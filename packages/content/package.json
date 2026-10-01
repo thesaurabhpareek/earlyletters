@@ -1,0 +1,20 @@
+{
+  "name": "@scribe/content",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Every word the product says, in app and out. Rules in VOICE.md are enforced by test/rules.test.ts.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7",
+    "@types/node": "^22"
+  },
+  "dependencies": {
+    "@scribe/core": "*"
+  }
+}

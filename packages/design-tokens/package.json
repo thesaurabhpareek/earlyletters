@@ -1,0 +1,10 @@
+{
+  "name": "@scribe/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Design tokens for Early Letters (colors, spacing, radii, type, elevation, motion). Zero dependencies; consumable by React Native and web.",
+  "main": "src/tokens.ts",
+  "types": "src/tokens.ts",
+  "sideEffects": false,
+  "license": "UNLICENSED"
+}

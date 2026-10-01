@@ -1,0 +1,8 @@
+{
+  "name": "@scribe/brand",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The product's public identity. Rename the product here only.",
+  "main": "index.ts",
+  "types": "index.ts"
+}

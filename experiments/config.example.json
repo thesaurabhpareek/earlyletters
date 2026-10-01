@@ -1,0 +1,18 @@
+{
+  "_readme": "Copy of this file lives at config.local.json (git-ignored). Put your real family words ONLY in the local copy.",
+  "childName": "Asha",
+  "language": "en",
+  "models": ["base", "small", "large-v3-turbo-q5_0"],
+  "dictionary": [
+    { "term": "Asha", "kind": "child", "heardAs": [] },
+    { "term": "Ashu", "kind": "nickname", "heardAs": [] },
+    { "term": "Mumma", "kind": "family", "heardAs": [] },
+    { "term": "Papa", "kind": "self", "heardAs": [] },
+    { "term": "chalo", "kind": "word", "heardAs": [] }
+  ],
+  "phrases": [
+    { "file": "01.m4a", "expected": "Asha walked to Mumma today and then she said bau to the dog." },
+    { "file": "02.m4a", "expected": "Chalo Ashu, time for bath, she was not wanting to sleep na." },
+    { "file": "silence-white-noise.m4a", "expected": "" }
+  ]
+}
