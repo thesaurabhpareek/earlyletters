@@ -89,3 +89,29 @@ export function normalizeChars(input: string): string {
 
 /** Characters that must never survive into an entry. */
 export const FORBIDDEN_CHARS = /[—–‘’“”…]/;
+
+/**
+ * Speech recognisers annotate sounds that are not speech: [BLANK_AUDIO],
+ * (waves crashing), *music*, music notes. None of that is something a person
+ * said, so it never enters the transcript. Observed Oct 1 2026: whisper base
+ * turned 30 s of white noise into "(waves crashing)" with voice detection off.
+ * Keep the original recogniser output in stt_meta if needed for debugging.
+ *
+ * Conservative by design: bracket tags, asterisk tags and music notes are
+ * never speech, so they always go. Parenthetical text is removed only when
+ * it is ALL the recogniser produced (the noise case); otherwise it may be
+ * words someone said, and it stays. Apply to recogniser output only, never
+ * to typed text.
+ */
+export function stripNonSpeech(input: string): string {
+  const tidy = (s: string) =>
+    s.replace(/\s+([,.!?])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+  const withoutTags = tidy(
+    input
+      .replace(/\[[^\]\n]{1,40}\]/g, ' ')
+      .replace(/\*[^*\n]{1,40}\*/g, ' ')
+      .replace(/[♪♫♬♩]+/g, ' '),
+  );
+  const onlyParentheticals = /^(\s*\([^()\n]{1,40}\)[\s.,]*)+$/.test(withoutTags);
+  return onlyParentheticals ? '' : withoutTags;
+}

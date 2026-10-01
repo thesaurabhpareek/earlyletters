@@ -10,12 +10,12 @@ Internal codename: `scribe`. Start with [CLAUDE.md](CLAUDE.md) for structure, co
 
 | Area | State |
 |---|---|
-| Faithful-edit engine (`packages/core`) | Built, 37 tests passing |
+| Faithful-edit engine (`packages/core`) | Built, 38 tests passing |
 | Content: in-app copy, 104 prompts, App Store, website, book (`packages/content`) | Written, 16 rule checks passing |
 | Database schema and access rules (`supabase`) | Written, 36 checks passing locally; not yet applied (needs a Supabase project) |
 | Design language, tokens, component library choice (`docs/design`, `packages/design-tokens`) | Done |
 | Architecture and decision records (`docs`) | Done |
-| Speech-model experiment kit (`experiments`) | Setup script done; runner in progress |
+| Speech-model experiment kit (`experiments`) | Ready; ran end to end on sample audio. Waiting on your recordings |
 | iOS app screens (`apps/ios`) | Not started (Expo template only) |
 
 ## Founder to-dos (only you can do these)

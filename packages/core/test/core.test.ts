@@ -12,6 +12,7 @@ import {
   normalizeChars,
   selectFollowUps,
   selectPrompt,
+  stripNonSpeech,
   renderTemplate,
   type Prompt,
   verifyEdits,
@@ -39,6 +40,12 @@ function modelEdit(raw: string, type: Edit['type'], original: string, replacemen
 const ctx = (raw: string, level: 'clean' | 'verbatim' = 'clean') => ({ raw, level, dictionary: DICT, protectedSpans: [] });
 
 describe('character normalization', () => {
+  it('strips sound annotations that nobody said', () => {
+    expect(stripNonSpeech(' (waves crashing) (waves crashing)')).toBe('');
+    expect(stripNonSpeech('[BLANK_AUDIO] She walked. [MUSIC] *laughs* ♪')).toBe('She walked.');
+    expect(stripNonSpeech('She said (I think) it was blue.')).toBe('She said (I think) it was blue.');
+  });
+
   it('removes every forbidden character', () => {
     const out = normalizeChars('She laughed — really laughed… “bau” she said, it’s 3–4 times.');
     expect(out).not.toMatch(FORBIDDEN_CHARS);

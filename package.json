@@ -3,13 +3,15 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "experiments"
   ],
   "scripts": {
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "mobile": "npm run start -w @scribe/ios",
-    "test:db": "node supabase/tests/rls.test.mjs supabase/migrations/20260930000000_scribe_core.sql"
+    "test:db": "node supabase/tests/rls.test.mjs supabase/migrations/20260930000000_scribe_core.sql",
+    "experiment": "npm run experiment -w @scribe/experiments --"
   },
   "engines": {
     "node": ">=20"
