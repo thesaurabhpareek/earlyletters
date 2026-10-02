@@ -60,7 +60,7 @@ export const FILLERS = new Set(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 
  * or a toddler's own speech.
  */
 export const REPEAT_COLLAPSIBLE = new Set([
-  'the', 'a', 'an', 'i', 'and', 'to', 'is', 'it', 'was', 'she', 'he', 'we', 'of', 'in', 'that', 'so', 'but',
+  'the', 'a', 'an', 'i', 'and', 'to', 'it', 'was', 'she', 'he', 'we', 'of', 'in', 'so', 'but',
 ]);
 
 /**

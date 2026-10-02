@@ -1,9 +1,9 @@
 # Backlog
 
 The ordered list of work for Early Letters. Format and rules: ADR 0011 (`docs/adr/0011-requirements-and-agent-workflow.md`).
-Window: 5 Oct to 30 Oct 2026 (4 weeks). Last re-planned: 2 Oct 2026.
+Window: 5 Oct to 30 Oct 2026 (4 weeks). Last re-planned: 2 Oct 2026 (PRD.md 1.1: multi-child and analytics tasks added).
 
-Requirements are cited, never copied. Sources: `docs/prd/A-*.md` (A-REQ, A-NFR), `docs/prd/B-*.md` (B-REQ, B-NFR), `docs/prd/C-*.md` (C-REQ, C-NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ; classes C, S, A, T in `docs/legal/data-policy.md` section 2). If a PRD and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides.
+Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##; wins over A, B and C where they differ), `docs/prd/A-*.md` (A-REQ, A-NFR), `docs/prd/B-*.md` (B-REQ, B-NFR), `docs/prd/C-*.md` (C-REQ, C-NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ; classes C, S, A, T in `docs/legal/data-policy.md` section 2). If a PRD and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides.
 
 ---
 
@@ -33,7 +33,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 2. **Traceability.** PR body lists `Satisfies:` IDs, matching the task. `scripts/trace.mjs` passes once BL-002 is merged (no unknown IDs).
 3. **Constitution.** Nothing writes, rewrites, summarizes or shapes a person's words. Machine edits go through `verifyEdits`. `raw_transcript` stays immutable.
 4. **Content rules.** Every user-facing word lives in `packages/content` and passes `packages/content/test/rules.test.ts` (no em or en dashes, curly quotes, ellipsis characters or emoji; no fear, guilt or loss language; never imply AI writes; `{child}` never gendered; no streaks, points, badges or gap counts). The brand name comes only from `packages/brand`. If a rule test fails, fix the copy, not the test.
-5. **Data classification.** Any new or changed table, column, Storage bucket, device store, SDK or vendor has its row in `docs/legal/data-policy.md` section 4 in the **same PR**, with one class (C, S, A or T), owner and retention (DATA-REQ-001, DATA-REQ-002). The PR body states `Data classes touched:`. Content (C) and Sensitive (S) data never reach analytics, logs, crash reports, push payloads, URLs or support prefill (LEGAL-REQ-014, DATA-REQ-004).
+5. **Data classification.** Any new or changed table, column, Storage bucket, device store, SDK or vendor has its row in `docs/legal/data-policy.md` section 4 in the **same PR**, with one class (C, S, A or T) and its level (L1 Public, L2 Internal, L3 Confidential, L4 Restricted; PRD.md 7.10, PRD-REQ-010), owner and retention (DATA-REQ-001, DATA-REQ-002). The PR body states `Data classes touched:`. Content (C) and Sensitive (S) data never reach analytics, logs, crash reports, push payloads, URLs or support prefill (LEGAL-REQ-014, DATA-REQ-004).
 6. **Privacy in tests.** Fixtures use only the fictional family "Asha". No real names.
 7. **Database.** Schema changes ship as a new file in `supabase/migrations/`; applied migrations are never edited. Every new RLS rule has an access test in `supabase/tests` (LEGAL-REQ-024, B-NFR-003).
 8. **Performance budgets.** If the task touches a budgeted path, the PR states the budget and how it was checked (unit timing, bundle size, or "needs device check" with a `human` follow-up task). Budgets in play this month: cold start p50 <= 1.2 s and p90 <= 2.0 s on iPhone SE 3, warm start p50 <= 400 ms, no awaited network or model load on launch (A-NFR-001, A-NFR-002); intro images <= 250 KB each and <= 1.5 MB total, no frame over 16.7 ms (A-NFR-003); first-run screens interactive <= 300 ms (B-NFR-008); Settings opens < 300 ms (C-NFR-007).
@@ -126,8 +126,8 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 
 #### BL-020 Typed analytics catalogue and allowlist
 - Status: ready. Mode: agent.
-- Satisfies: LEGAL-REQ-003, LEGAL-REQ-017, LEGAL-REQ-016, A-NFR-012, B-NFR-001, C-NFR-005, C-REQ-034.
-- Scope: new workspace `packages/analytics` (pure TS, no PostHog or Sentry dependency): event-name union with enum, count and duration props only (ADR 0008); `sanitize()` that drops non-allowlisted props and strings over 40 characters; consent gate default off; random analytics id. Events listed in A section 10, B-NFR-001 and C-REQ-034.
+- Satisfies: LEGAL-REQ-003, LEGAL-REQ-017, LEGAL-REQ-016, A-NFR-012, B-NFR-001, C-NFR-005, C-REQ-034, PRD-REQ-016, PRD-REQ-018.
+- Scope: new workspace `packages/analytics` (pure TS, no PostHog or Sentry dependency): event-name union with enum, count and duration props only (ADR 0008); `sanitize()` that drops non-allowlisted props and strings over 40 characters; consent gate default off with nothing queued before consent; `optOut()` on withdrawal; random analytics id. Full product catalogue (PRD.md K-01) from `docs/analytics`, plus A section 10, B-NFR-001 and C-REQ-034. Children only as ordinals and `child_count_bucket`.
 - Data classes touched: T. Add the catalogue to `data-policy.md` section 4.
 
 #### BL-021 Crash and log scrubber
@@ -135,6 +135,18 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 - Satisfies: LEGAL-REQ-014, A-NFR-012, DATA-REQ-004.
 - Scope: pure `scrubEvent()` and `scrubBreadcrumb()` in `packages/analytics` matching Sentry's `beforeSend` shape: remove fields named like text, transcript, name, note, letter; drop URLs with `token_hash` or `/i/`; drop HTTP bodies and query strings. Tests use Asha fixtures.
 - Data classes touched: T.
+
+#### BL-023 Ask sequencer and analytics consent sheet
+- Status: blocked (BL-020, BL-042). Mode: agent.
+- Satisfies: PRD-REQ-001, PRD-REQ-016, LEGAL-REQ-003, LEGAL-REQ-008.
+- Scope: pure `nextAsk(state)` in `packages/core` returning at most one of Keep the book, reminder prime, analytics consent per session after the first letter, never during recording, review or export; consent sheet with `analyticsConsent.*` copy, nothing preselected; Settings > Privacy row to change it. Tests prove no two asks in one session.
+- Data classes touched: A (`policy_acceptances` for analytics consent).
+
+#### BL-024 Server business aggregates
+- Status: blocked (BL-013). Mode: agent.
+- Satisfies: PRD-REQ-017.
+- Scope: SQL views or a scheduled Edge Function computing daily counts (accounts, books, letters saved, family letters, books per family bucket); RevenueCat totals later. Counts only; no ids leave the database. Service role only, with an access test.
+- Data classes touched: T (L2).
 
 #### BL-022 Kill switches and remote config shape
 - Status: needs-decision (which remote config source: Supabase table or PostHog flags? ADR 0008 vs C-NFR-009). Mode: pair.
@@ -164,6 +176,25 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 - Scope: child name and birthday or due date (required), "What does {child} call you?" signature, languages and Hindi script preference; names and signature seed dictionary terms through `packages/core`. Works offline. Birthdays stored as calendar dates. Copy in `packages/content`.
 - Data classes touched: S (child name, date of birth, languages), A (signature).
 - Budgets: B-NFR-008 (interactive <= 300 ms).
+- Note (PRD.md K-12): "Add another child" for twins in first run creates one book each, with no Plus sheet.
+
+#### BL-034 Child switcher and per-child local scope
+- Status: blocked (BL-032, BL-033). Mode: agent.
+- Satisfies: B-REQ-004, PRD-REQ-011, PRD-REQ-012.
+- Scope: every local query scoped by `child_id`; "For {child}" switcher and "Whose book?" sheet with `children.switcher.*` copy; "To {child}" in recording and Review, changeable before save; last opened child per device. Logic (selection, ordering, defaulting) in `packages/core` with tests.
+- Data classes touched: S (device store).
+- Budgets: switch child p95 300 ms (PRD.md 7.1).
+
+#### BL-035 Per-child settings
+- Status: blocked (BL-034). Mode: agent.
+- Satisfies: PRD-REQ-013, B-REQ-014, C-REQ-012, C-REQ-016.
+- Scope: Settings > Children list and "{child}'s book" page with the three scopes in PRD.md K-12 (book, person per child, person global); hide and show again; include in my reminders; pause celebrations per person per child. All rows 2 taps or fewer. Copy `children.settings.*`.
+- Data classes touched: S, A (local now; server table `child_member_prefs` belongs to the data architect).
+
+#### BL-036 Additional-child Plus rule (pure logic)
+- Status: needs-decision (twins exception and whether a joined book counts; PRD.md section 9 Q2 and Q7). Mode: agent after decision.
+- Satisfies: PRD-REQ-015.
+- Scope: pure `canCreateBook({booksAsParent, hasPlus, firstRun, sameDateAsSibling})` in `packages/core` with tests; the app shows `children.add.*` and the Plus sheet; server enforcement in `create_child` follows with the entitlement work.
 
 ---
 
@@ -228,8 +259,9 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 ## Later (not in this window, kept for ordering)
 
 - Apple and Google native sign-in UI (A-REQ-016, A-REQ-017), after BL-053.
-- Invites and family (B-REQ-007 to B-REQ-011), after sign-in.
+- Invites and family (B-REQ-007 to B-REQ-011), after sign-in. Per-child sharing and the cross-child leak test (PRD-REQ-014).
 - Export, free and offline (C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to DATA-REQ-053).
 - In-app account deletion flow and `purge-worker` (C-REQ-019, DATA-REQ-019 to DATA-REQ-027, DATA-REQ-033, DATA-REQ-034).
 - Reminders (C-REQ-001 to C-REQ-007, LEGAL-REQ-054).
-- Plus and paywall (C-REQ-020 to C-REQ-029, LEGAL-REQ-046 to LEGAL-REQ-049).
+- Plus and paywall (C-REQ-020 to C-REQ-029, LEGAL-REQ-046 to LEGAL-REQ-049). Account-level entitlement and `book_has_plus` (PRD.md K-28); server-side `create_child` Plus check (PRD-REQ-015); notice schedule per PRD.md K-04 (PRD-REQ-003).
+- Vendor wiring for PostHog and Sentry behind `packages/analytics` after counsel approves the consent copy (PRD-REQ-016; founder approves the event budget, PRD.md section 9 Q8).

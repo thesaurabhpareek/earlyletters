@@ -1,6 +1,6 @@
 # Early Letters launch PRD, Section B: first-run profile, family, privacy, personalization
 
-Owner: PM Lead B. Draft, 1 Oct 2026. iOS at launch; every requirement must also work on Android (one Expo codebase). Siblings: **Section A** (launch, intro, sign-in, "I was invited"), **Section C** (reminders, celebrations, settings, pricing, paywall).
+Owner: PM Lead B. Draft, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict log** (K-01, K-02, K-07, K-08, K-09, K-12, K-18); [PRD.md](PRD.md) wins where they differ. iOS at launch; every requirement must also work on Android (one Expo codebase). Siblings: **Section A** (launch, intro, sign-in, "I was invited"), **Section C** (reminders, celebrations, settings, pricing, paywall).
 
 ---
 
@@ -47,16 +47,18 @@ Target: R1, first saved letter at ≤ 90 s median (USER_RESEARCH 6).
 4. **Which languages do you speak with {child}?** Optional. Chips: English, Hindi, "Another language". With Hindi: "How should Hindi look in your letters?" Devanagari / Roman letters / As spoken (USER_RESEARCH 6 R12). It sits before the first letter because it sets that letter's transcription. Skip = automatic detection.
 5. **Tonight**, with the first prompt. Speak or Type. First letter saved (owned by the capture spec).
 6. **After the first save, "Make it yours"**: optional skippable cards: What matters (F3), Names and words (F4), Invite family (F5), photo. Unfinished cards rest in Settings, never as nags.
+   - *Revised Oct 2 2026 per PRD.md conflict log K-02:* first run never asks for notification permission and never shows a reminder step. The reminder priming card belongs to C (C-REQ-001) and appears on a later Tonight view.
 
 Edge cases
 - No account yet (if A defers sign-up): stored locally, created via `create_child` at sign-up. Invites need an account; tapping Invite starts A's sign-up.
 - Adoption: birthday picker allows "I only know the month" (stores month precision; chapters still work). Optional "The day {child} came home" date is P2.
-- Twins or more: "Add another child" repeats steps 1 to 2 with the date prefilled; one book each.
+- Twins or more: "Add another child" repeats steps 1 to 2 with the date prefilled; one book each. *Revised Oct 2 2026 per PRD.md conflict log K-12:* children added together in first run are free (provisional, founder to confirm) and no Plus sheet ever appears in first run.
 - Name in Devanagari or with diacritics: accepted as typed; never transliterated.
 
 ### F2. Children: add, switch, expecting to born, remove
-1. Add: Settings > Children > Add, or the child switcher. ≤ 3 taps to a second child's book (R3).
-2. Switch: "For Asha" with a chevron atop Tonight and Book. Listening and Review always show "To Asha" plus the audience line (DESIGN_LANGUAGE 12); the child can be changed in Review before save.
+1. Add: Settings > Children > Add a child, or the child switcher. ≤ 3 taps to a second child's book (R3). *Revised Oct 2 2026 per PRD.md conflict log K-12:* a second or later child's book is part of Plus (founder decision 2 Oct 2026), so the third tap opens the Plus sheet for a Free user; twins and multiples added together are free (provisional). Every existing book stays writable after a lapse (C-REQ-028).
+2. Switch: "For Asha" with a chevron atop Tonight and Book. Listening and Review always show "To Asha" plus the audience line (DESIGN_LANGUAGE 12); the child can be changed in Review before save. *Revised Oct 2 2026 per PRD.md K-12:* the switcher lists active books (youngest first), then "Add a child" and "Hidden books"; with one child the name shows without a chevron. The last opened child is remembered per device. A family member invited to several books sees only those books.
+2a. Per-child settings (*added Oct 2 2026 per PRD.md K-12*): each child has a Settings page "{child}'s book". Shared for the whole book (parents edit): name, nickname, birthday or due date, photo, book look, family can read, hide, delete. Per person for this child: sign my letters as, include in my reminders, pause celebrations; parents also set auto-add per family member. Per person for all children: reminder cadence and time, languages, reading size, analytics choice.
 3. Expecting to born: from the child row, "{child} is here?" → birth date, optional name change (placeholder names are common). Letters dated before birth stay in **Before You**; chapters re-derive from the birth date (`packages/core/src/age.ts` already returns "before birth").
    - Never a due-date countdown or "due today" message. 14 days past the due date, the only change is a quiet "Update {child}'s details" on the Settings row. No push, no card.
 4. Remove child (graceful, no loss copy): Settings > {child} > "Hide this book" stops prompts, reminders, month, birthday and celebration notifications on every member's device; readable from Settings > Hidden books; restorable. "Delete this book" sits on the same screen (B-REQ-016).
@@ -89,12 +91,12 @@ C owns reminder cadence; goals are an input, within R7 (≤ 2 per week). Evidenc
    - **Co-parent** (`parent`): "Writes, reads the whole book, chooses which family letters go in."
    - **Family** (`contributor`): "Writes to {child}. You choose which letters go in the book."
 2. "What does {child} call them?" chips (Nani, Dadi, Nana, Dada, Grandma, Grandpa, Aunty, Uncle, Other) or free text. Optional: first name, their languages, "Larger letters for them" (on for grandparent chips, DESIGN_LANGUAGE 12).
-3. Multi-child families: "Which books?" checkboxes, all children selected by default (P1; P0 is one child per invite).
+3. Multi-child families: "Which books?" checkboxes (P1; P0 is one child per invite). *Revised Oct 2 2026 per PRD.md K-12:* sharing is per child. Each book has its own member list and roles; an invite to one book never opens another. At P0 the invite sheet states "This invite is for {child}'s book only." (`children.sharing.oneBookNote`). The P1 picker defaults to the child currently selected, not all children.
 4. Share sheet with `family.shareMessage` texts and the link; **Show code** gives an 8-character code to read aloud (R5).
 5. Member list: "Invited", Send again, Cancel invite.
 
 Branches and edge cases
-- **Expired** (7 days): invitee sees `errors.inviteExpired`; inviter sees "Invite expired" with Send again (new token).
+- **Expired** (7 days for Co-parent, 14 days for Family; *revised Oct 2 2026 per PRD.md K-18*): invitee sees `errors.inviteExpired`; inviter sees "Invite expired" with Send again (new token).
 - **Co-parent declines or ignores**: "Not now" on the invitee side notifies nobody; row stays "Invited" until expiry. Decision: silence beats a rejection notice inside a family.
 - **Invitee already keeps a book for this child**: offer "Bring your letters into this book" (P1, B-REQ-021); until then both coexist.
 - **Contributor tries to invite**: not offered; server refuses.
@@ -110,7 +112,7 @@ Evidence: USER_RESEARCH 6 (R14), 1.4 (grandparents struggle with app UX); COMPET
 5. Play it back, "Send to {inviter}", "Say it again", or "Type instead".
 6. "Your letter is on its way to {inviter}. Come back any time with this same link."
 7. Transcription runs on the parent's phone, on device, when the letter arrives (no third-party AI; ARCHITECTURE 2, attribute 3). The contributor later sees their words, with "Keep it word for word".
-- Return access: the single-use invite creates an anonymous session plus a **personal return link** (hashed, revocable). "Send {signsAs} a new link" retires the old one.
+- Return access: the single-use invite creates an anonymous session plus a **personal return link** (hashed, revocable). "Send {signsAs} a new link" retires the old one. *Revised Oct 2 2026 per PRD.md conflict log K-07, K-08:* the anonymous session is created at the first Send, not on page load, and Send includes the 18+ confirmation. Anonymous auth is used on the web page only, never in the app.
 - Edges: microphone blocked → Type instead. Browser can't record → "Type your letter, or open the link on another phone." Interrupted upload → held and retried, shown as "Not sent yet".
 - "Get the app" is offered after the second letter; the same profile continues there (account linking).
 
@@ -139,7 +141,7 @@ Leave (anyone): "Leave my letters in the book" (default) or "Take my letters out
 | Contributor | All, with status | Only if "Family can read the book" is on (default off) | Others' added letters, same rule | Never | Name, nickname, photo; no edit |
 | Removed or left member | Read and export only | None | None | Never | None |
 
-Entries are private unless the author picks "Add to {child}'s book" (`review.destination`). Sealed letters are visible to non-authors only as "A sealed letter from Papa, to open when {child} is 18".
+Entries are private unless the author picks "Add to {child}'s book" (`review.destination`). *Revised Oct 2 2026 per PRD.md conflict log K-09:* `raw_transcript`, `machine_edits` and `stt_meta` are readable by the author only; everyone else reads entries through a security-barrier view without them, and "Show exactly what I said" appears only on your own letters. Sealed letters are visible to non-authors only as "A sealed letter from Papa, to open when {child} is 18".
 
 ### F10. Appearance, reading size, themes, templates
 - App appearance: System (default), Light, Dark. Per device.
@@ -200,7 +202,9 @@ P0 launch blocker, P1 launch quarter, P2 later.
 
 **B-REQ-004**
 - Given two children, When recording, Then "To {child}" is visible, And in Review it can be changed, And the save goes to the chosen child.
-- Given the switcher, Then a second child's empty book is ≤ 3 taps away.
+- Given the switcher, Then a second child's empty book is ≤ 3 taps away (for a Free user, the third tap is the Plus sheet; revised Oct 2 2026 per PRD.md K-12).
+- Given two children, When a parent turns off "Include Asha in my reminders", Then that parent gets no reminder naming Asha, And the co-parent's reminders are unchanged.
+- Given Nani is invited to Asha's book only, When she syncs, Then she receives nothing from the sibling's book.
 
 **B-REQ-005**
 - Given due date mode, When a letter is saved, Then it is in "Before You".
@@ -211,7 +215,7 @@ P0 launch blocker, P1 launch quarter, P2 later.
 - Given "Asha", nickname "Ashu", signature "Papa", Then `dictionary_terms` rows exist for each, And child-level terms are readable by every member.
 
 **B-REQ-007**
-- Given a parent creates a Family invite, Then the link holds a single-use token, 7-day expiry, role `contributor`.
+- Given a parent creates a Family invite, Then the link holds a single-use token, 14-day expiry (Co-parent: 7 days; revised Oct 2 2026 per PRD.md K-18), role `contributor`.
 - Given a contributor calls invite creation, Then the server rejects it.
 - Given an expired link, Then the page shows `errors.inviteExpired`.
 - Given 10 wrong codes in an hour from one device, Then entry is blocked for an hour.
@@ -267,7 +271,7 @@ P0 launch blocker, P1 launch quarter, P2 later.
 
 | ID | Area | Requirement |
 |---|---|---|
-| B-NFR-001 | Privacy | No child name, signature, language names or token in analytics, logs or crashes (CLAUDE.md). Allowlisted events: `child_added {mode}`, `invite_created {role}`, `invite_accepted {role, surface}`, `family_letter_reviewed {decision}`, `goals_set {keys}`, `languages_set {multilingual}`. Language names can proxy ethnicity. |
+| B-NFR-001 | Privacy | *Revised Oct 2 2026 per PRD.md K-01:* all events are sent only after analytics opt-in; children are referred to by ordinal (`first`, `second`, `third_plus`), never id or name. No child name, signature, language names or token in analytics, logs or crashes (CLAUDE.md). Allowlisted events: `child_added {mode}`, `invite_created {role}`, `invite_accepted {role, surface}`, `family_letter_reviewed {decision}`, `goals_set {keys}`, `languages_set {multilingual}`. Language names can proxy ethnicity. |
 | B-NFR-002 | Privacy | Tokens travel in the URL fragment (`/j#t=...`) so servers never log them; only SHA-256 hashes stored (existing pattern). Link previews are generic. |
 | B-NFR-003 | Security | RLS mapping below; each rule gets an access test and a PowerSync parity test (ARCHITECTURE 8). |
 | B-NFR-004 | Security | Invite creation rate limit 20 per parent per day; code entry 10 attempts per hour per device; return links revocable and rotated on removal. |
@@ -307,7 +311,7 @@ P0 launch blocker, P1 launch quarter, P2 later.
 9. Storage: `child-photos/{child_id}/`, `avatars/{profile_id}/`, `inbox/{child_id}/{entry_id}` (ciphertext from the web).
 10. `dictionary_terms`: unique on `(owner_id, child_id, term)`; shared-read policy for child-level `child`, `nickname`, `family` kinds.
 11. Content: prompt band `before` (0 of 104 prompts cover pregnancy today) and `tags` (`heritage`, `older`).
-12. Auth: anonymous web sessions linkable to a full account later (Supabase capability **to verify**).
+12. Auth: anonymous web sessions linkable to a full account later (Supabase capability **to verify**). *Revised Oct 2 2026 per PRD.md conflict log K-08:* web contribution page only, created at the first Send; the app never uses anonymous auth.
 
 ---
 
@@ -334,7 +338,7 @@ P0 launch blocker, P1 launch quarter, P2 later.
 4. Server transcription (with consent, ZDR) so web contributors review words at once? Proposed P1.
 5. Is on-device Whisper good enough on short Hindi names? Phase 0 data (ARCHITECTURE 10).
 6. A co-parent's account deletion removes their letters from the shared book. "Leave my letters for {child}" (P2) needs counsel.
-7. 7-day expiry for grandparents? Proposed 14 days for Family, 7 for Co-parent.
+7. ~~7-day expiry for grandparents?~~ Resolved Oct 2 2026 (PRD.md K-18): 14 days for Family, 7 for Co-parent.
 8. The return link is a bearer credential. Acceptable, or phone OTP on new devices?
 
 ---

@@ -1,18 +1,18 @@
 ---
 title: Early Letters in-app and store disclosures
-version: 1.0.0
+version: 1.1.0
 status: draft-for-counsel
 effective_date: TBD
 last_updated: 2026-10-02
 owner: founder
-related: terms-of-service.md (1.1.0), subscription-terms.md (1.0.0), packages/content/VOICE.md
+related: terms-of-service.md (1.2.0), subscription-terms.md (1.1.0), packages/content/VOICE.md, docs/legal/memos/lawyer-1.md
 ---
 
 > **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice. Notes for counsel appear as **[COUNSEL: ...]**.
 
 # In-app and store disclosures
 
-The exact short strings for the beta label, the "it can make mistakes" note, and the paywall legal links, with where each one appears. Every string is under 140 characters as stored (with prices filled in, they stay under 140), uses straight quotes, and has no em dashes, en dashes, ellipsis characters or emoji. Strings move into `packages/content` (strings.en.ts and store.en.ts) so the content rule tests run on them. `{child}`, `{monthlyPrice}`, `{annualPrice}` and `{date}` are placeholders filled at runtime; prices always come from the store.
+The exact short strings for the beta label, the "it can make mistakes" note, and the paywall legal links, with where each one appears. Every string is under 140 characters as stored (with prices filled in, they stay under 140), uses straight quotes, and has no em dashes, en dashes, ellipsis characters or emoji. Strings move into `packages/content` (strings.en.ts and store.en.ts) so the content rule tests run on them. `{child}`, `{price}`, `{period}`, `{trialLength}`, `{cancelByDate}`, `{renewDate}` and `{date}` are placeholders filled at runtime. Prices and trial lengths always come from the store offer, never from code, because the trial experiment (PRD C section 8) varies the length. `{cancelByDate}` is the trial or period end minus 24 hours, shown as a calendar date.
 
 **Voice note.** The brief's example used "We tidy small slips". VOICE.md bans words that suggest software "tidied" a letter, so these strings say "fix small slips" instead, which matches story 2 ("We fix slips of the tongue.").
 
@@ -43,18 +43,32 @@ Rules: shown once per install, after the first transcript appears and before the
 
 | Key | Where it appears | String | Chars |
 |---|---|---|---|
-| `plus.legal.renewAnnual` | Plus sheet, directly under the annual option when the user is trial-eligible | Free for 2 months, then {annualPrice} a year. Renews automatically until you cancel, at least 24 hours before it renews. | 120 |
-| `plus.legal.renewMonthly` | Plus sheet, under the monthly option when trial-eligible | Free for 1 month, then {monthlyPrice} a month. Renews automatically until you cancel, at least 24 hours before it renews. | 121 |
-| `plus.legal.renewNoTrial` | Plus sheet, under either option when not trial-eligible | {price} a {period}, charged now. Renews automatically until you cancel, at least 24 hours before it renews. | 107 |
+| `plus.legal.renewTrial` | Plus sheet, directly under the chosen plan when trial-eligible | {trialLength} free, then {price} a {period}. Renews automatically until you cancel. Cancel by {cancelByDate} and you pay nothing. | up to 123 filled |
+| `plus.legal.renewNoTrial` | Plus sheet, under the chosen plan when not trial-eligible | {price} a {period}, charged now. Renews automatically until you cancel at least 24 hours before it renews. | up to 101 filled |
 | `plus.legal.cancel` | Plus sheet, above the links | Cancel any time in Settings, Plan, Manage subscription, or in your Apple or Google account. | 91 |
-| `plus.legal.links` | Plus sheet footer; each word is a link | Terms of Service, Privacy Policy, Subscription terms, Restore (four separate link labels) | see note |
-| `plus.legal.agree` | Plus sheet, directly above the purchase button | By continuing, you agree to the Subscription terms and Terms of Service. | 72 |
+| `plus.legal.agree` | Plus sheet, directly above the purchase button | By subscribing, you agree that Plus renews automatically at this price until you cancel. | 88 |
+| `plus.legal.links` | Plus sheet footer; each label is a link | Terms of Service, Privacy Policy, Subscription terms, Restore (four separate labels) | 16, 14, 18, 7 |
+| `plus.ack.body` | Confirmation sheet after purchase, and the same text in the confirmation email | Plus is on, free until {date}. Then {price} a {period} until you cancel. Cancel by {cancelByDate} to pay nothing. | up to 125 filled |
 
-Note on `plus.legal.links`: the component draws the separators, so the stored strings are four separate labels: "Terms of Service" (16), "Privacy Policy" (14), "Subscription terms" (18), "Restore" (7).
+Rules:
+- The plan option leads with the billed amount ("{price} a year"); the free period is secondary text. Apple reviewers commonly reject paywalls where the free period is more prominent than the billed price (Unverified practice, not a quoted guideline).
+- Neither plan is preselected. The sheet states what Plus adds before the purchase button (Apple 3.1.2(c)).
+- All of section 3 is visible at the default text size without scrolling past the purchase button, and wraps, never truncates, at the largest Dynamic Type size (PRD C-REQ-022, C-NFR-006).
+- "Free" wording appears only when the store reports eligibility. Links open in-app.
+- The Manage subscription row opens the store's cancel screen in one tap. No offer, survey or extra screen comes before it.
+- Log paywall version, product, offer and time for each purchase as proof of consent, kept at least 3 years or 1 year after the plan ends, whichever is longer (California 17602).
+- This is store-required disclosure text, which VOICE and PRD C section 7 allow to state prices, dates and renewal plainly.
 
-Rules: all of section 3 is visible at the default text size without scrolling past the purchase button, and wraps (never truncates) at the largest Dynamic Type size (PRD C-REQ-022, C-NFR-006). "Free trial" wording appears only when the store reports eligibility. Links open in-app. This is store-required disclosure text, which VOICE and PRD C section 7 allow to state prices, dates and renewal plainly.
+**[COUNSEL: Covers Apple DPLA Schedule 2 section 3.8(b), Google Play Subscriptions policy, California 17602 (clear and conspicuous terms near the button, price after the trial, express affirmative consent to the renewal terms, retained acknowledgment) and Massachusetts (calendar date to cancel by). Confirm that `plus.legal.agree` plus the store's purchase sheet is express affirmative consent to the renewal terms, or whether a separate tap is needed.]**
 
-**[COUNSEL: Covers Apple DPLA Schedule 2 section 3.8(b) (title, length, price, links to Privacy Policy and Terms of Use in the app), Google Play Subscriptions policy, and California Business and Professions Code 17602 (clear and conspicuous terms near the purchase button, price after the trial, express affirmative consent). Confirm whether `plus.legal.agree` plus the store's purchase sheet is enough "express affirmative consent", or whether a separate checkbox is needed. Log paywall version, product and time for each purchase as proof of consent. If Apple's Standard EULA is used, App Store metadata must also link the Terms of Use.]**
+## 3a. Sign-in acceptance (owner: PRD A, A-REQ-034)
+
+| Key | Where it appears | String | Chars |
+|---|---|---|---|
+| `auth.legal.accept` | Above the sign-in buttons | By continuing, you confirm you are 18 or older and agree to the Terms and Privacy Policy. | 89 |
+| `web.legal.accept` | Family web page, above the first Send | By sending, you confirm you are 18 or older and agree to the Terms and Privacy Policy. | 86 |
+
+Rule: the acceptance stores the Terms version and time (POLICY_VERSIONING section 7). Terms 1.5 and 2.1 rely on this line.
 
 ## 4. Store listing
 
@@ -62,10 +76,10 @@ Rules: all of section 3 is visible at the default text size without scrolling pa
 |---|---|---|---|
 | `store.description.betaLine` | App Store and Google Play description, last paragraph | Early Letters is in beta. We are still building, and some things may change. Your letters are always yours to export. | 117 |
 | `store.description.subscriptionLine` | App Store and Google Play description, after the feature list | Writing, reading, listening and export are free, always. Plus is optional and renews automatically until you cancel. | 116 |
-| `store.description.legalLinks` | Last lines of the description | Terms of Service: {TERMS_URL} Privacy Policy: {PRIVACY_URL} | varies |
+| `store.description.legalLinks` | Last lines of the description | Terms of Use: {TERMS_URL} Privacy Policy: {PRIVACY_URL} | varies |
 | `store.promotionalText.beta` | App Store promotional text (optional, changeable without review) | Now in beta. Tell us what you think at {SUPPORT_EMAIL}. | 55 |
 
-Rules: no "beta" in the app name or subtitle (30-character fields are reserved for the name and category). Remove the beta lines when the label ends.
+Rules: `packages/content/src/store.en.ts` does not yet end its description with `store.description.legalLinks`; the content owner must add it (Apple expects a Terms of Use link for auto-renewing subscriptions). No "beta" in the app name or subtitle (30-character fields are reserved for the name and category). Remove the beta lines when the label ends.
 
 ## 5. Where each disclosure is backed in the Terms
 
@@ -74,10 +88,12 @@ Rules: no "beta" in the app name or subtitle (30-character fields are reserved f
 | Beta label and store beta line | 16.4, 20.2 |
 | "It can make mistakes" note | 11.4 to 11.6, 20.2, 20.3 |
 | Paywall disclosure and links | 14, Subscription Terms |
+| 18+ acceptance line | 1.5, 2.1 |
 | "Your letters are always yours to export" | 12.3, 13 |
 
 ## Changelog
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.1.0 | 2026-10-02 | draft-for-counsel | Consumer-law review: paywall strings take trial length and cancel-by date from the store offer; clearer renewal wording; consent line now names automatic renewal; acknowledgment string; prominence, one-tap cancel and consent-log rules; 18+ acceptance strings (3a); store legal-links gap flagged. Beta and mistakes strings unchanged. |
 | 1.0.0 | 2026-10-02 | draft-for-counsel | First draft, prepared by Claude for counsel review, at the founder's request. |

@@ -1,6 +1,6 @@
 # PRD Section C: Habit loop and money
 
-Lead C. Draft v2, 2 Oct 2026. This version applies the founder pricing decision of 1 Oct 2026.
+Lead C. Draft v2, 2 Oct 2026. This version applies the founder pricing decision of 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict log** (K-01, K-03, K-04, K-05, K-06, K-11, K-12, K-17, K-28); [PRD.md](PRD.md) wins where they differ.
 
 Scope: reminders, celebrations, settings, Plus pricing, funnel analytics. **A** owns launch, intro and sign-in; **B** owns first-run, children, family, privacy, themes.
 
@@ -36,7 +36,7 @@ Parents want: a nudge at a chosen time, never late and never right after writing
    - On Android 13 and later, `POST_NOTIFICATIONS`, which is off by default for new installs [P11].
    - On Android 12 and earlier, no prompt.
 
-Branches: denied saves the preference and Settings offers **Open Settings** (never re-prompt); Not now allows one more prime after the first chapter (max 2); Android rationale only when `shouldShowRequestPermissionRationale()` is true [P11]. Edge cases: invited family default to weekly (B); due-date mode starts month-age notes at birth; several children share one schedule per person, naming the most recently opened child.
+Branches: denied saves the preference and Settings offers **Open Settings** (never re-prompt); Not now allows one more prime after the first chapter (max 2); Android rationale only when `shouldShowRequestPermissionRationale()` is true [P11]. Edge cases: invited family default to weekly (B); due-date mode starts month-age notes at birth; several children share one schedule per person; each reminder names one included child, rotating in turn so no child is named less often (*Revised Oct 2 2026 per PRD.md conflict log K-12:* each child has an "Include {child} in my reminders" switch; month-age and birthday notes are per child).
 
 ### F2. Send decision
 
@@ -60,14 +60,15 @@ Free tier forever (write, read, play, export, family authors)
     -> Plus sheet: Annual $29.99 (2 months free) | Monthly $3.99 (1 month free) | Not now
        Intro-offer eligibility checked per store; ineligible users see the price without trial copy
     -> Trial starts: confirmation sheet + email (end date, price, how to cancel)
-    -> Trial-ending notice: D-3 push + email + in-app card (annual trial also D-7)
-    -> Converts (store charges) -> renewal notices: annual D-7; monthly none (date in Settings)
+    -> Trial-ending notice: monthly trial D-7 and D-3; annual 2-month trial D-18 and D-3 (push only at D-3)
+    -> Converts (store charges) -> renewal notices: annual D-30 and D-7; monthly none (date in Settings); anniversary reminder for every plan
+       (Revised Oct 2 2026 per PRD.md conflict log K-04)
     -> Cancel / billing failure -> store grace period -> lapse to Free (see 4.3)
 ```
 
 Edge cases:
 - **Trial on Monthly, then switching to Annual.** Apple allows one introductory offer per subscription group [P1], so there is no second trial. The sheet shows the price only.
-- **Two parent-admins on one book.** The book has Plus if either admin holds it (A: per-book entitlement, OQ3).
+- **Two parent-admins on one book.** The book has Plus if either admin holds it. *Revised Oct 2 2026 per PRD.md conflict log K-28:* Plus belongs to the subscriber's account and covers every book where the subscriber is a parent; a co-parent gets Plus features in those shared books without a second purchase.
 - **Refund.** The entitlement is removed and the book drops to Free. Letters, audio and existing backups are untouched.
 - **Account deletion while subscribed.** Explain that billing continues through Apple and link to manage subscriptions [P4].
 - **Gift (F5).** A family member buys "A year of Plus for {child}'s book". This is a non-renewing purchase, granted to that book on the server. Refunds go to the purchaser only [P2 3.1.1].
@@ -83,7 +84,7 @@ Edge cases:
 | Family authors, invites, approvals | Yes | Yes | Gating co-parents gets criticised (C §2 takeaway c; C §7 item 8). |
 | Encrypted backup of letters and recordings (ADR6) | Letter text syncs (ARCH §4 step 7). Audio stays on the phone. | **Plus** | The real ongoing cost is cumulative audio storage, about 19 MB per family per month (ARCH §7). Cloud support is a named valid subscription use [P2 3.1.2(a)]. |
 | Read together (playback with word highlight) | 3 sessions to try (A) | **Plus** | The most emotional moment in the category is hearing a voice (C §4 praise 4). C §5 item 2 says it is unclaimed in baby books. It is the natural value moment (U R20). |
-| More than one child's book | First book | **Plus** for each extra book | Second children get far less (U §1.4). Families with 2 or more children are deeper users (A). |
+| More than one child's book | First book | **Plus** covers every additional child's book (no per-child price) | Second children get far less (U §1.4). Families with 2 or more children are deeper users (A). *Revised Oct 2 2026 per PRD.md conflict log K-12, K-28:* founder decision 2 Oct 2026. Twins and multiples added together are free (provisional, PRD.md section 9). |
 | Extra themes and book covers | Default theme | **Plus** | Cosmetic and low-risk. Day One and Dearest charge for extras (C §2). B owns themes. |
 | Printed-book credit (annual) | None | P2, once confirmed with App Review | Print is the category's profit engine (C §3). See OQ2 for the risk. |
 | Lifetime ~$99.99 | None | P2 non-consumable | U §4.3 verdict; C §6 recommendation. |
@@ -115,10 +116,10 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 | Event | What happens |
 |---|---|
 | Trial starts | An in-app sheet and an email. They give the end date, the price after, and how to cancel (manage-subscription link). |
-| Trial ending | **3 days before**: a "Your plan" push, an email and an in-app card. For the annual 2-month trial, also 7 days before. Never sent on a birthday; moved a day earlier instead. |
-| Renewal | Annual: email and in-app card 7 days before. Monthly: next date shown in Settings, no push. |
+| Trial ending | *Revised Oct 2 2026 per PRD.md conflict log K-04:* monthly 1-month trial: 7 and 3 days before; annual 2-month trial: **18** and 3 days before. Email and in-app card each time; a "Your plan" push only at 3 days. Never sent on a birthday; moved a day earlier instead. |
+| Renewal | *Revised Oct 2 2026 per PRD.md conflict log K-04:* annual: email and in-app card **30 and 7 days** before. Monthly: next date shown in Settings, no push. Every subscription: an annual reminder email on its anniversary. |
 | Dormant payer (P1) | Plus with no saves in 60 days: one email on how to pause or cancel, at most every 6 months (U §5 fear 2). |
-| Price change | Email and in-app notice 30 days ahead, plus the store consent flow. |
+| Price change | Email and in-app notice **25 days** ahead (window 7 to 30, Subscription terms), plus the store consent flow (*Revised Oct 2 2026 per PRD.md conflict log K-04*). |
 | Lapse to Free | Writing, reading, playback, export and family stay unchanged in **every existing book, including extra children's books**. Only creating a further book needs Plus. Backed-up audio stays stored, restorable and downloadable forever, but new recordings stop uploading. Settings says plainly: "New recordings are kept on this phone." Read together returns to the try state. Themes fall back to default, and no content changes. |
 
 ## 5. Requirements
@@ -170,8 +171,8 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 **C-REQ-013 (P1) Year One.** On the first birthday, the Book shows a Year One cover (CR §6) with Read together, a free PDF, and "Tell me when printing opens." No Plus offer that day.
 - Given the first birthday, then the card shows and the Plus offer is suppressed for 24 hours.
 
-**C-REQ-014 (P1) "On this day."** Show "One month ago" or "One year ago today" on Tonight, at most one card a day. Use only letters that are in the book and visible to the viewer. Exclude sealed letters and any entry with a `safety_events` row.
-- Given the only candidate has a safety tier, then no card shows.
+**C-REQ-014 (P1) "On this day."** Show "One month ago" or "One year ago today" on Tonight, at most one card a day. Use only letters that are in the book and visible to the viewer. Exclude sealed letters and any entry with a safety tier in the **local** database (*Revised Oct 2 2026 per PRD.md conflict log K-06: the server `safety_events` table is dropped*).
+- Given the only candidate has a local safety tier, then no card shows.
 
 **C-REQ-015 (P0) Never celebrated:** streaks, frequency, speed, comparisons between authors, per-author totals, developmental milestones as app events, and plan status.
 - Given any moment string, then it has no comparatives and no per-author counts.
@@ -183,15 +184,15 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 | Section | Rows | Owner |
 |---|---|---|
 | Account | Name, sign-in method, sign out | A |
-| Children, Family | Child, birthday or due date, members, roles, invites, approvals | B |
-| Privacy | Audience, AI consent (ARCH §8), lock-screen names | B, plus a C row |
+| Children, Family | Children list (one row per child, plus Add a child and Hidden books); per child: name and birthday or due date, sign my letters as, include in my reminders, pause celebrations, who writes, family can read, book look, hide, delete; members, roles, invites, approvals (*Revised Oct 2 2026 per PRD.md conflict log K-12*) | B |
+| Privacy | *Revised Oct 2 2026 per PRD.md conflict log K-01, K-17:* share usage and crash reports (analytics opt-in), sync and family sharing (sensitive-data consent), cloud transcription (AI consent), backup mode, lock-screen names, audience | B, plus a C row |
 | Reminders | Cadence, time, pause, channels | C |
-| The book | Sign my letters as, pause celebrations | B, C |
+| The book | Default signature (per-child overrides live under Children) | B, C |
 | Appearance and reading size | Theme (B; Plus extras marked), Reading Size, Large Print (DL principle 6) | B, C |
 | Recordings and backup | Keep recordings, storage used, encrypted backup (Plus), Vault mode (ADR6), download backed-up audio | C |
 | Plan | Free or Plus status, trial end or renewal date, see Plus, restore, manage subscription, request a refund | C |
 | Your data | Export everything, Recently deleted, delete book, delete account | C |
-| Help, Legal | Support (prefilled with app version and plan state, no content), Terms, Privacy, Licences, shutdown and portability pledge (C §7 item 6) | C |
+| Help, Legal | *Revised Oct 2 2026 per PRD.md conflict log K-05, K-13, K-14, K-17:* About (version and beta label), How transcription works, Support (prefilled with app version and plan state, no content), Report a concern (P1), Terms, Privacy Policy, Consumer Health Data Privacy Policy, Subscription terms, Subprocessors, Accessibility statement, Licences, shutdown and portability pledge (90 days' notice) | C |
 
 - Given VoiceOver, then each row reads its label and value, for example "Reminders, a few times a week, 8:30 PM".
 
@@ -212,7 +213,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 **C-REQ-021 (P0) Products and entitlement.**
 - Products: `el_plus_monthly_399` (1-month trial) and `el_plus_annual_2999` (2-month trial), in one subscription group.
 - Both map to the RevenueCat `plus` entitlement (ADR7).
-- The entitlement applies to the book, so every member's Plus features work there.
+- *Revised Oct 2 2026 per PRD.md conflict log K-28:* the entitlement belongs to the subscriber's account (Apple allows one active subscription per group per person, so per-book purchases cannot fund a third child). A book has Plus when any of its parents holds the entitlement or a gift is active on it; every member's Plus features then work there. Additional children's books need the creator to hold Plus at creation.
 
 - Given Mama holds Plus, when Papa (co-admin) opens Read together on that book, then it works without a second purchase.
 
@@ -224,7 +225,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 
 - Given a user who already used a trial, then the sheet shows "$29.99 a year" with no "free" wording.
 
-**C-REQ-023 (P0) Offer placement.** The offer appears only at the F4 value moments, and only when the user taps a Plus feature (backup, second child, Read together after the free tries, themes).
+**C-REQ-023 (P0) Offer placement.** The offer appears only at the F4 value moments, and only when the user taps a Plus feature (backup, second child, Read together after the free tries, themes). *Revised Oct 2 2026 per PRD.md conflict log K-12:* never during first run; twins and multiples added together in first run do not trigger it.
 - It is never shown at launch, during recording or export, in the Book list, or on a birthday.
 - After "Not now", it reappears at most once per month-age chapter.
 - Evidence: U R17 (offer at a value moment); C §4 complaint 1.
@@ -234,13 +235,15 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 **C-REQ-024 (P0) Trial start notice.**
 - Given a trial starts, then the in-app sheet and an email state the end date, the price after, and how to cancel (manage link), and `trial_started` is logged.
 
-**C-REQ-025 (P0) Trial-ending notice, at least 3 days before.**
-- Given a monthly trial ends in 3 days, then exactly one push, one email and one in-app card go out, and no reminder sends that day.
-- Given an annual trial, then notices go out at both 7 and 3 days before.
+**C-REQ-025 (P0) Trial-ending notice.** *Revised Oct 2 2026 per PRD.md conflict log K-04.*
+- Given a monthly trial ends in 7 days, then one email and one in-app card go out.
+- Given a monthly or annual trial ends in 3 days, then exactly one push, one email and one in-app card go out, and no reminder sends that day.
+- Given an annual 2-month trial, then notices go out at 18 and 3 days before.
 - Given push is off, then the email and in-app card still go out.
 
-**C-REQ-026 (P0) Renewal notices** (§4.3).
-- Given an annual renewal in 7 days, then one email and an in-app card state the date, price and cancel route.
+**C-REQ-026 (P0) Renewal notices** (§4.3). *Revised Oct 2 2026 per PRD.md conflict log K-04.*
+- Given an annual renewal in 30 days, and again in 7 days, then one email and an in-app card state the date, price and cancel route.
+- Given any subscription reaches its anniversary, then one annual reminder email goes out.
 
 **C-REQ-027 (P0) Grace and billing retry.** Turn on Apple Billing Grace Period and the Google grace period plus account hold [P6]. During grace, Plus keeps working and a card says "There's a problem with your payment. Your letters are fine."
 - Given a failed renewal, then Plus continues through grace and lapses only after it ends.
@@ -268,7 +271,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 
 ### Analytics
 
-**C-REQ-034 (P0) Funnel events.** Properties are enums, counts and durations only (ADR8).
+**C-REQ-034 (P0) Funnel events.** Properties are enums, counts and durations only (ADR8). *Revised Oct 2 2026 per PRD.md conflict log K-01:* every event here is sent only after the user opts in on the analytics consent sheet; nothing is queued or sent before a choice. Business totals come from server aggregates. The full product catalogue is owned by the analytics engineer in `docs/analytics` (PRD-REQ-016).
 
 | Area | Events |
 |---|---|
@@ -298,7 +301,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 
 - **Notifications.** One idea, under 60 characters if possible. Invite, never remind. No counts, no days-since, no urgency. At most one exclamation mark a month.
 - **Plan copy.** It may state prices and dates. Never write "unlock", "premium", "expire", "lose" or "locked" (V: not "Unlock bedtime mode"). The word "trial" may appear only in store-required disclosure text. Elsewhere, say "free month" or "free months".
-- **Promise line.** Every Plus surface includes: "Writing, reading, listening and export are free, always. Plus adds a few extras."
+- **Promise line.** Every Plus surface includes: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras." (*Revised Oct 2 2026 per PRD.md conflict log K-11; string `plus.promise`.*)
 - **Names and prices.** Use `{child}` and never gender the child. Use localized `{monthlyPrice}` and `{annualPrice}` from the store. Never hardcode prices (BRAND "Proof discipline").
 
 Draft new strings:
@@ -306,7 +309,7 @@ Draft new strings:
 | Key | Copy |
 |---|---|
 | `reminder.prime` | "A gentle nudge, now and then?" / "A couple of evenings a week, at a time you pick. Never late at night." |
-| `plus.sheet` | "Plus, for {child}'s book" / "Backup for every recording, Read together, more than one book, and new covers. Writing, reading, listening and export are free, always." |
+| `plus.sheet` | "Plus, for {child}'s book" / "Backup for every recording, Read together, books for more children, and new covers. Writing, reading, playing your recordings, export and family letters are free, always." |
 | `plus.trialStart` | "Your free month starts today. Plus renews at {monthlyPrice} on {date} unless you cancel." |
 | `plus.trialEnding` | "Plus renews on {date}" / "{price} from then. Change or cancel any time in Settings." |
 | `plus.lapsed` | "Plus has ended. Everything you made is still here, and you can keep writing." |
@@ -352,10 +355,10 @@ These targets are assumptions (A) until the first cohorts.
 
 1. **OQ1. Read together is gated for Free users after 3 tries.** BRAND pillar 2 and U R20 treat it as core. Does gating it weaken the brand promise? An alternative is to keep it free and charge for print and backup instead. This needs founder confirmation.
 2. **OQ2. Printed-book credit inside an IAP annual plan.** Is it allowed under 3.1.3(e)? A discount at card checkout may be safer. Ask App Review.
-3. **OQ3. Plus scope.** Per book (good for gifts) or per account (simpler)?
+3. **OQ3. Plus scope.** ~~Per book or per account?~~ Resolved Oct 2 2026 (PRD.md K-28): per account, extending to every book the subscriber parents; gifts stay per book.
 4. **OQ4. Apple Billing Grace Period length.** The options are not verified.
 5. **OQ5. iOS device backup.** Does iOS device backup include our app's audio directory? This decides how risky Free audio is.
-6. **OQ6. Second child behind Plus.** U R3 wants a second child added in 3 taps or fewer. We keep that flow but end it at the Plus sheet. Is that acceptable?
+6. **OQ6. Second child behind Plus.** ~~Acceptable?~~ Resolved Oct 2 2026 by the founder (PRD.md K-12): yes. The add flow stays 3 taps and ends at the Plus sheet; twins added together are free (provisional).
 7. **OQ7. Copy and pricing for diaspora families.** Hindi or code-switched notification copy (U §1.4), and India storefront pricing for gifts.
 8. **OQ8. Invited family reminders.** Weekly by default, or none until they opt in?
 
@@ -369,7 +372,7 @@ These targets are assumptions (A) until the first cohorts.
 **B (first-run, children, family, privacy, themes)**
 - B does **not** ask for notification permission. `onboarding.reminder` moves to C's card after the first letter and gets rewritten.
 - The birth date or due date drives month-ages and birthdays.
-- "Add child" ends at the Plus sheet for a second book.
+- "Add child" ends at the Plus sheet for a second book, except twins and multiples added together (PRD.md K-12).
 - The parent-admin role defines the Plus scope.
 - Themes mark which ones are Plus.
 - Privacy hosts the toggles for lock-screen names and pausing celebrations.

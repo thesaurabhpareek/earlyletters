@@ -1,6 +1,6 @@
 ---
 title: Early Letters Terms of Service
-version: 1.1.0
+version: 1.2.0
 status: draft-for-counsel
 effective_date: TBD
 last_updated: 2026-10-02
@@ -8,7 +8,7 @@ owner: founder
 applies_to: Early Letters iOS app, Android app (later), family contribution web page, apps/web
 ---
 
-> **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice and is not ready to publish. Placeholders appear in curly braces, for example {COMPANY_LEGAL_NAME}. Notes for counsel appear as **[COUNSEL: ...]** and must be removed before publication. Law and store rules were checked on 2 October 2026; sources are in Appendix A, open decisions in Appendix B.
+> **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice and is not ready to publish. Placeholders appear in curly braces, for example {COMPANY_LEGAL_NAME}. Notes for counsel appear as **[COUNSEL: ...]** and must be removed before publication. Law and store rules were checked on 2 October 2026; sources are in Appendix A, open decisions in Appendix B. The consumer-law review for this version is docs/legal/memos/lawyer-1.md.
 
 > **[COUNSEL NOTE FOR THE FOUNDER. Not part of the Terms; remove before publication.]** These Terms limit what a user can claim against the company. They do not by themselves protect you personally. What limits personal liability is running Early Letters through the LLC (or other entity) and keeping it separate: form it before launch, sign every contract, store account and vendor agreement in its name, use its own bank account, never mix personal and company money, and keep it in good standing with the California Secretary of State and Franchise Tax Board. Recommended before launch: technology errors and omissions (tech E&O) insurance combined with cyber liability (data breach response, notification costs, regulatory defense), and general liability once printed books ship. Counsel to confirm the entity type, coverage limits and any exclusions for children's data.
 
@@ -18,12 +18,12 @@ applies_to: Early Letters iOS app, Android app (later), family contribution web 
 
 This summary is here to help. The full terms below are what count.
 
-- Early Letters is for adults. Children are who the letters are written to, not users.
+- Early Letters is for adults 18 and over. Children are who the letters are written to, not users.
 - Early Letters is in beta. Features may change or break, so please export a copy from time to time.
 - Your words and recordings are yours. We only use them to run Early Letters for you and the family you invite.
 - We never rewrite your letters. Transcription only fixes microphone and grammar slips, and you can see and undo every fix. Speech recognition can still get things wrong, so please read your letters before you save them.
 - Writing, reading, listening, export and family authors are free, always. Past letters are never put behind a payment.
-- Plus is optional. It renews automatically through Apple or Google until you cancel. We tell you before a free month ends and before an annual plan renews.
+- Plus is optional. It renews automatically through Apple or Google until you cancel. We tell you before free months end and before an annual plan renews, and we never raise your price without your agreement.
 - Co-parents are equals. Neither can remove the other or delete the other's letters.
 - If we ever close Early Letters, we will give you at least 90 days' notice and a way to take everything with you.
 - If something goes wrong, contact us first. You can always use small claims court.
@@ -43,13 +43,13 @@ This summary is here to help. The full terms below are what count.
 
 1.4 If you got the app from the Apple App Store or Google Play, Section 26 also applies.
 
-1.5 You accept these Terms when you tap to continue on the sign-in screen, or when you use the Service. If you do not agree, please do not use the Service. We record which version you accepted and when.
+1.5 You accept these Terms when you tap to continue on the sign-in screen, where you also confirm you are 18 or older. If you use the Service before creating an account, these Terms apply to that use too. If you do not agree, please do not use the Service. We record which version you accepted and when.
 
 **[COUNSEL: A-REQ-034 shows "By continuing, you agree to the Terms and Privacy Policy." above the sign-in buttons and stores the version and time. Local use before sign-in has no explicit acceptance step (Section A, F3). Decide whether browsewrap for pre-account local use is acceptable, or whether the story 4 privacy notice should also link these Terms. Web contributors also need an acceptance line on the contribution page before their first letter.]**
 
 ## 2. Who can use Early Letters
 
-2.1 **Adults only.** You must be at least 18 years old, and an adult where you live, to use the Service.
+2.1 **Adults only.** You must be at least 18 years old to use the Service, and you confirm this when you accept these Terms. If we learn that an account belongs to someone under 18, we will close it. Where the law allows, we will first let them export their letters.
 
 2.2 **Children are the subject, not users.** Early Letters is a place for adults to write to a child. A child does not create an account, sign in, or send anything through the Service. An adult may read or play letters to a child, for example with Read together. The child is still not a user, and we do not knowingly collect personal information from a child.
 
@@ -57,7 +57,7 @@ This summary is here to help. The full terms below are what count.
 
 2.4 **Where you are.** You confirm that you are not located in a country subject to a US government embargo or designated by the US government as a "terrorist supporting" country, and that you are not on any US government list of prohibited or restricted parties.
 
-**[COUNSEL: Section A 7 records "Terms say users are 18+, no age gate." Confirm that no age gate is acceptable given (a) California AB 1043 (Digital Age Assurance Act), which we understand requires apps to request an operating system age signal from 1 January 2027, and (b) app store age-verification laws in other states. Neither was verified for this draft. Also confirm the expecting-parent and guardian wording.]**
+**[COUNSEL: 1.2.0 adds a self-declared 18+ confirmation to the sign-in acceptance line (copy change owned by PRD A, A-REQ-034). It is a declaration, not verification. Confirm it is enough given (a) Texas SB 2420 (App Store Accountability Act), reported in force in 2026 with developer duties to use the store's age category and parental consent signals, and similar Utah and Louisiana laws; and (b) California AB 1043 (Digital Age Assurance Act), under which developers must request an age signal from 1 January 2027. None of these statutes was opened for this draft. A store signal that a user is a minor is actual knowledge and must trigger 2.1. Decide whether to exclude teen parents; this draft does. Also confirm the expecting-parent and guardian wording.]**
 
 ## 3. Your account and signing in
 
@@ -93,7 +93,9 @@ This summary is here to help. The full terms below are what count.
 
 5.3 **Our part.** We own the Service itself: the app, its design, the book layouts, prompts, illustrations, the Early Letters name and logo, and our software. These Terms give you a personal, non-transferable, revocable right to use the Service as these Terms allow. You may print and share your own book exports for personal and family use, including our book layout around your words.
 
-5.4 **Ideas you send us.** If you send us suggestions, we may use them without owing you anything. We will never treat Your Content as a suggestion.
+5.4 **More than one voice.** If a recording includes other people, such as a partner or your child, the person who saves the letter is its author under these Terms. Please save other adults' voices only with their agreement (Section 10.2).
+
+5.5 **Ideas you send us.** If you send us suggestions, we may use them without owing you anything. We will never treat Your Content as a suggestion.
 
 ## 6. The permission you give us
 
@@ -122,7 +124,7 @@ This summary is here to help. The full terms below are what count.
 
 7.1 When you add a letter to a child's book, you give the people who can read that book in the Service a personal, non-commercial permission to read it, play its recording, export it, and include it in printed books for the family, for as long as it stays in the book.
 
-7.2 Copies someone has already exported, downloaded, printed or played may stay on their devices or shelves after you take a letter out. We cannot reach those copies. Please keep this in mind before adding a letter to a shared book.
+7.2 Copies someone has already exported, downloaded, printed or played may stay on their devices or shelves after you take a letter out. We cannot reach those copies. Those people may keep copies they already made for personal family use, such as a printed book. Please keep this in mind before adding a letter to a shared book.
 
 7.3 Family permission is for family use. No one may sell, publish or post another author's letters or recordings publicly without that author's permission.
 
@@ -190,9 +192,7 @@ This summary is here to help. The full terms below are what count.
 
 11.4 **The limits.** Speech recognition is not perfect. It can mishear words, names and places, and it can struggle with background noise, quiet speech, accents, and families that move between languages in one sentence. It may also miss a fix it could have made. Read together highlights words as the recording plays, and the highlighting can drift or be missing. Please read each letter before you save it, and correct anything that is wrong. Your recording is the original, and it is always kept unless you delete it.
 
-11.5 **Your review is the final word.** What you save is what goes in the book. Because you review and approve each letter, you are responsible for its final text.
-
-11.6 **It can make mistakes.** Speech recognition and the small fixes in 11.1 can mishear a word, misspell a name, or put a comma in the wrong place. You review your letters and are responsible for what you keep. Your letters are a family keepsake. They are not a medical, legal or other professional record, and nothing in Early Letters is a substitute for advice from a doctor, lawyer or other professional.
+11.5 **It can make mistakes, and your review is the final word.** What you save is what goes in the book, so please read each letter first. Your letters are a family keepsake, not a medical, legal or other professional record.
 
 **[COUNSEL: Section 11 is the product's core public promise and a likely basis for false-advertising or UCL claims if broken. Engineering enforces it in code (packages/core verifier; raw transcript immutable by database trigger). Confirm the list in 11.1 matches packages/core EditType exactly at each release, and keep it versioned with these Terms. The voice guide bars naming the technology in product copy; legal text must still be accurate, so 11 uses "speech recognition". The Privacy Policy must disclose any third-party AI processing per App Review Guideline 5.1.2(i).]**
 
@@ -224,9 +224,9 @@ This summary is here to help. The full terms below are what count.
 
 14.1 **What Plus is.** Plus is an optional subscription that adds extras, such as encrypted backup of recordings, Read together beyond the free tries, books for more than one child, and extra themes. What Plus includes is shown in the app before you subscribe. The Subscription Terms are part of these Terms.
 
-14.2 **Prices and trials.** At launch, Plus costs US $3.99 a month with a one-month free trial, or US $29.99 a year with a two-month free trial. Prices in other countries are shown in local currency by the store and may include tax. Free trials are for new subscribers, one per person per subscription group, as the store decides. If you are not eligible, the app shows the price without a trial.
+14.2 **Prices and trials.** At launch, Plus costs US $3.99 a month with a one-month free trial, or US $29.99 a year with a two-month free trial. The price, the length of any free trial and the date by which to cancel are shown in the app before you subscribe, and those are the terms that apply to you. Free trials are for new subscribers, one per person, as the store decides. If you are not eligible, the app shows the price without a trial. Early Letters is offered in the United States.
 
-14.3 **Automatic renewal.** Plus renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. The store charges your store account. By subscribing you agree to this.
+14.3 **Automatic renewal.** Plus renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. The store charges your store account. By subscribing you agree to this, and we keep a record of what you agreed to and when.
 
 14.4 **Billing is handled by Apple or Google.** If you subscribe in the app, Apple or Google processes the payment, and their terms also apply. We do not see or store your card details.
 
@@ -237,27 +237,29 @@ This summary is here to help. The full terms below are what count.
 To avoid being charged, cancel at least 24 hours before a free trial or period ends. After you cancel, Plus keeps working until the end of the period you already paid for or the end of your free trial, and then stops. Deleting the app or your account does not cancel a subscription.
 
 14.6 **Reminders we send.** We tell you, in the app and by email:
-- when a free trial starts, with the end date, the price after, and how to cancel;
-- before a free trial ends: for the one-month trial, at least 3 days before; for the two-month trial on the annual plan, between 15 and 21 days before, and again 3 days before;
-- before an annual plan renews, between 15 and 45 days before (we aim for about 30 days), and again about 7 days before;
-- at least once a year for every Plus plan, monthly included, with what Plus is, what it costs, how often you are charged, and how to cancel;
+- when a free trial starts: the date it ends, the date to cancel by, the price after, and how to cancel;
+- before a free trial ends: at least 3 days before the last day to cancel; for a free trial longer than one month, also 16 to 21 days before it ends;
+- before an annual plan renews: about 30 days before, and again about 7 days before;
+- at least once a year for every Plus plan, with what Plus is, what it costs, how often you are charged, and how to cancel;
 - before a price change, as described in 14.8.
 
 14.7 **Refunds.** Refunds for purchases made through Apple are decided by Apple; you can ask at reportaproblem.apple.com or in Early Letters under Settings, Plan, Request a refund. For purchases through Google Play, you can ask Google or contact us, and we will follow Google Play's rules and the law. Unless the law or the store's policy says otherwise, we do not give partial refunds for unused time. A refund ends Plus for that period. It never affects your letters, recordings or existing backups.
 
-14.8 **Price changes.** We may change the price of Plus. We will tell you at least 7 days and no more than 30 days before a new price applies to you, by email and in the app, with how to cancel. Where the store requires your agreement to a price increase, your plan will not renew at the higher price unless you agree. A price change never applies to a period you have already paid for.
+14.8 **Price changes.** We may change the price of Plus. We will tell you 7 to 30 days before a new price applies to you, by email and in the app, with how to cancel. Your plan will not renew at a higher price unless you agree to it. A price change never applies to a period you have already paid for.
 
 14.9 **Payment problems.** If a renewal payment fails, the store may retry for a while. Plus keeps working during the store's grace period. If payment is not fixed, Plus ends, and your letters are untouched.
 
-14.10 **When Plus ends.** Section 13.2 applies. In addition, all your existing books stay fully usable, including extra children's books; creating another book needs Plus again. New recordings stay on your phone instead of being backed up.
+14.10 **No obstacles to cancelling.** We never put an offer or extra step between you and cancelling.
 
-14.11 **Who Plus covers.** Plus applies to the book or books described on the Plus screen when you subscribe, including for the other co-parent in that book. Family Sharing through the App Store is not available for Plus at launch.
+14.11 **When Plus ends.** Section 13.2 applies. In addition, all your existing books stay fully usable, including extra children's books; creating another book needs Plus again. New recordings stay on your phone instead of being backed up.
 
-14.12 **Gifts.** A family member may buy a year of Plus for a child's book. A gift does not renew. Any refund of a gift goes only to the person who bought it.
+14.12 **Who Plus covers.** Plus applies to the book or books described on the Plus screen when you subscribe, including for the other co-parent in that book. Family Sharing through the App Store is not available for Plus at launch.
 
-14.13 **Lifetime.** We may later offer a one-time lifetime option. If we do, its terms will be shown before purchase. A lifetime purchase is a license to use Plus features for as long as we operate the Service, not ownership of software, and Section 17 applies to it.
+14.13 **Gifts.** A family member may buy a year of Plus for a child's book. A gift does not renew and is never charged again. Any refund of a gift goes only to the person who bought it.
 
-**[COUNSEL: (1) California's Automatic Renewal Law as amended by AB 2863 applies to offers to California consumers from 1 July 2025, even though Apple and Google bill. Confirm our duties when the store is merchant of record: express affirmative consent and keeping proof of consent for at least 3 years or 1 year after termination, whichever is longer (we should log paywall version, product, and time for each purchase); an acknowledgment after purchase that can be retained; trial-end notice 3 to 21 days before a trial longer than 31 days ends (17602(b)(1)); renewal notice 15 to 45 days before an offer with an initial term of one year or longer renews (17602(b)(2)), and where both apply only the (b)(2) notice is required, so for the annual plan's 2-month trial this draft sends the first notice 15 to 21 days before the trial ends to satisfy both windows; annual reminder for annual agreements (17602(h)), which this draft extends to monthly plans; price-change notice 7 to 30 days before (PRD C 4.3 says "30 days ahead", which must not be earlier than 30 days); and online cancellation by "a prominently located direct link or button". Confirm that the in-app Manage subscription link that opens the store's cancellation screen satisfies 17602(d). (2) Federal: ROSCA (15 U.S.C. 8403) is in force. The FTC's 2024 Negative Option Rule was vacated by the Eighth Circuit in July 2025; the FTC published an ANPRM on 13 March 2026. As of 2 October 2026 the FTC page shows no proposed or final rule after the ANPRM. Recheck before launch. (3) Other state auto-renewal laws (Appendix B). (4) 14.7 no-partial-refund term: check against store policies and any state law. (5) Plus scope (per book vs per account) is open in PRD C OQ3; 14.11 must match the final decision. (6) Lifetime: California AB 2426 requires clear disclosure that a digital good "purchase" is a license; 14.13 is a start, and the purchase screen needs the disclosure too.]**
+14.14 **Lifetime.** We may later offer a one-time lifetime option. If we do, its terms will be shown before purchase. A lifetime purchase is a license to use Plus features for as long as we operate the Service, not ownership of software, and Section 17 applies to it.
+
+**[COUNSEL: Reminder windows in 14.6 are set to satisfy every state law checked at once (memo finding H1): annual renewal at about 30 days (California 15 to 45 before renewal; New York 15 to 45 before the cancellation deadline; Virginia and Utah 30 to 60 before renewal; Massachusetts 5 to 30 before the cancellation deadline), and the long-trial notice at 16 to 21 days (California 17602(b)(1) and (b)(2), New York 3 to 21 days before the cancellation deadline). PRD C (C-REQ-025, C-REQ-026, section 4.3) still sends 7 and 3 days; it must change before launch or these lines must be cut. Federal: ROSCA (15 U.S.C. 8403) applies; the FTC 2024 Negative Option Rule was vacated by the Eighth Circuit in July 2025, and the FTC issued an ANPRM in March 2026 with no later rule shown on 2 October 2026. 14.8 commits to opt-in consent for every price increase, which avoids New York's 14-day pro-rata refund route that we could not perform for Apple purchases. Confirm that the in-app Manage subscription link to the store's cancel screen meets California 17602(d), Colorado's one-step cancellation and the NYC rule. Plus scope (PRD C OQ3) must match 14.12. Lifetime: California AB 2426 license disclosure on the purchase screen.]**
 
 ## 15. Printed books
 
@@ -320,9 +322,9 @@ The Service works with services we do not control, such as Apple, Google, sign-i
 
 20.1 We work hard to make Early Letters reliable and to keep your letters safe. But the Service is provided "as is" and "as available". To the extent the law allows, we do not give promises or warranties beyond those written in these Terms, including implied warranties of merchantability, fitness for a particular purpose and non-infringement.
 
-20.2 In particular, we do not promise that: speech recognition or the small fixes in Section 11.1 will be accurate (Section 11.6); the Service, which is in beta (Section 16.4), will always be available, uninterrupted or free of errors; or any data will never be lost, especially data not backed up or exported (Section 12.4).
+20.2 In particular, we do not promise that: speech recognition or the small fixes in Section 11.1 will be accurate (Section 11.5); the Service, which is in beta (Section 16.4), will always be available, uninterrupted or free of errors; or any data will never be lost, especially data not backed up or exported (Section 12.4).
 
-20.3 Early Letters is a memory book. It is not medical, parenting, legal or safety advice, and letters are not a medical, legal or professional record (Section 11.6). Any prompt or resource card in the app is general information only.
+20.3 Early Letters is a memory book. It is not medical, parenting, legal or safety advice, and letters are not a medical, legal or professional record (Section 11.5). Any prompt or resource card in the app is general information only.
 
 20.4 This section does not limit any promise we make elsewhere in these Terms, such as Sections 6, 11.1 to 11.3, 13 and 17, or any right you have by law that cannot be waived.
 
@@ -332,7 +334,7 @@ The Service works with services we do not control, such as Apple, Google, sign-i
 - we are not liable for indirect, incidental, special, consequential or punitive damages, or for loss of profits; and
 - our total liability for all claims about the Service is limited to the greater of (a) the amount you paid us, or paid the store for Early Letters, in the 12 months before the claim, and (b) US $50.
 
-21.2 These limits do not apply to liability for: our fraud or intentional misconduct; our gross negligence; our violation of law; death or personal injury caused by our negligence; or anything else that cannot be limited or excluded by law, including under California Civil Code section 1668. They also do not take away any right you have under consumer protection law that cannot be waived by contract.
+21.2 These limits do not apply to liability for: our fraud or intentional misconduct; our gross negligence; our violation of law; death or personal injury caused by our negligence; or anything else that cannot be limited or excluded by law, including under California Civil Code section 1668. They also do not take away any right you have under consumer protection law that cannot be waived by contract, including the California Consumers Legal Remedies Act.
 
 21.3 Some places do not allow some of these limits. If you live in one of them, some limits may not apply to you, and you may have more rights than these Terms describe.
 
@@ -382,7 +384,7 @@ These terms apply in addition to the rest of these Terms, and win if there is a 
 
 (a) **Acknowledgement.** These Terms are between you and {COMPANY_LEGAL_NAME} only, not with Apple. We, not Apple, are solely responsible for the App and its content. These Terms do not set usage rules for the App that conflict with the Apple Media Services Terms and Conditions.
 
-(b) **Scope of license.** Your license to the App is a non-transferable license to use it on any Apple-branded products that you own or control, as permitted by the Usage Rules in the Apple Media Services Terms and Conditions, except that the App may be accessed, acquired and used by other accounts associated with the purchaser through Family Sharing, volume purchasing or Legacy Contacts.
+(b) **Scope of license.** Your license to the App is a non-transferable license to use it on any Apple-branded products that you own or control, as permitted by the Usage Rules in the Apple Media Services Terms and Conditions, except that the App may be accessed, acquired and used by other accounts associated with the purchaser through Family Sharing or volume purchasing.
 
 (c) **Maintenance and support.** We are solely responsible for providing maintenance and support for the App, as described in these Terms or as required by law. Apple has no obligation at all to provide maintenance or support services for the App.
 
@@ -448,7 +450,15 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 - [L4] California Courts Self-Help, Small Claims (individual limit $12,500; no lawyers): https://selfhelp.courts.ca.gov/small-claims-california
 - [L5] McGill v. Citibank, N.A., 2 Cal. 5th 945 (2017): https://law.justia.com/cases/california/supreme-court/2017/s224086.html (search result; full opinion not opened)
 - [L6] AB 2426 (2024), digital goods license disclosures, summary: https://www.gtlaw.com/en/insights/2024/12/ab-2426-new-california-law-requires-clear-licensing-disclosures-for-digital-goods (search result; not opened)
-- Unverified: California Civil Code 1668 and 1789.3; Code of Civil Procedure 1281.97 to 1281.98; Penal Code 632; SB 478; AB 1043.
+- Unverified (pages could not be opened on 2 October 2026; text relied on from general knowledge): California Civil Code 1668 (no exemption for fraud, willful injury or violation of law), 1751 (CLRA rights cannot be waived) and 1789.3; Code of Civil Procedure 1281.97 to 1281.98; Penal Code 632; SB 478; AB 1043.
+
+**Other states (opened 2 October 2026 for version 1.2.0 unless marked)**
+- [L10] New York General Business Law 527-a (trial over one month: notice 3 to 21 days before the cancellation deadline; initial term of one year or more: 15 to 45 days before the cancellation deadline; price increase: consent, or cancel within 14 days with pro-rata refund; cancel through all mediums): https://law.justia.com/codes/new-york/gbs/article-29-bb/527-a/
+- [L11] Perkins Coie, "New York and Colorado Update Auto-Renewing Subscription Requirements" (New York effective 5 November 2025; Colorado SB25-145 effective 16 February 2026, one-step online cancellation): https://perkinscoie.com/insights/update/new-york-and-colorado-update-auto-renewing-subscription-requirements
+- [L12] Code of Virginia 59.1-207.46 (version effective 1 October 2026: trial over 30 days, notice within 30 days of the trial's end; offers of 12 months or more, notice 30 to 60 days before renewal; cancellation at least as easy as sign-up): https://law.lis.virginia.gov/vacode/title59.1/chapter17.8/section59.1-207.46/
+- [L13] Kelley Drye, "Auto-Renewal Laws: 2025 Round Up" (Minnesota from 1 January 2025; Utah from 1 January 2025, renewal notice 30 to 60 days, trial notice at least 3 days; Massachusetts 940 CMR 38.00 from 2 September 2025): https://www.kelleydrye.com/viewpoints/blogs/ad-law-access/auto-renewal-laws-2025-round-up
+- [L14] Churnkey, Massachusetts 940 CMR 38.00 guide (secondary source; terms over 31 days: notice 5 to 30 days before the cancellation deadline; trials must state the calendar date to cancel by; terms of 31 days or less: repeat key terms as often as billed): https://churnkey.co/guides/massachusetts-automatic-renewal-law
+- Search results only, not opened: New York City "click-to-cancel" rule, in force 1 October 2026 (Skadden, September 2026); Texas SB 2420 App Store Accountability Act; Eighth Circuit vacatur of the FTC rule, Custom Communications v. FTC (July 2025, Mayer Brown summary).
 
 **Federal**
 - [L7] FTC, Negative Option Rule page (2024 final rule; ANPRM 13 March 2026; docket FTC-2026-0265): https://www.ftc.gov/legal-library/browse/rules/negative-option-rule
@@ -477,7 +487,7 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 
 1. **Arbitration or courts** (Section 23). Draft defaults to courts plus small claims; Option B provided.
 2. **Custom EULA or Apple Standard EULA** (Section 26.1). Need a real support phone number either way if custom.
-3. **Auto-renewal compliance with store billing** (Section 14). California ARL duties when Apple or Google is merchant of record; consent records; whether the store-cancel link meets 17602(d); also review other state laws (for example New York, Colorado, Minnesota, Virginia; not verified).
+3. **Auto-renewal compliance with store billing** (Section 14). California ARL duties when Apple or Google is merchant of record; consent records; whether the store-cancel link meets 17602(d), Colorado and NYC; reminder windows set to the overlap of California, New York, Virginia, Utah and Massachusetts (14.6).
 4. **FTC status.** No negative option rule in force as of 2 October 2026; ROSCA applies. Recheck at launch.
 5. **Binding promises.** Sections 6.2 (no training, no ads, no sale), 11 (faithful transcription), 13 (free forever, non-amendable), 17 (90-day shutdown notice, successor obligations). Confirm the company can keep them, including in a sale or insolvency.
 6. **Account deletion and shared books** (Section 8.4; PRD B OQ6).
@@ -485,7 +495,7 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 8. **Court orders and safety removals** (Section 9.4), CSAM reporting (Section 10.3).
 9. **Liability cap and carve-outs** (Section 21), indemnity (Section 22).
 10. **Print Terms** to draft before print launch (Section 15).
-11. **Product alignment to fix in PRD C:** (a) annual renewal notice must go 15 to 45 days before renewal (17602(b)(2)); PRD C-REQ-026 sends it 7 days before, which is too late on its own; (b) annual-plan trial: first trial-ending notice 15 to 21 days before the trial ends (PRD C-REQ-025 sends 7 and 3 days); (c) price-change notice must land 7 to 30 days before the change (C 4.3 says "30 days ahead", the outer limit); (d) log proof of consent for each purchase; (e) the monthly plan's annual reminder is optional under 17602(h) but kept here for simplicity.
+11. **Product alignment to fix in PRD C** (owner: PRD agent): (a) annual renewal notice about 30 days before renewal, plus 7 days; (b) trials over one month: first notice 16 to 21 days before the trial ends; (c) every trial: last notice at least 3 days before the last day to cancel (trial end minus 24 hours), so D-4, not D-3; (d) price-change notice 7 to 30 days before, with opt-in store consent for every increase; (e) log proof of consent for each purchase; (f) trial length comes from the store offer, because the section 8 experiment varies it; (g) monthly renewal receipt email if counsel says Massachusetts applies.
 12. **Shutdown notice period.** Resolved in 1.1.0: 90 days everywhere. Privacy Policy section 18 and DELETION_AND_EXPORT_SPEC.md were changed from 60 to 90 days; their owners should confirm.
 13. **Entity and insurance.** Form the LLC before launch and operate only through it; obtain tech E&O plus cyber insurance (see the note at the top).
 14. **Beta end date** (Section 16.4) and liability cap amount (Section 21.1).
@@ -494,5 +504,6 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.2.0 | 2026-10-02 | draft-for-counsel | Consumer-law review (docs/legal/memos/lawyer-1.md). 18+ confirmation at acceptance and under-18 handling (1.5, 2.1); more-than-one-voice rule (5.4); family may keep copies already made (7.2); 11.5 and 11.6 merged into one light mistakes line; trial terms follow what the app shows (14.2); consent records (14.3); reminder windows set to the multi-state overlap (14.6); opt-in for every price increase (14.8); no obstacles to cancelling (14.10); CLRA named in 21.2; Apple license scope matched to Apple's minimum terms (26.1(b)); sources L10 to L14. Pre-publication draft, no users bound; if published over 1.1.0 this would be major under POLICY_VERSIONING 2.1 items 6 and 7. |
 | 1.1.0 | 2026-10-02 | draft-for-counsel | Founder request: added beta section (16.4) and summary line; added "It can make mistakes" (11.6); tightened disclaimers (20.2, 20.3); liability floor lowered from $100 to $50 and carve-outs widened (21); founder note on entity and insurance; shutdown notice aligned at 90 days across legal docs. |
 | 1.0.0 | 2026-10-02 | draft-for-counsel | First draft, prepared by Claude for counsel review. Based on PRD Sections A, B and C (1 to 2 Oct 2026) and the pricing decision of 1 Oct 2026. |

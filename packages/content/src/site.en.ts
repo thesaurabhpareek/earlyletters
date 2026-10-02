@@ -59,7 +59,8 @@ export const site = {
       "Backups are encrypted on your phone first. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
       "No ads. We never sell or share your data.",
       "You can export everything as a PDF, free, at any time.",
-      "You can delete a letter or a recording whenever you like.",
+      "You can delete your own letters and recordings whenever you like.",
+      "Each child has their own book and their own family list. Inviting someone to one book does not open the others.",
     ],
   },
   faq: [
@@ -89,7 +90,7 @@ export const site = {
     },
     {
       q: "How much does it cost?",
-      a: "Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional, from {price}, and adds backup for every recording and a few extras. Printed books will be priced separately when they arrive.",
+      a: "Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional, from {price}, and adds backup for every recording, books for more children and a few extras. Your first child's book is free. Printed books will be priced separately when they arrive.",
     },
     {
       q: "What happens to my recordings?",

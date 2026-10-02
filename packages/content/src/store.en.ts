@@ -34,6 +34,9 @@ Speak Hindi, English, both in one sentence, or any mix your family uses. Early L
 PRIVATE BY DEFAULT
 Your letters are yours. Only the family you invite can read them, and you decide what goes into the book. No ads, and we never sell or share your data.
 
+A BOOK FOR EACH CHILD
+Each child gets their own book, with their own months, family and settings. Switch between them in one tap. Your first child's book is free. Books for more children are part of Plus.
+
 TAKE IT WITH YOU
 Export your memory book as a PDF any time, for free. Printed books, starting with Early Letters: Year One, are on the way.
 
@@ -47,6 +50,8 @@ Early Letters is for parents of children from birth to five, and for the grandpa
 Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional and renews automatically until you cancel.
 
 Early Letters is in beta. We are still building, and some things may change. Your letters are always yours to export.`,
+  // Optional App Store promotional text while the beta label is on (in-app-disclosures.md section 4).
+  promotionalTextBeta: "Now in beta. Tell us what you think from Settings, Help and Legal, Support.",
   whatsNewV1:
     "Hello. This is the first version of Early Letters. Talk or type a letter to your child, keep your voice with it, invite family, read together, and export your memory book as a PDF any time.",
   screenshotCaptions: [

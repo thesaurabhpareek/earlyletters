@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs';
 import { BookOpenIcon, MoonStarsIcon, UsersThreeIcon } from 'phosphor-react-native';
 import { useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
@@ -22,21 +22,21 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Tonight',
-          tabBarIcon: ({ color, focused }) => <MoonStarsIcon color={color} size={26} weight={focused ? 'fill' : 'regular'} />,
+          tabBarIcon: ({ color, focused }) => <MoonStarsIcon color={color as string} size={26} weight={focused ? 'fill' : 'regular'} />,
         }}
       />
       <Tabs.Screen
         name="book"
         options={{
           title: 'Book',
-          tabBarIcon: ({ color, focused }) => <BookOpenIcon color={color} size={26} weight={focused ? 'fill' : 'regular'} />,
+          tabBarIcon: ({ color, focused }) => <BookOpenIcon color={color as string} size={26} weight={focused ? 'fill' : 'regular'} />,
         }}
       />
       <Tabs.Screen
         name="family"
         options={{
           title: 'Family',
-          tabBarIcon: ({ color, focused }) => <UsersThreeIcon color={color} size={26} weight={focused ? 'fill' : 'regular'} />,
+          tabBarIcon: ({ color, focused }) => <UsersThreeIcon color={color as string} size={26} weight={focused ? 'fill' : 'regular'} />,
         }}
       />
     </Tabs>

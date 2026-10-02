@@ -1,18 +1,18 @@
-import * as Haptics from 'expo-haptics';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { MicrophoneIcon, PencilSimpleIcon } from 'phosphor-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, LinearTransition } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { ageLabel, ageOn, ENGINE_VERSION, renderTemplate, selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
-import { copy, fill, greetingKey } from '@/lib/copy';
-import { getFamily, listEntries, saveEntry, todayISO, uuidv7, type Family } from '@/lib/store';
+import { copy, fill, greetingKey, pendingCopy } from '@/lib/copy';
+import { haptic } from '@/lib/haptics';
+import { getActiveChildId, getFamily, listDrafts, listEntries, saveEntry, subscribe, todayISO, uuidv7, type Draft, type Family } from '@/lib/store';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -24,15 +24,25 @@ export default function Tonight() {
   const [daysSince, setDaysSince] = useState<number | null>(null);
   const [shuffle, setShuffle] = useState(0);
   const [keptLine, setKeptLine] = useState(false);
+  const [waiting, setWaiting] = useState<Draft | null>(null);
+
+  const load = useCallback(() => {
+    setFamily(getFamily());
+    const childId = getActiveChildId();
+    setWaiting(childId ? (listDrafts(childId)[0] ?? null) : null);
+  }, []);
+
+  // Child switcher (Mobile B) and saves elsewhere update Tonight live.
+  useEffect(() => subscribe(load), [load]);
 
   useFocusEffect(
     useCallback(() => {
-      setFamily(getFamily());
+      load();
       const entries = listEntries();
       setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
       setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
       setKeptLine(false);
-    }, []),
+    }, [load]),
   );
 
   const today = todayISO();
@@ -79,15 +89,14 @@ export default function Tonight() {
       inBook: false,
       soundsLikeMe: null,
     });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptic('soft');
     setKeptLine(true);
   };
 
   const start = (mode: 'spoken' | 'typed') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptic('press');
     const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
-    if (mode === 'typed') router.push({ pathname: '/write', params });
-    else router.push({ pathname: '/review', params: { ...params, mode: 'sample' } });
+    router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
   };
 
   return (
@@ -107,7 +116,7 @@ export default function Tonight() {
             <Text className="font-serif text-2xl leading-9 text-foreground">{renderTemplate(prompt.text, { child })}</Text>
             <Pressable
               onPress={() => {
-                Haptics.selectionAsync();
+                haptic('tap');
                 setShuffle((s) => s + 1);
               }}
               accessibilityRole="button"
@@ -116,6 +125,16 @@ export default function Tonight() {
             </Pressable>
           </Card>
         </Animated.View>
+
+        {waiting && (
+          <Pressable
+            onPress={() => router.push({ pathname: waiting.audioUri ? '/review' : '/write', params: { draftId: waiting.id } })}
+            accessibilityRole="button"
+            className="min-h-11 flex-row items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3">
+            <Text className="flex-1 text-base text-foreground">{pendingCopy.tonight.waitingTitle}</Text>
+            <Text className="text-base font-medium text-primary">{copy.review.title}</Text>
+          </Pressable>
+        )}
 
         <View className="flex-1" />
 

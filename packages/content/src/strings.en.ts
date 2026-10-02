@@ -58,6 +58,8 @@ export const en = {
       expectingLabel: "Not here yet",
       expectingHelp: "Letters written before birth go into a chapter called Before You.",
       addAnotherButton: "Add another child",
+      // Twins or more, same birthday or due date, during first run (PRD.md K-12).
+      addAnotherHelp: "Twins or more? Add them now. Each child gets their own book.",
       cta: "Continue",
     },
 
@@ -412,7 +414,7 @@ export const en = {
       thankButton: "Send a thank you",
       thankMessage: "Your letter is in {child}'s book. Thank you, {signsAs}.",
       addedToast: "{signsAs}'s letter is in the book.",
-      settingLabel: "Add family letters on their own",
+      settingLabel: "Add family letters automatically",
       settingHelp: "Skip the check and add every letter from {signsAs} straight to the book.",
     },
     contributorBook: {
@@ -581,6 +583,95 @@ export const en = {
       },
     },
     neverRewrite: "We never rewrite your words. We only tidy what the microphone got wrong.",
+    // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
+    privacy: {
+      title: "Privacy",
+      analyticsLabel: "Share usage and crash reports",
+      analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
+      sensitiveLabel: "Sync and family sharing",
+      aiLabel: "Cloud transcription",
+      lockScreenLabel: "Names in notifications",
+    },
+  },
+
+  // Product analytics consent. Third ask after the first letter, on a later session (PRD.md K-01, PRD-REQ-001).
+  analyticsConsent: {
+    title: "Help us make it better?",
+    body: "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
+    detail: "Nothing is shared unless you say yes. Saying no changes nothing else.",
+    changeLater: "You can change this any time in Settings, Privacy.",
+    yesButton: "Share usage",
+    noButton: "Don't share",
+  },
+
+  // One book per child (PRD.md K-12, PRD-REQ-011 to PRD-REQ-015).
+  children: {
+    switcher: {
+      label: "For {child}",
+      hint: "Switch to another child's book",
+      title: "Whose book?",
+      addButton: "Add a child",
+      hiddenLink: "Hidden books",
+      toLabel: "To {child}",
+      changeLink: "Write to another child",
+    },
+    add: {
+      title: "Add a child",
+      body: "Each child gets their own book, with their own months, family and settings.",
+      plusNote: "Your first child's book is free, always. Books for more children are part of Plus.",
+      keepNote: "Every book you already have stays open for writing, reading and export, with or without Plus.",
+      twinsHelp: "Twins or more? Add them together and each gets their own book, free.",
+      cta: "Add {child}'s book",
+    },
+    settings: {
+      sectionTitle: "Children",
+      title: "{child}'s book",
+      detailsLabel: "Name and birthday",
+      signsAsLabel: "Sign my letters to {child} as",
+      remindersLabel: "Include {child} in my reminders",
+      remindersHelp: "Your reminder time is shared across your children. Notes about {child}'s months and birthday follow this switch.",
+      celebrationsLabel: "Pause celebrations for {child}",
+      celebrationsHelp: "Only for you. Month notes, birthdays and milestones for {child} rest until you turn them back on.",
+      familyLabel: "Who writes to {child}",
+      familyCanReadLabel: "Family can read {child}'s book",
+      themeLabel: "How the book looks",
+      hideLabel: "Hide this book",
+      hideBody: "Hiding {child}'s book quiets every reminder and note about {child}, for everyone in the family. Nothing is deleted.",
+      showButton: "Show this book again",
+      hiddenTitle: "Hidden books",
+      hiddenEmpty: "No hidden books.",
+    },
+    sharing: {
+      pickerTitle: "Which books?",
+      oneBookNote: "This invite is for {child}'s book only.",
+      separateNote: "Each child's book has its own family list. Inviting someone to one book does not open the others.",
+    },
+  },
+
+  // Web contribution page (apps/web). Same text as review.firstNote.body (in-app-disclosures.md section 2).
+  web: {
+    firstNote: {
+      title: "Please have a read",
+      body: "We fix small slips, like \"um\" and repeats. We can also mishear a word or a name. Please read it before you save.",
+    },
+    ageConfirm: "I am 18 or older",
+  },
+
+  // Plus sheet store-required disclosure (in-app-disclosures.md section 3). {price} is the localized store price.
+  plus: {
+    legal: {
+      renewAnnual: "Free for 2 months, then {price} a year. Renews automatically until you cancel, at least 24 hours before it renews.",
+      renewMonthly: "Free for 1 month, then {price} a month. Renews automatically until you cancel, at least 24 hours before it renews.",
+      renewNoTrialAnnual: "{price} a year, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",
+      renewNoTrialMonthly: "{price} a month, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",
+      cancel: "Cancel any time in Settings, Plan, Manage subscription, or in your Apple or Google account.",
+      termsLink: "Terms of Service",
+      privacyLink: "Privacy Policy",
+      subscriptionTermsLink: "Subscription terms",
+      restoreLink: "Restore",
+      agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
+    },
+    promise: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras.",
   },
 
   errors: {
@@ -620,6 +711,66 @@ export const en = {
       title: "Something went wrong",
       body: "Your words are safe. Please try again.",
     },
+  },
+
+  // Appended by Mobile B (Book, letter view, children, Family, Settings). PM to review.
+  reader: {
+    readingSizeTitle: "Reading size",
+    readingSizeButton: "Aa",
+    readingSizeA11y: "Reading size",
+    sizes: {
+      standard: "Standard",
+      large: "Large",
+      largePrint: "Large print",
+    },
+    preview: "Dear {child}, today you laughed at the rain.",
+    deletedBody: "Going back to the book in a moment.",
+    notFoundTitle: "This letter is not here anymore.",
+    notFoundCta: "Back to the book",
+    openHint: "Opens the letter.",
+  },
+
+  // Keys the children section above does not cover yet.
+  childrenExtra: {
+    dueDateLabel: "Due date",
+    nameRequired: "Add a name to continue.",
+    notSet: "Not set",
+    familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
+    plusGateTitle: "Another book is part of Plus",
+    plusCta: "See what Plus adds",
+    plusNotYet: "Plus is not open yet in the beta.",
+  },
+
+  familyTab: {
+    membersTitle: "Who writes to {child}",
+    youLabel: "You",
+    emptyTitle: "Just you, for now.",
+    emptyBody: "Letters are lovelier with more voices.",
+    inviteNeedsSignIn: "Inviting family needs an account, so they can write from their own phone. Sign in arrives in a coming update.",
+    rolesTitle: "Two ways to join",
+    coParentLabel: "Co-parent",
+    coParentBody: "Writes, reads the whole book, and chooses which family letters go in.",
+    familyLabel: "Family",
+    familyBody: "Writes to {child}. You choose which letters go in the book.",
+  },
+
+  settingsMore: {
+    accountTitle: "Account",
+    signedOutLabel: "Not signed in",
+    signedOutHelp: "Everything is kept on this phone for now. Sign in arrives in a coming update.",
+    appearanceTitle: "Appearance",
+    themeLabel: "Theme",
+    themes: {
+      system: "Match this phone",
+      light: "Light",
+      dark: "Dark",
+    },
+    exportNotYet: "Export arrives in a coming beta update.",
+    deleteAccountNotYet: "Accounts arrive with sign in. Until then, deleting the app removes everything on this phone.",
+    backupNotYet: "Backup arrives with Plus, later in the beta.",
+    remindersNotYet: "Your choice is saved. Reminders start in a coming beta update.",
+    legalTitle: "Legal",
+    versionLabel: "Version",
   },
 } as const;
 
