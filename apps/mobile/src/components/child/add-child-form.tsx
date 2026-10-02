@@ -7,17 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
-import { addChild, getActiveChild, hasPlus, listChildren, setActiveChildId, todayISO } from '@/lib/store';
+import { isoOf, longDate } from '@/lib/dates';
+import { addChild, getActiveChild, newChildNeedsPlus, setActiveChildId, todayISO } from '@/lib/store';
 import { PlusGate } from './plus-gate';
 
 const DAY = 86_400_000;
 
-/** Add a child (PRD B F2.1): name plus birthday or due date. Extra books are a Plus feature (PRD C 4.1). */
+/**
+ * Add a child (PRD B F2.1): name plus birthday or due date. Books made in
+ * first run are free; another book after that is a Plus feature (PRD C 4.1),
+ * and books joined as co-parent never count (store.newChildNeedsPlus).
+ */
 export function AddChildForm() {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const o = copy.onboarding.child;
   const x = copy.childrenExtra;
-  const gated = listChildren().length > 0 && !hasPlus();
+  const [gated] = useState(newChildNeedsPlus);
   const [passedGate, setPassedGate] = useState(false);
   const [name, setName] = useState('');
   const [expecting, setExpecting] = useState(false);
@@ -94,7 +99,7 @@ export function AddChildForm() {
           <Text className="text-base font-medium text-muted-foreground">{dateLabel}</Text>
           {Platform.OS !== 'ios' && (
             <Pressable onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={dateLabel} className="min-h-12 justify-center rounded-2xl border border-border bg-card px-4">
-              <Text className="text-lg text-foreground">{date.toLocaleDateString()}</Text>
+              <Text className="text-lg text-foreground">{longDate(isoOf(date))}</Text>
             </Pressable>
           )}
           {pickerOpen && (

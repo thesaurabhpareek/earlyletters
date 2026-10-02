@@ -340,6 +340,26 @@ export function hasPlus(): boolean {
   return false;
 }
 
+/**
+ * A book this user joined as a co-parent rather than started. Joining needs
+ * sign-in and sync, so nothing is joined yet. Joined books never use up the
+ * free book.
+ */
+export function isJoinedBook(_child: Child): boolean {
+  return false;
+}
+
+/**
+ * Whether starting another book needs Plus (PRD C 4.1). Every book made during
+ * first run is free (twins or more, PRD K-12). After that, a new book needs
+ * Plus once this user has started any book of their own; hidden books count,
+ * joined books never do.
+ */
+export function newChildNeedsPlus(): boolean {
+  if (hasPlus()) return false;
+  return [...listChildren(), ...listHiddenChildren()].some((c) => !isJoinedBook(c));
+}
+
 /** Invited family (needs accounts and sync). Empty until then. */
 export function listMembers(_childId: string): Member[] {
   return [];

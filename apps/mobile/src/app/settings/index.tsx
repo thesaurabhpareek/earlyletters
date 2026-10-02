@@ -27,7 +27,7 @@ export default function Settings() {
   const version = Constants.expoConfig?.version ?? '';
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-4 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <View accessible className="gap-1 rounded-[14px] bg-secondary p-4">
         <Text className="text-xs font-semibold tracking-[1.2px] text-primary">{copy.settings.about.beta.label.toUpperCase()}</Text>
         <Text className="text-sm leading-5 text-foreground">{copy.settings.about.beta.body}</Text>

@@ -1,5 +1,6 @@
-import { ageLabel, ageOn, chapterOf } from '@scribe/core';
-import { copy, fill } from '@/lib/copy';
+import { ageOn, chapterOf } from '@scribe/core';
+import { copy, fill, pendingCopy } from '@/lib/copy';
+import { ageText, dayDate } from '@/lib/dates';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 
@@ -43,23 +44,33 @@ export function groupChapters(entries: BookEntry[], child: Child): Chapter[] {
   }
   const chapters = [...byKey.values()].sort((a, b) => (b.month ?? -1) - (a.month ?? -1));
   for (const ch of chapters) {
-    const n = ch.data.length;
-    ch.countLine = n === 1 ? copy.book.chapterSubtitleOne : fill(copy.book.chapterSubtitle, { count: n });
+    ch.countLine = countLine(ch.data);
     const authors = [...new Set(ch.data.map((e) => authorOf(e, child)))];
     ch.fromLine = fill(copy.book.signature, { signsAs: authors.join(', ') });
   }
   return chapters;
 }
 
-const SHORT_DATE: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+/** "3 letters", "1 note", "2 letters and 1 note": only the kinds that exist. */
+export function countLine(entries: BookEntry[]): string {
+  const p = pendingCopy.book;
+  const letters = entries.filter((e) => e.kind === 'letter').length;
+  const notes = entries.length - letters;
+  const l = letters === 1 ? p.letterOne : fill(p.letters, { count: letters });
+  const n = notes === 1 ? p.noteOne : fill(p.notes, { count: notes });
+  if (letters && notes) return fill(p.lettersAndNotes, { letters: l, notes: n });
+  return notes ? n : l;
+}
 
-/** Card dateline: "TUESDAY 29 SEPTEMBER · 16 MONTHS AND 1 WEEK". */
-export function shortDateline(child: Child, onISO: string): string {
-  const [y, m, d] = onISO.split('-').map(Number);
-  const date = new Date(y, m - 1, d).toLocaleDateString(undefined, SHORT_DATE);
-  if (!child.birthday) return date.toUpperCase();
-  const age = ageOn(child.birthday, onISO);
-  return age.days < 0 ? date.toUpperCase() : `${date} · ${ageLabel(age)}`.toUpperCase();
+/** Card dateline: "TUESDAY, 29 SEPTEMBER 2026" (one format everywhere, lib/dates). The chapter already names the month of age. */
+export function shortDateline(_child: Child, onISO: string): string {
+  return dayDate(onISO).toUpperCase();
+}
+
+/** Spoken form for VoiceOver: "Tuesday, 29 September 2026, 7 months and 1 week". */
+export function datelineA11y(child: Child, onISO: string): string {
+  const age = ageText(child, onISO);
+  return age ? `${dayDate(onISO)}, ${age}` : dayDate(onISO);
 }
 
 export type Provenance = 'spokenTidied' | 'spokenExact' | 'typed';

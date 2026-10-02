@@ -1,5 +1,5 @@
 import { Redirect, router } from 'expo-router';
-import { GearSixIcon } from 'phosphor-react-native';
+import { BookOpenTextIcon, GearSixIcon } from 'phosphor-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, SectionList, View, useColorScheme } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -58,9 +58,21 @@ export default function Book() {
       <Text role="heading" maxFontSizeMultiplier={1.5} className="font-serif text-4xl leading-[44px] text-foreground">
         {fill(copy.book.title, { child })}
       </Text>
+      {entries.some((e) => e.inBook) && (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="mt-1 self-start"
+          onPress={() => router.push({ pathname: '/read-together', params: { childId: active.id } })}
+          accessibilityHint={fill(copy.readTogether.subtitle, { child })}>
+          <BookOpenTextIcon size={18} color={c.accent} />
+          <Text>{copy.readTogether.title}</Text>
+        </Button>
+      )}
       {currentEmpty && (
-        <Animated.View entering={enter(0)} className="mt-3 gap-1 rounded-[20px] bg-muted p-5">
-          <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{copy.book.thisMonthLabel.toUpperCase()}</Text>
+        // accentSoft card: visible on bg in both modes; label accent 4.74 / 5.99, body textMuted 4.75 / 5.73 (AA).
+        <Animated.View entering={enter(0)} className="mt-3 gap-1 rounded-[20px] bg-secondary p-5">
+          <Text className="text-xs font-medium tracking-[1.2px] text-primary">{copy.book.thisMonthLabel.toUpperCase()}</Text>
           <Text className="font-serif text-xl text-foreground">
             {currentMonth === 0 ? chapterTitle(0) : fill(copy.book.empty.chapterTitle, { month: currentMonth })}
           </Text>
@@ -75,7 +87,7 @@ export default function Book() {
       {chapters.length === 0 ? (
         <View className="flex-1">
           {header}
-          <Animated.View entering={enter(0)} className="flex-1 justify-center gap-4 px-6 pb-16">
+          <Animated.View entering={enter(0)} className="flex-1 justify-center gap-4 px-5 pb-16">
             <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">
               {copy.book.empty.bookTitle}
             </Text>

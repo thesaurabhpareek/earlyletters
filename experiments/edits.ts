@@ -44,6 +44,8 @@ export interface EditRow {
   changedWordRatio: number;
   /** Edits applied, by type. */
   applied: Record<string, number>;
+  /** Possible repeats offered to the parent, not applied ("so so", "you you" after a verb). */
+  suggested: number;
   /** Verifier rejections (model provider + pipeline), by reason. */
   rejections: Partial<Record<RejectReason, number>>;
   rejectedTotal: number;
@@ -86,6 +88,7 @@ export async function compareTranscript(
       clean: out.text,
       changedWordRatio: changedWordRatio(t.raw, out.text),
       applied: tally(out.applied.map((e) => e.type)),
+      suggested: out.suggestions.length,
       rejections: tally(out.rejected.map((r) => r.reason)),
       rejectedTotal: out.rejected.length,
       invalid: modelSummary?.invalid ?? 0,
@@ -102,6 +105,7 @@ export interface VariantSummary {
   avgChangedWordRatio: number;
   maxChangedWordRatio: number;
   totalApplied: number;
+  totalSuggested: number;
   totalRejected: number;
   totalInvalid: number;
   errors: number;
@@ -123,6 +127,7 @@ export function summarize(rows: EditRow[]): VariantSummary[] {
       avgChangedWordRatio: avg(mine.map((r) => r.changedWordRatio)),
       maxChangedWordRatio: Math.max(0, ...mine.map((r) => r.changedWordRatio)),
       totalApplied: mine.reduce((n, r) => n + Object.values(r.applied).reduce((a, b) => a + b, 0), 0),
+      totalSuggested: mine.reduce((n, r) => n + r.suggested, 0),
       totalRejected: mine.reduce((n, r) => n + r.rejectedTotal, 0),
       totalInvalid: mine.reduce((n, r) => n + r.invalid, 0),
       errors: mine.filter((r) => r.error).length,
@@ -135,4 +140,27 @@ export function summarize(rows: EditRow[]): VariantSummary[] {
     }
     return s;
   });
+}
+
+/**
+ * A ModelCall that replays saved replies instead of calling anything, keyed
+ * by transcript id. Lets anyone re-score a model's output (for example after
+ * a verifier change) with no endpoint and no key. A missing id throws, which
+ * the provider reports as model_call_failed.
+ */
+export function replayModel(replies: Record<string, string>, currentId: () => string): ModelCall {
+  return async () => {
+    const reply = replies[currentId()];
+    if (reply === undefined) throw new Error('no saved reply');
+    return reply;
+  };
+}
+
+/** Wrap a ModelCall so every reply is kept, keyed by transcript id, for --save-replies. */
+export function recordingModel(call: ModelCall, currentId: () => string, into: Record<string, string>): ModelCall {
+  return async (req, signal) => {
+    const reply = await call(req, signal);
+    into[currentId()] = reply;
+    return reply;
+  };
 }

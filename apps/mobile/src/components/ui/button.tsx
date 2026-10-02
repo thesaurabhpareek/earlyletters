@@ -96,12 +96,20 @@ type ButtonProps = React.ComponentProps<typeof Pressable> &
   React.RefAttributes<typeof Pressable> &
   VariantProps<typeof buttonVariants>;
 
-function Button({ className, variant, size, ...props }: ButtonProps) {
+/**
+ * Disabled (COMPONENTS 2.1): a token-based quiet fill instead of 50% opacity,
+ * so the label stays AA in both modes (textMuted on surface: 5.11 light,
+ * 7.65 dark). Ghost and link buttons only mute their label.
+ */
+function Button({ className, variant, size, disabled, accessibilityState, ...props }: ButtonProps) {
+  const filled = variant !== 'ghost' && variant !== 'link';
   return (
-    <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
+    <TextClassContext.Provider value={cn(buttonTextVariants({ variant, size }), disabled && 'text-muted-foreground')}>
       <Pressable
-        className={cn(props.disabled && 'opacity-50', buttonVariants({ variant, size }), className)}
+        className={cn(buttonVariants({ variant, size }), disabled && filled && 'border border-border bg-muted shadow-none', className)}
         role="button"
+        disabled={disabled}
+        accessibilityState={{ ...accessibilityState, disabled: !!disabled }}
         {...props}
       />
     </TextClassContext.Provider>

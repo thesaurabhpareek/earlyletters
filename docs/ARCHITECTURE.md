@@ -285,7 +285,7 @@ Open questions: Does a meaningful share of target families code-switch? Is the L
 
 ## 12. Decisions index
 
-ADRs in `docs/adr/`: 0001 on-device ASR, 0002 server ASR fallback, 0003 edit-pass model strategy, 0004 sync engine, 0005 audio format, 0006 encrypted backup, 0007 payments and printed books, 0008 analytics and crash reporting, 0009 word alignment, 0010 web app placement.
+ADRs in `docs/adr/`: 0001 on-device ASR, 0002 server ASR fallback, 0003 edit-pass model strategy, 0004 sync engine, 0005 audio format, 0006 encrypted backup, 0007 payments and printed books, 0008 analytics and crash reporting, 0009 word alignment, 0010 web app placement, 0011 requirements and agent workflow, 0012 open models for transcription and grammar (2026 refresh).
 
 ## Sources (opened 1 Oct 2026)
 

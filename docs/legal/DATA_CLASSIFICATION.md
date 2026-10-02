@@ -1,11 +1,14 @@
 ---
 title: Data classification
 product: "{brand.name} (codename scribe)"
-version: 1.0.0
+version: 1.1.0
 status: draft-for-counsel
 owner: founder (data governance lead role)
 companion: data-policy.md (retention, ownership), DELETION_AND_EXPORT_SPEC.md (DATA-REQ), ENGINEERING_REQUIREMENTS.md (LEGAL-REQ), PRD.md section 7.10
 changelog:
+  - version: 1.1.0
+    date: 2026-10-02
+    summary: Adds the device-only 18+ entry gate state (PRD.md 1.2, PRD-REQ-019). Minor.
   - version: 1.0.0
     date: 2026-10-02
     summary: First version. Four levels (PRD 7.10 founder decision), handling rules per level, full inventory of Postgres columns, views, Storage buckets, device stores and analytics properties. Column levels are enforced by COMMENT ON COLUMN in supabase/migrations and supabase/tests/classification.test.mjs.
@@ -454,6 +457,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | Keychain/Keystore: child content key, X25519 private key, session, invite token | L4 | ADR 0006, A-NFR-008 |
 | Analytics id | L2 | Random; reset at sign-out and account deletion |
 | Safety tiers (local only, PRD K-06) | L4 | Never leave the device; no server table exists |
+| 18+ entry gate state (PRD-REQ-019) | L2 | Device only: `passed` boolean, or the time of a No answer for the 24-hour stop screen. Never an age, birth date or age range; never in analytics or logs |
 | Whisper model files | L1 | Not personal data |
 
 ### 4.7 Analytics properties (PostHog, after opt-in only)

@@ -9,7 +9,7 @@ export default function Recordings() {
   const r = copy.settings.recordings;
   const b = copy.settings.backup;
   return (
-    <ScrollView contentContainerClassName="gap-7 px-4 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Section title={r.title} footer={r.keepHelp}>
         <Row first title={r.onPhoneTitle} subtitle={r.onPhoneBody} />
       </Section>

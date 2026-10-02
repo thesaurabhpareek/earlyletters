@@ -42,14 +42,15 @@ export function Row({ title, subtitle, value, onPress, disabled, destructive, fi
   const body = (
     <>
       <View className="flex-1 gap-0.5">
-        <Text className={cn('text-base', destructive ? 'text-caution' : 'text-foreground')}>{title}</Text>
+        {/* Disabled rows: full-opacity muted text (AA in both modes), no chevron. Destructive uses the destructive token. */}
+        <Text className={cn('text-base', disabled ? 'text-muted-foreground' : destructive ? 'text-destructive' : 'text-foreground')}>{title}</Text>
         {subtitle && <Text className="text-sm leading-5 text-muted-foreground">{subtitle}</Text>}
       </View>
       {value && <Text className="max-w-[50%] text-right text-base text-muted-foreground">{value}</Text>}
       {onPress && !disabled && <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
     </>
   );
-  const className = cn('min-h-12 flex-row items-center gap-3 px-4 py-3', !first && 'border-t border-border', disabled && 'opacity-60');
+  const className = cn('min-h-12 flex-row items-center gap-3 px-4 py-3', !first && 'border-t border-border');
   const label = [title, value, subtitle].filter(Boolean).join(', ');
   if (!onPress) {
     return (
@@ -91,7 +92,7 @@ export function ToggleRow({
   return (
     <View className={cn('min-h-12 flex-row items-center gap-3 px-4 py-3', !first && 'border-t border-border')}>
       <View className="flex-1 gap-0.5">
-        <Text className={cn('text-base text-foreground', disabled && 'opacity-60')}>{title}</Text>
+        <Text className={cn('text-base', disabled ? 'text-muted-foreground' : 'text-foreground')}>{title}</Text>
         {subtitle && <Text className="text-sm leading-5 text-muted-foreground">{subtitle}</Text>}
       </View>
       <Switch

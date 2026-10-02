@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelCall } from '@scribe/core';
-import { changedWordRatio, compareTranscript, summarize } from './edits';
+import { changedWordRatio, compareTranscript, recordingModel, replayModel, summarize } from './edits';
 
 // Fictional family only.
 const DICT = [
@@ -53,5 +53,39 @@ describe('edit-pass comparison', () => {
   it('runs rules only when no model is configured', async () => {
     const rows = await compareTranscript({ file: 'd', raw: 'she walked' }, DICT, null);
     expect(rows.map((r) => r.variant)).toEqual(['rules']);
+  });
+
+  it('collapses restarts, keeps grammatical doubles and counts offered repeats', async () => {
+    const t = {
+      file: 'e',
+      raw: 'today you you held the spoon, it was like a like a little hiccup. I told you you were brave and I am so so proud',
+      expected: 'Today you held the spoon, it was like a little hiccup. I told you you were brave and I am so so proud.',
+    };
+    const [rules] = await compareTranscript(t, DICT, null);
+    expect(rules.clean).toBe(t.expected);
+    expect(rules.werClean).toBe(0);
+    expect(rules.applied.repeat).toBe(2);
+    expect(rules.suggested).toBe(1); // "so so": the parent decides
+    expect(summarize([rules])[0].totalSuggested).toBe(1);
+  });
+
+  it('records replies and replays them without any endpoint', async () => {
+    let id = '';
+    const saved: Record<string, string> = {};
+    const live = recordingModel(replying({ edits: [{ type: 'agreement', original: 'have', replacement: 'has' }] }), () => id, saved);
+    const t = { file: 'f', raw: 'she have a ball' };
+    id = 'f';
+    const first = await compareTranscript(t, DICT, live);
+    expect(Object.keys(saved)).toEqual(['f']);
+
+    const replay = replayModel(saved, () => id);
+    const again = await compareTranscript(t, DICT, replay);
+    expect(again[1].clean).toBe(first[1].clean);
+    expect(again[1].clean).toBe('She has a ball.');
+
+    id = 'missing';
+    const none = await compareTranscript({ file: 'missing', raw: 'she have a ball' }, DICT, replay);
+    expect(none[1].error).toBe('model_call_failed');
+    expect(none[1].clean).toBe(none[0].clean);
   });
 });

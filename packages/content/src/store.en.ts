@@ -1,6 +1,7 @@
 // App Store listing copy for Early Letters. Plain text only.
 // Limits: appName <= 30, subtitle <= 30, promotionalText <= 170,
 // keywords <= 100 (comma-separated, no spaces), captions <= 40.
+// v1 is digital only: no printed-book promises in store copy (PRD.md K-32).
 
 export const storeListing = {
   appName: "Early Letters: Memory Book",
@@ -20,7 +21,7 @@ YOUR VOICE, KEPT
 The original recording stays with each letter, on your phone by default. With the optional backup, recordings are encrypted on your phone before upload, and we keep a recovery key so we can help you restore them, unless you choose Vault mode. Years from now, your child can hear how you sounded when you said it.
 
 READ TOGETHER
-Open any letter and it plays in the voice of the person who wrote it, while the words appear on the page. Listen together at bedtime.
+Open any letter and it plays in the voice of the person who wrote it, while the words appear on the page. Listen together at bedtime. Your first 3 Read together sessions are free; after that, Read together is part of Plus. Playing any single recording is always free.
 
 NOTES AND LETTERS
 Some days are a quick note. Some days are a proper letter. Both belong. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores. Come back whenever you like.
@@ -32,13 +33,13 @@ EVERY LANGUAGE, AS SPOKEN
 Speak Hindi, English, both in one sentence, or any mix your family uses. Early Letters keeps your words in the language you said them.
 
 PRIVATE BY DEFAULT
-Your letters are yours. Only the family you invite can read them, and you decide what goes into the book. No ads, and we never sell or share your data.
+Your letters are yours. Only the family you invite can read them, and you decide what goes into the book. No ads. We never sell your data or share it with advertisers.
 
 A BOOK FOR EACH CHILD
-Each child gets their own book, with their own months, family and settings. Switch between them in one tap. Your first child's book is free. Books for more children are part of Plus.
+Each child gets their own book, with their own months, family and settings. Switch between them in one tap. Your first child's book is free, and so are twins or more you add together when you set up. Books you start for more children later are part of Plus.
 
 TAKE IT WITH YOU
-Export your memory book as a PDF any time, for free. Printed books, starting with Early Letters: Year One, are on the way.
+Export your memory book any time, for free: your letters, your recordings and a PDF of the book.
 
 HOW IT WORKS
 1. Tap and talk, or type if you prefer.

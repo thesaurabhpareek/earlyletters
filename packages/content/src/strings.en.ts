@@ -43,6 +43,7 @@ export const en = {
       body: "We tidy what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.",
       body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
       recordingTitle: "Your voice stays too",
+      // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
       recordingBody: "The recording is kept on this phone, so one day {child} can hear you say it.",
       privateNote: "Private by default. You choose what goes in the book.",
       cta: "That sounds right",
@@ -334,11 +335,7 @@ export const en = {
       shareButton: "Share",
       deleteButton: "Delete",
     },
-    printPrompt: {
-      title: "Early Letters: Year One",
-      body: "{child}'s first year, in your words. Ready to hold in your hands.",
-      cta: "See the printed book",
-    },
+    // No printed-book prompt: v1 is digital only; printed books are a future launch (PRD.md K-32).
   },
 
   readTogether: {
@@ -516,12 +513,15 @@ export const en = {
     tidyOn: "Lightly tidied",
     tidyOff: "Word for word",
     tidyHelp: "Word for word keeps every um and false start. Either way, we never rewrite.",
+    // Show onPhone* only while backup is off; show backedUp* while it is on (lawyer-2 H4, register s.3 row 16).
     recordings: {
       title: "Recordings",
       keepLabel: "Keep recordings",
       keepHelp: "Your voice is saved with each letter, on this phone.",
       onPhoneTitle: "Kept on this phone",
-      onPhoneBody: "Recordings live on this phone. Export or turn on backup to keep a copy.",
+      onPhoneBody: "Without backup, recordings live only on this phone. Export or turn on backup to keep a copy.",
+      backedUpTitle: "Kept on this phone and backed up",
+      backedUpBody: "Each recording stays on this phone, with an encrypted copy in your backup.",
       storageUsed: "{count} MB used on this phone",
     },
     backup: {
@@ -589,9 +589,23 @@ export const en = {
       analyticsLabel: "Share usage and crash reports",
       analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
       sensitiveLabel: "Sync and family sharing",
+      // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
+      sensitiveHelp: "Letters can hold health details about you or {child}. Turn this off to stop syncing, and we will offer to delete what already synced.",
       aiLabel: "Cloud transcription",
       lockScreenLabel: "Names in notifications",
     },
+  },
+
+  // Sensitive-data consent, one plain screen after a new account is created and before the first sync
+  // (PRD.md K-15, PRD-REQ-002; text from consumer-health-data-notice.md HN-4, counsel to approve).
+  sensitiveConsent: {
+    title: "Before your book syncs",
+    body: "Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.",
+    use: "We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
+    changeLater: "You can change this any time in Settings, Privacy.",
+    declineHelp: "If you keep it on this phone, syncing, backup and family sharing stay off.",
+    agreeButton: "Agree and sync",
+    declineButton: "Keep on this phone",
   },
 
   // Product analytics consent. Third ask after the first letter, on a later session (PRD.md K-01, PRD-REQ-001).
@@ -618,9 +632,12 @@ export const en = {
     add: {
       title: "Add a child",
       body: "Each child gets their own book, with their own months, family and settings.",
-      plusNote: "Your first child's book is free, always. Books for more children are part of Plus.",
+      // PRD-REQ-015 (founder, 2 Oct 2026): one free book you start; books you joined as a co-parent do not count;
+      // children added together in first run are all free, so this sheet's twins line makes no price promise.
+      plusNote: "The first book you start is free, always. Books you start for more children are part of Plus.",
+      joinedNote: "A book you joined as a co-parent does not count as your free book.",
       keepNote: "Every book you already have stays open for writing, reading and export, with or without Plus.",
-      twinsHelp: "Twins or more? Add them together and each gets their own book, free.",
+      twinsHelp: "Twins or more? Each child gets their own book.",
       cta: "Add {child}'s book",
     },
     settings: {
@@ -697,7 +714,7 @@ export const en = {
     },
     backupFailed: {
       title: "Backup paused",
-      body: "Your letters are safe on this phone. We will back up when the connection returns.",
+      body: "Your recordings are safe on this phone. Backup will continue when you are back online.",
     },
     inviteExpired: {
       title: "This invite has expired",
@@ -757,7 +774,8 @@ export const en = {
   settingsMore: {
     accountTitle: "Account",
     signedOutLabel: "Not signed in",
-    signedOutHelp: "Everything is kept on this phone for now. Sign in arrives in a coming update.",
+    // signedOutHelp and deleteAccountNotYet are removed in the release that ships sign-in (lawyer-2 H4).
+    signedOutHelp: "Your letters and recordings are kept on this phone for now. Sign in arrives in a coming update.",
     appearanceTitle: "Appearance",
     themeLabel: "Theme",
     themes: {
@@ -766,11 +784,23 @@ export const en = {
       dark: "Dark",
     },
     exportNotYet: "Export arrives in a coming beta update.",
-    deleteAccountNotYet: "Accounts arrive with sign in. Until then, deleting the app removes everything on this phone.",
+    deleteAccountNotYet: "Accounts arrive with sign in. Until then, deleting the app removes its letters and recordings from this phone.",
     backupNotYet: "Backup arrives with Plus, later in the beta.",
     remindersNotYet: "Your choice is saved. Reminders start in a coming beta update.",
     legalTitle: "Legal",
     versionLabel: "Version",
+  },
+
+  // 18+ only (founder decision, Oct 2 2026). Asked before any child details; only "yes" is stored, never an age.
+  ageGate: {
+    title: "Are you 18 or older?",
+    body: "We ask everyone the same question.",
+    yesButton: "Yes",
+    noButton: "No",
+    stopTitle: "Thank you for telling us.",
+    stopBody: "Early Letters is currently for adults 18 and over.",
+    stopNote: "Nothing you entered has been kept.",
+    mistakeButton: "I answered by mistake",
   },
 } as const;
 

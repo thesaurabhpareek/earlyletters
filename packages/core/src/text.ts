@@ -54,14 +54,7 @@ export const FUNCTION_WORDS = new Set([
  */
 export const FILLERS = new Set(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 'er', 'hmm', 'hmmm', 'mm']);
 
-/**
- * Immediate repeats are only collapsed for these words. "no no no",
- * "very very", "bye bye" are kept: repetition is often emphasis, dialect,
- * or a toddler's own speech.
- */
-export const REPEAT_COLLAPSIBLE = new Set([
-  'the', 'a', 'an', 'i', 'and', 'to', 'it', 'was', 'she', 'he', 'we', 'of', 'in', 'so', 'but',
-]);
+/* Which repeats are collapsed, suggested or kept lives in repeats.ts. */
 
 /**
  * Normalize characters per the founder's standing rule: no em dashes,

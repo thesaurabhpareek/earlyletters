@@ -19,7 +19,7 @@ export default function AppearanceSettings() {
   const scale = tokens.readingScale[size];
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-4 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Section title={m.themeLabel}>
         <Choices
           options={THEMES.map((t) => ({ value: t, label: m.themes[t] }))}

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { dateline } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -12,7 +11,9 @@ import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { deleteEntry, getActiveChild, getChild, getEntry, setEntryInBook, undeleteEntry, type Entry } from '@/lib/store';
-import { provenanceOf, shortDateline } from '@/components/book/chapters';
+import { provenanceOf } from '@/components/book/chapters';
+import { PrivateChip } from '@/components/book/letter-card';
+import { letterDateline } from '@/lib/dates';
 import { ReadingSizeSheet } from '@/components/book/reading-size-sheet';
 import { UndoToast } from '@/components/book/undo-toast';
 import { authorOf, getReadingSize, isOwnEntry, setReadingSize, type ReadingSize } from '@/components/child/child-store';
@@ -43,7 +44,7 @@ export default function Letter() {
       onPress={() => setSizeOpen(true)}
       accessibilityRole="button"
       accessibilityLabel={copy.reader.readingSizeA11y}
-      className="h-11 min-w-11 items-center justify-center px-2">
+      className="mr-2 h-11 min-w-11 items-center justify-center px-3">
       <Text maxFontSizeMultiplier={1.3} className="font-serif text-xl text-primary">
         {copy.reader.readingSizeButton}
       </Text>
@@ -56,7 +57,7 @@ export default function Letter() {
     return (
       <View className="flex-1 bg-background">
         <Stack.Screen options={{ headerRight: undefined }} />
-        <Animated.View entering={enter(0)} className="flex-1 justify-center gap-2 px-6">
+        <Animated.View entering={enter(0)} className="flex-1 justify-center gap-2 px-5">
           <Text role="heading" className="font-serif text-2xl text-foreground">
             {copy.settings.delete.entryToast}
           </Text>
@@ -78,7 +79,7 @@ export default function Letter() {
 
   if (!entry || !child) {
     return (
-      <View className="flex-1 items-start justify-center gap-4 bg-background px-6">
+      <View className="flex-1 items-start justify-center gap-4 bg-background px-5">
         <Text role="heading" className="font-serif text-2xl text-foreground">
           {copy.reader.notFoundTitle}
         </Text>
@@ -92,7 +93,7 @@ export default function Letter() {
   const scale = tokens.readingScale[size];
   const signsAs = authorOf(entry, child);
   const signature = fill(copy.book.signature, { signsAs });
-  const date = child.birthday ? dateline(entry.occurredOn, child.name, child.birthday) : shortDateline(child, entry.occurredOn);
+  const date = letterDateline(child, entry.occurredOn);
   const provenance = copy.book.provenance[provenanceOf(entry)];
   const spoken = entry.captureMode !== 'typed';
   const own = isOwnEntry(entry);
@@ -124,19 +125,12 @@ export default function Letter() {
           <Text maxFontSizeMultiplier={2.4} className="text-sm font-medium tracking-[0.6px] text-muted-foreground">
             {date}
           </Text>
-          <View className="flex-row flex-wrap items-center gap-2">
-            <Text maxFontSizeMultiplier={1.5} className="text-base font-medium text-foreground">
-              {signature}
-            </Text>
-            {!entry.inBook && (
-              <View className="flex-row items-center gap-1 rounded-full bg-muted px-2 py-0.5">
-                <LockSimpleIcon size={12} color={c.textMuted} weight="bold" />
-                <Text maxFontSizeMultiplier={1.5} className="text-xs font-medium text-muted-foreground">
-                  {copy.book.privateLabel}
-                </Text>
-              </View>
-            )}
-          </View>
+          {/* The signature lives once, at the end of the letter (no "From Mama" here). */}
+          {!entry.inBook && (
+            <View className="flex-row">
+              <PrivateChip color={c.text} />
+            </View>
+          )}
         </Animated.View>
 
         {showOriginal && (
@@ -190,8 +184,9 @@ export default function Letter() {
               </Text>
             )}
             <Button variant="ghost" onPress={remove} accessibilityLabel={copy.settings.delete.entryConfirm}>
-              <TrashIcon size={18} color={c.caution} />
-              <Text className="text-caution">{copy.book.entryMenu.deleteButton}</Text>
+              {/* destructive token (terracotta, 5.05:1 light, 7.65:1 dark), never caution amber */}
+              <TrashIcon size={18} color={c.recording} />
+              <Text className="text-destructive">{copy.book.entryMenu.deleteButton}</Text>
             </Button>
           </View>
         )}

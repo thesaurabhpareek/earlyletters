@@ -1,6 +1,6 @@
 ---
 title: Early Letters Plus Subscription Terms
-version: 1.1.0
+version: 1.2.0
 status: draft-for-counsel
 effective_date: TBD
 last_updated: 2026-10-02
@@ -16,13 +16,13 @@ This is the short summary shown before you subscribe. It is part of the Early Le
 
 ## What stays free
 
-Writing, reading, listening, export and family authors are free, always. If you never subscribe, or stop later, every letter and recording you made stays yours to read, play and export.
+Writing, reading, playing your recordings, export and family authors are free, always. If you never subscribe, or stop later, every letter and recording you made stays yours to read, play and export.
 
 ## What Plus adds
 
 - Encrypted backup of every recording.
-- Read together, after the free tries.
-- A book for more than one child.
+- Read together, after the free sessions (3 today; the app shows the current number).
+- Books for more children. The first book you start is free. Children you add together when you first set up the app (twins or more) are free too, and a book you joined as a co-parent does not count as your free book.
 - Extra themes and book covers.
 
 **[COUNSEL: Must match the live Plus sheet (PRD C 4.1) at every release. Apple 3.1.2(c) requires describing what the user gets before asking them to subscribe.]**
@@ -90,5 +90,6 @@ Sources: Terms of Service Appendix A, items L1, L7, L8, L10 to L14, S1, S5, S6, 
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.2.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2: "listening" becomes "playing your recordings" (K-11); Read together free sessions and the books-for-more-children rule as decided by the founder on 2 Oct (PRD-REQ-015, PRD-REQ-020). Pre-publication draft, no users bound; minor (clarifies free scope). |
 | 1.1.0 | 2026-10-02 | draft-for-counsel | Consumer-law review: filled the Plus feature list from PRD C 4.1; trial terms follow what the app shows (the trial experiment varies length); consent record and emailed copy; no obstacles to cancelling; reminder windows aligned to Terms 14.6; opt-in for price increases; gifts never renew. Pre-publication draft; if published over 1.0.0 this would be major (POLICY_VERSIONING 2.1 item 6). |
 | 1.0.0 | 2026-10-02 | draft-for-counsel | First draft, prepared by Claude for counsel review, from the pricing decision of 1 Oct 2026. |

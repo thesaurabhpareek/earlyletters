@@ -11,7 +11,7 @@ export default function Reminders() {
   const [paused, setPaused] = useState(getRemindersPaused);
   const r = copy.settings.reminders;
   return (
-    <ScrollView contentContainerClassName="gap-7 px-4 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Section title={r.cadenceLabel} footer={`${r.help} ${copy.settingsMore.remindersNotYet}`}>
         <Choices
           options={CADENCE_OPTIONS}

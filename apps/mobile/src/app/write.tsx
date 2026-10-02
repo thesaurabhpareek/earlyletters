@@ -8,7 +8,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View, useColorScheme } from 'react-native';
-import { ageLabel, ageOn, renderTemplate } from '@scribe/core';
+import { renderTemplate } from '@scribe/core';
+import { ageText } from '@/lib/dates';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -78,15 +79,14 @@ export default function Write() {
   };
 
   if (!child) return null;
-  const today = todayISO();
-  const age = child.birthday ? ageOn(child.birthday, today) : null;
-  const dateline = age && age.days >= 0 ? `${child.name} · ${ageLabel(age)}` : child.name;
+  const age = ageText(child, todayISO());
+  const dateline = age ? `${child.name} · ${age}` : child.name;
 
   return (
     <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <View className="flex-row items-center justify-between px-3 pt-2">
-          <Button variant="ghost" size="sm" onPress={close}>
+        <View className="flex-row items-center justify-between px-5 pt-2">
+          <Button variant="ghost" size="sm" className="-ml-4" onPress={close}>
             <Text className="text-primary">{copy.common.closeButton}</Text>
           </Button>
           <Text className="text-sm text-muted-foreground" accessibilityLiveRegion="polite">

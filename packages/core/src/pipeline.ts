@@ -10,15 +10,18 @@
  */
 import type { CleanResult, DictionaryTerm, Edit, EditLevel, Flag } from './types';
 import { dictionaryEdits, protectedSpans } from './protect';
-import { fillerEdits, repeatEdits } from './rules';
-import { applyEdits, verifyEdits } from './verify';
+import { fillerEdits, repeatEdits, repeatSuggestionEdits } from './rules';
+import { overlaps } from './protect';
+import { applyEdits, checkEdit, verifyEdits } from './verify';
 import { normalizeChars } from './text';
 
 /**
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 1;
+export const ENGINE_VERSION = 2;
+// 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
+//   collapse; "in in", "so so" become suggestions; "what it was was" kept.
 
 export interface CleanOptions {
   level: EditLevel;
@@ -51,16 +54,23 @@ export function faithfulClean(raw: string, opts: CleanOptions): CleanResult {
   const model = (opts.modelEdits ?? []).map((e) => ({ ...e, source: 'model' as const }));
 
   const dictResult = verifyEdits(dict, { raw, level, dictionary, protectedSpans: lockedAndQuoted });
-  const restResult = verifyEdits([...dictResult.accepted, ...rules, ...model], {
+  const restCtx = {
     raw,
     level,
     dictionary,
     // dictionary fixes already accepted must not be blocked by term spans they create
     protectedSpans: allProtected.filter((p) => !dictResult.accepted.some((d) => d.start === p.start)),
-  });
+  };
+  const restResult = verifyEdits([...dictResult.accepted, ...rules, ...model], restCtx);
 
   const applied = restResult.accepted;
   const rejected = [...dictResult.rejected, ...restResult.rejected];
+
+  // Offered, not applied: only ones the verifier would accept right now and
+  // that do not collide with an applied edit (an accepted one drops out here).
+  const suggestions = (level === 'clean' ? repeatSuggestionEdits(raw) : []).filter(
+    (s) => checkEdit(s, restCtx) === null && !applied.some((a) => overlaps(a, s) || (a.start === s.start && a.end === s.end)),
+  );
 
   return {
     text: normalizeChars(applyEdits(raw, applied)).trim(),
@@ -68,7 +78,17 @@ export function faithfulClean(raw: string, opts: CleanOptions): CleanResult {
     rejected,
     flags: opts.modelFlags ?? [],
     modelChangeRatio: restResult.modelChangeRatio,
+    suggestions,
   };
+}
+
+/**
+ * Options that apply the suggestions the parent tapped. They go in as rule
+ * edits, so they are verified again with everything else; nothing bypasses
+ * verifyEdits.
+ */
+export function acceptSuggestions(opts: CleanOptions, accepted: Edit[]): CleanOptions {
+  return { ...opts, ruleEdits: [...(opts.ruleEdits ?? []), ...accepted.map((e) => ({ ...e, source: 'rule' as const }))] };
 }
 
 /**

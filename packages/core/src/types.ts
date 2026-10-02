@@ -93,4 +93,11 @@ export interface CleanResult {
   flags: Flag[];
   /** Share of raw words touched by applied MODEL edits (0..1). */
   modelChangeRatio: number;
+  /**
+   * Edits the engine did NOT apply but offers to the parent (possible
+   * repeats such as "so so" or "you you" after an object verb). Each has
+   * already passed the verifier against this raw text; to accept one, pass
+   * it back in CleanOptions.ruleEdits (see acceptSuggestions).
+   */
+  suggestions: Edit[];
 }

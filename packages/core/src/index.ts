@@ -2,6 +2,7 @@ export * from './types';
 export * from './text';
 export * from './protect';
 export * from './rules';
+export * from './repeats';
 export * from './verify';
 export * from './pipeline';
 export * from './edit-provider';

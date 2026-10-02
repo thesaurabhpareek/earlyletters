@@ -53,6 +53,7 @@ function Root() {
         <Stack.Screen name="write" options={{ presentation: 'modal' }} />
         <Stack.Screen name="listen" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         <Stack.Screen name="review" options={{ presentation: 'modal', gestureEnabled: false }} />
+        <Stack.Screen name="read-together" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Screen name="letter/[id]" options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: c.accent }} />
       </Stack>
     </ThemeProvider>

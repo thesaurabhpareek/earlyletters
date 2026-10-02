@@ -33,7 +33,10 @@ function rather than writing SQL elsewhere. Everything is synchronous SQLite
 
 ### Device settings
 `getSetting(key): string | null`, `setSetting(key, value)`. Keys in use:
-`activeChildId`, `appearance` (`system|light|dark`, applied in `app/_layout.tsx`), `readingSize`, `reminders.cadence`, `reminders.paused`, `review.firstNoteSeen`, `ageAttested` (`yes|no`, never an age), `ageAttestedAt`.
+`activeChildId`, `appearance` (`system|light|dark`, applied in `app/_layout.tsx`), `readingSize`, `reminders.cadence`, `reminders.paused`, `review.firstNoteSeen`, `ageAttested` (`yes` only: under 18 is stopped in onboarding and nothing is stored; never an age), `ageAttestedAt`, `readTogether.sessions` (a count, see read-together.ts).
+
+### Plus gates
+`newChildNeedsPlus()`: books made in first run are all free (twins or more); after that a new book needs Plus once you have started any book of your own (hidden ones count). `isJoinedBook(child)` (false until co-parent joining exists) keeps joined books out of the count.
 
 ### Not built yet (stubs with stable signatures)
 `currentUserId(): null`, `hasPlus(): false`, `listMembers(childId): []`. They become real with sign-in (PRD A), purchases (PRD C) and sync.
@@ -50,6 +53,8 @@ function rather than writing SQL elsewhere. Everything is synchronous SQLite
 ## Other modules
 - `copy.ts`: `copy`, `fill`, `greetingKey`, and `pendingCopy` (strings awaiting the PM, see TODO there).
 - `transcribe.ts`: `Transcriber` interface and `getTranscriber()`. Adapters: `transcribe-whisper.ts` (dev build + model + decoder), `transcribe-sample.ts` (development only).
+- `dates.ts`: the one date format, from `@scribe/core` `dateline`: `dayDate(iso)` "Tuesday, 29 September 2026", `longDate(iso)`, `letterDateline(child, iso)`, `ageText(child, iso)`, `isoOf(date)`. Never call `toLocaleDateString` in screens.
+- `read-together.ts`: `FREE_READ_TOGETHER_SESSIONS` (3), `canStartReadTogether()`, `recordReadTogetherSession()`, `readTogetherSessions()`.
 - `haptics.ts`: `haptic('tap' | 'press' | 'soft' | 'success' | 'warning')`.
 - `motion.ts`: `useMotion()`, `useReducedMotion()`; never read Reduce Motion elsewhere.
 - `audio-mode.ts`: `setAudioMode('idle' | 'recording' | 'playback')`; always restore `idle`.

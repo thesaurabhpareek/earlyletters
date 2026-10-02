@@ -14,8 +14,6 @@ import { Alert, Pressable, ScrollView, TextInput, View, useColorScheme } from 'r
 import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
-  ageLabel,
-  ageOn,
   applyEdits,
   faithfulClean,
   normalizeChars,
@@ -33,6 +31,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { setAudioMode } from '@/lib/audio-mode';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import {
@@ -251,9 +250,8 @@ export default function Review() {
     );
   }
 
-  const today = todayISO();
-  const age = child.birthday ? ageOn(child.birthday, today) : null;
-  const dateline = age && age.days >= 0 ? `${child.name} · ${ageLabel(age)}` : child.name;
+  const age = ageText(child, todayISO());
+  const dateline = age ? `${child.name} · ${age}` : child.name;
   const openE = openEdit !== null ? applied[openEdit] : null;
   const many = listChildren().length > 1;
 
@@ -280,19 +278,19 @@ export default function Review() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between px-3 pt-2">
-        <Button variant="ghost" size="sm" onPress={() => router.back()} accessibilityHint={pendingCopy.write.savedOnPhone}>
+      <View className="flex-row items-center justify-between px-5 pt-2">
+        <Button variant="ghost" size="sm" className="-ml-4" onPress={() => router.back()} accessibilityHint={pendingCopy.write.savedOnPhone}>
           <Text className="text-primary">{copy.common.closeButton}</Text>
         </Button>
         {spoken && (
-          <Button variant="ghost" size="sm" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
+          <Button variant="ghost" size="sm" className="-mr-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
             {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
             <Text className="text-primary">{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
           </Button>
         )}
       </View>
 
-      <ScrollView contentContainerClassName="gap-5 px-5 pb-10 pt-2" keyboardShouldPersistTaps="handled">
+      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
         <View className="gap-1">
           <Pressable onPress={pickChild} disabled={!many} accessibilityRole={many ? 'button' : 'text'} className="min-h-11 justify-center">
             <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline.toUpperCase()}</Text>
@@ -309,13 +307,16 @@ export default function Review() {
 
         {firstNote && phase === 'ready' && (
           <Animated.View entering={motion.enter()} layout={LinearTransition.springify().damping(30)}>
-            <Card className="gap-2 rounded-3xl border-0 bg-secondary p-5">
-              <Text className="text-lg font-semibold text-foreground">{r.firstNote.title}</Text>
-              <Text className="text-base leading-6 text-foreground">{r.firstNote.body}</Text>
-              <Button variant="ghost" size="sm" className="self-start" onPress={dismissFirstNote}>
-                <Text className="text-primary">{r.firstNote.dismissButton}</Text>
-              </Button>
-            </Card>
+            {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
+            <View className="gap-1 rounded-2xl bg-secondary py-3 pl-4 pr-2">
+              <View className="flex-row items-center justify-between gap-2">
+                <Text className="flex-1 text-base font-semibold text-foreground">{r.firstNote.title}</Text>
+                <Button variant="ghost" size="sm" onPress={dismissFirstNote}>
+                  <Text className="text-primary">{r.firstNote.dismissButton}</Text>
+                </Button>
+              </View>
+              <Text className="pr-2 text-sm leading-5 text-foreground">{r.firstNote.body}</Text>
+            </View>
           </Animated.View>
         )}
 
@@ -479,19 +480,22 @@ export default function Review() {
               </View>
             )}
 
-            <View className="gap-3 pt-2">
-              <Text className="text-lg font-semibold text-foreground">{r.destination.title}</Text>
-              <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing}>
-                <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
-              </Button>
-              <Button size="lg" variant="secondary" onPress={() => save(false)} disabled={!finalText.trim() || editing}>
-                <Text>{r.destination.privateButton}</Text>
-              </Button>
-              <Text className="text-sm text-muted-foreground">{r.destination.privateHelp}</Text>
-            </View>
+            <Text className="text-sm text-muted-foreground">{r.destination.privateHelp}</Text>
           </>
         )}
       </ScrollView>
+
+      {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll. */}
+      {phase === 'ready' && (
+        <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
+          <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing} accessibilityHint={r.destination.title}>
+            <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
+          </Button>
+          <Button variant="secondary" onPress={() => save(false)} disabled={!finalText.trim() || editing}>
+            <Text>{r.destination.privateButton}</Text>
+          </Button>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

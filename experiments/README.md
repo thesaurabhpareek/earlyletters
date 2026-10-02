@@ -30,6 +30,13 @@ Each of you, in your normal voice, the way you'd talk at bedtime:
 
 Name files `01.m4a`, `02.m4a` and so on. AirDrop them to your Mac and put them in `experiments/recordings/`.
 
+### Optional: two Hindi-English models
+Standard Whisper struggles with Hindi-English mixed speech. Two open fine-tunes may do much better, and they write it differently: one puts Hindi in Devanagari, the other writes everything in Roman letters. To test them on recordings 6 to 10 (about 6 GB of downloads, needs python3):
+```bash
+./experiments/setup-hinglish.sh
+```
+Then add `"hinglish-trelis-q5_0"` and `"hinglish-oriserve-q5_0"` to `models` in `config.local.json`, and run once with `"language": "en"` and once with `"language": "auto"`. This script has not been run end to end yet; if it fails, send me the error. Why these two: `docs/adr/0012-open-models-transcription-and-grammar.md`.
+
 ## 4. Run
 ```bash
 npm run experiment
@@ -52,8 +59,18 @@ npm run experiment:edits -- --transcripts experiments/results/transcripts.json \
 ```
 `--model-url` takes any OpenAI-compatible server. To keep everything on your Mac, run a local one, for example llama.cpp's `llama-server -m Qwen3.5-2B-Q4_K_M.gguf --port 8080` or Ollama (`--model-url http://localhost:11434/v1`). A hosted key, if you use one, goes in `EDIT_MODEL_API_KEY`; then your transcripts leave the Mac, so use the fictional samples or ask first.
 
+The model is just a function the comparison is handed (`ModelCall` in `@scribe/core`), so no key or endpoint lives in the repo. Two more options make runs repeatable:
+```bash
+# keep the model's raw replies (they contain your transcript text; results/ is never committed)
+npm run experiment:edits -- --transcripts experiments/results/transcripts.json \
+  --model-url http://localhost:8080/v1 --model qwen3.5-2b --save-replies experiments/results/replies.json
+# re-score those replies later (for example after an engine change) with no model running
+npm run experiment:edits -- --transcripts experiments/results/transcripts.json --replay experiments/results/replies.json
+```
+
 Open `experiments/results/edits.md`. For each variant it shows:
 - **Words changed:** share of your words removed or replaced (capitals and punctuation do not count). Lower is more faithful.
+- **Repeats offered:** doubles the engine will not remove by itself because they are often meant ("so so proud", "my my", "in in the morning"). The engine returns them in `suggestions` for the review screen to offer as tap-to-remove (app wiring is separate work). Restarts such as "like a like a little hiccup" and "today you you held" are removed automatically; "I told you you were brave" and "what it was was magic" are always kept.
 - **Verifier rejections:** edits the model proposed that the engine refused (added words, synonym swaps, too many changes). The model never gets a say over this.
 - **Malformed model items / failures:** replies that were not valid edit JSON. Many of these means the model is a poor fit.
 - **Word error after cleaning:** against what you said, when the transcript has it. The model earns its place only if this drops and you prefer its output.

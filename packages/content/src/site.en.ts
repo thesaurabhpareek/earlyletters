@@ -1,4 +1,5 @@
 // Website copy for Early Letters. {price} and {child} are placeholders.
+// v1 is digital only: no printed-book promises (PRD.md K-32).
 
 export const site = {
   hero: {
@@ -55,10 +56,10 @@ export const site = {
     points: [
       "Your letters are private by default. Only the family you invite can read what you add to the book.",
       "We never rewrite your words. Transcription happens on your phone by default. If you ever choose cloud transcription, we ask first.",
-      "Your recordings stay on your phone unless you back them up, share them with family, or choose cloud transcription.",
+      "Your recordings stay on your phone unless you back them up or choose cloud transcription. Family can hear a recording once it is backed up.",
       "Backups are encrypted on your phone first. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
-      "No ads. We never sell or share your data.",
-      "You can export everything as a PDF, free, at any time.",
+      "No ads. We never sell your data or share it with advertisers.",
+      "You can export your book, free, at any time.",
       "You can delete your own letters and recordings whenever you like.",
       "Each child has their own book and their own family list. Inviting someone to one book does not open the others.",
     ],
@@ -66,7 +67,7 @@ export const site = {
   faq: [
     {
       q: "Who can see my letters?",
-      a: "You and the family you invite. Letters are private by default, and you decide what goes into the book. When you sign in, your letters sync to our servers so your family and your next phone can read them. Our staff never read them except to keep the service running or when the law requires it, and that access is restricted and logged.",
+      a: "You and the family you invite. Letters are private by default, and you decide what goes into the book. When you sign in, your letters sync to our servers so your family and your next phone can read them. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. That access is restricted and logged.",
     },
     {
       q: "Do you rewrite my words?",
@@ -86,15 +87,15 @@ export const site = {
     },
     {
       q: "Can I get my memory book out?",
-      a: "Yes. Export it as a PDF any time, for free. Printed books, starting with Early Letters: Year One, are coming later.",
+      a: "Yes. Export it any time, for free: your letters, your recordings and a PDF of the book.",
     },
     {
       q: "How much does it cost?",
-      a: "Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional, from {price}, and adds backup for every recording, books for more children and a few extras. Your first child's book is free. Printed books will be priced separately when they arrive.",
+      a: "Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional, from {price}, and adds backup for every recording, books for more children, Read together after your first 3 sessions, and a few extras. Your first child's book is free, and so are twins or more you add together when you set up.",
     },
     {
       q: "What happens to my recordings?",
-      a: "Each recording stays on your phone by default, attached to its letter. It leaves your phone only if you back it up, share the letter with family, or choose cloud transcription. Backups are encrypted on your phone first, and we keep a recovery key so we can help you restore them, unless you choose Vault mode. You can delete your recordings and letters whenever you like.",
+      a: "Each recording stays on your phone by default, attached to its letter. It leaves your phone only if you back it up or choose cloud transcription. Family can hear a recording once it is backed up. Backups are encrypted on your phone first, and we keep a recovery key so we can help you restore them, unless you choose Vault mode. You can delete your recordings and letters whenever you like.",
     },
   ],
   gift: {

@@ -1,6 +1,6 @@
 ---
 title: Early Letters Terms of Service
-version: 1.2.0
+version: 1.3.0
 status: draft-for-counsel
 effective_date: TBD
 last_updated: 2026-10-02
@@ -39,17 +39,17 @@ This summary is here to help. The full terms below are what count.
 1.3 These documents are part of the Terms:
 - the **Privacy Policy**, which explains what data we collect, why, and who processes it, at {PRIVACY_URL};
 - the **Subscription Terms**, shown before you subscribe to Plus, at {SUBSCRIPTION_TERMS_URL};
-- the **Print Terms**, shown before you order a printed book (Section 15).
+- the **Print Terms**, if and when we offer printed books (Section 15). Printed books are not offered yet.
 
 1.4 If you got the app from the Apple App Store or Google Play, Section 26 also applies.
 
-1.5 You accept these Terms when you tap to continue on the sign-in screen, where you also confirm you are 18 or older. If you use the Service before creating an account, these Terms apply to that use too. If you do not agree, please do not use the Service. We record which version you accepted and when.
+1.5 You accept these Terms when you tap to continue on the sign-in screen, where you also confirm you are 18 or older. You also confirm you are 18 or older when you first open the app, before you can use it at all. If you use the Service before creating an account, these Terms apply to that use too. If you do not agree, please do not use the Service. We record which version you accepted and when.
 
 **[COUNSEL: A-REQ-034 shows "By continuing, you agree to the Terms and Privacy Policy." above the sign-in buttons and stores the version and time. Local use before sign-in has no explicit acceptance step (Section A, F3). Decide whether browsewrap for pre-account local use is acceptable, or whether the story 4 privacy notice should also link these Terms. Web contributors also need an acceptance line on the contribution page before their first letter.]**
 
 ## 2. Who can use Early Letters
 
-2.1 **Adults only.** You must be at least 18 years old to use the Service, and you confirm this when you accept these Terms. If we learn that an account belongs to someone under 18, we will close it. Where the law allows, we will first let them export their letters.
+2.1 **Adults only.** You must be at least 18 years old to use the Service in any way, including on your phone without an account. The app asks before you can use it, and you confirm it again when you accept these Terms. If you tell us you are under 18, the app stops and keeps nothing. If we learn that an account belongs to someone under 18, we will close it. Where the law allows, we will first let them export their letters.
 
 2.2 **Children are the subject, not users.** Early Letters is a place for adults to write to a child. A child does not create an account, sign in, or send anything through the Service. An adult may read or play letters to a child, for example with Read together. The child is still not a user, and we do not knowingly collect personal information from a child.
 
@@ -57,7 +57,7 @@ This summary is here to help. The full terms below are what count.
 
 2.4 **Where you are.** You confirm that you are not located in a country subject to a US government embargo or designated by the US government as a "terrorist supporting" country, and that you are not on any US government list of prohibited or restricted parties.
 
-**[COUNSEL: 1.2.0 adds a self-declared 18+ confirmation to the sign-in acceptance line (copy change owned by PRD A, A-REQ-034). It is a declaration, not verification. Confirm it is enough given (a) Texas SB 2420 (App Store Accountability Act), reported in force in 2026 with developer duties to use the store's age category and parental consent signals, and similar Utah and Louisiana laws; and (b) California AB 1043 (Digital Age Assurance Act), under which developers must request an age signal from 1 January 2027. None of these statutes was opened for this draft. A store signal that a user is a minor is actual knowledge and must trigger 2.1. Decide whether to exclude teen parents; this draft does. Also confirm the expecting-parent and guardian wording.]**
+**[COUNSEL: 1.3.0: founder decision 2 Oct 2026 (PRD.md K-07, PRD-REQ-019): no use of any kind under 18, including local-only use; an 18+ entry gate runs before first use, with a stop screen for No. 1.2.0 adds a self-declared 18+ confirmation to the sign-in acceptance line (copy change owned by PRD A, A-REQ-034). It is a declaration, not verification. Confirm it is enough given (a) Texas SB 2420 (App Store Accountability Act), reported in force in 2026 with developer duties to use the store's age category and parental consent signals, and similar Utah and Louisiana laws; and (b) California AB 1043 (Digital Age Assurance Act), under which developers must request an age signal from 1 January 2027. None of these statutes was opened for this draft. A store signal that a user is a minor is actual knowledge and must trigger 2.1. Decide whether to exclude teen parents; this draft does. Also confirm the expecting-parent and guardian wording.]**
 
 ## 3. Your account and signing in
 
@@ -103,7 +103,7 @@ This summary is here to help. The full terms below are what count.
 - operate the Service for you and the people you choose to share with;
 - turn recordings into text and apply the mechanical fixes described in Section 11;
 - sync your letters between your devices and back up recordings if you turn backup on;
-- make book files and exports when you ask, and print files when you order a printed book;
+- make book files and exports when you ask (and, once printed books are offered, print files when you order one);
 - keep the Service secure, fix problems, and give you support when you ask for it;
 - meet our legal obligations.
 
@@ -122,7 +122,7 @@ This summary is here to help. The full terms below are what count.
 
 ## 7. The permission you give your family
 
-7.1 When you add a letter to a child's book, you give the people who can read that book in the Service a personal, non-commercial permission to read it, play its recording, export it, and include it in printed books for the family, for as long as it stays in the book.
+7.1 When you add a letter to a child's book, you give the people who can read that book in the Service a personal, non-commercial permission to read it, play its recording, export it, and, once printed books are offered, include it in printed books for the family, for as long as it stays in the book.
 
 7.2 Copies someone has already exported, downloaded, printed or played may stay on their devices or shelves after you take a letter out. We cannot reach those copies. Those people may keep copies they already made for personal family use, such as a printed book. Please keep this in mind before adding a letter to a shared book.
 
@@ -261,9 +261,11 @@ To avoid being charged, cancel at least 24 hours before a free trial or period e
 
 **[COUNSEL: Reminder windows in 14.6 are set to satisfy every state law checked at once (memo finding H1): annual renewal at about 30 days (California 15 to 45 before renewal; New York 15 to 45 before the cancellation deadline; Virginia and Utah 30 to 60 before renewal; Massachusetts 5 to 30 before the cancellation deadline), and the long-trial notice at 16 to 21 days (California 17602(b)(1) and (b)(2), New York 3 to 21 days before the cancellation deadline). PRD C (C-REQ-025, C-REQ-026, section 4.3) still sends 7 and 3 days; it must change before launch or these lines must be cut. Federal: ROSCA (15 U.S.C. 8403) applies; the FTC 2024 Negative Option Rule was vacated by the Eighth Circuit in July 2025, and the FTC issued an ANPRM in March 2026 with no later rule shown on 2 October 2026. 14.8 commits to opt-in consent for every price increase, which avoids New York's 14-day pro-rata refund route that we could not perform for Apple purchases. Confirm that the in-app Manage subscription link to the store's cancel screen meets California 17602(d), Colorado's one-step cancellation and the NYC rule. Plus scope (PRD C OQ3) must match 14.12. Lifetime: California AB 2426 license disclosure on the purchase screen.]**
 
-## 15. Printed books
+## 15. Printed books (not offered yet)
 
-15.1 We may offer printed books. Printed books are physical goods, so they are not bought through the App Store or Google Play. You pay by card or Apple Pay at a separate checkout.
+Printed books are not part of Early Letters today; the Service is digital only. This section will apply only once we offer them, and we will update these Terms and publish the Print Terms before then.
+
+15.1 We may offer printed books in the future. Printed books are physical goods, so they are not bought through the App Store or Google Play. You pay by card or Apple Pay at a separate checkout.
 
 15.2 Printed books are sold under separate **Print Terms** that you see and accept before you order. They cover price, shipping, taxes, delivery times, damaged or faulty books, cancellations and refunds. We will show you a full preview and all costs before you pay.
 
@@ -283,7 +285,7 @@ To avoid being charged, cancel at least 24 hours before a free trial or period e
 
 16.4 **Beta.** Early Letters is in beta. That means we are still building it: features may change, move, pause or sometimes break, and you may find bugs. Please export a copy of your letters from time to time (Section 12.3) and tell us about problems at {SUPPORT_EMAIL}. Being in beta does not change Sections 6, 11.1 to 11.3, 13 or 17.
 
-**[COUNSEL: Decide when the beta label ends (for example at version 1.0 public launch or a date) and update 16.4, the in-app label and the store listing together (see in-app-disclosures.md). A beta label supports, but does not replace, the disclaimers in Section 20; it is not a defense to the binding promises listed in 16.4.]**
+**[COUNSEL: Founder decision 2 Oct 2026 (PRD.md K-13): the beta ends only when the founder says so, with no date or metric trigger. When it ends, 16.4, the in-app label and the store listing change together in one release (see in-app-disclosures.md). A beta label supports, but does not replace, the disclaimers in Section 20; it is not a defense to the binding promises listed in 16.4.]**
 
 **[COUNSEL: 16.3 pro-rated refund for Apple purchases depends on Apple; we cannot issue Apple refunds directly. Decide whether to commit to a direct refund outside the store in that case.]**
 
@@ -498,12 +500,13 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 11. **Product alignment to fix in PRD C** (owner: PRD agent): (a) annual renewal notice about 30 days before renewal, plus 7 days; (b) trials over one month: first notice 16 to 21 days before the trial ends; (c) every trial: last notice at least 3 days before the last day to cancel (trial end minus 24 hours), so D-4, not D-3; (d) price-change notice 7 to 30 days before, with opt-in store consent for every increase; (e) log proof of consent for each purchase; (f) trial length comes from the store offer, because the section 8 experiment varies it; (g) monthly renewal receipt email if counsel says Massachusetts applies.
 12. **Shutdown notice period.** Resolved in 1.1.0: 90 days everywhere. Privacy Policy section 18 and DELETION_AND_EXPORT_SPEC.md were changed from 60 to 90 days; their owners should confirm.
 13. **Entity and insurance.** Form the LLC before launch and operate only through it; obtain tech E&O plus cyber insurance (see the note at the top).
-14. **Beta end date** (Section 16.4) and liability cap amount (Section 21.1).
+14. ~~**Beta end date** (Section 16.4)~~ (founder decided 2 Oct 2026: when the founder says so) and liability cap amount (Section 21.1).
 
 ## Changelog
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.3.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2 (founder decisions of 2 Oct). Adults only covers every use, including pre-account use on the phone; age asked at first open (1.5, 2.1; PRD K-07). Printed books marked not offered yet; print clauses apply only once print launches (1.3, 6.1, 7.1, 15; PRD K-32). Beta end note updated (16.4 counsel note; PRD K-13). Pre-publication draft, no users bound; 2.1 would be major if 1.2.0 had been published (POLICY_VERSIONING 2.1 item 9, counsel to classify). |
 | 1.2.0 | 2026-10-02 | draft-for-counsel | Consumer-law review (docs/legal/memos/lawyer-1.md). 18+ confirmation at acceptance and under-18 handling (1.5, 2.1); more-than-one-voice rule (5.4); family may keep copies already made (7.2); 11.5 and 11.6 merged into one light mistakes line; trial terms follow what the app shows (14.2); consent records (14.3); reminder windows set to the multi-state overlap (14.6); opt-in for every price increase (14.8); no obstacles to cancelling (14.10); CLRA named in 21.2; Apple license scope matched to Apple's minimum terms (26.1(b)); sources L10 to L14. Pre-publication draft, no users bound; if published over 1.1.0 this would be major under POLICY_VERSIONING 2.1 items 6 and 7. |
 | 1.1.0 | 2026-10-02 | draft-for-counsel | Founder request: added beta section (16.4) and summary line; added "It can make mistakes" (11.6); tightened disclaimers (20.2, 20.3); liability floor lowered from $100 to $50 and carve-outs widened (21); founder note on entity and insurance; shutdown notice aligned at 90 days across legal docs. |
 | 1.0.0 | 2026-10-02 | draft-for-counsel | First draft, prepared by Claude for counsel review. Based on PRD Sections A, B and C (1 to 2 Oct 2026) and the pricing decision of 1 Oct 2026. |

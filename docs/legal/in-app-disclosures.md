@@ -1,18 +1,18 @@
 ---
 title: Early Letters in-app and store disclosures
-version: 1.1.0
+version: 1.2.0
 status: draft-for-counsel
 effective_date: TBD
 last_updated: 2026-10-02
 owner: founder
-related: terms-of-service.md (1.2.0), subscription-terms.md (1.1.0), packages/content/VOICE.md, docs/legal/memos/lawyer-1.md
+related: terms-of-service.md (1.3.0), subscription-terms.md (1.2.0), packages/content/VOICE.md, docs/legal/memos/lawyer-1.md
 ---
 
 > **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice. Notes for counsel appear as **[COUNSEL: ...]**.
 
 # In-app and store disclosures
 
-The exact short strings for the beta label, the "it can make mistakes" note, and the paywall legal links, with where each one appears. Every string is under 140 characters as stored (with prices filled in, they stay under 140), uses straight quotes, and has no em dashes, en dashes, ellipsis characters or emoji. Strings move into `packages/content` (strings.en.ts and store.en.ts) so the content rule tests run on them. `{child}`, `{price}`, `{period}`, `{trialLength}`, `{cancelByDate}`, `{renewDate}` and `{date}` are placeholders filled at runtime. Prices and trial lengths always come from the store offer, never from code, because the trial experiment (PRD C section 8) varies the length. `{cancelByDate}` is the trial or period end minus 24 hours, shown as a calendar date.
+The exact short strings for the beta label, the "it can make mistakes" note, and the paywall legal links, with where each one appears. Every string is under 140 characters as stored (with prices filled in, they stay under 140), except `store.description.subscriptionLine`, a paragraph of the store description (145), uses straight quotes, and has no em dashes, en dashes, ellipsis characters or emoji. Strings move into `packages/content` (strings.en.ts and store.en.ts) so the content rule tests run on them. `{child}`, `{price}`, `{period}`, `{trialLength}`, `{cancelByDate}`, `{renewDate}` and `{date}` are placeholders filled at runtime. Prices and trial lengths always come from the store offer, never from code, because the trial experiment (PRD C section 8) varies the length. `{cancelByDate}` is the trial or period end minus 24 hours, shown as a calendar date.
 
 **Voice note.** The brief's example used "We tidy small slips". VOICE.md bans words that suggest software "tidied" a letter, so these strings say "fix small slips" instead, which matches story 2 ("We fix slips of the tongue.").
 
@@ -24,7 +24,7 @@ The exact short strings for the beta label, the "it can make mistakes" note, and
 | `about.beta.body` | Same screen, below the label | Early Letters is in beta. Some things may change or break. Export a copy of your letters now and then. | 102 |
 | `about.beta.exportCta` | Button under `about.beta.body` (opens Export everything) | Export a copy | 13 |
 
-Rules: show the label quietly (caption style, no badge colour). Never show it on Tonight, Listening, Review or the Book. Remove all beta strings in the same release as Terms Section 16.4.
+Rules: show the label quietly (caption style, no badge colour). Never show it on Tonight, Listening, Review or the Book. Remove all beta strings in the same release as Terms Section 16.4. The beta ends only when the founder says so (PRD.md K-13); there is no date or metric trigger.
 
 ## 2. "It can make mistakes" note
 
@@ -75,7 +75,7 @@ Rule: the acceptance stores the Terms version and time (POLICY_VERSIONING sectio
 | Key | Where it appears | String | Chars |
 |---|---|---|---|
 | `store.description.betaLine` | App Store and Google Play description, last paragraph | Early Letters is in beta. We are still building, and some things may change. Your letters are always yours to export. | 117 |
-| `store.description.subscriptionLine` | App Store and Google Play description, after the feature list | Writing, reading, listening and export are free, always. Plus is optional and renews automatically until you cancel. | 116 |
+| `store.description.subscriptionLine` | App Store and Google Play description, after the feature list | Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional and renews automatically until you cancel. | 145 |
 | `store.description.legalLinks` | Last lines of the description | Terms of Use: {TERMS_URL} Privacy Policy: {PRIVACY_URL} | varies |
 | `store.promotionalText.beta` | App Store promotional text (optional, changeable without review) | Now in beta. Tell us what you think at {SUPPORT_EMAIL}. | 55 |
 
@@ -95,5 +95,6 @@ Rules: `packages/content/src/store.en.ts` does not yet end its description with 
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.2.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2: `subscriptionLine` uses "playing your recordings" and matches `store.en.ts` (K-11); beta ends only on the founder's decision (K-13). Patch-level wording; counsel to confirm. |
 | 1.1.0 | 2026-10-02 | draft-for-counsel | Consumer-law review: paywall strings take trial length and cancel-by date from the store offer; clearer renewal wording; consent line now names automatic renewal; acknowledgment string; prominence, one-tap cancel and consent-log rules; 18+ acceptance strings (3a); store legal-links gap flagged. Beta and mistakes strings unchanged. |
 | 1.0.0 | 2026-10-02 | draft-for-counsel | First draft, prepared by Claude for counsel review, at the founder's request. |

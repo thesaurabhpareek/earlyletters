@@ -3,7 +3,7 @@ import { MicrophoneIcon, PencilSimpleIcon } from 'phosphor-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, LinearTransition } from 'react-native-reanimated';
-import { ageLabel, ageOn, ENGINE_VERSION, renderTemplate, selectPrompt } from '@scribe/core';
+import { ageOn, ENGINE_VERSION, renderTemplate, selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { copy, fill, greetingKey, pendingCopy } from '@/lib/copy';
+import { ageText, dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { getActiveChildId, getFamily, listDrafts, listEntries, saveEntry, subscribe, todayISO, uuidv7, type Draft, type Family } from '@/lib/store';
 
@@ -69,7 +70,8 @@ export default function Tonight() {
   if (family === null) return <Redirect href="/onboarding" />;
 
   const child = family.childName;
-  const dateline = age && age.days >= 0 ? `${child.toUpperCase()} · ${ageLabel(age).toUpperCase()}` : WEEKDAYS[new Date().getDay()].toUpperCase();
+  const ageNow = ageText({ birthday: family.childBirthday }, today);
+  const dateline = (ageNow ? `${child} · ${ageNow}` : dayDate(today)).toUpperCase();
 
   const keepNotMuch = () => {
     const weekday = WEEKDAYS[new Date().getDay()];

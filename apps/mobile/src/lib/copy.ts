@@ -32,11 +32,9 @@ export function greetingKey(hour = new Date().getHours()): keyof typeof en.tonig
 export const pendingCopy = {
   onboarding: {
     dueDateLabel: 'Due date', // onboarding.child.dueDateLabel (also proposed by Mobile B)
-    adultTitle: 'Are you 18 or older?', // onboarding.age.title (PRD.md K-07: neutral, nothing preselected)
-    adultBody: 'We ask everyone the same question.', // onboarding.age.body
-    adultYes: 'Yes', // onboarding.age.yesButton
-    adultNo: 'No', // onboarding.age.noButton
-    adultUnder: '{app} is made for adults. Anything you write stays on this phone.', // onboarding.age.under18 ({app} from packages/brand)
+    removeChild: 'Remove {child}', // onboarding.child.removeA11y (twins: remove an extra name row)
+    signsAsTitleMany: 'What do {child} call you?', // onboarding.signsAs.titleMany (twins: plural verb)
+    andJoin: '{a} and {b}', // common.andJoin (names list: "Asha and Dev")
     mishearTitle: 'We can mishear', // onboarding.promise.mishearTitle (body reuses settings.help.mistakes)
   },
   listen: {
@@ -60,6 +58,19 @@ export const pendingCopy = {
   write: {
     label: 'Your letter', // write.label (VoiceOver; visually hidden)
     savedOnPhone: 'Saved on this phone', // write.autosaved (COMPONENTS 2.8)
+  },
+  book: {
+    letters: '{count} letters', // book.chapterLetters (replaces chapterSubtitle when all are letters)
+    letterOne: '1 letter', // book.chapterSubtitleOne (exists)
+    notes: '{count} notes', // book.chapterNotes
+    noteOne: '1 note', // book.chapterNoteOne
+    lettersAndNotes: '{letters} and {notes}', // book.chapterMixed
+  },
+  readTogether: {
+    plusTitle: 'Read together is part of Plus', // readTogether.plusGate.title
+    plusBody: 'You have read together {count} times for free. Plus keeps it open whenever you like.', // readTogether.plusGate.body
+    keepNote: 'Every letter stays open to read and hear, with or without Plus.', // readTogether.plusGate.keepNote
+    emptyBody: 'Letters you add to the book will be here to read together.', // readTogether.empty
   },
   tonight: {
     waitingTitle: 'A letter is waiting to be read back.', // tonight.draftWaiting.title

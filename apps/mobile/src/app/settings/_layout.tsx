@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { tokens } from '@scribe/design-tokens';
 import { copy } from '@/lib/copy';
 
@@ -14,6 +15,8 @@ export default function SettingsLayout() {
         headerStyle: { backgroundColor: c.bg },
         headerTitleStyle: { color: c.text },
         headerShadowVisible: false,
+        // iOS centres the title. The web preview's header starts at 16; nudge it to the 20pt content margin.
+        headerTitle: Platform.OS === 'web' ? ({ children }) => <Text className="ml-1 text-lg font-medium text-foreground">{children}</Text> : undefined,
         contentStyle: { backgroundColor: c.bg },
       }}>
       <Stack.Screen name="index" options={{ title: copy.settings.title }} />

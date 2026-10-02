@@ -14,6 +14,8 @@
  *                or a hosted provider (ADR 0003). Key, if needed, from EDIT_MODEL_API_KEY.
  * --model        model name to send.
  * --level        clean (default) or verbatim.
+ * --save-replies FILE  keep the model's raw replies (JSON, keyed by asr/file) to re-score later.
+ * --replay FILE  re-score saved replies instead of calling a model: no endpoint, no key.
  *
  * Output: results/edits.md and results/edits.csv. Transcripts are sent only to
  * the endpoint you name; use a local server to keep everything on your Mac.
@@ -21,7 +23,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { DictionaryTerm, EditLevel, ModelCall } from '@scribe/core';
-import { compareTranscript, summarize, type EditRow, type Transcript } from './edits';
+import { compareTranscript, recordingModel, replayModel, summarize, type EditRow, type Transcript } from './edits';
 
 const ROOT = resolve(__dirname);
 const args = process.argv.slice(2);
@@ -36,6 +38,8 @@ const resultsDir = flag('results') ?? join(ROOT, 'results');
 const modelUrl = flag('model-url');
 const modelName = flag('model') ?? 'default';
 const level = (flag('level') ?? 'clean') as EditLevel;
+const saveRepliesPath = flag('save-replies');
+const replayPath = flag('replay');
 
 const transcripts: Transcript[] = JSON.parse(readFileSync(transcriptsPath, 'utf8'));
 const dictionary: DictionaryTerm[] = JSON.parse(readFileSync(configPath, 'utf8')).dictionary ?? [];
@@ -67,9 +71,16 @@ function openAICompatible(baseUrl: string, model: string): ModelCall {
 }
 
 async function main() {
-  const model = modelUrl ? openAICompatible(modelUrl, modelName) : null;
+  let currentId = '';
+  const idOf = (t: Transcript) => `${t.asr ?? ''}/${t.file}`;
+  const saved: Record<string, string> = {};
+  let model: ModelCall | null = null;
+  if (replayPath) model = replayModel(JSON.parse(readFileSync(replayPath, 'utf8')), () => currentId);
+  else if (modelUrl) model = openAICompatible(modelUrl, modelName);
+  if (model && saveRepliesPath && !replayPath) model = recordingModel(model, () => currentId, saved);
   const rows: EditRow[] = [];
   for (const t of transcripts) {
+    currentId = idOf(t);
     const started = Date.now();
     const r = await compareTranscript(t, dictionary, model, { level, modelId: modelName });
     rows.push(...r);
@@ -92,13 +103,13 @@ async function main() {
     '# Edit pass comparison: rules only vs rules + model',
     '',
     `Generated ${new Date().toISOString()} from ${transcripts.length} transcripts (${transcriptsPath.split('/').pop()}).`,
-    `Model: ${model ? `${modelName} at ${modelUrl}` : 'none (pass --model-url to compare)'}. Level: ${level}.`,
+    `Model: ${replayPath ? `saved replies from ${replayPath.split('/').pop()}` : model ? `${modelName} at ${modelUrl}` : 'none (pass --model-url to compare)'}. Level: ${level}.`,
     '',
-    '| Variant | Transcripts | Words changed (avg) | Words changed (max) | Edits applied | Verifier rejections | Malformed model items | Model failures | Word error after cleaning | Output differs from rules |',
-    '|---|---|---|---|---|---|---|---|---|---|',
+    '| Variant | Transcripts | Words changed (avg) | Words changed (max) | Edits applied | Repeats offered | Verifier rejections | Malformed model items | Model failures | Word error after cleaning | Output differs from rules |',
+    '|---|---|---|---|---|---|---|---|---|---|---|',
     ...summarize(rows).map(
       (s) =>
-        `| ${s.variant} | ${s.transcripts} | ${pct(s.avgChangedWordRatio)} | ${pct(s.maxChangedWordRatio)} | ${s.totalApplied} | ${s.totalRejected} | ${s.totalInvalid} | ${s.errors} | ${pct(s.avgWerClean)} | ${s.differsFromRules ?? '-'} |`,
+        `| ${s.variant} | ${s.transcripts} | ${pct(s.avgChangedWordRatio)} | ${pct(s.maxChangedWordRatio)} | ${s.totalApplied} | ${s.totalSuggested} | ${s.totalRejected} | ${s.totalInvalid} | ${s.errors} | ${pct(s.avgWerClean)} | ${s.differsFromRules ?? '-'} |`,
     ),
     '',
     'How to read this: "words changed" counts words removed or replaced (case and punctuation ignored); the verifier caps model changes at 15% of words per entry.',
@@ -115,7 +126,7 @@ async function main() {
     for (const r of mine) {
       md.push(
         `- **${r.variant}:** ${r.clean || '(nothing)'}`,
-        `  - words changed ${pct(r.changedWordRatio)}; applied: ${fmt(r.applied)}; rejected: ${fmt(r.rejections)}${r.invalid ? `; malformed ${r.invalid}` : ''}${r.error ? `; failure ${r.error}` : ''}`,
+        `  - words changed ${pct(r.changedWordRatio)}; applied: ${fmt(r.applied)}${r.suggested ? `; repeats offered ${r.suggested}` : ''}; rejected: ${fmt(r.rejections)}${r.invalid ? `; malformed ${r.invalid}` : ''}${r.error ? `; failure ${r.error}` : ''}`,
       );
     }
     md.push('');
@@ -135,6 +146,10 @@ async function main() {
       ),
     ].join('\n'),
   );
+  if (saveRepliesPath && !replayPath) {
+    writeFileSync(saveRepliesPath, JSON.stringify(saved, null, 2));
+    console.log(`Saved ${Object.keys(saved).length} model replies to ${saveRepliesPath} (contains transcript text; keep it out of git).`);
+  }
   console.log(`\nDone. Open ${join(resultsDir, 'edits.md')}`);
 }
 

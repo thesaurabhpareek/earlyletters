@@ -2,14 +2,11 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView } from 'react-native';
 import { copy, fill } from '@/lib/copy';
+import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { getChild, hideChild, listChildren, subscribe, updateChild } from '@/lib/store';
 import { Row, Section, ToggleRow } from '@/components/settings/settings-ui';
 
-const formatDate = (iso: string) => {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-};
 
 /** One child's book settings (PRD B F2): each child is managed separately. */
 export default function ChildSettings() {
@@ -43,7 +40,7 @@ export default function ChildSettings() {
   };
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-4 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: fill(s.title, { child: name }) }} />
 
       <Section title={s.detailsLabel}>

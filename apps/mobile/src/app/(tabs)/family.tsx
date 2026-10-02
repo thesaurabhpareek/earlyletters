@@ -68,7 +68,7 @@ export default function Family() {
           </Text>
           <Text className="text-base leading-6 text-foreground">{fill(copy.family.invite.body, { child })}</Text>
           <Button disabled className="self-start" accessibilityHint={f.inviteNeedsSignIn}>
-            <UserPlusIcon size={18} color={c.onAccent} />
+            <UserPlusIcon size={18} color={c.textMuted} />
             <Text>{copy.onboarding.invite.addButton}</Text>
           </Button>
           <Text className="text-sm leading-5 text-muted-foreground">{f.inviteNeedsSignIn}</Text>

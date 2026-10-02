@@ -1,6 +1,6 @@
 ---
 title: Early Letters Privacy Policy
-version: 1.1.0
+version: 1.2.0
 status: draft-for-counsel
 effective_date: TBD
 last_updated: 2026-10-02
@@ -40,7 +40,7 @@ This policy covers:
 
 It does not cover Apple, Google or other companies you deal with directly, such as when you buy through the App Store or sign in with Apple or Google. Their own privacy policies apply to what they collect.
 
-Early Letters is for adults. You must be 18 or older to create an account or write in a book, and we ask you to confirm this when you create an account or send a letter from the web page. A book is *about* a child, but the child does not use Early Letters. You can keep a book for more than one child; each child has their own book. See section 12.
+Early Letters is for adults. You must be 18 or older to use it at all, including on your phone without an account. The app asks before you can use it, and if the answer is no it stops and keeps nothing. We ask you to confirm your age again when you create an account or send a letter from the web page. A book is *about* a child, but the child does not use Early Letters. You can keep a book for more than one child; each child has their own book. See section 12.
 
 Health information has its own short policy, our Consumer Health Data Privacy Policy at {HEALTH_POLICY_URL}. It sits alongside this one.
 
@@ -198,7 +198,7 @@ No system is perfectly secure. If a breach affects your information, we will tel
 
 ## 12. Children's privacy
 
-**Who uses Early Letters.** Early Letters is made for adults: parents and close family. Children do not sign in, type, or use the app. We do not offer child accounts, and our App Store listing and website speak to parents. Features that would ask a child to speak or type into the app are not available. [CN-2]
+**Who uses Early Letters.** Early Letters is made for adults: parents and close family. No one under 18 may use it in any way: the app asks your age before first use, and an answer under 18 stops the app before anything is created or kept, on the phone or with us. Children do not sign in, type, or use the app. We do not offer child accounts, and our App Store listing and website speak to parents. Features that would ask a child to speak or type into the app are not available. [CN-2]
 
 **What we hold about a child.** Because a book is about a child, it holds what the adults who love that child put into it: the child's name, birthday or due date, photos, and letters that mention the child. A recording may include the child's voice in the background. All of this is provided by a parent or a family member a parent invited. We use it only to make that child's book. We never use it for marketing, never sell or share it, and never build a profile of the child.
 
@@ -332,7 +332,7 @@ Each version has a number and an effective date. Earlier versions are kept at {P
 
 **CN-9. Transparency reporting.** We committed to publishing request counts. Confirm whether to keep this commitment for a small company.
 
-**CN-10. Safety events.** Decided (PRD K-06, PRD-REQ-006, LEGAL-REQ-015): tiers stay on the device and a new migration drops `public.safety_events`. That migration has not shipped: the core migration still creates the table, and the draft `migrations/drafts/20261002000000_data_governance.sql` still purges it after 12 months, which contradicts the drop. **Do not publish sections 3, 5, 10 and 13 as written until the drop migration ships.**
+**CN-10. Safety events.** Decided (PRD K-06, PRD-REQ-006, LEGAL-REQ-015): tiers stay on the device and a new migration drops `public.safety_events`. That migration has not shipped: the core migration still creates the table, and the drop is in `supabase/migrations/20261002020000_data_governance.sql` (promoted from the draft on 2 Oct 2026; it drops the table instead of purging it). That migration is written but not yet applied to the live project (`supabase/APPLY.md`). **Do not publish sections 3, 5, 10 and 13 as written until it is applied.**
 
 **CN-11. Subprocessor notice.** 30 days' notice before adding a provider that handles content. Confirm this matches what our vendors give us (PostHog 14 days, Sentry 30 days, Vercel unspecified "from time to time" with a 5-day objection window).
 
@@ -376,5 +376,6 @@ Unverified in this pass: CalOPPA Do Not Track requirement; CTDPA 15-day revocati
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.0 | 2026-10-02 | Product alignment with PRD.md 1.2 (founder decision 2 Oct, K-07): no use of any kind under 18, including local use; age asked before first use (intro, section 12). CN-10 points at the promoted governance migration. Pre-publication draft, no users bound; minor (clarifies a narrower audience, adds protection). |
 | 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`). Short version: "by default" on transcription, recovery-key qualifier, no-voiceprint line, deletion line narrowed to "your book" and "your own letters" (PRD K-29). Sections 3 and 5: 18+ confirmation and age signal, per-child profiles, Plus per account, analytics child-count range. Section 7: author-only transcripts (K-09), per-child family lists, how family hear recordings, Standard-mode web playback unlock. Section 10: published deletion clock (31 / 38 / 45 days, K-23), decided invite expiry (K-18), activity records, account-deletion effects on shared and sole-parent books (K-22), analytics deletion limits. Section 11: web uploads no longer described as unreadable to us. Section 12: parent-control sentence corrected (K-10), child-input features unavailable, under-18 closure. Section 13: biometric statement, consent placement and withdrawal in Settings. Section 14: export scope, web deletion page, request extension, provider list on request. Section 15: retention per category, letters as communications, biometric sentence corrected. Section 16: biometric and CHD pointers. Health notice renamed Consumer Health Data Privacy Policy. Pre-publication draft, no users bound; if 1.0.0 had been published this would be major under POLICY_VERSIONING 2.1 item 4 (narrower deletion statement). |
 | 1.0.0 | 2026-10-02 | First draft for counsel review. |

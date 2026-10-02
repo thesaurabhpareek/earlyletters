@@ -1,6 +1,6 @@
 # Early Letters: Launch PRD (integrated)
 
-Owner: lead PM. Version 1.1, 2 Oct 2026. Status: integrated draft for founder sign-off.
+Owner: lead PM. Version 1.2, 2 Oct 2026. Status: integrated draft; founder decisions of 2 Oct applied (section 4); remaining founder questions in section 9.
 Codename `scribe`. Public name from `packages/brand` only.
 
 This is the single launch PRD. It does not repeat the section drafts; it links them, indexes every requirement, and records how every contradiction between them was resolved. Where this file and a section draft disagree, **this file wins** until the founder changes it. Where the legal drafts and this file disagree on a legal duty, the legal drafts win and the conflict goes in section 5.
@@ -19,13 +19,15 @@ Other inputs (all read for this integration): `docs/legal/*` (Terms 1.1.0, Subsc
 
 Early Letters is a baby memory book families fill by talking. A parent speaks for a minute, the phone transcribes it, fixes only mechanical slips (never meaning), keeps the voice, and files the letter by the child's month of age. Co-parents and grandparents write too; parents choose what goes in the book.
 
-**Launch shape (founder decisions, 1 and 2 Oct 2026):**
+**Launch shape (founder decisions, 1 and 2 Oct 2026; second set of 2 Oct applied in 1.2):**
 - **US App Store first.** iOS only at launch; every pattern must port to Android unchanged (one Expo codebase). US storefront only (LEGAL-REQ-058); the web contribution page stays reachable worldwide for invited family.
 - **Free forever core:** write, read, play back recordings, export, family authors, and every backup already made (stays stored and downloadable after a lapse).
-- **Multiple children:** each child has their own profile and book, managed separately (own settings, own family list). The first child's book is free; **additional children are part of Plus** (K-12, K-28).
+- **Multiple children:** each child has their own profile and book, managed separately (own settings, own family list). The first book you start is free; **additional children are part of Plus** (K-12, K-28). Every child added together in first run (twins or more) stays free, and a book you joined as a co-parent does not count as your free book (PRD-REQ-015).
 - **Full product analytics**, opt-in per Apple 5.1.1(ii) and content-free (K-01).
-- **Plus:** $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Lifetime at about $99.99 later (P2). Read together is free for 3 sessions, then Plus (provisional).
-- **Beta product** with light, standard "it can make mistakes" disclosures (section 5, K-13 and K-14).
+- **Plus:** $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Lifetime at about $99.99 later (P2). Read together is free for 3 sessions, then Plus (decided; the count is a remote-config value, PRD-REQ-020).
+- **Beta product** with light, standard "it can make mistakes" disclosures (section 5, K-13 and K-14). The beta ends only when the founder says so; no date or metric ends it, and the label and disclosures stay until then.
+- **Adults only (18+).** An 18+ entry gate comes before first run; under 18 sees a stop screen and cannot use the app at all, not even on the phone alone (K-07, PRD-REQ-019).
+- **Digital only.** v1 has export and the PDF book; printed books are a future launch and are not promised in product, store or legal copy (K-32).
 - **Data classification:** L1 Public, L2 Internal, L3 Confidential (PII), L4 Restricted (encryption required). Section 7.10.
 
 **What this integration changed** (full reasons in section 5):
@@ -35,15 +37,16 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 4. California ARL notice schedule: annual renewal at **30 and 7 days**; annual-plan trial at **18 and 3 days**; monthly trial at **7 and 3 days**.
 5. **90-day** shutdown notice everywhere.
 6. Safety tiers stay **on the device**; the server `safety_events` table is dropped.
-7. **18+ age gate** at account creation and on the web page, with Apple Declared Age Range for Texas.
+7. **18+ entry gate** before first run (1.2: moved from account creation; no local-only mode for under-18) and on the web page, with Apple Declared Age Range for Texas.
 8. **Anonymous sessions on the web contribution page only**, never in the app.
 9. Raw transcripts and machine edits are **author-only**.
 10. Nobody deletes another person's words; the Privacy Policy line that says parents can "delete everything in their child's book" must change.
-11. Read together after 3 tries is **Plus, provisionally**. Additional children's books are **Plus by founder decision**; Plus is held per account and covers every book its holder parents, because Apple allows only one active subscription per group (K-12, K-28). Twins added together stay free (provisional).
+11. Read together after 3 sessions is **Plus** (decided 2 Oct, remote config). Additional children's books are **Plus by founder decision**; Plus is held per account and covers every book its holder parents, because Apple allows only one active subscription per group (K-12, K-28). Children added together in first run stay free and joined books do not count (decided 2 Oct, PRD-REQ-015).
 12. Child-directed store copy and the "kids" keyword are removed; child-voice features sit behind a counsel flag.
 13. The beta label lives in Settings > Help and Legal > About and the store description only.
 14. Product analytics are a full, typed, content-free catalogue owned by the analytics engineer, sent only after opt-in; business totals come from server aggregates (K-01, PRD-REQ-016 to PRD-REQ-018).
 15. Revisions to B and C that version 1.0 listed as done had not been written; they are applied in 1.1 (K-30).
+16. (1.2) Founder decisions of 2 Oct applied: twins, joined books, Read together, beta end, 18+ only, digital only, analytics volume (section 4). Lawyer 2's nine remaining privacy claims fixed in `packages/content` (K-21, section 8).
 
 ---
 
@@ -53,12 +56,12 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 | Area | What ships | Appendix |
 |---|---|---|
 | Entry | Branded splash, 4-story intro (remote switch to 3 or none), first letter before account, Keep the book sheet, Apple/Google/email sign-in, magic link plus code, invites by link or code, offline entry | A |
-| Consent | Terms acceptance record, 18+ gate, sensitive-data consent, analytics opt-in, AI-processing consent (server ASR, opt-in), web contributor notice | A, legal |
+| Consent | Terms acceptance record, 18+ entry gate before first run (stop screen, no local-only mode), sensitive-data consent, analytics opt-in, AI-processing consent (server ASR, opt-in), web contributor notice | A, legal |
 | First run | Child name plus birthday or due date, signature, languages and Hindi script, goals, dictionary from names | B |
 | Capture | Speak or type, on-device transcription, faithful edits with diff, one-time "it can make mistakes" card, save offline | ARCH, core, legal |
 | Family | Co-parent and Family roles, invites, web contribution page (no install), approvals, leave and remove with letter retention, visibility model, private by default | B |
-| Book | Month chapters, Before You, Read together (3 free tries; Plus after, provisional), quiet milestones, birthdays and month-age notes | B, C |
-| Children | One profile and book per child; child switcher; per-child settings; per-child family list; second and later child's book through Plus (twins free, provisional) | B, C, PRD |
+| Book | Month chapters, Before You, Read together (3 free sessions, then Plus; remote config), quiet milestones, birthdays and month-age notes; PDF book in export (no print) | B, C |
+| Children | One profile and book per child; child switcher; per-child settings; per-child family list; second and later child's book through Plus (children added together in first run free; joined books do not count) | B, C, PRD |
 | Analytics | Opt-in consent sheet, typed content-free event catalogue, server-side business aggregates, withdrawal in Settings > Privacy | C, analytics |
 | Habit | Primed notification permission after the first letter, a few evenings a week default, smart quiet window, back-off (P1) | C |
 | Plus | Monthly and annual products, per-book entitlement, paywall disclosures, notices, grace, lapse, restore, refunds | C |
@@ -67,13 +70,14 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 | Store | US-only listing, adult-facing metadata, privacy labels and manifest generated from the data map | legal |
 
 ### 2.2 Out of scope for launch
-Android build (specified, not shipped); lifetime purchase; printed books and print credit; web gift codes; gift a year of Plus (P1); sealed letters (P1); sibling letters and any child-input feature (flagged, counsel); Hindi app UI (P2); passkeys, SMS, passwords; child accounts; EU, UK, India, Canada storefronts; server-side LLM edit pass (not on at launch per Privacy Policy section 4).
+Android build (specified, not shipped); lifetime purchase; printed books and print credit (future launch, v1 is digital only, K-32); web gift codes; gift a year of Plus (P1); sealed letters (P1); sibling letters and any child-input feature (flagged, counsel); Hindi app UI (P2); passkeys, SMS, passwords; child accounts; EU, UK, India, Canada storefronts; server-side LLM edit pass (not on at launch per Privacy Policy section 4).
 
 ### 2.3 Launch gates
 1. Every item in the launch acceptance checklist (section 6) passes.
 2. Every P0 LEGAL-REQ and DATA-REQ passes (they are launch blockers by their own terms).
 3. Counsel has reviewed the Terms, Privacy Policy, Subscription terms, in-app disclosures and the claims registry.
-4. `packages/brand` holds the real company name and domain (A Q3); universal links, SMTP and the Apple Services ID depend on it.
+4. `packages/brand` holds the real company name and domain (A Q3); universal links, SMTP and the Apple Services ID depend on it. Still a founder choice (section 9 Q5).
+5. The beta label stays until the founder ends the beta; ending it is a release that changes Terms 16.4, About and the store line together (K-13).
 
 ---
 
@@ -95,9 +99,9 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | A-REQ-009 | P1 | Stories | Silent intro | |
 | A-REQ-010 | P1 | Stories | Stories show once | |
 | A-REQ-011 | P1 | Stories | Remote variant switch | |
-| A-REQ-012 | P0 | Account timing | Letter first, no sign-in required | |
+| A-REQ-012 | P0 | Account timing | Letter first, no sign-in required (18+ entry gate first) | K-07 |
 | A-REQ-013 | P0 | Account timing | Keep the book sheet after the first letter | K-02 |
-| A-REQ-014 | P0 | Account timing | Later works locally | K-11 |
+| A-REQ-014 | P0 | Account timing | Later works locally (adults only) | K-11, K-07 |
 | A-REQ-015 | P0 | Account timing | Re-ownership of local data in one transaction | |
 | A-REQ-016 | P0 | Methods | Sign in with Apple on iOS | |
 | A-REQ-017 | P0 | Methods | Google sign-in | |
@@ -188,7 +192,7 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | C-REQ-010 | P0 | Celebrate | Quiet milestones | |
 | C-REQ-011 | P0 | Celebrate | Birthdays and month-ages | |
 | C-REQ-012 | P0 | Celebrate | Pause celebrations per book | |
-| C-REQ-013 | P1 | Celebrate | Year One | |
+| C-REQ-013 | P1 | Celebrate | Year One (no print line) | K-32 |
 | C-REQ-014 | P1 | Celebrate | On this day (excludes local safety tiers) | K-06 |
 | C-REQ-015 | P0 | Celebrate | Never celebrated list | |
 | C-REQ-016 | P0 | Settings | Settings IA, 2 taps max (adds Privacy consents, Legal list, About) | K-13, K-17 |
@@ -208,7 +212,7 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | C-REQ-030 | P1 | Plus | Gift a year of Plus | |
 | C-REQ-031 | P1 | Plus | Dormant-payer email | |
 | C-REQ-032 | P2 | Plus | Lifetime, about $99.99 | |
-| C-REQ-033 | P2 | Plus | Web gift code; printed books outside IAP | |
+| C-REQ-033 | P2 | Plus | Web gift code; printed books outside IAP (future launch) | K-32 |
 | C-REQ-034 | P0 | Analytics | Funnel events, content-free, consent-gated | K-01 |
 | C-NFR-001 | P0 | Reliability | Notification delivery and quiet window | |
 | C-NFR-002 | P0 | Reliability | Purchase reliability | |
@@ -224,7 +228,7 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | ID | P | Area | Requirement | Source |
 |---|---|---|---|---|
 | PRD-REQ-001 | P0 | Consent | **One ask per session.** After the first letter, at most one permission or consent sheet per app session, in this order: Keep the book (A F3), reminder prime (C F1), analytics consent (LEGAL-REQ-003). Never stacked; never during recording, review or export. | K-01, K-02 |
-| PRD-REQ-002 | P0 | Consent | **Account creation sequence:** age question, then provider sign-in with the Terms notice, then the sensitive-data consent, then sync. Each step records its own `policy_acceptances` row. | K-07, K-15 |
+| PRD-REQ-002 | P0 | Consent | **Account creation sequence:** provider sign-in with the Terms notice and 18+ confirmation line (the entry gate, PRD-REQ-019, was already answered Yes; `age_attested` goes in the `terms` acceptance context), then the sensitive-data consent (`sensitiveConsent.*`), then sync. Each step records its own `policy_acceptances` row. | K-07, K-15 |
 | PRD-REQ-003 | P0 | Plus | **Notice schedule** in section 5, K-04, driven by RevenueCat webhooks with idempotency keys; email and in-app always, push only on the 3-day trial notice. | K-04 |
 | PRD-REQ-004 | P0 | Privacy | **Author-only working material.** `raw_transcript`, `machine_edits` and `stt_meta` are readable only by the author, through a security-barrier view for everyone else. | K-09 |
 | PRD-REQ-005 | P0 | Children | **Child-input flag.** `together` prompts, "Write one together" and sibling letters are behind a `child-input` flag that is off in production until counsel signs off (LEGAL-REQ-059). | K-19 |
@@ -237,9 +241,11 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | PRD-REQ-012 | P0 | Children | **Child switcher.** "For {child}" atop Tonight and Book; one tap opens "Whose book?" listing active books, Add a child, Hidden books. "To {child}" always visible while recording and in Review, changeable before save. Last opened child remembered per device. Single child: no chevron. | K-12 |
 | PRD-REQ-013 | P0 | Children | **Per-child settings.** Settings > Children > {child}'s book. Book-level (parents edit, all members see): name, nickname, birthday or due date, photo, book look, family can read, hide, delete. Person-per-child: sign my letters as, include in my reminders, pause celebrations; auto-add per family member (parents). Person-global: cadence and time, languages, reading size, analytics. Each row 2 taps or fewer from Settings. | K-12, K-17 |
 | PRD-REQ-014 | P0 | Children | **Per-child sharing.** Invites, roles, approvals and "Family can read" are per child. An invite names exactly one child at launch (multi-book picker P1, defaulting to the current child). RLS and sync streams scope every read to the child's members. | K-12, K-09 |
-| PRD-REQ-015 | P0 | Plus | **Additional children are Plus.** A Free user may create one book. Creating a book while already a parent of any non-deleted book (hidden counts) needs Plus, except children added together in first run with the same birth or due date (provisional). A lapse never closes an existing book. Contributors are never gated. Server function `create_child` enforces the rule; the client only shows the sheet. | K-12, K-28 |
+| PRD-REQ-015 | P0 | Plus | **Additional children are Plus.** A Free user may start one book. Starting another book while you already started a non-deleted book (`children.created_by` = you; hidden counts) needs Plus. **Books you joined as a co-parent do not count** (founder, 2 Oct). **Every child added together in first run is free**, whatever their dates (founder, 2 Oct); those books count as started books afterwards. A lapse never closes an existing book. Contributors are never gated. Server function `create_child` enforces the rule (first-run batch flag checked server-side: only on an account's first `create_child` call or batch); the client only shows the sheet. | K-12, K-28 |
 | PRD-REQ-016 | P0 | Analytics | **Product analytics, opt-in.** A typed event catalogue in `packages/analytics` covering entry, first run, capture, review, book, family, children, reminders, Plus, settings and errors. Enum, count, duration and bucket properties only; children as ordinals; random analytics id. Nothing is queued or sent before consent. | K-01 |
 | PRD-REQ-017 | P0 | Analytics | **Server aggregates for business totals.** Accounts, books, letters saved, family letters, trials, conversions and churn come from Postgres counts and RevenueCat, with no per-user content, so decisions do not depend on the consenting share. | K-01 |
+| PRD-REQ-019 | P0 | Consent | **18+ entry gate, no local-only mode.** Before any first-run screen, story 4 action or invite flow, a neutral "Are you 18 or older?" (Yes, No, nothing preselected), plus iOS Declared Age Range where required. Yes is stored on the install as a boolean only. No, or an under-18 signal, shows a stop screen (the product is currently for adults 18 and over); nothing is created, recorded or stored; the stop screen stays for 24 hours (anti-retry) before the question can be asked again. A store signal or report after an account exists closes the account per Terms 2.1. Copy `ageGate.*` (mobile engineer); web page keeps its Send-time 18+ confirmation. | K-07, LEGAL-REQ-002 |
+| PRD-REQ-020 | P0 | Plus | **Read together free sessions.** A Free book allows 3 Read together sessions (a session starts when playback with word highlight begins), then Plus. The number is remote config `read_together_free_sessions` (default 3, audit-logged, C-NFR-009); copy that states the number reads it from config, and store and site copy change in the same release if it changes. Playing any single recording is always free. | K-11 |
 | PRD-REQ-018 | P0 | Analytics | **Withdrawal and deletion.** Turning analytics off stops sending within the session and calls `optOut()`; account deletion requests deletion of the analytics id's events from PostHog and Sentry within the published clock. | K-01, LEGAL-REQ-003 |
 
 ### 3.5 Legal and data requirements (linked, not duplicated)
@@ -273,8 +279,16 @@ All live in [ENGINEERING_REQUIREMENTS.md](../legal/ENGINEERING_REQUIREMENTS.md) 
 | (2 Oct) Multiple children, each with its own separately managed profile and book; additional children part of Plus | K-12, K-28; PRD-REQ-011 to 015 |
 | (2 Oct) Full product analytics, opt-in, content-free | K-01; PRD-REQ-016 to 018 |
 | (2 Oct) Free core includes backups already made | C-NFR-008, C-REQ-028 stand |
-| (2 Oct) Read together free for 3 sessions, then Plus (provisional) | K-11; section 9 Q1 |
+| (2 Oct) Read together free for 3 sessions, then Plus (provisional; confirmed in the second set below) | K-11; PRD-REQ-020 |
 | L1 to L4 data classification | Section 7.10 |
+| (2 Oct, second set) Twins or more added together in first run all stay free | PRD-REQ-015; K-12; section 9 Q2 closed |
+| (2 Oct) A book joined as co-parent does not count as your free book | PRD-REQ-015; K-12; section 9 Q7 closed |
+| (2 Oct) Physical printed books are a future launch; v1 is digital only | K-32; print removed from v1 scope, copy, store text and Terms (kept as roadmap) |
+| (2 Oct) Read together is Plus after 3 free sessions (default; remote config) | PRD-REQ-020; K-11; section 9 Q1 closed |
+| (2 Oct) Beta ends only when the founder says so; no date or metric trigger | K-13; section 9 Q3 closed |
+| (2 Oct) Under 18 not allowed at all; no local-only mode; clean stop screen | K-07; PRD-REQ-019; section 9 Q4 closed |
+| (2 Oct) About 13M analytics events a month at 100k families is accepted | K-01; section 7.8; section 9 Q8 closed |
+| (2 Oct) Company name and domain still pending; earlyletters.com, .app and .co reported available on 2 Oct | Section 9 Q5 stays open; `packages/brand` placeholders kept |
 
 ---
 
@@ -288,6 +302,7 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - **Why.** Apple's wording is explicit; the Privacy Policy is already written this way; a rejection at review costs more than the lost data.
 - **Consequence.** Funnel numbers in A section 10 and C section 9 cover consenting users only. Core business numbers (accounts, letters saved, trials, conversions) come from server-side aggregates (Postgres counts, RevenueCat), which need no device analytics.
 - **Founder update, 2 Oct 2026: full product analytics are wanted.** This does not change consent; it changes scope. The catalogue covers the whole product (PRD-REQ-016), not only the funnel in C-REQ-034. Rules: allowlisted enums, counts, durations and buckets; children as ordinals (`first`, `second`, `third_plus`) and a `child_count_bucket` user property, never ids or names; no screen-name autocapture, replay or touches (ADR 0008); every property tagged L2 in the data map; consent copy in `analyticsConsent.*` (section 8). Business totals come from server aggregates (PRD-REQ-017).
+- **Founder update, 2 Oct 2026 (second set): volume accepted.** About 13M events a month at 100k families (section 7.8) is accepted; budget PostHog above the free tier. The catalogue is not capped for cost; the per-user ceiling in section 7.7 still applies.
 - **Docs changed.** A section 7 and A-NFR-002 revised; B-NFR-001 and C-REQ-034 revised (1.1). **Owner action (analytics engineer):** ADR 0008 states `defaultOptIn: false` and Sentry opt-in; publish the event catalogue in `docs/analytics` with an L-level per property; implement PRD-REQ-016 and 018 in `packages/analytics`. **Owner action (legal, privacy counsel):** approve `analyticsConsent.*` wording and the privacy label "Usage Data / Diagnostics, not linked, not tracking" for consenting users.
 
 ### K-02. Notification permission timing: B versus C (and A)
@@ -335,9 +350,10 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 
 ### K-07. 18+ age gate (Texas)
 - **Conflict.** A section 7(6): "Terms say users are 18+, no age gate". Register CR-004 (Texas SB 2420 in effect; Apple Declared Age Range since 4 June 2026) and LEGAL-REQ-002 require a neutral 18+ gate plus store signals. Terms 2.1 and Privacy Policy section 2 already say 18+.
-- **Decision.** A neutral age question ("Are you 18 or older?" with Yes and No, nothing preselected) is the **first step of the sign-in sheet**, before any provider button, and part of Send on the web contribution page. On iOS, call Declared Age Range where required; the result is used in memory and never stored. An under-18 answer or signal: no account, nothing uploaded, a calm "Early Letters is made for adults" message, and the gate stays closed for 24 hours. Local-only use continues (counsel may change this to a stop screen; section 9 Q4). Pre-account local use has no gate because nothing leaves the phone.
+- **Decision.** A neutral age question ("Are you 18 or older?" with Yes and No, nothing preselected) is the **first step of the sign-in sheet**, before any provider button, and part of Send on the web contribution page. On iOS, call Declared Age Range where required; the result is used in memory and never stored. An under-18 answer or signal: no account, nothing uploaded, a calm "Early Letters is made for adults" message, and the gate stays closed for 24 hours. ~~Local-only use continues (counsel may change this to a stop screen; section 9 Q4). Pre-account local use has no gate because nothing leaves the phone.~~
+- **Founder decision, 2 Oct 2026 (second set): under 18 is not allowed at all.** No local-only mode. The question moves from the sign-in sheet to an **18+ entry gate** before first run (PRD-REQ-019): it runs before any child detail, recording or invite, so nothing about a minor is ever created on the phone or the server. No, or an under-18 store signal, shows a clean stop screen explaining the product is currently for adults 18 and over; it stays for 24 hours, then the question may be asked again. Yes is stored on the install as a boolean, never an age. The sign-in sheet keeps the Terms line with the 18+ confirmation (Lawyer 1 H4) and records `age_attested` in the `terms` acceptance context. The web contribution page keeps its 18+ confirmation at Send; under 18 there sends nothing. Terms 2.1 and Privacy Policy section 12 now say there is no under-18 use of any kind. **Owner action (mobile engineer):** stop screen and gate, copy `ageGate.*`. **Owner action (legal):** LEGAL-REQ-002 acceptance criteria updated to the entry gate.
 - **Why.** The law is in force; the gate costs one tap; putting it before account creation means nothing about a minor ever reaches us.
-- **Docs changed.** A section 7, F3, F4 and A-REQ-034 revised.
+- **Docs changed.** A section 7, F3, F4 and A-REQ-034 revised; 1.2: A F2.5, F3.4, A-REQ-012, A-REQ-034 revised again; Terms 2.1 (1.3.0), Privacy Policy section 12 (1.2.0), ENGINEERING_REQUIREMENTS LEGAL-REQ-002.
 
 ### K-08. Anonymous web contributor sessions: A says none, B needs them
 - **Conflict.** A decision 4: no Supabase anonymous auth in v1, because it needs network at first launch and has a 30 per hour per IP limit. B F6 and section 6 item 12 need an anonymous session plus a personal return link for grandparents without the app. DELETION spec OQ-10 and POLICY_VERSIONING both assume B's model.
@@ -358,7 +374,7 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 
 ### K-11. "Free, always" promise wording and Read together
 - **Conflict.** The promise line says "Writing, reading, **listening** and export are free, always", while Read together is Plus after 3 tries (C 4.1). Register item 10 and CR-012. A-REQ-014 lists Read together as working without an account.
-- **Decision.** Use "playing your recordings" instead of "listening" everywhere a promise appears: "Writing, reading, playing your recordings, export and family letters are free, always." Playback of any recording stays free; Read together (word highlight, sequenced playback) is the Plus feature after 3 tries, **provisionally** (section 9 Q1). A-REQ-014 reads "Read together within the free tries".
+- **Decision.** Use "playing your recordings" instead of "listening" everywhere a promise appears: "Writing, reading, playing your recordings, export and family letters are free, always." Playback of any recording stays free; Read together (word highlight, sequenced playback) is the Plus feature after 3 tries. **Decided 2 Oct 2026 (founder):** 3 free sessions is the default, tunable through remote config (PRD-REQ-020). Store description and site cost answer now say so, so the free-scope promise and the paywall cannot be read as contradicting each other. A-REQ-014 reads "Read together within the free tries".
 - **Owner action.** Terms short version and 13.1 already say "reading your letters and playing their recordings" (13.1 matches); in-app-disclosures `store.description.subscriptionLine` and Subscription terms "What stays free" should switch "listening" to "playing your recordings".
 
 ### K-12. Multi-child profile management and Plus gating
@@ -377,13 +393,14 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 
   3. **Reminders** stay one schedule per person; each reminder names one included child in turn (rotation, not "most recent", so a second child is never named less). Month-age and birthday notes are per child and follow that child's switch. Pause celebrations is per person per child, so one parent's hard season does not silence the other's.
   4. **Per-child sharing** (PRD-REQ-014): member lists, roles, invites, approvals and "Family can read" are per child. At launch an invite names one child and says so; the P1 multi-book picker defaults to the current child, not all.
-  5. **Plus gating** (PRD-REQ-015): a Free user creates one book. Creating a book while already a parent of any non-deleted book (hidden books count; joined books count) opens the Plus sheet at the third tap. **Provisional exception:** children added together in first run with the same birth or due date (twins and multiples) are free, so no paywall can ever appear in first run. Lapse: every existing book stays writable; only creating another needs Plus. Contributors are never gated. Enforced server-side in `create_child`.
+  5. **Plus gating** (PRD-REQ-015): a Free user starts one book. Starting a book while you already started a non-deleted book (hidden books count) opens the Plus sheet at the third tap. **Decided 2 Oct 2026 (founder):** books you joined as a co-parent do **not** count (so in a two-parent family each parent can start one free book; accepted), and **every child added together in first run is free**, whatever their dates, so no paywall can ever appear in first run. Lapse: every existing book stays writable; only creating another needs Plus. Contributors are never gated. Enforced server-side in `create_child`.
 - **Why.** The founder decided the gate. Rotation and per-person celebration pauses answer UR section 1.4 (second children get less) and UR section 1.1 (separated parents). Charging a family for twins in their first minute is the anger pattern in UR section 0 finding 4. Default-all invites would open a sibling's book to someone invited for one child.
 - **Docs changed.** B F1, F2, F5, acceptance criteria; C F1, 4.1, C-REQ-016, C-REQ-023, OQ6; strings `children.*`, `onboarding.child.addAnotherHelp`, store and site copy. **Owner action (data architect):** `create_child` Plus check with entitlement lookup; RLS and PowerSync sync streams scoped per child with a cross-child leak test; per-person-per-child settings table (`child_member_prefs`). **Owner action (mobile engineers):** switcher, per-child settings screens, Review child change. **Owner action (analytics engineer):** `child_added{mode, ordinal}`, `child_switched{ordinal}`, `child_setting_changed{key}`.
 
 ### K-13. Beta label placement
 - **Conflict.** None between drafts, but no PRD placed it. in-app-disclosures section 1 and 4 define it; Terms 16.4 backs it.
 - **Decision.** The label and body appear **only** in Settings > Help and Legal > About (caption style, no badge colour) and as the last paragraph of the store description. Never on Tonight, Listening, Review, the Book, the intro, the sign-in sheet or the Plus sheet. Not in the app name or subtitle. Optional App Store promotional text may say "Now in beta". All beta strings are removed in the same release that removes Terms 16.4.
+- **Founder decision, 2 Oct 2026 (second set): the beta ends only when the founder says so.** No version, date, crash-free or other metric trigger. Until then the label, the About body, the store line and Terms 16.4 stay. Ending it is one release: remove `settings.about.beta.*`, `store.promotionalTextBeta` and the store beta paragraph, publish Terms with 16.4 removed (version bump per POLICY_VERSIONING), update in-app-disclosures section 4.
 - **Docs changed.** `about.beta.*` and the store beta line added (section 8); C-REQ-016 lists About.
 
 ### K-14. "It can make mistakes" note
@@ -422,6 +439,7 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 ### K-21. Privacy and security claims in shipped copy
 - **Conflict.** Register section 3 items 1 to 6 and 10: "everything stays only on this phone", backup "copies your letters ... encrypted", "Transcription happens on your phone", "recordings stay on your phone unless you turn on the encrypted backup", "Only you", encryption claims without the recovery-key qualifier.
 - **Decision.** Rewritten in section 8 to say: letters sync when you sign in; recordings stay on the phone unless you back them up, share them with family or choose cloud transcription; transcription is on the phone **by default**; Standard backup keeps a recovery key with us unless you choose Vault mode. Each claim goes into the claims registry (LEGAL-REQ-044).
+- **1.2 (Lawyer 2 H4, register section 3 rows 13 to 21).** The nine remaining claims are fixed in `packages/content` (section 8): backup-failed copy says recordings, not letters; signed-out and pre-account deletion copy names letters and recordings instead of "everything"; the recordings row is conditional on backup state; staff access is narrowed to the Privacy Policy's three cases; "never sell or share" becomes "never sell your data or share it with advertisers"; "export everything as a PDF" becomes "export your book"; recording exits drop "share them with family" (K-33); the sensitive-data consent and its Settings help line name health details.
 
 ### K-22. Account deletion and the shared book
 - **Conflict.** B OQ6, Terms 8.4, Privacy CN-13: a co-parent's account deletion removes their letters from the shared book, which may surprise the other parent. DELETION spec F1: `children.created_by ... on delete cascade` deletes the **whole book**, including other people's letters, when the creator deletes their account.
@@ -463,6 +481,17 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - **Conflict.** in-app-disclosures section 3 uses `{monthlyPrice}`, `{annualPrice}`, `{date}` and `{period}`; the content rules test allows only `{price}` among these, and the test is outside `packages/content/src`.
 - **Decision.** Strings ship as `plus.legal.*` using `{price}`, with separate annual and monthly no-trial lines instead of `{period}`. Wording is otherwise identical. **Owner action (legal, terms counsel):** update the key names and placeholders in in-app-disclosures section 3 and "listening" in section 4 `subscriptionLine` (K-11).
 
+### K-32. Printed books are a future launch; v1 is digital only
+- **Conflict.** Out of scope in 2.2 and P2 in C-REQ-033, but shipped copy and legal text still promised or described print: store "Printed books ... are on the way", site FAQ "coming later" and "priced separately", `book.printPrompt` ("See the printed book"), C-REQ-013 "Tell me when printing opens", Terms sections 3, 6 and 15 as live terms.
+- **Founder decision (2 Oct 2026).** Physical printed books are a future launch. v1 is digital only.
+- **Decision.** No print promise or teaser anywhere in v1 product, store or website copy (an App Store description should not advertise features that are not in the app). Export (letters, recordings and the PDF book) is the v1 book. Terms 15 is marked "not offered yet" and the print clauses in 3, 6 and 7.1 apply only once print launches (Terms 1.3.0). Privacy Policy already says printed books are not available. Lulu and Stripe stay in the subprocessor list as planned, not active. Roadmap kept: C-REQ-033, ADR 0007, CR-054, the data-policy print rows.
+- **Docs changed.** `book.printPrompt` removed; `store.description`, `site.faq` (two answers), `book.en.ts` header; C 4.1, C-REQ-013, OQ2; Terms 1.3.0.
+
+### K-33. Recordings reach family only through backup
+- **Conflict.** Site privacy point 3 and the recordings FAQ listed "share them with family" as a separate way recordings leave the phone; Terms 12.1 lists only backup and the web page; Lawyer 2 H4 row 20 asked the PRD B owner to confirm.
+- **Decision (product, 2 Oct 2026).** Confirmed: in the app, family hear a recording only once it is backed up, because member playback uses the per-child key grants on backed-up files (ADR 0006 section 3, `book.recordingElsewhere`). Sharing is not a separate exit. Copy now says recordings leave the phone only if you back them up or choose cloud transcription, and family can hear a recording once it is backed up. Web contributors' own recordings leave their browser by design (B-NFR-005), which Terms 12.1 already states.
+- **Owner action (legal, terms counsel).** Terms 12.1 should also name cloud transcription (consented, ADR 0002) as an exit.
+
 ### Owner follow-ups (not editable by product)
 | Owner | Action | Entry |
 |---|---|---|
@@ -477,6 +506,10 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 | Analytics engineer | ADR 0008 opt-in wording; `docs/analytics` catalogue; PRD-REQ-016 to 018 | K-01 |
 | Mobile engineers | One ask per session; switcher; per-child settings; first-run twins flow with no Plus sheet; beta label only in About | PRD-REQ-001, K-12, K-13 |
 | Design leads | "tidy" wording decision; DESIGN_LANGUAGE real-name example | K-26, K-27 |
+| Mobile engineers | 18+ entry gate and stop screen (`ageGate.*`), no local-only mode; sensitive-data consent screen (`sensitiveConsent.*`); recordings row conditional on backup (`settings.recordings.backedUp*`); `joinedNote` in Add a child; Read together count from remote config | K-07, K-15, K-21, PRD-REQ-015, PRD-REQ-020 |
+| Data architect | `create_child`: count only books the caller started; first-run batch exemption; `read_together_free_sessions` remote config key | PRD-REQ-015, PRD-REQ-020 |
+| Legal, terms counsel | Terms 12.1 adds cloud transcription as an exit; confirm print deferral wording (Terms 1.3.0) | K-33, K-32 |
+| Brand owner | `packages/content/BRAND.md`: remove "Printed books ... come later" or mark it roadmap; "by default" on on-device transcription | K-32, K-21 |
 
 ---
 
@@ -489,7 +522,10 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] Fresh install: user saves a first letter with no sign-in, no OS permission prompt other than the microphone, and no network request to PostHog or Sentry (A-REQ-012, LEGAL-REQ-003, LEGAL-REQ-007).
 - [ ] [auto] Story intro: with VoiceOver on, auto-advance is off and each story is one element with Next and Previous actions (A-REQ-007).
 - [ ] [auto] After the first save, the Keep the book sheet opens with Apple, Google, Email and Later; Later keeps record, review, save, book, export working (A-REQ-013, A-REQ-014).
-- [ ] [auto] Sign-in sheet first asks "Are you 18 or older?" with nothing preselected; "No" creates no auth user, uploads nothing, and keeps the gate closed for 24 hours (K-07, LEGAL-REQ-002).
+- [ ] [auto] Fresh install: before any first-run screen, story 4 action or invite flow, the app asks "Are you 18 or older?" with nothing preselected (PRD-REQ-019, LEGAL-REQ-002).
+- [ ] [auto] Answering No (or an under-18 Declared Age Range signal) shows the stop screen; no child row, letter, recording, dictionary term, auth user or network request exists afterwards; there is no path to record or write; relaunching within 24 hours shows the stop screen again (PRD-REQ-019).
+- [ ] [auto] Answering Yes stores only a boolean on the install (no age or birth date anywhere on the device or server) and the gate never shows again on that install (PRD-REQ-019).
+- [ ] [auto] The sign-in sheet shows the Terms line with the 18+ confirmation; the `terms` acceptance row carries `age_attested: true` (K-07, LEGAL-REQ-001).
 - [ ] [auto] Account creation writes one `policy_acceptances` row for `terms` before any other row syncs, then shows the sensitive-data consent; declining leaves zero uploaded entries (LEGAL-REQ-001, LEGAL-REQ-006).
 - [ ] [auto] Local letters, children and dictionary move to the new user id in one transaction; a forced failure changes nothing (A-REQ-015).
 - [ ] [auto] Email: one message with link and 6-digit code; either signs in; both expire in 1 hour; the browser page does not verify on load (A-REQ-018, A-REQ-023).
@@ -534,6 +570,7 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] A lapsed user keeps both child books writable; creating a third shows the Plus sheet (C-REQ-028).
 - [ ] [manual] Restore on a new iPhone shows Plus within 10 seconds (C-REQ-020).
 - [ ] [auto] An Apple refund webhook removes only the entitlement (C-REQ-029).
+- [ ] [auto] A Free book allows exactly `read_together_free_sessions` (default 3) Read together sessions; the next tap opens the Plus sheet; changing the remote value changes the limit without a release; single-recording playback is never limited (PRD-REQ-020).
 
 ### 6.6 Settings, data, deletion
 - [ ] [auto] Every Settings row, including each consent and Export and Delete, is reachable in 2 taps or fewer (C-REQ-016, LEGAL-REQ-008).
@@ -541,7 +578,7 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] Account deletion: export offered first, subscription notice with manage link before confirm, 30-day undo, then a cross-system verification script finds no remaining rows or objects except pseudonymised acceptances and the suppression hash (C-REQ-019, LEGAL-REQ-029).
 - [ ] [manual] `https://<domain>/delete-account` completes a deletion request without the app (LEGAL-REQ-030).
 - [ ] [auto] Purge job deletes tombstones older than 30 days; backups bound to 7 days (LEGAL-REQ-031, DATA-REQ-030).
-- [ ] [auto] Settings > Help and Legal > About shows the beta label and body; no beta string appears on Tonight, Listening, Review, Book, intro, sign-in or Plus screens (K-13).
+- [ ] [auto] Settings > Help and Legal > About shows the beta label and body; no beta string appears on Tonight, Listening, Review, Book, intro, sign-in or Plus screens (K-13). The label has no date, version or metric switch; only a release removes it (K-13, founder 2 Oct).
 
 ### 6.7 Store, legal, content
 - [ ] [auto] `packages/content` tests pass: no em or en dashes, curly quotes, ellipsis characters or emoji; no "kids" keyword or child-directed phrases; claims registry rule passes (LEGAL-REQ-044, LEGAL-REQ-045).
@@ -552,11 +589,13 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] AI gateway returns 403 without an active `ai-processing` consent and for any `source='web'` entry without the contributor's own consent (LEGAL-REQ-004, LEGAL-REQ-005).
 - [ ] [manual] Terms, Privacy Policy (with the K-10 sentence fixed), Subscription terms and Consumer Health Data Privacy Policy are published at versioned URLs and linked in-app and in the store listing.
 - [ ] [manual] `packages/brand` has the real legal name and domain; no `example.com` anywhere in the build.
+- [ ] [auto] No product, store or website string mentions printed books, print or ordering a book (K-32).
 
 ### 6.8 Children (multi-child)
 - [ ] [auto] With two children, "To {child}" shows while recording and in Review; changing it in Review saves to the chosen child only (PRD-REQ-012).
 - [ ] [auto] A Free user with one book: Add a child reaches the Plus sheet in 3 taps; the server rejects `create_child` without Plus even if the client is bypassed (PRD-REQ-015).
-- [ ] [auto] First run with twins (same birth date, added together): two books, no Plus sheet, no paywall request (K-12).
+- [ ] [auto] First run with several children added together (twins, or siblings with different dates): one book each, no Plus sheet, no paywall request; the server accepts every `create_child` in that first-run batch without Plus (PRD-REQ-015).
+- [ ] [auto] A Free co-parent who joined one book and started none can start one book without Plus; starting a second needs Plus; the server enforces both (PRD-REQ-015).
 - [ ] [auto] A co-parent of a book whose other parent holds Plus gets Plus features in that book with no purchase (K-28).
 - [ ] [auto] Nani invited to Asha's book only receives no row, photo, member or audio from the sibling's book through API or sync (PRD-REQ-014).
 - [ ] [auto] Turning off "Include {child} in my reminders" removes reminders, month-age and birthday notes naming that child for that person only (PRD-REQ-013).
@@ -673,7 +712,7 @@ Assumptions from ARCH section 7: 2.2 members per family; 20 entries per family p
 | Store webhooks | 10 per minute | 300 per minute |
 | Notice emails (trial, renewal) | 100 per day | 5k per day |
 | Children's books (1.3 per family assumed) | 1.3k | 130k |
-| Analytics events (40% consent assumed, 150 per user per month) | about 130k per month | about 13M per month (above PostHog free tier; budget it) |
+| Analytics events (40% consent assumed, 150 per user per month) | about 130k per month | about 13M per month (above PostHog free tier; cost accepted by the founder, 2 Oct 2026) |
 | Database size | Under 8 GB | About 150 GB |
 | Cumulative backed-up audio | About 115 GB | About 11.4 TB |
 
@@ -737,25 +776,50 @@ Added in version 1.1 (same day):
 | `store.description`, `store.promotionalTextBeta` | "A book for each child" section; optional beta promotional text | K-12, K-13 |
 | `site.privacy.points`, `site.faq` cost answer | Delete "your own" letters; per-child family lists; more children in Plus | K-10, K-12 |
 
+Added in version 1.2 (2 Oct, founder decisions and Lawyer 2 H4):
+
+| Key | Now | Entry |
+|---|---|---|
+| `errors.backupFailed.body` | "Your recordings are safe on this phone. Backup will continue when you are back online." | K-21 (row 13) |
+| `settingsMore.signedOutHelp` | Letters and recordings, not "everything"; removed with sign-in | K-21 (row 14) |
+| `settingsMore.deleteAccountNotYet` | "removes its letters and recordings from this phone"; removed with sign-in | K-21 (row 15) |
+| `settings.recordings.onPhoneBody`, `backedUpTitle`, `backedUpBody` (new) | "Without backup, recordings live only on this phone"; backed-up variant shown when backup is on | K-21 (row 16) |
+| `site.faq` "Who can see my letters?" | Staff look only for help requests, security or serious misuse, or the law; restricted and logged | K-21 (row 17) |
+| `site.privacy.points[4]`, store PRIVATE BY DEFAULT | "No ads. We never sell your data or share it with advertisers." | K-21 (row 18) |
+| `site.privacy.points[5]` | "You can export your book, free, at any time." | K-21 (row 19) |
+| `site.privacy.points[2]`, `site.faq` recordings | Exits are backup and cloud transcription; family hear backed-up recordings | K-33 (row 20) |
+| `settings.privacy.sensitiveHelp`, `sensitiveConsent.*` (new) | Names health details; consent text from CHD policy HN-4 ("train machine learning models" replaces "train AI" for the content rules) | K-15, K-21 (row 21) |
+| `onboarding.promise.recordingBody` | Unchanged; marked first-run only (backup cannot be on yet) | K-21 |
+| `book.printPrompt` | Removed | K-32 |
+| `store.description`, `site.faq` | No print promises; export described as letters, recordings and a PDF; Read together free for 3 sessions then Plus; twins or more added together at setup are free | K-32, K-11, PRD-REQ-015 |
+| `children.add.plusNote`, `joinedNote` (new), `twinsHelp` | First book you start is free; joined books do not count; the Add a child sheet makes no twins price promise (that exemption is first run only) | PRD-REQ-015 |
+
 Not changed here (owner follow-ups): "tidy" wording (K-26); paywall legal strings from in-app-disclosures section 3, which need the content test's placeholder allowlist extended with `monthlyPrice`, `annualPrice`, `date` and `period` when C builds the sheet; `BRAND.md` pillar text "On-device transcription only fixes" should gain "by default" at the next brand review.
 
 ---
 
 ## 9. Questions only the founder can answer
 
-1. **Read together behind Plus after 3 tries (provisional yes).** It is the strongest emotional moment and a brand pillar; gating it may read as "listening is not free". Alternative: keep it free and let backup, extra books and themes carry Plus.
-2. **Twins exception.** Additional children are Plus (decided). Confirm twins and multiples added together stay free; without it, a parent of twins meets a paywall in first run.
-7. **Child count for Free.** Does a book you joined as co-parent count as your free book (current rule: yes, so Papa creating a second child's book needs Plus)? The alternative lets each parent create one free book, which a two-parent family could use to cover two children.
-8. **Analytics budget.** Full analytics at 100k families is about 13M events a month, above PostHog's free tier. Accept the cost, or cap the catalogue?
-3. **Beta end.** What ends the beta label (a version, a date, a crash-free threshold)? Terms 16.4, the About screen and the store line change together.
-4. **Under-18 answer.** Keep local-only use (current default) or show a stop screen? Counsel input welcome; the founder owns the product call.
-5. **Company name and domain.** `packages/brand` placeholders block universal links, SMTP, the Apple Services ID, legal URLs and store submission.
-6. **Overseas grandparents.** Confirm the web page stays reachable worldwide (register recommendation). If counsel later asks for a geo-block, the feature effectively disappears for them; that is a founder call.
+Resolved 2 Oct 2026 (second set of founder decisions; kept for the record):
+1. ~~**Read together behind Plus after 3 tries.**~~ **Resolved:** accepted as the default; 3 free sessions, tunable in remote config (PRD-REQ-020, K-11).
+2. ~~**Twins exception.**~~ **Resolved:** every child added together in first run stays free (PRD-REQ-015, K-12). See new Q9.
+3. ~~**Beta end.**~~ **Resolved:** only when the founder says so; no date or metric trigger (K-13).
+4. ~~**Under-18 answer.**~~ **Resolved:** not allowed at all; no local-only mode; a clean stop screen at an 18+ entry gate before first run (PRD-REQ-019, K-07).
+7. ~~**Child count for Free.**~~ **Resolved:** a book you joined as co-parent does not count as your free book (PRD-REQ-015).
+8. ~~**Analytics budget.**~~ **Resolved:** about 13M events a month at 100k families is accepted (K-01, 7.8).
 
-Owner actions outside product (tracked, not founder questions): ADR 0008 opt-in wording; `safety_events` drop migration; LEGAL-REQ-033 and -047 table edits; Privacy Policy section 12 sentence; Subscription terms and in-app-disclosures "listening" wording; DESIGN_LANGUAGE real-name example.
+Still open:
+
+5. **Company name and domain.** Still pending founder choice. The founder reports earlyletters.com, earlyletters.app and earlyletters.co all available (checked 2 Oct 2026; not re-verified here, and availability can change until registered). `packages/brand` keeps its placeholders. This blocks universal links, SMTP, the Apple Services ID, legal URLs, store submission and BL-053; registering the chosen domain (and ideally the other two as defensive redirects) is the unblocking step.
+6. **Overseas grandparents.** Confirm the web page stays reachable worldwide (register recommendation). If counsel later asks for a geo-block, the feature effectively disappears for them; that is a founder call.
+9. **First-run sibling scope (confirm the reading).** The decision says twins "or multiple children" added together in first run all stay free. 1.2 applies it literally: any children added in first run, including siblings with different birthdays, are free, which also guarantees no paywall in first run. If you meant only same-date multiples (twins, triplets), say so; the rule becomes one condition in `create_child` and the first-run "Add another child" step must then explain that a sibling with a different date is added later (Plus).
+10. **Second consent at first family share (Lawyer 2 HN-4, counsel first).** Washington may need a sharing consent separate from the sync consent. Recommended: one extra tap the first time you invite family or add a letter to a shared book. Product supports it; it waits for counsel's answer.
+
+Owner actions outside product (tracked, not founder questions): ADR 0008 opt-in wording; LEGAL-REQ-033 and -047 table edits; Privacy Policy section 12 sentence; Subscription terms and in-app-disclosures "listening" wording; DESIGN_LANGUAGE real-name example; BRAND.md print line and "by default"; Terms 12.1 cloud transcription exit (K-33).
 
 ## Changelog
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-10-02 | First integrated PRD: index, conflict log K-01 to K-27, launch checklist, NFR budgets, copy fixes. |
 | 1.1 | 2026-10-02 | Founder decisions of 2 Oct: multi-child (K-12 rewritten, PRD-REQ-011 to 015, checklist 6.8), full opt-in analytics (K-01, PRD-REQ-016 to 018, checklist 6.9), Plus per account (K-28), K-29 to K-31, owner follow-up table; B and C revisions actually applied; new copy. |
+| 1.2 | 2026-10-02 | Second set of founder decisions of 2 Oct: first-run children free and joined books not counted (PRD-REQ-015), Read together 3 sessions in remote config (PRD-REQ-020), beta ends on founder say-so (K-13), 18+ entry gate with no local-only mode (PRD-REQ-019, K-07), digital only (K-32), analytics volume accepted; Lawyer 2 H4 claims fixed (K-21, K-33, section 8); checklist 6.1, 6.5, 6.6, 6.7, 6.8 updated; section 9 resolved items closed, Q5 updated, Q9 and Q10 added. |

@@ -83,10 +83,10 @@ Edge cases:
 | Read, play original audio, export PDF and ZIP | Yes | Yes | "Never held hostage" (C §7 item 5; U R15). |
 | Family authors, invites, approvals | Yes | Yes | Gating co-parents gets criticised (C §2 takeaway c; C §7 item 8). |
 | Encrypted backup of letters and recordings (ADR6) | Letter text syncs (ARCH §4 step 7). Audio stays on the phone. | **Plus** | The real ongoing cost is cumulative audio storage, about 19 MB per family per month (ARCH §7). Cloud support is a named valid subscription use [P2 3.1.2(a)]. |
-| Read together (playback with word highlight) | 3 sessions to try (A) | **Plus** | The most emotional moment in the category is hearing a voice (C §4 praise 4). C §5 item 2 says it is unclaimed in baby books. It is the natural value moment (U R20). |
-| More than one child's book | First book | **Plus** covers every additional child's book (no per-child price) | Second children get far less (U §1.4). Families with 2 or more children are deeper users (A). *Revised Oct 2 2026 per PRD.md conflict log K-12, K-28:* founder decision 2 Oct 2026. Twins and multiples added together are free (provisional, PRD.md section 9). |
+| Read together (playback with word highlight) | 3 sessions to try (A); *confirmed Oct 2 2026 (founder), count in remote config, default 3 (PRD-REQ-020)* | **Plus** | The most emotional moment in the category is hearing a voice (C §4 praise 4). C §5 item 2 says it is unclaimed in baby books. It is the natural value moment (U R20). |
+| More than one child's book | First book | **Plus** covers every additional child's book (no per-child price) | Second children get far less (U §1.4). Families with 2 or more children are deeper users (A). *Revised Oct 2 2026 per PRD.md conflict log K-12, K-28:* founder decision 2 Oct 2026. Twins and multiples added together are free (provisional, PRD.md section 9). *Confirmed Oct 2 2026 (founder):* all children added together in first run are free; a book joined as a co-parent does not count as the free book (PRD-REQ-015). |
 | Extra themes and book covers | Default theme | **Plus** | Cosmetic and low-risk. Day One and Dearest charge for extras (C §2). B owns themes. |
-| Printed-book credit (annual) | None | P2, once confirmed with App Review | Print is the category's profit engine (C §3). See OQ2 for the risk. |
+| Printed-book credit (annual) | None | P2, once confirmed with App Review. *Oct 2 2026 (founder): v1 is digital only; printed books are a future launch (PRD.md K-32).* | Print is the category's profit engine (C §3). See OQ2 for the risk. |
 | Lifetime ~$99.99 | None | P2 non-consumable | U §4.3 verdict; C §6 recommendation. |
 
 **The keep-and-leave rule (P0).** Nothing in Plus may be needed to keep or take away what a family has made.
@@ -168,7 +168,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 **C-REQ-012 (P0) Pause celebrations, per book.** This covers milestones, birthdays, month-ages and resurfacing. Evidence: U §1.1 (divorced parents); A (loss, estrangement). B places the toggle.
 - Given pause is on, when the birthday arrives, then nothing is sent or shown.
 
-**C-REQ-013 (P1) Year One.** On the first birthday, the Book shows a Year One cover (CR §6) with Read together, a free PDF, and "Tell me when printing opens." No Plus offer that day.
+**C-REQ-013 (P1) Year One.** On the first birthday, the Book shows a Year One cover (CR §6) with Read together and a free PDF. No Plus offer that day. *Revised Oct 2 2026 per PRD.md K-32:* no "Tell me when printing opens" line in v1 (digital only; no print promise in product copy).
 - Given the first birthday, then the card shows and the Plus offer is suppressed for 24 hours.
 
 **C-REQ-014 (P1) "On this day."** Show "One month ago" or "One year ago today" on Tonight, at most one card a day. Use only letters that are in the book and visible to the viewer. Exclude sealed letters and any entry with a safety tier in the **local** database (*Revised Oct 2 2026 per PRD.md conflict log K-06: the server `safety_events` table is dropped*).
@@ -353,12 +353,12 @@ These targets are assumptions (A) until the first cohorts.
 
 ## 10. Open questions
 
-1. **OQ1. Read together is gated for Free users after 3 tries.** BRAND pillar 2 and U R20 treat it as core. Does gating it weaken the brand promise? An alternative is to keep it free and charge for print and backup instead. This needs founder confirmation.
-2. **OQ2. Printed-book credit inside an IAP annual plan.** Is it allowed under 3.1.3(e)? A discount at card checkout may be safer. Ask App Review.
+1. **OQ1. Read together is gated for Free users after 3 tries.** ~~Needs founder confirmation.~~ Resolved Oct 2 2026 by the founder (PRD.md section 9 Q1): accepted as the default, 3 free sessions, tunable in remote config (C-NFR-009, PRD-REQ-020).
+2. **OQ2. Printed-book credit inside an IAP annual plan.** Deferred with print (PRD.md K-32; v1 is digital only). Before print launches: is it allowed under 3.1.3(e)? A discount at card checkout may be safer. Ask App Review.
 3. **OQ3. Plus scope.** ~~Per book or per account?~~ Resolved Oct 2 2026 (PRD.md K-28): per account, extending to every book the subscriber parents; gifts stay per book.
 4. **OQ4. Apple Billing Grace Period length.** The options are not verified.
 5. **OQ5. iOS device backup.** Does iOS device backup include our app's audio directory? This decides how risky Free audio is.
-6. **OQ6. Second child behind Plus.** ~~Acceptable?~~ Resolved Oct 2 2026 by the founder (PRD.md K-12): yes. The add flow stays 3 taps and ends at the Plus sheet; twins added together are free (provisional).
+6. **OQ6. Second child behind Plus.** ~~Acceptable?~~ Resolved Oct 2 2026 by the founder (PRD.md K-12): yes. The add flow stays 3 taps and ends at the Plus sheet; twins added together are free (provisional; confirmed Oct 2 2026 as every child added together in first run, PRD-REQ-015).
 7. **OQ7. Copy and pricing for diaspora families.** Hindi or code-switched notification copy (U §1.4), and India storefront pricing for gifts.
 8. **OQ8. Invited family reminders.** Weekly by default, or none until they opt in?
 

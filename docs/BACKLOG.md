@@ -1,7 +1,7 @@
 # Backlog
 
 The ordered list of work for Early Letters. Format and rules: ADR 0011 (`docs/adr/0011-requirements-and-agent-workflow.md`).
-Window: 5 Oct to 30 Oct 2026 (4 weeks). Last re-planned: 2 Oct 2026 (PRD.md 1.1: multi-child and analytics tasks added).
+Window: 5 Oct to 30 Oct 2026 (4 weeks). Last re-planned: 2 Oct 2026 (PRD.md 1.2: founder decisions of 2 Oct; E1 promoted as one migration; 18+ entry gate, consent screen, recordings row and Read together limit added).
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##; wins over A, B and C where they differ), `docs/prd/A-*.md` (A-REQ, A-NFR), `docs/prd/B-*.md` (B-REQ, B-NFR), `docs/prd/C-*.md` (C-REQ, C-NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ; classes C, S, A, T in `docs/legal/data-policy.md` section 2). If a PRD and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides.
 
@@ -76,42 +76,42 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 
 ### E1. Database integrity and governance
 
-The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes findings F1 to F9 in `DELETION_AND_EXPORT_SPEC.md` section 0. Promote it in ordered, reviewable slices. Each slice moves the matching cases from `supabase/tests/drafts/data_governance.test.mjs` into `npm run test:db`.
+`supabase/migrations/20261002020000_data_governance.sql` fixes findings F1 to F9 in `DELETION_AND_EXPORT_SPEC.md` section 0. It was promoted from the draft as **one** migration on 2 Oct 2026 (commit 81d9546), not in slices, and its cases run in `npm run test:db` from `supabase/tests/data_governance.test.mjs`. It is written and tested but **not yet applied** to the live project (`supabase/APPLY.md`, BL-015). BL-010 to BL-014 below are therefore done in that one file; follow-up gaps get new tasks.
 
 #### BL-010 Entry immutability, checksum and version history
-- Status: ready. Mode: agent.
+- Status: done (commit 81d9546, `20261002020000_data_governance.sql`; live apply is BL-015). Mode: agent.
 - Satisfies: DATA-REQ-040, DATA-REQ-041, DATA-REQ-042, DATA-REQ-046, DATA-REQ-013 (findings F2, F6, F7, F8).
 - Scope: new migration with the immutability guard (including `created_at`), server-set `raw_sha256`, versioning of `machine_edits`, server-clock tombstones via `delete_entry` and `restore_entry`.
 - Data classes touched: C (entries), A (versions metadata). Update `data-policy.md` rows for `entries.raw_sha256` from Draft to Live.
 
 #### BL-011 Members see the book, not the raw transcript
-- Status: ready. Mode: agent. Depends on: BL-010.
+- Status: done (commit 81d9546, `20261002020000_data_governance.sql`; live apply is BL-015). Mode: agent. Depends on: BL-010.
 - Satisfies: DATA-REQ-003, DATA-REQ-047, LEGAL-REQ-024 (findings F3, F9).
 - Scope: restrict non-author reads of `raw_transcript`, `machine_edits`, `stt_meta`; `photo_path` must start with `{child_id}/{author_id}/`; Storage read policy matches.
 - Data classes touched: C.
 
 #### BL-012 No cascade across authors, no orphaned books
-- Status: ready. Mode: agent. Depends on: BL-010.
+- Status: done (commit 81d9546, `20261002020000_data_governance.sql`; live apply is BL-015). Mode: agent. Depends on: BL-010.
 - Satisfies: DATA-REQ-012, DATA-REQ-014, DATA-REQ-015, DATA-REQ-016, B-REQ-016 (findings F1, F4, F5).
 - Scope: replace `children.created_by ... on delete cascade`; contributors cannot update the child row; last parent cannot leave; `children_guard` and `child_members_guard`.
 - Data classes touched: S (children), A (child_members).
 
 #### BL-013 Audit log and deletion state machine
-- Status: ready. Mode: agent. Depends on: BL-012.
+- Status: done (commit 81d9546, `20261002020000_data_governance.sql`; live apply is BL-015). Mode: agent. Depends on: BL-012.
 - Satisfies: DATA-REQ-045, DATA-REQ-010, DATA-REQ-011, DATA-REQ-019, DATA-REQ-020, DATA-REQ-026, DATA-REQ-035, DATA-REQ-006, LEGAL-REQ-029, LEGAL-REQ-033.
 - Scope: `audit_events` (enum-only detail), `deletion_requests`, `deletion_request_steps`, `legal_holds`, `purge_ledger`, `storage_purge_queue`, `request_account_deletion`, `cancel_account_deletion`, `purge_due`. Scheduling the hourly cron is a separate human task (BL-015). The `purge-worker` Edge Function is out of scope this month.
 - Data classes touched: A (all new tables; content-free by construction).
 
 #### BL-014 Policy acceptance records
-- Status: ready. Mode: agent.
+- Status: done (commit 81d9546, `20261002020000_data_governance.sql`; live apply is BL-015). Mode: agent.
 - Satisfies: LEGAL-REQ-001, LEGAL-REQ-009, A-REQ-034.
 - Scope: new migration for `policy_acceptances` and `record_policy_act` per `docs/legal/POLICY_VERSIONING.md` sections 6 and 7; RLS so a user reads and inserts only their own rows and never updates or deletes; tests. LEGAL-REQ-001 replaces A-REQ-034's "stored on the profile".
 - Data classes touched: A.
 
 #### BL-015 Apply integrity migrations to the dev project
-- Status: blocked (BL-010 to BL-014 merged). Mode: human.
+- Status: ready. Mode: human.
 - Satisfies: DATA-REQ-006, DATA-REQ-005.
-- Scope: founder applies merged migrations to the dev Supabase project (us-west-1), turns on the hourly `purge_due()` cron, confirms point-in-time recovery setting matches DATA-REQ-030 before any real family data.
+- Scope: founder applies `20261002010000_entries_select_policy.sql` then `20261002020000_data_governance.sql` to the dev Supabase project (us-west-1) following `supabase/APPLY.md` steps 1 to 7 (pre-flight, apply, checks, consent pepper), turns on the hourly `purge_due()` cron, confirms point-in-time recovery setting matches DATA-REQ-030 before any real family data.
 
 #### BL-016 Data inventory check
 - Status: ready. Mode: agent. Depends on: BL-002.
@@ -170,13 +170,20 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 - Scope after decision: local schema mirroring `entries`, `children`, `profiles`, `dictionary_terms`; one transaction per letter save (text, audio reference, dictionary updates); idempotent client ids.
 - Data classes touched: C, S, A (device store row in `data-policy.md` 4.x).
 
+#### BL-037 18+ entry gate and stop screen
+- Status: ready. Mode: agent (mobile engineer; Declared Age Range needs a human sandbox check).
+- Satisfies: PRD-REQ-019, LEGAL-REQ-002, A-REQ-012.
+- Scope: before any first-run screen, story 4 action or invite flow, ask "Are you 18 or older?" (Yes, No, nothing preselected) with `ageGate.*` copy; iOS Declared Age Range where required, used in memory only. Yes stores a device boolean; No or an under-18 signal shows the stop screen, creates nothing (no child, letter, recording, dictionary term or auth user, no network call) and stays for 24 hours before the question can be asked again. No local-only mode. Gate logic (state, 24-hour window) as a pure tested module. PRD.md checklist 6.1 lines for PRD-REQ-019.
+- Data classes touched: device store, L2 (`DATA_CLASSIFICATION.md` 4.6 row "18+ entry gate state"; add the data-policy row in the same PR).
+- Note: `ageGate.stopBody` uses an `{app}` placeholder that the content rules test does not allow; fix the copy (not the test) before this merges.
+
 #### BL-033 Minimal first-run profile
-- Status: blocked (BL-032). Mode: agent.
+- Status: blocked (BL-032, BL-037). Mode: agent.
 - Satisfies: B-REQ-001, B-REQ-002, B-REQ-003, B-REQ-006, B-NFR-007, B-NFR-009, LEGAL-REQ-012, A-REQ-035.
 - Scope: child name and birthday or due date (required), "What does {child} call you?" signature, languages and Hindi script preference; names and signature seed dictionary terms through `packages/core`. Works offline. Birthdays stored as calendar dates. Copy in `packages/content`.
 - Data classes touched: S (child name, date of birth, languages), A (signature).
 - Budgets: B-NFR-008 (interactive <= 300 ms).
-- Note (PRD.md K-12): "Add another child" for twins in first run creates one book each, with no Plus sheet.
+- Note (PRD.md PRD-REQ-015, decided 2 Oct): "Add another child" in first run creates one book each, with no Plus sheet, for twins or any children added together; mark them as the first-run batch so `create_child` accepts them at sign-up without Plus.
 
 #### BL-034 Child switcher and per-child local scope
 - Status: blocked (BL-032, BL-033). Mode: agent.
@@ -192,9 +199,9 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 - Data classes touched: S, A (local now; server table `child_member_prefs` belongs to the data architect).
 
 #### BL-036 Additional-child Plus rule (pure logic)
-- Status: needs-decision (twins exception and whether a joined book counts; PRD.md section 9 Q2 and Q7). Mode: agent after decision.
+- Status: ready (decided 2 Oct 2026: every child added together in first run is free, and books joined as a co-parent do not count; PRD.md PRD-REQ-015). Mode: agent.
 - Satisfies: PRD-REQ-015.
-- Scope: pure `canCreateBook({booksAsParent, hasPlus, firstRun, sameDateAsSibling})` in `packages/core` with tests; the app shows `children.add.*` and the Plus sheet; server enforcement in `create_child` follows with the entitlement work.
+- Scope: pure `canCreateBook({booksStarted, hasPlus, inFirstRunBatch})` in `packages/core` with tests. `booksStarted` counts non-deleted books the user started (hidden included), never books joined as co-parent; `inFirstRunBatch` is true for every child added together in first run, whatever their dates. The app shows `children.add.*` (including `joinedNote`) and the Plus sheet; server enforcement in `create_child` follows with the entitlement work (data architect). If the founder narrows the first-run rule to same-date multiples (PRD.md section 9 Q9), add that one condition.
 
 ---
 
@@ -234,8 +241,14 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 
 #### BL-050 Keep-the-book sheet with notice, terms and age gate
 - Status: blocked (BL-014, BL-042). Mode: agent.
-- Satisfies: A-REQ-013, A-REQ-014, A-REQ-031, A-REQ-034, LEGAL-REQ-001, LEGAL-REQ-002, LEGAL-REQ-045.
-- Scope: sheet after the first save with Apple, Google, Email and Later; child-data notice and terms line above the buttons; neutral 18+ confirmation with 24-hour anti-retry; Later keeps everything working locally and the sheet returns at most once a day. Age range is never stored.
+- Satisfies: A-REQ-013, A-REQ-014, A-REQ-031, A-REQ-034, LEGAL-REQ-001, LEGAL-REQ-045.
+- Scope: sheet after the first save with Apple, Google, Email and Later; child-data notice and the Terms line with the 18+ confirmation above the buttons (the age question itself is the entry gate, BL-037; record `age_attested` in the `terms` acceptance context); Later keeps everything working locally and the sheet returns at most once a day. Age range is never stored.
+- Data classes touched: A (`policy_acceptances`).
+
+#### BL-054 Sensitive-data consent screen
+- Status: blocked (BL-050). Mode: agent.
+- Satisfies: PRD-REQ-002, LEGAL-REQ-006, A-REQ-034.
+- Scope: one plain screen after a new account is created and before the first sync, copy `sensitiveConsent.*` (counsel to approve; consumer-health-data-notice.md HN-4). "Agree and sync" records `sensitive-data` accept; "Keep on this phone" records decline and keeps sync, backup and family off. Settings > Privacy row shows `settings.privacy.sensitiveHelp` and allows withdrawal with the offer to delete synced letters.
 - Data classes touched: A (`policy_acceptances`).
 
 #### BL-051 Email link and code sign-in
@@ -250,7 +263,7 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 - Scope: move every local row to the signed-in user id in one transaction before any sync; on failure nothing changes and Retry shows. Tests cover crash mid-transaction (A-NFR-013: no lost letter).
 
 #### BL-053 Sign-in provider and email setup
-- Status: needs-decision (company domain and legal entity are still placeholders in `packages/brand`). Mode: human.
+- Status: needs-decision (company name, domain and legal entity are still placeholders in `packages/brand`; founder reports earlyletters.com, .app and .co available on 2 Oct 2026, choice pending; PRD.md section 9 Q5). Mode: human.
 - Satisfies: A-REQ-016, A-REQ-022, A-REQ-026, A-NFR-009, LEGAL-REQ-026.
 - Scope: real domain; custom SMTP with SPF, DKIM, DMARC; Apple Services ID and key with a named owner and rotation date; Google client ids; AASA and `assetlinks.json`. Secrets stay out of the repo.
 
@@ -264,4 +277,8 @@ The draft `supabase/migrations/drafts/20261002000000_data_governance.sql` fixes 
 - In-app account deletion flow and `purge-worker` (C-REQ-019, DATA-REQ-019 to DATA-REQ-027, DATA-REQ-033, DATA-REQ-034).
 - Reminders (C-REQ-001 to C-REQ-007, LEGAL-REQ-054).
 - Plus and paywall (C-REQ-020 to C-REQ-029, LEGAL-REQ-046 to LEGAL-REQ-049). Account-level entitlement and `book_has_plus` (PRD.md K-28); server-side `create_child` Plus check (PRD-REQ-015); notice schedule per PRD.md K-04 (PRD-REQ-003).
-- Vendor wiring for PostHog and Sentry behind `packages/analytics` after counsel approves the consent copy (PRD-REQ-016; founder approves the event budget, PRD.md section 9 Q8).
+- Vendor wiring for PostHog and Sentry behind `packages/analytics` after counsel approves the consent copy (PRD-REQ-016; event volume of about 13M a month at 100k families accepted by the founder 2 Oct 2026, PRD.md K-01).
+- Read together free-session limit (PRD-REQ-020): remote config `read_together_free_sessions`, default 3, audit-logged; after BL-022 decides the config source. Fourth session opens the Plus sheet; single-recording playback never limited.
+- Recordings row conditional on backup (PRD.md K-21): show `settings.recordings.onPhone*` while backup is off and `backedUp*` while it is on; remove `settingsMore.signedOutHelp` and `deleteAccountNotYet` in the release that ships sign-in. With the backup work.
+- Beta label removal: only when the founder ends the beta (PRD.md K-13); one release removes `settings.about.beta.*`, the store beta lines and Terms 16.4.
+- Printed books: future launch, not in v1 (PRD.md K-32); C-REQ-033 and ADR 0007 stay as roadmap.
