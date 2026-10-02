@@ -303,25 +303,13 @@ export const EVENTS = {
   },
   goals_set: {
     area: 'children',
-    when: 'What matters goals saved (one boolean per goal, never free text)',
-    reqs: ['B-NFR-001'],
+    when: 'What matters goals saved. Count only: goals are L4 (PRD 7.10), so which goals were picked is never sent',
+    reqs: ['B-NFR-001', 'PRD-REQ-010'],
     level: 'L2',
-    props: {
-      count: int(0, 5),
-      voices: bool(),
-      family: bool(),
-      languages: bool(),
-      for_later: bool(),
-      book_to_hold: bool(),
-    },
+    props: { count: int(0, 5) },
   },
-  languages_set: {
-    area: 'children',
-    when: 'Languages step saved. Only whether more than one language; language names can proxy ethnicity',
-    reqs: ['B-NFR-001'],
-    level: 'L2',
-    props: { multilingual: bool() },
-  },
+  // `languages_set` from B-NFR-001 is intentionally absent: languages are L4
+  // (PRD 7.10) and even a multilingual flag is derived from them.
   dictionary_term_added: {
     area: 'children',
     when: 'A Names and words term saved (kind only, never the term)',

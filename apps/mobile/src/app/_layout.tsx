@@ -8,6 +8,7 @@ import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
 import { tokens } from '@scribe/design-tokens';
 import { getSetting, subscribe } from '@/lib/store';
+import { useStoreReady } from '@/dev/store-ready';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,7 +25,12 @@ function useAppearance(): void {
   }, [appearance]);
 }
 
+/** Native: always ready. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts). */
 export default function RootLayout() {
+  return useStoreReady() ? <Root /> : null;
+}
+
+function Root() {
   useAppearance();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const c = tokens[scheme];

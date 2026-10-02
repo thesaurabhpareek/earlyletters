@@ -81,6 +81,16 @@ describe('catalogue rules', () => {
     }
   });
 
+  it('sends goals only as a count and nothing derived from languages (both L4, PRD 7.10)', () => {
+    expect(Object.keys(EVENTS.goals_set.props)).toEqual(['count']);
+    expect(Object.keys(EVENTS)).not.toContain('languages_set');
+    for (const [name, spec] of entries) {
+      for (const key of Object.keys(spec.props)) {
+        expect(key, `${name}.${key}`).not.toMatch(/lingual|language|goal|voices|for_later|book_to_hold/);
+      }
+    }
+  });
+
   it('every event and property is documented in docs/analytics/TRACKING_PLAN.md', () => {
     const plan = readFileSync(resolve(__dirname, '../../../docs/analytics/TRACKING_PLAN.md'), 'utf8');
     for (const [name, spec] of entries) {
