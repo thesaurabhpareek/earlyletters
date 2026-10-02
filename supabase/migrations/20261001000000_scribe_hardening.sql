@@ -1,4 +1,5 @@
 -- Hardening after Supabase advisors on the live project (Oct 1 2026).
+-- APPLIED to early-letters on Oct 2 2026 as "scribe_hardening_indexes_and_grants".
 -- Additive: never edit a migration that has been applied.
 
 -- 1. Internal functions must not be callable through the public API.
@@ -20,11 +21,3 @@ create index if not exists child_invites_accepted_by_idx on public.child_invites
 create index if not exists children_created_by_idx on public.children (created_by);
 create index if not exists dictionary_terms_child_idx on public.dictionary_terms (child_id);
 create index if not exists safety_events_author_idx on public.safety_events (author_id);
-
--- 3. One SELECT policy on entries instead of two (each permissive policy runs per row).
-drop policy if exists entries_author_select on public.entries;
-drop policy if exists entries_book_select on public.entries;
-create policy entries_select on public.entries for select to authenticated using (
-  author_id = (select auth.uid())
-  or (in_book and deleted_at is null and public.is_child_member(child_id))
-);
