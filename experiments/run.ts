@@ -7,8 +7,9 @@
  *  3. cleans with the real Early Letters engine (@scribe/core),
  *  4. scores against what you actually said.
  *
- * Output: results/report.md (read this), results/report.csv, and
- * results/review.md (the blind "does this sound like me" sheet).
+ * Output: results/report.md (read this), results/report.csv,
+ * results/review.md (the blind "does this sound like me" sheet), and
+ * results/transcripts.json (input for `npm run experiment:edits`).
  *
  * Usage: npm run experiment            (all models in config.local.json)
  *        npm run experiment -- --model base
@@ -190,6 +191,12 @@ for (const r of rows) {
   );
 }
 writeFileSync(join(resultsDir, 'report.md'), md.join('\n'));
+
+// Same transcripts, ready for the edit-pass comparison (npm run experiment:edits).
+writeFileSync(
+  join(resultsDir, 'transcripts.json'),
+  JSON.stringify(rows.map((r) => ({ asr: r.model, file: r.file, raw: r.raw, expected: r.expected })), null, 2),
+);
 
 const csvEscape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
 const csv = [

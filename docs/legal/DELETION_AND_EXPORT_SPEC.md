@@ -5,8 +5,8 @@ status: draft-for-counsel
 effective_date: TBD
 owner: founder (data governance lead role)
 implements: data-policy.md v1.0.0
-sql_draft: supabase/migrations/drafts/20261002000000_data_governance.sql
-sql_tests: supabase/tests/drafts/data_governance.test.mjs (42 checks, passing on 2 Oct 2026 in PGlite on top of the two live migrations; existing rls.test.mjs still passes with the draft applied)
+sql_migration: supabase/migrations/20261002020000_data_governance.sql (promoted 2 Oct 2026, pending live apply)
+sql_tests: supabase/tests/data_governance.test.mjs (run by npm run test:db)
 changelog:
   - version: 1.0.0
     date: 2026-10-02
@@ -450,7 +450,7 @@ The format string comes from `packages/brand` at build time (CLAUDE.md: name onl
 | TC-11 | Account deletion request idempotent, cancellable, completes, pseudonymises audit | Draft test |
 | TC-12 | Photo path scoped to own folder | Draft test |
 | TC-13 | Machine-edit-only change is versioned | Draft test |
-| TC-14 | Safety events older than 12 months erased | Draft test |
+| TC-14 | No server `safety_events` table (PRD K-06) | Test |
 | TC-15 | Sync Streams parity incl. tombstones and deleted books | To build (ADR 0004) |
 | TC-16 | PowerSync rejected write goes to `rejected_writes`, queue continues | To build (mobile) |
 | TC-17 | Export manifest hashes verify; corrupted file flagged | To build (mobile) |
@@ -465,7 +465,7 @@ The format string comes from `packages/brand` at build time (CLAUDE.md: name onl
 **DATA-REQ-060 (P0) Invites.** `child_invites` rows are deleted 90 days after `expires_at` (draft `purge_due`). B's `member_return_links` follow the same rule after revocation.
 - Given an invite that expired 91 days ago, When `purge_due()` runs, Then it is gone.
 
-**DATA-REQ-061 (P0) Safety events.** Deleted after 12 months (draft). Counsel note CN-10 recommends storing without `author_id`; if adopted, drop the column in the same migration as promotion of this draft.
+**DATA-REQ-061 (P0) Safety events.** Not applicable: no server table. `20261002020000_data_governance.sql` drops `public.safety_events` (PRD K-06, LEGAL-REQ-015); tiers stay on the device.
 
 **DATA-REQ-062 (P0) Telemetry.** PostHog retention 12 months; Sentry 90 days; set in each console and recorded in the runbook.
 
@@ -481,10 +481,7 @@ The format string comes from `packages/brand` at build time (CLAUDE.md: name onl
 
 ## 7. Proposed SQL (summary)
 
-File: `supabase/migrations/drafts/20261002000000_data_governance.sql` (not in the live folder). Tests: `supabase/tests/drafts/data_governance.test.mjs`. Run:
-```bash
-node supabase/tests/drafts/data_governance.test.mjs supabase/migrations/*.sql supabase/migrations/drafts/20261002000000_data_governance.sql
-```
+File: `supabase/migrations/20261002020000_data_governance.sql` (promoted 2 Oct 2026; pending live apply, see `supabase/APPLY.md`). Tests: `supabase/tests/data_governance.test.mjs`. Run: `npm run test:db`.
 
 | Object | Kind | Purpose | Req |
 |---|---|---|---|

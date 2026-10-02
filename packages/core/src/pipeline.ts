@@ -25,6 +25,11 @@ export interface CleanOptions {
   dictionary: DictionaryTerm[];
   /** Phrases the parent locked in review. */
   locked?: string[];
+  /**
+   * Extra deterministic edits from rule providers in this package (e.g.
+   * RulePunctuationProvider). Verified like every other edit.
+   */
+  ruleEdits?: Edit[];
   /** Edits proposed by a model, if experiment 3 shows one is needed. */
   modelEdits?: Edit[];
   modelFlags?: Flag[];
@@ -39,7 +44,10 @@ export function faithfulClean(raw: string, opts: CleanOptions): CleanResult {
   const allProtected = protectedSpans(raw, dictionary, locked);
 
   const dict = dictionaryEdits(raw, dictionary);
-  const rules: Edit[] = level === 'clean' ? [...fillerEdits(raw), ...repeatEdits(raw)] : [];
+  const rules: Edit[] = [
+    ...(level === 'clean' ? [...fillerEdits(raw), ...repeatEdits(raw)] : []),
+    ...(opts.ruleEdits ?? []).map((e) => ({ ...e, source: 'rule' as const })),
+  ];
   const model = (opts.modelEdits ?? []).map((e) => ({ ...e, source: 'model' as const }));
 
   const dictResult = verifyEdits(dict, { raw, level, dictionary, protectedSpans: lockedAndQuoted });

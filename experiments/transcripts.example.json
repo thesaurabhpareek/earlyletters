@@ -1,0 +1,7 @@
+[
+  { "file": "sample-01", "raw": "um Asia walked to mama today and then she said \"bau\" to the dog", "expected": "Asha walked to Mumma today and then she said \"bau\" to the dog." },
+  { "file": "sample-02", "raw": "shallow Ashu, time for bath, she was not wanting to sleep na", "expected": "chalo Ashu, time for bath, she was not wanting to sleep na." },
+  { "file": "sample-03", "raw": "she was, she was so happy when the the ball came back. she have a new favourite game now", "expected": "She was so happy when the ball came back. She has a new favourite game now." },
+  { "file": "sample-04", "raw": "uh, today you laughed so much, really really laughed, Mumma couldn't stop smiling,", "expected": "Today you laughed so much, really really laughed, Mumma couldn't stop smiling." },
+  { "file": "sample-05", "raw": "aaj Asha ne pehli baar papa bola and we all just looked at each other", "expected": "aaj Asha ne pehli baar papa bola and we all just looked at each other." }
+]

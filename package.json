@@ -10,8 +10,10 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "mobile": "npm run start -w @scribe/mobile",
-    "test:db": "node supabase/tests/rls.test.mjs supabase/migrations/*.sql",
-    "experiment": "npm run experiment -w @scribe/experiments --"
+    "test:db": "node supabase/tests/run.mjs",
+    "test:db:perf": "node supabase/tests/run.mjs perf",
+    "experiment": "npm run experiment -w @scribe/experiments --",
+    "experiment:edits": "npm run experiment:edits -w @scribe/experiments --"
   },
   "engines": {
     "node": ">=20"
