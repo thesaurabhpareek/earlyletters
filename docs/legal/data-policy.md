@@ -62,7 +62,7 @@ Note: under Washington MHMDA a letter that mentions health is consumer health da
 
 ## 4. Data inventory
 
-Region: Supabase project in **us-west-1** (AWS, California). Status column: **Live** = in an applied migration; **Draft** = in `supabase/migrations/drafts/20261002000000_data_governance.sql`; **Planned** = described in ARCHITECTURE, ADR or PRD but not yet in SQL.
+Region: Supabase project in **us-west-1** (AWS, California). Status column: **Live** = in an applied migration; **Draft** = in `supabase/migrations/20261002020000_data_governance.sql` (promoted 2 Oct 2026, pending live apply). Levels L1 to L4 per column: `DATA_CLASSIFICATION.md`; **Planned** = described in ARCHITECTURE, ADR or PRD but not yet in SQL.
 
 ### 4.1 Postgres, `public` schema
 
@@ -84,7 +84,7 @@ Region: Supabase project in **us-west-1** (AWS, California). Status column: **Li
 | `entries` planned columns | approval, reviewer, occasion, `sealed_until`, group ids, source | A/C | Author (approval: parents) | Life of entry | PRD B section 6 | Planned (B) |
 | `entry_versions` | previous `final_text`, `in_book`; Draft adds `machine_edits`, `superseded_by` | C | Author | Life of the entry; purged with it | Server-side version history | Live; columns Draft |
 | `dictionary_terms` | names and words, `heard_as` | C (names) | Author; child-level terms shared with members (B) | Life of account or book | Name accuracy | Live |
-| `safety_events` | author, tier 0 to 2, engine version, time; never text | S (health inference, CR-031) | Company | 12 months (proposed); counsel note CN-10 recommends dropping `author_id` | Tune gentle resource cards | Live; purge Draft |
+| `safety_events` | none: dropped (PRD K-06); tiers stay on the device | n/a | n/a | n/a | n/a | Dropped in `20261002020000_data_governance.sql` |
 | `audio_blobs` | entry, object path, size, `sha256`, wrapped file key | C pointer + S (key) | Author | Life of entry; key row deleted at purge (crypto-shred) | Encrypted backup (ADR 0006) | Planned |
 | `child_key_grants` | CCK wrapped to member public keys | S | Parents | Until member removal rotates the key, or book purge | Family playback (ADR 0006) | Planned |
 | Escrow wrap of CCK | CCK wrapped by server secret (Standard mode) | S | Parents | Until Vault mode is chosen or book purge | Recovery (ADR 0006) | Planned |
@@ -186,7 +186,7 @@ Every letter, book and account moves through the same states. The spec gives the
 | Backed-up audio after Plus lapses | As long as the account exists | Same as letters | PRD C section 4.3. PRD wording "forever" should read "as long as your account exists" (section 9) |
 | Inactive accounts | No automatic deletion in v1 (a keepsake is opened years later) | n/a | Counsel to confirm against storage-limitation duties (OQ-11) |
 | Invites and return-link hashes | 90 days after expiry, use or revocation (proposed) | Hard delete | Privacy Policy section 10 |
-| `safety_events` | 12 months (proposed) | Hard delete | CN-10 |
+| `safety_events` | Not applicable: no server table (PRD K-06) | n/a | CN-10 |
 | Analytics events | 12 months (proposed) | Provider deletion | |
 | Crash events | 90 days (proposed) | Provider deletion | |
 | Audit events | 24 months | Hard delete; actor id nulled at account deletion | Security evidence |

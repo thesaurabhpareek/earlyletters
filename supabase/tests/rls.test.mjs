@@ -1,5 +1,6 @@
-// Tests the scribe migration in embedded Postgres (PGlite) with stub
-// Supabase auth/storage schemas. Run: node supabase/tests/rls.test.mjs <migration.sql>
+// Core access rules, run against every migration in supabase/migrations (PGlite,
+// stub Supabase auth/storage schemas). Run all DB tests: npm run test:db
+// Book members read others' letters through public.book_entries (PRD K-09).
 // Requires: npm i @electric-sql/pglite (dev only).
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
@@ -76,9 +77,11 @@ const BOOK = '0192b000-0000-7000-8000-000000000002';
 await as(A, insert(PRIVATE, false));
 await as(A, insert(BOOK, true));
 check('author sees both own entries', (await as(A, 'select id from entries')).rows.length === 2);
-const partner = (await as(B, 'select id from entries')).rows.map((r) => r.id);
+const partner = (await as(B, 'select id from book_entries')).rows.map((r) => r.id);
 check('co-parent sees only the book entry', partner.length === 1 && partner[0] === BOOK);
-check('stranger sees nothing', (await as(C, 'select id from entries')).rows.length === 0);
+check('co-parent cannot read the author\'s rows in the entries table', (await as(B, 'select id from entries')).rows.length === 0);
+check('book view has no raw transcript column', await fails(() => as(B, 'select raw_transcript from book_entries')));
+check('stranger sees nothing', (await as(C, 'select id from entries')).rows.length === 0 && (await as(C, 'select id from book_entries')).rows.length === 0);
 check('co-parent cannot edit the author\'s entry', (await as(B, `update entries set final_text='x' where id='${BOOK}'`)).affectedRows === 0);
 check('nobody can hard-delete an entry', (await as(A, `delete from entries where id='${BOOK}'`)).affectedRows === 0);
 check('stranger cannot write to a child they do not belong to', await fails(() => as(C, insert('0192b000-0000-7000-8000-000000000009', false, C))));
@@ -94,7 +97,7 @@ check('author can read own history', (await as(A, 'select * from entry_versions'
 check('co-parent cannot read history', (await as(B, 'select * from entry_versions')).rows.length === 0);
 
 await as(A, `update entries set deleted_at=now() where id='${BOOK}'`);
-check('tombstoned entry leaves the co-parent view', (await as(B, 'select id from entries')).rows.length === 0);
+check('tombstoned entry leaves the co-parent view', (await as(B, 'select id from book_entries')).rows.length === 0);
 check('full-text search works', (await as(A, `select id from entries where search @@ plainto_tsquery('simple', 'walked')`)).rows.length >= 1);
 
 // Storage: {child_id}/{author_id}/{entry_id}.jpg
@@ -110,12 +113,11 @@ check('cannot upload under another author\'s folder', await fails(() => as(B, `i
 
 await as(A, `insert into dictionary_terms (owner_id, child_id, term, kind, heard_as) values ('${A}', '${CHILD}', 'Asha', 'child', '{Asia}')`);
 check('dictionary is private to its owner', (await as(B, 'select * from dictionary_terms')).rows.length === 0);
-await as(A, `insert into safety_events (author_id, tier) values ('${A}', 1)`);
-check('users cannot read safety events', (await as(A, 'select * from safety_events')).rows.length === 0);
+check('no server table for safety tiers (PRD K-06)', await fails(() => as(A, `insert into safety_events (author_id, tier) values ('${A}', 1)`)));
 
 // Leaving
 await as(B, `delete from child_members where profile_id='${B}'`);
-check('a co-parent who leaves loses access to the book', (await as(B, 'select id from entries')).rows.length === 0);
+check('a co-parent who leaves loses access to the book', (await as(B, 'select id from book_entries')).rows.length === 0);
 
 console.log(failures ? `\n${failures} FAILED` : '\nALL PASSED');
 process.exit(failures ? 1 : 0);
