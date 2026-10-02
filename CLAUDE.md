@@ -13,7 +13,7 @@ The machine may remove and repair. It may never add meaning.
 ## Where things live
 | Path | What |
 |---|---|
-| `apps/ios` | Expo SDK 57 iOS app (Expo Router) |
+| `apps/mobile` | Expo SDK 57 app: iOS first, Android later (Expo Router) |
 | `packages/core` | Faithful-edit engine, verifier, age math, prompt selection, safety tiers. Pure TS, no React Native |
 | `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 104 prompts. `VOICE.md`, `BRAND.md` |
 | `packages/design-tokens` | Colours, type, spacing, motion. One source for iOS and web |

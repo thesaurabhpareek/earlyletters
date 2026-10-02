@@ -148,7 +148,7 @@ Warm ink-tinted shadows. `0` flat (lists, reading); `1` resting cards (y2/6/6%);
 
 ## 10. Sound and haptics
 
-- No UI sounds; the only audio is recordings. Never autoplay (H2).
+- No UI sounds by default; the only default audio is recordings. An opt-in "Paper sounds" setting adds six quiet sounds (see SOUND.md). Never autoplay (H2).
 - Haptics, consistent and complementary (H6): light impact on record start/stop, success on save, selection on Reading Size. None during playback.
 
 ## 11. Accessibility rules

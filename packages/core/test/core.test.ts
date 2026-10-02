@@ -17,6 +17,7 @@ import {
   type Prompt,
   verifyEdits,
   withoutEdit,
+  segments,
   type DictionaryTerm,
   type Edit,
 } from '../src';
@@ -223,6 +224,17 @@ describe('verifier: adversarial model edits are rejected', () => {
 });
 
 describe('reversibility', () => {
+  it('segments mark every machine edit and rebuild the cleaned text', () => {
+    const raw = 'Um, Asia and and mama went out.';
+    const out = faithfulClean(raw, { level: 'clean', dictionary: DICT });
+    const segs = segments(raw, out.applied);
+    expect(segs.map((s) => s.text).join('').trim()).toBe(out.text);
+    expect(segs.filter((s) => s.edit !== null)).toHaveLength(out.applied.length);
+    const asha = segs.find((s) => s.text === 'Asha');
+    expect(asha?.edit).not.toBeNull();
+    expect(out.applied[asha!.edit!].original).toBe('Asia');
+  });
+
   it('raw + applied edits reproduces the cleaned text, and any edit can be undone', () => {
     const raw = 'Um, Asia and and mama went out.';
     const out = faithfulClean(raw, { level: 'clean', dictionary: DICT });

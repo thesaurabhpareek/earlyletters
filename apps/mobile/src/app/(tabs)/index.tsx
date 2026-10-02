@@ -1,0 +1,146 @@
+import * as Haptics from 'expo-haptics';
+import { Redirect, router, useFocusEffect } from 'expo-router';
+import { MicrophoneIcon, PencilSimpleIcon } from 'phosphor-react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeInUp, LinearTransition } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ageLabel, ageOn, ENGINE_VERSION, renderTemplate, selectPrompt } from '@scribe/core';
+import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
+import { tokens } from '@scribe/design-tokens';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Text } from '@/components/ui/text';
+import { copy, fill, greetingKey } from '@/lib/copy';
+import { getFamily, listEntries, saveEntry, todayISO, uuidv7, type Family } from '@/lib/store';
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+export default function Tonight() {
+  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const t = copy.tonight;
+  const [family, setFamily] = useState<Family | null | undefined>(undefined);
+  const [recent, setRecent] = useState<string[]>([]);
+  const [daysSince, setDaysSince] = useState<number | null>(null);
+  const [shuffle, setShuffle] = useState(0);
+  const [keptLine, setKeptLine] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setFamily(getFamily());
+      const entries = listEntries();
+      setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
+      setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
+      setKeptLine(false);
+    }, []),
+  );
+
+  const today = todayISO();
+  const age = family?.childBirthday ? ageOn(family.childBirthday, today) : null;
+
+  const prompt = useMemo(
+    () =>
+      selectPrompt(
+        {
+          ageMonths: age && age.days >= 0 ? age.months : 0,
+          daysSinceLastEntry: daysSince,
+          hardStretch: false,
+          role: 'parent',
+          together: false,
+          recentKeys: recent,
+          seed: `${today}:${shuffle}`,
+        },
+        PROMPTS,
+      ),
+    [age?.months, daysSince, recent, today, shuffle],
+  );
+
+  if (family === undefined) return null;
+  if (family === null) return <Redirect href="/onboarding" />;
+
+  const child = family.childName;
+  const dateline = age && age.days >= 0 ? `${child.toUpperCase()} · ${ageLabel(age).toUpperCase()}` : WEEKDAYS[new Date().getDay()].toUpperCase();
+
+  const keepNotMuch = () => {
+    const weekday = WEEKDAYS[new Date().getDay()];
+    const text = renderTemplate(copy.notMuch.template, { weekday, child });
+    saveEntry({
+      id: uuidv7(),
+      kind: 'not_much',
+      occurredOn: today,
+      capturedAt: new Date().toISOString(),
+      captureMode: 'typed',
+      editLevel: 'verbatim',
+      promptKey: null,
+      engineVersion: ENGINE_VERSION,
+      rawTranscript: text,
+      machineEdits: [],
+      finalText: text,
+      inBook: false,
+      soundsLikeMe: null,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setKeptLine(true);
+  };
+
+  const start = (mode: 'spoken' | 'typed') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
+    if (mode === 'typed') router.push({ pathname: '/write', params });
+    else router.push({ pathname: '/review', params: { ...params, mode: 'sample' } });
+  };
+
+  return (
+    <SafeAreaView edges={['top']} className="flex-1 bg-background">
+      <ScrollView contentContainerClassName="flex-grow gap-6 px-5 pb-8 pt-4">
+        <Animated.View entering={FadeIn.duration(400)} className="gap-2">
+          <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline}</Text>
+          <Text className="font-serif text-4xl leading-[44px] text-foreground">
+            {fill(t.greeting[greetingKey()], { name: family.signsAs })}
+          </Text>
+          <Text className="text-lg leading-7 text-muted-foreground">{fill(t.subtitle, { child })}</Text>
+        </Animated.View>
+
+        <Animated.View key={prompt.key} entering={FadeInDown.springify().damping(20)} layout={LinearTransition.springify()}>
+          <Card className="gap-4 rounded-3xl border-0 bg-card p-6 shadow-sm shadow-black/5">
+            <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{t.promptLabel.toUpperCase()}</Text>
+            <Text className="font-serif text-2xl leading-9 text-foreground">{renderTemplate(prompt.text, { child })}</Text>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                setShuffle((s) => s + 1);
+              }}
+              accessibilityRole="button"
+              className="h-11 justify-center self-start">
+              <Text className="text-base font-medium text-primary">{t.newPromptButton}</Text>
+            </Pressable>
+          </Card>
+        </Animated.View>
+
+        <View className="flex-1" />
+
+        <Animated.View entering={FadeInUp.delay(120).springify().damping(20)} className="gap-3">
+          <View className="flex-row gap-3">
+            <Button size="capture" onPress={() => start('spoken')} accessibilityLabel={t.speakButton}>
+              <MicrophoneIcon color={c.onAccent} size={24} weight="fill" />
+              <Text>{t.speakButton}</Text>
+            </Button>
+            <Button size="capture" onPress={() => start('typed')} accessibilityLabel={t.typeButton}>
+              <PencilSimpleIcon color={c.onAccent} size={24} weight="fill" />
+              <Text>{t.typeButton}</Text>
+            </Button>
+          </View>
+          {keptLine ? (
+            <Animated.View entering={FadeIn} className="h-11 items-center justify-center">
+              <Text className="text-base text-success">{copy.notMuch.savedToast}</Text>
+            </Animated.View>
+          ) : (
+            <Button variant="ghost" onPress={keepNotMuch}>
+              <Text className="text-muted-foreground">{t.notMuchButton}</Text>
+            </Button>
+          )}
+        </Animated.View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

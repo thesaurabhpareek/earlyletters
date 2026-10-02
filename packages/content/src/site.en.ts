@@ -10,7 +10,7 @@ export const site = {
   benefits: [
     {
       title: "Exactly as you said it",
-      body: "Transcription happens on your phone and only fixes microphone slips. We never rewrite your words. Every sentence is one you actually said.",
+      body: "Transcription happens on your phone by default and only fixes microphone slips. We never rewrite your words. Every sentence is one you actually said.",
     },
     {
       title: "Your voice, kept",
@@ -44,7 +44,7 @@ export const site = {
   },
   readTogether: {
     title: "Read together",
-    body: "Open a letter and it plays in the voice of the person who wrote it, while the words appear on the page. Curl up at bedtime and listen to Dadi tell the story of the first steps. Or let {child} choose a favourite letter and listen alone, again and again.",
+    body: "Open a letter and it plays in the voice of the person who wrote it, while the words appear on the page. Curl up together at bedtime and listen to Dadi tell the story of the first steps, again and again.",
   },
   family: {
     title: "Room for everyone who loves {child}",
@@ -53,9 +53,11 @@ export const site = {
   privacy: {
     title: "Our promise, in plain words",
     points: [
-      "Your letters are private by default. Nothing is shared unless you share it.",
-      "We never rewrite your words. Transcription happens on your phone.",
-      "Your recordings stay on your phone unless you turn on the encrypted backup.",
+      "Your letters are private by default. Only the family you invite can read what you add to the book.",
+      "We never rewrite your words. Transcription happens on your phone by default. If you ever choose cloud transcription, we ask first.",
+      "Your recordings stay on your phone unless you back them up, share them with family, or choose cloud transcription.",
+      "Backups are encrypted on your phone first. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
+      "No ads. We never sell or share your data.",
       "You can export everything as a PDF, free, at any time.",
       "You can delete a letter or a recording whenever you like.",
     ],
@@ -63,11 +65,11 @@ export const site = {
   faq: [
     {
       q: "Who can see my letters?",
-      a: "Only you, until you choose otherwise. Letters are private by default. You decide what goes into the book and who you invite to it.",
+      a: "You and the family you invite. Letters are private by default, and you decide what goes into the book. When you sign in, your letters sync to our servers so your family and your next phone can read them. Our staff never read them except to keep the service running or when the law requires it, and that access is restricted and logged.",
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone and only fixes microphone and grammar slips, like a misheard word or a missing full stop. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone by default and only fixes microphone and grammar slips, like a misheard word or a missing full stop. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
@@ -87,11 +89,11 @@ export const site = {
     },
     {
       q: "How much does it cost?",
-      a: "Early Letters will cost {price}. PDF export is always free. Printed books will be priced separately when they arrive.",
+      a: "Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional, from {price}, and adds backup for every recording and a few extras. Printed books will be priced separately when they arrive.",
     },
     {
       q: "What happens to my recordings?",
-      a: "Each recording stays on your phone by default, attached to its letter. If you turn on backup, recordings are encrypted before they are stored. You can delete a recording or a letter whenever you like.",
+      a: "Each recording stays on your phone by default, attached to its letter. It leaves your phone only if you back it up, share the letter with family, or choose cloud transcription. Backups are encrypted on your phone first, and we keep a recovery key so we can help you restore them, unless you choose Vault mode. You can delete your recordings and letters whenever you like.",
     },
   ],
   gift: {

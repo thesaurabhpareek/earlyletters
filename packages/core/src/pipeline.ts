@@ -71,3 +71,29 @@ export function withoutEdit(raw: string, applied: Edit[], index: number): { text
   const remaining = applied.filter((_, i) => i !== index);
   return { text: normalizeChars(applyEdits(raw, remaining)).trim(), applied: remaining };
 }
+
+/** A run of display text; `edit` is set when the run is a machine edit's result. */
+export interface Segment {
+  text: string;
+  /** Index into `applied`, or null for the person's untouched words. */
+  edit: number | null;
+}
+
+/**
+ * Split the cleaned text into the person's own words and the machine's
+ * edits, so the review screen can underline every change. Joining the
+ * segments' text always equals faithfulClean(...).text (before trim).
+ * A pure deletion becomes an empty-text segment placed where the words were.
+ */
+export function segments(raw: string, applied: Edit[]): Segment[] {
+  const sorted = applied.map((e, i) => ({ e, i })).sort((a, b) => a.e.start - b.e.start);
+  const out: Segment[] = [];
+  let pos = 0;
+  for (const { e, i } of sorted) {
+    if (e.start > pos) out.push({ text: raw.slice(pos, e.start), edit: null });
+    out.push({ text: e.replacement, edit: i });
+    pos = e.end;
+  }
+  if (pos < raw.length) out.push({ text: raw.slice(pos), edit: null });
+  return out.map((s) => ({ ...s, text: normalizeChars(s.text) }));
+}

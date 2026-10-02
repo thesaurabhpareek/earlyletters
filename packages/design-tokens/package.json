@@ -6,5 +6,20 @@
   "main": "src/tokens.ts",
   "types": "src/tokens.ts",
   "sideEffects": false,
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "tsx src/build-css.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.20.0",
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7"
+  },
+  "exports": {
+    ".": "./src/tokens.ts",
+    "./tokens.native.css": "./dist/tokens.native.css"
+  }
 }

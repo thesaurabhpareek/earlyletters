@@ -4,7 +4,7 @@
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
 
-const migration = readFileSync(process.argv[2], 'utf8');
+const migrations = process.argv.slice(2).map((f) => readFileSync(f, 'utf8'));
 const db = new PGlite();
 const A = '11111111-1111-1111-1111-111111111111'; // parent A (author)
 const B = '22222222-2222-2222-2222-222222222222'; // parent B (invited co-parent)
@@ -28,13 +28,18 @@ await db.exec(`
   grant all on storage.objects to authenticated;
 `);
 
-await db.exec(migration);
-check('migration applies cleanly', true);
+for (const m of migrations) await db.exec(m);
+check(`${migrations.length} migration(s) apply cleanly`, true);
 await db.exec(`
   grant usage on schema public to authenticated;
   grant select, insert, update, delete on all tables in schema public to authenticated;
   insert into auth.users values ('${A}'),('${B}'),('${C}');
 `);
+const priv = async (fn) => (await db.query(`select has_function_privilege('authenticated', '${fn}', 'execute') as ok`)).rows[0].ok;
+check('internal functions are not exposed to signed-in users',
+  !(await priv('public.handle_new_user()')) && !(await priv('public.entries_record_version()')) && (await priv('public.is_child_member(uuid)')));
+check('anonymous visitors cannot call the membership helper',
+  !(await db.query(`select has_function_privilege('anon', 'public.is_child_member(uuid)', 'execute') as ok`)).rows[0].ok);
 check('signup creates a profile automatically', (await db.query('select id from public.profiles')).rows.length === 3);
 
 const as = async (uid, sql, params = []) => {

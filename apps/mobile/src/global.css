@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import 'uniwind';
+@import '../../../packages/design-tokens/dist/tokens.native.css';
+
+/* Scan shared packages for class names (docs.uniwind.dev/monorepos). */
+@source '../../../packages';
+
+/* Fonts. v1 slice: system fonts. Backlog: bundle Literata (letters) and
+   Mukta (UI) per DESIGN_LANGUAGE.md so iOS and Android render the same. */
+@theme {
+  --font-serif: Georgia;
+}

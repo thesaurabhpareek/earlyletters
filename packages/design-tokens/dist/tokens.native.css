@@ -1,0 +1,64 @@
+/* GENERATED from packages/design-tokens/src/tokens.ts. Do not edit by hand. */
+@layer theme {
+  :root {
+    @variant light {
+      --color-background: #FBF8F3;
+      --color-foreground: #2B2722;
+      --color-card: #FFFFFF;
+      --color-card-foreground: #2B2722;
+      --color-popover: #FFFFFF;
+      --color-popover-foreground: #2B2722;
+      --color-primary: #8A5A3B;
+      --color-primary-foreground: #FFFFFF;
+      --color-secondary: #F1E6DC;
+      --color-secondary-foreground: #2B2722;
+      --color-muted: #F5EFE7;
+      --color-muted-foreground: #6B645B;
+      --color-accent: #F1E6DC;
+      --color-accent-foreground: #2B2722;
+      --color-destructive: #B5473A;
+      --color-border: #E6DED3;
+      --color-input: #E6DED3;
+      --color-ring: #2F6F8F;
+      --color-surface: #F5EFE7;
+      --color-surface-raised: #FFFFFF;
+      --color-recording: #B5473A;
+      --color-success: #3F7A55;
+      --color-caution: #94661A;
+    }
+
+    @variant dark {
+      --color-background: #161412;
+      --color-foreground: #F2ECE4;
+      --color-card: #201D1A;
+      --color-card-foreground: #F2ECE4;
+      --color-popover: #201D1A;
+      --color-popover-foreground: #F2ECE4;
+      --color-primary: #D9A47E;
+      --color-primary-foreground: #1E1612;
+      --color-secondary: #3A2E25;
+      --color-secondary-foreground: #F2ECE4;
+      --color-muted: #1B1917;
+      --color-muted-foreground: #B3AA9E;
+      --color-accent: #3A2E25;
+      --color-accent-foreground: #F2ECE4;
+      --color-destructive: #F08C7C;
+      --color-border: #33302C;
+      --color-input: #33302C;
+      --color-ring: #8CC4DE;
+      --color-surface: #1B1917;
+      --color-surface-raised: #201D1A;
+      --color-recording: #F08C7C;
+      --color-success: #8CC9A0;
+      --color-caution: #E3B866;
+    }
+  }
+}
+
+@theme {
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+}

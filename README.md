@@ -16,7 +16,7 @@ Internal codename: `scribe`. Start with [CLAUDE.md](CLAUDE.md) for structure, co
 | Design language, tokens, component library choice (`docs/design`, `packages/design-tokens`) | Done |
 | Architecture and decision records (`docs`) | Done |
 | Speech-model experiment kit (`experiments`) | Ready; ran end to end on sample audio. Waiting on your recordings |
-| iOS app screens (`apps/ios`) | Not started (Expo template only) |
+| iOS app screens (`apps/mobile`) | Not started (Expo template only) |
 
 ## Founder to-dos (only you can do these)
 1. Create a private GitHub repo and install the Claude GitHub App on it.

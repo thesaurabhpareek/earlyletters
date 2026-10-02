@@ -98,13 +98,16 @@ export const en = {
       cta: "Continue",
     },
 
+    // Shown as a card on Tonight after the first letter is saved, never during first run (PRD.md K-02).
     reminder: {
-      title: "When is your quiet moment?",
-      body: "One gentle nudge a day, at a time that suits you. Most people choose after bedtime.",
+      title: "A gentle nudge, now and then?",
+      body: "A couple of evenings a week, at a time you pick. Never late at night.",
+      yesEveningsButton: "Yes, evenings",
+      pickTimeButton: "Pick a time",
       timeLabel: "Remind me at",
       noneOption: "No reminders",
       noneHelp: "You can write whenever you like.",
-      permissionTitle: "One small reminder a day",
+      permissionTitle: "A few evenings a week",
       permissionBody: "Just a nudge. You can change the time or turn it off any time.",
       cta: "Set reminder",
     },
@@ -256,6 +259,12 @@ export const en = {
     },
     addWordToDictionary: "Add \"{name}\" to your words",
     playButton: "Hear it",
+    // One-time card, the first time a spoken letter is transcribed on this install (in-app-disclosures.md section 2).
+    firstNote: {
+      title: "Please have a read",
+      body: "We fix small slips, like \"um\" and repeats. We can also mishear a word or a name. Please read it before you save.",
+      dismissButton: "Got it",
+    },
   },
 
   quickNote: {
@@ -388,7 +397,7 @@ export const en = {
       howStep2: "We write down your words exactly as you said them.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your voice is kept too, so {child} can hear you tell it.",
-      privacyNote: "Only {inviter} sees your letters until they go in the book.",
+      privacyNote: "Only {child}'s parents see your letters until they go in the book.",
       cta: "Write my first letter",
       firstPrompt: "Tell {child} about the first time you met.",
     },
@@ -510,15 +519,15 @@ export const en = {
       keepLabel: "Keep recordings",
       keepHelp: "Your voice is saved with each letter, on this phone.",
       onPhoneTitle: "Kept on this phone",
-      onPhoneBody: "Recordings live on this phone. Turn on backup to keep a copy if you change phones.",
+      onPhoneBody: "Recordings live on this phone. Export or turn on backup to keep a copy.",
       storageUsed: "{count} MB used on this phone",
     },
     backup: {
       title: "Encrypted backup",
       offLabel: "Backup is off",
       onLabel: "Backup is on",
-      body: "Copies your letters and recordings to our servers, encrypted, so a new phone can bring them back.",
-      honestNote: "Without backup, everything stays only on this phone.",
+      body: "Copies your recordings to our servers, encrypted on this phone first, so a new phone can bring them back. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
+      honestNote: "Without backup, your recordings stay only on this phone. Your letters sync when you are signed in, so your family and your next phone can read them.",
       turnOnButton: "Turn on backup",
       turnOffButton: "Turn off backup",
       lastBackup: "Last backed up {weekday}",
@@ -539,7 +548,8 @@ export const en = {
       recentlyDeleted: "Recently deleted",
       restoreButton: "Restore",
       bookTitle: "Delete the whole book?",
-      bookBody: "Every letter and recording for {child} will be removed from this phone and from backup.",
+      bookBody: "Every letter and recording in {child}'s book will be removed from this phone and from our servers. Family members can save a copy of their own letters first.",
+      bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
       bookUndo: "You have 30 days to change your mind. After that, it cannot be restored.",
       bookExportFirst: "You can export everything first, free.",
       bookConfirm: "Delete the book",
@@ -548,11 +558,28 @@ export const en = {
       accountConfirm: "Delete account",
     },
     reminders: {
-      timeLabel: "Daily reminder",
+      cadenceLabel: "Reminders",
+      timeLabel: "Reminder time",
       offLabel: "Off",
-      help: "One gentle nudge, at the time you choose.",
+      weeklyLabel: "Weekly",
+      fewTimesLabel: "A few times a week",
+      everyEveningLabel: "Every evening",
+      pauseLabel: "Pause all reminders",
+      help: "A gentle nudge a few evenings a week, at the time you choose. Never late at night.",
     },
     privacyLine: "Private by default. You decide what goes in the book.",
+    help: {
+      mistakesTitle: "How transcription works",
+      mistakes: "Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
+    },
+    about: {
+      title: "About",
+      beta: {
+        label: "Beta",
+        body: "Early Letters is in beta. Some things may change or break. Export a copy of your letters now and then.",
+        exportCta: "Export a copy",
+      },
+    },
     neverRewrite: "We never rewrite your words. We only tidy what the microphone got wrong.",
   },
 
@@ -575,7 +602,7 @@ export const en = {
     },
     offline: {
       title: "You're offline",
-      body: "Keep talking. Everything is saved on this phone and will back up later.",
+      body: "Keep talking. Everything is saved on this phone.",
     },
     backupFailed: {
       title: "Backup paused",
