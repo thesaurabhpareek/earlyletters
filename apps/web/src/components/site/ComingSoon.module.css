@@ -7,18 +7,6 @@
   background: var(--night);
   color: var(--night-ink);
 }
-.light {
-  position: absolute;
-  left: 50%;
-  top: 64%;
-  width: 120vmax;
-  height: 120vmax;
-  transform: translate(-50%, -50%) scaleY(0.72);
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(closest-side, rgba(243, 201, 139, 0.3), rgba(217, 164, 126, 0.14) 38%, rgba(120, 80, 50, 0.05) 62%, transparent);
-  animation: breathe 9s ease-in-out infinite;
-}
 .vignette {
   position: absolute;
   inset: 0;
@@ -28,7 +16,7 @@
 .main {
   position: relative;
   text-align: center;
-  padding: 0 var(--gutter);
+  padding: 48px var(--gutter) 96px;
 }
 .title {
   margin: 0;
@@ -51,6 +39,12 @@
 .trust {
   margin-top: 1.1em;
   font-size: clamp(15px, 1.3vw, 18px);
+}
+.form {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+  animation: rise 1.4s var(--ease-standard) 1s both;
 }
 .soon {
   display: inline-block;
@@ -80,15 +74,6 @@
 .footer a:focus-visible {
   color: var(--night-ink);
 }
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.86;
-  }
-}
 @keyframes rise {
   from {
     opacity: 0;
@@ -103,7 +88,7 @@
   .title,
   .line,
   .soon,
-  .light {
+  .form {
     animation: none;
   }
 }
