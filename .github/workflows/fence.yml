@@ -1,0 +1,60 @@
+# Agent fence (D-041, BL-122, CI-11). Fails a pull request that touches the
+# database, CI or authentication code unless it carries the `approve-migration`
+# label, which only the founder applies after an independent review run.
+#
+# Runs on pull_request_target so the copy of this workflow on the base branch
+# is used, not the one in the pull request. It never checks out or runs pull
+# request code: it only reads the changed-file list through the API.
+#
+# Limitation: until branch protection makes the `fence` check required, this
+# is advisory; a failing check does not stop a merge. See .github/README.md.
+name: Fence
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: fence-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  fence:
+    name: fence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Check fenced paths against the approve-migration label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'approve-migration') }}
+          # Fenced paths (extended regex on the repo-relative path):
+          #   supabase/**            database schema, access rules, tests, config
+          #   .github/**             CI, guard, fence, CODEOWNERS
+          #   auth paths             any file or folder under apps/ or packages/
+          #                          named auth, session or sign-in (plus .ext or -suffix)
+          FENCE: '^(supabase/|\.github/|(apps|packages)/(.*/)?(auth|session|sign-?in)([._-][^/]*)?(/|$))'
+        run: |
+          # filename and, for renames, previous_filename: moving a file out of
+          # a fenced folder is still a change to it.
+          files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" \
+            --jq '.[] | .filename, (.previous_filename // empty)' | sort -u)
+          hits=$(printf '%s\n' "$files" | grep -E "$FENCE" || true)
+          if [ -z "$hits" ]; then
+            echo "No fenced paths touched."
+            exit 0
+          fi
+          echo "Fenced paths in this pull request:"
+          printf '%s\n' "$hits" | sed 's/^/  /'
+          if [ "$APPROVED" = "true" ]; then
+            echo "approve-migration label present; the fence passes."
+            exit 0
+          fi
+          echo "::error title=fence::This pull request touches supabase/**, .github/** or auth code. It needs an independent review run and the founder's approve-migration label (D-041)."
+          exit 1

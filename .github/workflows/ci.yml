@@ -1,6 +1,7 @@
 # Pull request and branch CI (TDD 07 section 10). Budget: under 10 minutes
 # end to end. Every job has a timeout; the longest path is install (4) plus
 # one check job (5). Branch protection requires only the `required` job.
+# Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: CI
 
 on:
@@ -23,17 +24,19 @@ env:
 jobs:
   install:
     name: install
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 4
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
       - id: modules
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             node_modules
@@ -47,23 +50,27 @@ jobs:
   unit:
     name: tests and content rules
     needs: install
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Content rules (VOICE.md, BRAND.md)
-        run: npm test -w @scribe/content
-      - name: Engine, verifier fuzz, entitlements, analytics, tokens, experiments
+      # Content rules (VOICE.md, BRAND.md) run inside `npm test` with every
+      # other workspace; the separate content step was a duplicate (MONO-12).
+      - name: Engine, verifier fuzz, content rules, entitlements, analytics, tokens, experiments
         run: npm test
 
   db:
     name: database rules
     needs: install
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Access rules, governance, classification, performance (PGlite)
         run: npm run test:db
@@ -71,10 +78,12 @@ jobs:
   typecheck:
     name: typecheck
     needs: install
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Packages and experiments
         run: npm run typecheck -w packages -w experiments --if-present
@@ -82,11 +91,65 @@ jobs:
         working-directory: apps/mobile
         run: npx tsc --noEmit
 
+  lint:
+    name: lint
+    needs: install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # The root `lint` script and ESLint config arrive separately (WS-12,
+      # WS-16). Until then this step reports a skip and passes (CI-10).
+      - id: script
+        name: Look for a root lint script
+        run: |
+          if node -e 'process.exit(require("./package.json").scripts?.lint ? 0 : 1)'; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=lint skipped::No root \"lint\" script in package.json yet."
+          fi
+      - if: steps.script.outputs.present == 'true'
+        name: npm run lint
+        run: npm run lint
+
+  mobile-config:
+    name: mobile config
+    needs: install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # Evaluates app.config.ts and its plugins without a native build (CI-10).
+      - name: expo config --type public
+        working-directory: apps/mobile
+        run: npx expo config --type public > /dev/null
+
+  guard-tests:
+    name: CI script tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Migration guard and audit gate (node:test)
+        run: node --test .github/scripts/migration-guard.test.mjs .github/scripts/audit-gate.test.mjs
+
   required:
     name: required
     if: always()
-    needs: [install, unit, db, typecheck]
-    runs-on: ubuntu-latest
+    needs: [install, unit, db, typecheck, lint, mobile-config, guard-tests]
+    runs-on: ubuntu-24.04
     timeout-minutes: 1
     steps:
       - name: All checks passed

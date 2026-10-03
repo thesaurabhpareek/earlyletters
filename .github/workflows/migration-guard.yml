@@ -1,6 +1,12 @@
 # Fails any change that edits, renames or deletes an applied migration.
 # The applied list lives in .github/migrations-applied.txt. Runs on every
 # pull request (no path filter, so it can be a required check).
+#
+# CI-09: the guard script and its exception list are taken from a trusted ref,
+# never from the pull request. The trusted ref is the base branch when it has
+# the guard, else origin/develop (the release PR into `main`, whose base
+# predates the guard). The script is copied out of git into $RUNNER_TEMP and run
+# from there, so the pull request's copy is never executed.
 name: Migration guard
 
 on:
@@ -14,17 +20,35 @@ permissions:
 jobs:
   guard:
     name: applied migrations unchanged
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
-      - name: Compare with the base
+      - name: Compare with the base, using the guard from the trusted ref
         env:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: node .github/scripts/migration-guard.mjs "$BASE" "$HEAD_SHA"
+          FALLBACK: origin/develop
+          SCRIPT: .github/scripts/migration-guard.mjs
+        run: |
+          if [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
+            echo "No base commit (new branch); nothing to compare."
+            exit 0
+          fi
+          TRUSTED=""
+          for ref in "$BASE" "$FALLBACK"; do
+            if git cat-file -e "$ref:$SCRIPT" 2>/dev/null; then TRUSTED="$ref"; break; fi
+          done
+          if [ -z "$TRUSTED" ]; then
+            TRUSTED="$HEAD_SHA"
+            echo "::warning title=migration guard bootstrap::Neither $BASE nor $FALLBACK has the guard; using the copy from the change."
+          fi
+          echo "Guard script and exceptions from: $TRUSTED"
+          git show "$TRUSTED:$SCRIPT" > "$RUNNER_TEMP/migration-guard.mjs"
+          GUARD_TRUSTED_REF="$TRUSTED" node "$RUNNER_TEMP/migration-guard.mjs" "$BASE" "$HEAD_SHA"

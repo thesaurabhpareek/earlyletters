@@ -1,0 +1,16 @@
+# gitleaks configuration for .github/workflows/security.yml (CI-05).
+# Starts from the default rules; every allowlist entry says why.
+title = "Early Letters gitleaks config"
+
+[extend]
+useDefault = true
+
+# Prompt catalogue ids such as `key: "together.25-36.love-who"` look like
+# generic API keys to the entropy rule. They are copy keys, not secrets.
+# Scoped to that one rule, the content package, and the exact id shape.
+[[allowlists]]
+description = "Content prompt and copy keys (dotted ids), not credentials"
+targetRules = ["generic-api-key"]
+paths = ['''^packages/content/src/[a-z.-]+\.ts$''']
+regexTarget = "line"
+regexes = ['''\bkey: "[a-z0-9]+(\.[a-z0-9-]+)+"''']
