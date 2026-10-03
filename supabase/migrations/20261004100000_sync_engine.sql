@@ -3,10 +3,10 @@
 -- 3 Oct 2026: no PowerSync; DECISIONS D-023; agent brief decision 17 for the
 -- API standards). Client: apps/mobile/src/lib/sync.
 --
--- PENDING: not yet applied. Apply after 20261003041500_sync_cursor_pull.sql.
--- This file also stands alone: the objects it shares with that file (the
--- entries.sync_xid version, its trigger and index) use IF NOT EXISTS or OR
--- REPLACE with the same names and meaning. Needs 20261003000000 (require_user,
+-- PENDING: not yet applied. It replaces the unapplied draft
+-- 20261003041500_sync_cursor_pull.sql (deleted 3 Oct 2026; its sync_books() moved
+-- here as section 8b). The entries.sync_xid version, its trigger and index use
+-- IF NOT EXISTS or OR REPLACE. Needs 20261003000000 (require_user,
 -- the consent gate, approval and the B F9 book_entries view) and 20261003010000
 -- (create_child with device ids, create_first_run_children).
 --
@@ -91,7 +91,7 @@
 -- New SQLSTATEs: none. Reused: SCRAT (sync rate limit: back off, retry),
 -- SCDEL with detail 'purged' (the letter was deleted and purged).
 
--- ─── 1. Server version per letter (shared with 20261003041500) ──────────
+-- ─── 1. Server version per letter ────────────────────────────────────────
 alter table public.entries add column if not exists sync_xid xid8 not null default '0';
 -- The known_at of the restore re-upload that last set this row; any other write clears it.
 alter table public.entries add column if not exists sync_restored_from timestamptz;
@@ -750,6 +750,69 @@ begin
 end;
 $$;
 
+-- ─── 8b. The caller's books (moved from the draft 20261003041500, deleted unapplied) ──
+-- One call for screens that need every book at once without pulling letters:
+-- account deletion's "What happens" lines (apps/mobile/src/lib/account-deletion)
+-- and the first-run flag (children_entitlements.test.mjs). Contributors get the
+-- birthday month and day only, never the year or the due date (DECISIONS D-039).
+create or replace function public.sync_books()
+returns jsonb language plpgsql volatile security definer set search_path = public, pg_catalog as $$
+declare v_uid uuid := public.require_user();
+begin
+  return jsonb_build_object(
+    'epoch', (select max(e.epoch) from sync_epochs e),
+    'first_run_open', coalesce((select p.first_run_closed_at is null from profiles p where p.id = v_uid), true),
+    'books', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', c.id,
+               'role', m.role,
+               'name', c.name,
+               'nickname', c.nickname,
+               'date_of_birth', case when m.role = 'parent' then c.date_of_birth end,
+               'birthday_md', to_char(c.date_of_birth, 'MM-DD'),
+               'due_date', case when m.role = 'parent' then c.due_date end,
+               'family_can_read', c.family_can_read,
+               'created_by_me', c.created_by is not distinct from v_uid,
+               'joined_at', m.joined_at,
+               'auto_add', m.auto_add_letters,
+               'my_signs_as', coalesce(mp.signs_as,
+                                       (select i.signs_as from child_invites i
+                                         where i.child_id = c.id and i.accepted_by = v_uid
+                                         order by i.accepted_at desc limit 1)),
+               'members', (
+                 select jsonb_agg(jsonb_build_object(
+                          'profile_id', mm.profile_id,
+                          'role', mm.role,
+                          'is_me', mm.profile_id = v_uid,
+                          'joined_at', mm.joined_at,
+                          'auto_add', case when m.role = 'parent' then mm.auto_add_letters end,
+                          'signs_as', coalesce(pp.signs_as,
+                                               (select i.signs_as from child_invites i
+                                                 where i.child_id = c.id and i.accepted_by = mm.profile_id
+                                                 order by i.accepted_at desc limit 1),
+                                               pr.signs_as))
+                          order by mm.joined_at)
+                   from child_members mm
+                   left join child_member_prefs pp on pp.child_id = mm.child_id and pp.profile_id = mm.profile_id
+                   left join profiles pr on pr.id = mm.profile_id
+                  where mm.child_id = c.id),
+               'invites', case when m.role = 'parent' then coalesce((
+                 select jsonb_agg(jsonb_build_object(
+                          'id', i.id, 'role', i.role, 'signs_as', i.signs_as,
+                          'created_at', i.created_at, 'expires_at', i.expires_at,
+                          'status', case when i.expires_at < now() then 'expired' else 'open' end)
+                          order by i.created_at desc)
+                   from child_invites i
+                  where i.child_id = c.id and i.accepted_at is null and i.revoked_at is null
+                    and i.expires_at > now() - interval '14 days'), '[]'::jsonb) end)
+             order by m.joined_at, c.id)
+        from child_members m
+        join children c on c.id = m.child_id and c.deleted_at is null
+        left join child_member_prefs mp on mp.child_id = c.id and mp.profile_id = v_uid
+       where m.profile_id = v_uid), '[]'::jsonb));
+end;
+$$;
+
 -- ─── 9. Privileges ───────────────────────────────────────────────────────
 revoke execute on function public.entries_set_sync_xid() from public, anon, authenticated;
 revoke execute on function public.entries_not_purged() from public, anon, authenticated;
@@ -760,6 +823,8 @@ revoke execute on function public.sync_pull(jsonb, int) from public, anon;
 revoke execute on function public.sync_push(jsonb) from public, anon;
 grant execute on function public.sync_pull(jsonb, int) to authenticated;
 grant execute on function public.sync_push(jsonb) to authenticated;
+revoke execute on function public.sync_books() from public, anon;
+grant execute on function public.sync_books() to authenticated;
 
 -- Clients read epochs and write their own receipts and rate windows through RLS; nothing else.
 revoke insert, update, delete, truncate on public.sync_epochs from anon, authenticated;

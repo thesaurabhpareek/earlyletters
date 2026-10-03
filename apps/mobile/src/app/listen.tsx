@@ -1,6 +1,7 @@
 /**
- * Listening (DESIGN_LANGUAGE 12, MOTION 5b). Records AAC M4A, mono, 64 kbps
- * (ADR 0005) into the app's document directory, so it stays on this phone.
+ * Listening (DESIGN_LANGUAGE 12, MOTION 5b). Records AAC M4A, mono, 64 kbps,
+ * 48 kHz (ADR 0005, ADR 0015; settings in lib/capture/recorder.ts
+ * VOICE_RECORDING_OPTIONS) into the app's document directory, so it stays on this phone.
  *
  * Crash-safe (LEGAL-REQ-011, TDD 01 3.4): the draft row is written before the
  * microphone goes live (lib/capture/recorder.ts). Finish, the app going to
@@ -8,18 +9,11 @@
  * screen all stop and keep the take, then Review opens. Only "Let it go",
  * confirmed, deletes audio. Never records in the background.
  */
-import {
-  AudioQuality,
-  IOSOutputFormat,
-  getRecordingPermissionsAsync,
-  requestRecordingPermissionsAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-  type RecordingOptions,
-} from 'expo-audio';
+import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import { File } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
-import { LockSimpleIcon, PencilSimpleIcon } from 'phosphor-react-native';
+import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Alert, AppState, Linking, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
@@ -34,21 +28,8 @@ import { setAudioMode } from '@/lib/audio-mode';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useReducedMotion } from '@/lib/motion';
-import { abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
+import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
 import { deleteDraft, getActiveChild, setRecordingProgress } from '@/lib/store';
-
-/** ADR 0005: AAC-LC, mono, 44.1 kHz, 64 kbps, .m4a. Metering feeds the aura. */
-const VOICE: RecordingOptions = {
-  extension: '.m4a',
-  sampleRate: 44100,
-  numberOfChannels: 1,
-  bitRate: 64000,
-  isMeteringEnabled: true,
-  directory: 'document',
-  ios: { extension: '.m4a', outputFormat: IOSOutputFormat.MPEG4AAC, audioQuality: AudioQuality.HIGH, sampleRate: 44100 },
-  android: { extension: '.m4a', outputFormat: 'mpeg4', audioEncoder: 'aac', sampleRate: 44100 },
-  web: { mimeType: 'audio/webm', bitsPerSecond: 64000 },
-};
 
 type Phase = 'asking' | 'denied' | 'recording' | 'paused' | 'finishing';
 
@@ -69,7 +50,7 @@ export default function Listen() {
   const seenLive = useRef(false);
   const lastDuration = useRef(0);
   const [interrupted, setInterrupted] = useState(false);
-  const recorder = useAudioRecorder(VOICE, (s) => {
+  const recorder = useAudioRecorder(VOICE_RECORDING_OPTIONS, (s) => {
     // The OS or media services ended the take (TDD 03 FM-1): keep what exists.
     if (s.hasError || s.mediaServicesDidReset) setInterrupted(true);
   });

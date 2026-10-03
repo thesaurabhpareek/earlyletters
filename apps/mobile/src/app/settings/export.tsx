@@ -1,6 +1,7 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Stack } from 'expo-router';
-import { CheckCircleIcon, LockSimpleIcon } from 'phosphor-react-native';
+import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
+import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, ScrollView, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';

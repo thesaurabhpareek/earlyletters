@@ -27,7 +27,7 @@ const ROOT = typeof __dirname === 'string' ? __dirname : process.cwd();
  * only this file; nested .ts imports would need Node type stripping, which
  * EAS build images do not promise.
  */
-function loadTs<T>(relative: string): T {
+function loadTs<T>(relative: string, req: (id: string) => unknown = require): T {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const ts = require('typescript') as typeof import('typescript');
   const file = path.join(ROOT, relative);
@@ -36,7 +36,7 @@ function loadTs<T>(relative: string): T {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   });
   const mod = { exports: {} as Record<string, unknown> };
-  new Function('module', 'exports', 'require', outputText)(mod, mod.exports, require);
+  new Function('module', 'exports', 'require', outputText)(mod, mod.exports, req);
   return mod.exports as T;
 }
 
@@ -129,6 +129,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-apple-authentication',
+    // Brand fonts embedded at build time (no runtime load on launch). The list is
+    // @scribe/design-tokens/fonts `fontFiles` (repo-root paths); its .ttf requires are
+    // Metro assets, so they are stubbed here.
+    [
+      'expo-font',
+      {
+        fonts: loadTs<typeof import('../../packages/design-tokens/fonts/index')>('../../packages/design-tokens/fonts/index.ts', () => 0).fontFiles.map(
+          (f) => path.join(ROOT, '../..', f),
+        ),
+      },
+    ],
     // Google sign-in (PRD A-REQ-017): only when this build has the iOS client id, because the
     // plugin needs its reversed form as a URL scheme (docs/ops/AUTH_SETUP.md section 3).
     ...(googleIosUrlScheme ? [['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }] as [string, object]] : []),

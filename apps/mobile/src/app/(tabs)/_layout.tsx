@@ -1,5 +1,8 @@
 import { Tabs } from 'expo-router/js-tabs';
-import { BookOpenIcon, MoonStarsIcon, UsersThreeIcon, type Icon } from 'phosphor-react-native';
+import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
+import { MoonStarsIcon } from 'phosphor-react-native/src/icons/MoonStars';
+import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
+import type { Icon } from 'phosphor-react-native';
 import { Platform, Pressable, type ColorValue, type PressableProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';

@@ -9,7 +9,11 @@
  * Haptics: `tap` for private / book, `warning` for Delete. Nothing on open or scroll.
  */
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { BookOpenIcon, LockSimpleIcon, MicrophoneIcon, PencilSimpleLineIcon, TrashIcon } from 'phosphor-react-native';
+import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
+import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
+import { PencilSimpleLineIcon } from 'phosphor-react-native/src/icons/PencilSimpleLine';
+import { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';

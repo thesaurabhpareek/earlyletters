@@ -10,7 +10,7 @@
  * store view (lib/read-together.ts, lib/billing).
  */
 import { router, useLocalSearchParams } from 'expo-router';
-import { BookOpenTextIcon } from 'phosphor-react-native';
+import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Switch, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';

@@ -8,7 +8,8 @@
  * The recording line is information, not a control, until playback ships (TDD 09 A11Y-F25),
  * so it has no pill and no accent colour.
  */
-import { LockSimpleIcon, MicrophoneIcon } from 'phosphor-react-native';
+import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Card } from '@/components/ui/card';

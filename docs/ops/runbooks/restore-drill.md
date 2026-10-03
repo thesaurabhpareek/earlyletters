@@ -40,10 +40,11 @@ Prefer fixing forward. Restore only when the data itself is wrong and cannot be 
      --restore-point <ISO> --started-at <ISO> --out ~/incident/INC-<n>-restore.json
    ```
    It reads the ledger files from the restored project's `ops-ledger` bucket, re-deletes the letters and books, clears restored Storage metadata of accounts that were deleted and deletes their Auth users again.
-4. **Bump the sync epoch** so phones re-upload what the restore lost instead of losing it (20261003041500_sync_cursor_pull.sql):
+4. **Begin a new sync epoch** so phones re-upload what the restore lost instead of losing it (`20261004100000_sync_engine.sql`, service role, after the replay in step 3):
    ```sql
-   alter database postgres set app.sync_epoch = '<current + 1>';
+   select public.sync_begin_epoch('database_restore', '<restore point ISO>');
    ```
+   Phones that pull with the older epoch get "reset": they re-upload every letter the server once held and pull every book again. They never delete anything because of it. For a drill on a scratch project use `'drill'` as the reason.
 5. Account requests that were mid-execution at the restore point are `executing` again; their Auth users are gone. Let the worker finish them; check with stuck-deletion.md section 1. Completion receipts may be sent a second time (Resend's idempotency lasts 24 hours); that is acceptable.
 6. Re-enable the jobs; check purge-failing.md section 1; run `verify-deletion.ts` for one or two accounts from the ledger.
 7. Known gap: `storage.objects` rows for photos deleted after the restore point come back as metadata without files. Their letters are re-deleted by the replay, so nothing can reach them; `ops_storage_residue` lists them for deleted people and the next account step cleans them.

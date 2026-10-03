@@ -11,7 +11,7 @@ import { basename, join, relative } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { brand } from '../../brand/index';
-import { book, emails, en, onboardingStories, permissions, PROMPTS, site, STORY_VISUALS, storeListing } from '../src';
+import { book, emails, en, features, onboardingStories, permissions, PROMPTS, site, STORY_VISUALS, storeListing } from '../src';
 
 type Leaf = { path: string; text: string };
 
@@ -81,6 +81,7 @@ const ALL: Leaf[] = [
   ...leaves(book, 'book'),
   ...leaves(permissions, 'permissions'),
   ...leaves(emails, 'emails'),
+  ...leaves(features, 'features'),
   ...onboardingStories.flatMap((c) => [
     { path: `story.${c.id}.headline`, text: c.headline },
     { path: `story.${c.id}.line`, text: c.line },
@@ -161,11 +162,14 @@ describe('prompts', () => {
   it('uses only known placeholders', () => {
     // a, b: two names joined; minutes, seconds: elapsed time; letters, notes: counted phrases;
     // app: the public name, filled from packages/brand (never typed in in-app copy);
-    // version, build: the app version row; date, reference, days, email: transactional emails.
+    // version, build: the app version row; date, reference, days, email: transactional emails;
+    // label, duration, elapsed, total: player VoiceOver; size, percent: downloads; format: export
+    // readme; cancelBy: trial end; coParent: deletion summary.
     const allowed = new Set([
       'child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n',
       'a', 'b', 'minutes', 'seconds', 'letters', 'notes', 'app', 'version', 'build',
-      'date', 'reference', 'days', 'email',
+      'date', 'reference', 'days', 'email', 'label', 'duration', 'elapsed', 'total', 'size',
+      'percent', 'format', 'cancelBy', 'coParent',
     ]);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);
@@ -189,7 +193,7 @@ describe('length limits', () => {
   });
 
   it('notifications fit on a lock screen', () => {
-    const n = leaves(en.notifications, 'notifications');
+    const n = [...leaves(en.notifications, 'notifications'), ...leaves(features.reminders.neutral, 'reminders.neutral'), ...leaves(features.reminders.together, 'reminders.together')];
     for (const l of n) {
       const limit = /title/i.test(l.path) ? 40 : 110;
       expect(l.text.length, l.path).toBeLessThanOrEqual(limit);
@@ -214,6 +218,14 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(leaves(permissions, 'permissions'), new RegExp(brand.name, 'i'))).toEqual([]);
     expect(offenders(APP_COPY, new RegExp(brand.name, 'i'))).toEqual([]);
     expect(offenders(leaves(emails, 'emails'), new RegExp(brand.name, 'i'))).toEqual([]);
+    expect(offenders(leaves(features, 'features'), new RegExp(brand.name, 'i'))).toEqual([]);
+  });
+
+  it('promises only what Plus gates in v1.0 (D-053): Read together after 3 per book, more books', () => {
+    const plus = [...leaves(features.billing, 'billing'), ...leaves(en.plus, 'plus'), ...leaves(storeListing, 'store')];
+    expect(offenders(plus, /\b(backup|backed up|themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\b(backup|theme)/i.test(o))).toEqual([]);
+    expect(en.plus.promise).toMatch(/Read together/);
+    expect(en.plus.promise).toMatch(/more children/);
   });
 
   it('has no beta wording in the store listing (D-060, App Review 2.2)', () => {
@@ -248,6 +260,8 @@ describe('privacy reassurance (D-061)', () => {
     expect(emails.welcome.promise).toBe(promise);
     expect(site.privacy.lead).toBe(promise);
     expect(storeListing.description).toContain(promise);
+    expect(en.trust.settings.voice).toBe(en.trust.voice);
+    expect(storeListing.description).toContain(en.trust.voice);
   });
 
   it('never sounds fearful or absolute about security', () => {
@@ -261,6 +275,17 @@ describe('privacy reassurance (D-061)', () => {
       expect((l.text.match(/[.!?](\s|$)/g) ?? []).length, l.path).toBeLessThanOrEqual(2);
       expect(l.text.length, l.path).toBeLessThanOrEqual(160);
     }
+  });
+});
+
+describe('licences', () => {
+  it('carries every language pack attribution word for word', () => {
+    const dir = join(REPO, 'packs', 'text-rules');
+    const needed = readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .flatMap((f) => (JSON.parse(readFileSync(join(dir, f), 'utf8')).attribution ?? []) as string[]);
+    expect(needed.length).toBeGreaterThan(0);
+    for (const line of needed) expect(features.licences.packs).toContain(line);
   });
 });
 

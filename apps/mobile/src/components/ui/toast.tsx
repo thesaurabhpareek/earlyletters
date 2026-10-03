@@ -12,7 +12,7 @@
  * Motion: enter y 8 to 0 + fade (280 ms), exit 160 ms; swipe down to dismiss (Gesture
  * Handler). Reduce Motion: fades only. Haptics: none on show; `tap` on Undo.
  */
-import { XIcon } from 'phosphor-react-native';
+import { XIcon } from 'phosphor-react-native/src/icons/X';
 import * as React from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';

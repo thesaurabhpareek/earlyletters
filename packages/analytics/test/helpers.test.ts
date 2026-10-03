@@ -18,6 +18,7 @@ import {
   recordingProvider,
   ROUTE_MAP,
   routeForSegments,
+  SCHEMA_VERSION,
   timeToFirstLetterBucket,
   toV1Lang,
   wordsBucket,
@@ -90,25 +91,63 @@ describe('trackers', () => {
   it('invites map the parent role to co_parent', async () => {
     const { analytics, sent } = await granted();
     const t = createTrackers(analytics);
-    t.trackInviteCreated({ role: 'parent', channel: 'share_sheet', largePrint: false, childIndex: 0 });
+    t.trackInviteCreated({ role: 'parent', channel: 'share_sheet', shared: true, childIndex: 0 });
     t.trackInviteAccepted({ role: 'contributor' });
     const [created, accepted] = await sent();
     expect(created.properties.role).toBe('co_parent');
     expect(accepted.properties).toMatchObject({ role: 'contributor', surface: 'app' });
   });
 
-  it('language and pack events carry only the code and pack identity, and refuse other languages', async () => {
+  it('language and pack events carry only the code and the short pack id', async () => {
     const { analytics, sent } = await granted();
     const t = createTrackers(analytics);
-    expect(t.trackLanguageSet({ lang: 'pt-BR', action: 'added', surface: 'settings' })).toBe('queued');
-    expect(t.trackLanguageSet({ lang: 'ta', action: 'added', surface: 'settings' })).toBe('not_sent');
-    expect(t.trackPackDownload({ lang: 'hi', kind: 'text_rules', version: 3, stage: 'failed', network: 'cellular' })).toBe('queued');
-    expect(t.trackPackDownload({ lang: 'hi', kind: 'speech_model', version: 5000, stage: 'completed', failure: 'network', network: 'wifi' })).toBe('queued');
-    const [lang, failed, done] = await sent();
-    expect(lang).toEqual({ event: 'language_set', properties: { lang: 'pt', action: 'added', surface: 'settings', schema_version: 1 } });
-    expect(failed.properties).toEqual({ lang: 'hi', pack_kind: 'text_rules', pack_version: 3, stage: 'failed', failure: 'unknown', network: 'cellular', schema_version: 1 });
-    expect(done.properties).not.toHaveProperty('failure'); // failure only on failed
-    expect(done.properties.pack_version).toBe(1000);
+    expect(t.trackLanguageSet({ lang: 'pt-BR', action: 'added' })).toBe('queued');
+    expect(t.trackLanguageSet({ lang: 'ta', action: 'added' })).toBe('not_sent');
+    t.trackPackDownload({ packId: 'text-rules.hi', version: 3, stage: 'failed', failure: 'hash_mismatch', network: 'cellular' });
+    t.trackPackDownload({ packId: 'speech-model.whisper-large-v3-turbo-q5_0', version: 5000, stage: 'completed', failure: 'offline', network: 'wifi' });
+    t.trackPackDownload({ packId: 'text-rules.de', version: null, stage: 'started', network: 'unknown' });
+    const [lang, failed, done, other] = await sent();
+    expect(lang).toEqual({ event: 'language_set', properties: { lang: 'pt', action: 'added', schema_version: SCHEMA_VERSION } });
+    expect(failed.properties).toEqual({ pack: 'rules_hi', lang: 'hi', pack_version: 3, stage: 'failed', failure: 'hash_mismatch', network: 'cellular', schema_version: SCHEMA_VERSION });
+    expect(done.properties).toEqual({ pack: 'model_turbo', pack_version: 1000, stage: 'completed', network: 'wifi', schema_version: SCHEMA_VERSION });
+    expect(other.properties).toMatchObject({ pack: 'other', pack_version: 1 });
+    expect(JSON.stringify([failed, done, other])).not.toMatch(/text-rules|speech-model|whisper/);
+  });
+
+  it('verifier rejections are grouped and counted, never carrying text', async () => {
+    const { analytics, sent } = await granted();
+    const t = createTrackers(analytics);
+    const r = (type: 'filler' | 'stt_fix', reason: 'not_vetted_for_language' | 'stt_fix_not_dictionary') => ({
+      edit: { type, source: 'rule' as const, original: 'Asha um', replacement: '' },
+      reason,
+    });
+    t.trackMachineEditsRejected([r('filler', 'not_vetted_for_language'), r('filler', 'not_vetted_for_language'), r('stt_fix', 'stt_fix_not_dictionary')]);
+    const events = await sent();
+    expect(events.map((e) => e.properties)).toEqual([
+      { edit_type: 'filler', source: 'rule', reason: 'not_vetted_for_language', count: 2, schema_version: SCHEMA_VERSION },
+      { edit_type: 'stt_fix', source: 'rule', reason: 'stt_fix_not_dictionary', count: 1, schema_version: SCHEMA_VERSION },
+    ]);
+    expect(JSON.stringify(events)).not.toContain('Asha');
+  });
+
+  it('transcription maps model ids to short values, including the Hindi model and no_speech', async () => {
+    const { analytics, sent } = await granted();
+    const t = createTrackers(analytics);
+    t.trackTranscriptionCompleted({ engine: 'on_device', modelId: 'speech-model.whisper-hindi-small-q5_1', audioMs: 20_000, latencyMs: 4_000, outcome: 'no_speech' });
+    t.trackTranscriptionCompleted({ engine: 'on_device', modelId: null, audioMs: 1, latencyMs: 1, outcome: 'ok' });
+    const [hi, sample] = await sent();
+    expect(hi.properties).toMatchObject({ model: 'hindi_small', outcome: 'no_speech', audio_bucket: '15_60s', latency_bucket: 'lt_5s' });
+    expect(sample.properties.model).toBe('none');
+  });
+
+  it('reminder preferences map to the schedule event', async () => {
+    const { analytics, sent } = await granted();
+    const t = createTrackers(analytics);
+    t.trackReminderSchedule({ enabled: true, cadence: 'fewTimes', hour: 20, paused: false });
+    t.trackReminderSchedule({ enabled: false, cadence: 'everyEvening', hour: 7, paused: true });
+    const [a, b] = await sent();
+    expect(a.properties).toMatchObject({ cadence: 'few_times', hour_bucket: 'evening', paused: false });
+    expect(b.properties).toMatchObject({ cadence: 'off', hour_bucket: 'morning', paused: true });
   });
 
   it('opted-in summary uses buckets only, never the times', async () => {
@@ -129,12 +168,13 @@ describe('trackers', () => {
     const t = createTrackers({ track: (name) => (names.push(name), 'queued') });
     t.trackCaptureStarted({ mode: 'spoken', source: 'tonight', promptKind: 'opening', childIndex: 0, role: 'parent' });
     t.trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: 3000 });
-    t.trackTranscriptionCompleted({ engine: 'on_device', model: 'turbo', audioMs: 1, latencyMs: 1, outcome: 'ok' });
+    t.trackTranscriptionCompleted({ engine: 'on_device', modelId: 'speech-model.whisper-large-v3-turbo-q5_0', audioMs: 1, latencyMs: 1, outcome: 'ok' });
     t.trackBookOpened({ childIndex: 0, letters: 3, role: 'parent' });
     t.trackReadTogetherStarted({ childIndex: 0, access: 'try', letters: 3 });
     t.trackReadTogetherEnded({ reason: 'finished', durationMs: 1, lettersHeard: 1 });
-    t.trackExportCompleted({ format: 'pdf', bytes: 1, durationMs: 1 });
-    t.trackReminderScheduleSet({ cadence: 'weekly', hour: 20 });
+    t.trackExportStarted({ letters: 3 });
+    t.trackExportCompleted({ bytes: 1, durationMs: 1 });
+    t.trackExportFailed({ reason: 'low_space' });
     t.trackColdStart({ ttfiMs: 800 });
     for (const n of names) expect(Object.keys(EVENTS)).toContain(n);
   });
@@ -224,11 +264,11 @@ describe('lifecycle', () => {
     expect(lc.session().index).toBe(2);
     const events = (await sent()).map((e) => [e.event, e.properties]);
     expect(events).toEqual([
-      ['app_cold_start', { ttfi_bucket: 'lt_1s', schema_version: 1 }],
-      ['app_opened', { source: 'cold', days_since_last_open: 'd0', schema_version: 1 }],
-      ['app_backgrounded', { session_bucket: '1_5m', schema_version: 1 }],
-      ['app_backgrounded', { session_bucket: '5_15m', schema_version: 1 }],
-      ['app_opened', { source: 'notification', days_since_last_open: 'd2_7', schema_version: 1 }],
+      ['app_cold_start', { ttfi_bucket: 'lt_1s', schema_version: SCHEMA_VERSION }],
+      ['app_opened', { source: 'cold', days_since_last_open: 'd0', schema_version: SCHEMA_VERSION }],
+      ['app_backgrounded', { session_bucket: '1_5m', schema_version: SCHEMA_VERSION }],
+      ['app_backgrounded', { session_bucket: '5_15m', schema_version: SCHEMA_VERSION }],
+      ['app_opened', { source: 'notification', days_since_last_open: 'd2_7', schema_version: SCHEMA_VERSION }],
     ]);
     expect(Number(storage.dump()[LIFECYCLE_KEYS.firstLaunchAt])).toBe(Date.UTC(2026, 9, 3, 18));
   });

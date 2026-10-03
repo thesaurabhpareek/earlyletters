@@ -28,7 +28,13 @@ export function textRulesBytes(code: LanguageCode): number | null {
 /** Download (if needed) and install a language's text rules. English resolves at once. */
 export function ensureTextRules(code: LanguageCode, opts?: { allowCellularOnce?: boolean }): Promise<EnsureResult | { ok: true; path: 'bundled'; version: 0 }> {
   if (code === 'en') return Promise.resolve({ ok: true, path: 'bundled', version: 0 });
-  return ensurePack(textRulesPackId(code), opts);
+  // Never throw synchronously: callers fire and forget, and some platforms
+  // (the web preview) throw from the file system before a promise exists.
+  try {
+    return ensurePack(textRulesPackId(code), opts).catch(() => ({ ok: false, reason: 'storage_error' }) as EnsureResult);
+  } catch {
+    return Promise.resolve({ ok: false, reason: 'storage_error' } as EnsureResult);
+  }
 }
 
 /** Live status for each language. */

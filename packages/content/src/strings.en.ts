@@ -298,6 +298,12 @@ export const en = {
         label: "Paragraph",
         explain: "You took a long pause, so we started a new paragraph.",
       },
+      // A punctuation edit that only wrote a character in the author's chosen script (ADR 0014
+      // section 4; packages/core describeEdit returns 'script'). Same word, same letters.
+      script: {
+        label: "Characters",
+        explain: "We wrote a character the way your chosen script writes it. It is the same word.",
+      },
     },
     lock: {
       button: "Keep this as said",
@@ -781,7 +787,7 @@ export const en = {
       restoreLink: "Restore",
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
-    promise: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras.",
+    promise: "Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds Read together whenever you like, after the first 3 times in each book, and books for more children.",
   },
 
   errors: {
@@ -845,7 +851,7 @@ export const en = {
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
     plusGateTitle: "Another book is part of Plus",
     plusCta: "See what Plus adds",
-    plusNotYet: "Plus is not open yet in the beta.",
+    plusNotYet: "Plus is not available on this device yet.",
   },
 
   familyTab: {
@@ -893,10 +899,11 @@ export const en = {
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",
     // Transcription language (D-056). The app itself is in English at v1.0.
-    languageLabel: "Language",
+    languageLabel: "Spoken language",
     languageHelp: "The language you speak your letters in.",
-    plusLabel: "Plus",
-    plusHelp: "Books for more children, and Read together whenever you like.",
+    // "Settings, Plan" is the path the Plus legal text and Subscription Terms name.
+    planLabel: "Plan",
+    planHelp: "Plus: Read together whenever you like, and books for more children.",
     remindersLabel: "Reminders",
     exportLabel: "Export your book",
     exportHelp: "Every letter and recording, free, any time.",
@@ -912,6 +919,7 @@ export const en = {
     helpLabel: "Help",
     helpValue: "Write to us",
     helpSubject: "Help with the app",
+    licencesLabel: "Licences",
     versionLabel: "Version",
     // "1.0.0 (42)": app version and build number.
     versionValue: "{version} ({build})",
@@ -950,6 +958,8 @@ export const en = {
     promise: "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",
     // For tight spaces: a row subtitle, a footer.
     short: "Private by default. Never sold, never used for ads.",
+    // The voice promise. Said where a recording is made or kept, never as a scare.
+    voice: "We never imitate your voice. Your original recording is always kept exactly as you made it.",
     // Sign-in screen, under the buttons (Apple, Google, email link).
     signIn: {
       why: "An account keeps your book safe when you change phones.",
@@ -959,13 +969,14 @@ export const en = {
     // Once, the first time someone records (a quiet line on Listening or under the first Review).
     firstRecording: {
       title: "Your voice stays here",
-      body: "Your words are written down on this phone, and the recording stays with your letter. It is never used to train machine learning models.",
+      body: "Your words are written down on this phone, and the recording stays with your letter. We never imitate your voice or use it to train machine learning models.",
       dismissButton: "Good to know",
     },
     // Settings, Privacy, at the top.
     settings: {
       title: "Our promise",
       body: "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",
+      voice: "We never imitate your voice. Your original recording is always kept exactly as you made it.",
     },
   },
 

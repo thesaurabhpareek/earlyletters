@@ -45,8 +45,7 @@ import {
  * microphone heard it; a clearer copy is made separately
  * (src/lib/audio-enhance).
  *
- * listen.tsx should use this object (request to the capture owner) instead
- * of its own copy, so these settings have one home.
+ * listen.tsx uses this object, so these settings have one home.
  */
 export const VOICE_RECORDING_OPTIONS: RecordingOptions = {
   extension: '.m4a',

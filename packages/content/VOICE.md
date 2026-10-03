@@ -83,6 +83,7 @@ Parents must never doubt that their letters are private. We say so calmly, in th
 **The promise.** One sentence, the same everywhere, word for word (`en.trust.promise`):
 "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models."
 Short form for a row or a footer (`en.trust.short`): "Private by default. Never sold, never used for ads."
+The voice promise (`en.trust.voice`), said where a recording is made or kept: "We never imitate your voice. Your original recording is always kept exactly as you made it."
 
 **Where it appears, and only there:**
 
@@ -90,7 +91,7 @@ Short form for a row or a footer (`en.trust.short`): "Private by default. Never 
 | --- | --- | --- |
 | Onboarding story 4 | Only you and the people you invite can read these letters. | Per-book sharing |
 | Sign-in | Why an account helps, who can read, what the email is for (`trust.signIn`). | Sign in with Apple's Hide My Email; no passwords |
-| First recording, once | Words are written down on this phone; the recording stays with the letter (`trust.firstRecording`). | On-device transcription; no audio upload at v1.0 |
+| First recording, once | Words are written down on this phone; the recording stays with the letter; we never imitate your voice (`trust.firstRecording`). | On-device transcription; no audio upload at v1.0; the original is never altered (D-058) |
 | Settings, Privacy | The promise at the top, then the switches (`trust.settings`, `settings.privacy`). | Analytics off by default, sync and sharing, export, delete |
 | Store listing and website | The promise in "Private by default". | Privacy Policy, privacy label |
 | Welcome email | The promise, once. | Same |

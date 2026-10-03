@@ -21,19 +21,23 @@
  */
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
-import { PauseIcon, PlayIcon } from 'phosphor-react-native';
+import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
+import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
 import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
   applyEdits,
+  describeEdit,
+  finalText as languageFinalText,
   normalizeChars,
   segments as toSegments,
+  toNFC,
   withoutEdit,
   type Edit,
+  type EditKind,
   type EditLevel,
-  type EditType,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { Transcript } from '@/components/capture/transcript';
@@ -47,6 +51,8 @@ import { ensureAudioHash } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
+import { useAuth } from '@/lib/auth/session-provider';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
@@ -54,6 +60,8 @@ import {
   getDraft,
   getSetting,
   listChildren,
+  listEntriesForChild,
+  listHiddenChildren,
   saveLetterFromDraft,
   saveVoiceOnlyFromDraft,
   setDraftChild,
@@ -61,12 +69,13 @@ import {
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { languageFor, requestWords, retryWords, sampleWordsFor, type Job } from '@/lib/transcription-queue';
+import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, type Job } from '@/lib/transcription-queue';
 import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
 import { languageNames, wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 
-const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
+/** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
+const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
   filler: 'filler',
   false_start: 'falseStart',
   repeat: 'repeat',
@@ -74,7 +83,13 @@ const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
   punctuation: 'punctuation',
   agreement: 'grammarSlip',
   paragraph: 'paragraph',
+  script: 'script',
 };
+
+/** Any letter on this phone yet, in any book (hidden books count). */
+function hasAnyLetter(): boolean {
+  return [...listChildren(), ...listHiddenChildren()].some((c) => listEntriesForChild(c.id).length > 0);
+}
 
 /**
  * transcribing: words for this recording are on their way (queued, being written down, waiting for the
@@ -124,11 +139,16 @@ export default function Review() {
     [child?.name, child?.signsAs], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  // The recording's language with the author's script (Chinese) and its installed text-rules pack (ADR 0014).
+  const letterLanguage = useMemo(() => spokenFor(language), [language]);
+  const rules = useMemo(() => rulesForLanguage(letterLanguage), [letterLanguage]);
+  const labelOf = (e: Edit) => r.edits[EDIT_COPY[describeEdit(e, rules)]];
+
   // Clean once per raw transcript, in the recording's language: the engine proposes, the verifier decides.
   useEffect(() => {
     if (!raw || typed) return;
-    setApplied(cleanSpoken(raw, dictionary, language).applied);
-  }, [raw, typed, dictionary, language]);
+    setApplied(cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage)).applied);
+  }, [raw, typed, dictionary, language, letterLanguage]);
 
   // Ask the queue for words (idempotent: a reopened Review joins the same job).
   useEffect(() => {
@@ -144,7 +164,7 @@ export default function Review() {
     const words = stored ?? samplePart?.raw ?? null;
     if (!words) return;
     setIsSample(!stored && !!samplePart);
-    setRaw(words);
+    setRaw(toNFC(words)); // the queue stores NFC; sample words get the same form
     setPhase('ready');
   }, [phase, draft, job?.phase, job?.outcome]);
 
@@ -180,14 +200,15 @@ export default function Review() {
   const marker = restored ? applied.length : null;
   const segs = useMemo(() => {
     const all = restored ? [...applied, { ...restored.edit, replacement: restored.edit.original }] : applied;
-    return toSegments(raw, all);
-  }, [raw, applied, restored]);
-  const cleanedText = useMemo(() => normalizeChars(applyEdits(raw, applied)).trim(), [raw, applied]);
+    return toSegments(raw, all, typed ? undefined : rules);
+  }, [raw, applied, restored, typed, rules]);
+  // Typed text keeps the house character rule only (unchanged); spoken text uses its language's final-text rule.
+  const cleanedText = useMemo(() => (typed ? normalizeChars(applyEdits(raw, applied)).trim() : languageFinalText(raw, applied, rules)), [raw, applied, typed, rules]);
   const finalText = userText ?? cleanedText;
 
   const putBack = (index: number) => {
     const edit = applied[index];
-    const next = withoutEdit(raw, applied, index);
+    const next = withoutEdit(raw, applied, index, rules);
     haptic('tap');
     setApplied(next.applied);
     setRestored({ edit, index });
@@ -227,12 +248,24 @@ export default function Review() {
   // Save: commit, haptic, then animate (MOTION principle 3).
   const settle = useSharedValue(1);
   const settleStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.9 + 0.1 * settle.value }], opacity: settle.value }));
-  const finishSave = (inBook: boolean) => {
+  // After the very first letter on this phone, someone signed out is offered an account (PRD A F3):
+  // the sign-in sheet replaces Review, and "Not now" always works (the app is local-first).
+  const auth = useAuth();
+  const offerSignIn = useRef(false);
+  const left = useRef(false);
+  const leave = () => {
+    if (left.current) return; // the timer and a tap must not both navigate
+    left.current = true;
+    if (offerSignIn.current) router.replace({ pathname: '/sign-in', params: { trigger: 'first_letter' } });
+    else router.back();
+  };
+  const finishSave = (inBook: boolean, firstLetter: boolean) => {
+    offerSignIn.current = firstLetter && auth.configured && auth.state.status === 'signedOut';
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');
     settle.value = motion.spring(0, 'gentle');
-    setTimeout(() => router.back(), 900); // sequenceMaxMs; a tap skips it
+    setTimeout(leave, 900); // sequenceMaxMs; a tap skips it
   };
 
   const saving = useRef(false);
@@ -243,6 +276,7 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
+      const firstLetter = !hasAnyLetter();
       saveLetterFromDraft(
         draft.id,
         {
@@ -268,7 +302,7 @@ export default function Review() {
         },
         audio.exists,
       );
-      finishSave(inBook);
+      finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
       setSaveFailed(true); // the draft is intact; nothing was half-saved
@@ -283,6 +317,7 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
+      const firstLetter = !hasAnyLetter();
       const fresh = getDraft(draft.id) ?? draft;
       saveVoiceOnlyFromDraft(
         { ...fresh, audioSha256: audio.sha256, audioBytes: audio.bytes },
@@ -291,7 +326,7 @@ export default function Review() {
       setDraft(fresh);
       setKeptForWords(phase === 'transcribing' && job?.outcome !== 'no_speech');
       setVoiceOnly(true);
-      finishSave(false);
+      finishSave(false, firstLetter);
     } catch {
       saving.current = false;
       setSaveFailed(true);
@@ -322,7 +357,7 @@ export default function Review() {
   if (phase === 'saved') {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-background px-5">
-        <Pressable onPress={() => router.back()} className="w-full" accessibilityRole="button" accessibilityLabel={copy.common.doneButton}>
+        <Pressable onPress={leave} className="w-full" accessibilityRole="button" accessibilityLabel={copy.common.doneButton}>
           <Animated.View style={settleStyle}>
             <Card className="rounded-3xl border-0 bg-card p-6">
               <Text className="font-serif text-xl leading-8 text-foreground" numberOfLines={4}>
@@ -467,8 +502,8 @@ export default function Review() {
 
                 {openE && !showOriginal && userText === null && (
                   <Animated.View entering={FadeIn.delay(80).duration(160)} className="gap-2 rounded-2xl bg-muted p-4">
-                    <Text className="text-sm font-semibold text-foreground">{r.edits[EDIT_COPY[openE.type]].label}</Text>
-                    <Text className="text-base leading-6 text-foreground">{r.edits[EDIT_COPY[openE.type]].explain}</Text>
+                    <Text className="text-sm font-semibold text-foreground">{labelOf(openE).label}</Text>
+                    <Text className="text-base leading-6 text-foreground">{labelOf(openE).explain}</Text>
                     <Text className="text-sm text-muted-foreground">{r.originalLabel}</Text>
                     <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
                     {openE.replacement.trim() !== '' && (
@@ -519,7 +554,7 @@ export default function Review() {
                       accessibilityRole="button"
                       accessibilityHint={pendingCopy.review.editA11yHint}
                       className="min-h-11 flex-row items-center gap-2">
-                      <Text className="text-sm font-medium text-foreground">{r.edits[EDIT_COPY[e.type]].label}</Text>
+                      <Text className="text-sm font-medium text-foreground">{labelOf(e).label}</Text>
                       <Text className="flex-1 text-sm text-muted-foreground" numberOfLines={1}>
                         "{e.original.trim()}"
                       </Text>

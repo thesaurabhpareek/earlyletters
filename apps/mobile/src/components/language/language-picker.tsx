@@ -14,7 +14,8 @@
  * English list. VoiceOver reads each native name with that language's voice
  * (accessibilityLanguage) and the English name in English.
  */
-import { CheckIcon, MagnifyingGlassIcon } from 'phosphor-react-native';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
+import { MagnifyingGlassIcon } from 'phosphor-react-native/src/icons/MagnifyingGlass';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { searchLanguages, type LanguageCode, type LanguageInfo } from '@scribe/core';

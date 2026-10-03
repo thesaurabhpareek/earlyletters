@@ -21,7 +21,7 @@
  * Sample words (development builds) are never stored.
  */
 import { AppState, type AppStateStatus } from 'react-native';
-import { ENGINE_VERSION } from '@scribe/core';
+import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio, scribeAudioErrorCode } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
 import {
@@ -59,6 +59,7 @@ import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, ty
 import { createSampleTranscriber } from '../transcribe-sample';
 import { createWhisperTranscriber } from '../transcribe-whisper';
 import { copyForLetter } from '../audio-enhance';
+import { getSpokenLanguages, languageCleanOptions } from '../language';
 import { cleanSpoken, spokenEditLevel } from './clean';
 import { initialQueue, languagesWaiting, nextJob, nextRetryAt, reduce, type Job, type JobFailure, type QueueEvent, type QueueState } from './machine';
 
@@ -428,15 +429,17 @@ function deliver(id: string, res: TranscribeResult, dictionary: ReturnType<typeo
     sampleWords.set(id, res);
     return;
   }
+  // NFC at the transcription boundary, before raw becomes immutable (ADR 0014: not an edit).
+  const raw = toNFC(res.raw);
   if (getDraft(id)) {
-    if (res.raw) setDraftTranscript(id, res.raw); // raw set once; Review cleans it with the parent
+    if (raw) setDraftTranscript(id, raw); // raw set once; Review cleans it with the parent
     return;
   }
   const entry = getEntry(id);
   if (entry && entry.transcriptStatus === 'waiting') {
-    const clean = cleanSpoken(res.raw, dictionary, language);
+    const clean = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(spokenFor(language)));
     setWordsForWaitingEntry(id, {
-      rawTranscript: res.raw,
+      rawTranscript: raw,
       machineEdits: clean.applied,
       finalText: clean.text.trim(),
       editLevel: spokenEditLevel(language),
@@ -444,6 +447,11 @@ function deliver(id: string, res: TranscribeResult, dictionary: ReturnType<typeo
     });
     forgetLetterLanguage(id);
   }
+}
+
+/** The author's settings for a letter's language (Chinese script), or just the code when it is not one of theirs. */
+export function spokenFor(language: SpeechLanguage) {
+  return getSpokenLanguages().languages.find((l) => l.code === language) ?? language;
 }
 
 /** The language Review names while words wait: the recording's own (the author's when it was never noted). */

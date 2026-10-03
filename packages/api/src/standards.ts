@@ -20,7 +20,7 @@ export const ENDPOINT_CLASSES = {
   read_rpc: { p95Ms: 300, timeoutMs: 10_000, maxAttempts: 4, backoff: { baseMs: 1_000, capMs: 60_000 } },
   /** Write RPCs under RLS (create_child, delete_entry, invites). Safe to retry: idempotent by id or key. */
   write_rpc: { p95Ms: 500, timeoutMs: 15_000, maxAttempts: 8, backoff: { baseMs: 1_000, capMs: 300_000 } },
-  /** Upload batch of up to 50 ops (sync_push_entries). */
+  /** Upload batch of up to 50 ops (sync_push). */
   sync_batch: { p95Ms: 800, timeoutMs: 30_000, maxAttempts: 10, backoff: { baseMs: 1_000, capMs: 300_000 } },
   /** Light Edge Functions (invite redeem, Apple token): cold start included. */
   edge_light: { p95Ms: 600, timeoutMs: 10_000, maxAttempts: 4, backoff: { baseMs: 1_000, capMs: 60_000 } },
@@ -82,12 +82,12 @@ export const ENDPOINTS = {
     idempotency: 'safe_method', rateLimit: { limit: 30, windowSeconds: 300, per: 'ip_hash', enforcedBy: 'supabase_auth' }, status: 'live',
   },
   syncPush: {
-    method: 'POST', path: '/rest/v1/rpc/sync_push_entries', class: 'sync_batch', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 60, per: 'user', enforcedBy: 'client' }, status: 'live',
+    method: 'POST', path: '/rest/v1/rpc/sync_push', class: 'sync_batch', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 60, per: 'user', enforcedBy: 'rpc' }, status: 'live',
   },
   syncPull: {
-    method: 'POST', path: '/rest/v1/rpc/sync_pull_book', class: 'read_rpc', auth: 'user_jwt',
-    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 60, per: 'user', enforcedBy: 'client' }, status: 'live',
+    method: 'POST', path: '/rest/v1/rpc/sync_pull', class: 'read_rpc', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 60, per: 'user', enforcedBy: 'rpc' }, status: 'live',
   },
   createChild: {
     method: 'POST', path: '/rest/v1/rpc/create_child', class: 'write_rpc', auth: 'user_jwt',

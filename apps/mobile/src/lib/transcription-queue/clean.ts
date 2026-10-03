@@ -20,7 +20,19 @@ export function spokenEditLevel(language: SpeechLanguage): EditLevel {
   return LANGUAGES_WITH_TIDY_RULES.has(language) ? 'clean' : 'verbatim';
 }
 
-export function cleanSpoken(raw: string, dictionary: DictionaryTerm[], language: SpeechLanguage, level: EditLevel = spokenEditLevel(language)): CleanResult {
-  const opts: CleanOptions & { language: SpeechLanguage } = { level, dictionary, language };
+/**
+ * `lang` is lib/language `languageCleanOptions(...)`: the language's installed
+ * text-rules pack and the author's script (Chinese), so script and
+ * punctuation follow the language (ADR 0014). Without it the language runs in
+ * punctuation-safe mode, as before.
+ */
+export function cleanSpoken(
+  raw: string,
+  dictionary: DictionaryTerm[],
+  language: SpeechLanguage,
+  level: EditLevel = spokenEditLevel(language),
+  lang: Pick<CleanOptions, 'pack' | 'script'> = {},
+): CleanResult {
+  const opts: CleanOptions & { language: SpeechLanguage } = { level, dictionary, pack: lang.pack, script: lang.script, language };
   return faithfulClean(raw, opts);
 }

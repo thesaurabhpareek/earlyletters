@@ -12,10 +12,14 @@
  *   `settings` table (all L2, DATA_CLASSIFICATION 4.5).
  *
  * Coordinator wiring (this file does not edit the root layout):
- *   1. `startAnalytics()` once, after the first frame, never awaited by UI.
+ *   1. `startAnalytics({ ttfiMs })` once, after the first frame, never
+ *      awaited by UI; then `startAnalyticsObservers()` (./observers).
  *   2. `useScreenViews()` once in the root layout (./use-screen-views).
  *   3. The ask sequencer shows `<AnalyticsConsentSheet>` when
  *      `analyticsAskDue(...)` says so (./ask).
+ *   4. Sentry, when added, initialises only while `analyticsConsent()` is
+ *      'granted' (one switch, LEGAL-REQ-003).
+ * Screens: `@/lib/analytics/track` (call sites in TRACKING_PLAN section 9).
  */
 import * as Crypto from 'expo-crypto';
 import { AppState } from 'react-native';
@@ -29,7 +33,8 @@ import {
   type KeyValueStorage,
   type Violation,
 } from '@scribe/analytics';
-import { currentUserId, deleteSetting, getSetting, listChildren, listEntriesForChild, setSetting, subscribe } from '@/lib/store';
+import { currentAuthUserId } from '@/lib/auth/auth-store';
+import { deleteSetting, getSetting, listChildren, listEntriesForChild, setSetting, subscribe } from '@/lib/store';
 
 const KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '';
 /** PostHog US Cloud ingestion host (users and Supabase are in the US). */
@@ -112,7 +117,7 @@ function optedInSummary(surface: 'consent_sheet' | 'settings') {
     firstLetterAt: first?.at ?? null,
     firstLetterMode: first?.mode ?? null,
     letters,
-    signedIn: currentUserId() !== null,
+    signedIn: currentAuthUserId() !== null,
     // Contributors join through the web page, which is v1.1; in the app everyone is a parent at v1.0.
     role: 'parent' as const,
     // TODO(invites owner): read the "joined from an invite" app state once invites set it.
@@ -140,6 +145,16 @@ export async function declineAnalytics(): Promise<void> {
 export async function withdrawAnalytics(): Promise<void> {
   await analytics.revoke();
   recordConsent('withdraw', 'settings');
+  notify();
+}
+
+/**
+ * An under-18 answer at sign-in (LEGAL-REQ-002): stop collecting at once,
+ * quietly. Nothing about the answer is sent; the 18+ gate closes the app.
+ */
+export async function stopAnalyticsForUnder18(): Promise<void> {
+  if (analytics.consent() !== 'granted') return;
+  await analytics.revoke();
   notify();
 }
 

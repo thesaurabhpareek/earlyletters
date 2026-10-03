@@ -28,7 +28,7 @@ import {
   BottomSheetView,
   type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
-import { XIcon } from 'phosphor-react-native';
+import { XIcon } from 'phosphor-react-native/src/icons/X';
 import * as React from 'react';
 import { View, useWindowDimensions, type Text as RNText } from 'react-native';
 import { Easing, ReduceMotion } from 'react-native-reanimated';

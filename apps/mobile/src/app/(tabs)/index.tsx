@@ -10,7 +10,11 @@
  * Not much today `soft`. Nothing else.
  */
 import { Redirect, router, useFocusEffect } from 'expo-router';
-import { ArrowsClockwiseIcon, CaretRightIcon, CheckCircleIcon, MicrophoneIcon, PencilSimpleIcon } from 'phosphor-react-native';
+import { ArrowsClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowsClockwise';
+import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
+import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
+import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';

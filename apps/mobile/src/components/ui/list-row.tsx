@@ -13,7 +13,7 @@
  *   text is hidden from VoiceOver so it is read once, as "Label, switch, on".
  * Haptics: none (navigation is not a haptic moment; the native switch has its own).
  */
-import { CaretRightIcon } from 'phosphor-react-native';
+import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import * as React from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import { Toggle } from '@/components/platform/toggle';

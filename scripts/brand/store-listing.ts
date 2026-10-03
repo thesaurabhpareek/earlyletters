@@ -19,7 +19,7 @@ const SCREENS: Record<string, string> = {
   voice: 'A letter from Mama with "Hear Mama"',
   book: "Asha's book, by month",
   together: 'Read together, dark mode',
-  private: 'Settings: Privacy, Export your book, Delete account',
+  private: 'Settings, Privacy: the switches and "What we never do"',
 };
 
 const md = `# App Store listing (v1.0)
@@ -58,7 +58,7 @@ ${s.whatsNewV1}
 
 ## Screenshots
 
-Six frames, rendered from the web preview with the fictional family "Asha" and composed by \`scripts/brand/screenshots.mts\`. Sizes: 1320 x 2868 (6.9-inch) and 1242 x 2688 (6.5-inch), PNG, no alpha. Files: \`docs/store/screenshots/<size>/<nn>-<id>.png\`.
+Six frames, rendered from the web preview with the fictional family "Asha" and composed by \`scripts/brand/screenshots.mts\`. Sizes: 1320 x 2868 (6.9-inch) and 1242 x 2688 (6.5-inch), PNG, no alpha. The script writes \`scripts/brand/dist/screenshots/<size>/<nn>-<id>.png\` (git-ignored); upload from there. Frames are not committed (COORDINATION section 8). Capture steps are in the script header: Reduce Motion on, \`?seed=asha\`, and on the web preview only, a stand-in that reports the seeded recordings as present and plays quiet audio of the seeded length, because the web build has no file system. Nothing in a frame is drawn by hand.
 
 | # | Caption | Subline | Screen | Appearance |
 |---|---|---|---|---|

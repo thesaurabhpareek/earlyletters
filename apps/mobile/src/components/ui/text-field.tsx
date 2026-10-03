@@ -13,7 +13,7 @@
  *   (announce() on iOS, a polite live region on Android).
  * - Uncapped Dynamic Type; the field grows taller, never clips.
  */
-import { WarningCircleIcon } from 'phosphor-react-native';
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import * as React from 'react';
 import { Platform, TextInput, View, type TextInputProps } from 'react-native';
 import { tokens } from '@scribe/design-tokens';

@@ -2,7 +2,7 @@
 -- Founder decision 3 (docs/agents/BRIEF-2026-10-03.md, 3 Oct 2026) and
 -- docs/adr/0013-apple-native-subscriptions.md as decided.
 --
--- PENDING: not yet applied. Apply after 20261003041500_sync_cursor_pull.sql
+-- PENDING: not yet applied. Apply after 20261003020000_purge_batching.sql
 -- (it replaces functions created in 20261003010000 and 20261003020000).
 --
 -- What this removes

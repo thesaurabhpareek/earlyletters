@@ -1,5 +1,5 @@
 // android: same (RN Modal renders as a bottom panel on both platforms; no 3-button limit)
-import { CheckIcon } from 'phosphor-react-native';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { Modal, Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';

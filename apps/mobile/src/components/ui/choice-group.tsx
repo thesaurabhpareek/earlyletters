@@ -17,7 +17,7 @@
  *   tag         read-only label (accentSoft)
  * Haptics: `tap` when a choice changes (a selection tick); none for tags.
  */
-import { CheckIcon } from 'phosphor-react-native';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import * as React from 'react';
 import { Platform, View } from 'react-native';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';

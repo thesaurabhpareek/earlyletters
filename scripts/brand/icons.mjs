@@ -10,6 +10,7 @@
 //   apps/mobile/assets/brand/icon-tinted.png      1024, iOS 18+ tinted, grayscale on black
 //   apps/mobile/assets/brand/android-foreground.png, android-monochrome.png   432, adaptive layers
 //   apps/mobile/assets/brand/splash.png, splash-dark.png                     480, splash mark
+//   apps/mobile/assets/brand/favicon.png                                      48, web preview
 //   packages/brand/logo/mark.svg, app-icon.svg                               vector masters
 // Preview outputs (not committed): every legacy iOS size with Contents.json, Play 512 icon,
 // favicon sizes and contact sheets.
@@ -57,6 +58,8 @@ await write(join(ASSETS, 'android-foreground.png'), await raster(svg.androidFore
 await write(join(ASSETS, 'android-monochrome.png'), await raster(svg.androidMonochrome, 432));
 await write(join(ASSETS, 'splash.png'), await raster(svg.splashLight, 480));
 await write(join(ASSETS, 'splash-dark.png'), await raster(svg.splashDark, 480));
+// Web preview favicon (app.config.ts `web.favicon`).
+await write(join(ASSETS, 'favicon.png'), await raster(svg.iosLight, 48, { opaque: PALETTE.accent }));
 writeFileSync(join(LOGO, 'mark.svg'), svg.markAccent);
 writeFileSync(join(LOGO, 'app-icon.svg'), svg.iosLight);
 console.log('packages/brand/logo/mark.svg, app-icon.svg');

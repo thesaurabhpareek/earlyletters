@@ -13,7 +13,7 @@
  * - "Saved on this phone" is a quiet status, announced at most every 10 s.
  */
 import { router, useLocalSearchParams } from 'expo-router';
-import { CheckIcon } from 'phosphor-react-native';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';

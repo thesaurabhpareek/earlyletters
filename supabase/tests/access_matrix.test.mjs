@@ -56,6 +56,9 @@ await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', 'x
 await sys(`insert into storage_purge_queue (bucket_id, object_path, reason) values ('entry-photos', 'x/', 'orphan')`);
 const dreq = (await sys(`insert into deletion_requests (kind, profile_id, status, source, scheduled_for) values ('account', $1, 'cancelled', 'ios', now()) returning id`, [C])).rows[0].id;
 await sys(`insert into deletion_request_steps (request_id, step) values ($1, 'auth_user')`, [dreq]);
+// One sync receipt and one rate window, both A's, so the own-rows rules are shown for others.
+await sys(`insert into sync_op_receipts (op_id, profile_id) values ($1, $2)`, [uuid7(), A]);
+await sys(`insert into sync_rate_windows (profile_id, bucket, window_start, hits) values ($1, 'push', now(), 1)`, [A]);
 
 const PERSONAS = ['parent', 'coparent', 'contributor', 'outsider', 'anonymous', 'anon'];
 const UID = { parent: A, coparent: B, contributor: N, outsider: C, anonymous: W };
@@ -100,6 +103,10 @@ const READS = [
   ['legal_holds', 'select 1 from legal_holds', [],                                    [0, 0, 0, 0, 0, 0]],
   ['purge_ledger', 'select 1 from purge_ledger', [],                                  [0, 0, 0, 0, 0, 0]],
   ['storage_purge_queue', 'select 1 from storage_purge_queue', [],                    [0, 0, 0, 0, 0, 0]],
+  // Sync (20261004100000): epochs are the same two values for every signed-in person; receipts and rate windows are own rows only.
+  ['sync_epochs', 'select 1 from sync_epochs', [],                                    [1, 1, 1, 1, 0, 0]],
+  ['sync_op_receipts', 'select 1 from sync_op_receipts', [],                          [1, 0, 0, 0, 0, 0]],
+  ['sync_rate_windows', 'select 1 from sync_rate_windows', [],                        [1, 0, 0, 0, 0, 0]],
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], [1, 1, 1, 0, 0, '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], [1, 0, 0, 0, 0, '42501']],
@@ -147,10 +154,10 @@ const RPCS = [
   ['record_policy_act', `select public.record_policy_act('privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['policy_actions_needed', `select * from public.policy_actions_needed()`,              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['my_sync_gate', `select * from public.my_sync_gate()`,                                ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  // Sync (20261003041500_sync_cursor_pull.sql; behaviour in sync.test.mjs).
+  // Sync (20261004100000_sync_engine.sql; behaviour in sync_engine.test.mjs).
   ['sync_books', `select public.sync_books()`,                                            ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['sync_pull_book', `select public.sync_pull_book('${CHILD}')`,                         ['ok', 'ok', 'ok', 'P0002', 'SCANO', '42501']],
-  ['sync_push_entries', `select public.sync_push_entries('[]')`,                          ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['sync_pull', `select public.sync_pull('{}'::jsonb, 10)`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['sync_push', `select public.sync_push('[]'::jsonb)`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -174,6 +181,7 @@ const SERVICE_ONLY = [
   `select public.audit('purge_run', null, null, null)`, `select public.create_child_row('${A}', '${uuid7()}', 'Asha', '2025-05-20', null)`,
   `select public.enqueue_storage_purge('entry-photos', 'x', false, 'orphan')`, `select public.is_held('child', '${CHILD}')`,
   `select public.entry_is_held('${aBook}')`, `select public.purge_backoff(1)`,
+  `select public.sync_begin_epoch('drill', null)`, `select public.sync_housekeeping(now(), 10)`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));

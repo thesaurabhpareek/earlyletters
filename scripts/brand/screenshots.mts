@@ -1,10 +1,13 @@
 // Composes the six App Store screenshot frames from raw web-preview captures.
 //
 //   1. cd apps/mobile && EXPO_PUBLIC_WEB_PREVIEW=1 npx expo export --platform web --output-dir <web>
-//   2. Serve <web> and capture each screen with `?seed=asha` (the fictional family) at 440x956 and
-//      414x896 points, 3x, Reduce Motion on, into <raw>/6.9/<id>.png and <raw>/6.5/<id>.png.
-//      Screen ids are `storeListing.screenshots[].id` (talk, exact, voice, book, together, private).
-//   3. npx tsx scripts/brand/screenshots.mts --raw <raw> [--out docs/store/screenshots] [--preview <dir>]
+//   2. Serve <web> (any static server) and run scripts/brand/capture-store.cjs twice:
+//      `<raw>/6.9 440 956` and `<raw>/6.5 414 896`. It captures each screen with `?seed=asha` (the
+//      fictional family), 3x, Reduce Motion on. Screen ids are `storeListing.screenshots[].id`
+//      (talk, exact, voice, book, together, private).
+//   3. npx tsx scripts/brand/screenshots.mts --raw <raw> [--out <dir>] [--preview <dir>]
+//      Default --out is scripts/brand/dist/screenshots (git-ignored): frames are uploaded to App Store
+//      Connect from there and never committed (COORDINATION section 8).
 //
 // Frames: caption in Literata Medium, subline in Mukta (packages/design-tokens/fonts, SIL OFL),
 // on paper (dark frames on dark paper), the screen inside a plain rounded phone outline we draw
@@ -26,7 +29,7 @@ const arg = (name: string, fallback?: string) => {
 };
 const RAW = arg('raw');
 if (!RAW) throw new Error('Pass --raw <dir> with 6.9/ and 6.5/ captures (see the header of this file).');
-const OUT = resolve(arg('out', join(ROOT, 'docs', 'store', 'screenshots'))!);
+const OUT = resolve(arg('out', join(ROOT, 'scripts', 'brand', 'dist', 'screenshots'))!);
 const PREVIEW = arg('preview');
 const FONTS = join(ROOT, 'packages', 'design-tokens', 'fonts');
 const SERIF = join(FONTS, 'Literata-Medium.ttf');

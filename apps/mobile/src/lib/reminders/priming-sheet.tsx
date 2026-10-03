@@ -1,4 +1,6 @@
-import { BellSimpleIcon, LockSimpleIcon, MoonIcon } from 'phosphor-react-native';
+import { BellSimpleIcon } from 'phosphor-react-native/src/icons/BellSimple';
+import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { MoonIcon } from 'phosphor-react-native/src/icons/Moon';
 import { Modal, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';

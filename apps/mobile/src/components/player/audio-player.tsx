@@ -1,5 +1,6 @@
 // web: same component over <audio> later | android: same code; verify TalkBack adjustable gestures (COMPONENTS 2.21)
-import { PauseIcon, PlayIcon } from 'phosphor-react-native';
+import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
+import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useMemo, useState } from 'react';
 import { Pressable, Switch, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';

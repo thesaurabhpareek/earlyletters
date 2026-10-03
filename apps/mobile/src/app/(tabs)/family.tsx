@@ -10,7 +10,9 @@
  * starts sign-in (PRD A F3.3a).
  */
 import { router, useFocusEffect, Redirect } from 'expo-router';
-import { ShareNetworkIcon, UserPlusIcon, XIcon } from 'phosphor-react-native';
+import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
+import { UserPlusIcon } from 'phosphor-react-native/src/icons/UserPlus';
+import { XIcon } from 'phosphor-react-native/src/icons/X';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 import Animated from 'react-native-reanimated';

@@ -9,7 +9,8 @@
  * Motion: the first 6 cards enter (280 ms, 30 ms stagger); nothing else moves on its own.
  */
 import { Redirect, router } from 'expo-router';
-import { BookOpenTextIcon, GearSixIcon } from 'phosphor-react-native';
+import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
+import { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix';
 import { useEffect, useMemo, useState } from 'react';
 import { SectionList, View } from 'react-native';
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, Extrapolation } from 'react-native-reanimated';

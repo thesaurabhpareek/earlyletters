@@ -114,7 +114,7 @@ for (const f of verdict.findings) print(`FINDING  ${f}`);
 print(verdict.pass ? 'PASS' : 'FAIL: write up the gap in the drill log (docs/ops/runbooks/restore-drill.md)');
 if (mode === 'restore') {
   print('Before reopening to clients: bump the sync epoch so phones re-upload what the restore lost:');
-  print("  alter database postgres set app.sync_epoch = '<current + 1>';   (20261003041500_sync_cursor_pull.sql)");
+  print(`  select public.sync_begin_epoch('database_restore', '${restorePoint.toISOString()}');   (service role; 20261004100000_sync_engine.sql)`);
 }
 if (typeof flags.out === 'string') {
   writePrivate(flags.out, JSON.stringify({

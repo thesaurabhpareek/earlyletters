@@ -1,6 +1,8 @@
 // android: same (RN Modal renders as a bottom panel on both platforms)
 import { router } from 'expo-router';
-import { CaretDownIcon, CheckIcon, PlusIcon } from 'phosphor-react-native';
+import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
+import { PlusIcon } from 'phosphor-react-native/src/icons/Plus';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

@@ -6,7 +6,9 @@
  */
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { router, useNavigation } from 'expo-router';
-import { EnvelopeSimpleIcon, FingerprintIcon, WarningCircleIcon } from 'phosphor-react-native';
+import { EnvelopeSimpleIcon } from 'phosphor-react-native/src/icons/EnvelopeSimple';
+import { FingerprintIcon } from 'phosphor-react-native/src/icons/Fingerprint';
+import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import Svg, { Path } from 'react-native-svg';

@@ -13,7 +13,7 @@
  *    by the stateless analytics-forget function (TDD 05 X-02); the server never
  *    holds analytics ids.
  *  - powersync_verify: `not_applicable`. v1.0 has no sync vendor (D-023,
- *    20261003041500_sync_cursor_pull.sql).
+ *    20261004100000_sync_engine.sql).
  */
 import { makeClientSecret, revokeAppleToken, unwrapAppleToken } from './lib/apple.ts';
 import { ServiceError } from './lib/http.ts';

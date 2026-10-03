@@ -1,5 +1,6 @@
 // web: apps/web/components/settings (not yet) | android: same
-import { CaretRightIcon, CheckIcon } from 'phosphor-react-native';
+import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import type { ReactNode } from 'react';
 import { Pressable, Switch, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';

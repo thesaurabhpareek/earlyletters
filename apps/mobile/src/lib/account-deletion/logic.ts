@@ -7,7 +7,7 @@
  */
 import { accountDeletionCopy as c } from './copy';
 
-/** A book as `sync_books()` describes it (20261003041500_sync_cursor_pull.sql). */
+/** A book as `sync_books()` describes it (20261004100000_sync_engine.sql, section 8b). */
 export interface SyncBook {
   id: string;
   name: string;

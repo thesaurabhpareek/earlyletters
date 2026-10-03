@@ -40,7 +40,7 @@ EXACTLY AS YOU SAID IT
 Your words are written down on your phone. We only fix what a microphone gets wrong: a stray "um", a repeated word, a missing full stop. We never rewrite your words. Read each letter back, and put any fix back with one tap.
 
 YOUR VOICE, KEPT
-The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it.
+The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it. ${en.trust.voice}
 
 READ TOGETHER
 Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page.

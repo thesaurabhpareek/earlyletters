@@ -20,7 +20,7 @@ Rules this copy follows (docs/DECISIONS.md, 3 Oct 2026): no "beta" (D-060, guide
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (2847 / 4000)
+## Description (2939 / 4000)
 
 ```text
 Early Letters is a baby memory book you fill by talking.
@@ -31,7 +31,7 @@ EXACTLY AS YOU SAID IT
 Your words are written down on your phone. We only fix what a microphone gets wrong: a stray "um", a repeated word, a missing full stop. We never rewrite your words. Read each letter back, and put any fix back with one tap.
 
 YOUR VOICE, KEPT
-The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it.
+The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it. We never imitate your voice. Your original recording is always kept exactly as you made it.
 
 READ TOGETHER
 Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page.
@@ -75,7 +75,7 @@ Hello. This is the first version of Early Letters. Talk or type a letter to your
 
 ## Screenshots
 
-Six frames, rendered from the web preview with the fictional family "Asha" and composed by `scripts/brand/screenshots.mjs`. Sizes: 1320 x 2868 (6.9-inch) and 1242 x 2688 (6.5-inch), PNG, no alpha. Files: `docs/store/screenshots/<size>/<nn>-<id>.png`.
+Six frames, rendered from the web preview with the fictional family "Asha" and composed by `scripts/brand/screenshots.mts`. Sizes: 1320 x 2868 (6.9-inch) and 1242 x 2688 (6.5-inch), PNG, no alpha. The script writes `scripts/brand/dist/screenshots/<size>/<nn>-<id>.png` (git-ignored); upload from there. Frames are not committed (COORDINATION section 8). Capture steps are in the script header: Reduce Motion on, `?seed=asha`, and on the web preview only, a stand-in that reports the seeded recordings as present and plays quiet audio of the seeded length, because the web build has no file system. Nothing in a frame is drawn by hand.
 
 | # | Caption | Subline | Screen | Appearance |
 |---|---|---|---|---|
@@ -84,7 +84,7 @@ Six frames, rendered from the web preview with the fictional family "Asha" and c
 | 3 | Your voice stays with every letter | One day your child can hear you say it. | A letter from Mama with "Hear Mama" | light |
 | 4 | A memory book, month by month | Every letter finds its month on its own. | Asha's book, by month | light |
 | 5 | Read together at bedtime | The letters you spoke, in your own voice. | Read together, dark mode | dark |
-| 6 | Private to your family | Never sold. Never used for ads. | Settings: Privacy, Export your book, Delete account | light |
+| 6 | Private to your family | Never sold. Never used for ads. | Settings, Privacy: the switches and "What we never do" | light |
 
 The first three show in search results, so they carry the core promise: talk, kept exactly, your voice. Frame 5 is dark, as bedtime is (CREATIVE section 4). Frame 6 is the privacy promise, shown as the real controls rather than a badge.
 

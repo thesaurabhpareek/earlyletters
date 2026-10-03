@@ -7,7 +7,7 @@
  * VoiceOver element (a ListRow would merge it into the row's label), and
  * both offer Remove and Try again as accessibility actions too.
  */
-import { CaretRightIcon } from 'phosphor-react-native';
+import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import { Platform, Pressable, View, type AccessibilityActionEvent } from 'react-native';
 import { languageInfo, type LanguageCode } from '@scribe/core';
 import { Button } from '@/components/ui/button';

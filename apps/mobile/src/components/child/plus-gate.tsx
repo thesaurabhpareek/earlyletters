@@ -1,5 +1,5 @@
 import type { Decision } from '@scribe/core';
-import { BooksIcon } from 'phosphor-react-native';
+import { BooksIcon } from 'phosphor-react-native/src/icons/Books';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ScrollView, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';

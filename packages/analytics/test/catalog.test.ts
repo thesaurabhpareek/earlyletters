@@ -10,6 +10,7 @@ import {
   REQUIRED_POSTHOG_AUTOCAPTURE,
   REQUIRED_POSTHOG_OPTIONS,
   type PropSpec,
+  withRenderedCatalogue,
 } from '../src';
 
 const entries = Object.entries(EVENTS) as [string, { area: string; reqs: readonly string[]; level: string; props: Record<string, PropSpec> }][];
@@ -108,14 +109,10 @@ describe('catalogue rules', () => {
     }
   });
 
-  it('every event and property is documented in docs/analytics/TRACKING_PLAN.md', () => {
+  it('docs/analytics/TRACKING_PLAN.md section 3.1 is the generated catalogue (run `npm run plan -w @scribe/analytics`)', () => {
     const plan = readFileSync(resolve(__dirname, '../../../docs/analytics/TRACKING_PLAN.md'), 'utf8');
-    for (const [name, spec] of entries) {
-      expect(plan, `event ${name}`).toContain(`\`${name}\``);
-      for (const key of Object.keys(spec.props)) {
-        expect(plan.includes(`\`${key}\``) || plan.includes(`${key}:`), `${name}.${key}`).toBe(true);
-      }
-    }
+    expect(withRenderedCatalogue(plan) === plan, 'TRACKING_PLAN.md is out of date: run `npm run plan -w @scribe/analytics`').toBe(true);
+    for (const [name] of entries) expect(plan, `event ${name}`).toContain(`\`${name}\``);
   });
 });
 
