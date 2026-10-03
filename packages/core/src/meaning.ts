@@ -7,18 +7,24 @@
  * refuses. A refused edit costs a parent one untidy word; an accepted wrong
  * edit puts words in their mouth.
  */
-import { FUNCTION_WORDS, tokens } from './text';
+import { frozenSet, FUNCTION_WORDS, nfc, tokens } from './text';
 
-/** Normalise a word for comparison: lowercase, straight apostrophe. */
+/** Normalise a word for comparison: NFC, lowercase, straight apostrophe. */
 export function norm(word: string): string {
-  return word.toLowerCase().replace(/[’‘′]/g, "'");
+  return nfc(word).toLowerCase().replace(/[’‘′]/g, "'");
 }
 
-/** Words that negate on their own. Hindi/Hinglish forms included; "na" is excluded (also a tag particle). */
-export const NEGATIONS: ReadonlySet<string> = new Set([
+/**
+ * Words that negate on their own. Hindi/Hinglish forms included in both
+ * scripts. Roman "na" is excluded (also a tag particle: "go na"); in
+ * Devanagari ना and न are counted, because refusing an edit near a tag
+ * particle costs one untidy word, while losing a real "no" reverses meaning.
+ */
+export const NEGATIONS: ReadonlySet<string> = frozenSet([
   'not', 'no', 'never', 'cannot', 'nobody', 'nothing', 'none', 'nowhere', 'neither', 'nor', 'nope', 'nah',
   'nahi', 'nahin',
-]);
+  'नहीं', 'नही', 'मत', 'ना', 'न',
+].map((w) => nfc(w)));
 
 export function isNegation(word: string): boolean {
   const w = norm(word);
@@ -30,13 +36,13 @@ export function negationCount(text: string): number {
 }
 
 /** Modal verbs and their contracted forms. Swapping one for another changes meaning. */
-export const MODALS: ReadonlySet<string> = new Set([
+export const MODALS: ReadonlySet<string> = frozenSet([
   'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must', 'ought',
   "can't", "couldn't", "won't", "wouldn't", "shan't", "shouldn't", "mightn't", "mustn't",
 ]);
 
 /** Number words. Digits are handled by `numbersOf` directly. */
-export const NUMBER_WORDS: ReadonlySet<string> = new Set([
+export const NUMBER_WORDS: ReadonlySet<string> = frozenSet([
   'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
   'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty', 'forty',
   'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'hundred', 'thousand', 'million', 'half', 'once', 'twice',
@@ -70,7 +76,7 @@ export function quoteMarkCount(text: string): number {
  * dictionary name by similarity ("Daddy" -> "Asha"); a parent can still teach
  * the mapping explicitly through `heardAs` ("mama" -> "Mumma").
  */
-export const KINSHIP: ReadonlySet<string> = new Set([
+export const KINSHIP: ReadonlySet<string> = frozenSet([
   'mom', 'mommy', 'mum', 'mummy', 'mumma', 'mama', 'mamma', 'ma', 'mother', 'amma', 'ammi', 'maa',
   'dad', 'daddy', 'papa', 'pappa', 'pa', 'father', 'baba', 'abba', 'appa',
   'nani', 'nana', 'dadi', 'dada', 'nanu', 'grandma', 'grandpa', 'granny', 'gran', 'grandad', 'granddad', 'grandmother',
@@ -81,7 +87,7 @@ export const KINSHIP: ReadonlySet<string> = new Set([
 ]);
 
 /** Pronouns beyond the function-word list. */
-const PRONOUNS: ReadonlySet<string> = new Set([
+const PRONOUNS: ReadonlySet<string> = frozenSet([
   'hers', 'mine', 'yours', 'theirs', 'ours', 'myself', 'yourself', 'himself', 'herself', 'itself', 'ourselves',
   'themselves', 'yourselves', "i'll", "i've", "i'd", "you'll", "she'll", "he'll", "we'll", "they'll",
   'who', 'whom', 'whose', 'someone', 'somebody', 'everyone', 'everybody', 'anyone', 'anybody',
@@ -104,29 +110,29 @@ export function isPronounI(word: string): boolean {
 /* ---------- agreement: number and person only ---------- */
 
 /** Same verb (or article), different number or person. Tense never changes inside a group. */
-const AGREEMENT_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
-  new Set(['is', 'are', 'am']),
-  new Set(['was', 'were']),
-  new Set(['has', 'have']),
-  new Set(['do', 'does']),
-  new Set(['go', 'goes']),
-  new Set(["isn't", "aren't"]),
-  new Set(["wasn't", "weren't"]),
-  new Set(["hasn't", "haven't"]),
-  new Set(["doesn't", "don't"]),
-  new Set(['a', 'an']),
-];
+const AGREEMENT_GROUPS: ReadonlyArray<ReadonlySet<string>> = Object.freeze([
+  frozenSet(['is', 'are', 'am']),
+  frozenSet(['was', 'were']),
+  frozenSet(['has', 'have']),
+  frozenSet(['do', 'does']),
+  frozenSet(['go', 'goes']),
+  frozenSet(["isn't", "aren't"]),
+  frozenSet(["wasn't", "weren't"]),
+  frozenSet(["hasn't", "haven't"]),
+  frozenSet(["doesn't", "don't"]),
+  frozenSet(['a', 'an']),
+]);
 
 /** Groups that span tenses. A move inside one of these is a tense change. */
-const TENSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
-  new Set(['is', 'are', 'am', 'was', 'were', 'be', 'been', 'being']),
-  new Set(['has', 'have', 'had', 'having']),
-  new Set(['do', 'does', 'did', 'done', 'doing']),
-  new Set(['go', 'goes', 'went', 'gone', 'going']),
-  new Set(["isn't", "aren't", "wasn't", "weren't"]),
-  new Set(["hasn't", "haven't", "hadn't"]),
-  new Set(["doesn't", "don't", "didn't"]),
-];
+const TENSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = Object.freeze([
+  frozenSet(['is', 'are', 'am', 'was', 'were', 'be', 'been', 'being']),
+  frozenSet(['has', 'have', 'had', 'having']),
+  frozenSet(['do', 'does', 'did', 'done', 'doing']),
+  frozenSet(['go', 'goes', 'went', 'gone', 'going']),
+  frozenSet(["isn't", "aren't", "wasn't", "weren't"]),
+  frozenSet(["hasn't", "haven't", "hadn't"]),
+  frozenSet(["doesn't", "don't", "didn't"]),
+]);
 
 /** walk/walks, watch/watches, carry/carries: the same word with a number or person ending. */
 function sameWordWithS(a: string, b: string): boolean {
@@ -170,7 +176,8 @@ export function classifyWordSwap(a: string, b: string): 'changes_negation' | 'ch
  * swaps, not a phonetic algorithm.
  */
 export function soundKey(text: string): string {
-  let s = norm(text).replace(/[^\p{L}]/gu, '');
+  // Marks stay (CORE-01): an accent or vowel sign is part of how a name sounds.
+  let s = norm(text).replace(/[^\p{L}\p{M}]/gu, '');
   s = s
     .replace(/sh/g, 'S')
     .replace(/ch/g, 'C')

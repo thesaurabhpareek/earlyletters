@@ -19,7 +19,7 @@ import { normalizeChars } from './text';
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 3;
+export const ENGINE_VERSION = 4;
 // 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
 //   collapse; "in in", "so so" become suggestions; "what it was was" kept.
 // 3 (2026-10-03): verifier hardening (BL-064, TDD 03 7.1). Refuses edits that
@@ -27,6 +27,12 @@ export const ENGINE_VERSION = 3;
 //   type (? !), names or pronouns outside the dictionary, mid-sentence
 //   capitals, and removals that are emphasis or a complete phrase said twice.
 //   Rules-only output for every existing fixture is unchanged.
+// 4 (2026-10-03): Unicode safety (CORE-01, PMOB-01). Words include combining
+//   marks (\p{M}) and compare in NFC, so a vowel sign, virama, nukta or accent
+//   is a letter: है -> हो and नहीं -> नही are refused, and so is any edit
+//   boundary that cuts a letter from its marks. Devanagari negations (नहीं,
+//   नही, मत, ना, न) are guarded. Dictionary terms no longer match the start
+//   of a longer Indic word. Pinned by test/golden.test.ts (CORE-08).
 
 export interface CleanOptions {
   level: EditLevel;

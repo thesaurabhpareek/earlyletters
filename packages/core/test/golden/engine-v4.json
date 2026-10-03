@@ -1,0 +1,467 @@
+{
+  "engineVersion": 4,
+  "cases": {
+    "en-filler": {
+      "text": "she was so happy when Asha saw the duck.",
+      "applied": [
+        {
+          "type": "filler",
+          "start": 0,
+          "end": 4,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-false-start": {
+      "text": "she was, she was so proud of herself",
+      "applied": [
+        {
+          "type": "filler",
+          "start": 9,
+          "end": 13,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-repeat-article": {
+      "text": "I will always remember the way you laughed at the dog.",
+      "applied": [
+        {
+          "type": "repeat",
+          "start": 49,
+          "end": 53,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-phrase-restart": {
+      "text": "it was like a little hiccup and then she slept",
+      "applied": [
+        {
+          "type": "repeat",
+          "start": 13,
+          "end": 20,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-you-you": {
+      "text": "Today you held the spoon by yourself.",
+      "applied": [
+        {
+          "type": "repeat",
+          "start": 9,
+          "end": 13,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-emphasis-kept": {
+      "text": "I love you, I love you so much.",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-cleft-kept": {
+      "text": "What it was was magic.",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-dictionary": {
+      "text": "Asha ate peas and Mumma laughed.",
+      "applied": [
+        {
+          "type": "stt_fix",
+          "start": 0,
+          "end": 4,
+          "replacement": "Asha",
+          "source": "rule"
+        },
+        {
+          "type": "stt_fix",
+          "start": 18,
+          "end": 22,
+          "replacement": "Mumma",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-quote-protected": {
+      "text": "Asha said \"bau bau\" to the cat.",
+      "applied": [
+        {
+          "type": "stt_fix",
+          "start": 0,
+          "end": 4,
+          "replacement": "Asha",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-verbatim": {
+      "text": "um she, uh, walked to Mumma",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-locked": {
+      "text": "she said the the moon is hers",
+      "applied": [],
+      "rejected": [
+        "repeat:overlaps_protected"
+      ],
+      "suggestions": []
+    },
+    "en-model-honest": {
+      "text": "She has a cold but she is still smiling",
+      "applied": [
+        {
+          "type": "punctuation",
+          "start": 0,
+          "end": 3,
+          "replacement": "She",
+          "source": "model"
+        },
+        {
+          "type": "agreement",
+          "start": 4,
+          "end": 8,
+          "replacement": "has",
+          "source": "model"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "en-model-hostile": {
+      "text": "I can come and she is happy.",
+      "applied": [],
+      "rejected": [
+        "agreement:changes_negation",
+        "agreement:changes_tense",
+        "punctuation:changes_sentence_type"
+      ],
+      "suggestions": []
+    },
+    "hinglish-filler": {
+      "text": "Asha ne aaj pehli baar Mumma bola!",
+      "applied": [
+        {
+          "type": "filler",
+          "start": 0,
+          "end": 4,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hinglish-negation": {
+      "text": "woh nahi soyi, bilkul nahi.",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hinglish-na-tag": {
+      "text": "chalo, Nani ke ghar chalein na",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hinglish-heard-as": {
+      "text": "chalo beta, bath time",
+      "applied": [
+        {
+          "type": "stt_fix",
+          "start": 0,
+          "end": 7,
+          "replacement": "chalo",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hinglish-repeat": {
+      "text": "Ashu and Nani played all day",
+      "applied": [
+        {
+          "type": "repeat",
+          "start": 8,
+          "end": 12,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hinglish-kinship": {
+      "text": "Dadi ne kaha ki Asha bahut cute hai",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hinglish-nahin": {
+      "text": "she is nahin sleeping, nahin.",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hinglish-model-negation": {
+      "text": "woh nahi soyi aaj.",
+      "applied": [],
+      "rejected": [
+        "filler:not_a_filler"
+      ],
+      "suggestions": []
+    },
+    "hinglish-model-name-swap": {
+      "text": "then Dada came home.",
+      "applied": [],
+      "rejected": [
+        "stt_fix:stt_fix_protected_word"
+      ],
+      "suggestions": []
+    },
+    "hinglish-numbers": {
+      "text": "Asha ne 2 roti khayi at 3:30",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-plain": {
+      "text": "वह खुश है।",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-negation": {
+      "text": "मैं नहीं जाऊंगा।",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-dictionary": {
+      "text": "आशा आज बहुत हँसी।",
+      "applied": [
+        {
+          "type": "stt_fix",
+          "start": 0,
+          "end": 3,
+          "replacement": "आशा",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-dictionary-boundary": {
+      "text": "आशाएँ बड़ी हैं, आशा सो गई।",
+      "applied": [
+        {
+          "type": "stt_fix",
+          "start": 16,
+          "end": 19,
+          "replacement": "आशा",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-repeat-kept": {
+      "text": "नहीं नहीं, वह सो रही है।",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-um-and-double-kept": {
+      "text": "उम, वह वह खेल रही थी",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-mat": {
+      "text": "उसे मत उठाओ, वह सो रही है।",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-nukta": {
+      "text": "ज़रा रुको, आशा आ रही है।",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-question": {
+      "text": "क्या तुमने चाँद देखा?",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-double-danda": {
+      "text": "आशु सो गया॥ फिर उठा",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-model-hai-to-ho": {
+      "text": "वह खुश है।",
+      "applied": [],
+      "rejected": [
+        "punctuation:punctuation_changed_letters"
+      ],
+      "suggestions": []
+    },
+    "hi-model-nahin-to-nah": {
+      "text": "मैं नहीं जाऊंगा।",
+      "applied": [],
+      "rejected": [
+        "punctuation:punctuation_changed_letters"
+      ],
+      "suggestions": []
+    },
+    "hi-model-anusvara": {
+      "text": "मैं नहीं जाऊंगा।",
+      "applied": [],
+      "rejected": [
+        "punctuation:punctuation_changed_letters"
+      ],
+      "suggestions": []
+    },
+    "hi-model-virama": {
+      "text": "थोड़ा नमक डालो।",
+      "applied": [],
+      "rejected": [
+        "punctuation:punctuation_changed_letters"
+      ],
+      "suggestions": []
+    },
+    "hi-model-honest-period": {
+      "text": "आशा आज बहुत हँसी।",
+      "applied": [
+        {
+          "type": "punctuation",
+          "start": 12,
+          "end": 16,
+          "replacement": "हँसी।",
+          "source": "model"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "hi-model-wedge": {
+      "text": "वह खुश है",
+      "applied": [],
+      "rejected": [
+        "punctuation:splits_word"
+      ],
+      "suggestions": []
+    },
+    "nfd-plain": {
+      "text": "We went to the café and Asha laughed.",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "nfd-repeat": {
+      "text": "the café was busy but she was not.",
+      "applied": [
+        {
+          "type": "repeat",
+          "start": 3,
+          "end": 7,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "nfd-quoted": {
+      "text": "Mumma said \"café\" twice.",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "nfd-name": {
+      "text": "Asha met Zoë at the park today",
+      "applied": [],
+      "rejected": [],
+      "suggestions": []
+    },
+    "nfd-filler": {
+      "text": "it was a naïve little song",
+      "applied": [
+        {
+          "type": "filler",
+          "start": 0,
+          "end": 4,
+          "replacement": "",
+          "source": "rule"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "nfd-model-drop-accent": {
+      "text": "We went to the café today.",
+      "applied": [],
+      "rejected": [
+        "punctuation:punctuation_changed_letters"
+      ],
+      "suggestions": []
+    },
+    "nfd-model-to-nfc": {
+      "text": "We went to the café today.",
+      "applied": [
+        {
+          "type": "punctuation",
+          "start": 15,
+          "end": 20,
+          "replacement": "café",
+          "source": "model"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    },
+    "nfd-model-capital": {
+      "text": "Señor Ashu waved",
+      "applied": [
+        {
+          "type": "punctuation",
+          "start": 0,
+          "end": 1,
+          "replacement": "S",
+          "source": "model"
+        }
+      ],
+      "rejected": [],
+      "suggestions": []
+    }
+  }
+}

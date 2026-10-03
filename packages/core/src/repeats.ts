@@ -18,10 +18,10 @@
  * the verifier's "duplicates the words immediately before" check proves it.
  */
 import type { Edit } from './types';
-import { FUNCTION_WORDS, tokens, type Token } from './text';
+import { frozenSet, FUNCTION_WORDS, nfc, tokens, type Token } from './text';
 
 /** Doubles of these are never grammatical side by side: always removed. */
-export const REPEAT_ALWAYS = new Set([
+export const REPEAT_ALWAYS: ReadonlySet<string> = frozenSet([
   'the', 'a', 'an', 'i', 'and', 'to', 'it', 'she', 'he', 'we', 'they', 'of', 'but',
 ]);
 
@@ -31,13 +31,13 @@ export const REPEAT_ALWAYS = new Set([
  * "had had", "that that" and "her her" are deliberately absent: they are
  * usually grammatical, so even a suggestion would be noise.
  */
-export const REPEAT_SUGGEST_ONLY = new Set([
+export const REPEAT_SUGGEST_ONLY: ReadonlySet<string> = frozenSet([
   'you', 'so', 'is', 'in', 'on', 'at', 'for', 'with', 'from',
   'my', 'your', 'our', 'their', 'his', 'me', 'them', 'us', 'this',
 ]);
 
 /** Before a doubled "you", these mark the start of a clause (subject position). */
-const SUBJECT_LEAD = new Set([
+const SUBJECT_LEAD: ReadonlySet<string> = frozenSet([
   'and', 'but', 'so', 'then', 'because', 'cause', 'when', 'while', 'if', 'now', 'today', 'tonight', 'yesterday',
   'also', 'oh', 'okay', 'ok',
 ]);
@@ -46,7 +46,7 @@ const SUBJECT_LEAD = new Set([
  * Verbs that take "you" as an object and then often a clause starting with
  * "you": "I told you you were brave". Not even suggested after these.
  */
-const OBJECT_VERBS = new Set([
+const OBJECT_VERBS: ReadonlySet<string> = frozenSet([
   'tell', 'tells', 'told', 'telling', 'promise', 'promised', 'show', 'showed', 'remind', 'reminded', 'ask', 'asked',
   'bet', 'assure', 'assured', 'warn', 'warned', 'teach', 'taught', 'wish', 'let', 'make', 'made', 'thank', 'thanked',
   'give', 'gave', 'love', 'loved', 'see', 'saw', 'hear', 'heard', 'want', 'wanted', 'help', 'helped', 'watch',
@@ -54,10 +54,10 @@ const OBJECT_VERBS = new Set([
 ]);
 
 /** "you know", "you see", "you mean" after a doubled "you" are discourse markers. */
-const DISCOURSE_AFTER_YOU = new Set(['know', 'see', 'mean']);
+const DISCOURSE_AFTER_YOU: ReadonlySet<string> = frozenSet(['know', 'see', 'mean']);
 
 /** Words that open a pseudo-cleft: "What it was was magic", "All I know is is". */
-const CLEFT_OPENERS = new Set([
+const CLEFT_OPENERS: ReadonlySet<string> = frozenSet([
   'what', 'all', 'thing', 'things', 'problem', 'point', 'truth', 'reason', 'question', 'why', 'how', 'where', 'who',
 ]);
 
@@ -67,7 +67,7 @@ const CLEFT_OPENERS = new Set([
  * dog", "I went to I went to the park". Particles that can end a phrase
  * ("come on", "pick up", "her") are deliberately absent.
  */
-const DANGLING = new Set([
+const DANGLING: ReadonlySet<string> = frozenSet([
   'a', 'an', 'the', 'my', 'your', 'our', 'their', 'his', 'its', 'to', 'of', 'with', 'for', 'from', 'at', 'and', 'but',
   'or', 'because', 'into', 'onto',
 ]);
@@ -77,7 +77,7 @@ const MAX_PHRASE = 4;
 const SOFT_GAP = /^[\s,]*$/;
 /** Inside a phrase: spaces only. */
 const TIGHT_GAP = /^\s+$/;
-const CLAUSE_BREAK = /[.!?;:,।]/;
+const CLAUSE_BREAK = /[.!?;:,।॥]/;
 
 export type RepeatDecision = 'auto' | 'suggest';
 
@@ -88,7 +88,8 @@ export interface RepeatFinding {
 
 export function findRepeats(raw: string): RepeatFinding[] {
   const toks = tokens(raw);
-  const lw = toks.map((t) => t.word.toLowerCase());
+  // NFC, so a precomposed and a decomposed copy of the same word are one word.
+  const lw = toks.map((t) => nfc(t.word).toLowerCase());
   const out: RepeatFinding[] = [];
   const gap = (a: Token, b: Token) => raw.slice(a.end, b.start);
   const taken = (start: number, end: number) => out.some((f) => f.edit.start < end && start < f.edit.end);
@@ -164,6 +165,6 @@ function singleDecision(raw: string, toks: Token[], lw: string[], i: number, bet
 /** Lowercased words from the start of the sentence up to (not including) toks[upto]. */
 function sentenceWordsBefore(raw: string, toks: Token[], lw: string[], upto: number): string[] {
   let s = upto;
-  while (s > 0 && !/[.!?।]/.test(raw.slice(toks[s - 1].end, toks[s].start))) s--;
+  while (s > 0 && !/[.!?।॥]/.test(raw.slice(toks[s - 1].end, toks[s].start))) s--;
   return lw.slice(s, upto);
 }
