@@ -23,13 +23,18 @@ The machine may remove and repair. It may never add meaning.
 | `experiments` | Mac kit to test speech models on real recordings |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | System design and decision records |
 | `docs/design/` | Design language, benchmark, component library, component specs |
+| `packages/api` | Typed API contracts, signed manifests, latency budgets |
+| `packages/analytics`, `packages/emails` | Opt-in analytics allowlist and insights loop; React Email templates |
+| `packs/` | Language rule packs (data, downloaded on demand) |
+| `docs/agents/` | Agent brief, coordination rules, board, debates. Read `COORDINATION.md` before working |
 
 ## Commands
 ```bash
 npm install            # once, at the repo root
-npm test               # engine (38) + content rules (16) + experiment scoring (5)
+npm test               # every workspace (~1,150 tests: core, mobile, api, analytics, content, emails, tokens, experiments); Node 22+
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
-npm run test:db        # database access rules (36)
+npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (15 files)
+npm run test:functions # Edge Functions and ops scripts (Deno via npx)
 npm run typecheck
 npm run mobile         # start the iOS app
 ```
@@ -44,7 +49,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 
 ## Privacy rules
 - No entry text, transcript, audio or child name in analytics, logs or crash reports.
-- Safety events store tier and time only, never the text.
+- Safety tiers stay on the device; there is no server table for them.
 - Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha".
 
 ## Branches and commits

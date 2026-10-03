@@ -1,0 +1,7 @@
+# Migrations that have been applied to the live database. One file name per line.
+# The migration guard (.github/workflows/migration-guard.yml) fails any change
+# that edits, renames or deletes a file listed here, removes a line from this
+# list, or adds a new migration that sorts before the newest one listed.
+# Add a line in the same PR that records applying a migration (supabase/APPLY.md).
+20260930000000_scribe_core.sql
+20261001000000_scribe_hardening.sql

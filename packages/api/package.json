@@ -1,0 +1,24 @@
+{
+  "name": "@scribe/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed, versioned contracts shared by the app, Edge Functions and scripts: pack manifest, remote config, content blocks, response envelope and errors, plus the integrity helpers (canonical JSON, Ed25519, SHA-256). Pure TypeScript, no React Native. See docs/adr/0016 and 0017.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run && vitest run --config vitest.consumers.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@scribe/content": "*",
+    "@scribe/core": "*",
+    "@types/node": "^22",
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^3.2.0",
+    "@noble/hashes": "^2.4.0",
+    "valibot": "^1.5.0"
+  }
+}

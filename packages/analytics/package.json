@@ -1,0 +1,21 @@
+{
+  "name": "@scribe/analytics",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Opt-in, content-free product analytics: typed event allowlist, consent gate, provider adapter, insights engine. Pure TypeScript, no React Native. See docs/analytics/TRACKING_PLAN.md.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "plan": "tsx scripts/plan.ts",
+    "insights": "tsx ../../scripts/insights/run.ts"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7",
+    "@types/node": "^22",
+    "tsx": "^4.20.0",
+    "@scribe/core": "*"
+  }
+}

@@ -1,0 +1,5 @@
+# Created by setup scripts; never commit
+whisper.cpp/
+openai-whisper/
+hf/
+.venv-hinglish/

@@ -2,6 +2,7 @@
 
 Owner: Lead A. Draft v1, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict log** (K-01, K-07, K-08, K-11, K-15, K-16, K-24); [PRD.md](PRD.md) wins where they differ. iOS at launch, Android later; every requirement must work on both.
 Siblings: **B** (first-run profile, children, goals, co-parent and privacy, templates and themes), **C** (reminders, celebrations, preferences, settings, pricing, trial and paywall).
+> **PRD.md 1.3 (3 Oct 2026) overrides here:** v1.0 opens on one welcome screen, then the 18+ gate; the 4-story intro (A-REQ-003 to A-REQ-011) moves to v1.1 (D-043). Sign-in at v1.0 is Sign in with Apple and email link plus code; Google sign-in (A-REQ-017) and linking move to v1.1 (D-044). The "I was invited" path now serves Family contributors in the app (K-35). See PRD.md section 3.0.
 Evidence keys: **UR** `docs/research/USER_RESEARCH.md`, **CR** `COMPETITIVE_RESEARCH.md`, **ARCH** `docs/ARCHITECTURE.md`, **DL** `docs/design/DESIGN_LANGUAGE.md`, **MO** `MOTION.md`, **CRE** `CREATIVE.md`, **CMP** `COMPONENTS.md`, **VOICE**/**BRAND** `packages/content/`. External sources [A#] at the end.
 
 ## 0. Key decisions
@@ -49,6 +50,7 @@ As a:
 3. Tap right two-thirds = next; tap left third = previous; hold ≥ 200 ms = pause, release = resume; horizontal swipe = next/previous; vertical swipe does nothing.
 4. Skip jumps to story 4's action panel, so the user still chooses.
 5. Story 4 actions: **Start a book** (primary, 56 pt) → Lead B profile → Tonight → first letter → F3. **I was invited** → F7. **Sign in** → F4.
+   *Revised Oct 2 2026 per PRD.md conflict log K-07 (founder decision: 18+ only, no local-only mode):* every story 4 action, and an invite link that skips the stories, first passes the **18+ entry gate** (PRD-REQ-019): "Are you 18 or older?" with Yes and No, nothing preselected; iOS Declared Age Range where required. Yes is remembered on the install as a boolean (never an age or birth date) and the gate never shows again. No, or an under-18 signal: a stop screen saying the product is currently for adults 18 and over; nothing is created or stored; no first run, recording or local book; the stop screen stays for 24 hours on the install (LEGAL-REQ-002 anti-retry), after which the question may be asked again. Copy: `ageGate.*` (mobile engineer).
 6. Backgrounded: pause; on return restart the current story.
 7. After any story 4 action, stories never show again on this install.
 
@@ -57,7 +59,7 @@ As a:
 2. Content: title, one line on family and new phones, Apple, Google, Email, privacy notice (§7), **Later**.
 3. Later: the app works locally. Re-offer only at (a) Invite someone (required), (b) turn on backup (required), (c) once after the third saved letter. Max once a day; no badge or counter.
 4. Success: local letters, children and dictionary terms move to the new user id in one transaction, then sync starts (ARCH §4 step 7).
-   *Revised Oct 2 2026 per PRD.md conflict log K-07, K-15:* account creation runs in this order: (a) neutral age question "Are you 18 or older?" (Yes, No, nothing preselected; iOS Declared Age Range where required, never stored), (b) provider sign-in with the Terms notice, recorded in `policy_acceptances`, (c) a separate sensitive-data consent screen for new accounts, (d) re-ownership and sync. Declining (c) keeps everything local. An under-18 answer creates no account and keeps the gate closed for 24 hours; local use continues.
+   *Revised Oct 2 2026 per PRD.md conflict log K-07, K-15:* account creation runs in this order: (a) provider sign-in with the Terms notice and the 18+ confirmation line, recorded in `policy_acceptances` with `age_attested` from the entry gate, (b) a separate sensitive-data consent screen for new accounts, (c) re-ownership and sync. Declining (b) keeps an adult's letters local. *Revised again Oct 2 2026 (founder decision):* the age question is no longer on the sign-in sheet; it is the 18+ entry gate before first run (F2.5, PRD-REQ-019). There is no local-only mode for under-18 users.
 5. Account already has children → F6.3.
 
 ### F4. Sign-in sheet (used by F2, F3, F6, F7)
@@ -133,7 +135,7 @@ P0 = launch blocker, P1 = launch target, P2 = later.
 - **A-REQ-011 (P1) Variant switch.** Given remote config `intro_variant` = `three`, then story 3 is omitted; `none` opens the story 4 panel directly.
 
 **Account timing**
-- **A-REQ-012 (P0) Letter first.** Given Start a book, when the user completes B's profile and saves a letter, then no sign-in was required.
+- **A-REQ-012 (P0) Letter first.** Given Start a book, when the user completes B's profile and saves a letter, then no sign-in was required. *Revised Oct 2 2026 per PRD.md K-07:* the 18+ entry gate (PRD-REQ-019) comes before B's profile; it is a question, not a sign-in.
 - **A-REQ-013 (P0) Keep the book sheet.** Given the first letter committed, when the save animation ends, then the F3 sheet opens with Apple, Google, Email and Later.
 - **A-REQ-014 (P0) Later works.** Given Later, then record, review, save, book, Read together (within the free tries; revised Oct 2 2026 per PRD.md conflict log K-11) and PDF export work; the sheet returns only at F3.3 moments, max once a day.
 - **A-REQ-015 (P0) Re-ownership.** Given local data and a successful sign-in, then all local rows move to the user id in one transaction before sync; on failure nothing changes and Retry shows.
@@ -163,7 +165,7 @@ P0 = launch blocker, P1 = launch target, P2 = later.
 - **A-REQ-033 (P0) Apple revoked.** Given Apple reports a revoked credential (checked at launch), then sign-out happens only after unsynced letters sync, then sign-in shows.
 
 **Consent**
-- **A-REQ-034 (P0) Terms.** Given the sign-in sheet, then the age question comes first, and above the provider buttons it shows the §7 notice and "By continuing, you agree to the Terms and Privacy Policy." (links open in-app); accepted version, time, method and app version are stored as an append-only `policy_acceptances` row (LEGAL-REQ-001), not on the profile. *Revised Oct 2 2026 per PRD.md conflict log K-07, K-15.*
+- **A-REQ-034 (P0) Terms.** Given the sign-in sheet (the 18+ entry gate already answered Yes; PRD-REQ-019), then above the provider buttons it shows the §7 notice and "By continuing, you agree to the Terms and Privacy Policy." (links open in-app); accepted version, time, method and app version are stored as an append-only `policy_acceptances` row (LEGAL-REQ-001), not on the profile. *Revised Oct 2 2026 per PRD.md conflict log K-07, K-15.*
 - **A-REQ-035 (P0) Notice before data.** Given Start a book, when B's first field appears, then the notice has already been shown on story 4; entry never requests contacts.
 
 ## 6. Non-functional requirements
@@ -191,7 +193,7 @@ Reference devices: iPhone SE (3rd gen) and a mid-tier 60 Hz Android (MO §7).
 
 **COPPA does not apply; flag the rest for counsel**
 - COPPA covers services directed to children under 13 or with actual knowledge of collecting personal information **from** a child [A8, FAQ A.2]; it "only applies to personal information collected online from children" [A8, FAQ A.8]. Our users are adults writing about a child; the child never signs in or types.
-- For counsel: (1) Read together played to a child is not collection; (2) Apple 5.1.4 still requires a privacy policy and children's-privacy compliance when collecting information about a minor, and 2.3.8 bars "for kids" metadata [A1]; (3) India DPDP Act 2023 (under-18s, verifiable parental consent): confirm the parent-as-provider model; (4) GDPR Art. 8 if offered in Europe; (5) US state minors' data and voice laws; (6) ~~Terms say users are 18+, no age gate.~~ *Revised Oct 2 2026 per PRD.md conflict log K-07:* neutral 18+ gate at account creation (F3.4) with store age signals (Texas SB 2420, LEGAL-REQ-002).
+- For counsel: (1) Read together played to a child is not collection; (2) Apple 5.1.4 still requires a privacy policy and children's-privacy compliance when collecting information about a minor, and 2.3.8 bars "for kids" metadata [A1]; (3) India DPDP Act 2023 (under-18s, verifiable parental consent): confirm the parent-as-provider model; (4) GDPR Art. 8 if offered in Europe; (5) US state minors' data and voice laws; (6) ~~Terms say users are 18+, no age gate.~~ *Revised Oct 2 2026 per PRD.md conflict log K-07:* neutral 18+ gate at account creation (F3.4) with store age signals (Texas SB 2420, LEGAL-REQ-002). *Revised again Oct 2 2026 (founder decision):* the gate moves to first launch, before any child detail or recording (F2.5, PRD-REQ-019); under 18 sees a stop screen and cannot use the app, locally or otherwise.
 - Analytics consent: *Revised Oct 2 2026 per PRD.md conflict log K-01:* opt-in everywhere (Apple 5.1.1(ii), LEGAL-REQ-003). Nothing is sent before a choice. The consent sheet is the third ask after the first letter, one ask per session (PRD-REQ-001). The analytics events in §10 cover consenting users only.
 
 ## 8. Platform compliance check
