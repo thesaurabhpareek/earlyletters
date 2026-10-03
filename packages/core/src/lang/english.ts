@@ -70,6 +70,7 @@ export const ENGLISH_PACK: TextRulesPack = {
     review: SHIPPED,
     negations: list(NEGATIONS),
     negationSuffixes: ["n't"],
+    negationPrefixes: [],
     modals: list(MODALS),
     numberWords: list(NUMBER_WORDS),
     functionWords: list(FUNCTION_WORDS),

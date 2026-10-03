@@ -4,10 +4,11 @@
  * store, the app state, the pack system and the engine, and runs one job at
  * a time.
  *
- * Boot wiring (coordinator, `_layout.tsx`): call
- * `startTranscriptionQueue({ packs: packManager })` once the store is open.
- * Review calls `requestWords(draftId)`; if the queue was not started yet it
- * starts itself without a pack system (letters then wait for their words).
+ * Boot wiring (coordinator, `_layout.tsx`): call `startTranscriptionQueue()`
+ * once the store is open (after `startPacks()`). It uses the platform pack
+ * facade (src/lib/packs) and registers the speech plan as a language
+ * resolver there. Review calls `requestWords(draftId)`; if the queue was not
+ * started yet it starts itself.
  *
  * Where words go when a job finishes:
  * - the draft still exists: `setDraftTranscript` (raw, set once); Review
@@ -49,6 +50,7 @@ import {
   planFor,
   recordMemoryFailure,
   speechPackHost,
+  speechPacksForLanguage,
   type SpeechPackHost,
   type SpeechPackProgress,
 } from '../models/speech-packs';
@@ -56,6 +58,7 @@ import { releaseContexts, whisperModule } from '../models/whisper-runtime';
 import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, type Transcriber } from '../transcribe';
 import { createSampleTranscriber } from '../transcribe-sample';
 import { createWhisperTranscriber } from '../transcribe-whisper';
+import { copyForLetter } from '../audio-enhance';
 import { cleanSpoken, spokenEditLevel } from './clean';
 import { initialQueue, languagesWaiting, nextJob, nextRetryAt, reduce, type Job, type JobFailure, type QueueEvent, type QueueState } from './machine';
 
@@ -71,6 +74,9 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null;
 const packProgress = new Map<string, SpeechPackProgress>();
 const askedDownload = new Set<SpeechLanguage>();
 const sampleWords = new Map<string, TranscribeResult>();
+/** Recordings whose clearer listening copy is due (made only while idle, one at a time). */
+const copiesDue = new Set<string>();
+let copying: Promise<void> | null = null;
 
 const whisper = createWhisperTranscriber();
 const sample = createSampleTranscriber();
@@ -143,6 +149,8 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   stopFns.push(subscribeStore(() => queueMicrotask(syncLetters)));
   stopFns.push(onSpeechPacksBound(() => watchPacks()));
   stopFns.push(onAuthorSpeechLanguage((lang) => void requestSpeechFor(lang)));
+  const unresolve = speechPackHost().addLanguageResolver?.(speechPacksForLanguage);
+  if (unresolve) stopFns.push(unresolve);
   watchPacks();
 
   noteInterruptedLaunch();
@@ -164,15 +172,12 @@ function stopTranscriptionQueue(): void {
 let unwatchPacks: (() => void) | null = null;
 function watchPacks(): void {
   unwatchPacks?.();
-  const host = speechPackHost();
-  unwatchPacks = host
-    ? host.onProgress((p) => {
-        if (!(p.id in SPEECH_MODELS)) return;
-        packProgress.set(p.id, p);
-        if (p.phase === 'installed' || p.phase === 'removed') refreshReady();
-        else emit();
-      })
-    : null;
+  unwatchPacks = speechPackHost().onProgress((p) => {
+    if (!(p.id in SPEECH_MODELS)) return;
+    packProgress.set(p.id, p);
+    if (p.phase === 'installed' || p.phase === 'removed') refreshReady();
+    else emit();
+  });
   refreshReady();
 }
 
@@ -197,7 +202,6 @@ export function retryWords(id: string): void {
 
 /** Starts the downloads a language needs (Settings "Download", a language just chosen). */
 export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
-  if (!speechPackHost()) return;
   askedDownload.add(language);
   await ensureSpeechFor(language, opts).catch(() => null);
   refreshReady();
@@ -231,7 +235,6 @@ export function speechPackProgress(id: SpeechModelId): SpeechPackProgress | null
  */
 export async function removeSpeechPack(id: SpeechModelId): Promise<void> {
   const host = speechPackHost();
-  if (!host) return;
   const running = state.running ? state.jobs[state.running] : null;
   if (running && planFor([running.language]).packs.includes(id)) controller?.abort();
   await (runningJob ?? Promise.resolve());
@@ -294,14 +297,27 @@ function refreshReady(): void {
 // ---------------------------------------------------------------------------
 
 function pump(): void {
-  if (state.running || runningJob) return;
+  if (state.running || runningJob || copying) return;
   const id = nextJob(state, Date.now());
   if (!id) {
     scheduleRetry();
+    makeNextListeningCopy();
     return;
   }
   runningJob = runJob(id).finally(() => {
     runningJob = null;
+    pump();
+  });
+}
+
+/** Listening copies wait for an idle queue in the foreground: words always come first. */
+function makeNextListeningCopy(): void {
+  if (copying || !state.foreground) return;
+  const id = copiesDue.values().next().value as string | undefined;
+  if (!id) return;
+  copiesDue.delete(id);
+  copying = copyForLetter(id).finally(() => {
+    copying = null;
     pump();
   });
 }
@@ -388,6 +404,7 @@ async function runJob(id: string): Promise<void> {
     );
     if (ctrl.signal.aborted) throw new TranscriptionAborted();
     deliver(id, res, dictionary, job.language, transcriber.isSample);
+    if (!transcriber.isSample) copiesDue.add(id);
     dispatch({ type: 'finish', id, outcome: res.outcome });
   } catch (e) {
     if (e instanceof TranscriptionAborted || ctrl.signal.aborted) {

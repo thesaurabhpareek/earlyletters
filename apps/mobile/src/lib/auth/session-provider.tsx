@@ -147,7 +147,11 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     void storedUserId().then((id) => alive && dispatch({ type: 'RESTORED', userId: id }));
     const { data } = sb.auth.onAuthStateChange((event, session) => {
       // Never call Supabase from inside this callback (supabase-js deadlock note); state only.
-      setAccount(accountOf(session));
+      // INITIAL_SESSION arrives with null when the refresh failed for lack of network, while
+      // the session stays in the Keychain (auth-js 2.117.2 _emitInitialSession and
+      // _callRefreshToken, read 3 Oct 2026), so a null there is not a sign-out. SIGNED_OUT is
+      // emitted only when supabase-js really removes the session (_removeSession).
+      if (session || event !== 'INITIAL_SESSION') setAccount(accountOf(session));
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodRef.current });
       } else if (event === 'SIGNED_OUT') {
@@ -222,7 +226,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       try {
         await sb.auth.signOut({ scope: 'local' });
       } catch {
-        // Local sign-out clears the Keychain even when the server cannot be reached.
+        // Local sign-out clears the Keychain even when the server cannot be reached
+        // (auth-js 2.117.2 _signOut removes the session on any error for scope 'local').
       }
       await forgetAppleUser();
       dispatch({ type: 'SIGNED_OUT' });

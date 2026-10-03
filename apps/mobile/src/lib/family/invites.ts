@@ -16,7 +16,9 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { brand } from '@scribe/brand';
+import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 import { publishInviteAccepted } from '../auth/auth-store';
+import { idempotencyKey } from '../supabase/client';
 import { inviteUrl } from './invite-link.logic';
 
 export interface CreatedInvite {
@@ -41,7 +43,9 @@ export interface BookMember {
 
 export async function createCoParentInvite(sb: SupabaseClient, childId: string, signsAs: string | null): Promise<CreatedInvite> {
   const s = signsAs?.trim().slice(0, 30) || null;
-  const { data, error } = await sb.rpc('create_child_invite', { p_child: childId, p_role: 'parent', p_signs_as: s });
+  const { data, error } = await sb
+    .rpc('create_child_invite', { p_child: childId, p_role: 'parent', p_signs_as: s })
+    .setHeader(HEADER_IDEMPOTENCY_KEY, idempotencyKey());
   if (error) throw error;
   if (typeof data !== 'string') throw Object.assign(new Error('invite_no_token'), { code: 'P0002' });
   return { token: data, url: inviteUrl(data, brand.web.origin) };

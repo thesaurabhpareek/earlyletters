@@ -90,7 +90,8 @@ export type AlertKind = (typeof ALERT_KINDS)[number];
 export const REASONS = ['account_deletion', 'device_after_deletion'] as const;
 export type Reason = (typeof REASONS)[number];
 
-export const FUNCTIONS = ['purge-worker', 'analytics-forget', 'ops-script'] as const;
+/** Every function or script that logs. `config` and `content` are the platform owner's document functions. */
+export const FUNCTIONS = ['purge-worker', 'analytics-forget', 'ops-script', 'config', 'content'] as const;
 export type FunctionName = (typeof FUNCTIONS)[number];
 
 export interface LogFields {

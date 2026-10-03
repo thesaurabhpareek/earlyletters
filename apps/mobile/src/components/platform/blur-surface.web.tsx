@@ -26,7 +26,7 @@ export function BlurSurface({ children, style, className, material = 'chrome', e
     // BlurView is not a Uniwind-wrapped component, so it takes style only; className goes on a wrapper.
     <View className={className} style={[edgeStyle, style, { overflow: 'hidden' }]}>
       <BlurView tint={tint} intensity={80} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.bg, opacity: 0.55 }} />
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.bg, opacity: 0.72 }} />
       {children}
     </View>
   );

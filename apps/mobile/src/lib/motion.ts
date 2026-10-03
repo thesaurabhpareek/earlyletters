@@ -8,7 +8,7 @@
  * subscribe to AccessibilityInfo changes (MOTION 4, M15, M16).
  */
 import { useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Platform } from 'react-native';
 import {
   Easing,
   FadeIn,
@@ -102,12 +102,12 @@ export function useMotion() {
        */
       enter: (index = 0) => {
         if (index >= M.staggerMax) return undefined;
-        return reduced
-          ? FadeIn.duration(M.fadeMs).reduceMotion(ReduceMotion.Never)
-          : FadeInDown.duration(M.enter.durationMs)
-              .delay(index * M.staggerMs)
-              .easing(STANDARD_EASING)
-              .withInitialValues({ opacity: 0, transform: [{ translateY: M.enter.dy }] });
+        if (reduced) return FadeIn.duration(M.fadeMs).reduceMotion(ReduceMotion.Never);
+        const base = FadeInDown.duration(M.enter.durationMs).delay(index * M.staggerMs).easing(STANDARD_EASING);
+        // Web (preview): Reanimated 4.5.1 pins elements with custom initial values to
+        // position:absolute after the animation (layoutReanimation/web componentUtils
+        // setElementAnimation -> setElementPosition), so web keeps the stock preset.
+        return Platform.OS === 'web' ? base : base.withInitialValues({ opacity: 0, transform: [{ translateY: M.enter.dy }] });
       },
       /** Exit for transient UI (toast, inline card): quicker than the entry. */
       exit: () =>

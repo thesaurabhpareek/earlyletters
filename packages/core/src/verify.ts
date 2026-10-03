@@ -189,9 +189,10 @@ function checkCase(e: Edit, ctx: VerifyContext): RejectReason | null {
   return null;
 }
 
-/** Shape rules shared by every removal: no words in, no new punctuation in. */
-function checkRemovalShape(e: Edit): RejectReason | null {
+/** Shape rules shared by every removal: no words in, no new punctuation in, no quotation mark out. */
+function checkRemovalShape(e: Edit, R: LanguageRules): RejectReason | null {
   if (!/^[\s,.]*$/.test(e.replacement)) return 'removal_only';
+  if (R.quoteMarkCount(e.original) > 0) return 'changes_quotes';
   for (const ch of [',', '.']) if (count(e.replacement, ch) > count(e.original, ch)) return 'removal_adds_punctuation';
   return null;
 }
@@ -317,7 +318,8 @@ function checkOpeners(e: Edit, ctx: VerifyContext, R: LanguageRules): RejectReas
     for (let i = e.start; i < e.start + e.replacement.length; i++) {
       if (edited[i] !== opener) continue;
       const before = edited.slice(0, i).replace(/[\s"'“‘(«¿¡]+$/u, '');
-      const clauseStart = before === '' || R.startsSentence(edited.slice(0, i), 'verbatim') || /[,;:]$/.test(before);
+      // At the clean level a filler the rules remove does not hold the question back ("em ¿quieres?").
+      const clauseStart = before === '' || R.startsSentence(edited.slice(0, i), ctx.level) || /[,;:]$/.test(before);
       if (!clauseStart) return 'changes_sentence_type';
       let paired = false;
       for (let j = i + 1; j < edited.length; j++) {
@@ -389,23 +391,29 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   let reason: RejectReason | null = null;
   switch (e.type) {
     case 'filler': {
-      reason = checkRemovalShape(e);
+      reason = checkRemovalShape(e, R);
       // Only words on the filler list may be removed under this label.
       // A filler said as its own sentence ("Hmm.") goes with its end mark.
       // Offered-only fillers ("mm" that may mean yes) come back only as
       // rule edits the parent accepted, never from a model.
-      const removed = R.words(e.original);
+      const removed = R.tokens(e.original);
       const withSuggest = e.source === 'rule';
-      if (!reason && (removed.length === 0 || !removed.every((w) => R.isFiller(w, withSuggest)))) reason = 'not_a_filler';
+      if (
+        !reason &&
+        (removed.length === 0 ||
+          !removed.every((t) => R.isFiller(t.word.toLowerCase(), withSuggest) && R.standsAlone(raw, e.start + t.start, e.start + t.end)))
+      ) {
+        reason = 'not_a_filler';
+      }
       // Spanish: a filler question "¿eh?" goes with both of its marks, never half.
       if (!reason && count(e.original, '¿') + count(e.original, '¡') > 0 && !/[?!]/.test(e.original)) reason = 'changes_sentence_type';
       break;
     }
     case 'repeat':
-      reason = checkRemovalShape(e) ?? checkRepeat(e, raw, R);
+      reason = checkRemovalShape(e, R) ?? checkRepeat(e, raw, R);
       break;
     case 'false_start':
-      reason = checkRemovalShape(e) ?? checkFalseStart(e, raw, R);
+      reason = checkRemovalShape(e, R) ?? checkFalseStart(e, raw, R);
       break;
     case 'stt_fix':
       reason = checkSttFix(e, ctx);

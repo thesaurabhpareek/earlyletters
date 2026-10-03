@@ -150,6 +150,7 @@ export class LanguageRules {
   private readonly fillerSuggest: Set<string>;
   private readonly negations: Set<string>;
   private readonly negationSuffixes: string[];
+  private readonly negationPrefixes: string[];
   private readonly modals: Set<string>;
   private readonly numberWords: Set<string>;
   private readonly functionWords: Set<string>;
@@ -252,6 +253,7 @@ export class LanguageRules {
     // Protective tables: always, drafts included.
     this.negations = set(m?.negations);
     this.negationSuffixes = (m?.negationSuffixes ?? []).map((x) => this.key(x));
+    this.negationPrefixes = (m?.negationPrefixes ?? []).map((x) => this.key(x));
     this.modals = set(m?.modals);
     this.numberWords = set(m?.numberWords);
     this.functionWords = set(m?.functionWords);
@@ -431,7 +433,21 @@ export class LanguageRules {
 
   isNegation(word: string): boolean {
     const k = this.key(word);
-    return this.negations.has(k) || this.negationSuffixes.some((s) => k.endsWith(s));
+    return this.negations.has(k) || this.negationSuffixes.some((s) => k.endsWith(s)) || this.negationPrefixes.some((p) => k.startsWith(p));
+  }
+
+  /**
+   * Under 'char' segmentation a one-character filler counts only where it
+   * stands alone: no letter or digit right before or after it. Always true
+   * for languages with spaces between words.
+   */
+  standsAlone(raw: string, start: number, end: number): boolean {
+    if (this.script.segmentation !== 'char') return true;
+    const unit = raw.charCodeAt(start - 1);
+    const before = start <= 0 ? '' : unit >= 0xdc00 && unit <= 0xdfff && start >= 2 ? raw.slice(start - 2, start) : raw[start - 1];
+    const after = end >= raw.length ? '' : String.fromCodePoint(raw.codePointAt(end)!);
+    const wordish = (c: string) => /[\p{L}\p{N}]/u.test(c);
+    return !wordish(before) && !wordish(after);
   }
 
   negationCount(text: string): number {
@@ -685,9 +701,13 @@ export class LanguageRules {
     return s;
   }
 
-  /** The name-matching key: consonant skeleton of the sound key. */
+  /**
+   * The name-matching key: the consonant skeleton of the sound key, doubles
+   * collapsed again once vowels are gone (محمد has no written vowels, so
+   * "Mohammed" and محمد meet at m-d once h drops and m-m collapses).
+   */
   phoneticKey(name: string): string {
-    return this.soundKey(name).replace(/a/g, '');
+    return this.soundKey(name).replace(/a/g, '').replace(/(.)\1+/gu, '$1');
   }
 
   /** Same consonant sounds in the same order (and, where vowels are written, at most one vowel group apart). */
@@ -695,9 +715,13 @@ export class LanguageRules {
     const a = this.soundKey(original);
     const b = this.soundKey(term);
     if (!a || !b) return false;
+    if (!this.phonetic.compareVowels) {
+      const ka = this.phoneticKey(original);
+      return ka.length > 0 && ka === this.phoneticKey(term);
+    }
     const consonants = (k: string) => k.replace(/a/g, '');
     const vowels = (k: string) => (k.match(/a/g) ?? []).length;
-    if (this.phonetic.compareVowels && Math.abs(vowels(a) - vowels(b)) > 1) return false;
+    if (Math.abs(vowels(a) - vowels(b)) > 1) return false;
     return consonants(a).length > 0 && consonants(a) === consonants(b);
   }
 }

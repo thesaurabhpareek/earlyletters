@@ -46,6 +46,8 @@ export interface StorageApi {
   remove(bucket: string, names: string[]): Promise<number>;
   copy(bucket: string, from: string, to: string): Promise<void>;
   upload(bucket: string, path: string, body: string, contentType: string, upsert?: boolean): Promise<void>;
+  /** Text of one object, or null when it does not exist (ops scripts: ledger files). */
+  download(bucket: string, path: string): Promise<string | null>;
 }
 
 export interface AuthAdminApi {
@@ -210,6 +212,18 @@ export function createServiceClient(cfg: ServiceConfig): ServiceClient {
       });
       if (!res.ok) return storageFail(res);
       await drain(res);
+    },
+    async download(bucket, path) {
+      const res = await call('storage', `/storage/v1/object/${encodeURIComponent(bucket)}/${enc(path)}`, {
+        method: 'GET',
+        headers: headers(),
+      });
+      if (res.status === 404 || res.status === 400) {
+        await drain(res);
+        return null;
+      }
+      if (!res.ok) return storageFail(res);
+      return res.text();
     },
   };
 

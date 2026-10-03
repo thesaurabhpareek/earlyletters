@@ -14,11 +14,13 @@
  *   escape gesture (two-finger Z) and a visible 44 pt Close button.
  * - Library defaults are overridden: its container is not one grouped "adjustable"
  *   element, and its handle and backdrop do not speak English placeholder labels.
+ * - dismissible={false} for permission priming and required choices: only the sheet's
+ *   own buttons close it (no pan, scrim, Close or escape).
  * Motion: springs from tokens.motion.standard. Reduce Motion: a 200 ms timing instead of
  * the spring (the library default would jump). Haptics: none on open (MOTION 6).
  *
  * Swap note: @expo/ui/community/bottom-sheet is an API-compatible native sheet (SwiftUI
- * on iOS); see docs/design/COMPONENT_LIBRARY.md section 10.
+ * on iOS); see docs/design/COMPONENT_LIBRARY.md section 0.1.
  */
 import {
   BottomSheetBackdrop,
@@ -49,6 +51,13 @@ export type SheetProps = {
   footer?: React.ReactNode;
   /** Hide the Close button (only when the content has its own Done). */
   hideClose?: boolean;
+  /**
+   * false: the sheet closes only through its own buttons (permission priming, a choice
+   * that must be made). No pan to close, no grabber, the scrim does not close it, no
+   * Close button and no escape gesture; the content must offer every way out as a
+   * labelled button (for example "Allow" and "Not now"). Default true.
+   */
+  dismissible?: boolean;
 };
 
 const S = tokens.motion.standard;
@@ -63,7 +72,7 @@ function Grabber() {
   );
 }
 
-export function Sheet({ open, onClose, title, description, children, footer, hideClose }: SheetProps) {
+export function Sheet({ open, onClose, title, description, children, footer, hideClose, dismissible = true }: SheetProps) {
   const ref = React.useRef<BottomSheetModal>(null);
   const titleRef = React.useRef<RNText>(null);
   const { c, scheme } = useTheme();
@@ -72,9 +81,14 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
   const reduced = useReducedMotion();
   const [shown, setShown] = React.useState(false);
 
+  // Present on open; dismiss only on a real open -> closed change. Calling dismiss() on a
+  // modal that was never presented leaves @gorhom/bottom-sheet 5.2.14 in its
+  // "dismissing" state, and the next present() then unmounts at once.
+  const wasOpen = React.useRef(false);
   React.useEffect(() => {
     if (open) ref.current?.present();
-    else ref.current?.dismiss();
+    else if (wasOpen.current) ref.current?.dismiss();
+    wasOpen.current = open;
   }, [open]);
 
   useFocusOnMount(titleRef, shown, title);
@@ -96,15 +110,15 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
         appearsOnIndex={0}
         disappearsOnIndex={-1}
         opacity={1}
-        pressBehavior="close"
+        pressBehavior={dismissible ? 'close' : 'none'}
         style={[props.style, { backgroundColor: c.scrim }]}
-        accessible
-        accessibilityRole="button"
-        accessibilityLabel={copy.common.closeButton}
+        accessible={dismissible}
+        accessibilityRole={dismissible ? 'button' : undefined}
+        accessibilityLabel={dismissible ? copy.common.closeButton : undefined}
         accessibilityHint={undefined}
       />
     ),
-    [c.scrim],
+    [c.scrim, dismissible],
   );
 
   return (
@@ -117,7 +131,9 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
       onChange={(i) => setShown(i >= 0)}
       enableDynamicSizing
       maxDynamicContentSize={height - insets.top - 24}
-      enablePanDownToClose
+      enablePanDownToClose={dismissible}
+      enableHandlePanningGesture={dismissible}
+      enableContentPanningGesture={dismissible}
       backdropComponent={backdrop}
       animationConfigs={animationConfigs}
       overrideReduceMotion={ReduceMotion.Never}
@@ -130,10 +146,14 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
         borderTopRightRadius: tokens.radius.xl,
         ...(scheme === 'dark' ? { borderWidth: 0.5, borderColor: c.line } : {}),
       }}
-      handleComponent={Grabber}
+      handleComponent={dismissible ? Grabber : null}
       style={scheme === 'light' ? { boxShadow: tokens.elevation[3].web } : undefined}>
       <BottomSheetView>
-        <View accessibilityViewIsModal onAccessibilityEscape={close} style={{ paddingBottom: Math.max(insets.bottom, 16) + 8 }} className="gap-4 px-5">
+        <View
+          accessibilityViewIsModal
+          onAccessibilityEscape={dismissible ? close : undefined}
+          style={{ paddingBottom: Math.max(insets.bottom, 16) + 8 }}
+          className={dismissible ? 'gap-4 px-5' : 'gap-4 px-5 pt-5'}>
           <View className="flex-row items-start gap-3 pt-1">
             <View className="flex-1 gap-1 pt-1.5">
               <Text ref={titleRef} variant="title2" asHeading>
@@ -141,7 +161,7 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
               </Text>
               {description ? <Text variant="subhead" tone="muted">{description}</Text> : null}
             </View>
-            {!hideClose && <IconButton icon={XIcon} label={copy.common.closeButton} variant="tinted" size="sm" onPress={close} />}
+            {dismissible && !hideClose && <IconButton icon={XIcon} label={copy.common.closeButton} variant="tinted" size="sm" onPress={close} />}
           </View>
           {children}
           {footer ? <View className="pt-2">{footer}</View> : null}

@@ -43,7 +43,8 @@ export default function SignInSheet() {
   }, []);
 
   // Opened while already signed in (a second tap, a stale route): continue to consent, which closes when done.
-  const signedInAtOpen = useState(auth.signedIn)[0];
+  // A sign-out in progress ("Try another way") is not "already signed in".
+  const signedInAtOpen = useState(['checkingConsent', 'needsConsent', 'ready'].includes(auth.state.status))[0];
   useEffect(() => {
     if (signedInAtOpen) router.replace('/sign-in/consent');
   }, [signedInAtOpen]);
@@ -58,6 +59,8 @@ export default function SignInSheet() {
   };
 
   const message = authErrorMessage(error);
+  // While a previous session is still being closed, wait: a new sign-in must not race the old sign-out.
+  const blocked = busy !== null || auth.state.status === 'signingOut';
   const google = googleSignInAvailable();
   const passkey = passkeysAvailable();
 
@@ -76,10 +79,10 @@ export default function SignInSheet() {
         <ErrorLine message={s.notConfigured} />
       ) : (
         <View className="gap-3 pt-2">
-          {apple && <AppleButton disabled={busy !== null} onPress={() => void run('apple', auth.signInWithApple)} />}
-          {google && <ProviderButton kind="google" label={s.google} disabled={busy !== null} onPress={() => void run('google', auth.signInWithGoogle)} />}
-          <ProviderButton kind="email" label={s.email} disabled={busy !== null} onPress={() => router.push('/sign-in/email')} />
-          {passkey && <QuietButton label={s.passkey} disabled={busy !== null} onPress={() => void run('passkey', auth.signInWithPasskey)} />}
+          {apple && <AppleButton disabled={blocked} onPress={() => void run('apple', auth.signInWithApple)} />}
+          {google && <ProviderButton kind="google" label={s.google} disabled={blocked} onPress={() => void run('google', auth.signInWithGoogle)} />}
+          <ProviderButton kind="email" label={s.email} disabled={blocked} onPress={() => router.push('/sign-in/email')} />
+          {passkey && <QuietButton label={s.passkey} disabled={blocked} onPress={() => void run('passkey', auth.signInWithPasskey)} />}
           {auth.lastMethod && !busy && <Text className="pt-1 text-center text-sm text-muted-foreground">{s.lastMethod[auth.lastMethod]}</Text>}
           {busy && <Busy label={s.busy} />}
           <ErrorLine message={message} />

@@ -42,13 +42,11 @@ export default function Recordings() {
         </Section>
       )}
 
-      {speechPackHost() && (
-        <Section title={speechSettingsCopy.title} footer={speechSettingsCopy.footer}>
-          {languages.map((lang, i) => (
-            <SpeechRow key={lang} language={lang} first={i === 0} />
-          ))}
-        </Section>
-      )}
+      <Section title={speechSettingsCopy.title} footer={speechSettingsCopy.footer}>
+        {languages.map((lang, i) => (
+          <SpeechRow key={lang} language={lang} first={i === 0} />
+        ))}
+      </Section>
 
       <Section title={b.title} footer={b.honestNote}>
         <Row first title={b.offLabel} subtitle={b.body} />
@@ -80,7 +78,7 @@ function SpeechRow({ language, first }: { language: SpeechLanguage; first: boole
   const host = speechPackHost();
   const plan = planFor([language]);
   const asrId = plan.asr[language];
-  if (!asrId || !host) return null;
+  if (!asrId) return null;
   const mb = Math.round(plan.bytes / 1e6);
   const installed = plan.packs.every((id) => host.packPath(id) !== null);
   const progress = speechDownloadProgress(language);

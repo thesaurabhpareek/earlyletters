@@ -23,6 +23,13 @@ export interface LanguageInfo {
   terminal: string;
   /** Which scripts an author can choose, with their own names (zh: 简体中文, 繁體中文). */
   scriptChoices: Array<{ script: ScriptCode; native: string; english: string }>;
+  /**
+   * Regional spelling standards an author can choose (Portuguese: Brazil or
+   * Portugal). It labels the author's language for the keyboard and the
+   * recogniser; the engine NEVER respells between them (fato and facto,
+   * bebê and bebé are both right, each where it is written).
+   */
+  regions: Array<{ tag: string; native: string; english: string }>;
   /** BCP 47 tag for the keyboard and for Whisper ("zh" covers both scripts). */
   bcp47: string;
 }
@@ -39,6 +46,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
     sentenceEnd: [],
     terminal: '.',
     scriptChoices: [],
+    regions: [],
     bcp47: 'en',
   },
   {
@@ -50,6 +58,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
     sentenceEnd: ['।', '॥'],
     terminal: '।',
     scriptChoices: [],
+    regions: [],
     bcp47: 'hi',
   },
   {
@@ -61,6 +70,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
     sentenceEnd: [],
     terminal: '.',
     scriptChoices: [],
+    regions: [],
     bcp47: 'es',
   },
   {
@@ -75,6 +85,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
       { script: 'Hans', native: '简体中文', english: 'Simplified' },
       { script: 'Hant', native: '繁體中文', english: 'Traditional' },
     ],
+    regions: [],
     bcp47: 'zh',
   },
   {
@@ -86,6 +97,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
     sentenceEnd: [],
     terminal: '.',
     scriptChoices: [],
+    regions: [],
     bcp47: 'fr',
   },
   {
@@ -97,6 +109,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
     sentenceEnd: [],
     terminal: '.',
     scriptChoices: [],
+    regions: [],
     bcp47: 'ar',
   },
   {
@@ -108,6 +121,10 @@ export const LANGUAGES: readonly LanguageInfo[] = [
     sentenceEnd: [],
     terminal: '.',
     scriptChoices: [],
+    regions: [
+      { tag: 'pt-BR', native: 'Português do Brasil', english: 'Brazil' },
+      { tag: 'pt-PT', native: 'Português europeu', english: 'Portugal' },
+    ],
     bcp47: 'pt',
   },
 ];
@@ -129,19 +146,46 @@ export function toLanguageCode(tag: string | null | undefined): LanguageCode | n
   return isLanguageCode(primary) ? primary : null;
 }
 
-/**
- * The Chinese script a device locale suggests: Traditional for zh-Hant,
- * zh-TW, zh-HK and zh-MO; Simplified otherwise. Only a default; the author
- * chooses in Settings.
- */
-export function defaultChineseScript(localeTag: string | null | undefined): 'Hans' | 'Hant' {
-  const t = (localeTag ?? '').toLowerCase().replace(/_/g, '-');
-  return /(^|-)hant(-|$)|-(tw|hk|mo)(-|$)/.test(t) ? 'Hant' : 'Hans';
+/** Script and region subtags of a BCP 47 tag: "zh-Hant-TW" -> Hant, TW; "en_PT" -> PT. */
+export function localeParts(tag: string | null | undefined): { script: string | null; region: string | null } {
+  const parts = (tag ?? '').trim().split(/[-_]/).slice(1);
+  const script = parts.find((p) => /^[A-Za-z]{4}$/.test(p)) ?? null;
+  const region = parts.find((p) => /^[A-Za-z]{2}$|^\d{3}$/.test(p)) ?? null;
+  return { script: script && script[0].toUpperCase() + script.slice(1).toLowerCase(), region: region && region.toUpperCase() };
 }
 
-/** The id of a language's text-rules pack in the signed manifest. */
+/**
+ * The Chinese script a device locale suggests: Traditional for zh-Hant and
+ * for Taiwan, Hong Kong and Macau (whatever the UI language, so an English
+ * phone in Taipei suggests Traditional); Simplified otherwise. Only a
+ * default; each author chooses in Settings.
+ */
+export function defaultChineseScript(localeTag: string | null | undefined): 'Hans' | 'Hant' {
+  const { script, region } = localeParts(localeTag);
+  if (script === 'Hant') return 'Hant';
+  if (script === 'Hans') return 'Hans';
+  return region === 'TW' || region === 'HK' || region === 'MO' ? 'Hant' : 'Hans';
+}
+
+/** Countries that follow European Portuguese spelling. */
+const PT_PT_REGIONS = new Set(['PT', 'AO', 'MZ', 'CV', 'GW', 'ST', 'TL', 'MO']);
+
+/**
+ * The regional standard a device locale suggests: pt-PT for Portugal and
+ * the countries that follow its spelling, pt-BR otherwise. Only a default;
+ * the author chooses in Settings.
+ */
+export function defaultRegion(code: LanguageCode, localeTag: string | null | undefined): string | null {
+  const info = languageInfo(code);
+  if (info.regions.length === 0) return null;
+  const { region } = localeParts(localeTag);
+  if (code === 'pt') return region && PT_PT_REGIONS.has(region) ? 'pt-PT' : 'pt-BR';
+  return info.regions[0].tag;
+}
+
+/** The id of a language's text-rules pack in the signed manifest (packages/api PACK_ID_RE: `text-rules.pt`). */
 export function textRulesPackId(code: LanguageCode): string {
-  return `text-rules-${code}`;
+  return `text-rules.${code}`;
 }
 
 /**

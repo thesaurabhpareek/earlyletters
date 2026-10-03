@@ -33,10 +33,12 @@ export const PROMPT_TOKEN_CAP = 200;
 /**
  * Default seeds. Mandarin uses the widely shared "以下是普通话的句子。",
  * which steers Whisper to Simplified characters with punctuation
- * (openai/whisper discussion 277; reliability varies by model, so the
- * Mandarin model is also chosen for this, ADR 0015). For a Traditional
- * Chinese family the language pack supplies "以下是普通話的句子。".
- * English needs none: Whisper already punctuates English.
+ * (openai/whisper discussion 277). In our check (ADR 0015) turbo without it
+ * punctuated 1 of 7 Mandarin clips, with it 7 of 7, at the same character
+ * error. Its commas come out ASCII; the Mandarin language pack's punctuation
+ * profile turns them full-width. For a Traditional Chinese family the
+ * language pack supplies "以下是普通話的句子。". English needs none:
+ * Whisper already punctuates English.
  */
 export const DEFAULT_PROMPT_SEEDS: Record<SpeechLanguage, string> = {
   en: '',

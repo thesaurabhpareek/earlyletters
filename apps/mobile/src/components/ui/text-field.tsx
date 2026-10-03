@@ -77,7 +77,7 @@ export const TextField = React.forwardRef<TextInput, TextFieldProps>(function Te
         setFocused(false);
         onBlur?.(e);
       }}
-      className={cn('text-foreground', Platform.select({ web: 'outline-none' }), letter ? 'min-h-64 flex-1' : 'min-h-[52px] flex-1 px-4 py-3', inputClassName)}
+      className={cn('text-foreground', Platform.select({ web: 'outline-none resize-none' }), letter ? 'min-h-64 flex-1' : 'min-h-[52px] flex-1 px-4 py-3', inputClassName)}
       style={[textStyle, letter ? { paddingTop: 0 } : null]}
     />
   );

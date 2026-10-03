@@ -19,15 +19,17 @@ const FAMILIES = Number(process.env.PERF_FAMILIES ?? 1000);
 const PER_FAMILY = Number(process.env.PERF_ENTRIES ?? 400);
 const SAMPLES = Number(process.env.PERF_SAMPLES ?? 120);
 const PUSH_SAMPLES = Number(process.env.PERF_PUSH_SAMPLES ?? 40);
-// Measured 3 Oct 2026 at 1,000 x 400 on a shared, busy machine (p95 ms): see the
-// table printed by this test and supabase/APPLY.md "Performance budgets".
+// Measured 3 Oct 2026 at 1,000 x 400 (p95 ms, PGlite, shared machine): pull_idle 2.1,
+// pull_verify 5.2, pull_incremental 5.4, pull_first_page 15.5, push_50_inserts 36.5,
+// push_50_edits 57.8. Budgets are about 3 to 4x that (machine load moves all of them
+// together); the push budgets stay well inside TDD 06's 250 ms of server time.
 const BUDGET_MS = {
-  pull_idle: 15,         // every book at its head, nothing changed (the common foreground pull)
-  pull_verify: 30,       // same, plus the digest of every letter the caller may hold
-  pull_incremental: 30,  // five new letters since the cursor
-  pull_first_page: 120,  // a new phone: the first 200 rows of a 400-letter book
-  push_50_inserts: 250,  // TDD 06 3.2: 250 ms server time per batch
-  push_50_edits: 250,
+  pull_idle: 8,          // every book at its head, nothing changed (the common foreground pull)
+  pull_verify: 20,       // same, plus the digest of every letter the caller may hold
+  pull_incremental: 20,  // five new letters since the cursor
+  pull_first_page: 50,   // a new phone: the first 200 rows of a 400-letter book
+  push_50_inserts: 120,  // 50 new letters, every trigger on
+  push_50_edits: 180,    // 50 edits of the words, versions written
 };
 
 const dataDir = mkdtempSync(join(tmpdir(), 'scribe-sync-perf-'));

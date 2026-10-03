@@ -19,6 +19,12 @@ export interface WorkerConfig {
   /** Shared secret the cron job presents (Authorization: Bearer). Not the service key. */
   triggerSecret: string;
   resendApiKey: string;
+  /**
+   * We keep Resend contacts (marketing lists) only if this is on. v1.0 has none, so the
+   * key can be a sending-only key (least privilege) and the email_provider step is
+   * not applicable. Turn on, with a full-access key, the day contacts are introduced.
+   */
+  resendContacts: boolean;
   /** "Name <address>" for user-facing deletion emails. */
   mailFrom: string;
   replyTo: string;
@@ -65,6 +71,7 @@ export function readConfig(get: EnvGetter): { config: WorkerConfig | null; missi
       serviceKey: v('SUPABASE_SERVICE_ROLE_KEY'),
       triggerSecret: v('PURGE_WORKER_SECRET'),
       resendApiKey: v('RESEND_API_KEY'),
+      resendContacts: v('RESEND_CONTACTS') === 'on',
       mailFrom: v('MAIL_FROM') || `${brand.name} <${support}>`,
       replyTo: support,
       alertTo: v('ALERT_EMAIL') || support,

@@ -44,7 +44,7 @@ const SERVICE_ONLY = [
   `select public.ops_ledger_between(now(), now(), 10)`, `select public.ops_retention(now())`,
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
   `select public.ops_replay_ledger('[]')`, `select public.ops_row_counts()`, `select public.ops_raw_sha(null, 1, now())`,
-  `select public.ops_schema_health()`,
+  `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];
@@ -113,7 +113,10 @@ check('a request\'s own queued folders are listed for the worker', rows.length =
 await sys(`select public.record_purge_attempt($1, false, 'http_503')`, [rows[0].id]);
 check('with a request id, rows in backoff are still listed (the step has its own backoff)',
   (await j(`select public.ops_storage_queue_due(100, $1) v`, [reqS])).some((r) => r.id === rows[0].id));
-check('without a request id, rows in backoff wait', !(await j(`select public.ops_storage_queue_due(1000, null) v`)).some((r) => r.id === rows[0].id));
+check('without a request id, an account\'s rows are left to its own step', !(await j(`select public.ops_storage_queue_due(1000, null) v`)).some((r) => r.request_id !== null));
+const generalId = general.find((r) => r.object_path === `${SOLO}/`).id;
+await sys(`select public.record_purge_attempt($1, false, 'http_503')`, [generalId]);
+check('without a request id, rows in backoff wait', !(await j(`select public.ops_storage_queue_due(1000, null) v`)).some((r) => r.id === generalId));
 
 const owned = await j(`select public.ops_storage_owned_by($1, 100) v`, [S]);
 check('objects Storage records as owned by the person are found (owner and owner_id)', owned.length === 1 && owned[0].bucket_id === 'entry-photos');
@@ -135,6 +138,10 @@ check('audit actor ids are the only thing left for finalize to clear', (await j(
   .every((r) => r.table_name === 'audit_events' || r.table_name === 'deletion_requests'));
 await sys(`select public.finalize_account_deletion($1, '{"verified": true}')`, [reqS]);
 check('after finalize, no residue at all', (await j(`select public.ops_deletion_residue($1, 'after_finalize') v`, [S])).length === 0);
+const st = await j(`select public.ops_deletion_request_status($1) v`, [reqS]);
+check('request status for the verify script: completed, unlinked, receipt and steps', st.status === 'completed' && st.profile_linked === false
+  && st.receipt.verified === true && typeof st.steps.auth_user === 'string');
+check('an unknown request has an empty status', JSON.stringify(await j(`select public.ops_deletion_request_status($1) v`, [A])) === '{}');
 check('the contributor\'s own letter in the deleted book went with the book (they were offered a copy)', (await sys(`select 1 from entries where id=$1`, [nLetter])).rows.length === 0);
 check('the shared book and both parents\' letters are untouched', (await sys(`select count(*)::int n from entries where id = any($1)`, [[aLetter, bLetter]])).rows[0].n === 2);
 check('the purge ledger has the deleted letters', (await sys(`select count(*)::int n from purge_ledger where entity_type='entry' and entity_id = any($1)`, [sLetters])).rows[0].n === 2);

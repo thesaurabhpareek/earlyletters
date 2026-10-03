@@ -9,15 +9,17 @@
  * matches the value below.
  *
  * Which model serves which language (ADR 0015, decision):
- * - English, Spanish, French, Portuguese, Arabic: one shared multilingual
- *   model, Whisper large-v3-turbo q5_0. A family speaking any mix of these
- *   downloads it once.
- * - Mandarin Chinese: Belle-whisper-large-v3-turbo-zh q5_0 (Apache-2.0 weights,
- *   same size as turbo, 24 to 64% lower character error on published Chinese
- *   sets). Falls back to the shared model until our copy is hosted.
+ * - English, Spanish, French, Portuguese, Arabic, Mandarin Chinese: one
+ *   shared multilingual model, Whisper large-v3-turbo q5_0. A family speaking
+ *   any mix of these downloads it once. Mandarin gets Simplified characters
+ *   and punctuation from its prompt seed (transcribe-prompt.ts).
  * - Hindi: whisper-hindi-small q5_1 (Apache-2.0, a third of turbo's size;
  *   turbo is weakest on Hindi of our seven languages). Falls back to the
  *   shared model until our copy is hosted.
+ * - Candidates (`status: 'candidate'`) are built and hashed but never chosen
+ *   until the golden corpus says so: Belle-whisper-large-v3-turbo-zh ties
+ *   turbo on Chinese text in our check but writes Latin-script names in
+ *   Chinese characters (ADR 0015), and names are the bar that matters most.
  * - Low-memory phones (compact tier): Whisper small q5_1 for every language
  *   except Hindi, which is already small.
  * - Voice activity detection: Silero VAD v6.2.0 (under 1 MB), needed by
@@ -76,6 +78,8 @@ export interface SpeechModel {
   build: 'upstream' | { tool: 'whisper.cpp whisper-quantize'; version: 'v1.9.3'; commit: string; quant: 'q5_0' | 'q5_1'; converter?: string };
   /** false until the file is uploaded to the self host (D-046); a model that is not hosted is never chosen. */
   hosted: boolean;
+  /** 'default': chosen for a language below. 'candidate': built and hashed for evaluation, never chosen. */
+  status: 'default' | 'candidate';
   /** Memory the loaded model needs, estimated (E; measured in BL-043). Drives the tier, never shown. */
   residentBytesEstimate: number;
 }
@@ -115,6 +119,7 @@ export const SPEECH_MODELS: Record<SpeechModelId, SpeechModel> = {
     source: { ...UPSTREAM.vad, file: 'ggml-silero-v6.2.0.bin', sha256: '2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987' },
     build: 'upstream',
     hosted: true,
+    status: 'default',
     residentBytesEstimate: 8_000_000,
   },
   'speech-model.whisper-large-v3-turbo-q5_0': {
@@ -132,6 +137,7 @@ export const SPEECH_MODELS: Record<SpeechModelId, SpeechModel> = {
     source: { ...UPSTREAM.whisperCpp, file: 'ggml-large-v3-turbo-q5_0.bin', sha256: '394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2' },
     build: 'upstream',
     hosted: true,
+    status: 'default',
     residentBytesEstimate: 1_000_000_000,
   },
   'speech-model.whisper-small-q5_1': {
@@ -149,6 +155,7 @@ export const SPEECH_MODELS: Record<SpeechModelId, SpeechModel> = {
     source: { ...UPSTREAM.whisperCpp, file: 'ggml-small-q5_1.bin', sha256: 'ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb' },
     build: 'upstream',
     hosted: true,
+    status: 'default',
     residentBytesEstimate: 400_000_000,
   },
   'speech-model.belle-whisper-turbo-zh-q5_0': {
@@ -166,6 +173,7 @@ export const SPEECH_MODELS: Record<SpeechModelId, SpeechModel> = {
     source: { ...UPSTREAM.belleZh, file: 'ggml-model.bin', sha256: '2a3bba5bfdb4d4da3d9949a83b405711727ca1941d4d5810895e077eb3cb4d99' },
     build: { tool: 'whisper.cpp whisper-quantize', version: 'v1.9.3', commit: WHISPER_CPP_BUILD.commit, quant: 'q5_0' },
     hosted: false,
+    status: 'candidate',
     residentBytesEstimate: 1_000_000_000,
   },
   'speech-model.whisper-hindi-small-q5_1': {
@@ -189,6 +197,7 @@ export const SPEECH_MODELS: Record<SpeechModelId, SpeechModel> = {
       converter: 'whisper.cpp v1.9.3 models/convert-h5-to-ggml.py, openai/whisper 86098128 assets, torch 2.5.1 cpu, transformers 4.46.3',
     },
     hosted: false,
+    status: 'default',
     residentBytesEstimate: 400_000_000,
   },
 };
@@ -206,10 +215,7 @@ export const LANGUAGE_MODELS: Record<SpeechLanguage, Record<Tier, readonly Speec
   fr: { full: ['speech-model.whisper-large-v3-turbo-q5_0'], compact: ['speech-model.whisper-small-q5_1'] },
   pt: { full: ['speech-model.whisper-large-v3-turbo-q5_0'], compact: ['speech-model.whisper-small-q5_1'] },
   ar: { full: ['speech-model.whisper-large-v3-turbo-q5_0'], compact: ['speech-model.whisper-small-q5_1'] },
-  zh: {
-    full: ['speech-model.belle-whisper-turbo-zh-q5_0', 'speech-model.whisper-large-v3-turbo-q5_0'],
-    compact: ['speech-model.whisper-small-q5_1'],
-  },
+  zh: { full: ['speech-model.whisper-large-v3-turbo-q5_0'], compact: ['speech-model.whisper-small-q5_1'] },
   hi: {
     full: ['speech-model.whisper-hindi-small-q5_1', 'speech-model.whisper-large-v3-turbo-q5_0'],
     compact: ['speech-model.whisper-hindi-small-q5_1', 'speech-model.whisper-small-q5_1'],
@@ -261,7 +267,7 @@ export function speechPlan(languages: readonly SpeechLanguage[], tier: Tier, ava
  */
 export function speechPackEntries(minAppVersion = '1.0.0', available: Availability = hostedOnly) {
   return Object.values(SPEECH_MODELS)
-    .filter((m) => available(m.id))
+    .filter((m) => m.status === 'default' && available(m.id))
     .map((m) => ({
       id: m.id,
       kind: m.kind,

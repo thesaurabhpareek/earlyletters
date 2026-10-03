@@ -29,6 +29,7 @@ export function fillerEdits(raw: string, rules: LanguageRules = ENGLISH_RULES, s
   const edits: Edit[] = [];
   for (const t of R.tokens(raw)) {
     if (suggest ? !R.isSuggestFiller(t.word) : !R.isFiller(t.word)) continue;
+    if (!R.standsAlone(raw, t.start, t.end)) continue; // 呃逆 is "hiccup", not a filler
     let start = t.start;
     let end = t.end;
     // Spanish: "¿eh?" carries its opening mark; it goes with the filler.

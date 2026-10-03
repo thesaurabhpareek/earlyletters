@@ -31,7 +31,7 @@ export const CONTENT_SCHEMA_VERSION = 1;
 export const ALLOWED_PLACEHOLDERS = ['child', 'app', 'signsAs'] as const;
 const PLACEHOLDER_RE = /\{([^{}]*)\}/g;
 /** Characters the content rules forbid (CLAUDE.md, VOICE.md): en and em dashes, curly quotes, the ellipsis character. */
-const FORBIDDEN_CHARS_RE = /[–—‘’“”…]/;
+const FORBIDDEN_CHARS_RE = /[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]/;
 // No control characters at all, newlines included: every text field is one paragraph.
 const CONTROL_RE = /[\u0000-\u001f\u007f]/;
 

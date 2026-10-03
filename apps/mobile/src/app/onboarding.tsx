@@ -34,6 +34,7 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { addChild, getActiveChildId, setActiveChildId, todayISO } from '@/lib/store';
@@ -200,7 +201,13 @@ export default function Onboarding() {
                     <Text variant="labelSmall" tone="muted">
                       {expecting ? pc.dueDateLabel : o.child.birthdayLabel}
                     </Text>
-                    {expecting ? (
+                    {Platform.OS === 'web' ? (
+                      // Web preview only: the community picker renders nothing on web, so show
+                      // the value the way iOS's compact picker does (a quiet date pill).
+                      <View className="rounded-md bg-muted px-3 py-2">
+                        <Text variant="body">{dayDate(todayISO(expecting ? dueDate : birthday))}</Text>
+                      </View>
+                    ) : expecting ? (
                       <DateTimePicker
                         value={dueDate}
                         mode="date"

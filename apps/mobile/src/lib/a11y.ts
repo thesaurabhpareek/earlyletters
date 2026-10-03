@@ -70,7 +70,18 @@ export function announce(message: string, opts: { queue?: boolean } = {}): void 
     if (!timer) timer = setTimeout(flushQueued, 1000);
     return;
   }
-  AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: opts.queue ?? true });
+  speak(message, opts.queue ?? true);
+}
+
+/** react-native-web has announceForAccessibility only; never throw from a status message. */
+function speak(message: string, queue: boolean) {
+  try {
+    if (typeof AccessibilityInfo.announceForAccessibilityWithOptions === 'function') {
+      AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue });
+    } else if (typeof AccessibilityInfo.announceForAccessibility === 'function') {
+      AccessibilityInfo.announceForAccessibility(message);
+    }
+  } catch {}
 }
 
 function flushQueued() {
@@ -81,7 +92,7 @@ function flushQueued() {
   }
   const all = queued;
   queued = [];
-  for (const m of all) AccessibilityInfo.announceForAccessibilityWithOptions(m, { queue: true });
+  for (const m of all) speak(m, true);
 }
 
 /**

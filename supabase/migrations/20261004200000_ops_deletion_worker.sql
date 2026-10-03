@@ -162,15 +162,18 @@ begin
 end;
 $$;
 
--- Queue rows due now. With a request id: every undone row of that request,
--- whatever its backoff (the account step has its own backoff).
+-- Queue rows due now that belong to no account request (purged letters and books).
+-- With a request id: every undone row of that request, whatever its backoff
+-- (the account's storage step drains them and has its own backoff, and the
+-- receipt counts what it deleted).
 create or replace function public.ops_storage_queue_due(p_limit int default 200, p_request uuid default null)
 returns jsonb language sql stable security definer set search_path = public, pg_catalog as $$
   select coalesce(jsonb_agg(jsonb_build_object('id', q.id, 'bucket_id', q.bucket_id, 'object_path', q.object_path,
            'is_prefix', q.is_prefix, 'request_id', q.request_id, 'attempts', q.attempts) order by q.id), '[]'::jsonb)
     from (select * from storage_purge_queue q
            where q.done_at is null
-             and (case when p_request is null then q.next_attempt_at <= now() else q.request_id = p_request end)
+             and (case when p_request is null then q.request_id is null and q.next_attempt_at <= now()
+                       else q.request_id = p_request end)
            order by q.id limit greatest(least(coalesce(p_limit, 200), 1000), 1)) q;
 $$;
 
@@ -550,6 +553,15 @@ begin
 end;
 $$;
 
+-- One request's status and receipt (verify-deletion script). Receipts hold counts and step outcomes only.
+create or replace function public.ops_deletion_request_status(p_request uuid)
+returns jsonb language sql stable security definer set search_path = public, pg_catalog as $$
+  select coalesce((select jsonb_build_object('kind', d.kind, 'status', d.status, 'requested_at', d.requested_at,
+            'completed_at', d.completed_at, 'profile_linked', d.profile_id is not null, 'receipt', d.receipt,
+            'steps', coalesce((select jsonb_object_agg(s.step, s.status) from deletion_request_steps s where s.request_id = d.id), '{}'::jsonb))
+           from deletion_requests d where d.id = p_request), '{}'::jsonb);
+$$;
+
 -- Row counts for the restore drill comparison. Counts only.
 create or replace function public.ops_row_counts()
 returns jsonb language sql stable security definer set search_path = public, pg_catalog as $$
@@ -611,6 +623,7 @@ begin
     'public.ops_apple_token_get(uuid)', 'public.ops_apple_token_delete(uuid)', 'public.ops_ledger_between(timestamptz, timestamptz, int)',
     'public.ops_retention(timestamptz)', 'public.ops_audit_write(text, text, text, text, uuid, uuid, uuid, jsonb)',
     'public.ops_incident_scope(jsonb)', 'public.ops_replay_ledger(jsonb)', 'public.ops_row_counts()',
+    'public.ops_deletion_request_status(uuid)',
     'public.ops_raw_sha(jsonb, int, timestamptz)', 'public.ops_schema_health()']
   loop
     execute format('revoke execute on function %s from public, anon, authenticated', f);

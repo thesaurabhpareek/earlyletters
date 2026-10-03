@@ -16,8 +16,7 @@
  * - `sha256File`: streamed natively in 1 MB blocks (a 574 MB model never
  *   enters JavaScript memory).
  */
-import { requireOptionalNativeModule } from 'expo';
-import type { NativeModule } from 'expo';
+import { NativeModule, requireOptionalNativeModule } from 'expo';
 
 /** One contiguous range of the recording, with digital silence placed before it. Same shape as ChunkPiece. */
 export interface DecodePiece {
@@ -48,7 +47,8 @@ type ScribeAudioEvents = {
   onEnhanceProgress: (event: EnhanceProgressEvent) => void;
 };
 
-export interface ScribeAudioNative extends NativeModule<ScribeAudioEvents> {
+/** Expo's documented pattern: a declared class extending NativeModule gives typed events (`addListener`). */
+export declare class ScribeAudioNative extends NativeModule<ScribeAudioEvents> {
   probe(uri: string): Promise<AudioInfo>;
   /** 16 kHz mono PCM16 LE; byte length = 2 x chunkSampleCount(pieces). */
   decodePcm16(uri: string, pieces: DecodePiece[]): Promise<ArrayBuffer>;

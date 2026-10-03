@@ -70,9 +70,12 @@ export function languagePunctuationEdits(req: EditRequest, R: LanguageRules): Ed
       if (!opener) continue;
       const body = raw.slice(s.start, s.end - 1);
       if (body.includes(opener) || /[,;:]/.test(body)) continue;
-      const first = R.tokens(body)[0];
+      // On the first word that survives the clean rules ("em, ¿quieres?" loses "em"), inside any opening quote: «¿Vienes?»
+      const first = R.tokens(body)
+        .map((t) => ({ ...t, start: s.start + t.start, end: s.start + t.end }))
+        .find((t) => !gone(t) && !(req.level === 'clean' && R.isFiller(t.word)));
       if (!first) continue;
-      openerAt.set(s.start + first.start, opener); // inside any opening quote: «¿Vienes?»
+      openerAt.set(first.start, opener);
     }
   }
 

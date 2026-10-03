@@ -138,7 +138,7 @@ function Letter() {
       <Stack.Screen options={{ headerRight }} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: insets.bottom + 48 }} contentContainerClassName="gap-7 px-6">
         <Animated.View entering={enter(0)} className="gap-3">
-          <Text variant="letterDateline">{date}</Text>
+          <Text variant="footnote">{date}</Text>
           {!entry.inBook && (
             <View className="flex-row">
               <PrivateChip color={c.text} />
@@ -168,7 +168,7 @@ function Letter() {
           </Text>
         </Animated.View>
 
-        {spoken && <AudioPlayer entryId={entry.id} context="letter" />}
+        {spoken && <AudioPlayer entryId={entry.id} />}
 
         <View className="gap-2 border-t border-border pt-5">
           <View className="flex-row items-center gap-2">

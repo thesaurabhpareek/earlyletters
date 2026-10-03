@@ -190,11 +190,15 @@ create policy sync_rate_windows_no_anonymous on public.sync_rate_windows as rest
   using (not (select public.is_anonymous())) with check (not (select public.is_anonymous()));
 
 -- ─── 6. Pull ─────────────────────────────────────────────────────────────
+-- plan_cache_mode = force_generic_plan (both RPCs): the statements inside read the
+-- book_entries view, whose custom re-plan on every call cost about 13 ms in PGlite
+-- against 0.3 ms to run; generic plans keep the index range scans (sync_perf.test.mjs).
 -- p_since: {"epoch": int, "books": {"<child id>": {"cursor": text, "access": text,
 --   "meta": md5 text, "have": {"n": int, "sum": int}, "verify": bool, "ids": bool}}}
 -- (all optional; {} is a first pull). p_limit: rows in this response, all books together.
 create or replace function public.sync_pull(p_since jsonb default '{}'::jsonb, p_limit int default 200)
-returns jsonb language plpgsql volatile security definer set search_path = public, pg_catalog as $$
+returns jsonb language plpgsql volatile security definer set search_path = public, pg_catalog
+  set plan_cache_mode = force_generic_plan as $$
 declare
   v_uid uuid := public.require_user();
   v_snap pg_snapshot := pg_current_snapshot();
@@ -470,7 +474,8 @@ $$;
 
 -- ─── 7. Push ─────────────────────────────────────────────────────────────
 create or replace function public.sync_push(p_ops jsonb)
-returns jsonb language plpgsql volatile security invoker set search_path = public, pg_catalog as $$
+returns jsonb language plpgsql volatile security invoker set search_path = public, pg_catalog
+  set plan_cache_mode = force_generic_plan as $$
 declare
   v_uid uuid := public.require_user();
   c_groups constant text[] := array['text', 'in_book', 'sounds_like_me', 'occurred_on'];

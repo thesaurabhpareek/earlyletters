@@ -32,7 +32,9 @@ v0.1, 2026-10-01. Extends `DESIGN_LANGUAGE.md` section 8 and `tokens.motion`; co
 | 5 | **Quiet joy.** | A soft wash and a sentence. | Confetti, counters, streaks, sound. |
 | 6 | **Same code, native chrome.** | Our motion in Reanimated; tabs, sheets, back stay native. | Re-create the iOS sheet spring on Android. |
 
-## 3. Proposed token additions (not yet in `tokens.ts`)
+## 3. Token additions (in `tokens.ts` since Oct 3 2026)
+
+All of the block below now lives in `tokens.motion` (plus `press`, `exitMs`, `easing`, `hardCeilingMs`, `emptyBreathMs`, `drawMs`), and `packages/design-tokens/test/tokens.test.ts` checks the 2 s ceiling, that the 6-item stagger fits under 900 ms and that every spring has a damping ratio of at least 0.9. `lib/motion.ts` reads them; screens never type a duration or spring. Implemented: `useMotion()` (`spring`, `fade`, `enter`, `exit`, `layout`), `usePressScale()` (`components/motion/press.ts`), `DrawOnPath` (`components/motion/draw-on.tsx`, 5h), `Breathe` (`components/motion/breathe.tsx`, 5j). Still hardcoded and owned elsewhere: the `B` constants in `components/capture/listening-aura.tsx` (equal to `tokens.motion.breath`; its owner should switch to the token).
 
 ```ts
 motion: { ...existing,
@@ -123,6 +125,8 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 
 ## 6. Haptics map
 
+**Policy (Oct 3 2026): a haptic marks an outcome, never a navigation.** `Button` plays no haptic by default; a call site passes `haptic` only where the press is an outcome (Speak / Type start a capture, Save, Delete). Continue, Back, Close, tab changes, sheet opening and scrolling are silent. `success` and `warning` are never dropped by the 100 ms throttle (`lib/haptics.shared.ts`). Android mapping is built (`lib/haptics.android.ts`).
+
 One `haptic(name)` wrapper. Android uses `performAndroidHapticsAsync` (system feedback, no VIBRATE permission), not the Vibrator path (M22).
 
 | Moment | iOS (`expo-haptics`) | Android (`AndroidHaptics`) |
@@ -167,6 +171,10 @@ iOS mutes the Taptic Engine in Low Power Mode and during dictation (M22): a hapt
 | Fit | Designer timelines | Characters, state machines (M12) | Draw-once lines, glow, washes |
 
 **Recommendation: none in v1.** All three illustrated moments are single-weight line drawings, no mascot (DESIGN_LANGUAGE 9): `strokeDashoffset` plus opacity covers them with no new dependency and exact Reduce Motion control. If a designer timeline is ever needed, pick **Lottie (.lottie)**: open format, Apache-2.0, Expo Go, no paid seat. Rive's strength is the characters we chose not to build.
+
+## 9b. Web preview note
+
+Reanimated 4.5.1 on web pins an element to `position: absolute` after any entering animation that is not a stock preset (custom `withInitialValues` or a `Keyframe`). `useMotion().enter()` therefore uses the stock `FadeInDown` on web and the 8 pt rise on native. Do not use custom entering keyframes in screens until this is fixed upstream (COMPONENT_LIBRARY 0.2 item 5).
 
 ## 10. Open questions
 

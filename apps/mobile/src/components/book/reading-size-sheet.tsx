@@ -27,6 +27,7 @@ export function ReadingSizeSheet({ visible, value, onChange, onClose }: Props) {
       <ChoiceGroup
         label={copy.reader.readingSizeA11y}
         layout="list"
+        className="-mx-4"
         value={value}
         onChange={onChange}
         options={READING_SIZES.map((size) => ({

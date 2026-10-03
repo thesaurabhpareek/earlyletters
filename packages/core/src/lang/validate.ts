@@ -202,7 +202,7 @@ export function validatePack(input: unknown, opts: { expectLanguage?: LanguageCo
     }
     if (isObj(n.foldForMatching)) {
       for (const [k, v] of Object.entries(n.foldForMatching)) {
-        if (!(/^\p{L}$/u.test(k) && typeof v === 'string' && /^\p{L}$/u.test(v) && k !== v)) c.err(`$.normalization.foldForMatching`, 'not_letter_to_letter');
+        if (!(/^[\p{L}\p{M}]$/u.test(k) && typeof v === 'string' && /^[\p{L}\p{M}]$/u.test(v) && k !== v)) c.err(`$.normalization.foldForMatching`, 'not_letter_to_letter');
       }
     } else c.err('$.normalization.foldForMatching', 'not_object');
     if (isObj(n.house)) {
@@ -282,7 +282,7 @@ export function validatePack(input: unknown, opts: { expectLanguage?: LanguageCo
   const meaningSets: Record<string, Set<string>> = {};
   if (
     c.table(m, '$.meaning', [
-      'negations', 'negationSuffixes', 'modals', 'numberWords', 'functionWords', 'pronouns', 'kinship', 'alwaysCapitalized',
+      'negations', 'negationSuffixes', 'negationPrefixes', 'modals', 'numberWords', 'functionWords', 'pronouns', 'kinship', 'alwaysCapitalized',
       'agreementGroups', 'tenseGroups', 'agreementInflections', 'vowels', 'minStem', 'tenseEndings', 'stemDropFinal',
     ])
   ) {
@@ -290,7 +290,10 @@ export function validatePack(input: unknown, opts: { expectLanguage?: LanguageCo
       meaningSets[k] = new Set(c.words(m[k], `$.meaning.${k}`));
     }
     if (c.array(m.negationSuffixes, '$.meaning.negationSuffixes', 8)) m.negationSuffixes.forEach((s, i) => c.str(s, `$.meaning.negationSuffixes[${i}]`, 8));
-    const negation = (w: string) => meaningSets.negations.has(w) || (Array.isArray(m.negationSuffixes) && m.negationSuffixes.some((s) => typeof s === 'string' && w.endsWith(s)));
+    if (c.array(m.negationPrefixes, '$.meaning.negationPrefixes', 8)) m.negationPrefixes.forEach((s, i) => c.str(s, `$.meaning.negationPrefixes[${i}]`, 8));
+    const affix = (list: unknown, w: string, end: boolean) =>
+      Array.isArray(list) && list.some((s) => typeof s === 'string' && (end ? w.endsWith(s) : w.startsWith(s)));
+    const negation = (w: string) => meaningSets.negations.has(w) || affix(m.negationSuffixes, w, true) || affix(m.negationPrefixes, w, false);
     for (const k of ['agreementGroups', 'tenseGroups']) {
       const groups = m[k];
       if (!c.array(groups, `$.meaning.${k}`, 400)) continue;

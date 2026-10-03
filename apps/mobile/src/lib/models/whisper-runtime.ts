@@ -15,6 +15,7 @@
  */
 import { AppState, type NativeEventSubscription } from 'react-native';
 import type { WhisperContext, WhisperVadContext } from 'whisper.rn/index';
+import { nativePath } from './paths';
 
 type WhisperModule = typeof import('whisper.rn/index');
 
@@ -136,20 +137,5 @@ async function releaseNow(): Promise<void> {
     await Promise.allSettled([c.asr.release(), c.vad.release()]);
   } catch {
     // never loaded: nothing to free
-  }
-}
-
-/**
- * A plain file system path for whisper.rn. It strips `file://` but does not
- * percent-decode, and the iOS models folder is "Application Support" (a
- * space): `Application%20Support` would not be found. Exported for tests.
- */
-export function nativePath(uriOrPath: string): string {
-  if (!uriOrPath.startsWith('file://')) return uriOrPath;
-  const rest = uriOrPath.slice('file://'.length);
-  try {
-    return decodeURI(rest);
-  } catch {
-    return rest;
   }
 }

@@ -5,22 +5,26 @@
  * verifies SHA-256 against the signed manifest and installs. This file only
  * decides WHICH speech packs a phone needs (catalog.ts) and asks for them.
  *
- * Binding: the coordinator calls `bindSpeechPacks(packManager)` at boot
- * (through `startTranscriptionQueue`, transcription-queue/index.ts). The
- * interface below is the subset of `PackManager` this area uses, typed
- * structurally so either side can change without a shared import. Until it
- * is bound, development builds can read a model copied by hand into
- * Application Support/models (checked by SHA-256 first); preview and store
- * builds simply keep letters waiting for their words.
+ * Host: the platform facade (`src/lib/packs`: ensurePack, packPath,
+ * onProgress, removePack, addLanguageResolver). The interface below is the
+ * subset this area uses, typed structurally; `bindSpeechPacks` replaces it
+ * (tests). The speech plan registers itself as a language resolver, so the
+ * platform's `ensureLanguage(lang)` fetches that language's speech packs too.
+ *
+ * Development builds only: when the platform cannot supply a model (no signed
+ * manifest published yet), a model copied by hand into Application
+ * Support/models is used, after its SHA-256 matches the catalog.
  */
 import { File } from 'expo-file-system';
 import * as Device from 'expo-device';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
+import * as platformPacks from '../packs';
 import { modelsDirectory } from '../model-files';
 import { getSetting, setSetting } from '../store';
 import {
   SPEECH_MODELS,
+  isSpeechLanguage,
   speechPlan,
   type Availability,
   type SpeechLanguage,
@@ -51,13 +55,22 @@ export interface SpeechPackProgress {
 
 export type SpeechEnsureResult = { ok: true; path: string } | { ok: false; reason: string };
 
-/** The part of the platform `PackManager` this area calls. */
+/** The part of the platform pack API this area calls. */
 export interface SpeechPackHost {
   packPath(id: string): string | null;
   ensurePack(id: string, opts?: { allowCellularOnce?: boolean; signal?: AbortSignal }): Promise<SpeechEnsureResult>;
   onProgress(listener: (p: SpeechPackProgress) => void): () => void;
   removePack(id: string): Promise<void>;
+  addLanguageResolver?(resolver: (language: string) => string[]): () => void;
 }
+
+const platformHost: SpeechPackHost = {
+  packPath: (id) => platformPacks.packPath(id),
+  ensurePack: (id, opts) => platformPacks.ensurePack(id, opts),
+  onProgress: (listener) => platformPacks.onProgress(listener),
+  removePack: (id) => platformPacks.removePack(id),
+  addLanguageResolver: (resolver) => platformPacks.addLanguageResolver(resolver),
+};
 
 let host: SpeechPackHost | null = null;
 const hostListeners = new Set<() => void>();
@@ -67,8 +80,15 @@ export function bindSpeechPacks(h: SpeechPackHost): void {
   hostListeners.forEach((l) => l());
 }
 
-export function speechPackHost(): SpeechPackHost | null {
-  return host ?? (devShortcutsAllowed ? devHost : null);
+export function speechPackHost(): SpeechPackHost {
+  if (host) return host;
+  return devShortcutsAllowed ? withDevFallback(platformHost) : platformHost;
+}
+
+/** Packs a language needs on this phone, for the platform's `ensureLanguage` (empty for languages without speech). */
+export function speechPacksForLanguage(language: string): string[] {
+  const primary = language.split('-')[0];
+  return isSpeechLanguage(primary) ? planFor([primary]).packs : [];
 }
 
 /** Called when a host is bound (the queue re-checks waiting letters). */
@@ -103,7 +123,7 @@ export function deviceTier(): Tier {
  */
 export function availability(): Availability {
   const h = speechPackHost();
-  return (id) => SPEECH_MODELS[id].hosted || (!!h && h.packPath(id) !== null);
+  return (id) => SPEECH_MODELS[id].status === 'default' && (SPEECH_MODELS[id].hosted || h.packPath(id) !== null);
 }
 
 export function planFor(languages: readonly SpeechLanguage[], tier: Tier = deviceTier()): SpeechPlan {
@@ -113,7 +133,6 @@ export function planFor(languages: readonly SpeechLanguage[], tier: Tier = devic
 /** Installed paths of every pack a language needs on this phone, or null if any is missing. */
 export function installedPathsFor(language: SpeechLanguage, tier: Tier = deviceTier()): { asr: string; vad: string; asrId: SpeechModelId } | null {
   const h = speechPackHost();
-  if (!h) return null;
   const plan = planFor([language], tier);
   const asrId = plan.asr[language];
   if (!asrId) return null;
@@ -129,7 +148,6 @@ export function installedPathsFor(language: SpeechLanguage, tier: Tier = deviceT
  */
 export async function ensureSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean; signal?: AbortSignal } = {}): Promise<SpeechEnsureResult> {
   const h = speechPackHost();
-  if (!h) return { ok: false, reason: 'pack_system_unavailable' };
   const plan = planFor([language]);
   let asrPath = '';
   for (const id of plan.packs) {
@@ -150,7 +168,7 @@ export function combineProgress(language: SpeechLanguage, latest: ReadonlyMap<st
   for (const id of plan.packs) {
     const bytes = SPEECH_MODELS[id].bytes;
     total += bytes;
-    if (h?.packPath(id)) {
+    if (h.packPath(id)) {
       done += bytes;
       continue;
     }
@@ -162,31 +180,35 @@ export function combineProgress(language: SpeechLanguage, latest: ReadonlyMap<st
 }
 
 // ---------------------------------------------------------------------------
-// Development stand-in (hand-copied model files), never in preview or store builds
+// Development fallback (hand-copied model files), never in preview or store builds
 // ---------------------------------------------------------------------------
 
 const verified = new Map<string, string>();
 
-const devHost: SpeechPackHost = {
-  packPath(id) {
-    return verified.get(id) ?? null;
-  },
-  async ensurePack(id) {
-    const known = verified.get(id);
-    if (known) return { ok: true, path: known };
-    const model = SPEECH_MODELS[id as SpeechModelId];
-    if (!model || !ScribeAudio) return { ok: false, reason: 'pack_system_unavailable' };
-    const file = new File(modelsDirectory().dir, model.fileName);
-    if (!file.exists) return { ok: false, reason: 'pack_system_unavailable' };
-    const sha = await ScribeAudio.sha256File(file.uri).catch(() => null);
-    if (sha !== model.sha256) return { ok: false, reason: 'hash_mismatch' };
-    verified.set(id, file.uri);
-    return { ok: true, path: file.uri };
-  },
-  onProgress() {
-    return () => {};
-  },
-  async removePack(id) {
-    verified.delete(id);
-  },
-};
+async function devModel(id: string): Promise<SpeechEnsureResult> {
+  const known = verified.get(id);
+  if (known) return { ok: true, path: known };
+  const model = SPEECH_MODELS[id as SpeechModelId];
+  if (!model || !ScribeAudio) return { ok: false, reason: 'not_in_manifest' };
+  const file = new File(modelsDirectory().dir, model.fileName);
+  if (!file.exists) return { ok: false, reason: 'not_in_manifest' };
+  const sha = await ScribeAudio.sha256File(file.uri).catch(() => null);
+  if (sha !== model.sha256) return { ok: false, reason: 'hash_mismatch' };
+  verified.set(id, file.uri);
+  return { ok: true, path: file.uri };
+}
+
+function withDevFallback(base: SpeechPackHost): SpeechPackHost {
+  return {
+    ...base,
+    packPath: (id) => base.packPath(id) ?? verified.get(id) ?? null,
+    async ensurePack(id, opts) {
+      const r = await base.ensurePack(id, opts).catch(() => ({ ok: false as const, reason: 'download_failed' }));
+      return r.ok ? r : devModel(id);
+    },
+    async removePack(id) {
+      verified.delete(id);
+      await base.removePack(id);
+    },
+  };
+}

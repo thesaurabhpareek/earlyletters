@@ -3,6 +3,10 @@
  * numbers; this file is the one place code reads them, and
  * `test/standards.test.ts` checks that every endpoint the app calls has a p95
  * budget, an auth rule, a retry rule and a rate limit.
+ *
+ * Edge Functions import this file directly (`../../../packages/api/src/standards.ts`,
+ * Deno, `supabase functions deploy --use-api`), so it must stay a leaf module:
+ * no relative imports, no package imports.
  */
 
 export const ENDPOINT_CLASSES = {
@@ -110,8 +114,11 @@ export type EndpointName = keyof typeof ENDPOINTS;
 
 /** Cache-Control for responses we serve. `stale-if-error` keeps the CDN answering through an origin outage. */
 export const CACHE_POLICY = {
-  /** Kill switches must reach active apps within 5 minutes (LEGAL-REQ-040). */
-  remoteConfig: 'public, max-age=300, stale-while-revalidate=3600, stale-if-error=604800',
+  /**
+   * Kill switches must reach active apps within 5 minutes of publishing (LEGAL-REQ-040):
+   * at most 60 s in any cache plus the app's 4-minute refresh = 5 minutes.
+   */
+  remoteConfig: 'public, max-age=60, stale-while-revalidate=3600, stale-if-error=604800',
   packManifest: 'public, max-age=900, stale-while-revalidate=86400, stale-if-error=604800',
   contentBundle: 'public, max-age=3600, stale-while-revalidate=86400, stale-if-error=604800',
   /** Pack files live at versioned paths and never change. */
@@ -120,9 +127,9 @@ export const CACHE_POLICY = {
   error: 'no-store',
 } as const;
 
-/** How often the app asks for each document (never at launch: after first frame, then on foreground). */
+/** How often the app asks for each document (never before the first frame; then on foreground and every minute while open, each at most this often). */
 export const CLIENT_REFRESH_MS = {
-  remoteConfig: 5 * 60_000,
+  remoteConfig: 4 * 60_000,
   packManifest: 6 * 3600_000,
   contentBundle: 6 * 3600_000,
 } as const;

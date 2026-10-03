@@ -148,6 +148,9 @@ async function runStep(ctx: Ctx, step: OrderedStep, req: ExecutingRequest, recei
     case 'powersync_verify':
       return { status: 'not_applicable' };
     case 'email_provider': {
+      // Sent-email records age out at Resend after 30 days (Verified: Resend docs). Contacts exist
+      // only if we ever keep lists (RESEND_CONTACTS=on); v1.0 keeps none.
+      if (!ctx.cfg.resendContacts) return { status: 'not_applicable', receipt: { email_provider: 'no_contacts' } };
       const user = await ctx.c.auth.getUser(uid);
       if (!user?.email) return { status: 'not_applicable' };
       await deleteContact(ctx.fetch, ctx.cfg.resendApiKey, user.email);

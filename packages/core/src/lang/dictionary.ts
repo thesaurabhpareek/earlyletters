@@ -58,11 +58,24 @@ export function termMatches(text: string, term: string, R: LanguageRules): Array
   return out;
 }
 
-/** Quoted speech in any of the quotation styles the engine knows. The child's own words are never edited. */
+/**
+ * Quoted speech in any of the quotation styles the engine knows. The
+ * child's own words are never edited. For « » the protected span is the
+ * quoted words themselves, so French spacing just inside the guillemets
+ * can still be set; the marks cannot move because no punctuation edit may
+ * change the number of quotation marks and no removal may take one.
+ */
 export function quotedSpansFor(text: string): Span[] {
   const spans: Span[] = [];
-  for (const re of [/["“]([^"“”]*)["”]/g, /«[^«»]*»/g, /「[^「」]*」/g, /『[^『』]*』/g]) {
+  for (const re of [/["“]([^"“”]*)["”]/g, /「[^「」]*」/g, /『[^『』]*』/g]) {
     for (const m of text.matchAll(re)) spans.push({ start: m.index!, end: m.index! + m[0].length });
+  }
+  for (const m of text.matchAll(/«([^«»]*)»/g)) {
+    const inner = m[1];
+    const lead = inner.length - inner.trimStart().length;
+    const words = inner.trim();
+    const start = m.index! + 1 + lead;
+    spans.push(words ? { start, end: start + words.length } : { start: m.index!, end: m.index! + m[0].length });
   }
   return spans.sort((a, b) => a.start - b.start);
 }

@@ -139,7 +139,12 @@ export interface PunctuationTable {
 
 export interface FillerTable {
   review: Review;
-  /** Hesitation sounds with no lexical meaning, removed by the rules at the clean level. */
+  /**
+   * Hesitation sounds with no lexical meaning, removed by the rules at the
+   * clean level. Under 'char' segmentation a filler is removed only where it
+   * stands alone between punctuation or spaces: 呃 is a hesitation, but 呃逆
+   * is "hiccup" and 额 in 额头 is "forehead".
+   */
   auto: string[];
   /** Sounds that can also mean something ("mm" for yes): offered to the parent, never removed by the engine. */
   suggest: string[];
@@ -158,6 +163,8 @@ export interface MeaningTable {
   negations: string[];
   /** Word endings that negate ("n't"). */
   negationSuffixes: string[];
+  /** Word beginnings that negate (French elided "n'": n'aime). */
+  negationPrefixes: string[];
   modals: string[];
   numberWords: string[];
   functionWords: string[];

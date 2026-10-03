@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import type { PromptBand, PromptKind } from '@scribe/core';
-import { PROMPTS } from '@scribe/content';
-import { blocksOf, parseContentBundle, PROMPT_BANDS, PROMPT_KINDS, textProblems, type ContentBlock } from '../src';
+import { onboardingStories, PROMPTS, STORY_VISUALS as CONTENT_STORY_VISUALS } from '@scribe/content';
+import { blocksOf, parseContentBundle, PROMPT_BANDS, PROMPT_KINDS, STORY_VISUALS, textProblems, type ContentBlock } from '../src';
 
 const bundle = (blocks: unknown[]) => ({ schemaVersion: 1, version: 2, generatedAt: '2026-10-03T12:00:00.000Z', locale: 'en', blocks });
 
@@ -15,6 +15,13 @@ describe('content blocks', () => {
     const r = parseContentBundle(bundle(PROMPTS.filter((p) => !p.retired).map((p) => ({ type: 'prompt', id: p.key, text: p.text, band: p.band, kind: p.kind }))));
     expect(r.ok).toBe(true);
     expect(r.ok && r.skipped).toBe(0);
+  });
+
+  it('[DECISION-16] the packaged story cards are valid story blocks with the same visual list', () => {
+    expect([...CONTENT_STORY_VISUALS]).toEqual([...STORY_VISUALS]);
+    const r = parseContentBundle(bundle([...onboardingStories]));
+    expect(r.ok && r.skipped).toBe(0);
+    expect(r.ok && r.value.blocks.length).toBe(onboardingStories.length);
   });
 
   it('accepts each block type', () => {

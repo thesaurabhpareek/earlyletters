@@ -8,15 +8,20 @@
  * - Session in the Keychain (secure-storage.ts), refreshed automatically
  *   while the app is in the foreground (startAutoRefreshWhileActive) and
  *   cleared by signOut. Requests use the user's JWT only (BRIEF 17).
- * - Every request carries an `x-request-id` (BRIEF 17), never content.
+ * - Every request carries an `x-request-id` and `x-app-version` (BRIEF 17,
+ *   packages/api), never content. Write RPCs the contract marks with an
+ *   `idempotency-key` set it per call (withIdempotencyKey).
  *
  * Created lazily on first use, never at import, so cold start does no
  * network or Keychain work before the first frame (A-NFR-002).
  */
 import 'react-native-url-polyfill/auto';
+import { HEADER_APP_VERSION, HEADER_REQUEST_ID, newRequestId } from '@scribe/api';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 import { AppState, type AppStateStatus } from 'react-native';
+import { uuidv7 } from '../store';
 import { readSupabaseEnv } from './env';
 import { secureStorage } from './secure-storage';
 
@@ -43,10 +48,17 @@ export function isSupabaseConfigured(): boolean {
   return readSupabaseEnv() !== null;
 }
 
-/** Adds a request id to every call; the server logs it instead of anything about the person. */
+const APP_VERSION = (Constants.expoConfig?.version ?? '0.0.0').slice(0, 32);
+
+/**
+ * Every call carries a fresh request id (12 hex characters, packages/api
+ * envelope) and the app version (ADR 0017); the server logs those instead of
+ * anything about the person.
+ */
 const fetchWithRequestId: typeof fetch = (input, init) => {
   const headers = new Headers(init?.headers);
-  if (!headers.has('x-request-id')) headers.set('x-request-id', Crypto.randomUUID());
+  if (!headers.has(HEADER_REQUEST_ID)) headers.set(HEADER_REQUEST_ID, newRequestId((n) => Crypto.getRandomBytes(n)));
+  headers.set(HEADER_APP_VERSION, APP_VERSION);
   return fetch(input, { ...init, headers });
 };
 
@@ -90,4 +102,14 @@ export function startAutoRefreshWhileActive(): () => void {
   apply(AppState.currentState);
   const sub = AppState.addEventListener('change', apply);
   return () => sub.remove();
+}
+
+/**
+ * packages/api ENDPOINTS marks create_child_invite and record_policy_act as
+ * `idempotency_key` writes: each call carries a client-made UUIDv7 so a retry
+ * can be applied once. Today's SQL functions do not read it yet (see the
+ * hand-off); sending it now keeps the client on the contract.
+ */
+export function idempotencyKey(): string {
+  return uuidv7();
 }

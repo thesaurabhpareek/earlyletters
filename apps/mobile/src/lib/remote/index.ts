@@ -163,11 +163,21 @@ export function startRemote(): () => void {
   packManifestDoc.load();
   contentDoc.load();
   void refreshRemote();
+  // While the app is open, check every minute; each document still keeps its own minimum interval
+  // (config 4 minutes, so a kill switch reaches an open app within 5 minutes of publishing, LEGAL-REQ-040).
+  let timer: ReturnType<typeof setInterval> | null = setInterval(() => void refreshRemote(), 60_000);
   const sub = AppState.addEventListener('change', (s) => {
-    if (s === 'active') void refreshRemote();
+    if (s === 'active') {
+      void refreshRemote();
+      timer ??= setInterval(() => void refreshRemote(), 60_000);
+    } else if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
   });
   return () => {
     sub.remove();
+    if (timer) clearInterval(timer);
     started = false;
   };
 }

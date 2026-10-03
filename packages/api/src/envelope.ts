@@ -9,6 +9,10 @@
  *   failure envelope.
  * - An error never carries a message, row, path, id or any user text: only a
  *   closed code, whether to retry, and (for Postgres) the SQLSTATE.
+ *
+ * Edge Functions import this file directly (`../../../packages/api/src/envelope.ts`,
+ * Deno, `supabase functions deploy --use-api`), so it must stay a leaf module:
+ * no relative imports, and no package import except `valibot`.
  */
 import * as v from 'valibot';
 
