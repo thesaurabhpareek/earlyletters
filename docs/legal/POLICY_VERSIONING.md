@@ -282,6 +282,12 @@ create trigger profiles_pseudonymise_acceptances before delete on public.profile
   for each row execute function public.policy_acceptances_pseudonymise();
 
 -- ─── Recording an act (the only write path for clients) ─────────────────
+-- Implementation note (2026-10-03): the shipped function, defined in
+-- supabase/migrations/20261003000000_security_and_family.sql, takes a leading
+-- p_id uuid (a client UUIDv7 idempotency key) and returns uuid. A retry with the
+-- same key and arguments returns the original row; a different payload under the
+-- same key raises SCCID. The migrations and packages/api are authoritative; the
+-- sketch below is the original design.
 create or replace function public.record_policy_act(
   p_document text,
   p_version text,

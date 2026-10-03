@@ -13,7 +13,8 @@
     "test:db": "node supabase/tests/run.mjs",
     "test:db:perf": "node supabase/tests/run.mjs perf",
     "experiment": "npm run experiment -w @scribe/experiments --",
-    "experiment:edits": "npm run experiment:edits -w @scribe/experiments --"
+    "experiment:edits": "npm run experiment:edits -w @scribe/experiments --",
+    "check:data-map": "node scripts/check-data-map.mjs"
   },
   "engines": {
     "node": ">=20"
