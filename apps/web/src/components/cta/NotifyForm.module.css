@@ -1,0 +1,103 @@
+.form {
+  width: 100%;
+  max-width: 30rem;
+  text-align: left;
+}
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--night-ink-muted);
+}
+.row {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--night-raised) 88%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 22%, transparent);
+  backdrop-filter: blur(6px);
+}
+.row:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--night-accent);
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--night-ink);
+  font: 500 17px/1 var(--font-sans);
+  outline: none;
+}
+.input::placeholder {
+  color: color-mix(in srgb, var(--night-ink) 42%, transparent);
+}
+.button {
+  flex: none;
+  height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--night-accent);
+  color: var(--night-on-accent);
+  font: 600 16px/1 var(--font-sans);
+  cursor: pointer;
+  transition: transform 160ms var(--ease-standard), filter 160ms;
+}
+.button:hover {
+  filter: brightness(1.06);
+}
+.button:active {
+  transform: scale(0.97);
+}
+.button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.button:focus-visible {
+  outline: 2px solid var(--night-ink);
+  outline-offset: 2px;
+}
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.note {
+  margin: 12px 0 0;
+  padding: 0 4px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--night-ink-muted);
+}
+.error {
+  min-height: 1.4em;
+  margin: 6px 0 0;
+  padding: 0 4px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--night-recording);
+}
+.success {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 1.8vw, 26px);
+  color: var(--night-ink);
+}
+@media (max-width: 420px) {
+  .row {
+    flex-direction: column;
+    border-radius: 24px;
+  }
+  .button {
+    width: 100%;
+  }
+}

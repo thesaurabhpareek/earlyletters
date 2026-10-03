@@ -19,8 +19,8 @@
  * - All words come from src/content/site.ts. Never hardcode copy.
  * - Text must stay readable at every progress value (never over busy motion).
  */
-import { createContext, useContext, useRef, type CSSProperties, type ReactNode } from 'react';
-import { useReducedMotion, useScroll, type MotionValue } from 'motion/react';
+import { createContext, useContext, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useMotionValueEvent, useReducedMotion, useScroll, type MotionValue } from 'motion/react';
 import styles from './Scene.module.css';
 
 export type Tone = 'paper' | 'dusk' | 'night';
@@ -56,8 +56,26 @@ export type SceneProps = {
 
 export function Scene({ id, label, length = 2, tone = 'night', children, className, style }: SceneProps) {
   const ref = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion() ?? false;
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+
+  // Scenes overlap by one screen (Scene.module.css). A stage stays invisible until its scene is pinned,
+  // so it never slides over the scene before it; at the cut it appears on top, on a matching frame.
+  const { scrollYProgress: arrival } = useScroll({ target: ref, offset: ['start end', 'start start'] });
+  const show = (v: number) => {
+    if (stageRef.current) stageRef.current.dataset.live = v >= 0.999 ? 'true' : 'false';
+  };
+  useMotionValueEvent(arrival, 'change', show);
+  useLayoutEffect(() => {
+    const read = () => {
+      const top = ref.current?.getBoundingClientRect().top ?? 0;
+      show(top <= 0.5 ? 1 : 0);
+    };
+    read();
+    window.addEventListener('resize', read);
+    return () => window.removeEventListener('resize', read);
+  }, []);
 
   return (
     <section
@@ -68,7 +86,7 @@ export function Scene({ id, label, length = 2, tone = 'night', children, classNa
       className={[styles.scene, className].filter(Boolean).join(' ')}
       style={{ ['--scene-length' as string]: String(length), ...style }}
     >
-      <div className={styles.stage}>
+      <div ref={stageRef} className={styles.stage} data-live="true">
         <SceneContext.Provider value={{ progress: scrollYProgress, reduced, id }}>{children}</SceneContext.Provider>
       </div>
     </section>

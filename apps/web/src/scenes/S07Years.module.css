@@ -1,0 +1,96 @@
+/* S07: a room at dusk, years from now. Phone first; desktop from 900px. */
+.frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--dusk);
+  color: var(--night-ink);
+  --room-lift: 6svh;
+  --s07-head: clamp(40px, 6.4vw, 104px);
+  --letter-accent: var(--accent);
+  --letter-on-accent: var(--on-accent);
+  --letter-pill: color-mix(in srgb, var(--ink) 7%, var(--surface-raised));
+}
+.roomSlot {
+  position: absolute;
+  left: 50%;
+  bottom: 3svh;
+  width: min(96vw, 1100px);
+  margin-left: calc(min(96vw, 1100px) / -2);
+  z-index: 1;
+}
+.lampLight {
+  position: absolute;
+  inset: -60% -10% -10% -10%;
+  pointer-events: none;
+}
+.room {
+  position: relative;
+  color: color-mix(in srgb, var(--night-ink) 74%, transparent);
+}
+.glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.phoneSlot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30svh;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+}
+.phone {
+  flex: none;
+}
+.copy {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: calc(env(safe-area-inset-top, 0px) + 9svh);
+  text-align: center;
+  z-index: 3;
+}
+.copy p {
+  margin-left: auto;
+  margin-right: auto;
+}
+.when {
+  color: var(--lamp);
+}
+.night {
+  position: absolute;
+  inset: 0;
+  background: var(--night);
+  z-index: 5;
+  pointer-events: none;
+}
+@media (min-width: 900px) {
+  .phoneSlot {
+    top: 0;
+    bottom: 0;
+    left: auto;
+    right: max(8vw, calc(50vw - 560px));
+    align-items: center;
+  }
+  .copy {
+    left: max(var(--gutter), calc(50vw - 640px));
+    right: auto;
+    top: 50%;
+    width: min(42vw, 600px);
+    text-align: left;
+    transform: translateY(-60%);
+  }
+  .copy p {
+    margin-left: 0;
+  }
+  .roomSlot {
+    bottom: 0;
+  }
+}
+[data-resting].frame .night {
+  opacity: 0 !important;
+}

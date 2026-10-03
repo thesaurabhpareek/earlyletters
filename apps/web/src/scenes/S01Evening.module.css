@@ -1,0 +1,104 @@
+/* S01: hero, window, lamp. Phone first; desktop from 900px. */
+.hero {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  padding: 0 var(--gutter);
+  z-index: 3;
+}
+.h1 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(52px, 11vw, 132px);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  color: var(--night-ink);
+}
+.line {
+  margin: 0.9em 0 0;
+  font-family: var(--font-sans);
+  font-size: clamp(18px, 1.6vw, 23px);
+  line-height: 1.4;
+  color: var(--night-ink-muted);
+}
+.cue {
+  margin-top: 9svh;
+  width: 1px;
+  height: 56px;
+  background: linear-gradient(to bottom, transparent, var(--night-ink-muted));
+  transform-origin: top;
+  animation: cue 2.8s cubic-bezier(0.2, 0, 0, 1) infinite;
+  opacity: 0.6;
+}
+@keyframes cue {
+  0% { transform: scaleY(0); opacity: 0; }
+  30% { opacity: 0.7; }
+  70% { transform: scaleY(1); opacity: 0.5; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+.window {
+  position: absolute;
+  left: 50%;
+  top: 9svh;
+  width: min(54vw, 34svh);
+  margin-left: calc(min(54vw, 34svh) / -2);
+  color: color-mix(in srgb, var(--night-ink) 78%, transparent);
+  z-index: 1;
+}
+.lamp {
+  position: absolute;
+  left: 6vw;
+  bottom: 8svh;
+  width: min(28vw, 150px);
+  color: color-mix(in srgb, var(--night-ink) 70%, transparent);
+  z-index: 1;
+}
+.copy {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: 52svh;
+  color: var(--night-ink);
+  z-index: 3;
+}
+
+@media (min-width: 900px) {
+  .window {
+    left: auto;
+    right: max(6vw, calc(50vw - 600px));
+    top: 50%;
+    width: min(28vw, 46svh);
+    margin-left: 0;
+    transform: translateY(-54%);
+  }
+  .lamp {
+    left: max(10vw, calc(50vw - 560px));
+    bottom: 6svh;
+    width: min(13vw, 190px);
+  }
+  .copy {
+    left: max(var(--gutter), calc(50vw - 640px));
+    right: auto;
+    top: 30svh;
+    width: min(40vw, 560px);
+  }
+}
+
+/* Reduced motion: one composed frame. The hero sits in the upper half, the words below it. */
+[data-resting] .hero {
+  bottom: 42svh;
+  opacity: 1 !important;
+  transform: none !important;
+}
+[data-resting] .cue,
+[data-resting] .window {
+  display: none;
+}
+[data-resting] .copy {
+  top: 60svh;
+}

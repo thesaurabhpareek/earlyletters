@@ -1,0 +1,498 @@
+/*
+ * Owner: E1 (web platform). The paper-tone reading page shared by the four legal documents and /delete-account.
+ * Tokens come from app/globals.css; nothing here hardcodes a colour.
+ *
+ * Layout: one three-column grid. Text sits in the middle column (max 34em); wide tables span all three.
+ * The em unit is the same everywhere (set once on .frame), so the back link, text and tables line up.
+ */
+.frame {
+  background: var(--paper);
+  color: var(--ink);
+  color-scheme: light;
+  font-family: var(--font-sans);
+  font-size: clamp(1.0625rem, 1rem + 0.2vw, 1.1875rem);
+  line-height: 1.65;
+  min-height: 60dvh;
+}
+
+.bar,
+.prose {
+  display: grid;
+  grid-template-columns: minmax(var(--gutter), 1fr) minmax(0, var(--measure)) minmax(var(--gutter), 1fr);
+}
+
+.bar {
+  padding-top: max(10px, env(safe-area-inset-top));
+}
+
+.bar > * {
+  grid-column: 2;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 44px;
+  margin-left: -0.25em;
+  padding: 0 0.75em 0 0.25em;
+  justify-self: start;
+  color: var(--ink-muted);
+  font-size: 0.95em;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color var(--fade-ms) var(--ease-standard);
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.back svg {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+}
+
+.prose {
+  padding-block: 0.75rem 4.5rem;
+  overflow-wrap: break-word;
+  /* Mukta sets a tight word space; a little more keeps long legal text easy on the eye. */
+  word-spacing: 0.07em;
+}
+
+/* The document HTML is injected into .body. display: contents lets its blocks be grid items of .prose. */
+.body {
+  display: contents;
+}
+
+.prose > *,
+.body > * {
+  grid-column: 2;
+  min-width: 0;
+  margin: 0;
+}
+
+.prose > * + *,
+.body > * + * {
+  margin-top: 1em;
+}
+
+/* Calm note while a document is being finalised. */
+.note {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7em;
+  margin-bottom: 1.25em;
+  padding: 0.75em 1em;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+.note::before {
+  content: '';
+  flex: none;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-0.1em);
+}
+
+/* Headings: Literata. */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.prose h1 {
+  margin-top: 0.4rem;
+  font-size: clamp(2rem, 1.45rem + 2.4vw, 2.8rem);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+
+.prose h2 {
+  margin-top: 2.6em;
+  font-size: 1.45em;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  scroll-margin-top: 1rem;
+}
+
+.prose h3 {
+  margin-top: 1.9em;
+  font-size: 1.15em;
+  line-height: 1.3;
+  font-weight: 600;
+  scroll-margin-top: 1rem;
+}
+
+.prose h4 {
+  margin-top: 1.6em;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+/* A title that follows a notice needs air above it. */
+.prose > * + h1,
+.body > * + h1 {
+  margin-top: 1.5em;
+}
+
+.prose h2 + *,
+.prose h3 + *,
+.prose h4 + * {
+  margin-top: 0.7em;
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.3em;
+}
+
+.prose li + li {
+  margin-top: 0.45em;
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin-top: 0.45em;
+}
+
+.prose li::marker {
+  color: var(--ink-muted);
+}
+
+.prose a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  overflow-wrap: anywhere;
+}
+
+.prose a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.prose blockquote {
+  padding: 0.85em 1.1em;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--surface);
+  font-size: 0.95em;
+  line-height: 1.6;
+}
+
+.prose :is(blockquote, li, td, th) > p {
+  margin: 0;
+}
+
+.prose :is(blockquote, li, td) > p + p {
+  margin-top: 0.7em;
+}
+
+.prose blockquote > * + * {
+  margin-top: 0.7em;
+}
+
+.prose hr {
+  margin-block: 2.4em;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.prose code {
+  padding: 0.08em 0.35em;
+  border-radius: 6px;
+  background: var(--surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.87em;
+  overflow-wrap: anywhere;
+}
+
+.prose pre {
+  padding: 1em;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 0.87em;
+  line-height: 1.5;
+}
+
+.prose pre code {
+  padding: 0;
+  background: none;
+  overflow-wrap: normal;
+}
+
+/* Contents: collapsed under the title. */
+.body details[data-toc] {
+  margin-top: 1.5em;
+  border-block: 1px solid var(--line);
+}
+
+.body details[data-toc] summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink-muted);
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.body details[data-toc] summary::-webkit-details-marker {
+  display: none;
+}
+
+.body details[data-toc] summary::after {
+  content: '';
+  width: 0.5em;
+  height: 0.5em;
+  margin-right: 0.3em;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--fade-ms) var(--ease-standard);
+}
+
+.body details[data-toc][open] summary::after {
+  transform: rotate(-135deg) translate(-0.1em, -0.1em);
+}
+
+.body details[data-toc] ul {
+  margin: 0;
+  padding: 0 0 0.75em;
+  list-style: none;
+}
+
+.body details[data-toc] li + li {
+  margin-top: 0;
+}
+
+.body details[data-toc] li a {
+  display: block;
+  padding: 0.5em 0;
+  color: var(--ink);
+  font-size: 0.95em;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.body details[data-toc] li a:hover {
+  color: var(--accent);
+}
+
+/* Tables: wide ones leave the text column; on a phone each row becomes a card. */
+.body [data-table-wrap] {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 100%;
+  max-width: 68em;
+  margin-block: 1.4em;
+  padding-inline: var(--gutter);
+  overflow-x: auto;
+}
+
+.body table {
+  width: 100%;
+  min-width: 42em;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.body table:has(th:nth-child(5)) {
+  min-width: 64em;
+}
+
+.body th {
+  padding: 0.7em 0.9em;
+  border-bottom: 1px solid var(--ink-muted);
+  color: var(--ink-muted);
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.body td {
+  padding: 0.9em;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+@media (max-width: 42em) {
+  .body [data-table-wrap] {
+    grid-column: 2;
+    max-width: none;
+    padding-inline: 0;
+    overflow: visible;
+  }
+
+  .body table,
+  .body tbody,
+  .body tr,
+  .body td {
+    display: block;
+    min-width: 0;
+    width: auto;
+  }
+
+  .body table:has(th:nth-child(5)) {
+    min-width: 0;
+  }
+
+  /* Header row stays in the accessibility tree; each cell shows its own label instead. */
+  .body thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .body tr {
+    margin-top: 0.9em;
+    padding: 0.35em 1em 0.5em;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+  }
+
+  .body tbody tr:first-child {
+    margin-top: 0;
+  }
+
+  .body td {
+    padding: 0.5em 0;
+    border: 0;
+    font-size: 0.97em;
+  }
+
+  .body td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.05em;
+    color: var(--ink-muted);
+    font-size: 0.74em;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .body td:first-child {
+    padding-top: 0.7em;
+    font-family: var(--font-serif);
+    font-size: 1.08em;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .body td:first-child::before {
+    display: none;
+  }
+}
+
+/* /delete-account */
+.lead {
+  color: var(--ink-muted);
+}
+
+.prose .steps {
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: 2.1em 1fr;
+  padding: 1em 0;
+  border-top: 1px solid var(--line);
+  counter-increment: step;
+}
+
+.steps li + li {
+  margin-top: 0;
+}
+
+.steps li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.steps li::before {
+  content: counter(step);
+  grid-row: 1 / span 2;
+  color: var(--accent);
+  font-family: var(--font-serif);
+  font-size: 1.35em;
+  line-height: 1.15;
+}
+
+.steps strong {
+  display: block;
+}
+
+.steps span {
+  color: var(--ink);
+}
+
+.prose a.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 1.4em;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--fade-ms) var(--ease-standard);
+}
+
+.prose a.button:hover {
+  background: var(--ink);
+}
+
+.prose > .buttonRow {
+  margin-top: 1.4em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back,
+  .body details[data-toc] summary::after,
+  .prose a.button {
+    transition: none;
+  }
+}
+
+@media print {
+  .bar {
+    display: none;
+  }
+
+  .frame {
+    background: #fff;
+  }
+}

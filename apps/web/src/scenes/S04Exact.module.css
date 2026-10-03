@@ -1,0 +1,51 @@
+/* S04: the letter on paper, and the headline above it once the fixes are done. */
+.letterStage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 var(--gutter);
+  z-index: 2;
+}
+.note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 1.4em 0 0;
+  max-width: 34em;
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 1.1vw, 16px);
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+.count {
+  color: var(--accent);
+  font-weight: 600;
+}
+.copy {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: calc(env(safe-area-inset-top, 0px) + 9svh);
+  text-align: center;
+  color: var(--ink);
+  z-index: 3;
+}
+.copy p {
+  margin-left: auto;
+  margin-right: auto;
+}
+.copy h2 {
+  font-size: clamp(36px, 5.2vw, 80px);
+}
+@media (min-width: 900px) {
+  .copy {
+    top: 7svh;
+  }
+}
+[data-resting] .copy {
+  position: relative;
+  top: auto;
+  padding-top: 4svh;
+}
