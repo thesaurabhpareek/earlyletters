@@ -167,6 +167,7 @@ const HELPERS = {
   'can_read_entry_photo(text)': [`select public.can_read_entry_photo('${photo}') v`, [true, true, false, false, false, '42501']],
   'is_anonymous()': [`select public.is_anonymous() v`, [false, false, false, false, true, '42501']],
   // Answers only whether a path's letter id was purged (ids only), the same for every signed-in caller.
+  'is_entry_photo_path(text)': [`select public.is_entry_photo_path('${CHILD}/${A}/${aBook}.jpg') v`, [true, true, true, true, true, '42501']],
   'photo_entry_is_purged(text)': [`select public.photo_entry_is_purged('${CHILD}/${A}/0192f000-0000-7000-8000-0000000000fe.jpg') v`, [true, true, true, true, true, '42501']],
   'require_user()': [`select public.require_user() is not null v`, [true, true, true, true, 'SCANO', '42501']],
   'my_role_in(uuid)': [`select public.my_role_in('${CHILD}') v`, ['parent', 'parent', 'contributor', null, 'contributor', '42501']],

@@ -265,30 +265,43 @@ create trigger child_member_prefs_consent_gate before insert or update on public
 create trigger children_consent_gate before update on public.children
   for each row execute function public.client_content_gate();
 
+-- The one object path shape a letter photo may have: {child_id}/{author_id}/{entry_id}.{ext},
+-- lowercase uuids (as uuid::text prints them) and the extensions the
+-- entries_photo_path_scoped constraint allows. Anything else (a doubled
+-- extension, no extension, an extra folder, upper case) is refused on upload,
+-- so the purge check below always sees the real entry id (#51 re-review).
+create or replace function public.is_entry_photo_path(p_name text)
+returns boolean language sql immutable set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(p_name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|heic|png)$', false);
+$$;
+
 -- DB-02 for photos (#32 red-team finding 2): true when the object path's entry id
--- ({child}/{author}/{entry}.{ext}) is a purged letter id. Security definer because
--- purge_ledger has no client policies; it answers only "is this id purged" for an
--- id the caller supplies (ids only, never content). A path that does not end in a
--- uuid file name yields false; the other policy checks still apply to it.
+-- is a purged letter id. Security definer because purge_ledger has no client
+-- policies; it answers only "is this id purged" for an id the caller supplies
+-- (ids only, never content). It reads the id from the standard path shape only;
+-- any other shape returns false here and is refused by is_entry_photo_path.
 create or replace function public.photo_entry_is_purged(p_name text)
 returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
-  select exists (
+  select public.is_entry_photo_path(p_name) and exists (
     select 1 from purge_ledger
      where entity_type = 'entry'
-       and entity_id = lower(substring(p_name from '/([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\.[A-Za-z]+$')));
+       and entity_id = split_part(split_part(p_name, '/', 3), '.', 1));
 $$;
 
 -- Photo uploads: Storage policies cannot raise a custom code; a missing consent
--- is a 403 there. The app checks my_sync_gate() before uploading. A purged
--- letter's photo path is refused for good (DB-02), so a deleted letter's photo
--- cannot come back without its row.
+-- is a 403 there. The app checks my_sync_gate() before uploading. Only the
+-- standard path shape is accepted (the CASE keeps the uuid casts from running on
+-- any other name), and a purged letter's photo path is refused for good (DB-02),
+-- so a deleted letter's photo cannot come back without its row.
 alter policy entry_photos_author_insert on storage.objects with check (
   bucket_id = 'entry-photos'
-  and (storage.foldername(name))[2] = (select auth.uid())::text
-  and public.is_child_member(((storage.foldername(name))[1])::uuid)
-  and public.child_is_live(((storage.foldername(name))[1])::uuid)
-  and public.can_write_content()
-  and not public.photo_entry_is_purged(name)
+  and case when public.is_entry_photo_path(name)
+           then (storage.foldername(name))[2] = (select auth.uid())::text
+                and public.is_child_member(((storage.foldername(name))[1])::uuid)
+                and public.child_is_live(((storage.foldername(name))[1])::uuid)
+                and public.can_write_content()
+                and not public.photo_entry_is_purged(name)
+           else false end
 );
 -- PSEC-04: no UPDATE on photo objects at all. A photo is replaced by uploading a new
 -- object (new entry id path) and deleting the old one, so a person who left a book
@@ -997,6 +1010,7 @@ revoke execute on function public.my_auto_add_in(uuid) from public, anon;
 revoke execute on function public.can_write_content() from public, anon;
 revoke execute on function public.require_content_consent() from public, anon;
 revoke execute on function public.photo_entry_is_purged(text) from public, anon;
+revoke execute on function public.is_entry_photo_path(text) from public, anon;
 grant execute on function public.is_anonymous() to authenticated;
 grant execute on function public.is_valid_client_uuid7(uuid) to authenticated;
 grant execute on function public.require_user() to authenticated;
@@ -1005,6 +1019,7 @@ grant execute on function public.my_auto_add_in(uuid) to authenticated;
 grant execute on function public.can_write_content() to authenticated;
 grant execute on function public.require_content_consent() to authenticated;
 grant execute on function public.photo_entry_is_purged(text) to authenticated;
+grant execute on function public.is_entry_photo_path(text) to authenticated;
 
 -- RPCs (each starts with require_user()).
 revoke execute on function public.my_sync_gate() from public, anon;

@@ -110,6 +110,25 @@ check('[DB-02] day 61: the upsert is still refused (SCPRG)', (await codeOf(() =>
   const live = await letter(A);
   check('[DB-02] a photo for a letter that was never purged still uploads',
     (await codeOf(() => as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${CHILD}/${A}/${live}.jpg`]))) === 'ok');
+  // #51 re-review: only {child}/{author}/{entry}.{jpg|jpeg|heic|png} (lowercase) is accepted,
+  // so the purge check always reads the real entry id.
+  const up = (name) => codeOf(() => as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [name]));
+  for (const [label, name] of [
+    ['a doubled extension ({id}.jpg.jpg)', `${CHILD}/${A}/${pl}.jpg.jpg`],
+    ['no extension', `${CHILD}/${A}/${pl}`],
+    ['an extra path segment', `${CHILD}/${A}/extra/${pl}.jpg`],
+    ['an uppercase extension', `${CHILD}/${A}/${pl}.JPG`],
+    ['an uppercase entry id', `${CHILD}/${A}/${pl.toUpperCase()}.jpg`],
+    ['an extension the app never writes', `${CHILD}/${A}/${pl}.gif`],
+  ]) {
+    check(`[DB-02] a purged letter's photo under ${label} is refused (42501)`,
+      (await up(name)) === '42501' && (await sys(`select 1 from storage.objects where name=$1`, [name])).rows.length === 0);
+  }
+  check('[DB-02] a non-standard name is refused even for a live letter (42501)', (await up(`${CHILD}/${A}/${live}.jpg.jpg`)) === '42501');
+  for (const ext of ['jpeg', 'heic', 'png']) {
+    const id = await letter(A);
+    check(`[DB-02] a normal .${ext} upload for a live letter still works`, (await up(`${CHILD}/${A}/${id}.${ext}`)) === 'ok');
+  }
   check('photo_entry_is_purged is false for a path without an entry id (no cast error)',
     (await one(A, `select public.photo_entry_is_purged($1) v`, [`${CHILD}/${A}/not-an-id.jpg`]))?.v === false);
 }

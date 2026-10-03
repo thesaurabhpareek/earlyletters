@@ -25,7 +25,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 >   - `create_child` takes `p_client_created_at timestamptz default null` (BL-113), kept in `children.client_created_at` (null when in the future or before 2024). New signature: `create_child(p_id uuid, p_name text, p_date_of_birth date default null, p_due_date date default null, p_client_created_at timestamptz default null) returns uuid`. `created_at` and `client_created_at` cannot be changed by clients (`SCIMM`).
 >   - New tests: `fixpack.test.mjs` (codes, redemption, deleted books, client time, left-member persona) and `upgrade.test.mjs` (seeds data through the old functions on the applied files, then applies files 3 to 7).
 > - **PSEC-04**: the photo UPDATE policy is dropped (photos are never overwritten in place), and deleting your own photo needs current membership of a live book.
-> - **DB-02 for photos** (PR #32 red-team finding 2): the photo upload policy refuses a path whose letter id is in `purge_ledger`, through the new helper `photo_entry_is_purged(text)`, so a purged letter's photo cannot be uploaded again.
+> - **DB-02 for photos** (PR #32 red-team finding 2): the photo upload policy refuses a path whose letter id is in `purge_ledger`, through the new helper `photo_entry_is_purged(text)`, so a purged letter's photo cannot be uploaded again. Uploads must use exactly `{child_id}/{author_id}/{entry_id}.{jpg|jpeg|heic|png}` (lowercase, checked by `is_entry_photo_path(text)`); any other name is refused.
 
 ## What is applied and what is pending
 
@@ -233,7 +233,7 @@ select p.proname, p.proconfig from pg_proc p join pg_namespace n on n.oid = p.pr
            ~ '^search_path=(pg_catalog, public, pg_temp|"")$';
 ```
 Then repeat the two classification and RLS queries from step 4. Advisors, expected and accepted in addition to step 4's list:
-- **0029** for the new RPCs: `create_child(uuid, text, date, date, timestamptz)`, `create_child_invite(uuid, uuid, text, bytea, bytea, text)`, `record_policy_act(uuid, ...)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`, `photo_entry_is_purged`. Each starts with `require_user()` or answers only for the caller, except `photo_entry_is_purged`, which answers only whether a given letter id was purged (ids only, no content).
+- **0029** for the new RPCs: `create_child(uuid, text, date, date, timestamptz)`, `create_child_invite(uuid, uuid, text, bytea, bytea, text)`, `record_policy_act(uuid, ...)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`, `photo_entry_is_purged`, `is_entry_photo_path` (not definer). Each starts with `require_user()` or answers only for the caller, except `photo_entry_is_purged`, which answers only whether a given letter id was purged (ids only, no content).
 - **0010** on `book_entries` (unchanged; the view now applies the B F9 rule) and on `book_children` (D-039).
 - `accept_child_invite_by_code(uuid, text)` is executable by `service_role` only (check: `select has_function_privilege('authenticated', 'public.accept_child_invite_by_code(uuid, text)', 'execute');` expect false). `server_secret`, `require_server_secret`, `invite_code_digest` and `join_book_by_invite` are executable by no API role.
 
