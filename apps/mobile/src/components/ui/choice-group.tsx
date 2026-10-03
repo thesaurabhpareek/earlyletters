@@ -23,6 +23,8 @@ import { Platform, View } from 'react-native';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { tokens } from '@scribe/design-tokens';
 import { AnimatedPressable, usePressScale } from '@/components/motion/press';
+import { ListDivider } from '@/components/ui/list-row';
+import { withDividers } from '@/components/ui/list-row.logic';
 import { Text } from '@/components/ui/text';
 import { haptic } from '@/lib/haptics';
 import { useIsLargeText, useTheme } from '@/lib/a11y';
@@ -44,16 +46,20 @@ export type ChoiceGroupProps<T extends string> = {
   options: ChoiceOption<T>[];
   value: T;
   onChange: (v: T) => void;
+  /** Every tap, including on the current value: for pickers that close once a choice is made (Whose book). */
+  onSelect?: (v: T) => void;
   layout?: 'segmented' | 'list';
   className?: string;
 };
 
-export function ChoiceGroup<T extends string>({ label, showLabel, options, value, onChange, layout = 'segmented', className }: ChoiceGroupProps<T>) {
+export function ChoiceGroup<T extends string>({ label, showLabel, options, value, onChange, onSelect, layout = 'segmented', className }: ChoiceGroupProps<T>) {
   const stacked = useIsLargeText();
   const pick = (v: T) => {
-    if (v === value) return;
-    haptic('tap');
-    onChange(v);
+    if (v !== value) {
+      haptic('tap');
+      onChange(v);
+    }
+    onSelect?.(v);
   };
   return (
     <View className={cn('gap-2', className)}>
@@ -66,13 +72,15 @@ export function ChoiceGroup<T extends string>({ label, showLabel, options, value
         accessibilityRole="radiogroup"
         accessibilityLabel={label}
         className={cn(layout === 'list' ? 'overflow-hidden rounded-lg bg-card' : stacked ? 'flex-col gap-2' : 'flex-row gap-3')}>
-        {options.map((o, i) =>
-          layout === 'list' ? (
-            <ListChoice key={o.value} option={o} checked={o.value === value} first={i === 0} onPress={() => pick(o.value)} />
-          ) : (
-            <SegmentChoice key={o.value} option={o} checked={o.value === value} grow={!stacked} onPress={() => pick(o.value)} />
-          ),
-        )}
+        {layout === 'list'
+          ? withDividers(options).map((item) =>
+              item.type === 'divider' ? (
+                <ListDivider key={item.key} />
+              ) : (
+                <ListChoice key={item.row.value} option={item.row} checked={item.row.value === value} onPress={() => pick(item.row.value)} />
+              ),
+            )
+          : options.map((o) => <SegmentChoice key={o.value} option={o} checked={o.value === value} grow={!stacked} onPress={() => pick(o.value)} />)}
       </View>
     </View>
   );
@@ -103,7 +111,7 @@ function SegmentChoice<T extends string>({ option, checked, grow, onPress }: { o
   );
 }
 
-function ListChoice<T extends string>({ option, checked, first, onPress }: { option: ChoiceOption<T>; checked: boolean; first: boolean; onPress: () => void }) {
+function ListChoice<T extends string>({ option, checked, onPress }: { option: ChoiceOption<T>; checked: boolean; onPress: () => void }) {
   const { c } = useTheme();
   return (
     <AnimatedPressable
@@ -112,7 +120,7 @@ function ListChoice<T extends string>({ option, checked, first, onPress }: { opt
       accessibilityState={{ checked }}
       accessibilityLabel={option.label}
       accessibilityHint={option.description}
-      className={cn('min-h-14 flex-row items-center gap-3 px-4 py-3 active:bg-secondary', !first && 'border-t border-border')}>
+      className="min-h-14 flex-row items-center gap-3 px-4 py-3 active:bg-secondary">
       <View className="flex-1 gap-0.5">
         {option.render ? option.render(checked) : <Text variant="label">{option.label}</Text>}
         {option.description ? <Text variant="footnote">{option.description}</Text> : null}

@@ -59,8 +59,10 @@ export const ASHA_REVIEW_RAW =
 /**
  * `waiting`: the Review draft has no words yet and one voice-only letter sits
  * in the book, for the "waiting for words" previews (TDD 03 FM-9).
+ * `quiet`: one kept recording in which nobody spoke (words came back empty),
+ * for the calm "nobody spoke" note on the card and the letter page.
  */
-export function seedAsha(opts: { waiting?: boolean } = {}): { draftId: string } | null {
+export function seedAsha(opts: { waiting?: boolean; quiet?: boolean } = {}): { draftId: string } | null {
   if (listChildren().length > 0) return null;
   const now = Date.now();
   const child = addChild({ name: 'Asha', birthday: todayISO(new Date(now - 214 * DAY)), dueDate: null, signsAs: 'Mama' });
@@ -120,6 +122,29 @@ export function seedAsha(opts: { waiting?: boolean } = {}): { draftId: string } 
       transcriptStatus: 'waiting',
     });
   } else setDraftTranscript(draft.id, ASHA_REVIEW_RAW);
+  if (opts.quiet) {
+    const at = new Date(now - 2 * DAY);
+    saveEntry({
+      id: uuidv7(at.getTime()),
+      kind: 'letter',
+      occurredOn: todayISO(at),
+      capturedAt: at.toISOString(),
+      captureMode: 'spoken',
+      editLevel: 'verbatim',
+      promptKey: null,
+      engineVersion: ENGINE_VERSION,
+      rawTranscript: '',
+      machineEdits: [],
+      finalText: '',
+      inBook: false,
+      soundsLikeMe: null,
+      childId: child.id,
+      authorSignsAs: 'Mama',
+      audioUri: 'file:///preview/asha-quiet.m4a',
+      audioDurationMs: 18000,
+      transcriptStatus: null,
+    });
+  }
   setSetting('preview.draftId', draft.id);
   return { draftId: draft.id };
 }
