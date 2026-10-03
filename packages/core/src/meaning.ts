@@ -160,7 +160,7 @@ export function soundKey(text: string): string {
 /**
  * True when `original` plausibly is the term misheard: exactly the same
  * consonant sounds in the same order, and at most one vowel group more or
- * fewer. "Usher" ~ "Asha", "Mira" ~ "Meera", "ah shoe" ~ "Ashu"; "Ashok",
+ * fewer. "Usher" ~ "Asha", "Nila" ~ "Neela", "ah shoe" ~ "Ashu"; "Ashok",
  * "Arya" and "moon" are not. Limitation: a real, different name with the
  * same sounds ("Aisha", "Isha") passes; the verifier only takes this path
  * for words the recogniser itself capitalised mid-sentence, and the review
