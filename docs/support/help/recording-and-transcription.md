@@ -16,13 +16,15 @@ Would you rather type? Tap **Type**. On a quiet day, **Not much today** is a com
 
 On your phone. In this version of the app, nothing you say is sent anywhere to be turned into words.
 
-The first time you speak a letter, the app downloads what it needs to understand you. It is best done on Wi-Fi. After that, speaking a letter works with no signal at all.
+The first time you speak a letter, the app downloads what it needs to understand you. Large downloads wait for Wi-Fi, unless you turn on **Use mobile data** in Settings, Storage. Until the download arrives, your voice is kept and the words follow. After that, speaking a letter works with no signal at all.
 
 ## Languages
 
 You can speak your letters in English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them, written the way that language is written: Hindi in Devanagari, Arabic from right to left, Chinese in characters, and the accents that Spanish, French and Portuguese need.
 
-English is already in the app. Another language downloads when you choose it, and only that one. You can remove a language in Settings to free space.
+Choose your language in Settings, **Spoken language**. You can add up to two more languages you speak at home. English is already in the app. Another language downloads when you choose it, and only that one.
+
+To free space, remove a download in Settings, Storage. Your letters and recordings stay. New recordings in that language wait for their words until you add it again.
 
 Many families move between Hindi and English in one breath. A way of writing made for that is not in this version yet. For now, choose the language you use most in that letter. Your recording keeps every word, just as you said it.
 
@@ -39,6 +41,8 @@ Only these small things, and only to help the words read clearly:
 - **Punctuation.** Commas, full stops and capital letters where you paused.
 - **Tiny slips of the tongue.** Like "a apple". We fix that one word and nothing around it.
 - **Paragraphs.** A long pause starts a new paragraph.
+
+Each language other than English also has a small spelling and punctuation download. Until it arrives, letters in that language keep your words exactly as heard, with only punctuation tidied.
 
 Each fix is shown when you read the letter back. Tap **Put it back** to undo one, or **Keep it word for word** to undo them all. **Show exactly what I said** shows the words as they first came out.
 
@@ -66,6 +70,8 @@ The app already knows {child}'s name and what {child} calls you, from when you s
 
 **"We could not write this one down."** The recording is safe on this phone. Tap Try again, or type it.
 
+**"No talking in this one."** The app heard no speech. The recording is kept just as it is, and you can add words by typing them.
+
 **The app cannot hear you.** Open your iPhone's Settings, find Early Letters, and turn on Microphone. Or type instead.
 
 ## Still stuck?
@@ -76,15 +82,21 @@ Write to us at {SUPPORT_EMAIL}. Tell us the language, and whether the trouble is
 
 ## Reviewer notes (remove before publishing)
 
-**Built today (develop at 3688796):** Speak and Type on Tonight; the Review screen with the fix list, Put it back, Keep it word for word, Show exactly what I said and "Tap any word to change it"; the voice-only save when words are not ready (`apps/mobile/src/lib/copy.ts` waiting strings); the transcription failed and microphone messages; the one-time "Please have a read" card; the names list built from the child's name and the signature (`dictionaryFor` in `review.tsx`).
+**Built on develop (7cc43b1):**
+- Speak and Type on Tonight; the Review screen with the fix list, Put it back, Keep it word for word, Show exactly what I said and "Tap any word to change it" (`strings.en.ts` lines 168 to 170, 250 to 255, 318); the microphone and transcription failed messages (lines 799 to 809); the one-time "Please have a read" card (line 334).
+- On-device speech and language downloads: `docs/agents/BOARD.md` "Done this wave" (speech, language, platform); ADR 0015 (one shared model, Hindi its own). Settings, Spoken language (`apps/mobile/src/app/settings/language.tsx`; `packages/content/src/features/language.en.ts` lines 12 to 17: one language plus "up to two more"). Settings, Storage removes downloads and has "Use mobile data" (`apps/mobile/src/app/settings/storage.tsx` line 132; `packages/content/src/features/packs.en.ts` lines 8, 9, 39 and 40). Settings, Recordings lists speech per language (`packages/content/src/features/speech.en.ts` lines 9 and 10).
+- The spelling and punctuation download: `packs.en.ts` line 17 (`text-rules`, "Spelling and punctuation"). Until it is installed for a language other than English, `safeModeNote` (`language.en.ts` line 46) applies, shown by `apps/mobile/src/app/settings/language.tsx` lines 53 to 56.
+- "No talking in this one": `packages/content/src/features/words.en.ts` lines 23 to 26, shown in `apps/mobile/src/app/review.tsx` lines 681 and 682.
+- The fix list still matches `EditType` exactly (`packages/core/src/types.ts` lines 12 to 19, unchanged this wave). The wave added one reason to refuse a fix, `not_vetted_for_language` (types.ts line 99): a fix whose word table for that language has not been signed off is not made. So some languages get fewer fixes, never more, and the article's "Only these small things" stays true.
 
-**To build:** BL-130 recorder session, BL-142 transcription queue, BL-143 model download and removal in Settings, BL-146 suggestions UX (P1), BL-178 the Names and words settings screen. Language packs downloaded on demand (brief decision 15) have no backlog task id yet that I could find; `product` to confirm. The clearer listening copy (brief decision 8) has no task either, so the article only says "if". "Keep this as said" phrase lock strings exist (`review.lock.*`) but the screen does not use them, so the article leaves them out.
+**To build:** the Word for word choice. Settings, Recordings shows the setting's name and help as a plain row with no switch (`apps/mobile/src/app/settings/recordings.tsx` line 63). Settings, Names and words has a label (`settings.dictionaryLabel`, `strings.en.ts` line 591) but no screen (BL-178). Until both exist, the two Settings sentences describe the specified product. "Keep this as said" phrase lock strings exist (`review.lock.*`) but no screen uses them, so the article leaves them out.
 
 **Decisions this article depends on** (settled ones are hand-offs; only D-031 is still open):
-- Seven spoken languages at v1.0 (brief decision 6, Decided) and Hindi-English mode in v1.1 (brief decision 9, Decided). The article says Hindi-English mode is "not in this version yet" rather than promising a later update. This conflicts with `site.faq` "Which languages can I use?" ("Hindi, English, or both in the same sentence") and `onboarding.dictionary.languagesBody` ("Switch languages mid-sentence"), and with PRD K-24 (code-switched speech P0). Hand-off to `content` and `product`.
-- Hindi in Devanagari (brief decision 6) while D-031 (Hindi script default) is still open until 30 Oct. If Roman script becomes an option, add one line.
-- No server transcription in v1.0 (PRD 2.2 and 3.0: nothing leaves the phone for transcription in v1.0). The Privacy Policy section 4 describes cloud transcription, which applies from v1.1 (section 2 says so).
-- Some older iPhones may not run the speech model (ADR 0001, BL-143 device tiers). The article covers this with "Words are not ready yet". Which models run on which phones is Unverified until BL-043 reports.
+- Seven spoken languages at v1.0 (D-056) and Hindi-English mode in v1.1 (D-059). The article says Hindi-English mode is "not in this version yet". My earlier hand-off is done on develop: `onboarding.dictionary.languagesBody` now reads "Your words stay in the language you speak. We never translate them." (`strings.en.ts` line 103), and no "same sentence" or "mid-sentence" claim is left in `packages/content/src`. PRD K-24 (code-switched speech P0) still needs `product` to update it.
+- Hindi in Devanagari (D-056) while D-031 (Hindi script default) is still open until 30 Oct (DECISIONS.md line 37). If Roman script becomes an option, add one line.
+- No server transcription in v1.0: speech runs on the phone (ADR 0015; `trust.firstRecording.body`, "Your words are written down on this phone"). The Privacy Policy section 4 describes cloud transcription, which applies from v1.1 (section 2 says so).
+- The clearer listening copy (D-058) is built (`startListeningCopies` in the boot wiring, BOARD.md integration check-in at 20:27). The article keeps "If the app also keeps a clearer copy" because the copy is optional per recording.
+- Some older iPhones may not run the speech model. The article covers this with "Words are not ready yet" (`words.en.ts` lines 27 to 30). Which models run on which phones is Unverified until the device spikes in ROADMAP week 2 report.
 
 **Wording:** "What we never do" says "We never change what you meant." It no longer adds "or how you said it", because the fix list above removes fillers and false starts from the text. The recording itself is never changed (next line in the article).
 

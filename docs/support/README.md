@@ -1,6 +1,6 @@
 # Early Letters help centre
 
-Owner: `support` (Customer Support Lead). Status: draft for review, written before launch from the product as specified. Last updated 3 Oct 2026.
+Owner: `support` (Customer Support Lead). Status: draft for review, written before launch from the product as decided and built. Last updated 3 Oct 2026, checked against develop at 7cc43b1.
 
 These articles answer the questions parents ask most. They speak in the product's voice (`packages/content/VOICE.md`): warm, calm, short sentences. They follow the content rules in `CLAUDE.md`.
 
@@ -8,50 +8,56 @@ These articles answer the questions parents ask most. They speak in the product'
 
 | Article | What it answers |
 |---|---|
-| [Signing in](help/signing-in.md) | Apple, Google and email sign-in, the email link and code, a new phone, signing out |
-| [Recording and transcription](help/recording-and-transcription.md) | How speaking a letter works, languages, the small slips we fix, and what we never change |
+| [Signing in](help/signing-in.md) | Apple, Google and email sign-in, the email link and code, passkeys, a new phone, signing out |
+| [Recording and transcription](help/recording-and-transcription.md) | How speaking a letter works, languages and downloads, the small slips we fix, and what we never change |
 | [Your privacy](help/privacy.md) | Who can read your letters, where recordings live, what we never do |
 | [Deleting and exporting](help/deleting-and-exporting.md) | Export everything, Recently deleted, deleting a letter, a book or your account |
-| [Plus and your Apple subscription](help/subscriptions.md) | What stays free, free trials, cancelling, refunds through Apple, Family Sharing |
+| [Plus and your Apple subscription](help/subscriptions.md) | What Plus adds, what stays free, free trials, cancelling, refunds through Apple, Family Sharing |
 | [Writing with your co-parent](help/co-parent.md) | Inviting a co-parent, what each of you sees, leaving a shared book |
 
 ## When you write to us
 
-You never need to send us your letters, your recordings or your child's name to get help. Tell us what you tapped and what you saw. In the app, Settings, Help, Support adds the app version and your plan for you, and nothing else.
+You never need to send us your letters, your recordings or your child's name to get help. Tell us what you tapped and what you saw. In the app, Settings, **Help** opens an email to us with a subject line and nothing else.
 
-If things feel heavy, Settings, Help, If you are struggling lists people you can talk to, any time. In the United States you can also call or text 988.
+If things feel heavy, open Settings and tap **If you are struggling**, under Help and legal. It lists free, confidential lines you can call or text, any time. In the United States you can also call or text 988. If you or your baby are in danger right now, call 911.
 
 ## How these articles mark what is not ready
 
 - Text without a mark describes the first version of the app (v1.0) as the founder has decided it.
 - "Not in this version yet" in an article means the founder has decided it is not in v1.0. Articles do not promise when it comes.
-- Each article ends with **Reviewer notes**, which are for the team and are removed before publishing. They say what is built today, what is still to build (with backlog ids), where the article comes from, and anything that needs a decision.
+- Each article ends with **Reviewer notes**, which are for the team and are removed before publishing. They say what is built on develop, what is still to build, where the article comes from, and anything that needs a decision.
 
 ## Placeholders to fill before publishing
 
 | Placeholder | What it becomes | Where it is decided |
 |---|---|---|
-| `{SUPPORT_EMAIL}` | The support mailbox | `packages/brand` (`publisher.supportEmail`, BL-100). The brief of 3 Oct says hello@earlyletters.com is live; the founder decides whether support uses it. |
-| `{PRIVACY_EMAIL}` | The privacy request mailbox | Privacy Policy section 1 |
-| `{WEB_DELETION_URL}` | The page for deleting an account without the app | BL-243 |
+| `{SUPPORT_EMAIL}` | `brand.support.email` (hello@earlyletters.com today) | `packages/brand/index.ts` lines 34 and 35, D-063 |
+| `{PRIVACY_EMAIL}` | The privacy request mailbox | Privacy Policy section 1, still a placeholder there. `docs/ops/DOMAINS.md` line 12 suggests a `privacy@` address; not decided. |
+| `{WEB_DELETION_URL}` | `brand.web.deleteAccount` (https://earlyletters.com/delete-account) | `packages/brand/index.ts` lines 55 and 56, D-042. DOMAINS.md line 12 lists the page as "later". |
 
-Legal pages use the addresses in the brief of 3 Oct (decision 13): https://earlyletters.com/terms, /privacy, /health-privacy and /subprocessors.
+The articles keep placeholders rather than typing these values, so `packages/brand` stays the one source. Legal pages use the addresses in D-063 and `packages/brand`: https://earlyletters.com/terms, /privacy, /health-privacy and /subprocessors.
 
 ## Reviewer notes (remove before publishing)
 
-**Where the two sources disagree.** The brief of 3 Oct (`docs/agents/BRIEF-2026-10-03.md`) and PRD 1.3 (`docs/prd/PRD.md`) were both written on 3 Oct, and the brief came about 25 minutes later. The brief marks decisions 3 to 9 as Decided, so these articles follow it on every point below. These are hand-offs, not open founder decisions: `product` updates the PRD, ADRs and backlog, and `legal` updates the published terms. The one row that is still an open question is the last one, reminders before a trial ends (see the subscriptions article notes).
+**Changed in this review.** "Settings, Help, Support adds the app version and your plan" was wrong: the Help row opens an email with the subject "Help with the app" and nothing else (`apps/mobile/src/app/settings/index.tsx` line 123; `supportMailto` in `packages/brand/index.ts` lines 123 to 126; LEGAL-REQ-014). "If you are struggling" is a row on Settings home in the Help and legal section, not under a Help screen, and it never hides behind a flag (index.tsx lines 24 and 124 to 135). Its 911 line is `struggling.emergency` (`strings.en.ts` line 951).
 
-| Topic | Brief of 3 Oct (these articles follow) | Still says otherwise |
+**Where the founder's decisions and other documents disagree.** The founder's decisions of 3 Oct are now in `docs/DECISIONS.md` (D-051 to D-067), and these articles follow them. These are hand-offs, not open founder decisions: `product` updates the PRD and backlog, and `legal` updates the terms and policy. The one row that is still an open question is the last one.
+
+| Topic | Decision (these articles follow) | Still says otherwise on develop |
 |---|---|---|
-| Sign-in | Apple, Google and email link at v1.0; passkeys can be added after sign-in (decision 4) | PRD 2.1 and D-044: Google in v1.1; BL-302 in the v1.1 table; PRD 2.2: passkeys out of scope. No backlog task for passkeys. |
-| Family | Co-parent only at v1.0; other family later (decision 5) | PRD K-35 and D-002 (family contributors in the app at v1.0); `family.*` invite strings; Privacy Policy section 7 |
-| Plus and the co-parent | Co-parent gets Plus through Apple Family Sharing, which is turned on; no server of ours sees purchases (decision 3) | ADR 0013, BL-103, ROADMAP week 3 and TDD 08: Family Sharing off; Terms 14.12: Family Sharing not available at launch; PRD K-28: Plus per account, covering the co-parent through the server |
-| Recordings | No audio upload in v1.0 (decision 9) | Subscription terms list encrypted backup as a Plus feature; Privacy Policy short version and section 7; `settings.backup.*` strings |
-| Safety | A static "If you are struggling" row (decision 9) | Privacy Policy sections 3, 5, 10 and 13 describe on-device support cards |
-| Reminders before a trial ends (open: `legal` and `product`) | No server of ours sees purchases (decision 3) | Subscription terms "Reminders from us" promise email reminders, which need the server to know about a trial |
+| Sign-in | D-054: Apple, Google and email link; passkeys after sign-in (built behind a flag) | PRD 2.1 and 2.2; BL-302 (`docs/BACKLOG.md` line 891) puts Google in v1.1 |
+| Family | D-055: co-parent only at v1.0 | PRD K-35; Privacy Policy section 7 |
+| Plus | D-053: Read together and more books only; Apple only, on the device; Family Sharing on | PRD C line 90 and 125 (themes); BL-103 (BACKLOG line 69: Family Sharing off); Terms 14.1 and Subscription terms (backup, themes); Terms 14.12 (no Family Sharing) |
+| Recordings | D-059: no audio upload in v1.0 (answers D-032) | Subscription terms list encrypted backup; Privacy Policy short version and section 7 |
+| Safety | D-059: static "If you are struggling" row (answers D-034) | Privacy Policy sections 3, 5, 10 and 13 describe on-device support cards |
+| Reminders before a trial ends (open: `legal` and `product`) | D-053: no server of ours sees purchases | Subscription terms "Reminders from us" promise email reminders. `docs/agents/DEBATES.md` Q-003, open, needs counsel |
+
+ADR 0013 and ROADMAP now agree with D-053 and D-054, so they are no longer in the table.
 
 **Price changes (hand-off to `legal` and `payments`).** The Subscription terms say "We never raise your price unless you agree." Apple asks subscribers to agree only above certain thresholds and otherwise just notifies them (App Store Connect Help, "Manage pricing for auto-renewable subscriptions"). So our promise holds only if every future increase keeps existing subscribers on their current price. Details in the subscriptions article notes.
 
-**Build status today (develop at 3688796).** The app runs on the phone only. There is no sign-in, sync, export, deletion flow, Plus purchase or co-parent invite yet. The Settings screen says so (`settingsMore.*NotYet` strings). Every article lists its own blocked tasks.
+**Build status (develop at 7cc43b1, the 3 Oct wave).** Built: sign-in (Apple, Google, email link and code; passkeys behind a flag), sync, co-parent invites, Plus on the device through Apple, export, in-app account deletion with the purge worker, language downloads, Settings home with Plan, Account, Privacy, Storage and Recordings. Not built yet, and marked in each article's notes: leaving a shared book, deleting a book from the app, Recently deleted, the Word for word switch, Names and words, and the web deletion page. Migrations from this wave are pending, not applied (`supabase/APPLY.md`), and nothing has been tested on a device for these articles.
 
-**Not checked by the content tests.** `packages/content/test/rules.test.ts` does not read `docs/support/`. This run checked these files with the same patterns as that test (characters, emoji, fear words, the machine-writing list, and the never-rewrite rule), plus the VOICE.md bans: no gendered pronouns for anyone, and none of the words VOICE.md and K-26 retire. A follow-up for `content`: extend the test to read `docs/support/**`.
+**Early version.** D-060: the store listing never says beta, and the app keeps "early version, can make mistakes" at the top of Settings. No article says "beta". The deleting and exporting article mentions the early-version note next to export, and that sentence goes when the founder ends the note.
+
+**Not checked by the content tests.** `packages/content/test/rules.test.ts` does not read `docs/support/`. Each review checks these files with the same patterns as that test (characters, emoji, fear words, the machine-writing list, the never-rewrite rule, and the D-053 Plus words), plus the VOICE.md bans: no gendered pronouns, and none of the words VOICE.md and K-26 retire. A follow-up for `content`: extend the test to read `docs/support/**`.

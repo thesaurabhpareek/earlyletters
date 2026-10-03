@@ -4,21 +4,25 @@ Your book is yours to keep, and yours to take with you. Export is free, always, 
 
 ## Export everything
 
-Settings, Your data, **Export everything**.
+Settings, **Export your book**, then **Export everything**.
 
 You get one ZIP file with:
 
-- every letter you wrote, with the words exactly as they first came out, each small fix, and the letter as you kept it;
+- every letter and note, as text;
+- for the letters you wrote, a data file with your words exactly as you said them, every small fix, and the letter as you kept it;
 - the letters your co-parent added to the book, as they kept them;
-- every recording on this phone, exactly as it was recorded;
-- your photos;
-- a PDF of {child}'s book;
-- a page you can open in any web browser to read the letters and play the recordings, even with no internet;
+- every recording on this phone, exactly as it was made;
+- a printable book for each child, by month (letters you kept private are not in it, but they are in the other files);
+- a page you can open in any web browser to read every letter and hear every recording, with no connection;
 - a short guide to every file.
 
-Export runs on your phone and works offline. A big book can take a few minutes. When it is ready, save it to Files, iCloud Drive or your computer.
+Export runs on your phone and works offline. Nothing is sent anywhere. A big book can take a few minutes. When it is ready, tap **Save or share** to save it to Files, iCloud Drive or your computer.
 
-Exporting now and then is a good habit. It is the one copy of your recordings that is entirely in your hands.
+The file is not locked with a password, so keep it somewhere private.
+
+If the app says the export is larger than one file can hold, write to us and we will help you get every letter out.
+
+Exporting now and then is a good habit. Settings notes that Early Letters is an early version and can make mistakes, and an export is a copy that is entirely in your hands. It is also the one copy of your recordings that you can keep anywhere you like.
 
 ## Delete a letter
 
@@ -41,16 +45,16 @@ Want a rest instead? **Hide this book** quiets every reminder and note about {ch
 
 ## Delete your account
 
-Settings, Your data, **Delete your account**. You can do it all in the app. There is nothing to email and no one to call.
+Settings, **Delete account**. You can do it all in the app. There is nothing to email and no one to call.
 
 1. The app shows what will happen to each book.
 2. It offers to export everything first.
-3. If you have Plus, it reminds you that deleting your account does not cancel your Apple subscription, and opens Apple's subscription screen if you want to cancel there. See [Plus and your Apple subscription](subscriptions.md).
-4. You confirm.
+3. If you have Plus, it reminds you that deleting your account does not cancel Plus, and **Manage subscription** opens Apple's subscription screen if you want to cancel there. See [Plus and your Apple subscription](subscriptions.md).
+4. Type "delete" to confirm.
 
-**What happens.** Your letters, recordings and photos are removed from every book, including a book you share with a co-parent. That book stays with your co-parent. A book where you are the only parent is deleted with everything in it.
+**What happens.** Your letters are removed from every book, including a book you share with a co-parent. That book stays with your co-parent, with their letters. A book where you are the only parent is deleted with everything in it.
 
-**You have 30 days to change your mind.** Sign in before the date the app shows and you can cancel.
+**You have 30 days to change your mind.** The app shows the date. Until then, cancel in Settings, Delete account, or by signing in again, and everything comes back as it was. We email you a receipt.
 
 **After 30 days,** your account is erased from our live systems. Copies in our backups are erased within 38 days of your request, and by the companies that help us run Early Letters within 45 days.
 
@@ -64,7 +68,7 @@ Deleting the app does not cancel Plus. Cancel with Apple: see [Plus and your App
 
 ## Without the app
 
-You can ask us to delete your account at {WEB_DELETION_URL}, or by email to {PRIVACY_EMAIL}. We send a sign-in link to the email on your account first, to make sure it is you.
+If you cannot use the app, write to us at {PRIVACY_EMAIL} and ask us to delete your account. The page at {WEB_DELETION_URL} explains the same steps.
 
 ## Still stuck?
 
@@ -74,18 +78,30 @@ Write to us at {SUPPORT_EMAIL}. Please do not send the letters themselves. Tell 
 
 ## Reviewer notes (remove before publishing)
 
-**Built today (develop at 3688796):** delete a letter from the letter screen with an Undo toast; Hide this book. Deleting a book is not built (the `settings.delete.book*` strings exist but no screen uses them; the row name "Delete this book" is from PRD B F2). Settings says export is coming (`settingsMore.exportNotYet`) and "Accounts arrive with sign in" (`settingsMore.deleteAccountNotYet`). Recently deleted is not built (no screen uses `settings.delete.recentlyDeleted`).
+**Built on develop (7cc43b1):**
+- **Export:** `apps/mobile/src/app/settings/export.tsx` and `apps/mobile/src/lib/export/`. Contents from `packages/content/src/features/export.en.ts` lines 10 to 14 (the "What is inside" list) and the README lines 64 to 87 (printable book leaves out private letters; `index.html` works with no connection; recordings byte for byte). "Works without a connection. Nothing is sent anywhere." (line 15), "Save or share" (line 21), the unlocked-file notice (line 23), the too-big message (line 28). The words exactly as heard and the fixes are exported for your own letters only (`apps/mobile/src/lib/export/schema.ts` line 67). The path is the Settings row "Export your book" (`settingsHome.exportLabel`) and the button "Export everything" (`settings.export.button`, `strings.en.ts` line 627).
+- **Account deletion:** `apps/mobile/src/app/settings/delete-account.tsx` with `apps/mobile/src/lib/account-deletion/`; words in `packages/content/src/features/account-deletion.en.ts` (type "delete" lines 42 and 43; date, cancel and receipt lines 41 and 49 to 54; Plus step lines 31 to 35, shown only with a subscription). Server: `request_account_deletion` schedules 30 days out (`supabase/migrations/20261002020000_data_governance.sql` lines 425 to 469, line 440); books with a co-parent stay with them (lines 450 to 455). The purge worker and its checks are in `supabase/migrations/20261004200000_ops_deletion_worker.sql` (an alert fires if anything deleted more than 31 days ago is still there, line 274) and `supabase/functions/purge-worker/`. That migration is pending, not applied (its line 4).
+- **Delete a letter** with Undo: `apps/mobile/src/app/letter/[id].tsx`. **Hide this book:** `apps/mobile/src/app/settings/children/[id].tsx` line 62.
 
-**To build:** BL-150 offline export (ZIP and PDF), BL-233 in-app account deletion, BL-220 account deletion billing step, BL-237 support deletion runbook, BL-243 static deletion page, plus Recently deleted and restore (DATA-REQ-010). BL-264 replaces the timed undo with a persistent toast for accessibility.
+**Not built in the app yet:**
+- **Recently deleted** (no screen uses `settings.delete.recentlyDeleted`). The server keeps deleted letters restorable until purge.
+- **Delete this book.** The server function exists (`request_book_deletion`, data_governance.sql lines 491 to 517, the equals rule included), but `settings/children/[id].tsx` has no delete row.
+- **The page at {WEB_DELETION_URL}.** D-042 (Recommended): a static page plus an email route at v1.0. `docs/ops/DOMAINS.md` line 12 lists `/delete-account` as "later".
 
-**Sources:** DELETION_AND_EXPORT_SPEC 2.2 (letter), 2.3 (book, equals rule), 2.6 (account, Apple 5.1.1(v), billing step), 4.1 and 4.2 (export contents, offline `index.html`, byte-identical audio); Privacy Policy section 10 (31, 38 and 45 days; consent records pseudonymised); PRD K-22, K-23; strings `settings.delete.*`, `settings.export.*`, `children.settings.hide*`.
+**Changed in this review:**
+- Paths follow Settings home (`apps/mobile/src/app/settings/index.tsx` lines 111 to 120): "Export your book" and "Delete account" are rows of their own.
+- "Your photos" is gone from the export list: letters have no photos in this version (`photo: null`, `apps/mobile/src/lib/export/build.logic.ts` line 478). The account deletion "what happens" line no longer names recordings or photos, because recordings are not on our servers in v1.0 (D-059).
+- "We send a sign-in link first" is gone from "Without the app". That is the full web flow, which D-042 moves to before Android.
+- New, because they are built: the unlocked-file notice, the too-big help line, type "delete" to confirm, the receipt email, and the early-version line (D-060: the app keeps "early version, can make mistakes" in Settings, `strings.en.ts` lines 665 to 668, shown at the top of Settings home, index.tsx lines 80 to 86). Remove that sentence when the founder ends the early-version note.
 
-**Narrowed by the brief of 3 Oct:**
-- *Recordings in export.* The spec exports audio "on the phone or in backup". With no audio upload in v1.0 (brief decision 9), the article says "every recording on this phone". The co-parent's recordings are on the co-parent's phone, so this export includes their text only.
-- *Family members.* Co-parent only at v1.0 (brief decision 5), so the sole-parent case leaves out "family members can save a copy" (`settings.delete.bookBody`). That string still mentions family; hand-off to `content` if the brief stands.
+**Hand-offs:**
+- `content`: `accountDeletion.what.intro` (account-deletion.en.ts line 13) says deletion removes "your letters, recordings, photos and books from our servers", and `exportFirst.body` (line 28) promises "your photos" in the export. In v1.0 there is no recording upload (D-059) and no photos in the export (above).
+- `legal` and support operations: the email route for deleting without the app has no runbook on develop. D-042 says a runbook handles it within LEGAL-REQ-031 times. The escalation guide (my standing duty 2) needs it, including how we confirm a request comes from the account holder.
+
+**Placeholders:** `{WEB_DELETION_URL}` is `brand.web.deleteAccount` (https://earlyletters.com/delete-account). `{PRIVACY_EMAIL}` is still a placeholder in Privacy Policy section 1 (DOMAINS.md suggests a `privacy@` address; not decided).
 
 **Still open:**
-- "After 30 days ... live systems": the policy says erased "within 31 days of your request". I said "after 30 days" for the grace period and kept 38 and 45 for backups and processors. Counsel may want "within 31 days" word for word.
-- The web deletion page is reduced at v1.0 (PRD 3.0: static page plus email route). `{WEB_DELETION_URL}` comes from BL-243.
-- Deleting the app removes recordings that were never exported. This is true whether or not D-033 passes, because deleting an app removes its iPhone backup data on the next backup (Unverified; general iOS behaviour). The sentence is kept factual and not alarming, per VOICE.
-- "Delete your account" is the label (`settings.delete.accountTitle`).
+- "After 30 days ... live systems": the policy says erased "within 31 days of your request". I said "after 30 days" for the grace period and kept 38 and 45 for backups and processors (Privacy Policy section 10, unchanged on develop). Counsel may want "within 31 days" word for word.
+- Deleting the app removes recordings that were never exported. Deleting an app also removes its data from the next iPhone backup (Unverified; general iOS behaviour). The sentence is kept factual and not alarming, per VOICE.
+
+**Sources:** DELETION_AND_EXPORT_SPEC 2.2 (letter), 2.3 (book, equals rule), 2.6 (account, Apple 5.1.1(v), billing step), 4.1 and 4.2 (export contents); Privacy Policy section 10 (31, 38 and 45 days; consent records pseudonymised); PRD K-22, K-23.

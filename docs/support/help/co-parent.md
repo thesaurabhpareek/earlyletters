@@ -10,25 +10,32 @@ Inviting your co-parent is free, and so is everything they write.
 
 ## Invite your co-parent
 
-You both need an account, so first sign in. See [Signing in](signing-in.md).
+You both need an account, so your co-parent can write from their own phone. If you have not signed in yet, the app asks you to first. See [Signing in](signing-in.md).
 
 1. Open the **Family** tab.
-2. Tap **Invite someone to write**.
-3. Send the invite link in a message, or tap **Show code** to read out an 8-character code.
+2. Tap **Invite a co-parent**.
+3. If you like, add what {child} calls them. It signs their letters.
+4. Tap **Share invite link** and send it in a message.
 
 The invite is for {child}'s book only. If you have more than one child, invite your co-parent to each book you want to share.
 
-The invite lasts 7 days. Until it is used, it shows as Invited, with **Send again** and **Cancel invite**.
+The link works once, for 7 days. Until your co-parent joins, the Family tab shows them as Invited, with **Share again** and **Cancel invite**.
 
 ## Accept an invite
 
 1. Install Early Letters from the App Store, if it is not on your iPhone yet.
-2. Tap the link. Or open the app, tap **I was invited**, and paste the link or type the code.
-3. Sign in.
+2. Tap the link. Or open the app, tap **I was invited**, and paste the link.
+3. Sign in, then follow the steps the app shows.
 
-**"This invite has expired."** Ask for a new one. A new invite takes a moment to send.
+Then you are in {child}'s book, and it arrives on your phone.
 
-**"We couldn't find that invite."** Check the link or code. Each invite works once, so ask for a new one if it was already used.
+**"This invite has expired."** Ask for a new one.
+
+**"This invite has already been used."** Each invite works once. Ask for a new one.
+
+**"This invite was cancelled."** Ask for a new one.
+
+**"We couldn't find that invite."** Check the link and try again.
 
 ## What each of you sees
 
@@ -65,21 +72,24 @@ Inviting grandparents, aunts, uncles and friends to write is not in this version
 
 ## Reviewer notes (remove before publishing)
 
-**Built today (develop at 3688796):** the Family tab with the roles explanation; invites are not built. The tab shows "Inviting family needs an account ... Sign in arrives in a coming update" (`familyTab.inviteNeedsSignIn`).
+**Built on develop (7cc43b1):** co-parent invites end to end.
+- Family tab: `apps/mobile/src/app/(tabs)/family.tsx`. Signed out, "Invite a co-parent" opens sign-in first (lines 93 and 94). Pending invites show "Invited" with "Share again" and "Cancel invite" (lines 160 to 168).
+- Words: `packages/content/src/features/family.en.ts`. "Invite a co-parent" (line 19), the optional "What does {child} call them?" (lines 37 to 39), "The link works once, for 7 days. You can cancel it any time." (line 41), "Share invite link" (line 42), the accept screen with a pasted link (lines 50 to 68), and the error messages quoted in the article (lines 71 to 75).
+- Server: `create_child_invite`, `revoke_invite`, `accept_child_invite` (`supabase/migrations/20261003000000_security_and_family.sql` lines 317, 349 and 366). A co-parent invite lasts 7 days (line 342). The app always sends the parent role (`apps/mobile/src/lib/family/invites.ts` line 3).
+- Opening a link signed out lands on "Join the family book", then sign-in and consent (`docs/ops/AUTH_SETUP.md` line 284).
 
-**To build:** BL-170 invite tokens and deep links, BL-176 co-parent invite in the app, BL-190 invite redemption, BL-194 per-child sharing, leave and the last-parent guard (B-REQ-010, DATA-REQ-016), BL-171 and BL-051 sign-in.
+**Changed in this review:** the invite flow follows the build. There is no 8-character code and no "Show code": a co-parent joins by link only, and "I was invited" takes a pasted link (AUTH_SETUP line 189). "Invite someone to write" is now "Invite a co-parent", and "Send again" is now "Share again". The error messages are the built ones.
 
-**Sources:** PRD B F5 (invite flow, Show code, 8-character code, Invited, Send again, Cancel invite; "Show code" and "Cancel invite" are not in strings yet, so confirm the labels when `content` adds them), F7 (leave choices), F8 (equals rule, safety cases through support), F9 (visibility); K-09 (author-only original words); K-18 (7-day co-parent expiry); DATA-REQ-014 to 016; strings `family.invite.*`, `familyTab.coParentBody`, `children.sharing.oneBookNote`, `errors.inviteExpired`, A section 9 `invite.notFound`; PRD-REQ-015 (joined books do not count).
+**Not built yet: leaving.** There is no leave screen, and no `leave_child` function in `supabase/migrations` (PRD B line 312 names `leave_child(p_keep_in_book)`). The only server path today is `request_book_deletion` with a co-parent (`supabase/migrations/20261002020000_data_governance.sql` lines 488 to 504), which removes the caller's own letters and leaves. That is "Delete this book" with a co-parent, not "Leave my letters in the book", and it deletes rather than keeps. Hand-off to `product`: B-REQ-010 needs its leave choices built, or this section changes. The last-parent guard exists (same file, line 361). The leave row name is not in strings yet.
 
-**Settled by the brief, other documents to update (hand-offs, not founder decisions):**
-1. **Co-parent only at v1.0** (brief decision 5, Decided). PRD K-35 and D-002 still ship family contributors in the app at v1.0. Hand-off to `product` to update the PRD. The invite screen copy (`family.invite.body`: "You choose which ones go in the book") is written for family members; hand-off to `content`.
-2. **Plus through Family Sharing** (brief decision 3, Decided). See the subscriptions article notes.
+**Settled (hand-offs, not founder decisions):**
+1. **Co-parent only at v1.0:** D-055 (Decided) supersedes D-002. PRD K-35 still ships family contributors at v1.0. Hand-off to `product`.
+2. **Plus through Family Sharing:** D-053. See the subscriptions article notes.
+3. **Hearing each other's recordings:** D-059 answers D-032: no audio upload in v1.0 (DECISIONS.md lines 378 and 393). The "Recordings" line above is the v1.0 behaviour, and `readTogether.recordingElsewhere` says the same in the app.
+4. **At most two parents per book:** D-069 is Recommended (founder OK needed). The article does not depend on it.
 
-**Still open:**
-3. **Hearing each other's recordings.** Brief decision 9 says family members hearing each other's recordings comes in v1.1, with no audio upload in v1.0. D-032 (shared voice, recommended, decision by 23 Oct) is still open and would change this. The article states the v1.0 behaviour plainly but gently. Update it if D-032 is approved.
+**Hand-off to `content`:** `familyTab.emptyBody` (`strings.en.ts` line 861), "Letters are lovelier with more voices.", counts a gap for a parent who keeps a book alone, the same issue the red team found in this article's first draft. The Family tab still shows it (family.tsx line 176).
 
-**Wording:** the opening line no longer says the book is "lovelier with two voices". That counted a gap for parents who keep a book alone, and "voices" suggested hearing each other's recordings, which v1.0 does not do. The last section says "not in this version yet" rather than promising a later update.
+**Wording:** the last section says "not in this version yet" rather than promising a later update. D-055 has the store listing, website and story cards say grandparents are "coming in a later update". Hand-off to `content` to pick one phrasing for every surface (red-team nit 4).
 
-**Leave path:** the exact Settings row name for leaving is not in strings yet. "Settings, {child}'s book, then leave" follows PRD C-REQ-016 (per-child page holds members and delete). Name the row when `content` adds it.
-
-**Safety routing:** the court-order and safety line follows B F8.3 (support verifies and removes a member through the service-role runbook, BL-237). The macros and the escalation and safety routing guide (standing duty 2) will spell out what support asks for. We never ask for letter content.
+**Safety routing:** the court-order and safety line follows B F8.3 (support verifies and removes a member through the service-role runbook, BL-237; `ops.audit_log` lists a `safety_removal` runbook, `supabase/migrations/20261004200000_ops_deletion_worker.sql` line 37). The macros and the escalation and safety routing guide (standing duty 2) will spell out what support asks for. We never ask for letter content.
