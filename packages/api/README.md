@@ -69,11 +69,26 @@ sends the same pair; a hash already used under another key raises `SCINV`
 (make a new token and key), and a hash that is not 32 bytes raises `22023`.
 The token goes in the share link and is sent to `accept_child_invite(p_token)`.
 
+Every invite also has an 8-character code to read aloud (A-REQ-029). Make it
+with `inviteCodeFromBytes(crypto.getRandomValues(new Uint8Array(8)))`, show it
+with `formatInviteCode`, and send only
+`p_code_hash = sha256(utf8(code))` (normal form, see `normaliseInviteCode`).
+The database stores an HMAC of that digest under a server pepper. A reused code
+raises `SCINV` (make a new code, token and key); `SCCFG` means the server pepper
+is not configured (retry later). A typed code is redeemed through the
+`invite-redeem` Edge Function, never through PostgREST
+(`accept_child_invite_by_code` is service-role only).
+
 ```ts
+const sha = async (s: string) =>
+  '\\x' + toHex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))));
 const token = toHex(crypto.getRandomValues(new Uint8Array(32)));
-const hash = '\\x' + toHex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))));
-const invite = { p_id: uuidv7(), p_child: childId, p_role: 'contributor', p_token_hash: hash } as const;
-// persist { invite, token }, then on every attempt:
+const code = inviteCodeFromBytes(crypto.getRandomValues(new Uint8Array(8)));
+const invite = {
+  p_id: uuidv7(), p_child: childId, p_role: 'contributor',
+  p_token_hash: await sha(token), p_code_hash: await sha(code),
+} as const;
+// persist { invite, token, code }, then on every attempt:
 const r = await callRpc(supabase, 'create_child_invite', invite);
 ```
 

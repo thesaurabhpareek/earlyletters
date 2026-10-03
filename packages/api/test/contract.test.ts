@@ -14,6 +14,10 @@ import {
   RPC_NAMES,
   callRpc,
   errorSpec,
+  formatInviteCode,
+  INVITE_CODE_ALPHABET,
+  inviteCodeFromBytes,
+  normaliseInviteCode,
   syncDisposition,
   type RpcTransport,
 } from '../src';
@@ -104,10 +108,12 @@ describe('rpc catalog', () => {
     }
   });
 
-  it('create_child_invite takes a token hash and returns the invite id, never a token', () => {
+  it('create_child_invite takes token and code hashes and returns the invite id, never a token', () => {
     const spec = RPC_CATALOG.create_child_invite;
-    expect(spec.params.map((p) => p.name)).toEqual(['p_id', 'p_child', 'p_role', 'p_token_hash', 'p_signs_as']);
+    expect(spec.params.map((p) => p.name)).toEqual(['p_id', 'p_child', 'p_role', 'p_token_hash', 'p_code_hash', 'p_signs_as']);
     expect(spec.params.find((p) => p.name === 'p_token_hash')?.sqlType).toBe('bytea');
+    expect(spec.params.find((p) => p.name === 'p_code_hash')).toEqual({ name: 'p_code_hash', sqlType: 'bytea', optional: false });
+    expect(spec.errors).toContain('SCCFG');
     expect(spec.sqlReturns).toBe('uuid');
     expect(spec.params.some((p) => (p.name as string) === 'p_token')).toBe(false);
   });
@@ -146,5 +152,32 @@ describe('callRpc', () => {
       expect(r.error.spec?.sync).toBe('pause');
       expect(r.error.details).toBe('terms');
     }
+  });
+});
+
+describe('invite codes (A-REQ-029)', () => {
+  it('the alphabet is Crockford base32: 32 symbols, no I, L, O or U', () => {
+    expect(INVITE_CODE_ALPHABET).toHaveLength(32);
+    expect(new Set(INVITE_CODE_ALPHABET).size).toBe(32);
+    expect(INVITE_CODE_ALPHABET).not.toMatch(/[ILOU]/);
+  });
+
+  it('normalises case, hyphens and spaces, and reads O as 0 and I or L as 1 (same as SQL)', () => {
+    expect(normaliseInviteCode('ab2c-d3ef')).toBe('AB2CD3EF');
+    expect(normaliseInviteCode(' o1il 2345 ')).toBe('01112345');
+  });
+
+  it('rejects wrong lengths, U and other symbols', () => {
+    for (const bad of ['ABC', 'ABCDEFGHJ', 'ABCDEFGU', 'ABCD_EFG', '', null, undefined]) {
+      expect(normaliseInviteCode(bad), String(bad)).toBeNull();
+    }
+  });
+
+  it('builds codes from 8 bytes and formats them as XXXX-XXXX', () => {
+    const code = inviteCodeFromBytes([0, 1, 31, 32, 63, 200, 255, 17]);
+    expect(code).toBe('01Z0Z8ZH');
+    expect(normaliseInviteCode(code)).toBe(code);
+    expect(formatInviteCode(code)).toBe(`${code.slice(0, 4)}-${code.slice(4)}`);
+    expect(() => inviteCodeFromBytes([1, 2, 3])).toThrow(RangeError);
   });
 });

@@ -239,7 +239,8 @@ export const API_ERRORS = Object.freeze({
   }),
   SCCFG: spec({
     code: 'SCCFG',
-    meaning: 'A server setting is missing (app.consent_pepper); raised when a profile is deleted. Ops alert, not a client error.',
+    meaning:
+      'A server secret is missing or shorter than 32 bytes (Supabase Vault consent_pepper or invite_code_pepper); raised when a profile is deleted or an invite is created or redeemed. Ops alert, not a client error.',
     category: 'server',
     httpStatus: 503,
     retryable: true,

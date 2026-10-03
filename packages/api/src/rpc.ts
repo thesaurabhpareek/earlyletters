@@ -38,7 +38,14 @@ export type NoArgs = Record<never, never>;
 export interface RpcContract {
   // ─── Books ─────────────────────────────────────────────────────────────
   create_child: {
-    request: { p_id: ClientUuid7; p_name: string; p_date_of_birth?: IsoDate | null; p_due_date?: IsoDate | null };
+    request: {
+      p_id: ClientUuid7;
+      p_name: string;
+      p_date_of_birth?: IsoDate | null;
+      p_due_date?: IsoDate | null;
+      /** When the book was made on the device. Dropped by the server when in the future or before 2024. */
+      p_client_created_at?: IsoTimestamp | null;
+    };
     /** The child id (same as p_id). */
     response: Uuid;
   };
@@ -59,17 +66,28 @@ export interface RpcContract {
 
   // ─── Invites ───────────────────────────────────────────────────────────
   /**
-   * Retry-safe invite. The client makes the secret, the server never sees it:
+   * Retry-safe invite. The client makes the secrets, the server never sees them:
    *  1. token = 32 random bytes from a CSPRNG, hex encoded (64 lower-case chars);
    *  2. p_token_hash = sha256(utf8(token)) as ByteaHex ('\\x' + 64 hex chars);
-   *  3. p_id = a new UUIDv7 (becomes child_invites.id).
-   * Persist p_id and token together before the first call, and reuse the same
-   * key and token on every retry: a replay returns the same invite id with no
-   * side effects (no new row, no rate-limit count). Put the token in the share
-   * link; the recipient sends it to accept_child_invite.
+   *  3. code = 8 symbols of Crockford base32 (INVITE_CODE_ALPHABET) from a CSPRNG,
+   *     shown as XXXX-XXXX; p_code_hash = sha256(utf8(normaliseInviteCode(code)));
+   *  4. p_id = a new UUIDv7 (becomes child_invites.id).
+   * Persist p_id, token and code together before the first call, and reuse them
+   * on every retry: a replay returns the same invite id with no side effects (no
+   * new row, no rate-limit count). Put the token in the share link (recipient
+   * calls accept_child_invite); a typed code goes to the invite-redeem Edge
+   * Function, never to PostgREST. SCCFG means the server's code pepper is not
+   * configured: keep the queued invite and retry later.
    */
   create_child_invite: {
-    request: { p_id: ClientUuid7; p_child: Uuid; p_role: MemberRole; p_token_hash: ByteaHex; p_signs_as?: string | null };
+    request: {
+      p_id: ClientUuid7;
+      p_child: Uuid;
+      p_role: MemberRole;
+      p_token_hash: ByteaHex;
+      p_code_hash: ByteaHex;
+      p_signs_as?: string | null;
+    };
     /** The invite id (same as p_id). No token is returned. */
     response: Uuid;
   };
@@ -214,7 +232,13 @@ const NATURAL = { kind: 'natural' } as const;
 export const RPC_CATALOG = Object.freeze({
   create_child: {
     kind: 'command',
-    params: [p('p_id', 'uuid'), p('p_name', 'text'), p('p_date_of_birth', 'date', true), p('p_due_date', 'date', true)],
+    params: [
+      p('p_id', 'uuid'),
+      p('p_name', 'text'),
+      p('p_date_of_birth', 'date', true),
+      p('p_due_date', 'date', true),
+      p('p_client_created_at', 'timestamptz', true),
+    ],
     sqlReturns: 'uuid',
     idempotency: { kind: 'client_id', param: 'p_id' },
     consentGated: true,
@@ -254,12 +278,19 @@ export const RPC_CATALOG = Object.freeze({
   },
   create_child_invite: {
     kind: 'command',
-    params: [p('p_id', 'uuid'), p('p_child', 'uuid'), p('p_role', 'text'), p('p_token_hash', 'bytea'), p('p_signs_as', 'text', true)],
+    params: [
+      p('p_id', 'uuid'),
+      p('p_child', 'uuid'),
+      p('p_role', 'text'),
+      p('p_token_hash', 'bytea'),
+      p('p_code_hash', 'bytea'),
+      p('p_signs_as', 'text', true),
+    ],
     sqlReturns: 'uuid',
     idempotency: { kind: 'client_id', param: 'p_id' },
     consentGated: true,
     allowsAnonymous: false,
-    errors: [...AUTH, 'SCCID', 'SCINV', '22023', 'SCPAR', 'SCDEL', 'SCCON', 'SCRAT'],
+    errors: [...AUTH, 'SCCID', 'SCINV', '22023', 'SCPAR', 'SCDEL', 'SCCON', 'SCRAT', 'SCCFG'],
     migration: '20261003000000_security_and_family.sql',
   },
   revoke_invite: {

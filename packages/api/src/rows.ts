@@ -82,6 +82,8 @@ export interface ChildRow {
   book_look: string;
   family_can_read: boolean;
   hidden_at: IsoTimestamp | null;
+  /** When the book was made on the device (create_child p_client_created_at); null when not sent or out of range. Client-immutable (SCIMM). */
+  client_created_at: IsoTimestamp | null;
 }
 export const CHILD_COLUMNS = [
   'id',
@@ -98,6 +100,7 @@ export const CHILD_COLUMNS = [
   'book_look',
   'family_can_read',
   'hidden_at',
+  'client_created_at',
 ] as const;
 /**
  * Book settings a parent may update. deleted_at, deletion_request_id and
@@ -169,6 +172,8 @@ export interface ChildInviteRow {
   created_at: IsoTimestamp;
   revoked_at: IsoTimestamp | null;
   signs_as: string | null;
+  /** HMAC-SHA256(invite_code_pepper, sha256(utf8(normalised code))). The code is made on the device and never sent to the database. */
+  code_hash: ByteaHex | null;
 }
 export const CHILD_INVITE_COLUMNS = [
   'id',
@@ -182,6 +187,7 @@ export const CHILD_INVITE_COLUMNS = [
   'created_at',
   'revoked_at',
   'signs_as',
+  'code_hash',
 ] as const;
 
 // ─── entries (author only, every column, any state) ──────────────────────

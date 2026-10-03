@@ -142,7 +142,10 @@ describe.skipIf(Boolean(reason))(`drift against ${dir}`, () => {
 
     it.each(RPC_NAMES)('%s: consentGated matches a require_content_consent call', (name) => {
       const fn = callable.get(catalogSig(name))!;
-      const calls = /\brequire_content_consent\s*\(/.test(fn.body) || name === 'require_content_consent';
+      // Direct call, or delegation to a helper that runs the same gate for a given person.
+      const calls =
+        /\b(require_content_consent|require_content_consent_of|join_book_by_invite)\s*\(/.test(fn.body) ||
+        name === 'require_content_consent';
       expect(RPC_CATALOG[name].consentGated).toBe(calls);
     });
 
