@@ -1,11 +1,11 @@
 # Backlog
 
 The ordered list of work for Early Letters. Format and rules: ADR 0011 (`docs/adr/0011-requirements-and-agent-workflow.md`).
-Window: 5 Oct 2026 to App Store submission on Mon 11 Jan 2027 (`docs/ROADMAP.md`, milestones M0 to M13). Last re-planned: 3 Oct 2026 (PRD.md 1.3: founder decisions of 3 Oct, Plus and family contributors at launch, individual publisher; TDD 01 to 10 findings folded in; decisions in `docs/DECISIONS.md`).
+Window: 5 Oct 2026 to App Store submission on Mon 11 Jan 2027 (`docs/ROADMAP.md`, milestones M0 to M13). Last re-planned: 3 Oct 2026 (PRD.md 1.3: founder decisions of 3 Oct, Plus and family contributors at launch, individual publisher; TDD 01 to 10 findings folded in; decisions in `docs/DECISIONS.md`). Reconciled 3 Oct 2026 with the founder brief of the same day (`docs/agents/BRIEF-2026-10-03.md`, all Decided), which wins where PRD 1.3 differs: no server of ours sees purchases (decision 3), Google sign-in at v1.0 (decision 4), co-parent only at v1.0 (decision 5), no audio upload, word highlighting or safety classifier at v1.0 (decision 9). Decision 4 also says "Passkeys can be added after sign-in" but not in which release, so passkey timing awaits the founder (BL-180). `develop` at 7cc43b1 records the brief as D-051 to D-067 in `docs/DECISIONS.md`.
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##; wins over A, B and C where they differ), `docs/prd/A-*.md` (A-REQ, A-NFR), `docs/prd/B-*.md` (B-REQ, B-NFR), `docs/prd/C-*.md` (C-REQ, C-NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ; classes C, S, A, T in `docs/legal/data-policy.md` section 2). If a PRD and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions are cited as D-### (`docs/DECISIONS.md`); design detail as TDD ## section (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-054) never change. New tasks from 3 Oct 2026 use BL-100 and up, grouped by milestone. **BL-055 to BL-099 are never used**, because TDD 03 and TDD 09 proposed numbers in that range that collide with each other; the appendix maps every TDD proposal (BL-M##, SB-##, BL-060 to BL-090, SEC-##, NEW-##, BL-R##, BL-Q##, BL-P##) to its BL id.
+**Numbering.** Existing ids (BL-001 to BL-054) never change. New tasks from 3 Oct 2026 use BL-100 and up, grouped by milestone. **BL-055 to BL-099 are never used**, because TDD 03 and TDD 09 proposed numbers in that range that collide with each other; the appendix maps every TDD proposal (BL-M##, SB-##, BL-060 to BL-090, SEC-##, NEW-##, BL-R##, BL-Q##, BL-P##) to its BL id. When a milestone block is full, a new task borrows the next free id from a later block and stays in its own milestone section: BL-123 and BL-124 are M0 tasks with M1 ids, because the M0 block (BL-100 to BL-109) is full.
 
 ---
 
@@ -65,17 +65,18 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 
 #### BL-103 App Store Connect setup: app record, bundle ids, subscriptions
 - Status: blocked (BL-100, BL-101, BL-102). Mode: human (agent prepares the checklist). Owner: founder, payments engineer. Milestone: M0, week 3. Size: M.
-- Satisfies: C-REQ-021, C-REQ-027, LEGAL-REQ-058, D-001, D-048.
-- Scope: production bundle id from `bundleId()` after BL-100 (suffixed ids for dev and preview, TDD 01 R-10); app record; subscription group "Plus"; `el_plus_monthly_399` (1-month free intro offer) and `el_plus_annual_2999` (2-month free intro offer); experiment arm products created but not offered (TDD 08 3.1); Billing Grace Period 16 days; Family Sharing off; territories = United States; In-App Purchase key (.p8) into Edge secrets; App Store Server Notifications V2 production and sandbox URLs pointing at `appstore-notifications` once BL-214 deploys to staging. Checklist in `docs/ops/` (product configuration check, TDD 08 F-16). (Source: TDD 08 BL-P02, ADR 0013.)
+- Satisfies: C-REQ-021, C-REQ-027, LEGAL-REQ-058, D-001, D-048; brief 3 Oct decision 3.
+- Scope: production bundle id from `bundleId()` after BL-100 (suffixed ids for dev and preview, TDD 01 R-10); app record; subscription group "Plus"; `el_plus_monthly_399` (1-month free intro offer) and `el_plus_annual_2999` (2-month free intro offer); experiment arm products created but not offered (TDD 08 3.1); Billing Grace Period 16 days; **Family Sharing on** for both products (brief decision 3: a co-parent gets Plus through Apple Family Sharing; this replaces "off" in ADR 0013 and TDD 08). Heads-up, not an open question: this step cannot be undone. Apple's App Store Connect help says that once Family Sharing is turned on for an In-App Purchase "you can't turn it off" (page "Turn on Family Sharing for In-App Purchases", read 3 Oct 2026). The brief decides it is on (D-053 on `develop`). Territories = United States. No In-App Purchase server key and no App Store Server Notifications URL: no server of ours sees purchases (brief decision 3). Confirm App Store Connect Sales and Trends subscription reports are readable from the founder's account, because Plus totals come only from them (BL-024). Checklist in `docs/ops/` (product configuration check, TDD 08 F-16). (Source: TDD 08 BL-P02, ADR 0013 as amended by brief decision 3.)
 
 #### BL-104 Counsel engagement and sign-off
 - Status: ready. Mode: human. Owner: founder. Milestone: M0 week 1 (engage), M13 (sign-off). Size: S (founder time), counsel L.
 - Satisfies: PRD 2.3 gate 3; LEGAL-REQ-044.
-- Scope: send the v1.0 scope (PRD 1.3 section 2) and the questions in Lawyer 1, Lawyer 2 and TDD 05 section 13 by week 1; full package (Terms 1.4.0, Privacy Policy 1.3.0, CHD notice 1.1.0, Subscription terms 1.3.0, in-app disclosures 1.3.0, claims registry) by week 5; sign-off by week 14. Includes the re-tier of web-page LEGAL-REQs (D-002) and D-042, D-021, D-022, D-039, D-049, D-050.
+- Scope: send the v1.0 scope (PRD 1.3 section 2) and the questions in Lawyer 1, Lawyer 2 and TDD 05 section 13 by week 1; full package (Terms 1.4.0, Privacy Policy 1.3.0, CHD notice 1.1.0, Subscription terms 1.3.0, in-app disclosures 1.3.0, claims registry) by week 5; sign-off by week 14. Includes the re-tier of web-page LEGAL-REQs (D-002) and D-042, D-021, D-022, D-039, D-049, D-050. Added 3 Oct: the auto-renewal question in BL-223 (notices and consent records with no purchase server) and the trademark question pack (BL-124, for BL-123).
 
 #### BL-105 Perinatal clinician review of safety copy
 - Status: ready. Mode: human. Owner: founder. Milestone: M0, answer by 20 Nov. Size: S.
 - Satisfies: D-034; LEGAL-REQ-015.
+- Scope (3 Oct): brief decision 9 moves the safety classifier and on-device support cards to v1.1 (BL-322), so v1.0 needs this review only for the wording of the static "If you are struggling" row (BL-158). The classifier review comes back with BL-322.
 
 #### BL-106 Vendor evidence and console security
 - Status: ready. Mode: human. Owner: founder. Milestone: M0, weeks 1 to 5. Size: S, recurring.
@@ -94,6 +95,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-109 Recruit the C1 beta families
 - Status: ready. Mode: human. Owner: founder. Milestone: M12, weeks 6 to 10. Size: S.
 - Satisfies: D-045; TDD 07 11.1 coverage list (two co-parent pairs, three grandparents in the app, two Hindi or code-switching speakers, one twins family, two VoiceOver or large-text users).
+- Scope (3 Oct): adjust the coverage list to v1.0 (brief decisions 5, 6 and 9): grandparents cannot join a book in v1.0, so they wait for v1.1 (BL-316); recruit speakers of the v1.0 letter languages instead of code-switching speakers (Hindi-English mode is v1.1).
 
 #### BL-005 Founder setup for the workflow
 - Status: ready. Mode: human. Owner: founder. Milestone: M1, week 1.
@@ -103,7 +105,19 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-053 Sign-in provider and email setup
 - Status: blocked (BL-100). Mode: human. Owner: founder, security engineer. Milestone: M0, weeks 2 to 3.
 - Satisfies: A-REQ-016, A-REQ-022, A-REQ-026, A-NFR-009, LEGAL-REQ-026.
-- Scope: custom SMTP on the domain with SPF, DKIM, DMARC; Apple Services ID and key with a named owner and rotation date; AASA file for universal links. Google client ids move to v1.1 (D-044). Secrets stay out of the repo. (Was needs-decision on company and domain; company is decided by D-004, the domain is BL-100.)
+- Scope: custom SMTP on the domain with SPF, DKIM, DMARC; Apple Services ID and key with a named owner and rotation date; AASA file for universal links (and `webcredentials` for passkeys, if BL-180 lands at v1.0). Google client ids for Sign in with Google at v1.0 (brief 3 Oct decision 4 supersedes D-044; used by BL-179). Secrets stay out of the repo. (Was needs-decision on company and domain; company is decided by D-004, the domain is BL-100.)
+
+#### BL-123 Trademark clearance for "Early Letters" [Critical]
+- Status: blocked (BL-124). Mode: human. Owner: founder, legal. Milestone: M0, send to counsel by week 3 (with BL-104); result before the store listing (BL-286). Size: S (founder time).
+- Satisfies: compliance register CR-122 (trademark not cleared; clearance before store submission).
+- Scope: the founder sends the question pack (BL-124) to counsel, alone or inside the BL-104 package; counsel decides how to clear the name and advises. The founder records the outcome in the compliance register (CR-122 evidence) and, if counsel advises any change, opens a decision entry before BL-286, because `packages/brand`, the bundle id (BL-103), the domains and the store name all carry the name. Agents never write a legal conclusion, a likelihood or a cost about the name. (CR-122 asked for clearance before the domain purchase too; the domains are already bought, brief decision 13, so the remaining gate is store submission.)
+- Done when: CR-122 no longer reads "Gap" and links the founder's record of counsel's answer.
+
+#### BL-124 Trademark question pack for counsel
+- Status: ready. Mode: agent. Owner: legal. Milestone: M0, week 2. Size: S.
+- Satisfies: compliance register CR-122; prepares BL-123.
+- Scope: a draft for counsel in `docs/legal/memos/` that states only facts from the repo, each with its source path: the marks in use (`brand.name`, `storeName`, `tagline` and the `printTitle` pattern in `packages/brand/index.ts`); the domains (brief decision 13); the publisher is an individual (D-004) with a possible later transfer to an organisation (D-004 point 5); US storefront only at launch (LEGAL-REQ-058), Android and printed books later (K-32); submission date (`docs/ROADMAP.md`). Then open questions for counsel: what a clearance should cover, which goods and services to consider, whether and when to file, what to do if a similar mark turns up, and whether the tagline or the print title need their own check. No legal conclusions, no likelihoods and no costs. Content rules apply.
+- Done when: the file exists, every fact cites a repo path, it contains questions only, and the founder can send it as written.
 
 ---
 
@@ -189,7 +203,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-113 Fix migration: client ids for children, due date, live books only [High]
 - Status: ready. Mode: agent (`approve-migration`). Owner: data architect. Milestone: M1, week 2. Depends on: BL-004. Size: S.
 - Satisfies: A-REQ-015, DATA-REQ-044, B-REQ-005, PRD-REQ-015 (shape only), D-038.
-- Scope: `create_child(p_id uuid, p_name, p_date_of_birth, p_due_date, p_first_run_batch boolean, p_client_created_at)` idempotent on `p_id`; check birth date or due date present; `entries_author_insert` also requires `child_is_live(child_id)`. Plus rules arrive in BL-213. (Source: TDD 02 M7 / SB-04, TDD 01 X-7.)
+- Scope: `create_child(p_id uuid, p_name, p_date_of_birth, p_due_date, p_first_run_batch boolean, p_client_created_at)` idempotent on `p_id`; check birth date or due date present; `entries_author_insert` also requires `child_is_live(child_id)`. No Plus rules on the server: brief 3 Oct decision 3 says server code does not enforce Plus (BL-213 superseded). Carrier of the removal: the pending migration `supabase/migrations/20261004000000_plus_on_device_only.sql`, on `develop` since 7cc43b1 (D-053), drops the server entitlement tables and functions and the Plus rule in `create_child`, and already takes a device id and a due date in `create_child`. Founder PR #32 (open) also edits these objects and adds client book time. Check both before starting and do only what is left. (Source: TDD 02 M7 / SB-04, TDD 01 X-7.)
 
 #### BL-114 Fix migration: server consent gates and anonymous guards [Critical]
 - Status: ready. Mode: agent (`approve-migration`). Owner: data architect, privacy engineer. Milestone: M1, week 2. Depends on: BL-004. Size: M.
@@ -321,7 +335,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-142 Transcription queue and voice-only save [Critical]
 - Status: blocked (BL-130, BL-141). Mode: agent. Owner: mobile engineer, speech engineer. Milestone: M3. Size: M.
 - Satisfies: PRD 7.4, A-REQ-030, LEGAL-REQ-015.
-- Scope: one job at a time, persisted status, resume after kill; a spoken letter saves with its audio before text exists and is shown as a voice letter until transcribed (TDD 03 OQ-4: kept local until transcribed, TDD 01 OQ-2); block Save on sample transcripts in release builds; on-device safety tier stored locally behind `safety_card_enabled` (D-034). (Source: TDD 03 BL-063, TDD 01 BL-M06.)
+- Scope: one job at a time, persisted status, resume after kill; a spoken letter saves with its audio before text exists and is shown as a voice letter until transcribed (TDD 03 OQ-4: kept local until transcribed, TDD 01 OQ-2); block Save on sample transcripts in release builds; no safety classifier runs in v1.0 (brief 3 Oct decision 9; the on-device tier returns with BL-322, behind `safety_card_enabled`). (Source: TDD 03 BL-063, TDD 01 BL-M06.)
 
 #### BL-143 Model manager [High]
 - Status: blocked (BL-022). Mode: agent plus device check. Owner: speech engineer. Milestone: M3. Size: M.
@@ -334,9 +348,10 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Scope: draft candidates, `stt_meta`, accepted and rejected `machine_edits`, author edit layer, `audio_sha256`; migration for `entries.alignment` (L4, final text only) and `audio_sha256` with classification comments; `book_entries` exposes `alignment` but never `stt_meta`; access tests. (Source: TDD 03 BL-066, C-1.)
 
 #### BL-145 Word alignment projection and quality gate [High]
-- Status: blocked (BL-141, BL-144). Mode: agent. Owner: speech engineer. Milestone: M3. Size: M.
+- Status: deferred (v1.1, BL-318). Mode: agent. Owner: speech engineer. Milestone: M3. Size: M.
 - Satisfies: ADR 0009, PRD-REQ-020.
 - Scope: pure projection of word timings through accepted edits onto `final_text` with a quality gate (word, sentence or none); Read together consumes `quality`; no raw transcript leak. (Source: TDD 03 BL-068.)
+- Deferred 3 Oct: its only consumer is word highlighting in Read together, which brief decision 9 moves to v1.1. Word timings are still captured (BL-141) and stored (BL-144) so v1.1 has them.
 
 #### BL-148 Author edits keep the version-replay invariant
 - Status: ready. Mode: agent. Owner: speech engineer. Milestone: M3. Size: S.
@@ -386,20 +401,37 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Satisfies: C-REQ-001 to C-REQ-007, C-REQ-010 to C-REQ-012, C-REQ-015, B-REQ-014, B-REQ-015, PRD-REQ-013, LEGAL-REQ-054, D-025.
 - Scope: pure planner in `packages/core` (cadence "a few evenings a week" default, 07:00 to 21:30, smart quiet, rotation across included children, month-age and birthday notes, hidden-book and due-date rules, DST); primed permission after the first letter (via BL-023); `expo-notifications` local scheduling; lock-screen names off by default from remote config with the Settings toggle (C-REQ-009 at v1.0); payloads carry no content. Tests BL-Q15 and BL-Q16. (Source: TDD 07 BL-Q15, BL-Q16.)
 
+#### BL-152 Store and site copy match the v1.0 scope [Critical]
+- Status: ready. Mode: agent. Owner: content. Milestone: M4, week 4 (before the website goes live). Size: S.
+- Satisfies: LEGAL-REQ-044, D-030; brief 3 Oct decisions 5, 6, 9 and 10 (D-055, D-056, D-059 and D-060 on `develop`).
+- Scope (re-checked against `develop` at 7cc43b1): commits 9be06db and a66376a already rewrote `packages/content/src/store.en.ts` and `site.en.ts` for co-parent only, no recording upload, no word highlight, the seven letter languages and no beta; each file's header comment cites D-055, D-059 and D-060. The line list this task first carried (marketing launch plan section 1.2, PR #38, line numbers at 3688796) no longer applies. What is left is a check pass, in the product voice, without adding new claims:
+  - Store line 52 and site line 33 (at 7cc43b1) say the co-parents' book "holds both your voices". With no audio upload in v1.0 (D-059), each phone plays only its own recordings, so the line may promise shared voices. Content decides the wording.
+  - Site lines 109 to 112 keep a `gift` block ("A gift from the grandparents") marked "Not on the v1.0 page". Nothing in this repo renders it at 7cc43b1, and the website is built in a separate thread (brief decision 13), so say in the PR body that it must stay off the v1.0 page.
+  - Read every other line once against the done-when.
+- Founder answers now on `develop` (they replace the two lines that waited here): the brief never names backup, but D-053 records that Plus gates only Read together after 3 free sessions per book and books for more children, and that the Terms must drop "encrypted backup"; D-059 records no audio upload in v1.0, and its effects answer D-033: recordings stay on the phone and in the person's own iPhone backup.
+- Done when: no line in `store.en.ts` or `site.en.ts` promises family contributors, shared voices, word highlighting, mixed-language letters, a backup run by us, cloud transcription or a beta; the content rules test passes; the PR lists every line changed, or says none needed a change.
+
+#### BL-153 In-app strings match the v1.0 scope
+- Status: ready. Mode: agent. Owner: content. Milestone: M4. Size: S.
+- Satisfies: LEGAL-REQ-044; brief 3 Oct decisions 5 and 9 (D-055 and D-059 on `develop`).
+- Scope (re-checked against `develop` at 7cc43b1): commits 9be06db and a66376a retired the recording-backup, backup-failed and cloud-transcription strings (see the "Retired 3 Oct 2026" note at the end of `packages/content/src/strings.en.ts`). Still there, at 7cc43b1 line numbers: 141 (invite body "Grandparents, aunts, uncles"), 397 to 398 (`familyBody`, `familyCta` "Invite family"), 565 (`firstGrandparentLetter`), 611 to 621 (`settings.backup.*`: "Encrypted backup", "Turn on backup", "Last backed up"), and 881 (`backupNotYet` "Backup arrives in a later update"). The file itself lists `settings.backup.*` and `backupNotYet` as still used by the recordings screen. For each: rewrite for v1.0, or move it into a clearly marked v1.1 group that no v1.0 screen imports (check `apps/mobile` usage and name any screen change needed for `mobile` in the PR body). Co-parent strings stay.
+- Done when: no string a v1.0 screen can show promises family contributors, a backup run by us or cloud transcription; the content rules test passes.
+
 #### BL-157 Lock-screen-safe notification copy
 - Status: ready. Mode: agent. Owner: content. Milestone: M4. Size: S.
 - Satisfies: D-025, C-REQ-009.
 - Scope: notification title and body variants without `{child}` for when names are hidden; Settings toggle label and help line; lock-screen length rules pass.
 
 #### BL-154 Read together free sessions per book
-- Status: blocked (BL-022, BL-036). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: S.
+- Status: done (commit 9be06db, merged in 7cc43b1; D-053 answers the Plus question). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: S. Depends on: BL-022, BL-036.
 - Satisfies: PRD-REQ-020, LEGAL-REQ-050, D-037.
 - Scope: count per book on the device, only when highlighted playback starts in try mode, limit from remote config; delete `FREE_READ_TOGETHER_SESSIONS`; single-recording playback never limited. (Source: TDD 01 BL-M13, TDD 08 C-3, TDD 07 BL-Q20.)
+- Done on `develop` (checked 3 Oct against 7cc43b1): D-053 records that Plus gates only Read together after 3 free sessions per book and books for more children. `apps/mobile/src/lib/read-together.ts` counts one session per book on the phone each time the Read together screen opens with letters on a free try (never under Plus; `apps/mobile/src/app/read-together.tsx`), takes the limit from remote config (which may only raise the default of 3), and `FREE_READ_TOGETHER_SESSIONS` is gone. Only the Read together screen calls the gate, so single-recording playback is never limited. So a session starts when Read together opens, not when word highlight begins (v1.1); the PRD-REQ-020 wording change is proposed to the founder.
 
 #### BL-160 Book and Read together release pass
-- Status: blocked (BL-145, BL-034). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: M.
-- Satisfies: B-REQ-005, C-REQ-010, C-REQ-011, ADR 0009.
-- Scope: month chapters and Before You; playback; Read together word highlight from `alignment` with the quality gate (sentence-level or plain playback fallback); quiet milestones inline; 60-letter chapter p95 500 ms.
+- Status: blocked (BL-034). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: M.
+- Satisfies: B-REQ-005, C-REQ-010, C-REQ-011.
+- Scope: month chapters and Before You; playback; Read together plays each letter in its author's voice without word highlight (brief 3 Oct decision 9; highlight from `alignment` moves to v1.1, BL-318, and ADR 0009 moves with it); quiet milestones inline; 60-letter chapter p95 500 ms.
 
 #### BL-156 Content and localisation debt
 - Status: ready. Mode: agent. Owner: content, design systems. Milestone: M4. Size: M.
@@ -408,13 +440,13 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 
 #### BL-158 Help: "If you are struggling" row
 - Status: ready. Mode: agent. Owner: content, mobile engineer. Milestone: M4. Size: S.
-- Satisfies: D-034, LEGAL-REQ-015.
-- Scope: a static, always-available row in Settings > Help with verified US resources (clinician-reviewed wording); the on-device card stays behind `safety_card_enabled`, off unless BL-105 signs off.
+- Satisfies: D-034, LEGAL-REQ-015; brief 3 Oct decision 9.
+- Scope: a static, always-available row in Settings > Help with verified US resources (clinician-reviewed wording, BL-105). Brief decision 9 moves the safety classifier and on-device support cards to v1.1 (BL-322); `safety_card_enabled` stays off in v1.0.
 
 #### BL-159 Settings information architecture
 - Status: blocked (BL-035). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: M.
 - Satisfies: C-REQ-016, LEGAL-REQ-008, K-13, K-17.
-- Scope: every row within 2 taps; Privacy rows (analytics, sensitive data, backup and shared voice, lock-screen names, audience); Help and Legal (About with the beta label, How transcription works, Support with content-free "Copy diagnostics", If you are struggling, Terms, Privacy Policy, CHD policy, Subscription terms, Subprocessors, Accessibility statement, Licences, 90-day pledge).
+- Scope: every row within 2 taps; Privacy rows (analytics, sensitive data, lock-screen names, audience; backup and shared voice rows wait for v1.1, brief 3 Oct decision 9); Help and Legal (About with the beta label, How transcription works, Support with content-free "Copy diagnostics", If you are struggling, Terms, Privacy Policy, CHD policy, Subscription terms, Subprocessors, Accessibility statement, Licences, 90-day pledge).
 
 ---
 
@@ -423,7 +455,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-050 Keep-the-book sheet with notice and terms
 - Status: blocked (BL-130). Mode: agent. Owner: mobile engineer. Milestone: M5.
 - Satisfies: A-REQ-013, A-REQ-014, A-REQ-031, A-REQ-034, LEGAL-REQ-001, LEGAL-REQ-045.
-- Scope: sheet after the first save with Apple, Email and Later (Google in v1.1, D-044); child-data notice and the Terms line with the 18+ confirmation above the buttons; record `age_attested` in the `terms` acceptance context; Later keeps everything working locally and the sheet returns at most once a day.
+- Scope: sheet after the first save with Apple, Google, Email and Later (brief 3 Oct decision 4 supersedes D-044; Google sign-in is BL-179); child-data notice and the Terms line with the 18+ confirmation above the buttons; record `age_attested` in the `terms` acceptance context; Later keeps everything working locally and the sheet returns at most once a day.
 
 #### BL-170 Secure session, deep links and invite tokens [High]
 - Status: blocked (BL-040). Mode: agent. Owner: mobile engineer, security engineer. Milestone: M5. Size: M.
@@ -433,7 +465,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-172 Auth configuration as code [High]
 - Status: blocked (BL-053). Mode: agent (dashboard values: human). Owner: security engineer. Milestone: M5. Size: S.
 - Satisfies: A-REQ-018, A-REQ-025, A-REQ-026, A-REQ-027, A-NFR-009.
-- Scope: JWT lifetime 15 minutes, OTP settings, SMTP, anonymous sign-in off in v1.0 (K-08 is v1.1), CAPTCHA decision, documented in `docs/security/`; residual OTP risk accepted per TDD 04 X-1. (Source: TDD 04 SEC-03.)
+- Scope: JWT lifetime 15 minutes, OTP settings, SMTP, providers Apple, Google and email (brief 3 Oct decision 4), anonymous sign-in off in v1.0 (K-08 is v1.1), CAPTCHA decision, documented in `docs/security/`; residual OTP risk accepted per TDD 04 X-1. (Source: TDD 04 SEC-03.)
 
 #### BL-171 Sign in with Apple and token capture [Critical]
 - Status: blocked (BL-053, BL-172). Mode: agent plus spike. Owner: security engineer. Milestone: M5. Size: M.
@@ -445,10 +477,23 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Satisfies: A-REQ-018, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-027, A-NFR-008.
 - Scope: one email with link and 6-digit code; scanner-safe page; resend limits; session tokens only in Keychain-backed storage.
 
+#### BL-179 Sign in with Google on iOS
+- Status: blocked (BL-053, BL-172). Mode: agent. Owner: security engineer, mobile engineer. Milestone: M5. Size: M.
+- Satisfies: A-REQ-017, LEGAL-REQ-055; brief 3 Oct decision 4 (supersedes D-044 and the v1.1 placement in PRD 2.1).
+- Scope: native Google sign-in into Supabase Auth's Google provider through a maintained, permissively licensed library (brief decisions 1 and coordination rules; verify the library and its API against the installed version, never from memory); client ids from BL-053; tokens only in Keychain-backed storage (BL-170); Sign in with Apple stays offered wherever Google is (LEGAL-REQ-055). Linking at v1.0: "Supabase Auth automatically links identities with the same email address to a single user", and it does not link to an unverified email (Supabase docs, "Identity Linking", read 3 Oct 2026), so Google, Apple and email link sign-ins with the same verified address already land in one account. Only manual linking ("Ways to sign in", off by default in Supabase) stays v1.1 (BL-302). Data-map row for any new identity column or vendor in the same PR.
+- Done when: a dev build signs in with Google and lands in the same account on a second sign-in; a test shows Google and email link with the same verified address land in one account, and an Apple private-relay address does not merge with them; the Keep-the-book sheet (BL-050) offers Apple, Google and Email; tests cover the cancel and error paths.
+
+#### BL-180 Add a passkey after sign-in
+- Status: needs-decision (passkeys at v1.0 or later?). Mode: agent plus spike. Owner: security engineer, mobile engineer. Milestone: M5. Depends on: BL-171, BL-051. Size: M.
+- Satisfies: brief 3 Oct decision 4 ("Passkeys can be added after sign-in"; PRD 2.2 lists passkeys out of scope, change proposed to the founder).
+- Scope: spike first and record the result in `docs/security/`: does Supabase Auth support passkeys (WebAuthn) as a sign-in factor (Unverified), and which maintained Expo-compatible library calls the iOS passkey APIs (Unverified). If a standard path exists, a signed-in user can add a passkey in Settings and later sign in with Face ID or Touch ID; `webcredentials` association on the domain (BL-053). If the only path needs our own server-side WebAuthn code, stop and set this task to needs-decision (brief decision 1, standard over custom).
+- Done when: the spike result is recorded, and either a dev build adds and uses a passkey, or the task carries the founder question.
+- Why the decision (3 Oct): brief decision 4 says "Passkeys can be added after sign-in", and D-054 on `develop` repeats it; neither says in which release. PRD 2.2 lists passkeys out of scope. If the founder says v1.0, this task becomes `blocked (BL-171, BL-051)` and the spike can start once both are done; if later, it moves to the v1.1 table.
+
 #### BL-054 Sensitive-data consent screen
 - Status: blocked (BL-050, BL-114). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M5.
 - Satisfies: PRD-REQ-002, LEGAL-REQ-006, A-REQ-034.
-- Scope: one plain screen after a new account is created and before the first sync, copy `sensitiveConsent.*` (counsel to approve; CHD notice HN-4). "Agree and sync" records `sensitive-data` accept; "Keep on this phone" records decline and keeps sync, backup and family off. Settings > Privacy shows `settings.privacy.sensitiveHelp` and allows withdrawal (modes in BL-240).
+- Scope: one plain screen after a new account is created and before the first sync, copy `sensitiveConsent.*` (counsel to approve; CHD notice HN-4). "Agree and sync" records `sensitive-data` accept; "Keep on this phone" records decline and keeps sync and family off (and backup, when it ships). Settings > Privacy shows `settings.privacy.sensitiveHelp` and allows withdrawal (modes in BL-240).
 
 #### BL-175 Visibility migration: `book_access`, approvals, leave and remove [Critical]
 - Status: blocked (BL-112). Mode: agent (`approve-migration`). Owner: data architect. Milestone: M5. Size: L.
@@ -486,46 +531,48 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Scope: Supabase CLI stack in CI for sync tests and a chaos suite (offline, kill, duplicate push); manual two-phone script (letter on one phone visible on the co-parent's in p95 5 s). (Source: TDD 02 SB-15.)
 
 #### BL-024 Server business aggregates
-- Status: ready (Plus totals added after BL-213). Mode: agent. Owner: analytics engineer, data architect. Milestone: M5 then M8.
-- Satisfies: PRD-REQ-017.
-- Scope: daily counts (accounts, books, letters saved, family letters, books per family bucket) and, after BL-213, trials, conversions, refunds and churn from `store_subscriptions` and `store_notifications`; counts only, cells under 10 suppressed; service role only with an access test. (Source: TDD 08 BL-024 extension.)
+- Status: ready. Mode: agent. Owner: analytics engineer, data architect. Milestone: M5.
+- Satisfies: PRD-REQ-017 (Plus part replaced by brief 3 Oct decision 3).
+- Scope: daily counts (accounts, books, letters saved, family letters, books per family bucket); counts only, cells under 10 suppressed; service role only with an access test. No Plus totals on our server: no server of ours sees purchases (brief decision 3), so trials, conversions, refunds and churn come only from App Store Connect reports (metric tree section 3.4, BZ-02 to BZ-05, in PR #40). (Source: TDD 08 BL-024 extension, narrowed 3 Oct.)
 
 ---
 
 ## M6. Family contributors in the app (weeks 7 to 10)
 
+Brief 3 Oct decision 5 (Decided): family at v1.0 is the co-parent only; other family members and the web page come later, and the app hides the contributor path while the database keeps the role. So BL-191, BL-192, BL-194 and BL-196 are deferred to v1.1 (BL-316). BL-190, BL-193 and BL-195 stay, because co-parent invites, leaving a shared book and the visibility matrix are needed at v1.0. This supersedes D-002 for v1.0.
+
 #### BL-190 Invite redemption function with rate limits [High]
 - Status: blocked (BL-112, BL-236). Mode: agent. Owner: data architect. Milestone: M6. Size: M.
 - Satisfies: B-NFR-004, A-REQ-028, B-NFR-002.
-- Scope: `invite-redeem` Edge Function (token in the body, never logged) with per-device and per-IP limits (10 code attempts per hour per device; global failed-attempt brake with alert) calling `accept_child_invite` as the user; refuses anonymous callers for any role in v1.0. (Source: TDD 02 SB-10.)
+- Scope: `invite-redeem` Edge Function (token in the body, never logged) with per-device and per-IP limits (10 code attempts per hour per device; global failed-attempt brake with alert) calling `accept_child_invite` as the user; refuses anonymous callers for any role in v1.0. v1.0 invites are co-parent invites (BL-176); the app never creates a Family invite (brief decision 5). (Source: TDD 02 SB-10.)
 
 #### BL-191 Contributor first run in the app
-- Status: blocked (BL-176, BL-190). Mode: agent. Owner: mobile engineer, content. Milestone: M6. Size: M.
+- Status: deferred (v1.1, BL-316). Mode: agent. Owner: mobile engineer, content. Milestone: M6. Size: M.
 - Satisfies: B-REQ-007, B-REQ-002, PRD-REQ-014, D-002.
 - Scope: "I was invited" path after the 18+ gate: sign in, accept, welcome (`family.contributorWelcome.*`), signature, first letter to the named child; contributors never create a child unless they start their own book; contributors never see the Plus sheet (D-036).
 
 #### BL-192 Approvals
-- Status: blocked (BL-175, BL-174). Mode: agent. Owner: mobile engineer. Milestone: M6. Size: M.
+- Status: deferred (v1.1, BL-316). Mode: agent. Owner: mobile engineer. Milestone: M6. Size: M.
 - Satisfies: B-REQ-009, B-REQ-023 (auto-add and thank you).
 - Scope: pending family letters for both parents (first action wins); Add to the book, Keep it aside, Send a thank you; per-member "Add family letters automatically"; contributor sees "With {inviter}" or "In the book".
 
 #### BL-193 Leave and remove with letter retention
 - Status: blocked (BL-175). Mode: agent. Owner: mobile engineer. Milestone: M6. Size: S.
 - Satisfies: B-REQ-010, B-REQ-016, LEGAL-REQ-032.
-- Scope: leave (keep or take my letters from the book) and remove a Family member (parents are equals and cannot remove each other); honest copy about copies already on other phones.
+- Scope: leave (keep or take my letters from the book) and remove a Family member (parents are equals and cannot remove each other); honest copy about copies already on other phones. v1.0 (brief 3 Oct decision 5): a co-parent leaving a shared book only; removing a Family member and the last-parent guard with contributors move to v1.1 (BL-316).
 
 #### BL-194 Family can read and per-child sharing
-- Status: blocked (BL-175). Mode: agent. Owner: mobile engineer. Milestone: M6. Size: S.
+- Status: deferred (v1.1, BL-316). Mode: agent. Owner: mobile engineer. Milestone: M6. Size: S.
 - Satisfies: B-REQ-011, PRD-REQ-014.
-- Scope: "Family can read {child}'s book" per book (private by default); invite names one child and says so; member list per child.
+- Scope: "Family can read {child}'s book" per book (private by default); invite names one child and says so; member list per child. (The v1.0 co-parent invite already names one child, BL-176.)
 
 #### BL-195 Visibility matrix and cross-child leak tests [Critical]
 - Status: blocked (BL-175, BL-116). Mode: agent. Owner: security engineer, QA engineer. Milestone: M6. Size: M.
 - Satisfies: LEGAL-REQ-024, B-NFR-003, B-REQ-006 to B-REQ-011, PRD-REQ-004, PRD-REQ-014.
-- Scope: generated matrix for every role and book state through RLS and through the pull RPCs; Nani invited to Asha's book only sees nothing of the sibling's book; contributor without "Family can read" sees only own letters. (Source: TDD 07 BL-Q12, TDD 04 SEC-04.)
+- Scope: generated matrix for every role and book state through RLS and through the pull RPCs; Nani invited to Asha's book only sees nothing of the sibling's book; contributor without "Family can read" sees only own letters. Contributor rows stay in the matrix at v1.0 because the database keeps the role even though the app hides it (brief 3 Oct decision 5). (Source: TDD 07 BL-Q12, TDD 04 SEC-04.)
 
 #### BL-196 Family-letter push without content
-- Status: blocked (BL-192). Mode: agent (APNs key: human). Owner: data architect, mobile engineer. Milestone: M6. Size: M.
+- Status: deferred (v1.1, BL-316). Mode: agent (APNs key: human). Owner: data architect, mobile engineer. Milestone: M6. Size: M.
 - Satisfies: C-REQ-007, LEGAL-REQ-054, C-NFR-005.
 - Scope: an Edge Function sends APNs pushes directly (no third-party push service) for a new family letter and "your letter is in the book". Server payloads never carry the child's name or letter text (PRD 7.10; DATA_CLASSIFICATION open issue 4); when lock-screen names are on, the app may render names locally (notification service extension or in-app), never the server. Payloads carry opaque ids for routing only; separate channel from reminders; data-map row for the APNs key and device tokens (L3). Content adds name-free push strings.
 
@@ -533,33 +580,35 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 
 ## M7. Shared voice (weeks 8 to 11; needs D-032)
 
+Brief 3 Oct decision 9 (Decided): no audio upload in v1.0, and family members hearing each other's recordings is v1.1. That answers D-032 for v1.0 with its alternative (a): letters reach the co-parent as text, and each recording plays on the phone that made it. Every task in this milestone is deferred to v1.1 (BL-315); BL-205 is superseded by the copy and policy tasks BL-152, BL-153, BL-224 and BL-246.
+
 #### BL-200 Audio key scheme and format
-- Status: needs-decision (D-032). Mode: pair. Owner: security engineer. Milestone: M7. Size: M.
+- Status: deferred (v1.1, BL-315). Mode: pair. Owner: security engineer. Milestone: M7. Size: M.
 - Satisfies: LEGAL-REQ-022(a) (counsel reading), ADR 0006 (v1.0 subset).
 - Scope: per-file AES-256-GCM on the phone (react-native-quick-crypto spike), file key wrapped by a server-held key through an Edge Function; `packages/crypto/FORMAT.md` versioned; known-answer tests and fuzz. Vault mode and per-child keys stay later. (Source: TDD 04 SEC-08 reduced, TDD 10 section 2.)
 
 #### BL-201 Audio blobs, bucket and upload policy
-- Status: blocked (BL-200, BL-213, BL-232). Mode: agent (`approve-migration`). Owner: data architect. Milestone: M7. Size: M.
+- Status: deferred (v1.1, BL-315). Mode: agent (`approve-migration`). Owner: data architect. Milestone: M7. Size: M.
 - Satisfies: C-NFR-008, DATA-REQ-047, D-032.
 - Scope: `audio_blobs` (path, size, sha256, wrapped file key), `entry-audio` bucket with path rules; signed upload URLs issued server-side only when the entry is in a shared book (Free) or `book_has_plus` (Plus); downloads of already uploaded audio never check entitlement. (Source: TDD 02 M12 reduced, TDD 08 BL-P09.)
 
 #### BL-202 Upload queue on the phone
-- Status: blocked (BL-201, BL-174). Mode: agent. Owner: mobile engineer. Milestone: M7. Size: M.
+- Status: deferred (v1.1, BL-315). Mode: agent. Owner: mobile engineer. Milestone: M7. Size: M.
 - Satisfies: PRD 7.3 (backed-up audio restore), D-032.
 - Scope: resumable, background-safe uploads after encryption; retries with backoff; state visible in Settings; never blocks recording or reading.
 
 #### BL-203 Member playback and deletion propagation
-- Status: blocked (BL-201). Mode: agent. Owner: data architect, mobile engineer. Milestone: M7. Size: M.
+- Status: deferred (v1.1, BL-315). Mode: agent. Owner: data architect, mobile engineer. Milestone: M7. Size: M.
 - Satisfies: B-REQ-011, LEGAL-REQ-032, PRD-REQ-014.
 - Scope: an Edge Function checks `book_access`, unwraps the file key and returns it with a short-lived URL; device cache with eviction; deleting a letter or leaving a book removes cached copies on next sync.
 
 #### BL-206 Wrap-key custody [High]
-- Status: blocked (BL-200). Mode: human plus agent. Owner: security engineer, founder. Milestone: M7. Size: S.
+- Status: deferred (v1.1, BL-315). Mode: human plus agent. Owner: security engineer, founder. Milestone: M7. Size: S.
 - Satisfies: LEGAL-REQ-023, LEGAL-REQ-040.
 - Scope: key only in Edge secrets, never in the database or its backups; sealed offline copy and yearly recovery drill; rotation runbook; every unwrap logged without content; kill switch `escrow_unwrap`. (Source: TDD 06 BL-R18, TDD 04 3.6.4.)
 
 #### BL-205 Shared-voice copy and legal alignment
-- Status: needs-decision (D-032). Mode: agent. Owner: content, legal. Milestone: M7. Size: S.
+- Status: superseded (by BL-152, BL-153, BL-224 and BL-246). Mode: agent. Owner: content, legal. Milestone: M7. Size: S.
 - Satisfies: K-21, K-33, LEGAL-REQ-044.
 - Scope: on approval, update the recordings claims in `packages/content` (Settings, store, site) and the Privacy Policy short version, section 4 and Terms 12.1 to say recordings of letters in a shared book upload, encrypted, so family can hear them.
 
@@ -567,74 +616,111 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 
 ## M8. Plus through the App Store (weeks 3 to 12)
 
+Brief 3 Oct decision 3 (Decided): StoreKit 2 with Apple's own subscription UI, restore and manage sheets, and the on-device entitlement check. No server of ours sees purchases; no RevenueCat; no App Store Server Notifications endpoint; server code does not enforce Plus; a co-parent gets Plus through Apple Family Sharing. Plus totals come from App Store Connect reports (BL-024, BL-253). So the server billing tasks (BL-211, BL-213, BL-214) are superseded, and the notice and consent tasks (BL-212, BL-217, BL-218) wait for the founder's answer in BL-223. This amends D-001 and ADR 0013 (server half). On `develop` since 7cc43b1: D-053 records decision 3, the pending migration `supabase/migrations/20261004000000_plus_on_device_only.sql` drops the server entitlement objects, and ADR 0013 is amended for the device (commit 9be06db).
+
 #### BL-036 Plan rules engine
 - Status: ready. Mode: agent. Owner: payments engineer. Milestone: M8, week 4. Size: M.
 - Satisfies: PRD-REQ-015, PRD-REQ-020, C-REQ-023, LEGAL-REQ-050, D-036, D-007, D-008.
 - Scope (extended 3 Oct): `packages/core/src/plan.ts` with `decide`, `planActive`, `FreeForever` and `GatedFeature` types (free-forever features cannot be gated at compile time), the TDD 08 2.3 truth table as fixtures and the three property tests; absorbs `canCreateBook` (first-run batch free, joined books never count, hidden books count). (Source: TDD 08 order 1.)
+- Inputs (3 Oct, brief decision 3): Plus comes only from this device's StoreKit entitlements, from the person's own subscription or through Family Sharing; there is no server plan state. A co-parent outside the purchaser's Apple family therefore does not inherit Plus (the PRD K-28 change and this consequence are listed for the founder). D-036's "no double offer" holds only where the other parent's Plus reaches this device through Family Sharing.
 
 #### BL-212 Notice windows as data
-- Status: ready. Mode: agent. Owner: payments engineer. Milestone: M8, week 5. Size: M.
+- Status: needs-decision (BL-223). Mode: agent. Owner: payments engineer. Milestone: M8, week 5. Size: M.
 - Satisfies: LEGAL-REQ-047, PRD-REQ-003, D-022.
 - Scope: `notice_windows` seed (the D-022 table) and a pure `scheduleFor(snapshot)` with tests N-1 to N-10 (1 March leap and non-leap, 31-day months, DST, trials of 31 and 32 days, cancel after scheduling, birthday inside the window). (Source: TDD 08 BL-P01.)
+- Why the decision (3 Oct): the windows were to be filled from server purchase snapshots, which brief decision 3 removes. If BL-223 chooses reminders on the device, the table and `scheduleFor` become pure code in `packages/core` fed by StoreKit dates on the phone, with no server seed; otherwise this task is superseded.
 
-#### BL-210 expo-iap spike on Expo SDK 57 [Critical]
+#### BL-223 Trial and renewal reminders with no purchase server
+- Status: needs-decision (drop the reminder promises, rely on Apple, or remind on the device? and what replaces server purchase consent records?). Mode: human. Owner: founder, legal. Milestone: M8, before the Terms go to counsel in week 5 (BL-104). Size: S (founder decision; counsel time not estimated).
+- Satisfies: LEGAL-REQ-047, LEGAL-REQ-049, PRD-REQ-003, C-REQ-024 to C-REQ-026; compliance register CR-050.
+- Scope: Terms 14.3 and 14.6 and the Subscription terms ("Reminders from us"; "send you a copy by email") promise email and in-app notices when a trial starts, before it ends, before an annual renewal, once a year and before a price change. LEGAL-REQ-047 builds those notices on our server from App Store Server Notifications, and LEGAL-REQ-049 reconciles purchase consent rows from them. Brief decision 3 removes both: no server of ours sees purchases. Options for the founder, with counsel:
+  - (a) Drop the promises we cannot keep. Counsel says what remains our own duty when Apple is the merchant of record (CR-050).
+  - (b) Rely on Apple's own notices. Verified for a price increase that needs consent: "the App Store informs the affected subscribers with an email, push notification, and in-app price consent sheet" (Apple StoreKit documentation, "Handling Subscriptions Billing", read 3 Oct 2026). Consent is needed only where the region requires it, when the increase is more than 50% and more than about US$5 per period (US$50 a year for annual plans), or after another increase in the past 12 months. Smaller increases are notified without consent: "Apple will automatically notify subscribers of the price increase with no additional request for consent", by email, push (if enabled) and in-app message (App Store Connect help, "Manage pricing for auto-renewable subscriptions", read 3 Oct 2026). Unverified: whether Apple sends any notice before a free trial ends or before a renewal of our plans. No Apple source was found on 3 Oct 2026; Apple's support page "Cancel a subscription from Apple" only tells people to cancel at least 24 hours before a trial ends, and PRD C 4.2 already marks Apple's trial notices as unverified. The renewal reminders by email and push in Apple's developer news of 27 Apr 2026 ("Now Available: Monthly Subscriptions with a 12-Month Commitment", read 3 Oct 2026) cover only that plan type, which is not available in the United States, so they do not apply to our plans.
+  - (c) Remind on the device: local notifications and in-app cards scheduled from the StoreKit 2 renewal data on the phone. No email; it reaches people only while the app is installed and notifications are allowed; whether `expo-iap` exposes the dates is Unverified (BL-210).
+  - Consent records: a `started` row written from the device at purchase start (our server then learns that a purchase began), or no server row at all. Counsel confirms either.
+- Same question as Q-003 in `docs/agents/DEBATES.md` on `develop` (open, needs counsel); ADR 0013 there lists LEGAL-REQ-047 and LEGAL-REQ-049 as gaps for the founder and counsel.
+- Done when: the founder's answer is recorded as a decision entry, with counsel's input, and BL-212, BL-217, BL-218 and BL-224 and the proposed LEGAL-REQ-047 and LEGAL-REQ-049 changes follow it.
+
+#### BL-226 Plus on the device: design note for decision 3
+- Status: done (commit 9be06db, merged in 7cc43b1; ADR 0013 as amended there is the design note). Mode: agent. Owner: payments engineer. Milestone: M8, week 3. Size: S.
+- Satisfies: ADR 0013, C-REQ-020, C-NFR-003, C-NFR-004, LEGAL-REQ-046, LEGAL-REQ-050; brief 3 Oct decision 3.
+- Scope: `docs/payments/PLUS_ON_DEVICE.md`, the design that replaces the server half of TDD 08 and ADR 0013: where Plus comes from (StoreKit 2 entitlements on the device, own or through Family Sharing); the states the app must handle (active, in trial, grace period, billing retry, expired, refunded or revoked) and what each gate in `packages/core/src/plan.ts` does in each; the offline cache rule; which TDD 08 sections and BL tasks decision 3 supersedes; a checklist of LEGAL-REQ-046 disclosures against Apple's own subscription view; the questions BL-210 must answer. Every StoreKit API named is marked Verified (with the Apple documentation page) or Unverified. Propose the ADR 0013 amendment text in the PR body; do not edit `plan.ts` (founder code-owned).
+- Done when: the note exists, every API claim is marked, and BL-210, BL-215 and BL-216 can cite it.
+- Done on `develop` (checked 3 Oct against 7cc43b1): `docs/adr/0013-apple-native-subscriptions.md`, amended in 9be06db, covers this scope in one place instead of a separate file: where Plus comes from (`Transaction.currentEntitlements`, own or through Family Sharing), the states (trial, active, grace, billing retry, expired, revoked) mapped by `planFromSnapshot` in `apps/mobile/src/lib/billing`, the offline cache, the TDD 08 sections it supersedes ("What changes elsewhere"), a requirements check that includes the pre-purchase disclosures, with V (verified) or U (unverified) marks on its API claims. BL-216 keeps the line-by-line LEGAL-REQ-046 check against Apple's view.
+
+#### BL-210 StoreKit 2 spike on Expo SDK 57 (expo-iap first) [Critical]
 - Status: blocked (BL-031, BL-103 for sandbox; the StoreKit configuration file works earlier). Mode: pair. Owner: payments engineer. Milestone: M8, week 3. Size: S.
-- Satisfies: ADR 0013.
-- Scope: `expo-iap` 5.8.x in a dev build: products load, purchase with `appAccountToken`, `currentEntitlementIOS`, `isEligibleForIntroOfferIOS`, `showManageSubscriptionsIOS`, `beginRefundRequestIOS`, transaction updates after a kill; record results in ADR 0013. Fallback per ADR 0013 if it fails.
+- Satisfies: ADR 0013; brief 3 Oct decision 3.
+- Scope (rewritten 3 Oct for brief decision 3): in a dev build, find the most standard way to reach StoreKit 2 from Expo SDK 57 for: Apple's own subscription view (`SubscriptionStoreView`, or the closest Apple-provided equivalent reachable from Expo); products load; purchase; current entitlements on the device, including family-shared transactions; transaction updates after a kill; intro-offer eligibility; Apple's restore, manage-subscription and refund sheets; the renewal dates BL-223 option (c) would need. Try `expo-iap` (5.8.x was the ADR 0013 candidate) first; which of these it exposes is Unverified. No `appAccountToken` binding and no server call. Record what each API returned in ADR 0013 (amended).
 
 #### BL-211 App Store Server API and JWS verification in Deno
-- Status: ready. Mode: agent. Owner: payments engineer. Milestone: M8, week 3. Size: S.
+- Status: superseded (by BL-210; brief 3 Oct decision 3, no server of ours sees purchases). Mode: agent. Owner: payments engineer. Milestone: M8, week 3. Size: S.
 - Satisfies: ADR 0013.
 - Scope: does `@apple/app-store-server-library` run in Supabase Edge Functions through `npm:`? If not, `jose` plus Apple Root CA G3 verification and an ES256 JWT client. Tests use generated test keys, never Apple's.
 
 #### BL-213 Billing migration and Plus rules on the server [Critical]
-- Status: blocked (BL-113, BL-114, BL-036). Mode: agent (`approve-migration`). Owner: data architect, payments engineer. Milestone: M8, week 6. Size: L.
+- Status: superseded (by BL-215 and BL-226; brief decision 3). Mode: agent (`approve-migration`). Owner: data architect, payments engineer. Milestone: M8, week 6. Size: L.
 - Satisfies: K-28, PRD-REQ-015, C-REQ-021, C-REQ-028, D-038.
 - Scope: `app_account_tokens`, `store_subscriptions` (one row per original transaction; 7-year ledger, pseudonymised at deletion), `store_notifications` (`notification_uuid` idempotency), `apply_store_transaction()`, `has_plus`, `book_has_plus`, `get_plan_state`, `my_app_account_token()`; `create_child` and `create_first_run_children` Plus rules; then `notice_schedule` with timestamps, `plan_cards`, `profiles.is_tester` and rule (d) for books made offline under Plus (D-038); DB-1 to DB-9 tests. Note 3 Oct: an uncommitted migration from the parallel data-architect session (`20261003010000_children_and_entitlements.sql`) already covers the first part; this task closes the rest. (Source: TDD 02 M9 / SB-11, TDD 08 order 5, TDD 07 BL-Q19, ADR 0013.)
+- Superseded 3 Oct: BL-036 absorbs the Plus rules on the device, BL-215 reads Plus from StoreKit and BL-226 (ADR 0013 as amended) holds the design. The objects listed above are dropped by `20261004000000_plus_on_device_only.sql` on `develop` (D-053).
 
 #### BL-214 App Store notifications endpoint, `sync_plan`, reconcile [Critical]
-- Status: blocked (BL-211, BL-213). Mode: agent. Owner: payments engineer. Milestone: M8, weeks 7 to 9. Size: L.
+- Status: superseded (by BL-215; BL-223 for notices). Mode: agent. Owner: payments engineer. Milestone: M8, weeks 7 to 9. Size: L.
 - Satisfies: C-NFR-002, C-REQ-027, C-REQ-029, LEGAL-REQ-049, PRD-REQ-003.
 - Scope: `appstore-notifications` (JWS verified, dedupe on `notificationUUID`, map by `appAccountToken`, re-read Get All Subscription Statuses, upsert, recompute notices, consent reconcile, logs without ids); `sync_plan()` RPC from the client's signed transaction; `plan-reconcile` hourly and nightly with Get Notification History; environment rule; replay suite W-1 to W-9 re-pointed to App Store payloads. (Source: TDD 08 BL-P03, ADR 0013.)
 
 #### BL-215 Mobile plan module
-- Status: blocked (BL-210, BL-214, BL-050). Mode: pair (adds a purchase SDK). Owner: payments engineer, mobile engineer. Milestone: M8, weeks 8 to 10. Size: M.
-- Satisfies: C-REQ-020, C-NFR-003, C-NFR-004, D-036, D-047.
-- Scope: `apps/mobile/src/lib/plan.ts`: configure only when signed in; purchase with `appAccountToken` and `finishTransaction` after server confirmation; restore with the D-047 rule; manage and refund; cache precedence (server, StoreKit, cache); replace the `hasPlus` and `isJoinedBook` stubs. (Source: TDD 08 BL-P04.)
+- Status: blocked (BL-210, BL-050). Mode: pair (adds a purchase SDK). Owner: payments engineer, mobile engineer. Milestone: M8, weeks 8 to 10. Size: M.
+- Satisfies: C-REQ-020, C-NFR-003, C-NFR-004, D-036; brief 3 Oct decision 3.
+- Scope (rewritten 3 Oct for brief decision 3): the plan module in `apps/mobile/src/lib/billing` (the path ADR 0013 names on `develop`; the module exists there since 7cc43b1, so check what is left before starting): purchase only when signed in (D-036, kept until the founder says otherwise: its two reasons, Plus held on our server and emailed notices, both change under decision 3); Plus comes only from StoreKit 2 on the device: current entitlements (own or family-shared) at launch and on every transaction update; finish each transaction after StoreKit verifies it on the device; restore, manage and refund through Apple's own sheets; cache the last known state for offline; replace the `hasPlus` and `isJoinedBook` stubs. No `appAccountToken`, no server confirmation and no server plan state. D-047 no longer applies, because no server binds a subscription to one of our accounts. (Source: TDD 08 BL-P04, amended.)
 
 #### BL-216 Plus sheet [High]
 - Status: blocked (BL-036, BL-215). Mode: agent. Owner: payments engineer, design systems. Milestone: M8, week 10. Size: M.
 - Satisfies: C-REQ-022, C-REQ-023, LEGAL-REQ-046, C-NFR-006, C-NFR-007.
-- Scope: TDD 08 section 6 rules (no preselection, eligibility from the store, disclosures above the button at AX5, no urgency, no hardcoded prices, never on quiet surfaces); delete `plus-gate.tsx` and the `onContinueDev` bypass; CI bundle grep fails on any dev bypass in production. (Source: TDD 08 BL-P05, C-9; TDD 07 BL-Q17.)
+- Scope: Apple's own subscription view from BL-210 (brief 3 Oct decision 3) with our header that says what Plus includes; check each LEGAL-REQ-046 disclosure against what Apple's view shows and add any that is missing in our header, above the button, readable at AX5; TDD 08 section 6 rules (no preselection, eligibility from the store, no urgency, no hardcoded prices, never on quiet surfaces); never offered when this device's Apple Account already has Plus, own or family-shared (D-036); delete `plus-gate.tsx` and the `onContinueDev` bypass; CI bundle grep fails on any dev bypass in production. (Source: TDD 08 BL-P05, C-9; TDD 07 BL-Q17.)
 
 #### BL-217 Purchase consent records
-- Status: blocked (BL-214). Mode: agent. Owner: payments engineer. Milestone: M8. Size: S.
+- Status: needs-decision (BL-223). Mode: agent. Owner: payments engineer. Milestone: M8. Size: S.
 - Satisfies: LEGAL-REQ-049, D-049. (Source: TDD 08 BL-P06.)
+- Why the decision (3 Oct): LEGAL-REQ-049 matches a `completed` row to the App Store notification, which brief decision 3 removes. BL-223 decides what replaces it.
 
 #### BL-218 Notice scheduler and emails [Critical]
-- Status: blocked (BL-212, BL-214, BL-053). Mode: agent. Owner: payments engineer, content. Milestone: M8, weeks 9 to 12. Size: L.
+- Status: needs-decision (BL-223). Mode: agent. Owner: payments engineer, content. Milestone: M8, weeks 9 to 12. Size: L.
 - Satisfies: PRD-REQ-003, C-REQ-024 to C-REQ-026, LEGAL-REQ-047, LEGAL-REQ-053, LEGAL-REQ-054.
 - Scope: pg_cron every 15 minutes; transactional templates without child names or promotion, with date, price string, cancel-by date (US Pacific in email, OQ-4) and cancel instructions; in-app cards; one push only for the final trial notice; hard-window refusal that pages the founder; the year-long clock test gates release. (Source: TDD 08 BL-P07, TDD 05 NEW-18, TDD 07 BL-Q18.)
+- Why the decision (3 Oct): this server scheduler cannot see trials or renewals once no server of ours sees purchases (brief decision 3). BL-223 decides whether it is replaced by reminders on the device, by Apple's own notices, or dropped.
 
 #### BL-219 Settings > Plan
 - Status: blocked (BL-215). Mode: agent. Owner: mobile engineer. Milestone: M8. Size: M.
 - Satisfies: C-REQ-016, LEGAL-REQ-048, C-REQ-029.
-- Scope: status and dates, "Plus is on for {child}'s book" coverage line, Manage or cancel in one tap, Restore, Request a refund; deleting the app does not cancel (said plainly). (Source: TDD 08 BL-P08.)
+- Scope: status and dates from StoreKit on the device; a coverage line that says Plus comes with this Apple Account, from the person's own subscription or through Family Sharing (brief 3 Oct decision 3; it no longer covers a book through our server); Manage or cancel in one tap, Restore, Request a refund; deleting the app does not cancel (said plainly). (Source: TDD 08 BL-P08.)
 
 #### BL-220 Account deletion billing step
-- Status: blocked (BL-213, BL-234). Mode: agent. Owner: payments engineer. Milestone: M8. Size: S.
+- Status: blocked (BL-234). Mode: agent. Owner: payments engineer. Milestone: M8. Size: S.
 - Satisfies: C-REQ-019, LEGAL-REQ-029.
-- Scope: billing notice and Manage link before the final confirm; at hard delete remove `app_account_tokens`, set `store_subscriptions.profile_id` null and pseudonymise consent rows; no third-party call (ADR 0013). (Source: TDD 08 BL-P10.)
+- Scope: billing notice and Manage link before the final confirm (deleting the account does not cancel the Apple subscription); no server billing rows exist to remove (brief 3 Oct decision 3; `20261004000000_plus_on_device_only.sql` on `develop` drops the ledger tables, D-053); purchase consent rows, if BL-223 keeps any, are pseudonymised; no third-party call (ADR 0013). (Source: TDD 08 BL-P10, amended.)
 
 #### BL-221 Keep-and-leave end-to-end run [High]
 - Status: blocked (BL-215, BL-216, BL-275). Mode: agent. Owner: QA engineer. Milestone: M8. Size: M.
 - Satisfies: LEGAL-REQ-050, C-REQ-028, C-NFR-004.
-- Scope: Maestro run with the App Store and entitlement hosts blocked and a lapsed fixture: write, read, play, export and play shared audio work; two books writable; a third offers Plus. (Source: TDD 08 BL-P11.)
+- Scope: Maestro run with the App Store and entitlement hosts blocked and a lapsed fixture: write, read, play and export work; two books writable; a third offers Plus. (No shared audio at v1.0, brief 3 Oct decision 9.) (Source: TDD 08 BL-P11.)
 
 #### BL-222 Sandbox checklist on device
-- Status: blocked (BL-215, BL-218). Mode: human. Owner: founder, payments engineer. Milestone: M8, weeks 11 to 12; every build that changes purchase code. Size: S.
+- Status: blocked (BL-215, BL-216). Mode: human. Owner: founder, payments engineer. Milestone: M8, weeks 11 to 12; every build that changes purchase code. Size: S.
 - Satisfies: C-NFR-002, C-NFR-003, C-REQ-020, C-REQ-027, C-REQ-029, LEGAL-REQ-048.
-- Scope: S-1 to S-10 from TDD 08 9.1 with sandbox Apple Accounts against staging; signed evidence in `docs/qa/evidence/`.
+- Scope: S-1 to S-10 from TDD 08 9.1 with sandbox Apple Accounts, without the server steps (brief 3 Oct decision 3), plus a Family Sharing case if Apple's sandbox supports it (Unverified); signed evidence in `docs/qa/evidence/`.
+
+#### BL-224 Terms and Subscription terms match decision 3 and the v1.0 scope
+- Status: ready. Mode: agent. Owner: legal. Milestone: M8, before the counsel package in week 5 (BL-104). Size: S.
+- Satisfies: LEGAL-REQ-044; brief 3 Oct decisions 3, 5 and 9 (D-053, D-055 and D-059 on `develop`).
+- Scope: draft-for-counsel edits, with version bumps and change-log lines per `docs/legal/POLICY_VERSIONING.md`, in `docs/legal/terms-of-service.md` and `subscription-terms.md`: 12.1 (recordings leave the phone only through backup, which is not in v1.0; the D-032 counsel note is answered by decision 9); 14.1 and the Subscription terms feature list (D-053 on `develop`: Terms 14.1 and the Subscription Terms must drop "encrypted backup" and "extra themes" before publication, and Plus gates only Read together after 3 free sessions per book and books for more children); 14.11 and "If Plus ends" (no backed-up recordings at v1.0); 14.12 (Family Sharing is on, so Plus reaches the family members Apple's Family Sharing includes, instead of covering the co-parent through our server; decision 3); any family-contributor lines (co-parent only, decision 5). 14.3, 14.6, 14.8 and "Reminders from us" get a counsel note pointing at BL-223 and change only after its answer. Counsel notes stay questions, never conclusions.
+- Done when: neither draft promises backup, extra themes, server-side Plus coverage or family contributors at v1.0; the reminder lines carry the BL-223 note; versions and change logs are updated; content rules pass.
+
+#### BL-225 Purchase data in the data policy and privacy labels match decision 3
+- Status: ready. Mode: agent. Owner: privacy engineer, legal. Milestone: M8. Size: S.
+- Satisfies: LEGAL-REQ-041, LEGAL-REQ-042, DATA-REQ-001; brief 3 Oct decision 3.
+- Scope: `docs/legal/data-policy.md` still lists `app_account_tokens`, the `store_subscriptions` purchase ledger (7 years) and App Store transaction status held on our server; `docs/legal/app-store-privacy-labels.md` declares Purchases as linked because "entitlements are mapped to accounts and books on our server". Brief decision 3 removes all of that, and so does `develop`: the pending migration `supabase/migrations/20261004000000_plus_on_device_only.sql` (on `develop` since 7cc43b1, D-053) drops those tables and functions. Describe the schema after that migration. Update both documents to what the app does at v1.0 (StoreKit on the device; analytics purchase events only with consent), and line them up with `docs/legal/data-map.yaml` once PR #37 merges. Where the right privacy-label answer is a judgement call, write the question for counsel instead of a conclusion.
+- Done when: neither document describes server-side purchase records; the label rows and the data-map rows agree; the change-log lines name brief decision 3.
 
 ---
 
@@ -688,6 +774,12 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Satisfies: LEGAL-REQ-042, LEGAL-REQ-043.
 - Scope: `PrivacyInfo.xcprivacy` and the App Store label answers generated per build with an evidence hash; release script fails on drift. (Source: TDD 05 NEW-04.)
 
+#### BL-246 Privacy Policy and subprocessors match the v1.0 scope
+- Status: ready. Mode: agent. Owner: legal. Milestone: M9, before the counsel package in week 5 (BL-104). Size: M.
+- Satisfies: LEGAL-REQ-041, LEGAL-REQ-044; brief 3 Oct decisions 3, 5 and 9.
+- Scope: draft-for-counsel edits with a version bump and change-log line in `docs/legal/privacy-policy.md` and `subprocessors.md` (line numbers on `develop` at 3688796): purchases (the subprocessors row for Apple names the App Store Server API and Server Notifications; no server of ours sees purchases, decision 3); recording backup and its keys (policy lines 22, 69, 117, 129 and 155; no audio upload at v1.0, decision 9); family contributors and web contributions (lines 38, 63, 90, 183 and 207; co-parent only, decision 5); support cards (lines 67, 94, 170 and 219, and CN-10; the classifier is v1.1, decision 9, and v1.0 has a static resources row). Coordinate with PR #37, which also edits `privacy-policy.md` (its version header). Counsel notes stay questions, never conclusions.
+- Done when: neither document describes server purchase data, recording backup, family contributors or support cards as part of v1.0; versions and change logs are updated; content rules pass.
+
 #### BL-241 Security programme documents and runbooks
 - Status: ready. Mode: agent. Owner: security engineer. Milestone: M9. Size: S.
 - Satisfies: LEGAL-REQ-028, LEGAL-REQ-039, LEGAL-REQ-040.
@@ -735,6 +827,13 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Status: ready (package exists with 39 tests; this task closes the gaps). Mode: agent. Owner: analytics engineer. Milestone: M10.
 - Satisfies: LEGAL-REQ-003, LEGAL-REQ-017, LEGAL-REQ-016, A-NFR-012, B-NFR-001, C-NFR-005, C-REQ-034, PRD-REQ-016, PRD-REQ-018.
 - Scope: confirm the full product catalogue (PRD.md K-01) and add purchase and family events from TDD 08 section 12 and TDD 03 4.5; never send goal keys (TDD 05 X-23); children only as ordinals and `child_count_bucket`; every property L2 in the data map.
+
+#### BL-253 Tracking plan: Plus totals from App Store Connect only
+- Status: done (commit a66376a, merged in 7cc43b1; TRACKING_PLAN draft 2). Mode: agent. Owner: analytics engineer. Milestone: M10. Size: S.
+- Satisfies: PRD-REQ-017 (Plus part replaced by brief 3 Oct decision 3), D-003.
+- Scope: `docs/analytics/TRACKING_PLAN.md` still names RevenueCat and a server purchase ledger as the source of trials, conversions, renewals, cancellations and refunds (section 0 items 4 and 5, the 1.2 source codes and row 7, the section 2 billing row, the section 4 Plus row, 6.2 "RevenueCat ids", 8.3 pricing test arm). Brief decision 3 removes both. Replace them with App Store Connect reports and the device purchase events among consenters, following the metric tree's section 3.4 and its item R-3 (PR #40). Do not add any per-user join between App Store data and our accounts.
+- Done when: the tracking plan names no RevenueCat id or server purchase ledger; every Plus metric cites an App Store Connect report or is marked device-only; analytics tests still pass.
+- Done on `develop` (checked 3 Oct against 7cc43b1): `docs/analytics/TRACKING_PLAN.md` draft 2 (a66376a) names RevenueCat only as not used and a server purchase ledger only as something that does not exist; the trial-to-paid row cites App Store Connect for money and device events for offer views, and the billing lifecycle row cites App Store Connect reports. CI at 7cc43b1 passes "tests and content rules", which runs the analytics suite.
 
 #### BL-021 Crash and log scrubber
 - Status: ready. Mode: agent. Owner: analytics engineer. Milestone: M10. Depends on: BL-020.
@@ -864,7 +963,7 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 #### BL-284 Durability drill
 - Status: blocked (BL-150, BL-174). Mode: human. Owner: founder, QA engineer. Milestone: M12, every release candidate. Size: S.
 - Satisfies: D-033, PRD 7.5.
-- Scope: iCloud device backup then restore to a second phone; export ZIP then re-read; sign in on a new phone and re-download text (and shared audio if D-032).
+- Scope: iCloud device backup then restore to a second phone; export ZIP then re-read; sign in on a new phone and re-download text (no audio upload at v1.0, brief 3 Oct decision 9).
 
 #### BL-283 Release engineering and the founder checklist
 - Status: blocked (BL-275). Mode: agent. Owner: QA engineer. Size: M.
@@ -876,9 +975,9 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 - Scope: Android build in CI and the small parity fixes (`haptics.android.ts`, BackHandler in Listen, audio mode); not shipped. (Source: TDD 01 BL-M20.)
 
 #### BL-286 Store listing and submission
-- Status: blocked (BL-104, BL-231, BL-280 exit). Mode: human. Owner: founder, content. Milestone: M13, weeks 14 to 15. Size: M.
+- Status: blocked (BL-104, BL-123, BL-152, BL-231, BL-280 exit). Mode: human. Owner: founder, content. Milestone: M13, weeks 14 to 15. Size: M.
 - Satisfies: LEGAL-REQ-041 to LEGAL-REQ-045, LEGAL-REQ-058, D-030.
-- Scope: listing text (store beta line per D-030), screenshots, Lifestyle category, privacy labels entered with evidence, review notes, products attached to the version, territories = United States; submit Mon 11 Jan 2027.
+- Scope: listing text with no beta line (brief 3 Oct decision 10 settles D-030) and only v1.0 features (BL-152), screenshots, Lifestyle category, privacy labels entered with evidence, review notes, products attached to the version, territories = United States; submit Mon 11 Jan 2027.
 
 ---
 
@@ -888,7 +987,7 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 |---|---|---|---|
 | BL-300 | Web contribution page (`apps/web`): anonymous identity at Send, contributor gateway, return links, browser audio encryption, page CSP and headers, Playwright suite | B-REQ-008, B-NFR-005, PRD-REQ-007, K-08, LEGAL-REQ-005, -010, -035 | TDD 02 SB-19, TDD 04 task 22, TDD 07 BL-Q13 |
 | BL-301 | Hindi invite messages and Hindi web page | B-REQ-022 | B |
-| BL-302 | Google sign-in on iOS and account linking | A-REQ-017, A-REQ-019 | TDD 04 task 13, D-044 |
+| BL-302 | Manual account linking between sign-in methods ("Ways to sign in"); Google sign-in itself moved to v1.0 as BL-179 (brief 3 Oct decision 4), and same-email automatic linking already works at v1.0 (BL-179) | A-REQ-019 | TDD 04 task 13, D-044 |
 | BL-303 | 4-story intro behind the remote variant switch | A-REQ-003 to A-REQ-011 | BL-041, D-043 |
 | BL-304 | AI gateway: server transcription with consent | LEGAL-REQ-004, -005, -018 to -020, -040 | TDD 03 BL-070, TDD 07 BL-Q24 |
 | BL-305 | Name check (say the name three times) | B-REQ-017 | TDD 03 BL-071 |
@@ -901,10 +1000,14 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 | BL-312 | Load test at 2x the 100k targets (before 25k families) | PRD 7.8 | TDD 02 SB-22 |
 | BL-313 | External penetration test (before the public link, paid marketing or 1k families) | LEGAL-REQ-024 | TDD 04 SEC-15 |
 | BL-314 | Photos under per-book keys; optional Face ID lock | TDD 04 X-5 | TDD 04 task 28 |
+| BL-315 | Shared voice: encrypted audio upload, member playback, wrap-key custody (was BL-200 to BL-203 and BL-206) | C-NFR-008, DATA-REQ-047, B-REQ-011, LEGAL-REQ-023 | Brief 3 Oct decision 9; D-032 design |
+| BL-316 | Family contributors in the app: contributor first run, approvals, Family can read, removing a member, family-letter push (was BL-191, BL-192, BL-194, BL-196 and part of BL-193) | B-REQ-007, B-REQ-009 to B-REQ-011, C-REQ-007, PRD-REQ-014 | Brief 3 Oct decision 5; D-002 |
 | BL-317 | Second-provider copy of backup ciphertext (7-day versioning at most) | DATA-REQ-030 | TDD 06 BL-R15, TDD 05 X-16 |
+| BL-318 | Read together word highlighting: alignment projection, quality gate and highlight (was BL-145 and the highlight part of BL-160) | PRD-REQ-020, ADR 0009 | Brief 3 Oct decision 9; TDD 03 BL-068 |
 | BL-319 | Nightly perf and concurrency runs; analytics additions; monthly cost sheet | PRD 7.8 | TDD 06 BL-R03, R04, R14, R17 |
 | BL-320 | P1 product items: sealed letters, multi-book invite picker, merge books, themes, author and child photos, reminder back-off | B-REQ-018 to B-REQ-024, C-REQ-008 | B, C |
 | BL-321 | Hindi app UI (P2) | B-REQ-025, A-NFR-014 | K-24 |
+| BL-322 | On-device safety classifier and support cards, only with a clinician's written sign-off (BL-105) | LEGAL-REQ-015 | Brief 3 Oct decision 9; D-034 |
 
 Printed books stay a future launch (K-32; ADR 0007 print half). Beta label removal happens only when the founder ends the beta (K-13): one release removes `settings.about.beta.*`, any store beta lines and Terms 16.4.
 
@@ -919,11 +1022,11 @@ Every task id proposed in TDD 01 to 09 maps to exactly one BL id (or is marked n
 | 01 (BL-M##) | M01 to BL-121; M02 to BL-111; M03 to BL-037; M04 to BL-040; M05 to BL-130; M06 to BL-142; M07 to BL-136; M08 to BL-034; M09 to BL-022; M10 to BL-031; M11 to BL-250; M12 to BL-156; M13 to BL-154; M14 to BL-170; M15 to BL-134; M16 to BL-275 + BL-276; M17 to BL-150; M18 to BL-044; M19 to BL-173 + BL-174 (per D-023); M20 to BL-288 |
 | 02 (SB-##, M#) | SB-01 to BL-173; SB-02 (M5) to BL-112; SB-03 (M6) to BL-175; SB-04 (M7) to BL-113; SB-05 (M8) to BL-114; SB-06 to BL-116; SB-07 to BL-173 (pull parity; Sync Streams only if PowerSync is chosen); SB-08 to BL-174; SB-09 (M10) to BL-236 + BL-022; SB-10 to BL-190; SB-11 (M9) to BL-213; SB-12 to BL-214 + BL-218; SB-13 to BL-234; SB-14 to BL-107; SB-15 to BL-177; SB-16 to BL-282; SB-17 (M11) to BL-178; SB-18 (M12) to BL-200 to BL-203 (reduced) + BL-306; SB-19 (M13) to BL-300; SB-20 to BL-247; SB-21 to BL-309; SB-22 to BL-312 |
 | 03 (BL-060 to BL-071) | 060 to BL-130; 061 to BL-140; 062 to BL-141; 063 to BL-142; 064 to BL-120; 065 to BL-143; 066 to BL-144; 067 to BL-146; 068 to BL-145; 069 to BL-147; 070 to BL-304; 071 to BL-305 |
-| 04 (SEC-##, order #) | SEC-01 to BL-106; SEC-02 to BL-106 + BL-122; SEC-03 to BL-172; SEC-04 to BL-116 + BL-195; SEC-05 to BL-115 (pepper) + BL-236 (tables); SEC-06 to BL-248; SEC-07 to BL-249; SEC-08 to BL-200; SEC-09 to BL-306; SEC-10 to BL-237; SEC-11 to BL-245; SEC-12 to BL-117; SEC-13 to BL-239; SEC-14 to BL-241; SEC-15 to BL-313; SEC-20 to BL-241; order 5 to BL-112; 6 to BL-114; 8 to BL-031; 9 to BL-037; 11 to BL-170; 12 to BL-171; 13 to BL-302; 19 to 21 to BL-306 (BL-200, BL-206 for the v1.0 subset); 22 to BL-300; 28 to BL-314 |
+| 04 (SEC-##, order #) | SEC-01 to BL-106; SEC-02 to BL-106 + BL-122; SEC-03 to BL-172; SEC-04 to BL-116 + BL-195; SEC-05 to BL-115 (pepper) + BL-236 (tables); SEC-06 to BL-248; SEC-07 to BL-249; SEC-08 to BL-200; SEC-09 to BL-306; SEC-10 to BL-237; SEC-11 to BL-245; SEC-12 to BL-117; SEC-13 to BL-239; SEC-14 to BL-241; SEC-15 to BL-313; SEC-20 to BL-241; order 5 to BL-112; 6 to BL-114; 8 to BL-031; 9 to BL-037; 11 to BL-170; 12 to BL-171; 13 to BL-179 (Google sign-in, v1.0) + BL-302 (linking); 19 to 21 to BL-306 (BL-200, BL-206 for the v1.0 subset); 22 to BL-300; 28 to BL-314 |
 | 05 (NEW-##) | 01 to BL-115; 02 to BL-114; 03 to BL-016; 04 to BL-231; 05 to BL-232; 06 to BL-234; 07 to BL-235; 08 to BL-240; 09 to BL-150; 10 to BL-309; 11 to BL-237; 12 to BL-171; 13 to BL-173 (n/a if PowerSync is not used); 14 to BL-243 (v1.0 static) + BL-310; 15 to BL-239; 16 to BL-238; 17 to BL-117; 18 to BL-218; 19 to BL-118; 20 to BL-106 |
 | 06 (BL-R##) | R01 and R02 to BL-289; R03 and R04 to BL-319; R05 and R06 to BL-239; R07 to BL-244; R08 to BL-242; R09 to BL-107; R10 to BL-173 (restore epoch) + BL-247 (drill); R11 to BL-282; R12 n/a (PowerSync client load harness; only if PowerSync is chosen, then BL-282); R13 to BL-044; R14 to BL-319; R15 to BL-317; R16 to BL-241; R17 to BL-319; R18 to BL-206 |
 | 07 (BL-Q##) | Q01 to BL-110; Q02 to BL-120; Q03 to BL-239; Q04 to BL-119; Q05 to BL-118; Q06 to BL-117; Q07 to BL-239; Q08 to BL-278; Q09 to BL-116; Q10 to BL-114; Q11 to BL-174; Q12 to BL-195; Q13 to BL-300; Q14 to BL-173 (pull parity); Q15 and Q16 to BL-151; Q17 to BL-216; Q18 to BL-218 + BL-214; Q19 to BL-213; Q20 to BL-154; Q21 to BL-150; Q22 to BL-234 + BL-238; Q23 to BL-279; Q24 to BL-304; Q25 to BL-275; Q26 to BL-276; Q27 to BL-277; Q28 to BL-004; Q29 to BL-280; Q30 to BL-135 |
 | 08 (BL-P##) | BL-036 extension to BL-036; P01 to BL-212; P02 to BL-103; P03 to BL-214; P04 to BL-215; P05 to BL-216; P06 to BL-217; P07 to BL-218; P08 to BL-219; P09 to BL-201; P10 to BL-220; P11 to BL-221; P12 to P14 to BL-308; P15 to BL-311 |
 | 09 (BL-070 to BL-090) | 070 to BL-255; 071 to BL-256; 072 to BL-257; 073 to BL-258; 074 to BL-259; 075 to BL-260; 076 to BL-261; 077 to BL-262; 078 to BL-263; 079 to BL-264; 080 to BL-265; 081 to BL-266; 082 to BL-267; 083 to BL-270; 084 to BL-271; 085 to BL-156; 086 to BL-268; 087 to BL-269; 088 to BL-279; 089 to BL-273; 090 to BL-272 |
 
-Unused numbers inside the blocks (for example BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318) are free for splits inside their milestone.
+Unused numbers inside the blocks (for example BL-125 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-155, BL-161 to BL-169, BL-181 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-227 to BL-230, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299) are free for splits inside their milestone. BL-123 and BL-124 sit in M0 because the M0 block (BL-100 to BL-109) is full; the next new v1.1 id is BL-323.
