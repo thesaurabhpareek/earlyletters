@@ -27,8 +27,8 @@ One manifest per environment lists every available pack and model. Proposed shap
       "version": "1.0.0",
       "engine_version": 3,
       "files": [
-        { "path": "pt/1.0.0/rules.json", "bytes": 48213, "sha256": "<64 hex>" },
-        { "path": "pt/1.0.0/model.bin", "bytes": 190000000, "sha256": "<64 hex>" }
+        { "path": "f/<sha256 of rules.json>", "bytes": 48213, "sha256": "<64 hex>" },
+        { "path": "f/<sha256 of model.bin>", "bytes": 190000000, "sha256": "<64 hex>" }
       ]
     }
   ],
@@ -43,8 +43,19 @@ Rules:
 2. **SHA-256 per file.** The app hashes each file while it downloads and accepts it only if the hash and byte count match the signed manifest. A mismatch deletes the partial file and retries later; it never falls back to an unverified copy.
 3. **No rollback.** The app refuses a manifest whose `manifest_version` is lower than the last one it accepted, or whose `expires_at` has passed (it keeps using what it already has).
 4. **Compatible only.** A pack whose `engine_version` or `min_app_build` the installed app does not support is ignored, not half-loaded.
-5. **Immutable paths.** A file at a versioned path never changes. A fix is a new version and a new path. This lets the CDN cache forever.
+5. **Immutable, content-addressed paths.** Every file is stored at `f/<sha256>`, named by its own hash, never by language or pack id. A file at a path never changes; a fix is a new file and therefore a new path. This lets the CDN cache forever and keeps language names out of request paths (see Download privacy below).
 6. **Same manifest machinery for server-driven content** (prompts, tips, remote config blocks; brief decision 16): signed or hashed, cached on device, and the app always works from its last good copy.
+
+## Download privacy
+
+A family's chosen language is personal data in our classification (L4 when tied to a person). The request for a pack must not reveal it more than necessary, so:
+
+1. **No language in the path.** Files are fetched by hash (`f/<sha256>`). Access logs show a hash, not `pt/` or `hi/`.
+2. **No identifiers on pack requests.** No user id, device id, auth token, cookie or per-user query parameter is sent to the pack host. Requests are anonymous `GET`s, identical for every device that picks the same language.
+3. **Minimal host logs.** Keep CDN or bucket access logging off, or at the shortest retention the host allows, and never join it with Supabase data. Record the chosen setting in the data map.
+4. **The manifest is fetched whole.** The app downloads the full manifest (all languages) and picks locally, so the manifest request reveals nothing.
+
+Limit, stated plainly: the manifest is public, so anyone holding it can map a hash back to a language, and file sizes differ per language. These steps stop readable paths in logs and casual exposure; they do not hide the choice from the host operator itself. That residual is acceptable because the host receives no account identifiers, only IP addresses, and we keep its logs minimal. If this ever needs to be stronger, the option is padding files to common size buckets.
 
 ## On the device
 
@@ -66,7 +77,7 @@ Rules:
 1. R2 bucket per environment (or one bucket with `staging/` and `prod/` prefixes), public read through a custom domain, write only by the founder or a protected publish job.
 2. Manifests served from the same edge with a short cache and `ETag`; pack and model files with a long immutable cache (brief decision 17).
 3. Public model weights mirrored from a pinned Hugging Face revision; our own pack JSON published only by us.
-4. Add the host to the data map and the subprocessor list review: no personal data goes there, but its access logs hold IP addresses, and a request path reveals which language a device downloaded (D-046). Keep logs minimal or off where the host allows.
+4. Add the host to the data map and the subprocessor list review: no personal data goes there, but its access logs hold IP addresses. Apply the Download privacy rules above (hash-named paths, no identifiers, minimal logs).
 5. Spike Apple-hosted Background Assets later for iOS 26+ devices, with the CDN as the fallback for everyone else. Decide only after the Expo path is proven on a real build.
 
 ## Publishing a pack (outline)
