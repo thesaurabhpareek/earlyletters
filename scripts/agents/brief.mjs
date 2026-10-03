@@ -114,6 +114,23 @@ function latestBrief() {
   return briefs.length ? `docs/agents/${briefs.at(-1)}` : undefined;
 }
 
+// Other sessions (the founder's build thread and its agents) claim files in
+// docs/agents/BOARD.md on develop. Their live claims are off limits.
+function otherThreadsSection() {
+  let text;
+  try { text = readText(join(ROOT, "docs", "agents", "BOARD.md")); } catch { return []; }
+  const rows = (text.split(/^## Active claims/m)[1] ?? "").split(/^## /m)[0]
+    .split("\n").filter((l) => /^\|/.test(l) && !/^\|\s*-/.test(l) && !/\|\s*Agent\s*\|/.test(l))
+    .map((l) => l.split("|").map((c) => c.trim()))
+    .filter((c) => c.length > 5 && !/^done/i.test(c[5]) && !/merge only/i.test(c[3]));
+  const lines = ["## Other threads working in this repo", "",
+    "The founder's build thread and its agents claim files in `docs/agents/BOARD.md` (rules: `docs/agents/COORDINATION.md`). Do not edit files under a live claim; if your assignment needs them, say so in your journal and PR body and stop or take your next item."];
+  lines.push("", rows.length
+    ? rows.map((c) => `- ${c[1]}: ${c[3]} (since ${c[4]})`).join("\n")
+    : "No live claims right now.", "");
+  return lines;
+}
+
 // ---------- write ----------
 
 const brief = latestBrief();
@@ -145,6 +162,7 @@ const doc = [
   "",
   ...assignmentSection(),
   "",
+  ...otherThreadsSection(),
   "## Finish the run",
   "",
   `1. Labels on every PR you open or update: \`agent:${handle}\` and \`from:agent\` (\`gh pr edit <n> --add-label agent:${handle},from:agent\`).`,

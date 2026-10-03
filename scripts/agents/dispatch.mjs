@@ -122,6 +122,7 @@ function attentionReasons(pr) {
   // (failing checks, a red-team "fix first"); a founder comment unblocks it.
   const f = prFacts(pr);
   const reasons = [];
+  if (gh(`/repos/${repo}/pulls/${pr.number}`, { allowFail: true })?.mergeable === false) reasons.push(`conflicts with ${pr.base.ref}: merge it into the branch`);
   if (f.failing.length) reasons.push(`failing checks: ${f.failing.join(", ")}`);
   if (f.changesRequested) reasons.push("founder requested changes");
   else if (f.founderNew.length) reasons.push("founder commented after the last commit");
