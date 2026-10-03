@@ -35,6 +35,11 @@ Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSo
 | `recording` | #B5473A | on `bg` / `surfaceRaised` | 5.05 / 5.35 |
 | `success` | #3F7A55 | on `bg` / `surfaceRaised` | 4.80 / 5.09 |
 | `caution` | #94661A | on `bg` / `surfaceRaised` | 4.75 / 5.03 |
+| `controlBorder` | #8A8175 | on `bg` / `surface` / `surfaceRaised` / `accentSoft` | 3.62 / 3.36 / 3.83 / 3.12 (non-text, 3:1) |
+| `editMark` | #8A5A3B | on `surfaceRaised` | 5.82 |
+| `destructive` | #B5473A | on `bg` (equals `recording` today; its own role, TDD 09 Q1) | 5.05 |
+| `onDestructive` | #FFFFFF | on `destructive` | 5.35 |
+| `scrim` | #2B2722 at 32% | behind sheets | (decorative) |
 
 ### Dark
 
@@ -53,13 +58,27 @@ Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSo
 | `recording` | #F08C7C | on `bg` / `surfaceRaised` | 7.65 / 6.99 |
 | `success` | #8CC9A0 | on `bg` / `surfaceRaised` | 9.60 / 8.77 |
 | `caution` | #E3B866 | on `bg` / `surfaceRaised` | 9.90 / 9.04 |
+| `controlBorder` | #857C70 | on `bg` / `surface` / `surfaceRaised` / `accentSoft` | 4.47 / 4.27 / 4.08 / 3.20 |
+| `editMark` | #D9A47E | on `surfaceRaised` | 7.64 |
+| `destructive` | #F08C7C | on `bg` | 7.65 |
+| `onDestructive` | #1E1612 | on `destructive` | 7.42 |
+| `scrim` | #000000 at 55% | behind sheets | (decorative) |
+
+### Increase Contrast (`tokens.highContrast`, applied app-wide by `UIProvider`)
+
+| Token | Light | Dark | Check (test) |
+|---|---|---|---|
+| `textMuted` | #524B43 | #D6CEC3 | 7:1 or more on every surface |
+| `accent` | #6E4529 | #E8BC9A | 7:1 or more on every surface |
+| `line` | #6B645B | #B3AA9E | 3:1 or more (hairlines become visible edges) |
+| `controlBorder` | #2B2722 | #F2ECE4 | 4.5:1 or more |
 
 **Rules**
-- `line` fails 3:1 by design: never the only boundary of an interactive control. Inputs use `textMuted` 1pt borders or a filled `surface`.
+- `line` fails 3:1 by design: never the only boundary of an interactive control. Control edges use `controlBorder` (the shadcn `input` colour maps to it, so every `border-input` passes 1.4.11). Never draw a control edge at reduced alpha: `textMuted` at 60% is 2.54:1 (the test keeps that failure documented).
 - Dark `onAccent` is dark ink, not white: white on #D9A47E would be ~2.1:1 (fails).
 - `recording` is a terracotta, not alarm red; it means "listening", never "error". Errors use `caution` plus an icon plus words.
 - Colour is never the only signal (H2).
-- Increase Contrast: `textMuted`→`text`, `line`→`textMuted`.
+- Increase Contrast: the table above (darker muted text and accent, visible hairlines, ink control edges).
 - No Liquid Glass in the content layer (H5); system tab bar and toolbars may use it.
 
 ## 3. Typography
@@ -97,6 +116,13 @@ Apple's default Body is 17/22 (H1). Mukta sits small on its em, so UI styles are
 | `caption` | Mukta 500, +0.2 tracking | 13 / 17 | Caption 1 | none |
 | `letterBody` | Literata 400 (+ Tiro) | 20 / 32 | Body | none |
 | `letterDateline` | Mukta 500, +0.6 tracking | 14 / 18 | Footnote | 2.4x |
+| `hero` | Literata 500 (opsz 30 cut), -0.4 | 44 / 50 | Large Title | 1.6x (first-run title only) |
+| `label` | Mukta 500 | 18 / 22 | Body | none (button and row labels) |
+| `labelSmall` | Mukta 500 | 16 / 20 | Subhead | none (small buttons, chips, field labels) |
+| `signature` | Literata Italic 400 | 20 / 32 | Body | none (scales with Reading Size) |
+| `prompt` | Literata 400 | 24 / 32 | Title 3 | none (Tonight's prompt) |
+
+**Faces are bundled (Oct 3 2026):** `packages/design-tokens/fonts`, subset with `build_fonts.py`: Mukta Regular / Medium / SemiBold (Latin, Latin Extended, Devanagari), Literata Regular (opsz 16) / Medium (opsz 30) / Italic (opsz 16) cut from the variable font, Tiro Devanagari Hindi Regular. 1.37 MB raw, 0.64 MB compressed. One family name per face; the `Text` component applies the face and never asks a custom font to synthesise weight or italics.
 
 Nothing is smaller than 13pt (HIG minimum is 11pt, H2; we hold a higher floor for grandparents).
 
