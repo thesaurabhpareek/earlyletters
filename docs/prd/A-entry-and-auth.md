@@ -39,7 +39,7 @@ As a:
 ## 3. Flows
 
 ### F1. Cold start
-1. Native splash: `bg` paper (light #FBF8F3, dark #161412), centred envelope line mark, no text. (Scaffold splash is Expo blue #208AEF; replace.)
+1. Native splash: `bg` paper (light #FBF8F3, dark #161412), the brand symbol resolved from the registry context `app.splash` (`assetFor('app.splash')`: `logo.symbol.ink` on paper, `logo.symbol.reversed` on paperDark), centred, 96 pt, no text (docs/brand/BRAND_SYSTEM.md 2). (Scaffold splash is Expo blue #208AEF; replace.)
 2. Restore session from secure storage without network, read local state, render first route, hide splash.
 3. Branch: pending invite token → F7; signed in or has local letters → Tonight, no animation (MO §5a); first launch → step 4 then F2.
 4. Brand moment, first launch only: mark draws via `strokeDashoffset` (600 ms), "Letters for someone small." fades in; ≤ 900 ms total (MO §3 `sequenceMaxMs`); tap skips. Reduce Motion: drawing complete, 200 ms fade.
@@ -120,7 +120,7 @@ Evidence: 1 UR §5 job 1; 2 BRAND pillar 1, CR §5 white space 1; 3 CR §4 prais
 P0 = launch blocker, P1 = launch target, P2 = later.
 
 **Launch**
-- **A-REQ-001 (P0) Branded splash.** Given a cold start, when the launch screen shows, then it uses paper background and envelope mark in the system appearance and matches the first frame without a jump (Android 12+: static splash-API icon).
+- **A-REQ-001 (P0) Branded splash.** Given a cold start, when the launch screen shows, then it uses the registry context `app.splash` (paper or paperDark background with `logo.symbol.ink` or `logo.symbol.reversed`) in the system appearance and matches the first frame without a jump (Android 12+: static splash-API icon).
 - **A-REQ-002 (P0) No blocking.** Given a cold start, when the first route lays out, then the splash hides; it never waits on network, model download or sync.
 - **A-REQ-003 (P1) Brand moment.** Given first launch, when the splash hides, then the mark draws in ≤ 900 ms; given a tap, then it ends; given Reduce Motion, then a 200 ms fade replaces it.
 

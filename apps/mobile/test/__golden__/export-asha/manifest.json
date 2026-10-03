@@ -20,8 +20,8 @@
   "files": [
     {
       "path": "README.txt",
-      "bytes": 1744,
-      "sha256": "6c21b0d5608e83eae4e3c204ef78481b298f8a2fea802b4a5ad630f7b17ee1b6",
+      "bytes": 1740,
+      "sha256": "83e1b3ba81f1750ed8c7049c101d64aa40a2af49bf18c5db6b380f0f83cc7868",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -33,13 +33,13 @@
     {
       "path": "book/Asha.pdf",
       "bytes": 95,
-      "sha256": "db301316d5372089d9b8a9deb27abc449d41dbd8de72bb053785e23cf145581d",
+      "sha256": "a4dd0a3822978876af5be15684b1511b9c376d520843190a365cb9b35d5762da",
       "media_type": "application/pdf"
     },
     {
       "path": "book/Dev.pdf",
       "bytes": 95,
-      "sha256": "aa800016e7c5baa5b4661d156a1a1aba4242eff570c0b9fed86c67a0a0ac3a5a",
+      "sha256": "a26955d627d0078f3c84b97005b0b30ae6c758191449b81479c07d26d7756673",
       "media_type": "application/pdf"
     },
     {
@@ -56,14 +56,14 @@
     },
     {
       "path": "letters/Asha/2026-03/2026-03-12_e2.txt",
-      "bytes": 287,
-      "sha256": "3abac49000cb3797579f2c9b3e036fc68f0be38f92f520497caaee5f672f061e",
+      "bytes": 286,
+      "sha256": "9325b7e1c7adf2d56ce20f929595204b95c84cc2895f57946bcf5e5c087b2921",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "letters/Asha/2026-04/2026-04-20_e3.txt",
-      "bytes": 182,
-      "sha256": "aa2e2836dbf23ef797c52be10968443bb8996619604195776d242f821f535644",
+      "bytes": 184,
+      "sha256": "86cc2e36e4a8a499a5f192087297060442004a7d1f366282f41ae1d445368e93",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -74,8 +74,8 @@
     },
     {
       "path": "letters/Asha/2026-06/2026-06-15_e5.txt",
-      "bytes": 198,
-      "sha256": "61301fbc9ae736235782823d595007af81cb81be9d6117b13fba4ba7c47ce52a",
+      "bytes": 200,
+      "sha256": "6ae30c4eefdc871d8ca86251d23540cf20715d0a45d1e3a6cb0d9406e22f9ef2",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -86,20 +86,20 @@
     },
     {
       "path": "letters/Asha/2026-08/2026-08-10_e7.txt",
-      "bytes": 186,
-      "sha256": "999dec09d693720fe96a349e68cb575fcedc3ac274accd496738a39ddbcb417b",
+      "bytes": 185,
+      "sha256": "29fb6a26722a0dbcc4a1a6bdfaa66bd435ac42cbb317e55b53ca7e4aeb4dee61",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "letters/Asha/2026-09/2026-09-01_e8.txt",
-      "bytes": 243,
-      "sha256": "ee9eb8b7f084a38da923ca780a1c7241844e222ff67b155002f4af574a6dacd4",
+      "bytes": 245,
+      "sha256": "bc76e0b925ba6f05f2152a63471cd9499f05e13fdf11c900899728bb7ac77408",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "letters/Asha/2026-12/2026-12-24_e10.txt",
-      "bytes": 198,
-      "sha256": "24078fd13b21089a60117cc4d6f99a59739f4c95ffb3ffd5fbb34024b05188f4",
+      "bytes": 200,
+      "sha256": "ec1ada7099f2a838fd80d905813e399bbcd0e59ad591c5ceb7d059ba412c8fb9",
       "media_type": "text/plain; charset=utf-8"
     },
     {

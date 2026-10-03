@@ -47,7 +47,7 @@ Deno.test('an account deletion runs every step in order and finalizes with a cou
   const receipt = w.emails.find((e) => e.subject === 'Your account has been deleted')!;
   assert.equal(receipt.to, CANARY.parentEmail);
   assert.match(receipt.text, new RegExp(req.id));
-  assert.match(receipt.text, /Apple Account subscriptions/);
+  assert.match(receipt.text, /If you have Plus[^\n]*Subscriptions/);
   assert.equal(receipt.idempotencyKey, `deletion-completed:${req.id}`);
   // Auth user deleted; co-parent untouched; receipt finalized with counts and step outcomes only.
   assert.equal(w.users.has(uid), false);
@@ -293,9 +293,9 @@ Deno.test('request and cancellation receipts use the content package words and a
   w.requests.push({ ...base, id: 'aaaaaaaa-0000-4000-8000-000000000002', profile_id: CANARY.coParentId });
   w.requests.push({ ...base, id: 'aaaaaaaa-0000-4000-8000-000000000003', profile_id: CANARY.profileId, status: 'cancelled', cancelled_at: w.now.toISOString() });
   await run(w, testConfig());
-  const requested = w.emails.find((e) => e.subject.startsWith('Your account will be deleted on'))!;
-  assert.match(requested.subject, /December 5, 2026/);
-  assert.match(requested.text, /cancel the deletion in Settings/);
+  const requested = w.emails.find((e) => e.subject === 'Your account is set to be deleted')!;
+  assert.match(requested.text, /December 5, 2026/);
+  assert.match(requested.text, /or to cancel the request\. Both are in Settings/);
   assert.match(requested.text, /aaaaaaaa-0000-4000-8000-000000000001/);
   assert.equal(requested.idempotencyKey, 'deletion-requested:aaaaaaaa-0000-4000-8000-000000000001');
   const cancelled = w.emails.find((e) => e.subject === 'Your account is staying')!;
