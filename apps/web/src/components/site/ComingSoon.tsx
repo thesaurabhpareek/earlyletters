@@ -13,6 +13,7 @@ export function ComingSoon() {
       <main className={styles.main}>
         <h1 className={styles.title}>{site.brand.name}</h1>
         <p className={styles.line}>{site.comingSoon.line}</p>
+        <p className={`${styles.line} ${styles.trust}`}>{site.comingSoon.trust}</p>
         <p className={styles.soon}>{site.cta.prelaunch.eyebrow}</p>
       </main>
       <footer className={styles.footer}>

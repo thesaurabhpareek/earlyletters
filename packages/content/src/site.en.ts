@@ -3,9 +3,9 @@
 
 export const site = {
   hero: {
-    headline: "Letters to your child, in your voice",
+    headline: "Remember and treasure every milestone",
     subhead:
-      "Early Letters is the baby memory book you fill by talking. Every word kept exactly as you said it, ready to read together for years.",
+      "Early Letters is the baby memory book you fill by talking. Private by design: your letters stay on your phone, and every word is kept exactly as you said it, ready to read together for years.",
   },
   primaryCta: "Join the waitlist",
   benefits: [

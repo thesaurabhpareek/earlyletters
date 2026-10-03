@@ -48,6 +48,10 @@
   color: color-mix(in srgb, var(--night-ink) 80%, transparent);
   animation: rise 1.4s var(--ease-standard) 0.5s both;
 }
+.trust {
+  margin-top: 1.1em;
+  font-size: clamp(15px, 1.3vw, 18px);
+}
 .soon {
   display: inline-block;
   margin: 2.4em 0 0;

@@ -62,7 +62,8 @@ export const site = {
   skip: 'Skip the film',
 
   comingSoon: {
-    line: 'The baby memory book you fill by talking. Every word kept exactly as you said it, with your voice.',
+    line: 'A calm place to keep and treasure every milestone. The baby memory book you fill by talking, with every word kept exactly as you said it, in your voice.',
+    trust: 'Private by design. Your letters stay on your phone, and we never rewrite your words.',
   },
 
   cta: {
