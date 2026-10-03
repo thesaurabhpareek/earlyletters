@@ -1,0 +1,1 @@
+icon-craft v1: bench.mjs works (home light/dark/tinted/clear at 402x874pt@3x, 29/40/60 @1-3x, App Store, notification), ICON_RULES.md verified against Apple docs, calibrated on r1 a/b, benched two-voices; late arrivals benched as they land, see BENCH_INDEX.md.

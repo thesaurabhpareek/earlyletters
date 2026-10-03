@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wordmark round 2</title>
+<style>
+@font-face{font-family:Mukta;font-weight:400;src:url(../../../../../../node_modules/@fontsource/mukta/files/mukta-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:Mukta;font-weight:600;src:url(../../../../../../node_modules/@fontsource/mukta/files/mukta-latin-600-normal.woff2) format('woff2')}
+:root{--ink:#2B2722;--muted:#6B645B;--paper:#FBF8F3;--line:#E6DED3;--accent:#8A5A3B;--night:#161412;--inkd:#F2ECE4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Mukta,system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:28px;font-weight:600;margin:0 0 4px} h2{font-size:22px;font-weight:600;margin:0}
+section{margin:56px 0;border-top:1px solid var(--line);padding-top:24px}
+header p{margin:2px 0;color:var(--muted)} .k{font-size:13px;color:var(--muted);margin:4px 0}
+.ground{border-radius:20px;padding:36px 40px;margin-top:16px;overflow:hidden}
+.paper{background:#fff;border:1px solid var(--line)} .night{background:var(--night);color:var(--inkd)}
+.night figcaption{color:#B3AA9E}
+.sizes{display:flex;flex-direction:column;gap:22px}
+.pair{display:flex;gap:56px;align-items:flex-end}
+figure{margin:0} figure img{display:block} figcaption{font-size:12px;color:var(--muted);margin-top:6px}
+.pix{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px}
+.px{image-rendering:pixelated;display:block;margin:8px 0;max-width:100%;object-fit:contain;object-position:left}
+.cmps{display:flex;flex-direction:column;gap:18px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:32px 40px;margin-top:16px}
+.cmp{display:flex;flex-direction:column;gap:6px}
+.emails{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px}
+.email{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.email .bar{padding:20px 22px;border-bottom:1px solid var(--line)} .email .bar img{display:block}
+.email .body{padding:16px 22px 4px;font-size:15px} .email .eh{font-weight:600;margin:0 0 6px} .email .k{padding:0 22px 14px}
+.note{max-width:760px}
+@media (max-width:700px){.pix{grid-template-columns:1fr}.ground{padding:24px 18px}.sizes img{max-width:100%;height:auto!important}}
+</style></head>
+<body><main>
+<h1>Early Letters wordmark, round 2</h1>
+<p class="k">Typographer T1 (wordmark). Four routes, each with a master cut (above 32 px) and a small cut (32 px and below). All shapes are outlined, hand-edited paths from OFL fonts. Sizes are the full height of the drawing, cap top to descender.</p>
+<div style="background:#F1E6DC;border-radius:14px;padding:18px 22px;margin-top:20px;max-width:860px">
+<p style="margin:0 0 6px;font-weight:600">Recommendation: route A, Signature</p>
+<p style="margin:0">Literata at a display optical size, spaced by eye rather than by the font's kerning, with one custom detail: the two t's in "Letters" share a single crossbar, and the first t stands a little taller than the second. A tall letter and a small one holding the same line. At 32 px and below a sturdier small cut takes over. Full reasoning in RATIONALE.md.</p></div>
+<section><h2>The four routes at one size</h2><div class="cmps"><div class="cmp"><span class="k">A. Signature</span><img src="a-signature/wordmark.svg" width="438" height="72" style="max-width:100%;height:auto" alt="Early Letters"></div><div class="cmp"><span class="k">B. Fine</span><img src="b-fine/wordmark.svg" width="411" height="72" style="max-width:100%;height:auto" alt="Early Letters"></div><div class="cmp"><span class="k">C. Spaced small caps</span><img src="c-small-caps/wordmark.svg" width="849" height="72" style="max-width:100%;height:auto" alt="Early Letters"></div><div class="cmp"><span class="k">D. Garamond (alternative OFL serif)</span><img src="d-garamond/wordmark.svg" width="352" height="72" style="max-width:100%;height:auto" alt="Early Letters"></div></div></section>
+
+  <section id="a-signature">
+    <header><h2>A. Signature</h2><p>Literata at a display optical size, optically spaced, one crossbar shared by a tall t and a small t.</p><p class="k">387 nodes in the master, 387 in the small cut</p></header>
+    <div class="ground paper">
+      <div class="sizes">
+        <figure><img src="a-signature/wordmark.svg" width="973" height="160" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>160 px, master</figcaption></figure>
+        <figure><img src="a-signature/wordmark.svg" width="389" height="64" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>64 px, master</figcaption></figure>
+        <div class="pair">
+          <figure><img src="a-signature/wordmark-small.svg" width="187" height="28" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>28 px, small cut</figcaption></figure>
+          <figure><img src="a-signature/wordmark-small.svg" width="93" height="14" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>14 px, small cut</figcaption></figure>
+        </div>
+      </div></div>
+    <div class="ground night">
+      <div class="sizes">
+        <figure><img src="a-signature/wordmark-reversed.svg" width="973" height="160" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>160 px, master</figcaption></figure>
+        <figure><img src="a-signature/wordmark-reversed.svg" width="389" height="64" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>64 px, master</figcaption></figure>
+        <div class="pair">
+          <figure><img src="a-signature/wordmark-small-reversed.svg" width="187" height="28" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>28 px, small cut</figcaption></figure>
+          <figure><img src="a-signature/wordmark-small-reversed.svg" width="93" height="14" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>14 px, small cut</figcaption></figure>
+        </div>
+      </div></div>
+    
+    <div class="pix">
+      
+        <div><p class="k">Master cut, real pixels at 28 and 14 px, shown 4x</p>
+          <img class="px" src="png/a-signature-master-28-paper.png" style="height:144px">
+          <img class="px" src="png/a-signature-master-14-paper.png" style="height:88px">
+          <img class="px" src="png/a-signature-master-14-night.png" style="height:88px">
+        </div>
+        <div><p class="k">Small cut, real pixels at 28 and 14 px, shown 4x</p>
+          <img class="px" src="png/a-signature-small-28-paper.png" style="height:144px">
+          <img class="px" src="png/a-signature-small-14-paper.png" style="height:88px">
+          <img class="px" src="png/a-signature-small-14-night.png" style="height:88px">
+        </div>
+    </div>
+  </section>
+  <section id="b-fine">
+    <header><h2>B. Fine</h2><p>Literata at its largest optical size and a lighter weight: more contrast, a book-jacket cut.</p><p class="k">387 nodes in the master, 387 in the small cut</p></header>
+    <div class="ground paper">
+      <div class="sizes">
+        <figure><img src="b-fine/wordmark.svg" width="914" height="160" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>160 px, master</figcaption></figure>
+        <figure><img src="b-fine/wordmark.svg" width="366" height="64" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>64 px, master</figcaption></figure>
+        <div class="pair">
+          <figure><img src="b-fine/wordmark-small.svg" width="187" height="28" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>28 px, small cut</figcaption></figure>
+          <figure><img src="b-fine/wordmark-small.svg" width="93" height="14" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>14 px, small cut</figcaption></figure>
+        </div>
+      </div></div>
+    <div class="ground night">
+      <div class="sizes">
+        <figure><img src="b-fine/wordmark-reversed.svg" width="914" height="160" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>160 px, master</figcaption></figure>
+        <figure><img src="b-fine/wordmark-reversed.svg" width="366" height="64" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>64 px, master</figcaption></figure>
+        <div class="pair">
+          <figure><img src="b-fine/wordmark-small-reversed.svg" width="187" height="28" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>28 px, small cut</figcaption></figure>
+          <figure><img src="b-fine/wordmark-small-reversed.svg" width="93" height="14" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>14 px, small cut</figcaption></figure>
+        </div>
+      </div></div>
+    
+    <div class="pix">
+      
+        <div><p class="k">Master cut, real pixels at 28 and 14 px, shown 4x</p>
+          <img class="px" src="png/b-fine-master-28-paper.png" style="height:144px">
+          <img class="px" src="png/b-fine-master-14-paper.png" style="height:88px">
+          <img class="px" src="png/b-fine-master-14-night.png" style="height:88px">
+        </div>
+        <div><p class="k">Small cut, real pixels at 28 and 14 px, shown 4x</p>
+          <img class="px" src="png/b-fine-small-28-paper.png" style="height:144px">
+          <img class="px" src="png/b-fine-small-14-paper.png" style="height:88px">
+          <img class="px" src="png/b-fine-small-14-night.png" style="height:88px">
+        </div>
+    </div>
+  </section>
+  <section id="c-small-caps">
+    <header><h2>C. Spaced small caps</h2><p>Capitals and true small caps, generously spaced, like a title page or a book spine.</p><p class="k">439 nodes in the master, 439 in the small cut</p></header>
+    <div class="ground paper">
+      <div class="sizes">
+        <figure><img src="c-small-caps/wordmark.svg" width="1886" height="160" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>160 px, master</figcaption></figure>
+        <figure><img src="c-small-caps/wordmark.svg" width="754" height="64" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>64 px, master</figcaption></figure>
+        <div class="pair">
+          <figure><img src="c-small-caps/wordmark-small.svg" width="349" height="28" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>28 px, small cut</figcaption></figure>
+          <figure><img src="c-small-caps/wordmark-small.svg" width="175" height="14" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>14 px, small cut</figcaption></figure>
+        </div>
+      </div></div>
+    <div class="ground night">
+      <div class="sizes">
+        <figure><img src="c-small-caps/wordmark-reversed.svg" width="1886" height="160" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>160 px, master</figcaption></figure>
+        <figure><img src="c-small-caps/wordmark-reversed.svg" width="754" height="64" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>64 px, master</figcaption></figure>
+        <div class="pair">
+          <figure><img src="c-small-caps/wordmark-small-reversed.svg" width="349" height="28" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>28 px, small cut</figcaption></figure>
+          <figure><img src="c-small-caps/wordmark-small-reversed.svg" width="175" height="14" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>14 px, small cut</figcaption></figure>
+        </div>
+      </div></div>
+    
+    <div class="pix">
+      
+        <div><p class="k">Master cut, real pixels at 28 and 14 px, shown 4x</p>
+          <img class="px" src="png/c-small-caps-master-28-paper.png" style="height:144px">
+          <img class="px" src="png/c-small-caps-master-14-paper.png" style="height:88px">
+          <img class="px" src="png/c-small-caps-master-14-night.png" style="height:88px">
+        </div>
+        <div><p class="k">Small cut, real pixels at 28 and 14 px, shown 4x</p>
+          <img class="px" src="png/c-small-caps-small-28-paper.png" style="height:144px">
+          <img class="px" src="png/c-small-caps-small-14-paper.png" style="height:88px">
+          <img class="px" src="png/c-small-caps-small-14-night.png" style="height:88px">
+        </div>
+    </div>
+  </section>
+  <section id="d-garamond">
+    <header><h2>D. Garamond (alternative OFL serif)</h2><p>EB Garamond with its historical tt ligature: the warmest, oldest voice, at the cost of family with the app.</p><p class="k">568 nodes in the master, 568 in the small cut</p></header>
+    <div class="ground paper">
+      <div class="sizes">
+        <figure><img src="d-garamond/wordmark.svg" width="782" height="160" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>160 px, master</figcaption></figure>
+        <figure><img src="d-garamond/wordmark.svg" width="313" height="64" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>64 px, master</figcaption></figure>
+        <div class="pair">
+          <figure><img src="d-garamond/wordmark-small.svg" width="146" height="28" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>28 px, small cut</figcaption></figure>
+          <figure><img src="d-garamond/wordmark-small.svg" width="73" height="14" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>14 px, small cut</figcaption></figure>
+        </div>
+      </div></div>
+    <div class="ground night">
+      <div class="sizes">
+        <figure><img src="d-garamond/wordmark-reversed.svg" width="782" height="160" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>160 px, master</figcaption></figure>
+        <figure><img src="d-garamond/wordmark-reversed.svg" width="313" height="64" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>64 px, master</figcaption></figure>
+        <div class="pair">
+          <figure><img src="d-garamond/wordmark-small-reversed.svg" width="146" height="28" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>28 px, small cut</figcaption></figure>
+          <figure><img src="d-garamond/wordmark-small-reversed.svg" width="73" height="14" style="max-width:100%;height:auto" alt="Early Letters"><figcaption>14 px, small cut</figcaption></figure>
+        </div>
+      </div></div>
+    
+    <div class="pix">
+      
+        <div><p class="k">Master cut, real pixels at 28 and 14 px, shown 4x</p>
+          <img class="px" src="png/d-garamond-master-28-paper.png" style="height:144px">
+          <img class="px" src="png/d-garamond-master-14-paper.png" style="height:88px">
+          <img class="px" src="png/d-garamond-master-14-night.png" style="height:88px">
+        </div>
+        <div><p class="k">Small cut, real pixels at 28 and 14 px, shown 4x</p>
+          <img class="px" src="png/d-garamond-small-28-paper.png" style="height:144px">
+          <img class="px" src="png/d-garamond-small-14-paper.png" style="height:88px">
+          <img class="px" src="png/d-garamond-small-14-night.png" style="height:88px">
+        </div>
+    </div>
+  </section>
+<section><h2>Email header, 28 px tall</h2><p class="k">The small cut of each route, as it would sit at the top of a family email.</p><div class="emails">
+    <div class="email"><div class="bar"><img src="a-signature/wordmark-small.svg" width="187" height="28" style="max-width:100%;height:auto" alt="Early Letters"></div>
+      <div class="body"><p class="eh">A letter is waiting for Asha</p><p>Nani recorded a letter for Asha this evening. It is kept exactly as she said it.</p></div>
+      <p class="k">A. Signature</p></div>
+    <div class="email"><div class="bar"><img src="b-fine/wordmark-small.svg" width="187" height="28" style="max-width:100%;height:auto" alt="Early Letters"></div>
+      <div class="body"><p class="eh">A letter is waiting for Asha</p><p>Nani recorded a letter for Asha this evening. It is kept exactly as she said it.</p></div>
+      <p class="k">B. Fine</p></div>
+    <div class="email"><div class="bar"><img src="c-small-caps/wordmark-small.svg" width="349" height="28" style="max-width:100%;height:auto" alt="Early Letters"></div>
+      <div class="body"><p class="eh">A letter is waiting for Asha</p><p>Nani recorded a letter for Asha this evening. It is kept exactly as she said it.</p></div>
+      <p class="k">C. Spaced small caps</p></div>
+    <div class="email"><div class="bar"><img src="d-garamond/wordmark-small.svg" width="146" height="28" style="max-width:100%;height:auto" alt="Early Letters"></div>
+      <div class="body"><p class="eh">A letter is waiting for Asha</p><p>Nani recorded a letter for Asha this evening. It is kept exactly as she said it.</p></div>
+      <p class="k">D. Garamond (alternative OFL serif)</p></div></div></section>
+</main></body></html>

@@ -1,0 +1,106 @@
+{
+  "a-signature/wordmark": {
+    "aspect": 6.0811,
+    "nodes": 387,
+    "baselineFromTop": 0.7627,
+    "bbox": {
+      "x0": 58,
+      "y0": -230,
+      "x1": 6115,
+      "y1": 766,
+      "w": 6057,
+      "h": 996
+    }
+  },
+  "a-signature/wordmark-small": {
+    "aspect": 6.6644,
+    "nodes": 387,
+    "baselineFromTop": 0.7627,
+    "bbox": {
+      "x0": 57,
+      "y0": -230,
+      "x1": 6695,
+      "y1": 766,
+      "w": 6638,
+      "h": 996
+    }
+  },
+  "b-fine/wordmark": {
+    "aspect": 5.7125,
+    "nodes": 387,
+    "baselineFromTop": 0.7627,
+    "bbox": {
+      "x0": 58,
+      "y0": -230,
+      "x1": 5748,
+      "y1": 766,
+      "w": 5690,
+      "h": 996
+    }
+  },
+  "b-fine/wordmark-small": {
+    "aspect": 6.6644,
+    "nodes": 387,
+    "baselineFromTop": 0.7627,
+    "bbox": {
+      "x0": 57,
+      "y0": -230,
+      "x1": 6695,
+      "y1": 766,
+      "w": 6638,
+      "h": 996
+    }
+  },
+  "c-small-caps/wordmark": {
+    "aspect": 11.7863,
+    "nodes": 439,
+    "baselineFromTop": 0.9689,
+    "bbox": {
+      "x0": 57,
+      "y0": -11,
+      "x1": 8496,
+      "y1": 705,
+      "w": 8439,
+      "h": 716
+    }
+  },
+  "c-small-caps/wordmark-small": {
+    "aspect": 12.4666,
+    "nodes": 439,
+    "baselineFromTop": 0.9674,
+    "bbox": {
+      "x0": 56,
+      "y0": -12,
+      "x1": 8932,
+      "y1": 700,
+      "w": 8876,
+      "h": 712
+    }
+  },
+  "d-garamond/wordmark": {
+    "aspect": 4.8856,
+    "nodes": 568,
+    "baselineFromTop": 0.7078,
+    "bbox": {
+      "x0": 31,
+      "y0": -284,
+      "x1": 4863,
+      "y1": 705,
+      "w": 4832,
+      "h": 989
+    }
+  },
+  "d-garamond/wordmark-small": {
+    "aspect": 5.2315,
+    "nodes": 568,
+    "baselineFromTop": 0.7078,
+    "bbox": {
+      "x0": 28,
+      "y0": -284,
+      "x1": 5202,
+      "y1": 705,
+      "w": 5174,
+      "h": 989
+    }
+  }
+}

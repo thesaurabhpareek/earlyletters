@@ -1,0 +1,198 @@
+{
+  "tiles": [
+    {
+      "id": "t0-flat-current",
+      "label": "Flat sepia (current accent)",
+      "top": "#8A5A3B",
+      "bot": "#8A5A3B",
+      "mid": "#8a5a3b",
+      "fg": "#FBF8F3",
+      "cTop": 5.5,
+      "cMid": 5.5,
+      "cBot": 5.5,
+      "L": 0.513,
+      "C": 0.078,
+      "h": 53,
+      "dL": 0,
+      "whiteOnMid": 5.82
+    },
+    {
+      "id": "t1-flat-deep",
+      "label": "Flat deepened",
+      "top": "#7F4F30",
+      "bot": "#7F4F30",
+      "mid": "#7f4f30",
+      "fg": "#FBF8F3",
+      "cTop": 6.47,
+      "cMid": 6.47,
+      "cBot": 6.47,
+      "L": 0.475,
+      "C": 0.079,
+      "h": 52.6,
+      "dL": 0,
+      "whiteOnMid": 6.85
+    },
+    {
+      "id": "t2-grad-critic",
+      "label": "Gradient, critic proposal",
+      "top": "#94603F",
+      "bot": "#7C4F33",
+      "mid": "#885839",
+      "fg": "#FBF8F3",
+      "cTop": 4.95,
+      "cMid": 5.66,
+      "cBot": 6.56,
+      "L": 0.506,
+      "C": 0.078,
+      "h": 53,
+      "dL": 0.066,
+      "whiteOnMid": 6
+    },
+    {
+      "id": "t3-grad-deep",
+      "label": "Gradient, deepened base",
+      "top": "#8D5A39",
+      "bot": "#784A2C",
+      "mid": "#835233",
+      "fg": "#FBF8F3",
+      "cTop": 5.42,
+      "cMid": 6.16,
+      "cBot": 7.04,
+      "L": 0.487,
+      "C": 0.08,
+      "h": 52.2,
+      "dL": 0.061,
+      "whiteOnMid": 6.52
+    },
+    {
+      "id": "t4-grad-leather",
+      "label": "Gradient, warmer leather",
+      "top": "#9A613C",
+      "bot": "#7D4A2C",
+      "mid": "#8c5634",
+      "fg": "#FBF8F3",
+      "cTop": 4.78,
+      "cMid": 5.67,
+      "cBot": 6.86,
+      "L": 0.507,
+      "C": 0.087,
+      "h": 51.9,
+      "dL": 0.085,
+      "whiteOnMid": 6.01
+    },
+    {
+      "id": "t5-grad-leather-token",
+      "label": "Leather, base = accentDeep",
+      "top": "#9A613C",
+      "bot": "#7F4F30",
+      "mid": "#8d5836",
+      "fg": "#FBF8F3",
+      "cTop": 4.78,
+      "cMid": 5.53,
+      "cBot": 6.47,
+      "L": 0.512,
+      "C": 0.085,
+      "h": 52.4,
+      "dL": 0.072,
+      "whiteOnMid": 5.86
+    },
+    {
+      "id": "p-paper",
+      "label": "Paper tile, sepia mark",
+      "top": "#FDFBF7",
+      "bot": "#F3ECE3",
+      "mid": "#f8f4ed",
+      "fg": "#8A5A3B",
+      "cTop": 5.63,
+      "cMid": 5.31,
+      "cBot": 4.97,
+      "L": 0.968,
+      "C": 0.01,
+      "h": 81.8,
+      "dL": 0.042,
+      "whiteOnMid": 1.1
+    },
+    {
+      "id": "n-ink",
+      "label": "Ink tile, light sepia mark",
+      "top": "#332E28",
+      "bot": "#231F1B",
+      "mid": "#2b2722",
+      "fg": "#D9A47E",
+      "cTop": 6.12,
+      "cMid": 6.75,
+      "cBot": 7.45,
+      "L": 0.275,
+      "C": 0.011,
+      "h": 73.5,
+      "dL": 0.062,
+      "whiteOnMid": 14.83
+    },
+    {
+      "id": "d0-current",
+      "label": "Dark: accentDark on warm near-black",
+      "top": "#2c2926",
+      "bot": "#1F1B18",
+      "mid": "#26221f",
+      "fg": "#D9A47E",
+      "cTop": 6.58,
+      "cMid": 7.18,
+      "cBot": 7.79,
+      "L": 0.255,
+      "C": 0.008,
+      "h": 59.3,
+      "dL": 0.057,
+      "whiteOnMid": 15.78
+    }
+  ],
+  "tokens": [
+    {
+      "pair": "accent #8A5A3B on paper",
+      "ratio": 5.5
+    },
+    {
+      "pair": "accentDeep #7F4F30 on paper",
+      "ratio": 6.47
+    },
+    {
+      "pair": "paper on accentDeep",
+      "ratio": 6.47
+    },
+    {
+      "pair": "white on accentDeep",
+      "ratio": 6.85
+    },
+    {
+      "pair": "accentDeep on accentSoft",
+      "ratio": 5.58
+    },
+    {
+      "pair": "accentDeep on paperRaised",
+      "ratio": 6.85
+    },
+    {
+      "pair": "accentDark on paperDark",
+      "ratio": 8.37
+    },
+    {
+      "pair": "accentDark on dark tile #1F1B18",
+      "ratio": 7.79
+    },
+    {
+      "pair": "accent on ink (never)",
+      "ratio": 2.55
+    },
+    {
+      "pair": "accentDark on paper (never)",
+      "ratio": 2.07
+    },
+    {
+      "pair": "ink on paper",
+      "ratio": 14
+    },
+    {
+      "pair": "inkDark on paperDark",
+      "ratio": 15.66
+    }
+  ]
+}

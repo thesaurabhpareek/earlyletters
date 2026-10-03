@@ -1,0 +1,15 @@
+Sketches, in the order they were made. One line on each: what it tested and why it was rejected or kept.
+00-reference-literata.png  Reference quote glyphs (EB Garamond variable font did not render; Literata 500 and 700 did). Studied for anatomy, not traced.
+01-glyph-drop.png          Round 1. Tail leaves the side of the ball, so each mark reads as a drop or a flame. Rejected.
+02-glyph-hook.png          Round 2. A real hook gives an unmistakable "66". Kept as the direction.
+03-integrations-first.png  First drawings of the five letter integrations plus the control. Sheet and 1b read as a file icon; envelope reads as Mail; cut-out reads as a quote card; corner-as-small-mark breaks and leaves a lone "6". All rejected.
+04-integrations-second.png Best-effort redraws. Lifting corner = sticky note; pocket without a V = printer or tray; big cut-out card = framed pair, smaller for no gain; corner mark = sticker. All rejected.
+05-page-tile.png           The tile is the page (physically correct dog-ear). Only integration that keeps the pair at full size. Runner-up.
+06-glyph-nodes-cusp.png    Round 6. Nodes shown: the hook left a hairline cusp in the counter. Rejected.
+07-glyph-fillet-shallow.png Round 7. A fillet node removed the cusp but the counter went shallow and the tail wobbled. Rejected.
+08-glyph-constructed-short.png Round 8. Constructed tail (annulus tangent to the ball, fillet in the counter): clean but short and flat. Rejected.
+09-glyph-constructed.png   Round 9. Longer, steeper annulus; variant f chosen, tail thickened to 0.64.
+10-pair-relationship.png   Round 10. Ratio 0.5 to 0.7, gap, lean. Chosen: 0.62, gap 0.12, child leans 8 degrees toward the parent.
+11-page-vs-pure.png        Round 11. Finished pair: three tile colours against three page folds. Gradient tile chosen; page loses on the bench (corner crowds the child at 29 px, lost in dark/tinted/clear, white tile).
+12-small-cut.png           Round 12. Small optical cut; B chosen (tail 0.76, child 0.66, gap 0.22).
+13-cut-softness.png        Round 13. Tail cut: 0.15 looked sharp at 1024, 0.7 started to look like a teardrop; 0.4 chosen.

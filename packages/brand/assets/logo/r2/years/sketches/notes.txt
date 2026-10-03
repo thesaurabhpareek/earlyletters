@@ -1,0 +1,14 @@
+Rejected explorations for "years" (time that grows). One line each.
+01-concentric-rings.png    Concentric rings with a centre dot: a target and an eye before it is anything tender.
+02-spiral.png              A spiral from a dot: reads as a snail, a "6" or hypnosis, and drifts toward the koru (Air New Zealand).
+03-doorframe-marks.png     Pencil height marks on a doorframe: the truest image, but drawn it is a ruler, a comb or an "E"; data, not love.
+04-letters-stack.png       Letters stacking into a book: a pyramid or a layers icon; horizontal bars also read as strikethrough.
+05-nested-arches.png       Nested arches over a dot: wifi and the nursery rainbow-toy cliche.
+06-nested-crescent.png     Crescent inside an arc: a moon (another designer's territory) and a bracket.
+07-sapling.png             Seed and sapling: the generic eco leaf the brief bans.
+08-doorways.png            Arched doorways: a tunnel; an arched top also flirts with a headstone.
+09-eggs.png                Nested egg shapes: bland, and at 16px just a zero.
+10-shelf-of-years.png      Year One, Two, Three books on a shelf: literal, but a bar chart at icon size.
+11-wood-slice.png          Solid wood slice with cut rings: an eyeball, unmistakably.
+12-hops.png                Arcs rising from one foot: lively, but a sideways wifi signal.
+13-first-build.png         First build of the chosen idea: stroke-sampled walls left lumps at 1024px and a crowded 16px; rebuilt from true circles.
