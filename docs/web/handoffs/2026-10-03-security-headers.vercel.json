@@ -23,7 +23,7 @@
       ]
     },
     {
-      "source": "/auth/confirm",
+      "source": "/auth/callback",
       "headers": [
         { "key": "Cache-Control", "value": "no-store" },
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" }

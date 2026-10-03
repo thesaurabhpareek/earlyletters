@@ -203,7 +203,7 @@ flowchart TD
 
 - The initial route is passed as the Stack's `initialRouteName` via a guarded group (`(gate)`, `(app)`), so there is no render-then-redirect flash. Expo Router supports redirect in layouts; the exact "protected routes" API in Router 57 is **Unverified**, so the fallback is `<Redirect>` in the group layouts, which still happens before the splash hides.
 - Splash hides on the first layout of the chosen route (`onLayout` of the root view), not in an effect of an unrelated component.
-- Deep links (`/i/<token>`, `/auth/confirm`) are parsed in `links.ts` from `Linking.getInitialURL()` and the URL listener; the invite token is written to Keychain before any UI (A-REQ-028). Token-bearing URLs are never logged and never passed as route params; the route gets a boolean `hasInvite`.
+- Deep links (`/i/<token>`, `/auth/callback`) are parsed in `links.ts` from `Linking.getInitialURL()` and the URL listener; the invite token is written to Keychain before any UI (A-REQ-028). Token-bearing URLs are never logged and never passed as route params; the route gets a boolean `hasInvite`.
 - An invite link still hits the age gate first (PRD-REQ-019).
 - `export function ErrorBoundary` in the root layout (Expo Router convention) shows a calm full-screen error with "Try again" and "Export what is on this phone" (export works without the rest of the app). Errors are recorded in the local diagnostics ring buffer with route template and error class only.
 
@@ -643,7 +643,7 @@ Rec: Maestro (YAML flows, works with Expo dev and release builds, readable by a 
 - Network host allowlist: an E2E run behind a proxy records every host; CI fails on a host missing from the data map (LEGAL-REQ-041).
 - Log canary: E2E with Asha fixtures, device logs and Sentry test events scanned for fixture strings (LEGAL-REQ-014).
 - Locked-device test: with the phone locked after first unlock, background tasks can read the DB; before first unlock, the files are unreadable (A-1).
-- Deep link fuzzing: malformed `/i/` and `/auth/confirm` URLs never crash and never log the token.
+- Deep link fuzzing: malformed `/i/` and `/auth/callback` URLs never crash and never log the token.
 
 ### 7.8 Which tests gate a release
 | Gate | Blocks | Runs |

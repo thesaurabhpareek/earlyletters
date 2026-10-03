@@ -23,7 +23,7 @@ export type LinkMode =
    * fragment never reaches a server log, and a mail scanner that fetches the page
    * cannot use it; the app (or the page) calls verifyOtp({ token_hash, type }).
    * The path is the one develop's app handles (apps/mobile/src/lib/auth/links.logic.ts
-   * AUTH_CALLBACK_PATH, docs/ops/AUTH_SETUP.md); the lane drafted /auth/confirm.
+   * AUTH_CALLBACK_PATH, docs/ops/AUTH_SETUP.md); the lane drafted /auth/callback.
    */
   | 'token-hash'
   /**

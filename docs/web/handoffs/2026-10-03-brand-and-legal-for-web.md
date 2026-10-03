@@ -31,7 +31,7 @@ The founder wants one standardised brand across every touchpoint. earlyletters.c
    - E3 owns `apps/web/vercel.json`. Adapt the CSP to Next.js, using nonces or hashes for inline scripts.
 
 5. **Landing page for email sign-in links.**
-   - Sign-in links go to `https://earlyletters.com/auth/confirm#token_hash=...` (see `docs/emails/SECURITY.md` and `supabase/auth-email.md`).
+   - Sign-in links go to `https://earlyletters.com/auth/callback#token_hash=...` (see `docs/emails/SECURITY.md` and `supabase/auth-email.md`).
    - The page must never verify the token itself. It only hands off to the app through the universal link, so a mail scanner that opens the link cannot use it up.
    - This page and the AASA file are E1's routes.
 

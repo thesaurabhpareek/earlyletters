@@ -71,7 +71,7 @@ Order: iOS Apple, Google, Email; Android Google, Apple, Email. Equal button size
 - **After success:** has children → Tonight (or F6.3 if local data). No children and came via "Sign in" → card "No book here yet. Did you use a different way to sign in last time?" with **Try another way** and **Start a book**.
 
 ### F5. Magic link deep link
-1. Link: `https://<app domain>/auth/confirm?token_hash=<hash>&type=email`; domain from `packages/brand`.
+1. Link: `https://<app domain>/auth/callback?token_hash=<hash>&type=email`; domain from `packages/brand`.
 2. App installed → universal link or App Link opens app → `verifyOtp({ token_hash, type })` → F4 success.
 3. Opens in a browser (no app, mail in-app browser, desktop) → page **does not verify on load**, because mail scanners prefetch links and would burn the token. Page shows **Open Early Letters** (scheme fallback) and the code to type.
 4. Expired or used → expiry copy with one-tap resend to the same address.

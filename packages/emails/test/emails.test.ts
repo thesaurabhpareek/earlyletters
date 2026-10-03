@@ -80,7 +80,7 @@ describe('components', () => {
 
   it('plain text prints the action URL once (the fallback block is skipped) and keeps the safety note', () => {
     const r = all.find((x) => x.name === 'pipeline-sample')!;
-    const url = 'https://earlyletters.com/auth/confirm?token_hash=fixture-not-a-real-token&type=email';
+    const url = 'https://earlyletters.com/auth/callback?token_hash=fixture-not-a-real-token&type=email';
     expect(r.text.split(url).length - 1).toBe(1);
     expect(r.text).not.toContain('Button not working?');
     expect(r.text).toContain('Did not ask for this?');

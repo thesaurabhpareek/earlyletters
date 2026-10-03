@@ -24,7 +24,7 @@ export type PipelineSampleProps = { signInUrl: string; code: string };
 export const subject = 'Pipeline sample';
 
 export const PreviewProps: PipelineSampleProps = {
-  signInUrl: 'https://earlyletters.com/auth/confirm?token_hash=fixture-not-a-real-token&type=email',
+  signInUrl: 'https://earlyletters.com/auth/callback?token_hash=fixture-not-a-real-token&type=email',
   code: '482913',
 };
 
