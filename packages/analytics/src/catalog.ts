@@ -12,7 +12,8 @@
  *   (the timestamp itself would leak an L4 date). See TRACKING_PLAN 6.4.
  * - Every property is L2 and every event cites the requirement it serves.
  */
-import { bool, int, oneOf, opt, type EventSpec } from './schema';
+import { CAPTURE_MODES, MEMBER_ROLES, OFFER_TRIGGERS } from '@scribe/core';
+import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
 
 // ---------------------------------------------------------------------------
 // Shared value sets
@@ -20,12 +21,17 @@ import { bool, int, oneOf, opt, type EventSpec } from './schema';
 
 export const CHILD_ORDINAL = oneOf('first', 'second', 'third_plus');
 export const CHILD_COUNT_BUCKET = oneOf('none', 'one', 'two', 'three_plus');
-/** The viewer's role in the current child's book (B section 6). */
-export const MEMBER_ROLE = oneOf('parent', 'contributor');
-export const INVITE_ROLE = oneOf('co_parent', 'contributor');
+/**
+ * The viewer's role in the current child's book (B section 6). DB values from
+ * @scribe/core: the UI's "Co-parent" is `parent` here (CORE-05).
+ */
+export const MEMBER_ROLE = oneOf(...MEMBER_ROLES);
+/** Role an invite grants: the same DB values as MEMBER_ROLE. */
+export const INVITE_ROLE = MEMBER_ROLE;
 /** Who wrote a letter, relative to the person viewing it. */
 export const AUTHOR_RELATION = oneOf('self', 'other_parent', 'family');
-export const CAPTURE_MODE = oneOf('spoken', 'typed');
+/** entries.capture_mode, from @scribe/core (includes `mixed`). */
+export const CAPTURE_MODE = oneOf(...CAPTURE_MODES);
 /** packages/core PromptKind, plus `none` when no prompt was shown. */
 export const PROMPT_KIND = oneOf('opening', 'gap', 'hard', 'family', 'together', 'none');
 export const AUDIO_BUCKET = oneOf('lt_15s', '15_60s', '1_2m', '2_5m', 'gt_5m');
@@ -38,7 +44,8 @@ export const SESSION_BUCKET = oneOf('lt_1m', '1_5m', '5_15m', 'gt_15m');
 export const EDIT_TYPE = oneOf('filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph');
 export const AUTH_METHOD = oneOf('apple', 'google', 'email');
 export const PLUS_PRODUCT = oneOf('monthly', 'annual', 'gift');
-export const PLUS_TRIGGER = oneOf('chapter_complete', 'second_child', 'backup', 'read_together', 'themes', 'settings');
+/** packages/core OfferTrigger. */
+export const PLUS_TRIGGER = oneOf(...OFFER_TRIGGERS);
 
 /** Route templates only, never resolved paths (dynamic segments stay literal). */
 export const ROUTE = oneOf(
@@ -92,8 +99,20 @@ export const GLOBAL_PROPS = {
   sample_pct: opt(int(1, 99)),
 } as const;
 
-/** Bump when an event or property changes meaning. */
-export const SCHEMA_VERSION = 1;
+/**
+ * Bump when an event or property changes meaning. A test hashes
+ * `catalogShape()` and fails until the new hash is recorded below under a
+ * new version (PDATA-10). Never edit an existing entry: append one.
+ */
+export const SCHEMA_VERSION = 2;
+
+/**
+ * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Version 1
+ * predates fingerprinting.
+ */
+export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.freeze({
+  2: '97274a738a82562389c1b2060a9f1f9b395781c6742cf5f8b9b28d5f11ae3ace',
+});
 
 // ---------------------------------------------------------------------------
 // Events
@@ -145,7 +164,7 @@ export const EVENTS = {
       letters_bucket: LETTERS_BUCKET,
       signed_in: bool(),
       member_role: MEMBER_ROLE,
-      first_letter_mode: oneOf('spoken', 'typed', 'none'),
+      first_letter_mode: oneOf(...CAPTURE_MODES, 'none'),
       time_to_first_letter: oneOf('lt_90s', '90s_5m', '5_30m', '30m_24h', 'gt_24h', 'unknown'),
       came_from_invite: bool(),
     },
@@ -255,8 +274,13 @@ export const EVENTS = {
     reqs: ['PRD-REQ-011', 'PRD-REQ-015', 'B-REQ-004'],
     level: 'L2',
     props: {
-      mode: oneOf('birthday', 'due_date', 'month_only'),
-      ordinal: CHILD_ORDINAL,
+      /**
+       * True when a full date (birthday or due date) was entered, false for
+       * month only or none. Which kind of date is never sent: it reveals a
+       * pregnancy (PPRIV-02).
+       */
+      has_date: bool(),
+      child_ordinal: CHILD_ORDINAL,
       in_first_run: bool(),
       added_together: bool(),
     },
@@ -266,7 +290,7 @@ export const EVENTS = {
     when: 'User switches the current book',
     reqs: ['PRD-REQ-012'],
     level: 'L2',
-    props: { ordinal: CHILD_ORDINAL, surface: oneOf('tonight', 'book', 'review', 'listen') },
+    props: { child_ordinal: CHILD_ORDINAL, surface: oneOf('tonight', 'book', 'review', 'listen') },
   },
   child_setting_changed: {
     area: 'children',
@@ -288,7 +312,7 @@ export const EVENTS = {
         'pause_celebrations',
         'auto_add',
       ),
-      ordinal: CHILD_ORDINAL,
+      child_ordinal: CHILD_ORDINAL,
     },
   },
   make_it_yours_card: {
@@ -504,7 +528,7 @@ export const EVENTS = {
     when: 'A member leaves a book',
     reqs: ['B-REQ-010'],
     level: 'L2',
-    props: { role: oneOf('co_parent', 'contributor'), letters: oneOf('keep', 'take_out') },
+    props: { role: MEMBER_ROLE, letters: oneOf('keep', 'take_out') },
   },
 
   // --- Reminders (C-REQ-034) -----------------------------------------------------
@@ -723,4 +747,32 @@ export const EVENTS = {
 } as const satisfies Record<string, EventSpec>;
 
 export type Catalog = typeof EVENTS;
+
+function shapeOf(p: PropSpec): unknown[] {
+  const base: unknown[] = [p.type, p.level, p.optional === true];
+  if (p.type === 'enum') base.push([...p.values]);
+  if (p.type === 'int') base.push(p.min, p.max);
+  return base;
+}
+
+function shapeOfProps(props: Readonly<Record<string, PropSpec>>): [string, unknown[]][] {
+  return Object.keys(props)
+    .sort()
+    .map((k) => [k, shapeOf(props[k])]);
+}
+
+/**
+ * Everything about the catalogue that changes what is sent: event names,
+ * levels, property keys, types, values, ranges and optionality, in a stable
+ * order. Excludes `when`, `reqs` and `area`, which are documentation.
+ */
+export function catalogShape(): unknown {
+  const events = EVENTS as Record<string, EventSpec>;
+  return {
+    globals: shapeOfProps(GLOBAL_PROPS),
+    events: Object.keys(events)
+      .sort()
+      .map((name) => [name, events[name].level, shapeOfProps(events[name].props)]),
+  };
+}
 export type EventName = keyof Catalog;

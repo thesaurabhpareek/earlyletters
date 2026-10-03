@@ -6,7 +6,8 @@
  *    nothing reaches the provider (LEGAL-REQ-003, PRD 6.9).
  * 2. Unknown events are dropped; unknown properties are stripped; enum,
  *    bool and int properties are checked against the catalogue
- *    (LEGAL-REQ-017).
+ *    (LEGAL-REQ-017). A missing or invalid required property drops the
+ *    event and is counted in `violationCounts()` (PDATA-03).
  * 3. Free text, PII-like strings and strings over 40 characters drop the
  *    whole event.
  * 4. `revoke()` clears the queue, opts the provider out, resets its
@@ -17,7 +18,7 @@ import { EVENTS, SCHEMA_VERSION, type Catalog, type EventName } from './catalog'
 import { ConsentStore, defaultRandomId, memoryStorage, type ConsentStatus, type KeyValueStorage } from './consent';
 import type { AnalyticsProvider } from './provider';
 import type { PropsOf } from './schema';
-import { sanitizeEvent, type Props, type Violation } from './validate';
+import { sanitizeEvent, type Props, type Violation, type ViolationKind } from './validate';
 
 export type EventProps<E extends EventName> = PropsOf<Catalog[E]['props']>;
 
@@ -72,6 +73,11 @@ export interface Analytics {
   analyticsIds(): string[];
   /** After deletion is requested upstream: forget all ids locally. */
   forgetIds(): Promise<void>;
+  /**
+   * Allowlist violations seen this session, by kind (PDATA-03). Counts only,
+   * never values, so a dev screen or health check can show them safely.
+   */
+  violationCounts(): Readonly<Partial<Record<ViolationKind, number>>>;
 }
 
 export const DEFAULT_MAX_QUEUE_BYTES = 1024 * 1024;
@@ -97,7 +103,12 @@ function hash(s: string): number {
 export function createAnalytics(options: AnalyticsOptions): Analytics {
   const provider = options.provider;
   const store = new ConsentStore(options.storage ?? memoryStorage(), options.randomId ?? defaultRandomId);
-  const report = options.onViolation ?? (() => {});
+  const counts: Partial<Record<ViolationKind, number>> = {};
+  const onViolation = options.onViolation;
+  const report = (v: Violation) => {
+    counts[v.kind] = (counts[v.kind] ?? 0) + 1;
+    onViolation?.(v);
+  };
   const maxBytes = options.maxQueueBytes ?? DEFAULT_MAX_QUEUE_BYTES;
   const intervalMs = options.flushIntervalMs ?? DEFAULT_FLUSH_INTERVAL_MS;
   const timers = options.timers ?? {
@@ -214,6 +225,7 @@ export function createAnalytics(options: AnalyticsOptions): Analytics {
     queueLength: () => queue.length,
     analyticsIds: () => store.allIds(),
     forgetIds: () => store.forgetAllIds(),
+    violationCounts: () => ({ ...counts }),
   };
 }
 
