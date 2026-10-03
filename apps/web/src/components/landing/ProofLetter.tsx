@@ -35,11 +35,12 @@ function Fix({ seg, index, progress, enabled }: { seg: HeardSegment; index: numb
 }
 
 export function ProofLetter({ progress, enabled }: { progress: MotionValue<number>; enabled: boolean }) {
-  const scale = useTransform(progress, [0, 0.24], [0.9, 1]);
-  const y = useTransform(progress, [0, 0.24], [90, 0]);
-  const rotate = useTransform(progress, [0, 0.24], [-4, -0.6]);
-  const opacity = useTransform(progress, [0, 0.14], [0, 1]);
-  const foot = useTransform(progress, [0.82, 0.95], [0, 1]);
+  // The letter settles in, then keeps coming a little closer for the rest of the scene.
+  const scale = useTransform(progress, [0, 0.24, 1], [0.92, 1, 1.03]);
+  const y = useTransform(progress, [0, 0.24], [60, 0]);
+  const rotate = useTransform(progress, [0, 0.24], [-2.5, -0.6]);
+  const opacity = useTransform(progress, [0.02, 0.16], [0, 1]);
+  const foot = useTransform(progress, [0.76, 0.88], [0, 1]);
   let fix = 0;
   return (
     <motion.figure className={styles.letter} style={enabled ? { scale, y, rotate, opacity } : undefined}>
