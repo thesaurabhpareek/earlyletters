@@ -43,6 +43,7 @@ export const en = {
       body: "We tidy what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.",
       body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
       recordingTitle: "Your voice stays too",
+      // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
       recordingBody: "The recording is kept on this phone, so one day {child} can hear you say it.",
       privateNote: "Private by default. You choose what goes in the book.",
       cta: "That sounds right",
@@ -58,6 +59,8 @@ export const en = {
       expectingLabel: "Not here yet",
       expectingHelp: "Letters written before birth go into a chapter called Before You.",
       addAnotherButton: "Add another child",
+      // Twins or more, same birthday or due date, during first run (PRD.md K-12).
+      addAnotherHelp: "Twins or more? Add them now. Each child gets their own book.",
       cta: "Continue",
     },
 
@@ -332,11 +335,7 @@ export const en = {
       shareButton: "Share",
       deleteButton: "Delete",
     },
-    printPrompt: {
-      title: "Early Letters: Year One",
-      body: "{child}'s first year, in your words. Ready to hold in your hands.",
-      cta: "See the printed book",
-    },
+    // No printed-book prompt: v1 is digital only; printed books are a future launch (PRD.md K-32).
   },
 
   readTogether: {
@@ -385,8 +384,8 @@ export const en = {
       removeButton: "Remove",
     },
     shareMessage: {
-      imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. Tap here to join:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Join here:",
+      imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the free app on your iPhone, or helps you get it:",
+      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Get the free app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
@@ -412,7 +411,7 @@ export const en = {
       thankButton: "Send a thank you",
       thankMessage: "Your letter is in {child}'s book. Thank you, {signsAs}.",
       addedToast: "{signsAs}'s letter is in the book.",
-      settingLabel: "Add family letters on their own",
+      settingLabel: "Add family letters automatically",
       settingHelp: "Skip the check and add every letter from {signsAs} straight to the book.",
     },
     contributorBook: {
@@ -514,12 +513,15 @@ export const en = {
     tidyOn: "Lightly tidied",
     tidyOff: "Word for word",
     tidyHelp: "Word for word keeps every um and false start. Either way, we never rewrite.",
+    // Show onPhone* only while backup is off; show backedUp* while it is on (lawyer-2 H4, register s.3 row 16).
     recordings: {
       title: "Recordings",
       keepLabel: "Keep recordings",
       keepHelp: "Your voice is saved with each letter, on this phone.",
       onPhoneTitle: "Kept on this phone",
-      onPhoneBody: "Recordings live on this phone. Export or turn on backup to keep a copy.",
+      onPhoneBody: "Without backup, recordings live only on this phone. Export or turn on backup to keep a copy.",
+      backedUpTitle: "Kept on this phone and backed up",
+      backedUpBody: "Each recording stays on this phone, with an encrypted copy in your backup.",
       storageUsed: "{count} MB used on this phone",
     },
     backup: {
@@ -581,6 +583,112 @@ export const en = {
       },
     },
     neverRewrite: "We never rewrite your words. We only tidy what the microphone got wrong.",
+    // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
+    privacy: {
+      title: "Privacy",
+      analyticsLabel: "Share usage and crash reports",
+      analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
+      sensitiveLabel: "Sync and family sharing",
+      // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
+      sensitiveHelp: "Letters can hold health details about you or {child}. Turn this off to stop syncing, and we will offer to delete what already synced.",
+      aiLabel: "Cloud transcription",
+      lockScreenLabel: "Names in notifications",
+    },
+  },
+
+  // Sensitive-data consent, one plain screen after a new account is created and before the first sync
+  // (PRD.md K-15, PRD-REQ-002; text from consumer-health-data-notice.md HN-4, counsel to approve).
+  sensitiveConsent: {
+    title: "Before your book syncs",
+    body: "Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.",
+    use: "We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
+    changeLater: "You can change this any time in Settings, Privacy.",
+    declineHelp: "If you keep it on this phone, syncing, backup and family sharing stay off.",
+    agreeButton: "Agree and sync",
+    declineButton: "Keep on this phone",
+  },
+
+  // Product analytics consent. Third ask after the first letter, on a later session (PRD.md K-01, PRD-REQ-001).
+  analyticsConsent: {
+    title: "Help us make it better?",
+    body: "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
+    detail: "Nothing is shared unless you say yes. Saying no changes nothing else.",
+    changeLater: "You can change this any time in Settings, Privacy.",
+    yesButton: "Share usage",
+    noButton: "Don't share",
+  },
+
+  // One book per child (PRD.md K-12, PRD-REQ-011 to PRD-REQ-015).
+  children: {
+    switcher: {
+      label: "For {child}",
+      hint: "Switch to another child's book",
+      title: "Whose book?",
+      addButton: "Add a child",
+      hiddenLink: "Hidden books",
+      toLabel: "To {child}",
+      changeLink: "Write to another child",
+    },
+    add: {
+      title: "Add a child",
+      body: "Each child gets their own book, with their own months, family and settings.",
+      // PRD-REQ-015 (founder, 2 Oct 2026): one free book you start; books you joined as a co-parent do not count;
+      // children added together in first run are all free, so this sheet's twins line makes no price promise.
+      plusNote: "The first book you start is free, always. Books you start for more children are part of Plus.",
+      joinedNote: "A book you joined as a co-parent does not count as your free book.",
+      keepNote: "Every book you already have stays open for writing, reading and export, with or without Plus.",
+      twinsHelp: "Twins or more? Each child gets their own book.",
+      cta: "Add {child}'s book",
+    },
+    settings: {
+      sectionTitle: "Children",
+      title: "{child}'s book",
+      detailsLabel: "Name and birthday",
+      signsAsLabel: "Sign my letters to {child} as",
+      remindersLabel: "Include {child} in my reminders",
+      remindersHelp: "Your reminder time is shared across your children. Notes about {child}'s months and birthday follow this switch.",
+      celebrationsLabel: "Pause celebrations for {child}",
+      celebrationsHelp: "Only for you. Month notes, birthdays and milestones for {child} rest until you turn them back on.",
+      familyLabel: "Who writes to {child}",
+      familyCanReadLabel: "Family can read {child}'s book",
+      themeLabel: "How the book looks",
+      hideLabel: "Hide this book",
+      hideBody: "Hiding {child}'s book quiets every reminder and note about {child}, for everyone in the family. Nothing is deleted.",
+      showButton: "Show this book again",
+      hiddenTitle: "Hidden books",
+      hiddenEmpty: "No hidden books.",
+    },
+    sharing: {
+      pickerTitle: "Which books?",
+      oneBookNote: "This invite is for {child}'s book only.",
+      separateNote: "Each child's book has its own family list. Inviting someone to one book does not open the others.",
+    },
+  },
+
+  // Web contribution page (apps/web), ships in v1.1 (PRD.md K-35). Same text as review.firstNote.body (in-app-disclosures.md section 2).
+  web: {
+    firstNote: {
+      title: "Please have a read",
+      body: "We fix small slips, like \"um\" and repeats. We can also mishear a word or a name. Please read it before you save.",
+    },
+    ageConfirm: "I am 18 or older",
+  },
+
+  // Plus sheet store-required disclosure (in-app-disclosures.md section 3). {price} is the localized store price.
+  plus: {
+    legal: {
+      renewAnnual: "Free for 2 months, then {price} a year. Renews automatically until you cancel, at least 24 hours before it renews.",
+      renewMonthly: "Free for 1 month, then {price} a month. Renews automatically until you cancel, at least 24 hours before it renews.",
+      renewNoTrialAnnual: "{price} a year, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",
+      renewNoTrialMonthly: "{price} a month, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",
+      cancel: "Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions.",
+      termsLink: "Terms of Service",
+      privacyLink: "Privacy Policy",
+      subscriptionTermsLink: "Subscription terms",
+      restoreLink: "Restore",
+      agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
+    },
+    promise: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras.",
   },
 
   errors: {
@@ -606,7 +714,7 @@ export const en = {
     },
     backupFailed: {
       title: "Backup paused",
-      body: "Your letters are safe on this phone. We will back up when the connection returns.",
+      body: "Your recordings are safe on this phone. Backup will continue when you are back online.",
     },
     inviteExpired: {
       title: "This invite has expired",
@@ -620,6 +728,79 @@ export const en = {
       title: "Something went wrong",
       body: "Your words are safe. Please try again.",
     },
+  },
+
+  // Appended by Mobile B (Book, letter view, children, Family, Settings). PM to review.
+  reader: {
+    readingSizeTitle: "Reading size",
+    readingSizeButton: "Aa",
+    readingSizeA11y: "Reading size",
+    sizes: {
+      standard: "Standard",
+      large: "Large",
+      largePrint: "Large print",
+    },
+    preview: "Dear {child}, today you laughed at the rain.",
+    deletedBody: "Going back to the book in a moment.",
+    notFoundTitle: "This letter is not here anymore.",
+    notFoundCta: "Back to the book",
+    openHint: "Opens the letter.",
+  },
+
+  // Keys the children section above does not cover yet.
+  childrenExtra: {
+    dueDateLabel: "Due date",
+    nameRequired: "Add a name to continue.",
+    notSet: "Not set",
+    familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
+    plusGateTitle: "Another book is part of Plus",
+    plusCta: "See what Plus adds",
+    plusNotYet: "Plus is not open yet in the beta.",
+  },
+
+  familyTab: {
+    membersTitle: "Who writes to {child}",
+    youLabel: "You",
+    emptyTitle: "Just you, for now.",
+    emptyBody: "Letters are lovelier with more voices.",
+    inviteNeedsSignIn: "Inviting family needs an account, so they can write from their own phone. Sign in arrives in a coming update.",
+    rolesTitle: "Two ways to join",
+    coParentLabel: "Co-parent",
+    coParentBody: "Writes, reads the whole book, and chooses which family letters go in.",
+    familyLabel: "Family",
+    familyBody: "Writes to {child}. You choose which letters go in the book.",
+  },
+
+  settingsMore: {
+    accountTitle: "Account",
+    signedOutLabel: "Not signed in",
+    // signedOutHelp and deleteAccountNotYet are removed in the release that ships sign-in (lawyer-2 H4).
+    signedOutHelp: "Your letters and recordings are kept on this phone for now. Sign in arrives in a coming update.",
+    appearanceTitle: "Appearance",
+    themeLabel: "Theme",
+    themes: {
+      system: "Match this phone",
+      light: "Light",
+      dark: "Dark",
+    },
+    exportNotYet: "Export arrives in a coming beta update.",
+    deleteAccountNotYet: "Accounts arrive with sign in. Until then, deleting the app removes its letters and recordings from this phone.",
+    backupNotYet: "Backup arrives with Plus, later in the beta.",
+    remindersNotYet: "Your choice is saved. Reminders start in a coming beta update.",
+    legalTitle: "Legal",
+    versionLabel: "Version",
+  },
+
+  // 18+ only (founder decision, Oct 2 2026). Asked before any child details; only "yes" is stored, never an age.
+  ageGate: {
+    title: "Are you 18 or older?",
+    body: "We ask everyone the same question.",
+    yesButton: "Yes",
+    noButton: "No",
+    stopTitle: "Thank you for telling us.",
+    stopBody: "Early Letters is currently for adults 18 and over.",
+    stopNote: "Nothing you entered has been kept.",
+    mistakeButton: "I answered by mistake",
   },
 } as const;
 

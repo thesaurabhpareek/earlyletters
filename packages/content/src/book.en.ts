@@ -1,4 +1,5 @@
-// Printed and PDF book copy for Early Letters: Year One, Year Two, etc.
+// Book copy for the PDF in every export (Early Letters: Year One, Year Two, etc.).
+// v1 is digital only; the same copy will serve printed books when they launch (PRD.md K-32).
 // {child} and {n} are placeholders.
 
 export const book = {

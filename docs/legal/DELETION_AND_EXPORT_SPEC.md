@@ -1,13 +1,16 @@
 ---
 title: Deletion, export and data integrity specification
-version: 1.0.0
+version: 1.1.0
 status: draft-for-counsel
 effective_date: TBD
 owner: founder (data governance lead role)
 implements: data-policy.md v1.0.0
-sql_draft: supabase/migrations/drafts/20261002000000_data_governance.sql
-sql_tests: supabase/tests/drafts/data_governance.test.mjs (42 checks, passing on 2 Oct 2026 in PGlite on top of the two live migrations; existing rls.test.mjs still passes with the draft applied)
+sql_migration: supabase/migrations/20261002020000_data_governance.sql (promoted 2 Oct 2026, pending live apply)
+sql_tests: supabase/tests/data_governance.test.mjs (run by npm run test:db)
 changelog:
+  - version: 1.1.0
+    date: 2026-10-03
+    summary: Alignment with PRD.md 1.3 (ADR 0013). RevenueCat removed; the subscription check before deletion reads the App Store entitlement through StoreKit and our plan state; processor step 4 becomes `appstore_mapping` (delete `app_account_tokens`, pseudonymise `store_subscriptions`; no third-party call). Minor.
   - version: 1.0.0
     date: 2026-10-02
     summary: First draft. Deletion flows with states and timelines, contributor removal decision, account deletion for Apple and Google Play, backups and PITR, processors, receipts, legal holds, export formats and 18-year plan, integrity controls, DATA-REQ-001 to DATA-REQ-066 with acceptance criteria, draft migration and tests.
@@ -184,7 +187,7 @@ Google Play: apps with account creation must provide an **in-app path** and a **
 | 1 | Settings > Your data > Delete account | At most 2 taps from Settings (C-REQ-016) |
 | 2 | **What happens** | Lists, per book: "Your N letters to {child} will be removed." Books with a co-parent: "{child}'s book stays with {coParent}." Sole-parent books with family: "{child}'s book will be deleted. Family members can save a copy of their letters." Plain line: "Letters already exported or played on family phones stay with them." |
 | 3 | **Export first** | `settings.delete.bookExportFirst`. Export everything is the primary button; Continue is secondary. Export runs locally (DATA-REQ-052). |
-| 4 | **Subscription** | If RevenueCat shows an active auto-renewing entitlement: "Deleting your account does not cancel Plus. Billing continues through Apple until you cancel." Button opens `showManageSubscription` on iOS 15+ [D2] (Google Play subscriptions deep link on Android). The user may continue without cancelling; we never block deletion on it (C-REQ-019). |
+| 4 | **Subscription** | If the App Store reports an active auto-renewing subscription (StoreKit `currentEntitlements` on the device, or our `get_plan_state()`; ADR 0013): "Deleting your account does not cancel Plus. Billing continues through Apple until you cancel." Button opens `showManageSubscription` on iOS 15+ [D2] (Google Play subscriptions deep link on Android). The user may continue without cancelling; we never block deletion on it (C-REQ-019). |
 | 5 | **Confirm** | Re-authentication if the session is older than 24 hours (device passcode/Face ID via LocalAuthentication, else email code), then type-to-confirm (C-REQ-019). |
 | 6 | Server | `request_account_deletion(source, had_active_subscription)`: one request per account (idempotent); own letters tombstoned with `deleted_reason='account_deletion'`; sole-parent books tombstoned and linked to the request; steps created; audit event. |
 | 7 | Phone | Shows "Your account will be deleted on {date}. Sign in before then to cancel." Signs out this device after unsynced writes are uploaded (A sign-out guard). Analytics opt-out takes effect immediately. |
@@ -206,7 +209,7 @@ Order matters: Supabase refuses to delete a user who owns Storage objects [D6], 
 | 1 | | `prepare_account_purge(request)`: re-checks holds; tombstones books where the user became sole parent; enqueues all `{child}/{user}/` prefixes and whole prefixes of books deleted with the account; hard-deletes the user's letters and those books; writes the ledger | function returns counts |
 | 2 | `storage_objects` | Drain the queue via Storage API (list prefix, delete in batches) | listing each prefix returns 0 objects |
 | 3 | `apple_token_revoke` | `POST https://appleid.apple.com/auth/revoke` with the stored refresh token [D2]; `not_applicable` if no Apple identity | HTTP 200 (also returned if already revoked) |
-| 4 | `revenuecat` | `DELETE /subscribers/{app_user_id}`, queued asynchronously by RevenueCat; 200 and 404 both mean done [D3]. Does not cancel a store subscription (RevenueCat page does not say it does; treat as **Unverified**, user was told in step 4) | 200 or 404 |
+| 4 | `appstore_mapping` | Delete the `app_account_tokens` row (random `appAccountToken`), set `store_subscriptions.profile_id` to null and pseudonymise `auto-renewal-terms` acceptances (ADR 0013). No third-party call: Apple is the store, not our processor, and keeps its own records. Does not cancel the store subscription (the user was told in step 4) | rows gone or pseudonymised |
 | 5 | `posthog` | `DELETE` person by analytics id with `delete_events=true`; returns 202 queued; events removed off-peak (weekends on Cloud) [D4] | 202, then person lookup 404 within 14 days |
 | 6 | `email_provider` | Delete the contact and stored message logs (API **Unverified** until provider chosen). Keep only a suppression hash if the person unsubscribed from commercial email (register CR-060) | provider confirms |
 | 7 | `receipt_email` | "Your account and letters have been deleted" with request id and date | sent |
@@ -235,8 +238,8 @@ Each step is retried with exponential backoff (1 min to 6 h) for 7 days; then th
 - Given the URL, Then it is entered in Play Console before the first Android release, And it works without installing the app.
 
 **DATA-REQ-022 (P0) Subscription notice.**
-- Given RevenueCat reports an active auto-renewing subscription on the device, When the user reaches Confirm, Then the notice and manage link have been shown, And `had_active_subscription=true` is stored on the request.
-- Given execution while the store subscription is still active, Then the RevenueCat customer is still deleted, And the completion email repeats how to cancel with Apple or Google.
+- Given the App Store reports an active auto-renewing subscription on the device, When the user reaches Confirm, Then the notice and manage link have been shown, And `had_active_subscription=true` is stored on the request.
+- Given execution while the store subscription is still active, Then the `app_account_tokens` mapping is still deleted and the ledger pseudonymised, And the completion email repeats how to cancel with Apple (or Google, once Android ships).
 
 **DATA-REQ-023 (P0) Device data at deletion.**
 - Given deletion executes, When any signed-in device of that user next launches or syncs, Then it receives an auth failure, shows "Your account was deleted on {date}", offers one local Export of what is still on the phone, and then wipes the local database, audio, photos, Keychain items for that account and the analytics id.
@@ -278,7 +281,7 @@ Facts: Supabase Pro keeps 7 days of daily backups; Team 14; Enterprise up to 30;
 - Given print orders (P2), Then order and payment records are retained 7 years (proposed) and disclosed.
 
 **DATA-REQ-034 (P0) Deletion verification.** Before `finalize_account_deletion`, the worker runs checks; failures keep the request `executing`.
-- Given a completed request, Then: no row in any `public` table references the former profile id (scan of every uuid column listed in the inventory); Storage listing of every enqueued prefix is empty; RevenueCat GET returns 404; Apple revoke returned 200; PostHog person lookup is 404 within 14 days (follow-up check).
+- Given a completed request, Then: no row in any `public` table references the former profile id (scan of every uuid column listed in the inventory); Storage listing of every enqueued prefix is empty; no `app_account_tokens` or `store_subscriptions` row references the profile; Apple revoke returned 200; PostHog person lookup is 404 within 14 days (follow-up check).
 
 **DATA-REQ-035 (P0) Legal holds.**
 - Given a hold on a letter, a book or an account, When `purge_due()` runs after day 30, Then the held scope is not purged and an account request moves to `held` (draft test for letters).
@@ -415,7 +418,7 @@ The format string comes from `packages/brand` at build time (CLAUDE.md: name onl
 **DATA-REQ-044 (P0) Idempotent writes.**
 - Given entry ids are UUIDv7 generated on the device, When an insert is retried, Then it is an upsert on `id` and produces one row.
 - Given `request_account_deletion()` is called twice, Then the same request id is returned (draft test); `restore_entry()` and `delete_entry()` on an already-restored or already-deleted letter return true (draft test).
-- Given a purge or worker step re-runs after a crash, Then deleting an already-deleted object, a RevenueCat 404 [D3] or an Apple "already revoked" 200 [D2] counts as done.
+- Given a purge or worker step re-runs after a crash, Then deleting an already-deleted object, an already-deleted `app_account_tokens` row or an Apple "already revoked" 200 [D2] counts as done.
 
 **DATA-REQ-045 (P0) Audit log without content.** `audit_events` records actor, action enum, subject id, child id and a small enum-only `detail`. Logged: letter deleted and restored, book deletion requested, cancelled and purged, leave and removal, account deletion requested, cancelled and completed, export created, holds, support access, purge runs, restore replays. Not logged: reads, edits to text (versions cover them), anything with content.
 - Given a user, Then they can read only their own audit rows; nobody can update or delete rows except retention (24 months) and pseudonymisation at account deletion (draft test).
@@ -450,7 +453,7 @@ The format string comes from `packages/brand` at build time (CLAUDE.md: name onl
 | TC-11 | Account deletion request idempotent, cancellable, completes, pseudonymises audit | Draft test |
 | TC-12 | Photo path scoped to own folder | Draft test |
 | TC-13 | Machine-edit-only change is versioned | Draft test |
-| TC-14 | Safety events older than 12 months erased | Draft test |
+| TC-14 | No server `safety_events` table (PRD K-06) | Test |
 | TC-15 | Sync Streams parity incl. tombstones and deleted books | To build (ADR 0004) |
 | TC-16 | PowerSync rejected write goes to `rejected_writes`, queue continues | To build (mobile) |
 | TC-17 | Export manifest hashes verify; corrupted file flagged | To build (mobile) |
@@ -465,7 +468,7 @@ The format string comes from `packages/brand` at build time (CLAUDE.md: name onl
 **DATA-REQ-060 (P0) Invites.** `child_invites` rows are deleted 90 days after `expires_at` (draft `purge_due`). B's `member_return_links` follow the same rule after revocation.
 - Given an invite that expired 91 days ago, When `purge_due()` runs, Then it is gone.
 
-**DATA-REQ-061 (P0) Safety events.** Deleted after 12 months (draft). Counsel note CN-10 recommends storing without `author_id`; if adopted, drop the column in the same migration as promotion of this draft.
+**DATA-REQ-061 (P0) Safety events.** Not applicable: no server table. `20261002020000_data_governance.sql` drops `public.safety_events` (PRD K-06, LEGAL-REQ-015); tiers stay on the device.
 
 **DATA-REQ-062 (P0) Telemetry.** PostHog retention 12 months; Sentry 90 days; set in each console and recorded in the runbook.
 
@@ -481,10 +484,7 @@ The format string comes from `packages/brand` at build time (CLAUDE.md: name onl
 
 ## 7. Proposed SQL (summary)
 
-File: `supabase/migrations/drafts/20261002000000_data_governance.sql` (not in the live folder). Tests: `supabase/tests/drafts/data_governance.test.mjs`. Run:
-```bash
-node supabase/tests/drafts/data_governance.test.mjs supabase/migrations/*.sql supabase/migrations/drafts/20261002000000_data_governance.sql
-```
+File: `supabase/migrations/20261002020000_data_governance.sql` (promoted 2 Oct 2026; pending live apply, see `supabase/APPLY.md`). Tests: `supabase/tests/data_governance.test.mjs`. Run: `npm run test:db`.
 
 | Object | Kind | Purpose | Req |
 |---|---|---|---|

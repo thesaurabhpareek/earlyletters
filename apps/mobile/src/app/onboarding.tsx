@@ -1,49 +1,139 @@
+/**
+ * First run (PRD B F1, essentials): what we promise, the child's name (twins
+ * or more: add them all now, each book is free), birthday or due date, and
+ * what the child calls you. One step per screen; Continue is full width at
+ * the bottom.
+ *
+ * Disclosures: the "we can mishear" note sits on the promise step
+ * (in-app-disclosures.md 2, help.mistakes). The beta label is NOT shown
+ * here: in-app-disclosures.md 1 and PRD.md K-13 limit it to Settings > About.
+ * Age (PRD-REQ-019): the 18+ entry gate runs at the app root before any
+ * route, this one included (components/gate/age-gate-screen.tsx), so first
+ * run is only ever reached by someone who answered Yes.
+ */
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { PlusIcon, XIcon } from 'phosphor-react-native';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
-import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeOut } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
-import { copy, fill } from '@/lib/copy';
-import { saveFamily, todayISO } from '@/lib/store';
+import { copy, fill, pendingCopy } from '@/lib/copy';
+import { haptic } from '@/lib/haptics';
+import { useMotion } from '@/lib/motion';
+import { addChild, getActiveChildId, setActiveChildId, todayISO } from '@/lib/store';
 
 type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
+const DAY = 864e5;
+/** Twins, triplets or more; a sane ceiling for one first run. */
+const MAX_FIRST_RUN_CHILDREN = 6;
+
+/** "Asha", "Asha and Dev", "Asha, Dev and Mira". */
+function joinNames(names: string[], fallback: string): string {
+  const n = names.map((x) => x.trim()).filter(Boolean);
+  if (n.length === 0) return fallback;
+  if (n.length === 1) return n[0];
+  return fill(pendingCopy.onboarding.andJoin, { a: n.slice(0, -1).join(', '), b: n[n.length - 1] });
+}
 
 export default function Onboarding() {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const o = copy.onboarding;
+  const pc = pendingCopy.onboarding;
+  const motion = useMotion();
   const [step, setStep] = useState<Step>('welcome');
-  const [name, setName] = useState('');
+  const [names, setNames] = useState<string[]>(['']);
+  const [expecting, setExpecting] = useState(false);
   const [birthday, setBirthday] = useState<Date>(new Date());
+  const [dueDate, setDueDate] = useState<Date>(new Date(Date.now() + 60 * DAY));
   const [signsAs, setSignsAs] = useState('');
-  const child = name.trim() || 'your child';
+  const child = joinNames(names, 'your child');
+  const namedCount = names.filter((n) => n.trim()).length;
 
   const next = () => {
-    Haptics.selectionAsync();
+    haptic('tap');
     setStep(ORDER[ORDER.indexOf(step) + 1]);
   };
 
+  const back = () => {
+    haptic('tap');
+    setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
+  };
+
+  const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? v.slice(0, 60) : x)));
+  const addName = () => {
+    haptic('tap');
+    setNames((all) => (all.length < MAX_FIRST_RUN_CHILDREN ? [...all, ''] : all));
+  };
+  const removeName = (i: number) => {
+    haptic('tap');
+    setNames((all) => all.filter((_, j) => j !== i));
+  };
+
   const finish = () => {
-    saveFamily({ childName: name.trim(), childBirthday: todayISO(birthday), signsAs: signsAs.trim() });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Every book made in first run is free (twins or more share the date).
+    const created = names
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .map((n) =>
+        addChild({
+          name: n,
+          birthday: expecting ? null : todayISO(birthday),
+          dueDate: expecting ? todayISO(dueDate) : null,
+          signsAs: signsAs.trim(),
+        }),
+      );
+    if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
+    haptic('success');
     router.replace('/');
   };
 
-  const input = 'h-14 rounded-2xl border border-border bg-card px-4 text-lg text-foreground';
+  const input = 'h-14 rounded-2xl border border-muted-foreground/60 bg-card px-4 text-lg text-foreground';
+  const disabled = (step === 'child' && names.some((n) => !n.trim())) || (step === 'signsAs' && !signsAs.trim());
+
+  const cta = {
+    welcome: o.welcome.startButton,
+    promise: o.promise.cta,
+    child: o.child.cta,
+    signsAs: o.signsAs.cta,
+    finish: o.finish.cta,
+  }[step];
+  const centred = step === 'welcome' || step === 'finish';
+
+  const segment = (selected: boolean, label: string, onPress: () => void) => (
+    <Pressable
+      onPress={() => {
+        haptic('tap');
+        onPress();
+      }}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      className={`min-h-11 flex-1 items-center justify-center rounded-full border px-4 py-2 ${selected ? 'border-primary bg-secondary' : 'border-muted-foreground/60 bg-card'}`}>
+      <Text className="text-center text-base text-foreground">{label}</Text>
+    </Pressable>
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView contentContainerClassName="flex-grow px-6 pb-6" keyboardShouldPersistTaps="handled">
-          <Animated.View key={step} entering={FadeInDown.springify().damping(18)} exiting={FadeOut.duration(120)} className="flex-1 justify-center gap-5 py-10">
+        <ScrollView contentContainerClassName="flex-grow px-5 pb-6" keyboardShouldPersistTaps="handled">
+          {step !== 'welcome' && (
+            <Button variant="ghost" size="sm" className="-ml-4 mt-2 self-start" onPress={back}>
+              <Text className="text-primary">{copy.common.backButton}</Text>
+            </Button>
+          )}
+          <Animated.View
+            key={step}
+            entering={motion.enter()}
+            exiting={FadeOut.duration(120)}
+            className={centred ? 'flex-1 justify-center gap-5 py-10' : 'flex-1 gap-5 pb-8 pt-6'}>
             {step === 'welcome' && (
               <>
-                <Text className="font-serif text-5xl leading-[56px] text-foreground">{o.welcome.title}</Text>
+                <Text role="heading" className="font-serif text-5xl leading-[56px] text-foreground">{o.welcome.title}</Text>
                 <Text className="text-xl text-muted-foreground">{o.welcome.subtitle}</Text>
                 <Text className="text-lg leading-7 text-foreground">{fill(o.welcome.body, { child: 'your child' })}</Text>
               </>
@@ -51,12 +141,16 @@ export default function Onboarding() {
 
             {step === 'promise' && (
               <>
-                <Text className="font-serif text-4xl leading-[44px] text-foreground">{o.promise.title}</Text>
+                <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">{o.promise.title}</Text>
                 <Text className="text-lg leading-7 text-foreground">{o.promise.body}</Text>
                 <Text className="text-lg leading-7 text-foreground">{o.promise.body2}</Text>
                 <View className="gap-1 rounded-3xl bg-secondary p-5">
                   <Text className="text-lg font-semibold text-foreground">{o.promise.recordingTitle}</Text>
                   <Text className="text-base leading-6 text-foreground">{fill(o.promise.recordingBody, { child: 'your child' })}</Text>
+                </View>
+                <View className="gap-1 rounded-3xl bg-muted p-5">
+                  <Text className="text-lg font-semibold text-foreground">{pc.mishearTitle}</Text>
+                  <Text className="text-base leading-6 text-foreground">{copy.settings.help.mistakes}</Text>
                 </View>
                 <Text className="text-base text-muted-foreground">{o.promise.privateNote}</Text>
               </>
@@ -64,61 +158,105 @@ export default function Onboarding() {
 
             {step === 'child' && (
               <>
-                <Text className="font-serif text-4xl leading-[44px] text-foreground">{o.child.title}</Text>
+                <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">{o.child.title}</Text>
                 <View className="gap-2">
                   <Text className="text-base font-medium text-muted-foreground">{o.child.nameLabel}</Text>
-                  <TextInput
-                    className={input}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder={o.child.namePlaceholder}
-                    placeholderTextColor={c.textMuted}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                    returnKeyType="done"
-                    accessibilityLabel={o.child.nameLabel}
-                  />
-                  <Text className="text-sm text-muted-foreground">{o.child.nameHelp}</Text>
+                  {names.map((n, i) => (
+                    <View key={i} className="flex-row items-center gap-2">
+                      <TextInput
+                        className={`${input} flex-1`}
+                        value={n}
+                        onChangeText={(v) => setNameAt(i, v)}
+                        placeholder={i === 0 ? o.child.namePlaceholder : undefined}
+                        placeholderTextColor={c.textMuted}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                        autoFocus={i > 0}
+                        textContentType="givenName"
+                        returnKeyType="done"
+                        accessibilityLabel={names.length > 1 ? `${o.child.nameLabel} ${i + 1}` : o.child.nameLabel}
+                        accessibilityHint={o.child.nameHelp}
+                      />
+                      {i > 0 && (
+                        <Pressable
+                          onPress={() => removeName(i)}
+                          accessibilityRole="button"
+                          accessibilityLabel={fill(pc.removeChild, { child: n.trim() || `${o.child.nameLabel} ${i + 1}` })}
+                          className="h-11 w-11 items-center justify-center rounded-full active:bg-secondary">
+                          <XIcon size={20} color={c.textMuted} />
+                        </Pressable>
+                      )}
+                    </View>
+                  ))}
+                  <Text className="text-sm text-muted-foreground">{names.length > 1 ? o.child.addAnotherHelp : o.child.nameHelp}</Text>
+                  {names.length < MAX_FIRST_RUN_CHILDREN && (
+                    <Button variant="ghost" size="sm" className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp}>
+                      <PlusIcon size={18} color={c.accent} />
+                      <Text className="text-primary">{o.child.addAnotherButton}</Text>
+                    </Button>
+                  )}
+                </View>
+                <View className="flex-row gap-3" accessibilityRole="radiogroup">
+                  {segment(!expecting, o.child.birthdayLabel, () => setExpecting(false))}
+                  {segment(expecting, o.child.expectingLabel, () => setExpecting(true))}
                 </View>
                 <View className="gap-2">
-                  <Text className="text-base font-medium text-muted-foreground">{o.child.birthdayLabel}</Text>
-                  <DateTimePicker
-                    value={birthday}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'compact' : 'default'}
-                    maximumDate={new Date(Date.now() + 280 * 864e5)}
-                    accentColor={c.accent}
-                    onChange={(_, d) => d && setBirthday(d)}
-                  />
-                  <Text className="text-sm text-muted-foreground">{fill(o.child.birthdayHelp, { child })}</Text>
+                  <Text className="text-base font-medium text-muted-foreground">{expecting ? pc.dueDateLabel : o.child.birthdayLabel}</Text>
+                  {expecting ? (
+                    <DateTimePicker
+                      value={dueDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                      minimumDate={new Date()}
+                      maximumDate={new Date(Date.now() + 305 * DAY)}
+                      accentColor={c.accent}
+                      accessibilityLabel={pc.dueDateLabel}
+                      onChange={(_, d) => d && setDueDate(d)}
+                    />
+                  ) : (
+                    <DateTimePicker
+                      value={birthday}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                      maximumDate={new Date()}
+                      accentColor={c.accent}
+                      accessibilityLabel={o.child.birthdayLabel}
+                      onChange={(_, d) => d && setBirthday(d)}
+                    />
+                  )}
+                  <Text className="text-sm text-muted-foreground">
+                    {expecting ? o.child.expectingHelp : fill(o.child.birthdayHelp, { child })}
+                  </Text>
                 </View>
               </>
             )}
 
             {step === 'signsAs' && (
               <>
-                <Text className="font-serif text-4xl leading-[44px] text-foreground">{fill(o.signsAs.title, { child })}</Text>
+                <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">{fill(namedCount > 1 ? pc.signsAsTitleMany : o.signsAs.title, { child })}</Text>
                 <Text className="text-lg text-foreground">{o.signsAs.body}</Text>
                 <TextInput
                   className={input}
                   value={signsAs}
-                  onChangeText={setSignsAs}
+                  onChangeText={(v) => setSignsAs(v.slice(0, 30))}
                   placeholder={o.signsAs.placeholder}
                   placeholderTextColor={c.textMuted}
                   autoCapitalize="words"
                   autoCorrect={false}
-                  accessibilityLabel={fill(o.signsAs.title, { child })}
+                  accessibilityLabel={fill(namedCount > 1 ? pc.signsAsTitleMany : o.signsAs.title, { child })}
                 />
+                <Text className="text-sm text-muted-foreground">{o.signsAs.examplesLabel}</Text>
                 <View className="flex-row flex-wrap gap-2">
                   {o.signsAs.examples.map((ex) => (
                     <Pressable
                       key={ex}
                       onPress={() => {
-                        Haptics.selectionAsync();
+                        haptic('tap');
                         setSignsAs(ex);
                       }}
                       accessibilityRole="button"
-                      className={`h-11 justify-center rounded-full border px-4 ${signsAs === ex ? 'border-primary bg-secondary' : 'border-border bg-card'}`}>
+                      accessibilityState={{ selected: signsAs === ex }}
+                      className={`h-11 justify-center rounded-full border px-4 ${signsAs === ex ? 'border-primary bg-secondary' : 'border-muted-foreground/60 bg-card'}`}>
                       <Text className="text-base text-foreground">{ex}</Text>
                     </Pressable>
                   ))}
@@ -133,27 +271,18 @@ export default function Onboarding() {
 
             {step === 'finish' && (
               <>
-                <Text className="font-serif text-5xl leading-[56px] text-foreground">{o.finish.title}</Text>
+                <Text role="heading" className="font-serif text-5xl leading-[56px] text-foreground">{o.finish.title}</Text>
                 <Text className="text-xl leading-8 text-foreground">{fill(o.finish.body, { child })}</Text>
               </>
             )}
           </Animated.View>
 
+          {/* Controls never animate in (MOTION principle 2). */}
           <Button
             size="lg"
-            disabled={(step === 'child' && !name.trim()) || (step === 'signsAs' && !signsAs.trim())}
+            disabled={disabled}
             onPress={step === 'finish' ? finish : next}>
-            <Text>
-              {step === 'welcome'
-                ? o.welcome.startButton
-                : step === 'promise'
-                  ? o.promise.cta
-                  : step === 'child'
-                    ? o.child.cta
-                    : step === 'signsAs'
-                      ? o.signsAs.cta
-                      : o.finish.cta}
-            </Text>
+            <Text>{cta}</Text>
           </Button>
         </ScrollView>
       </KeyboardAvoidingView>

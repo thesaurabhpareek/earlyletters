@@ -1,8 +1,12 @@
 # Legal Engineering Requirements (`LEGAL-REQ-###`)
 
+Version 1.1.0, 3 Oct 2026 (changelog at the end). Status: draft for counsel.
+
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. These requirements translate `compliance-register.md` into testable rules for the technical design and code. Where a requirement rests on an unverified legal reading it says so; build it anyway unless counsel removes it, because each one is cheap now and expensive after launch.
 
 **How to use this file.** Technical design agents and Claude Code sessions MUST satisfy every P0 requirement before public launch (TestFlight beyond the founding family counts as public). P1 requirements must be met before the feature they cover ships. Each requirement has acceptance criteria in Given/When/Then form that should become automated tests where the "Test" line says so. When a requirement conflicts with a PRD, this file wins until counsel or the founder decides otherwise; the conflict is listed in `compliance-register.md` s.4.
+
+**Release tiers (PRD.md 1.3 section 3.0, 3 Oct 2026).** A requirement tied to a feature binds the day that feature ships. The web contribution page moved to v1.1 (founder decision, PRD K-35), so LEGAL-REQ-010 and LEGAL-REQ-035 bind from v1.1, and the web parts of LEGAL-REQ-002, -005 and -014 apply from then; server transcription and the AI gateway are not in v1.0, so LEGAL-REQ-004, -005 and -020 bind when they ship. LEGAL-REQ-030 is met at v1.0 by a static page plus an email route, with the full web flow before Android (D-042). **Counsel to confirm these readings** (BL-104). Nothing here is dropped.
 
 **Sources** are register rows (`CR-###`, which carry the citations [L#]) and repo documents. "Policy" means `POLICY_VERSIONING.md`.
 
@@ -21,8 +25,9 @@ The sign-in sheet shows, directly above the sign-in buttons, the child-data noti
 Source: CR-019, CR-081; PRD A-REQ-034 (replace "stored on the profile" with `policy_acceptances`).
 
 ### LEGAL-REQ-002 (P0) 18+ age gate, store age signals, and minors' handling
-Account creation and the web contribution page require age confirmation of 18 or older, presented neutrally (no pre-selected answer, no hint that one answer is "right"). Store only `age_attested=true` plus the signal source in the acceptance `context`; never store a birth date or age range. On iOS, call the Declared Age Range API where required (Texas now; other states as their laws start) and treat any under-18 category as ineligible. Ineligible users keep local-only use with no data leaving the device, or (counsel to decide) are shown a polite stop screen; they never get an account, sync, invites or web contribution.
-- Given a user who indicates under 18 or whose store signal is under 18, When they try to create an account, Then no auth user is created, nothing is uploaded, and a calm message explains the app is for adults.
+*Revised 2 Oct 2026 per PRD.md 1.2 K-07 and PRD-REQ-019 (founder decision: under 18 is not allowed at all; no local-only mode).* The app asks before first use (an entry gate before first run, invites and sign-in), and account creation and the web contribution page also require age confirmation of 18 or older, presented neutrally (no pre-selected answer, no hint that one answer is "right"). Store only `age_attested=true` plus the signal source in the acceptance `context`; never store a birth date or age range. On iOS, call the Declared Age Range API where required (Texas now; other states as their laws start) and treat any under-18 category as ineligible. Ineligible users see a polite stop screen; there is no local-only mode: they never get first run, recording, a local book, an account, sync, invites or web contribution.
+- Given a fresh install, When the user takes any first action (start a book, I was invited, sign in, or an invite link), Then the age question appears first, with nothing preselected.
+- Given a user who indicates under 18 or whose store signal is under 18, When they answer, Then a stop screen explains the app is currently for adults 18 and over; no child, letter, recording or auth user is created, nothing is stored on the device except the gate state, and nothing is uploaded.
 - Given the under-18 answer, When the user goes back and tries again in the same install, Then the gate stays closed for 24 hours (anti-retry).
 - Given a Texas Apple Account, When the app requests the age range, Then the value is used in memory for the decision and is not written to any table, log or analytics event.
 - Given the web contribution page, When an invitee taps Send, Then age confirmation is part of the same act and recorded with `contributor-notice` acceptance.
@@ -215,7 +220,7 @@ Source: CR-110 (reasonable security; amended COPPA rule's written-programme mode
 ## 4. Deletion, retention and export
 
 ### LEGAL-REQ-029 (P0) In-app account deletion, end to end
-Settings > Your data > Delete account follows PRD C-REQ-019 (export offered first, subscription-billing notice with manage link, 30-day undo, type to confirm) and, when it completes, deletes or de-identifies the account everywhere: Postgres rows (profiles cascade; entries, versions, dictionary, memberships), Storage objects (audio, photos, avatars, inbox), PowerSync buckets, RevenueCat subscriber record (via API), PostHog person (random id) and Sentry user context if any, email-provider contact (keeping only a hashed suppression entry), Sign in with Apple token revocation (A-NFR-011). Consent records are pseudonymised, not deleted (Policy s.7.1). The user receives a confirmation email when deletion completes.
+Settings > Your data > Delete account follows PRD C-REQ-019 (export offered first, subscription-billing notice with manage link, 30-day undo, type to confirm) and, when it completes, deletes or de-identifies the account everywhere: Postgres rows (profiles cascade; entries, versions, dictionary, memberships), Storage objects (audio, photos, avatars, inbox), sync replicas if any (PowerSync buckets only if that engine is used, D-023), our App Store billing mapping (`app_account_tokens` deleted; `store_subscriptions` and auto-renewal consent rows pseudonymised; Apple keeps its own records as merchant of record, so no third-party billing call exists, ADR 0013), PostHog person (random id, deleted at request time through `analytics-forget`, TDD 05 X-02) and Sentry user context if any, email-provider contact (keeping only a hashed suppression entry), Sign in with Apple token revocation (A-NFR-011). Consent records are pseudonymised, not deleted (Policy s.7.1). The user receives a confirmation email when deletion completes.
 - Given a fixture account with entries, audio, photos, a subscription and analytics, When deletion completes, Then a verification script finds no row or object referencing the profile id or analytics id in any system, except pseudonymised `policy_acceptances` and the hashed suppression entry.
 - Given a co-parent and contributors on the book, When one parent deletes, Then PRD B-REQ-016 rules apply (book stays for the other parent; contributors offered export).
 - Test: automated (deletion verification script across systems, run in staging).
@@ -233,7 +238,7 @@ Source: CR-091 (Google Play web link requirement [L16]).
 | Letter or recording deleted by the author | Hidden from all members within one sync; hard-deleted from Postgres and Storage 30 days after deletion (undo window) |
 | Account or book deletion confirmed | Undo for 30 days; then hard delete from primary systems within 24 hours of the window ending |
 | Database and storage backups | Deleted data ages out of all backups within 35 days of the hard delete (backup retention must be configured to 30 days or less; Supabase backup retention Unverified) |
-| Processors (RevenueCat, PostHog, Sentry, email, PowerSync) | Deletion API calls issued within 24 hours of the hard delete; failures retried and alerted |
+| Processors (PostHog, Sentry, email provider; PowerSync only if used) | Deletion API calls issued within 24 hours of the hard delete (PostHog at request time, TDD 05 X-02); failures retried and alerted. Apple is not our processor for purchases (merchant of record); we delete our own mapping |
 | Rights request by email or web (access, deletion, correction) | Acknowledged within 10 days; completed within 45 days (CCPA response window, Unverified statute text) |
 - Given the scheduled purge job, When it runs daily, Then it deletes every tombstone older than 30 days and logs counts only.
 - Given a processor deletion failure, When retries exhaust, Then an alert fires within 24 hours.
@@ -253,9 +258,11 @@ Each data category in the data map has a retention rule and a job or trigger tha
 |---|---|
 | Account, entries, audio, photos | Until the user deletes them or the account (no automatic deletion of keepsake content, including after a Plus lapse; PRD C-NFR-008) |
 | Tombstones | 30 days |
-| Invite tokens (hashes) | 30 days after expiry or acceptance |
+| Invite tokens and codes (hashes), web return links once they exist | 90 days after use, revocation or expiry, whichever is first to end the link (`coalesce(revoked_at, accepted_at, expires_at)`; PRD K-18, K-41; D-020) |
 | Web contributor return links | Until revoked, or 24 months of inactivity with notice to the inviting parent (proposed) |
-| Ops audit log, security logs | 12 months |
+| Ops audit log (`ops_audit_log`), security logs (`security_events`), key-unwrap logs | 12 months |
+| Product and dispute audit events (`audit_events`, enum-only) | 24 months (DATA-REQ-066; D-021; both clocks listed in the Privacy Policy) |
+| Purchase ledger (`store_subscriptions`, no price or receipt) | 7 years, pseudonymised at account deletion |
 | Analytics events (PostHog) | Provider retention set to 12 months or less (setting Unverified) |
 | Crash reports (Sentry) | 90 days |
 | Policy acceptances | Account life + 3 years (pseudonymised after deletion) |
@@ -288,7 +295,7 @@ Source: CR-014, CR-022, CR-031.
 ## 5. Breach response hooks
 
 ### LEGAL-REQ-037 (P0) Security event logging
-Log, without content: auth events (sign-in, failures, method linking), service-role and runbook use (LEGAL-REQ-025), escrow unwraps (LEGAL-REQ-023), Storage bulk reads and signed-URL creation counts per account, admin console logins (Supabase, Vercel, RevenueCat, PostHog), RLS-denied spikes. Retained 12 months.
+Log, without content: auth events (sign-in, failures, method linking), service-role and runbook use (LEGAL-REQ-025), escrow unwraps (LEGAL-REQ-023), Storage bulk reads and signed-URL creation counts per account, admin console logins (Supabase, Vercel, App Store Connect, PostHog, Sentry, email provider), RLS-denied spikes. Retained 12 months.
 - Given each event type, When triggered in staging, Then a log entry with actor, action, target ids and time exists.
 - Test: automated.
 Source: CR-110, CR-111.
@@ -357,21 +364,27 @@ The Plus sheet shows, near the purchase button and readable at default text size
 Source: CR-050 (ARL clear and conspicuous terms, express affirmative consent), CR-051 (ROSCA), CR-087 (Apple 3.1.2(c)).
 
 ### LEGAL-REQ-047 (P0) Notice timing engine
-Server-driven notices (RevenueCat webhooks), sent by email plus in-app card (push optional), with idempotency keys:
+*Revised 3 Oct 2026 per PRD.md 1.3 K-38 (TDD 05 X-06, TDD 08 4.3, Lawyer 1 H1).* Server-driven notices, recomputed from App Store snapshots (App Store Server Notifications V2 plus App Store Server API re-reads; ADR 0013), sent by email plus in-app card (one push only with the final trial notice), with idempotency keys. `E` = trial end or period end (App Store instant, UTC); `C` = cancel deadline = `E - 24h`. The windows are stored as data; nothing is ever sent outside its hard window, and a missed window alerts the founder instead of sending late. We do not store the user's state, so everyone gets the strictest window.
 
-| Notice | Timing | Required by |
-|---|---|---|
-| Purchase or trial acknowledgment (terms, cancel instructions) | Immediately after purchase | ARL acknowledgment (CR-050) |
-| Trial ending, monthly (1-month trial) | 3 days before | Courtesy; PRD C-REQ-025 |
-| Trial ending, annual (2-month trial) | 7 and 3 days before (inside 3 to 21 days) | ARL trials over 31 days [L7] |
-| Annual renewal | **30 days before** (inside 15 to 45 days), plus 7 days before as courtesy | ARL terms of 1 year or more [L7]; changes PRD C-REQ-026 |
-| Annual reminder for every active subscription, monthly included | Once per subscription year | AB 2863 annual reminder [L7] |
-| Price increase | Between 30 and 7 days before it applies (target 25 days) | ARL [L7]; store consent flows |
-- Given an annual subscription renewing on 1 March, When the scheduler runs, Then a notice is sent on 30 January (± 1 day) and on 22 February, and none is sent outside the 15 to 45 day window as the "renewal notice".
+| Notice | Applies when | Target | Hard window | Required by |
+|---|---|---|---|---|
+| Purchase or trial acknowledgment (terms, cancel instructions) | Purchase or trial start | Immediately | Within 1 hour | ARL acknowledgment (CR-050) |
+| Trial ending, 31 days or less | Monthly plan's 1-month trial that will renew | `E - 7d` | `[E-8d, E-5d]` | Courtesy (UR R16); Virginia "within 30 days" for a 31-day trial |
+| Trial ending, over 31 days | Annual plan's 2-month trial that will renew | `E - 18d` | `[E-21d, E-16d]` | ARL 3 to 21 days; NY 3 to 21 days before `C`; Terms "16 to 21 days" |
+| Trial ending, final | Every trial that will renew | `E - 4d 12h` | `[E-5d, E-4d]` | At least 3 days before `C` (Subscription terms; Utah) |
+| Annual renewal, long | Annual plan, will renew, not in a trial | `E - 30d 12h` | `[E-31d, E-30d]` | ARL 15 to 45; NY 15 to 45 before `C`; Virginia and Utah 30 to 60; Massachusetts at most 30 before `C` |
+| Annual renewal, short | Annual plan, will renew | `E - 7d` | `[E-8d, E-6d]` | Courtesy |
+| Annual reminder for every active subscription, monthly included | Each subscription year | Anniversary | Same day | AB 2863 annual reminder [L7] |
+| Price increase | Approved increase, store opt-in consent only | `effective - 25d` | `[-30d, -7d]` | ARL [L7]; Lawyer 1 M1 |
+
+- Given an annual subscription renewing on 1 March 00:00 UTC, When the scheduler runs, Then the long renewal notice is sent between 29 January 00:00 and 30 January 00:00 UTC, and a short notice between 21 and 23 February; none is sent outside its window.
+- Given a 2-month trial ending at `E`, When the scheduler runs, Then notices go inside `[E-21d, E-16d]` and `[E-5d, E-4d]`, and only the second carries a push.
+- Given the user turns auto-renew off, When the next scheduler run happens, Then every pending trial or renewal notice for that period is skipped.
 - Given a monthly subscriber for 12 months, When the anniversary arrives, Then one annual reminder email is sent.
 - Given push is off, Then email and in-app still go out.
-- Test: automated (scheduler with clock control).
-Source: CR-050, CR-051; register s.4 K1.
+- Given the child's birthday falls inside a window, Then emails still go in the window, and a push or card avoids the birthday only if the window allows.
+- Test: automated (scheduler with clock control over a synthetic year, DST and leap-year cases).
+Source: CR-050, CR-051; register s.4 K1; Lawyer 1 H1; counsel confirms the table once (TDD 05 OQ-L7).
 
 ### LEGAL-REQ-048 (P0) Cancellation is easy
 Settings > Plan shows the renewal date and a "Manage or cancel" button that opens the platform's subscription management (iOS `showManageSubscriptions`; Google Play deep link). Every notice email includes the same instructions and a link to a web page explaining how to cancel on each platform. Any retention offer appears alongside, never instead of, the cancel route.
@@ -381,7 +394,7 @@ Source: CR-050 (online cancellation by a prominent direct link [L7]), CR-051.
 
 ### LEGAL-REQ-049 (P0) Purchase consent records
 Every purchase start and completion writes a `policy_acceptances` row for `auto-renewal-terms` (`method='paywall_purchase'`, product id, intro-offer type, storefront in `context`), linked to the exact disclosure version shown. Retained per LEGAL-REQ-033.
-- Given a completed purchase, When the webhook reconciles, Then exactly one acceptance row matches the RevenueCat transaction's product and time (± 10 minutes).
+- Given a completed purchase, When the App Store notification is reconciled, Then exactly one `completed` acceptance row matches the App Store original transaction's product and time (± 10 minutes), alongside the `started` row written at purchase start (D-049; counsel to confirm the reading).
 - Test: automated.
 Source: CR-050 (consent records 3 years or 1 year after termination [L7]); Policy s.7.3.
 
@@ -446,7 +459,7 @@ Engineering provides a service-role script that can preserve a specific account'
 Source: CR-112, CR-113.
 
 ### LEGAL-REQ-058 (P0) Launch geography controls
-iOS availability is set to the United States storefront only (Android likewise later). The website and app contain no EU/UK/India-targeted pricing, language or marketing. The web contribution page is reachable from any country but collects only what LEGAL-REQ-010 allows, sets no non-essential cookies, and stores no IP-derived location. No code stores a user's country or state except the storefront country that RevenueCat already provides for purchases.
+iOS availability is set to the United States storefront only (Android likewise later). The website and app contain no EU/UK/India-targeted pricing, language or marketing. The web contribution page is reachable from any country but collects only what LEGAL-REQ-010 allows, sets no non-essential cookies, and stores no IP-derived location. No code stores a user's country or state except the storefront country that Apple reports on App Store transactions (stored with the entitlement, L2).
 - Given App Store Connect, When the release checklist runs, Then territory availability equals {United States} and the evidence is saved.
 - Given the web contribution page, When loaded, Then only strictly necessary cookies or storage are set.
 - Test: manual checklist + automated cookie check.
@@ -486,3 +499,10 @@ Source: CR-016, CR-030, CR-031.
 ## Sources
 
 Citations [L#] are listed with URLs in `compliance-register.md` (all opened 2 Oct 2026). Repo inputs: PRD A, B, C; ARCHITECTURE.md; ADR 0001 to 0010; `supabase/migrations/*`; `packages/core/src/safety.ts`; `packages/content/src/{strings,site,store}.en.ts`; `POLICY_VERSIONING.md` (SQL smoke-tested in PGlite). Unverified items are marked inline (Supabase encryption-at-rest and backup retention, PostHog retention setting, Apple privacy-manifest rules, CCPA response window statute text, Declared Age Range API details beyond Apple's news post).
+
+## Changelog
+
+| Version | Date | Change |
+|---|---|---|
+| 1.1.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct; `docs/DECISIONS.md`). Release-tier note: web-page requirements (010, 035 and web parts of 002, 005, 014) bind from v1.1; AI requirements (004, 005, 020) bind when the gateway ships; 030 reduced at v1.0 (D-042); counsel to confirm. RevenueCat removed (ADR 0013): 029 deletion steps, 031 processors, 037 consoles, 049 reconciliation, 058 storefront source. 033: invite hashes 90 days keyed on use, revocation or expiry (K-18, D-020); `audit_events` 24 months beside 12-month ops and security logs (D-021); purchase ledger 7 years. 047 rewritten to the K-38 hard windows (final trial notice at E-4d12h; annual renewal inside [E-31d, E-30d]; long trial inside [E-21d, E-16d]). Not a published document; no notice. |
+| 1.0.0 | 2026-10-02 | First version; 2 Oct revision of 002 for the 18+ entry gate. |

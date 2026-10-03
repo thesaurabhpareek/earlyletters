@@ -1,0 +1,49 @@
+/* S09: the envelope closes; five promises. */
+.column {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 2.4svh, 28px);
+  padding: 8svh var(--gutter) 6svh;
+  text-align: center;
+  color: var(--night-ink);
+  z-index: 2;
+}
+.column h2 {
+  font-size: clamp(36px, 5vw, 80px);
+}
+.envelope {
+  width: clamp(110px, 12vw, 170px);
+  color: color-mix(in srgb, var(--night-ink) 80%, transparent);
+}
+.points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: clamp(10px, 1.4svh, 16px);
+  max-width: 32em;
+  text-align: left;
+}
+.point {
+  position: relative;
+  padding-left: 30px;
+  font-family: var(--font-sans);
+  font-size: clamp(17px, 1.35vw, 20px);
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--night-ink) 88%, transparent);
+}
+.tick {
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 14px;
+  height: 7px;
+  border-left: 1.6px solid var(--night-accent);
+  border-bottom: 1.6px solid var(--night-accent);
+  transform: translateY(-50%) rotate(-45deg);
+  border-radius: 1px;
+}

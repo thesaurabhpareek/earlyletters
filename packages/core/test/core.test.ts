@@ -326,3 +326,10 @@ describe('safety and follow-ups', () => {
     expect(selectFollowUps('She walked.', 'Asha', ['anchor', 'you'])).toHaveLength(0);
   });
 });
+
+describe('grammatical doubles are kept', () => {
+  it('keeps "that that" and "is is"', () => {
+    expect(faithfulClean('I want you to know that that was the best day.', { level: 'clean', dictionary: [] }).text).toContain('that that');
+    expect(faithfulClean('What it is is love.', { level: 'clean', dictionary: [] }).text).toContain('is is');
+  });
+});

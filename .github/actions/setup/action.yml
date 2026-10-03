@@ -1,0 +1,24 @@
+name: Setup Node and dependencies
+description: Node 22, then node_modules from the lockfile-keyed cache, or npm ci on a miss.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: package-lock.json
+
+    - id: modules
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          node_modules
+          apps/*/node_modules
+          packages/*/node_modules
+          experiments/node_modules
+        key: node-modules-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
+
+    - if: steps.modules.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm ci --no-audit --no-fund

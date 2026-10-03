@@ -1,0 +1,73 @@
+/*
+ * Owner: coordinator. Shared layout for scene stages. Phone first; desktop from 900px.
+ * Every class positions within the sticky stage (100svh). Scenes add their own module for specifics.
+ */
+.frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* Copy that sits in the upper part of the frame on phones and in the left column on desktop. */
+.copySide {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: calc(env(safe-area-inset-top, 0px) + 13svh);
+  z-index: 3;
+}
+
+/* Copy centred at the top on phones and desktop alike. */
+.copyTop {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: calc(env(safe-area-inset-top, 0px) + 12svh);
+  text-align: center;
+  z-index: 3;
+}
+.copyTop p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Copy centred in the frame. */
+.copyCenter {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 var(--gutter);
+  text-align: center;
+  z-index: 3;
+}
+.copyCenter > div {
+  max-width: 44rem;
+}
+.copyCenter p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 900px) {
+  .copySide {
+    left: max(var(--gutter), calc(50vw - 640px));
+    right: auto;
+    top: 50%;
+    width: min(40vw, 540px);
+    transform: translateY(-50%);
+  }
+}

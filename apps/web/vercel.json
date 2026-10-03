@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "npm ci --workspace=@scribe/web --no-audit --no-fund",
+  "ignoreCommand": "if [ -n \"$VERCEL_GIT_PREVIOUS_SHA\" ] && git cat-file -e \"$VERCEL_GIT_PREVIOUS_SHA^{commit}\" 2>/dev/null && D=$(git diff --name-only \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD) && [ -n \"$D\" ] && ! printf '%s\\n' \"$D\" | grep -qvE '^(apps/mobile|supabase|experiments)/'; then exit 0; else exit 1; fi"
+}

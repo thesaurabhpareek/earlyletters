@@ -1,0 +1,116 @@
+/* Owner: AT (atmosphere). Compositor-only motion (transform, opacity). Paused off-screen and in
+   hidden tabs via [data-at-idle]; removed entirely under prefers-reduced-motion. */
+
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pool {
+  position: absolute;
+  pointer-events: none;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+/* LampLight breathing: a slow swell, like the room settling. Scale and opacity only. */
+.breathe {
+  animation: breathe 8.6s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+@keyframes breathe {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.022);
+    opacity: 0.9;
+  }
+}
+
+/* LampLight flicker: an old filament on an evening circuit. Irregular, small (4% at most). */
+.flicker {
+  animation: flicker 6.7s linear infinite;
+}
+@keyframes flicker {
+  0% { opacity: 1; }
+  7% { opacity: 0.985; }
+  9% { opacity: 0.998; }
+  23% { opacity: 0.99; }
+  31% { opacity: 1; }
+  44% { opacity: 0.972; }
+  46% { opacity: 0.992; }
+  58% { opacity: 0.982; }
+  71% { opacity: 1; }
+  83% { opacity: 0.988; }
+  86% { opacity: 0.962; }
+  89% { opacity: 0.994; }
+  100% { opacity: 1; }
+}
+
+/* Grain: a static tile, optionally re-registered a few pixels at 12 fps (10 positions, steps). */
+.grain {
+  position: absolute;
+  inset: -16px;
+  pointer-events: none;
+  background-repeat: repeat;
+}
+@media (min-resolution: 2dppx) {
+  /* Two texels per CSS pixel on Retina: finer grain, a better dither, less visible as texture. */
+  .grain {
+    background-size: 128px 128px;
+  }
+}
+.grainAnimate {
+  animation: grain 0.833s steps(1, end) infinite;
+}
+@keyframes grain {
+  0% { transform: translate3d(0, 0, 0); }
+  10% { transform: translate3d(-7px, 4px, 0); }
+  20% { transform: translate3d(5px, -9px, 0); }
+  30% { transform: translate3d(-11px, -3px, 0); }
+  40% { transform: translate3d(9px, 8px, 0); }
+  50% { transform: translate3d(-3px, 11px, 0); }
+  60% { transform: translate3d(12px, -5px, 0); }
+  70% { transform: translate3d(-9px, -11px, 0); }
+  80% { transform: translate3d(3px, 6px, 0); }
+  90% { transform: translate3d(-5px, -7px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+[data-at-idle] .breathe,
+[data-at-idle] .flicker,
+[data-at-idle].grainAnimate {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathe,
+  .flicker,
+  .grainAnimate {
+    animation: none;
+  }
+}
+
+.paper {
+  background-repeat: repeat;
+}
+
+.motes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sizer {
+  position: absolute;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}

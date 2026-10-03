@@ -1,6 +1,9 @@
 // App Store listing copy for Early Letters. Plain text only.
 // Limits: appName <= 30, subtitle <= 30, promotionalText <= 170,
 // keywords <= 100 (comma-separated, no spaces), captions <= 40.
+// v1 is digital only: no printed-book promises in store copy (PRD.md K-32).
+// v1.0 family write from the app; no web-page or "no app needed" promise until v1.1 (PRD.md K-35).
+// No other platform's name in iOS metadata (App Review 2.3.10).
 
 export const storeListing = {
   appName: "Early Letters: Memory Book",
@@ -20,22 +23,25 @@ YOUR VOICE, KEPT
 The original recording stays with each letter, on your phone by default. With the optional backup, recordings are encrypted on your phone before upload, and we keep a recovery key so we can help you restore them, unless you choose Vault mode. Years from now, your child can hear how you sounded when you said it.
 
 READ TOGETHER
-Open any letter and it plays in the voice of the person who wrote it, while the words appear on the page. Listen together at bedtime.
+Open any letter and it plays in the voice of the person who wrote it, while the words appear on the page. Listen together at bedtime. Your first 3 Read together sessions are free; after that, Read together is part of Plus. Playing any single recording is always free.
 
 NOTES AND LETTERS
 Some days are a quick note. Some days are a proper letter. Both belong. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores. Come back whenever you like.
 
 A BOOK FOR THE WHOLE FAMILY
-Invite grandparents and close family to add their own letters. Each one is signed, like "From Papa" or "From Nani". You approve what goes into the book, and each author chooses what they share.
+Invite grandparents and close family to add their own letters from the free app on their own phone. Each one is signed, like "From Papa" or "From Nani". You approve what goes into the book, and each author chooses what they share.
 
 EVERY LANGUAGE, AS SPOKEN
 Speak Hindi, English, both in one sentence, or any mix your family uses. Early Letters keeps your words in the language you said them.
 
 PRIVATE BY DEFAULT
-Your letters are yours. Only the family you invite can read them, and you decide what goes into the book. No ads, and we never sell or share your data.
+Your letters are yours. Only the family you invite can read them, and you decide what goes into the book. No ads. We never sell your data or share it with advertisers.
+
+A BOOK FOR EACH CHILD
+Each child gets their own book, with their own months, family and settings. Switch between them in one tap. Your first child's book is free, and so are twins or more you add together when you set up. Books you start for more children later are part of Plus.
 
 TAKE IT WITH YOU
-Export your memory book as a PDF any time, for free. Printed books, starting with Early Letters: Year One, are on the way.
+Export your memory book any time, for free: your letters, your recordings and a PDF of the book.
 
 HOW IT WORKS
 1. Tap and talk, or type if you prefer.
@@ -47,6 +53,10 @@ Early Letters is for parents of children from birth to five, and for the grandpa
 Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional and renews automatically until you cancel.
 
 Early Letters is in beta. We are still building, and some things may change. Your letters are always yours to export.`,
+  // Optional App Store promotional text while the beta label is on (in-app-disclosures.md section 4).
+  // Pending founder decision D-030 (PRD.md K-37): recommended not to use this, or the description's
+  // last (beta) paragraph, in the v1.0 listing, because App Review 2.2 keeps betas on TestFlight.
+  promotionalTextBeta: "Now in beta. Tell us what you think from Settings, Help and Legal, Support.",
   whatsNewV1:
     "Hello. This is the first version of Early Letters. Talk or type a letter to your child, keep your voice with it, invite family, read together, and export your memory book as a PDF any time.",
   screenshotCaptions: [

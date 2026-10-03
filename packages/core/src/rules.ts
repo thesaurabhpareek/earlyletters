@@ -1,9 +1,10 @@
 /**
  * Deterministic cleanup rules (no model): filler removal and collapsing
- * accidental repeats of a small set of function words.
+ * accidental repeats (decided in repeats.ts).
  */
 import type { Edit } from './types';
-import { FILLERS, REPEAT_COLLAPSIBLE, tokens } from './text';
+import { FILLERS, tokens } from './text';
+import { findRepeats } from './repeats';
 
 /**
  * "So um she, uh, walked" -> "So she walked".
@@ -41,28 +42,27 @@ export function fillerEdits(raw: string): Edit[] {
   return mergeOverlapping(edits, raw);
 }
 
-/** "and and then" -> "and then". Only for REPEAT_COLLAPSIBLE words. */
+/**
+ * Accidental repeats the rules remove by themselves: "and and then",
+ * "like a like a little hiccup", "today you you held". Context-dependent
+ * doubles ("I told you you were brave", "what it was was magic") are kept;
+ * see repeats.ts for the full decision table.
+ */
 export function repeatEdits(raw: string): Edit[] {
-  const toks = tokens(raw);
-  const edits: Edit[] = [];
-  for (let i = 1; i < toks.length; i++) {
-    const prev = toks[i - 1];
-    const cur = toks[i];
-    if (prev.word.toLowerCase() !== cur.word.toLowerCase()) continue;
-    if (!REPEAT_COLLAPSIBLE.has(cur.word.toLowerCase())) continue;
-    const between = raw.slice(prev.end, cur.start);
-    if (!/^[\s,]*$/.test(between)) continue; // a sentence break between them is not a repeat
-    // remove the gap and the second occurrence: keeps the first one's casing
-    edits.push({
-      type: 'repeat',
-      start: prev.end,
-      end: cur.end,
-      original: raw.slice(prev.end, cur.end),
-      replacement: '',
-      source: 'rule',
-    });
-  }
-  return mergeOverlapping(edits, raw);
+  return findRepeats(raw)
+    .filter((f) => f.decision === 'auto')
+    .map((f) => f.edit);
+}
+
+/**
+ * Repeats that may be a stumble or may be meant ("so so happy", "my my").
+ * Never applied by the engine; the parent can accept one in review, and it
+ * is then verified like any other edit (pass it in CleanOptions.ruleEdits).
+ */
+export function repeatSuggestionEdits(raw: string): Edit[] {
+  return findRepeats(raw)
+    .filter((f) => f.decision === 'suggest')
+    .map((f) => f.edit);
 }
 
 function mergeOverlapping(edits: Edit[], raw: string): Edit[] {
