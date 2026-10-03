@@ -2,7 +2,7 @@
  * The home page shown on production until the film is approved (SITE_MODE, see lib/site-mode.ts), told as a
  * short story over a lamp that changes colour as you read, with scroll-linked motion in the style of a product
  * launch page: the hero recedes, "Meera is asleep." and the proof letter are pinned scenes that your scroll
- * plays, and the rest rise into place. Every word comes from site.ts, which the copy rules check. The server
+ * plays, paragraphs fill from dim to bright as you read them, and the rest lift into place the same way. Every word comes from site.ts, which the copy rules check. The server
  * renders every scene in its finished state, so the page reads without JavaScript and with reduced motion
  * (scrub.tsx). The sign-up form appears only when the email service is configured at build time, so a visitor
  * never meets a form that cannot work (set RESEND_API_KEY and RESEND_SEGMENT_ID, then redeploy). The same code
@@ -14,8 +14,7 @@ import { ShareButton } from '@/components/site/ShareButton';
 import { Aurora } from './Aurora';
 import { Evening } from './Evening';
 import { ProofScene } from './ProofScene';
-import { Reveal } from './Reveal';
-import { HeroStage, Rise } from './scrub';
+import { FillText, HeroStage, Rise } from './scrub';
 import { StoryRail } from './StoryRail';
 import styles from './Landing.module.css';
 
@@ -65,9 +64,9 @@ export function Landing() {
             <h2 id="minute-title" className={styles.h2}>
               {s.s02.headline}
             </h2>
-            <p className={styles.sub}>{s.s02.support}</p>
           </Rise>
-          <Rise x={-70} y={20} className={styles.pull}>
+          <FillText text={s.s02.support} className={styles.sub} />
+          <Rise className={styles.pull}>
             <p className={styles.pullTitle}>{s.s03.headline}</p>
             <p className={styles.pullText}>{s.s03.support}</p>
           </Rise>
@@ -77,13 +76,15 @@ export function Landing() {
 
         <section className={styles.section} aria-labelledby="voice-title">
           <div className={styles.split}>
-            <Rise x={-60} y={24}>
-              <h2 id="voice-title" className={styles.h2}>
-                {s.s05.headline}
-              </h2>
-              <p className={styles.sub}>{s.s05.support}</p>
-            </Rise>
-            <Rise x={70} y={24} className={styles.years}>
+            <div>
+              <Rise>
+                <h2 id="voice-title" className={styles.h2}>
+                  {s.s05.headline}
+                </h2>
+              </Rise>
+              <FillText text={s.s05.support} className={styles.sub} />
+            </div>
+            <Rise className={styles.years}>
               <p className={styles.kicker}>{s.s07.dateline}</p>
               <p className={styles.yearsTitle}>{s.s07.headline}</p>
               <p className={styles.cardText}>{s.s07.support}</p>
@@ -97,14 +98,14 @@ export function Landing() {
             <h2 id="book-title" className={styles.h2}>
               {s.s06.headline}
             </h2>
-            <p className={styles.sub}>{s.s06.support}</p>
           </Rise>
+          <FillText text={s.s06.support} className={styles.sub} />
           <ol className={styles.timeline}>
             {s.s06.chapters.map((chapter, i) => {
               const last = i === s.s06.chapters.length - 1;
               return (
                 <li key={chapter.month}>
-                  <Rise x={110 + i * 30} y={0} scale={0.94} start={1} end={0.72} className={`${styles.month} ${last ? styles.monthNow : ''}`}>
+                  <Rise className={`${styles.month} ${last ? styles.monthNow : ''}`}>
                     {last ? <span className={styles.filed}>{s.s06.filedChip}</span> : null}
                     <span className={styles.monthName}>{chapter.month}</span>
                     <span className={styles.monthMeta}>{chapter.meta}</span>
@@ -121,17 +122,17 @@ export function Landing() {
             <h2 id="lang-title" className={styles.h2}>
               {s.s08.headline}
             </h2>
-            <p className={styles.sub}>{s.s08.support}</p>
           </Rise>
+          <FillText text={s.s08.support} className={styles.sub} />
           <ul className={styles.langs}>
             {s.s08.lines.map((line, i) => (
               <li key={line.lang}>
-                <Reveal delay={i * 0.05} className={styles.lang}>
+                <Rise className={styles.lang}>
                   <span className={styles.langName}>{line.name}</span>
                   <span lang={line.lang} dir={line.dir} className={styles.langText}>
                     {line.text}
                   </span>
-                </Reveal>
+                </Rise>
               </li>
             ))}
           </ul>
@@ -145,11 +146,9 @@ export function Landing() {
             </h2>
           </Rise>
           <ul className={styles.points}>
-            {s.s09.points.map((point, i) => (
+            {s.s09.points.map((point) => (
               <li key={point}>
-                <Reveal delay={i * 0.06} className={styles.point}>
-                  {point}
-                </Reveal>
+                <Rise className={styles.point}>{point}</Rise>
               </li>
             ))}
           </ul>
@@ -161,12 +160,12 @@ export function Landing() {
             <h2 id="price-title" className={styles.h2}>
               {s.s10.headline}
             </h2>
-            <p className={styles.sub}>{s.s10.support}</p>
           </Rise>
+          <FillText text={s.s10.support} className={styles.sub} />
         </section>
 
         <section id="early-access" className={`${styles.section} ${styles.closing}`} aria-labelledby="start-title">
-          <Rise scale={0.9} y={60}>
+          <Rise>
             <h2 id="start-title" className={`${styles.h2} ${styles.sheen}`}>
               {s.s11.headline}
             </h2>
