@@ -70,7 +70,7 @@ What sits under it, in plain words: a parent talks to their child for a minute, 
 
 Draft positioning statement for v1.0 (direction for `content`, not final words):
 
-> For parents of babies and young children, Early Letters is the memory book you fill by talking. You speak a letter to your child in your own words, and it is kept exactly as you said it, with your voice, month by month, so {child} can read it and hear it for years. Unlike baby books with blanks to fill or journals that tidy your words, nothing is rewritten.
+> For parents of babies and young children, Early Letters is the memory book you fill by talking. You speak a letter to your child in your own words, and it is kept exactly as you said it, with your voice, month by month, so {child} can read it and hear it for years. Unlike baby books with blanks to fill or journals that rewrite your words, nothing is rewritten.
 
 ### 2.2 The five-second test
 
@@ -159,18 +159,24 @@ The beta is on TestFlight and only on TestFlight. The store listing, promotional
 
 | Cohort | Who | Size | Dates | How they join |
 |---|---|---|---|---|
-| C0 internal | The founder's own household and anyone on the team | Up to 10 | From week 6 (9 Nov) | Internal testers, no Beta App Review |
+| C0 internal | The founder's own household and anyone on the team | Up to 10 | From week 6 (9 Nov) | Internal testers, no Beta App Review. Each must be an App Store Connect user on the account (see below) |
 | C1 friendly families | Families from the founder's network, chosen for coverage | 15 to 25 families | Build to Beta App Review by Fri 11 Dec; runs 14 Dec to 8 Jan | TestFlight **email invitation** [M16], not a public link |
 | C2 public link | Not planned | 0 | n/a | A public link triggers the pen test (ROADMAP 6 item 9) and the entity recommendation (D-004). D-045 makes C2 optional and after submission; this plan recommends skipping it |
 
 TestFlight facts that matter here: up to 10,000 external testers; each build can be tested for up to 90 days; the first build added to an external group goes to App Review; testers install through the TestFlight app [M16]. A C1 build approved around 14 Dec stays testable until about mid-March (E from the 90-day rule).
+
+Internal testers are "up to 100 App Store Connect users with access to your content" [M16], and an individual developer account can give up to 50 additional users access [M20]. So each C0 phone needs its owner invited as an App Store Connect user first; a tester email alone is not enough.
 
 ### 5.2 Who to recruit (BL-109)
 
 BL-109's coverage list comes from TDD 07 and still asks for "three grandparents in the app". Under brief decision 5, family members other than the co-parent cannot write in v1.0, so that slot has nothing to test. Proposed coverage for `product` and QA to confirm:
 
 - at least 2 co-parent pairs (both parents active in one book);
-- speakers of at least 3 of the 7 v1.0 languages other than English, with Hindi and Spanish first (largest US communities among the seven, [M2] and [S13 in USER_RESEARCH]), plus Arabic for right-to-left;
+- speakers of at least 3 of the 7 v1.0 languages other than English: Spanish, Hindi and Arabic first, then Chinese if a family can be found. Spanish and Chinese are the largest US communities among the seven; Hindi is the smallest. US speakers aged 5 and over, ACS 2018 to 2022: Spanish 41.4 million, Chinese 3.49 million, Arabic 1.34 million, French 1.21 million, Portuguese 0.91 million, Hindi 0.88 million [M18] (F; the order holds within the published margins of error; the Census counts Mandarin and Cantonese together as Chinese). Why each is in the beta:
+  - Spanish: by far the largest.
+  - Hindi: not for size. It is the user research's named multilingual segment [S13 in USER_RESEARCH] and its highest-risk case for faithful transcription: a speech model dropped words where Hindi and English mix [S12 in USER_RESEARCH], and Hindi-speaking testers are likely to mix even with one language per letter (A).
+  - Arabic: right-to-left.
+  - Chinese: the second largest, and another script;
 - 1 twins or multiples family;
 - 2 VoiceOver or large-text users;
 - a mix of expecting and new parents (child 0 to 2), and at least one parent who already writes or records to their child (segment B).
@@ -179,10 +185,11 @@ Everyone is 18 or older and passes the in-app 18+ gate (D-006, TDD 07 section 11
 
 ### 5.3 How recruitment works (drafted in standing duty 5)
 
-1. **Weeks 6 to 7:** the founder sends a short personal message to people the founder already knows. Drafts: a two-paragraph invitation, a five-question screening form (phone model, languages spoken at home, child's age band, co-parent willing to join, accessibility settings in use), and a plain consent note. The form never asks for the child's name or birth date.
+1. **Weeks 6 to 7:** the founder sends a short personal message to people the founder already knows. Drafts: a two-paragraph invitation, a five-question screening form, and a plain consent note. The form asks for: phone model; which of the seven v1.0 languages they would speak letters in; child's age band; whether a co-parent would join; and, as an optional question, "any settings you would like to test with, such as VoiceOver or larger text". It never asks for the child's name or birth date.
+   - **Where the answers live (proposal; the founder and `legal` confirm before week 6):** a Google Form owned by the founder, with the responses kept only there, outside this repo and never shared with agents (A: Google Forms is a proposal, not a decision; any form tool `legal` approves works the same way). Answers from families not invited to C1 are deleted when the invitations go out (week 10). All remaining answers are deleted by Fri 15 Jan 2027, one week after C1 ends. Only counts by coverage slot enter the repo (week 7).
 2. **Week 9 (by 4 Dec, D-045):** pick 20 to 30 families to land 15 to 25 active ones (E: assumes some never install).
 3. **Week 10:** welcome note (BL-280) with three things marketing cares about: do not screenshot letters (TestFlight screenshot feedback can capture letter text, TDD 07 11.2); use "Report a problem" instead; how to move to the App Store version without losing letters (QA to confirm the path; section 9 risk 11).
-4. **Days 7 and 21 (21 Dec and 4 Jan):** the TDD 07 surveys. Marketing asks to add three content-free questions: "How would you describe Early Letters to a friend in one sentence?", "What almost stopped you trying it?", "What would you type into the App Store to find it?" Answers feed the listing and keyword research. No letter content is ever asked for.
+4. **Days 7 and 21 (21 Dec and 4 Jan):** the TDD 07 surveys. Marketing asks to add three content-free questions: "How would you describe Early Letters to a friend in one sentence?", "What almost stopped you trying it?", "What would you type into the App Store to find it?" Answers feed the listing and keyword research as input only: they are never quoted or paraphrased into store or site copy (5.4). No letter content is ever asked for.
 
 ### 5.4 What we never do with beta families
 
@@ -209,7 +216,7 @@ This section is the plan; the field-by-field brief and screenshot storyboard are
 | Screenshots | First 1 to 3 show in search when there is no preview [M3] | Six, from CREATIVE.md section 4, revised for v1.0 (6.2) |
 | App preview | Autoplays muted [M3] | Optional at v1.0. Needs a cast voice with a voice release (CREATIVE.md consent rules); skip rather than fake one |
 | Category | n/a | Lifestyle (D-004: never Health and Fitness or Medical) |
-| URLs | n/a | Marketing https://earlyletters.com, privacy https://earlyletters.com/privacy, support hello@earlyletters.com (brief decision 13) |
+| URLs | Support URL required, full URL [M19] | Marketing https://earlyletters.com, privacy https://earlyletters.com/privacy (brief decision 13). Support: **a support page is needed and not yet planned.** Apple requires a Support URL, given as the entire URL including the protocol, that "must lead to actual contact information" [M19], so a bare email address does not fit the field. Brief decision 13 lists only /terms, /privacy, /health-privacy and /subprocessors. Proposed: https://earlyletters.com/support, showing the support email (hello@earlyletters.com unless the founder picks another) and linking to the help centre (PR #41). Founder decision; the website thread would build it (section 10) |
 | Release option | n/a | **Manually release this version**, so the founder picks the launch day after approval; a released version can take up to 24 hours to appear [M10] |
 
 ### 6.2 Screenshot set, adjusted for v1.0
@@ -253,15 +260,15 @@ Weeks and dates follow `docs/ROADMAP.md` section 1. "Agent" work is drafts in th
 | 4 | 26 to 30 Oct | M3 device spike; D-031 due | Featuring nomination text (App Launch, window 18 to 29 Jan) | Submit the nomination in App Store Connect (30 min) [M7][M8] |
 | 5 | 2 to 6 Nov | Counsel package due | Beta recruitment materials (standing duty 5). Store and site claims list added to the counsel package (LEGAL-REQ-044) | Approve recruitment drafts (30 min) |
 | 6 | 9 to 13 Nov | **Go or cut checkpoint**; C0 starts | Re-check every claim against any cut taken on 13 Nov (ROADMAP section 4) | Start BL-109: personal messages to friends with babies (1 h) |
-| 7 | 16 to 20 Nov | M6 to M10 | Screener answers summarised by coverage slot, never by name in the repo | Follow-ups (1 h) |
+| 7 | 16 to 20 Nov | M6 to M10 | Screener answers summarised by coverage slot, never by name in the repo; the answers stay in the form tool (5.3) | Follow-ups (1 h) |
 | 8 | 23 to 27 Nov | Thanksgiving 26 Nov | Screenshot frames drafted from design, with the fictional "Asha" family | none |
 | 9 | 30 Nov to 4 Dec | **D-045 by Fri 4 Dec** | Coverage check of the chosen families against section 5.2 | Pick 20 to 30 C1 families (30 min) |
-| 10 | 7 to 11 Dec | Feature freeze; **C1 build to Beta App Review by Fri 11 Dec** | Marketing lines for the C1 welcome note (BL-280); three survey questions (section 5.3) | Send TestFlight email invitations once the build is approved (30 min) |
+| 10 | 7 to 11 Dec | Feature freeze; **C1 build to Beta App Review by Fri 11 Dec** | Marketing lines for the C1 welcome note (BL-280); three survey questions (section 5.3) | Send TestFlight email invitations once the build is approved (30 min); delete screener answers from families not invited (5.3) |
 | 11 | 14 to 18 Dec | **C1 starts** | Capture screenshots from the frozen build | none |
 | 12 | 21 to 25 Dec | Holiday | Day-7 survey (21 Dec) | none |
 | 13 | 28 Dec to 1 Jan | Holiday | none | none |
-| 14 | 4 to 8 Jan | C1 exit; counsel sign-off; **D-030** | Day-21 survey (4 Jan). Survey learnings into the listing. Final listing text to `content` for `store.en.ts`. Launch email draft. Update the featuring nomination if the window moved | Approve the listing, screenshots and launch email; enter them in App Store Connect; set "Manually release this version" (2 h) |
-| 15 | 11 to 15 Jan | **Submit Mon 11 Jan** | Launch-day checklist (7.2) final | Submit; answer App Review within a day |
+| 14 | 4 to 8 Jan | C1 exit; counsel sign-off; **D-030** | Day-21 survey (4 Jan). Survey learnings into the listing. Final listing text to `content` for `store.en.ts`. Launch email draft. Update the featuring nomination if the window moved. Check the support page (6.1) is live and shows contact information | Approve the listing, screenshots and launch email; enter them in App Store Connect with the support page URL; set "Manually release this version" (2 h) |
+| 15 | 11 to 15 Jan | **Submit Mon 11 Jan** | Launch-day checklist (7.2) final | Submit; answer App Review within a day; delete the remaining screener answers by Fri 15 Jan (5.3) |
 
 ### 7.2 Launch day (on approval; target week of 18 Jan)
 
@@ -326,7 +333,7 @@ Targets marked A are assumptions to revisit after the first cohorts; those copie
 | Share of books with a co-parent invite in the first 30 days | Server | Set after the first cohort (TP) |
 | Weekly keeping families (north star) | Server | Report weekly; never shown to users (TP) |
 | Active writers at week 4 / first-letter users | Server | 35% or more (TP) |
-| Median time to first letter | Device (consenting only) | 90 seconds or less (TP); labelled as a consenting-user number |
+| Median time to first letter | Device (consenting only) | 90 seconds or less (TP); labelled as a consenting-user number. Only if counsel approves the one-time `analytics_opted_in` summary (TRACKING_PLAN section 2, LEGAL-REQ-003); otherwise this is not measured, and activation is read from ASC installs and server counts only |
 | Trial starts per first-letter user by day 90 | ASC plus server | 15% or more (TP); only a partial read at six weeks |
 | Refunds | ASC | Under 3% (TP) |
 | Ratings asked for outside the system prompt | Process | Zero |
@@ -358,7 +365,7 @@ Targets marked A are assumptions to revisit after the first cohorts; those copie
 
 **To `content`:** section 1.2 rows 1 to 8; screenshot frame changes in 6.2; the launch email once drafted. Final words stay in `packages/content`.
 
-**To `legal`:** the claims list (section 1.2 and the listing) for the counsel package by week 5; CN-7 before any "never used to train models" line; the launch email as a commercial email (CAN-SPAM, postal address per D-004); whether a post-launch thank-you offer code for C1 families is acceptable; FTC review-rule disclosure if reviews are ever mentioned to people we know.
+**To `legal`:** the claims list (section 1.2 and the listing) for the counsel package by week 5; CN-7 before any "never used to train models" line; the launch email as a commercial email (CAN-SPAM, postal address per D-004); whether a post-launch thank-you offer code for C1 families is acceptable; FTC review-rule disclosure if reviews are ever mentioned to people we know; the C1 screening form before week 6 (its five questions, the optional settings question, the form tool and where answers are kept, and the deletion dates in 5.3); what contact information the support page must show (Apple names "legal address, email address, telephone number" as examples, "as may be required by local law" [M19]; any postal address follows D-004, not the family home).
 
 **To `product`:**
 1. Reconcile `docs/ROADMAP.md` with the Oct 3 brief (family scope, shared voice, word highlighting, Google sign-in, Family Sharing on or off: BL-103 says off, brief decision 3 says on).
@@ -369,9 +376,13 @@ Targets marked A are assumptions to revisit after the first cohorts; those copie
 
 **To `analytics`:** replace RevenueCat ("R") with App Store Connect subscription reports in `TRACKING_PLAN.md` under brief decision 3; agree the campaign-link naming (`ct` values) and the traffic threshold for a product page optimisation test.
 
-**To the website thread (`feat/web-scroll-film`), for information only:** put an App Store campaign link behind the badge; keep the waitlist to its stated purpose (one launch notice); its v1.0 claims (scenes S05, S08 to S10) already fit the brief. No website copy is written in this plan.
+**To the website thread (`feat/web-scroll-film`):**
+- One page to build, if the founder approves it: a support page, proposed at https://earlyletters.com/support, live before the listing is entered in week 14. It shows the support email and links to the help centre (PR #41). Apple marks the Support URL as required (6.1) [M19].
+- For information only: put an App Store campaign link behind the badge; keep the waitlist to its stated purpose (one launch notice); its v1.0 claims (scenes S05, S08 to S10) already fit the brief. No website copy is written in this plan.
 
-**Open questions for the founder:** none blocking this plan. The decisions above that are marked for the founder (D-030 store beta line, D-045 cohorts) are already in the roadmap.
+**Open questions for the founder:**
+1. **Support page (6.1):** whether earlyletters.com gets a support page beyond the four in brief decision 13, at what URL, and which mailbox it shows. It does not block this plan; it blocks entering the listing in week 14.
+2. The decisions already in the roadmap and marked for the founder (D-030 store beta line, D-045 cohorts).
 
 ---
 
@@ -394,6 +405,9 @@ All opened 3 Oct 2026 unless marked.
 - [M13] Apple, Set up offer codes (free or discounted periods; new, existing or expired subscribers): https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-up-offer-codes/
 - [M14] Goodwin Procter, FTC finalizes rule on consumer reviews and testimonials (Sep 2024; effective 21 Oct 2024). Secondary source; the rule text (16 CFR Part 465) was not opened: https://www.goodwinlaw.com/en/insights/publications/2024/09/alerts-practices-cldr-ftc-finalizes-rule-on-consumer-reviews
 - [M15] Apple, Requesting App Store reviews (at most three prompts in 365 days; when to ask): https://developer.apple.com/documentation/storekit/requesting-app-store-reviews
-- [M16] Apple, TestFlight overview (10,000 external testers, 90-day builds, first external build reviewed): https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/ and TestFlight (public links, email invitations, TestFlight app): https://developer.apple.com/testflight/
+- [M16] Apple, TestFlight overview (10,000 external testers; internal testers are up to 100 App Store Connect users; 90-day builds; first external build reviewed): https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/ and TestFlight (public links, email invitations, TestFlight app): https://developer.apple.com/testflight/
 - [M17] Apple iTunes Search API, US storefront, run 3 Oct 2026. Query "early letters": the ten results were alphabet, phonics and letter-writing apps (for example Phonics Island, LipLetter Land Early Literacy, ABC Letter Tracing for Kids): https://itunes.apple.com/search?term=early+letters&entity=software&country=us . Query "baby memory book": Lifestyle apps led by The Short Years Baby Book (4,832 ratings), BabyPage (4,098), BackThen (28,915) and Qeepsake (14,632): https://itunes.apple.com/search?term=baby+memory+book&entity=software&country=us
+- [M18] US Census Bureau, ACS 2018 to 2022 5-year estimates, table B16001 (Language spoken at home by ability to speak English, population 5 years and over), national row, from the table-based summary file: https://www2.census.gov/programs-surveys/acs/summary_file/2022/table-based-SF/data/5YRData/acsdt5y2022-b16001.dat . Estimates (margin of error): Spanish 41,434,050 (126,335); Chinese incl. Mandarin and Cantonese 3,486,356 (23,094); Arabic 1,341,739 (22,447); French incl. Cajun 1,214,884 (13,467); Portuguese 911,501 (12,777); Hindi 882,803 (11,693). The same file gives 21.7% speaking a language other than English, 61.1% of them Spanish and 5.1% Chinese, matching [M2]. Downloaded 3 Oct 2026 (the Census data API now needs a key, so the file was used instead)
+- [M19] Apple, App Store Connect reference, Platform version information (Support URL: "must lead to actual contact information (legal address, email address, telephone number), as may be required by local law"; "Specify the entire URL, including the protocol"; "This property is required"): https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information
+- [M20] Apple, Add and edit users ("If you're enrolled in the Apple Developer Program as an individual, you can give up to 50 additional users access to your content in App Store Connect."): https://developer.apple.com/help/app-store-connect/manage-your-team/add-and-edit-users/
 - Internal: `docs/research/COMPETITIVE_RESEARCH.md` [S#], `docs/research/USER_RESEARCH.md` [S#], `docs/ROADMAP.md`, `docs/DECISIONS.md`, `docs/agents/BRIEF-2026-10-03.md`, `docs/legal/compliance-register.md`, `docs/legal/privacy-policy.md`, `docs/analytics/TRACKING_PLAN.md`, `packages/content/VOICE.md`, `BRAND.md`, `src/store.en.ts`, `src/site.en.ts`, `docs/design/CREATIVE.md`.
