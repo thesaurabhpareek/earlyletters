@@ -28,9 +28,8 @@
 }
 .out {
   text-decoration: none;
-  color: inherit;
-  background: linear-gradient(var(--recording), var(--recording)) no-repeat 0 58% / 0 2px;
-  transition: background-size 0.7s var(--ease-standard) var(--d, 0s), color 0.7s var(--ease-standard) var(--d, 0s);
+  color: var(--ink-muted);
+  background: linear-gradient(var(--recording), var(--recording)) no-repeat 0 58% / 100% 2px;
 }
 .in {
   text-decoration: none;
@@ -40,15 +39,6 @@
   border-radius: 4px;
   background: var(--accent-soft);
   color: var(--accent);
-  opacity: 0;
-  transition: opacity 0.6s var(--ease-standard) calc(var(--d, 0s) + 0.35s);
-}
-.played .out {
-  background-size: 100% 2px;
-  color: var(--ink-muted);
-}
-.played .in {
-  opacity: 1;
 }
 .foot {
   display: flex;
@@ -71,9 +61,5 @@
 @media (prefers-reduced-motion: reduce) {
   .letter {
     transform: none;
-  }
-  .out,
-  .in {
-    transition: none;
   }
 }

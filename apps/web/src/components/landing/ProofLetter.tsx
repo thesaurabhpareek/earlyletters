@@ -1,61 +1,66 @@
 'use client';
 /**
- * The proof behind "exactly as you said it": the sample letter as the microphone heard it, with the app's
- * three small fixes shown the way the app shows them. A misheard name is struck and corrected, a filler and
- * a false start are struck and gone. Nothing is added. The fixes play once as the letter scrolls into view;
- * the server and reduced-motion visitors get the finished state. The letter itself is checked by
- * test/sample-letter.test.ts: applying every fix gives exactly the final text, and no fix adds meaning.
+ * The proof behind "exactly as you said it": the sample letter as the microphone heard it, with the app's three
+ * small fixes shown the way the app shows them. A misheard name is struck and corrected, a filler and a false
+ * start are struck and gone. Nothing is added. When scrubbing is on, the letter grows into place and each fix is
+ * drawn by your scroll, one after another; otherwise it shows the finished letter. The letter itself is checked
+ * by test/sample-letter.test.ts: applying every fix gives exactly the final text, and no fix adds meaning.
  */
-import { useInView, useReducedMotion } from 'motion/react';
-import { useEffect, useRef, useState } from 'react';
+import { motion, useTransform, type MotionValue } from 'motion/react';
 import { sampleLetter, site, type HeardSegment } from '@/content/site';
 import styles from './ProofLetter.module.css';
 
 const s04 = site.scenes.s04;
 const segments = sampleLetter.heard as readonly HeardSegment[];
-type Phase = 'server' | 'armed' | 'played';
 
-export function ProofLetter() {
-  const ref = useRef<HTMLElement>(null);
-  const still = useReducedMotion();
-  const inView = useInView(ref, { once: true, margin: '0px 0px -25% 0px' });
-  const [phase, setPhase] = useState<Phase>('server');
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || still) {
-      setPhase('played');
-      return;
-    }
-    setPhase(el.getBoundingClientRect().top < window.innerHeight * 0.6 ? 'played' : 'armed');
-  }, [still]);
-
-  const played = phase !== 'armed' || inView;
-  let fix = 0;
-
+function Fix({ seg, index, progress, enabled }: { seg: HeardSegment; index: number; progress: MotionValue<number>; enabled: boolean }) {
+  const from = 0.3 + index * 0.17;
+  const to = from + 0.12;
+  const width = useTransform(progress, [from, to], [0, 100]);
+  const backgroundSize = useTransform(width, (v) => `${v.toFixed(1)}% 2px`);
+  const strikeColor = useTransform(progress, [from, to], ['#2b2722', '#6b645b']);
+  const inOpacity = useTransform(progress, [to - 0.02, to + 0.08], [0, 1]);
   return (
-    <figure ref={ref} className={`${styles.letter} ${played ? styles.played : ''}`}>
+    <span>
+      <motion.del className={styles.out} style={enabled ? { backgroundSize, color: strikeColor } : undefined}>
+        {seg.text}
+      </motion.del>
+      {seg.becomes !== '' ? (
+        <motion.ins className={styles.in} style={enabled ? { opacity: inOpacity } : undefined}>
+          {seg.becomes}
+        </motion.ins>
+      ) : null}
+    </span>
+  );
+}
+
+export function ProofLetter({ progress, enabled }: { progress: MotionValue<number>; enabled: boolean }) {
+  const scale = useTransform(progress, [0, 0.24], [0.9, 1]);
+  const y = useTransform(progress, [0, 0.24], [90, 0]);
+  const rotate = useTransform(progress, [0, 0.24], [-4, -0.6]);
+  const opacity = useTransform(progress, [0, 0.14], [0, 1]);
+  const foot = useTransform(progress, [0.82, 0.95], [0, 1]);
+  let fix = 0;
+  return (
+    <motion.figure className={styles.letter} style={enabled ? { scale, y, rotate, opacity } : undefined}>
       <figcaption className={styles.head}>
         <span>{`To ${sampleLetter.to}`}</span>
         <span>{sampleLetter.dateline}</span>
         <span>{`From ${sampleLetter.from}`}</span>
       </figcaption>
       <p className={styles.body}>
-        {segments.map((seg, i) => {
-          if (seg.becomes === undefined) return <span key={i}>{seg.text}</span>;
-          const delay = `${0.5 + fix++ * 0.7}s`;
-          return (
-            <span key={i} style={{ ['--d' as string]: delay }}>
-              <del className={styles.out}>{seg.text}</del>
-              {seg.becomes !== '' ? <ins className={styles.in}>{seg.becomes}</ins> : null}
-            </span>
-          );
-        })}
+        {segments.map((seg, i) =>
+          seg.becomes === undefined ? (
+            <span key={i}>{seg.text}</span>
+          ) : (
+            <Fix key={i} seg={seg} index={fix++} progress={progress} enabled={enabled} />
+          ),
+        )}
       </p>
-      <p className={styles.foot}>
+      <motion.p className={styles.foot} style={enabled ? { opacity: foot } : undefined}>
         <span className={styles.count}>{s04.appChanges}</span>
         <span>{s04.appTrust}</span>
-      </p>
-    </figure>
+      </motion.p>
+    </motion.figure>
   );
 }
