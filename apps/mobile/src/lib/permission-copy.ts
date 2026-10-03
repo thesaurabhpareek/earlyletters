@@ -10,5 +10,5 @@
 export const permissionCopy = {
   // permissions.microphone (Info.plist NSMicrophoneUsageDescription)
   microphone:
-    '{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone unless you choose to back them up, share them with family, or use cloud transcription.',
+    '{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone.',
 } as const;

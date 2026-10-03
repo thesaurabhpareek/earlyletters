@@ -1,0 +1,490 @@
+{
+  "kind": "text-rules",
+  "schema": 1,
+  "language": "ar",
+  "version": "1.0.0",
+  "engine": 1,
+  "name": {
+    "english": "Arabic",
+    "native": "العربية"
+  },
+  "script": {
+    "primary": "Arab",
+    "variants": [],
+    "direction": "rtl",
+    "cased": false,
+    "segmentation": "space"
+  },
+  "attribution": [],
+  "normalization": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Unicode Standard Annex #15, Unicode Normalization Forms, https://unicode.org/reports/tr15/",
+        "Unicode Standard, ch. 9.2 Arabic: U+0640 ARABIC TATWEEL is an elongation (kashida) used for justification, not part of a word’s spelling",
+        "Harakat (U+064B..U+0652, U+0670) are kept exactly as recognised, never added or removed; ignored only when a word is compared with the tables",
+        "Dialect words are never normalised to Modern Standard Arabic: alef and ya folds apply to table look-ups only, never to the text"
+      ]
+    },
+    "form": "NFC",
+    "dropFromFinal": [
+      "ـ"
+    ],
+    "ignoreForMatching": [
+      "ً",
+      "ٌ",
+      "ٍ",
+      "َ",
+      "ُ",
+      "ِ",
+      "ّ",
+      "ْ",
+      "ٰ",
+      "ـ"
+    ],
+    "foldForMatching": {
+      "أ": "ا",
+      "إ": "ا",
+      "آ": "ا",
+      "ٱ": "ا",
+      "ى": "ي"
+    },
+    "house": {
+      "dashes": "replace",
+      "dashTo": "، ",
+      "quotes": "straight",
+      "ellipsis": "dots",
+      "spaces": "plain"
+    }
+  },
+  "punctuation": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Unicode Standard, ch. 9.2 Arabic: U+060C ARABIC COMMA, U+061B ARABIC SEMICOLON, U+061F ARABIC QUESTION MARK",
+        "Arabic full stop is U+002E"
+      ]
+    },
+    "sentenceEnd": [
+      ".",
+      "!",
+      "?",
+      "؟"
+    ],
+    "terminal": ".",
+    "openers": [],
+    "pairOpeners": false,
+    "quotes": [
+      "«",
+      "»"
+    ],
+    "commas": [
+      "،"
+    ],
+    "localForms": {
+      ",": "،",
+      ";": "؛",
+      "?": "؟"
+    },
+    "localFormsSwallowSpace": false,
+    "spaceBefore": [],
+    "spaceInsideGuillemets": false
+  },
+  "fillers": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Hesitation spellings in informal Arabic writing (unverified). يعني (I mean) is a discourse marker and kept; آه and إيه can mean yes; ام is excluded because it is also أم (mother) written without hamza"
+      ]
+    },
+    "auto": [
+      "اممم",
+      "امم",
+      "همم",
+      "هممم",
+      "ممم",
+      "إمم",
+      "آآ",
+      "ااا"
+    ],
+    "suggest": [
+      "مم"
+    ]
+  },
+  "meaning": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Ryding, A Reference Grammar of Modern Standard Arabic (2005): negation with la, lam, lan, laysa, ma; dialect negators mish (Egyptian, Levantine), mu (Gulf), maku (Iraqi)",
+        "Dialect forms are listed so they are protected, never converted. Needs native review per dialect"
+      ]
+    },
+    "negations": [
+      "لا",
+      "لم",
+      "لن",
+      "ليس",
+      "ليست",
+      "لست",
+      "لسنا",
+      "ليسوا",
+      "ما",
+      "مش",
+      "مو",
+      "مب",
+      "ماكو",
+      "مافي",
+      "بدون",
+      "دون",
+      "غير",
+      "أبدا",
+      "ابدا"
+    ],
+    "negationSuffixes": [],
+    "negationPrefixes": [],
+    "modals": [
+      "يمكن",
+      "ممكن",
+      "يجب",
+      "لازم",
+      "يقدر",
+      "تقدر",
+      "أقدر",
+      "نقدر",
+      "يستطيع",
+      "تستطيع",
+      "أستطيع",
+      "نستطيع",
+      "ربما",
+      "قد",
+      "سوف",
+      "رح",
+      "راح",
+      "بدي",
+      "بدك"
+    ],
+    "numberWords": [
+      "صفر",
+      "واحد",
+      "واحدة",
+      "اثنان",
+      "اثنين",
+      "اثنتان",
+      "ثلاثة",
+      "ثلاث",
+      "أربعة",
+      "أربع",
+      "خمسة",
+      "خمس",
+      "ستة",
+      "ست",
+      "سبعة",
+      "سبع",
+      "ثمانية",
+      "ثماني",
+      "تسعة",
+      "تسع",
+      "عشرة",
+      "عشر",
+      "مئة",
+      "مائة",
+      "ألف",
+      "مليون",
+      "نصف",
+      "أول",
+      "أولى",
+      "ثاني",
+      "ثانية",
+      "ثالث",
+      "ثالثة"
+    ],
+    "functionWords": [
+      "في",
+      "من",
+      "إلى",
+      "الى",
+      "على",
+      "عن",
+      "مع",
+      "و",
+      "أو",
+      "او",
+      "ثم",
+      "لكن",
+      "أن",
+      "ان",
+      "إن",
+      "إذا",
+      "اذا",
+      "لو",
+      "هذا",
+      "هذه",
+      "ذلك",
+      "تلك",
+      "هو",
+      "هي",
+      "هم",
+      "هن",
+      "أنا",
+      "انا",
+      "أنت",
+      "انت",
+      "نحن",
+      "أنتم",
+      "كان",
+      "كانت",
+      "يكون",
+      "تكون",
+      "هل",
+      "الذي",
+      "التي",
+      "الذين"
+    ],
+    "pronouns": [
+      "إياه",
+      "إياها",
+      "نفسه",
+      "نفسها",
+      "نفسي",
+      "أحد",
+      "احد",
+      "كل",
+      "جميع"
+    ],
+    "kinship": [
+      "ماما",
+      "بابا",
+      "أم",
+      "ام",
+      "أب",
+      "اب",
+      "أبي",
+      "ابي",
+      "أمي",
+      "امي",
+      "والدة",
+      "والد",
+      "جدة",
+      "جد",
+      "تيتة",
+      "تيته",
+      "ستو",
+      "سيدو",
+      "خالة",
+      "خالو",
+      "خال",
+      "عمة",
+      "عمو",
+      "عم",
+      "أخت",
+      "اخت",
+      "أخ",
+      "اخ",
+      "بنت",
+      "ابن",
+      "طفل",
+      "طفلة",
+      "بيبي",
+      "زوج",
+      "زوجة",
+      "مربية"
+    ],
+    "alwaysCapitalized": [],
+    "agreementGroups": [],
+    "tenseGroups": [
+      [
+        "كان",
+        "يكون",
+        "سيكون"
+      ],
+      [
+        "كانت",
+        "تكون",
+        "ستكون"
+      ]
+    ],
+    "agreementInflections": [],
+    "vowels": "",
+    "minStem": 3,
+    "tenseEndings": [],
+    "stemDropFinal": []
+  },
+  "repeats": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Doubled prepositions treated as stumbles. Needs native review per dialect"
+      ]
+    },
+    "always": [
+      "في",
+      "من",
+      "على",
+      "إلى",
+      "الى",
+      "عن"
+    ],
+    "suggest": [
+      "أنا",
+      "انا",
+      "هو",
+      "هي",
+      "أنت",
+      "انت",
+      "هذا",
+      "هذه"
+    ],
+    "dangling": [
+      "في",
+      "من",
+      "على",
+      "إلى",
+      "الى",
+      "عن",
+      "مع",
+      "و",
+      "أو",
+      "او",
+      "لكن",
+      "أن",
+      "ان",
+      "إن",
+      "لأن",
+      "لان"
+    ],
+    "verifierExtra": [],
+    "cleft": {
+      "words": [],
+      "openers": []
+    },
+    "subject": {
+      "words": [],
+      "objectVerbs": [],
+      "clauseLeads": [],
+      "discourseAfter": []
+    },
+    "maxPhrase": 4
+  },
+  "phonetic": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Consonant values after ALA-LC Arabic romanization, simplified to common Latin spellings of names; و and ي read as vowels; ع and ء silent (unverified against a names list)"
+      ]
+    },
+    "romanize": {
+      "ا": "a",
+      "أ": "a",
+      "إ": "i",
+      "آ": "a",
+      "ٱ": "a",
+      "ء": "",
+      "ؤ": "u",
+      "ئ": "i",
+      "ب": "b",
+      "ت": "t",
+      "ث": "th",
+      "ج": "j",
+      "ح": "h",
+      "خ": "kh",
+      "د": "d",
+      "ذ": "dh",
+      "ر": "r",
+      "ز": "z",
+      "س": "s",
+      "ش": "sh",
+      "ص": "s",
+      "ض": "d",
+      "ط": "t",
+      "ظ": "z",
+      "ع": "",
+      "غ": "gh",
+      "ف": "f",
+      "ق": "q",
+      "ك": "k",
+      "ل": "l",
+      "م": "m",
+      "ن": "n",
+      "ه": "h",
+      "ة": "a",
+      "و": "u",
+      "ي": "i",
+      "ى": "a",
+      "پ": "p",
+      "چ": "ch",
+      "گ": "g",
+      "ڤ": "v",
+      "ـ": ""
+    },
+    "rewrite": [
+      {
+        "from": "kh",
+        "to": "k"
+      },
+      {
+        "from": "gh",
+        "to": "g"
+      },
+      {
+        "from": "th",
+        "to": "t"
+      },
+      {
+        "from": "dh",
+        "to": "d"
+      },
+      {
+        "from": "sh",
+        "to": "S"
+      },
+      {
+        "from": "ch",
+        "to": "S"
+      },
+      {
+        "from": "q",
+        "to": "k"
+      },
+      {
+        "from": "x",
+        "to": "ks"
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "before": "eiy"
+      },
+      {
+        "from": "c",
+        "to": "k"
+      },
+      {
+        "from": "p",
+        "to": "b"
+      },
+      {
+        "from": "v",
+        "to": "f"
+      },
+      {
+        "from": "w",
+        "to": "u"
+      },
+      {
+        "from": "h",
+        "to": ""
+      }
+    ],
+    "vowels": "aeiouy",
+    "collapseDoubles": true,
+    "dropFinalAfterVowel": [],
+    "stripMarks": true,
+    "compareVowels": false
+  }
+}
