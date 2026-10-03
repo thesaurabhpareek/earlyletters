@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   ROOT, parseBacklog, eligibility, primaryOwner, takenIds, queueFor, ownerMap,
-  loadRoster, readState, writeState, standingChanged,
+  loadRoster, readState, writeState, standingChanged, isFounderComment,
 } from "./lib.mjs";
 import { summarize } from "./receipt.mjs";
 import { tally, newTotals, opencodeConfig } from "./run-opencode.mjs";
@@ -177,4 +177,14 @@ test("salvage saves unfinished work to a branch and never to develop or main", (
   assert.equal(salvagePlan({ ...base, dirty: true, unpushed: false, branch: "main" }).branch, "agent/qa/wip-42");
   assert.deepEqual(salvagePlan({ ...base, dirty: false, unpushed: true, branch: "fix/qa-bl-001-trace" }),
     { action: "save", branch: "fix/qa-bl-001-trace", commit: false, newBranch: false });
+});
+
+test("machine posts from the founder's account are not founder instructions", () => {
+  const roster = { founder: "founder" };
+  const by = (body) => ({ user: { login: "founder" }, body });
+  assert.equal(isFounderComment(by("Please split this PR."), roster), true);
+  assert.equal(isFounderComment(by("<!-- receipt run:1 agent:qa cost:unknown --> Run receipt"), roster), false);
+  assert.equal(isFounderComment(by("<!-- journal run:1 agent:qa -->\n**Mode:** task"), roster), false);
+  assert.equal(isFounderComment(by("<!-- red-team:abc -->\nVerdict: ship"), roster), false);
+  assert.equal(isFounderComment({ user: { login: "someone" }, body: "do this" }, roster), false);
 });
