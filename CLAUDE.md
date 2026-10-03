@@ -38,7 +38,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 ## Content rules (enforced by `packages/content/test/rules.test.ts`)
 - No em dashes, en dashes, curly quotes, ellipsis characters, or emoji.
 - No fear, guilt or loss language. Legacy is about love and time, never endings.
-- Never imply AI writes anything. We never rewrite.
+- AI may be named, but only in a sentence that also says it never writes or rewrites words and that letters stay private on the phone (enforced by both content tests). Never imply AI writes anything. We never rewrite.
 - Never gender the child; use `{child}`.
 - Celebrate what exists; never count gaps. No streaks, points or badges, ever.
 

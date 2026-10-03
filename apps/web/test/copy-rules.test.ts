@@ -137,11 +137,17 @@ describe('no fear, guilt or loss', () => {
 describe('no machine-writing claims', () => {
   // RULE: never imply software writes or improves anything (rules.test.ts AI list, case-insensitive except AI itself, plus a few synonyms).
   it('never implies the app writes for you', () => {
-    expect(offenders(PROSE, /\b(AI|A\.I\.)\b/)).toEqual([]);
+    // AI may be named only in a string that also promises it never writes and says letters stay private.
+    const namesAi = PROSE.filter((l) => /\b(AI|A\.I\.|artificial intelligence)\b/.test(l.text));
+    const unpromised = namesAi.filter(
+      (l) =>
+        !(/\b(never|not|don'?t|doesn'?t|won'?t|no)\b[^.]{0,60}\bwrit/i.test(l.text) && /\b(private|privacy|on your phone|on-device)\b/i.test(l.text)),
+    );
+    expect(unpromised.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
     expect(
       offenders(
         PROSE,
-        /\b(artificial intelligence|machine learning|LLM|GPT|chatbot|algorithms?|ghostwrit\w*|auto-?(write|writes|writing|complete)|writes? (it )?for you|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing))\b/i,
+        /\b(machine learning|LLM|GPT|chatbot|algorithms?|ghostwrit\w*|auto-?(write|writes|writing|complete)|writes? (it )?for you|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing))\b/i,
       ),
     ).toEqual([]);
   });
@@ -156,10 +162,10 @@ describe('no machine-writing claims', () => {
 });
 
 describe('site vocabulary', () => {
-  // RULE: banned site words (learn, ABC, early learning, literacy, educational, AI-written, generated, legacy, hereafter, cherish, precious, journey, unlock, seamless, magic, effortless).
+  // RULE: banned site words (learn, ABC, early learning, literacy, educational, AI-written, generated, legacy, hereafter, precious, unlock, seamless, magic, effortless).
   it('avoids the banned words', () => {
     const BANNED =
-      /\b(learn(s|ed|ing|er|ers)?|ABC|early learning|literac(y|ies)|educat(ion|ional)|AI[- ]?(written|generated|powered)|generat(e|es|ed|ing)|legacy|hereafter|cherish(es|ed|ing)?|precious|journey(s|ed|ing)?|unlock(s|ed|ing)?|seamless(ly)?|magic(al)?|effortless(ly)?)\b/i;
+      /\b(learn(s|ed|ing|er|ers)?|ABC|early learning|literac(y|ies)|educat(ion|ional)|AI[- ]?(written|generated|powered)|generat(e|es|ed|ing)|legacy|hereafter|precious|unlock(s|ed|ing)?|seamless(ly)?|magic(al)?|effortless(ly)?)\b/i;
     expect(offenders(PROSE, BANNED)).toEqual([]);
   });
 

@@ -52,9 +52,20 @@ describe('no fear, guilt or loss', () => {
 });
 
 describe('no AI-writing claims', () => {
-  const AI = /\b(AI|A\.I\.|artificial intelligence|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing))\b/;
+  const AI = /\b(smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing))\b/;
   it('never implies the app writes for you', () => {
     expect(offenders(ALL, AI)).toEqual([]);
+  });
+
+  it('names AI only with the promise that it never writes, and that letters stay private', () => {
+    const NAMES_AI = /\b(AI|A\.I\.|artificial intelligence)\b/;
+    const bad = ALL.filter(
+      (l) =>
+        NAMES_AI.test(l.text) &&
+        !(/\b(never|not|don'?t|doesn'?t|won'?t|no)\b[^.]{0,60}\bwrit/i.test(l.text) && /\b(private|privacy|on your phone|on-device)\b/i.test(l.text)),
+    );
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    expect(offenders(ALL, /\bAI[- ]?(written|generated|powered)\b/i)).toEqual([]);
   });
 
   it('only mentions rewriting to promise it never happens', () => {
