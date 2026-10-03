@@ -39,9 +39,11 @@ flowchart LR
 | OpenCode runner | `scripts/agents/run-opencode.mjs` | Runs an agent on an open-weight model with a hard dollar cap and step cap. |
 | Receipts | `scripts/agents/receipt.mjs` | Posts cost, steps, minutes and outcome on the agent's journal after every run. |
 | Salvage | `scripts/agents/salvage.mjs` | Pushes unfinished work to a branch when a run stops early, and notes it in the journal. |
+| Agent conversations | `scripts/agents/handoff.mjs`, `docs/agents/AGENT-COMMS.md` | Handoffs and RFCs between agents (issues labelled `handoff`), replies, and the trust rules for whose words count. |
+| Activity ledger | `scripts/agents/ledger.mjs` | One JSON line per thing any agent did or said (journal entries, receipts, handoffs, replies, reviews), rebuilt from GitHub. |
 | Bootstrap and checks | `scripts/agents/bootstrap.mjs`, `check.mjs`, `lib.test.mjs` | Create labels, journals and the board; keep the team consistent; test the dispatcher. |
 | Workflows | `.github/workflows/agents.yml`, `claude.yml`, `agents-check.yml` | Run the team; `@claude` for the founder; the consistency check on PRs. |
-| GitHub objects | Labels `agent:<handle>`, `from:agent`, `needs:founder`, `review:*`, `approve-migration`; one journal issue per agent; the issue titled "Agent board"; daily `digest` issues | Where you see and steer everything. |
+| GitHub objects | Labels `agent:<handle>`, `from:agent`, `needs:founder`, `review:*`, `approve-migration`, `handoff`, `rfc`, `from:<handle>`, `to:<handle>`; one journal issue per agent; the issue titled "Agent board"; daily `digest` issues | Where you see and steer everything. |
 
 ## 3. Engines and models
 
@@ -79,8 +81,8 @@ Ownership of paths is exclusive, so two agents never edit the same files for the
 
 ## 5. How a run works
 
-1. **Dispatch** (every 30 minutes, or on demand). The dispatcher reads the roster, the backlog, open PRs and running jobs. For each free agent it picks, in order: fix its own PR (failing checks, your comments, a red-team "fix first"); review an agent PR (red team only); the next eligible backlog task; a standing duty from its charter, but only if something changed since its last standing run. It respects each agent's daily runs and open-PR limit, the team's daily cap (30) and parallelism (6). It writes the board.
-2. **Brief.** For each assignment, `brief.mjs` writes `.agent-run/brief.md`: the reading order, your journal instructions since the agent's last run, its last three journal entries, and the assignment (for backlog work, the task text itself).
+1. **Dispatch** (every 30 minutes, or on demand). The dispatcher reads the roster, the backlog, open PRs and running jobs. For each free agent it picks, in order: fix its own PR (failing checks, your comments, a red-team or steward "fix first"); answer the oldest handoff waiting for it; review a PR (red team: agent PRs; stewards: any PR touching their `review_paths`); the next eligible backlog task; a standing duty from its charter, but only if something changed since its last standing run. It respects each agent's daily runs and open-PR limit, the team's daily cap (30) and parallelism (6). It writes the board.
+2. **Brief.** For each assignment, `brief.mjs` writes `.agent-run/brief.md`: the reading order, your journal instructions since the agent's last run, its last three journal entries, the handoffs waiting for it and the replies to handoffs it sent, and the assignment (for backlog work, the task text itself).
 3. **Run.** The engine runs the agent on a fresh GitHub runner, checked out on `develop` with dependencies installed. Hard stops: dollar budget, steps or turns, and job timeout.
 4. **Output.** One branch and one PR into `develop` (labels `agent:<handle>`, `from:agent`), commits ending `Agent: <handle>`, and one journal entry.
 5. **Save and receipt.** Whatever stopped the run, the workflow pushes anything left uncommitted or unpushed to `agent/<handle>/wip-<run id>` and records it in the journal, so no work is lost to a cap, timeout or provider limit (`scripts/agents/salvage.mjs`; guaranteed for OpenCode runs, best effort for Claude Code runs). Then it posts cost, steps, minutes, model and outcome on the journal.
@@ -173,8 +175,9 @@ The hard monthly stop is the budget on your OpenRouter key (and on the Claude Co
 1. **OpenRouter:** create an API key with a monthly budget (for example $50) under Guardrails; in Settings, Privacy, turn on zero data retention so no provider can keep or train on prompts; add prepaid credit; save the key as the Actions secret `OPENROUTER_API_KEY`.
 2. **Agents GitHub App:** in GitHub, Settings, Developer settings, GitHub Apps, New GitHub App. Name it (for example `early-letters-agents`), set any homepage URL, turn the webhook off. Repository permissions: Contents read and write, Pull requests read and write, Issues read and write, Checks read, Actions read. Do not grant Workflows or Administration. Create it, install it on this repository only, generate a private key. Save the Client ID as the Actions variable `AGENTS_APP_CLIENT_ID` and the private key file's contents as the secret `AGENTS_APP_PRIVATE_KEY`.
 3. **Workflows on `main`:** GitHub runs scheduled workflows only from the default branch. Merge the harness PR into `develop`, then release `develop` into `main` (or merge the small companion PR that adds only the two workflow files).
-4. **Branch protection** on `develop` and `main`: the command in `.github/README.md` (required checks, 1 approval, no force pushes).
-5. **Optional:** `ANTHROPIC_API_KEY` to run some agents on Claude; `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) so `@claude` uses your own subscription.
+4. **Agent identity for messages:** after creating the App, add its bot login (for example `early-letters-agents[bot]`) as the Actions variable `AGENTS_BOT_LOGINS`. The dispatcher also recognises the App by `AGENTS_APP_CLIENT_ID`; until either is set, the board says agent messages are not recognised (`docs/agents/AGENT-COMMS.md` section 5).
+5. **Branch protection** on `develop` and `main`: the command in `.github/README.md` (required checks, 1 approval, no force pushes).
+6. **Optional:** `ANTHROPIC_API_KEY` to run some agents on Claude; `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) so `@claude` uses your own subscription.
 
 ## 13. Going private without losing branch protection
 
@@ -201,4 +204,5 @@ Do it before the first external TestFlight families join (backlog milestone M12)
 ## 15. Change log
 
 - 3 Oct 2026: harness created (ADR 0014); open-weight engine by default, Claude optional (ADR 0015); per-run dollar caps; skip unchanged standing runs; this document.
+- 3 Oct 2026: agents talk to each other through handoffs and RFCs, stewards review PRs in their domains, and an activity ledger records every message (ADR 0016, `docs/agents/AGENT-COMMS.md`). Red-team and steward verdicts now count only from trusted authors, closing a gap where any GitHub user could post a verdict on this public repository.
 - 3 Oct 2026: nothing is lost to limits: agents push as they go, the workflow salvages unfinished runs to a branch, and `CLAUDE.md` asks every session to push work in progress at least every 30 minutes.

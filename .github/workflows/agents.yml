@@ -63,6 +63,9 @@ jobs:
           AGENTS_PAUSED: ${{ vars.AGENTS_PAUSED }}
           ONLY_AGENT: ${{ inputs.agent }}
           FORCE_TASK: ${{ inputs.task }}
+          # Whose comments count as agent messages (docs/agents/AGENT-COMMS.md).
+          AGENTS_APP_CLIENT_ID: ${{ vars.AGENTS_APP_CLIENT_ID }}
+          AGENTS_BOT_LOGINS: ${{ vars.AGENTS_BOT_LOGINS }}
         run: node scripts/agents/dispatch.mjs
 
   run:
@@ -108,6 +111,8 @@ jobs:
           PR: ${{ matrix.pr }}
           REASON: ${{ matrix.reason }}
           JOURNAL: ${{ matrix.journal }}
+          AGENTS_APP_CLIENT_ID: ${{ vars.AGENTS_APP_CLIENT_ID }}
+          AGENTS_BOT_LOGINS: ${{ vars.AGENTS_BOT_LOGINS }}
         run: >
           node scripts/agents/brief.mjs --agent "$AGENT" --mode "$MODE" --task "$TASK" --pr "$PR"
           --reason "$REASON" --journal "$JOURNAL" --run-url "$RUN_URL" --run-id "$GITHUB_RUN_ID"
