@@ -13,7 +13,7 @@ export type EditType =
   | 'filler' // "um", "uh" removed
   | 'false_start' // "she was, she was so" -> "she was so"
   | 'repeat' // "the the" -> "the"
-  | 'stt_fix' // "mirror" -> "Meera" (replacement must be a dictionary term)
+  | 'stt_fix' // "mirror" -> "Mira" (replacement must be a dictionary term)
   | 'punctuation' // add/remove punctuation, sentence case; letters unchanged
   | 'agreement' // "she have" -> "she has": one word, same stem
   | 'paragraph'; // whitespace only

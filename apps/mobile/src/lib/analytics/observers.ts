@@ -22,6 +22,7 @@ import {
   createPackObserver,
   createPlanObserver,
   createReminderObserver,
+  notificationOpenedEvent,
   trackNotificationOpened,
   type AuthLike,
 } from '@scribe/analytics';
@@ -32,7 +33,9 @@ import { onProgress } from '@/lib/packs';
 import { expoNetwork } from '@/lib/packs/expo-adapter';
 import { readPrefs } from '@/lib/reminders';
 import { listChildren, listEntriesForChild, subscribe } from '@/lib/store';
+import { getSyncStatus, subscribeSyncStatus } from '@/lib/sync';
 import { analytics, stopAnalyticsForUnder18, trackers } from './index';
+import { noteReminderOpened } from './track';
 
 type Connection = 'wifi' | 'cellular' | 'none' | 'unknown';
 
@@ -103,9 +106,30 @@ export function startAnalyticsObservers(): () => void {
     stops.push(subscribePlan(() => safe(read)));
   });
 
+  // sync_failed: an attempt ended offline or needing sign-in again. Counted once per change into that
+  // state, so a phone that stays offline does not report every retry.
+  safe(() => {
+    let last = getSyncStatus().phase;
+    stops.push(
+      subscribeSyncStatus((st) =>
+        safe(() => {
+          if (st.phase !== last && (st.phase === 'offline' || st.phase === 'auth')) {
+            analytics.track('sync_failed', { reason: st.phase === 'offline' ? 'network' : 'auth' });
+          }
+          last = st.phase;
+        }),
+      ),
+    );
+  });
+
   safe(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((r) =>
-      safe(() => void trackNotificationOpened(analytics, r.notification.request.content.data)),
+      safe(() => {
+        const data = r.notification.request.content.data;
+        // An evening reminder (never a month or birthday note): `from_notification_2h` on letter_saved.
+        if (notificationOpenedEvent(data)) noteReminderOpened();
+        void trackNotificationOpened(analytics, data);
+      }),
     );
     stops.push(() => sub.remove());
   });

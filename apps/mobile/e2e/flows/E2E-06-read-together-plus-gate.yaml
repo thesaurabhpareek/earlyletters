@@ -1,0 +1,72 @@
+# E2E-06  Read together: 3 free sessions per book, then the Plus gate.
+# Proves: PRD-REQ-020 and D-009 (exactly read_together_free_sessions, default 3,
+# then Plus; the remote value changes the limit with no release, and may only
+# raise it), D-037 (counted per book on the device), C-REQ-023 (the Plus sheet
+# appears only at its trigger), LEGAL-REQ-050 (Not now leaves everything working).
+# The simulator has no StoreKit purchase here, so the account is Free.
+appId: ${APP_ID}
+name: E2E-06 Read together and the Plus gate
+tags:
+  - e2e
+  - E2E-06
+  - PRD-REQ-020
+  - D-009
+  - D-037
+  - C-REQ-023
+  - LEGAL-REQ-050
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    id: "book.readTogether"
+# 1. Three free sessions.
+- repeat:
+    times: 3
+    commands:
+      - runFlow: ../subflows/read-together-once.yaml
+- assertNotVisible:
+    id: "plusGate.screen"
+# 2. The fourth opens the Plus gate; Not now returns to the Book.
+- tapOn:
+    id: "book.readTogether"
+- assertVisible:
+    id: "plusGate.screen"
+- assertVisible:
+    id: "plusGate.notNow"
+- tapOn:
+    id: "plusGate.notNow"
+- assertVisible:
+    id: "book.screen"
+# 3. Reading one letter is never limited.
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "letter.screen"
+- assertNotVisible:
+    id: "plusGate.screen"
+- runFlow: ../subflows/go-back.yaml
+# 4. Remote config raises the allowance to 5: two more sessions, then the gate again.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_CONFIG: '{"readTogetherFreeSessions":5}'
+- tapOn:
+    id: "tab.book"
+- repeat:
+    times: 2
+    commands:
+      - runFlow: ../subflows/read-together-once.yaml
+- tapOn:
+    id: "book.readTogether"
+- assertVisible:
+    id: "plusGate.screen"
+- tapOn:
+    id: "plusGate.notNow"
+- stopApp

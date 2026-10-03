@@ -2,7 +2,8 @@
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useMemo, useState } from 'react';
-import { Pressable, Switch, View, useColorScheme } from 'react-native';
+import { Pressable, View, useColorScheme } from 'react-native';
+import { Toggle } from '@/components/platform/toggle';
 import { tokens } from '@scribe/design-tokens';
 import { Text } from '@/components/ui/text';
 import { authorOf, isOwnEntry } from '@/components/child/child-store';
@@ -22,6 +23,7 @@ import {
   stepPosition,
   useLetterPlayer,
 } from '@/lib/player';
+import { track } from '@/lib/analytics/track';
 import { getActiveChild, getChild, getEntry, type Entry } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
@@ -59,7 +61,7 @@ export function AudioPlayer({ entryId, autoPlay, onFinish, context = 'letter', c
       </Text>
     );
   }
-  return <PlayableRecording entry={entry} signsAs={signsAs} autoPlay={autoPlay} onFinish={onFinish} className={className} />;
+  return <PlayableRecording entry={entry} signsAs={signsAs} autoPlay={autoPlay} onFinish={onFinish} context={context} className={className} />;
 }
 
 function PlayableRecording({
@@ -67,12 +69,14 @@ function PlayableRecording({
   signsAs,
   autoPlay,
   onFinish,
+  context,
   className,
 }: {
   entry: Entry;
   signsAs: string;
   autoPlay?: boolean;
   onFinish?: () => void;
+  context: 'letter' | 'readTogether';
   className?: string;
 }) {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
@@ -99,7 +103,19 @@ function PlayableRecording({
   const valueText = fill(playerCopy.positionText, { elapsed: formatClock(shown), total: formatClock(p.duration) });
   const at = (x: number) => positionAt(x, width, p.duration);
 
+  const toggle = () => {
+    // Only your own recordings play in v1.0, so the author is always you.
+    if (!p.playing)
+      track('playback_started', {
+        surface: context === 'readTogether' ? 'read_together' : 'letter',
+        author_relation: 'self',
+        version: choice.source === 'original' ? 'original' : 'listening_copy',
+      });
+    p.toggle();
+  };
+
   const chooseOriginal = (on: boolean) => {
+    track('settings_changed', { key: 'listening_copy' });
     setHandoff({ at: handoffPosition(p.position, null), play: p.playing });
     setPreferOriginal(on);
     setPrefersOriginal(on);
@@ -108,7 +124,7 @@ function PlayableRecording({
   return (
     <View className={cn('gap-2', className)}>
       <Pressable
-        onPress={p.toggle}
+        onPress={toggle}
         accessibilityRole="button"
         accessibilityLabel={a11yLabel}
         accessibilityState={{ busy: !p.loaded && !p.error }}
@@ -165,12 +181,11 @@ function PlayableRecording({
             <Text className="text-sm font-medium text-foreground">{playerCopy.originalLabel}</Text>
             <Text className="text-sm leading-5 text-muted-foreground">{choice.source === 'original' ? playerCopy.originalOn : playerCopy.originalOff}</Text>
           </View>
-          <Switch
+          <Toggle
+            label={playerCopy.originalLabel}
+            description={choice.source === 'original' ? playerCopy.originalOn : playerCopy.originalOff}
             value={choice.source === 'original'}
             onValueChange={chooseOriginal}
-            accessibilityLabel={playerCopy.originalLabel}
-            accessibilityHint={choice.source === 'original' ? playerCopy.originalOn : playerCopy.originalOff}
-            trackColor={{ true: c.accent }}
           />
         </View>
       )}
