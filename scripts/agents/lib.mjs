@@ -272,8 +272,8 @@ export function isTrusted(c, trust) {
 export const HANDOFF_KINDS = ["question", "request", "rfc", "fyi"];
 export const REPLY_STATUSES = ["answered", "done", "declined", "blocked"];
 
-const HANDOFF_RE = /<!--\s*handoff\s+from:([a-z0-9-]+)\s+to:([a-z0-9,-]+)\s+kind:([a-z]+)\s*-->/;
-const REPLY_RE = /<!--\s*handoff-reply\s+from:([a-z0-9-]+)\s+status:([a-z]+)\s*-->/;
+const HANDOFF_RE = /^\s*<!--\s*handoff\s+from:([a-z0-9-]+)\s+to:([a-z0-9,-]+)\s+kind:([a-z]+)\s*-->/;
+const REPLY_RE = /^\s*<!--\s*handoff-reply\s+from:([a-z0-9-]+)\s+status:([a-z]+)\s*-->/;
 
 export function parseHandoff(body) {
   const m = (body ?? "").match(HANDOFF_RE);
@@ -321,8 +321,9 @@ export function handoffSettled(issue, comments, trust, now = new Date(), minAgeM
   if (!isTrusted(issue, trust)) return false;
   if (pendingTargets(issue, comments, trust).length) return false;
   const replies = comments.filter((c) => isTrusted(c, trust) && parseReply(c.body));
-  const statuses = replies.map((c) => parseReply(c.body).status);
-  if (statuses.includes("blocked")) return false;
+  const latest = new Map();
+  for (const c of replies) latest.set(parseReply(c.body).from, parseReply(c.body).status);
+  if ([...latest.values()].includes("blocked")) return false;
   const last = replies.at(-1);
   return !!last && now - new Date(last.created_at) >= minAgeMs;
 }
@@ -349,13 +350,18 @@ export function matchingPaths(files, globs) {
   return files.filter((f) => res.some((r) => r.test(f)));
 }
 
+/** True when the body's first non-blank text is this marker (a quoted marker further down never counts). */
+export function startsWithMarker(body, marker) {
+  return (body ?? "").trimStart().startsWith(marker);
+}
+
 export function stewardMarker(handle, sha) {
   return `<!-- steward:${handle}:${sha} -->`;
 }
 
 /** The trusted steward verdict for this head commit, or undefined. */
 export function stewardVerdict(comments, handle, sha, trust) {
-  const c = comments.find((x) => isTrusted(x, trust) && (x.body ?? "").includes(stewardMarker(handle, sha)));
+  const c = comments.find((x) => isTrusted(x, trust) && startsWithMarker(x.body, stewardMarker(handle, sha)));
   if (!c) return undefined;
   return (c.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase() || "posted";
 }

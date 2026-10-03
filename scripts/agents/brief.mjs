@@ -71,7 +71,7 @@ function assignmentSection() {
     const prComments = pr ? [
       ...ghAll(`/repos/${repo}/pulls/${prNum}/reviews`, { allowFail: true }),
       ...ghAll(`/repos/${repo}/issues/${prNum}/comments`, { allowFail: true }),
-    ].filter((c) => isFounderComment(c, roster) || (isTrusted(c, trust) && /<!-- (red-team|steward):/.test(c.body ?? ""))) : [];
+    ].filter((c) => isFounderComment(c, roster) || (isTrusted(c, trust) && /^\s*<!-- (red-team|steward):/.test(c.body ?? ""))) : [];
     for (const c of prComments.slice(-5)) lines.push("", `From ${c.user?.login}:`, "", quote(c.body));
     lines.push("", "For failing checks, read the logs with `gh run list --branch <branch>` and `gh run view <id> --log-failed`.");
   } else if (mode === "review") {
@@ -173,6 +173,22 @@ function inboxSection() {
   return lines;
 }
 
+/** Reading order follows the precedence ladder (AIE-R01): higher layers first. */
+function readingOrder() {
+  const brief = latestBrief();
+  const items = [
+    "`CLAUDE.md` (the repo rules and the constitution).",
+    ...(brief ? [`\`${brief}\` (latest founder decisions; the founder's instructions below rank with it).`] : []),
+    "`docs/agents/OPERATING_MODEL.md` (how the team works; hard limits in section 8).",
+    ...(existsSync(join(ROOT, "docs", "engineering", "PRINCIPLES.md"))
+      ? ["`docs/engineering/PRINCIPLES.md` (engineering principles; load a chapter of `docs/engineering/` only when your work touches it, and search it by rule id)."]
+      : []),
+    `\`.claude/agents/${handle}.md\` (your charter: who you are and what you own).`,
+    `\`agents/${handle}/MEMORY.md\` (your long-term memory).`,
+  ];
+  return items.map((t, i) => `${i + 1}. ${t}`);
+}
+
 function plannerContext() {
   const taken = takenIds(openPRs);
   const lines = ["Queue depth by agent (eligible backlog tasks not already taken):", "", "| Agent | Backlog owner names | Ready now |", "|---|---|---|"];
@@ -210,14 +226,7 @@ const doc = [
   "",
   "## Read first, in this order",
   "",
-  "1. `CLAUDE.md` (the repo rules and the constitution).",
-  "2. `docs/agents/OPERATING_MODEL.md` (how the team works; hard limits in section 8).",
-  `3. \`.claude/agents/${handle}.md\` (your charter: who you are and what you own).`,
-  `4. \`agents/${handle}/MEMORY.md\` (your long-term memory).`,
-  ...(brief ? [`5. \`${brief}\` (latest founder decisions).`] : []),
-  ...(existsSync(join(ROOT, "docs", "engineering", "PRINCIPLES.md"))
-    ? ["6. `docs/engineering/PRINCIPLES.md` (engineering principles; load a chapter of `docs/engineering/` only when your work touches it, and search it by rule id)."]
-    : []),
+  ...readingOrder(),
   "",
   "## Founder instructions since your last run",
   "",

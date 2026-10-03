@@ -19,17 +19,17 @@ export function classify(item, { trusted, source }) {
   const url = item.html_url;
   const base = { at, url, trusted, author: item.user?.login };
   let m;
-  if ((m = body.match(/<!-- journal run:(\S+) agent:([a-z0-9-]+) -->/))) {
+  if ((m = body.match(/^\s*<!-- journal run:(\S+) agent:([a-z0-9-]+) -->/))) {
     const mode = body.match(/\*\*Mode:\*\*\s*(.+)/)?.[1]?.trim();
     return { ...base, kind: "journal", agent: m[2], run: m[1], detail: mode };
   }
-  if ((m = body.match(/<!-- receipt run:(\S+) agent:([a-z0-9-]+) cost:([0-9.]+) -->/))) {
+  if ((m = body.match(/^\s*<!-- receipt run:(\S+) agent:([a-z0-9-]+) cost:([0-9.]+) -->/))) {
     return { ...base, kind: "receipt", agent: m[2], run: m[1], cost_usd: Number(m[3]) };
   }
-  if ((m = body.match(/<!-- red-team:([0-9a-f]{7,40}) -->/))) {
+  if ((m = body.match(/^\s*<!-- red-team:([0-9a-f]{7,40}) -->/))) {
     return { ...base, kind: "red-team-review", agent: "red-team", sha: m[1], verdict: verdictOf(body) };
   }
-  if ((m = body.match(/<!-- steward:([a-z0-9-]+):([0-9a-f]{7,40}) -->/))) {
+  if ((m = body.match(/^\s*<!-- steward:([a-z0-9-]+):([0-9a-f]{7,40}) -->/))) {
     return { ...base, kind: "steward-review", agent: m[1], sha: m[2], verdict: verdictOf(body) };
   }
   const r = parseReply(body);
@@ -39,6 +39,20 @@ export function classify(item, { trusted, source }) {
     if (h) return { ...base, kind: "handoff", agent: h.from, to: h.to, handoff_kind: h.kind, title: item.title };
   }
   return undefined;
+}
+
+/**
+ * One ledger row for an item, applying trust. Receipts are posted by the
+ * workflow with its own token (github-actions[bot]); that author is trusted
+ * for receipts only, never for messages or verdicts. Pure, so it is tested.
+ */
+export function ledgerRow(item, trust, source, all = false) {
+  const workflowBot = item.user?.login === "github-actions[bot]" && item.user?.type === "Bot";
+  const trusted = isTrusted(item, trust);
+  const row = classify(item, { trusted, source });
+  if (!row) return undefined;
+  if (!trusted && workflowBot && row.kind === "receipt") row.trusted = true;
+  return row.trusted || all ? row : undefined;
 }
 
 function verdictOf(body) {
@@ -71,9 +85,7 @@ function main() {
 
   const rows = [];
   const add = (item, source) => {
-    const trusted = isTrusted(item, trust);
-    if (!trusted && !all) return;
-    const row = classify(item, { trusted, source });
+    const row = ledgerRow(item, trust, source, all);
     if (row) rows.push(row);
   };
   for (const c of ghAll(`/repos/${repo}/issues/comments?since=${sinceIso}&sort=created`, { allowFail: true })) add(c, "comment");

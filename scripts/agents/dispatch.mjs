@@ -19,7 +19,7 @@ import {
   ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
   isFounderComment, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
-  matchingPaths, stewardVerdict,
+  matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
@@ -118,7 +118,7 @@ function prFacts(pr) {
     (r) => isFounderComment(r, roster) && r.state === "CHANGES_REQUESTED" && new Date(r.submitted_at) > headAt,
   );
   const all = [...reviews, ...comments];
-  const redTeam = all.find((c) => isTrusted(c, trust) && (c.body ?? "").includes(`red-team:${sha}`));
+  const redTeam = all.find((c) => isTrusted(c, trust) && startsWithMarker(c.body, `<!-- red-team:${sha} -->`));
   const redVerdict = redTeam ? (redTeam.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase() : undefined;
   const stewardFix = roster.agents
     .filter((a) => a.kind === "steward")
@@ -140,7 +140,10 @@ function prFiles(pr) {
 /** Open PRs this steward should review: they touch its review paths and lack its verdict for the head commit. */
 function stewardTargets(agent) {
   return openPRs
+    // Only agent PRs and the founder's own: a drive-by PR from anyone else must
+    // not spend steward runs or put its text into a brief.
     .filter((pr) => !pr.draft && agentOfPR(pr) !== agent.handle)
+    .filter((pr) => agentOfPR(pr) || pr.user?.login === roster.founder)
     .filter((pr) => matchingPaths(prFiles(pr), agent.review_paths).length)
     .filter((pr) => !stewardVerdict(prFacts(pr).all, agent.handle, pr.head.sha, trust))
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -370,7 +373,7 @@ function renderBoard() {
     lines.push(`- #${x.issue.number} ${x.issue.title} (waiting on ${x.pending.map((p) => `\`${p}\``).join(", ")}, ${days}d)`);
   }
   if (closedHandoffs.length) lines.push(`- Closed this tick (every recipient replied): ${closedHandoffs.map((n) => `#${n}`).join(", ")}`);
-  if (!trust.appClientId && trust.bots.size <= 1) lines.push("- Note: neither `AGENTS_APP_CLIENT_ID` nor `AGENTS_BOT_LOGINS` reached the dispatcher, so agent messages from the agents GitHub App are not recognised yet.");
+  if (!String(env.AGENTS_BOT_LOGINS ?? "").trim()) lines.push("- Note: the repository variable `AGENTS_BOT_LOGINS` is empty. PR reviews carry no app id, so red-team and steward reviews posted by the agents GitHub App are not recognised until it is set (HARNESS section 12).");
   lines.push("", "Pause everything: set the repository variable `AGENTS_PAUSED` to `true`. Change caps and models in `agents/roster.json`.");
   lines.push("", writeState(state));
   return lines.join("\n");
@@ -387,13 +390,13 @@ function redLabel(pr) {
 // ---------- close settled handoffs ----------
 
 const closedHandoffs = [];
-for (const x of handoffs) {
+for (const x of paused ? [] : handoffs) {
   if (!handoffSettled(x.issue, x.comments, trust, now)) continue;
   closedHandoffs.push(x.issue.number);
   if (DRY) continue;
   gh(`/repos/${repo}/issues/${x.issue.number}/comments`, {
     method: "POST",
-    body: { body: "Closed by the dispatcher: every recipient replied at least 48 hours ago. Reopen it, or comment, to continue." },
+    body: { body: "Closed by the dispatcher: every recipient replied at least 48 hours ago. The founder or the sender can reopen it to continue." },
     allowFail: true,
   });
   gh(`/repos/${repo}/issues/${x.issue.number}`, { method: "PATCH", body: { state: "closed", state_reason: "completed" }, allowFail: true });
