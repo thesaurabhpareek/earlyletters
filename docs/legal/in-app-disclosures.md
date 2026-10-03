@@ -5,7 +5,7 @@ status: draft-for-counsel
 effective_date: TBD
 last_updated: 2026-10-03
 owner: founder
-related: terms-of-service.md (1.3.0), subscription-terms.md (1.2.0), packages/content/VOICE.md, docs/legal/memos/lawyer-1.md
+related: terms-of-service.md (1.4.0), subscription-terms.md (1.3.0), packages/content/VOICE.md, docs/legal/memos/lawyer-1.md
 ---
 
 > **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice. Notes for counsel appear as **[COUNSEL: ...]**.

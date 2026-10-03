@@ -12,7 +12,7 @@ reviewers: outside privacy counsel (TBD)
 
 # Early Letters Privacy Policy
 
-Version 1.1.0. Effective date: TBD.
+Version 1.3.0. Effective date: TBD.
 
 Early Letters is a memory book you fill by talking. Parents and close family speak or type notes and letters to a child. This policy explains what we collect, why, who helps us run the service, how long we keep things, and the choices you have. We have tried to write it the way we write everything else: plainly.
 
