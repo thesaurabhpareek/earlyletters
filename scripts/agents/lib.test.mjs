@@ -10,6 +10,7 @@ import {
 } from "./lib.mjs";
 import { summarize } from "./receipt.mjs";
 import { tally, newTotals, opencodeConfig } from "./run-opencode.mjs";
+import { salvagePlan } from "./salvage.mjs";
 
 const FIXTURE = `
 ## M1. Guardrails
@@ -166,4 +167,14 @@ test("every agent resolves to an engine, a model and a spend cap", () => {
     assert.ok(a.model, `${a.handle} model`);
     assert.ok(a.max_budget_usd > 0, `${a.handle} budget`);
   }
+});
+
+test("salvage saves unfinished work to a branch and never to develop or main", () => {
+  const base = { handle: "qa", runId: "42" };
+  assert.deepEqual(salvagePlan({ ...base, dirty: false, unpushed: false, branch: "develop" }), { action: "none" });
+  assert.deepEqual(salvagePlan({ ...base, dirty: true, unpushed: false, branch: "develop" }),
+    { action: "save", branch: "agent/qa/wip-42", commit: true, newBranch: true });
+  assert.equal(salvagePlan({ ...base, dirty: true, unpushed: false, branch: "main" }).branch, "agent/qa/wip-42");
+  assert.deepEqual(salvagePlan({ ...base, dirty: false, unpushed: true, branch: "fix/qa-bl-001-trace" }),
+    { action: "save", branch: "fix/qa-bl-001-trace", commit: false, newBranch: false });
 });

@@ -168,6 +168,17 @@ jobs:
           node scripts/agents/run-opencode.mjs --agent "$AGENT" --model "$MODEL" --budget "$BUDGET" \
             --max-turns "$MAX_TURNS" --variant "$EFFORT" --out "$RUNNER_TEMP/agent-exec.json"
 
+      # Whatever stopped the run (cap, timeout, error, provider limit), push
+      # anything left unsaved to a branch and note it in the journal.
+      - name: Save unfinished work
+        if: always()
+        env:
+          GH_TOKEN: ${{ matrix.engine == 'claude-code' && steps.claude.outputs.github_token || steps.app.outputs.token }}
+          AGENT: ${{ matrix.agent }}
+          JOURNAL: ${{ matrix.journal }}
+          REASON: ${{ matrix.engine == 'claude-code' && steps.claude.outcome || steps.opencode.outcome }}
+        run: node scripts/agents/salvage.mjs --agent "$AGENT" --journal "$JOURNAL" --run-id "$GITHUB_RUN_ID" --reason "$REASON"
+
       - name: Run receipt
         if: always()
         env:

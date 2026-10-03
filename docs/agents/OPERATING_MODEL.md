@@ -42,6 +42,7 @@ Priority order the dispatcher uses: fix your open PRs first, then backlog tasks,
 - One concern per PR. Keep PRs small enough to review in ten minutes. If the work is bigger, split it (backlog rule 5).
 - Run `npm test`, `npm run typecheck` and, if you touched `supabase/`, `npm run test:db` before every push. Never weaken, skip or delete a test to make it pass.
 - Open the PR as a draft only if it is blocked; otherwise ready for review.
+- **Save as you go.** After your first meaningful commit, push the branch and open the PR (as a draft until it is ready). Push again after every logical step. If a run stops early, the workflow pushes anything left to `agent/<handle>/wip-<run id>` and notes it in your journal; when your brief shows such an entry, continue from that branch first.
 
 ## 5. The journal entry (one per run)
 

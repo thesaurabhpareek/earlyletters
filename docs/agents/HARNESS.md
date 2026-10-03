@@ -38,6 +38,7 @@ flowchart LR
 | Brief builder | `scripts/agents/brief.mjs` | Writes the one file an agent reads first. |
 | OpenCode runner | `scripts/agents/run-opencode.mjs` | Runs an agent on an open-weight model with a hard dollar cap and step cap. |
 | Receipts | `scripts/agents/receipt.mjs` | Posts cost, steps, minutes and outcome on the agent's journal after every run. |
+| Salvage | `scripts/agents/salvage.mjs` | Pushes unfinished work to a branch when a run stops early, and notes it in the journal. |
 | Bootstrap and checks | `scripts/agents/bootstrap.mjs`, `check.mjs`, `lib.test.mjs` | Create labels, journals and the board; keep the team consistent; test the dispatcher. |
 | Workflows | `.github/workflows/agents.yml`, `claude.yml`, `agents-check.yml` | Run the team; `@claude` for the founder; the consistency check on PRs. |
 | GitHub objects | Labels `agent:<handle>`, `from:agent`, `needs:founder`, `review:*`, `approve-migration`; one journal issue per agent; the issue titled "Agent board"; daily `digest` issues | Where you see and steer everything. |
@@ -82,7 +83,7 @@ Ownership of paths is exclusive, so two agents never edit the same files for the
 2. **Brief.** For each assignment, `brief.mjs` writes `.agent-run/brief.md`: the reading order, your journal instructions since the agent's last run, its last three journal entries, and the assignment (for backlog work, the task text itself).
 3. **Run.** The engine runs the agent on a fresh GitHub runner, checked out on `develop` with dependencies installed. Hard stops: dollar budget, steps or turns, and job timeout.
 4. **Output.** One branch and one PR into `develop` (labels `agent:<handle>`, `from:agent`), commits ending `Agent: <handle>`, and one journal entry.
-5. **Receipt.** The workflow posts cost, steps, minutes, model and outcome on the journal, whatever happened, and notes a missing journal entry.
+5. **Save and receipt.** Whatever stopped the run, the workflow pushes anything left uncommitted or unpushed to `agent/<handle>/wip-<run id>` and records it in the journal, so no work is lost to a cap, timeout or provider limit (`scripts/agents/salvage.mjs`; guaranteed for OpenCode runs, best effort for Claude Code runs). Then it posts cost, steps, minutes, model and outcome on the journal.
 6. **Review.** CI runs on the PR; the red team reviews it and labels it; you approve and merge. Supabase and sign-in changes also need your `approve-migration` label (D-041).
 
 ## 6. Creating an agent
@@ -193,9 +194,11 @@ Do it before the first external TestFlight families join (backlog milestone M12)
 | An agent is idle | its row on the board | Daily runs used, open-PR limit reached (waiting for you), nothing changed since its last standing run, or a missing secret. |
 | A run failed | the receipt on its journal, then the run log | Budget or step cap hit, CI failure, or a provider error. |
 | "No journal entry was written" | the run log | The agent ran out of budget or steps before finishing. |
+| A journal entry says work was saved to `agent/<handle>/wip-...` | that branch | The run stopped early; the agent's next run continues from it. |
 | Receipts show $0.00 on a paid model | the runner stops these | The model is not in OpenCode's priced list; pick a listed model. |
 | Two agents changed the backlog at once | the PRs | Only `product` reorders; others change only their own status line. |
 
 ## 15. Change log
 
 - 3 Oct 2026: harness created (ADR 0014); open-weight engine by default, Claude optional (ADR 0015); per-run dollar caps; skip unchanged standing runs; this document.
+- 3 Oct 2026: nothing is lost to limits: agents push as they go, the workflow salvages unfinished runs to a branch, and `CLAUDE.md` asks every session to push work in progress at least every 30 minutes.
