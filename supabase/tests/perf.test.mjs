@@ -47,7 +47,7 @@ await db.exec(`
     union all select ${uid('c000', 'f')} from generate_series(1, ${FAMILIES}) f;
   insert into profiles (id, signs_as) select id, 'Papa' from auth.users;
   insert into children (id, name, date_of_birth, created_by)
-    select ${uid('d000', 'f')}, 'Asha', date '2025-05-20', ${uid('a000', 'f')} from generate_series(1, ${FAMILIES}) f;
+    select ${uid('d000', 'f')}, 'Asha', date '2025-04-12', ${uid('a000', 'f')} from generate_series(1, ${FAMILIES}) f;
   insert into child_members (child_id, profile_id, role)
     select ${uid('d000', 'f')}, ${uid('a000', 'f')}, 'parent' from generate_series(1, ${FAMILIES}) f
     union all select ${uid('d000', 'f')}, ${uid('b000', 'f')}, 'parent' from generate_series(1, ${FAMILIES}) f
@@ -58,8 +58,8 @@ await db.exec(`
            ${uid('d000', 'f')},
            case when k % 5 = 4 then ${uid('c000', 'f')} when k % 2 = 0 then ${uid('a000', 'f')} else ${uid('b000', 'f')} end,
            'Papa', 'letter',
-           date '2025-05-20' + (k * 730 / ${PER_FAMILY}),
-           (date '2025-05-20' + (k * 730 / ${PER_FAMILY}))::timestamptz + make_interval(mins => 1200 + k % 120),
+           date '2025-04-12' + (k * 730 / ${PER_FAMILY}),
+           (date '2025-04-12' + (k * 730 / ${PER_FAMILY}))::timestamptz + make_interval(mins => 1200 + k % 120),
            'spoken', 1,
            'um ' || x.t, sha256(convert_to('um ' || x.t, 'UTF8')), x.t, '[]'::jsonb,
            k % 10 <> 0,

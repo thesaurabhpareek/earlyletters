@@ -2,7 +2,7 @@
 // family approval and visibility (B F9), server consent gates, the policy
 // notice-window fix, anonymous sessions, letters into deleted books.
 // Test titles carry requirement ids. Fictional family "Asha" only (CLAUDE.md).
-import { createDb, users } from './harness.mjs';
+import { createDb, users, uuid7 } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { check, as, sys, one, fails, codeOf, done, publishPolicies, consent, newChild, invite, join } = h;
@@ -36,12 +36,12 @@ const ids = async (uid, child = CHILD) => (await as(uid, `select id from book_en
 
 // ── Invites (LEGAL-REQ-024, B-REQ-007, B-NFR-004, TDD 04 3.4.2) ───────────
 check('[LEGAL-REQ-024] a contributor cannot create a parent invite',
-  (await codeOf(() => as(N, `select public.create_child_invite($1, 'parent')`, [CHILD]))) === 'SCPAR');
+  (await codeOf(() => as(N, `select public.create_child_invite('${uuid7()}', $1, 'parent', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
 check('[LEGAL-REQ-024] a contributor cannot create a family invite either',
-  (await codeOf(() => as(N, `select public.create_child_invite($1, 'contributor')`, [CHILD]))) === 'SCPAR');
-check('[LEGAL-REQ-024] a stranger cannot create an invite', (await codeOf(() => as(C, `select public.create_child_invite($1, 'contributor')`, [CHILD]))) === 'SCPAR');
-check('[B-REQ-007] the role must be explicit', (await codeOf(() => as(A, `select public.create_child_invite($1, null)`, [CHILD]))) === 'SCINV'
-  && (await codeOf(() => as(A, `select public.create_child_invite($1, 'admin')`, [CHILD]))) === 'SCINV');
+  (await codeOf(() => as(N, `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
+check('[LEGAL-REQ-024] a stranger cannot create an invite', (await codeOf(() => as(C, `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
+check('[B-REQ-007] the role must be explicit', (await codeOf(() => as(A, `select public.create_child_invite('${uuid7()}', $1, null, sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCINV'
+  && (await codeOf(() => as(A, `select public.create_child_invite('${uuid7()}', $1, 'admin', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCINV');
 check('[LEGAL-REQ-024] the old one-argument invite function is gone', (await codeOf(() => as(A, `select public.create_child_invite($1::uuid)`, [CHILD]))) === '42883');
 check('child_invites.role has no default', (await sys(`select column_default from information_schema.columns where table_name='child_invites' and column_name='role'`)).rows[0].column_default === null);
 
@@ -168,12 +168,12 @@ const eV = await err(() => newChild(V));
 check('[LEGAL-REQ-002] no book without the age attestation: SCCON age', eV?.code === 'SCCON' && eV.detail === 'age');
 const eX = await err(() => newChild(X));
 check('[LEGAL-REQ-006] no book without sensitive-data consent: SCCON sensitive-data', eX?.code === 'SCCON' && eX.detail === 'sensitive-data');
-check('age_attested can only be true', (await codeOf(() => as(V, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', null, null, null, '{"age_attested": false}'::jsonb)`))) === '22023');
-check('policy act context keys are allowlisted', (await codeOf(() => as(V, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', null, null, null, '{"email": "x"}'::jsonb)`))) === '22023');
+check('age_attested can only be true', (await codeOf(() => as(V, `select public.record_policy_act('${uuid7()}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', null, null, null, '{"age_attested": false}'::jsonb)`))) === '22023');
+check('policy act context keys are allowlisted', (await codeOf(() => as(V, `select public.record_policy_act('${uuid7()}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', null, null, null, '{"email": "x"}'::jsonb)`))) === '22023');
 
 // B withdraws sensitive-data consent.
 const bPrivate = await letter(B, { inBook: false });
-await as(B, `select public.record_policy_act('sensitive-data', '1.0.0', 'withdraw', 'settings_toggle', 'settings.privacy', '1.0.0', 'ios')`);
+await as(B, `select public.record_policy_act('${uuid7()}', 'sensitive-data', '1.0.0', 'withdraw', 'settings_toggle', 'settings.privacy', '1.0.0', 'ios')`);
 check('[LEGAL-REQ-006] after withdrawal a new letter is refused with SCCON (pause, not reject)', (await codeOf(() => letter(B))) === 'SCCON');
 check('[LEGAL-REQ-006] editing words is refused', (await codeOf(() => as(B, `update entries set final_text='x' where id=$1`, [bPrivate]))) === 'SCCON');
 check('[LEGAL-REQ-006] putting a letter in the book is refused', (await codeOf(() => as(B, `update entries set in_book=true where id=$1`, [bPrivate]))) === 'SCCON');
@@ -187,7 +187,7 @@ check('[LEGAL-REQ-006] photo uploads are refused', await fails(() => as(B, `inse
 check('[LEGAL-REQ-006] invites are refused', (await codeOf(() => invite(B, CHILD, 'contributor'))) === 'SCCON');
 check('[LEGAL-REQ-006] reviews are refused', (await codeOf(() => as(B, `select public.review_family_letter($1, 'added')`, [nPending]))) === 'SCCON');
 check('reading still works after withdrawal', await sees(B, aBook));
-await as(B, `select public.record_policy_act('sensitive-data', '1.0.0', 'accept', 'settings_toggle', 'settings.privacy', '1.0.0', 'ios')`);
+await as(B, `select public.record_policy_act('${uuid7()}', 'sensitive-data', '1.0.0', 'accept', 'settings_toggle', 'settings.privacy', '1.0.0', 'ios')`);
 check('[LEGAL-REQ-006] consent again: writes resume', (await codeOf(() => letter(B))) === 'ok');
 
 // ── Anonymous sessions (TDD 04 S-2, K-08) ─────────────────────────────────
@@ -199,13 +199,13 @@ check('[K-08] an anonymous member reads no book, member or letter rows',
   (await asW(`select 1 from children union all select 1 from child_members union all select 1 from book_entries union all select 1 from profiles`)).rows.length === 0);
 check('[K-08] the same person with a full session reads the book', (await as(W, `select 1 from book_entries where child_id=$1`, [CHILD])).rows.length > 0);
 for (const [name, sql, params] of [
-  ['create_child', `select public.create_child('0192d000-0000-7000-8000-000000000001', 'Asha', '2025-05-20')`, []],
-  ['create_child_invite', `select public.create_child_invite($1, 'contributor')`, [CHILD]],
+  ['create_child', `select public.create_child('0192d000-0000-7000-8000-000000000001', 'Asha', '2025-04-12')`, []],
+  ['create_child_invite', `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]],
   ['accept_child_invite', `select public.accept_child_invite('x')`, []],
   ['request_account_deletion', `select * from public.request_account_deletion('web')`, []],
   ['delete_entry', `select public.delete_entry($1)`, [aBook]],
   ['policy_actions_needed', `select * from public.policy_actions_needed()`, []],
-  ['record_policy_act (sign-in sheet)', `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1', 'web')`, []],
+  ['record_policy_act (sign-in sheet)', `select public.record_policy_act('${uuid7()}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1', 'web')`, []],
 ]) {
   check(`[K-08] anonymous session cannot call ${name}`, (await codeOf(() => asW(sql, params))) === 'SCANO');
 }
@@ -214,7 +214,7 @@ check('[K-08] anonymous session cannot write a letter', (await codeOf(() => asW(
 check('[K-08] anonymous session cannot write dictionary terms', await fails(() => asW(`insert into dictionary_terms (owner_id, term, kind) values ($1, 'Asha', 'child')`, [W])));
 check('[K-08] anonymous session cannot upload photos', await fails(() => asW(`insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${CHILD}/${W}/x.jpg`])));
 check('[LEGAL-REQ-002] the web page records the contributor notice with the age attestation',
-  (await codeOf(() => asW(`select public.record_policy_act('contributor-notice', '1.0.0', 'accept', 'web_contributor_page', 'web.send', '1', 'web', null, null, null, '{"age_attested": true}'::jsonb)`))) === 'ok');
+  (await codeOf(() => asW(`select public.record_policy_act('${uuid7()}', 'contributor-notice', '1.0.0', 'accept', 'web_contributor_page', 'web.send', '1', 'web', null, null, null, '{"age_attested": true}'::jsonb)`))) === 'ok');
 await sys(`delete from child_members where profile_id=$1`, [W]);
 
 // ── Letters into deleted books (TDD 02 C10) ──────────────────────────────
@@ -234,20 +234,20 @@ check('[X-01] a new user during the notice window is offered the new version', o
 check('[X-01] and can accept it', (await codeOf(() => consent(U, { version: '2.0.0' }))) === 'ok');
 check('[X-01] after accepting, nothing is asked and content is allowed',
   (await as(U, `select 1 from policy_actions_needed() where document='terms'`)).rows.length === 0 && (await gate(U)).content_allowed);
-check('[X-01] the old version is refused to new users', (await codeOf(() => as(C, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`))) === 'P0001');
+check('[X-01] the old version is refused to new users', (await codeOf(() => as(C, `select public.record_policy_act('${uuid7()}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`))) === 'SCVER');
 check('[X-01] existing acceptors are not asked until the change is in force',
   (await as(A, `select 1 from policy_actions_needed() where document='terms'`)).rows.length === 0 && (await gate(A)).content_allowed);
 
 // A re-consent version already in force, followed by a minor version: the old
 // function compared only against the newest in-force version (a minor) and
 // missed the major change.
-await as(A, `select public.record_policy_act('contributor-notice', '1.0.0', 'accept', 'consent_sheet', 'notice', '1', 'ios')`);
+await as(A, `select public.record_policy_act('${uuid7()}', 'contributor-notice', '1.0.0', 'accept', 'consent_sheet', 'notice', '1', 'ios')`);
 await sys(`insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary) values
   ('contributor-notice', '2.0.0', 'major', true, now() - interval '40 days', now() - interval '40 days', now() - interval '5 days', sha256('c2'::bytea), 'https://example.invalid/cn/2.0.0', 'Major'),
   ('contributor-notice', '2.1.0', 'minor', false, now() - interval '2 days', now() - interval '2 days', now() - interval '2 days', sha256('c21'::bytea), 'https://example.invalid/cn/2.1.0', 'Minor')`);
 check('[X-01] an acceptor of 1.0.0 is asked after a major change, even when a minor followed',
   (await as(A, `select version from policy_actions_needed() where document='contributor-notice'`)).rows[0]?.version === '2.1.0');
-await as(A, `select public.record_policy_act('contributor-notice', '2.1.0', 'accept', 'reconsent_sheet', 'notice', '1', 'ios')`);
+await as(A, `select public.record_policy_act('${uuid7()}', 'contributor-notice', '2.1.0', 'accept', 'reconsent_sheet', 'notice', '1', 'ios')`);
 check('[X-01] accepting the offered version clears it', (await as(A, `select 1 from policy_actions_needed() where document='contributor-notice'`)).rows.length === 0);
 
 done();

@@ -41,10 +41,11 @@ check('every public table has row level security on', noRls.length === 0);
 // Only the two documented views exist; any new view must be reviewed for RLS bypass.
 const views = (await sys(`select c.relname, coalesce(c.reloptions::text, '') as opts from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and c.relkind = 'v' order by 1`)).rows;
-check('public views are the reviewed set (book_entries, my_policy_state)',
-  views.map((v) => v.relname).join(',') === 'book_entries,my_policy_state');
-check('book_entries is a security barrier view; my_policy_state runs as the invoker',
+check('public views are the reviewed set (book_children, book_entries, my_policy_state)',
+  views.map((v) => v.relname).join(',') === 'book_children,book_entries,my_policy_state');
+check('book_entries and book_children are security barrier views; my_policy_state runs as the invoker',
   views.find((v) => v.relname === 'book_entries')?.opts.includes('security_barrier=true')
+  && views.find((v) => v.relname === 'book_children')?.opts.includes('security_barrier=true')
   && views.find((v) => v.relname === 'my_policy_state')?.opts.includes('security_invoker=true'));
 
 const counts = cols.reduce((m, r) => { const l = (r.comment ?? '').slice(0, 2); m[l] = (m[l] ?? 0) + 1; return m; }, {});
