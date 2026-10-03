@@ -226,7 +226,7 @@ export function todayUTC(now = new Date()) {
 export function isFounderComment(c, roster) {
   // Machine posts (receipts, journal entries, reviews, board state) made from
   // the founder's account in interactive sessions are not instructions.
-  if (/^\s*<!-- (receipt|journal|red-team|steward|agents-state|handoff|handoff-reply)[\s:]/.test(c?.body ?? "")) return false;
+  if (/^\s*<!-- (receipt|journal|red-team|steward|agents-state|handoff|handoff-reply|agent)[\s:]/.test(c?.body ?? "")) return false;
   return c?.user?.login === roster.founder || c?.author_association === "OWNER";
 }
 

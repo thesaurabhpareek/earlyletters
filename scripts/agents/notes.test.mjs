@@ -11,5 +11,6 @@ test("machine posts from the founder's account are not founder instructions", ()
   assert.equal(isFounderComment(by("<!-- journal run:1 agent:qa -->\n**Mode:** task"), roster), false);
   assert.equal(isFounderComment(by("<!-- red-team:abc -->\nVerdict: ship"), roster), false);
   assert.equal(isFounderComment(by("<!-- handoff-reply from:qa status:done -->\nDone."), roster), false);
+  assert.equal(isFounderComment(by("<!-- agent:support -->\nFixed in abc123: all findings."), roster), false);
   assert.equal(isFounderComment({ user: { login: "someone" }, body: "do this" }, roster), false);
 });

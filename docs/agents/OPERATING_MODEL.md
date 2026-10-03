@@ -40,6 +40,7 @@ Priority order the dispatcher uses: fix your open PRs first, then backlog tasks,
 - Branch: backlog work keeps the backlog rule, `<type>/<area>-bl-###-<slug>`. Other work uses `agent/<handle>/<slug>`.
 - Commit messages end with a trailer line `Agent: <handle>`.
 - PR title: `BL-###: <title>` for backlog work, `[<handle>] <title>` otherwise. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` when a decision or account step only the founder can do blocks the PR, and `approve-migration` is never yours to add.
+- Any PR or issue comment you post starts with the line `<!-- agent:<handle> -->`, so it is never mistaken for the founder's words when a session posts from his account.
 - PR body: `Agent: <handle>`, `Mode:`, `Satisfies:` (requirement ids or `none`), `Data classes touched:`, how it was checked, and what the founder should look at first.
 - One concern per PR. Keep PRs small enough to review in ten minutes. If the work is bigger, split it (backlog rule 5).
 - Run `npm test`, `npm run typecheck` and, if you touched `supabase/`, `npm run test:db` before every push. Never weaken, skip or delete a test to make it pass.
