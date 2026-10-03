@@ -8,7 +8,7 @@ await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('$
 await publishPolicies();
 for (const u of [A, B, C, N, S]) await consent(u);
 
-const create = (uid, id, name = 'Asha', dob = '2025-05-20', due = null) =>
+const create = (uid, id, name = 'Asha', dob = '2025-04-12', due = null) =>
   as(uid, `select public.create_child($1, $2, $3::date, $4::date) as id`, [id, name, dob, due]).then((r) => r.rows[0].id);
 const started = async (uid) => (await sys(`select count(*)::int n from children where created_by=$1 and deleted_at is null`, [uid])).rows[0].n;
 
@@ -16,13 +16,13 @@ const started = async (uid) => (await sys(`select count(*)::int n from children 
 const first = uuid7();
 check('[A-REQ-015] the book keeps the device id', (await create(A, first)) === first);
 check('[DATA-REQ-044] a retry with the same id is idempotent', (await create(A, first)) === first && (await started(A)) === 1);
-check('the old create_child(text, date) is gone', (await codeOf(() => as(A, `select public.create_child('Asha', '2025-05-20'::date)`))) === '42883');
+check('the old create_child(text, date) is gone', (await codeOf(() => as(A, `select public.create_child('Asha', '2025-04-12'::date)`))) === '42883');
 check('a v4 id is refused', (await codeOf(() => create(A, '0b2f9e3c-5a7d-4c1e-9f00-123456789abc'))) === 'SCCID');
 check('a v7 id with the wrong variant is refused', (await codeOf(() => create(A, uuid7().replace(/-(.)/g, (m, c, i) => (i === 18 ? '-c' : m)).slice(0, 36)))) === 'SCCID');
 check('a v7 id from the future is refused', (await codeOf(() => create(A, uuid7(Date.now() + 3 * 86400e3)))) === 'SCCID');
 check('another person\'s book id is refused without saying whose', (await codeOf(() => create(C, first))) === 'SCCID');
 check('[B-REQ-001] a birthday or a due date is required', (await codeOf(() => create(C, uuid7(), 'Asha', null, null))) === '22023');
-check('a name is required', (await codeOf(() => create(C, uuid7(), '  ', '2025-05-20'))) === '22023');
+check('a name is required', (await codeOf(() => create(C, uuid7(), '  ', '2025-04-12'))) === '22023');
 check('a future birthday is refused', (await codeOf(() => create(C, uuid7(), 'Asha', '2099-01-01'))) === '22023');
 const expecting = await create(C, uuid7(), 'Asha', null, new Date(Date.now() + 90 * 86400e3).toISOString().slice(0, 10));
 check('[B-REQ-005] a book can start from a due date', (await sys(`select due_date is not null and date_of_birth is null ok from children where id=$1`, [expecting])).rows[0].ok);
@@ -40,15 +40,15 @@ check('a person can still edit their own profile', (await codeOf(() => as(A, `up
 
 // First-run batch: twins and siblings added together are all free.
 const twins = [uuid7(), uuid7(), uuid7()];
-const batch = JSON.stringify(twins.map((id, i) => ({ id, name: `Asha ${i + 1}`, date_of_birth: '2025-05-20', due_date: null })));
+const batch = JSON.stringify(twins.map((id, i) => ({ id, name: `Asha ${i + 1}`, date_of_birth: '2025-04-12', due_date: null })));
 const made = (await one(N, `select public.create_first_run_children($1::jsonb) ids`, [batch])).ids;
 check('[PRD-REQ-015] every child in the first-run batch is free', made.length === 3 && (await started(N)) === 3);
 check('[DATA-REQ-044] replaying the batch returns the same ids', (await one(N, `select public.create_first_run_children($1::jsonb) ids`, [batch])).ids.join() === made.join() && (await started(N)) === 3);
-const later = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-05-20' }]);
+const later = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-04-12' }]);
 check('[PRD-REQ-015] the batch is one-time: a later batch follows the Plus rule', (await codeOf(() => as(N, `select public.create_first_run_children($1::jsonb)`, [later]))) === 'SCPLS');
 check('the batch is capped at 6', (await codeOf(() => as(S, `select public.create_first_run_children($1::jsonb)`,
-  [JSON.stringify(Array.from({ length: 7 }, () => ({ id: uuid7(), name: 'Asha', date_of_birth: '2025-05-20' })))]))) === '22023');
-const bad = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-05-20' }, { id: uuid7(), name: '', date_of_birth: '2025-05-20' }]);
+  [JSON.stringify(Array.from({ length: 7 }, () => ({ id: uuid7(), name: 'Asha', date_of_birth: '2025-04-12' })))]))) === '22023');
+const bad = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-04-12' }, { id: uuid7(), name: '', date_of_birth: '2025-04-12' }]);
 check('a batch is all or nothing', (await codeOf(() => as(S, `select public.create_first_run_children($1::jsonb)`, [bad]))) === '22023' && (await started(S)) === 0
   && (await sys(`select first_run_closed_at is null o from profiles where id=$1`, [S])).rows[0].o);
 

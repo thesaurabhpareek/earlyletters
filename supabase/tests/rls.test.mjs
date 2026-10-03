@@ -23,7 +23,7 @@ check('anonymous visitors cannot call the membership helper',
 check('signup creates a profile automatically', (await sys('select id from public.profiles')).rows.length === 3);
 
 // Child + invite flow
-const CHILD = (await as(A, `select public.create_child($1, 'Asha', '2025-05-20') as id`, [uuid7()])).rows[0].id;
+const CHILD = (await as(A, `select public.create_child($1, 'Asha', '2025-04-12') as id`, [uuid7()])).rows[0].id;
 check('create_child makes the creator a member', (await as(A, 'select * from child_members')).rows.length === 1);
 check('stranger cannot see the child', (await as(C, 'select * from children')).rows.length === 0);
 check('cannot insert a child directly', await fails(() => as(C, `insert into children (name, created_by) values ('x', '${C}')`)));
