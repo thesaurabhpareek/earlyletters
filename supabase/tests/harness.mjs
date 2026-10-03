@@ -27,6 +27,12 @@ export async function createDb(files, options = {}) {
     -- migration's own revoke (for example on book_entries) is what the tests see.
     grant usage on schema public to authenticated, anon;
     alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon;
+    -- Supabase also grants EXECUTE on every new public function and USAGE/SELECT
+    -- on every new public sequence to the API roles (PDB-01). Without these the
+    -- harness hides a missing revoke: a migration that revokes only from public
+    -- would look locked down here but stay callable by anon on Supabase.
+    alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+    alter default privileges in schema public grant usage, select on sequences to anon, authenticated;
   `);
   for (const f of files) await db.exec(readFileSync(f, 'utf8'));
 
