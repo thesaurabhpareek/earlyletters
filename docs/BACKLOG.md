@@ -51,7 +51,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 
 #### BL-100 Domain and support mailbox [Critical]
 - Status: ready. Mode: human. Owner: founder. Milestone: M0, week 1. Size: S.
-- Satisfies: D-005; prerequisite for A-REQ-022, A-REQ-026, LEGAL-REQ-053, BL-053.
+- Satisfies: D-005, PRD-REQ-023 (the brand values part); prerequisite for A-REQ-022, A-REQ-026, LEGAL-REQ-053, BL-053.
 - Scope: choose the domain (earlyletters.com, .app, .co were reported available on 2 Oct; re-check), register it plus defensive redirects, create `support@` and `privacy@` mailboxes, then set `packages/brand` `publisher.domain`, `supportEmail` and `privacyUrl` in one PR (agent may open it; the founder supplies the value). Notes for a later transfer to an organisation account (D-004 point 5) go in `docs/ops/` when written.
 
 #### BL-101 Apple Developer Program, individual enrollment
@@ -165,7 +165,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 
 #### BL-117 CI security and platform scans [High]
 - Status: blocked (BL-004). Mode: agent. Owner: security engineer. Milestone: M1. Size: M.
-- Satisfies: LEGAL-REQ-007, LEGAL-REQ-016, LEGAL-REQ-019, LEGAL-REQ-021, LEGAL-REQ-026, LEGAL-REQ-027, LEGAL-REQ-060, A-NFR-008, A-NFR-010.
+- Satisfies: LEGAL-REQ-007, LEGAL-REQ-016, LEGAL-REQ-019, LEGAL-REQ-021, LEGAL-REQ-026, LEGAL-REQ-027, LEGAL-REQ-060, A-NFR-008, A-NFR-010, PRD-REQ-023 (the placeholder check; K-36).
 - Scope: SDK and import denylist (ads, attribution, tracking, AdSupport, AppTrackingTransparency, HealthKit, face and diarization libraries); manifest lint (permissions, ATS, scheme); gitleaks; Semgrep and SQL lint; OSV and npm audit; placeholder scan (`example.com`, `TODO` publisher values fail release builds only). (Source: TDD 04 SEC-12, TDD 07 BL-Q06, TDD 05 NEW-17.)
 
 #### BL-122 Agent fence and review rule
@@ -194,7 +194,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 
 #### BL-013 Audit log and deletion state machine
 - Status: done (commit 81d9546; remote apply is BL-015). Mode: agent. Depends on: BL-012.
-- Satisfies: DATA-REQ-045, DATA-REQ-010, DATA-REQ-011, DATA-REQ-019, DATA-REQ-020, DATA-REQ-026, DATA-REQ-035, DATA-REQ-006, LEGAL-REQ-029, LEGAL-REQ-033.
+- Satisfies: DATA-REQ-045, DATA-REQ-010, DATA-REQ-011, DATA-REQ-019, DATA-REQ-020, DATA-REQ-026, DATA-REQ-035, DATA-REQ-006, LEGAL-REQ-029, LEGAL-REQ-033, PRD-REQ-006 (the same file drops `safety_events`, its insert policy and index instead of purging them; K-06).
 - Scope: `audit_events` (enum-only detail), `deletion_requests`, `deletion_request_steps`, `legal_holds`, `purge_ledger`, `storage_purge_queue`, `request_account_deletion`, `cancel_account_deletion`, `purge_due`. The worker is BL-234.
 
 #### BL-014 Policy acceptance records
@@ -232,9 +232,10 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Scope: CI applies all migrations to `scribe-staging` with `supabase db push` on a tag (D-041), never through the SQL editor; set the consent pepper as a secret before the cron; schedule the hourly `purge_due()` cron; confirm PITR and backup settings against DATA-REQ-030; repeat for production before any non-founder data (C0, week 6).
 
 #### BL-016 Data map is canonical [High]
-- Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M1 then M9. Depends on: BL-002. Size: L (split: schema and parser first).
+- Status: blocked (founder PR #37). Mode: agent. Owner: privacy engineer. Milestone: M1 then M9. Depends on: BL-002. Size: L (split: schema and parser first).
 - Satisfies: DATA-REQ-001, DATA-REQ-002, LEGAL-REQ-012, LEGAL-REQ-027, LEGAL-REQ-041, PRD-REQ-010.
 - Scope (re-scoped 3 Oct per TDD 05 X-05): `docs/legal/data-map.yaml` with a schema is the single inventory for tables, columns, buckets, device stores, SDKs, log streams, hosts and analytics properties, each with class, L-level, owner, retention and destinations; `scripts/data-map.mjs` checks migrations (`create table`, `add column`), column comments, buckets, dependencies and hosts against it and fails CI on any gap; `data-policy.md` section 4 and DATA_CLASSIFICATION section 4 become generated or checked tables. (Source: TDD 05 NEW-03.)
+- Status note (3 Oct): founder PR #37 (open) adds `docs/legal/data-map.yaml`, `scripts/check-data-map.mjs` (shape, Postgres tables and columns applied through the test harness, device SQLite tables) and regenerates DATA_CLASSIFICATION section 4.1, which is most of the first split. When #37 merges or closes, set this task back to `ready` and re-scope it to what is left (CI wiring, `data-policy.md` section 4, any check #37 does not make).
 
 #### BL-118 Content rule additions and claims registry [High]
 - Status: ready. Mode: agent. Owner: content. Milestone: M1. Size: M.
@@ -247,9 +248,10 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Scope: prompt selection in `packages/core` takes a flag (default off) and never returns `together` prompts while it is off; replace the test that asserts the `together: true` path. (Source: TDD 07 BL-Q04, Q-07.)
 
 #### BL-120 Verifier hardening and property tests [High]
-- Status: ready. Mode: agent. Owner: speech engineer. Milestone: M1. Size: M.
+- Status: blocked (founder PR #28). Mode: agent. Owner: speech engineer. Milestone: M1. Size: M.
 - Satisfies: CLAUDE.md constitution, DATA-REQ-040, DATA-REQ-041, DATA-REQ-042.
 - Scope: reject the eight meaning-changing edits reproduced in TDD 03 7.1 (negation, tense, `stt_fix` to any dictionary term, contraction, mood); fast-check property suite with the TDD 03 invariants; bump `ENGINE_VERSION` if any rule outcome changes. Required before any model edit pass. (Source: TDD 03 BL-064, TDD 07 BL-Q02.)
+- Status note (3 Oct): founder PR #28 (open) changes the same files: a Unicode-safe verifier, Devanagari negation guards, a golden corpus tied to `ENGINE_VERSION` and a 10,000-run Unicode property. `develop` at 7cc43b1 also rewrote `verify.ts`, `meaning.ts` and `text.ts` for language packs and is at `ENGINE_VERSION` 4. When #28 merges or closes, set this task back to `ready` and re-scope it to what is left: the eight meaning-changing edits of TDD 03 7.1 and the TDD 03 invariants as properties.
 
 #### BL-111 LocalStore interface and schema migrator [High]
 - Status: ready. Mode: agent (pair for the interface review). Owner: mobile engineer, sync owner. Milestone: M1 to M2. Depends on: BL-121. Size: L.
@@ -487,8 +489,8 @@ Brief 3 Oct decision 16 (Recommended; the founder may override): screens stay na
 
 #### BL-151 Notification planner and local reminders [High]
 - Status: blocked (BL-034). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: M.
-- Satisfies: C-REQ-001 to C-REQ-007, C-REQ-010 to C-REQ-012, C-REQ-015, B-REQ-014, B-REQ-015, PRD-REQ-013, LEGAL-REQ-054, D-025.
-- Scope: pure planner in `packages/core` (cadence "a few evenings a week" default, 07:00 to 21:30, smart quiet, rotation across included children, month-age and birthday notes, hidden-book and due-date rules, DST); primed permission after the first letter (via BL-023); `expo-notifications` local scheduling; lock-screen names off by default from remote config with the Settings toggle (C-REQ-009 at v1.0); payloads carry no content. Tests BL-Q15 and BL-Q16. (Source: TDD 07 BL-Q15, BL-Q16.)
+- Satisfies: C-REQ-001 to C-REQ-007, C-REQ-010 to C-REQ-012, C-REQ-015, B-REQ-014, B-REQ-015, PRD-REQ-013, LEGAL-REQ-054, D-025, C-NFR-001 (local reminders only; its plan-notice part waits on BL-223).
+- Scope: pure planner in `packages/core` (cadence "a few evenings a week" default, 07:00 to 21:30, smart quiet, rotation across included children, month-age and birthday notes, hidden-book and due-date rules, DST); primed permission after the first letter (via BL-023); `expo-notifications` local scheduling; lock-screen names off by default from remote config with the Settings toggle (C-REQ-009 at v1.0); payloads carry no content; reschedule on save, foreground, time zone change and settings change, and a test proves nothing is scheduled between 21:30 and 07:00 (C-NFR-001). Tests BL-Q15 and BL-Q16. (Source: TDD 07 BL-Q15, BL-Q16.)
 
 #### BL-152 Store and site copy match the v1.0 scope [Critical]
 - Status: ready. Mode: agent. Owner: content. Milestone: M4, week 4 (before the website goes live). Size: S.
@@ -519,8 +521,8 @@ Brief 3 Oct decision 16 (Recommended; the founder may override): screens stay na
 
 #### BL-160 Book and Read together release pass
 - Status: blocked (BL-034). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: M.
-- Satisfies: B-REQ-005, C-REQ-010, C-REQ-011.
-- Scope: month chapters and Before You; playback; Read together plays each letter in its author's voice without word highlight (brief 3 Oct decision 9; highlight from `alignment` moves to v1.1, BL-318, and ADR 0009 moves with it); quiet milestones inline; 60-letter chapter p95 500 ms.
+- Satisfies: B-REQ-005, C-REQ-010, C-REQ-011, C-REQ-018 (export part).
+- Scope: month chapters and Before You; playback; Read together plays each letter in its author's voice without word highlight (brief 3 Oct decision 9; highlight from `alignment` moves to v1.1, BL-318, and ADR 0009 moves with it); quiet milestones inline, with one soft export card at each Year One or chapter milestone for recordings that are only on the phone (C-REQ-018; export only at v1.0, since there is no backup, D-059; never a sales screen); 60-letter chapter p95 500 ms. The Settings line for C-REQ-018 is `settings.recordings.onPhoneBody` in `packages/content` (on `develop` at 7cc43b1).
 
 #### BL-155 Listening copy in playback
 - Status: blocked (BL-132, BL-160). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: S.
@@ -766,12 +768,12 @@ Brief 3 Oct decision 3 (Decided): StoreKit 2 with Apple's own subscription UI, r
 
 #### BL-215 Mobile plan module
 - Status: blocked (BL-210, BL-050). Mode: pair (adds a purchase SDK). Owner: payments engineer, mobile engineer. Milestone: M8, weeks 8 to 10. Size: M.
-- Satisfies: C-REQ-020, C-NFR-003, C-NFR-004, D-036; brief 3 Oct decision 3.
+- Satisfies: C-REQ-020, C-NFR-003, C-NFR-004, D-036, PRD-REQ-022 (sign-in first; restore stays Apple's, per Apple Account, so D-047 no longer applies); brief 3 Oct decision 3.
 - Scope (rewritten 3 Oct for brief decision 3): the plan module in `apps/mobile/src/lib/billing` (the path ADR 0013 names on `develop`; the module exists there since 7cc43b1, so check what is left before starting): purchase only when signed in (D-036, kept until the founder says otherwise: its two reasons, Plus held on our server and emailed notices, both change under decision 3); Plus comes only from StoreKit 2 on the device: current entitlements (own or family-shared) at launch and on every transaction update; finish each transaction after StoreKit verifies it on the device; restore, manage and refund through Apple's own sheets; cache the last known state for offline; replace the `hasPlus` and `isJoinedBook` stubs. No `appAccountToken`, no server confirmation and no server plan state. D-047 no longer applies, because no server binds a subscription to one of our accounts. (Source: TDD 08 BL-P04, amended.)
 
 #### BL-216 Plus sheet [High]
 - Status: blocked (BL-036, BL-215). Mode: agent. Owner: payments engineer, design systems. Milestone: M8, week 10. Size: M.
-- Satisfies: C-REQ-022, C-REQ-023, LEGAL-REQ-046, C-NFR-006, C-NFR-007.
+- Satisfies: C-REQ-022, C-REQ-023, LEGAL-REQ-046, C-NFR-006, C-NFR-007, PRD-REQ-022 (no offer when this Apple Account already has Plus; contributors are v1.1, BL-316).
 - Scope: Apple's own subscription view from BL-210 (brief 3 Oct decision 3) with our header that says what Plus includes; check each LEGAL-REQ-046 disclosure against what Apple's view shows and add any that is missing in our header, above the button, readable at AX5; TDD 08 section 6 rules (no preselection, eligibility from the store, no urgency, no hardcoded prices, never on quiet surfaces); never offered when this device's Apple Account already has Plus, own or family-shared (D-036); delete `plus-gate.tsx` and the `onContinueDev` bypass; CI bundle grep fails on any dev bypass in production. (Source: TDD 08 BL-P05, C-9; TDD 07 BL-Q17.)
 
 #### BL-217 Purchase consent records
@@ -1065,8 +1067,8 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 
 #### BL-044 Device budget check
 - Status: blocked (BL-040). Mode: human. Owner: founder, QA engineer. Milestone: M12, every release candidate.
-- Satisfies: A-NFR-001, A-NFR-003, B-NFR-008, C-NFR-007, PRD 7.1, PRD 7.7.
-- Scope (extended 3 Oct): perf build profile and measurement script on iPhone SE 3 with year-1 and year-5 fixtures; cold and warm start, first-run interactivity, Book scroll frame time, export time; MetricKit readout into diagnostics. (Source: TDD 01 BL-M18, TDD 06 BL-R13.)
+- Satisfies: A-NFR-001, A-NFR-003, A-NFR-004, B-NFR-008, C-NFR-007, PRD 7.1, PRD 7.7.
+- Scope (extended 3 Oct): perf build profile and measurement script on iPhone SE 3 with year-1 and year-5 fixtures; cold and warm start, first-run interactivity, Book scroll frame time, export time, sign-in time after the Apple or Google sheet closes and sign-in email delivery time (A-NFR-004); MetricKit readout into diagnostics. (Source: TDD 01 BL-M18, TDD 06 BL-R13.)
 
 #### BL-285 Download size under 40 MB on every release build
 - Status: blocked (BL-108). Mode: agent (script), human (first real build). Owner: QA engineer. Milestone: M12, first preview build, then every release build. Size: S.
