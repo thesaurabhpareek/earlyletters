@@ -5,11 +5,13 @@
 -- The file name keeps "entitlements" so the migration version and history stay
 -- stable; it no longer creates any entitlement objects (see below).
 --
--- 5. create_child [TDD 02 C4, A-REQ-015, DATA-REQ-044, PRD-REQ-015]:
+-- 5. create_child [TDD 02 C4, A-REQ-015, DATA-REQ-044, PRD-REQ-015, BL-113]:
 --    create_child(text, date) is dropped. create_child(p_id, p_name,
---    p_date_of_birth, p_due_date) takes the device's UUIDv7 (version and
---    variant checked, timestamp sane), is idempotent for the same person, and
---    needs a birthday or a due date.
+--    p_date_of_birth, p_due_date, p_client_created_at) takes the device's UUIDv7
+--    (version and variant checked, timestamp sane), is idempotent for the same
+--    person, and needs a birthday or a due date. p_client_created_at is when the
+--    book was made on the device (offline books sync later); it is kept in
+--    children.client_created_at, or null when it is in the future or before 2024.
 -- 6. Payments (founder decision 3, docs/agents/BRIEF-2026-10-03.md): Apple only,
 --    StoreKit 2 on the device (Transaction.currentEntitlements, Family Sharing
 --    for the co-parent). No server of ours sees purchases, so this file creates
@@ -43,6 +45,23 @@ create trigger profiles_guard before update on public.profiles
 -- NOT VALID: existing rows are checked by APPLY.md before VALIDATE.
 alter table public.children add constraint children_has_date
   check (date_of_birth is not null or due_date is not null) not valid;
+
+-- When the book was made on the device (BL-113). Display only; created_at stays the server clock.
+alter table public.children add column if not exists client_created_at timestamptz;
+comment on column public.children.client_created_at is 'L2 device timestamp when the book was made (may be null)';
+-- Both creation times are set once, by create_child.
+create or replace function public.children_times_guard()
+returns trigger language plpgsql set search_path = pg_catalog, public as $$
+begin
+  if current_user in ('authenticated', 'anon')
+     and (new.created_at is distinct from old.created_at or new.client_created_at is distinct from old.client_created_at) then
+    raise exception 'children: created_at and client_created_at are set by create_child' using errcode = 'SCIMM';
+  end if;
+  return new;
+end;
+$$;
+create trigger children_times_guard before update on public.children
+  for each row execute function public.children_times_guard();
 
 -- ─── 3. Client-supplied ids ─────────────────────────────────────────────
 -- is_valid_client_uuid7() is defined in 20261003000000_security_and_family.sql
@@ -78,7 +97,7 @@ $$;
 drop function if exists public.create_child(text, date);
 
 create or replace function public.create_child(p_id uuid, p_name text, p_date_of_birth date default null,
-                                               p_due_date date default null)
+                                               p_due_date date default null, p_client_created_at timestamptz default null)
 returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user(); v_creator uuid; v_found boolean;
 begin
@@ -105,8 +124,11 @@ begin
      or p_due_date > current_date + 310 or p_due_date < current_date - 400 then
     raise exception 'date out of range' using errcode = '22023';
   end if;
-  insert into children (id, name, date_of_birth, due_date, created_by)
-    values (p_id, btrim(p_name), p_date_of_birth, p_due_date, v_uid);
+  if p_client_created_at > now() + interval '5 minutes' or p_client_created_at < timestamptz '2024-01-01 00:00:00+00' then
+    p_client_created_at := null;  -- device clock out of range; keep server time only
+  end if;
+  insert into children (id, name, date_of_birth, due_date, created_by, client_created_at)
+    values (p_id, btrim(p_name), p_date_of_birth, p_due_date, v_uid, p_client_created_at);
   insert into child_members (child_id, profile_id, role) values (p_id, v_uid, 'parent');
   return p_id;
 end;
@@ -114,5 +136,6 @@ $$;
 
 -- ─── 5. Privileges ───────────────────────────────────────────────────────
 revoke execute on function public.profiles_guard() from public, anon, authenticated;
-revoke execute on function public.create_child(uuid, text, date, date) from public, anon;
-grant execute on function public.create_child(uuid, text, date, date) to authenticated;
+revoke execute on function public.children_times_guard() from public, anon, authenticated;
+revoke execute on function public.create_child(uuid, text, date, date, timestamptz) from public, anon;
+grant execute on function public.create_child(uuid, text, date, date, timestamptz) to authenticated;

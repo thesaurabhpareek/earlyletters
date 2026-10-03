@@ -35,6 +35,8 @@
 -- Review fixes on 3 Oct 2026 (WS-01): DB-01 view write grants revoked, DB-02 purged
 -- entry ids refused (SCPRG) and entry/book ledger rows kept, DB-06/DB-14 indexes,
 -- DB-07 pepper fails closed, DB-09 SCDEL split, DB-11 search_path order, PDB-02 sequences.
+-- M1 fix pack (BL-115 X-12): the consent pepper is read from Supabase Vault
+-- (server_secret / require_server_secret), never from a database setting.
 
 -- ─── 0. Deleting the book creator's account must not delete the book ─────
 -- children.created_by was ON DELETE CASCADE: when the parent who created a book
@@ -696,19 +698,47 @@ $$;
 create trigger policy_acceptances_guard before update or delete on public.policy_acceptances
   for each row execute function public.policy_acceptances_guard();
 
--- Pseudonymise before the profile row disappears. The pepper is a server-only
--- setting (APPLY.md step 6) so hashes cannot be reversed by guessing UUIDs.
--- DB-07: fails closed. Without a pepper of at least 32 characters no profile can be
+-- Server secrets (X-12, TDD 04 finding 8, LEGAL-REQ-026). Peppers live in Supabase
+-- Vault, never in a database setting (a setting sits in pg_db_role_setting and in
+-- every backup in clear). server_secret() reads vault.decrypted_secrets by name
+-- through dynamic SQL, so this file applies even where the vault schema is absent;
+-- it then returns null and require_server_secret() fails closed. The PGlite test
+-- harness stubs vault.decrypted_secrets (supabase/tests/harness.mjs). Neither
+-- function is granted to any API role.
+create or replace function public.server_secret(p_name text)
+returns text language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare v text;
+begin
+  if to_regclass('vault.decrypted_secrets') is null then
+    return null;
+  end if;
+  execute 'select decrypted_secret from vault.decrypted_secrets where name = $1 limit 1' into v using p_name;
+  return v;
+end;
+$$;
+
+-- Raises SCCFG when the secret is missing, empty or shorter than p_min_bytes bytes.
+create or replace function public.require_server_secret(p_name text, p_min_bytes int default 32)
+returns text language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare v text := public.server_secret(p_name);
+begin
+  if v is null or octet_length(v) < p_min_bytes then
+    raise exception 'server secret % is missing or shorter than % bytes (APPLY.md step 6)', p_name, p_min_bytes
+      using errcode = 'SCCFG', hint = 'Ops: store it in Supabase Vault under this name; never change it once set.';
+  end if;
+  return v;
+end;
+$$;
+
+-- Pseudonymise before the profile row disappears. The pepper is the Vault secret
+-- consent_pepper (APPLY.md step 6) so hashes cannot be reversed by guessing UUIDs.
+-- DB-07 / X-12: fails closed. Without a pepper of at least 32 bytes no profile can be
 -- deleted (SCCFG), rather than silently hashing with an empty pepper. There is no
--- bypass flag; the test suite sets its own test pepper.
+-- bypass flag; the test harness stores a test pepper in its Vault stub.
 create or replace function public.policy_acceptances_pseudonymise()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
-declare v_pepper text := current_setting('app.consent_pepper', true);
+declare v_pepper text := public.require_server_secret('consent_pepper');
 begin
-  if v_pepper is null or char_length(v_pepper) < 32 then
-    raise exception 'app.consent_pepper is not set (APPLY.md step 6)' using errcode = 'SCCFG',
-      hint = 'Ops: set the pepper for this environment; never change it once set.';
-  end if;
   update policy_acceptances
      set subject_hash = sha256(convert_to(old.id::text || v_pepper, 'UTF8')),
          pseudonymised_at = now(),
@@ -1055,6 +1085,18 @@ revoke execute on function public.finalize_account_deletion(uuid, jsonb) from pu
 revoke execute on function public.policy_versions_guard() from public, anon, authenticated;
 revoke execute on function public.policy_acceptances_guard() from public, anon, authenticated;
 revoke execute on function public.policy_acceptances_pseudonymise() from public, anon, authenticated;
+revoke execute on function public.server_secret(text) from public, anon, authenticated;
+revoke execute on function public.require_server_secret(text, int) from public, anon, authenticated;
+-- Supabase's default privileges also grant new functions to service_role, which
+-- PostgREST exposes: secrets must not be readable through the service key either.
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'revoke execute on function public.server_secret(text) from service_role';
+    execute 'revoke execute on function public.require_server_secret(text, int) from service_role';
+  end if;
+end;
+$$;
 revoke execute on function public.has_active_consent(uuid, text) from public, anon, authenticated;
 
 -- Signed-in users (RLS helpers called as the user, and RPCs that check auth.uid()).

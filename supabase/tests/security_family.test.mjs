@@ -36,12 +36,12 @@ const ids = async (uid, child = CHILD) => (await as(uid, `select id from book_en
 
 // ── Invites (LEGAL-REQ-024, B-REQ-007, B-NFR-004, TDD 04 3.4.2) ───────────
 check('[LEGAL-REQ-024] a contributor cannot create a parent invite',
-  (await codeOf(() => as(N, `select public.create_child_invite('${uuid7()}', $1, 'parent', sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
+  (await codeOf(() => as(N, `select public.create_child_invite('${uuid7()}', $1, 'parent', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
 check('[LEGAL-REQ-024] a contributor cannot create a family invite either',
-  (await codeOf(() => as(N, `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
-check('[LEGAL-REQ-024] a stranger cannot create an invite', (await codeOf(() => as(C, `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
-check('[B-REQ-007] the role must be explicit', (await codeOf(() => as(A, `select public.create_child_invite('${uuid7()}', $1, null, sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCINV'
-  && (await codeOf(() => as(A, `select public.create_child_invite('${uuid7()}', $1, 'admin', sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCINV');
+  (await codeOf(() => as(N, `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
+check('[LEGAL-REQ-024] a stranger cannot create an invite', (await codeOf(() => as(C, `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCPAR');
+check('[B-REQ-007] the role must be explicit', (await codeOf(() => as(A, `select public.create_child_invite('${uuid7()}', $1, null, sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCINV'
+  && (await codeOf(() => as(A, `select public.create_child_invite('${uuid7()}', $1, 'admin', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]))) === 'SCINV');
 check('[LEGAL-REQ-024] the old one-argument invite function is gone', (await codeOf(() => as(A, `select public.create_child_invite($1::uuid)`, [CHILD]))) === '42883');
 check('child_invites.role has no default', (await sys(`select column_default from information_schema.columns where table_name='child_invites' and column_name='role'`)).rows[0].column_default === null);
 
@@ -200,7 +200,7 @@ check('[K-08] an anonymous member reads no book, member or letter rows',
 check('[K-08] the same person with a full session reads the book', (await as(W, `select 1 from book_entries where child_id=$1`, [CHILD])).rows.length > 0);
 for (const [name, sql, params] of [
   ['create_child', `select public.create_child('0192d000-0000-7000-8000-000000000001', 'Asha', '2025-04-12')`, []],
-  ['create_child_invite', `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea))`, [CHILD]],
+  ['create_child_invite', `select public.create_child_invite('${uuid7()}', $1, 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, [CHILD]],
   ['accept_child_invite', `select public.accept_child_invite('x')`, []],
   ['request_account_deletion', `select * from public.request_account_deletion('web')`, []],
   ['delete_entry', `select public.delete_entry($1)`, [aBook]],

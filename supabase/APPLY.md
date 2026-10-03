@@ -8,7 +8,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 > - **DB-02**: a purged letter id is refused for good with the new SQLSTATE `SCPRG`, including upserts and service-role inserts. `purge_due` no longer prunes `entry` and `child` rows from `purge_ledger` (ids only, never content); person and object-path rows still age out after 60 days. A purged book id now also raises `SCPRG` (was `SCDEL`).
 > - **DB-05 / D-039**: the `children` table is readable and editable by parents only. Every member reads `book_children` (name, nickname, birthday month and day; never the due date or birth year).
 > - **DB-06 / DB-14**: new full index `entries_child_occurred_idx (child_id, occurred_on)`; the redundant partial `entries_book_idx` is dropped.
-> - **DB-07**: the consent pepper fails closed. Deleting a profile raises `SCCFG` until `app.consent_pepper` is set (at least 32 characters). Step 6 is now a hard prerequisite of any account deletion, including deleting a user from the dashboard.
+> - **DB-07 / BL-115 X-12**: the consent pepper fails closed and lives in Supabase Vault, not in a database setting. Deleting a profile raises `SCCFG` until the Vault secret `consent_pepper` exists with at least 32 bytes. `app.consent_pepper` is no longer read. Step 6 is now a hard prerequisite of any account deletion, including deleting a user from the dashboard.
 > - **DB-09**: "only a parent" raises `SCPAR` (was `SCDEL`); a pending account deletion raises `SCACD`; a direct book tombstone raises `SCTMB`; `record_policy_act` raises `P0002` (unknown version), `SCVER` (newer version must be accepted) and `22023`; service-only state errors use `55000`.
 > - **DB-11**: every security-definer function sets `search_path = pg_catalog, public` (the two from file 1 are re-pinned with `alter function`).
 > - **DB-12**: `dictionary_terms` is unique on `(owner_id, child_id, lower(term)) nulls not distinct`, replacing `unique (owner_id, term)`.
@@ -17,6 +17,13 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 > - **PDB-02**: `anon` and `authenticated` hold no privileges on public sequences.
 > - **Founder decision 3 (payments, docs/agents/BRIEF-2026-10-03.md)**: Apple only, StoreKit 2 on the device. File 6 no longer creates `app_account_tokens`, `store_subscriptions`, `store_notifications`, `has_plus`, `book_has_plus`, `get_plan_state`, `my_app_account_token`, `apply_store_transaction`, `store_environment_allowed`, `create_child_row` or `create_first_run_children`, nor `profiles.first_run_closed_at`. The server never enforces Plus, and SQLSTATE `SCPLS` no longer exists. File 7 no longer ages out `store_notifications`.
 > - **Retry safety (founder decision 17)**: `create_child_invite` and `record_policy_act` take a required client UUIDv7 key `p_id` (first argument), stored as the row's primary key (`child_invites.id`, `policy_acceptances.id`). A replay with the same key and arguments returns the original id and changes nothing (no second row, no audit event, no count against the invite limit). The same key with different arguments, or another person's key, raises `SCCID`. **Invite design:** the app generates the invite secret itself (32 random bytes, hex encoded) and keeps it for the share link; it sends only `p_token_hash = sha256(utf8(token))`. The server never sees, stores or returns the token, so a replay has nothing secret to re-send. `accept_child_invite(p_token)` is unchanged. New signatures: `create_child_invite(p_id uuid, p_child uuid, p_role text, p_token_hash bytea, p_signs_as text default null) returns uuid` (the invite id, no longer the token) and `record_policy_act(p_id uuid, p_document, p_version, p_action, p_method, p_surface, p_app_version, p_platform, p_locale, p_client_recorded_at, p_rendered_sha256, p_context) returns uuid`. Both old signatures are dropped.
+> - **M1 fix pack (BL-112, BL-113, BL-115, BL-116), 3 Oct 2026**:
+>   - Invite codes (A-REQ-029): `create_child_invite` takes `p_code_hash` too. New signature: `create_child_invite(p_id uuid, p_child uuid, p_role text, p_token_hash bytea, p_code_hash bytea, p_signs_as text default null) returns uuid`. The app makes an 8-character code and sends only `p_code_hash = sha256(utf8(normalised code))`; the server stores `HMAC-SHA256(invite_code_pepper, p_code_hash)` in `child_invites.code_hash`, so a database dump cannot brute-force the codes. Creating an invite raises `SCCFG` until the Vault secret `invite_code_pepper` exists (step 6).
+>   - `accept_child_invite_by_code(p_user uuid, p_code text)` redeems a typed code. It is granted to `service_role` only, for the `invite-redeem` Edge Function (not built yet), which must verify the caller's JWT, refuse anonymous sessions and apply the attempt limits in TDD 04 3.11. Same outcomes and codes as `accept_child_invite`.
+>   - Upgrade: file 5 revokes every open invite made by the old `create_child_invite(uuid)` (any member could mint one and its role defaulted to parent).
+>   - A person who joined and then left gets `SCINV` from their used invite (before, the retry shortcut returned the book id without re-adding them).
+>   - `create_child` takes `p_client_created_at timestamptz default null` (BL-113), kept in `children.client_created_at` (null when in the future or before 2024). New signature: `create_child(p_id uuid, p_name text, p_date_of_birth date default null, p_due_date date default null, p_client_created_at timestamptz default null) returns uuid`. `created_at` and `client_created_at` cannot be changed by clients (`SCIMM`).
+>   - New tests: `fixpack.test.mjs` (codes, redemption, deleted books, client time, left-member persona) and `upgrade.test.mjs` (seeds data through the old functions on the applied files, then applies files 3 to 7).
 > - **PSEC-04**: the photo UPDATE policy is dropped (photos are never overwritten in place), and deleting your own photo needs current membership of a live book.
 
 ## What is applied and what is pending
@@ -27,7 +34,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 2 | `20261001000000_scribe_hardening.sql` | Applied 2 Oct as `scribe_hardening_indexes_and_grants` | Function grants, FK indexes |
 | 3 | `20261002010000_entries_select_policy.sql` | **Pending** | One SELECT policy on entries instead of two (performance only) |
 | 4 | `20261002020000_data_governance.sql` | **Pending** | Deletion, retention, legal holds, audit, policy acceptances, author-only raw transcripts (`book_entries` view), per-child settings, drops `safety_events`, classification comments on every column |
-| 5 | `20261003000000_security_and_family.sql` | **Pending** | Anonymous-session guard, server consent gate (Terms + age + sensitive-data), policy notice-window fix (X-01), parent-only invites with explicit role and limits, family approval and visibility (B F9) |
+| 5 | `20261003000000_security_and_family.sql` | **Pending** | Anonymous-session guard, server consent gate (Terms + age + sensitive-data), policy notice-window fix (X-01), parent-only invites with explicit role, limits and hashed codes, family approval and visibility (B F9) |
 | 6 | `20261003010000_children_and_entitlements.sql` | **Pending** | `create_child` with device UUIDv7 ids, UUIDv7 letter ids. No entitlement objects (founder decision 3; the name is kept so the version stays stable) |
 | 7 | `20261003020000_purge_batching.sql` | **Pending** | `purge_due` per-run limit, retry backoff columns for the purge worker, invite retention clock |
 
@@ -128,15 +135,25 @@ alter table public.entries validate constraint entries_photo_path_scoped;
 ```
 Rollback: none needed; if it fails, nothing changed.
 
-## Step 6. Set the consent pepper (before any account deletion runs)
+## Step 6. Store the two peppers in Supabase Vault (before files 4 and 5 are used)
 
-Required (DB-07): until the pepper is set, deleting any profile, including deleting a user from the Authentication dashboard, fails with SQLSTATE `SCCFG` and nothing is deleted. That is deliberate: the old behaviour hashed with an empty pepper, which anyone could reverse by guessing user ids. Do this step straight after step 3.
+Required (DB-07, BL-115 X-12): until the peppers exist, deleting any profile (including deleting a user from the Authentication dashboard) and creating any invite fail with SQLSTATE `SCCFG`, and nothing is written. That is deliberate: the old behaviour hashed with an empty pepper, which anyone could reverse by guessing user ids. Do this step straight after step 3.
 
-Policy acceptances are kept 3 years after an account is deleted, under a peppered hash of the old user id. Generate a random value once (at least 32 characters) (for example `openssl rand -hex 32`), store it in your password manager, and set it:
+The peppers live in Supabase Vault, not in a database setting: a setting sits in `pg_db_role_setting` and in every backup in clear (TDD 04 finding 8, LEGAL-REQ-026). `public.server_secret(name)` reads `vault.decrypted_secrets` by name; no API role (`anon`, `authenticated`, `service_role`) may call it.
+
+- `consent_pepper`: policy acceptances are kept 3 years after an account is deleted, under a peppered hash of the old user id.
+- `invite_code_pepper`: `child_invites.code_hash` is an HMAC of the invite code under it.
+
+Generate each value once (at least 32 bytes; for example `openssl rand -hex 32`), store both in your password manager, and run in the SQL Editor:
 ```sql
-alter database postgres set app.consent_pepper = '<the random value>';
+select vault.create_secret('<random value 1>', 'consent_pepper', 'Policy acceptance pseudonymisation pepper');
+select vault.create_secret('<random value 2>', 'invite_code_pepper', 'Invite code HMAC pepper');
+-- Check (expect two rows with length 64; never select the secret itself):
+select name, octet_length(decrypted_secret) from vault.decrypted_secrets where name in ('consent_pepper', 'invite_code_pepper');
 ```
-Never change it afterwards (old and new hashes would no longer match). Whether Supabase Vault is a better home for it is **Unverified**; the database setting works with the migration as written. Anyone with database owner access can read it, which is acceptable for a pseudonymisation pepper but not for a key.
+Never change `consent_pepper` afterwards (old and new hashes would no longer match). `invite_code_pepper` may be rotated on suspicion; open invite codes then stop working and parents send new invites (links keep working).
+
+**Unverified, check on staging first:** that the migration role (`postgres`), which owns `server_secret`, can read `vault.decrypted_secrets` on this project; Supabase documents that view for the `postgres` role, but confirm with the check query above and then `select public.require_server_secret('consent_pepper') is not null;` as `postgres`. If `app.consent_pepper` was ever set on a project, remove it after the Vault secret exists: `alter database postgres reset app.consent_pepper;`.
 
 ## Step 7. Schedule the purge
 
@@ -210,12 +227,13 @@ select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
  where n.nspname = 'public' and p.prosecdef and coalesce(array_to_string(p.proconfig, ','), '') !~ 'search_path=pg_catalog, public';
 ```
 Then repeat the two classification and RLS queries from step 4. Advisors, expected and accepted in addition to step 4's list:
-- **0029** for the new RPCs: `create_child(uuid, text, date, date)`, `create_child_invite(uuid, uuid, text, bytea, text)`, `record_policy_act(uuid, ...)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`. Each starts with `require_user()` or answers only for the caller.
+- **0029** for the new RPCs: `create_child(uuid, text, date, date, timestamptz)`, `create_child_invite(uuid, uuid, text, bytea, bytea, text)`, `record_policy_act(uuid, ...)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`. Each starts with `require_user()` or answers only for the caller.
 - **0010** on `book_entries` (unchanged; the view now applies the B F9 rule) and on `book_children` (D-039).
+- `accept_child_invite_by_code(uuid, text)` is executable by `service_role` only (check: `select has_function_privilege('authenticated', 'public.accept_child_invite_by_code(uuid, text)', 'execute');` expect false). `server_secret`, `require_server_secret`, `invite_code_digest` and `join_book_by_invite` are executable by no API role.
 
 ## Step 11. Settings per environment
 
-- Every environment: `app.consent_pepper` (step 6). Nothing else: purchases never reach the server (founder decision 3), so there is no store-environment setting and no App Store notification endpoint.
+- Every environment: the Vault secrets `consent_pepper` and `invite_code_pepper` (step 6). Nothing else: purchases never reach the server (founder decision 3), so there is no store-environment setting and no App Store notification endpoint.
 
 ## Step 12. Validate the new constraints
 
@@ -246,7 +264,7 @@ The cron command is unchanged. When the `purge-worker` exists it should loop `se
 | `SCPRG` | This letter or book id was purged for good (DB-02); also on upsert | Permanent: drop the local row; never retry with the same id |
 | `SCCID` | Also: a letter id, invite key or policy-act key that is not a device UUIDv7 (DB-15), or an idempotency key replayed with different arguments or by another person | Permanent; a client bug (make a new key only for a new action) |
 | `SCVER` | A newer policy version must be accepted first (`record_policy_act`) | Fetch `policy_actions_needed()` and show that version |
-| `SCCFG` | A server setting is missing (`app.consent_pepper`) | Not a client error: alert ops; retry later |
+| `SCCFG` | A server secret is missing or short (Vault `consent_pepper` or `invite_code_pepper`) | Not a client error: alert ops; retry later (keep the queued invite) |
 | `55000` | Service role only: a deletion request is not in the expected state | Worker: re-read the request and skip |
 | `P0002` | Not found (also when the caller may not see it) | Permanent |
 | `22023` | Bad argument (dates, names, decision, context keys, `source = 'support'`, `captured_at` more than a day ahead, support-assisted acts from a client) | Permanent; a client bug |
@@ -280,8 +298,8 @@ Prefer fixing forward. Everything is additive except the dropped functions, whic
 - Children: parents read `children`; every member (and the contributor UI) reads `book_children` (`id, name, nickname, birth_month, birth_day`) (D-039).
 - Letters: ids must be UUIDv7 from the device (already the case in `store.ts`); `SCPRG` on upload means the letter was purged on the server, so drop the local row.
 - Photos: never update an uploaded photo object; upload a new path and delete the old one.
-- Children: `create_child(p_id, p_name, p_date_of_birth, p_due_date)` with the device's UUIDv7 (the same id local letters already use; retries are safe). Twins and siblings are separate `create_child` calls. The server never checks Plus: the app decides with StoreKit 2 on the device (founder decision 3).
-- Invites: the app makes the token (32 random bytes, hex) and a UUIDv7 key, stores both with the pending action, and calls `create_child_invite(p_id, p_child, p_role, p_token_hash, p_signs_as)` with `p_token_hash = sha256(utf8(token))` and `p_role` `'parent'` or `'contributor'`. Retry with the same key and arguments after a lost response; the result is the invite id. Only parents see the invite button. `revoke_invite(id)`. `SCINV` "token already used" means generate a new token and key.
+- Children: `create_child(p_id, p_name, p_date_of_birth, p_due_date, p_client_created_at)` with the device's UUIDv7 and the time the book was made on the device (the same id local letters already use; retries are safe). Twins and siblings are separate `create_child` calls. The server never checks Plus: the app decides with StoreKit 2 on the device (founder decision 3).
+- Invites: the app makes the token (32 random bytes, hex), an 8-character code (Crockford base32, `0-9 A-Z` without `I L O U`, from a CSPRNG, shown as `XXXX-XXXX`) and a UUIDv7 key, stores all three with the pending action, and calls `create_child_invite(p_id, p_child, p_role, p_token_hash, p_code_hash, p_signs_as)` with `p_token_hash = sha256(utf8(token))`, `p_code_hash = sha256(utf8(code))` (normal form: upper case, no hyphen) and `p_role` `'parent'` or `'contributor'`. Retry with the same key and arguments after a lost response; the result is the invite id. Only parents see the invite button. `revoke_invite(id)`. `SCINV` "token already used" or "code already used" means generate a new token, code and key. Typed codes go to the `invite-redeem` Edge Function (when built), never straight to the database.
 - Family letters: for contributors `in_book = true` means "send to the parents". The server keeps the letter `approval = 'pending'` and `in_book = false` until a parent calls `review_family_letter(id, 'added' | 'set_aside', expected_state)`; show status from `approval`. Never upload `approval`, `reviewed_by` or `reviewed_at`. A contributor takes a letter back with `withdraw_family_letter(id)`. Editing the words of an added family letter returns it to pending unless the parents turned on auto-add for that person.
 - Reads: `book_entries` now follows B F9 and has an `approval` column; parents' "Letters from family" reads `approval in ('pending', 'set_aside')`.
 - Consent: every `record_policy_act` call carries a UUIDv7 key `p_id` made once per act and reused on retry. Record `terms` accept with `context = {"age_attested": true, "age_signal": ...}` and `sensitive-data` accept before the first upload; read `my_sync_gate()` to decide which sheet to show; context keys are allowlisted (`auth`, `age_attested`, `age_signal`, `scope`, `crash`, `usage`, `product`, `intro_offer`, `storefront`, `mode`).

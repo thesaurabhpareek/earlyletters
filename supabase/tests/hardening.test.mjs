@@ -131,8 +131,9 @@ check('[DB-09] a parent tombstoning the book directly is SCTMB', (await codeOf((
 // ── Retry safety (founder decision 17): client idempotency keys ─────────
 {
   const hash = (t) => createHash('sha256').update(t, 'utf8').digest('hex');
-  const mk = (uid, id, child, role, tokenHash, signsAs = null) =>
-    as(uid, `select public.create_child_invite($1, $2, $3, decode($4, 'hex'), $5) id`, [id, child, role, tokenHash, signsAs]).then((r) => r.rows[0].id);
+  // The code hash defaults to one derived from the token hash, so a replay sends the same pair.
+  const mk = (uid, id, child, role, tokenHash, signsAs = null, codeHash = hash(`code:${tokenHash}`)) =>
+    as(uid, `select public.create_child_invite($1, $2, $3, decode($4, 'hex'), decode($5, 'hex'), $6) id`, [id, child, role, tokenHash, codeHash, signsAs]).then((r) => r.rows[0].id);
   const invites = async () => (await sys(`select count(*)::int n from child_invites where invited_by=$1`, [A])).rows[0].n;
   const audits = async () => (await sys(`select count(*)::int n from audit_events where action='invite_created' and actor_id=$1`, [A])).rows[0].n;
   const token = randomBytes(32).toString('hex');
@@ -150,6 +151,10 @@ check('[DB-09] a parent tombstoning the book directly is SCTMB', (await codeOf((
   check('[retry] a non-v7 invite key is refused (SCCID)', (await codeOf(() => mk(A, '0b2f9e3c-5a7d-4c1e-9f00-123456789abc', CHILD, 'contributor', hash('x1')))) === 'SCCID');
   check('[retry] a token hash that is not 32 bytes is refused (22023)', (await codeOf(() => mk(A, uuid7(), CHILD, 'contributor', 'abcd'))) === '22023');
   check('[retry] a reused token hash under a new key is refused (SCINV)', (await codeOf(() => mk(A, uuid7(), CHILD, 'contributor', hash(token)))) === 'SCINV');
+  check('[BL-112] same key, different code hash is refused (SCCID)', (await codeOf(() => mk(A, key, CHILD, 'contributor', hash(token), 'Nani', hash('other-code')))) === 'SCCID');
+  check('[BL-112] a code hash that is not 32 bytes is refused (22023)', (await codeOf(() => mk(A, uuid7(), CHILD, 'contributor', hash('x2'), null, 'abcd'))) === '22023');
+  check('[BL-112] a reused code under a new key and token is refused (SCINV)',
+    (await codeOf(() => mk(A, uuid7(), CHILD, 'contributor', hash('x3'), null, hash(`code:${hash(token)}`)))) === 'SCINV');
   // Rate limit: fill A's 24-hour allowance, then a replay still succeeds and a new invite does not.
   const used = (await sys(`select count(*)::int n from child_invites where invited_by=$1 and created_at > now() - interval '24 hours'`, [A])).rows[0].n;
   for (let i = used; i < 20; i++) await mk(A, uuid7(), CHILD, 'contributor', hash(`fill-${i}`));
@@ -173,18 +178,42 @@ check('[DB-09] a parent tombstoning the book directly is SCTMB', (await codeOf((
   check('[retry] a non-v7 act key is refused (SCCID)', (await codeOf(() => act(A, '0b2f9e3c-5a7d-4c1e-9f00-123456789abc'))) === 'SCCID');
   check('[retry] the old signatures are gone (42883)',
     (await codeOf(() => as(A, `select public.create_child_invite($1::uuid, 'contributor'::text, null::text)`, [CHILD]))) === '42883'
+    && (await codeOf(() => as(A, `select public.create_child_invite($1::uuid, $2::uuid, 'contributor'::text, sha256('x'::bytea), null::text)`, [uuid7(), CHILD]))) === '42883'
     && (await codeOf(() => as(A, `select public.record_policy_act('privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`))) === '42883');
 }
 
-// ── DB-07: the consent pepper fails closed ───────────────────────────────
-check('[DB-07] with no pepper set, deleting a profile raises SCCFG',
-  (await codeOf(() => sys(`delete from auth.users where id=$1`, [C]))) === 'SCCFG' && (await sys(`select 1 from profiles where id=$1`, [C])).rows.length === 1);
-await sys(`select set_config('app.consent_pepper', 'short', false)`);
-check('[DB-07] a pepper under 32 characters is refused too', (await codeOf(() => sys(`delete from auth.users where id=$1`, [C]))) === 'SCCFG');
-await sys(`select set_config('app.consent_pepper', 'test-pepper-0123456789abcdef0123456789', false)`);
-check('[DB-07] with a pepper set, the profile is deleted and acceptances are pseudonymised',
-  (await codeOf(() => sys(`delete from auth.users where id=$1`, [C]))) === 'ok'
-  && (await sys(`select count(*)::int n from policy_acceptances where profile_id is null and subject_hash is not null`)).rows[0].n >= 2);
+// ── DB-07 / BL-115 X-12: the consent pepper fails closed and lives in Vault ──
+{
+  const setPepper = (v) => v === null
+    ? sys(`delete from vault.decrypted_secrets where name = 'consent_pepper'`)
+    : sys(`insert into vault.decrypted_secrets values ('consent_pepper', $1) on conflict (name) do update set decrypted_secret = excluded.decrypted_secret`, [v]);
+  const delC = () => codeOf(() => sys(`delete from auth.users where id=$1`, [C]));
+  await setPepper(null);
+  check('[DB-07] with no pepper in Vault, deleting a profile raises SCCFG',
+    (await delC()) === 'SCCFG' && (await sys(`select 1 from profiles where id=$1`, [C])).rows.length === 1);
+  await sys(`select set_config('app.consent_pepper', 'a-database-setting-pepper-0123456789abcdef', false)`);
+  check('[BL-115 X-12] a database setting is never used as the pepper', (await delC()) === 'SCCFG');
+  await sys(`select set_config('app.consent_pepper', '', false)`);
+  await setPepper('');
+  check('[BL-115 X-12] an empty pepper is refused (SCCFG)', (await delC()) === 'SCCFG');
+  await setPepper('x'.repeat(31));
+  check('[BL-115 X-12] a pepper of 31 bytes is refused (SCCFG)', (await delC()) === 'SCCFG');
+  await sys(`alter table vault.decrypted_secrets rename to decrypted_secrets_off`);
+  check('[BL-115 X-12] without the vault view the lookup fails closed (SCCFG)', (await delC()) === 'SCCFG');
+  await sys(`alter table vault.decrypted_secrets_off rename to decrypted_secrets`);
+  for (const r of ['anon', 'authenticated', 'service_role']) {
+    const g = (await sys(`select has_function_privilege($1, 'public.server_secret(text)', 'execute') a,
+                                 has_function_privilege($1, 'public.require_server_secret(text, int)', 'execute') b,
+                                 has_function_privilege($1, 'public.invite_code_digest(bytea)', 'execute') c`, [r])).rows[0];
+    check(`[BL-115 X-12] ${r} cannot call the secret lookups`, !g.a && !g.b && !g.c);
+  }
+  await setPepper('test-consent-pepper-0123456789abcdef0123');
+  check('[DB-07] with a 32+ byte pepper in Vault, the profile is deleted and acceptances are pseudonymised',
+    (await delC()) === 'ok'
+    && (await sys(`select count(*)::int n from policy_acceptances where profile_id is null and subject_hash is not null`)).rows[0].n >= 2);
+  check('[BL-115 X-12] the subject hash uses the Vault pepper',
+    (await sys(`select count(*)::int n from policy_acceptances where subject_hash = sha256(convert_to($1 || 'test-consent-pepper-0123456789abcdef0123', 'UTF8'))`, [C])).rows[0].n >= 2);
+}
 
 // ── DB-06 / DB-14: indexes ───────────────────────────────────────────────
 const idx = (await sys(`select indexname, indexdef from pg_indexes where schemaname = 'public' and tablename = 'entries'`)).rows;

@@ -142,8 +142,8 @@ const WRITES = [
 // so anyone signed in and consented may start another book.
 const RPCS = [
   ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['create_child_invite', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(gen_random_uuid()::text::bytea))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
-  ['create_child_invite (parent role)', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'parent', sha256(gen_random_uuid()::text::bytea))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['create_child_invite', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['create_child_invite (parent role)', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'parent', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['accept_child_invite', `select public.accept_child_invite('${token}')`,               ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
   ['revoke_invite', `select public.revoke_invite('${inviteId}')`,                        ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
   ['review_family_letter', `select public.review_family_letter('${nSent}', 'added')`,    ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
