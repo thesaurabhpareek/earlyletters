@@ -1,0 +1,127 @@
+/**
+ * Package rules and behaviour that do not depend on the migrations.
+ */
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import {
+  API_CONTRACT_VERSION,
+  API_ERRORS,
+  CUSTOM_ERROR_CODES,
+  ERROR_CODES,
+  RPC_CATALOG,
+  RPC_NAMES,
+  callRpc,
+  errorSpec,
+  syncDisposition,
+  type RpcTransport,
+} from '../src';
+
+const pkg = fileURLToPath(new URL('..', import.meta.url));
+// En dash, em dash, curly single and double quotes, ellipsis (built from code points so this file stays clean).
+const FORBIDDEN = new RegExp(`[${[0x2013, 0x2014, 0x2018, 0x2019, 0x201c, 0x201d, 0x2026].map((c) => String.fromCharCode(c)).join('')}]`);
+
+function files(d: string): string[] {
+  return readdirSync(d).flatMap((f) => {
+    const p = join(d, f);
+    if (f === 'node_modules') return [];
+    return statSync(p).isDirectory() ? files(p) : [p];
+  });
+}
+
+describe('package rules', () => {
+  const src = files(join(pkg, 'src'));
+
+  it('src is pure TypeScript: no node: imports, no react-native, no third-party imports', () => {
+    for (const f of src) {
+      const text = readFileSync(f, 'utf8');
+      const imports = [...text.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
+      for (const i of imports) expect(i.startsWith('./'), `${f} imports ${i}`).toBe(true);
+      expect(text).not.toMatch(/\brequire\(/);
+    }
+  });
+
+  it('no em or en dashes, curly quotes or ellipsis characters in package files', () => {
+    for (const f of files(pkg)) {
+      expect(readFileSync(f, 'utf8'), f).not.toMatch(FORBIDDEN);
+    }
+  });
+
+  it('contract version is semver', () => {
+    expect(API_CONTRACT_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+});
+
+describe('errors registry', () => {
+  it('keys equal codes and codes are 5-character SQLSTATEs', () => {
+    for (const c of ERROR_CODES) {
+      expect(API_ERRORS[c].code).toBe(c);
+      expect(c).toMatch(/^[0-9A-Z]{5}$/);
+    }
+  });
+
+  it('copy keys are keys, not copy', () => {
+    for (const c of ERROR_CODES) expect(API_ERRORS[c].copyKey).toMatch(/^api\.error\.[a-z_]+$/);
+  });
+
+  it('retryable agrees with the sync disposition', () => {
+    for (const c of ERROR_CODES) {
+      const s = API_ERRORS[c];
+      if (s.sync === 'reject') expect(s.retryable, c).toBe(false);
+      else expect(s.retryable, c).toBe(true);
+    }
+  });
+
+  it('consent pauses the queue; purged ids are dropped; unknown codes retry', () => {
+    expect(syncDisposition('SCCON')).toBe('pause');
+    expect(errorSpec('SCPRG')?.clientAction).toBe('drop_local_row');
+    expect(syncDisposition('XX999')).toBe('retry');
+    expect(errorSpec('XX999')).toBeUndefined();
+  });
+
+  it('custom codes are SC-prefixed and include the 15 post-#32 codes', () => {
+    expect(new Set(CUSTOM_ERROR_CODES)).toEqual(
+      new Set(['SCANO', 'SCCON', 'SCINV', 'SCRAT', 'SCAPR', 'SCIMM', 'SCTMB', 'SCLPG', 'SCDEL', 'SCPAR', 'SCACD', 'SCPRG', 'SCCID', 'SCVER', 'SCCFG']),
+    );
+  });
+});
+
+describe('rpc catalog', () => {
+  it('names are unique and params are p_-prefixed', () => {
+    expect(new Set(RPC_NAMES).size).toBe(RPC_NAMES.length);
+    for (const n of RPC_NAMES) for (const p of RPC_CATALOG[n].params) expect(p.name).toMatch(/^p_/);
+  });
+
+  it('optional params come last (PostgREST named args do not need it, but SQL defaults do)', () => {
+    for (const n of RPC_NAMES) {
+      const flags = RPC_CATALOG[n].params.map((p) => p.optional);
+      expect(flags, n).toEqual([...flags].sort((a, b) => Number(a) - Number(b)));
+    }
+  });
+});
+
+describe('callRpc', () => {
+  const ok: RpcTransport = { rpc: async () => ({ data: '0192f0e2-0000-7000-8000-000000000000', error: null }) };
+  const fail: RpcTransport = {
+    rpc: async () => ({ data: null, error: { code: 'SCCON', message: 'consent required', details: 'terms', hint: null } }),
+  };
+
+  it('passes name and args through and returns typed data', async () => {
+    const calls: unknown[] = [];
+    const t: RpcTransport = { rpc: async (fn, args) => (calls.push([fn, args]), ok.rpc(fn, args)) };
+    const r = await callRpc(t, 'create_child', { p_id: '0192f0e2-0000-7000-8000-000000000000', p_name: 'Asha' });
+    expect(calls).toEqual([['create_child', { p_id: '0192f0e2-0000-7000-8000-000000000000', p_name: 'Asha' }]]);
+    expect(r).toEqual({ ok: true, data: '0192f0e2-0000-7000-8000-000000000000' });
+  });
+
+  it('maps errors to the registry', async () => {
+    const r = await callRpc(fail, 'my_sync_gate', {});
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error.code).toBe('SCCON');
+      expect(r.error.spec?.sync).toBe('pause');
+      expect(r.error.details).toBe('terms');
+    }
+  });
+});
