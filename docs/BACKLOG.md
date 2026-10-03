@@ -841,6 +841,12 @@ Brief 3 Oct decision 3 (Decided): StoreKit 2 with Apple's own subscription UI, r
 - Satisfies: DATA-REQ-011, DATA-REQ-019 to DATA-REQ-023, DATA-REQ-033, DATA-REQ-034, DATA-REQ-036, LEGAL-REQ-029, LEGAL-REQ-031, LEGAL-REQ-038.
 - Scope: `purge-worker` Edge Function draining the queue and account steps (Postgres, Storage, Auth user, Apple token revocation, email provider suppression), backoff, verification step, SLA monitor and alerts; fake-vendor tests TC-19. (Source: TDD 05 NEW-06, TDD 02 SB-13, TDD 07 BL-Q22.)
 
+#### BL-228 Deletion receipts
+- Status: blocked (BL-234). Mode: agent (email sender secrets: human). Owner: privacy engineer, content. Milestone: M9. Size: M.
+- Satisfies: DATA-REQ-025; LEGAL-REQ-029, LEGAL-REQ-014.
+- Scope: the purge worker writes `deletion_requests.receipt` with the request id, requested and completed times, counts per category (letters, books, objects) and each step's outcome, never content. The app shows the request's status from that row. Three transactional emails (request, cancellation, completion) carry only the request id and dates, sent through the email provider (Resend, brief decision 13); their words come from `content` in `packages/content`. Data-map rows for the receipt and the email sends in the same PR.
+- Done when: tests prove the receipt and the email bodies hold no letter text, names or transcripts (canary family "Asha"); a cancelled request sends the cancellation email and no completion email.
+
 #### BL-235 Analytics deletion at request time
 - Status: blocked (BL-020). Mode: agent. Owner: analytics engineer. Milestone: M9. Size: S.
 - Satisfies: DATA-REQ-033, PRD-REQ-018, D-003.
@@ -855,10 +861,22 @@ Brief 3 Oct decision 3 (Decided): StoreKit 2 with Apple's own subscription UI, r
 - Status: blocked (BL-234). Mode: agent. Owner: privacy engineer. Milestone: M9. Size: M.
 - Satisfies: LEGAL-REQ-029, DATA-REQ-034. (Source: TDD 05 NEW-16.)
 
+#### BL-227 Integrity cases mapped to their tests
+- Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M9 (start now). Size: S.
+- Satisfies: DATA-REQ-049, DATA-REQ-060, DATA-REQ-061.
+- Scope: `docs/privacy/integrity-cases.md` maps each case TC-01 to TC-20 in DATA-REQ-049 to the test file and test title that proves it, on `develop` and on founder PR #32 (which rewrites `supabase/tests`), or to the backlog task that will build it (for example TC-16 to BL-174, TC-17 to BL-150, TC-19 to BL-234, TC-20 to BL-134). Also: DATA-REQ-060 (invites removed 90 days after they end) is implemented in `purge_due`; name the test that proves it or list the gap. DATA-REQ-061 is TC-14. Docs only: `supabase/tests` is the founder's area now, so test gaps and retitles (a test proving a requirement starts with its id, Definition of Done 1) go in the PR body as proposed tasks for `data-architect` and `qa`.
+- Done when: every case has a row with a file and title or a BL id; each claim was checked by reading or running the test, and the PR body lists the gaps.
+
 #### BL-239 Network capture, consent gating and log canary [High]
 - Status: blocked (BL-275). Mode: agent. Owner: QA engineer, privacy engineer. Milestone: M9. Size: M.
 - Satisfies: LEGAL-REQ-003, LEGAL-REQ-014, LEGAL-REQ-015, DATA-REQ-004, A-NFR-012.
-- Scope: proxy-based E2E checks (zero PostHog or Sentry requests before consent; nothing queued on disk; no tier in any request); canary family "Asha" never in device logs, function logs, push payloads or analytics bodies; typed ops logger with redaction; Sentry scrub rules for PostgREST errors. (Source: TDD 05 NEW-15, TDD 07 BL-Q03, BL-Q07, TDD 04 SEC-13, TDD 06 BL-R05, BL-R06.)
+- Scope: proxy-based E2E checks (zero PostHog or Sentry requests before consent; nothing queued on disk; no tier in any request); canary family "Asha" never in device logs, function logs, push payloads or analytics bodies; typed ops logger with redaction; Sentry scrub rules for PostgREST errors. (Source: TDD 05 NEW-15, TDD 07 BL-Q03, BL-Q07, TDD 04 SEC-13, TDD 06 BL-R05, BL-R06.) Added 3 Oct: model, pack, manifest and content requests carry no auth header, cookie, user id or device id, and pack paths never name a language (BL-165, BL-167; brief decision 15).
+
+#### BL-229 Remote config and server content cannot widen data collection
+- Status: blocked (BL-022, BL-166). Mode: agent. Owner: privacy engineer. Milestone: M9. Size: S.
+- Satisfies: brief 3 Oct decision 16 ("never server-driven"); LEGAL-REQ-003, LEGAL-REQ-008, LEGAL-REQ-040.
+- Scope: a test over the remote config keys (D-035, BL-022) and the content block types (BL-166) that fails if any remote value can turn on analytics or crash reporting, change a consent's state or its counsel-approved words, add a destination for data, or change prices, the paywall or the purchase flow. A remote value may only reduce what is collected or sent (kill switches, LEGAL-REQ-040), never widen it. D-035 lists `plus_offer_triggers` as a remote key; decision 16 says nothing that changes the paywall is server-driven, so the PR names this key for a founder answer instead of deciding it.
+- Done when: the test lists every key and block type with its allowed direction; adding a key without a row fails it.
 
 #### BL-240 Sensitive-data withdrawal modes
 - Status: blocked (BL-054). Mode: agent. Owner: privacy engineer. Milestone: M9. Size: S.
@@ -874,6 +892,12 @@ Brief 3 Oct decision 3 (Decided): StoreKit 2 with Apple's own subscription UI, r
 - Satisfies: LEGAL-REQ-041, LEGAL-REQ-044; brief 3 Oct decisions 3, 5 and 9.
 - Scope: draft-for-counsel edits with a version bump and change-log line in `docs/legal/privacy-policy.md` and `subprocessors.md` (line numbers on `develop` at 3688796): purchases (the subprocessors row for Apple names the App Store Server API and Server Notifications; no server of ours sees purchases, decision 3); recording backup and its keys (policy lines 22, 69, 117, 129 and 155; no audio upload at v1.0, decision 9); family contributors and web contributions (lines 38, 63, 90, 183 and 207; co-parent only, decision 5); support cards (lines 67, 94, 170 and 219, and CN-10; the classifier is v1.1, decision 9, and v1.0 has a static resources row). Coordinate with PR #37, which also edits `privacy-policy.md` (its version header). Counsel notes stay questions, never conclusions.
 - Done when: neither document describes server purchase data, recording backup, family contributors or support cards as part of v1.0; versions and change logs are updated; content rules pass.
+
+#### BL-230 Licence register for models, packs, fonts and app libraries
+- Status: ready. Mode: agent. Owner: legal. Milestone: M9, before the counsel package in week 5 (BL-104). Size: M.
+- Satisfies: compliance register CR-123 (status Partial); C-REQ-016 (Settings > Legal > Licences); brief 3 Oct decisions 6, 8 and 15 and the coordination rule on licences.
+- Scope: a draft for counsel, `docs/legal/licences.md`, listing what we ship in the app or serve from our own host: app libraries in the iOS bundle (from `apps/mobile/package.json` and the lockfile), the fonts named in `packages/design-tokens/src/tokens.ts`, speech and voice-activity models (ADR 0001, ADR 0012, `experiments/`), noise-suppression candidates (BL-131) and any word lists used in packs (BL-162, BL-163). Each row: licence as read in the source (link and date), whether we may redistribute it, the attribution text it needs, or Unverified. The brief's coordination rules allow only MIT, Apache-2.0, BSD and ISC in the app bundle, and the font comments in `tokens.ts` say SIL OFL 1.1, so list those fonts as a founder question rather than a conclusion. No legal conclusions. The generated notices file and the Licences row stay with BL-159 and a follow-up task.
+- Done when: every row has a source link and date or says Unverified; CR-123 links the register (founder PR #37 also edits `compliance-register.md`, so rebase on it if it merges first); open questions are listed for BL-104.
 
 #### BL-241 Security programme documents and runbooks
 - Status: ready. Mode: agent. Owner: security engineer. Milestone: M9. Size: S.
@@ -1014,6 +1038,12 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 #### BL-273 Accessibility statement
 - Status: ready. Mode: agent. Owner: content, legal. Size: S. Satisfies: LEGAL-REQ-052. (Source: TDD 09 BL-089.)
 
+#### BL-274 Letter text in seven scripts within the size budget
+- Status: blocked (BL-030). Mode: agent. Owner: design systems, mobile engineer. Milestone: M11. Size: M.
+- Satisfies: brief 3 Oct decisions 6 and 15; B-NFR-007; A-NFR-005, A-NFR-006; D-027.
+- Scope: a font plan in `docs/design/` and the tokens: the bundled fonts in `tokens.ts` (Latin and Devanagari) subset to what the app needs, remembering that letters are the family's own text and need every character their language uses; whether the Devanagari reading font is bundled or left to the system, with measured sizes against the 40 MB budget (BL-285); Arabic and Chinese letters use iOS system fonts. A shared letter-text component in `apps/mobile/src/components/ui/` sets each letter's writing direction from its own text, so an Arabic letter reads right to left inside the English app and mixed lines stay in order, at every Dynamic Type size and never capped (D-027). VoiceOver reads a letter in its language where React Native allows it (verify the prop against the installed version). The PDF follows the same rules (BL-150).
+- Done when: component tests render a fictional letter in each of the seven languages at default size and AX5 with the right direction; the font sizes are measured and written down; the licence question on the fonts is linked to BL-230.
+
 ---
 
 ## M12. Beta and release engineering (weeks 6 to 14)
@@ -1036,6 +1066,12 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 - Status: blocked (BL-040). Mode: human. Owner: founder, QA engineer. Milestone: M12, every release candidate.
 - Satisfies: A-NFR-001, A-NFR-003, B-NFR-008, C-NFR-007, PRD 7.1, PRD 7.7.
 - Scope (extended 3 Oct): perf build profile and measurement script on iPhone SE 3 with year-1 and year-5 fixtures; cold and warm start, first-run interactivity, Book scroll frame time, export time; MetricKit readout into diagnostics. (Source: TDD 01 BL-M18, TDD 06 BL-R13.)
+
+#### BL-285 Download size under 40 MB on every release build
+- Status: blocked (BL-108). Mode: agent (script), human (first real build). Owner: QA engineer. Milestone: M12, first preview build, then every release build. Size: S.
+- Satisfies: brief 3 Oct decision 15; PRD 7.7 (its 80 MB budget is replaced by decision 15's limit of under 40 MB; requirement change proposed to the founder).
+- Scope: a script under `scripts/` that reads the size report Xcode writes for an exported, thinned release build and fails when any device variant's download size reaches 40 MB; the result is saved under `docs/qa/evidence/` and the step is listed in the release checklist (BL-283). Speech models and language packs are not in the build (BL-143, BL-165). Check the report's format against Apple's documentation and the first real report from BL-108's build; never write a parser for a format no one has seen. CI changes are proposed under `docs/ops/proposed/` for the founder.
+- Done when: the script passes and fails correctly on the real report and on a copy edited over the limit; the first measured size is recorded.
 
 #### BL-279 Manual scripts and evidence
 - Status: ready. Mode: agent (scripts), human (runs). Owner: QA engineer. Size: S.
@@ -1062,7 +1098,13 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 #### BL-283 Release engineering and the founder checklist
 - Status: blocked (BL-275). Mode: agent. Owner: QA engineer. Size: M.
 - Satisfies: TDD 10 section 3; PRD 2.3.
-- Scope: `docs/ops/RELEASE.md` (20 lines the founder runs per release, each linking automated evidence); release workflow from `ios-v*` tags; OTA gate questions ("does this change collection or destinations?"); pre-submission checklist; review-notes template with a demo account and the 5.1.1(ix) positioning (D-004).
+- Scope: `docs/ops/RELEASE.md` (20 lines the founder runs per release, each linking automated evidence); release workflow from `ios-v*` tags; OTA gate questions ("does this change collection or destinations?"); pre-submission checklist; review-notes template with a demo account and the 5.1.1(ix) positioning (D-004). Added 3 Oct: the template carries the paragraphs on language packs and server content from BL-281, and the checklist runs the size check (BL-285).
+
+#### BL-281 App Review notes and counsel questions: language packs and server content
+- Status: ready. Mode: agent. Owner: legal. Milestone: M12; the questions join the counsel package in week 5 (BL-104). Size: S.
+- Satisfies: brief 3 Oct decisions 15 and 16; LEGAL-REQ-044.
+- Scope: a draft memo in `docs/legal/memos/` for counsel. Facts only, each with its source: what a language pack holds and that a generic engine already in the app reads it (decision 15, BL-149); the signed manifest (BL-164); what the server may and may never deliver (decision 16, BL-166, BL-229). Quote App Store Review Guidelines 2.5.2 and 2.3.1 from Apple's page with the link and the date read. Then questions for counsel, and draft paragraphs for the App Review notes (BL-283) that describe packs as data and list the server-delivered content types. Add compliance register rows for 2.5.2 and 2.3.1 with status Open. No conclusions about compliance.
+- Done when: the memo and register rows exist, every fact cites a source, and the review-note paragraphs claim nothing the backlog does not build.
 
 #### BL-288 Android CI build (parity watch)
 - Status: blocked (BL-031). Mode: agent. Owner: mobile engineer. Size: M. Satisfies: PRD 2.1 portability.
@@ -1102,6 +1144,7 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 | BL-320 | P1 product items: sealed letters, multi-book invite picker, merge books, themes, author and child photos, reminder back-off | B-REQ-018 to B-REQ-024, C-REQ-008 | B, C |
 | BL-321 | Hindi app UI (P2) | B-REQ-025, A-NFR-014 | K-24 |
 | BL-322 | On-device safety classifier and support cards, only with a clinician's written sign-off (BL-105) | LEGAL-REQ-015 | Brief 3 Oct decision 9; D-034 |
+| BL-323 | Hindi-English mixed letters (code-switching mode): model choice, script handling and pack rules for one letter in two languages | B-REQ-003, K-24 | Brief 3 Oct decisions 6 and 9; ADR 0012 |
 
 Printed books stay a future launch (K-32; ADR 0007 print half). Beta label removal happens only when the founder ends the beta (K-13): one release removes `settings.about.beta.*`, any store beta lines and Terms 16.4.
 
@@ -1123,4 +1166,4 @@ Every task id proposed in TDD 01 to 09 maps to exactly one BL id (or is marked n
 | 08 (BL-P##) | BL-036 extension to BL-036; P01 to BL-212; P02 to BL-103; P03 to BL-214; P04 to BL-215; P05 to BL-216; P06 to BL-217; P07 to BL-218; P08 to BL-219; P09 to BL-201; P10 to BL-220; P11 to BL-221; P12 to P14 to BL-308; P15 to BL-311 |
 | 09 (BL-070 to BL-090) | 070 to BL-255; 071 to BL-256; 072 to BL-257; 073 to BL-258; 074 to BL-259; 075 to BL-260; 076 to BL-261; 077 to BL-262; 078 to BL-263; 079 to BL-264; 080 to BL-265; 081 to BL-266; 082 to BL-267; 083 to BL-270; 084 to BL-271; 085 to BL-156; 086 to BL-268; 087 to BL-269; 088 to BL-279; 089 to BL-273; 090 to BL-272 |
 
-Unused numbers inside the blocks (for example BL-125 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-155, BL-161 to BL-169, BL-181 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-227 to BL-230, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299) are free for splits inside their milestone. BL-123 and BL-124 sit in M0 because the M0 block (BL-100 to BL-109) is full; the next new v1.1 id is BL-323.
+Unused numbers inside the blocks (for example BL-126 to BL-129, BL-138, BL-139, BL-181 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-254, BL-287, BL-290 to BL-299) are free for splits inside their milestone. BL-123 to BL-125 sit in M0 because the M0 block (BL-100 to BL-109) is full; BL-161 to BL-165 sit in M3 because the M3 block (BL-140 to BL-149) is full; BL-227 to BL-229 sit in M9 next to the deletion tasks. The next new v1.1 id is BL-324.
