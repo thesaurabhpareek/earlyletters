@@ -95,7 +95,7 @@ Region: Supabase project in **us-west-1** (AWS, California). Status column: **Li
 | `deletion_requests`, `deletion_request_steps` | kind, status, dates, source, counts; profile id nulled at completion | A | Company | 3 years after completion or cancellation | Proof that deletion happened | Draft |
 | `legal_holds` | scope id, reason code, ticket ref, placed by, review date | A | Company | Until released plus 3 years (proposed) | Preservation duties | Draft |
 | `audit_events` | actor, action enum, subject id, child id, small enum detail | A | Company | 24 months; actor id nulled at account deletion | Security and dispute evidence | Draft |
-| `purge_ledger` | ids of purged entries, books, profiles, object paths | A | Company | 60 days | Re-apply deletions after a database restore | Draft |
+| `purge_ledger` | ids of purged entries, books, profiles, object paths | A | Company | Ids of purged letters and books kept indefinitely, ids only, to block resurrection (confirm with counsel); profile and object-path rows 60 days | Re-apply deletions after a database restore; refuse a purged letter or book id for good | Draft |
 | `storage_purge_queue` | bucket, path, attempts | A | Company | 7 days after done | Storage deletion through the API | Draft |
 | `waitlist` (web) | email | A | Subscriber | Until launch invite plus 12 months, or unsubscribe (proposed) | Launch notice (ADR 0010) | Planned |
 | Print orders (P2) | shipping address, order, payment reference | A | Buyer | 7 years for transaction records (proposed) | Tax and accounting; refunds | Planned |

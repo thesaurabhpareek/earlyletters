@@ -27,7 +27,7 @@ changelog:
 |---|---|---|
 | Every column of every table and view in `public` carries a `COMMENT ON COLUMN` that starts with `L1`, `L2`, `L3` or `L4` | `supabase/migrations/*.sql` (from `20261002020000_data_governance.sql`) | Automated: `supabase/tests/classification.test.mjs` fails on any unlabelled column |
 | Content, child identity and dictionary columns are L4; person identifiers are at least L3 | same test | Automated |
-| Every `public` table has RLS on; the only views are the reviewed `book_entries` and `my_policy_state` | same test | Automated |
+| Every `public` table has RLS on; the only views are the reviewed `book_children`, `book_entries` and `my_policy_state` | same test | Automated |
 | Storage buckets, device stores, SDKs, log streams, analytics properties | this document, sections 4.4 to 4.7 | Manual review in the PR that adds them; machine-readable `docs/legal/data-map.yaml` (PRD 7.10 item 1) not yet built |
 | L4 never in analytics, logs, URLs, push payloads | `packages/analytics` allowlist, log canary (LEGAL-REQ-014, -017) | Allowlist in `packages/analytics` (in progress); log canary not built |
 
@@ -327,6 +327,16 @@ This table is generated from the migrations; if it disagrees with a migration, t
 | `enqueued_at` | L2 | system timestamp |
 | `attempts` | L2 | count |
 | `done_at` | L2 | system timestamp |
+
+#### `book_children` (view)
+
+| Column | Level | Note |
+|---|---|---|
+| `id` | L3 | book id |
+| `name` | L4 | child name |
+| `nickname` | L4 | child nickname |
+| `birth_month` | L4 | birthday month (no year) |
+| `birth_day` | L4 | birthday day of month (no year) |
 
 #### `book_entries` (view)
 

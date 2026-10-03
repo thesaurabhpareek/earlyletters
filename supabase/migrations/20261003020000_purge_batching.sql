@@ -32,7 +32,7 @@ create index if not exists deletion_request_steps_due_idx on public.deletion_req
 
 -- Enqueue, or re-arm a row that was already done.
 create or replace function public.enqueue_storage_purge(p_bucket text, p_path text, p_prefix boolean, p_reason text, p_request uuid default null)
-returns void language sql security definer set search_path = pg_catalog, public as $$
+returns void language sql security definer set search_path = pg_catalog, public, pg_temp as $$
   insert into storage_purge_queue (bucket_id, object_path, is_prefix, reason, request_id)
   values (p_bucket, p_path, p_prefix, p_reason, p_request)
   on conflict (bucket_id, object_path) do update
@@ -43,12 +43,12 @@ $$;
 
 -- Backoff: 1 min x 2^(attempts - 1), capped at 6 hours.
 create or replace function public.purge_backoff(p_attempts int)
-returns interval language sql immutable set search_path = pg_catalog, public as $$
+returns interval language sql immutable set search_path = pg_catalog, public, pg_temp as $$
   select least(interval '6 hours', interval '1 minute' * power(2, greatest(p_attempts, 1) - 1));
 $$;
 
 create or replace function public.record_purge_attempt(p_id bigint, p_ok boolean, p_error_code text default null)
-returns void language sql security definer set search_path = pg_catalog, public as $$
+returns void language sql security definer set search_path = pg_catalog, public, pg_temp as $$
   update storage_purge_queue
      set attempts = attempts + 1,
          done_at = case when p_ok then now() end,
@@ -59,7 +59,7 @@ $$;
 
 -- p_status: 'done', 'not_applicable', 'failed' (terminal, alerts), or 'pending' (retry with backoff).
 create or replace function public.record_deletion_step(p_request uuid, p_step text, p_status text, p_error_code text default null)
-returns void language plpgsql security definer set search_path = pg_catalog, public as $$
+returns void language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   if p_status not in ('done', 'not_applicable', 'failed', 'pending') then
     raise exception 'unknown step status' using errcode = '22023';
@@ -78,7 +78,7 @@ $$;
 drop function if exists public.purge_due(timestamptz);
 
 create or replace function public.purge_due(p_now timestamptz default now(), p_limit int default 500)
-returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   r record;
   v_children int := 0;
@@ -159,7 +159,7 @@ end;
 $$;
 
 create or replace function public.finalize_account_deletion(p_request uuid, p_receipt jsonb)
-returns void language plpgsql security definer set search_path = pg_catalog, public as $$
+returns void language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid;
 begin
   select profile_id into v_uid from deletion_requests where id = p_request and kind = 'account' and status = 'executing' for update;
