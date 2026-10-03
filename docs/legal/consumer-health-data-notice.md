@@ -13,7 +13,7 @@ reviewers: outside privacy counsel (TBD)
 
 # Consumer Health Data Privacy Policy
 
-Version 1.0.0. Effective date: TBD.
+Version 1.1.0. Effective date: TBD.
 
 Some state laws protect "consumer health data" with their own rules: Washington's My Health My Data Act, Nevada's consumer health data law (SB 370), and Connecticut's consumer health data provisions. This policy explains how those rules apply to Early Letters. We follow it for everyone in the United States, wherever you live. Our main Privacy Policy at {PRIVACY_POLICY_URL} covers everything else.
 
@@ -95,7 +95,7 @@ Consent text must list categories, purpose, recipients and how to withdraw [L1].
 
 **HN-8. Deletion timing.** Washington allows deletion from backups to be delayed to enable restoration but not beyond six months from authentication of the request [L1]; our 38-day backup clock is well inside it. Nevada allows longer (two years, per FPF [L2]).
 
-**HN-9. Due date in Apple's label.** Apple lists "pregnancy or childbirth information" as Sensitive Info; app-store-privacy-labels.md 1.1.0 declares it.
+**HN-9. Due date in Apple's label.** Apple lists "pregnancy or childbirth information" as Sensitive Info; app-store-privacy-labels.md 1.2.0 declares it.
 
 **HN-10. Affiliates and provider identity (updated 3 Oct 2026).** The founder publishes as an individual with no LLC for now (`docs/DECISIONS.md` D-004), so there are no affiliates to name. Confirm MHMDA duties apply the same way to an individual "regulated entity" (the Act has no revenue threshold), and revisit this note if an entity is formed.
 

@@ -1,11 +1,14 @@
 ---
 title: Data classification
 product: "{brand.name} (codename scribe)"
-version: 1.2.0
+version: 1.3.0
 status: draft-for-counsel
 owner: founder (data governance lead role)
 companion: data-policy.md (retention, ownership), DELETION_AND_EXPORT_SPEC.md (DATA-REQ), ENGINEERING_REQUIREMENTS.md (LEGAL-REQ), PRD.md section 7.10
 changelog:
+  - version: 1.3.0
+    date: 2026-10-03
+    summary: Factual alignment, no level changes to existing items. Machine-readable inventory `docs/legal/data-map.yaml` and its checker `scripts/check-data-map.mjs` added (section 0, open issue 7). Section 4.1 regenerated from the migrations as changed by PR #32 (adds the `book_children` view and columns added by pending files 5 and 7). Server entitlement tables removed from 4.3 and the Apple row in 4.8 corrected (founder decision 3). Section 4.5 lists the device columns and settings keys added by local migration 3. Section 4.7 regenerated from `packages/analytics/src/catalog.ts`; open issue 1 resolved by the catalogue (`goals_set{count}`), open issue 2 no longer applies (no `languages_set` event). Backup audio and inbox buckets marked deferred (decision 9). Minor.
   - version: 1.2.0
     date: 2026-10-03
     summary: Alignment with PRD.md 1.3 and docs/DECISIONS.md. RevenueCat removed (ADR 0013); the App Store account token (`app_account_tokens`) and original transaction id are L3, storefront L2. Device settings use `ageGate.passed` and `ageGate.stoppedAt` only; `ageAttested` and `ageAttestedAt` retired (D-026). Open issue 3 has a recommended answer (D-039: contributors never see the due date or birth year) and issue 4 a recommended default (D-025: lock-screen names off, and server pushes never carry the child's name). Minor.
@@ -27,11 +30,11 @@ changelog:
 |---|---|---|
 | Every column of every table and view in `public` carries a `COMMENT ON COLUMN` that starts with `L1`, `L2`, `L3` or `L4` | `supabase/migrations/*.sql` (from `20261002020000_data_governance.sql`) | Automated: `supabase/tests/classification.test.mjs` fails on any unlabelled column |
 | Content, child identity and dictionary columns are L4; person identifiers are at least L3 | same test | Automated |
-| Every `public` table has RLS on; the only views are the reviewed `book_entries` and `my_policy_state` | same test | Automated |
-| Storage buckets, device stores, SDKs, log streams, analytics properties | this document, sections 4.4 to 4.7 | Manual review in the PR that adds them; machine-readable `docs/legal/data-map.yaml` (PRD 7.10 item 1) not yet built |
+| Every `public` table has RLS on; the only views are the reviewed `book_entries` and `my_policy_state` (plus `book_children` once PR #32 merges) | same test | Automated |
+| Storage buckets, device stores, SDKs, hosts, log streams, analytics properties | `docs/legal/data-map.yaml` (PRD 7.10 item 1) and this document, sections 4.4 to 4.8 | `scripts/check-data-map.mjs` fails when a Postgres column (with a different level than its comment), an analytics property, a device SQLite column or a device settings key is missing from the map. Buckets other than those in migrations, SDKs, hosts and logs are reviewed by hand. Not yet wired into `npm test` or CI |
 | L4 never in analytics, logs, URLs, push payloads | `packages/analytics` allowlist, log canary (LEGAL-REQ-014, -017) | Allowlist in `packages/analytics` (in progress); log canary not built |
 
-Rule for every PR: a new table, column, bucket, device column, SDK or analytics property ships with its level in the same PR. The database part is a CI gate today; the rest is a review checklist item until `data-map.yaml` exists.
+Rule for every PR: a new table, column, bucket, device column, settings key, SDK, host or analytics property ships with its level in the same PR, in `data-map.yaml` as well as here. The database comments are a CI gate today; `scripts/check-data-map.mjs` checks the map and becomes a gate once it is wired into CI.
 
 ## 1. Levels
 
@@ -78,7 +81,7 @@ Every L3 and L4 row tied to a child is readable only by that child's members (PR
 
 ### 4.1 Postgres `public` schema (generated from the column comments)
 
-This table is generated from the migrations; if it disagrees with a migration, the migration wins and this table must be regenerated. Status: all rows below exist after `20261002020000_data_governance.sql` (pending live apply, see `supabase/APPLY.md`).
+This table is generated from the migrations; if it disagrees with a migration, the migration wins and this table must be regenerated. Status: regenerated 3 Oct 2026 from the pending migrations as changed by PR #32 (`fix/db-pending-hardening`), which removes the server entitlement tables (founder decision 3) and adds the `book_children` view. Files 3 to 7 are pending live apply (see `supabase/APPLY.md`). The same columns and levels are in `data-map.yaml`, where the checker compares them with the migration comments.
 
 #### `audit_events`
 
@@ -107,6 +110,8 @@ This table is generated from the migrations; if it disagrees with a migration, t
 | `accepted_by` | L3 | person id |
 | `accepted_at` | L2 | system timestamp |
 | `created_at` | L2 | system timestamp |
+| `revoked_at` | L2 | system timestamp |
+| `signs_as` | L3 | signature the inviter suggested ("Nani") |
 
 #### `child_member_prefs`
 
@@ -159,6 +164,7 @@ This table is generated from the migrations; if it disagrees with a migration, t
 | `attempts` | L2 | count |
 | `last_error_code` | L2 | HTTP status or error class |
 | `updated_at` | L2 | system timestamp |
+| `next_attempt_at` | L2 | system timestamp (retry backoff) |
 
 #### `deletion_requests`
 
@@ -221,6 +227,9 @@ This table is generated from the migrations; if it disagrees with a migration, t
 | `deleted_reason` | L2 | enum |
 | `raw_sha256` | L4 | content-derived hash of raw_transcript, author-only |
 | `author_signs_as` | L3 | signature at save time |
+| `approval` | L2 | family review state (not_needed, pending, added, set_aside) |
+| `reviewed_by` | L3 | person id of the reviewing parent; nulled at account deletion |
+| `reviewed_at` | L2 | system timestamp |
 
 #### `entry_versions`
 
@@ -327,6 +336,18 @@ This table is generated from the migrations; if it disagrees with a migration, t
 | `enqueued_at` | L2 | system timestamp |
 | `attempts` | L2 | count |
 | `done_at` | L2 | system timestamp |
+| `next_attempt_at` | L2 | system timestamp (retry backoff) |
+| `last_error_code` | L2 | HTTP status or error class |
+
+#### `book_children` (view)
+
+| Column | Level | Note |
+|---|---|---|
+| `id` | L3 | book id |
+| `name` | L4 | child name |
+| `nickname` | L4 | child nickname |
+| `birth_month` | L4 | birthday month (no year) |
+| `birth_day` | L4 | birthday day of month (no year) |
 
 #### `book_entries` (view)
 
@@ -353,6 +374,7 @@ This table is generated from the migrations; if it disagrees with a migration, t
 | `updated_at` | L2 | system timestamp |
 | `deleted_at` | L2 | tombstone time (author rows only) |
 | `search` | L4 | content-derived full-text index |
+| `approval` | L2 | family review state |
 
 #### `my_policy_state` (view)
 
@@ -383,19 +405,20 @@ Each must get column comments in the migration that creates it; the CI gate enfo
 |---|---|
 | `profile_settings` (languages, Hindi script, goals, reminder cadence) | Languages and goals L4 (PRD 7.10); cadence and reading size L2 |
 | `member_return_links` (hashed bearer token) | Hash L3 |
-| `store_subscriptions` (PRD K-28, purchase ledger), `store_notifications`, `app_account_tokens` | Product, dates, status, storefront and notification ids L2; profile id, `app_account_token` (the random `appAccountToken`) and `original_transaction_id` L3 (ADR 0013; column comments in the 3 Oct migration are authoritative) |
-| `audio_blobs` (path, size, sha256, wrapped file key) | Wrapped key L4; sha256 of ciphertext L3; path L3 |
+| `audio_blobs` (path, size, sha256, wrapped file key; v1.1, decision 9) | Wrapped key L4; sha256 of ciphertext L3; path L3 |
 | `child_key_grants`, escrow wraps | L4 |
 | `waitlist` (web) | Email L3 |
 | `ops_audit_log` (LEGAL-REQ-025) | Operator and target ids L3 |
+
+Not planned: `store_subscriptions`, `store_notifications`, `app_account_tokens` and any other server purchase or entitlement table. Founder decision 3 (3 Oct 2026): purchases are checked on the device with StoreKit 2 and no server of ours sees them. The pending 3 Oct migration that created them is changed by PR #32 so that it no longer does.
 
 ### 4.4 Supabase Storage buckets
 
 | Bucket | Path | Content | Level | Status |
 |---|---|---|---|---|
 | `entry-photos` | `{child_id}/{author_id}/{entry_id}.{jpg,jpeg,heic,png}` (enforced by `entries_photo_path_scoped`) | Photos with letters | L4 (path itself L3) | Live, private |
-| backup audio (name TBD) | per ADR 0006 | AES-256-GCM ciphertext of M4A | L4 | Planned |
-| `inbox` | `{child_id}/{entry_id}` | Web contributor audio, encrypted in the browser | L4 | Planned (B) |
+| backup audio (name TBD) | per ADR 0006 | AES-256-GCM ciphertext of M4A | L4 | Deferred to v1.1 (decision 9: no audio upload in v1.0) |
+| `inbox` | `{child_id}/{entry_id}` | Web contributor audio, encrypted in the browser | L4 | Deferred to v1.1 (decision 9: web contribution page) |
 | `child-photos` | `{child_id}/...` (`children_photo_path_scoped`) | Child profile photo | L4 | Planned (column exists) |
 | `avatars` | `{profile_id}/...` | Member photo | L3 | Planned (B) |
 | `exports` | `{profile_id}/{export_id}.zip` | Server-built exports, 7 days | L4 | Planned (DATA-REQ-054) |
@@ -419,6 +442,9 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `author_signs_as` | L3 | Signature at save time |
 | `audio_uri` | L3 | Sandbox path containing the letter id; points at L4 audio |
 | `audio_duration_ms` | L2 | Duration |
+| `audio_sha256` | L4 | Hash of the recording (derived from L4, rule 1.1.2) |
+| `audio_bytes` | L2 | Size |
+| `transcript_status` | L2 | Enum (`waiting` for a recording kept without words yet) |
 
 **`children`**
 
@@ -440,6 +466,18 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `created_at`, `audio_duration_ms` | L2 | |
 | `audio_uri` | L3 | Path to L4 audio |
 | `raw_transcript`, `typed_text` | L4 | Content |
+| `state` | L2 | Enum (recording, ready, unrecoverable) |
+| `audio_sha256` | L4 | Hash of the recording (derived from L4, rule 1.1.2) |
+| `audio_bytes` | L2 | Size |
+| `recovered_at` | L2 | Timestamp |
+
+**`orphan_audio`** (recordings found with no draft or letter; reported in Settings, never deleted automatically)
+
+| Column | Level | Note |
+|---|---|---|
+| `file_name` | L3 | Recording file name (may carry an id) |
+| `bytes` | L2 | Size |
+| `found_at` | L2 | Timestamp |
 
 **`settings`** (key, value)
 
@@ -448,6 +486,8 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `activeChildId` | L3 | Book id |
 | `appearance`, `readingSize`, `reminders.cadence`, `reminders.paused`, `review.firstNoteSeen` | L2 | Device preferences |
 | `ageGate.passed` (after Yes), `ageGate.stoppedAt` (after No only) | L2 | 18+ entry gate state (PRD-REQ-019, D-026). `ageAttested` and `ageAttestedAt` are retired; the server records `age_attested: true` in the `terms` acceptance context |
+| `readTogether.sessions` | L2 | Count of free Read together sessions used |
+| `preview.draftId` | L3 | Development seed only (fictional Asha family) |
 | `family` (legacy, migrated away on open) | L4 | Contained child name and birthday |
 
 ### 4.6 Device: files and secure storage
@@ -458,22 +498,26 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | Photos, cached book audio of other members | L4 | Deleted on purge sync or removal |
 | Export ZIPs in app temp | L4 | Deleted after the share sheet closes; plaintext by design |
 | Keychain/Keystore: child content key, X25519 private key, session, invite token | L4 | ADR 0006, A-NFR-008 |
-| Analytics id | L2 | Random; reset at sign-out and account deletion |
+| Analytics id | L2 | Random; reset at sign-out and account deletion. Stored with the consent choice and up to 20 retired ids under `scribe.analytics.consent`, `scribe.analytics.id` and `scribe.analytics.retired_ids` (`packages/analytics/src/consent.ts`; storage backend not chosen) |
 | Safety tiers (local only, PRD K-06) | L4 | Never leave the device; no server table exists |
 | 18+ entry gate state (PRD-REQ-019) | L2 | Device only: `passed` boolean, or the time of a No answer for the 24-hour stop screen. Never an age, birth date or age range; never in analytics or logs |
 | Whisper model files | L1 | Not personal data |
 
 ### 4.7 Analytics properties (PostHog, after opt-in only)
 
-Every property below is L2: enums, booleans, counts, durations or buckets. No event carries an id other than the random analytics id, a name, a date, a language name or any text. Sources: PRD A section 10, B-NFR-001, C-REQ-034, PRD K-12, ADR 0008. The typed catalogue is `packages/analytics/src/catalog.ts` (being built in parallel on 2 Oct 2026; owner: analytics engineer) with its plan in `docs/analytics`. This table is the PRD-derived baseline; when the catalogue lands, every property it defines must be L2 and listed here, and any property not here must be classified first.
+Every property below is L2: enums, booleans or bounded integers. No event carries an id other than the random analytics id, a name, a date, a language name or any text. The typed catalogue `packages/analytics/src/catalog.ts` is the source of truth; this table was regenerated from it on 3 Oct 2026 and `data-map.yaml` mirrors it, with `scripts/check-data-map.mjs` failing on any difference. The global properties are sent as event properties, never as PostHog person properties (LEGAL-REQ-017). A new property must be L2 and added to the catalogue, the data map and this table in the same PR.
 
 | Event | Properties (all L2) |
 |---|---|
-| (person property) | `child_count_bucket` |
-| `app_cold_start` | `ttfi_bucket`, `platform`, `first_launch` |
-| `screen_view` | `route` (route template only, never params) |
+| (every event, as event properties) | `schema_version`, `child_count_bucket`, `sample_pct` |
+| `app_cold_start` | `ttfi_bucket` |
+| `app_opened` | `source`, `days_since_last_open` |
+| `app_backgrounded` | `session_bucket` |
+| `screen_view` | `route` |
+| `analytics_opted_in` | `surface`, `days_since_install`, `letters_bucket`, `signed_in`, `member_role`, `first_letter_mode`, `time_to_first_letter`, `came_from_invite` |
 | `intro_story_view` | `index`, `via`, `variant` |
-| `intro_paused`, `intro_skipped` | `index` |
+| `intro_paused` | `index` |
+| `intro_skipped` | `index` |
 | `intro_action` | `action`, `stories_seen` |
 | `auth_sheet_shown` | `trigger` |
 | `auth_method_selected` | `method` |
@@ -484,15 +528,31 @@ Every property below is L2: enums, booleans, counts, durations or buckets. No ev
 | `auth_deferred` | `trigger` |
 | `invite_opened` | `via`, `signed_in` |
 | `local_merge_choice` | `choice` |
-| `entry_saved` | `kind`, `capture_mode`, `duration_bucket`, `edit_count`, `engine` |
-| `child_added` | `mode`, `ordinal` |
-| `child_switched` | `ordinal` |
-| `child_setting_changed` | `key` (setting key enum, never the value) |
-| `invite_created` | `role` |
+| `child_added` | `mode`, `ordinal`, `in_first_run`, `added_together` |
+| `child_switched` | `ordinal`, `surface` |
+| `child_setting_changed` | `key`, `ordinal` |
+| `make_it_yours_card` | `card`, `action` |
+| `goals_set` | `count` |
+| `dictionary_term_added` | `kind`, `source` |
+| `capture_started` | `mode`, `source`, `prompt_kind`, `child_ordinal`, `member_role` |
+| `capture_discarded` | `mode`, `stage`, `audio_bucket` |
+| `transcription_completed` | `engine`, `model`, `audio_bucket`, `latency_bucket`, `outcome` |
+| `model_download` | `stage`, `model`, `network` |
+| `letter_saved` | `mode`, `destination`, `child_ordinal`, `member_role`, `prompt_kind`, `audio_bucket`, `words_bucket`, `machine_edit_count`, `edits_reverted_count`, `engine`, `from_notification_2h` |
+| `review_action` | `action` |
+| `machine_edit_reverted` | `edit_type`, `source` |
+| `letter_deleted` | `action`, `destination` |
+| `book_opened` | `child_ordinal`, `letters_bucket`, `member_role` |
+| `letter_opened` | `author_relation`, `has_audio` |
+| `playback_started` | `surface`, `author_relation` |
+| `read_together_started` | `child_ordinal`, `access`, `letters_bucket` |
+| `read_together_ended` | `reason`, `session_bucket`, `letters_heard` |
+| `read_together_try_used` | `n` |
+| `invite_created` | `role`, `channel`, `large_print`, `child_ordinal` |
 | `invite_accepted` | `role`, `surface` |
 | `family_letter_reviewed` | `decision` |
-| `goals_set` | `keys` (see section 6, item 1) |
-| `languages_set` | `multilingual` (see section 6, item 2) |
+| `member_removed` | `role` |
+| `member_left` | `role`, `letters` |
 | `reminder_prime_shown` | `source` |
 | `reminder_prime_result` | `choice` |
 | `os_permission_result` | `granted`, `platform` |
@@ -500,35 +560,38 @@ Every property below is L2: enums, booleans, counts, durations or buckets. No ev
 | `reminder_sent` | `type`, `variant_id` |
 | `reminder_suppressed` | `reason` |
 | `notification_opened` | `type`, `variant_id` |
-| `letter_saved` | `from_notification_2h` |
 | `moment_shown` | `type` |
-| `resurface_shown`, `resurface_opened` | `kind` |
+| `resurface_shown` | `kind` |
+| `resurface_opened` | `kind` |
 | `settings_changed` | `key` |
+| `backup_mode_set` | `mode` |
 | `export_started` | `format` |
-| `export_completed` | `size_bucket` |
+| `export_completed` | `format`, `size_bucket`, `duration_bucket` |
 | `account_deletion` | `stage` |
-| `plus_offer_viewed`, `plus_offer_dismissed` | `trigger` |
-| `purchase_started`, `trial_started`, `trial_converted`, `trial_cancelled`, `renewal`, `refund_detected` | `product` |
-| `trial_notice_sent` | `days_before`, `channel` |
-| `billing_issue`, `gift_purchased` | (none) |
-| `plus_lapsed` | `reason` |
+| `plus_offer_viewed` | `trigger`, `arm` |
+| `plus_offer_dismissed` | `trigger` |
+| `purchase_started` | `product`, `trigger` |
+| `trial_started` | `product` |
+| `purchase_succeeded` | `product` |
 | `purchase_failed` | `error_class` |
 | `restore_result` | `outcome` |
-| `read_together_try_used` | `n` |
+| `gift_purchased` | (none) |
+| `error_shown` | `code` |
+| `sync_failed` | `reason` |
 
-Sentry crash events: L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` strips bodies, query strings and fields named like `text|transcript|name|note|letter`, ADR 0008).
+Sentry crash events (planned; Sentry is not installed in this repo on 3 Oct 2026): L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` strips bodies, query strings and fields named like `text|transcript|name|note|letter`, ADR 0008).
 
 ### 4.8 Logs and processors
 
 | System | Level of what it may hold | Control |
 |---|---|---|
 | Supabase API, Postgres and Edge Function logs | L2 | No `log_statement=all`; functions log ids of operational records and counts only |
-| PowerSync Cloud bucket storage | L4 (replicated rows) | Sync Streams mirror RLS; co-members' streams must select from `book_entries` columns only (no raw transcript); parity test TC-15 to build |
+| PowerSync Cloud bucket storage (only if used; D-023 recommends an outbox sync without PowerSync) | L4 (replicated rows) | Sync Streams mirror RLS; co-members' streams must select from `book_entries` columns only (no raw transcript); parity test TC-15 to build |
 | PostHog | L2 | Section 4.7 |
 | Sentry | L2 | Scrubbed |
-| Apple App Store Server API and Notifications (independent party, not a processor) | L3 | We receive transaction status for a random `appAccountToken`; no third-party billing processor (ADR 0013) |
+| Apple App Store and StoreKit (independent party, not a processor) | L3 | Founder decision 3: StoreKit 2 on the device; purchase and entitlement data stay between the phone and Apple. No App Store Server Notifications endpoint and no server purchase records; no third-party billing processor |
 | AI providers (only with consent) | L4 in transit | Zero retention, no training (LEGAL-REQ-020) |
-| Email provider | L3 | Transactional only; no content in subjects or bodies |
+| Email provider (Resend, decision 13) | L3 | Transactional only; no content in subjects or bodies |
 | Support mailbox | L4 | People may paste letters; handled as L4 |
 
 ## 5. Changes made with this document (2 Oct 2026)
@@ -539,10 +602,11 @@ Sentry crash events: L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` s
 
 ## 6. Open issues for owners
 
-1. **`goals_set{keys}` sends goal keys, but PRD 7.10 classifies goals as L4.** Either goals are reclassified (counsel, with the goal list) or the property becomes `goal_count`. Owner: analytics engineer and privacy counsel. Until resolved, do not ship this property.
-2. **`languages_set{multilingual}`** is a boolean reduction of L4 languages (rule 1.1.2). Acceptable as L2 only if counsel agrees a single boolean is not an ethnicity proxy; B-NFR-001 already rejects language names.
+1. ~~**`goals_set{keys}` sends goal keys, but PRD 7.10 classifies goals as L4.**~~ Resolved in the catalogue: `goals_set` carries only `count` (bounded integer), no goal keys.
+2. ~~**`languages_set{multilingual}`**~~ The catalogue has no `languages_set` event, so no language-derived property is sent. If one is proposed, it is a boolean reduction of L4 languages (rule 1.1.2) and needs counsel's view first.
 3. **Due date and birthday are visible to contributors** (children row is readable by all members). L4 handling is met (RLS, encryption at rest), but whether grandparents should see a due date is a product and counsel decision (K-25). **Recommended 3 Oct 2026 (D-039, counsel to confirm):** contributors see name, nickname and birthday month and day only; never the due date or birth year (BL-175).
 4. **Lock-screen child names** (C-REQ-009 toggle) put L4 in local notification text. PRD 7.10 bans L4 in push payloads; local notifications are not server push, but the toggle must default off and never apply to server-sent pushes. **Recommended 3 Oct 2026 (D-025):** default off through remote config; family-letter pushes from the server never carry the child's name (BL-196).
 5. **Supabase encryption at rest** is **Unverified** in writing (LEGAL-REQ-022(c)); record it before launch.
 6. **`policy_acceptances.locale`** is classified L3 as a language proxy; counsel may decide it is L2.
-7. **`data-map.yaml`** (PRD 7.10 item 1) is not built. The database part of the gate exists via column comments; device stores, SDKs and analytics need the same machine check.
+7. **`data-map.yaml`** (PRD 7.10 item 1) is built, with `scripts/check-data-map.mjs`. Remaining: wire the checker into `npm test` and CI, and remove its `pending_changes` entry for PR #32 once that PR merges.
+8. **Language pack downloads** (decision 15) name the pack in the request path, so a host's access log pairs an IP address with a chosen language, which this document treats as L4 (section 1). Decide the host and its logging before packs ship.
