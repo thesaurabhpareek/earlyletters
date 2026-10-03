@@ -61,6 +61,10 @@ export const site = {
 
   skip: 'Skip the film',
 
+  comingSoon: {
+    line: 'The baby memory book you fill by talking. Every word kept exactly as you said it, with your voice.',
+  },
+
   cta: {
     /** Before the App Store link exists (src/lib/launch.ts decides the mode). */
     prelaunch: {

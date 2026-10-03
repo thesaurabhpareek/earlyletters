@@ -19,7 +19,9 @@
   color: var(--night-ink);
 }
 .line {
-  margin: 0.9em 0 0;
+  margin: clamp(26px, 3.4vw, 52px) 0 0;
+  max-width: min(26em, 84vw);
+  text-wrap: balance;
   font-family: var(--font-sans);
   font-size: clamp(18px, 1.7vw, 26px);
   line-height: 1.4;

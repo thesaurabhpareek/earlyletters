@@ -1,0 +1,105 @@
+.page {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--night);
+  color: var(--night-ink);
+}
+.light {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  width: 120vmax;
+  height: 120vmax;
+  transform: translate(-50%, -50%) scaleY(0.72);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(243, 201, 139, 0.3), rgba(217, 164, 126, 0.14) 38%, rgba(120, 80, 50, 0.05) 62%, transparent);
+  animation: breathe 9s ease-in-out infinite;
+}
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse farthest-corner at 50% 46%, transparent 45%, rgba(0, 0, 0, 0.55));
+}
+.main {
+  position: relative;
+  text-align: center;
+  padding: 0 var(--gutter);
+}
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(56px, 12vw, 160px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  animation: rise 1.4s var(--ease-standard) 0.2s both;
+}
+.line {
+  margin: clamp(26px, 3.4vw, 52px) auto 0;
+  max-width: min(26em, 84vw);
+  text-wrap: balance;
+  font-size: clamp(18px, 1.7vw, 24px);
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--night-ink) 80%, transparent);
+  animation: rise 1.4s var(--ease-standard) 0.5s both;
+}
+.soon {
+  display: inline-block;
+  margin: 2.4em 0 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lamp);
+  box-shadow: inset 0 0 0 1px rgba(243, 201, 139, 0.35);
+  animation: rise 1.4s var(--ease-standard) 0.8s both;
+}
+.footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  text-align: center;
+  font-size: 15px;
+}
+.footer a {
+  color: var(--night-ink-muted);
+  text-decoration: none;
+}
+.footer a:hover,
+.footer a:focus-visible {
+  color: var(--night-ink);
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.86;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title,
+  .line,
+  .soon,
+  .light {
+    animation: none;
+  }
+}
