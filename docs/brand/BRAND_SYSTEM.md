@@ -80,7 +80,7 @@ A context without a status is live (its files exist). `planned` contexts have a 
 | `email.header.light` / `.dark` | `email.logo.*` | 154 x 32, not a link. |
 | `email.avatar` | `email.avatar`, `email.bimi.template` | See EMAIL_IDENTITY.md 6. |
 | `email.footer` | `font.ui`, muted colours, line | Text only. |
-| `email.type` | `font.reading.web*`, `font.ui.web*` | `@font-face` from earlyletters.com/fonts/ only, hidden from classic Outlook; fallbacks Georgia and system UI. |
+| `email.type` | `font.reading.web*`, `font.ui.web*` | Off by default (nothing in an email loads from a server; EMAIL_IDENTITY 4.5). If the founder turns it on: `@font-face` from earlyletters.com/fonts/ only, hidden from classic Outlook; fallbacks Georgia and system UI. |
 | `appstore.icon` | `icon.app.default` | Opaque RGB, no alpha. |
 | `appstore.screenshot-badge` | `logo.symbol.accent`, `.reversed` | Symbol only; the UI is the hero. |
 | `appstore.screenshot-frame` (planned, v1.0) | badge symbols, paper/paperDark, Literata, Mukta | Caption band 22 percent of height; headline Literata 500 ink, 84 px at 1260 x 2736 (64 px at 1080 x 1920); 64 px safe area; v1.0 features only. |

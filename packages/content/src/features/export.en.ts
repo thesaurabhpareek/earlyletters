@@ -11,7 +11,8 @@ export const exportCopy = {
     includesLetters: 'Every letter and note, as text',
     includesRecordings: 'Every recording on this phone, exactly as it was made',
     includesBook: 'A printable book for each child, by month',
-    includesData: 'A data file with your words as heard, every tidy-up, and the final text',
+    // D-074: what the machine changes is a "small fix", never a tidy-up.
+    includesData: 'A data file with your words as heard, every small fix, and the final text',
     offlineNote: 'Works without a connection. Nothing is sent anywhere.',
     packing: 'Packing your letters',
     checking: 'Checking every file',
@@ -21,7 +22,7 @@ export const exportCopy = {
     shareButton: 'Save or share',
     /** DATA-REQ-056: one line, shown with the share action. */
     privacyNotice: 'This file holds your letters and recordings, unlocked. Keep it somewhere private.',
-    afterShare: 'The copy on this phone has been tidied away. Export again any time.',
+    afterShare: 'The copy on this phone has been cleared away. Export again any time.', // D-074 glossary
     againButton: 'Export again',
     failedTitle: 'The export did not finish',
     failedBody: 'Your letters and recordings are all still here. Please try again.',
@@ -75,7 +76,7 @@ export const exportCopy = {
     'audio/      Every recording on this phone, exactly as it was made (M4A, AAC).',
     '            Open them in any music or video player.',
     'data/       entries.json: every letter, with your words exactly as heard, every small',
-    '            tidy-up, and the final text. children.json and account.json: the books',
+    '            fix, and the final text. children.json and account.json: the books', // D-074
     '            and the plan on this phone.',
     'schema/     A description of the data files, for anyone building a reader.',
     'index.html  Open in any web browser to read every letter and hear every recording.',

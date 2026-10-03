@@ -43,7 +43,8 @@ export const languageCopy = {
     retry: 'Did not finish. Tap to try again.',
     downloadNow: 'Download now on mobile data',
   },
-  safeModeNote: 'Until it arrives, letters in {name} keep your words exactly as heard, with only punctuation tidied.',
+  // D-074: "small fixes", never tidying.
+  safeModeNote: 'Until it arrives, letters in {name} keep your words exactly as heard, with only punctuation fixed.',
 
   picker: {
     title: 'Choose a language',
