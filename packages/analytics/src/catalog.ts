@@ -6,7 +6,11 @@
  *
  * Rules for adding an event (read TRACKING_PLAN.md section 6 first):
  * - Enums, booleans and bounded integers only. No free text, ids, names,
- *   dates, language names or anything derived from letter content.
+ *   dates or anything derived from letter content.
+ * - Language appears only as `lang` (one of the seven v1.0 spoken-letter
+ *   languages, ISO 639-1) on the `languages` events below, never next to a
+ *   letter, capture or book event (TRACKING_PLAN 6.2, DATA_CLASSIFICATION
+ *   4.7.1; counsel review pending).
  * - Children appear only as `child_ordinal` or `child_count_bucket`.
  * - No event may fire at a time set by a child's birthday or due date
  *   (the timestamp itself would leak an L4 date). See TRACKING_PLAN 6.4.
@@ -37,8 +41,27 @@ export const SESSION_BUCKET = oneOf('lt_1m', '1_5m', '5_15m', 'gt_15m');
 /** packages/core EditType. */
 export const EDIT_TYPE = oneOf('filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph');
 export const AUTH_METHOD = oneOf('apple', 'google', 'email');
+/** Apple subscriptions only (founder decision 3, 3 Oct 2026; ADR 0013). Gifts are P1 (C-REQ-030). */
 export const PLUS_PRODUCT = oneOf('monthly', 'annual', 'gift');
 export const PLUS_TRIGGER = oneOf('chapter_complete', 'second_child', 'backup', 'read_together', 'themes', 'settings');
+export const NETWORK = oneOf('wifi', 'cellular');
+
+/**
+ * Spoken-letter languages in v1.0 (founder decision 6, 3 Oct 2026), as ISO
+ * 639-1 primary subtags: English, Hindi, Spanish, Mandarin Chinese, French,
+ * Arabic, Portuguese. A closed list: a language outside it is never sent.
+ */
+export const LANG = oneOf('en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt');
+export type Lang = (typeof LANG.values)[number];
+export const V1_LANGUAGES: readonly Lang[] = LANG.values;
+/**
+ * What a downloadable pack holds (founder decision 15): `text_rules` is the
+ * versioned JSON (rules, filler and negation tables, punctuation profile,
+ * phonetic tables, prompt text); `speech_model` is a per-language model file.
+ * A pack is identified in analytics by (lang, pack_kind, pack_version), never
+ * by the manifest's id string or URL.
+ */
+export const PACK_KIND = oneOf('text_rules', 'speech_model');
 
 /** Route templates only, never resolved paths (dynamic segments stay literal). */
 export const ROUTE = oneOf(
@@ -62,6 +85,8 @@ export const ROUTE = oneOf(
   'settings_child_new',
   'settings_privacy',
   'settings_your_data',
+  'settings_export',
+  'settings_languages',
   'settings_help_legal',
   'settings_about',
 );
@@ -308,8 +333,8 @@ export const EVENTS = {
     level: 'L2',
     props: { count: int(0, 5) },
   },
-  // `languages_set` from B-NFR-001 is intentionally absent: languages are L4
-  // (PRD 7.10) and even a multilingual flag is derived from them.
+  // `languages_set{multilingual}` from B-NFR-001 stays absent. Language usage
+  // is measured only by the `languages` events below (one language per event).
   dictionary_term_added: {
     area: 'children',
     when: 'A Names and words term saved (kind only, never the term)',
@@ -363,7 +388,7 @@ export const EVENTS = {
     props: {
       stage: oneOf('started', 'completed', 'failed', 'removed'),
       model: oneOf('turbo', 'small'),
-      network: oneOf('wifi', 'cellular'),
+      network: NETWORK,
     },
   },
   letter_saved: {
@@ -415,6 +440,35 @@ export const EVENTS = {
     reqs: ['PRD-REQ-016'],
     level: 'L2',
     props: { action: oneOf('deleted', 'restored'), destination: oneOf('book', 'private') },
+  },
+
+  // --- Languages and on-demand packs (founder decisions 6 and 15) -----------
+  // The only events that carry `lang`. Never add `lang` to letter, capture,
+  // book or family events: that would tie a language to letter behaviour.
+  language_set: {
+    area: 'languages',
+    when: 'An author adds or removes one spoken-letter language (which of the seven only; one language per event)',
+    reqs: ['B-REQ-003', 'PRD-REQ-016'],
+    level: 'L2',
+    props: {
+      lang: LANG,
+      action: oneOf('added', 'removed'),
+      surface: oneOf('settings', 'capture'),
+    },
+  },
+  pack_download: {
+    area: 'languages',
+    when: 'A language pack download changes state; the pack is named by language, kind and manifest version only',
+    reqs: ['B-REQ-003', 'NFR-7.7'],
+    level: 'L2',
+    props: {
+      lang: LANG,
+      pack_kind: PACK_KIND,
+      pack_version: int(1, 1000),
+      stage: oneOf('started', 'completed', 'failed', 'removed'),
+      failure: opt(oneOf('network', 'storage_full', 'hash_mismatch', 'signature_invalid', 'cancelled', 'unknown')),
+      network: NETWORK,
+    },
   },
 
   // --- Book and Read together ------------------------------------------------
@@ -647,7 +701,9 @@ export const EVENTS = {
     props: { stage: oneOf('started', 'export_offered', 'confirmed', 'undone') },
   },
 
-  // --- Plus (device side only; billing lifecycle is server-side, see plan 4.3) ---------
+  // --- Plus (device side only). Billing is Apple's alone (founder decision 3):
+  // no server of ours sees purchases, so renewals, refunds and churn come from
+  // App Store Connect reports, never from events (TRACKING_PLAN section 2). ---
   plus_offer_viewed: {
     area: 'plus',
     when: 'Plus sheet shown',

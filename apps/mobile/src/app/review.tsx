@@ -11,6 +11,13 @@
  * available (no transcriber, model not ready, failure) the parent can keep
  * the recording as a letter waiting for its words (TDD 03 FM-9). Sample
  * words (development builds) are never saved as a transcript.
+ *
+ * Words come from the transcription queue (src/lib/transcription-queue),
+ * never from a transcriber called here, so reopening Review never starts a
+ * second job (TDD 03 FM-18). Progress is honest: "Part 2 of 5" from the
+ * queue, or the language download's own percentage. While the author's
+ * language is still downloading, the voice can be kept now and its words
+ * follow when the phone is ready (ADR 0015).
  */
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -21,7 +28,6 @@ import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } 
 import {
   ENGINE_VERSION,
   applyEdits,
-  faithfulClean,
   normalizeChars,
   segments as toSegments,
   withoutEdit,
@@ -51,12 +57,14 @@ import {
   saveLetterFromDraft,
   saveVoiceOnlyFromDraft,
   setDraftChild,
-  setDraftTranscript,
   setSetting,
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { getTranscriber, TranscriberUnavailable } from '@/lib/transcribe';
+import { languageFor, requestWords, retryWords, sampleWordsFor, type Job } from '@/lib/transcription-queue';
+import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
+import { languageNames, wordsCopy } from '@/lib/transcription-queue/copy';
+import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 
 const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
   filler: 'filler',
@@ -68,7 +76,10 @@ const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
   paragraph: 'paragraph',
 };
 
-/** waiting: no words for this recording right now (no transcriber, model not ready, or it failed). */
+/**
+ * transcribing: words for this recording are on their way (queued, being written down, waiting for the
+ * language download, failed or nobody spoke: WordsStatus shows which). waiting: the file is empty.
+ */
 type Phase = 'transcribing' | 'ready' | 'waiting' | 'saved';
 
 export default function Review() {
@@ -87,13 +98,16 @@ export default function Review() {
   const [phase, setPhase] = useState<Phase>(
     typed || draft?.rawTranscript ? 'ready' : draft?.state === 'unrecoverable' ? 'waiting' : 'transcribing',
   );
-  const [waitReason, setWaitReason] = useState<'unavailable' | 'failed'>(draft?.state === 'unrecoverable' ? 'failed' : 'unavailable');
+  const language = draft ? languageFor(draft.id) : 'en';
+  const job = useWordsJob(phase === 'transcribing' ? draft?.id : null);
+  const download = useSpeechDownload(phase === 'transcribing' && job?.phase === 'waiting_for_pack' ? language : null);
   const [saveFailed, setSaveFailed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [voiceOnly, setVoiceOnly] = useState(false);
+  const [keptForWords, setKeptForWords] = useState(false);
   const [raw, setRaw] = useState<string>(typed ? draft!.typedText! : (draft?.rawTranscript ?? ''));
   const [isSample, setIsSample] = useState(false);
-  const [level, setLevel] = useState<EditLevel>(typed ? 'verbatim' : 'clean');
+  const [level, setLevel] = useState<EditLevel>(typed ? 'verbatim' : spokenEditLevel(language));
   const [applied, setApplied] = useState<Edit[]>([]);
   const [openEdit, setOpenEdit] = useState<number | null>(null);
   const [restored, setRestored] = useState<{ edit: Edit; index: number } | null>(null);
@@ -104,44 +118,45 @@ export default function Review() {
   const [soundsLikeMe, setSoundsLikeMe] = useState<boolean | null>(null);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
-  const attempt = useRef(0);
 
   const dictionary = useMemo(
     () => (child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : []),
     [child?.name, child?.signsAs], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  // Clean once per raw transcript: the engine proposes, the verifier decides.
+  // Clean once per raw transcript, in the recording's language: the engine proposes, the verifier decides.
   useEffect(() => {
     if (!raw || typed) return;
-    setApplied(faithfulClean(raw, { level: 'clean', dictionary }).applied);
-  }, [raw, typed, dictionary]);
+    setApplied(cleanSpoken(raw, dictionary, language).applied);
+  }, [raw, typed, dictionary, language]);
 
-  // Transcribe a recording that has no transcript yet.
-  const transcribe = async () => {
-    if (!draft?.audioUri) return;
-    const n = ++attempt.current;
-    setPhase('transcribing');
-    try {
-      const t = await getTranscriber();
-      if (!t) throw new TranscriberUnavailable('model-missing');
-      const res = await t.transcribe({ audioUri: draft.audioUri, durationMs: draft.audioDurationMs, dictionary });
-      if (n !== attempt.current) return;
-      if (!t.isSample) setDraftTranscript(draft.id, res.raw); // raw is set once, never changed
-      setIsSample(t.isSample);
-      setRaw(res.raw);
-      setPhase('ready');
-    } catch (e) {
-      if (n !== attempt.current) return;
-      setWaitReason(e instanceof TranscriberUnavailable ? 'unavailable' : 'failed');
-      setPhase('waiting');
-    }
-  };
-
+  // Ask the queue for words (idempotent: a reopened Review joins the same job).
   useEffect(() => {
-    if (phase === 'transcribing') transcribe();
+    if (phase === 'transcribing' && draft?.audioUri) requestWords(draft.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Words arrived: the queue set the draft's raw transcript once (or, in development, sample words).
+  useEffect(() => {
+    if (phase !== 'transcribing' || !draft || job?.phase !== 'done' || job.outcome !== 'ok') return;
+    const samplePart = sampleWordsFor(draft.id);
+    const stored = getDraft(draft.id)?.rawTranscript ?? null;
+    const words = stored ?? samplePart?.raw ?? null;
+    if (!words) return;
+    setIsSample(!stored && !!samplePart);
+    setRaw(words);
+    setPhase('ready');
+  }, [phase, draft, job?.phase, job?.outcome]);
+
+  const packWait = job?.phase === 'waiting_for_pack';
+  const canKeepVoice = packWait || job?.phase === 'failed' || (job?.phase === 'done' && job.outcome === 'no_speech');
+
+  const tryAgain = () => {
+    if (!draft) return;
+    haptic('tap');
+    if (job?.phase === 'failed') retryWords(draft.id);
+    else requestWords(draft.id);
+  };
 
   // Mini player for the recording ("Hear it").
   const player = useAudioPlayer(draft?.audioUri ?? null);
@@ -274,6 +289,7 @@ export default function Review() {
         { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
       );
       setDraft(fresh);
+      setKeptForWords(phase === 'transcribing' && job?.outcome !== 'no_speech');
       setVoiceOnly(true);
       finishSave(false);
     } catch {
@@ -317,7 +333,9 @@ export default function Review() {
           <Animated.View entering={FadeIn.delay(250).duration(200)} className="mt-6 items-center" accessibilityLiveRegion="polite">
             <Text className="text-lg text-success">
               {voiceOnly
-                ? pendingCopy.review.voiceOnlyToast
+                ? keptForWords
+                  ? wordsCopy.pack.keptToast
+                  : pendingCopy.review.voiceOnlyToast
                 : savedTo === 'book'
                   ? fill(r.destination.addedToast, { child: child.name })
                   : r.destination.privateToast}
@@ -379,25 +397,23 @@ export default function Review() {
         )}
 
         {phase === 'transcribing' && (
-          <Card className="items-center gap-2 rounded-3xl border-0 bg-card p-8" accessibilityLiveRegion="polite">
-            <Text className="text-lg text-muted-foreground">{copy.tonight.states.transcribing}</Text>
-          </Card>
+          <WordsStatus
+            job={job}
+            download={download}
+            languageName={languageNames[language]}
+            onRetry={tryAgain}
+            onType={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}
+          />
         )}
 
         {phase === 'waiting' && (
+          // The recording file is empty (a take cut off before any audio): nothing to write down.
           <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
             <Text role="heading" className="text-lg font-semibold text-foreground">
-              {waitReason === 'failed' ? copy.errors.transcriptionFailed.title : pendingCopy.review.waitingTitle}
+              {copy.errors.transcriptionFailed.title}
             </Text>
-            <Text className="text-base leading-6 text-foreground">
-              {waitReason === 'failed' ? copy.errors.transcriptionFailed.body : pendingCopy.review.waitingBody}
-            </Text>
+            <Text className="text-base leading-6 text-foreground">{copy.errors.transcriptionFailed.body}</Text>
             <View className="flex-row flex-wrap gap-3">
-              {waitReason === 'failed' && draft.state !== 'unrecoverable' && (
-                <Button variant="secondary" onPress={transcribe}>
-                  <Text>{copy.errors.transcriptionFailed.button}</Text>
-                </Button>
-              )}
               <Button variant="secondary" onPress={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}>
                 <Text>{copy.errors.micDenied.typeButton}</Text>
               </Button>
@@ -567,11 +583,11 @@ export default function Review() {
           </Button>
         </View>
       )}
-      {/* No words to save (or only sample words): keep the recording itself. */}
-      {spoken && (phase === 'waiting' || (phase === 'ready' && isSample)) && (
+      {/* No words to save yet (language still downloading, nobody spoke, a failure) or only sample words: keep the recording itself. */}
+      {spoken && (phase === 'waiting' || (phase === 'ready' && isSample) || (phase === 'transcribing' && canKeepVoice)) && (
         <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
           <Button size="lg" onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp}>
-            <Text>{pendingCopy.review.voiceOnlyButton}</Text>
+            <Text>{packWait ? wordsCopy.pack.keepButton : pendingCopy.review.voiceOnlyButton}</Text>
           </Button>
         </View>
       )}
@@ -584,5 +600,108 @@ export default function Review() {
         onClose={() => setPickerOpen(false)}
       />
     </SafeAreaView>
+  );
+}
+
+/** Calm, honest status while words are on their way (no spinner, real numbers only). */
+function WordsStatus({
+  job,
+  download,
+  languageName,
+  onRetry,
+  onType,
+}: {
+  job: Job | null;
+  download: { progress: number | null; hold: 'waiting_for_wifi' | 'no_space' | 'offline' | null };
+  languageName: string;
+  onRetry: () => void;
+  onType: () => void;
+}) {
+  const typeButton = (
+    <Button variant="secondary" onPress={onType}>
+      <Text>{copy.errors.micDenied.typeButton}</Text>
+    </Button>
+  );
+
+  if (job?.phase === 'failed') {
+    return (
+      <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
+        <Text role="heading" className="text-lg font-semibold text-foreground">{copy.errors.transcriptionFailed.title}</Text>
+        <Text className="text-base leading-6 text-foreground">{copy.errors.transcriptionFailed.body}</Text>
+        <View className="flex-row flex-wrap gap-3">
+          {job.failure !== 'file_missing' && job.failure !== 'unsupported' && (
+            <Button variant="secondary" onPress={onRetry}>
+              <Text>{copy.errors.transcriptionFailed.button}</Text>
+            </Button>
+          )}
+          {typeButton}
+        </View>
+      </Card>
+    );
+  }
+
+  if (job?.phase === 'done' && job.outcome === 'no_speech') {
+    return (
+      <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
+        <Text role="heading" className="text-lg font-semibold text-foreground">{wordsCopy.noSpeech.title}</Text>
+        <Text className="text-base leading-6 text-foreground">{wordsCopy.noSpeech.body}</Text>
+        <View className="flex-row flex-wrap gap-3">{typeButton}</View>
+      </Card>
+    );
+  }
+
+  if (job?.phase === 'waiting_for_pack') {
+    const p = download.progress;
+    const line =
+      download.hold === 'waiting_for_wifi'
+        ? wordsCopy.pack.waitingForWifi
+        : download.hold === 'no_space'
+          ? wordsCopy.pack.noSpace
+          : p !== null
+            ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
+            : null;
+    return (
+      <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
+        <Text role="heading" className="text-lg font-semibold text-foreground">
+          {fill(wordsCopy.pack.title, { name: languageName })}
+        </Text>
+        <Text className="text-base leading-6 text-foreground">{fill(wordsCopy.pack.body, { name: languageName })}</Text>
+        {line && <Text className="text-sm text-muted-foreground">{line}</Text>}
+        {p !== null && download.hold === null && <ProgressLine value={p} />}
+        <View className="flex-row flex-wrap gap-3">
+          <Button variant="secondary" onPress={onType}>
+            <Text>{wordsCopy.pack.typeButton}</Text>
+          </Button>
+        </View>
+      </Card>
+    );
+  }
+
+  const total = job?.phase === 'running' ? (job.progress?.total ?? 0) : 0;
+  const done = job?.progress?.done ?? 0;
+  const part = Math.min(total, done + 1);
+  return (
+    <Card
+      className="items-center gap-3 rounded-3xl border-0 bg-card p-8"
+      accessibilityLiveRegion="polite"
+      accessibilityLabel={total > 1 ? fill(wordsCopy.listeningA11y, { n: part, count: total }) : wordsCopy.preparing}>
+      <Text className="text-center text-lg text-muted-foreground">
+        {total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing}
+      </Text>
+      {total > 1 && <ProgressLine value={done / total} />}
+    </Card>
+  );
+}
+
+/** A thin, determinate line: progress the parent can trust. */
+function ProgressLine({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
+  return (
+    <View
+      className="h-1 w-full overflow-hidden rounded-full bg-muted"
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: pct }}>
+      <View className="h-1 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+    </View>
   );
 }

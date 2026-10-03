@@ -282,3 +282,43 @@ Everything else in the migration is additive (new tables, columns, functions, tr
 File 5's `book_entries` keeps the same plan shape (bitmap scan of `entries_book_page_idx`, membership resolved once from `child_members_profile_idx`). A first draft that OR-ed two membership subqueries measured 21 ms p95 on `book_page`; the shipped predicate uses one membership subquery plus a parents-only clause for pending letters. On a busy machine all six numbers move together by up to about 1.5x.
 
 Plans: book and search queries use the new partial index `entries_book_page_idx (child_id, occurred_on desc, captured_at desc) where in_book and deleted_at is null`; membership is resolved once per query from `child_members_profile_idx`, so cost follows the reader's own books, not the number of families. Synthetic letters are about 24 words; real letters are longer, which mainly affects search recheck time. Scale knobs: `PERF_FAMILIES`, `PERF_ENTRIES`, `PERF_SAMPLES`; `npm run test:db:perf` runs only this test.
+
+## File 20261004000000_plus_on_device_only.sql (Plus checked on the device, 3 Oct 2026)
+
+Founder decision 3 (Apple only, out of the box, checked on the device, no server) and ADR 0013 as decided. Apply it after `20261003041500_sync_cursor_pull.sql`. It can go in the same session as files 5 to 7; if file 6 (`20261003010000_children_and_entitlements.sql`) was never applied, apply file 6 first and then this file, because this file replaces functions file 6 and file 7 create.
+
+What it does:
+- Drops `store_notifications`, `store_subscriptions` and `app_account_tokens`, and the functions `apply_store_transaction`, `my_app_account_token`, `get_plan_state`, `has_plus`, `book_has_plus` and `store_environment_allowed`. Nothing of ours sees purchases: do not create an App Store Server Notifications URL or an In-App Purchase key for this project.
+- Redefines `create_child` and `create_first_run_children` without the Plus rule. `create_child_row` loses its `p_free` argument (5 arguments now). `SCPLS` is retired: the server never refuses a book for Plus. The first-run batch still closes `profiles.first_run_closed_at`.
+- Redefines `purge_due(timestamptz, int)` without the `store_notifications` retention line. Any later migration that redefines `purge_due` must start from this version.
+
+Before applying in an environment where file 6 already ran, check that the ledger holds nothing worth keeping (it only ever held test purchases, because no notification endpoint was built):
+```sql
+select (select count(*) from public.store_subscriptions) subs,
+       (select count(*) from public.store_notifications) notes,
+       (select count(*) from public.app_account_tokens) tokens;
+```
+
+Check the result:
+```sql
+select to_regclass('public.store_subscriptions'), to_regclass('public.store_notifications'), to_regclass('public.app_account_tokens');
+-- all three null
+select proname from pg_proc where pronamespace = 'public'::regnamespace
+   and (proname in ('has_plus', 'book_has_plus', 'get_plan_state', 'my_app_account_token', 'apply_store_transaction', 'store_environment_allowed')
+        or prosrc ~ 'SCPLS|store_notifications');
+-- no rows
+select pg_get_function_identity_arguments('public.create_child_row'::regproc);
+-- p_uid uuid, p_id uuid, p_name text, p_date_of_birth date, p_due_date date
+select public.purge_due(now(), 1);  -- runs (service role)
+```
+
+Settings: `app.store_environment` (Step 11) is no longer read by anything; it can stay set or be reset.
+
+Rollback: re-running file 6's entitlement section restores the empty tables and functions; there is no data to restore. Prefer fixing forward.
+
+App changes that ship with this file:
+- The app never calls `my_app_account_token`, `get_plan_state` or `book_has_plus`; Plus comes from StoreKit 2 on the device (`apps/mobile/src/lib/billing`).
+- `SCPLS` can still arrive from a server that does not have this file yet. Keep the book on the phone and retry sync later (TDD 08 2.5); never delete or hide it.
+- The "Plus" line under "App changes for files 5 to 7" above is replaced by this section.
+
+Trade-off (follows from founder decision 3; recorded in ADR 0013): Plus is enforced on the device only. A modified app could start more books or more Read together sessions than the free allowance. Every Plus feature in v1.0 runs on the phone and costs nothing on the server, so nothing server-side is exposed. A future server-cost Plus feature (backup upload) needs its own check at its own endpoint; see ADR 0013.

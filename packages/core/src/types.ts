@@ -94,7 +94,9 @@ export type RejectReason =
   | 'repeat_is_emphasis' // very very, bye bye, come on come on: kept as said
   | 'false_start_complete_phrase' // the "restart" did not lead anywhere: I love you, I love you.
   | 'stt_fix_protected_word' // a pronoun, kinship word, number, negation or another dictionary term
-  | 'stt_fix_not_heard_as'; // not a learned mishearing, a case variant, or close in sound
+  | 'stt_fix_not_heard_as' // not a learned mishearing, a case variant, or close in sound
+  // Language packs (ADR 0014).
+  | 'not_vetted_for_language'; // this kind of edit needs a table this language's pack has not had signed off
 
 export interface RejectedEdit {
   edit: Edit;

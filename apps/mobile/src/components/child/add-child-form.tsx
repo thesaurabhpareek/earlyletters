@@ -9,7 +9,8 @@ import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { isoOf, longDate } from '@/lib/dates';
 import { devShortcutsAllowed } from '@/lib/build-env';
-import { addChild, getActiveChild, newChildNeedsPlus, setActiveChildId, todayISO } from '@/lib/store';
+import { addChild, getActiveChild, setActiveChildId, todayISO } from '@/lib/store';
+import { newChildNeedsPlus, startBookGate } from '@/lib/billing';
 import { PlusGate } from './plus-gate';
 
 const DAY = 86_400_000;
@@ -17,7 +18,7 @@ const DAY = 86_400_000;
 /**
  * Add a child (PRD B F2.1): name plus birthday or due date. Books made in
  * first run are free; another book after that is a Plus feature (PRD C 4.1),
- * and books joined as co-parent never count (store.newChildNeedsPlus).
+ * and books joined as co-parent never count (billing.newChildNeedsPlus).
  */
 export function AddChildForm() {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
@@ -32,7 +33,14 @@ export function AddChildForm() {
   const [tried, setTried] = useState(false);
 
   if (gated && !passedGate) {
-    return <PlusGate onNotNow={() => router.back()} onContinueDev={devShortcutsAllowed ? () => setPassedGate(true) : undefined} />;
+    return (
+      <PlusGate
+        decision={startBookGate()}
+        onPlus={() => setPassedGate(true)}
+        onNotNow={() => router.back()}
+        onContinueDev={devShortcutsAllowed ? () => setPassedGate(true) : undefined}
+      />
+    );
   }
 
   const trimmed = name.trim();

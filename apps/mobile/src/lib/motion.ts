@@ -1,54 +1,124 @@
 /**
  * useMotion(): the one place screens learn about Reduce Motion (MOTION.md 4).
- * useReducedMotion() only reads the value at start, so we also subscribe to
- * AccessibilityInfo changes. Fallback is a 200 ms fade, never a jump.
+ * Every duration, spring and distance comes from tokens.motion; nothing is typed here.
+ *
+ * Reduce Motion rule: movement is replaced by a paired 200 ms fade (ReduceMotion.Never on
+ * the fade), never a jump on content that carries meaning. Pure decoration simply does
+ * not run. Reanimated's useReducedMotion() reads the value once at start, so we also
+ * subscribe to AccessibilityInfo changes (MOTION 4, M15, M16).
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
-import { Easing, FadeIn, FadeInDown, ReduceMotion, withSpring, withTiming } from 'react-native-reanimated';
+import {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeOutDown,
+  LinearTransition,
+  ReduceMotion,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { tokens, type MotionToken } from '@scribe/design-tokens';
 
-export const FADE_MS = tokens.motion.reduceMotion.durationMs;
-export const STANDARD_EASING = Easing.bezier(0.2, 0, 0, 1);
+const M = tokens.motion;
 
+export const FADE_MS = M.fadeMs;
+export const EXIT_MS = M.exitMs;
+export const STANDARD_EASING = Easing.bezier(...M.easing);
+
+let current = false;
+const listeners = new Set<(v: boolean) => void>();
+let subscribed = false;
+
+function ensureSubscribed() {
+  if (subscribed) return;
+  subscribed = true;
+  AccessibilityInfo.isReduceMotionEnabled()
+    .then((v) => set(v))
+    .catch(() => {});
+  AccessibilityInfo.addEventListener('reduceMotionChanged', set);
+}
+function set(v: boolean) {
+  if (v === current) return;
+  current = v;
+  listeners.forEach((l) => l(v));
+}
+
+/** Live Reduce Motion value (one shared subscription for the whole app). */
 export function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
+  ensureSubscribed();
+  const [reduced, setReduced] = useState(current);
   useEffect(() => {
-    let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((v) => alive && setReduced(v));
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
+    listeners.add(setReduced);
+    setReduced(current);
     return () => {
-      alive = false;
-      sub.remove();
+      listeners.delete(setReduced);
     };
   }, []);
   return reduced;
 }
 
+/** Synchronous read for non-React code (haptics, imperative toasts). */
+export function isReducedMotion(): boolean {
+  ensureSubscribed();
+  return current;
+}
+
 export function springConfig(token: MotionToken) {
-  const s = tokens.motion[token];
+  const s = M[token];
   return { stiffness: s.stiffness, damping: s.damping, mass: s.mass, reduceMotion: ReduceMotion.System };
+}
+
+/** Layout transition on a spring token (cards reflowing, an inline card opening). */
+export function layoutSpring(token: MotionToken = 'standard') {
+  const s = M[token];
+  return LinearTransition.springify().stiffness(s.stiffness).damping(s.damping).mass(s.mass);
 }
 
 export function useMotion() {
   const reduced = useReducedMotion();
-  return {
-    reduced,
-    /** Spring to a value on a motion token; under Reduce Motion, a 200 ms fade-like timing. */
-    spring: (to: number, token: MotionToken = 'standard') => {
-      'worklet';
-      return reduced
-        ? withTiming(to, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
-        : withSpring(to, springConfig(token));
-    },
-    fade: (to: number, duration = FADE_MS) => {
-      'worklet';
-      return withTiming(to, { duration, reduceMotion: ReduceMotion.Never });
-    },
-    /** Entering animation for content (never for controls; MOTION principle 2). */
-    enter: (index = 0) =>
-      reduced
-        ? FadeIn.duration(FADE_MS).reduceMotion(ReduceMotion.Never)
-        : FadeInDown.duration(280).delay(Math.min(index, 6) * 30).easing(STANDARD_EASING),
-  };
+  return useMemo(
+    () => ({
+      reduced,
+      /** Spring to a value on a motion token; under Reduce Motion, a 200 ms timing instead. Worklet-safe. */
+      spring: (to: number, token: MotionToken = 'standard') => {
+        'worklet';
+        const s = M[token];
+        return reduced
+          ? withTiming(to, { duration: M.fadeMs, reduceMotion: ReduceMotion.Never })
+          : withSpring(to, { stiffness: s.stiffness, damping: s.damping, mass: s.mass, reduceMotion: ReduceMotion.System });
+      },
+      /** Opacity timing that always runs (it is the Reduce Motion fallback itself). */
+      fade: (to: number, duration: number = M.fadeMs) => {
+        'worklet';
+        return withTiming(to, { duration, easing: STANDARD_EASING, reduceMotion: ReduceMotion.Never });
+      },
+      /**
+       * Entering animation for content, never for controls (MOTION principle 2):
+       * opacity 0 to 1, y 8 to 0, 280 ms, staggered 30 ms for the first 6 items.
+       * Items beyond the stagger window get no entrance at all.
+       */
+      enter: (index = 0) => {
+        if (index >= M.staggerMax) return undefined;
+        return reduced
+          ? FadeIn.duration(M.fadeMs).reduceMotion(ReduceMotion.Never)
+          : FadeInDown.duration(M.enter.durationMs)
+              .delay(index * M.staggerMs)
+              .easing(STANDARD_EASING)
+              .withInitialValues({ opacity: 0, transform: [{ translateY: M.enter.dy }] });
+      },
+      /** Exit for transient UI (toast, inline card): quicker than the entry. */
+      exit: () =>
+        reduced
+          ? FadeOut.duration(M.fadeMs).reduceMotion(ReduceMotion.Never)
+          : FadeOutDown.duration(M.exitMs).easing(STANDARD_EASING),
+      /** Layout reflow; undefined under Reduce Motion (an instant reflow beats a fake fade). */
+      layout: (token: MotionToken = 'standard') => (reduced ? undefined : layoutSpring(token)),
+    }),
+    [reduced],
+  );
 }
+
+export type Motion = ReturnType<typeof useMotion>;

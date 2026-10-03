@@ -298,30 +298,8 @@ export function currentUserId(): string | null {
   return null;
 }
 
-/** Plus entitlement (PRD C). False until purchases ship. */
-export function hasPlus(): boolean {
-  return false;
-}
-
-/**
- * A book this user joined as a co-parent rather than started. Joining needs
- * sign-in and sync, so nothing is joined yet. Joined books never use up the
- * free book.
- */
-export function isJoinedBook(_child: Child): boolean {
-  return false;
-}
-
-/**
- * Whether starting another book needs Plus (PRD C 4.1). Every book made during
- * first run is free (twins or more, PRD K-12). After that, a new book needs
- * Plus once this user has started any book of their own; hidden books count,
- * joined books never do.
- */
-export function newChildNeedsPlus(): boolean {
-  if (hasPlus()) return false;
-  return [...listChildren(), ...listHiddenChildren()].some((c) => !isJoinedBook(c));
-}
+// Plus (hasPlus, isJoinedBook, newChildNeedsPlus) lives in lib/billing: StoreKit 2
+// on this phone through the plan engine (ADR 0013). This file stays free of it.
 
 /** Invited family (needs accounts and sync). Empty until then. */
 export function listMembers(_childId: string): Member[] {

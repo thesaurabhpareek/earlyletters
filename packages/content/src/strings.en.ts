@@ -1,14 +1,25 @@
-// Early Letters: all in-app copy (English).
-// Placeholders: {name}, {child}, {signsAs}, {count}, {month}, {weekday}, {year}, {inviter}.
+// All in-app copy (English).
+// Placeholders: {name}, {child}, {signsAs}, {count}, {month}, {weekday}, {year}, {inviter},
+// {a} and {b} (two names joined), {minutes} and {seconds}, {letters} and {notes} (counted phrases).
+// {app} is the public name. It is filled from packages/brand when the app loads this copy
+// (apps/mobile/src/lib/copy.ts), so the name is never typed in in-app copy (CLAUDE.md).
 // Keys ending in "button", "cta" or "action" are button labels (22 characters or fewer).
-// Keys ending in "link" are text links and may run longer.
+// Keys ending in "link" are text links and may run longer. Keys ending in "A11y" are
+// VoiceOver labels or hints, never shown on screen.
+//
+// v1.0 scope (docs/DECISIONS.md, founder decisions of 3 Oct 2026): letters are spoken in one of 7
+// languages (D-056), one per letter, with no Hindi-English mixing in one sentence until v1.1 (D-059);
+// family at launch is the co-parent only (D-055); recordings are never uploaded, so they stay on the
+// phone that made them and in that person's own iPhone backup (D-059, D-033); Read together plays
+// recordings on this phone with no word highlight (D-059). Copy must not promise any of those early.
+// Privacy is said calmly and the same way everywhere: see `trust` and VOICE.md (D-061).
 
 export const en = {
   app: {
-    name: "Early Letters",
+    name: "{app}",
     category: "memory book",
     tagline: "Exactly as you said it.",
-    oneLine: "Early Letters, the memory book you fill by talking.",
+    oneLine: "{app}, the memory book you fill by talking.",
   },
 
   common: {
@@ -26,11 +37,13 @@ export const en = {
     playButton: "Play",
     pauseButton: "Pause",
     signature: "From {signsAs}",
+    // Two or more names: "Asha and Dev", "Asha, Dev and Mira" (the app joins the first ones with commas).
+    andJoin: "{a} and {b}",
   },
 
   onboarding: {
     welcome: {
-      title: "Early Letters",
+      title: "{app}",
       subtitle: "The memory book you fill by talking.",
       body: "A few words a day, in your own voice. Kept for {child} to read and hear for years.",
       startButton: "Begin the book",
@@ -45,6 +58,8 @@ export const en = {
       recordingTitle: "Your voice stays too",
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
       recordingBody: "The recording is kept on this phone, so one day {child} can hear you say it.",
+      // Heading above settings.help.mistakes in first run.
+      mishearTitle: "We can mishear",
       privateNote: "Private by default. You choose what goes in the book.",
       cta: "That sounds right",
     },
@@ -58,6 +73,9 @@ export const en = {
       birthdayHelp: "We sort letters by {child}'s month of age.",
       expectingLabel: "Not here yet",
       expectingHelp: "Letters written before birth go into a chapter called Before You.",
+      dueDateLabel: "Due date",
+      // Twins: removes an extra name row.
+      removeA11y: "Remove {child}",
       addAnotherButton: "Add another child",
       // Twins or more, same birthday or due date, during first run (PRD.md K-12).
       addAnotherHelp: "Twins or more? Add them now. Each child gets their own book.",
@@ -66,6 +84,8 @@ export const en = {
 
     signsAs: {
       title: "What does {child} call you?",
+      // Twins or more: {child} is the joined names, so the verb is plural.
+      titleMany: "What do {child} call you?",
       body: "This is how your letters will be signed.",
       placeholder: "Papa, Mama, Amma, Baba, Dad",
       examplesLabel: "A few ideas",
@@ -79,7 +99,8 @@ export const en = {
       title: "Your words, spelled your way",
       body: "Add names and home words you use often. We will spell them the way you do.",
       examples: "Like Nani, chhotu, or the name of a stuffed rabbit.",
-      languagesBody: "Switch languages mid-sentence. Every word stays in the language you spoke it.",
+      // v1.0: one of 7 languages per letter (D-056); mixing languages in a sentence is v1.1 (D-059).
+      languagesBody: "Your words stay in the language you speak. We never translate them.",
       addPlaceholder: "Add a word or name",
       addButton: "Add word",
       emptyHint: "You can always add more from Settings.",
@@ -173,6 +194,10 @@ export const en = {
       letterPlaceholder: "Dear {child},",
       saveButton: "Save",
     },
+    // A take that was recorded but not yet read back (TDD 01 3.4).
+    draftWaiting: {
+      title: "A letter is waiting to be read back.",
+    },
     afterSave: {
       title: "Kept.",
       body: "One more page for {child}.",
@@ -180,6 +205,24 @@ export const en = {
       doneButton: "Done for tonight",
       anotherButton: "Add another",
     },
+  },
+
+  // Listening screen (DESIGN_LANGUAGE 12).
+  listen: {
+    toChild: "To {child}",
+    audience: "Only you, until you add it to the book.",
+    elapsedA11y: "{minutes} min {seconds} s recorded",
+    discardButton: "Let it go",
+    discardTitle: "Let this recording go?",
+    discardBody: "It will be removed from this phone.",
+    discardConfirm: "Remove it",
+    keepButton: "Keep it",
+  },
+
+  // Write screen (COMPONENTS 2.8).
+  write: {
+    label: "Your letter",
+    autosaved: "Saved on this phone",
   },
 
   notMuch: {
@@ -202,6 +245,7 @@ export const en = {
     subtitle: "Here is what you said, lightly tidied.",
     trustLine: "We only fixed what got in the way of your words. Nothing added.",
     changesLabel: "{count} small fixes",
+    changesLabelOne: "1 small fix",
     noChanges: "Word for word. Nothing needed fixing.",
     showOriginalLink: "Show exactly what I said",
     showTidiedButton: "Show tidied version",
@@ -209,6 +253,22 @@ export const en = {
     tidiedLabel: "Lightly tidied",
     undoEditButton: "Put it back",
     undoAllButton: "Keep it word for word",
+    putBackToast: "Put back.",
+    editTextButton: "Change words",
+    editA11yHint: "Edited. Double tap to see what you said.",
+    removedA11y: "Words taken out here",
+    toChildA11y: "To {child}. Change",
+    // A recording kept before the words are ready on this phone (ADR 0001, TDD 03 FM-9).
+    voiceOnlyButton: "Keep the recording",
+    waiting: {
+      title: "Your voice is kept",
+      body: "Words are not ready on this phone yet. Keep the recording now and the words can come later. You can also type it.",
+    },
+    // Development builds only: the sample transcriber's words are never saved.
+    dev: {
+      sampleBanner: "Sample words for testing, not your recording.",
+      sampleNotSaved: "Sample words are never saved. Keep the recording only, or type it.",
+    },
     edits: {
       filler: {
         label: "Filler",
@@ -259,6 +319,7 @@ export const en = {
       privateHelp: "Private letters stay with you. You can add them to the book later.",
       addedToast: "Added to {child}'s book.",
       privateToast: "Kept just for you.",
+      voiceOnlyToast: "Recording kept on this phone.",
     },
     addWordToDictionary: "Add \"{name}\" to your words",
     playButton: "Hear it",
@@ -285,12 +346,18 @@ export const en = {
 
   book: {
     title: "{child}'s book",
-    subtitle: "Early Letters: Year One",
-    yearTitle: "Early Letters: Year {year}",
+    subtitle: "{app}: Year One",
+    yearTitle: "{app}: Year {year}",
     beforeYouChapter: "Before You",
     chapterTitle: "Month {month}",
     chapterSubtitle: "{count} letters and notes",
     chapterSubtitleOne: "1 letter",
+    chapterLetters: "{count} letters",
+    chapterNotes: "{count} notes",
+    chapterNoteOne: "1 note",
+    chapterMixed: "{letters} and {notes}",
+    // A spoken letter kept before its words were ready (TDD 01 OQ-11).
+    waitingForWords: "A recording, waiting for its words.",
     chapterNewborn: "The first weeks",
     thisMonthLabel: "This month",
     signature: "From {signsAs}",
@@ -303,7 +370,7 @@ export const en = {
     hearLink: "Hear it in {signsAs}'s voice",
     hearShort: "Hear {signsAs}",
     recordingOnPhone: "Recording kept on this phone",
-    recordingBackedUp: "Recording kept and backed up",
+    // v1.0: recordings stay on the phone that made them (D-059), so a co-parent's voice is on their own phone.
     recordingElsewhere: "Recording kept on {signsAs}'s phone",
     privateLabel: "Private",
     familyLabel: "From family",
@@ -340,7 +407,8 @@ export const en = {
 
   readTogether: {
     title: "Read together",
-    subtitle: "Open the book with {child}. Each letter plays in the voice that wrote it.",
+    // v1.0: plays the recordings on this phone (D-059); no word highlight yet (D-059).
+    subtitle: "Open the book with {child}. Letters spoken on this phone play in the voice that said them.",
     chooseMonth: "Pick a month",
     chooseAuthor: "Letters from",
     everyone: "Everyone",
@@ -353,6 +421,13 @@ export const en = {
     autoplayLabel: "Play the next one on its own",
     nowReading: "{signsAs}, Month {month}",
     noRecording: "This one was typed. Read it aloud together.",
+    recordingElsewhere: "{signsAs}'s voice is on their phone. Read this one aloud together.",
+    empty: "Letters you add to the book will be here to read together.",
+    plusGate: {
+      title: "Read together is part of Plus",
+      body: "You have read together {count} times for free. Plus keeps it open whenever you like.",
+      keepNote: "Every letter stays open to read and hear, with or without Plus.",
+    },
     endOfMonth: "That was Month {month}. You are so loved.",
     endOfMonthAlt: "That was Month {month}. Every word was for you.",
     endOfBook: "That is every letter so far. More are still being written.",
@@ -385,17 +460,17 @@ export const en = {
     },
     shareMessage: {
       imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the free app on your iPhone, or helps you get it:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Get the free app and join here:",
+      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in your own words. Get the free app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
       title: "Welcome, {signsAs}.",
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
-      howStep1: "Tap the microphone and talk, in any language.",
+      howStep1: "Tap the microphone and talk.",
       howStep2: "We write down your words exactly as you said them.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
-      voiceNote: "Your voice is kept too, so {child} can hear you tell it.",
+      voiceNote: "Your recording is kept on your phone too, so one day {child} can hear you tell it.",
       privacyNote: "Only {child}'s parents see your letters until they go in the book.",
       cta: "Write my first letter",
       firstPrompt: "Tell {child} about the first time you met.",
@@ -513,23 +588,28 @@ export const en = {
     tidyOn: "Lightly tidied",
     tidyOff: "Word for word",
     tidyHelp: "Word for word keeps every um and false start. Either way, we never rewrite.",
-    // Show onPhone* only while backup is off; show backedUp* while it is on (lawyer-2 H4, register s.3 row 16).
+    // v1.0 has no recording upload (D-059). Recordings live in a backed-up app folder, so the
+    // person's own iPhone backup includes them (D-033, lawyer-2 L1). Never say "only on this phone".
     recordings: {
       title: "Recordings",
       keepLabel: "Keep recordings",
       keepHelp: "Your voice is saved with each letter, on this phone.",
       onPhoneTitle: "Kept on this phone",
-      onPhoneBody: "Without backup, recordings live only on this phone. Export or turn on backup to keep a copy.",
-      backedUpTitle: "Kept on this phone and backed up",
-      backedUpBody: "Each recording stays on this phone, with an encrypted copy in your backup.",
+      onPhoneBody: "Recordings are kept on this phone and in your iPhone's own backup, if you use one. Export any time to keep a copy of your own.",
       storageUsed: "{count} MB used on this phone",
+      // Audio the launch sweep found with no letter while no book existed (TDD 01 3.2.4). Never deleted.
+      orphansTitle: "Recordings without a letter",
+      orphansOne: "1 recording on this phone is not part of a letter yet. It stays on this phone.",
+      orphansMany: "{count} recordings on this phone are not part of a letter yet. They stay on this phone.",
     },
     backup: {
       title: "Encrypted backup",
       offLabel: "Backup is off",
       onLabel: "Backup is on",
-      body: "Copies your recordings to our servers, encrypted on this phone first, so a new phone can bring them back. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
-      honestNote: "Without backup, your recordings stay only on this phone. Your letters sync when you are signed in, so your family and your next phone can read them.",
+      // v1.0 uploads no recordings (D-059). This says where they are today, not what is coming.
+      body: "We do not copy your recordings to our servers. They are kept on this phone and in your iPhone's own backup, if you use one.",
+      // D-033: the person's own iPhone backup includes recordings.
+      honestNote: "Your letters sync when you are signed in, so your co-parent and your next phone can read them. Export any time to keep a copy of your own.",
       turnOnButton: "Turn on backup",
       turnOffButton: "Turn off backup",
       lastBackup: "Last backed up {weekday}",
@@ -577,8 +657,9 @@ export const en = {
     about: {
       title: "About",
       beta: {
-        label: "Beta",
-        body: "Early Letters is in beta. Some things may change or break. Export a copy of your letters now and then.",
+        label: "Early version",
+        // D-030: no beta line in the store listing; this small in-app note stays until the founder ends it.
+      body: "{app} is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.",
         exportCta: "Export a copy",
       },
     },
@@ -588,11 +669,22 @@ export const en = {
       title: "Privacy",
       analyticsLabel: "Share usage and crash reports",
       analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
+      analyticsOffNote: "Turning this off stops sharing straight away. Nothing else changes.",
       sensitiveLabel: "Sync and family sharing",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
       sensitiveHelp: "Letters can hold health details about you or {child}. Turn this off to stop syncing, and we will offer to delete what already synced.",
-      aiLabel: "Cloud transcription",
+      sensitiveOn: "On",
+      sensitiveOff: "Off, kept on this phone",
+      sensitiveSignedOut: "Not signed in",
       lockScreenLabel: "Names in notifications",
+      promiseTitle: "Our promise",
+      // Shown above the switches. The promise itself is `trust.promise`.
+      controlsHelp: "These switches are yours. Export your book, stop sharing or delete everything, any time.",
+      documentsTitle: "Our promises in full",
+      privacyPolicyLink: "Privacy Policy",
+      healthPrivacyLink: "Consumer Health Data Privacy Policy",
+      subprocessorsLink: "Who helps us run the app",
+      termsLink: "Terms of Service",
     },
   },
 
@@ -603,7 +695,8 @@ export const en = {
     body: "Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.",
     use: "We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
     changeLater: "You can change this any time in Settings, Privacy.",
-    declineHelp: "If you keep it on this phone, syncing, backup and family sharing stay off.",
+    // v1.0 has no backup (D-059); counsel to re-approve this line with the HN-4 text.
+    declineHelp: "If you keep it on this phone, syncing and sharing stay off.",
     agreeButton: "Agree and sync",
     declineButton: "Keep on this phone",
   },
@@ -712,17 +805,13 @@ export const en = {
       title: "You're offline",
       body: "Keep talking. Everything is saved on this phone.",
     },
-    backupFailed: {
-      title: "Backup paused",
-      body: "Your recordings are safe on this phone. Backup will continue when you are back online.",
-    },
     inviteExpired: {
       title: "This invite has expired",
       body: "Ask {inviter} to send a new one.",
     },
     storageLow: {
       title: "This phone is almost full",
-      body: "New recordings may not fit. Turning on backup or freeing space will help.",
+      body: "New recordings may not fit. Freeing some space on this phone will help.",
     },
     generic: {
       title: "Something went wrong",
@@ -741,7 +830,8 @@ export const en = {
       largePrint: "Large print",
     },
     preview: "Dear {child}, today you laughed at the rain.",
-    deletedBody: "Going back to the book in a moment.",
+    // No timed return to the book (TDD 09 A11Y-F03).
+    deletedBody: "You can still undo this, or close to go back to the book.",
     notFoundTitle: "This letter is not here anymore.",
     notFoundCta: "Back to the book",
     openHint: "Opens the letter.",
@@ -774,8 +864,6 @@ export const en = {
   settingsMore: {
     accountTitle: "Account",
     signedOutLabel: "Not signed in",
-    // signedOutHelp and deleteAccountNotYet are removed in the release that ships sign-in (lawyer-2 H4).
-    signedOutHelp: "Your letters and recordings are kept on this phone for now. Sign in arrives in a coming update.",
     appearanceTitle: "Appearance",
     themeLabel: "Theme",
     themes: {
@@ -783,12 +871,102 @@ export const en = {
       light: "Light",
       dark: "Dark",
     },
-    exportNotYet: "Export arrives in a coming beta update.",
-    deleteAccountNotYet: "Accounts arrive with sign in. Until then, deleting the app removes its letters and recordings from this phone.",
-    backupNotYet: "Backup arrives with Plus, later in the beta.",
+    // Recording backup is not in v1.0 (D-059).
+    backupNotYet: "Backup arrives in a later update.",
     remindersNotYet: "Your choice is saved. Reminders start in a coming beta update.",
     legalTitle: "Legal",
     versionLabel: "Version",
+  },
+
+  // Settings home (PRD C, C-REQ-016). Rows, in order: Account, Language, Plus, Reminders, Export your
+  // book, Privacy, Storage, Recordings, Appearance, Delete account, Terms, Privacy Policy, Help, version.
+  settingsHome: {
+    sections: {
+      account: "Account",
+      writing: "Writing",
+      plus: "Plus",
+      data: "Your data",
+      privacy: "Privacy and space",
+      help: "Help and legal",
+      about: "About",
+    },
+    accountLabel: "Account",
+    accountHelp: "Sign in, and the ways you sign in.",
+    // Transcription language (D-056). The app itself is in English at v1.0.
+    languageLabel: "Language",
+    languageHelp: "The language you speak your letters in.",
+    plusLabel: "Plus",
+    plusHelp: "Books for more children, and Read together whenever you like.",
+    remindersLabel: "Reminders",
+    exportLabel: "Export your book",
+    exportHelp: "Every letter and recording, free, any time.",
+    privacyLabel: "Privacy",
+    // Language packs and speech files, downloaded only when needed (D-065).
+    storageLabel: "Storage",
+    storageHelp: "Language packs and space on this phone.",
+    recordingsLabel: "Recordings",
+    appearanceLabel: "Appearance",
+    deleteAccountLabel: "Delete account",
+    termsLabel: "Terms of Service",
+    privacyPolicyLabel: "Privacy Policy",
+    helpLabel: "Help",
+    helpValue: "Write to us",
+    helpSubject: "Help with the app",
+    versionLabel: "Version",
+    // "1.0.0 (42)": app version and build number.
+    versionValue: "{version} ({build})",
+    strugglingA11yHint: "Shows free, confidential support lines.",
+  },
+
+  // Static resources row (D-034): v1.0 has no on-device safety classifier. Resources verified 3 Oct 2026
+  // on mchb.hrsa.gov, 988lifeline.org and postpartum.net. Clinician and counsel to review the wording.
+  struggling: {
+    title: "If you are struggling",
+    body: "The early months can be very hard. You do not have to carry it alone. These lines are free and confidential.",
+    resources: [
+      {
+        name: "National Maternal Mental Health Hotline",
+        how: "Call or text 1-833-852-6262, any time, in English or Spanish.",
+        tel: "18338526262",
+      },
+      {
+        name: "988 Lifeline",
+        how: "Call or text 988, any time.",
+        tel: "988",
+      },
+      {
+        name: "Postpartum Support International",
+        how: "Call 1-800-944-4773 and a trained volunteer calls you back.",
+        tel: "18009444773",
+      },
+    ],
+    emergency: "If you or your baby are in danger right now, call 911.",
+  },
+
+  // Calm privacy reassurance (D-061). One promise, said the same way wherever a parent might
+  // wonder, and backed by real controls in Settings, Privacy. Never fearful, never long, never more
+  // than one line in a place. The store listing and website use `trust.promise` word for word.
+  trust: {
+    promise: "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",
+    // For tight spaces: a row subtitle, a footer.
+    short: "Private by default. Never sold, never used for ads.",
+    // Sign-in screen, under the buttons (Apple, Google, email link).
+    signIn: {
+      why: "An account keeps your book safe when you change phones.",
+      privacy: "Only you and the people you invite can read your letters. We never sell them or use them for ads.",
+      email: "We use your email only to sign you in and to write to you about your account.",
+    },
+    // Once, the first time someone records (a quiet line on Listening or under the first Review).
+    firstRecording: {
+      title: "Your voice stays here",
+      body: "Your words are written down on this phone, and the recording stays with your letter. It is never used to train machine learning models.",
+      dismissButton: "Good to know",
+    },
+    // Settings, Privacy, at the top.
+    settings: {
+      title: "Our promise",
+      body: "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",
+    },
   },
 
   // 18+ only (founder decision, Oct 2 2026). Asked before any child details; only "yes" is stored, never an age.
@@ -798,10 +976,23 @@ export const en = {
     yesButton: "Yes",
     noButton: "No",
     stopTitle: "Thank you for telling us.",
-    stopBody: "Early Letters is currently for adults 18 and over.",
+    stopBody: "{app} is currently for adults 18 and over.",
     stopNote: "Nothing you entered has been kept.",
     mistakeButton: "I answered by mistake",
   },
 } as const;
+
+// Retired 3 Oct 2026 (bring back from git history if the feature returns):
+// - book.recordingBackedUp, settings.recordings.backedUpTitle and backedUpBody, errors.backupFailed:
+//   no recording upload or backup in v1.0 (D-059).
+// - settings.privacy.aiLabel: cloud transcription is v1.1 (ROADMAP).
+// - settingsMore.signedOutHelp, deleteAccountNotYet, exportNotYet: sign-in, account deletion and
+//   export ship in v1.0; Settings home links to their screens.
+// - settingsHome.helpLabel "Write to us" moved to settingsHome.helpValue; the row is "Help".
+// - storeListing beta paragraph and promotionalTextBeta: D-030, D-060.
+// - pendingCopy in apps/mobile/src/lib/copy.ts: every string now lives here; it is a thin re-export.
+// Still in use and due to retire when their screens change: settingsMore.remindersNotYet (reminders),
+// settingsMore.backupNotYet and settings.backup.* (recordings screen), childrenExtra.plusNotYet
+// (Plus gate), familyTab.inviteNeedsSignIn (Family tab).
 
 export type Strings = typeof en;

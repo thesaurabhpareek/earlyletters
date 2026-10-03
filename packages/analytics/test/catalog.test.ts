@@ -12,7 +12,7 @@ import {
   type PropSpec,
 } from '../src';
 
-const entries = Object.entries(EVENTS) as [string, { reqs: readonly string[]; level: string; props: Record<string, PropSpec> }][];
+const entries = Object.entries(EVENTS) as [string, { area: string; reqs: readonly string[]; level: string; props: Record<string, PropSpec> }][];
 
 /** Property keys that name content or L3/L4 data. B-NFR-001: language names too. */
 const FORBIDDEN_KEY = /(text|transcript|name|note|email|audio_url|birth|due_date|dob|token|query|phone|address|signs_as|language_code|locale|timezone|photo_url|word$|term$)/;
@@ -81,12 +81,29 @@ describe('catalogue rules', () => {
     }
   });
 
-  it('sends goals only as a count and nothing derived from languages (both L4, PRD 7.10)', () => {
+  it('sends goals only as a count and no multilingual flag (PRD 7.10, B-NFR-001)', () => {
     expect(Object.keys(EVENTS.goals_set.props)).toEqual(['count']);
     expect(Object.keys(EVENTS)).not.toContain('languages_set');
     for (const [name, spec] of entries) {
       for (const key of Object.keys(spec.props)) {
         expect(key, `${name}.${key}`).not.toMatch(/lingual|language|goal|voices|for_later|book_to_hold/);
+      }
+    }
+  });
+
+  it('carries language only as `lang`, only on languages events, only from the seven v1.0 codes', () => {
+    const withLang = entries.filter(([, spec]) => 'lang' in spec.props).map(([name]) => name).sort();
+    expect(withLang).toEqual(['language_set', 'pack_download']);
+    for (const name of withLang) {
+      const spec = EVENTS[name as 'language_set'];
+      expect(spec.area).toBe('languages');
+      expect(spec.props.lang.type).toBe('enum');
+      expect([...spec.props.lang.values].sort()).toEqual(['ar', 'en', 'es', 'fr', 'hi', 'pt', 'zh']);
+    }
+    // Never next to letter, capture, book or family behaviour.
+    for (const [name, spec] of entries) {
+      if (['capture', 'book', 'family', 'children', 'celebrate'].includes(spec.area)) {
+        expect(Object.keys(spec.props), name).not.toContain('lang');
       }
     }
   });

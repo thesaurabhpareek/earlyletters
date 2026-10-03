@@ -2,8 +2,19 @@
  * Text helpers: tokenizing, the function-word list, and character
  * normalization. All deterministic.
  */
+import { FILLERS, FUNCTION_WORDS } from './lang/english-tables';
 
-const WORD_RE = /[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu;
+export { FILLERS, FUNCTION_WORDS };
+
+/**
+ * A word: letters and digits plus the combining marks that belong to them
+ * (Devanagari vowel signs and virama, Arabic harakat, a decomposed accent),
+ * joined by internal apostrophes. Marks never start a word. Without \p{M},
+ * "हिंदी" fell apart into "ह" and "द", and an accent could be added or
+ * removed without changing any "letter" (si -> sí). ASCII text tokenizes
+ * exactly as before.
+ */
+const WORD_RE = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:['’][\p{L}\p{N}][\p{L}\p{M}\p{N}]*)*/gu;
 
 export interface Token {
   word: string;
@@ -23,36 +34,17 @@ export function words(text: string): string[] {
   return tokens(text).map((t) => t.word.toLowerCase());
 }
 
-/** Letters and digits only, lowercased. Used to prove punctuation edits change no words. */
+/**
+ * Letters, combining marks and digits only, lowercased. Used to prove
+ * punctuation edits change no words. Marks count: a vowel sign, nukta,
+ * harakah or accent is part of how a word is spelled ("मैं" and "में" are
+ * different words; so are "si" and "sí").
+ */
 export function lettersOnly(text: string): string {
-  return (text.match(/[\p{L}\p{N}]/gu) ?? []).join('').toLowerCase();
+  return (text.match(/[\p{L}\p{M}\p{N}]/gu) ?? []).join('').toLowerCase();
 }
 
-/**
- * Words a grammar repair may insert without adding meaning.
- * Deliberately short. Anything not here (or in the dictionary) that a
- * replacement introduces is treated as a new content word and rejected.
- */
-export const FUNCTION_WORDS = new Set([
-  'a', 'an', 'the',
-  'is', 'are', 'was', 'were', 'be', 'been', 'being', 'am',
-  'has', 'have', 'had', 'having',
-  'do', 'does', 'did',
-  'will', 'would', 'can', 'could', 'shall', 'should', 'may', 'might', 'must',
-  'to', 'of', 'in', 'on', 'at', 'for', 'with', 'by', 'from', 'into', 'onto', 'up',
-  'and', 'or', 'but', 'so', 'if', 'that', 'than', 'then', 'as',
-  'i', 'me', 'my', 'we', 'us', 'our', 'you', 'your',
-  'he', 'him', 'his', 'she', 'her', 'it', 'its', 'they', 'them', 'their',
-  'this', 'these', 'those',
-  "it's", "i'm", "she's", "he's", "we're", "they're", "you're",
-  "don't", "doesn't", "didn't", "isn't", "wasn't", "aren't", "weren't",
-]);
-
-/**
- * Removed only as standalone disfluencies. "like" and "you know" are
- * excluded on purpose: they are often meaningful, and part of how people talk.
- */
-export const FILLERS = new Set(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 'er', 'hmm', 'hmmm', 'mm']);
+/* FUNCTION_WORDS and FILLERS live in lang/english-tables.ts (re-exported above). */
 
 /* Which repeats are collapsed, suggested or kept lives in repeats.ts. */
 

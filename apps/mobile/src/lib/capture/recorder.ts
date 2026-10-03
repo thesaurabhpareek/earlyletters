@@ -14,7 +14,7 @@
  * stop, which hands it to the OS; the hash recorded here is re-checked by the
  * DATA-REQ-046 scrub. Residual risk noted in TDD 01 3.4 rule 4.
  */
-import type { AudioRecorder } from 'expo-audio';
+import { AudioQuality, IOSOutputFormat, type AudioRecorder, type RecordingOptions } from 'expo-audio';
 import * as Crypto from 'expo-crypto';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
@@ -27,6 +27,38 @@ import {
   type Draft,
   type DraftState,
 } from '../store';
+
+/**
+ * Recording settings (ADR 0005, ADR 0015; speech engineer owns these).
+ * AAC-LC, mono, 64 kbps, .m4a in Documents (kept in the device backup, D-033).
+ *
+ * 48 kHz rather than 44.1 kHz: iPhone microphones run at 48 kHz, so the
+ * recording is not resampled on the way in; 48 kHz to Whisper's 16 kHz is
+ * an exact 3:1 step; and Apple's voice isolation for the listening copy
+ * works on the original rate. Same bitrate, same file size (0.48 MB/min).
+ *
+ * No voice processing at record time: expo-audio records with the session
+ * in `.default` mode (verified in expo-audio 57 source) and that is what we
+ * want. Voice processing (`.voiceChat`) would be applied to the original
+ * itself, and it is built for calls: it narrows the sound and suppresses
+ * what is not speech, a baby's laugh included. The original stays as the
+ * microphone heard it; a clearer copy is made separately
+ * (src/lib/audio-enhance).
+ *
+ * listen.tsx should use this object (request to the capture owner) instead
+ * of its own copy, so these settings have one home.
+ */
+export const VOICE_RECORDING_OPTIONS: RecordingOptions = {
+  extension: '.m4a',
+  sampleRate: 48000,
+  numberOfChannels: 1,
+  bitRate: 64000,
+  isMeteringEnabled: true,
+  directory: 'document',
+  ios: { extension: '.m4a', outputFormat: IOSOutputFormat.MPEG4AAC, audioQuality: AudioQuality.HIGH, sampleRate: 48000 },
+  android: { extension: '.m4a', outputFormat: 'mpeg4', audioEncoder: 'aac', sampleRate: 48000 },
+  web: { mimeType: 'audio/webm', bitsPerSecond: 64000 },
+};
 
 export type StopReason = 'user' | 'background' | 'interruption' | 'dismiss';
 

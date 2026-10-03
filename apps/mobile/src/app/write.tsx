@@ -4,23 +4,35 @@
  * or a crash loses nothing. Save opens Review for the destination choice.
  * Also reached from Review with ?draftId= to type a letter for a recording
  * that could not be written down (capture mode becomes "mixed").
+ *
+ * Design (docs/design/BENCHMARK.md, "Screens"):
+ * - Day One / Apple Notes writing surface: no box, the letter face at letter size,
+ *   the prompt as a quiet line above. Typed text keeps the keyboard's own autocorrect.
+ * - Save sits in the thumb zone above the keyboard (DESIGN_LANGUAGE principle 2;
+ *   TDD 09 A11Y-F16), not alone in the top-right corner.
+ * - "Saved on this phone" is a quiet status, announced at most every 10 s.
  */
 import { router, useLocalSearchParams } from 'expo-router';
+import { CheckIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View, useColorScheme } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
-import { ageText } from '@/lib/dates';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
+import { TextField } from '@/components/ui/text-field';
+import { announce, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
-import { haptic } from '@/lib/haptics';
+import { ageText } from '@/lib/dates';
 import { createDraft, deleteDraft, getActiveChild, getDraft, setDraftTyped, todayISO } from '@/lib/store';
 
+const ANNOUNCE_EVERY_MS = 10_000;
+
 export default function Write() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const { c } = useTheme();
   const params = useLocalSearchParams<{ promptKey?: string; draftId?: string }>();
   const child = getActiveChild();
   const existing = params.draftId ? getDraft(params.draftId) : null;
@@ -28,6 +40,7 @@ export default function Write() {
   const [saved, setSaved] = useState(false);
   const draftId = useRef<string | null>(existing?.id ?? null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastAnnounced = useRef(0);
 
   const promptKey = params.promptKey ?? existing?.promptKey ?? null;
   const prompt = promptKey ? PROMPTS.find((p) => p.key === promptKey) : undefined;
@@ -46,6 +59,11 @@ export default function Write() {
       }).id;
     } else setDraftTyped(draftId.current, value);
     setSaved(true);
+    const now = Date.now();
+    if (now - lastAnnounced.current > ANNOUNCE_EVERY_MS) {
+      lastAnnounced.current = now;
+      announce(pendingCopy.write.savedOnPhone);
+    }
   };
 
   const onChange = (value: string) => {
@@ -74,7 +92,6 @@ export default function Write() {
     if (timer.current) clearTimeout(timer.current);
     persist(text);
     if (!draftId.current) return;
-    haptic('press');
     router.replace({ pathname: '/review', params: { draftId: draftId.current } });
   };
 
@@ -85,33 +102,39 @@ export default function Write() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <View className="flex-row items-center justify-between px-5 pt-2">
-          <Button variant="ghost" size="sm" className="-ml-4" onPress={close}>
-            <Text className="text-primary">{copy.common.closeButton}</Text>
-          </Button>
-          <Text className="text-sm text-muted-foreground" accessibilityLiveRegion="polite">
-            {saved ? pendingCopy.write.savedOnPhone : ''}
-          </Text>
-          <Button size="sm" onPress={done} disabled={!text.trim()}>
-            <Text>{copy.tonight.typing.saveButton}</Text>
-          </Button>
+        <View className="min-h-12 flex-row items-center justify-between px-5 pt-1">
+          <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.closeButton} onPress={close} />
+          {saved ? (
+            <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
+              <CheckIcon size={14} color={c.textMuted} weight="bold" />
+              <Text variant="footnote">{pendingCopy.write.savedOnPhone}</Text>
+            </Animated.View>
+          ) : null}
         </View>
-        <ScrollView contentContainerClassName="flex-grow gap-4 px-5 pb-8 pt-4" keyboardShouldPersistTaps="handled">
-          <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline.toUpperCase()}</Text>
-          {prompt && <Text className="text-lg leading-7 text-muted-foreground">{renderTemplate(prompt.text, { child: child.name })}</Text>}
-          <TextInput
-            className="min-h-64 flex-1 font-serif text-xl leading-8 text-foreground"
+        <ScrollView contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4" keyboardShouldPersistTaps="handled">
+          <Text variant="letterDateline" caps>
+            {dateline}
+          </Text>
+          {prompt && (
+            <Text variant="callout" tone="muted">
+              {renderTemplate(prompt.text, { child: child.name })}
+            </Text>
+          )}
+          <TextField
+            variant="letter"
+            label={pendingCopy.write.label}
+            labelHidden
+            className="mt-3"
             value={text}
             onChangeText={onChange}
             placeholder={fill(copy.tonight.typing.letterPlaceholder, { child: child.name })}
-            placeholderTextColor={c.textMuted}
-            multiline
             autoFocus
-            textAlignVertical="top"
-            accessibilityLabel={pendingCopy.write.label}
             accessibilityHint={copy.tonight.typing.placeholder}
           />
         </ScrollView>
+        <View className="border-t border-border bg-background px-5 pb-2 pt-3">
+          <Button size="lg" fullWidth label={copy.tonight.typing.saveButton} onPress={done} disabled={!text.trim()} />
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -3,17 +3,22 @@ import '@/global.css';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
 import { tokens } from '@scribe/design-tokens';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
-import { useAgeGate } from '@/lib/age-gate';
+import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
+import { SessionProvider } from '@/lib/auth/session-provider';
 import { runLaunchSweep } from '@/lib/capture/sweep';
+import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
 import { getSetting, subscribe } from '@/lib/store';
 import { useStoreReady } from '@/dev/store-ready';
 
 SplashScreen.preventAutoHideAsync();
+
+/** Deep links (invites, sign-in) open as sheets over the tabs, never as the only screen. */
+export const unstable_settings = { initialRouteName: '(tabs)' };
 
 /** Appearance (PRD B F10): System, Light or Dark, per device. Settings writes `appearance`. */
 function useAppearance(): void {
@@ -57,6 +62,13 @@ function Root() {
     if (gate.decision === 'pass') void runLaunchSweep();
   }, [gate.decision]);
 
+  // An under-18 answer on the account age sheet closes the gate the same way the entry question does.
+  const refreshGate = gate.refresh;
+  const closeGate = useCallback(() => {
+    answerAgeGate('no');
+    refreshGate();
+  }, [refreshGate]);
+
   if (gate.decision !== 'pass') {
     return (
       <ThemeProvider value={theme}>
@@ -69,15 +81,21 @@ function Root() {
   return (
     <ThemeProvider value={theme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="write" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="listen" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
-        <Stack.Screen name="review" options={{ presentation: 'modal', gestureEnabled: false }} />
-        <Stack.Screen name="read-together" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="letter/[id]" options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: c.accent }} />
-      </Stack>
+      {/* Accounts (PRD A): inside the gate, so no session work happens before it passes. */}
+      <SessionProvider onUnder18={closeGate}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="write" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="listen" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
+          <Stack.Screen name="review" options={{ presentation: 'modal', gestureEnabled: false }} />
+          <Stack.Screen name="read-together" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="letter/[id]" options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: c.accent }} />
+          <Stack.Screen name="(auth)" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="invite" options={{ presentation: 'modal' }} />
+        </Stack>
+        <PendingInviteWatcher />
+      </SessionProvider>
     </ThemeProvider>
   );
 }
