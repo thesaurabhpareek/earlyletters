@@ -33,10 +33,8 @@ import styles from './S07Years.module.css';
 const copy = site.scenes.s07;
 
 function phoneWidth(w: number, h: number) {
-  if (w < 768) {
-    const reserve = Math.min(340, Math.max(250, h * 0.4));
-    return Math.round(Math.max(150, Math.min(300, w * 0.64, (h - reserve) / 2.09)));
-  }
+  // Phones: the phone rises from below the words and is cropped by the bottom edge, like a film frame.
+  if (w < 768) return Math.round(Math.max(170, Math.min(270, w * 0.62)));
   return Math.round(Math.max(240, Math.min(330, (h - 180) / 2.09)));
 }
 

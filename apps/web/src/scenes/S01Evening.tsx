@@ -57,10 +57,12 @@ function EveningStage() {
   const glow = useTransform(p, [0.56, 0.66], [0, 1]);
   const dust = useTransform(p, [0.62, 0.78], [0, 1]);
   const vignette = useTransform(p, [0, 0.5], [0.7, 1]);
+  const heroGlow = useTransform(p, [0, 0.12, 0.24], [0.5, 0.5, 0]);
 
   return (
     <div className={stage.frame} data-resting={resting || undefined}>
       <NightSky moon={{ x: w < 900 ? '56%' : '74%', y: w < 900 ? '20%' : '30%', size: '80vmax', intensity: moon }} />
+      <LampLight intensity={heroGlow} x="50%" y="58%" size={w < 900 ? '130vmax' : '90vmax'} warmth="lamp" aspect={0.7} breathe />
       <LampLight intensity={glow} x={pool.x} y={pool.y} size={pool.size} warmth="lamp" aspect={0.8} breathe />
       <Motes x={pool.fx} y={pool.fy} radius={0.32} intensity={dust} />
 

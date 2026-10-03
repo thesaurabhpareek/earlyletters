@@ -47,5 +47,7 @@
 [data-resting] .copy {
   position: relative;
   top: auto;
-  padding-top: 4svh;
+  left: auto;
+  right: auto;
+  padding: 10svh var(--gutter) 0;
 }

@@ -27,9 +27,21 @@ export type PaperLetterProps = {
 };
 
 function NameFix({ seg, order, fixes, marks }: { seg: HeardSegment; order: number; fixes: MotionValue<number>; marks: MotionValue<number> | number }) {
+  const [settled, setSettled] = useState(() => fixes.get() >= order + 0.85);
+  // Deferred: the value can change while a parent renders (reduced motion swaps the source).
+  useMotionValueEvent(fixes, 'change', (v) => queueMicrotask(() => setSettled(v >= order + 0.85)));
   const heard = useTransform(fixes, [order, order + 0.6], [1, 0]);
   const fixed = useTransform(fixes, [order + 0.2, order + 0.8], [0, 1]);
   const wash = useTransform(fixes, [order + 0.2, order + 0.8, order + 2.2, order + 3], [0, 1, 1, 0]);
+  if (settled) {
+    // Once the right name is in, it takes its own width: the line closes up once, never per frame.
+    return (
+      <span className={styles.name}>
+        <motion.span aria-hidden className={styles.wash} style={{ opacity: wash }} />
+        <span className={styles.cell}>{seg.becomes}</span>
+      </span>
+    );
+  }
   return (
     <span className={styles.name}>
       <motion.span aria-hidden className={styles.wash} style={{ opacity: wash }} />
@@ -46,7 +58,7 @@ function NameFix({ seg, order, fixes, marks }: { seg: HeardSegment; order: numbe
 
 function Removal({ seg, order, fixes, marks }: { seg: HeardSegment; order: number; fixes: MotionValue<number>; marks: MotionValue<number> | number }) {
   const [gone, setGone] = useState(() => fixes.get() >= order + 0.7);
-  useMotionValueEvent(fixes, 'change', (v) => setGone(v >= order + 0.7));
+  useMotionValueEvent(fixes, 'change', (v) => queueMicrotask(() => setGone(v >= order + 0.7)));
   const opacity = useTransform(fixes, [order, order + 0.55], [1, 0]);
   if (gone) return null;
   return (

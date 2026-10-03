@@ -109,7 +109,11 @@ export function TonightScreen({ press }: TonightScreenProps) {
         >
           {c.appTabs.map((t, i) => (
             <span key={t} style={{ color: i === 0 ? ACCENT : MUTED, display: 'grid', justifyItems: 'center', gap: u(4) }}>
-              <span style={{ width: u(24), height: u(24), borderRadius: u(7), border: `${u(1.6)} solid currentColor`, opacity: i === 0 ? 1 : 0.8 }} />
+              <svg viewBox="0 0 24 24" style={{ width: u(25), height: u(25) }} fill={i === 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                {i === 0 ? <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /> : null}
+                {i === 1 ? <path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13" /> : null}
+                {i === 2 ? <path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 6.5M18 14.8c2 .7 3.2 2.5 3.5 5.2" /> : null}
+              </svg>
               {t}
             </span>
           ))}

@@ -13,7 +13,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-weight: 500;
-  font-size: clamp(52px, 11vw, 132px);
+  font-size: clamp(60px, 13vw, 176px);
   line-height: 0.95;
   letter-spacing: -0.035em;
   color: var(--night-ink);
@@ -21,9 +21,9 @@
 .line {
   margin: 0.9em 0 0;
   font-family: var(--font-sans);
-  font-size: clamp(18px, 1.6vw, 23px);
+  font-size: clamp(18px, 1.7vw, 26px);
   line-height: 1.4;
-  color: var(--night-ink-muted);
+  color: color-mix(in srgb, var(--night-ink) 74%, transparent);
 }
 .cue {
   margin-top: 9svh;
