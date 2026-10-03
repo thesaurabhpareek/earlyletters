@@ -37,9 +37,14 @@ jobs:
           curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}"
           echo "${GITLEAKS_SHA256}  ${tarball}" | sha256sum -c -
           tar -xzf "$tarball" gitleaks
-      - name: Scan every commit
+      # Pull requests scan every commit reachable from the PR (base history plus
+      # the PR), so a PR is not failed by fixtures on unrelated branches.
+      # Pushes, the weekly run and manual runs scan every branch.
+      - name: Scan commits
+        env:
+          SCOPE: ${{ github.event_name == 'pull_request' && 'HEAD' || '--all' }}
         run: |
-          "$RUNNER_TEMP/gitleaks" git --config .github/gitleaks.toml --redact --no-banner --exit-code 1 .
+          "$RUNNER_TEMP/gitleaks" git --config .github/gitleaks.toml --redact --no-banner --exit-code 1 --log-opts="$SCOPE" .
 
   audit:
     name: npm audit (production, high)
