@@ -1,7 +1,10 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView } from 'react-native';
+import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
+import { familyCopy } from '@/lib/family/copy';
+import { inviteHref } from '@/lib/family/entry.logic';
 import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { getChild, hideChild, listChildren, subscribe, updateChild } from '@/lib/store';
@@ -51,6 +54,16 @@ export default function ChildSettings() {
 
       <Section footer={fill(s.remindersHelp, { child: name })}>
         <ToggleRow first title={fill(s.remindersLabel, { child: name })} value={child.remindersOn} onChange={(v) => updateChild(child.id, { remindersOn: v })} />
+      </Section>
+
+      {/* Co-parent sharing: v1.0 opens the coming-soon sheet; v1.1 opens the invite (lib/family/entry.logic.ts). */}
+      <Section footer={serverFeaturesEnabled() ? undefined : familyCopy.soon.settingsRowHelp}>
+        <Row
+          first
+          title={familyCopy.soon.settingsRow}
+          value={serverFeaturesEnabled() ? undefined : familyCopy.soon.status}
+          onPress={() => router.push(inviteHref('settings_child', serverFeaturesEnabled(), child.id) as Href)}
+        />
       </Section>
 
       <Section footer={fill(x.familyCanReadHelp, { child: name })}>

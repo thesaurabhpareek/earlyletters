@@ -6,6 +6,7 @@ import { brand } from '@scribe/brand';
 import { NeverList } from '@/components/consent/never-list';
 import { consentCopy } from '@/components/consent/copy';
 import { Row, Section, ToggleRow } from '@/components/settings/settings-ui';
+import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { getActiveChild } from '@/lib/store';
 import { grantAnalytics, withdrawAnalytics } from '@/lib/analytics';
@@ -21,6 +22,7 @@ import { useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
  * - Sync and family sharing (sensitive-data consent): shown here; its owner
  *   registers the status and the change flow (lib/analytics/privacy-sources).
  * - What we never do, then the full documents.
+ * v1.0: no sync and no account (lib/capabilities.ts), so the sync consent row is not shown.
  */
 export default function PrivacySettings() {
   const p = copy.settings.privacy;
@@ -51,9 +53,11 @@ export default function PrivacySettings() {
           <ToggleRow first title={p.analyticsLabel} subtitle={p.analyticsHelp} value={analytics === 'granted'} onChange={setAnalytics} disabled={busy} />
         </Section>
 
-        <Section title={consentCopy.sensitiveSection} footer={fill(p.sensitiveHelp, { child })}>
-          <Row first title={p.sensitiveLabel} value={sensitiveValue} onPress={sensitive.open} disabled={!sensitive.open && sensitive.status === 'signed_out'} />
-        </Section>
+        {capabilities.sync ? (
+          <Section title={consentCopy.sensitiveSection} footer={fill(p.sensitiveHelp, { child })}>
+            <Row first title={p.sensitiveLabel} value={sensitiveValue} onPress={sensitive.open} disabled={!sensitive.open && sensitive.status === 'signed_out'} />
+          </Section>
+        ) : null}
 
         <NeverList />
 

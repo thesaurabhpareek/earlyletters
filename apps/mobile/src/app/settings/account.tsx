@@ -8,10 +8,11 @@
  * "Sign out", which never discards unsynced letters (PRD A F6.4).
  * Account deletion lives with the data screens (PRD C), not here.
  */
-import { Stack, router } from 'expo-router';
+import { Redirect, Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { Row, Section } from '@/components/settings/settings-ui';
+import { capabilities } from '@/lib/capabilities';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { authCopy } from '@/lib/auth/copy';
@@ -24,7 +25,12 @@ import { copy } from '@/lib/copy';
 import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 
-export default function AccountSettings() {
+/** v1.0 has no account (lib/capabilities.ts): Settings offers no row, and a stale route goes back to Settings. */
+export default function AccountSettingsRoute() {
+  return capabilities.signIn ? <AccountSettings /> : <Redirect href="/settings" />;
+}
+
+function AccountSettings() {
   const auth = useAuth();
   const a = authCopy.account;
   const [passkeys, setPasskeys] = useState<PasskeyInfo[]>([]);

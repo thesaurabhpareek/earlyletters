@@ -665,6 +665,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `notifications.lockScreenNames` | L2 | The setting only. When on, local notification text carries the child's name (L4) on the lock screen (section 6, item 4) |
 | `player.original` | L2 | Play the original recording instead of the listening copy |
 | `auth.lastMethod` | L2 | Last sign-in method (apple, google, email, passkey) |
+| `family.coParentNotify` | L2 | Day (YYYY-MM-DD) the person tapped "Tell me when it's here" on co-parent coming soon; stays on the phone, never sent |
 | `language.spoken` | L4 | The author's spoken-letter languages, script and region (PRD 7.10: languages are L4) |
 | `speech.language` | L4 | The author's primary speech language |
 | `speech.letterLanguage.<letter id>` | L4 | Language a letter was spoken in; the key holds a letter id (L3) |
