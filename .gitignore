@@ -57,3 +57,8 @@ experiments/results/
 
 # generated token CSS is committed (consumed by Uniwind and web)
 !packages/design-tokens/dist/
+
+# web
+apps/web/.next*
+apps/web/next-env.d.ts
+apps/web/*.tsbuildinfo

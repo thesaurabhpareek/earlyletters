@@ -1,0 +1,44 @@
+/* Owner: coordinator. */
+.scene {
+  position: relative;
+  height: calc(var(--scene-length, 2) * 100svh);
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  width: 100%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.scene[data-tone='paper'] {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.scene[data-tone='dusk'] {
+  background: var(--dusk);
+  color: var(--night-ink);
+}
+
+.scene[data-tone='night'] {
+  background: var(--night);
+  color: var(--night-ink);
+}
+
+/* Reduced motion: scenes do not pin; content flows like a normal page. */
+@media (prefers-reduced-motion: reduce) {
+  .scene {
+    height: auto;
+    min-height: 100svh;
+  }
+  .stage {
+    position: relative;
+    min-height: 100svh;
+    height: auto;
+    padding-block: 12svh;
+  }
+}

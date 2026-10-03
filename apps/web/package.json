@@ -1,0 +1,32 @@
+{
+  "name": "@scribe/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "earlyletters.com: the one-page scroll film, legal pages and well-known files. ADR 0010.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@fontsource-variable/literata": "^5.3.0",
+    "@fontsource/mukta": "^5.3.0",
+    "@scribe/brand": "*",
+    "@scribe/design-tokens": "*",
+    "motion": "^14.0.0",
+    "next": "16.3.8",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "playwright-core": "^1.63.0",
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7"
+  }
+}
