@@ -118,7 +118,8 @@ function prFacts(pr) {
 }
 
 function attentionReasons(pr) {
-  if (labelNames(pr).includes("needs:founder")) return [];
+  // needs:founder does not pause fixes the agent can make on its own
+  // (failing checks, a red-team "fix first"); a founder comment unblocks it.
   const f = prFacts(pr);
   const reasons = [];
   if (f.failing.length) reasons.push(`failing checks: ${f.failing.join(", ")}`);
