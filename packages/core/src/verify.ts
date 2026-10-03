@@ -12,12 +12,14 @@
  *  - a name or pronoun, except a dictionary-backed stt_fix,
  *  - sentence type (. -> ?, ! removed), quotation marks, or any number,
  *  - or when a removal labelled filler, repeat or false start deletes
- *    anything that is not a filler, an accidental repeat or a real restart.
+ *    anything that is not a filler, an accidental repeat or a real restart,
+ *  - or any letter, combining mark (vowel sign, virama, nukta, accent) or
+ *    digit, or a boundary that cuts a letter from its marks (CORE-01).
  * Fillers, accidental repeats, dictionary name fixes, sentence case and a
  * final period where none was are still accepted.
  */
 import type { DictionaryTerm, Edit, EditLevel, EditType, RejectReason, RejectedEdit, Span } from './types';
-import { FILLERS, FUNCTION_WORDS, lettersOnly, tokens, words, type Token } from './text';
+import { FILLERS, FUNCTION_WORDS, frozenSet, lettersOnly, nfc, splitsCluster, tokens, WORD_CHAR_CLASS, words, type Token } from './text';
 import { isDictionaryTerm, overlaps } from './protect';
 import { REPEAT_ALWAYS, REPEAT_SUGGEST_ONLY } from './repeats';
 import {
@@ -38,22 +40,22 @@ import {
 export const CEILING_RATIO = 0.15;
 export const CEILING_MIN_WORDS = 3;
 
-const LEVEL_TYPES: Record<EditLevel, ReadonlySet<EditType>> = {
-  clean: new Set(['filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph']),
-  verbatim: new Set(['stt_fix', 'punctuation']),
-};
+const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.freeze({
+  clean: frozenSet<EditType>(['filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph']),
+  verbatim: frozenSet<EditType>(['stt_fix', 'punctuation']),
+});
 
-const REMOVAL_TYPES: ReadonlySet<EditType> = new Set(['filler', 'repeat', 'false_start']);
+const REMOVAL_TYPES: ReadonlySet<EditType> = frozenSet<EditType>(['filler', 'repeat', 'false_start']);
 
 /**
  * Single words whose immediate double is an accidental repeat, not emphasis.
  * The same lists the deterministic repeat rules use, plus "was" ("she was was").
  * "very very", "bye bye", "no no" are how people talk and are kept.
  */
-const REPEATABLE_WORDS: ReadonlySet<string> = new Set([...REPEAT_ALWAYS, ...REPEAT_SUGGEST_ONLY, 'was']);
+const REPEATABLE_WORDS: ReadonlySet<string> = frozenSet([...REPEAT_ALWAYS, ...REPEAT_SUGGEST_ONLY, 'was']);
 
 /** A phrase ending in one of these is unfinished, so saying it again is a restart. */
-const DANGLING = new Set([
+const DANGLING: ReadonlySet<string> = frozenSet([
   'a', 'an', 'the', 'my', 'your', 'our', 'their', 'his', 'its', 'to', 'of', 'with', 'for', 'from', 'at', 'and', 'but',
   'or', 'because', 'into', 'onto',
 ]);
@@ -80,8 +82,9 @@ function insideWord(toks: Token[], i: number): boolean {
   return toks.some((t) => t.start < i && i < t.end);
 }
 
-const WORD_CHAR = /[\p{L}\p{N}'’]/u;
-const LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
+/** Inside a word: letters, marks, digits, apostrophes and the zero-width joiners. */
+const WORD_CHAR = new RegExp(`[${WORD_CHAR_CLASS}'’\\u200C\\u200D]`, 'u');
+const LETTER_OR_DIGIT = new RegExp(`[${WORD_CHAR_CLASS}]`, 'u');
 
 /** Would applying `e` leave two words touching ("Today you you" minus " you " -> "Todayyou")? */
 function joinsWords(raw: string, e: Edit): boolean {
@@ -128,24 +131,29 @@ interface CaseChange {
   raised: boolean;
 }
 
+/**
+ * The letters of `text` as clusters: a letter or digit plus the marks and
+ * joiners that belong to it, with its offset. Compared in NFC, so "e" plus a
+ * combining accent and a precomposed "é" are the same letter (CORE-01).
+ */
+function letterClusters(text: string): Array<{ at: number; ch: string }> {
+  const out: Array<{ at: number; ch: string }> = [];
+  for (const m of text.matchAll(LETTER_CLUSTER)) out.push({ at: m.index!, ch: nfc(m[0]) });
+  return out;
+}
+const LETTER_CLUSTER = /[\p{L}\p{N}][\p{M}\u200C\u200D]*/gu;
+
 /** Letter-by-letter case changes in a punctuation edit, or null if the letters do not line up. */
 function caseChanges(e: Edit): CaseChange[] | null {
-  const LETTER = /[\p{L}\p{N}]/u;
+  const a = letterClusters(e.original);
+  const b = letterClusters(e.replacement);
   const out: CaseChange[] = [];
-  let i = 0;
-  let j = 0;
-  for (;;) {
-    while (i < e.original.length && !LETTER.test(e.original[i])) i++;
-    while (j < e.replacement.length && !LETTER.test(e.replacement[j])) j++;
-    if (i >= e.original.length || j >= e.replacement.length) break;
-    const o = e.original[i];
-    const r = e.replacement[j];
-    if (o !== r) {
-      if (o.toLowerCase() !== r.toLowerCase()) return null;
-      out.push({ at: j, from: i, raised: r === r.toUpperCase() && o !== o.toUpperCase() });
-    }
-    i++;
-    j++;
+  for (let k = 0; k < Math.min(a.length, b.length); k++) {
+    const o = a[k].ch;
+    const r = b[k].ch;
+    if (o === r) continue;
+    if (o.toLowerCase() !== r.toLowerCase()) return null;
+    out.push({ at: b[k].at, from: a[k].at, raised: r === r.toUpperCase() && o !== o.toUpperCase() });
   }
   return out;
 }
@@ -316,6 +324,10 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (e.start < 0 || e.end > raw.length || e.start > e.end) return 'out_of_bounds';
   if (raw.slice(e.start, e.end) !== e.original) return 'original_mismatch';
   if (!LEVEL_TYPES[ctx.level].has(e.type)) return 'type_not_allowed_at_level';
+
+  // No edit may start or end inside one written character: between a letter
+  // and its vowel sign, after a virama, or inside a surrogate pair (CORE-01).
+  if (splitsCluster(raw, e.start) || splitsCluster(raw, e.end)) return 'splits_word';
 
   // Dictionary corrections from our own rules are allowed to land on a
   // mis-cased name; everything else must stay clear of protected spans.
