@@ -1,0 +1,108 @@
+# E2E-02  First run with twins, offline.
+# Proves: B-REQ-001 (only a name and a birthday or due date are required),
+# B-REQ-004 and PRD-REQ-015 (every child added in first run gets a free book;
+# no Plus sheet), B-NFR-009 (first run works offline), C-REQ-001 (no OS
+# notification prompt during first run), PRD-REQ-012 (switcher lists both books).
+# The server half of PRD-REQ-015 is gone (D-053: Plus is checked on the device
+# only), so nothing here calls create_child.
+appId: ${APP_ID}
+name: E2E-02 First run with twins
+tags:
+  - e2e
+  - E2E-02
+  - B-REQ-001
+  - B-REQ-004
+  - PRD-REQ-015
+  - B-NFR-009
+  - C-REQ-001
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_OFFLINE: "1"
+- runFlow: ../subflows/pass-age-gate.yaml
+- assertVisible:
+    id: "onboarding.step.welcome"
+- tapOn:
+    id: "onboarding.cta"
+- assertVisible:
+    id: "onboarding.step.promise"
+- tapOn:
+    id: "onboarding.cta"
+# Child step: Continue stays disabled until every name field has a name.
+- assertVisible:
+    id: "onboarding.step.child"
+- assertVisible:
+    id: "onboarding.cta"
+    enabled: false
+- tapOn:
+    id: "onboarding.child.name.0"
+- inputText: "Asha"
+- tapOn:
+    id: "onboarding.child.addAnother"
+- assertVisible:
+    id: "onboarding.cta"
+    enabled: false
+- tapOn:
+    id: "onboarding.child.name.1"
+- inputText: "Avi"
+- hideKeyboard
+# Born is the default; today's date is a valid birthday, so nothing else is needed.
+- assertVisible:
+    id: "onboarding.child.when.born"
+- assertNotVisible:
+    id: "plusGate.screen"
+- tapOn:
+    id: "onboarding.cta"
+    enabled: true
+- assertVisible:
+    id: "onboarding.step.signsAs"
+- tapOn:
+    id: "onboarding.signsAs.input"
+- inputText: "Mama"
+- hideKeyboard
+- tapOn:
+    id: "onboarding.cta"
+    enabled: true
+- assertVisible:
+    id: "onboarding.step.finish"
+- tapOn:
+    id: "onboarding.cta"
+- assertVisible:
+    id: "tonight.screen"
+# No Plus sheet and no notification prompt anywhere in first run.
+- assertNotVisible:
+    id: "plusGate.screen"
+- assertNotVisible:
+    text: ".*Would Like to Send You Notifications.*"
+# Both books exist: the switcher lists two children and offers Add a child.
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    id: "book.screen"
+- tapOn:
+    id: "book.childSwitcher"
+- assertVisible:
+    id: "switcher.sheet"
+- assertVisible:
+    id: "switcher.child"
+    index: 0
+- assertVisible:
+    id: "switcher.child"
+    index: 1
+- assertVisible:
+    id: "switcher.addChild"
+# Switch to the second book; the Book title names that child (fixture name, not copy).
+- tapOn:
+    id: "switcher.child"
+    index: 1
+- assertVisible:
+    text: ".*Avi.*"
+- tapOn:
+    id: "book.childSwitcher"
+- tapOn:
+    id: "switcher.child"
+    index: 0
+- assertVisible:
+    text: ".*Asha.*"
+- stopApp

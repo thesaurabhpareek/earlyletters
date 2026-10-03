@@ -104,8 +104,8 @@ export default function Settings() {
 
       <ListSection title={h.sections.writing}>
         <ListRow title={h.languageLabel} subtitle={h.languageHelp} trailing="chevron" onPress={go(ROUTES.language)} />
-        <ListRow title={h.remindersLabel} trailing={s.reminders} onPress={go(ROUTES.reminders)} />
-        <ListRow title={h.appearanceLabel} trailing={copy.settingsMore.themes[s.appearance]} onPress={go(ROUTES.appearance)} />
+        <ListRow title={h.remindersLabel} value={s.reminders} trailing="chevron" onPress={go(ROUTES.reminders)} />
+        <ListRow title={h.appearanceLabel} value={copy.settingsMore.themes[s.appearance]} trailing="chevron" onPress={go(ROUTES.appearance)} />
       </ListSection>
 
       <ListSection title={h.sections.data} footer={copy.trust.short}>
@@ -133,8 +133,8 @@ export default function Settings() {
           ))}
           <Text variant="footnote">{copy.struggling.emergency}</Text>
         </Disclosure>
-        <ListRow title={h.termsLabel} trailing="chevron" onPress={openWeb(brand.web.terms)} />
-        <ListRow title={h.privacyPolicyLabel} trailing="chevron" onPress={openWeb(brand.web.privacy)} />
+        <ListRow accessibilityRole="link" title={h.termsLabel} trailing="chevron" onPress={openWeb(brand.web.terms)} />
+        <ListRow accessibilityRole="link" title={h.privacyPolicyLabel} trailing="chevron" onPress={openWeb(brand.web.privacy)} />
         <Disclosure title={h.licencesLabel}>
           <Text variant="subhead">{licences.intro}</Text>
           {licences.sections.map((sec) => (

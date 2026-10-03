@@ -10,8 +10,9 @@
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { Row, Section } from '@/components/settings/settings-ui';
+import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
+import { track } from '@/lib/analytics/track';
 import { billingCopy, manageSubscription, presentPlusStore, requestRefund, restorePurchases, usePlan, type PlanLine } from '@/lib/billing';
 import { copy, fill } from '@/lib/copy';
 import { longDate } from '@/lib/dates';
@@ -68,30 +69,43 @@ export default function PlanSettings() {
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: p.title }} />
 
-      <Section title={p.statusTitle} footer={copy.plus.promise}>
+      <ListSection title={p.statusTitle} footer={copy.plus.promise}>
         <View accessible className="gap-1 px-4 py-3">
           <View className="flex-row items-start gap-3">
-            <Text className="flex-1 text-base leading-6 text-foreground">{statusText(plan.line)}</Text>
-            {period && <Text className="text-base text-muted-foreground">{period}</Text>}
+            <Text variant="body" className="flex-1">
+              {statusText(plan.line)}
+            </Text>
+            {period && (
+              <Text variant="body" tone="muted">
+                {period}
+              </Text>
+            )}
           </View>
-          {shared && <Text className="text-sm leading-5 text-muted-foreground">{p.shared}</Text>}
+          {shared && <Text variant="footnote">{p.shared}</Text>}
         </View>
-      </Section>
+      </ListSection>
 
       <View className="gap-2">
-        <Section footer={p.payment}>
+        <ListSection footer={p.payment}>
           {!plan.plusOn && plan.storeSupport === 'available' && (
-            <Row
-              first
+            <ListRow
               title={p.seePlans}
+              trailing="chevron"
               disabled={busy !== null}
-              onPress={() => run('store', async () => ((await presentPlusStore()) === 'purchased' ? billingCopy.gate.isOn : null))}
+              onPress={() =>
+                run('store', async () => {
+                  track('plus_offer_viewed', { trigger: 'settings' });
+                  const outcome = await presentPlusStore();
+                  if (outcome !== 'busy') track('plus_offer_closed', { trigger: 'settings', outcome });
+                  return outcome === 'purchased' ? billingCopy.gate.isOn : null;
+                })
+              }
             />
           )}
-          <Row
-            first={plan.plusOn || plan.storeSupport !== 'available'}
+          <ListRow
             title={p.manage}
             subtitle={p.manageHelp}
+            trailing="chevron"
             disabled={busy !== null}
             onPress={() =>
               run('manage', async () => {
@@ -100,32 +114,38 @@ export default function PlanSettings() {
               })
             }
           />
-          <Row
+          <ListRow
             title={busy === 'restore' ? p.restoring : p.restore}
             subtitle={p.restoreHelp}
             disabled={busy !== null}
             onPress={() =>
               run('restore', async () => {
                 const r = await restorePurchases();
+                track('restore_result', { outcome: r });
                 return r === 'restored' ? p.restored : r === 'nothing' ? p.restoreNothing : r === 'cancelled' ? null : p.restoreFailed;
               })
             }
           />
           {ownPurchase && (
-            <Row
+            <ListRow
               title={p.refund}
               subtitle={p.refundHelp}
+              trailing="chevron"
               disabled={busy !== null}
               onPress={() => run('refund', async () => ((await requestRefund()) === 'success' ? p.refundSent : null))}
             />
           )}
-        </Section>
+        </ListSection>
         {notice && (
-          <Text accessibilityLiveRegion="polite" className="px-1 text-sm leading-5 text-foreground">
+          <Text variant="footnote" tone="default" accessibilityLiveRegion="polite" className="px-4">
             {notice}
           </Text>
         )}
-        {storeNote && <Text className="px-1 text-sm leading-5 text-muted-foreground">{storeNote}</Text>}
+        {storeNote && (
+          <Text variant="footnote" className="px-4">
+            {storeNote}
+          </Text>
+        )}
       </View>
     </ScrollView>
   );

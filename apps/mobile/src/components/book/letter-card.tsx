@@ -20,6 +20,8 @@ import { layoutSpring, type Motion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 import { datelineA11y, shortDateline } from './chapters';
+import { bookCopy } from './copy';
+import { letterWords } from './letter-words.logic';
 
 interface Props {
   entry: Entry;
@@ -43,8 +45,10 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
   const signature = fill(copy.book.signature, { signsAs });
   const date = shortDateline(child, entry.occurredOn);
   const spoken = entry.captureMode !== 'typed';
-  const waiting = entry.transcriptStatus === 'waiting';
-  const excerpt = waiting ? pendingCopy.book.waitingForWords : entry.finalText.replace(/\s+/g, ' ').trim();
+  const words = letterWords(entry);
+  // No words to show (waiting for them, or nobody spoke): a quiet italic note instead of an excerpt.
+  const waiting = words !== 'words';
+  const excerpt = words === 'waiting' ? pendingCopy.book.waitingForWords : words === 'nobodySpoke' ? bookCopy.nobodySpoke : entry.finalText.replace(/\s+/g, ' ').trim();
 
   const label = [signature, datelineA11y(child, entry.occurredOn), excerpt, entry.inBook ? null : copy.book.privateLabel, spoken ? copy.book.recordingOnPhone : null]
     .filter(Boolean)
