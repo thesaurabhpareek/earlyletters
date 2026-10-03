@@ -1,0 +1,140 @@
+# The agent team. Every 30 minutes the dispatcher (plain code, no model)
+# decides what each agent works on next and starts up to six agents in
+# parallel. Each agent is Claude Code running as the Claude GitHub App, so its
+# pull requests come from the Claude bot, run CI, and wait for the founder.
+#
+# Needs: the ANTHROPIC_API_KEY secret (a key from a Claude Console workspace
+# with a monthly spend limit). Pause: repository variable AGENTS_PAUSED=true.
+# Rules: docs/agents/OPERATING_MODEL.md. Decision: docs/adr/0014.
+name: Agents
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: "Run only this agent (handle from agents/roster.json); empty for all"
+        required: false
+        default: ""
+      task:
+        description: "Backlog id to force for that agent (for example BL-121); empty to let the dispatcher choose"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    concurrency:
+      group: agents-plan
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      checks: read
+      actions: read
+    outputs:
+      assignments: ${{ steps.dispatch.outputs.assignments }}
+      count: ${{ steps.dispatch.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Dispatch
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_MODEL_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+          AGENTS_PAUSED: ${{ vars.AGENTS_PAUSED }}
+          ONLY_AGENT: ${{ inputs.agent }}
+          FORCE_TASK: ${{ inputs.task }}
+        run: node scripts/agents/dispatch.mjs
+
+  run:
+    name: agent ${{ matrix.agent }}
+    needs: plan
+    if: needs.plan.outputs.count != '0' && needs.plan.outputs.count != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.assignments) }}
+    concurrency:
+      group: agent-${{ matrix.agent }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      checks: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Install dependencies
+        uses: ./.github/actions/setup
+
+      # Values from the plan travel through env, never straight into the
+      # shell, so a PR title can never become a command.
+      - name: Write the run brief
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          AGENT: ${{ matrix.agent }}
+          MODE: ${{ matrix.mode }}
+          TASK: ${{ matrix.task }}
+          PR: ${{ matrix.pr }}
+          REASON: ${{ matrix.reason }}
+          JOURNAL: ${{ matrix.journal }}
+        run: >
+          node scripts/agents/brief.mjs --agent "$AGENT" --mode "$MODE" --task "$TASK" --pr "$PR"
+          --reason "$REASON" --journal "$JOURNAL" --run-url "$RUN_URL" --run-id "$GITHUB_RUN_ID"
+          --out .agent-run/brief.md
+
+      - name: Agent
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: github-actions,claude
+          base_branch: develop
+          prompt: |
+            You are the Early Letters agent "${{ matrix.agent }}". Read .agent-run/brief.md now and follow it exactly.
+            It holds your identity, memory, founder instructions, your one assignment for this run, and how to finish.
+          claude_args: |
+            --model ${{ matrix.model }}
+            --max-turns ${{ matrix.max_turns }}
+            --allowedTools "Read,Write,Edit,MultiEdit,Glob,Grep,Bash,WebSearch,WebFetch,TodoWrite,Task"
+            --disallowedTools "Bash(git push --force:*),Bash(git push -f:*),Bash(gh pr merge:*),Bash(gh pr review --approve:*),Bash(gh repo delete:*),Bash(gh secret:*),Bash(gh variable:*)"
+
+      - name: Run receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          AGENT: ${{ matrix.agent }}
+          MODE: ${{ matrix.mode }}
+          TASK: ${{ matrix.task }}
+          PR: ${{ matrix.pr }}
+          JOURNAL: ${{ matrix.journal }}
+          OUTCOME: ${{ steps.claude.outcome }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: >
+          node scripts/agents/receipt.mjs --agent "$AGENT" --journal "$JOURNAL" --mode "$MODE"
+          --task "$TASK" --pr "$PR" --outcome "$OUTCOME" --execution-file "$EXECUTION_FILE"
+          --run-url "$RUN_URL" --run-id "$GITHUB_RUN_ID"

@@ -1,0 +1,196 @@
+{
+  "$comment": "The Early Letters agent team. Edit caps and models here; the dispatcher reads this file on every tick. Rules: docs/agents/OPERATING_MODEL.md. Decision: docs/adr/0014-agent-operating-system.md.",
+  "version": 1,
+  "repo": "thesaurabhpareek/earlyletters",
+  "base_branch": "develop",
+  "founder": "thesaurabhpareek",
+  "limits": {
+    "$comment": "max_runs_per_day_total is the main budget lever. At the modelled $0.47 to $3.73 per Sonnet session, 30 runs a day is roughly $420 to $3,400 a month in API spend before Opus runs. The hard stop is the spend limit on the Claude Console workspace that holds ANTHROPIC_API_KEY.",
+    "max_runs_per_day_total": 30,
+    "max_parallel": 6,
+    "digest_hour_utc": 14,
+    "claim_grace_minutes": 20
+  },
+  "defaults": {
+    "model": "claude-sonnet-5-5",
+    "max_turns": 80,
+    "timeout_minutes": 50,
+    "daily_runs": 1,
+    "wip_limit": 1
+  },
+  "departments": {
+    "engineering": "1f6feb",
+    "data": "8250df",
+    "applied-science": "bf3989",
+    "quality": "1a7f37",
+    "design": "d4a72c",
+    "brand": "e16f24",
+    "product": "0969da",
+    "legal": "6e7781",
+    "growth": "cf222e",
+    "support": "2da44e",
+    "operations": "57606a"
+  },
+  "agents": [
+    {
+      "handle": "red-team",
+      "title": "Principal Reviewer (red team)",
+      "department": "quality",
+      "backlog_owner_names": [],
+      "kind": "reviewer",
+      "model": "claude-opus-5-5",
+      "daily_runs": 4,
+      "wip_limit": 1,
+      "max_turns": 60
+    },
+    {
+      "handle": "product",
+      "title": "Product Manager",
+      "department": "product",
+      "backlog_owner_names": [],
+      "kind": "planner",
+      "daily_runs": 3,
+      "wip_limit": 2
+    },
+    {
+      "handle": "qa",
+      "title": "Quality Engineer",
+      "department": "quality",
+      "backlog_owner_names": ["qa engineer"],
+      "daily_runs": 3,
+      "wip_limit": 3
+    },
+    {
+      "handle": "mobile",
+      "title": "Mobile Engineer (iOS first, Expo)",
+      "department": "engineering",
+      "backlog_owner_names": ["mobile engineer"],
+      "daily_runs": 4,
+      "wip_limit": 3
+    },
+    {
+      "handle": "data-architect",
+      "title": "Data Architect (Supabase)",
+      "department": "data",
+      "backlog_owner_names": ["data architect"],
+      "model": "claude-opus-5-5",
+      "daily_runs": 3,
+      "wip_limit": 2
+    },
+    {
+      "handle": "security",
+      "title": "Security Engineer",
+      "department": "engineering",
+      "backlog_owner_names": ["security engineer"],
+      "model": "claude-opus-5-5",
+      "daily_runs": 2,
+      "wip_limit": 2
+    },
+    {
+      "handle": "privacy",
+      "title": "Privacy Engineer",
+      "department": "engineering",
+      "backlog_owner_names": ["privacy engineer"],
+      "daily_runs": 2,
+      "wip_limit": 2
+    },
+    {
+      "handle": "speech",
+      "title": "Speech and Applied Science Engineer",
+      "department": "applied-science",
+      "backlog_owner_names": ["speech engineer"],
+      "daily_runs": 2,
+      "wip_limit": 2
+    },
+    {
+      "handle": "sync",
+      "title": "Sync and Backend Engineer",
+      "department": "engineering",
+      "backlog_owner_names": ["sync owner"],
+      "daily_runs": 2,
+      "wip_limit": 2
+    },
+    {
+      "handle": "payments",
+      "title": "Payments Engineer (StoreKit)",
+      "department": "engineering",
+      "backlog_owner_names": ["payments engineer"],
+      "daily_runs": 2,
+      "wip_limit": 2
+    },
+    {
+      "handle": "design-systems",
+      "title": "Design Systems and Accessibility Lead",
+      "department": "design",
+      "backlog_owner_names": ["design systems"],
+      "daily_runs": 3,
+      "wip_limit": 2
+    },
+    {
+      "handle": "analytics",
+      "title": "Analytics Engineer",
+      "department": "data",
+      "backlog_owner_names": ["analytics engineer"],
+      "daily_runs": 2,
+      "wip_limit": 2
+    },
+    {
+      "handle": "content",
+      "title": "Brand and Content Lead",
+      "department": "brand",
+      "backlog_owner_names": ["content"],
+      "daily_runs": 2,
+      "wip_limit": 2
+    },
+    {
+      "handle": "decision-science",
+      "title": "Decision Scientist",
+      "department": "data",
+      "backlog_owner_names": [],
+      "daily_runs": 1,
+      "wip_limit": 1
+    },
+    {
+      "handle": "legal",
+      "title": "Legal Drafting (counsel-facing)",
+      "department": "legal",
+      "backlog_owner_names": ["legal"],
+      "daily_runs": 1,
+      "wip_limit": 1
+    },
+    {
+      "handle": "marketing",
+      "title": "Growth and Marketing Lead",
+      "department": "growth",
+      "backlog_owner_names": [],
+      "daily_runs": 1,
+      "wip_limit": 1
+    },
+    {
+      "handle": "support",
+      "title": "Customer Support Lead",
+      "department": "support",
+      "backlog_owner_names": [],
+      "daily_runs": 1,
+      "wip_limit": 1
+    },
+    {
+      "handle": "ops",
+      "title": "Release and Operations Engineer",
+      "department": "operations",
+      "backlog_owner_names": [],
+      "daily_runs": 1,
+      "wip_limit": 1
+    },
+    {
+      "handle": "chief-of-staff",
+      "title": "Chief of Staff",
+      "department": "operations",
+      "backlog_owner_names": [],
+      "kind": "digest",
+      "daily_runs": 1,
+      "wip_limit": 0,
+      "max_turns": 40
+    }
+  ]
+}
