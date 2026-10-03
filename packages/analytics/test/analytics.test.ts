@@ -3,6 +3,7 @@ import {
   createAnalytics,
   memoryStorage,
   recordingProvider,
+  SCHEMA_VERSION,
   STORAGE_KEYS,
   type Violation,
 } from '../src';
@@ -86,7 +87,7 @@ describe('consent gate', () => {
     await analytics.flush();
     const [evt] = provider.captured();
     expect(evt.event).toBe('letter_saved');
-    expect(evt.properties).toMatchObject({ ...validLetter, schema_version: 1 });
+    expect(evt.properties).toMatchObject({ ...validLetter, schema_version: SCHEMA_VERSION });
   });
 
   it('restores a persisted grant on init without a new id', async () => {
@@ -109,7 +110,7 @@ describe('allowlist', () => {
     // @ts-expect-error unknown property is a type error too
     analytics.track('screen_view', { route: 'book', referrer: 'settings' });
     await analytics.flush();
-    expect(provider.captured()[0].properties).toEqual({ route: 'book', schema_version: 1 });
+    expect(provider.captured()[0].properties).toEqual({ route: 'book', schema_version: SCHEMA_VERSION });
     expect(violations).toContainEqual({ kind: 'unknown_property', event: 'screen_view', property: '<unlisted>' });
   });
 
@@ -124,21 +125,50 @@ describe('allowlist', () => {
     expect(violations[0].kind).toBe('unknown_event');
   });
 
-  it('strips values outside the enum or integer range', async () => {
-    const { analytics, provider } = setup();
+  it('drops the event when a required value is outside the enum or integer range (PDATA-03)', async () => {
+    const { analytics, provider, violations } = setup();
     await analytics.init();
     await analytics.grant();
-    analytics.track('letter_saved', {
-      ...validLetter,
-      // @ts-expect-error not an allowed value
-      destination: 'everyone',
-      machine_edit_count: 10_000,
-    });
+    expect(
+      analytics.track('letter_saved', {
+        ...validLetter,
+        // @ts-expect-error not an allowed value
+        destination: 'everyone',
+        machine_edit_count: 10_000,
+      }),
+    ).toBe('dropped_invalid');
+    await analytics.flush();
+    expect(provider.captured()).toHaveLength(0);
+    expect(violations).toContainEqual({ kind: 'invalid_value', event: 'letter_saved', property: 'destination' });
+    expect(violations).toContainEqual({ kind: 'invalid_value', event: 'letter_saved', property: 'machine_edit_count' });
+    expect(analytics.violationCounts()).toEqual({ invalid_value: 2 });
+  });
+
+  it('strips an invalid optional value but keeps the event', async () => {
+    const { analytics, provider, violations } = setup();
+    await analytics.init();
+    await analytics.grant();
+    // @ts-expect-error not an allowed value
+    expect(analytics.track('letter_saved', { ...validLetter, audio_bucket: 'forever' })).toBe('queued');
     await analytics.flush();
     const props = provider.captured()[0].properties;
-    expect(props).not.toHaveProperty('destination');
-    expect(props).not.toHaveProperty('machine_edit_count');
+    expect(props).not.toHaveProperty('audio_bucket');
     expect(props.mode).toBe('spoken');
+    expect(violations).toEqual([{ kind: 'invalid_value', event: 'letter_saved', property: 'audio_bucket' }]);
+  });
+
+  it('drops the event and counts a violation when a required property is missing (PDATA-03)', async () => {
+    const { analytics, provider, violations } = setup();
+    await analytics.init();
+    await analytics.grant();
+    const { destination: _omit, ...partial } = validLetter;
+    void _omit;
+    // @ts-expect-error destination is required
+    expect(analytics.track('letter_saved', partial)).toBe('dropped_invalid');
+    await analytics.flush();
+    expect(provider.captured()).toHaveLength(0);
+    expect(violations).toEqual([{ kind: 'missing_property', event: 'letter_saved', property: 'destination' }]);
+    expect(analytics.violationCounts()).toEqual({ missing_property: 1 });
   });
 
   it('rejects non-integer numbers, nulls, objects and arrays', async () => {
@@ -149,11 +179,34 @@ describe('allowlist', () => {
       reason: 'finished',
       session_bucket: '1_5m',
       letters_heard: 2.5,
+    });
+    analytics.track('read_together_ended', {
+      reason: 'finished',
+      // @ts-expect-error null is never allowed
+      session_bucket: null,
+      letters_heard: 2,
+    });
+    analytics.track('read_together_ended', {
+      reason: 'finished',
+      session_bucket: '1_5m',
+      letters_heard: 2,
       // @ts-expect-error nested objects are never allowed
       extra: { a: 1 },
     });
+    analytics.track('read_together_ended', {
+      reason: 'finished',
+      session_bucket: '1_5m',
+      // @ts-expect-error arrays are never allowed
+      letters_heard: [1],
+    });
     await analytics.flush();
-    expect(provider.captured()[0].properties).toEqual({ reason: 'finished', session_bucket: '1_5m', schema_version: 1 });
+    expect(provider.captured()).toHaveLength(1);
+    expect(provider.captured()[0].properties).toEqual({
+      reason: 'finished',
+      session_bucket: '1_5m',
+      letters_heard: 2,
+      schema_version: SCHEMA_VERSION,
+    });
   });
 });
 
@@ -194,7 +247,7 @@ describe('free text and PII', () => {
     await analytics.init();
     await analytics.grant();
     // @ts-expect-error free text
-    analytics.track('child_switched', { ordinal: 'Asha', surface: 'book' });
+    analytics.track('child_switched', { child_ordinal: 'Asha', surface: 'book' });
     // @ts-expect-error free text
     analytics.track('error_shown', { code: 'She laughed at the dog today' });
     // @ts-expect-error too long
@@ -298,7 +351,7 @@ describe('globals, sampling, queue cap', () => {
     await analytics.init();
     await analytics.grant();
     analytics.setChildCount(3);
-    analytics.track('child_switched', { ordinal: 'third_plus', surface: 'book' });
+    analytics.track('child_switched', { child_ordinal: 'third_plus', surface: 'book' });
     await analytics.flush();
     expect(provider.captured()[0].properties.child_count_bucket).toBe('three_plus');
     expect(provider.calls.find((c) => c.method === 'identify')!.args).toHaveLength(1);
