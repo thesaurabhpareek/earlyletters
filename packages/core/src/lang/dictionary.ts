@@ -97,7 +97,7 @@ export function protectedSpansFor(text: string, dictionary: DictionaryTerm[], lo
 /**
  * Dictionary corrections: every learned mishearing, and case-only variants
  * of a term, become the canonical term. Quoted spans are skipped. Longer
- * variants first, so "Meera ji" wins over "Meera".
+ * variants first, so "Mira ji" wins over "Mira".
  */
 export function dictionaryEditsFor(raw: string, dictionary: DictionaryTerm[], R: LanguageRules): Edit[] {
   const quotes = quotedSpansFor(raw);
