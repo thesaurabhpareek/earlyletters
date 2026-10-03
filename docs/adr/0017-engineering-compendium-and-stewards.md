@@ -29,4 +29,4 @@ Standards for this codebase were spread across `CLAUDE.md`, BRIEF decisions, ten
 
 - Five more agents; the roster requests 50 runs a day against the team cap of 30 until the founder changes it. Stewards idle when there is nothing in their paths to review.
 - PRs in shared paths (for example `supabase/migrations/**`) get up to three steward reviews plus the red team. That is intended for the riskiest paths and costs cents per review on the default model.
-- 81 of 192 MUST rules have no mechanical check yet. They are explicit, owned and queued, not hidden.
+- 78 of 192 rules have no mechanical check yet. They are explicit, owned and queued, not hidden.

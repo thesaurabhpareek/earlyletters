@@ -12,7 +12,7 @@ The constitution in `CLAUDE.md` comes first: the machine may remove and repair, 
 
 ## Contracts
 5. Every write is idempotent on a client key, and every contract change is additive, because old app builds stay in the field. (API-R06, API-R11)
-6. Errors are typed codes and SQLSTATEs. Messages and logs never hold user data; logs carry a random request id, never a user id. (CODE-R15, OBS-R02, OBS-R03)
+6. Errors are typed codes and SQLSTATEs. Messages and operational logs never hold user data and carry a random request id, never a user id; only the audit log records actor and target ids (SEC-R24). (CODE-R15, OBS-R02, OBS-R03)
 
 ## Data
 7. Deny by default: every table, view, function and sequence starts closed and is opened on purpose, with an allow test and a deny test. (DB-R12, DB-R13, DB-R14, IAM-R14)
@@ -34,4 +34,4 @@ The constitution in `CLAUDE.md` comes first: the machine may remove and repair, 
 19. Need something outside your files? Open a handoff to the owner (`docs/agents/AGENT-COMMS.md`). Never edit another agent's files.
 20. A rule nobody enforces is a wish. When agents break a rule twice, turn it into a check. (AIE-R04, AIE-R06)
 
-When a rule here and a chapter disagree, the chapter wins; tell its owner with a handoff. When a chapter and the code disagree, that is a bug in one of them: say which in your PR.
+This page summarises the chapters. When it and a chapter disagree, the chapter wins; tell its owner with a handoff. Precedence between this compendium and other sources is AIE-R01. When a chapter and the code disagree, that is a bug in one of them: say which in your PR.

@@ -4,7 +4,7 @@ Every MUST rule in the compendium and what enforces it today. Status words: **en
 
 Rules that stay `not yet` are the backlog for the stewards' standing duty 2: turn one into a real check per run, or file it as a backlog proposal for `product`. The owner of each chapter keeps its rows current in the same PR that changes a rule or adds a check.
 
-Totals across 192 MUST rules (2026-10-03): 81 not yet, 42 enforced, 39 pending, 30 partly/review.
+Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 38 pending in open PRs, 34 partly enforced, review-only or covered by the rule they cite, 78 not yet.
 
 ## principal-architect (chapters 01, 02, 10)
 
@@ -29,9 +29,9 @@ Totals across 192 MUST rules (2026-10-03): 81 not yet, 42 enforced, 39 pending, 
 | CODE-R20 | MUST | typecheck `strict` in CI; ESLint and Prettier | typecheck enforced on develop; lint not yet (PR #30 job waits for WS-12, WS-16) | MONO-01 |
 | API-R01 | MUST | contract package with typed wrappers | not yet | API-G4 (MONO-10, WS-04) |
 | API-R02 | MUST | generated types plus drift test | not yet | WS-04 |
-| API-R03 | MUST | view grant revokes; grants catalog sweep | pending PR #32, PR #26 | DB-01 |
-| API-R04 | MUST NOT | review; gitleaks; app bundle secret scan | gitleaks pending PR #30; bundle scan not yet | API-G1 |
-| API-R05 | MUST | `access_matrix.test.mjs`; anon-executable sweep | partly on develop; sweep pending PR #26 | none |
+| API-R03 | MUST | cites DB-R13 for views; RPC or narrow policy writes by review | see DB-R13; review | DB-01 |
+| API-R04 | MUST NOT | review (security-architect); bundle scan | review; bundle scan not yet | API-G1 |
+| API-R05 | MUST | `access_matrix.test.mjs` (matrix listing, no anon-callable function) | enforced on develop | none |
 | API-R06 | MUST | UUIDv7 check; DATA-REQ-044 tests; key column for non-row RPCs | partly on develop (pending migrations 3-7 in tests); key column not yet | API-G2 |
 | API-R07 | MUST | idempotency key store | not yet | API-G2 |
 | API-R08 | MUST | device outbox with retry classes | not yet | MOB-02 (WS-09) |
@@ -93,7 +93,7 @@ Gap ids defined here:
 | DB-R12 | MUST | `classification.test.mjs` (RLS on); allow/deny coverage by review | partly on develop | DB-18 |
 | DB-R13 | MUST | revokes + `[DB-01]` tests; `grants.test.mjs` view sweep | pending PR #32, PR #26 | DB-01 |
 | DB-R14 | MUST | revoke blocks in migrations; anon-executable sweep; sequence revoke | functions on develop; sweep pending PR #26; sequences pending PR #32 | PDB-02 |
-| DB-R15 | MUST | `search_path = pg_catalog, public` rewrite; catalog check proposed | pending PR #32; check not yet | DB-11 |
+| DB-R15 | MUST | `access_matrix.test.mjs:262-264` (search_path pinned); order rewrite; order check | presence enforced on develop; order pending PR #32; order check not yet | DB-11 |
 | DB-R16 | MUST | DB-R13 tests; review | pending PR #32 | DB-01 |
 | DB-R17 | MUST | `entries_guard_immutable`; `rls.test.mjs`, `data_governance.test.mjs` | enforced on develop (test harness) | none |
 | DB-R18 | MUST | `entries_guard_immutable`; `SCTMB` test | enforced on develop (server); device gap | MOB-03, WS-09 |
@@ -140,7 +140,7 @@ Gap ids defined here:
 | IAM-R12 | MUST | app behaviour test | not yet | TDD 04 3.2.3 |
 | IAM-R13 | MUST | `access_matrix.test.mjs` structural checks | enforced on develop | |
 | IAM-R14 | MUST | `access_matrix.test.mjs` lines 253-266 | enforced on develop | |
-| IAM-R15 | MUST | view revokes; `grants.test.mjs` catalog sweep | pending PR #32, PR #26 | DB-01 |
+| IAM-R15 | MUST | cites DB-R13 | see DB-R13 | DB-01 |
 | IAM-R16 | MUST | review; `book_access` table | not yet | DB-08, D-024 |
 | IAM-R17 | MUST | `book_children` view; matrix cell | pending PR #32 | DB-05 |
 | IAM-R18 | MUST | `create_child_invite`; `purge_batching.sql:137`; `security_family.test.mjs` | enforced on develop (not live) | DB-03, BL-112 |
@@ -148,7 +148,7 @@ Gap ids defined here:
 | IAM-R20 | MUST | `remove_member`, `set_member_role` RPCs | not yet | PSEC-01, WS-02 |
 | IAM-R21 | MUST | `data_governance.test.mjs` (SCLPG) | enforced on develop | |
 | IAM-R22 | MUST | runbook; review | not yet | DB-17, WS-18 |
-| IAM-R23 | MUST NOT | gitleaks; bundle scan | pending PR #30 (repo); not yet (bundle) | PINF-01, PINF-05 |
+| IAM-R23 | MUST NOT | review; no Supabase credentials in `agents.yml` | review | PINF-01, PINF-05 |
 | IAM-R24 | MUST | access matrix unlisted-function check; review | enforced on develop (functions); review (tables, views) | |
 | SEC-R01 | MUST | review; `docs/security/threat-model.md` | not yet | handoff to `security` |
 | SEC-R02 | MUST | `docs/ops/SECRETS.md` | not yet | PINF-05, WS-18 |
@@ -170,7 +170,7 @@ Gap ids defined here:
 | SEC-R18 | MUST | storage policy changes and tests | pending PR #32 | PSEC-04 |
 | SEC-R19 | MUST | review of `agents.yml`, roster; App permissions (founder setting) | not yet (not verifiable in repo) | PINF-01 |
 | SEC-R20 | MUST | GitHub App token in `agents.yml` | partial on harness branch; not yet for all engines | PINF-02 |
-| SEC-R21 | MUST | `isFounderComment` (`scripts/agents/lib.mjs:226`); `claude.yml` OWNER filter | enforced on harness branch (PR #4); review | PINF-03 |
+| SEC-R21 | MUST | cites AIE-R22; `claude.yml` OWNER filter | pending PR #4; review | PINF-03 |
 | SEC-R22 | MUST | DNS records | not yet | PINF-08 |
 | SEC-R23 | MUST | `SECURITY.md`, `docs/ops/INCIDENT.md` | not yet | PINF-09, WS-18 |
 | SEC-R24 | MUST | `security_events` table and sources | not yet | LEGAL-REQ-037 |
@@ -199,7 +199,7 @@ Gap ids defined here:
 | PRIV-R19 | MUST | `classification.test.mjs` L4 checks; catalogue review | enforced on develop | none |
 | PRIV-R20 | MUST NOT | `child-input` flag check | not yet | LEGAL-REQ-059, PDATA-08 |
 | DSR-R01 | MUST | review; `ops/lib/runbook.mjs` wrapper | not yet | TDD 05 7.7 |
-| DSR-R02 | MUST | review; support runbook | not yet | LEGAL-REQ-036 |
+| DSR-R02 | MUST | review; support runbook | review only | LEGAL-REQ-036 |
 | DSR-R03 | MUST | deletion UI re-auth | not yet | DATA-REQ-019 |
 | DSR-R04 | MUST NOT | `request_book_deletion`, `delete_entry`, `child_members_guard`, `data_governance.test.mjs` | enforced on develop (repo; not live); pending PR #32 (DB-01) | DB-01, DB-17, DB-03 |
 | DSR-R05 | MUST | `privacy_requests` table | not yet | TDD 05 7.8 |
@@ -216,7 +216,7 @@ Gap ids defined here:
 
 | Rule id | Level | Enforced by | Status (enforced on develop / pending PR #n / not yet) | Gap id |
 |---|---|---|---|---|
-| AIE-R01 | MUST | review (ai-eng-lead, red-team); brief reading order | not yet | AIE-G1 |
+| AIE-R01 | MUST | review (ai-eng-lead, red-team); brief reading order (`readingOrder()`) | pending PR #39 | AIE-G1 |
 | AIE-R02 | MUST NOT | `scripts/agents/check.mjs` assertion | not yet | AIE-G2 |
 | AIE-R03 | MUST | `check.mjs` size warnings (150 memory lines, 200-char description) | pending PR #4 (partial); real budgets not yet | AIE-G3 |
 | AIE-R04 | MUST | review (ai-eng-lead) of instruction-file PRs | review only | none |
@@ -231,10 +231,10 @@ Gap ids defined here:
 | AIE-R15 | MUST NOT | review (red-team); CI diff check on agent PRs | review only; check not yet | AIE-G5 |
 | AIE-R16 | MUST NOT | review (red-team scope check) | pending PR #4 (red-team charter) | none |
 | AIE-R17 | MUST | `verify.fuzz.test.ts` in CI; golden test; nightly random seed | fuzz enforced on develop; golden pending PR #28; nightly pending PR #36 | none |
-| AIE-R18 | MUST | deny lists `run-opencode.mjs:19-22`, `agents.yml:136`; branch protection | deny lists pending PR #4; branch protection not yet | CI-01 |
+| AIE-R18 | MUST | deny lists `run-opencode.mjs:19-22`, `agents.yml:141`; branch protection | deny lists pending PR #4; branch protection not yet | CI-01 |
 | AIE-R19 | MUST | roster model split; dispatcher review mode; model-family check | pending PR #4; family check not yet | AIE-G6 |
 | AIE-R20 | MUST | `verifyEdits` and its property test; red-team constitution check | enforced on develop | none |
 | AIE-R21 | MUST | deny lists, App permissions, `fence.yml` | pending PR #4 and PR #30; fence advisory until branch protection | PINF-01, CI-11 |
-| AIE-R22 | MUST | `isFounderComment` (`lib.mjs:226`); marker author check | pending PR #4; marker check pending PR #39 | AIE-G7 |
+| AIE-R22 | MUST | `isFounderComment`; trusted-author and first-line marker checks (`isTrusted`, `startsWithMarker`) | pending PR #4 and PR #39 | AIE-G7 |
 | AIE-R23 | MUST | `receipt.mjs`; weekly aggregation | pending PR #4 (receipts); aggregation not yet | AIE-G8 |
 | AIE-R24 | MUST | founder approval of `agents/roster.json` (CODEOWNERS); review | pending PR #4 | none |

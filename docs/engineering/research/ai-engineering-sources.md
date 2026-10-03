@@ -49,9 +49,9 @@ How sources were read: `x.com` and some vendor pages refused the fetch tool, so 
 - Supports: AIE-R08, AIE-R09, AIE-R10, AIE-R07 (memory as structured notes).
 
 **A3. Best practices for Claude Code.** Anthropic docs, undated page. https://code.claude.com/docs/en/best-practices. Checked 2026-10-03.
-- The single strongest lever is a check the agent can run (tests, build exit code, a fixture diff); without one, the human becomes the verification loop.
+- Giving the agent a check it can run is the guidance the page stresses most (tests, build exit code, a fixture diff); without one, the human becomes the verification loop.
 - Keep `CLAUDE.md` short; if a rule keeps being ignored the file is probably too long; emphasise one line, not many. Hooks are deterministic, instructions are advisory.
-- A fresh context reviews better because it is not biased toward code it just wrote (writer and reviewer sessions). After two failed corrections, restart with a better prompt.
+- A fresh context reviews better because it is not biased toward code it just wrote (writer and reviewer sessions). After correcting the agent more than twice on the same issue, restart with a better prompt.
 - Quote: "Would removing this cause Claude to make mistakes?"
 - Supports: AIE-R03, AIE-R04, AIE-R06, AIE-R14, AIE-R18, AIE-R19.
 

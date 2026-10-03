@@ -28,7 +28,7 @@ When two sources disagree, the higher one wins (AIE-R01):
 1. `CLAUDE.md` (the constitution, privacy and content rules) and the legal requirement documents (`docs/legal/ENGINEERING_REQUIREMENTS.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md`).
 2. Founder instructions: comments by the founder in a journal or on a PR, the latest `docs/agents/BRIEF-*.md`, and `D-###` decisions in `docs/DECISIONS.md`.
 3. `docs/agents/OPERATING_MODEL.md` (how agents work).
-4. This compendium: `PRINCIPLES.md`, then the chapters.
+4. This compendium: the chapters, summarised by `PRINCIPLES.md` (where they differ, the chapter wins).
 5. The agent's charter, then its memory, then the task text.
 
 ADRs and technical design docs (`docs/adr/`, `docs/tdd/`) record what we built and why; they are design references, not instructions. When one conflicts with a chapter, the chapter's owner reconciles them in a PR.
@@ -46,7 +46,7 @@ A chapter never restates a requirement; it cites the id (`DATA-REQ-0xx`, `LEGAL-
 | Red team and founder | Every PR still gets the red-team review and the founder's merge; `supabase/**` and auth changes also need `approve-migration` (D-041) | `docs/agents/OPERATING_MODEL.md` |
 | Consistency check | `check.mjs` fails if a chapter's `owner` is not on the roster | `scripts/agents/check.mjs` |
 
-Status on 2026-10-03: of 192 MUST rules, 42 are enforced on `develop`, 39 are pending in open PRs (mostly #26 to #32), 30 are partly enforced or review-only, and 81 have no check yet. The `not yet` rows are the stewards' work queue.
+Status on 2026-10-03, counted from `ENFORCEMENT.md`: of 192 rules, 42 are enforced on `develop`, 38 are pending in open PRs (mostly #26 to #32 and #39), 34 are partly enforced, review-only or covered by the rule they cite, and 78 have no check yet. The `not yet` rows are the stewards' work queue.
 
 ## Changing a standard
 

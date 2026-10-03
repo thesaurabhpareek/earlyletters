@@ -56,11 +56,11 @@ Early Letters holds a family's spoken letters about a child: the most intimate d
 
 ### Authorisation in the database
 
-**IAM-R13 (MUST)** Every table in `public` has RLS enabled, default deny, and a restrictive anonymous-session policy if `authenticated` can reach it. *Enforced by:* `access_matrix.test.mjs` structural checks (enforced on `develop`).
+**IAM-R13 (MUST)** RLS on every table is DB-R12; on top of it, any table `authenticated` can reach has a restrictive policy that refuses anonymous sessions. *Enforced by:* `access_matrix.test.mjs` structural checks (enforced on `develop`).
 
 **IAM-R14 (MUST)** Every function callable by `authenticated` is listed in the access matrix, starts with `require_user()` (or checks `is_anonymous()`), and no function is executable by `anon`. *Enforced by:* `access_matrix.test.mjs` lines 253-266 (enforced on `develop`).
 
-**IAM-R15 (MUST)** Every client-visible view revokes INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER from `authenticated`, `anon` and `public`, repeated after every `create or replace view`. *Why:* Supabase grants write on new views to `authenticated` by default, which made `book_entries` writable (DB-01, Critical). *Enforced by:* pending PR #32 (revokes) and PR #26 (catalog sweep in `grants.test.mjs`).
+**IAM-R15 (MUST)** Views are read-only to clients exactly as DB-R13 states; a view is never an authorisation boundary that grants more than its base tables. *Why:* DB-01 (Critical). *Enforced by:* see DB-R13.
 
 **IAM-R16 (MUST)** Book visibility has one predicate. Until D-024's `book_access` table exists, `book_entries`, Storage read policies and any pull RPC use the same `can_read_book` logic and are covered by the same matrix rows. Once `book_access` lands, all of them read it and nothing else. *Enforced by:* `review` (data-steward, security-architect); not yet for `book_access` (DB-08).
 
@@ -80,7 +80,7 @@ Early Letters holds a family's spoken letters about a child: the most intimate d
 
 **IAM-R22 (MUST)** Account deletion goes through `request_account_deletion` and the purge pipeline (chapter 08 owns the process). Deleting a user from the Supabase dashboard is forbidden in production because `profiles.id references auth.users on delete cascade` hard-deletes letters (DB-17). *Enforced by:* not yet: runbook in WS-18; `review`.
 
-**IAM-R23 (MUST NOT)** Ship a Supabase secret or `service_role` key in the app, an `EXPO_PUBLIC_*` variable, an agent's environment or an agent connector (BRIEF decision 17, PINF-01, PINF-05). The app holds only the project URL and publishable key. *Enforced by:* gitleaks in PR #30 (repo); not yet for the built `.ipa` (bundle scan, LEGAL-REQ-026). See SEC-R03.
+**IAM-R23 (MUST NOT)** Give an AI agent, its environment or its connectors a Supabase secret or `service_role` key (PINF-01, PINF-05). Keys in the app are SEC-R03. *Enforced by:* review (security-architect); agents run with no Supabase credentials in `agents.yml`.
 
 **IAM-R24 (MUST)** Every new table, column visible to clients, view, RPC or Storage policy adds rows to the access matrix for every persona (parent, co-parent, contributor, outsider, anonymous, anon) in the same PR, including at least one deny. *Enforced by:* `access_matrix.test.mjs` fails on an unlisted callable function; `review` for tables and views.
 

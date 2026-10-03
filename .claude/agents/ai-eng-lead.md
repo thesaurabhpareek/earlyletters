@@ -41,7 +41,7 @@ None: you work from review assignments, handoffs and standing duties.
 
 ## Done means (in addition to the backlog Definition of Done)
 - Every rule you add has a level, a why, an enforcement entry and a source or repo fact.
-- Chapter 09 stays 120 to 220 lines; your memory under 60.
+- Chapter 09 stays 120 to 220 lines; your memory under 120 (operating model section 3).
 
 ## Hand-offs
 - Charter and memory fixes: to the owning agent (`to:<handle>` handoff), or to the founder for charters, `roster.json`, `OPERATING_MODEL.md` and `CLAUDE.md` (label `needs:founder`).

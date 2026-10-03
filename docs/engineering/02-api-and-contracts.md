@@ -30,11 +30,11 @@ The phone is offline-first and cannot be force-upgraded, so every server interfa
 
 **API-R02 (MUST)** Database types used by clients are generated from the migrations in CI, never written by hand, and a drift test fails when a migration changes a column or function the package exposes. *Why:* CORE-02, CORE-03 (local schema drifted from the server). *Enforced by:* not yet: WS-04 (wave 2, depends on WS-01).
 
-**API-R03 (MUST)** Client writes go through RPCs or narrow, tested RLS policies on a table (the `entries` upsert path, TDD 02 3.4); views are read-only and grant no INSERT, UPDATE, DELETE or TRUNCATE to `anon` or `authenticated`. *Why:* DB-01: the `book_entries` view was writable by every member. *Enforced by:* pending PR #32 (revokes) and PR #26 (`supabase/tests/grants.test.mjs` catalog sweep).
+**API-R03 (MUST)** Client writes go through RPCs or narrow, tested RLS policies on a table (the `entries` upsert path, TDD 02 3.4); views are read-only to clients per DB-R13. *Why:* DB-01: the `book_entries` view was writable by every member. *Enforced by:* see DB-R13.
 
-**API-R04 (MUST NOT)** The app never ships a service-role or secret key, and no request is made with one on a user's behalf; Edge Functions call the database with the caller's JWT unless the function is a system job. *Why:* BRIEF decision 17; a service key bypasses RLS. *Enforced by:* review (security-architect); gitleaks scan pending PR #30; a bundle scan for `sb_secret`/`service_role` is not yet (API-G1).
+**API-R04 (MUST NOT)** No request is made with a service-role or secret key on a user's behalf; Edge Functions call the database with the caller's JWT unless the function is a system job. Keeping keys out of the app is SEC-R03. *Why:* BRIEF decision 17; a service key bypasses RLS. *Enforced by:* review (security-architect); a bundle scan for `sb_secret`/`service_role` is not yet (API-G1).
 
-**API-R05 (MUST)** Every RPC calls `require_user()` (or is explicitly service-only with EXECUTE revoked from `anon` and `authenticated`), and every new function revokes EXECUTE from `public` and `anon` unless it is meant for them. *Why:* Supabase grants EXECUTE on new functions to API roles by default. *Enforced by:* `supabase/tests/access_matrix.test.mjs` on develop; anon-executable sweep pending PR #26.
+**API-R05 (MUST)** Every RPC calls `require_user()` (or is explicitly service-only with EXECUTE revoked from `anon` and `authenticated`), and every new function revokes EXECUTE from `public` and `anon`: no function is callable by `anon` (IAM-R14 owns that rule). *Why:* Supabase grants EXECUTE on new functions to API roles by default. *Enforced by:* `supabase/tests/access_matrix.test.mjs` ("no public function is callable by the anon role") on develop.
 
 ### Idempotency and retries
 

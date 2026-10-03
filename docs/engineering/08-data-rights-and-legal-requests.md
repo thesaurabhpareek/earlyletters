@@ -28,7 +28,7 @@ I am not a lawyer. Every timeline below is an engineering reading of a source, t
 
 **DSR-R01 (MUST)** Every request type has exactly one execution path, listed in the request matrix below; support never edits rows by hand or runs ad hoc SQL against user data. *Why:* one path is testable and auditable. *Enforced by:* review (compliance-engineer); service-role scripts through one runbook wrapper `not yet: TDD 05 section 7.7` (`ops/lib/runbook.mjs` does not exist).
 
-**DSR-R02 (MUST)** Before any destructive action requested outside the app (email, `/delete-account` form), support verifies control of the account email by sending a sign-in link or code to it and waiting for it to be used. A request that cannot be verified within 30 days is closed as unverifiable. *Why:* LEGAL-REQ-036, DATA-REQ-021, privacy policy section 14. *Enforced by:* review; runbook `not yet: PDATA-02 follow-on` (no `privacy_requests` table yet).
+**DSR-R02 (MUST)** Before any destructive action requested outside the app (email, `/delete-account` form), support verifies control of the account email by sending a sign-in link or code to it and waiting for it to be used. *Why:* LEGAL-REQ-036, DATA-REQ-021, privacy policy section 14. *Enforced by:* review; runbook `not yet: PDATA-02 follow-on` (no `privacy_requests` table yet).
 
 **DSR-R03 (MUST)** In-app destructive requests re-authenticate when the session is older than 24 hours, then type-to-confirm. *Why:* DATA-REQ-019 step 5; spec OQ-7. *Enforced by:* `not yet` (deletion UI not built).
 
@@ -48,7 +48,7 @@ I am not a lawyer. Every timeline below is an engineering reading of a source, t
 
 **DSR-R11 (MUST)** Preservation for legal process uses only the preservation script (snapshot to a restricted bucket, 90-day expiry, audit-logged), run on counsel's written instruction. No other access path exists. *Why:* LEGAL-REQ-057. *Enforced by:* `not yet: LEGAL-REQ-057` (P1).
 
-**DSR-R12 (MUST)** Track two clocks per request: our published SLA and the statutory outer limit. Acknowledge within 10 days; complete within 45 days of receipt; an extension of up to 45 more is sent before day 45 with the reason. *Why:* privacy policy section 14; LEGAL-REQ-031; CCPA (see Deadlines). *Enforced by:* `not yet` (needs the request log and a daily overdue query).
+**DSR-R12 (MUST)** Track two clocks per request: our published SLA and the statutory outer limit. Acknowledge within 10 business days; complete within 45 days of receipt; an extension of up to 45 more is sent before day 45 with the reason. *Why:* CCPA regulation 999.313(a) (see Deadlines); `docs/legal/privacy-policy.md` section 20 (reply within 10 business days) and section 14 (45 days); the rights-request row of `docs/legal/ENGINEERING_REQUIREMENTS.md` (line 242); LEGAL-REQ-031. *Enforced by:* `not yet` (needs the request log and a daily overdue query).
 
 **DSR-R13 (MUST)** Tell users the honest backup window: deleted data is off live systems within 31 days of the request, off backups within 38, and processors within 45. A change to Supabase backup or PITR settings updates `data-policy.md` section 5 and privacy policy section 10 first. *Why:* DATA-REQ-030, DATA-REQ-036. *Enforced by:* review; monitoring query `not yet: PDATA-06`.
 
@@ -86,7 +86,7 @@ Engineering reading, confirm with counsel. Which laws apply to a US-first, iOS-o
 | Apple account deletion guidance | In-app initiation; delays allowed if the user is told how long and gets a confirmation; email or phone may be used only for verification. |
 | Washington AG MHMDA page | Deletion right reaches archived and backup systems; no timeline stated on that page. |
 
-Our published promise (privacy policy section 14, consumer health data notice section 6) is the operating SLA: acknowledge in 10 days, complete in 45.
+Our published promise is the operating SLA: reply within 10 business days (privacy policy section 20) and answer within 45 days (privacy policy section 14).
 
 ## Request log
 
@@ -118,7 +118,8 @@ Only the founder grants an exception, with counsel's written note for anything t
 2. **Legal hold notice (counsel):** may a held user still see deletion as done (data-policy section 7)?
 3. **Co-parent account deletion and shared books (counsel, spec OQ-1).**
 4. **Analytics on cancelled deletion (counsel, TDD 05 OQ-L3):** PostHog data deleted at request time cannot be restored.
-5. **Spec drift (founder):** the `deletion_request_steps.step` check still lists `revenuecat`, while the spec (v1.1.0) and ADR 0013 say `appstore_mapping`. Fix in a pending migration.
+5. **Unverifiable requests (counsel):** how long to wait for a requester to complete verification before closing the request as unverifiable. No current source sets a period; until counsel answers, keep the request open and follow up.
+6. **Spec drift (founder):** the `deletion_request_steps.step` check still lists `revenuecat`, while the spec (v1.1.0) and ADR 0013 say `appstore_mapping`. Fix in a pending migration.
 
 ## References
 
