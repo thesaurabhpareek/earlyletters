@@ -7,7 +7,7 @@ CI, review rules and branch protection for `thesaurabhpareek/earlyletters`.
 | `workflows/ci.yml` | On every pull request and every push to `develop` and `main`: install (cached by `package-lock.json`), then in parallel: `npm test` (content rules included), `npm run test:db`, typecheck for every workspace (`apps/mobile` with `npx tsc --noEmit`), lint (skipped with a notice until a root `lint` script exists), `expo config --type public` for `apps/mobile`, and the tests for the scripts in this folder. A `required` job sums them up. Every job has a timeout; the longest path is 9 minutes. |
 | `workflows/migration-guard.yml` | Fails a change that edits, renames or deletes a migration listed in `migrations-applied.txt`, removes a line from that list, or adds a migration that sorts before the newest applied one. Runs the guard and reads its exception list from a trusted ref, never from the pull request (see below). |
 | `workflows/security.yml` | gitleaks over the full history (config `gitleaks.toml`), and `npm audit --omit=dev --audit-level=high` through `scripts/audit-gate.mjs` with the dated ignore list `audit-ignore.json`. Also weekly on Mondays. Not part of `required`. |
-| `workflows/fence.yml` | The agent fence (D-041): fails a pull request that touches `supabase/**`, `.github/**` or auth code unless it has the `approve-migration` label. Path rules in `scripts/fence-paths.mjs`, read from the base commit. Advisory until branch protection exists (see below). |
+| `workflows/fence.yml` | The agent fence (D-041): fails a pull request that touches `supabase/**`, `.github/**` or auth code unless it has the `approve-migration` label. Path rules in `scripts/fence-paths.mjs`, read from the base commit; fails closed on API errors. Advisory until branch protection exists (see below). |
 | `dependabot.yml` | Weekly update pull requests into `develop`: npm (Expo and React Native packages grouped) and GitHub Actions (SHA pins). |
 | `migrations-applied.txt` | The migrations applied to the live database. Add a line in the same PR that records applying one (see `supabase/APPLY.md`). |
 | `migration-exceptions.txt` | Reviewed exceptions to the applied-migration rule, one `file@blob-sha` per line. Today: only `20261001000000_scribe_hardening.sql`, reconciled with what was applied in commit 3730551. |
@@ -41,23 +41,19 @@ Note for the release pull request (`develop` into `main`): the base, `main`, pre
 
 ### Where auth code must live
 
-The fence recognises authentication code by name, not by reading it. So the convention is: **auth code lives in a folder, or a file whose name, starts with one of these words** (case does not matter, anywhere in the repository, and Expo Router names such as `(auth)/`, `[session]` or `_login` count):
+The fence recognises authentication code by name, not by reading it. It splits every folder name and file stem into words (on camelCase, `-`, `_`, digits and other punctuation, case ignored) and fences the path when an auth word starts at any word, alone or run together with the next words (`Sign`+`In`, `log`+`in`). The auth words are:
 
-`auth` (also `authentication`, `authState`, `authorization`), `oauth`, `session`, `sign-in`/`signin`/`sign_in`, `sign-up`, `sign-out`, `login`/`log-in`, `logout`/`log-out`, `passkey`, `token`, `credential`.
+`auth` (also `authentication`, `authState`, `authorization`), `reauth`, `oauth`, `session`, `signin`/`sign-in`/`SignIn`, `signup`, `signout`, `login`, `logout`, `passkey`, `token`, `jwt`, `credential`, and `supabase` (the Supabase client carries auth and session config).
 
-Examples that are fenced: `apps/mobile/src/features/authentication/useLogin.ts`, `apps/mobile/src/authState.ts`, `apps/mobile/src/login.ts`, `packages/api/src/token.ts`, `auth/index.ts`, `services/auth/handler.ts`, `apps/mobile/app/(auth)/welcome.tsx`.
+Examples that are fenced: `apps/mobile/src/useAuth.ts`, `AppleSignIn.tsx`, `apple-sign-in.ts`, `accessToken.ts`, `refresh-token.ts`, `lib/jwt.ts`, `supabaseClient.ts`, `features/authentication/useLogin.ts`, `authState.ts`, `login.ts`, `packages/api/src/token.ts`, `auth/index.ts`, `services/auth/handler.ts`, `apps/mobile/app/(auth)/welcome.tsx`, and anything under `supabase/` or `.github/`.
 
-Deliberately not fenced: `docs/**` (prose and decision records, no code runs from it), `packages/design-tokens/**` (design tokens, not credentials), and names that start like these words but are not auth (`author*`, `tokenize*`/`tokenise*`).
+Deliberately not fenced: `docs/**` (prose and decision records, no code runs from it), `packages/design-tokens/**` (design tokens, not credentials), and words that start like auth words but are not (`author*`, as in `AuthorBadge.tsx`, and `tokenize*`/`tokenise*`).
 
-A file that handles sign-in, sessions or credentials under any other name (for example `useAccount.ts` calling the Supabase auth client) is not fenced. Do not do that: put it under an `auth/` folder or rename it. Reviewers should reject auth logic outside a recognised path. To change the rules, edit `scripts/fence-paths.mjs` and its fixtures in `scripts/fence-paths.test.mjs` in the same pull request; the change takes effect once merged into the base.
+The convention: **auth code goes in a folder or file whose name contains one of these words as a word**. An all-lowercase name that buries the word mid-word (`useauth.ts`) or a name with none of them (`useAccount.ts` calling the auth client) is not fenced. Do not do that: rename it or put it under an `auth/` folder. Reviewers should reject auth logic outside a recognised path. To change the rules, edit `scripts/fence-paths.mjs` and its fixtures in `scripts/fence-paths.test.mjs` in the same pull request; the change takes effect once merged into the base.
 
-What it does not do, until the founder turns on branch protection (CI-01):
+### The fence fails closed
 
-- A failing `fence` check does not block a merge. Anyone with write access can still merge, and direct pushes to `develop` or `main` skip pull requests and the fence entirely.
-- Anyone with write access can add the label. The label is a signal of the founder's review, not an access control.
-- The label must exist in the repository first (Issues, Labels, New label: `approve-migration`). It does not exist yet.
-
-To make it a real gate: create the label, add `fence` to the required checks below, and once a second reviewer exists, require code owner review for `/.github/` and `/supabase/`.
+The fence step runs under `bash` with `pipefail`. It fails, rather than passing, when it cannot list the pull request's files, when the number of files listed differs from the pull request's `changed_files` (the API stops at 3000 files), or when fetching the rules from the base commit fails for any reason other than a 404. Only a 404 (a base that predates `scripts/fence-paths.mjs`) uses the built-in fallback pattern, which fences a superset of the rules. `scripts/fence-paths.test.mjs` runs the step's exact `run:` block against a stub `gh` to check each of these.
 
 ## Branch protection (to apply once the workflows are on GitHub)
 
