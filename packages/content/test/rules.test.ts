@@ -1,6 +1,7 @@
 /**
  * Brand and voice rules, enforced on every word the product says.
  * See VOICE.md. If a test here fails, fix the copy, not the test.
+ * A title that starts with an id in brackets proves that requirement (BACKLOG Definition of Done 1).
  *
  * Also scans feature-local copy files in the app (`apps/mobile/src/**` files
  * named `copy.ts`, `*-copy.ts` or `*.copy.ts`): every string literal in them is
@@ -74,19 +75,29 @@ function stringsIn(file: string): Leaf[] {
 const APP_COPY_FILES = copyFiles(APP_SRC);
 const APP_COPY: Leaf[] = APP_COPY_FILES.flatMap(stringsIn);
 
+// Surfaces, for the rules that differ by surface. IN_APP is everything the iOS app shows; IN_APP plus STORE is
+// what Apple reviews as "app or metadata".
+const STORE = leaves(storeListing, 'store');
+const SITE = leaves(site, 'site');
+const BOOK = leaves(book, 'book');
+const EMAILS = leaves(emails, 'emails');
+const STORIES: Leaf[] = onboardingStories.flatMap((c) => [
+  { path: `story.${c.id}.headline`, text: c.headline },
+  { path: `story.${c.id}.line`, text: c.line },
+]);
+const PROMPT_LEAVES: Leaf[] = PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text }));
+const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions'), ...leaves(features, 'features'), ...STORIES, ...APP_COPY];
+
 const ALL: Leaf[] = [
   ...leaves(en, 'en'),
-  ...leaves(storeListing, 'store'),
-  ...leaves(site, 'site'),
-  ...leaves(book, 'book'),
+  ...STORE,
+  ...SITE,
+  ...BOOK,
   ...leaves(permissions, 'permissions'),
-  ...leaves(emails, 'emails'),
+  ...EMAILS,
   ...leaves(features, 'features'),
-  ...onboardingStories.flatMap((c) => [
-    { path: `story.${c.id}.headline`, text: c.headline },
-    { path: `story.${c.id}.line`, text: c.line },
-  ]),
-  ...PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text })),
+  ...STORIES,
+  ...PROMPT_LEAVES,
 ];
 /** Everything the rules below apply to: content plus feature-local app copy. */
 const EVERY: Leaf[] = [...ALL, ...APP_COPY];
@@ -103,9 +114,28 @@ describe('characters', () => {
     expect(offenders([...EVERY, ...DOCS], /\p{Extended_Pictographic}/u)).toEqual([]);
   });
 
-  it('uses at most 3 exclamation marks across all product copy', () => {
-    const count = EVERY.reduce((n, l) => n + (l.text.match(/!/g)?.length ?? 0), 0);
-    expect(count).toBeLessThanOrEqual(3);
+  // Per surface, so one surface's addition never fails another's (TDD 07 Q-17). The budgets add up to the
+  // old ceiling of 3 across all product copy, which still holds. Notifications get none: a template is sent
+  // again and again, and VOICE.md allows at most one exclamation mark a month across all notifications.
+  it('uses at most 3 exclamation marks across all product copy, within a budget per surface', () => {
+    const count = (items: Leaf[]) => items.reduce((n, l) => n + (l.text.match(/!/g)?.length ?? 0), 0);
+    const isNotification = (l: Leaf) => /^(en\.notifications|features\.reminders\.(neutral|together))\./.test(l.path);
+    const surfaces = {
+      notifications: IN_APP.filter(isNotification),
+      inApp: IN_APP.filter((l) => !isNotification(l)),
+      store: STORE,
+      site: SITE,
+      book: BOOK,
+      emails: EMAILS,
+      prompts: PROMPT_LEAVES,
+    };
+    const budget = { notifications: 0, inApp: 2, store: 0, site: 1, book: 0, emails: 0, prompts: 0 };
+    // Every string sits in exactly one surface, so none escapes a budget.
+    expect(Object.values(surfaces).reduce((n, s) => n + s.length, 0)).toBe(EVERY.length);
+    for (const surface of Object.keys(budget) as (keyof typeof budget)[]) {
+      expect(count(surfaces[surface]), surface).toBeLessThanOrEqual(budget[surface]);
+    }
+    expect(count(EVERY)).toBeLessThanOrEqual(3);
   });
 });
 
@@ -212,6 +242,241 @@ describe('save failure reassurance', () => {
   });
 });
 
+// BL-118 rules (TDD 07 section 6). Each one guards a decision that copy alone cannot keep.
+
+describe('no daily rhythm, streaks or gap counts', () => {
+  // Reminders default to a few evenings a week; no string may promise or imply a daily rhythm (PRD.md K-03).
+  const DAILY =
+    /\b(daily|nightly|every (?:single )?(?:day|night)|each (?:day|night)|(?:once|twice|one|words?|minutes?|letters?|notes?|nudges?|reminders?) (?:a|per) (?:day|night))\b/i;
+  // Prompts are left out: they ask about the child's own days ("What does {child} do every day?"), which sets
+  // no rhythm for the parent. Everything the product says about itself is in scope.
+  const RHYTHM_CHECKED = EVERY.filter((l) => !l.path.startsWith('prompt.'));
+  // Anything that reminds, notifies or celebrates.
+  const RHYTHM_SCOPE = IN_APP.filter((l) => /^en\.(notifications|moments)\./.test(l.path) || /remind/i.test(l.path));
+  const GAP = /\b(in a row|missed|miss(?:es|ing)? (?:a|one|any)|since (?:your|the) last|streaks?|(?:days?|nights?|weeks?) since|(?:days?|nights?) (?:off|away))\b/i;
+  // "one day" is left out on purpose: it means "someday", which VOICE.md's legacy rule asks for.
+  const DAY_COUNT = /(?:\b\d+|\{\w+\}|\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|thirty))\s+(?:days?|nights?)\b/i;
+
+  it('[C-REQ-005] no string promises a daily rhythm', () => {
+    expect(RHYTHM_CHECKED.length).toBe(EVERY.length - PROMPTS.length);
+    expect(offenders(RHYTHM_CHECKED, DAILY)).toEqual([]);
+  });
+
+  it('[C-REQ-005] the daily-rhythm pattern catches the likely slips and leaves "someday" alone', () => {
+    for (const s of ['A few words a day.', 'Every night, a letter.', 'Your nightly note', 'One a day is plenty.', 'Once per day', 'Every single day counts.']) {
+      expect(DAILY.test(s), s).toBe(true);
+    }
+    for (const s of ['One day your child can hear you say it.', 'Pick the evenings that suit you.', 'A few words at a time.']) {
+      expect(DAILY.test(s), s).toBe(false);
+    }
+  });
+
+  it('[C-REQ-005] reminder, notification and moment strings never count days, runs or gaps', () => {
+    expect(RHYTHM_SCOPE.length).toBeGreaterThan(30);
+    expect(offenders(RHYTHM_SCOPE, GAP)).toEqual([]);
+    expect(offenders(RHYTHM_SCOPE, DAY_COUNT)).toEqual([]);
+  });
+});
+
+describe('moments celebrate without comparing', () => {
+  const MOMENTS = IN_APP.filter((l) => l.path.startsWith('en.moments.'));
+  // Never celebrated: comparisons, speed, per-author totals and plan status (C-REQ-015). "Behind" and "best"
+  // count only in their comparing senses, so "the voice behind the letter" and "Best wishes" pass.
+  const COMPARE =
+    /\b(more than|most|fewer|less than|ahead|(?:fall(?:s|en|ing)?|fell|get(?:ting)?|left) behind|behind (?:on|schedule)|faster|fastest|quicker|slower|better|best(?! wishes)|than (?:you|others|anyone|before|last))\b/i;
+  const PLAN = /\b(Plus|trial|subscri\w*|premium|upgrade)\b/i;
+
+  it('[C-REQ-015] moment strings never compare, never count per author and never mention the plan', () => {
+    expect(MOMENTS.length).toBeGreaterThan(10);
+    expect(offenders(MOMENTS, COMPARE)).toEqual([]);
+    expect(offenders(MOMENTS, PLAN)).toEqual([]);
+    const perAuthor = MOMENTS.filter((l) => /\{count\}/.test(l.text) && /\{(signsAs|name|inviter)\}/.test(l.text));
+    expect(perAuthor.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('[C-REQ-015] the comparison pattern skips "behind" and "best" when they do not compare', () => {
+    for (const s of ['The voice behind the letter.', 'Best wishes from all of us.']) expect(COMPARE.test(s), s).toBe(false);
+    for (const s of ['More than last month.', 'Do not fall behind.', 'Your best month yet.']) expect(COMPARE.test(s), s).toBe(true);
+  });
+});
+
+describe('adult audience', () => {
+  // The app is for adults; the store and the website never present it as for children or as something a child
+  // uses alone (LEGAL-REQ-045). App Review 2.3.8 reserves "For Kids" and "For Children" for the Kids Category.
+  // "On their own" counts only when a child is the subject, so adults doing things on their own phone pass.
+  const CHILD = String.raw`(?:\b(?:kids?|child|children|toddlers?|little ones?|bab(?:y|ies))\b|\{child\})`;
+  const CHILD_DIRECTED = new RegExp(
+    [
+      String.raw`\bkids?\b|\bkiddos?\b`,
+      String.raw`\bchildren'?s app\b`,
+      String.raw`\bfor (?:children|kids|babies|toddlers|little ones)\b`,
+      String.raw`\b(?:child|kid|baby|toddler)-?(?:friendly|safe)\b`,
+      String.raw`\bfor ages \d+`,
+      // A child as the one who uses the app.
+      String.raw`${CHILD} (?:can|could|will|gets? to|is able to|are able to) (?:tap|listen|play|use|record|explore|press|swipe)\b`,
+      String.raw`${CHILD}[^.!?]{0,60}\b(?:on (?:their|his|her) own|by (?:themselves|themself|himself|herself)|(?:all )?alone)\b`,
+      String.raw`\b(?:listen|play|tap|explore) alone\b`,
+      String.raw`\blet (?:them|your (?:child|children|little ones?|kids?)|\{child\}) (?:listen|use|play|tap|record|explore)\b`,
+    ].join('|'),
+    'i',
+  );
+
+  it('[LEGAL-REQ-045] store and website copy has no "kids" and no child-directed phrases', () => {
+    expect(offenders([...STORE, ...SITE], CHILD_DIRECTED)).toEqual([]);
+  });
+
+  it('[LEGAL-REQ-045] the pattern catches child-directed phrases and lets adult sentences pass', () => {
+    const caught = [
+      'Let them listen on their own.',
+      'Great for kids.',
+      'For Kids',
+      'A child-friendly app.',
+      'They can listen alone.',
+      "A children's app.",
+      'A memory book for babies.',
+      'Your toddler can tap to hear.',
+      '{child} can play the letters on their own.',
+    ];
+    for (const s of caught) expect(CHILD_DIRECTED.test(s), s).toBe(true);
+    const adult = [
+      'Invite your co-parent to write from the free app on their own iPhone.',
+      'Grandparents can add letters on their own, any time.',
+      'Over time it becomes a book your child can read, and hear, for years.',
+      'Each child gets their own book, with their own months.',
+      'For parents of babies and young children.',
+      'Our safety backups clear on their own within 7 days.',
+    ];
+    for (const s of adult) expect(CHILD_DIRECTED.test(s), s).toBe(false);
+  });
+});
+
+describe('digital only', () => {
+  // v1 is digital only: no printed books, print or ordering anywhere (PRD.md K-32). "Printable" passes: it
+  // describes the PDF book the export makes ("v1 has export and the PDF book", PRD.md), not a book we print.
+  const PRINT =
+    /\b(print(?:s|ed|ing|er|ers)?|hardcover|hardback|paperback|softcover|hard ?copy|hard ?copies|photo ?books?|physical (?:book|books|copy|copies)|order (?:(?:a|your|the|more|extra) )?(?:book|books|copy|copies)|shipping|ships to|delivered to your door)\b/i;
+  // The reading-size option, not a printed book. Allowed only at this path with this exact value.
+  const ALLOWED = new Map([['en.reader.sizes.largePrint', 'Large print']]);
+
+  it('[K-32] no product, store, website or book string mentions print or ordering a book', () => {
+    const hits = EVERY.filter((l) => PRINT.test(l.text) && ALLOWED.get(l.path) !== l.text);
+    expect(hits.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('[K-32] the print pattern catches print promises and lets the PDF book pass', () => {
+    for (const s of ['Order a printed copy.', 'Keep a hard copy on the shelf.', 'A photo book of year one.', 'Printing opens soon.']) {
+      expect(PRINT.test(s), s).toBe(true);
+    }
+    expect(PRINT.test('A printable book for each child, by month (PDF).')).toBe(false);
+  });
+});
+
+describe('beta placement', () => {
+  // D-060 (founder, answers D-030): the beta runs on TestFlight, the store listing never says beta, and the app
+  // keeps one small "early version, can make mistakes" note. So no product string says "beta" at all. The store
+  // half, with the words that mean the same, is the D-060 test under "brand name and v1.0 claims" below.
+  // Which screen shows the About note is checked in apps/mobile, not here.
+  it('[K-13] no app, website, book or email string says "beta" (D-060)', () => {
+    expect(offenders(EVERY.filter((l) => !l.path.startsWith('store')), /\bbeta\b/i)).toEqual([]);
+  });
+
+  it('[K-13] Settings, About keeps the "early version, can make mistakes" note (D-060)', () => {
+    expect(en.settings.about.beta.label.length).toBeGreaterThan(0);
+    expect(en.settings.about.beta.body).toMatch(/\bearly version\b/i);
+    expect(en.settings.about.beta.body).toMatch(/\bmistakes?\b/i);
+  });
+});
+
+describe('Apple platforms only', () => {
+  // App Review 2.3.10 (read on developer.apple.com, 3 Oct 2026): "don't include names, icons, or imagery of
+  // other mobile platforms or alternative app marketplaces in your app or metadata, unless there is specific,
+  // approved interactive functionality." Scope: the iOS app and its store metadata; the website may differ.
+  // The list names the common ones; it is not exhaustive. "Google" alone stays allowed for Sign in with Google.
+  const OTHER_PLATFORMS =
+    /\b(android|google play|play store|galaxy store|samsung|huawei|google pixel|pixel (?:phone|\d+)|chromebooks?|chrome ?os|wear ?os|amazon appstore|appgallery|harmonyos|windows phone|blackberry|f-droid|aptoide|altstore|setapp|epic games store)\b/i;
+
+  it('[CR-131] the iOS app and its store metadata name no other mobile platform or app marketplace', () => {
+    expect(offenders([...IN_APP, ...STORE], OTHER_PLATFORMS)).toEqual([]);
+  });
+});
+
+describe('never gender anyone', () => {
+  // The child is always {child}; authors are {signsAs}. Prompts are checked above; this covers every string.
+  it('uses no gendered pronouns in any product, store, website, book or email string', () => {
+    expect(offenders(EVERY, /\b(she|he|her|him|his|hers|herself|himself)\b/i)).toEqual([]);
+  });
+
+  it('never calls the child a son, daughter, boy or girl', () => {
+    const CHILD_GENDERED = /\b(sons?|daughters?|baby (?:boy|girl)s?|little (?:boy|girl)s?|(?:your|our|my) (?:boy|girl)s?)\b/i;
+    expect(offenders(EVERY, CHILD_GENDERED)).toEqual([]);
+  });
+});
+
+describe('the 90-day pledge', () => {
+  // 90 days' notice with export working throughout, stated identically in Terms 17, Privacy Policy 18,
+  // the deletion spec and Settings, Help and Legal (PRD-REQ-009, PRD.md K-05).
+  // A shutdown notice needs the company as the one closing: "close family" or a Close button is not one.
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const COMPANY = String.raw`(?:\b(?:we|us|the company|the service|the app|our (?:company|service|app))\b|\{app\}|\b${escape(brand.name)}\b)`;
+  const SHUT = new RegExp(
+    String.raw`${COMPANY}[^.!?]{0,40}?\b(?:close|closes|closing|shut(?:s|ting)? down|wind(?:s|ing)? down|cease operations|stop(?:s|ping)? operating|discontinu\w*)\b|\b(?:shutdown|wind-down)\b`,
+    'i',
+  );
+  // Day counts, written as digits, words or both ("ninety (90) days"), and month counts, which never equal the pledge.
+  const WORDS: Record<string, string> = { seven: '7', ten: '10', fourteen: '14', thirty: '30', sixty: '60', ninety: '90' };
+  const DAY_NUMBERS = /\b(\d+|seven|ten|fourteen|thirty|sixty|ninety)(?:\s*\(\d+\))?(?:-day|\s+(?:calendar\s+|business\s+)?days?)\b/gi;
+  const MONTHS = /\b(\d+|one|two|three|four|six|twelve)(?:\s*\(\d+\))?(?:-month|\s+months?)\b/gi;
+  const numbersIn = (text: string) => [
+    ...[...text.matchAll(DAY_NUMBERS)].map((m) => WORDS[m[1].toLowerCase()] ?? m[1]),
+    ...[...text.matchAll(MONTHS)].map((m) => `${m[1]} months`),
+  ];
+  const LEGAL_DIR = join(REPO, 'docs', 'legal');
+
+  it('[PRD-REQ-009] Settings, Help and Legal states the pledge: 90 days and export throughout', () => {
+    expect(en.settings.help.pledge).toMatch(/\b90 days\b/);
+    expect(en.settings.help.pledge).toMatch(/\bexport\b/i);
+  });
+
+  it('[PRD-REQ-009] every shutdown notice in copy says 90 days', () => {
+    const bad = EVERY.filter((l) => SHUT.test(l.text) && numbersIn(l.text).some((n) => n !== '90'));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('[PRD-REQ-009] the shutdown pattern needs the company as subject and reads every way of writing the number', () => {
+    expect(SHUT.test(en.settings.help.pledge)).toBe(true);
+    expect(SHUT.test('Invite grandparents and close family. Your trial ends after 30 days.')).toBe(false);
+    expect(SHUT.test('Close')).toBe(false);
+    expect(numbersIn('at least ninety (90) days')).toEqual(['90']);
+    expect(numbersIn('thirty days, or three months')).toEqual(['30', 'three months']);
+  });
+
+  it('[PRD-REQ-009] every shutdown notice in docs/legal says 90 days', () => {
+    // A line counts when it, or the heading of its section, talks about closing. Counsel notes are
+    // drafting comments, not statements, so they are skipped.
+    const files = readdirSync(LEGAL_DIR).filter((f) => f.endsWith('.md'));
+    const pledged = ['terms-of-service.md', 'privacy-policy.md', 'DELETION_AND_EXPORT_SPEC.md'];
+    expect(files).toEqual(expect.arrayContaining(pledged));
+    const bad: string[] = [];
+    const statements = new Map<string, number>();
+    for (const f of files) {
+      let heading = '';
+      readFileSync(join(LEGAL_DIR, f), 'utf8')
+        .split('\n')
+        .forEach((line, i) => {
+          if (/^#{1,6}\s/.test(line)) heading = line;
+          if (line.includes('[COUNSEL')) return;
+          if (!SHUT.test(line) && !SHUT.test(heading)) return;
+          const days = numbersIn(line);
+          if (days.length) statements.set(f, (statements.get(f) ?? 0) + 1);
+          if (days.some((n) => n !== '90')) bad.push(`${f}:${i + 1}: ${line.trim()}`);
+        });
+    }
+    // Each document that makes the pledge is still seen by the scan, so a narrowed pattern cannot go blind.
+    for (const f of pledged) expect(statements.get(f) ?? 0, f).toBeGreaterThanOrEqual(1);
+    expect(bad).toEqual([]);
+  });
+});
+
 describe('brand name and v1.0 claims', () => {
   it('never types the public name in in-app copy; uses {app} from packages/brand', () => {
     expect(offenders(leaves(en, 'en'), new RegExp(brand.name, 'i'))).toEqual([]);
@@ -228,8 +493,11 @@ describe('brand name and v1.0 claims', () => {
     expect(en.plus.promise).toMatch(/more children/);
   });
 
-  it('has no beta wording in the store listing (D-060, App Review 2.2)', () => {
-    expect(offenders(leaves(storeListing, 'store'), /\bbeta\b/i)).toEqual([]);
+  it('[K-13] has no beta wording in the store listing (D-060, App Review 2.2)', () => {
+    // 2.2 covers "Demos, betas, and trial versions", so the listing also avoids the words that mean the same.
+    // The in-app "early version" note is the likeliest one to be pasted in by mistake.
+    const BETA_LIKE = /\b(beta|early version|early access|preview|pre-?release|demo|test (?:version|build)|trial version|work in progress)\b/i;
+    expect(offenders(STORE, BETA_LIKE)).toEqual([]);
   });
 
   it('makes no claim the v1.0 build cannot keep (D-055, D-056, D-059)', () => {

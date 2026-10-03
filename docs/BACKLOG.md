@@ -190,7 +190,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: deferred (v1.1, with T5-01 and T5-08 in FUTURE). v1.0 uses `docs/legal/DATA_CLASSIFICATION.md` 1.3.0, regenerated from the migrations by the analytics agent.
 
 #### BL-118 Content rule additions and claims registry [High]
-- Status: done in part (the rules test enforces the trust lines word for word, no beta wording, no grandparent claims, and only what Plus gates in v1.0: D-053, D-055, D-060, D-061 effects). The claims registry and the remaining rules are deferred (v1.1, merged into T5-08).
+- Status: in-review (PR #46, the remaining rules). Done before it: the rules test enforces the trust lines word for word, no beta wording, no grandparent claims, and only what Plus gates in v1.0 (D-053, D-055, D-060, D-061 effects). The claims registry is deferred (v1.1, merged into T5-08).
 
 #### BL-119 `child-input` flag in the prompt selector [High]
 - Status: ready. Mode: agent. Owner: speech engineer. Verified: Tonight passes `together: false` to `selectPrompt`, so `together` prompts never show today, but `packages/core` has no flag and no test that proves it.

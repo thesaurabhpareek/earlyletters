@@ -45,7 +45,7 @@ export const en = {
     welcome: {
       title: "{app}",
       subtitle: "The memory book you fill by talking.",
-      body: "A few words a day, in your own voice. Kept for {child} to read and hear for years.",
+      body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
       joinButton: "I was invited",
@@ -564,7 +564,7 @@ export const en = {
     },
     firstGrandparentLetter: {
       title: "{signsAs} wrote to {child}.",
-      body: "The book has more than one voice now.",
+      body: "Another voice joins the book.",
     },
     firstReadTogether: {
       title: "You read it together.",
@@ -659,6 +659,10 @@ export const en = {
     help: {
       mistakesTitle: "How transcription works",
       mistakes: "Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
+      // Shutdown and portability pledge (PRD-REQ-009, PRD.md K-05). Same number and promise as Terms 17
+      // and Privacy Policy 18; counsel to confirm. Change all of them together or none.
+      pledgeTitle: "If we ever close",
+      pledge: "If we ever plan to close, we will tell you at least 90 days ahead and keep export working the whole time.",
     },
     about: {
       title: "About",
@@ -879,7 +883,8 @@ export const en = {
     },
     // Recording backup is not in v1.0 (D-059).
     backupNotYet: "Backup arrives in a later update.",
-    remindersNotYet: "Your choice is saved. Reminders start in a coming beta update.",
+    // No "beta" in app copy: the only release-stage note is About's "early version" (D-060, K-13).
+    remindersNotYet: "Your choice is saved. Reminders start in a coming update.",
     legalTitle: "Legal",
     versionLabel: "Version",
   },
