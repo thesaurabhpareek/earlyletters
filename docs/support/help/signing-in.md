@@ -26,11 +26,11 @@ The link and the code each work once and last for 1 hour.
 
 **If the link has expired,** tap to send a new one to the same address.
 
-## Use the same way each time
+## Same email address, same account
 
-Each way of signing in opens its own account. If you started with Apple, sign in with Apple again on a new phone. The app remembers which way you used last on this phone, and shows it.
+If you use the same email address, Apple, Google and the email link all open the same account. The app also remembers which way you used last on this phone, and shows it.
 
-This matters most with Sign in with Apple. If you chose Hide My Email, Apple gives us a private address. Signing in later with your real email, or with Google, opens a new, empty account. Your letters are still safe in your first account. Sign out and sign in the first way.
+If the addresses are different, each one opens its own account. This happens most with Sign in with Apple. If you chose Hide My Email, Apple gives us a private address instead of your own. Signing in later with Google, or with the email link, then opens a new, empty account. Your letters are still safe in your first account. Sign out, then sign in with Apple again.
 
 ## Passkeys
 
@@ -62,9 +62,17 @@ Write to us at {SUPPORT_EMAIL}. Tell us which way you sign in and what you see o
 
 **To build:** BL-171 Sign in with Apple, BL-051 email link and code, BL-052 bringing local letters into an account, BL-053 provider and email setup. The A section's "Keep the book" sheet (A-REQ-013), merge prompt (A F6.3) and sign-out guard (A F6.4) are specified. "I already have a book" is `onboarding.welcome.signInButton`.
 
-**Founder decision needed: Google and passkeys.** This article follows brief decision 4 (Apple, Google, email link; passkeys after sign-in). PRD 2.1, D-044 and BL-302 put Google in v1.1, PRD 2.2 has passkeys out of scope, and the backlog has no passkey task. If the PRD stands, remove the Google bullet and the Passkeys section, and change "Three ways" to "Two ways". If the brief stands, `product` should add Google and passkey tasks to v1.0.
+**Hand-off to `product`: Google and passkeys (settled by the brief).** This article follows brief decision 4 (Decided: Apple, Google, email link; passkeys after sign-in). PRD 2.1, D-044 and BL-302 still put Google in v1.1, PRD 2.2 has passkeys out of scope, and the backlog has no passkey task. `product` should update the PRD and add Google and passkey tasks to v1.0.
 
-**Facts used:** link and code single use for 1 hour (A-REQ-018); resend after 60 seconds (A F4); 5 wrong codes in 15 minutes pauses entry for 15 minutes (A-REQ-027); scanner-safe browser page with the code (A-REQ-023); expired link resend (A-REQ-024); last method remembered, never the email (A F6.2); Hide My Email gives a new empty account (A edge cases). Linking sign-in methods (A-REQ-019) is P1 and not promised here.
+**Same email, same account: what was checked (3 Oct 2026).**
+- Supabase docs, "Identity Linking" (supabase.com/docs/guides/auth/auth-identity-linking, opened as markdown): "Supabase Auth automatically links identities with the same email address to a single user." "When a new user signs in with OAuth, Supabase Auth will attempt to look for an existing user that uses the same email address. If a match is found, the new identity is linked to the user." The condition: "It would also be an insecure practice to automatically link an identity to a user with an unverified email address", so "Supabase Auth will remove any other unconfirmed identities linked to an existing user." SAML SSO users are never linked (not used here).
+- Supabase docs, "Passwordless email sign-in": the email link signs people "in to their accounts", and "If the user hasn't signed up yet, they are automatically signed up by default." So an email link to an address that already has an account reaches that account.
+- PRD A, edge cases (`docs/prd/A-entry-and-auth.md` line 101): "Same verified email via Google and email: linked automatically [A2]", citing the same Supabase page.
+- Project settings: there is no `supabase/config.toml` on develop. PR #36 adds one for the local stack only. It has no identity-linking setting, and Apple and Google are `enabled = false` until the credentials exist (BL-053). Hosted auth settings are set in each project's dashboard (PR #36, `docs/ops/DEPLOY.md` section 5), so they are not in the repo and I could not check them.
+
+**Engineering question before publishing (the security engineer, owner of BL-171 Sign in with Apple, once BL-053 provider setup is done).** On iOS, Apple and Google both sign in through `signInWithIdToken` (PRD A F4). The Supabase page describes automatic linking for OAuth sign-ins and does not name the ID-token flow, and I could not read the Supabase Auth source from this session. So "Apple, Google and the email link all open the same account" is Unverified for the ID-token path. Please test on staging once BL-053 credentials exist: email link first, then Apple and Google with the same address, and the reverse. Also confirm the address Apple and Google pass on counts as verified. If they do not link, change this section back to "sign in the same way each time".
+
+**Facts used:** link and code single use for 1 hour (A-REQ-018); resend after 60 seconds (A F4); 5 wrong codes in 15 minutes pauses entry for 15 minutes (A-REQ-027); scanner-safe browser page with the code (A-REQ-023); expired link resend (A-REQ-024); last method remembered, never the email (A F6.2); Hide My Email gives a new empty account, because private relay addresses never match another address (A F6.2 and edge cases). "Ways to sign in", where a person adds or removes a method by hand (A-REQ-019, manual linking, P1, v1.1 per D-044), is a different feature and is not promised here.
 
 **Recordings on a new phone:** brief decision 9 says no audio upload in v1.0, so this article does not promise a restore from our servers. "Your iPhone's own backup" relies on D-033 (recordings kept in a backed-up folder), which is still recommended, not decided. If D-033 is declined, change the sentence to name export only.
 

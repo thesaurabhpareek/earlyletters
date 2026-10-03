@@ -24,7 +24,7 @@ If things feel heavy, Settings, Help, If you are struggling lists people you can
 ## How these articles mark what is not ready
 
 - Text without a mark describes the first version of the app (v1.0) as the founder has decided it.
-- "In a later update" in an article means the founder has decided it comes after v1.0.
+- "Not in this version yet" in an article means the founder has decided it is not in v1.0. Articles do not promise when it comes.
 - Each article ends with **Reviewer notes**, which are for the team and are removed before publishing. They say what is built today, what is still to build (with backlog ids), where the article comes from, and anything that needs a decision.
 
 ## Placeholders to fill before publishing
@@ -39,7 +39,7 @@ Legal pages use the addresses in the brief of 3 Oct (decision 13): https://early
 
 ## Reviewer notes (remove before publishing)
 
-**Where the two sources disagree.** The brief of 3 Oct (`docs/agents/BRIEF-2026-10-03.md`) and PRD 1.3 (`docs/prd/PRD.md`) were both written on 3 Oct, and the brief came about 25 minutes later. My charter tells me to follow the brief, so these articles follow it on every point below. The other documents still need to change to match it, or the founder needs to reverse it. Hand-offs: product (`product`) for the PRD and backlog, legal (`legal`) for the published terms.
+**Where the two sources disagree.** The brief of 3 Oct (`docs/agents/BRIEF-2026-10-03.md`) and PRD 1.3 (`docs/prd/PRD.md`) were both written on 3 Oct, and the brief came about 25 minutes later. The brief marks decisions 3 to 9 as Decided, so these articles follow it on every point below. These are hand-offs, not open founder decisions: `product` updates the PRD, ADRs and backlog, and `legal` updates the published terms. The one row that is still an open question is the last one, reminders before a trial ends (see the subscriptions article notes).
 
 | Topic | Brief of 3 Oct (these articles follow) | Still says otherwise |
 |---|---|---|
@@ -48,7 +48,9 @@ Legal pages use the addresses in the brief of 3 Oct (decision 13): https://early
 | Plus and the co-parent | Co-parent gets Plus through Apple Family Sharing, which is turned on; no server of ours sees purchases (decision 3) | ADR 0013, BL-103, ROADMAP week 3 and TDD 08: Family Sharing off; Terms 14.12: Family Sharing not available at launch; PRD K-28: Plus per account, covering the co-parent through the server |
 | Recordings | No audio upload in v1.0 (decision 9) | Subscription terms list encrypted backup as a Plus feature; Privacy Policy short version and section 7; `settings.backup.*` strings |
 | Safety | A static "If you are struggling" row (decision 9) | Privacy Policy sections 3, 5, 10 and 13 describe on-device support cards |
-| Reminders before a trial ends | No server of ours sees purchases (decision 3) | Subscription terms "Reminders from us" promise email reminders, which need the server to know about a trial |
+| Reminders before a trial ends (open: `legal` and `product`) | No server of ours sees purchases (decision 3) | Subscription terms "Reminders from us" promise email reminders, which need the server to know about a trial |
+
+**Price changes (hand-off to `legal` and `payments`).** The Subscription terms say "We never raise your price unless you agree." Apple asks subscribers to agree only above certain thresholds and otherwise just notifies them (App Store Connect Help, "Manage pricing for auto-renewable subscriptions"). So our promise holds only if every future increase keeps existing subscribers on their current price. Details in the subscriptions article notes.
 
 **Build status today (develop at 3688796).** The app runs on the phone only. There is no sign-in, sync, export, deletion flow, Plus purchase or co-parent invite yet. The Settings screen says so (`settingsMore.*NotYet` strings). Every article lists its own blocked tasks.
 

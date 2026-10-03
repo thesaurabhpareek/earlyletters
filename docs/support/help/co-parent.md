@@ -1,6 +1,6 @@
 # Writing with your co-parent
 
-{child}'s book is lovelier with two voices. Invite your co-parent and you both write to {child}, in one book.
+Invite your co-parent, and you can both write to {child}, in one book.
 
 ## What a co-parent can do
 
@@ -59,7 +59,7 @@ If you need help because of a court order or a safety concern, write to us at {S
 
 ## Grandparents and other family
 
-Inviting grandparents, aunts, uncles and friends to write arrives in a later update.
+Inviting grandparents, aunts, uncles and friends to write is not in this version yet.
 
 ---
 
@@ -71,10 +71,14 @@ Inviting grandparents, aunts, uncles and friends to write arrives in a later upd
 
 **Sources:** PRD B F5 (invite flow, Show code, 8-character code, Invited, Send again, Cancel invite; "Show code" and "Cancel invite" are not in strings yet, so confirm the labels when `content` adds them), F7 (leave choices), F8 (equals rule, safety cases through support), F9 (visibility); K-09 (author-only original words); K-18 (7-day co-parent expiry); DATA-REQ-014 to 016; strings `family.invite.*`, `familyTab.coParentBody`, `children.sharing.oneBookNote`, `errors.inviteExpired`, A section 9 `invite.notFound`; PRD-REQ-015 (joined books do not count).
 
-**Founder decisions this article depends on:**
-1. **Co-parent only at v1.0** (brief decision 5). PRD K-35 and D-002 ship family contributors in the app at v1.0. If K-35 stands, remove the last section and add Family roles, approvals and "Family can read the book". The invite screen copy (`family.invite.body`: "You choose which ones go in the book") is written for family members; hand-off to `content`.
-2. **Hearing each other's recordings.** Brief decision 9 says family members hearing each other's recordings comes in v1.1, with no audio upload in v1.0. D-032 (shared voice, recommended, decision by 23 Oct) would change this. The article states the v1.0 behaviour plainly but gently. Update it if D-032 is approved.
-3. **Plus through Family Sharing.** See the subscriptions article notes.
+**Settled by the brief, other documents to update (hand-offs, not founder decisions):**
+1. **Co-parent only at v1.0** (brief decision 5, Decided). PRD K-35 and D-002 still ship family contributors in the app at v1.0. Hand-off to `product` to update the PRD. The invite screen copy (`family.invite.body`: "You choose which ones go in the book") is written for family members; hand-off to `content`.
+2. **Plus through Family Sharing** (brief decision 3, Decided). See the subscriptions article notes.
+
+**Still open:**
+3. **Hearing each other's recordings.** Brief decision 9 says family members hearing each other's recordings comes in v1.1, with no audio upload in v1.0. D-032 (shared voice, recommended, decision by 23 Oct) is still open and would change this. The article states the v1.0 behaviour plainly but gently. Update it if D-032 is approved.
+
+**Wording:** the opening line no longer says the book is "lovelier with two voices". That counted a gap for parents who keep a book alone, and "voices" suggested hearing each other's recordings, which v1.0 does not do. The last section says "not in this version yet" rather than promising a later update.
 
 **Leave path:** the exact Settings row name for leaving is not in strings yet. "Settings, {child}'s book, then leave" follows PRD C-REQ-016 (per-child page holds members and delete). Name the row when `content` adds it.
 

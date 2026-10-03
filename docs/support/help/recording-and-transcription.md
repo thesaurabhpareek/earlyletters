@@ -24,7 +24,7 @@ You can speak your letters in English, Hindi, Spanish, Mandarin Chinese, French,
 
 English is already in the app. Another language downloads when you choose it, and only that one. You can remove a language in Settings to free space.
 
-Many families move between Hindi and English in one breath. A way of writing made for that arrives in a later update. For now, choose the language you use most in that letter. Your recording keeps every word, just as you said it.
+Many families move between Hindi and English in one breath. A way of writing made for that is not in this version yet. For now, choose the language you use most in that letter. Your recording keeps every word, just as you said it.
 
 The app's own screens are in English for now.
 
@@ -47,7 +47,7 @@ To keep every "um" and false start in every letter, choose **Word for word** in 
 ## What we never do
 
 - We never add a word you did not say.
-- We never change what you meant or how you said it.
+- We never change what you meant.
 - We never reword, summarise or make a letter sound nicer.
 - We never change your recording. If the app also keeps a clearer copy for listening, the original is always there to play.
 - We never change a letter you typed. Your keyboard's own autocorrect is the only help it gets.
@@ -80,10 +80,12 @@ Write to us at {SUPPORT_EMAIL}. Tell us the language, and whether the trouble is
 
 **To build:** BL-130 recorder session, BL-142 transcription queue, BL-143 model download and removal in Settings, BL-146 suggestions UX (P1), BL-178 the Names and words settings screen. Language packs downloaded on demand (brief decision 15) have no backlog task id yet that I could find; `product` to confirm. The clearer listening copy (brief decision 8) has no task either, so the article only says "if". "Keep this as said" phrase lock strings exist (`review.lock.*`) but the screen does not use them, so the article leaves them out.
 
-**Decisions this article depends on:**
-- Seven spoken languages at v1.0 and Hindi-English mode in v1.1 (brief decision 6). This conflicts with `site.faq` "Which languages can I use?" ("Hindi, English, or both in the same sentence") and `onboarding.dictionary.languagesBody` ("Switch languages mid-sentence"), and with PRD K-24 (code-switched speech P0). Hand-off to `content` and `product`.
+**Decisions this article depends on** (settled ones are hand-offs; only D-031 is still open):
+- Seven spoken languages at v1.0 (brief decision 6, Decided) and Hindi-English mode in v1.1 (brief decision 9, Decided). The article says Hindi-English mode is "not in this version yet" rather than promising a later update. This conflicts with `site.faq` "Which languages can I use?" ("Hindi, English, or both in the same sentence") and `onboarding.dictionary.languagesBody` ("Switch languages mid-sentence"), and with PRD K-24 (code-switched speech P0). Hand-off to `content` and `product`.
 - Hindi in Devanagari (brief decision 6) while D-031 (Hindi script default) is still open until 30 Oct. If Roman script becomes an option, add one line.
 - No server transcription in v1.0 (PRD 2.2 and 3.0: nothing leaves the phone for transcription in v1.0). The Privacy Policy section 4 describes cloud transcription, which applies from v1.1 (section 2 says so).
 - Some older iPhones may not run the speech model (ADR 0001, BL-143 device tiers). The article covers this with "Words are not ready yet". Which models run on which phones is Unverified until BL-043 reports.
 
-**Wording:** the Settings toggle is labelled with a word VOICE.md retires (`settings.tidyLabel`, PRD K-26 rename pending). The article names only its "Word for word" option. When `content` renames the toggle, name it here. The fix list matches `EditType` in `packages/core/src/types.ts` and the `review.edits.*` explanations. "A apple" is the strings' own example; I did not use the agreement example from `types.ts` because it uses a gendered pronoun.
+**Wording:** "What we never do" says "We never change what you meant." It no longer adds "or how you said it", because the fix list above removes fillers and false starts from the text. The recording itself is never changed (next line in the article).
+
+The Settings toggle is labelled with a word VOICE.md retires (`settings.tidyLabel`, PRD K-26 rename pending). The article names only its "Word for word" option. When `content` renames the toggle, name it here. The fix list matches `EditType` in `packages/core/src/types.ts` and the `review.edits.*` explanations. "A apple" is the strings' own example; I did not use the agreement example from `types.ts` because it uses a gendered pronoun.
