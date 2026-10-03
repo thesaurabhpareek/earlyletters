@@ -11,7 +11,7 @@ import { createDb } from './harness.mjs';
 
 const { db, check, sys, done } = await createDb(process.argv.slice(2));
 
-const PENDING_WS01 = new Set(['views', 'sequences']);
+const PENDING_WS01 = new Set(); // WS-01 merged into this branch (stacked on #32): all checks enforced.
 const enforce = process.env.EXPECT_WS01 === '1';
 const pending = (key, name, ok) => {
   if (enforce || !PENDING_WS01.has(key)) return check(name, ok);
