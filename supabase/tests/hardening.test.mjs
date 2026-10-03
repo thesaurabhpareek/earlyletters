@@ -7,6 +7,7 @@
 // into harness.mjs; until then only this file has it.
 import { createDb, users, uuid7 } from './harness.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
+import { createHash, randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -119,13 +120,61 @@ check('[DB-12] "all books" (null child) counts as one value (23505)', (await cod
 
 // ── DB-09: specific codes ────────────────────────────────────────────────
 check('[DB-09] only a parent deletes a book (SCPAR)', (await codeOf(() => as(C, `select public.request_book_deletion($1, 'ios')`, [CHILD]))) === 'SCPAR');
-check('[DB-09] an unknown policy version is P0002', (await codeOf(() => as(A, `select public.record_policy_act('terms', '9.9.9', 'accept', 'signin_sheet', 'auth.sheet', '1', 'ios')`))) === 'P0002');
-check('[DB-09] support-assisted acts from a client are 22023', (await codeOf(() => as(A, `select public.record_policy_act('terms', '1.0.0', 'accept', 'support_assisted', 'auth.sheet', '1', 'ios')`))) === '22023');
+check('[DB-09] an unknown policy version is P0002', (await codeOf(() => as(A, `select public.record_policy_act('${uuid7()}', 'terms', '9.9.9', 'accept', 'signin_sheet', 'auth.sheet', '1', 'ios')`))) === 'P0002');
+check('[DB-09] support-assisted acts from a client are 22023', (await codeOf(() => as(A, `select public.record_policy_act('${uuid7()}', 'terms', '1.0.0', 'accept', 'support_assisted', 'auth.sheet', '1', 'ios')`))) === '22023');
 const bLetter = await letter(B);
 await as(B, `select * from public.request_account_deletion('ios')`);
 check('[DB-09] restoring letters during a pending account deletion is SCACD', (await codeOf(() => as(B, `select public.restore_entry($1)`, [bLetter]))) === 'SCACD');
 await as(B, `select public.cancel_account_deletion()`);
 check('[DB-09] a parent tombstoning the book directly is SCTMB', (await codeOf(() => as(B, `update children set deleted_at = now() where id=$1`, [CHILD]))) === 'SCTMB');
+
+// ── Retry safety (founder decision 17): client idempotency keys ─────────
+{
+  const hash = (t) => createHash('sha256').update(t, 'utf8').digest('hex');
+  const mk = (uid, id, child, role, tokenHash, signsAs = null) =>
+    as(uid, `select public.create_child_invite($1, $2, $3, decode($4, 'hex'), $5) id`, [id, child, role, tokenHash, signsAs]).then((r) => r.rows[0].id);
+  const invites = async () => (await sys(`select count(*)::int n from child_invites where invited_by=$1`, [A])).rows[0].n;
+  const audits = async () => (await sys(`select count(*)::int n from audit_events where action='invite_created' and actor_id=$1`, [A])).rows[0].n;
+  const token = randomBytes(32).toString('hex');
+  const key = uuid7();
+  const before = await invites();
+  const auditBefore = await audits();
+  check('[retry] create_child_invite returns the client key as the invite id', (await mk(A, key, CHILD, 'contributor', hash(token), 'Nani')) === key);
+  check('[retry] a replay with the same key returns the same invite', (await mk(A, key, CHILD, 'contributor', hash(token), 'Nani')) === key);
+  check('[retry] the replay made no second row and no second audit event', (await invites()) === before + 1 && (await audits()) === auditBefore + 1);
+  check('[retry] the server stores only the hash of the client token',
+    (await sys(`select encode(token_hash, 'hex') h from child_invites where id=$1`, [key])).rows[0].h === hash(token));
+  check('[retry] same key, different role is refused (SCCID)', (await codeOf(() => mk(A, key, CHILD, 'parent', hash(token), 'Nani'))) === 'SCCID');
+  check('[retry] same key, different token hash is refused (SCCID)', (await codeOf(() => mk(A, key, CHILD, 'contributor', hash('other'), 'Nani'))) === 'SCCID');
+  check('[retry] someone else\'s key is refused (SCCID)', (await codeOf(() => mk(B, key, CHILD, 'contributor', hash(token), 'Nani'))) === 'SCCID');
+  check('[retry] a non-v7 invite key is refused (SCCID)', (await codeOf(() => mk(A, '0b2f9e3c-5a7d-4c1e-9f00-123456789abc', CHILD, 'contributor', hash('x1')))) === 'SCCID');
+  check('[retry] a token hash that is not 32 bytes is refused (22023)', (await codeOf(() => mk(A, uuid7(), CHILD, 'contributor', 'abcd'))) === '22023');
+  check('[retry] a reused token hash under a new key is refused (SCINV)', (await codeOf(() => mk(A, uuid7(), CHILD, 'contributor', hash(token)))) === 'SCINV');
+  // Rate limit: fill A's 24-hour allowance, then a replay still succeeds and a new invite does not.
+  const used = (await sys(`select count(*)::int n from child_invites where invited_by=$1 and created_at > now() - interval '24 hours'`, [A])).rows[0].n;
+  for (let i = used; i < 20; i++) await mk(A, uuid7(), CHILD, 'contributor', hash(`fill-${i}`));
+  const atLimit = await invites();
+  check('[retry] at the daily limit a new invite is refused (SCRAT)', (await codeOf(() => mk(A, uuid7(), CHILD, 'contributor', hash('one-more')))) === 'SCRAT');
+  check('[retry] at the daily limit a replay still returns the original invite', (await mk(A, key, CHILD, 'contributor', hash(token), 'Nani')) === key);
+  check('[retry] the replay did not count toward the limit (no new row)', (await invites()) === atLimit);
+  check('[retry] the invite still works with the client-held token', (await codeOf(() => as(C, `select public.accept_child_invite($1)`, [token]))) === 'ok');
+  await sys(`delete from child_invites where invited_by=$1 and accepted_at is null`, [A]);
+
+  const act = (uid, id, action = 'acknowledge', surface = 'auth.sheet') =>
+    as(uid, `select public.record_policy_act($1, 'privacy', '1.0.0', $2, 'signin_sheet', $3, '1', 'ios') id`, [id, action, surface]).then((r) => r.rows[0].id);
+  const acts = async () => (await sys(`select count(*)::int n from policy_acceptances where profile_id=$1 and document='privacy'`, [A])).rows[0].n;
+  const k2 = uuid7();
+  const n0 = await acts();
+  check('[retry] record_policy_act returns the client key as the row id', (await act(A, k2)) === k2);
+  check('[retry] a replay returns the same row and writes nothing new', (await act(A, k2)) === k2 && (await acts()) === n0 + 1);
+  check('[retry] same key, different act is refused (SCCID)', (await codeOf(() => act(A, k2, 'decline'))) === 'SCCID'
+    && (await codeOf(() => act(A, k2, 'acknowledge', 'settings.privacy'))) === 'SCCID');
+  check('[retry] another person replaying the key is refused (SCCID)', (await codeOf(() => act(B, k2))) === 'SCCID');
+  check('[retry] a non-v7 act key is refused (SCCID)', (await codeOf(() => act(A, '0b2f9e3c-5a7d-4c1e-9f00-123456789abc'))) === 'SCCID');
+  check('[retry] the old signatures are gone (42883)',
+    (await codeOf(() => as(A, `select public.create_child_invite($1::uuid, 'contributor'::text, null::text)`, [CHILD]))) === '42883'
+    && (await codeOf(() => as(A, `select public.record_policy_act('privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`))) === '42883');
+}
 
 // ── DB-07: the consent pepper fails closed ───────────────────────────────
 check('[DB-07] with no pepper set, deleting a profile raises SCCFG',

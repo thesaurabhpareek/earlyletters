@@ -16,6 +16,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 > - **DB-16**: file 3 no longer has its own `begin` / `commit`.
 > - **PDB-02**: `anon` and `authenticated` hold no privileges on public sequences.
 > - **Founder decision 3 (payments, docs/agents/BRIEF-2026-10-03.md)**: Apple only, StoreKit 2 on the device. File 6 no longer creates `app_account_tokens`, `store_subscriptions`, `store_notifications`, `has_plus`, `book_has_plus`, `get_plan_state`, `my_app_account_token`, `apply_store_transaction`, `store_environment_allowed`, `create_child_row` or `create_first_run_children`, nor `profiles.first_run_closed_at`. The server never enforces Plus, and SQLSTATE `SCPLS` no longer exists. File 7 no longer ages out `store_notifications`.
+> - **Retry safety (founder decision 17)**: `create_child_invite` and `record_policy_act` take a required client UUIDv7 key `p_id` (first argument), stored as the row's primary key (`child_invites.id`, `policy_acceptances.id`). A replay with the same key and arguments returns the original id and changes nothing (no second row, no audit event, no count against the invite limit). The same key with different arguments, or another person's key, raises `SCCID`. **Invite design:** the app generates the invite secret itself (32 random bytes, hex encoded) and keeps it for the share link; it sends only `p_token_hash = sha256(utf8(token))`. The server never sees, stores or returns the token, so a replay has nothing secret to re-send. `accept_child_invite(p_token)` is unchanged. New signatures: `create_child_invite(p_id uuid, p_child uuid, p_role text, p_token_hash bytea, p_signs_as text default null) returns uuid` (the invite id, no longer the token) and `record_policy_act(p_id uuid, p_document, p_version, p_action, p_method, p_surface, p_app_version, p_platform, p_locale, p_client_recorded_at, p_rendered_sha256, p_context) returns uuid`. Both old signatures are dropped.
 > - **PSEC-04**: the photo UPDATE policy is dropped (photos are never overwritten in place), and deleting your own photo needs current membership of a live book.
 
 ## What is applied and what is pending
@@ -188,7 +189,7 @@ insert into supabase_migrations.schema_migrations (version, name) values
   ('20261003000000', 'security_and_family'), ('20261003010000', 'children_and_entitlements'), ('20261003020000', 'purge_batching')
 on conflict do nothing;   -- run after all three succeeded; or insert one row after each
 ```
-File 5 creates restrictive policies and alters existing ones, and drops one: `entry_photos_author_update` on `storage.objects` (PSEC-04). Policy drops need the dashboard's approval, so expect that prompt for file 5. It drops two functions (`create_child_invite(uuid)`, and in file 6 `create_child(text, date)`; in file 7 `purge_due(timestamptz)`, replaced by `purge_due(timestamptz, int)` with defaults, so the cron command `select public.purge_due();` keeps working).
+File 5 creates restrictive policies and alters existing ones, and drops one: `entry_photos_author_update` on `storage.objects` (PSEC-04). Policy drops need the dashboard's approval, so expect that prompt for file 5. It drops three functions (`create_child_invite(uuid)`, the step-3 `record_policy_act(text, ...)` without a key, and in file 6 `create_child(text, date)`; in file 7 `purge_due(timestamptz)`, replaced by `purge_due(timestamptz, int)` with defaults, so the cron command `select public.purge_due();` keeps working).
 
 ## Step 10. Check the result
 
@@ -209,7 +210,7 @@ select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
  where n.nspname = 'public' and p.prosecdef and coalesce(array_to_string(p.proconfig, ','), '') !~ 'search_path=pg_catalog, public';
 ```
 Then repeat the two classification and RLS queries from step 4. Advisors, expected and accepted in addition to step 4's list:
-- **0029** for the new RPCs: `create_child(uuid, text, date, date)`, `create_child_invite(uuid, text, text)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`. Each starts with `require_user()` or answers only for the caller.
+- **0029** for the new RPCs: `create_child(uuid, text, date, date)`, `create_child_invite(uuid, uuid, text, bytea, text)`, `record_policy_act(uuid, ...)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`. Each starts with `require_user()` or answers only for the caller.
 - **0010** on `book_entries` (unchanged; the view now applies the B F9 rule) and on `book_children` (D-039).
 
 ## Step 11. Settings per environment
@@ -243,7 +244,7 @@ The cron command is unchanged. When the `purge-worker` exists it should loop `se
 | `SCIMM`, `SCTMB`, `SCLPG`, `SCDEL`, `SCPAR` | As in step 4. `SCDEL` means "this book or letter is deleted" (new or edited letters, restore before the book). `SCPAR` means "parents only", including deleting or restoring a book. `SCTMB` also covers a direct book tombstone. `SCIMM` also covers `profiles.id` and `profiles.created_at` | Permanent: `rejected_writes` |
 | `SCACD` | An account deletion is pending; cancel it to restore these letters or books | Permanent; offer "cancel account deletion" |
 | `SCPRG` | This letter or book id was purged for good (DB-02); also on upsert | Permanent: drop the local row; never retry with the same id |
-| `SCCID` | Also: a letter id that is not a device UUIDv7 (DB-15) | Permanent; a client bug |
+| `SCCID` | Also: a letter id, invite key or policy-act key that is not a device UUIDv7 (DB-15), or an idempotency key replayed with different arguments or by another person | Permanent; a client bug (make a new key only for a new action) |
 | `SCVER` | A newer policy version must be accepted first (`record_policy_act`) | Fetch `policy_actions_needed()` and show that version |
 | `SCCFG` | A server setting is missing (`app.consent_pepper`) | Not a client error: alert ops; retry later |
 | `55000` | Service role only: a deletion request is not in the expected state | Worker: re-read the request and skip |
@@ -280,10 +281,10 @@ Prefer fixing forward. Everything is additive except the dropped functions, whic
 - Letters: ids must be UUIDv7 from the device (already the case in `store.ts`); `SCPRG` on upload means the letter was purged on the server, so drop the local row.
 - Photos: never update an uploaded photo object; upload a new path and delete the old one.
 - Children: `create_child(p_id, p_name, p_date_of_birth, p_due_date)` with the device's UUIDv7 (the same id local letters already use; retries are safe). Twins and siblings are separate `create_child` calls. The server never checks Plus: the app decides with StoreKit 2 on the device (founder decision 3).
-- Invites: `create_child_invite(p_child, p_role, p_signs_as)` with `p_role` `'parent'` or `'contributor'`; only parents see the invite button. `revoke_invite(id)`.
+- Invites: the app makes the token (32 random bytes, hex) and a UUIDv7 key, stores both with the pending action, and calls `create_child_invite(p_id, p_child, p_role, p_token_hash, p_signs_as)` with `p_token_hash = sha256(utf8(token))` and `p_role` `'parent'` or `'contributor'`. Retry with the same key and arguments after a lost response; the result is the invite id. Only parents see the invite button. `revoke_invite(id)`. `SCINV` "token already used" means generate a new token and key.
 - Family letters: for contributors `in_book = true` means "send to the parents". The server keeps the letter `approval = 'pending'` and `in_book = false` until a parent calls `review_family_letter(id, 'added' | 'set_aside', expected_state)`; show status from `approval`. Never upload `approval`, `reviewed_by` or `reviewed_at`. A contributor takes a letter back with `withdraw_family_letter(id)`. Editing the words of an added family letter returns it to pending unless the parents turned on auto-add for that person.
 - Reads: `book_entries` now follows B F9 and has an `approval` column; parents' "Letters from family" reads `approval in ('pending', 'set_aside')`.
-- Consent: record `terms` accept with `context = {"age_attested": true, "age_signal": ...}` and `sensitive-data` accept before the first upload; read `my_sync_gate()` to decide which sheet to show; context keys are allowlisted (`auth`, `age_attested`, `age_signal`, `scope`, `crash`, `usage`, `product`, `intro_offer`, `storefront`, `mode`).
+- Consent: every `record_policy_act` call carries a UUIDv7 key `p_id` made once per act and reused on retry. Record `terms` accept with `context = {"age_attested": true, "age_signal": ...}` and `sensitive-data` accept before the first upload; read `my_sync_gate()` to decide which sheet to show; context keys are allowlisted (`auth`, `age_attested`, `age_signal`, `scope`, `crash`, `usage`, `product`, `intro_offer`, `storefront`, `mode`).
 - Policy sheet: `policy_actions_needed()` returns the version to show; during a notice window new users get the new version.
 - Plus: entirely on the device (`Transaction.currentEntitlements`, Apple's subscription UI, Family Sharing for the co-parent). There is no server plan RPC. Account deletion `source` is `ios`, `android` or `web` only.
 - PowerSync streams: `book_entries` is a view; the member stream must apply the same B F9 predicate on `entries` (TDD 02 3.2 `book_access`, not built in these files).

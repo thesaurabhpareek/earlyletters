@@ -10,8 +10,8 @@
 --
 -- Fixes (requirement ids in brackets):
 --  1. Invite escalation [TDD 02 C1, TDD 04 S-1, LEGAL-REQ-024, B-REQ-007]:
---     create_child_invite(uuid) is dropped. The new create_child_invite(p_child,
---     p_role, p_signs_as) needs an explicit role, a parent caller, a live book and
+--     create_child_invite(uuid) is dropped. The new create_child_invite(p_id,
+--     p_child, p_role, p_token_hash, p_signs_as) needs an explicit role, a parent caller, a live book and
 --     consent, and is rate limited per book and per parent. Contributors cannot
 --     create any invite. accept_child_invite refuses revoked, expired, used and
 --     deleted-book invites and existing members; retries by the same person are
@@ -59,6 +59,15 @@
 --    photo needs current membership of a live book.
 --  * DB-09: "only a parent" raises SCPAR; record_policy_act raises real codes.
 --  * DB-12: dictionary terms are unique per owner, per book, ignoring case.
+--  * Retry safety (founder decision 17): create_child_invite and record_policy_act
+--    take a required client UUIDv7 key (p_id), stored as the row's primary key. A
+--    replay with the same key and the same arguments returns the original result
+--    with no side effects (no second row, no audit, no rate-limit count); the same
+--    key with different arguments, or someone else's key, raises SCCID.
+--    Invites: the CLIENT generates the secret token (32 random bytes, hex) and sends
+--    only p_token_hash = sha256(utf8(token)); the server never sees or returns the
+--    token, so a replay has nothing secret to re-send. accept_child_invite(p_token)
+--    is unchanged.
 
 -- ─── 1. Shared predicates ────────────────────────────────────────────────
 -- Supabase sets request.jwt.claims for every API request. Reading the setting
@@ -66,6 +75,17 @@
 create or replace function public.is_anonymous()
 returns boolean language sql stable set search_path = pg_catalog, public as $$
   select coalesce((nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'is_anonymous')::boolean, false);
+$$;
+
+-- RFC 9562 UUIDv7: version nibble 7, variant 10xx, 48-bit Unix ms timestamp
+-- between 2024-01-01 and one day from now. Client-made ids and idempotency keys.
+create or replace function public.is_valid_client_uuid7(p_id uuid)
+returns boolean language sql stable set search_path = pg_catalog, public as $$
+  select p_id is not null
+     and substr(p_id::text, 15, 1) = '7'
+     and substr(p_id::text, 20, 1) in ('8', '9', 'a', 'b')
+     and to_timestamp((('x' || lpad(substr(replace(p_id::text, '-', ''), 1, 12), 16, '0'))::bit(64)::bigint) / 1000.0)
+         between timestamptz '2024-01-01 00:00:00+00' and now() + interval '1 day';
 $$;
 
 -- Every RPC starts with this. Returns the caller's id.
@@ -260,7 +280,11 @@ alter policy entry_photos_author_delete on storage.objects using (
 
 -- record_policy_act: anonymous sessions may record only the web contributor
 -- notice; context keys are allowlisted (TDD 05 7.1); age_attested must be true.
+-- p_id is the client's UUIDv7 idempotency key and becomes policy_acceptances.id
+-- (primary key, so unique). A replay with the same key returns the same row id.
+drop function if exists public.record_policy_act(text, text, text, text, text, text, text, text, timestamptz, bytea, jsonb);
 create or replace function public.record_policy_act(
+  p_id uuid,
   p_document text,
   p_version text,
   p_action text,
@@ -273,11 +297,27 @@ create or replace function public.record_policy_act(
   p_rendered_sha256 bytea default null,
   p_context jsonb default '{}'::jsonb
 ) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
-declare v_ver policy_versions%rowtype; v_id uuid; v_ctx jsonb := coalesce(p_context, '{}'::jsonb);
+declare v_ver policy_versions%rowtype; v_prev policy_acceptances%rowtype; v_ctx jsonb := coalesce(p_context, '{}'::jsonb);
 begin
   if auth.uid() is null then raise exception 'not authenticated' using errcode = '28000'; end if;
   if public.is_anonymous() and p_method is distinct from 'web_contributor_page' then
     raise exception 'anonymous sessions may only record the web contributor notice' using errcode = 'SCANO';
+  end if;
+  if not public.is_valid_client_uuid7(p_id) then
+    raise exception 'act id must be a UUIDv7 made on the device' using errcode = 'SCCID';
+  end if;
+  -- Replay (lost response): same key, same act -> the original row, nothing new.
+  select * into v_prev from policy_acceptances where id = p_id;
+  if found then
+    if v_prev.profile_id is not distinct from auth.uid()
+       and (v_prev.document, v_prev.version, v_prev.action, v_prev.method, v_prev.surface, v_prev.app_version,
+            v_prev.platform, v_prev.locale, v_prev.rendered_sha256, v_prev.context)
+           is not distinct from
+           (p_document, p_version, p_action, p_method, p_surface, p_app_version,
+            p_platform, p_locale, p_rendered_sha256, v_ctx) then
+      return p_id;
+    end if;
+    raise exception 'act id already used for a different act' using errcode = 'SCCID';
   end if;
   if p_method = 'support_assisted' then
     raise exception 'support-assisted acts are recorded by the service role' using errcode = '22023';
@@ -307,12 +347,11 @@ begin
   if p_client_recorded_at is not null and p_client_recorded_at > now() + interval '5 minutes' then
     p_client_recorded_at := null;  -- device clock in the future; keep server time only
   end if;
-  insert into policy_acceptances (profile_id, document, version, action, method, surface,
+  insert into policy_acceptances (id, profile_id, document, version, action, method, surface,
                                   client_recorded_at, app_version, platform, locale, rendered_sha256, context)
-  values (auth.uid(), p_document, p_version, p_action, p_method, p_surface,
-          p_client_recorded_at, p_app_version, p_platform, p_locale, p_rendered_sha256, v_ctx)
-  returning id into v_id;
-  return v_id;
+  values (p_id, auth.uid(), p_document, p_version, p_action, p_method, p_surface,
+          p_client_recorded_at, p_app_version, p_platform, p_locale, p_rendered_sha256, v_ctx);
+  return p_id;
 end;
 $$;
 
@@ -337,18 +376,39 @@ alter table public.audit_events add constraint audit_events_action_check check (
 
 drop function if exists public.create_child_invite(uuid);
 
--- Returns the raw token once; only its SHA-256 is stored. Co-parent invites
--- last 7 days, family invites 14 (K-18). Limits (B-NFR-004): 20 invites per
--- book and 20 per parent in any 24 hours.
-create or replace function public.create_child_invite(p_child uuid, p_role text, p_signs_as text default null)
-returns text language plpgsql security definer set search_path = pg_catalog, public as $$
+-- Retry-safe invites (founder decision 17). The client generates the invite secret
+-- (32 random bytes, hex encoded, 64 characters), keeps it for the share link, and
+-- sends only p_token_hash = sha256(utf8(token)) plus a UUIDv7 key p_id, which
+-- becomes child_invites.id. The server never sees or returns the token, so a replay
+-- after a lost response returns the same invite id and the client still holds its
+-- token. Co-parent invites last 7 days, family invites 14 (K-18). Limits
+-- (B-NFR-004): 20 invites per book and 20 per parent in any 24 hours; replays do
+-- not count. Returns the invite id.
+create or replace function public.create_child_invite(p_id uuid, p_child uuid, p_role text, p_token_hash bytea,
+                                                      p_signs_as text default null)
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_uid uuid := public.require_user();
-  v_token text;
-  v_id uuid;
+  v_prev child_invites%rowtype;
 begin
+  if not public.is_valid_client_uuid7(p_id) then
+    raise exception 'invite id must be a UUIDv7 made on the device' using errcode = 'SCCID';
+  end if;
+  -- Replay: same key, same caller, same arguments -> the same invite, nothing new.
+  select * into v_prev from child_invites where id = p_id;
+  if found then
+    if v_prev.invited_by = v_uid and v_prev.child_id = p_child and v_prev.role is not distinct from p_role
+       and v_prev.token_hash = p_token_hash
+       and v_prev.signs_as is not distinct from nullif(btrim(p_signs_as), '') then
+      return p_id;
+    end if;
+    raise exception 'invite id already used for a different invite' using errcode = 'SCCID';
+  end if;
   if p_role is null or p_role not in ('parent', 'contributor') then
     raise exception 'invite role must be parent or contributor' using errcode = 'SCINV';
+  end if;
+  if p_token_hash is null or octet_length(p_token_hash) <> 32 then
+    raise exception 'token hash must be a SHA-256 digest (32 bytes)' using errcode = '22023';
   end if;
   if not public.is_child_parent(p_child) then
     raise exception 'only a parent can invite' using errcode = 'SCPAR';
@@ -361,14 +421,14 @@ begin
      or (select count(*) from child_invites where invited_by = v_uid and created_at > now() - interval '24 hours') >= 20 then
     raise exception 'too many invites today' using errcode = 'SCRAT';
   end if;
-  -- 244 random bits from two v4 UUIDs; core Postgres, no extension needed.
-  v_token := replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
-  insert into child_invites (child_id, invited_by, token_hash, role, signs_as, expires_at)
-    values (p_child, v_uid, sha256(convert_to(v_token, 'UTF8')), p_role, nullif(btrim(p_signs_as), ''),
-            now() + case p_role when 'parent' then interval '7 days' else interval '14 days' end)
-    returning id into v_id;
-  perform public.audit('invite_created', 'membership', v_id, p_child, jsonb_build_object('role', p_role));
-  return v_token;
+  if exists (select 1 from child_invites where token_hash = p_token_hash) then
+    raise exception 'token already used; generate a new one' using errcode = 'SCINV';
+  end if;
+  insert into child_invites (id, child_id, invited_by, token_hash, role, signs_as, expires_at)
+    values (p_id, p_child, v_uid, p_token_hash, p_role, nullif(btrim(p_signs_as), ''),
+            now() + case p_role when 'parent' then interval '7 days' else interval '14 days' end);
+  perform public.audit('invite_created', 'membership', p_id, p_child, jsonb_build_object('role', p_role));
+  return p_id;
 end;
 $$;
 
@@ -815,12 +875,14 @@ revoke execute on function public.entries_family_rules() from public, anon, auth
 
 -- Called as the signed-in user by RLS policies and client-context triggers.
 revoke execute on function public.is_anonymous() from public, anon;
+revoke execute on function public.is_valid_client_uuid7(uuid) from public, anon;
 revoke execute on function public.require_user() from public, anon;
 revoke execute on function public.my_role_in(uuid) from public, anon;
 revoke execute on function public.my_auto_add_in(uuid) from public, anon;
 revoke execute on function public.can_write_content() from public, anon;
 revoke execute on function public.require_content_consent() from public, anon;
 grant execute on function public.is_anonymous() to authenticated;
+grant execute on function public.is_valid_client_uuid7(uuid) to authenticated;
 grant execute on function public.require_user() to authenticated;
 grant execute on function public.my_role_in(uuid) to authenticated;
 grant execute on function public.my_auto_add_in(uuid) to authenticated;
@@ -829,13 +891,15 @@ grant execute on function public.require_content_consent() to authenticated;
 
 -- RPCs (each starts with require_user()).
 revoke execute on function public.my_sync_gate() from public, anon;
-revoke execute on function public.create_child_invite(uuid, text, text) from public, anon;
+revoke execute on function public.create_child_invite(uuid, uuid, text, bytea, text) from public, anon;
+revoke execute on function public.record_policy_act(uuid, text, text, text, text, text, text, text, text, timestamptz, bytea, jsonb) from public, anon;
 revoke execute on function public.revoke_invite(uuid) from public, anon;
 revoke execute on function public.accept_child_invite(text) from public, anon;
 revoke execute on function public.review_family_letter(uuid, text, text) from public, anon;
 revoke execute on function public.withdraw_family_letter(uuid) from public, anon;
 grant execute on function public.my_sync_gate() to authenticated;
-grant execute on function public.create_child_invite(uuid, text, text) to authenticated;
+grant execute on function public.create_child_invite(uuid, uuid, text, bytea, text) to authenticated;
+grant execute on function public.record_policy_act(uuid, text, text, text, text, text, text, text, text, timestamptz, bytea, jsonb) to authenticated;
 grant execute on function public.revoke_invite(uuid) to authenticated;
 grant execute on function public.accept_child_invite(text) to authenticated;
 grant execute on function public.review_family_letter(uuid, text, text) to authenticated;

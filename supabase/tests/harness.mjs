@@ -72,18 +72,22 @@ export async function createDb(files, options = {}) {
   const consent = async (uid, { terms = true, age = true, sensitive = true, version = '1.0.0' } = {}) => {
     if (terms) {
       const ctx = JSON.stringify(age ? { age_attested: true, age_signal: 'none' } : {});
-      await as(uid, `select public.record_policy_act('terms', $1, 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', 'en-US', null, null, $2::jsonb)`, [version, ctx]);
+      await as(uid, `select public.record_policy_act('${uuid7()}', 'terms', $1, 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', 'en-US', null, null, $2::jsonb)`, [version, ctx]);
     }
     if (sensitive) {
-      await as(uid, `select public.record_policy_act('sensitive-data', '1.0.0', 'accept', 'consent_sheet', 'consent.sensitive', '1.0.0', 'ios')`);
+      await as(uid, `select public.record_policy_act('${uuid7()}', 'sensitive-data', '1.0.0', 'accept', 'consent_sheet', 'consent.sensitive', '1.0.0', 'ios')`);
     }
   };
   const newChild = async (uid, name = 'Asha', dob = '2025-04-12', due = null) => {
     const id = uuid7();
     return (await one(uid, `select public.create_child($1, $2, $3::date, $4::date) as id`, [id, name, dob, due])).id;
   };
-  const invite = async (inviter, child, role) =>
-    (await one(inviter, `select public.create_child_invite($1, $2) as t`, [child, role])).t;
+  // The client makes the invite secret and sends only its SHA-256 (retry-safe invites).
+  const invite = async (inviter, child, role) => {
+    const token = randomBytes(32).toString('hex');
+    await one(inviter, `select public.create_child_invite($1, $2, $3, sha256(convert_to($4, 'UTF8'))) as id`, [uuid7(), child, role, token]);
+    return token;
+  };
   const join = async (uid, role, child, inviter) => {
     const t = await invite(inviter, child, role);
     await as(uid, `select public.accept_child_invite($1)`, [t]);

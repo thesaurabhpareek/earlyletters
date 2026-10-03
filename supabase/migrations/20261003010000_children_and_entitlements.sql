@@ -45,16 +45,8 @@ alter table public.children add constraint children_has_date
   check (date_of_birth is not null or due_date is not null) not valid;
 
 -- ─── 3. Client-supplied ids ─────────────────────────────────────────────
--- RFC 9562 UUIDv7: version nibble 7, variant 10xx, 48-bit Unix ms timestamp
--- between 2024-01-01 and one day from now.
-create or replace function public.is_valid_client_uuid7(p_id uuid)
-returns boolean language sql stable set search_path = pg_catalog, public as $$
-  select p_id is not null
-     and substr(p_id::text, 15, 1) = '7'
-     and substr(p_id::text, 20, 1) in ('8', '9', 'a', 'b')
-     and to_timestamp((('x' || lpad(substr(replace(p_id::text, '-', ''), 1, 12), 16, '0'))::bit(64)::bigint) / 1000.0)
-         between timestamptz '2024-01-01 00:00:00+00' and now() + interval '1 day';
-$$;
+-- is_valid_client_uuid7() is defined in 20261003000000_security_and_family.sql
+-- (the invite and policy-act RPCs there need it first).
 
 -- Letters (DB-15). Same body as 20261002020000 plus the id and clock checks.
 create or replace function public.entries_before_insert()
@@ -122,7 +114,5 @@ $$;
 
 -- ─── 5. Privileges ───────────────────────────────────────────────────────
 revoke execute on function public.profiles_guard() from public, anon, authenticated;
-revoke execute on function public.is_valid_client_uuid7(uuid) from public, anon;
 revoke execute on function public.create_child(uuid, text, date, date) from public, anon;
-grant execute on function public.is_valid_client_uuid7(uuid) to authenticated;
 grant execute on function public.create_child(uuid, text, date, date) to authenticated;

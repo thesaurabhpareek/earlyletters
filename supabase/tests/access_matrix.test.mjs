@@ -27,7 +27,7 @@ const CHILD = await newChild(A);
 await join(B, 'parent', CHILD, A);
 await join(N, 'contributor', CHILD, A);
 await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'contributor')`, [CHILD, W]);
-await as(W, `select public.record_policy_act('contributor-notice', '1.0.0', 'accept', 'web_contributor_page', 'web.send', '1', 'web', null, null, null, '{"age_attested": true}'::jsonb)`, [], { anonymous: true });
+await as(W, `select public.record_policy_act('${uuid7()}', 'contributor-notice', '1.0.0', 'accept', 'web_contributor_page', 'web.send', '1', 'web', null, null, null, '{"age_attested": true}'::jsonb)`, [], { anonymous: true });
 
 let seq = 0;
 const letter = async (author, inBook) => {
@@ -142,8 +142,8 @@ const WRITES = [
 // so anyone signed in and consented may start another book.
 const RPCS = [
   ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
-  ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['create_child_invite', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(gen_random_uuid()::text::bytea))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['create_child_invite (parent role)', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'parent', sha256(gen_random_uuid()::text::bytea))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['accept_child_invite', `select public.accept_child_invite('${token}')`,               ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
   ['revoke_invite', `select public.revoke_invite('${inviteId}')`,                        ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
   ['review_family_letter', `select public.review_family_letter('${nSent}', 'added')`,    ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
@@ -155,7 +155,7 @@ const RPCS = [
   ['cancel_book_deletion', `select public.cancel_book_deletion('${CHILD}')`,             ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['request_account_deletion', `select * from public.request_account_deletion('ios')`,   ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['cancel_account_deletion', `select public.cancel_account_deletion()`,                 ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['record_policy_act', `select public.record_policy_act('privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['record_policy_act', `select public.record_policy_act('${uuid7()}', 'privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['policy_actions_needed', `select * from public.policy_actions_needed()`,              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['my_sync_gate', `select * from public.my_sync_gate()`,                                ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
 ];

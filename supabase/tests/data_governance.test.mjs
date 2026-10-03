@@ -6,7 +6,7 @@
 // Fixture changes on 3 Oct 2026 (20261003*): device-id create_child, invites with
 // an explicit role (no more editing child_invites.role by hand), and Terms, age
 // and sensitive-data consent recorded for every person before they write content.
-import { createDb, users } from './harness.mjs';
+import { createDb, users, uuid7 } from './harness.mjs';
 
 const { check, as, sys, one, fails, done, publishPolicies, consent, newChild, join: joinAs } = await createDb(process.argv.slice(2));
 const { A, B, C, N, S, U } = users;
@@ -145,16 +145,16 @@ check('child photo path must sit in the child folder', await fails(() => as(A, `
 // ── Policy acceptances (POLICY_VERSIONING.md 7.2) ─────────────────────────
 // terms 1.0.0 is published by the publishPolicies() fixture.
 check('a new user is asked to accept the Terms', (await as(U, `select document from policy_actions_needed()`)).rows.some((r) => r.document === 'terms'));
-const actA = (await one(A, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', 'en-US') as id`)).id;
-await as(B, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`);
+const actA = (await one(A, `select public.record_policy_act('${uuid7()}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', 'en-US') as id`)).id;
+await as(B, `select public.record_policy_act('${uuid7()}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`);
 const accepted = await one(A, `select document, version, accepted_at, profile_id from policy_acceptances where id='${actA}'`);
 check('acceptance records policy, version, accepted_at and user', accepted.document === 'terms' && accepted.version === '1.0.0' && accepted.accepted_at && accepted.profile_id === A);
 check('my_policy_state shows the current act', (await one(A, `select action from my_policy_state where document='terms'`)).action === 'accept');
 check('users cannot read others\' acceptances', (await as(B, `select 1 from policy_acceptances where profile_id='${A}'`)).rows.length === 0);
 check('clients cannot insert acceptances directly', await fails(() => as(A, `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform) values ('${A}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'x', '1', 'ios')`)));
 check('acceptances are append-only, even for the service role', await fails(() => sys(`update policy_acceptances set action='decline' where id='${actA}'`)));
-check('unknown versions are refused', await fails(() => as(A, `select public.record_policy_act('terms', '9.9.9', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`)));
-check('anonymous visitors cannot record acts', !(await sys(`select has_function_privilege('anon', 'public.record_policy_act(text,text,text,text,text,text,text,text,timestamptz,bytea,jsonb)', 'execute') ok`)).rows[0].ok);
+check('unknown versions are refused', await fails(() => as(A, `select public.record_policy_act('${uuid7()}', 'terms', '9.9.9', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`)));
+check('anonymous visitors cannot record acts', !(await sys(`select has_function_privilege('anon', 'public.record_policy_act(uuid,text,text,text,text,text,text,text,text,timestamptz,bytea,jsonb)', 'execute') ok`)).rows[0].ok);
 
 // ── TC-08 Delete book with a co-parent = remove own letters and leave ─────
 const BOOK2 = await newChild(B);
