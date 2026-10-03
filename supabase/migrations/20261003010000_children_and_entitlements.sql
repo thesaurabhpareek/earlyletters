@@ -29,7 +29,7 @@
 -- ─── 1. Profiles: server-owned columns ──────────────────────────────────
 -- profiles_update_self lets a person edit their own row; id and created_at are server-owned.
 create or replace function public.profiles_guard()
-returns trigger language plpgsql set search_path = pg_catalog, public as $$
+returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 begin
   if current_user in ('authenticated', 'anon')
      and (new.id is distinct from old.id or new.created_at is distinct from old.created_at) then
@@ -51,7 +51,7 @@ alter table public.children add column if not exists client_created_at timestamp
 comment on column public.children.client_created_at is 'L2 device timestamp when the book was made (may be null)';
 -- Both creation times are set once, by create_child.
 create or replace function public.children_times_guard()
-returns trigger language plpgsql set search_path = pg_catalog, public as $$
+returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 begin
   if current_user in ('authenticated', 'anon')
      and (new.created_at is distinct from old.created_at or new.client_created_at is distinct from old.client_created_at) then
@@ -69,7 +69,7 @@ create trigger children_times_guard before update on public.children
 
 -- Letters (DB-15). Same body as 20261002020000 plus the id and clock checks.
 create or replace function public.entries_before_insert()
-returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   if not public.is_valid_client_uuid7(new.id) then
     raise exception 'entries: letter id must be a UUIDv7 made on the device' using errcode = 'SCCID';
@@ -98,7 +98,7 @@ drop function if exists public.create_child(text, date);
 
 create or replace function public.create_child(p_id uuid, p_name text, p_date_of_birth date default null,
                                                p_due_date date default null, p_client_created_at timestamptz default null)
-returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+returns uuid language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user(); v_creator uuid; v_found boolean;
 begin
   if not public.is_valid_client_uuid7(p_id) then

@@ -52,7 +52,7 @@ const token = await invite(A, CHILD, 'contributor');
 const inviteId = (await sys(`select id from child_invites where accepted_at is null order by created_at desc limit 1`)).rows[0].id;
 // One row in every service-only table, so "0 rows" means "denied", not "empty".
 await sys(`insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', $1, 'other', 'T-1', 'ops', '2027-01-01')`, [CHILD]);
-await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', 'x')`);
+await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', 'x'), ('entry', '0192f000-0000-7000-8000-0000000000fe')`);
 await sys(`insert into storage_purge_queue (bucket_id, object_path, reason) values ('entry-photos', 'x/', 'orphan')`);
 const dreq = (await sys(`insert into deletion_requests (kind, profile_id, status, source, scheduled_for) values ('account', $1, 'cancelled', 'ios', now()) returning id`, [C])).rows[0].id;
 await sys(`insert into deletion_request_steps (request_id, step) values ($1, 'auth_user')`, [dreq]);
@@ -166,6 +166,8 @@ const HELPERS = {
   'child_is_live(uuid)': [`select public.child_is_live('${CHILD}') v`, [true, true, true, true, true, '42501']],
   'can_read_entry_photo(text)': [`select public.can_read_entry_photo('${photo}') v`, [true, true, false, false, false, '42501']],
   'is_anonymous()': [`select public.is_anonymous() v`, [false, false, false, false, true, '42501']],
+  // Answers only whether a path's letter id was purged (ids only), the same for every signed-in caller.
+  'photo_entry_is_purged(text)': [`select public.photo_entry_is_purged('${CHILD}/${A}/0192f000-0000-7000-8000-0000000000fe.jpg') v`, [true, true, true, true, true, '42501']],
   'require_user()': [`select public.require_user() is not null v`, [true, true, true, true, 'SCANO', '42501']],
   'my_role_in(uuid)': [`select public.my_role_in('${CHILD}') v`, ['parent', 'parent', 'contributor', null, 'contributor', '42501']],
   'my_auto_add_in(uuid)': [`select public.my_auto_add_in('${CHILD}') v`, [false, false, false, false, false, '42501']],

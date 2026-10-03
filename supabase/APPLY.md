@@ -10,7 +10,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 > - **DB-06 / DB-14**: new full index `entries_child_occurred_idx (child_id, occurred_on)`; the redundant partial `entries_book_idx` is dropped.
 > - **DB-07 / BL-115 X-12**: the consent pepper fails closed and lives in Supabase Vault, not in a database setting. Deleting a profile raises `SCCFG` until the Vault secret `consent_pepper` exists with at least 32 bytes. `app.consent_pepper` is no longer read. Step 6 is now a hard prerequisite of any account deletion, including deleting a user from the dashboard.
 > - **DB-09**: "only a parent" raises `SCPAR` (was `SCDEL`); a pending account deletion raises `SCACD`; a direct book tombstone raises `SCTMB`; `record_policy_act` raises `P0002` (unknown version), `SCVER` (newer version must be accepted) and `22023`; service-only state errors use `55000`.
-> - **DB-11**: every security-definer function sets `search_path = pg_catalog, public` (the two from file 1 are re-pinned with `alter function`).
+> - **DB-11**: every security-definer function and every function an RLS policy calls sets `search_path = pg_catalog, public, pg_temp` (the two from file 1 are re-pinned with `alter function`). `pg_temp` must be named and last: when it is missing, Postgres searches it first, so a temp table named `child_members` or `purge_ledger` in the caller's session would replace the real one inside these functions (PR #32 red-team finding 1).
 > - **DB-12**: `dictionary_terms` is unique on `(owner_id, child_id, lower(term)) nulls not distinct`, replacing `unique (owner_id, term)`.
 > - **DB-15**: letter ids must be device UUIDv7 (`SCCID`), and `captured_at` may be at most one day in the future (`22023`).
 > - **DB-16**: file 3 no longer has its own `begin` / `commit`.
@@ -25,6 +25,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 >   - `create_child` takes `p_client_created_at timestamptz default null` (BL-113), kept in `children.client_created_at` (null when in the future or before 2024). New signature: `create_child(p_id uuid, p_name text, p_date_of_birth date default null, p_due_date date default null, p_client_created_at timestamptz default null) returns uuid`. `created_at` and `client_created_at` cannot be changed by clients (`SCIMM`).
 >   - New tests: `fixpack.test.mjs` (codes, redemption, deleted books, client time, left-member persona) and `upgrade.test.mjs` (seeds data through the old functions on the applied files, then applies files 3 to 7).
 > - **PSEC-04**: the photo UPDATE policy is dropped (photos are never overwritten in place), and deleting your own photo needs current membership of a live book.
+> - **DB-02 for photos** (PR #32 red-team finding 2): the photo upload policy refuses a path whose letter id is in `purge_ledger`, through the new helper `photo_entry_is_purged(text)`, so a purged letter's photo cannot be uploaded again.
 
 ## What is applied and what is pending
 
@@ -222,12 +223,17 @@ select * from public.content_gate_state('<your profile id>');
 select to_regprocedure('public.create_child_invite(uuid)');
 -- PSEC-04: no photo UPDATE policy (expect 0).
 select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and cmd = 'UPDATE' and policyname like 'entry_photos%';
--- DB-11: definer functions with public first on the path (expect 0).
-select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
- where n.nspname = 'public' and p.prosecdef and coalesce(array_to_string(p.proconfig, ','), '') !~ 'search_path=pg_catalog, public';
+-- DB-11: definer functions and RLS helpers whose search_path is not exactly
+-- pg_catalog, public, pg_temp (pg_temp last) or empty (expect 0 rows).
+select p.proname, p.proconfig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public'
+   and (p.prosecdef or exists (select 1 from pg_policies pol
+          where coalesce(pol.qual, '') || ' ' || coalesce(pol.with_check, '') ~ ('\m' || p.proname || '\(')))
+   and not coalesce((select c from unnest(p.proconfig) c where c like 'search_path=%'), '')
+           ~ '^search_path=(pg_catalog, public, pg_temp|"")$';
 ```
 Then repeat the two classification and RLS queries from step 4. Advisors, expected and accepted in addition to step 4's list:
-- **0029** for the new RPCs: `create_child(uuid, text, date, date, timestamptz)`, `create_child_invite(uuid, uuid, text, bytea, bytea, text)`, `record_policy_act(uuid, ...)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`. Each starts with `require_user()` or answers only for the caller.
+- **0029** for the new RPCs: `create_child(uuid, text, date, date, timestamptz)`, `create_child_invite(uuid, uuid, text, bytea, bytea, text)`, `record_policy_act(uuid, ...)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`, `photo_entry_is_purged`. Each starts with `require_user()` or answers only for the caller, except `photo_entry_is_purged`, which answers only whether a given letter id was purged (ids only, no content).
 - **0010** on `book_entries` (unchanged; the view now applies the B F9 rule) and on `book_children` (D-039).
 - `accept_child_invite_by_code(uuid, text)` is executable by `service_role` only (check: `select has_function_privilege('authenticated', 'public.accept_child_invite_by_code(uuid, text)', 'execute');` expect false). `server_secret`, `require_server_secret`, `invite_code_digest` and `join_book_by_invite` are executable by no API role.
 
@@ -275,9 +281,9 @@ Prefer fixing forward. Everything is additive except the dropped functions, whic
 - **Consent gate blocks real people by mistake** (the most likely emergency): neutralise it without dropping anything, then fix forward.
   ```sql
   create or replace function public.require_content_consent() returns void language plpgsql volatile security definer
-    set search_path = public, pg_catalog as $$ begin return; end; $$;
+    set search_path = pg_catalog, public, pg_temp as $$ begin return; end; $$;
   create or replace function public.can_write_content() returns boolean language sql stable security definer
-    set search_path = public, pg_catalog as $$ select auth.uid() is not null and not public.is_anonymous(); $$;
+    set search_path = pg_catalog, public, pg_temp as $$ select auth.uid() is not null and not public.is_anonymous(); $$;
   ```
   This also lifts LEGAL-REQ-006 enforcement on the server, so treat it as an incident and restore the real bodies from file 5 the same day.
 - **Family visibility**: to go back to the step-4 read model, re-run the `create or replace view public.book_entries` and `can_read_entry_photo` definitions from `20261002020000_data_governance.sql` (keep the trailing `approval` column in the view; a replace cannot drop it), then re-run the view's `revoke` lines (DB-01: a replace must always be followed by them). This re-exposes all in-book letters to contributors (B-REQ-011), so only as a short bridge.

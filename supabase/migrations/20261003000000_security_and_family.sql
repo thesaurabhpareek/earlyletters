@@ -77,14 +77,14 @@
 -- Supabase sets request.jwt.claims for every API request. Reading the setting
 -- directly (as auth.jwt() does) keeps this testable in the PGlite harness.
 create or replace function public.is_anonymous()
-returns boolean language sql stable set search_path = pg_catalog, public as $$
+returns boolean language sql stable set search_path = pg_catalog, public, pg_temp as $$
   select coalesce((nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'is_anonymous')::boolean, false);
 $$;
 
 -- RFC 9562 UUIDv7: version nibble 7, variant 10xx, 48-bit Unix ms timestamp
 -- between 2024-01-01 and one day from now. Client-made ids and idempotency keys.
 create or replace function public.is_valid_client_uuid7(p_id uuid)
-returns boolean language sql stable set search_path = pg_catalog, public as $$
+returns boolean language sql stable set search_path = pg_catalog, public, pg_temp as $$
   select p_id is not null
      and substr(p_id::text, 15, 1) = '7'
      and substr(p_id::text, 20, 1) in ('8', '9', 'a', 'b')
@@ -95,7 +95,7 @@ $$;
 -- Every RPC starts with this. Returns the caller's id.
 -- volatile on purpose: a planner may skip an unreferenced stable call; a guard must always run.
 create or replace function public.require_user()
-returns uuid language plpgsql volatile set search_path = pg_catalog, public as $$
+returns uuid language plpgsql volatile set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := auth.uid();
 begin
   if v_uid is null then
@@ -143,12 +143,12 @@ create policy entry_photos_no_anonymous on storage.objects as restrictive for al
 -- client-context triggers, which run as `authenticated` and cannot read other
 -- members' rows directly.
 create or replace function public.my_role_in(p_child uuid)
-returns text language sql stable security definer set search_path = pg_catalog, public as $$
+returns text language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select role from child_members where child_id = p_child and profile_id = auth.uid();
 $$;
 
 create or replace function public.my_auto_add_in(p_child uuid)
-returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select coalesce((select auto_add_letters from child_members
                     where child_id = p_child and profile_id = auth.uid() and role = 'contributor'), false);
 $$;
@@ -160,7 +160,7 @@ $$;
 -- A person with a current accept acts only when a re-consent version is in force.
 create or replace function public.policy_actions_needed()
 returns table (document text, version text, effective_at timestamptz, summary text)
-language plpgsql stable security definer set search_path = pg_catalog, public as $$
+language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user();
 begin
   return query
@@ -194,7 +194,7 @@ $$;
 -- durable: re-accepting a later Terms version does not ask the age again.
 create or replace function public.content_gate_state(p_profile uuid)
 returns table (terms_current boolean, age_attested boolean, sensitive_data boolean)
-language sql stable security definer set search_path = pg_catalog, public as $$
+language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select public.has_active_consent(p_profile, 'terms'),
          exists (select 1 from policy_acceptances a
                   where a.profile_id = p_profile and a.document = 'terms' and a.action = 'accept'
@@ -205,7 +205,7 @@ $$;
 -- The caller's gate, for the app's consent sheet and Settings (never takes a profile id).
 create or replace function public.my_sync_gate()
 returns table (terms_current boolean, age_attested boolean, sensitive_data boolean, content_allowed boolean)
-language plpgsql stable security definer set search_path = pg_catalog, public as $$
+language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user();
 begin
   return query select g.terms_current, g.age_attested, g.sensitive_data,
@@ -215,7 +215,7 @@ end;
 $$;
 
 create or replace function public.can_write_content()
-returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select auth.uid() is not null and not public.is_anonymous()
      and coalesce((select g.terms_current and g.age_attested and g.sensitive_data
                      from public.content_gate_state(auth.uid()) g), false);
@@ -223,7 +223,7 @@ $$;
 
 -- Raises SCCON (pause, not reject) when p_profile may not write content.
 create or replace function public.require_content_consent_of(p_profile uuid)
-returns void language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+returns void language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
 declare g record;
 begin
   select * into g from public.content_gate_state(p_profile);
@@ -240,7 +240,7 @@ $$;
 
 -- Raises SCCON (pause, not reject) when the caller may not write content.
 create or replace function public.require_content_consent()
-returns void language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+returns void language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   if auth.uid() is null then raise exception 'not authenticated' using errcode = '28000'; end if;
   if public.is_anonymous() then raise exception 'not available to anonymous sessions' using errcode = 'SCANO'; end if;
@@ -250,7 +250,7 @@ $$;
 
 -- Generic client-write gate for tables whose every insert or update is content.
 create or replace function public.client_content_gate()
-returns trigger language plpgsql set search_path = pg_catalog, public as $$
+returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 begin
   if current_user in ('authenticated', 'anon') then
     perform public.require_content_consent();
@@ -265,14 +265,30 @@ create trigger child_member_prefs_consent_gate before insert or update on public
 create trigger children_consent_gate before update on public.children
   for each row execute function public.client_content_gate();
 
+-- DB-02 for photos (#32 red-team finding 2): true when the object path's entry id
+-- ({child}/{author}/{entry}.{ext}) is a purged letter id. Security definer because
+-- purge_ledger has no client policies; it answers only "is this id purged" for an
+-- id the caller supplies (ids only, never content). A path that does not end in a
+-- uuid file name yields false; the other policy checks still apply to it.
+create or replace function public.photo_entry_is_purged(p_name text)
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select exists (
+    select 1 from purge_ledger
+     where entity_type = 'entry'
+       and entity_id = lower(substring(p_name from '/([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\.[A-Za-z]+$')));
+$$;
+
 -- Photo uploads: Storage policies cannot raise a custom code; a missing consent
--- is a 403 there. The app checks my_sync_gate() before uploading.
+-- is a 403 there. The app checks my_sync_gate() before uploading. A purged
+-- letter's photo path is refused for good (DB-02), so a deleted letter's photo
+-- cannot come back without its row.
 alter policy entry_photos_author_insert on storage.objects with check (
   bucket_id = 'entry-photos'
   and (storage.foldername(name))[2] = (select auth.uid())::text
   and public.is_child_member(((storage.foldername(name))[1])::uuid)
   and public.child_is_live(((storage.foldername(name))[1])::uuid)
   and public.can_write_content()
+  and not public.photo_entry_is_purged(name)
 );
 -- PSEC-04: no UPDATE on photo objects at all. A photo is replaced by uploading a new
 -- object (new entry id path) and deleting the old one, so a person who left a book
@@ -308,7 +324,7 @@ create or replace function public.record_policy_act(
   p_client_recorded_at timestamptz default null,
   p_rendered_sha256 bytea default null,
   p_context jsonb default '{}'::jsonb
-) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+) returns uuid language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_ver policy_versions%rowtype; v_prev policy_acceptances%rowtype; v_ctx jsonb := coalesce(p_context, '{}'::jsonb);
 begin
   if auth.uid() is null then raise exception 'not authenticated' using errcode = '28000'; end if;
@@ -398,7 +414,7 @@ drop function if exists public.create_child_invite(uuid);
 
 -- RFC 2104 HMAC-SHA256 on the built-in sha256(), so no extension schema is needed.
 create or replace function public.hmac_sha256(p_key bytea, p_msg bytea)
-returns bytea language plpgsql immutable strict set search_path = pg_catalog, public as $$
+returns bytea language plpgsql immutable strict set search_path = pg_catalog, public, pg_temp as $$
 declare k bytea := p_key; ipad bytea; opad bytea;
 begin
   if octet_length(k) > 64 then k := sha256(k); end if;
@@ -417,7 +433,7 @@ $$;
 -- removed, O read as 0 and I or L read as 1. Returns null for anything else. The
 -- app normalises the same way and sends p_code_hash = sha256(utf8(normal form)).
 create or replace function public.normalise_invite_code(p_code text)
-returns text language sql immutable set search_path = pg_catalog, public as $$
+returns text language sql immutable set search_path = pg_catalog, public, pg_temp as $$
   select case when v ~ '^[0-9A-HJKMNP-TV-Z]{8}$' then v end
     from (select translate(upper(regexp_replace(coalesce(p_code, ''), '[[:space:]-]', '', 'g')), 'OIL', '011') as v) x;
 $$;
@@ -425,7 +441,7 @@ $$;
 -- What child_invites.code_hash stores: HMAC-SHA256(invite_code_pepper, sha256 of the
 -- normal form). Raises SCCFG when the pepper is missing or short (fails closed).
 create or replace function public.invite_code_digest(p_code_sha256 bytea)
-returns bytea language sql stable security definer set search_path = pg_catalog, public as $$
+returns bytea language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select public.hmac_sha256(convert_to(public.require_server_secret('invite_code_pepper'), 'UTF8'), p_code_sha256);
 $$;
 
@@ -440,7 +456,7 @@ $$;
 -- not count. Returns the invite id.
 create or replace function public.create_child_invite(p_id uuid, p_child uuid, p_role text, p_token_hash bytea,
                                                       p_code_hash bytea, p_signs_as text default null)
-returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+returns uuid language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_uid uuid := public.require_user();
   v_prev child_invites%rowtype;
@@ -495,7 +511,7 @@ end;
 $$;
 
 create or replace function public.revoke_invite(p_invite uuid)
-returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user(); v_child uuid;
 begin
   select child_id into v_child from child_invites where id = p_invite;
@@ -515,7 +531,7 @@ $$;
 -- caller already authenticated by accept_child_invite (JWT) or by the invite-redeem
 -- Edge Function (accept_child_invite_by_code).
 create or replace function public.join_book_by_invite(p_invite uuid, p_uid uuid)
-returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+returns uuid language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_inv child_invites%rowtype;
 begin
   select * into v_inv from child_invites where id = p_invite for update;
@@ -544,7 +560,7 @@ end;
 $$;
 
 create or replace function public.accept_child_invite(p_token text)
-returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+returns uuid language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user(); v_id uuid;
 begin
   select id into v_id from child_invites where token_hash = sha256(convert_to(coalesce(p_token, ''), 'UTF8'));
@@ -559,7 +575,7 @@ $$;
 -- the attempt limits in TDD 04 3.11 (10 per hour per user and per hashed IP, a global
 -- failure breaker). p_user is the verified caller. Same outcomes as accept_child_invite.
 create or replace function public.accept_child_invite_by_code(p_user uuid, p_code text)
-returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+returns uuid language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_norm text := public.normalise_invite_code(p_code); v_id uuid;
 begin
   if p_user is null then raise exception 'caller id is required' using errcode = '22023'; end if;
@@ -592,7 +608,7 @@ create index if not exists entries_family_review_idx on public.entries (child_id
 -- parents turned on auto-add for this member. Parents' letters: approval
 -- stays 'not_needed' and in_book is the author's choice.
 create or replace function public.entries_family_rules()
-returns trigger language plpgsql set search_path = pg_catalog, public as $$
+returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_content boolean;
   v_role text;
@@ -679,7 +695,7 @@ alter policy entries_author_insert on public.entries
 -- (default 'pending'): the update applies only from that state, so when both
 -- parents act at once the first wins and the second gets the current state back.
 create or replace function public.review_family_letter(p_entry uuid, p_decision text, p_expected text default 'pending')
-returns text language plpgsql security definer set search_path = pg_catalog, public as $$
+returns text language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user(); v entries%rowtype;
 begin
   if p_decision not in ('added', 'set_aside') or p_expected not in ('pending', 'added', 'set_aside') then
@@ -709,7 +725,7 @@ $$;
 -- the client cannot express "un-send" by writing in_book. Never consent-gated:
 -- it only narrows who reads the letter. Idempotent.
 create or replace function public.withdraw_family_letter(p_entry uuid)
-returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user();
 begin
   if not exists (select 1 from entries where id = p_entry and author_id = v_uid) then
@@ -723,7 +739,7 @@ $$;
 
 -- Auto-add applies to family members only.
 create or replace function public.set_member_auto_add(p_child uuid, p_member uuid, p_on boolean)
-returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user();
 begin
   if not public.is_child_parent(p_child) then
@@ -805,7 +821,7 @@ create unique index if not exists dictionary_terms_owner_child_term_key
 
 -- Photos follow the letters.
 create or replace function public.can_read_entry_photo(p_name text)
-returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select not public.is_anonymous() and exists (
     select 1 from entries e
       join children c on c.id = e.child_id and c.deleted_at is null
@@ -820,7 +836,7 @@ $$;
 -- and no longer schedules a RevenueCat step (founder: StoreKit 2 direct, no RevenueCat).
 create or replace function public.request_account_deletion(p_source text, p_had_active_subscription boolean default null)
 returns table (request_id uuid, scheduled_for timestamptz)
-language plpgsql security definer set search_path = pg_catalog, public as $$
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_uid uuid := public.require_user();
   v_id uuid;
@@ -864,7 +880,7 @@ end;
 $$;
 
 create or replace function public.cancel_account_deletion()
-returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user(); v_id uuid;
 begin
   select id into v_id from deletion_requests
@@ -880,7 +896,7 @@ end;
 $$;
 
 create or replace function public.request_book_deletion(p_child uuid, p_source text)
-returns text language plpgsql security definer set search_path = pg_catalog, public as $$
+returns text language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user(); v_id uuid;
 begin
   if p_source is null or p_source not in ('ios', 'android', 'web') then
@@ -910,7 +926,7 @@ end;
 $$;
 
 create or replace function public.cancel_book_deletion(p_child uuid)
-returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user(); v_req uuid;
 begin
   if not exists (select 1 from child_members where child_id = p_child and profile_id = v_uid and role = 'parent') then
@@ -929,7 +945,7 @@ end;
 $$;
 
 create or replace function public.delete_entry(p_entry uuid)
-returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user();
 begin
   if not exists (select 1 from entries where id = p_entry and author_id = v_uid) then
@@ -941,7 +957,7 @@ end;
 $$;
 
 create or replace function public.restore_entry(p_entry uuid)
-returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_uid uuid := public.require_user(); v entries%rowtype;
 begin
   select * into v from entries where id = p_entry for update;
@@ -980,6 +996,7 @@ revoke execute on function public.my_role_in(uuid) from public, anon;
 revoke execute on function public.my_auto_add_in(uuid) from public, anon;
 revoke execute on function public.can_write_content() from public, anon;
 revoke execute on function public.require_content_consent() from public, anon;
+revoke execute on function public.photo_entry_is_purged(text) from public, anon;
 grant execute on function public.is_anonymous() to authenticated;
 grant execute on function public.is_valid_client_uuid7(uuid) to authenticated;
 grant execute on function public.require_user() to authenticated;
@@ -987,6 +1004,7 @@ grant execute on function public.my_role_in(uuid) to authenticated;
 grant execute on function public.my_auto_add_in(uuid) to authenticated;
 grant execute on function public.can_write_content() to authenticated;
 grant execute on function public.require_content_consent() to authenticated;
+grant execute on function public.photo_entry_is_purged(text) to authenticated;
 
 -- RPCs (each starts with require_user()).
 revoke execute on function public.my_sync_gate() from public, anon;

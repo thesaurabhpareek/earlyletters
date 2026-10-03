@@ -90,6 +90,69 @@ check('housekeeping still ages out person and object-path rows after 60 days',
 check('[DB-02] day 61 after purge: re-inserting the id is still refused (SCPRG)', (await codeOf(() => letter(A, gone))) === 'SCPRG');
 check('[DB-02] day 61: the upsert is still refused (SCPRG)', (await codeOf(() => as(A, upsert, [gone, CHILD, A]))) === 'SCPRG');
 
+// ── DB-02 for photos (#32 red-team finding 2): a purged letter's photo stays purged ──
+{
+  const pl = await letter(A);
+  const pPath = `${CHILD}/${A}/${pl}.jpg`;
+  await as(A, `update entries set photo_path=$1 where id=$2`, [pPath, pl]);
+  await as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [pPath]);
+  await as(A, `select public.delete_entry($1)`, [pl]);
+  await sys(`select public.purge_due(now() + interval '31 days')`);
+  check('[DB-02] purging a letter with a photo queues the photo for deletion',
+    (await sys(`select 1 from storage_purge_queue where object_path=$1`, [pPath])).rows.length === 1
+    && (await sys(`select 1 from purge_ledger where entity_type = 'entry' and entity_id=$1`, [pl])).rows.length === 1);
+  await sys(`delete from storage.objects where name=$1`, [pPath]); // what the purge worker does
+  check('[DB-02] the author cannot re-upload a purged letter\'s photo to the same path (42501)',
+    (await codeOf(() => as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [pPath]))) === '42501'
+    && (await sys(`select 1 from storage.objects where name=$1`, [pPath])).rows.length === 0);
+  check('[DB-02] nor with another photo extension (42501)',
+    (await codeOf(() => as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${CHILD}/${A}/${pl}.heic`]))) === '42501');
+  const live = await letter(A);
+  check('[DB-02] a photo for a letter that was never purged still uploads',
+    (await codeOf(() => as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${CHILD}/${A}/${live}.jpg`]))) === 'ok');
+  check('photo_entry_is_purged is false for a path without an entry id (no cast error)',
+    (await one(A, `select public.photo_entry_is_purged($1) v`, [`${CHILD}/${A}/not-an-id.jpg`]))?.v === false);
+}
+
+// ── DB-11 (#32 red-team finding 1): a caller's temp table cannot shadow the access rules ──
+// Without pg_temp last in a function's search_path, Postgres searches pg_temp
+// first, so a temp table named like a real one replaces it inside definer
+// functions and RLS helpers. All of this runs in one session (one PGlite connection).
+{
+  const PL = await letter(A);
+  await as(A, `select public.delete_entry($1)`, [PL]);
+  await sys(`select public.purge_due(now() + interval '31 days')`);
+  const PLPhoto = `${CHILD}/${A}/${PL}.jpg`;
+  check('[DB-11] shadow setup: the stranger may create temp tables in this harness',
+    (await codeOf(() => as(C, `create temp table child_members (child_id uuid, profile_id uuid, role text, auto_add boolean default false, joined_at timestamptz default now())`))) === 'ok'
+    && (await codeOf(() => as(C, `create temp table purge_ledger (entity_type text, entity_id text, purged_at timestamptz default now())`))) === 'ok');
+  await as(C, `insert into pg_temp.child_members (child_id, profile_id, role) values ($1, $2, 'parent')`, [CHILD, C]);
+  check('[DB-11] with a temp child_members naming them parent, a stranger still reads no children row',
+    (await as(C, `select name, date_of_birth, due_date from children where id=$1`, [CHILD])).rows.length === 0);
+  check('[DB-11] ... reads nothing from book_children or book_entries',
+    (await as(C, `select 1 from book_children where id=$1 union all select 1 from book_entries where child_id=$1`, [CHILD])).rows.length === 0);
+  check('[DB-11] ... is_child_member and is_child_parent still answer false',
+    await (async () => { const r = await one(C, `select public.is_child_member($1) m, public.is_child_parent($1) p`, [CHILD]); return r?.m === false && r?.p === false; })());
+  check('[DB-11] ... and request_book_deletion is refused (SCPAR), the book stays live',
+    (await codeOf(() => as(C, `select public.request_book_deletion($1, 'ios')`, [CHILD]))) === 'SCPAR'
+    && (await sys(`select deleted_at from children where id=$1`, [CHILD])).rows[0].deleted_at === null);
+  check('[DB-11] ... and cannot write a letter into the book',
+    (await codeOf(() => letter(C))) !== 'ok' && (await sys(`select 1 from entries where author_id=$1`, [C])).rows.length === 0);
+  await as(C, `drop table pg_temp.child_members`);
+  // The stranger's empty temp purge_ledger is still in this session; it must not
+  // hide the real ledger from the purge checks (temp tables are per session, not per user).
+  check('[DB-11] with an empty temp purge_ledger, the author re-inserting a purged letter id is still refused (SCPRG)',
+    (await sys(`select count(*)::int n from pg_temp.purge_ledger`)).rows[0].n === 0
+    && (await codeOf(() => letter(A, PL))) === 'SCPRG'
+    && (await sys(`select 1 from entries where id=$1`, [PL])).rows.length === 0);
+  check('[DB-11] ... a stale upsert of it is refused (SCPRG)', (await codeOf(() => as(A, upsert, [PL, CHILD, A]))) === 'SCPRG');
+  check('[DB-11] ... the service role re-insert is refused (SCPRG)',
+    (await codeOf(() => sys(insertSql, [PL, CHILD, A, new Date().toISOString()]))) === 'SCPRG');
+  check('[DB-11] ... and its photo cannot be re-uploaded (42501)',
+    (await codeOf(() => as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [PLPhoto]))) === '42501');
+  await sys(`drop table pg_temp.purge_ledger`);
+}
+
 // ── PSEC-04: photos cannot be overwritten; delete needs live membership ───
 const nLetter = await letter(N);
 const nPhoto = `${CHILD}/${N}/${nLetter}.jpg`;
@@ -221,12 +284,25 @@ check('[DB-06] a full (non-partial) index leads with entries.child_id',
   idx.some((i) => /\(child_id, occurred_on\)$/.test(i.indexdef) && !/ WHERE /.test(i.indexdef)));
 check('[DB-14] the redundant entries_book_idx is gone', !idx.some((i) => i.indexname === 'entries_book_idx'));
 
-// ── DB-11: definer functions resolve pg_catalog first ────────────────────
-const badPath = (await sys(`select p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' sig, array_to_string(p.proconfig, ',') cfg
-  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'public' and p.prosecdef and coalesce(array_to_string(p.proconfig, ','), '') !~ 'search_path=pg_catalog, public'`)).rows;
-for (const f of badPath) console.log(`      ${f.sig}: ${f.cfg}`);
-check('[DB-11] every security definer function sets search_path = pg_catalog, public', badPath.length === 0);
+// ── DB-11: definer functions and RLS helpers resolve pg_catalog first, pg_temp last ──
+// The search_path must be exactly `pg_catalog, public, pg_temp` (or empty, with
+// fully qualified names). A path that omits pg_temp is refused: Postgres then
+// searches pg_temp FIRST, so a caller's temp table shadows real tables (#32 red-team finding 1).
+const policyFns = new Set();
+for (const p of (await sys(`select coalesce(qual, '') || ' ' || coalesce(with_check, '') e from pg_policies`)).rows) {
+  for (const m of p.e.matchAll(/(?:public\.)?([a-z_0-9]+)\(/g)) policyFns.add(m[1]);
+}
+const swept = (await sys(`select p.proname name, p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' sig, p.prosecdef secdef,
+    coalesce((select c from unnest(p.proconfig) c where c like 'search_path=%'), '') cfg
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public'`)).rows
+  .filter((f) => f.secdef || policyFns.has(f.name));
+const badPath = swept.filter((f) => !/^search_path=(pg_catalog, public, pg_temp|"")$/.test(f.cfg));
+for (const f of badPath) console.log(`      ${f.sig}: ${f.cfg || '(no search_path)'}`);
+check('[DB-11] every security definer function and RLS helper sets search_path = pg_catalog, public, pg_temp (pg_temp last)',
+  swept.length >= 50 && badPath.length === 0);
+check('[DB-11] the sweep covers the RLS helpers',
+  ['is_child_member', 'is_child_parent', 'child_is_live', 'can_read_entry_photo', 'is_anonymous', 'can_write_content', 'photo_entry_is_purged']
+    .every((n) => policyFns.has(n) && swept.some((f) => f.name === n)));
 
 // ── PDB-02 and function defaults (Supabase-faithful privileges) ──────────
 const seqs = (await sys(`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
