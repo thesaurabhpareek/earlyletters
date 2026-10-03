@@ -1,7 +1,7 @@
 # Backlog
 
 The ordered list of work for Early Letters. Format and rules: ADR 0011 (`docs/adr/0011-requirements-and-agent-workflow.md`).
-Window: 5 Oct 2026 to App Store submission on Mon 11 Jan 2027 (`docs/ROADMAP.md`, milestones M0 to M13). Last re-planned: 3 Oct 2026 (PRD.md 1.3: founder decisions of 3 Oct, Plus and family contributors at launch, individual publisher; TDD 01 to 10 findings folded in; decisions in `docs/DECISIONS.md`). Reconciled 3 Oct 2026 with the founder brief of the same day (`docs/agents/BRIEF-2026-10-03.md`, all Decided), which wins where PRD 1.3 differs: no server of ours sees purchases (decision 3), Google sign-in and passkeys at v1.0 (decision 4), co-parent only at v1.0 (decision 5), no audio upload, word highlighting or safety classifier at v1.0 (decision 9).
+Window: 5 Oct 2026 to App Store submission on Mon 11 Jan 2027 (`docs/ROADMAP.md`, milestones M0 to M13). Last re-planned: 3 Oct 2026 (PRD.md 1.3: founder decisions of 3 Oct, Plus and family contributors at launch, individual publisher; TDD 01 to 10 findings folded in; decisions in `docs/DECISIONS.md`). Reconciled 3 Oct 2026 with the founder brief of the same day (`docs/agents/BRIEF-2026-10-03.md`, all Decided), which wins where PRD 1.3 differs: no server of ours sees purchases (decision 3), Google sign-in and passkeys at v1.0 (decision 4), co-parent only at v1.0 (decision 5), no audio upload, word highlighting or safety classifier at v1.0 (decision 9). Tasks for brief decisions 6 and 15 (seven letter languages, on-demand language packs, a download under 40 MB), 8 (a cleaner listening copy) and 16 (server-driven content) added 3 Oct: BL-125, BL-131 to BL-133, BL-149, BL-155, BL-161 to BL-169, BL-274, BL-285 and v1.1 row BL-323.
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##; wins over A, B and C where they differ), `docs/prd/A-*.md` (A-REQ, A-NFR), `docs/prd/B-*.md` (B-REQ, B-NFR), `docs/prd/C-*.md` (C-REQ, C-NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ; classes C, S, A, T in `docs/legal/data-policy.md` section 2). If a PRD and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions are cited as D-### (`docs/DECISIONS.md`); design detail as TDD ## section (`docs/tdd/`).
 
@@ -118,6 +118,12 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Satisfies: compliance register CR-122; prepares BL-123.
 - Scope: a draft for counsel in `docs/legal/memos/` that states only facts from the repo, each with its source path: the marks in use (`brand.name`, `storeName`, `tagline` and the `printTitle` pattern in `packages/brand/index.ts`); the domains (brief decision 13); the publisher is an individual (D-004) with a possible later transfer to an organisation (D-004 point 5); US storefront only at launch (LEGAL-REQ-058), Android and printed books later (K-32); submission date (`docs/ROADMAP.md`). Then open questions for counsel: what a clearance should cover, which goods and services to consider, whether and when to file, what to do if a similar mark turns up, and whether the tagline or the print title need their own check. No legal conclusions, no likelihoods and no costs. Content rules apply.
 - Done when: the file exists, every fact cites a repo path, it contains questions only, and the founder can send it as written.
+
+#### BL-125 Pick the host for speech models and language packs
+- Status: ready. Mode: human. Owner: founder. Milestone: M0, before BL-143 starts. Size: S (founder time).
+- Satisfies: D-046; brief 3 Oct decision 15 (hosting).
+- Scope: D-046 leaves the host to the founder, and BL-143 and BL-165 need it. Decision 15 prefers Apple's own hosting where it fits, otherwise a CDN with free or very cheap egress. PR #35 (`docs/ops/MODEL_HOSTING.md`, founder, unmerged) compares Apple-hosted Background Assets, Cloudflare R2 and Hugging Face and recommends R2 as the primary host. It reports that Apple-hosted asset packs need iOS 26 or later (read 3 Oct; not re-checked here); with iOS 17 as the minimum (D-040), a CDN is needed for most devices whichever way this goes. Choose the host and the custom domain, create the account (vendor step), decide whether staging and production use separate signing keys and who holds a backup of the signing key, and record the answer in D-046. An Apple-hosted spike stays optional and needs BL-103 and BL-108 first.
+- Done when: D-046 names the host, the domain and the key custody; the data map's host row names the chosen host and its log setting (the data map in PR #37 already lists a "pack CDN" host).
 
 ---
 
@@ -293,6 +299,24 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Satisfies: LEGAL-REQ-007, LEGAL-REQ-011, DATA-REQ-046, DATA-REQ-048, A-REQ-012, A-REQ-030, PRD 7.4.
 - Scope: draft row written when recording starts; background, interruption and swipe-dismiss stop and keep the take; one-time microphone primer before the OS prompt; low-storage warning below 1 GB; atomic save (letter, audio reference, dictionary updates) in one transaction after the audio is fsynced and SHA-256 hashed; recordings in a backed-up app directory (D-033), never the model; boot recovery sweep for `recording` drafts. Reducer in `packages/core` with tests. (Source: TDD 01 BL-M05, TDD 03 BL-060, TDD 10 risk 2.)
 
+#### BL-131 Noise-suppression arm in the experiment kit
+- Status: ready. Mode: agent. Owner: speech engineer. Milestone: M2, before BL-043 runs. Size: S.
+- Satisfies: brief 3 Oct decision 8 (cleaner listening copy; the original is never altered); ADR 0005.
+- Scope: in `experiments/`, an optional arm that makes a cleaned copy of each recording with RNNoise and with DeepFilterNet (the two examples in decision 8), using their published tools installed by a setup script, then reports for each arm: word error (character error for Chinese), invented words on the silent clip, time per minute of audio, and the size of anything the app would have to ship or download. It also writes original and cleaned pairs for a blind listening sheet. Check each licence from its repository and record it with the date read (decision 8 says BSD for RNNoise and MIT or Apache for DeepFilterNet). Apple's voice processing at recording time cannot be tested from saved files on a Mac, so the README asks for a device recording with it on as part of BL-043. Recordings and results stay on the Mac and are never committed; fixtures use the fictional family "Asha".
+- Done when: `npm run experiment` runs the arm when enabled and is unchanged when not; a test covers the report on fictional samples; the README says how to run it.
+
+#### BL-132 Listening copy on the device
+- Status: blocked (BL-130, BL-131, founder PR #29). Mode: agent plus device check. Owner: mobile engineer, speech engineer. Milestone: M2 to M4. Size: M.
+- Satisfies: brief 3 Oct decision 8; DATA-REQ-046, DATA-REQ-048, DATA-REQ-001.
+- Scope: starts after founder PR #29 (store on SqlDb repositories) merges, because the local schema and store change there. After a save (BL-130), make a listening copy from the fsynced original with the method chosen in BL-043 from the BL-131 numbers. The copy is a separate file with its own hash; the original and its `audio_sha256` never change. The copy can be deleted and rebuilt from the original, so it is excluded from device backup (D-033 keeps the original in backup). Export carries the original (BL-150). Transcription keeps using the original unless BL-131 shows the copy is clearly better and the founder agrees. Never blocks recording or save; a failed copy leaves the letter as it was. Data-map row for the new device file in the same PR.
+- Done when: a test proves the original's bytes and hash are identical before and after the copy is made and deleted; deleting the copy never touches the original; a device check confirms playback of both.
+
+#### BL-133 Words for the listening copy
+- Status: ready. Mode: agent. Owner: content. Milestone: M2. Size: S.
+- Satisfies: brief 3 Oct decision 8; LEGAL-REQ-044; CLAUDE.md content rules.
+- Scope: in `packages/content`, the label for the clearer copy, the label for the original recording, their VoiceOver hints, and one line for Help ("How recordings work") saying the original is always kept as it was recorded and can always be played. The words describe sound only: nothing may suggest that a voice or a letter was changed, improved or written by a machine. Calm, no fear or loss language.
+- Done when: the strings exist with no screen using them yet (BL-155 does); the content rules test passes; the claims register (PR #37, `docs/legal/CLAIMS.md`) is named in the PR body for `legal` if the Help line counts as a new claim.
+
 #### BL-134 Launch sweeps and integrity checks
 - Status: blocked (BL-111). Mode: agent. Owner: mobile engineer. Milestone: M2. Size: S.
 - Satisfies: DATA-REQ-011, DATA-REQ-032, DATA-REQ-046.
@@ -310,7 +334,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-033 Minimal first-run profile
 - Status: blocked (BL-111, BL-037, BL-136). Mode: agent. Owner: mobile engineer. Milestone: M2 to M4.
 - Satisfies: B-REQ-001, B-REQ-002, B-REQ-003, B-REQ-006, B-NFR-007, B-NFR-009, LEGAL-REQ-012, A-REQ-035.
-- Scope: child name and birthday or due date (required), "What does {child} call you?" signature, languages and Hindi script preference (default per D-031); names and signature seed dictionary terms through `packages/core`. Works offline. Birthdays stored as calendar dates. Copy in `packages/content`. "Add another child" in first run creates one book each, with no Plus sheet, for every child added then (D-007; batch cap 6, D-038).
+- Scope: child name and birthday or due date (required), "What does {child} call you?" signature, languages from the seven v1.0 letter languages (brief 3 Oct decision 6) and Hindi script preference (default per D-031); choosing a language other than English starts that language's pack download and no other (BL-165); names and signature seed dictionary terms through `packages/core`. Works offline. Birthdays stored as calendar dates. Copy in `packages/content`. "Add another child" in first run creates one book each, with no Plus sheet, for every child added then (D-007; batch cap 6, D-038).
 - Budgets: B-NFR-008 (interactive <= 300 ms).
 
 ---
@@ -320,7 +344,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-043 On-device transcription spike and the 14-recording experiment [Critical]
 - Status: ready. Mode: human (dev build, real recordings, `npm run experiment`). Owner: founder, speech engineer. Milestone: M3, weeks 2 to 4.
 - Satisfies: none directly (ADR 0001, 0012; D-031).
-- Scope: run the 14-recording experiment; measure time to transcript, memory, battery and heat on iPhone SE 3, a 12 and a current iPhone with the BL-140 decoder prototype; decide the default tier (turbo q5_0 or small q5_1) and the Hindi script default by 30 Oct. Results into ADR 0001 and TDD 03 section 5.
+- Scope: run the 14-recording experiment; measure time to transcript, memory, battery and heat on iPhone SE 3, a 12 and a current iPhone with the BL-140 decoder prototype; decide the default tier (turbo q5_0 or small q5_1) and the Hindi script default by 30 Oct. Results into ADR 0001 and TDD 03 section 5. Added 3 Oct: run the noise-suppression arm (BL-131) and make one device recording with Apple's voice processing on, then choose with the founder how the listening copy is made (brief decision 8, BL-132); run the per-language arms (BL-161) where speakers are available.
 
 #### BL-140 Audio decode module (M4A to 16 kHz PCM in memory) [Critical]
 - Status: ready. Mode: agent plus device check. Owner: speech engineer. Milestone: M3. Size: M.
@@ -340,7 +364,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-143 Model manager [High]
 - Status: blocked (BL-022). Mode: agent plus device check. Owner: speech engineer. Milestone: M3. Size: M.
 - Satisfies: PRD 7.7, ADR 0001, D-046.
-- Scope: manifest with device tiers; resumable Range download to `Application Support/models/*.part` on Wi-Fi by default; SHA-256 verified before rename; excluded from backup (TDD 10 contradiction 2); storage-pressure check; remove and re-download in Settings; versioned URLs on the zero-egress host the founder picks (D-046) with its data-map row. (Source: TDD 03 BL-065.)
+- Scope: manifest with device tiers; resumable Range download to `Application Support/models/*.part` on Wi-Fi by default; SHA-256 verified before rename; excluded from backup (TDD 10 contradiction 2); storage-pressure check; remove and re-download in Settings; versioned URLs on the zero-egress host the founder picks (D-046) with its data-map row. (Source: TDD 03 BL-065.) Added 3 Oct: the host comes from BL-125; the manifest is the signed one from BL-164; language packs reuse this downloader (BL-165, brief decision 15).
 
 #### BL-144 Transcription persistence and alignment column [High]
 - Status: blocked (BL-111). Mode: agent (`approve-migration` for the server part). Owner: data architect, speech engineer. Milestone: M3. Size: M.
@@ -361,10 +385,49 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-147 Golden-audio corpus v1
 - Status: ready. Mode: pair (founder recruits speakers). Owner: speech engineer. Milestone: M3 to M12. Size: L.
 - Satisfies: TDD 03 7.5 release gate. (Source: TDD 03 BL-069.)
+- Scope (3 Oct): speakers of each of the seven v1.0 letter languages (brief decision 6); the same speakers review their language's text-rule pack (BL-162, BL-163) before it is published.
 
 #### BL-146 Suggestions UX in Review
 - Status: blocked (BL-120). Mode: agent. Owner: speech engineer, mobile engineer. Milestone: M3 (P1 for v1.0; cut first if late). Size: M.
 - Satisfies: ADR 0012, DATA-REQ-042. (Source: TDD 03 BL-067.)
+
+Brief 3 Oct decisions 6 and 15 (Decided): letters can be spoken in English, Hindi, Spanish, Mandarin Chinese, French, Arabic and Portuguese, each with the right script and punctuation; the app ships only the English text-rules pack, and every other language's pack and the speech models download when an author picks them. BL-161 to BL-165 sit in M3 because the M3 block (BL-140 to BL-149) is full.
+
+#### BL-161 Seven letter languages in the experiment kit, with a model survey
+- Status: ready. Mode: agent. Owner: speech engineer. Milestone: M3, weeks 2 to 4 (feeds BL-043). Size: M.
+- Satisfies: brief 3 Oct decision 6; B-REQ-003; ADR 0012.
+- Scope: in `experiments/`, per-language runs for the seven letter languages, with character error rate for Chinese (no spaces between words) and script checks (Hindi in Devanagari, Arabic in Arabic script, Chinese as characters, accents kept in Spanish, French and Portuguese). Write `experiments/LANGUAGES.md`: for each language, the candidate open models (multilingual Whisper sizes and any per-language fine-tunes), each with its licence as read on the model card (link and date), file size, any published accuracy with its source (or "none published"), and whether the licence allows us to redistribute it from our own host. Decision 6 allows a fine-tuned model only where it is clearly better and its licence allows it; the file states facts, not a pick. No accuracy claims of our own until real recordings are run (BL-043, BL-147). Fictional samples only.
+- Done when: the kit runs any one language from config; tests cover the character error rate and the script checks on fictional samples; `LANGUAGES.md` has a row per candidate with every licence linked and dated, or marked Unverified.
+
+#### BL-149 Language pack format and the generic interpreter
+- Status: blocked (founder PR #28). Mode: agent. Owner: speech engineer. Milestone: M3. Size: M.
+- Satisfies: brief 3 Oct decisions 6, 7 and 15; B-REQ-003; ADR 0012; CLAUDE.md constitution.
+- Scope: starts after founder PR #28 (Unicode-safe verifier and golden corpus) merges, because it changes the same files. In `packages/core`: a `LanguagePack` type and schema (id, version, engine version, script, writing direction, filler table, negation table, punctuation profile, phonetic table for taught names, decoder prompt text), a loader that validates a pack and rejects unknown fields and anything that could carry code (decision 15: packs are data, App Store guideline 2.5.2), and the cleaning engine reading these tables from the active pack instead of constants. The English pack is extracted from today's constants and bundled. Packs supply tables only: the edit types stay those in `EditType` and every machine edit still goes through `verifyEdits`; if a pack has no negation table, the engine makes only the edits the verifier can check without one. Changes to the founder-owned files (`verify.ts`, `meaning.ts`, `types.ts`, `pipeline.ts`) are proposed in the PR with tests and never weaken them.
+- Done when: the golden corpus from PR #28 passes unchanged with the bundled English pack; tests reject a pack with an unknown field, a wrong engine version or a code-like value; `ENGINE_VERSION` is bumped only if an outcome changes.
+
+#### BL-162 Text-rule packs: Spanish, French and Portuguese
+- Status: blocked (BL-149). Mode: agent. Owner: speech engineer. Milestone: M3 to M4. Size: M.
+- Satisfies: brief 3 Oct decisions 6 and 7; B-REQ-003; B-NFR-007.
+- Scope: draft packs in the BL-149 format: filler and negation tables, punctuation profile (Spanish opening question and exclamation marks; French spacing before high punctuation, after checking the convention and the character; Portuguese), accents never stripped or changed, a phonetic table for taught names. Every table entry cites its source or is marked for the native-speaker review. Golden sentences per language using the fictional family "Asha", including negations the verifier must protect. Each pack keeps `review: pending` until its speakers sign off (BL-147).
+- Done when: the three packs load; golden tests pass, including one per language where dropping a negation is refused; nothing marks a pack reviewed.
+
+#### BL-163 Text-rule packs: Hindi, Arabic and Mandarin Chinese
+- Status: blocked (BL-149). Mode: agent. Owner: speech engineer. Milestone: M3 to M4. Size: M.
+- Satisfies: brief 3 Oct decisions 6 and 7; B-REQ-003; B-NFR-007; D-031.
+- Scope: as BL-162 for Hindi (Devanagari, the danda as the full stop; the script default follows D-031, which is still open although decision 6 names Devanagari), Arabic (right to left, Arabic comma and question mark, never replaced with Latin punctuation) and Mandarin Chinese (full-width punctuation, no spaces between words, fillers matched as character sequences). Hindi-English mixed letters are v1.1 (BL-323). Same citation, golden-test and `review: pending` rules.
+- Done when: the three packs load; golden tests pass in each script, including a refused negation drop per language; tests prove the script is never converted.
+
+#### BL-164 Signed manifest contract and verifier
+- Status: blocked (founder PR #34). Mode: agent. Owner: sync owner, security engineer. Milestone: M3 (needed by BL-165 and BL-169). Size: M.
+- Satisfies: brief 3 Oct decisions 15, 16 and 17; D-046.
+- Scope: starts after founder PR #34 creates `packages/api` (the platform coordinator's area in PR #33). A typed, versioned manifest for models, language packs and server content, following the sketch in PR #35 (`docs/ops/MODEL_HOSTING.md`, "The manifest"): manifest version, issue and expiry times, minimum app build, entries with engine version and files (content-addressed path, bytes, SHA-256). Strict parse (unknown fields rejected); a detached signature over the exact bytes served, so no JSON canonicalisation is needed (say so in the PR if this departs from the sketch), checked with a maintained, permissively licensed library whose API is verified against the installed version; bundled public keys for the current and next key id. Refuse a manifest older than the last one accepted, an expired one (keep the last good copy), and entries the app's engine or build cannot use. Pure TypeScript with no `node:` imports. `security` reviews the threat model in the PR.
+- Done when: tests cover a changed byte, a wrong key, a rollback, an expired manifest, an unknown field and an incompatible entry; the contract version is bumped per the package rules.
+
+#### BL-165 Language pack downloads and deletion on the device
+- Status: blocked (BL-143, BL-149, BL-164). Mode: agent plus device check. Owner: speech engineer, mobile engineer. Milestone: M3 to M4. Size: M.
+- Satisfies: brief 3 Oct decision 15; B-REQ-003; PRD 7.4; DATA-REQ-001.
+- Scope: a pack downloads only when an author picks its language (first run BL-033, or Settings), and nothing else downloads with it; English is never downloaded. Reuse the BL-143 downloader: Wi-Fi by default, resumable, each file checked against the signed manifest (BL-164) and its SHA-256 (`sha256File`, BL-140) before use, stored in Application Support and excluded from device backup. Settings > Storage lists downloaded packs with their size and a Delete action; deleting a pack keeps every saved letter, and new spoken letters in that language save as voice letters until it returns (BL-142). Requests carry no auth header, cookie, user id or device id, and file paths are content hashes, never language names (PR #35, "Download privacy"). Data-map rows for pack files in the same PR.
+- Done when: tests prove that picking Portuguese fetches only the Portuguese pack, a tampered file is rejected and removed, deletion frees the space and leaves letters intact, and pack requests carry no identifiers; a device check on a release build confirms download, use and deletion.
 
 ---
 
@@ -374,6 +437,32 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Status: ready (decided as a Supabase table, D-035). Mode: agent (`approve-migration` for the table). Owner: data architect, mobile engineer. Milestone: M4. Size: M.
 - Satisfies: LEGAL-REQ-040, C-NFR-009, A-REQ-011, PRD-REQ-005, PRD-REQ-020.
 - Scope: `app_config` table (public read of non-secret keys, service-role write, audit trigger) with the D-035 keys; client with bundled defaults, cache and refresh after first frame and on foreground, never awaited at launch, fail-safe kill-switch semantics; Edge Functions read kill switches with a 60 s cache. (Source: TDD 01 BL-M09, TDD 02 2.7.)
+
+Brief 3 Oct decision 16 (Recommended; the founder may override): screens stay native, and prompts, tips, announcements, remote config, flags, kill switches and pack manifests can come from the server as typed, versioned, signed or hashed content blocks, cached on the device and served from an edge cache. The app always works from its last good copy. Nothing that changes data collection or the paywall, or that could slip past App Review, is server-driven. Onboarding story cards wait for the v1.1 intro (BL-303).
+
+#### BL-166 Content block contract
+- Status: blocked (founder PR #34). Mode: agent. Owner: sync owner. Milestone: M4. Size: S.
+- Satisfies: brief 3 Oct decisions 16 and 17.
+- Scope: starts after founder PR #34 creates `packages/api`. A small, versioned block vocabulary for v1.0: prompt, tip and note (announcement), each with id, version, start and end dates, minimum app build, English text whose only placeholders are the allowlisted ones (`{child}`), and links only to our own https paths. A bundle holds blocks and is listed in the signed manifest (BL-164). Unknown block types and fields are dropped, never rendered. No block type can change data collection, consent, prices, the paywall or the purchase flow, and none carries code.
+- Done when: schema tests accept the v1.0 types and reject unknown fields, other placeholders and outside links; the contract version is bumped per the package rules.
+
+#### BL-167 Edge fetch with ETag and the last good copy
+- Status: blocked (founder PR #34). Mode: agent. Owner: sync owner. Milestone: M4. Size: M.
+- Satisfies: brief 3 Oct decisions 16 and 17; A-NFR-002; PRD 7.4.
+- Scope: one client helper in `packages/api` for public, read-only documents (manifests, content bundles): `If-None-Match` with the stored ETag; on 200 the document is validated (schema, and signature or hash through BL-164) before it atomically replaces the last good copy; on 304, an error or a failed check, the last good copy stays; the bundled default is used when nothing is cached. Never awaited at launch: refresh after the first frame and on return to the foreground, at most once per interval. Requests carry no auth header, cookie or user or device id. Transport and storage are injected so tests need no network. Whether BL-022's public keys also move to the edge is a founder question: D-035 chose a Supabase table, and decision 17 says public config comes from a CDN or edge.
+- Done when: tests cover 200, 304, a network error, a failed signature, a corrupt cache and a first launch offline.
+
+#### BL-168 Content bundle build and checks
+- Status: blocked (BL-166). Mode: agent. Owner: content. Milestone: M4. Size: S.
+- Satisfies: brief 3 Oct decision 16; CLAUDE.md content rules; PRD-REQ-005.
+- Scope: a script in `packages/content` that builds the server content bundle (prompts, tips, notes) from the same sources as the bundled copy, validates it against BL-166, runs the content rules on every string, keeps `together` prompts marked so the `child-input` flag still filters them (BL-119), and writes the bundle bytes and their SHA-256 for the founder to sign and publish. The bundled copy stays the default.
+- Done when: the script builds a valid bundle from today's prompts; a deliberately broken string or unknown block fails it; the content rules test passes.
+
+#### BL-169 Server prompts and notes in the app
+- Status: blocked (BL-030, BL-166, BL-167, BL-168). Mode: agent. Owner: mobile engineer, design systems. Milestone: M4. Size: M.
+- Satisfies: brief 3 Oct decision 16; A-NFR-002; PRD-REQ-005; A-NFR-005, A-NFR-006.
+- Scope: Tonight's prompt and an optional note come from the last good bundle (BL-167), falling back to the bundled copy; prompt selection in `packages/core` takes the merged set and still applies the `child-input` flag. Native components in `apps/mobile/src/components/ui/` render the v1.0 block types at every Dynamic Type size with VoiceOver labels; unknown types are skipped. Nothing is fetched or awaited before the first frame. No analytics event carries prompt text.
+- Done when: tests prove the app shows the bundled prompts offline and on a first launch, picks up a new bundle on the next foreground, and never shows a `together` prompt while the flag is off.
 
 #### BL-034 Child switcher and per-child local scope
 - Status: blocked (BL-111, BL-033). Mode: agent. Owner: mobile engineer. Milestone: M4.
@@ -394,7 +483,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 #### BL-150 Offline export (ZIP and PDF) [Critical]
 - Status: blocked (BL-111). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: L.
 - Satisfies: C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to DATA-REQ-053, DATA-REQ-056, LEGAL-REQ-013.
-- Scope: streaming ZIP64 export from local files with a manifest of hashes, every own entry (raw, edits, final), audio, photos with EXIF stripped, the PDF book and `account.json`; family letters without raw transcripts; works offline and in every plan state; under 2 minutes for a 230 MB year on SE 3; temp cleanup; golden schema test. (Source: TDD 01 BL-M17, TDD 05 NEW-09, TDD 07 BL-Q21.)
+- Scope: streaming ZIP64 export from local files with a manifest of hashes, every own entry (raw, edits, final), audio, photos with EXIF stripped, the PDF book and `account.json`; family letters without raw transcripts; works offline and in every plan state; under 2 minutes for a 230 MB year on SE 3; temp cleanup; golden schema test. (Source: TDD 01 BL-M17, TDD 05 NEW-09, TDD 07 BL-Q21.) Added 3 Oct: letters in all seven letter languages render in their own script and direction in the PDF (Arabic right to left), with the fonts and rules of BL-274; audio in the export is the original recording (BL-132).
 
 #### BL-151 Notification planner and local reminders [High]
 - Status: blocked (BL-034). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: M.
@@ -437,9 +526,15 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Satisfies: B-REQ-005, C-REQ-010, C-REQ-011.
 - Scope: month chapters and Before You; playback; Read together plays each letter in its author's voice without word highlight (brief 3 Oct decision 9; highlight from `alignment` moves to v1.1, BL-318); quiet milestones inline; 60-letter chapter p95 500 ms.
 
+#### BL-155 Listening copy in playback
+- Status: blocked (BL-132, BL-160). Mode: agent. Owner: mobile engineer. Milestone: M4. Size: S.
+- Satisfies: brief 3 Oct decision 8; A-NFR-005, A-NFR-006.
+- Scope: letter playback and Read together play the listening copy when one exists (BL-132), with the original recording always one tap away in the player, labelled with the BL-133 words; with no copy, the original plays and nothing is said about it. VoiceOver names which version is playing.
+- Done when: tests cover both versions, a letter with no copy and a deleted copy; a device check confirms the original is reachable from every player.
+
 #### BL-156 Content and localisation debt
 - Status: ready. Mode: agent. Owner: content, design systems. Milestone: M4. Size: M.
-- Satisfies: CLAUDE.md content rules, B-NFR-007, K-24, D-028.
+- Satisfies: CLAUDE.md content rules, B-NFR-007, K-24, D-028; brief 3 Oct decision 6 (the app UI stays English at v1.0 but is ready for localisation).
 - Scope: move `pendingCopy` and screen literals into `packages/content`; dates through `Intl.DateTimeFormat` with the device locale in `packages/core`; plurals through `Intl.PluralRules` with `{ one, other }` strings; assembled sentences become templates (`readTogether.position`); `caps` text style instead of `.toUpperCase()`. (Source: TDD 01 BL-M12, TDD 09 BL-085.)
 
 #### BL-158 Help: "If you are struggling" row
