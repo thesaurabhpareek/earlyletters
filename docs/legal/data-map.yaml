@@ -52,7 +52,7 @@ pending_changes:
   - pr: 32
     branch: fix/db-pending-hardening
     note: "Removes server entitlements (founder decision 3) and adds the book_children view (D-039)"
-    adds: [book_children]
+    adds: [book_children, children.client_created_at, child_invites.code_hash]
     removes: [app_account_tokens, store_subscriptions, store_notifications, profiles.first_run_closed_at]
   - pr: 31
     branch: fix/analytics-enums-core
@@ -375,6 +375,7 @@ postgres:
         date_of_birth: L4
         created_by: L3
         created_at: L2
+        client_created_at: L2
         updated_at: L2
         deleted_at: L2
         deletion_request_id: L2
@@ -449,6 +450,7 @@ postgres:
         child_id: L3
         invited_by: L3
         token_hash: L3
+        code_hash: L3
         role: L3
         expires_at: L2
         accepted_by: L3
