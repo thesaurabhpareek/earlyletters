@@ -1,0 +1,52 @@
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.slot {
+  position: absolute;
+  inset: 0;
+}
+.layer {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+.amber {
+  width: 130vmax;
+  height: 130vmax;
+  margin: -65vmax 0 0 -65vmax;
+  background: radial-gradient(closest-side, rgba(243, 201, 139, 0.46), rgba(217, 164, 126, 0.22) 36%, rgba(120, 80, 50, 0.07) 62%, transparent);
+}
+.gold {
+  width: 56vmax;
+  height: 56vmax;
+  margin: -28vmax 0 0 -28vmax;
+  background: radial-gradient(closest-side, rgba(255, 226, 168, 0.5), rgba(243, 201, 139, 0.18) 46%, transparent);
+}
+.rose {
+  top: 62%;
+  width: 120vmax;
+  height: 120vmax;
+  margin: -60vmax 0 0 -60vmax;
+  background: radial-gradient(closest-side, rgba(240, 140, 124, 0.4), rgba(196, 100, 118, 0.2) 40%, rgba(90, 40, 70, 0.07) 64%, transparent);
+}
+.dusk {
+  top: 48%;
+  width: 130vmax;
+  height: 130vmax;
+  margin: -65vmax 0 0 -65vmax;
+  background: radial-gradient(closest-side, rgba(128, 118, 226, 0.34), rgba(80, 78, 170, 0.16) 42%, rgba(30, 30, 80, 0.06) 66%, transparent);
+}
+.sweep {
+  top: 52%;
+  width: 150vmax;
+  height: 150vmax;
+  margin: -75vmax 0 0 -75vmax;
+  background: conic-gradient(from 0deg, transparent, rgba(243, 201, 139, 0.1), transparent 30%, rgba(240, 140, 124, 0.1), transparent 62%, rgba(128, 118, 226, 0.1), transparent);
+  mask-image: radial-gradient(closest-side, transparent 10%, #000 42%, transparent 100%);
+}

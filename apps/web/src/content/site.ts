@@ -65,6 +65,8 @@ export const site = {
     line: 'A calm place to keep and treasure every milestone. The baby memory book you fill by talking, with every word kept exactly as you said it, in your voice.',
     trust: 'Private by design. Your letters stay on your phone, and we never rewrite your words.',
     shareButton: 'Share with friends and family',
+    howTitle: 'How it works',
+    writeToUs: 'Write to us any time:',
     shareCopied: 'Link copied',
     shareTitle: `${NAME}, the baby memory book`,
     shareText: 'The baby memory book you fill by talking. Every word kept exactly as you said it, private on your phone.',
