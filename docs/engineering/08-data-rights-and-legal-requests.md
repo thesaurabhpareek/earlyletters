@@ -106,7 +106,7 @@ One row per non-self-serve request, service role only, retained 3 years after co
 
 **Engineer changing a deletion or consent path:** cite the DATA-REQ ids the change satisfies; add a test in `supabase/tests/`; confirm the request matrix row still holds; ask compliance-engineer for review.
 
-Response templates belong in `docs/support/` (owned by `support`); none exist yet. Handoff filed in the draft notes.
+Response templates belong in `docs/support/` (owned by `support`); none exist yet; a handoff to `support` to create them is the first follow-up.
 
 ## Exceptions
 

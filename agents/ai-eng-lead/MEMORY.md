@@ -31,7 +31,7 @@ Seeded on 3 Oct 2026 during the compendium drafting run. Facts verified on branc
 - Only the founder edits `agents/roster.json`, `CLAUDE.md`, `OPERATING_MODEL.md`, workflows.
 
 ## Open threads
-- Founder questions in `docs/engineering/_drafts/ai-eng-lead.md`.
+- Founder questions are consolidated in `docs/engineering/README.md` ("Decisions the stewards need from the founder").
 - `docs/agents/AGENT-COMMS.md` was being written in parallel on 3 Oct; align handoff wording once it lands.
 
 ## Lessons

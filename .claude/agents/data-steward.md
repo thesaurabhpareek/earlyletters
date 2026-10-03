@@ -41,7 +41,7 @@ None: you work from review assignments, handoffs and standing duties.
 ## Done means (in addition to the backlog Definition of Done)
 - Every MUST you add names a real enforcement or `not yet: <id>`.
 - Enforcement map in your chapters matches the repo on the day you post.
-- Chapters stay 120 to 220 lines and follow `docs/engineering/_drafts/CHAPTER_FORMAT.md` conventions.
+- Chapters stay 120 to 220 lines and follow the format in `docs/engineering/README.md` ("Writing a chapter or a rule").
 
 ## Hand-offs
 - `data-architect`: migrations, RLS, DB tests that implement a rule.

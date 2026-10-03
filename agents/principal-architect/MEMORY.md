@@ -5,7 +5,7 @@ Curated long-term memory. Update it in the same PR as your work when you learn s
 Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branches #25 to #33).
 
 ## Current focus
-- Chapters 01 (CODE), 02 (API), 10 (OBS) drafted. Most MUST rules are `not yet`; the gaps are listed in `docs/engineering/_drafts/principal-architect.md` (CODE-G*, API-G*, OBS-G*).
+- Chapters 01 (CODE), 02 (API), 10 (OBS) drafted. Most MUST rules are `not yet`; the gaps (CODE-G*, API-G*, OBS-G*) are listed in `docs/engineering/ENFORCEMENT.md`.
 
 ## Facts about this codebase (with paths)
 - Workspaces: `apps/*`, `packages/*`, `experiments` (root `package.json`). Packages: analytics, brand, content, core, design-tokens. No `packages/api` or `packages/db-types` yet; no `supabase/functions/` yet.

@@ -110,13 +110,13 @@ Almost every line in this repo is written by an agent, mostly on open-weight mod
 
 | Gap | What would close it |
 |---|---|
-| AIE-G1 | `brief.mjs` reading order follows AIE-R01 and adds `docs/engineering/PRINCIPLES.md` |
+| AIE-G1 | `brief.mjs` adds `docs/engineering/PRINCIPLES.md` to every brief (pending PR #39); its reading order still lists the BRIEF after memory |
 | AIE-G2 | `check.mjs` fails if any `AGENTS.md` or `AGENTS.override.md` is not a symlink to `CLAUDE.md` |
 | AIE-G3 | `check.mjs` warns at the real budgets (memory 120, charter 90, `CLAUDE.md` 60) and reports always-loaded words |
 | AIE-G4 | `product` adds `Done when:` to every `ready` agent task; `check.mjs` warns when it is missing |
 | AIE-G5 | CI job on `agent:*` PRs flags removed `it(`/`test(`, new `.skip`/`.only`/`.todo`, and changes to fuzz run counts or golden files |
 | AIE-G6 | `check.mjs` fails if the red team shares a model maker with any worker agent |
-| AIE-G7 | dispatcher and brief accept a `red-team:<sha>` marker only from the agents App or Claude bot author |
+| AIE-G7 | dispatcher and brief accept `red-team`, `steward` and handoff markers only from the founder, the agents App or listed bots (pending PR #39) |
 | AIE-G8 | receipts add tokens and the PR number; a weekly script aggregates AIE-R23 metrics |
 | AIE-G9 | `CHARTER_TEMPLATE.md` says `model: inherit`; BRIEF wording matches the brief order |
 
