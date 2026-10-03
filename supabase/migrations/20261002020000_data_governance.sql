@@ -416,7 +416,7 @@ create table public.deletion_requests (
   cancelled_at timestamptz,
   executing_at timestamptz,
   completed_at timestamptz,
-  had_active_subscription boolean,    -- as reported by RevenueCat on the device at request time
+  had_active_subscription boolean,    -- as reported by StoreKit on the device at request time (no server purchase data)
   receipt jsonb not null default '{}'::jsonb check (octet_length(receipt::text) <= 2048),
   constraint deletion_requests_kind_child check ((kind = 'book') = (child_id is not null))
 );

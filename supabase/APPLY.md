@@ -15,6 +15,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 > - **DB-15**: letter ids must be device UUIDv7 (`SCCID`), and `captured_at` may be at most one day in the future (`22023`).
 > - **DB-16**: file 3 no longer has its own `begin` / `commit`.
 > - **PDB-02**: `anon` and `authenticated` hold no privileges on public sequences.
+> - **Founder decision 3 (payments, docs/agents/BRIEF-2026-10-03.md)**: Apple only, StoreKit 2 on the device. File 6 no longer creates `app_account_tokens`, `store_subscriptions`, `store_notifications`, `has_plus`, `book_has_plus`, `get_plan_state`, `my_app_account_token`, `apply_store_transaction`, `store_environment_allowed`, `create_child_row` or `create_first_run_children`, nor `profiles.first_run_closed_at`. The server never enforces Plus, and SQLSTATE `SCPLS` no longer exists. File 7 no longer ages out `store_notifications`.
 > - **PSEC-04**: the photo UPDATE policy is dropped (photos are never overwritten in place), and deleting your own photo needs current membership of a live book.
 
 ## What is applied and what is pending
@@ -26,14 +27,14 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 3 | `20261002010000_entries_select_policy.sql` | **Pending** | One SELECT policy on entries instead of two (performance only) |
 | 4 | `20261002020000_data_governance.sql` | **Pending** | Deletion, retention, legal holds, audit, policy acceptances, author-only raw transcripts (`book_entries` view), per-child settings, drops `safety_events`, classification comments on every column |
 | 5 | `20261003000000_security_and_family.sql` | **Pending** | Anonymous-session guard, server consent gate (Terms + age + sensitive-data), policy notice-window fix (X-01), parent-only invites with explicit role and limits, family approval and visibility (B F9) |
-| 6 | `20261003010000_children_and_entitlements.sql` | **Pending** | `create_child` with device UUIDv7 ids and the Plus rule, first-run batch, Apple StoreKit 2 entitlement tables |
+| 6 | `20261003010000_children_and_entitlements.sql` | **Pending** | `create_child` with device UUIDv7 ids, UUIDv7 letter ids. No entitlement objects (founder decision 3; the name is kept so the version stays stable) |
 | 7 | `20261003020000_purge_batching.sql` | **Pending** | `purge_due` per-run limit, retry backoff columns for the purge worker, invite retention clock |
 
 Step 4 drops whatever entries SELECT policies exist, so it is correct whether or not step 3 ran. Apply 3 first anyway, so the live history matches the repo. Files 5 to 7 depend on 4 and on each other; apply them in order.
 
 ## Before you start (10 minutes)
 
-1. On your Mac, in the repo: `npm install` then `npm run test:db`. All eight test files must pass (`access_matrix`, `children_entitlements`, `classification`, `data_governance`, `perf`, `purge_batching`, `rls`, `security_family`). Do not continue if anything fails.
+1. On your Mac, in the repo: `npm install` then `npm run test:db`. All nine test files must pass (`access_matrix`, `children`, `classification`, `data_governance`, `hardening`, `perf`, `purge_batching`, `rls`, `security_family`). Do not continue if anything fails.
 2. In the Supabase dashboard, Database > Backups: confirm a daily backup from the last 24 hours exists. If you want an exact restore point, run `supabase db dump --linked -f backup-2026-10-02.sql` (needs the Supabase CLI linked to the project). Storage files are not in database backups; nothing here touches Storage objects.
 3. Pick a quiet time. Today only founder data exists, so there is no user impact, but the app build that reads co-parent letters must switch to `book_entries` (section "App changes") before any co-parent uses it.
 
@@ -170,10 +171,8 @@ File 5 turns on a server consent gate: from that moment **no letter, book, dicti
    -- b) Contributors today (expect none). Their existing in-book letters stay readable as they are;
    --    new and edited family letters follow the approval flow.
    select child_id, profile_id from public.child_members where role = 'contributor';
-   -- c) Nothing already uses the new names (expect five nulls).
-   select to_regclass('public.store_subscriptions'), to_regclass('public.store_notifications'),
-          to_regclass('public.app_account_tokens'), to_regproc('public.review_family_letter'),
-          to_regclass('public.book_children');
+   -- c) Nothing already uses the new names (expect two nulls).
+   select to_regproc('public.review_family_letter'), to_regclass('public.book_children');
    -- d) DB-12: dictionary terms that would collide under the new per-book, case-insensitive rule (expect no rows).
    select owner_id, child_id, lower(term), count(*) from public.dictionary_terms
     group by 1, 2, 3 having count(*) > 1;
@@ -210,15 +209,12 @@ select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
  where n.nspname = 'public' and p.prosecdef and coalesce(array_to_string(p.proconfig, ','), '') !~ 'search_path=pg_catalog, public';
 ```
 Then repeat the two classification and RLS queries from step 4. Advisors, expected and accepted in addition to step 4's list:
-- **0029** for the new RPCs: `create_child(uuid, text, date, date)`, `create_first_run_children`, `create_child_invite(uuid, text, text)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, `get_plan_state`, `my_app_account_token`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `book_has_plus`. Each starts with `require_user()` or answers only for the caller.
+- **0029** for the new RPCs: `create_child(uuid, text, date, date)`, `create_child_invite(uuid, text, text)`, `revoke_invite`, `review_family_letter`, `withdraw_family_letter`, `my_sync_gate`, and the helpers `my_role_in`, `my_auto_add_in`, `can_write_content`, `require_content_consent`, `is_valid_client_uuid7`. Each starts with `require_user()` or answers only for the caller.
 - **0010** on `book_entries` (unchanged; the view now applies the B F9 rule) and on `book_children` (D-039).
-- Tables with RLS on and no policy (`app_account_tokens`, `store_subscriptions`, `store_notifications`): intentional, service role only.
 
 ## Step 11. Settings per environment
 
-- Production: nothing (sandbox App Store notifications are recorded and ignored).
-- Development and staging only: `alter database postgres set app.store_environment = 'sandbox';` so TestFlight and sandbox purchases count as Plus there.
-- The App Store notification Edge Function (not built yet) calls `apply_store_transaction(...)` with the service role after verifying Apple's JWS; it never stores the signed payload.
+- Every environment: `app.consent_pepper` (step 6). Nothing else: purchases never reach the server (founder decision 3), so there is no store-environment setting and no App Store notification endpoint.
 
 ## Step 12. Validate the new constraints
 
@@ -241,11 +237,10 @@ The cron command is unchanged. When the `purge-worker` exists it should loop `se
 | `SCANO` | Anonymous session refused | Permanent for that session; the web page goes through its gateway |
 | `28000` | Not signed in | Refresh the session |
 | `SCRAT` | Too many invites today (20 per book, 20 per parent, rolling 24 h) | Tell the person; retry tomorrow |
-| `SCPLS` | Plus needed to start another book | Keep the book on the phone, offer Plus once (TDD 08 2.5) |
 | `SCCID` | Child id is not a device UUIDv7, or is someone else's | Permanent; a client bug |
 | `SCINV` | Invite cannot be used (role, used, expired, revoked, already a member) | Show the matching invite error |
 | `SCAPR` | Client tried to change `approval`, `reviewed_by` or `reviewed_at` | Permanent; drop those columns from uploads |
-| `SCIMM`, `SCTMB`, `SCLPG`, `SCDEL`, `SCPAR` | As in step 4. `SCDEL` means "this book or letter is deleted" (new or edited letters, restore before the book). `SCPAR` means "parents only", including deleting or restoring a book. `SCTMB` also covers a direct book tombstone. `SCIMM` also covers `profiles.first_run_closed_at` | Permanent: `rejected_writes` |
+| `SCIMM`, `SCTMB`, `SCLPG`, `SCDEL`, `SCPAR` | As in step 4. `SCDEL` means "this book or letter is deleted" (new or edited letters, restore before the book). `SCPAR` means "parents only", including deleting or restoring a book. `SCTMB` also covers a direct book tombstone. `SCIMM` also covers `profiles.id` and `profiles.created_at` | Permanent: `rejected_writes` |
 | `SCACD` | An account deletion is pending; cancel it to restore these letters or books | Permanent; offer "cancel account deletion" |
 | `SCPRG` | This letter or book id was purged for good (DB-02); also on upsert | Permanent: drop the local row; never retry with the same id |
 | `SCCID` | Also: a letter id that is not a device UUIDv7 (DB-15) | Permanent; a client bug |
@@ -257,7 +252,7 @@ The cron command is unchanged. When the `purge-worker` exists it should loop `se
 
 ## Rolling back files 5 to 7
 
-Prefer fixing forward. Everything is additive except the dropped functions, which must not come back (`create_child_invite(uuid)` is the privilege escalation; `create_child(text, date)` skips the Plus rule and device ids).
+Prefer fixing forward. Everything is additive except the dropped functions, which must not come back (`create_child_invite(uuid)` is the privilege escalation; `create_child(text, date)` skips device ids).
 - **Consent gate blocks real people by mistake** (the most likely emergency): neutralise it without dropping anything, then fix forward.
   ```sql
   create or replace function public.require_content_consent() returns void language plpgsql volatile security definer
@@ -269,7 +264,6 @@ Prefer fixing forward. Everything is additive except the dropped functions, whic
 - **Family visibility**: to go back to the step-4 read model, re-run the `create or replace view public.book_entries` and `can_read_entry_photo` definitions from `20261002020000_data_governance.sql` (keep the trailing `approval` column in the view; a replace cannot drop it), then re-run the view's `revoke` lines (DB-01: a replace must always be followed by them). This re-exposes all in-book letters to contributors (B-REQ-011), so only as a short bridge.
 - **Contributors cannot see the book's name** (DB-05): the app must read `book_children` for members; never restore contributor read access to `children` (it exposes the due date, K-25).
 - **Anonymous guard**: `drop policy <table>_no_anonymous on public.<table>;` per table (needs the dashboard's approval for policy drops). There is no reason to, since the app never uses anonymous sessions.
-- **File 6 entitlement tables**: dropping them loses only data the reconcile job can rebuild from Apple; drop `store_notifications`, `store_subscriptions`, `app_account_tokens` in that order.
 - **File 7**: restore the step-4 `purge_due(timestamptz)` body from `20261002020000_data_governance.sql` under that signature and `drop function public.purge_due(timestamptz, int);` The new columns can stay.
 
 ## App changes that must ship with or before step 3 reaching real families
@@ -285,13 +279,13 @@ Prefer fixing forward. Everything is additive except the dropped functions, whic
 - Children: parents read `children`; every member (and the contributor UI) reads `book_children` (`id, name, nickname, birth_month, birth_day`) (D-039).
 - Letters: ids must be UUIDv7 from the device (already the case in `store.ts`); `SCPRG` on upload means the letter was purged on the server, so drop the local row.
 - Photos: never update an uploaded photo object; upload a new path and delete the old one.
-- Children: `create_child(p_id, p_name, p_date_of_birth, p_due_date)` with the device's UUIDv7 (the same id local letters already use; retries are safe). First run sends every child at once to `create_first_run_children('[{"id", "name", "date_of_birth", "due_date"}]')` (1 to 6; all free, one time). A later child needs Plus (`SCPLS`).
+- Children: `create_child(p_id, p_name, p_date_of_birth, p_due_date)` with the device's UUIDv7 (the same id local letters already use; retries are safe). Twins and siblings are separate `create_child` calls. The server never checks Plus: the app decides with StoreKit 2 on the device (founder decision 3).
 - Invites: `create_child_invite(p_child, p_role, p_signs_as)` with `p_role` `'parent'` or `'contributor'`; only parents see the invite button. `revoke_invite(id)`.
 - Family letters: for contributors `in_book = true` means "send to the parents". The server keeps the letter `approval = 'pending'` and `in_book = false` until a parent calls `review_family_letter(id, 'added' | 'set_aside', expected_state)`; show status from `approval`. Never upload `approval`, `reviewed_by` or `reviewed_at`. A contributor takes a letter back with `withdraw_family_letter(id)`. Editing the words of an added family letter returns it to pending unless the parents turned on auto-add for that person.
 - Reads: `book_entries` now follows B F9 and has an `approval` column; parents' "Letters from family" reads `approval in ('pending', 'set_aside')`.
 - Consent: record `terms` accept with `context = {"age_attested": true, "age_signal": ...}` and `sensitive-data` accept before the first upload; read `my_sync_gate()` to decide which sheet to show; context keys are allowlisted (`auth`, `age_attested`, `age_signal`, `scope`, `crash`, `usage`, `product`, `intro_offer`, `storefront`, `mode`).
 - Policy sheet: `policy_actions_needed()` returns the version to show; during a notice window new users get the new version.
-- Plus: `my_app_account_token()` gives the UUID to pass as `appAccountToken` to `Product.purchase`; `get_plan_state()` and `book_has_plus(child)` read the result. Account deletion `source` is `ios`, `android` or `web` only.
+- Plus: entirely on the device (`Transaction.currentEntitlements`, Apple's subscription UI, Family Sharing for the co-parent). There is no server plan RPC. Account deletion `source` is `ios`, `android` or `web` only.
 - PowerSync streams: `book_entries` is a view; the member stream must apply the same B F9 predicate on `entries` (TDD 02 3.2 `book_access`, not built in these files).
 
 ## Rolling back step 3 after it committed

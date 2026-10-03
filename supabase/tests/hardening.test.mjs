@@ -108,8 +108,8 @@ check('[PSEC-04] a malformed path is refused without a cast error',
   (await codeOf(() => as(A, `delete from storage.objects where bucket_id = 'entry-photos' and name = $1`, [`not-a-uuid/${A}/x.jpg`]))) === 'ok');
 
 // ── DB-12: dictionary terms per owner, per book, ignoring case ───────────
-// A second book for A (service path, so the Plus rule is not what this checks).
-const SECOND = (await sys(`select public.create_child_row($1, $2, 'Ravi', '2025-05-20', null, true) id`, [A, uuid7()])).rows[0].id;
+// A second book for A (the server does not enforce Plus, founder decision 3).
+const SECOND = await newChild(A, 'Ravi', '2025-05-20', null);
 const term = (child, t) => as(A, `insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, $3, 'family')`, [A, child, t]);
 await term(CHILD, 'Nani');
 check('[DB-12] the same name can be saved for a second book', SECOND !== null && (await codeOf(() => term(SECOND, 'Nani'))) === 'ok');

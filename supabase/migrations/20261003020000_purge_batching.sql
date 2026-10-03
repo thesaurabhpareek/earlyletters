@@ -16,7 +16,8 @@
 --    silently doing nothing.
 --  * Invite hashes are kept 90 days after revocation, use or expiry, whichever
 --    came first, instead of always after expiry.
---  * App Store notification ledger rows are kept 7 years (transactions, DATA_CLASSIFICATION 2).
+--  * (No App Store notification ledger: payments are StoreKit 2 on the device only,
+--    founder decision 3, so there is no store_notifications table to age out.)
 --  * finalize_account_deletion also nulls entries.reviewed_by (new column).
 --  * (WS-01, 3 Oct 2026) purge_due keeps entry and book ids in purge_ledger for good
 --    (DB-02); service-only state errors use 55000 instead of SCDEL (DB-09); API roles
@@ -144,7 +145,6 @@ begin
   perform set_config('app.retention_purge', 'on', true);
   delete from policy_acceptances where pseudonymised_at < p_now - interval '3 years';
   perform set_config('app.retention_purge', 'off', true);
-  delete from store_notifications where received_at < p_now - interval '7 years';
 
   -- 5. Housekeeping. Entry and book ids stay in the ledger for good (DB-02: a purged
   --    id must never be re-inserted); only person and object-path rows age out.
