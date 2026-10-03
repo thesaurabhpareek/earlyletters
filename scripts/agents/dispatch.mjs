@@ -260,11 +260,16 @@ function spendToday() {
   const comments = ghAll(`/repos/${repo}/issues/comments?since=${today}T00:00:00Z&sort=created`, { allowFail: true });
   let cost = 0;
   let n = 0;
+  let unknown = 0;
   for (const c of comments) {
-    const m = (c.body ?? "").match(/<!-- receipt run:\S+ agent:\S+ cost:([0-9.]+) -->/);
-    if (m) { cost += Number(m[1]); n++; }
+    const m = (c.body ?? "").match(/<!-- receipt run:\S+ agent:\S+ cost:([0-9.]+|unknown) -->/);
+    if (!m) continue;
+    // Receipts that report no cost (and older ones that wrote 0.0000 with
+    // "cost not reported") are counted apart, never as $0.
+    if (m[1] === "unknown" || /cost not reported/.test(c.body)) unknown++;
+    else { cost += Number(m[1]); n++; }
   }
-  return { cost, n };
+  return { cost, n, unknown };
 }
 
 // ---------- running jobs (Actions API) ----------
@@ -288,7 +293,7 @@ function runningAgents() {
 // ---------- board ----------
 
 function renderBoard() {
-  const spend = DRY ? { cost: 0, n: 0 } : spendToday();
+  const spend = DRY ? { cost: 0, n: 0, unknown: 0 } : spendToday();
   const runUrl = env.GITHUB_RUN_ID
     ? `https://github.com/${repo}/actions/runs/${env.GITHUB_RUN_ID}`
     : "a local dispatcher run";
@@ -296,7 +301,7 @@ function renderBoard() {
     "# Agent board",
     "",
     `Updated ${now.toISOString().slice(0, 16).replace("T", " ")} UTC by ${env.GITHUB_RUN_ID ? `[the dispatcher](${runUrl})` : runUrl}. Status: **${status}**.`,
-    `Runs today: **${usedToday()} of ${totalCap}**. Estimated spend today: **$${spend.cost.toFixed(2)}** from ${spend.n} run receipts.`,
+    `Runs today: **${usedToday()} of ${totalCap}**. Estimated spend today: **$${spend.cost.toFixed(2)}** from ${spend.n} run receipts${spend.unknown ? `, plus ${spend.unknown} run${spend.unknown === 1 ? "" : "s"} with no cost reported (interactive or failed)` : ""}.`,
     "",
     "| Agent | Engine and model | Now | Runs today | Open PRs | Ready tasks |",
     "|---|---|---|---|---|---|",

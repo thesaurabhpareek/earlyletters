@@ -45,7 +45,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const repo = repoSlug(roster);
   const s = summarize(opt("execution-file"));
   const outcome = opt("outcome", "unknown");
-  const cost = s.cost ?? 0;
+  // "unknown" (not 0) when the engine reported no cost, so the board never
+  // shows an interactive or failed run as free.
+  const cost = s.cost !== undefined ? s.cost.toFixed(4) : "unknown";
 
   let wroteEntry = false;
   if (journal) {
@@ -53,7 +55,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     wroteEntry = comments.some((c) => (c.body ?? "").includes(`<!-- journal run:${runId} agent:${handle}`));
   }
   const parts = [
-    `<!-- receipt run:${runId} agent:${handle} cost:${cost.toFixed(4)} -->`,
+    `<!-- receipt run:${runId} agent:${handle} cost:${cost} -->`,
     `Run receipt: ${target || "run"}${s.model ? ` on ${s.model.replace(/^openrouter\//, "")}` : ""}, ${outcome}${s.subtype && s.subtype !== "success" ? ` (${s.subtype})` : ""}.`,
     [s.turns !== undefined ? `${s.turns} turns` : null, s.minutes !== undefined ? `${s.minutes} min` : null,
       s.cost !== undefined ? `$${s.cost.toFixed(2)} estimated` : "cost not reported"].filter(Boolean).join(", ") + ".",
