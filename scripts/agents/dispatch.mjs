@@ -5,6 +5,7 @@
 //
 //   node scripts/agents/dispatch.mjs                 # GitHub Actions mode
 //   node scripts/agents/dispatch.mjs --dry-run       # print the plan, write nothing
+//   node scripts/agents/dispatch.mjs --board-only     # refresh the board, assign nothing
 //   node scripts/agents/dispatch.mjs --local --top 1 --claim
 //        local mode: no Actions API (running jobs are inferred from claims)
 //
@@ -27,6 +28,7 @@ const opt = (n) => {
   return i >= 0 ? argv[i + 1] : undefined;
 };
 const DRY = flag("--dry-run");
+const BOARD_ONLY = flag("--board-only");
 const LOCAL = flag("--local");
 const TOP = Number(opt("--top") ?? Infinity);
 const CLAIM = !LOCAL || flag("--claim");
@@ -121,14 +123,14 @@ function attentionReasons(pr) {
 
 const totalCap = roster.limits.max_runs_per_day_total;
 const usedToday = () => Object.values(state.runs).reduce((s, n) => s + n, 0);
-let slots = Math.min(
+let slots = BOARD_ONLY ? 0 : Math.min(
   TOP,
   Math.max(0, roster.limits.max_parallel - running.size),
   Math.max(0, totalCap - usedToday()),
 );
 
 const paused = String(env.AGENTS_PAUSED ?? "").toLowerCase() === "true";
-const noKey = !LOCAL && String(env.HAS_MODEL_KEY ?? "").toLowerCase() !== "true";
+const noKey = (!LOCAL || BOARD_ONLY) && String(env.HAS_MODEL_KEY ?? "").toLowerCase() !== "true";
 const status = paused ? "paused (repository variable AGENTS_PAUSED is true)"
   : noKey ? "waiting for the ANTHROPIC_API_KEY secret"
   : "running";
