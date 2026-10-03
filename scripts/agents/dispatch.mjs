@@ -8,6 +8,8 @@
 //   node scripts/agents/dispatch.mjs --board-only     # refresh the board, assign nothing
 //   node scripts/agents/dispatch.mjs --local --top 1 --claim
 //        local mode: no Actions API (running jobs are inferred from claims)
+//   node scripts/agents/dispatch.mjs --local --board-only --release qa,ops
+//        release the claims of local runs that have finished
 //
 // Env: GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_OUTPUT, AGENTS_PAUSED,
 //      ONLY_AGENT, FORCE_TASK, FORCE_MODE, and which engines can run:
@@ -78,6 +80,11 @@ for (const [handle, c] of Object.entries(state.claims)) {
   const expired = !agent || ageMs > (agent.timeout_minutes * 60_000 + grace);
   const finished = !LOCAL && c.source === "actions" && !running.has(handle) && ageMs > 10 * 60_000;
   if (expired || finished) delete state.claims[handle];
+}
+// Local runs have no job to watch: the session that ran them releases their
+// claims when they finish (`--release product,ops`).
+for (const h of (opt("--release") ?? "").split(",").map((x) => x.trim()).filter(Boolean)) {
+  delete state.claims[h];
 }
 const claimedTasks = new Set(Object.values(state.claims).map((c) => c.task).filter(Boolean));
 
