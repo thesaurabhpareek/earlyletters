@@ -24,7 +24,7 @@ There is no user data yet. Every number in this file is a target, an assumption 
 
 | Source | Covers | Misses | Used for |
 |---|---|---|---|
-| **ASC Sales** (App Store Connect units and subscription reports) | Every App Store install and every purchase (Fact: Apple's reports, not consent-based) | Anything inside the app. Cannot be joined to our accounts (decision 3: no server of ours sees purchases) | Installs, trials, conversions, Plus mix |
+| **ASC Sales** (App Store Connect Sales and Trends, subscription reports) | First-time App Units: the first "Get" per Apple Account; redownloads and extra devices are not counted (Fact: Apple's metric definition). Every purchase. Whether any of it depends on a user's data-sharing choice is not stated by Apple (Unverified) | Anything inside the app. Cannot be joined to our accounts (decision 3: no server of ours sees purchases) | New users, trials, conversions, Plus mix |
 | **ASC App Analytics, Xcode Organizer** | People who share analytics with developers in iOS settings (Apple's consent; TDD 06 2.1) | Our events; people who said no to Apple | Crash rate, launch time (release gate source, D-003) |
 | **Server aggregates** (BL-024, PRD-REQ-017) | Signed-in accounts that accepted the sensitive-data consent and have synced | Letters kept only on the phone: no account, or sensitive-data consent declined (K-15) | WKF, accounts, books, letters, family, retention, consent split |
 | **Device analytics** (PostHog, opt-in) | People who said yes on the analytics sheet, from that moment on | First run (always), everyone who declined or was never asked | How the product is used inside the app |
@@ -49,7 +49,8 @@ Rule (from TRACKING_PLAN 0.5, kept): headline numbers come from server aggregate
 | Destination | Both count: `in_book = true` and private (`in_book = false`). Private by default is a product principle (B goal 5, B-REQ-011). A North Star that counted only book letters would reward moving private words into the shared book (Decision; differs from TRACKING_PLAN 1.1, see 2.5). |
 | Authors | Any author: parent, co-parent or family contributor. A contributor's letter counts toward the family that owns the child's book, whatever the parent's review state (`approval` in `pending`, `added`, `set_aside`). The contributor kept it for the child; the parent's choice is measured separately (IN-06). |
 | Time | `entries.captured_at`, bucketed into ISO weeks, Monday 00:00 to Sunday 24:00 UTC (Decision, A-4). If `captured_at` is later than `created_at` (device clock ahead), use `created_at`. Never `occurred_on`: parents backdate memories on purpose ("Before You", hindsight writing, UR 3). |
-| Late arrival | Offline letters sync late. A week stays provisional for 14 days after it ends, then is frozen (A-5). Letters whose `created_at` is more than 14 days after `captured_at` do not change frozen weeks. An example is a local-only parent who signs in months later. Those letters go into a **backfilled letters** count for the week they arrived. |
+| Late arrival | Offline letters sync late. A week stays provisional for 14 days after it ends, then is frozen (A-5). Letters whose `created_at` is more than 14 days after `captured_at` do not change frozen weeks. An example is a local-only parent who signs in months later. Those letters go into a **backfilled letters** count for the week they arrived. Deletions after a week is frozen do not change it either. |
+| Hidden books | Letters in a hidden book (`children.hidden_at` not null) count like any other. Hiding a book is never treated as churn (4.3 item 7). |
 | Exclusions | Internal accounts: the founder, C0 phones and the App Review demo account (R-6). Non-production builds (R-5). |
 | Columns read | `entries.id`, `child_id`, `author_id`, `kind`, `captured_at`, `created_at`, `deleted_at`, `in_book`, `approval`, `capture_mode`, `sounds_like_me`; `children.id`, `deleted_at`, `hidden_at`; `child_members.child_id`, `profile_id`, `role`. Never `raw_transcript`, `final_text`, `machine_edits`, `stt_meta`, `search`, names, dates of birth or due dates. |
 | Suppression | Any reported cell under 10 families shows as "under 10" (TRACKING_PLAN 1.4). |
@@ -82,7 +83,7 @@ Rejected alternatives:
 | **Voices** (FV28) | Families with kept letters from 2 or more distinct `author_id` in the 28-day window / MKF | Family participation. A 28-day window because co-parents write on their own cadence (UR 3) (Decision; TRACKING_PLAN uses one week) |
 | **Letters per keeping family** | Kept letters in week W / WKF | Context only. No upward target (IN-05) |
 | **Growth accounting** | WKF(W) = new (first kept letter ever in W) + continuing (also kept a letter in W-1) + returning (kept letters before, none in W-1) | Shows whether WKF grows from new families or from habit. Computed in Postgres; no family is labelled or contacted |
-| **Sync coverage** | New accounts with a first kept letter in month M (server) / first-time downloads in month M (ASC Sales) | Shows how much of the user base the server can see. A period ratio, not a cohort: label it "approximate" |
+| **Sync coverage** | New accounts with a first kept letter in month M (server) / App Units in month M (ASC Sales) | Shows how much of the user base the server can see. A period ratio, not a cohort: label it "approximate" |
 | **Backfilled letters** | See 2.2 | Shows how much keeping happened off the server's view first |
 
 ### 2.5 Differences from TRACKING_PLAN 1.1 (R-2)
@@ -150,7 +151,7 @@ PRD.md has no goals section of its own; the goals live in section 1 of each appe
 
 | ID | Metric | Exact definition | Source: events and properties, or tables and columns | Target (A unless noted) |
 |---|---|---|---|---|
-| IN-01 | First letter | (a) Among `analytics_opted_in` events: share with `time_to_first_letter = lt_90s`, excluding `unknown` and events with `first_letter_mode = none`. A median of 90 s or less means this share is 50% or more. (b) Lower bound for all users: new founding parents with a first kept letter in month M / ASC first-time downloads in month M | (a) Device: `analytics_opted_in.time_to_first_letter`, `.first_letter_mode`, `.surface`. (b) Server `children.created_by`, `entries`; ASC Sales | Median 90 s or less (A G1) |
+| IN-01 | First letter | (a) Among `analytics_opted_in` events: share with `time_to_first_letter = lt_90s`, excluding `unknown` and events with `first_letter_mode = none`. A median of 90 s or less means this share is 50% or more. (b) Lower bound for all users: new founding parents with a first kept letter in month M / ASC App Units in month M. App Units include invited family and people who never pass the 18+ gate, which also pulls the ratio down | (a) Device: `analytics_opted_in.time_to_first_letter`, `.first_letter_mode`, `.surface`. (b) Server `children.created_by`, `entries`; ASC Sales | Median 90 s or less (A G1) |
 | IN-02 | Keep the book | (a) Server: founding parents whose account exists by day 7 of their first kept letter / founding parents in the cohort. This is computable only for people who eventually sync, so it overstates. (b) Device: share of `analytics_opted_in` with `signed_in = true`, by `days_since_install` | (a) `profiles.created_at`, `entries.captured_at`. (b) `analytics_opted_in.signed_in`, `.days_since_install`; `auth_succeeded{new_user}`, `auth_deferred{trigger}` after consent | 70% (A G2). Decision trigger 50% (A Q2), R-8 |
 | IN-03 | Activated writer | First-letter accounts with kept letters on 2 or more distinct UTC dates of `captured_at` in days 0 to 13 / first-letter accounts in the cohort | Server `entries.author_id`, `captured_at` | Set after first cohorts |
 | IN-04 | Active writers and retention | Active writer: account with 1 or more kept letters in the week. Week-4 retention: cohort accounts with a kept letter in days 28 to 34 / cohort size. Month-6 retention: a kept letter in days 150 to 179 / cohort size. Founding parents and joiners are reported apart | Server `entries` | Week 4: 35% or more. Month 6: 20% or more (C section 9, A) |
@@ -385,6 +386,7 @@ To `analytics` unless another owner is named. Each request is content-free and L
 - [Apple: Subscription events](https://developer.apple.com/help/app-store-connect/reference/subscription-events/)
 - [Apple: Subscription event report](https://developer.apple.com/help/app-store-connect/reference/subscription-event-report/)
 - [Apple: Testing subscriptions and in-app purchases in TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testing-subscriptions-and-in-app-purchases-in-testflight)
+- [Apple: Sales and Trends metrics and dimensions](https://developer.apple.com/help/app-store-connect/reference/sales-and-trends-metrics-and-dimensions/) (App Units; subscription Units exclude free trials)
 
 ---
 
