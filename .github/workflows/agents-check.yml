@@ -1,0 +1,36 @@
+# Keeps the agent team consistent: roster, charters, memory files and the
+# dispatcher's own tests. Runs on pull requests that touch any of them.
+name: Agents check
+
+on:
+  pull_request:
+    paths:
+      - "agents/**"
+      - ".claude/agents/**"
+      - "scripts/agents/**"
+      - "docs/BACKLOG.md"
+      - "docs/agents/**"
+  push:
+    branches: [develop, main]
+    paths:
+      - "agents/**"
+      - ".claude/agents/**"
+      - "scripts/agents/**"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: agent team consistent
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Roster, charters and memory
+        run: node scripts/agents/check.mjs
+      - name: Dispatcher tests
+        run: node --test 'scripts/agents/*.test.mjs'

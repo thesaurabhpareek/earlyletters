@@ -21,6 +21,8 @@ Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, confl
 8. Never: apply a migration to a remote Supabase project, touch secrets or store accounts, edit an applied migration, weaken a test to make it pass, merge a PR, add an analytics, crash or purchase SDK (those tasks are `pair`), or edit a requirement document. Propose requirement changes in the PR body.
 9. **Agent fence (D-041).** Until CI and branch protection are on (BL-004, BL-005), unattended runs take only tasks under `packages/*` and `docs/`. After that, any PR touching `supabase/**` or authentication code needs an independent review run and the founder's `approve-migration` label before merge.
 
+**Agent team (ADR 0014).** Unattended work is now assigned by `scripts/agents/dispatch.mjs` to the agent whose `backlog_owner_names` in `agents/roster.json` include the task's first non-founder Owner. Rules 1 to 9 above still apply to every run. A task `blocked` only by backlog ids that are all `done` counts as ready. Only the `product` agent edits tasks other than its own status line.
+
 Issues: GitHub Issues are an inbox for the founder's bugs and ideas (labels `inbox`, `bug`, `idea`). Agents act on an Issue only after it is copied here as a task. A PR that finishes such a task writes `Closes #n`.
 
 Status values: `ready`, `blocked (reason)`, `needs-decision (D-### or question)`, `in-review (PR #n)`, `done (PR #n)`, `superseded (by BL-###)`, `deferred (v1.1, BL-###)`.
