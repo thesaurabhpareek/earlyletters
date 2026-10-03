@@ -11,11 +11,15 @@
 -- Fixes (requirement ids in brackets):
 --  1. Invite escalation [TDD 02 C1, TDD 04 S-1, LEGAL-REQ-024, B-REQ-007]:
 --     create_child_invite(uuid) is dropped. The new create_child_invite(p_id,
---     p_child, p_role, p_token_hash, p_signs_as) needs an explicit role, a parent caller, a live book and
---     consent, and is rate limited per book and per parent. Contributors cannot
---     create any invite. accept_child_invite refuses revoked, expired, used and
+--     p_child, p_role, p_token_hash, p_code_hash, p_signs_as) needs an explicit role, a
+--     parent caller, a live book and consent, and is rate limited per book and per
+--     parent. Contributors cannot create any invite. Every invite has a link token
+--     (SHA-256 stored) and an 8-character code (HMAC under a Vault pepper stored).
+--     accept_child_invite (link) and accept_child_invite_by_code (service role only,
+--     for the invite-redeem Edge Function) refuse revoked, expired, used and
 --     deleted-book invites and existing members; retries by the same person are
---     idempotent. Invites are readable by parents only (S-9).
+--     idempotent. Open invites made by the old function are revoked on upgrade.
+--     Invites are readable by parents only (S-9).
 --  2. Family visibility [B-REQ-009, B-REQ-011, B F9, TDD 04 S-3, S-4]:
 --     entries.approval. A contributor's in_book means "send to the parents"; the
 --     server keeps their letter pending until a parent adds it (or adds it at
@@ -217,15 +221,13 @@ returns boolean language sql stable security definer set search_path = pg_catalo
                      from public.content_gate_state(auth.uid()) g), false);
 $$;
 
--- Raises SCCON (pause, not reject) when the caller may not write content.
-create or replace function public.require_content_consent()
+-- Raises SCCON (pause, not reject) when p_profile may not write content.
+create or replace function public.require_content_consent_of(p_profile uuid)
 returns void language plpgsql volatile security definer set search_path = pg_catalog, public as $$
 declare g record;
 begin
-  if auth.uid() is null then raise exception 'not authenticated' using errcode = '28000'; end if;
-  if public.is_anonymous() then raise exception 'not available to anonymous sessions' using errcode = 'SCANO'; end if;
-  select * into g from public.content_gate_state(auth.uid());
-  if not (g.terms_current and g.age_attested and g.sensitive_data) then
+  select * into g from public.content_gate_state(p_profile);
+  if not coalesce(g.terms_current and g.age_attested and g.sensitive_data, false) then
     raise exception 'consent required before content is stored'
       using errcode = 'SCCON',
             detail = concat_ws(',', case when not g.terms_current then 'terms' end,
@@ -233,6 +235,16 @@ begin
                                     case when not g.sensitive_data then 'sensitive-data' end),
             hint = 'Pause the upload queue and show the consent sheet; do not drop the write.';
   end if;
+end;
+$$;
+
+-- Raises SCCON (pause, not reject) when the caller may not write content.
+create or replace function public.require_content_consent()
+returns void language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated' using errcode = '28000'; end if;
+  if public.is_anonymous() then raise exception 'not available to anonymous sessions' using errcode = 'SCANO'; end if;
+  perform public.require_content_consent_of(auth.uid());
 end;
 $$;
 
@@ -359,8 +371,16 @@ $$;
 alter table public.child_invites alter column role drop default;
 alter table public.child_invites add column if not exists revoked_at timestamptz;
 alter table public.child_invites add column if not exists signs_as text check (char_length(signs_as) <= 30);
+-- Invite code (A-REQ-029, TDD 04 3.4.1): HMAC-SHA256 under the Vault secret
+-- invite_code_pepper, so a database dump cannot brute-force the 40-bit codes offline.
+alter table public.child_invites add column if not exists code_hash bytea unique;
 create index if not exists child_invites_inviter_created_idx on public.child_invites (invited_by, created_at);
 create index if not exists child_invites_child_created_idx on public.child_invites (child_id, created_at);
+
+-- Upgrade (M1 fix pack): every open invite made by the old create_child_invite(uuid)
+-- is untrusted. Any member could mint one and its role defaulted to 'parent' (the
+-- escalation this file fixes), so none of them may be accepted after this file.
+update public.child_invites set revoked_at = now() where accepted_at is null and revoked_at is null;
 
 -- Parents only (S-9): contributors no longer see who else was invited.
 alter policy child_invites_select on public.child_invites using (public.is_child_parent(child_id));
@@ -376,29 +396,71 @@ alter table public.audit_events add constraint audit_events_action_check check (
 
 drop function if exists public.create_child_invite(uuid);
 
+-- RFC 2104 HMAC-SHA256 on the built-in sha256(), so no extension schema is needed.
+create or replace function public.hmac_sha256(p_key bytea, p_msg bytea)
+returns bytea language plpgsql immutable strict set search_path = pg_catalog, public as $$
+declare k bytea := p_key; ipad bytea; opad bytea;
+begin
+  if octet_length(k) > 64 then k := sha256(k); end if;
+  k := k || decode(repeat('00', 64 - octet_length(k)), 'hex');
+  ipad := k; opad := k;
+  for i in 0..63 loop
+    ipad := set_byte(ipad, i, get_byte(k, i) # 54);   -- 0x36
+    opad := set_byte(opad, i, get_byte(k, i) # 92);   -- 0x5c
+  end loop;
+  return sha256(opad || sha256(ipad || p_msg));
+end;
+$$;
+
+-- Invite codes: 8 symbols of Crockford base32 (0-9 and A-Z without I, L, O, U),
+-- about 40 bits, shown as XXXX-XXXX. Normal form: upper case, spaces and hyphens
+-- removed, O read as 0 and I or L read as 1. Returns null for anything else. The
+-- app normalises the same way and sends p_code_hash = sha256(utf8(normal form)).
+create or replace function public.normalise_invite_code(p_code text)
+returns text language sql immutable set search_path = pg_catalog, public as $$
+  select case when v ~ '^[0-9A-HJKMNP-TV-Z]{8}$' then v end
+    from (select translate(upper(regexp_replace(coalesce(p_code, ''), '[[:space:]-]', '', 'g')), 'OIL', '011') as v) x;
+$$;
+
+-- What child_invites.code_hash stores: HMAC-SHA256(invite_code_pepper, sha256 of the
+-- normal form). Raises SCCFG when the pepper is missing or short (fails closed).
+create or replace function public.invite_code_digest(p_code_sha256 bytea)
+returns bytea language sql stable security definer set search_path = pg_catalog, public as $$
+  select public.hmac_sha256(convert_to(public.require_server_secret('invite_code_pepper'), 'UTF8'), p_code_sha256);
+$$;
+
 -- Retry-safe invites (founder decision 17). The client generates the invite secret
--- (32 random bytes, hex encoded, 64 characters), keeps it for the share link, and
--- sends only p_token_hash = sha256(utf8(token)) plus a UUIDv7 key p_id, which
--- becomes child_invites.id. The server never sees or returns the token, so a replay
--- after a lost response returns the same invite id and the client still holds its
--- token. Co-parent invites last 7 days, family invites 14 (K-18). Limits
+-- (32 random bytes, hex encoded, 64 characters) and the 8-character code, keeps both
+-- for the share sheet, and sends only p_token_hash = sha256(utf8(token)),
+-- p_code_hash = sha256(utf8(normalised code)) and a UUIDv7 key p_id, which becomes
+-- child_invites.id. The server never sees or returns the token or the code, so a
+-- replay after a lost response returns the same invite id and the client still holds
+-- both. Co-parent invites last 7 days, family invites 14 (K-18). Limits
 -- (B-NFR-004): 20 invites per book and 20 per parent in any 24 hours; replays do
 -- not count. Returns the invite id.
 create or replace function public.create_child_invite(p_id uuid, p_child uuid, p_role text, p_token_hash bytea,
-                                                      p_signs_as text default null)
+                                                      p_code_hash bytea, p_signs_as text default null)
 returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_uid uuid := public.require_user();
   v_prev child_invites%rowtype;
+  v_code bytea;
 begin
   if not public.is_valid_client_uuid7(p_id) then
     raise exception 'invite id must be a UUIDv7 made on the device' using errcode = 'SCCID';
   end if;
+  if p_token_hash is null or octet_length(p_token_hash) <> 32 then
+    raise exception 'token hash must be a SHA-256 digest (32 bytes)' using errcode = '22023';
+  end if;
+  if p_code_hash is null or octet_length(p_code_hash) <> 32 then
+    raise exception 'code hash must be a SHA-256 digest (32 bytes)' using errcode = '22023';
+  end if;
+  v_code := public.invite_code_digest(p_code_hash);
   -- Replay: same key, same caller, same arguments -> the same invite, nothing new.
   select * into v_prev from child_invites where id = p_id;
   if found then
     if v_prev.invited_by = v_uid and v_prev.child_id = p_child and v_prev.role is not distinct from p_role
-       and v_prev.token_hash = p_token_hash
+       and v_prev.token_hash = p_token_hash and v_prev.code_hash is not distinct from v_code
        and v_prev.signs_as is not distinct from nullif(btrim(p_signs_as), '') then
       return p_id;
     end if;
@@ -406,9 +468,6 @@ begin
   end if;
   if p_role is null or p_role not in ('parent', 'contributor') then
     raise exception 'invite role must be parent or contributor' using errcode = 'SCINV';
-  end if;
-  if p_token_hash is null or octet_length(p_token_hash) <> 32 then
-    raise exception 'token hash must be a SHA-256 digest (32 bytes)' using errcode = '22023';
   end if;
   if not public.is_child_parent(p_child) then
     raise exception 'only a parent can invite' using errcode = 'SCPAR';
@@ -424,8 +483,11 @@ begin
   if exists (select 1 from child_invites where token_hash = p_token_hash) then
     raise exception 'token already used; generate a new one' using errcode = 'SCINV';
   end if;
-  insert into child_invites (id, child_id, invited_by, token_hash, role, signs_as, expires_at)
-    values (p_id, p_child, v_uid, p_token_hash, p_role, nullif(btrim(p_signs_as), ''),
+  if exists (select 1 from child_invites where code_hash = v_code) then
+    raise exception 'code already used; generate a new one' using errcode = 'SCINV';
+  end if;
+  insert into child_invites (id, child_id, invited_by, token_hash, code_hash, role, signs_as, expires_at)
+    values (p_id, p_child, v_uid, p_token_hash, v_code, p_role, nullif(btrim(p_signs_as), ''),
             now() + case p_role when 'parent' then interval '7 days' else interval '14 days' end);
   perform public.audit('invite_created', 'membership', p_id, p_child, jsonb_build_object('role', p_role));
   return p_id;
@@ -449,31 +511,62 @@ begin
 end;
 $$;
 
-create or replace function public.accept_child_invite(p_token text)
+-- The checks every redemption shares (link or code). Internal: p_uid is the
+-- caller already authenticated by accept_child_invite (JWT) or by the invite-redeem
+-- Edge Function (accept_child_invite_by_code).
+create or replace function public.join_book_by_invite(p_invite uuid, p_uid uuid)
 returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
-declare
-  v_uid uuid := public.require_user();
-  v_inv child_invites%rowtype;
+declare v_inv child_invites%rowtype;
 begin
-  select * into v_inv from child_invites
-    where token_hash = sha256(convert_to(coalesce(p_token, ''), 'UTF8'))
-    for update;
+  select * into v_inv from child_invites where id = p_invite for update;
   if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
-  -- Same person retrying after a lost response: idempotent.
-  if v_inv.accepted_by = v_uid then return v_inv.child_id; end if;
+  -- Same person retrying after a lost response: idempotent. Someone who joined and
+  -- then left cannot come back on the used invite (they need a new one).
+  if v_inv.accepted_by = p_uid
+     and exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = p_uid) then
+    return v_inv.child_id;
+  end if;
   if v_inv.accepted_at is not null then raise exception 'invite already used' using errcode = 'SCINV'; end if;
   if v_inv.revoked_at is not null then raise exception 'invite revoked' using errcode = 'SCINV'; end if;
   if v_inv.expires_at < now() then raise exception 'invite expired' using errcode = 'SCINV'; end if;
   if not public.child_is_live(v_inv.child_id) then raise exception 'invite not found' using errcode = 'SCINV'; end if;
   -- No role change through invites (covers the inviter accepting their own link).
-  if exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = v_uid) then
+  if exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = p_uid) then
     raise exception 'already a member of this book' using errcode = 'SCINV';
   end if;
-  perform public.require_content_consent();
-  insert into child_members (child_id, profile_id, role) values (v_inv.child_id, v_uid, v_inv.role);
-  update child_invites set accepted_by = v_uid, accepted_at = now() where id = v_inv.id;
-  perform public.audit('member_joined', 'membership', v_uid, v_inv.child_id, jsonb_build_object('role', v_inv.role));
+  perform public.require_content_consent_of(p_uid);
+  insert into child_members (child_id, profile_id, role) values (v_inv.child_id, p_uid, v_inv.role);
+  update child_invites set accepted_by = p_uid, accepted_at = now() where id = v_inv.id;
+  insert into audit_events (actor_id, actor_kind, action, subject_type, subject_id, child_id, detail)
+    values (p_uid, 'user', 'member_joined', 'membership', p_uid, v_inv.child_id, jsonb_build_object('role', v_inv.role));
   return v_inv.child_id;
+end;
+$$;
+
+create or replace function public.accept_child_invite(p_token text)
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+declare v_uid uuid := public.require_user(); v_id uuid;
+begin
+  select id into v_id from child_invites where token_hash = sha256(convert_to(coalesce(p_token, ''), 'UTF8'));
+  if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  return public.join_book_by_invite(v_id, v_uid);
+end;
+$$;
+
+-- Typed or spoken code (A-REQ-029). Codes are low entropy, so this is NOT granted
+-- to authenticated: only the invite-redeem Edge Function calls it, with the service
+-- role, after verifying the caller's JWT (refusing anonymous sessions) and applying
+-- the attempt limits in TDD 04 3.11 (10 per hour per user and per hashed IP, a global
+-- failure breaker). p_user is the verified caller. Same outcomes as accept_child_invite.
+create or replace function public.accept_child_invite_by_code(p_user uuid, p_code text)
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+declare v_norm text := public.normalise_invite_code(p_code); v_id uuid;
+begin
+  if p_user is null then raise exception 'caller id is required' using errcode = '22023'; end if;
+  if v_norm is null then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  select id into v_id from child_invites where code_hash = public.invite_code_digest(sha256(convert_to(v_norm, 'UTF8')));
+  if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  return public.join_book_by_invite(v_id, p_user);
 end;
 $$;
 
@@ -872,6 +965,12 @@ $$;
 revoke execute on function public.content_gate_state(uuid) from public, anon, authenticated;
 revoke execute on function public.client_content_gate() from public, anon, authenticated;
 revoke execute on function public.entries_family_rules() from public, anon, authenticated;
+revoke execute on function public.require_content_consent_of(uuid) from public, anon, authenticated;
+revoke execute on function public.join_book_by_invite(uuid, uuid) from public, anon, authenticated;
+revoke execute on function public.hmac_sha256(bytea, bytea) from public, anon, authenticated;
+revoke execute on function public.normalise_invite_code(text) from public, anon, authenticated;
+revoke execute on function public.invite_code_digest(bytea) from public, anon, authenticated;
+revoke execute on function public.accept_child_invite_by_code(uuid, text) from public, anon, authenticated;
 
 -- Called as the signed-in user by RLS policies and client-context triggers.
 revoke execute on function public.is_anonymous() from public, anon;
@@ -891,14 +990,14 @@ grant execute on function public.require_content_consent() to authenticated;
 
 -- RPCs (each starts with require_user()).
 revoke execute on function public.my_sync_gate() from public, anon;
-revoke execute on function public.create_child_invite(uuid, uuid, text, bytea, text) from public, anon;
+revoke execute on function public.create_child_invite(uuid, uuid, text, bytea, bytea, text) from public, anon;
 revoke execute on function public.record_policy_act(uuid, text, text, text, text, text, text, text, text, timestamptz, bytea, jsonb) from public, anon;
 revoke execute on function public.revoke_invite(uuid) from public, anon;
 revoke execute on function public.accept_child_invite(text) from public, anon;
 revoke execute on function public.review_family_letter(uuid, text, text) from public, anon;
 revoke execute on function public.withdraw_family_letter(uuid) from public, anon;
 grant execute on function public.my_sync_gate() to authenticated;
-grant execute on function public.create_child_invite(uuid, uuid, text, bytea, text) to authenticated;
+grant execute on function public.create_child_invite(uuid, uuid, text, bytea, bytea, text) to authenticated;
 grant execute on function public.record_policy_act(uuid, text, text, text, text, text, text, text, text, timestamptz, bytea, jsonb) to authenticated;
 grant execute on function public.revoke_invite(uuid) to authenticated;
 grant execute on function public.accept_child_invite(text) to authenticated;
@@ -910,12 +1009,18 @@ begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.content_gate_state(uuid) to service_role';
     execute 'grant execute on function public.is_anonymous() to service_role';
+    -- Only the invite-redeem Edge Function (service role) redeems codes.
+    execute 'grant execute on function public.accept_child_invite_by_code(uuid, text) to service_role';
+    -- The secret-derived digest and the internal join stay off the service key's RPC surface.
+    execute 'revoke execute on function public.invite_code_digest(bytea) from service_role';
+    execute 'revoke execute on function public.join_book_by_invite(uuid, uuid) from service_role';
   end if;
 end;
 $$;
 
 -- ─── 7. Classification ───────────────────────────────────────────────────
 comment on column public.child_invites.revoked_at is 'L2 system timestamp';
+comment on column public.child_invites.code_hash is 'L3 HMAC-SHA256 of the invite code under the Vault pepper (code itself is L4, never stored)';
 comment on column public.child_invites.signs_as is 'L3 signature the inviter suggested ("Nani")';
 comment on column public.entries.approval is 'L2 family review state (not_needed, pending, added, set_aside)';
 comment on column public.entries.reviewed_by is 'L3 person id of the reviewing parent; nulled at account deletion';

@@ -14,8 +14,7 @@ check(`${process.argv.length - 2} migrations apply cleanly`, true);
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('${S}'),('${U}')`);
 await publishPolicies();
 for (const u of [A, B, C, N, S]) await consent(u);
-// DB-07: profile deletion needs the consent pepper; the suite sets a test value.
-await sys(`select set_config('app.consent_pepper', 'test-pepper-0123456789abcdef0123456789', false)`);
+// DB-07: profile deletion needs the consent pepper; the harness stores a test value in its Vault stub.
 
 const CHILD = await newChild(A);
 const join = (uid, role, child = CHILD, inviter = A) => joinAs(uid, role, child, inviter);

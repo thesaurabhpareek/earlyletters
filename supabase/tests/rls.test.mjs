@@ -28,7 +28,7 @@ check('create_child makes the creator a member', (await as(A, 'select * from chi
 check('stranger cannot see the child', (await as(C, 'select * from children')).rows.length === 0);
 check('cannot insert a child directly', await fails(() => as(C, `insert into children (name, created_by) values ('x', '${C}')`)));
 check('cannot add yourself as a member directly', await fails(() => as(C, `insert into child_members (child_id, profile_id) values ('${CHILD}', '${C}')`)));
-check('stranger cannot create an invite', await fails(() => as(C, `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(gen_random_uuid()::text::bytea))`)));
+check('stranger cannot create an invite', await fails(() => as(C, `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`)));
 
 const token = await invite(A, CHILD, 'parent');
 check('invite token is long and random', /^[0-9a-f]{64}$/.test(token));

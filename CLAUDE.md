@@ -29,7 +29,7 @@ The machine may remove and repair. It may never add meaning.
 npm install            # once, at the repo root
 npm test               # engine (237) + mobile (31) + content rules (16) + analytics (39) + tokens (4) + experiments (11); Node 22+
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
-npm run test:db        # access matrix, security, governance, classification, entitlements, purge, performance (8 files)
+npm run test:db        # access matrix, grants, structure, security, governance, fix pack, upgrade path, purge, performance (13 files)
 npm run typecheck
 npm run mobile         # start the iOS app
 ```
