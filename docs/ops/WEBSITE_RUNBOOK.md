@@ -36,21 +36,16 @@ Set these when creating the project (Add New > Project > import the repo), or in
 | Install Command | leave default; `apps/web/vercel.json` sets `npm ci --workspace=@scribe/web --no-audit --no-fund` | Installs the site and the two packages it uses, not the Expo app. Measured: 10 s and 575 MB, against 27 s and 1.4 GB for the whole workspace. Verified (measured in a clean worktree). |
 | Build Command | leave default (`next build`, the `build` script of `@scribe/web`) | Measured: 28 s cold, 23 routes. Verified. |
 | Output Directory | leave default | Next.js preset. |
-| Ignored Build Step | leave the dashboard field empty; `vercel.json` sets `ignoreCommand` | See below. |
+| Ignored Build Step | leave empty | No skip rule is set. `vercel.json` had an `ignoreCommand` of 284 characters; Vercel allows at most 256 and rejects the deployment (400), so it was removed on 2026-10-03. Verified (rejected by the Vercel deployment API). |
 | Node.js Version | **22.x** (Settings > Build and Deployment) | Tests and CI run on 22. Vercel's default is now 24.x and 20.x is deprecated from 2026-10-01. Verified (Vercel docs). Local and CI runs were on 22 only, so staying on 22 is the tested path. Opinion. |
 | Production Branch | `main` | CLAUDE.md: `main` is always releasable. Verified (repo rule). |
 | Deployment Protection | Vercel Authentication on previews (default), production public | Previews stay private to the team. Opinion. |
 | Plan | **Pro before launch** | Vercel's Hobby plan is for personal, non-commercial use only; a product with a paid tier is commercial. Custom analytics events also need Pro. Verified (Vercel docs). |
 
-**Ignored build step (`ignoreCommand` in `apps/web/vercel.json`).** A deployment is skipped only when every file changed since
-the last deployed commit (`VERCEL_GIT_PREVIOUS_SHA`) is under `apps/mobile/`, `supabase/` or `experiments/`. It builds in every
-doubtful case: no previous SHA, SHA missing from the clone, empty diff, shallow clone. Exit 0 skips, exit 1 builds. Verified
-against 16 fixture repositories (all behaved as intended). Facts about Vercel: exit 0 skips and the deployment shows as canceled;
-`VERCEL_GIT_PREVIOUS_SHA` is only exposed when an ignore step exists; the clone is shallow (depth 10). Verified (Vercel docs).
-Do not also enable the dashboard's own "Skip deployment" setting (it is workspace-aware but GitHub only); two skip rules are
-hard to reason about. Opinion.
-A skipped deployment is expected, not an incident. Pushes that change only mobile, database or experiment files will show
-"Canceled by Ignored Build Step" in Vercel, and that is correct.
+**Ignored build step.** None is set, so every push to a branch builds. Pushes that change only `apps/mobile/`, `supabase/` or
+`experiments/` still produce a site build; that costs build minutes only. The earlier `ignoreCommand` was removed because it
+exceeded Vercel's 256-character limit (Verified: the API answered 400). If a skip rule is wanted again, put the logic in a script
+under `apps/web/scripts/` and keep the command short, then run a real Vercel deployment before relying on it. Opinion.
 
 **CI.** `.github/workflows/web.yml` runs typecheck, tests and two builds (prelaunch and a launch rehearsal) on pushes and pull
 requests that touch the site's inputs; about 1.5 minutes expected, 5-minute timeout. It is not a required check on purpose
