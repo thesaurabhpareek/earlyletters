@@ -46,7 +46,8 @@
     "legal": "6e7781",
     "growth": "cf222e",
     "support": "2da44e",
-    "operations": "57606a"
+    "operations": "57606a",
+    "standards": "0b7285"
   },
   "agents": [
     {
@@ -179,6 +180,113 @@
       ],
       "daily_runs": 2,
       "wip_limit": 2
+    },
+    {
+      "handle": "principal-architect",
+      "title": "Principal Architect",
+      "department": "standards",
+      "backlog_owner_names": [],
+      "kind": "steward",
+      "daily_runs": 2,
+      "wip_limit": 1,
+      "review_paths": [
+        "packages/**",
+        "apps/mobile/src/lib/**",
+        "supabase/functions/**",
+        "scripts/*.mjs"
+      ]
+    },
+    {
+      "handle": "data-steward",
+      "title": "Data Steward",
+      "department": "standards",
+      "backlog_owner_names": [],
+      "kind": "steward",
+      "daily_runs": 2,
+      "wip_limit": 1,
+      "review_paths": [
+        "supabase/migrations/**",
+        "supabase/tests/**",
+        "supabase/APPLY.md",
+        ".github/migrations-applied.txt",
+        "apps/mobile/src/lib/db/**",
+        "apps/mobile/src/lib/store.ts",
+        "packages/analytics/**",
+        "packages/core/src/domain.ts",
+        "docs/legal/data-map.yaml",
+        "scripts/check-data-map.mjs"
+      ]
+    },
+    {
+      "handle": "security-architect",
+      "title": "Identity and Security Architect",
+      "department": "standards",
+      "backlog_owner_names": [],
+      "kind": "steward",
+      "daily_runs": 2,
+      "wip_limit": 1,
+      "review_paths": [
+        "supabase/migrations/**",
+        "**/auth/**",
+        "**/auth.*",
+        "**/session*",
+        "**/sign-in*",
+        "apps/mobile/src/lib/auth*",
+        ".github/**",
+        "apps/mobile/app.config.ts",
+        "apps/mobile/eas.json",
+        "package-lock.json",
+        "scripts/agents/**",
+        ".claude/**",
+        "agents/roster.json",
+        "SECURITY.md",
+        "docs/security/**",
+        "docs/ops/SECRETS.md"
+      ]
+    },
+    {
+      "handle": "compliance-engineer",
+      "title": "Privacy and Compliance Engineer",
+      "department": "standards",
+      "backlog_owner_names": [],
+      "kind": "steward",
+      "daily_runs": 2,
+      "wip_limit": 1,
+      "review_paths": [
+        "packages/analytics/**",
+        "docs/legal/**",
+        "apps/mobile/src/**/consent*",
+        "apps/mobile/src/**/delete*",
+        "apps/mobile/src/**/export*",
+        "supabase/migrations/**",
+        "package.json",
+        "apps/*/package.json",
+        "packages/*/package.json",
+        "apps/mobile/app.config.ts",
+        "packages/content/src/**",
+        "supabase/functions/**"
+      ]
+    },
+    {
+      "handle": "ai-eng-lead",
+      "title": "AI-Assisted Engineering Lead",
+      "department": "standards",
+      "backlog_owner_names": [],
+      "kind": "steward",
+      "daily_runs": 2,
+      "wip_limit": 1,
+      "review_paths": [
+        "CLAUDE.md",
+        "**/AGENTS.md",
+        "**/AGENTS.override.md",
+        "docs/agents/**",
+        ".claude/agents/**",
+        "agents/**",
+        "scripts/agents/**",
+        ".github/workflows/agents*.yml",
+        ".github/workflows/claude.yml",
+        "docs/engineering/**"
+      ]
     },
     {
       "handle": "decision-science",

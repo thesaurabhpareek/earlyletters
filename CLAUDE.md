@@ -23,6 +23,7 @@ The machine may remove and repair. It may never add meaning.
 | `experiments` | Mac kit to test speech models on real recordings |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | System design and decision records |
 | `docs/design/` | Design language, benchmark, component library, component specs |
+| `docs/engineering/` | Engineering compendium: `PRINCIPLES.md` (one page) and chapters 01 to 10, each owned by a steward agent |
 
 ## Commands
 ```bash
@@ -48,8 +49,9 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha".
 
 ## Agents
-- How the harness works, end to end: `docs/agents/HARNESS.md`. The team (19 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`.
+- How the harness works, end to end: `docs/agents/HARNESS.md`. The team (24 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`. How agents talk to each other: `docs/agents/AGENT-COMMS.md`.
 - Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
+- Engineering standards: read `docs/engineering/PRINCIPLES.md` before any code, schema, API or data change; open a chapter only when your change touches it. Five steward agents own the chapters and review PRs in their domains.
 - Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0014, ADR 0015): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
 
 ## Saving work (every session, human or AI)
