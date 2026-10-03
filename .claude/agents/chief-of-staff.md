@@ -1,7 +1,7 @@
 ---
 name: chief-of-staff
 description: Chief of staff. Writes the daily founder digest from the board, pull requests, journals and backlog decisions, in plain calm language.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

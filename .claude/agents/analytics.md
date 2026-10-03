@@ -1,7 +1,7 @@
 ---
 name: analytics
 description: Analytics engineer. Owns the opt-in, content-free analytics package and tracking plan, and keeps events, schema and code in step.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

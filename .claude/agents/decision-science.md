@@ -1,7 +1,7 @@
 ---
 name: decision-science
 description: Decision scientist. Builds the metric tree, experiment framework and pricing tests, and later turns analytics into backlog proposals.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

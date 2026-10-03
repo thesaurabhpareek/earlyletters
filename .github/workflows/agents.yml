@@ -1,11 +1,15 @@
 # The agent team. Every 30 minutes the dispatcher (plain code, no model)
 # decides what each agent works on next and starts up to six agents in
-# parallel. Each agent is Claude Code running as the Claude GitHub App, so its
-# pull requests come from the Claude bot, run CI, and wait for the founder.
+# parallel. Each agent runs on its roster engine:
+#   opencode    OpenCode (MIT) on an open-weight model through OpenRouter,
+#               acting as the agents GitHub App (the default, low cost);
+#   claude-code Claude Code acting as the Claude GitHub App (optional).
+# Either way its pull requests come from a bot, run CI, and wait for the founder.
 #
-# Needs: the ANTHROPIC_API_KEY secret (a key from a Claude Console workspace
-# with a monthly spend limit). Pause: repository variable AGENTS_PAUSED=true.
-# Rules: docs/agents/OPERATING_MODEL.md. Decision: docs/adr/0014.
+# Needs for opencode: OPENROUTER_API_KEY secret (a key with a budget), the
+# AGENTS_APP_CLIENT_ID variable and AGENTS_APP_PRIVATE_KEY secret. For
+# claude-code: ANTHROPIC_API_KEY. Pause: repository variable AGENTS_PAUSED=true.
+# Structure and process: docs/agents/HARNESS.md. Decisions: ADR 0014, ADR 0015.
 name: Agents
 
 on:
@@ -53,7 +57,9 @@ jobs:
         id: dispatch
         env:
           GH_TOKEN: ${{ github.token }}
-          HAS_MODEL_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+          HAS_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY != '' }}
+          HAS_AGENTS_APP: ${{ vars.AGENTS_APP_CLIENT_ID != '' && secrets.AGENTS_APP_PRIVATE_KEY != '' }}
+          HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
           AGENTS_PAUSED: ${{ vars.AGENTS_PAUSED }}
           ONLY_AGENT: ${{ inputs.agent }}
           FORCE_TASK: ${{ inputs.task }}
@@ -85,6 +91,7 @@ jobs:
         with:
           ref: develop
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install dependencies
         uses: ./.github/actions/setup
@@ -106,8 +113,9 @@ jobs:
           --reason "$REASON" --journal "$JOURNAL" --run-url "$RUN_URL" --run-id "$GITHUB_RUN_ID"
           --out .agent-run/brief.md
 
-      - name: Agent
+      - name: Agent (Claude Code)
         id: claude
+        if: matrix.engine == 'claude-code'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -116,11 +124,49 @@ jobs:
           prompt: |
             You are the Early Letters agent "${{ matrix.agent }}". Read .agent-run/brief.md now and follow it exactly.
             It holds your identity, memory, founder instructions, your one assignment for this run, and how to finish.
+          # Token controls: a hard dollar cap per run, a turn cap, cache-friendly
+          # system prompt, and an optional effort level per agent (roster).
           claude_args: |
             --model ${{ matrix.model }}
             --max-turns ${{ matrix.max_turns }}
+            --max-budget-usd ${{ matrix.budget }}
+            --exclude-dynamic-system-prompt-sections
+            ${{ matrix.effort != '' && format('--effort {0}', matrix.effort) || '' }}
             --allowedTools "Read,Write,Edit,MultiEdit,Glob,Grep,Bash,WebSearch,WebFetch,TodoWrite,Task"
             --disallowedTools "Bash(git push --force:*),Bash(git push -f:*),Bash(gh pr merge:*),Bash(gh pr review --approve:*),Bash(gh repo delete:*),Bash(gh secret:*),Bash(gh variable:*)"
+
+      - name: Agent identity (GitHub App token)
+        id: app
+        if: matrix.engine == 'opencode'
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.AGENTS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.AGENTS_APP_PRIVATE_KEY }}
+
+      # OpenCode on an open-weight model. The runner enforces the per-run
+      # dollar cap and step cap; the OpenRouter key's own budget is the
+      # monthly hard stop.
+      - name: Agent (OpenCode)
+        id: opencode
+        if: matrix.engine == 'opencode'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          AGENT: ${{ matrix.agent }}
+          MODEL: ${{ matrix.model }}
+          BUDGET: ${{ matrix.budget }}
+          MAX_TURNS: ${{ matrix.max_turns }}
+          EFFORT: ${{ matrix.effort }}
+          OPENCODE_VERSION: ${{ matrix.engine_version }}
+        run: |
+          BOT_ID="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${BOT_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          gh auth setup-git
+          npm install -g --no-audit --no-fund "opencode-ai@${OPENCODE_VERSION}"
+          node scripts/agents/run-opencode.mjs --agent "$AGENT" --model "$MODEL" --budget "$BUDGET" \
+            --max-turns "$MAX_TURNS" --variant "$EFFORT" --out "$RUNNER_TEMP/agent-exec.json"
 
       - name: Run receipt
         if: always()
@@ -132,8 +178,8 @@ jobs:
           TASK: ${{ matrix.task }}
           PR: ${{ matrix.pr }}
           JOURNAL: ${{ matrix.journal }}
-          OUTCOME: ${{ steps.claude.outcome }}
-          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          OUTCOME: ${{ matrix.engine == 'claude-code' && steps.claude.outcome || steps.opencode.outcome }}
+          EXECUTION_FILE: ${{ matrix.engine == 'claude-code' && steps.claude.outputs.execution_file || format('{0}/agent-exec.json', runner.temp) }}
         run: >
           node scripts/agents/receipt.mjs --agent "$AGENT" --journal "$JOURNAL" --mode "$MODE"
           --task "$TASK" --pr "$PR" --outcome "$OUTCOME" --execution-file "$EXECUTION_FILE"

@@ -1,7 +1,7 @@
 ---
 name: speech
 description: Speech and applied science engineer. On-device transcription, language packs, model evaluation and noise suppression, within the constitution.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

@@ -6,9 +6,10 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   ROOT, parseBacklog, eligibility, primaryOwner, takenIds, queueFor, ownerMap,
-  loadRoster, readState, writeState,
+  loadRoster, readState, writeState, standingChanged,
 } from "./lib.mjs";
 import { summarize } from "./receipt.mjs";
+import { tally, newTotals, opencodeConfig } from "./run-opencode.mjs";
 
 const FIXTURE = `
 ## M1. Guardrails
@@ -126,6 +127,43 @@ test("receipts read cost, turns and minutes from the execution log", () => {
     { type: "system" },
     { type: "result", subtype: "success", total_cost_usd: 1.2345, num_turns: 31, duration_ms: 754000 },
   ]));
-  assert.deepEqual(summarize(file), { cost: 1.2345, turns: 31, minutes: 13, subtype: "success" });
+  assert.deepEqual(summarize(file), { model: undefined, cost: 1.2345, turns: 31, minutes: 13, subtype: "success" });
   assert.deepEqual(summarize(join(dir, "missing.json")), {});
+});
+
+test("standing duties rerun only when something changed", () => {
+  assert.equal(standingChanged(undefined, "abc", 0), true, "first standing run");
+  assert.equal(standingChanged({ develop: "abc" }, "abc", 0), false, "nothing new");
+  assert.equal(standingChanged({ develop: "abc" }, "def", 0), true, "develop moved");
+  assert.equal(standingChanged({ develop: "abc" }, "abc", 1), true, "founder wrote");
+});
+
+test("OpenCode events add up to cost, steps and tokens", () => {
+  const t = newTotals();
+  tally(t, { type: "step_start", part: {} });
+  tally(t, { type: "step_finish", part: { cost: 0.012, tokens: { input: 1000, output: 200, reasoning: 50, cache: { read: 9000, write: 0 } } } });
+  tally(t, { type: "text", part: { text: "hi" } });
+  tally(t, { type: "step_finish", part: { cost: 0.008, tokens: { input: 500, output: 100, reasoning: 0, cache: { read: 4000, write: 0 } } } });
+  assert.equal(t.steps, 2);
+  assert.equal(Number(t.cost.toFixed(3)), 0.02);
+  assert.deepEqual(t.tokens, { input: 1500, output: 350, cacheRead: 13000 });
+});
+
+test("OpenCode config never shares sessions and denies founder-only actions", () => {
+  const c = opencodeConfig();
+  assert.equal(c.share, "disabled");
+  assert.equal(c.autoupdate, false);
+  for (const p of ["gh pr merge*", "git push --force*", "gh secret*", "git push origin main*"]) {
+    assert.equal(c.permission.bash[p], "deny", p);
+  }
+  assert.equal(Object.keys(c.permission.bash)[0], "*", "catch-all first so specific denies win");
+});
+
+test("every agent resolves to an engine, a model and a spend cap", () => {
+  const roster = loadRoster();
+  for (const a of roster.agents) {
+    assert.ok(roster.engines[a.engine], `${a.handle} engine`);
+    assert.ok(a.model, `${a.handle} model`);
+    assert.ok(a.max_budget_usd > 0, `${a.handle} budget`);
+  }
 });

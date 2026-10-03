@@ -1,7 +1,7 @@
 ---
 name: sync
 description: Sync and backend engineer. Owns the sync engine, typed API contracts in packages/api and Supabase edge functions.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

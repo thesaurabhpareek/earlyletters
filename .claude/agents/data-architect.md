@@ -1,7 +1,7 @@
 ---
 name: data-architect
 description: Data architect for Supabase. Owns migrations, row-level security and their tests, and the schema side of the data map.
-model: opus
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: content
 description: Brand and content lead. Owns every word the product says in packages/content, the voice rules and the 104 prompts.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

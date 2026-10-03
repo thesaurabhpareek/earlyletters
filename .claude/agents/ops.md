@@ -1,7 +1,7 @@
 ---
 name: ops
 description: Release and operations engineer. Owns docs/ops, CI health, dependency hygiene, release checklists and proposed workflow changes.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

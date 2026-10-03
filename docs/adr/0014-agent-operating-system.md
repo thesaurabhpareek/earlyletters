@@ -1,6 +1,6 @@
 # ADR 0014: Agent operating system: a roster of identities, a code dispatcher, and Claude Code on GitHub Actions
 
-- **Status:** Accepted, 2026-10-03 (founder asked for the full setup).
+- **Status:** Accepted, 2026-10-03 (founder asked for the full setup). Amended the same day by ADR 0015: agents run on open-weight models by default; Claude is optional per agent.
 - **Deciders:** founder.
 - **Supersedes:** the "Unattended run protocol" in ADR 0011 for work selection; ADR 0011's backlog format and traceability rules stay in force. ADR 0011 said to revisit "when more than one agent runs in parallel"; that is now.
 - **Related:** `agents/roster.json`, `docs/agents/OPERATING_MODEL.md`, `.github/workflows/agents.yml`, `scripts/agents/`.

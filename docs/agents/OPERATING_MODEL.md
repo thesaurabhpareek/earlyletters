@@ -1,7 +1,7 @@
 # How the Early Letters agent team works
 
 Every agent reads this file at the start of every run, after `CLAUDE.md` and before its own charter.
-Decision record: `docs/adr/0014-agent-operating-system.md`. Team list and caps: `agents/roster.json`.
+How the whole harness fits together: `docs/agents/HARNESS.md`. Team list, engines and caps: `agents/roster.json`. These rules apply whichever engine runs you.
 
 ## 1. The team and who you are
 
@@ -74,3 +74,15 @@ The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the l
 - Never put real family details, the founder's personal information, or anything from the founder's private life into code, docs, issues or memory. Tests use the fictional family "Asha".
 - Mark what you verified versus what you assumed. Never invent library APIs, prices, or legal facts.
 - If you cannot finish safely, stop, explain why in your journal entry, and open a draft PR or no PR at all.
+
+## 9. Context and token discipline
+
+Every run has a dollar cap and a step cap. Spend them on the work, not on reading.
+
+- Your brief already holds your task text and your recent journal entries. Do not read `docs/BACKLOG.md` whole (it is over 900 lines); search it for the lines you need.
+- Search before you read (`grep`, `rg`, glob), then read only the line ranges that matter. Do not re-read a file you already have unless it changed.
+- Prefer diffs to whole files: `git diff`, `gh pr diff`.
+- Keep command output small: pipe long output through `tail` or `grep`.
+- Run the focused tests first (one workspace or one file), then the full required suite once before you push.
+- Write the journal entry in the template's seven lines. Keep `MEMORY.md` under 120 lines by replacing stale lines.
+- Stop when your one assignment is done. If you hit a cap, commit what is safe on your branch, open a draft PR if it helps, and say in your journal exactly what is left.

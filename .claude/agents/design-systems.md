@@ -1,7 +1,7 @@
 ---
 name: design-systems
 description: Design systems and accessibility lead. Owns design tokens, shared UI components, design docs and the WCAG and Dynamic Type bar.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

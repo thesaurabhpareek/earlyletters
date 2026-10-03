@@ -1,7 +1,7 @@
 ---
 name: security
 description: Security engineer. Owns threat models, auth flow review, access-test harness work and dependency vulnerability triage.
-model: opus
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

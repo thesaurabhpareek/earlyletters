@@ -13,17 +13,24 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 export function loadRoster(root = ROOT) {
   const raw = JSON.parse(readFileSync(join(root, "agents", "roster.json"), "utf8"));
   const d = raw.defaults ?? {};
-  const agents = raw.agents.map((a, i) => ({
-    kind: "worker",
-    backlog_owner_names: [],
-    ...a,
-    model: a.model ?? d.model,
-    max_turns: a.max_turns ?? d.max_turns,
-    timeout_minutes: a.timeout_minutes ?? d.timeout_minutes,
-    daily_runs: a.daily_runs ?? d.daily_runs,
-    wip_limit: a.wip_limit ?? d.wip_limit,
-    priority: i,
-  }));
+  const agents = raw.agents.map((a, i) => {
+    const engine = a.engine ?? d.engine ?? "opencode";
+    const e = raw.engines?.[engine] ?? {};
+    return {
+      kind: "worker",
+      backlog_owner_names: [],
+      ...a,
+      engine,
+      model: a.model ?? e.default_model,
+      max_turns: a.max_turns ?? d.max_turns,
+      timeout_minutes: a.timeout_minutes ?? d.timeout_minutes,
+      daily_runs: a.daily_runs ?? d.daily_runs,
+      wip_limit: a.wip_limit ?? d.wip_limit,
+      max_budget_usd: a.max_budget_usd ?? e.default_budget_usd,
+      effort: a.effort ?? d.effort ?? "",
+      priority: i,
+    };
+  });
   return { ...raw, agents };
 }
 
@@ -218,4 +225,13 @@ export function todayUTC(now = new Date()) {
 
 export function isFounderComment(c, roster) {
   return c?.user?.login === roster.founder || c?.author_association === "OWNER";
+}
+
+/**
+ * A standing duty is worth a new run only if something it reads has changed:
+ * the integration branch moved, or the founder wrote to the agent since.
+ */
+export function standingChanged(prev, developSha, founderNoteCount) {
+  if (!prev?.develop) return true;
+  return prev.develop !== developSha || founderNoteCount > 0;
 }

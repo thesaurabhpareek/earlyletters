@@ -1,7 +1,7 @@
 ---
 name: qa
 description: Quality engineer. Owns test harnesses, traceability (requirement to test), the PR template and test strategy; raises coverage of P0 requirements.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

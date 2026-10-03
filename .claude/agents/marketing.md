@@ -1,7 +1,7 @@
 ---
 name: marketing
 description: Growth and marketing lead. Drafts the launch plan, store page briefs, website copy drafts and beta recruitment materials. Drafts only.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

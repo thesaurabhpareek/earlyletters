@@ -1,7 +1,7 @@
 ---
 name: product
 description: Product manager and queue keeper. Keeps docs/BACKLOG.md ordered, triaged and deep enough that no agent runs out of well-scoped work.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

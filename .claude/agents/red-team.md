@@ -1,7 +1,7 @@
 ---
 name: red-team
 description: Principal reviewer. Reviews every agent pull request against the constitution, privacy, security and tests before the founder sees it.
-model: opus
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

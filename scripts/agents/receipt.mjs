@@ -32,6 +32,7 @@ export function summarize(path) {
   const list = Array.isArray(data) ? data : [data];
   const result = [...list].reverse().find((m) => m?.type === "result") ?? {};
   return {
+    model: result.model,
     cost: typeof result.total_cost_usd === "number" ? result.total_cost_usd : undefined,
     turns: result.num_turns,
     minutes: typeof result.duration_ms === "number" ? Math.round(result.duration_ms / 60000) : undefined,
@@ -53,7 +54,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const parts = [
     `<!-- receipt run:${runId} agent:${handle} cost:${cost.toFixed(4)} -->`,
-    `Run receipt: ${target || "run"}, ${outcome}${s.subtype && s.subtype !== "success" ? ` (${s.subtype})` : ""}.`,
+    `Run receipt: ${target || "run"}${s.model ? ` on ${s.model.replace(/^openrouter\//, "")}` : ""}, ${outcome}${s.subtype && s.subtype !== "success" ? ` (${s.subtype})` : ""}.`,
     [s.turns !== undefined ? `${s.turns} turns` : null, s.minutes !== undefined ? `${s.minutes} min` : null,
       s.cost !== undefined ? `$${s.cost.toFixed(2)} estimated` : "cost not reported"].filter(Boolean).join(", ") + ".",
     runUrl ? `[Run log](${runUrl}).` : "",

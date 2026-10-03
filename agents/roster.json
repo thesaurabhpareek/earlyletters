@@ -1,22 +1,37 @@
 {
-  "$comment": "The Early Letters agent team. Edit caps and models here; the dispatcher reads this file on every tick. Rules: docs/agents/OPERATING_MODEL.md. Decision: docs/adr/0014-agent-operating-system.md.",
+  "$comment": "The Early Letters agent team. Edit engines, models and caps here; the dispatcher reads this file on every tick. Structure and process: docs/agents/HARNESS.md. Rules agents follow: docs/agents/OPERATING_MODEL.md. Decisions: ADR 0014, ADR 0015.",
   "version": 1,
   "repo": "thesaurabhpareek/earlyletters",
   "base_branch": "develop",
   "founder": "thesaurabhpareek",
   "limits": {
-    "$comment": "max_runs_per_day_total is the main budget lever. At the modelled $0.47 to $3.73 per Sonnet session, 30 runs a day is roughly $420 to $3,400 a month in API spend before Opus runs. The hard stop is the spend limit on the Claude Console workspace that holds ANTHROPIC_API_KEY.",
+    "$comment": "max_runs_per_day_total is the team-wide daily cap. Money is capped three ways: max_budget_usd per run (enforced by the runner), the spend limit on the provider key (OpenRouter key budget or Claude Console workspace), and this daily cap.",
     "max_runs_per_day_total": 30,
     "max_parallel": 6,
     "digest_hour_utc": 14,
     "claim_grace_minutes": 20
   },
+  "engines": {
+    "$comment": "opencode = OpenCode (MIT) driving open-weight models through OpenRouter; the default. claude-code = Claude Code via anthropics/claude-code-action; optional per agent. Models must be priced in the engine's model list, or the per-run spend cap cannot be enforced.",
+    "opencode": {
+      "version": "1.18.34",
+      "secret": "OPENROUTER_API_KEY",
+      "default_model": "openrouter/deepseek/deepseek-v4.1-flash",
+      "default_budget_usd": 2
+    },
+    "claude-code": {
+      "secret": "ANTHROPIC_API_KEY",
+      "default_model": "claude-sonnet-5-5",
+      "default_budget_usd": 8
+    }
+  },
   "defaults": {
-    "model": "claude-sonnet-5-5",
     "max_turns": 80,
     "timeout_minutes": 50,
     "daily_runs": 1,
-    "wip_limit": 1
+    "wip_limit": 1,
+    "$comment": "An agent without engine, model or max_budget_usd takes the engine's defaults. effort is optional and passed to the engine (OpenCode --variant, Claude Code --effort).",
+    "engine": "opencode"
   },
   "departments": {
     "engineering": "1f6feb",
@@ -38,10 +53,11 @@
       "department": "quality",
       "backlog_owner_names": [],
       "kind": "reviewer",
-      "model": "claude-opus-5-5",
       "daily_runs": 4,
       "wip_limit": 1,
-      "max_turns": 60
+      "max_turns": 60,
+      "model": "openrouter/z-ai/glm-5.2",
+      "max_budget_usd": 3
     },
     {
       "handle": "product",
@@ -56,7 +72,9 @@
       "handle": "qa",
       "title": "Quality Engineer",
       "department": "quality",
-      "backlog_owner_names": ["qa engineer"],
+      "backlog_owner_names": [
+        "qa engineer"
+      ],
       "daily_runs": 3,
       "wip_limit": 3
     },
@@ -64,7 +82,9 @@
       "handle": "mobile",
       "title": "Mobile Engineer (iOS first, Expo)",
       "department": "engineering",
-      "backlog_owner_names": ["mobile engineer"],
+      "backlog_owner_names": [
+        "mobile engineer"
+      ],
       "daily_runs": 4,
       "wip_limit": 3
     },
@@ -72,8 +92,9 @@
       "handle": "data-architect",
       "title": "Data Architect (Supabase)",
       "department": "data",
-      "backlog_owner_names": ["data architect"],
-      "model": "claude-opus-5-5",
+      "backlog_owner_names": [
+        "data architect"
+      ],
       "daily_runs": 3,
       "wip_limit": 2
     },
@@ -81,8 +102,9 @@
       "handle": "security",
       "title": "Security Engineer",
       "department": "engineering",
-      "backlog_owner_names": ["security engineer"],
-      "model": "claude-opus-5-5",
+      "backlog_owner_names": [
+        "security engineer"
+      ],
       "daily_runs": 2,
       "wip_limit": 2
     },
@@ -90,7 +112,9 @@
       "handle": "privacy",
       "title": "Privacy Engineer",
       "department": "engineering",
-      "backlog_owner_names": ["privacy engineer"],
+      "backlog_owner_names": [
+        "privacy engineer"
+      ],
       "daily_runs": 2,
       "wip_limit": 2
     },
@@ -98,7 +122,9 @@
       "handle": "speech",
       "title": "Speech and Applied Science Engineer",
       "department": "applied-science",
-      "backlog_owner_names": ["speech engineer"],
+      "backlog_owner_names": [
+        "speech engineer"
+      ],
       "daily_runs": 2,
       "wip_limit": 2
     },
@@ -106,7 +132,9 @@
       "handle": "sync",
       "title": "Sync and Backend Engineer",
       "department": "engineering",
-      "backlog_owner_names": ["sync owner"],
+      "backlog_owner_names": [
+        "sync owner"
+      ],
       "daily_runs": 2,
       "wip_limit": 2
     },
@@ -114,7 +142,9 @@
       "handle": "payments",
       "title": "Payments Engineer (StoreKit)",
       "department": "engineering",
-      "backlog_owner_names": ["payments engineer"],
+      "backlog_owner_names": [
+        "payments engineer"
+      ],
       "daily_runs": 2,
       "wip_limit": 2
     },
@@ -122,7 +152,9 @@
       "handle": "design-systems",
       "title": "Design Systems and Accessibility Lead",
       "department": "design",
-      "backlog_owner_names": ["design systems"],
+      "backlog_owner_names": [
+        "design systems"
+      ],
       "daily_runs": 3,
       "wip_limit": 2
     },
@@ -130,7 +162,9 @@
       "handle": "analytics",
       "title": "Analytics Engineer",
       "department": "data",
-      "backlog_owner_names": ["analytics engineer"],
+      "backlog_owner_names": [
+        "analytics engineer"
+      ],
       "daily_runs": 2,
       "wip_limit": 2
     },
@@ -138,7 +172,9 @@
       "handle": "content",
       "title": "Brand and Content Lead",
       "department": "brand",
-      "backlog_owner_names": ["content"],
+      "backlog_owner_names": [
+        "content"
+      ],
       "daily_runs": 2,
       "wip_limit": 2
     },
@@ -154,7 +190,9 @@
       "handle": "legal",
       "title": "Legal Drafting (counsel-facing)",
       "department": "legal",
-      "backlog_owner_names": ["legal"],
+      "backlog_owner_names": [
+        "legal"
+      ],
       "daily_runs": 1,
       "wip_limit": 1
     },

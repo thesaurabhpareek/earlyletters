@@ -9,15 +9,15 @@
 //   node scripts/agents/dispatch.mjs --local --top 1 --claim
 //        local mode: no Actions API (running jobs are inferred from claims)
 //
-// Env: GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_OUTPUT,
-//      HAS_MODEL_KEY ("true" when ANTHROPIC_API_KEY is set), AGENTS_PAUSED,
-//      ONLY_AGENT, FORCE_TASK, FORCE_MODE.
+// Env: GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_OUTPUT, AGENTS_PAUSED,
+//      ONLY_AGENT, FORCE_TASK, FORCE_MODE, and which engines can run:
+//      HAS_OPENROUTER_KEY + HAS_AGENTS_APP (opencode), HAS_ANTHROPIC_KEY (claude-code).
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
-  isFounderComment,
+  isFounderComment, standingChanged,
 } from "./lib.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
@@ -57,6 +57,7 @@ if (state.day !== today) {
 }
 state.runs ??= {};
 state.claims ??= {};
+state.standing ??= {};
 
 const tasks = parseBacklog(readText(join(ROOT, "docs", "BACKLOG.md")));
 const byId = new Map(tasks.map((t) => [t.id, t]));
@@ -66,6 +67,7 @@ const openPRs = ghAll(`/repos/${repo}/pulls?state=open`);
 const taken = takenIds(openPRs);
 
 const running = LOCAL ? new Set() : runningAgents();
+const developSha = gh(`/repos/${repo}/branches/${roster.base_branch}`, { allowFail: true })?.commit?.sha ?? "";
 
 // Drop claims that have ended: their job is no longer running (Actions mode)
 // or they are older than the agent's timeout plus grace (both modes).
@@ -130,9 +132,17 @@ let slots = BOARD_ONLY ? 0 : Math.min(
 );
 
 const paused = String(env.AGENTS_PAUSED ?? "").toLowerCase() === "true";
-const noKey = (!LOCAL || BOARD_ONLY) && String(env.HAS_MODEL_KEY ?? "").toLowerCase() !== "true";
+const yes = (v) => String(v ?? "").toLowerCase() === "true";
+// What each engine still needs before it can run (empty = ready). The local
+// lane runs inside a Claude session, so engines do not apply there.
+const engineNeeds = {
+  opencode: [!yes(env.HAS_OPENROUTER_KEY) && "the OPENROUTER_API_KEY secret", !yes(env.HAS_AGENTS_APP) && "the agents GitHub App"].filter(Boolean),
+  "claude-code": [!yes(env.HAS_ANTHROPIC_KEY) && "the ANTHROPIC_API_KEY secret"].filter(Boolean),
+};
+const needsFor = (agent) => (LOCAL && !BOARD_ONLY ? [] : engineNeeds[agent.engine] ?? [`engine ${agent.engine}`]);
+const noKey = roster.agents.every((a) => needsFor(a).length);
 const status = paused ? "paused (repository variable AGENTS_PAUSED is true)"
-  : noKey ? "waiting for the ANTHROPIC_API_KEY secret"
+  : noKey ? `waiting for ${[...new Set(roster.agents.flatMap(needsFor))].join(" and ")}`
   : "running";
 
 const rows = [];
@@ -160,7 +170,11 @@ for (const agent of roster.agents) {
   }
   const runsToday = state.runs[h] ?? 0;
   if (runsToday >= agent.daily_runs) { row.now = `idle: used ${runsToday}/${agent.daily_runs} runs today`; continue; }
-  if (slots <= 0 || paused || noKey) { row.now = `ready: ${nextWork(agent, mine, queue)?.label ?? "standing duty"}`; continue; }
+  const needs = needsFor(agent);
+  if (slots <= 0 || paused || needs.length) {
+    row.now = `ready: ${nextWork(agent, mine, queue)?.label ?? "standing duty"}${needs.length && !paused ? ` (needs ${needs.join(" and ")})` : ""}`;
+    continue;
+  }
 
   const work = env.FORCE_TASK && env.ONLY_AGENT === h
     ? { mode: env.FORCE_MODE || "task", task: env.FORCE_TASK, label: `${env.FORCE_MODE || "task"} ${env.FORCE_TASK}` }
@@ -174,9 +188,13 @@ for (const agent of roster.agents) {
     pr: work.pr ? String(work.pr) : "",
     reason: work.reason ?? "",
     journal: String(journals.get(h)?.number ?? ""),
+    engine: agent.engine,
+    engine_version: roster.engines?.[agent.engine]?.version ?? "",
     model: agent.model,
     max_turns: agent.max_turns,
     timeout: agent.timeout_minutes,
+    budget: agent.max_budget_usd,
+    effort: agent.effort,
   };
   assignments.push(a);
   slots--;
@@ -186,6 +204,7 @@ for (const agent of roster.agents) {
   }
   if (a.task) claimedTasks.add(a.task);
   if (a.mode === "digest") state.lastDigest = today;
+  if (a.mode === "standing") state.standing[h] = { develop: developSha, at: now.toISOString() };
   row.now = `starting: ${work.label}`;
 }
 
@@ -207,15 +226,25 @@ function nextWork(agent, mine, queue) {
     return due ? { mode: "digest", label: "digest" } : undefined;
   }
   if (mine.length >= agent.wip_limit) return undefined;
-  // 3. Backlog task, then standing duty.
+  // 3. Backlog task, then standing duty, but only if something changed since
+  //    this agent's last standing run (saves a run that would find nothing new).
   if (queue.length) return { mode: "task", task: queue[0].id, reason: queue[0].title, label: `task ${queue[0].id}` };
+  if (!standingChanged(state.standing[h], developSha, founderNotesSince(h, state.standing[h]?.at))) return undefined;
   return { mode: "standing", label: "standing duty" };
 }
 
 function idleReason(agent, mine) {
   if (agent.kind === "digest") return state.lastDigest === today ? "today's digest is done" : "digest not due yet";
   if (mine.length >= agent.wip_limit) return `waiting for founder review (${mine.length}/${agent.wip_limit} open PRs)`;
+  if (state.standing[agent.handle]) return "nothing changed since its last standing run";
   return "nothing to do";
+}
+
+function founderNotesSince(handle, at) {
+  const j = journals.get(handle);
+  if (!at || !j?.number) return 0;
+  const comments = gh(`/repos/${repo}/issues/${j.number}/comments?since=${at}&per_page=100`, { allowFail: true }) ?? [];
+  return comments.filter((c) => isFounderComment(c, roster)).length;
 }
 
 function describe(c) {
@@ -267,13 +296,14 @@ function renderBoard() {
     `Updated ${now.toISOString().slice(0, 16).replace("T", " ")} UTC by ${env.GITHUB_RUN_ID ? `[the dispatcher](${runUrl})` : runUrl}. Status: **${status}**.`,
     `Runs today: **${usedToday()} of ${totalCap}**. Estimated spend today: **$${spend.cost.toFixed(2)}** from ${spend.n} run receipts.`,
     "",
-    "| Agent | Now | Runs today | Open PRs | Ready tasks |",
-    "|---|---|---|---|---|",
+    "| Agent | Engine and model | Now | Runs today | Open PRs | Ready tasks |",
+    "|---|---|---|---|---|---|",
   ];
   for (const r of rows) {
     const j = journals.get(r.agent.handle);
     const name = j ? `[\`${r.agent.handle}\`](${j.html_url})` : `\`${r.agent.handle}\``;
-    lines.push(`| ${name} ${r.agent.title} | ${r.now} | ${state.runs[r.agent.handle] ?? 0}/${r.agent.daily_runs} | ${r.open} | ${r.agent.backlog_owner_names.length ? r.queue : "n/a"} |`);
+    const engine = `${r.agent.engine}: ${String(r.agent.model).replace(/^openrouter\//, "")}`;
+    lines.push(`| ${name} ${r.agent.title} | ${engine} | ${r.now} | ${state.runs[r.agent.handle] ?? 0}/${r.agent.daily_runs} | ${r.open} | ${r.agent.backlog_owner_names.length ? r.queue : "n/a"} |`);
   }
   const forFounder = openPRs.filter((pr) => agentOfPR(pr) && !pr.draft && !attentionReasonsSafe(pr).length);
   const needsFounder = openPRs.filter((pr) => labelNames(pr).includes("needs:founder"));

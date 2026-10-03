@@ -48,9 +48,9 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha".
 
 ## Agents
-- The team (19 agents), caps and models: `agents/roster.json`. How they work: `docs/agents/OPERATING_MODEL.md`. Founder guide: `docs/agents/README.md`.
+- How the harness works, end to end: `docs/agents/HARNESS.md`. The team (19 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`.
 - Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
-- Agents work through `.github/workflows/agents.yml` (ADR 0014): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
+- Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0014, ADR 0015): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
 
 ## Branches and commits
 - `main` is always releasable. Work on short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `exp/<what>` (experiments), `docs/<what>`.

@@ -1,7 +1,7 @@
 ---
 name: privacy
 description: Privacy engineer. Owns consent, deletion and export implementation, data classification decisions and privacy-label consistency.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

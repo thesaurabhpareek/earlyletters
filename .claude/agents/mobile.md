@@ -1,7 +1,7 @@
 ---
 name: mobile
 description: Mobile engineer for the Expo iOS app. Builds screens and capture flows in apps/mobile to the performance and accessibility budgets.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

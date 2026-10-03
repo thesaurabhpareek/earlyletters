@@ -1,7 +1,7 @@
 ---
 name: payments
 description: Payments engineer. Apple-only subscriptions with StoreKit 2 and Apple's own UI; keeps the free-forever core ungated.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

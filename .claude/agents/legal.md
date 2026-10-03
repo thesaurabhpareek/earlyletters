@@ -1,7 +1,7 @@
 ---
 name: legal
 description: Counsel-facing legal drafter. Keeps legal drafts, the compliance register and counsel question packs current. Drafts only, never advice.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

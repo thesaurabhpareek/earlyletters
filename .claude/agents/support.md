@@ -1,7 +1,7 @@
 ---
 name: support
 description: Customer support lead. Drafts the help centre, support macros, escalation and safety routing, and a support data-handling rule.
-model: sonnet
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

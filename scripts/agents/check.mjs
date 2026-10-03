@@ -8,7 +8,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ROOT, loadRoster, ownerMap, parseBacklog, readText } from "./lib.mjs";
 
-const MODELS = { "claude-opus-5-5": "opus", "claude-sonnet-5-5": "sonnet", "claude-haiku-4-5-20251001": "haiku" };
+const CLAUDE_MODELS = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5-20251001"]);
+const OPENCODE_MODEL = /^openrouter\/[a-z0-9~-]+\/[a-z0-9.:-]+$/;
 const KINDS = new Set(["worker", "reviewer", "planner", "digest"]);
 
 export function check(root = ROOT) {
@@ -23,11 +24,15 @@ export function check(root = ROOT) {
     if (seen.has(a.handle)) errors.push(`${where}: duplicate handle`);
     seen.add(a.handle);
     if (!roster.departments?.[a.department]) errors.push(`${where}: department "${a.department}" is not in roster.departments`);
-    if (!MODELS[a.model]) errors.push(`${where}: model "${a.model}" is not one of ${Object.keys(MODELS).join(", ")}`);
+    if (!roster.engines?.[a.engine]) errors.push(`${where}: engine "${a.engine}" is not defined in roster.engines`);
+    else if (a.engine === "claude-code" && !CLAUDE_MODELS.has(a.model)) errors.push(`${where}: model "${a.model}" is not one of ${[...CLAUDE_MODELS].join(", ")}`);
+    else if (a.engine === "opencode" && !OPENCODE_MODEL.test(a.model ?? "")) errors.push(`${where}: OpenCode model "${a.model}" must look like openrouter/<maker>/<model>`);
     if (!KINDS.has(a.kind)) errors.push(`${where}: kind "${a.kind}" is not one of ${[...KINDS].join(", ")}`);
     for (const k of ["daily_runs", "wip_limit", "max_turns", "timeout_minutes"]) {
       if (!Number.isInteger(a[k]) || a[k] < 0) errors.push(`${where}: ${k} must be a whole number`);
     }
+    if (!(typeof a.max_budget_usd === "number" && a.max_budget_usd > 0)) errors.push(`${where}: max_budget_usd must be a positive number (set it on the agent or as the engine default)`);
+    if (a.effort && !["low", "medium", "high", "xhigh", "max"].includes(a.effort)) errors.push(`${where}: effort "${a.effort}" is not low, medium, high, xhigh or max`);
     if (a.timeout_minutes > 350) errors.push(`${where}: timeout_minutes must stay under the 6-hour job limit`);
 
     const charterPath = join(root, ".claude", "agents", `${a.handle}.md`);
@@ -38,8 +43,8 @@ export function check(root = ROOT) {
       if (fm.name !== a.handle) errors.push(`${where}: charter frontmatter name is "${fm.name}"`);
       if (!fm.description) errors.push(`${where}: charter has no description`);
       else if (fm.description.length > 200) warnings.push(`${where}: charter description is ${fm.description.length} characters; keep it under 200 to save context`);
-      if (fm.model && MODELS[a.model] && fm.model !== MODELS[a.model]) {
-        errors.push(`${where}: charter model "${fm.model}" does not match roster model "${a.model}"`);
+      if (fm.model && fm.model !== "inherit") {
+        errors.push(`${where}: charter model must be "inherit"; the roster chooses the model for automated runs`);
       }
     }
     const memPath = join(root, "agents", a.handle, "MEMORY.md");
