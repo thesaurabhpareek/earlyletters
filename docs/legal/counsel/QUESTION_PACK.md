@@ -212,7 +212,7 @@ Original ids: L2-Q3, REG-Q14, REG CR-040, CHD HN-2, PP CN-17.
 #### Q17. Is Early Letters a "personal health record" under the FTC rule, or covered by California's CMIA?
 Original ids: REG-Q4, REG CR-030, REG CR-016.
 - **Question.** Does a multi-author journal with photos have "the technical capacity to draw information from multiple sources" under the Health Breach Notification Rule? Does the CMIA reach it?
-- **Why it matters.** No health fields or health integrations exist; health appears only in free text (REG line 89).
+- **Why it matters.** REG line 89 says there are no health fields and no health integrations; health details arrive in free text. The one structured exception is the due date, which L2 line 22 and PRD K-25 treat as health data.
 - **Drafts say.** REG line 89 (CR-030: "Maybe, low") and line 71 (CR-016: "Maybe, low ... Counsel to confirm").
 - **Options as we see them.** Treat as out of scope and keep breach readiness; or plan for the rule.
 - **Blocks.** Incident response plan (BL-241).
@@ -353,7 +353,7 @@ Original ids: L1-Q3 (last part), L1-L6, REG-Q10, REG CR-012, Terms Appendix B it
 #### Q32. Is the liability cap enforceable, and should a security incident or a breach of 6.2 sit outside it?
 Original ids: L1-Q3 (first part), L1-L2, Terms counsel note line 343, Terms Appendix B item 9.
 - **Question.** Is the greater of 12 months' fees or $50 enforceable for claims about family recordings and letters? Should a security incident exposing letters, or a breach of the no-training promise, be carved out?
-- **Why it matters.** Most users pay nothing, so the $50 floor is the cap for them (Terms 21.1, line 335).
+- **Why it matters.** Writing, reading, playing recordings and export are free (Terms 13.1, line 211). For anyone who has paid nothing in the 12 months before a claim, the cap in Terms 21.1 is US $50 (line 338).
 - **Drafts say.** Terms 21.1 and 21.2 (lines 335 to 339) and counsel note line 343; L1 line 62.
 - **Options as we see them.** Keep; add carve-outs; raise the floor.
 - **Blocks.** Terms 21.
@@ -389,8 +389,7 @@ Original ids: PR #46 body "Proposed next PR" items 1 to 3; LEGAL-REQ-044.
 #### Q36. Do the shipped trust lines match what the product does on day one?
 Original ids: L1-M3, L1-M5, L2-H4, REG section 3 rows 13 to 22, CLAIMS.md gaps 1 to 5 (#37), PR #38 section 1.2.
 - **Question.** Please review the claims register (#37 `CLAIMS.md`) together with the strings it cites, and say which lines you need changed before launch.
-- **Why it matters.** Several lines describe features moved after v1.0: backup and family playback (CLAIMS.md lines 34 to 35, "Not yet"), grandparents writing and Hindi-English mixing (PR #38 `LAUNCH_PLAN.md` lines 48 and 51). PR #46 adds rules that fail on some of these today (PR #46 body: "5 fail as intended").
-- **Drafts say.** REG lines 206 to 219; CLAIMS.md lines 57 to 65 on #37.
+- **Why it matters.** Several lines describe features moved after v1.0: backup and family playback (CLAIMS.md lines 34 to 35, "Not yet"), grandparents writing and Hindi-English mixing (PR #38 `LAUNCH_PLAN.md` lines 48 and 51).- **Drafts say.** REG lines 206 to 219; CLAIMS.md lines 57 to 65 on #37.
 - **Options as we see them.** Fix copy before the package (BL-152 and BL-153, PR #45); send as is with the register.
 - **Blocks.** BL-118, BL-152 and BL-153 (PR #45), BL-286.
 - **Sources.** FTC Act section 5 deception theory as described in REG line 65 (Unverified citation).
@@ -445,7 +444,7 @@ Original ids: REG-Q9, REG CR-112, CR-113, Terms counsel notes lines 157 and 178.
 #### Q42. Recording other people.
 Original ids: REG CR-041, PP CN-15, Terms counsel note line 178.
 - **Question.** Is Terms 5.4 plus a short help note enough where a user records others?
-- **Why it matters.** Recording runs only while the user records; there is no background recording (REG line 100).
+- **Why it matters.** Letters are recorded at home, where others may be talking. REG line 100 asks that recording run only while the user holds or taps record, with no background recording.
 - **Drafts say.** Terms 5.4 (line 96) and 10.2 (line 163); PP line 349.
 - **Options as we see them.** As drafted; add the recorder help note (REG line 100).
 - **Blocks.** Terms 5.4.
