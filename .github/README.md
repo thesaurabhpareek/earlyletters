@@ -7,7 +7,7 @@ CI, review rules and branch protection for `thesaurabhpareek/earlyletters`.
 | `workflows/ci.yml` | On every pull request and every push to `develop` and `main`: install (cached by `package-lock.json`), then in parallel: `npm test` (content rules included), `npm run test:db`, typecheck for every workspace (`apps/mobile` with `npx tsc --noEmit`), lint (skipped with a notice until a root `lint` script exists), `expo config --type public` for `apps/mobile`, and the tests for the scripts in this folder. A `required` job sums them up. Every job has a timeout; the longest path is 9 minutes. |
 | `workflows/migration-guard.yml` | Fails a change that edits, renames or deletes a migration listed in `migrations-applied.txt`, removes a line from that list, or adds a migration that sorts before the newest applied one. Runs the guard and reads its exception list from a trusted ref, never from the pull request (see below). |
 | `workflows/security.yml` | gitleaks over the full history (config `gitleaks.toml`), and `npm audit --omit=dev --audit-level=high` through `scripts/audit-gate.mjs` with the dated ignore list `audit-ignore.json`. Also weekly on Mondays. Not part of `required`. |
-| `workflows/fence.yml` | The agent fence (D-041): fails a pull request that touches `supabase/**`, `.github/**` or auth code unless it has the `approve-migration` label. Path rules in `scripts/fence-paths.mjs`, read from the base commit; fails closed on API errors. Advisory until branch protection exists (see below). |
+| `workflows/fence.yml` | The agent fence (D-041): fails a pull request that touches `supabase/**`, `.github/**` or auth code unless it has the `approve-migration` label. Path rules in `scripts/fence-paths.mjs`, read from the base commit; fails closed on API errors. Advisory until branch protection makes `fence` and `applied migrations unchanged` required checks: a failing check does not block a merge until then (see below). |
 | `dependabot.yml` | Weekly update pull requests into `develop`: npm (Expo and React Native packages grouped) and GitHub Actions (SHA pins). |
 | `migrations-applied.txt` | The migrations applied to the live database. Add a line in the same PR that records applying one (see `supabase/APPLY.md`). |
 | `migration-exceptions.txt` | Reviewed exceptions to the applied-migration rule, one `file@blob-sha` per line. Today: only `20261001000000_scribe_hardening.sql`, reconciled with what was applied in commit 3730551. |
@@ -54,6 +54,18 @@ The convention: **auth code goes in a folder or file whose name contains one of 
 ### The fence fails closed
 
 The fence step runs under `bash` with `pipefail`. It fails, rather than passing, when it cannot list the pull request's files, when the number of files listed differs from the pull request's `changed_files` (the API stops at 3000 files), or when fetching the rules from the base commit fails for any reason other than a 404. Only a 404 (a base that predates `scripts/fence-paths.mjs`) uses the built-in fallback pattern, which fences a superset of the rules. `scripts/fence-paths.test.mjs` runs the step's exact `run:` block against a stub `gh` to check each of these.
+
+### Advisory until branch protection
+
+The fence, like the migration guard, is advisory until the founder turns on branch protection (CI-01) and makes `fence` and `applied migrations unchanged` required checks. Failing closed (above) only means the check goes red; it does not stop a merge by itself.
+
+What it does not do until then:
+
+- A failing `fence` check does not block a merge. Anyone with write access can still merge, and direct pushes to `develop` or `main` skip pull requests and the fence entirely.
+- Anyone with write access can add the label. The label is a signal of the founder's review, not an access control.
+- The label must exist in the repository first (Issues, Labels, New label: `approve-migration`). It does not exist yet.
+
+To make it a real gate: create the label, add `fence` and `applied migrations unchanged` to the required checks below, and once a second reviewer exists, require code owner review for `/.github/` and `/supabase/`.
 
 ## Branch protection (to apply once the workflows are on GitHub)
 
