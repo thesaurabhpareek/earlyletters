@@ -32,7 +32,7 @@ export const en = {
     welcome: {
       title: "Early Letters",
       subtitle: "The memory book you fill by talking.",
-      body: "A few words a day, in your own voice. Kept for {child} to read and hear for years.",
+      body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
       joinButton: "I was invited",
@@ -483,7 +483,7 @@ export const en = {
     },
     firstGrandparentLetter: {
       title: "{signsAs} wrote to {child}.",
-      body: "The book has more than one voice now.",
+      body: "Another voice joins the book.",
     },
     firstReadTogether: {
       title: "You read it together.",
@@ -573,6 +573,10 @@ export const en = {
     help: {
       mistakesTitle: "How transcription works",
       mistakes: "Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
+      // Shutdown and portability pledge (PRD-REQ-009, PRD.md K-05). Same number and promise as Terms 17
+      // and Privacy Policy 18; counsel to confirm. Change all of them together or none.
+      pledgeTitle: "If we ever close",
+      pledge: "If we ever plan to close, we will tell you at least 90 days ahead and keep export working the whole time.",
     },
     about: {
       title: "About",
@@ -755,7 +759,7 @@ export const en = {
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
     plusGateTitle: "Another book is part of Plus",
     plusCta: "See what Plus adds",
-    plusNotYet: "Plus is not open yet in the beta.",
+    plusNotYet: "Plus is not open yet.",
   },
 
   familyTab: {
@@ -783,10 +787,11 @@ export const en = {
       light: "Light",
       dark: "Dark",
     },
-    exportNotYet: "Export arrives in a coming beta update.",
+    // "Beta" lives only in Settings, About (PRD.md K-13; brief 3 Oct decision 10).
+    exportNotYet: "Export arrives in a coming update.",
     deleteAccountNotYet: "Accounts arrive with sign in. Until then, deleting the app removes its letters and recordings from this phone.",
-    backupNotYet: "Backup arrives with Plus, later in the beta.",
-    remindersNotYet: "Your choice is saved. Reminders start in a coming beta update.",
+    backupNotYet: "Backup arrives with Plus in a later update.",
+    remindersNotYet: "Your choice is saved. Reminders start in a coming update.",
     legalTitle: "Legal",
     versionLabel: "Version",
   },

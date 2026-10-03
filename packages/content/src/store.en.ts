@@ -4,6 +4,8 @@
 // v1 is digital only: no printed-book promises in store copy (PRD.md K-32).
 // v1.0 family write from the app; no web-page or "no app needed" promise until v1.1 (PRD.md K-35).
 // No other platform's name in iOS metadata (App Review 2.3.10).
+// Never says "beta": the beta runs on TestFlight (brief 3 Oct decision 10, D-030, App Review 2.2).
+// Adult audience: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8).
 
 export const storeListing = {
   appName: "Early Letters: Memory Book",
@@ -29,7 +31,7 @@ NOTES AND LETTERS
 Some days are a quick note. Some days are a proper letter. Both belong. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores. Come back whenever you like.
 
 A BOOK FOR THE WHOLE FAMILY
-Invite grandparents and close family to add their own letters from the free app on their own phone. Each one is signed, like "From Papa" or "From Nani". You approve what goes into the book, and each author chooses what they share.
+Invite grandparents and close family to add their own letters from the free app on their phone. Each one is signed, like "From Papa" or "From Nani". You approve what goes into the book, and each author chooses what they share.
 
 EVERY LANGUAGE, AS SPOKEN
 Speak Hindi, English, both in one sentence, or any mix your family uses. Early Letters keeps your words in the language you said them.
@@ -50,13 +52,7 @@ HOW IT WORKS
 
 Early Letters is for parents of children from birth to five, and for the grandparents, aunts, uncles and close friends who love them. Written early. Kept for good. Read again and again.
 
-Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional and renews automatically until you cancel.
-
-Early Letters is in beta. We are still building, and some things may change. Your letters are always yours to export.`,
-  // Optional App Store promotional text while the beta label is on (in-app-disclosures.md section 4).
-  // Pending founder decision D-030 (PRD.md K-37): recommended not to use this, or the description's
-  // last (beta) paragraph, in the v1.0 listing, because App Review 2.2 keeps betas on TestFlight.
-  promotionalTextBeta: "Now in beta. Tell us what you think from Settings, Help and Legal, Support.",
+Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional and renews automatically until you cancel.`,
   whatsNewV1:
     "Hello. This is the first version of Early Letters. Talk or type a letter to your child, keep your voice with it, invite family, read together, and export your memory book as a PDF any time.",
   screenshotCaptions: [
