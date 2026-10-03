@@ -21,6 +21,8 @@ A dispatcher (`scripts/agents/dispatch.mjs`, run by `.github/workflows/agents.ym
 | `standing` | Your queue is empty | Do the highest-priority standing duty in your charter that has no open PR yet; if one has an open PR of yours, continue that PR instead. |
 | `digest` | Chief of staff only, once a day | Write the founder digest (section 7). |
 
+**Before you start, check for overlap.** Other people and sessions also open PRs here. List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
+
 Priority order the dispatcher uses: fix your open PRs first, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting on the founder's review. The board issue shows which.
 
 **Task eligibility** (the dispatcher's reading of `docs/BACKLOG.md`): `Mode: agent`, the task's first non-founder `Owner` maps to your role (`backlog_owner_names` in the roster), every `Depends on` task is `done`, and the status is `ready`, or `blocked (...)` where every blocker named in the parentheses is a backlog id whose status is `done`. A task is taken when its id appears in an open PR branch or title, or another agent holds a live claim on it.

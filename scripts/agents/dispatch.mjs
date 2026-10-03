@@ -152,8 +152,10 @@ const reviewTargets = openPRs
   .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 const sensitive = (pr) => /supabase|auth|sign-?in|migration/i.test(`${pr.title} ${pr.head.ref}`);
 
+// ONLY_AGENT: a comma-separated list of handles to assign; everyone else still appears on the board.
+const only = env.ONLY_AGENT ? new Set(env.ONLY_AGENT.split(",").map((s) => s.trim()).filter(Boolean)) : null;
+
 for (const agent of roster.agents) {
-  if (env.ONLY_AGENT && env.ONLY_AGENT !== agent.handle) continue;
   const h = agent.handle;
   const mine = openPRs.filter((pr) => agentOfPR(pr) === h);
   const queue = tasks.filter(
@@ -171,12 +173,12 @@ for (const agent of roster.agents) {
   const runsToday = state.runs[h] ?? 0;
   if (runsToday >= agent.daily_runs) { row.now = `idle: used ${runsToday}/${agent.daily_runs} runs today`; continue; }
   const needs = needsFor(agent);
-  if (slots <= 0 || paused || needs.length) {
+  if (slots <= 0 || paused || needs.length || (only && !only.has(h))) {
     row.now = `ready: ${nextWork(agent, mine, queue)?.label ?? "standing duty"}${needs.length && !paused ? ` (needs ${needs.join(" and ")})` : ""}`;
     continue;
   }
 
-  const work = env.FORCE_TASK && env.ONLY_AGENT === h
+  const work = env.FORCE_TASK && only?.has(h)
     ? { mode: env.FORCE_MODE || "task", task: env.FORCE_TASK, label: `${env.FORCE_MODE || "task"} ${env.FORCE_TASK}` }
     : nextWork(agent, mine, queue);
   if (!work) { row.now = `idle: ${idleReason(agent, mine)}`; continue; }
