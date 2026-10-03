@@ -60,12 +60,43 @@
 .hero {
   min-height: 100svh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding-top: 96px;
   padding-bottom: 80px;
+}
+.heroInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
+}
+.scene {
+  position: relative;
+}
+.stage {
+  width: 100%;
+}
+.stageInner {
+  width: 100%;
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: clamp(72px, 12vw, 148px) var(--gutter);
+}
+.pinOn .stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+}
+.pinOn .stageInner {
+  padding-block: 84px 36px;
+}
+.pinOn .evening {
+  min-height: 0;
 }
 .title {
   margin: 0;

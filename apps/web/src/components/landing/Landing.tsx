@@ -1,18 +1,21 @@
 /**
  * The home page shown on production until the film is approved (SITE_MODE, see lib/site-mode.ts), told as a
- * short story over a lamp that changes colour as you read: evening, a minute of talking, the proof that every
- * word is kept, the voice that stays, the book that grows, then languages, privacy, price and early access.
- * Every word comes from site.ts, which the copy rules check. Server-rendered; only the lamp, the rail, the
- * reveal wrappers, the proof letter and the two buttons run in the browser. The sign-up form appears only when
- * the email service is configured at build time, so a visitor never meets a form that cannot work (set
- * RESEND_API_KEY and RESEND_SEGMENT_ID, then redeploy). The same code serves earlyletters.com once attached.
+ * short story over a lamp that changes colour as you read, with scroll-linked motion in the style of a product
+ * launch page: the hero recedes, "Meera is asleep." and the proof letter are pinned scenes that your scroll
+ * plays, and the rest rise into place. Every word comes from site.ts, which the copy rules check. The server
+ * renders every scene in its finished state, so the page reads without JavaScript and with reduced motion
+ * (scrub.tsx). The sign-up form appears only when the email service is configured at build time, so a visitor
+ * never meets a form that cannot work (set RESEND_API_KEY and RESEND_SEGMENT_ID, then redeploy). The same code
+ * serves earlyletters.com once the domain is attached.
  */
 import { site } from '@/content/site';
 import { NotifyForm } from '@/components/cta/NotifyForm';
 import { ShareButton } from '@/components/site/ShareButton';
 import { Aurora } from './Aurora';
-import { ProofLetter } from './ProofLetter';
+import { Evening } from './Evening';
+import { ProofScene } from './ProofScene';
 import { Reveal } from './Reveal';
+import { HeroStage, Rise } from './scrub';
 import { StoryRail } from './StoryRail';
 import styles from './Landing.module.css';
 
@@ -38,7 +41,7 @@ export function Landing() {
       </header>
 
       <main id="top" className={styles.main}>
-        <section className={`${styles.section} ${styles.hero}`} aria-labelledby="hero-title">
+        <HeroStage className={`${styles.section} ${styles.hero}`} innerClassName={styles.heroInner}>
           <h1 id="hero-title" className={`${styles.title} ${styles.sheen}`}>
             {site.brand.name}
           </h1>
@@ -52,91 +55,60 @@ export function Landing() {
               </a>
             ) : null}
           </div>
-        </section>
+        </HeroStage>
 
-        <section className={`${styles.section} ${styles.evening}`} aria-labelledby="evening-title">
-          <Reveal>
-            <p className={styles.kicker}>
-              {s.s01.label} <span className={styles.dateline}>{s.s01.dateline}</span>
-            </p>
-          </Reveal>
-          <h2 id="evening-title" className={styles.big}>
-            {s.s01.headline.split(' ').map((word, i) => (
-              <span key={`${word}-${i}`}>
-                {i > 0 ? ' ' : null}
-                <Reveal as="span" delay={0.15 + i * 0.22} className={styles.word}>
-                  {word}
-                </Reveal>
-              </span>
-            ))}
-          </h2>
-          <Reveal delay={0.9}>
-            <p className={styles.sub}>{s.s01.support}</p>
-          </Reveal>
-        </section>
+        <Evening />
 
         <section id="how" className={styles.section} aria-labelledby="minute-title">
-          <Reveal>
+          <Rise>
             <p className={styles.kicker}>{site.comingSoon.howTitle}</p>
             <h2 id="minute-title" className={styles.h2}>
               {s.s02.headline}
             </h2>
             <p className={styles.sub}>{s.s02.support}</p>
-          </Reveal>
-          <Reveal delay={0.1} className={styles.pull}>
+          </Rise>
+          <Rise x={-70} y={20} className={styles.pull}>
             <p className={styles.pullTitle}>{s.s03.headline}</p>
             <p className={styles.pullText}>{s.s03.support}</p>
-          </Reveal>
+          </Rise>
         </section>
 
-        <section className={styles.section} aria-labelledby="exact-title">
-          <div className={styles.split}>
-            <Reveal>
-              <h2 id="exact-title" className={styles.h2}>
-                {s.s04.headline}
-              </h2>
-              <p className={styles.sub}>{s.s04.support}</p>
-            </Reveal>
-            <Reveal delay={0.15}>
-              <ProofLetter />
-            </Reveal>
-          </div>
-        </section>
+        <ProofScene />
 
         <section className={styles.section} aria-labelledby="voice-title">
           <div className={styles.split}>
-            <Reveal>
+            <Rise x={-60} y={24}>
               <h2 id="voice-title" className={styles.h2}>
                 {s.s05.headline}
               </h2>
               <p className={styles.sub}>{s.s05.support}</p>
-            </Reveal>
-            <Reveal delay={0.15} className={styles.years}>
+            </Rise>
+            <Rise x={70} y={24} className={styles.years}>
               <p className={styles.kicker}>{s.s07.dateline}</p>
               <p className={styles.yearsTitle}>{s.s07.headline}</p>
               <p className={styles.cardText}>{s.s07.support}</p>
-            </Reveal>
+            </Rise>
           </div>
         </section>
 
         <section className={styles.section} aria-labelledby="book-title">
-          <Reveal>
+          <Rise>
             <p className={styles.kicker}>{s.s06.label}</p>
             <h2 id="book-title" className={styles.h2}>
               {s.s06.headline}
             </h2>
             <p className={styles.sub}>{s.s06.support}</p>
-          </Reveal>
+          </Rise>
           <ol className={styles.timeline}>
             {s.s06.chapters.map((chapter, i) => {
               const last = i === s.s06.chapters.length - 1;
               return (
                 <li key={chapter.month}>
-                  <Reveal delay={i * 0.12} className={`${styles.month} ${last ? styles.monthNow : ''}`}>
+                  <Rise x={110 + i * 30} y={0} scale={0.94} start={1} end={0.72} className={`${styles.month} ${last ? styles.monthNow : ''}`}>
                     {last ? <span className={styles.filed}>{s.s06.filedChip}</span> : null}
                     <span className={styles.monthName}>{chapter.month}</span>
                     <span className={styles.monthMeta}>{chapter.meta}</span>
-                  </Reveal>
+                  </Rise>
                 </li>
               );
             })}
@@ -144,13 +116,13 @@ export function Landing() {
         </section>
 
         <section id="languages" className={styles.section} aria-labelledby="lang-title">
-          <Reveal>
+          <Rise>
             <p className={styles.kicker}>{s.s08.label}</p>
             <h2 id="lang-title" className={styles.h2}>
               {s.s08.headline}
             </h2>
             <p className={styles.sub}>{s.s08.support}</p>
-          </Reveal>
+          </Rise>
           <ul className={styles.langs}>
             {s.s08.lines.map((line, i) => (
               <li key={line.lang}>
@@ -166,12 +138,12 @@ export function Landing() {
         </section>
 
         <section id="private" className={styles.section} aria-labelledby="private-title">
-          <Reveal>
+          <Rise>
             <p className={styles.kicker}>{s.s09.label}</p>
             <h2 id="private-title" className={styles.h2}>
               {s.s09.headline}
             </h2>
-          </Reveal>
+          </Rise>
           <ul className={styles.points}>
             {s.s09.points.map((point, i) => (
               <li key={point}>
@@ -184,17 +156,17 @@ export function Landing() {
         </section>
 
         <section id="price" className={styles.section} aria-labelledby="price-title">
-          <Reveal>
+          <Rise>
             <p className={styles.kicker}>{s.s10.label}</p>
             <h2 id="price-title" className={styles.h2}>
               {s.s10.headline}
             </h2>
             <p className={styles.sub}>{s.s10.support}</p>
-          </Reveal>
+          </Rise>
         </section>
 
         <section id="early-access" className={`${styles.section} ${styles.closing}`} aria-labelledby="start-title">
-          <Reveal>
+          <Rise scale={0.9} y={60}>
             <h2 id="start-title" className={`${styles.h2} ${styles.sheen}`}>
               {s.s11.headline}
             </h2>
@@ -214,7 +186,7 @@ export function Landing() {
               </>
             )}
             <ShareButton />
-          </Reveal>
+          </Rise>
         </section>
       </main>
 
