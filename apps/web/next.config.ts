@@ -50,11 +50,30 @@ const securityHeaders = [
 // Links that carry a token never leak their address through Referer (docs/tdd/04-security-identity.md 3.1.6).
 const tokenLinkPaths = ['/a', '/i', '/j', '/r'];
 
+/**
+ * One address for the site: earlyletters.com. The other names people may type or have bookmarked answer with a
+ * permanent redirect (308) to the same path and query on the primary domain. The rule only matches these host
+ * names, so earlyletters.com itself, preview URLs and local development are never redirected. It takes effect
+ * once the domain is attached to the Vercel project and its DNS points there (docs/ops/WEBSITE_RUNBOOK.md 4).
+ * The apple-app-site-association file is served only from the primary domain, which is why it is not exempt here.
+ */
+const PRIMARY_HOST = 'earlyletters.com';
+const REDIRECT_HOSTS = ['www.earlyletters.com', 'earlyletters.app', 'www.earlyletters.app'];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   distDir: process.env.NEXT_DIST_DIR || '.next',
   transpilePackages: ['@scribe/brand', '@scribe/design-tokens'],
+
+  async redirects() {
+    return REDIRECT_HOSTS.map((host) => ({
+      source: '/:path*',
+      has: [{ type: 'host' as const, value: host }],
+      destination: `https://${PRIMARY_HOST}/:path*`,
+      permanent: true,
+    }));
+  },
 
   async headers() {
     return [

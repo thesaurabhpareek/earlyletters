@@ -149,6 +149,13 @@ Rules:
    Verified (the API allows 301, 302, 307, 308; the dashboard flow is Edit > "Redirect to"). Inferred (exact dashboard labels).
 7. Run section 9, parts C and D, and the email-record diff from section 5.
 
+**Redirects are also in the code.** `apps/web/next.config.ts` (`REDIRECT_HOSTS`, tested in `apps/web/test/redirects.test.ts`) sends
+`www.earlyletters.com`, `earlyletters.app` and `www.earlyletters.app` to `https://earlyletters.com/<same path and query>` with a 308.
+Once a domain is attached to the project and its DNS points at Vercel, the redirect works with no dashboard rule; a dashboard
+redirect, if you also set one, gives the same answer. Attach `earlyletters.com` first and confirm it serves the site before attaching
+the `.app` names, so the redirect never points at a domain that is not live yet. Verified (running server, Host header: 308 with
+path and query kept; 200 for `earlyletters.com`). Inferred (not run against the real domains).
+
 Opinion: after step 7, `*.earlyletters.com` and `*.earlyletters.app` no longer need to resolve to anything. Removing the parking
 wildcard (step 4) already does that; do not add a new wildcard.
 
