@@ -9,7 +9,7 @@
  * Reduce Motion: a static 2pt ring whose opacity steps 0.2/0.3/0.4, at most
  * one change per 400 ms, with 200 ms fades. Decorative for VoiceOver.
  */
-import { MicrophoneIcon } from 'phosphor-react-native';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { useEffect } from 'react';
 import { View, useColorScheme } from 'react-native';
 import Animated, {

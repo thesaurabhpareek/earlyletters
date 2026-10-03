@@ -2,9 +2,10 @@
  * Local-first store (PRD P0: nothing is ever lost).
  *
  * Every entry is written to SQLite on the phone before anything else
- * happens. Sync to Supabase comes later (PowerSync, ADR 0004) and will read
- * from these same rows. Column names mirror supabase/migrations so the
- * sync layer is a straight mapping.
+ * happens. After the first sign-in, every write here also queues its upload
+ * in the same transaction (src/lib/sync: outbox push and cursor pull, D-023).
+ * Column names mirror supabase/migrations so the sync layer is a straight
+ * mapping.
  *
  * Multi-child: `children` holds one row per book; the active child lives in
  * `settings` under `activeChildId`. Every entry and draft carries `child_id`.
@@ -19,6 +20,19 @@ import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { expoSqlDb, OPEN_PRAGMAS } from './db/expo-adapter';
 import { migrate } from './db/migrations';
+import type { SqlDb } from './db/sql';
+import {
+  SYNC_SETTING,
+  enqueueBookCreate,
+  enqueueBookUpdate,
+  enqueueEntryDelete,
+  enqueueEntryRestore,
+  enqueueEntryUpsert,
+  enqueuePrefs,
+  type EnqueueContext,
+} from './sync/outbox';
+import { signalOutbox } from './sync/signal';
+import { ALL_GROUPS, type EntrySyncState, type FieldGroup } from './sync/types';
 
 export type EntryKind = 'note' | 'letter' | 'not_much';
 export type CaptureMode = 'spoken' | 'typed' | 'mixed';
@@ -55,6 +69,10 @@ export interface Entry {
    * (setWordsForWaitingEntry). null: the letter has its words.
    */
   transcriptStatus?: TranscriptStatus;
+  /** Upload state on this phone (sync/types.ts): local, pending ("Not sent yet"), synced, rejected, held, gone. */
+  syncState?: EntrySyncState;
+  /** Family review state from the server (not_needed, pending, added, set_aside); null before sync. */
+  approval?: string | null;
 }
 
 export type TranscriptStatus = 'waiting' | null;
@@ -75,6 +93,10 @@ export interface Child {
   signsAs: string; // what this child calls the current user
   remindersOn: boolean;
   familyCanRead: boolean;
+  /** From sync: true when this account started the book, false when it joined it. Absent for a book only on this phone. */
+  createdByMe?: boolean;
+  /** From sync: this account's role in the book. Absent for a book only on this phone. */
+  role?: 'parent' | 'contributor';
 }
 
 export interface NewChild {
@@ -191,22 +213,32 @@ interface ChildRow {
   signs_as: string;
   reminders_on: number;
   family_can_read: number;
+  role: string | null;
+  created_by_me: number | null;
 }
 
-const childFromRow = (r: ChildRow): Child => ({
-  id: r.id,
-  name: r.name,
-  birthday: r.birthday,
-  dueDate: r.due_date,
-  signsAs: r.signs_as,
-  remindersOn: r.reminders_on === 1,
-  familyCanRead: r.family_can_read === 1,
-});
+const childFromRow = (r: ChildRow): Child => {
+  const c: Child = {
+    id: r.id,
+    name: r.name,
+    birthday: r.birthday,
+    dueDate: r.due_date,
+    signsAs: r.signs_as,
+    remindersOn: r.reminders_on === 1,
+    familyCanRead: r.family_can_read === 1,
+  };
+  if (r.created_by_me !== null && r.created_by_me !== undefined) c.createdByMe = r.created_by_me === 1;
+  if (r.role === 'parent' || r.role === 'contributor') c.role = r.role;
+  return c;
+};
+
+/** Books this person left, or that were deleted on the server, are not listed (their own letters stay on the phone). */
+const LISTED = "server_state NOT IN ('left', 'deleted')";
 
 /** Visible children, oldest book first. */
 export function listChildren(): Child[] {
   return open()
-    .getAllSync<ChildRow>('SELECT * FROM children WHERE hidden_at IS NULL ORDER BY created_at ASC')
+    .getAllSync<ChildRow>(`SELECT * FROM children WHERE hidden_at IS NULL AND ${LISTED} ORDER BY created_at ASC`)
     .map(childFromRow);
 }
 
@@ -234,12 +266,18 @@ export function setActiveChildId(id: string): void {
 export function addChild(input: NewChild): Child {
   const id = uuidv7();
   const now = new Date().toISOString();
-  open().runSync(
-    'INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    id, input.name, input.birthday, input.dueDate, input.signsAs, now, now,
-  );
-  if (!getSetting('activeChildId')) open().runSync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', 'activeChildId', id);
+  const d = open();
+  d.withTransactionSync(() => {
+    d.runSync(
+      'INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      id, input.name, input.birthday, input.dueDate, input.signsAs, now, now,
+    );
+    if (!getSetting('activeChildId')) d.runSync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', 'activeChildId', id);
+    // After the first sign-in a new book is queued for the server (before it, ownership.ts sends every book at once).
+    enqueueBookCreate(sqlOf(d), id, enqueueContext());
+  });
   changed();
+  signalOutbox();
   return getChild(id)!;
 }
 
@@ -247,12 +285,27 @@ export function updateChild(id: string, patch: Partial<Omit<Child, 'id'>>): void
   const c = getChild(id);
   if (!c) return;
   const n = { ...c, ...patch };
-  open().runSync(
-    `UPDATE children SET name = ?, birthday = ?, due_date = ?, signs_as = ?, reminders_on = ?, family_can_read = ?, updated_at = ?
-     WHERE id = ?`,
-    n.name, n.birthday, n.dueDate, n.signsAs, n.remindersOn ? 1 : 0, n.familyCanRead ? 1 : 0, new Date().toISOString(), id,
-  );
+  const d = open();
+  d.withTransactionSync(() => {
+    d.runSync(
+      `UPDATE children SET name = ?, birthday = ?, due_date = ?, signs_as = ?, reminders_on = ?, family_can_read = ?, updated_at = ?
+       WHERE id = ?`,
+      n.name, n.birthday, n.dueDate, n.signsAs, n.remindersOn ? 1 : 0, n.familyCanRead ? 1 : 0, new Date().toISOString(), id,
+    );
+    // Book settings (parents, per field) and my per-book preferences travel separately.
+    const book: Record<string, unknown> = {};
+    if (n.name !== c.name) book.name = n.name;
+    if (n.birthday !== c.birthday) book.date_of_birth = n.birthday;
+    if (n.dueDate !== c.dueDate) book.due_date = n.dueDate;
+    if (n.familyCanRead !== c.familyCanRead) book.family_can_read = n.familyCanRead;
+    const prefs: Record<string, unknown> = {};
+    if (n.signsAs !== c.signsAs) prefs.signs_as = n.signsAs;
+    if (n.remindersOn !== c.remindersOn) prefs.include_in_reminders = n.remindersOn;
+    enqueueBookUpdate(sqlOf(d), id, book, enqueueContext());
+    enqueuePrefs(sqlOf(d), id, prefs, enqueueContext());
+  });
   changed();
+  signalOutbox();
 }
 
 /** "Hide this book" (PRD B F2.4): stops prompts for this child; restorable. */
@@ -267,7 +320,9 @@ export function unhideChild(id: string): void {
 }
 
 export function listHiddenChildren(): Child[] {
-  return open().getAllSync<ChildRow>('SELECT * FROM children WHERE hidden_at IS NOT NULL ORDER BY created_at ASC').map(childFromRow);
+  return open()
+    .getAllSync<ChildRow>(`SELECT * FROM children WHERE hidden_at IS NOT NULL AND ${LISTED} ORDER BY created_at ASC`)
+    .map(childFromRow);
 }
 
 // ── Family view of the active child (stable, single-child API) ───────────
@@ -293,39 +348,49 @@ export function dictionaryFor(f: Family): DictionaryTerm[] {
 }
 
 // ── Accounts and family members (not built yet: sign-in is PRD A) ────────
-/** Null until sign-in exists. Every local entry belongs to this phone's user. */
+/**
+ * The account that owns this phone's letters: set once, at the first sign-in,
+ * when sync claims the local data (sync/ownership.ts). Null before that, when
+ * every local entry is this phone's user's.
+ */
 export function currentUserId(): string | null {
-  return null;
+  return getSetting(SYNC_SETTING.owner);
 }
 
-/** Plus entitlement (PRD C). False until purchases ship. */
-export function hasPlus(): boolean {
-  return false;
+// Plus (hasPlus, isJoinedBook, newChildNeedsPlus) lives in lib/billing: StoreKit 2
+// on this phone through the plan engine (ADR 0013). This file stays free of it.
+
+/** The other members of a book, as the server last listed them (sync_books.members). Empty for a book only on this phone. */
+export function listMembers(childId: string): Member[] {
+  const r = open().getFirstSync<{ members: string | null }>('SELECT members FROM sync_books WHERE child_id = ?', childId);
+  if (!r?.members) return [];
+  try {
+    const list = JSON.parse(r.members) as { profile_id: string; role: string; is_me: boolean; signs_as: string | null }[];
+    return list
+      .filter((m) => !m.is_me)
+      .map((m): Member => ({ id: m.profile_id, signsAs: m.signs_as ?? '', role: m.role === 'contributor' ? 'contributor' : 'parent', status: 'active' }));
+  } catch {
+    return [];
+  }
 }
 
-/**
- * A book this user joined as a co-parent rather than started. Joining needs
- * sign-in and sync, so nothing is joined yet. Joined books never use up the
- * free book.
- */
-export function isJoinedBook(_child: Child): boolean {
-  return false;
+// ── Sync hooks (src/lib/sync) ─────────────────────────────────────────────
+function sqlOf(d: SQLite.SQLiteDatabase): SqlDb {
+  return expoSqlDb(d);
 }
 
-/**
- * Whether starting another book needs Plus (PRD C 4.1). Every book made during
- * first run is free (twins or more, PRD K-12). After that, a new book needs
- * Plus once this user has started any book of their own; hidden books count,
- * joined books never do.
- */
-export function newChildNeedsPlus(): boolean {
-  if (hasPlus()) return false;
-  return [...listChildren(), ...listHiddenChildren()].some((c) => !isJoinedBook(c));
+function enqueueContext(): EnqueueContext {
+  return { now: new Date().toISOString(), newId: () => uuidv7() };
 }
 
-/** Invited family (needs accounts and sync). Empty until then. */
-export function listMembers(_childId: string): Member[] {
-  return [];
+/** The local database for the sync engine (same connection as the store). */
+export function localSqlDb(): SqlDb {
+  return expoSqlDb(open());
+}
+
+/** Lets the sync engine re-render screens after it merged server changes. */
+export function notifyStoreChanged(): void {
+  changed();
 }
 
 // ── Entries ──────────────────────────────────────────────────────────────
@@ -343,6 +408,8 @@ interface Row {
   final_text: string;
   in_book: number;
   sounds_like_me: number | null;
+  sync_state: string | null;
+  approval: string | null;
   child_id: string | null;
   author_id: string | null;
   author_signs_as: string | null;
@@ -384,6 +451,8 @@ const fromRow = (r: Row): Entry => ({
   audioSha256: r.audio_sha256,
   audioBytes: r.audio_bytes,
   transcriptStatus: r.transcript_status === 'waiting' ? 'waiting' : null,
+  syncState: (r.sync_state ?? 'local') as EntrySyncState,
+  approval: r.approval,
 });
 
 /** The one INSERT for entries. Callers decide whether it runs alone or inside a transaction. */
@@ -416,8 +485,13 @@ function writeEntry(d: SQLite.SQLiteDatabase, e: Entry): void {
  * Capture screens use saveLetterFromDraft instead.
  */
 export function saveEntry(e: Entry): void {
-  writeEntry(open(), e);
+  const d = open();
+  d.withTransactionSync(() => {
+    writeEntry(d, e);
+    enqueueEntryUpsert(sqlOf(d), e.id, ALL_GROUPS, enqueueContext());
+  });
   changed();
+  signalOutbox();
 }
 
 export class AudioMissingError extends Error {
@@ -440,8 +514,11 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   d.withTransactionSync(() => {
     writeEntry(d, { ...e, id: draftId });
     d.runSync('DELETE FROM drafts WHERE id = ?', draftId);
+    // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
+    enqueueEntryUpsert(sqlOf(d), draftId, ALL_GROUPS, enqueueContext());
   });
   changed();
+  signalOutbox();
 }
 
 /**
@@ -501,14 +578,22 @@ export function setWordsForWaitingEntry(
   w: { rawTranscript: string; machineEdits: Edit[]; finalText: string; editLevel: EditLevel; engineVersion: number },
 ): boolean {
   const d = open();
-  const res = d.runSync(
-    `UPDATE entries SET raw_transcript = ?, machine_edits = ?, final_text = ?, edit_level = ?, engine_version = ?,
-       transcript_status = NULL, updated_at = ?
-     WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = ''`,
-    w.rawTranscript, JSON.stringify(w.machineEdits), w.finalText, w.editLevel, w.engineVersion, new Date().toISOString(), id,
-  );
-  const done = res.changes === 1;
-  if (done) changed();
+  let done = false;
+  d.withTransactionSync(() => {
+    const res = d.runSync(
+      `UPDATE entries SET raw_transcript = ?, machine_edits = ?, final_text = ?, edit_level = ?, engine_version = ?,
+         transcript_status = NULL, updated_at = ?
+       WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = ''`,
+      w.rawTranscript, JSON.stringify(w.machineEdits), w.finalText, w.editLevel, w.engineVersion, new Date().toISOString(), id,
+    );
+    done = res.changes === 1;
+    // The words exist now: the letter's first upload (it was held while waiting).
+    if (done) enqueueEntryUpsert(sqlOf(d), id, ALL_GROUPS, enqueueContext());
+  });
+  if (done) {
+    changed();
+    signalOutbox();
+  }
   return done;
 }
 
@@ -532,20 +617,43 @@ export function getEntry(id: string): Entry | null {
   return r ? fromRow(r) : null;
 }
 
+/** One local write plus its upload op, in one transaction (a kill leaves both or neither). */
+function writeAndQueue(write: (d: SQLite.SQLiteDatabase) => void, queue: (db: SqlDb) => void): void {
+  const d = open();
+  d.withTransactionSync(() => {
+    write(d);
+    queue(sqlOf(d));
+  });
+  changed();
+  signalOutbox();
+}
+
+const IN_BOOK: FieldGroup[] = ['in_book'];
+
 export function setEntryInBook(id: string, inBook: boolean): void {
-  open().runSync('UPDATE entries SET in_book = ?, updated_at = ? WHERE id = ?', inBook ? 1 : 0, new Date().toISOString(), id);
-  changed();
+  writeAndQueue(
+    (d) => d.runSync('UPDATE entries SET in_book = ?, updated_at = ? WHERE id = ?', inBook ? 1 : 0, new Date().toISOString(), id),
+    (db) => enqueueEntryUpsert(db, id, IN_BOOK, enqueueContext()),
+  );
 }
 
-/** Tombstone, never a hard delete (matches the server schema). */
+/** Tombstone, never a hard delete (matches the server schema). The server clock sets the real deleted_at. */
 export function deleteEntry(id: string): void {
-  open().runSync('UPDATE entries SET deleted_at = ?, updated_at = ? WHERE id = ?', new Date().toISOString(), new Date().toISOString(), id);
-  changed();
+  writeAndQueue(
+    (d) => d.runSync('UPDATE entries SET deleted_at = ?, updated_at = ? WHERE id = ?', new Date().toISOString(), new Date().toISOString(), id),
+    (db) => enqueueEntryDelete(db, id, enqueueContext()),
+  );
 }
 
+/**
+ * Restore from Recently deleted: live here at once; on the server through
+ * restore_entry() (never by clearing deleted_at, which the server refuses).
+ */
 export function undeleteEntry(id: string): void {
-  open().runSync('UPDATE entries SET deleted_at = NULL, updated_at = ? WHERE id = ?', new Date().toISOString(), id);
-  changed();
+  writeAndQueue(
+    (d) => d.runSync('UPDATE entries SET deleted_at = NULL, updated_at = ? WHERE id = ?', new Date().toISOString(), id),
+    (db) => enqueueEntryRestore(db, id, enqueueContext()),
+  );
 }
 
 // ── Drafts (capture in progress) ─────────────────────────────────────────

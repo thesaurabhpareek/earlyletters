@@ -1,6 +1,7 @@
 /**
- * Listening (DESIGN_LANGUAGE 12, MOTION 5b). Records AAC M4A, mono, 64 kbps
- * (ADR 0005) into the app's document directory, so it stays on this phone.
+ * Listening (DESIGN_LANGUAGE 12, MOTION 5b). Records AAC M4A, mono, 64 kbps,
+ * 48 kHz (ADR 0005, ADR 0015; settings in lib/capture/recorder.ts
+ * VOICE_RECORDING_OPTIONS) into the app's document directory, so it stays on this phone.
  *
  * Crash-safe (LEGAL-REQ-011, TDD 01 3.4): the draft row is written before the
  * microphone goes live (lib/capture/recorder.ts). Finish, the app going to
@@ -8,46 +9,27 @@
  * screen all stop and keep the take, then Review opens. Only "Let it go",
  * confirmed, deletes audio. Never records in the background.
  */
-import {
-  AudioQuality,
-  IOSOutputFormat,
-  getRecordingPermissionsAsync,
-  requestRecordingPermissionsAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-  type RecordingOptions,
-} from 'expo-audio';
+import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import { File } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
-import { PencilSimpleIcon } from 'phosphor-react-native';
+import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, AppState, Linking, View, useColorScheme } from 'react-native';
+import { AccessibilityInfo, Alert, AppState, Linking, View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
-import { tokens } from '@scribe/design-tokens';
 import { ListeningAura, type AuraState } from '@/components/capture/listening-aura';
-import { Button } from '@/components/ui/button';
+import { Button, ButtonRow } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { LineArt } from '@/components/ui/line-art';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
+import { useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useReducedMotion } from '@/lib/motion';
-import { abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
+import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
 import { deleteDraft, getActiveChild, setRecordingProgress } from '@/lib/store';
-
-/** ADR 0005: AAC-LC, mono, 44.1 kHz, 64 kbps, .m4a. Metering feeds the aura. */
-const VOICE: RecordingOptions = {
-  extension: '.m4a',
-  sampleRate: 44100,
-  numberOfChannels: 1,
-  bitRate: 64000,
-  isMeteringEnabled: true,
-  directory: 'document',
-  ios: { extension: '.m4a', outputFormat: IOSOutputFormat.MPEG4AAC, audioQuality: AudioQuality.HIGH, sampleRate: 44100 },
-  android: { extension: '.m4a', outputFormat: 'mpeg4', audioEncoder: 'aac', sampleRate: 44100 },
-  web: { mimeType: 'audio/webm', bitsPerSecond: 64000 },
-};
 
 type Phase = 'asking' | 'denied' | 'recording' | 'paused' | 'finishing';
 
@@ -57,7 +39,7 @@ function clock(ms: number): string {
 }
 
 export default function Listen() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const { c } = useTheme();
   const t = copy.tonight.states;
   const p = pendingCopy.listen;
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
@@ -68,7 +50,7 @@ export default function Listen() {
   const seenLive = useRef(false);
   const lastDuration = useRef(0);
   const [interrupted, setInterrupted] = useState(false);
-  const recorder = useAudioRecorder(VOICE, (s) => {
+  const recorder = useAudioRecorder(VOICE_RECORDING_OPTIONS, (s) => {
     // The OS or media services ended the take (TDD 03 FM-1): keep what exists.
     if (s.hasError || s.mediaServicesDidReset) setInterrupted(true);
   });
@@ -226,21 +208,22 @@ export default function Listen() {
 
   if (phase === 'denied') {
     const e = copy.errors.micDenied;
+    // A choice, not an error: calm card, Type offered first (DESIGN_LANGUAGE 12, Listening).
     return (
       <SafeAreaView className="flex-1 justify-center bg-background px-5">
-        <Card className="gap-4 rounded-3xl border-0 bg-card p-6">
-          <Text role="heading" className="font-serif text-2xl text-foreground">{e.title}</Text>
-          <Text className="text-lg leading-7 text-foreground">{e.body}</Text>
-          <Button size="lg" onPress={typeInstead}>
-            <PencilSimpleIcon color={c.onAccent} size={24} />
-            <Text>{e.typeButton}</Text>
-          </Button>
-          <Button variant="ghost" onPress={() => Linking.openSettings()}>
-            <Text className="text-primary">{e.settingsButton}</Text>
-          </Button>
-          <Button variant="ghost" onPress={() => router.back()}>
-            <Text className="text-muted-foreground">{copy.common.closeButton}</Text>
-          </Button>
+        <Card padding={6} radius="xl" className="gap-5">
+          <LineArt name="envelope" width={128} wash={false} style={{ marginLeft: -8 }} />
+          <View className="gap-2">
+            <Text variant="title1" asHeading>
+              {e.title}
+            </Text>
+            <Text variant="body">{e.body}</Text>
+          </View>
+          <View className="gap-1">
+            <Button size="lg" icon={PencilSimpleIcon} label={e.typeButton} onPress={typeInstead} />
+            <Button variant="quiet" label={e.settingsButton} onPress={() => Linking.openSettings()} />
+            <Button variant="quiet" label={copy.common.closeButton} onPress={() => router.back()} />
+          </View>
         </Card>
       </SafeAreaView>
     );
@@ -249,58 +232,58 @@ export default function Listen() {
   const aura: AuraState = phase === 'recording' ? 'listening' : phase === 'paused' ? 'paused' : phase === 'finishing' ? 'processing' : 'idle';
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
 
+  const elapsedA11y = fill(p.elapsedA11y, {
+    minutes: Math.floor(status.durationMillis / 60000),
+    seconds: Math.floor(status.durationMillis / 1000) % 60,
+  });
+  const live = phase === 'recording' || phase === 'paused';
+
+  // Design: Voice Memos-simple, Calm-quiet. The glow is the only thing that moves, and
+  // only with the voice (MOTION 5b). Controls are static and full strength from frame one.
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="items-center gap-1 px-5 pt-6">
-        <Text role="heading" className="text-lg font-semibold text-foreground">{fill(p.toChild, { child: child.name })}</Text>
-        <Text className="text-sm text-muted-foreground">{p.audience}</Text>
+      <View className="items-center gap-1.5 px-6 pt-6">
+        <Text variant="headline" asHeading className="text-center">
+          {fill(p.toChild, { child: child.name })}
+        </Text>
+        <View className="flex-row items-center gap-1.5">
+          <LockSimpleIcon size={14} color={c.textMuted} />
+          <Text variant="footnote" className="text-center">
+            {p.audience}
+          </Text>
+        </View>
       </View>
 
-      <View className="flex-1 items-center justify-center gap-6">
+      <View className="flex-1 items-center justify-center gap-5">
         <ListeningAura state={aura} db={db} reduced={reduced} />
-        <Text
-          className="text-2xl font-semibold text-foreground"
-          style={{ fontVariant: ['tabular-nums'] }}
-          accessibilityLabel={fill(p.elapsedA11y, {
-            minutes: Math.floor(status.durationMillis / 60000),
-            seconds: Math.floor(status.durationMillis / 1000) % 60,
-          })}>
+        <Text variant="headline" scale={1.75} className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y}>
           {clock(status.durationMillis)}
         </Text>
         <View className="items-center gap-1 px-8" accessibilityLiveRegion="polite">
-          <Text className="text-center text-lg text-foreground">
+          <Text variant="callout" className="text-center">
             {phase === 'paused' ? t.paused : quiet ? t.stillHere : t.listening}
           </Text>
-          {phase !== 'paused' && <Text className="text-center text-base text-muted-foreground">{t.listeningHint}</Text>}
+          {phase !== 'paused' && (
+            <Text variant="footnote" className="text-center">
+              {t.listeningHint}
+            </Text>
+          )}
         </View>
       </View>
 
-      <View className="gap-3 px-5 pb-4">
-        <View className="flex-row gap-3">
+      <View className="gap-2 px-5 pb-4">
+        <ButtonRow>
           <Button
             variant="secondary"
             size="lg"
-            className="flex-1"
-            disabled={phase !== 'recording' && phase !== 'paused'}
+            disabled={!live}
             onPress={togglePause}
-            accessibilityLabel={phase === 'paused' ? t.resumeButton : copy.common.pauseButton}>
-            <Text>{phase === 'paused' ? t.resumeButton : copy.common.pauseButton}</Text>
-          </Button>
-          <Button
-            size="lg"
-            className="flex-1"
-            disabled={phase !== 'recording' && phase !== 'paused'}
-            onPress={finish}
-            accessibilityLabel={t.stopButton}
-            accessibilityHint={fill(p.elapsedA11y, {
-              minutes: Math.floor(status.durationMillis / 60000),
-              seconds: Math.floor(status.durationMillis / 1000) % 60,
-            })}>
-            <Text>{t.stopButton}</Text>
-          </Button>
-        </View>
-        <Button variant="ghost" onPress={discard} disabled={phase === 'finishing'}>
-          <Text className="text-muted-foreground">{p.discardButton}</Text>
+            label={phase === 'paused' ? t.resumeButton : copy.common.pauseButton}
+          />
+          <Button size="lg" disabled={!live} onPress={finish} label={t.stopButton} accessibilityHint={elapsedA11y} />
+        </ButtonRow>
+        <Button variant="quiet" onPress={discard} disabled={phase === 'finishing'} className="self-center">
+          <Text tone="muted">{p.discardButton}</Text>
         </Button>
       </View>
     </SafeAreaView>

@@ -68,6 +68,17 @@ jobs:
       - name: Access rules, governance, classification, performance (PGlite)
         run: npm run test:db
 
+  functions:
+    name: edge functions and ops scripts (Deno)
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Purge worker, analytics-forget, logger and log canary, ops scripts
+        run: npm run test:functions
+
   typecheck:
     name: typecheck
     needs: install
@@ -85,7 +96,7 @@ jobs:
   required:
     name: required
     if: always()
-    needs: [install, unit, db, typecheck]
+    needs: [install, unit, db, functions, typecheck]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:

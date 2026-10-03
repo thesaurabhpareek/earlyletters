@@ -1,6 +1,6 @@
 # Applying pending migrations to the live project
 
-For the founder. Project: `early-letters` (Supabase, us-west-1). Written 2 Oct 2026; steps 8 to 13 added 3 Oct 2026.
+For the founder. Project: `early-letters` (Supabase, us-west-1). Written 2 Oct 2026; steps 8 to 13 added 3 Oct 2026; files 8 to 11 and steps 14 to 18 added 3 Oct 2026 (evening wave).
 Nothing here has been run against the live project yet. Do the steps in order; each has a check and a rollback.
 
 ## What is applied and what is pending
@@ -14,12 +14,18 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 5 | `20261003000000_security_and_family.sql` | **Pending** | Anonymous-session guard, server consent gate (Terms + age + sensitive-data), policy notice-window fix (X-01), parent-only invites with explicit role and limits, family approval and visibility (B F9) |
 | 6 | `20261003010000_children_and_entitlements.sql` | **Pending** | `create_child` with device UUIDv7 ids and the Plus rule, first-run batch, Apple StoreKit 2 entitlement tables |
 | 7 | `20261003020000_purge_batching.sql` | **Pending** | `purge_due` per-run limit, retry backoff columns for the purge worker, invite retention clock |
+| 8 | `20261004000000_plus_on_device_only.sql` | **Pending** | Plus checked on the device only: drops the server entitlement tables and the server Plus rule (section "File 20261004000000" below) |
+| 9 | `20261004100000_sync_engine.sql` | **Pending** | Sync engine: `sync_pull`, `sync_push`, `sync_books`, op receipts, rate windows, restore epochs, `sync_housekeeping` (step 14) |
+| 10 | `20261004200000_ops_deletion_worker.sql` | **Pending** | Schema `ops` (never exposed) and service-only functions for the purge worker, analytics-forget and the ops runbooks (step 15) |
+| 11 | `20261004300000_insights_aggregates.sql` | **Pending** | Schema `insights` (never exposed): k-anonymised weekly counts, `insights_reader` role, `public.insights_aggregates(p_weeks)` for the service role and that role only (step 16) |
+
+The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
 Step 4 drops whatever entries SELECT policies exist, so it is correct whether or not step 3 ran. Apply 3 first anyway, so the live history matches the repo. Files 5 to 7 depend on 4 and on each other; apply them in order.
 
 ## Before you start (10 minutes)
 
-1. On your Mac, in the repo: `npm install` then `npm run test:db`. All eight test files must pass (`access_matrix`, `children_entitlements`, `classification`, `data_governance`, `perf`, `purge_batching`, `rls`, `security_family`). Do not continue if anything fails.
+1. On your Mac, in the repo: `npm install` then `npm run test:db`. All twelve test files must pass (`access_matrix`, `children_entitlements`, `classification`, `data_governance`, `insights_aggregates`, `ops_deletion_worker`, `perf`, `purge_batching`, `rls`, `security_family`, `sync_engine`, `sync_perf`). Do not continue if anything fails.
 2. In the Supabase dashboard, Database > Backups: confirm a daily backup from the last 24 hours exists. If you want an exact restore point, run `supabase db dump --linked -f backup-2026-10-02.sql` (needs the Supabase CLI linked to the project). Storage files are not in database backups; nothing here touches Storage objects.
 3. Pick a quiet time. Today only founder data exists, so there is no user impact, but the app build that reads co-parent letters must switch to `book_entries` (section "App changes") before any co-parent uses it.
 
@@ -282,3 +288,101 @@ Everything else in the migration is additive (new tables, columns, functions, tr
 File 5's `book_entries` keeps the same plan shape (bitmap scan of `entries_book_page_idx`, membership resolved once from `child_members_profile_idx`). A first draft that OR-ed two membership subqueries measured 21 ms p95 on `book_page`; the shipped predicate uses one membership subquery plus a parents-only clause for pending letters. On a busy machine all six numbers move together by up to about 1.5x.
 
 Plans: book and search queries use the new partial index `entries_book_page_idx (child_id, occurred_on desc, captured_at desc) where in_book and deleted_at is null`; membership is resolved once per query from `child_members_profile_idx`, so cost follows the reader's own books, not the number of families. Synthetic letters are about 24 words; real letters are longer, which mainly affects search recheck time. Scale knobs: `PERF_FAMILIES`, `PERF_ENTRIES`, `PERF_SAMPLES`; `npm run test:db:perf` runs only this test.
+
+## File 20261004000000_plus_on_device_only.sql (Plus checked on the device, 3 Oct 2026)
+
+Founder decision 3 (Apple only, out of the box, checked on the device, no server) and ADR 0013 as decided. This is file 8: apply it after file 7 (`20261003020000_purge_batching.sql`). It can go in the same session as files 5 to 7; if file 6 (`20261003010000_children_and_entitlements.sql`) was never applied, apply file 6 first and then this file, because this file replaces functions file 6 and file 7 create.
+
+What it does:
+- Drops `store_notifications`, `store_subscriptions` and `app_account_tokens`, and the functions `apply_store_transaction`, `my_app_account_token`, `get_plan_state`, `has_plus`, `book_has_plus` and `store_environment_allowed`. Nothing of ours sees purchases: do not create an App Store Server Notifications URL or an In-App Purchase key for this project.
+- Redefines `create_child` and `create_first_run_children` without the Plus rule. `create_child_row` loses its `p_free` argument (5 arguments now). `SCPLS` is retired: the server never refuses a book for Plus. The first-run batch still closes `profiles.first_run_closed_at`.
+- Redefines `purge_due(timestamptz, int)` without the `store_notifications` retention line. Any later migration that redefines `purge_due` must start from this version.
+
+Before applying in an environment where file 6 already ran, check that the ledger holds nothing worth keeping (it only ever held test purchases, because no notification endpoint was built):
+```sql
+select (select count(*) from public.store_subscriptions) subs,
+       (select count(*) from public.store_notifications) notes,
+       (select count(*) from public.app_account_tokens) tokens;
+```
+
+Check the result:
+```sql
+select to_regclass('public.store_subscriptions'), to_regclass('public.store_notifications'), to_regclass('public.app_account_tokens');
+-- all three null
+select proname from pg_proc where pronamespace = 'public'::regnamespace
+   and (proname in ('has_plus', 'book_has_plus', 'get_plan_state', 'my_app_account_token', 'apply_store_transaction', 'store_environment_allowed')
+        or prosrc ~ 'SCPLS|store_notifications');
+-- no rows
+select pg_get_function_identity_arguments('public.create_child_row'::regproc);
+-- p_uid uuid, p_id uuid, p_name text, p_date_of_birth date, p_due_date date
+select public.purge_due(now(), 1);  -- runs (service role)
+```
+
+Settings: `app.store_environment` (Step 11) is no longer read by anything; it can stay set or be reset.
+
+Rollback: re-running file 6's entitlement section restores the empty tables and functions; there is no data to restore. Prefer fixing forward.
+
+App changes that ship with this file:
+- The app never calls `my_app_account_token`, `get_plan_state` or `book_has_plus`; Plus comes from StoreKit 2 on the device (`apps/mobile/src/lib/billing`).
+- `SCPLS` can still arrive from a server that does not have this file yet. Keep the book on the phone and retry sync later (TDD 08 2.5); never delete or hide it.
+- The "Plus" line under "App changes for files 5 to 7" above is replaced by this section.
+
+Trade-off (follows from founder decision 3; recorded in ADR 0013): Plus is enforced on the device only. A modified app could start more books or more Read together sessions than the free allowance. Every Plus feature in v1.0 runs on the phone and costs nothing on the server, so nothing server-side is exposed. A future server-cost Plus feature (backup upload) needs its own check at its own endpoint; see ADR 0013.
+
+## Step 14. Apply files 8 to 11, in filename order
+
+The order is the filename order, the same order `npm run test:db` applies them in:
+
+1. `20261004000000_plus_on_device_only.sql` (file 8, section above)
+2. `20261004100000_sync_engine.sql` (file 9)
+3. `20261004200000_ops_deletion_worker.sql` (file 10)
+4. `20261004300000_insights_aggregates.sql` (file 11)
+
+Same method as step 9 (`begin;` first line, whole file, `commit;` last line; any error rolls the file back: copy it and stop). Record each one:
+```sql
+insert into supabase_migrations.schema_migrations (version, name) values
+  ('20261004000000', 'plus_on_device_only'), ('20261004100000', 'sync_engine'),
+  ('20261004200000', 'ops_deletion_worker'), ('20261004300000', 'insights_aggregates')
+on conflict do nothing;   -- after all four succeeded; or one row after each
+```
+Then add the four file names to `.github/migrations-applied.txt` in the same pull request that records the apply.
+
+Check the result:
+```sql
+-- File 9: the sync RPCs exist and only signed-in people can call them (expect 3 rows, all true / false).
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in, has_function_privilege('anon', p.oid, 'execute') anon
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('sync_pull', 'sync_push', 'sync_books');
+-- File 9: the service-only sync functions (expect 2 rows, all false).
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('sync_begin_epoch', 'sync_housekeeping');
+-- File 9: the first epoch (expect 1, 'initial').
+select epoch, reason from public.sync_epochs;
+-- Files 10 and 11: the two private schemas exist and nothing public reaches them (expect false, false).
+select has_schema_privilege('authenticated', 'ops', 'usage'), has_schema_privilege('authenticated', 'insights', 'usage');
+-- File 11 (service role): counts only, small cells null.
+select * from public.insights_aggregates(4) limit 5;
+```
+Advisors, expected and accepted: **0029** for the security-definer RPCs `sync_pull` and `sync_books` (each starts with `require_user()` and answers only for the caller). `sync_rate_windows` is an unlogged table by design (counters need no crash safety or backup).
+
+Rollback: prefer fixing forward. File 9 adds tables and functions only (plus two columns on `entries` with defaults); file 10 and 11 add their own schemas, which `drop schema ops cascade` / `drop schema insights cascade` remove before any real use.
+
+## Step 15. Settings for files 8 to 11
+
+- **Exposed schemas: `public` only.** Dashboard > Project Settings > Data API > Exposed schemas. Never add `ops` or `insights` (or `graphql_public` unless GraphQL is wanted; the app does not use it). The private schemas are reached only through service-role functions.
+- **Sync housekeeping, hourly** (pg_cron, enabled in step 7). It trims op receipts older than 30 days and rate windows older than a day:
+  ```sql
+  select cron.schedule('scribe-sync-housekeeping', '43 * * * *', $$ select public.sync_housekeeping(); $$);
+  ```
+  Check after an hour: `select status, start_time from cron.job_run_details where jobid = (select jobid from cron.job where jobname = 'scribe-sync-housekeeping') order by start_time desc limit 3;`
+  Rollback: `select cron.unschedule('scribe-sync-housekeeping');`
+- **Restore epoch.** After any database restore, before clients reconnect and after the purge-ledger replay, run `select public.sync_begin_epoch('database_restore', '<restore point ISO>');` with the service role (docs/ops/runbooks/restore-drill.md step 4). Phones then re-upload what the restore lost; they never delete anything because of it. The old `app.sync_epoch` database setting from the deleted draft is not read by anything.
+- **Purge worker** (file 10): deploy and schedule as in docs/ops/README.md ("Deploy", steps 4 and 5; `supabase/cron/purge-worker.sql`). Keep the hourly `scribe-purge-due` job from step 7 as a backstop.
+- **Insights reader** (file 11): the file creates the `insights_reader` role (no login) and grants it to `authenticator` when that role exists. Nothing else to set; the weekly insights run reads with the service role (docs/analytics/INSIGHTS_LOOP.md).
+- `app.store_environment` (step 11) is no longer read by anything after file 8.
+
+## Step 16. App changes for files 8 to 11
+
+- Sync (`apps/mobile/src/lib/sync`) calls `sync_pull` and `sync_push` only. It starts after the 18+ gate and only with a signed-in, consented session (`syncAllowed()`), so nothing calls these before step 14.
+- Account deletion's "What happens" lines call `sync_books()` (file 9 section 8b).
+- The app never calls anything in `ops` or `insights`.
+

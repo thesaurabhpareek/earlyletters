@@ -1,18 +1,21 @@
 /**
- * Read together (DESIGN_LANGUAGE 12, COMPONENTS 2.22, first slice).
+ * Read together (DESIGN_LANGUAGE 12, COMPONENTS 2.22).
  * Chrome-free, Large Print by default, one letter at a time, oldest first.
- * Voice playback with word highlight arrives with the audio player; until
- * then every letter reads as text and says where its recording is kept.
+ * v1.0 is plain playback (founder decision 3 Oct 2026): your own recordings
+ * on this phone play in the voice that said them; word highlighting is v1.1.
+ * Anyone else's letter, or a recording not on this phone, is read aloud.
  *
- * Allowance (founder decision, Oct 2 2026): FREE_READ_TOGETHER_SESSIONS free
- * sessions on this phone, then the Plus gate (lib/read-together.ts).
+ * Allowance (founder decisions, Oct 2 and 3 2026): a few free sessions in each
+ * Free book (remote config, default 3), then the Plus gate, which opens Apple's
+ * store view (lib/read-together.ts, lib/billing).
  */
 import { router, useLocalSearchParams } from 'expo-router';
-import { BookOpenTextIcon } from 'phosphor-react-native';
+import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View, useColorScheme } from 'react-native';
+import { ScrollView, Switch, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
 import { PlusGate } from '@/components/child/plus-gate';
+import { AudioPlayer } from '@/components/player/audio-player';
 import { authorOf } from '@/components/child/child-store';
 import { chapterTitle, monthFor } from '@/components/book/chapters';
 import { Button } from '@/components/ui/button';
@@ -21,7 +24,7 @@ import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
-import { canStartReadTogether, FREE_READ_TOGETHER_SESSIONS, recordReadTogetherSession } from '@/lib/read-together';
+import { canStartReadTogether, freeReadTogetherSessions, readTogetherGate, recordReadTogetherSession } from '@/lib/read-together';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
 
 const BODY = tokens.type.letterBody;
@@ -31,9 +34,12 @@ export default function ReadTogether() {
   const rt = copy.readTogether;
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
-  const [allowed, setAllowed] = useState(canStartReadTogether);
+  const [allowed, setAllowed] = useState(() => canStartReadTogether(child?.id));
   const counted = useRef(false);
   const [index, setIndex] = useState(0);
+  // "Play the next one on its own": after a recording ends, turn the page and start the next voice.
+  const [autoNext, setAutoNext] = useState(false);
+  const [startNext, setStartNext] = useState(false);
 
   const letters = useMemo(() => (child ? listEntriesForChild(child.id).filter((e) => e.inBook && e.transcriptStatus !== 'waiting').reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -41,7 +47,7 @@ export default function ReadTogether() {
   useEffect(() => {
     if (allowed && !counted.current && letters.length > 0) {
       counted.current = true;
-      recordReadTogetherSession();
+      recordReadTogetherSession(child?.id);
     }
   }, [allowed, letters.length]);
 
@@ -53,7 +59,9 @@ export default function ReadTogether() {
       <SafeAreaView className="flex-1 bg-background">
         <PlusGate
           title={p.plusTitle}
-          body={fill(p.plusBody, { count: FREE_READ_TOGETHER_SESSIONS })}
+          body={fill(p.plusBody, { count: freeReadTogetherSessions() })}
+          decision={readTogetherGate(child?.id)}
+          onPlus={() => setAllowed(true)}
           keepNote={p.keepNote}
           icon={<BookOpenTextIcon size={28} color={c.accent} />}
           onNotNow={close}
@@ -83,8 +91,9 @@ export default function ReadTogether() {
   const month = monthFor(child, entry.occurredOn);
   const spoken = entry.captureMode !== 'typed';
   const scale = tokens.readingScale.largePrint;
-  const go = (to: number) => {
-    haptic('tap');
+  const go = (to: number, auto = false) => {
+    if (!auto) haptic('tap');
+    setStartNext(auto);
     setIndex(Math.max(0, Math.min(letters.length, to)));
   };
 
@@ -127,7 +136,28 @@ export default function ReadTogether() {
             style={{ fontSize: BODY.fontSize * scale, lineHeight: BODY.lineHeight * scale }}>
             {fill(copy.book.signature, { signsAs })}
           </Text>
-          <Text className="text-base text-muted-foreground">{spoken ? copy.book.recordingOnPhone : rt.noRecording}</Text>
+          {spoken ? (
+            <AudioPlayer
+              key={entry.id}
+              entryId={entry.id}
+              context="readTogether"
+              autoPlay={autoNext && startNext}
+              onFinish={() => {
+                if (autoNext) go(index + 1, true);
+              }}
+            />
+          ) : (
+            <Text className="text-base text-muted-foreground">{rt.noRecording}</Text>
+          )}
+          <View className="min-h-11 flex-row items-center gap-3">
+            <Text className="flex-1 text-base text-foreground">{rt.autoplayLabel}</Text>
+            <Switch
+              value={autoNext}
+              onValueChange={setAutoNext}
+              accessibilityLabel={rt.autoplayLabel}
+              trackColor={{ true: c.accent }}
+            />
+          </View>
         </ScrollView>
       )}
 
