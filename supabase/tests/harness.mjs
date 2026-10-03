@@ -78,7 +78,7 @@ export async function createDb(files, options = {}) {
       await as(uid, `select public.record_policy_act('sensitive-data', '1.0.0', 'accept', 'consent_sheet', 'consent.sensitive', '1.0.0', 'ios')`);
     }
   };
-  const newChild = async (uid, name = 'Asha', dob = '2025-05-20', due = null) => {
+  const newChild = async (uid, name = 'Asha', dob = '2025-04-12', due = null) => {
     const id = uuid7();
     return (await one(uid, `select public.create_child($1, $2, $3::date, $4::date) as id`, [id, name, dob, due])).id;
   };

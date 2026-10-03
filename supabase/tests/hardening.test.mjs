@@ -21,7 +21,7 @@ const { A, B, C, N } = users;
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}')`);
 await publishPolicies();
 for (const u of [A, B, C, N]) await consent(u);
-const CHILD = await newChild(A, 'Asha', '2025-05-20', null);
+const CHILD = await newChild(A, 'Asha', '2025-04-12', null);
 await sys(`update children set due_date = '2025-05-25', nickname = 'Ashu' where id=$1`, [CHILD]);
 await joinAs(B, 'parent', CHILD, A);
 await joinAs(N, 'contributor', CHILD, A);
@@ -51,7 +51,7 @@ check('[DB-05] a contributor reads no children row (no birth year, no due date)'
   (await as(N, `select date_of_birth, due_date from children where id=$1`, [CHILD])).rows.length === 0);
 const seen = (await one(N, `select * from book_children where id=$1`, [CHILD]));
 check('[D-039] a contributor reads name, nickname, birthday month and day',
-  seen?.name === 'Asha' && seen.nickname === 'Ashu' && seen.birth_month === 5 && seen.birth_day === 20);
+  seen?.name === 'Asha' && seen.nickname === 'Ashu' && seen.birth_month === 4 && seen.birth_day === 12);
 check('[D-039] book_children has no year, birthday or due date column',
   Object.keys(seen ?? {}).sort().join() === 'birth_day,birth_month,id,name,nickname');
 check('[DB-05] a parent still reads the full children row',
@@ -109,7 +109,7 @@ check('[PSEC-04] a malformed path is refused without a cast error',
 
 // ── DB-12: dictionary terms per owner, per book, ignoring case ───────────
 // A second book for A (the server does not enforce Plus, founder decision 3).
-const SECOND = await newChild(A, 'Ravi', '2025-05-20', null);
+const SECOND = await newChild(A, 'Ravi', '2025-04-12', null);
 const term = (child, t) => as(A, `insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, $3, 'family')`, [A, child, t]);
 await term(CHILD, 'Nani');
 check('[DB-12] the same name can be saved for a second book', SECOND !== null && (await codeOf(() => term(SECOND, 'Nani'))) === 'ok');

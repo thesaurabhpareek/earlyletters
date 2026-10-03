@@ -9,7 +9,7 @@ await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('$
 await publishPolicies();
 for (const u of [A, B, C, N, S]) await consent(u);
 
-const create = (uid, id, name = 'Asha', dob = '2025-05-20', due = null) =>
+const create = (uid, id, name = 'Asha', dob = '2025-04-12', due = null) =>
   as(uid, `select public.create_child($1, $2, $3::date, $4::date) as id`, [id, name, dob, due]).then((r) => r.rows[0].id);
 const started = async (uid) => (await sys(`select count(*)::int n from children where created_by=$1 and deleted_at is null`, [uid])).rows[0].n;
 
@@ -17,13 +17,13 @@ const started = async (uid) => (await sys(`select count(*)::int n from children 
 const first = uuid7();
 check('[A-REQ-015] the book keeps the device id', (await create(A, first)) === first);
 check('[DATA-REQ-044] a retry with the same id is idempotent', (await create(A, first)) === first && (await started(A)) === 1);
-check('the old create_child(text, date) is gone', (await codeOf(() => as(A, `select public.create_child('Asha', '2025-05-20'::date)`))) === '42883');
+check('the old create_child(text, date) is gone', (await codeOf(() => as(A, `select public.create_child('Asha', '2025-04-12'::date)`))) === '42883');
 check('a v4 id is refused', (await codeOf(() => create(A, '0b2f9e3c-5a7d-4c1e-9f00-123456789abc'))) === 'SCCID');
 check('a v7 id with the wrong variant is refused', (await codeOf(() => create(A, uuid7().replace(/-(.)/g, (m, c, i) => (i === 18 ? '-c' : m)).slice(0, 36)))) === 'SCCID');
 check('a v7 id from the future is refused', (await codeOf(() => create(A, uuid7(Date.now() + 3 * 86400e3)))) === 'SCCID');
 check('another person\'s book id is refused without saying whose', (await codeOf(() => create(C, first))) === 'SCCID');
 check('[B-REQ-001] a birthday or a due date is required', (await codeOf(() => create(C, uuid7(), 'Asha', null, null))) === '22023');
-check('a name is required', (await codeOf(() => create(C, uuid7(), '  ', '2025-05-20'))) === '22023');
+check('a name is required', (await codeOf(() => create(C, uuid7(), '  ', '2025-04-12'))) === '22023');
 check('a future birthday is refused', (await codeOf(() => create(C, uuid7(), 'Asha', '2099-01-01'))) === '22023');
 const expecting = await create(C, uuid7(), 'Asha', null, new Date(Date.now() + 90 * 86400e3).toISOString().slice(0, 10));
 check('children without a date are refused at the table too', (await codeOf(() => sys(`insert into children (id, name, created_by) values ($1, 'Asha', $2)`, [uuid7(), A]))) === '23514');

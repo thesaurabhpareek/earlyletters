@@ -117,7 +117,7 @@ const WRITES = [
   ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
   ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
   ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'none', 'none', 'none', 'none']],
-  ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-05-20')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-04-12')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: add self', `insert into child_members (child_id, profile_id) values ('${CHILD}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
   ['child_invites: insert directly', `insert into child_invites (child_id, invited_by, token_hash, role) values ('${CHILD}', auth.uid(), '\\x00', 'parent')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -141,7 +141,7 @@ const WRITES = [
 // The server does not enforce Plus (founder decision 3: StoreKit 2 on the device),
 // so anyone signed in and consented may start another book.
 const RPCS = [
-  ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-05-20')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['accept_child_invite', `select public.accept_child_invite('${token}')`,               ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
