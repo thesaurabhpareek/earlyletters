@@ -188,7 +188,7 @@ Rules (Rec, enforced by lint in BL-M01):
 
 ```mermaid
 flowchart TD
-  A[Native splash: paper bg, envelope mark] --> B["bootstrap(): open DB, run migrations, read settings, cached config"]
+  A["Native splash: paper bg, symbol from registry context app.splash"] --> B["bootstrap(): open DB, run migrations, read settings, cached config"]
   B --> C{ageGate.stoppedAt within 24 h?}
   C -- yes --> STOP[/stop screen/]
   C -- no --> D{ageGate.passed?}

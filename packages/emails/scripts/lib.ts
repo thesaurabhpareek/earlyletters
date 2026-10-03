@@ -7,6 +7,7 @@ import { basename, extname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createElement, type ComponentType } from 'react';
 import { renderEmail, renderEmailText } from '../src/components/render';
+import { assetFor } from '@scribe/brand';
 import { ASSET_BASE, dark, fonts, light } from '../src/tokens';
 
 export const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
@@ -15,7 +16,12 @@ export const FIXTURES_DIR = join(PACKAGE_ROOT, 'test', 'fixtures');
 export const OUT_DIR = join(PACKAGE_ROOT, 'out');
 /** B3's email assets; copied next to the gallery so previews work before the site is live. */
 export const BRAND_EMAIL_ASSETS = resolve(PACKAGE_ROOT, '..', 'brand', 'assets', 'email');
-const GALLERY_ASSETS = ['logo-light.png', 'logo-dark.png'];
+/** Gallery copies of the header logos (registry contexts email.header.*): source file and its name under /email/. */
+const REPO_ROOT = resolve(PACKAGE_ROOT, '..', '..');
+const GALLERY_ASSETS = (['email.header.light', 'email.header.dark'] as const).map((c) => {
+  const a = assetFor(c)[0];
+  return { src: join(REPO_ROOT, a.path!), name: a.url!.replace(/^\/email\//, '') };
+});
 
 /** Gallery variants load images from out/email/ instead of the live site. Shipped HTML is untouched. */
 const localAssets = (html: string) => html.split(`${ASSET_BASE}/`).join('../email/');
@@ -155,8 +161,8 @@ export async function buildAll(opts: { dirs: string[]; outDir: string }): Promis
   await mkdir(join(opts.outDir, 'gallery'), { recursive: true });
   await mkdir(join(opts.outDir, 'email'), { recursive: true });
   for (const f of GALLERY_ASSETS) {
-    await copyFile(join(BRAND_EMAIL_ASSETS, f), join(opts.outDir, 'email', f)).catch(() => {
-      console.warn(`Gallery: ${f} not found in ${BRAND_EMAIL_ASSETS}; previews will show alt text.`);
+    await copyFile(f.src, join(opts.outDir, 'email', f.name)).catch(() => {
+      console.warn(`Gallery: ${f.src} not found; previews will show alt text.`);
     });
   }
   await Promise.all(

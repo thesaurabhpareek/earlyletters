@@ -16,6 +16,8 @@
  * turned off, and offering a link that does nothing would mislead.
  */
 
+import { brand } from '@scribe/brand';
+
 export const emailLegal = {
   /** Commercial footer only. Filled with a PO box or PMB, never the family home. */
   postalLine: "{postalAddress}",
@@ -26,9 +28,9 @@ export const emailLegal = {
   /** One line near the top of the footer, saying why this email arrived. */
   whyYouGotThis: {
     transactional:
-      "You are getting this because it is about your Early Letters account. We only send what you need to know.",
+      `You are getting this because it is about your ${brand.name} account. We only send what you need to know.`,
     commercial:
-      "You are getting this because you asked for news from Early Letters. Your account and your books are not affected if you unsubscribe.",
+      `You are getting this because you asked for news from ${brand.name}. Your account and your books are not affected if you unsubscribe.`,
   },
 
   /* Optional additions (not in the brief contract). */
@@ -43,7 +45,7 @@ export const emailLegal = {
   /** The page the unsubscribe link opens: one button, no sign-in, no questions. */
   unsubscribePage: {
     heading: "Stop these emails?",
-    body: "You will stop getting news from Early Letters. Account emails, like sign-in links and plan reminders, still come, because you need them.",
+    body: `You will stop getting news from ${brand.name}. Account emails, like sign-in links and plan reminders, still come, because you need them.`,
     button: "Unsubscribe",
     done: "Done. You will not get these emails again. Changed your mind? You can sign up again any time.",
     error: "That did not go through. Please try again, or reply to any of our emails and we will do it for you.",

@@ -1,3 +1,5 @@
 dist/
 .astro/
 public/favicon/
+public/email/
+public/og/

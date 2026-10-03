@@ -171,7 +171,7 @@ This summary is here to help. The full terms below are what count.
 
 11.3 **You can see and undo every fix.** We keep the original transcript unchanged. Every fix is shown and can be undone before and after you save.
 
-11.4 **The limits.** Speech recognition is not perfect. It can mishear words, names and places, and it can struggle with background noise, quiet speech, accents, and families that move between languages in one sentence. It may also miss a fix it could have made. Read together highlights words as the recording plays, and the highlighting can drift or be missing. Please read each letter before you save it, and correct anything that is wrong. Your recording is the original, and it is always kept unless you delete it.
+11.4 **The limits.** Speech recognition is not perfect. It can mishear words, names and places, and it can struggle with background noise, quiet speech, accents, and families that move between languages in one sentence. It may also miss a fix it could have made. When Read together highlights words as a recording plays (planned for a later version), the highlighting can drift or be missing. Please read each letter before you save it, and correct anything that is wrong. Your recording is the original, and it is always kept unless you delete it.
 
 11.5 **It can make mistakes, and your review is the final word.** What you save is what goes in the book, so please read each letter first. Your letters are a family keepsake, not a medical, legal or other professional record.
 
@@ -203,7 +203,7 @@ This summary is here to help. The full terms below are what count.
 
 14.2 **Prices and trials.** At launch, Plus costs US $3.99 a month with a one-month free trial, or US $29.99 a year with a two-month free trial. The price, the length of any free trial and the date by which to cancel are shown in the app before you subscribe, and those are the terms that apply to you. Free trials are for new subscribers, one per person, as the store decides. If you are not eligible, the app shows the price without a trial. Early Letters is offered in the United States.
 
-14.3 **Automatic renewal.** Plus renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. The store charges your store account. By subscribing you agree to this, and we keep a record of what you agreed to and when.
+14.3 **Automatic renewal.** Plus renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. Apple charges your Apple Account (on Android, once available, Google Play charges your Google Account). By subscribing you agree to this, and we keep a record of what you agreed to and when.
 
 14.4 **Billing is handled by Apple or Google.** If you subscribe in the app, Apple or Google processes the payment, and their terms also apply. We do not see or store your card details.
 
@@ -230,9 +230,9 @@ To avoid being charged, cancel at least 24 hours before a free trial or period e
 
 14.11 **When Plus ends.** Section 13.2 applies. In addition, all your existing books stay fully usable, including extra children's books; creating another book needs Plus again. New recordings stay on your phone instead of being backed up.
 
-14.12 **Who Plus covers.** Plus applies to the book or books described on the Plus screen when you subscribe, including for the other co-parent in that book. Family Sharing through the App Store is not available for Plus at launch.
+14.12 **Who Plus covers.** Plus applies to the book or books described on the Plus screen when you subscribe, including for the other co-parent in that book. A co-parent can also get Plus through Apple Family Sharing, which is turned on for Plus.
 
-14.13 **Gifts.** A family member may buy a year of Plus for a child's book. A gift does not renew and is never charged again. Any refund of a gift goes only to the person who bought it.
+14.13 **Gifts.** Gifts of Plus are not available yet. When they are, a gift is paid once, does not renew and is never charged again, and any refund of a gift goes only to the person who bought it.
 
 14.14 **Lifetime.** We may later offer a one-time lifetime option. If we do, its terms will be shown before purchase. A lifetime purchase is a license to use Plus features for as long as we operate the Service, not ownership of software, and Section 17 applies to it.
 

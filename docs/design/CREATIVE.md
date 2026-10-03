@@ -1,6 +1,6 @@
 # Early Letters: Creative Direction
 
-v0.1, 2026-10-01. Companion to `DESIGN_LANGUAGE.md` and `MOTION.md` (timing, written in parallel). Sources C1 to C15 were opened for this review. **(opinion)** marks judgement. Sample family: fictional "Asha".
+v0.2, 2026-10-03 (v0.1 2026-10-01; v0.2 replaces the envelope-line motif with the quotation-mark system of the approved primary mark, D-051). Companion to `DESIGN_LANGUAGE.md`, `MOTION.md` (timing) and `docs/brand/BRAND_SYSTEM.md` (the mark, its files and registry contexts). Sources C1 to C15 were opened for this review. **(opinion)** marks judgement. Sample family: fictional "Asha".
 
 ## 1. Benchmark
 
@@ -32,8 +32,17 @@ v0.1, 2026-10-01. Companion to `DESIGN_LANGUAGE.md` and `MOTION.md` (timing, wri
 
 ## 3. Visual system
 
+### The brand device: two opening quotation marks
+The mark (BRAND_SYSTEM.md 1) is the only brand device: a large and a small opening quotation mark, leaning together, parent and child, the moment before someone speaks. It replaces the earlier "one continuous line that folds into an envelope" motif everywhere. Files come from the registry (`assetFor(context)`), never from a path.
+- **The pair** (`logo.symbol.*`) is the signature: debossed or foiled on the printed cover, centred on the splash, top-left of the caption band on store screenshots, on the Play feature graphic.
+- **The small mark** (`logo.symbol.small.*`, the small cut) is the system's punctuation: a bullet in lists, a section divider in the book and on the site, a closing flourish at the foot of a printed page. One per divider, never a pattern or a repeat.
+- **The pair opens a quote.** On cards (invite, gift, social) a letter's line may open with the pair in `accent` or `textMuted`, then the words in Literata. Opening only: never closing marks, never a speech bubble, never a mark rotated or mirrored.
+- **One colour** per use: ink, inkDark, accent (the one warm moment on paper) or accentDeep foil. No gradient outside the app icon tile.
+- **The wordmark is artwork.** Never retype the name in EB Garamond or Literata to stand in for the lockup; EB Garamond appears only as outlined artwork and brand display (cover title pages, gift cards, OG image).
+
 ### Illustration
-- **Motif:** one continuous line that folds into an envelope, opens into a page, or curves into a moon.
+Line drawings are illustration, not the brand mark. They may show any object (envelope, lamp, moon, page, window), never stand in for the logo, never sit locked up with the wordmark, and never reshape a quotation mark into an object. Where a surface needs to say "Early Letters", it uses the mark from the registry; where it needs to set a mood, it may use a drawing. The web scroll film (`docs/web`, branch `feat/web-scroll-film`, another lane) draws a window, lamp, moon, envelope and page: that is allowed under this rule, and the film's brand moment is still the quotation mark from `web.header` or the symbol, not an envelope.
+- **Motif:** single-line drawings of the objects of a letter and a night (a page, a lamp, a moon, a window). One drawing per screen at most.
 - **Line:** single weight, 1.5pt at a 24pt artboard (2pt on store art), round caps. Ink `textMuted` #6B645B on paper #FBF8F3; dark #B3AA9E on #161412. One optional `accentSoft` #F1E6DC wash behind the main object.
 - **No faces, no mascot, no drawn babies.** Objects imply people: glasses on an open book, shoes by a door, a dupatta over a chair arm. Drawn from real homes.
 - **Never:** wax seals, quills, ribbons, sparkles, confetti.
@@ -76,7 +85,7 @@ Headlines in Literata 500, sentence case, 6 words or fewer per frame. Support in
 | 6 | A book that grows month by month. | Chapter covers, Month 1 to 6. | Subline "Free PDF any time." No print claim until print ships. |
 
 **App Store:** 1260x2736 (6.9"), JPG or PNG, no alpha, up to 10 (C11); must show the app in use (C12).
-**Google Play:** up to 8 per device type, 9:16, long side at most twice the short side (C14). **1260x2736 fails (ratio 2.17)**, so export 1080x1920 separately. Add a 1024x500 feature graphic (envelope line plus "Exactly as you said it.") and a 512x512 icon. No price or promo text; a separate set per language (C15). Android frames or frameless (opinion).
+**Google Play:** up to 8 per device type, 9:16, long side at most twice the short side (C14). **1260x2736 fails (ratio 2.17)**, so export 1080x1920 separately. Add a 1024x500 feature graphic (the quotation pair, `logo.symbol.accent` on paper or `logo.symbol.reversed` on paperDark, plus "Exactly as you said it." in Literata) and a 512x512 icon. No price or promo text; a separate set per language (C15). Android frames or frameless (opinion).
 
 ### Preview video: "Tuesday" (25s)
 App Store: screen capture only, no hands or people; narration allowed; 15 to 30s; 886x1920; 30 fps max (C12, C13). The narration is the real parent's in-app recording.
@@ -112,7 +121,7 @@ The author is always present. The laugh is the peak, not tears.
 | **Read together at bedtime (15 to 30s)** | Low light, phone on the pillow, highlight visible, a small hand tapping Next. | Child's face never required. |
 
 ### Grandparent gift
-- **Invite card:** printed A6 envelope, line motif, "Your stories belong in Asha's book." Inside: "Tap the red circle and talk." plus a QR.
+- **Invite card:** printed A6 card (registry context `invite.card`): the quotation pair opens the line "Your stories belong in Asha's book." in Literata; horizontal lockup at the foot, at least 27 px tall. Inside: "Tap the red circle and talk." plus a QR. (v1.0 invites are co-parent only, D-057; the grandparent card is v1.1.)
 - **Message for parents to send:** "Nani, Asha's book has a page for you."
 - **When print ships:** "Early Letters: Year One" as the gift grandparents give back, at "{price}", shot as a real book on a real lap.
 
@@ -122,21 +131,21 @@ How each should feel; timing is in `MOTION.md`.
 
 | Moment | Feel | Visual and words |
 |---|---|---|
-| **Onboarding** | Opening a letter someone left for you. | Three drawings: closed envelope, open envelope with blank page, page with one line. "Letters for someone small." |
+| **Onboarding** | Opening a letter someone left for you. | The small-cut lockup (context `app.header`) once at the top; then three line drawings as illustration: a lamp switched on, a blank page, a page with one line. The brand moment is the quotation pair, not a drawing. "Letters for someone small." |
 | **Empty Book** | An open notebook, not a missed assignment. | Paper cover, month numeral. "Month 1 is waiting for its first letter." |
 | **Empty Family** | A table with one chair pulled out. | "Just you, for now. Letters are lovelier with more voices." |
-| **First letter** | A soft exhale; the letter has a home. | Envelope settles into Month N. "Asha's first letter. Kept exactly as you said it." No badge. |
+| **First letter** | A soft exhale; the letter has a home. | The letter card settles into Month N, its first line opened by the small quotation mark. "Asha's first letter. Kept exactly as you said it." No badge. |
 | **100 letters** | Finding an old note in a coat pocket. The reward is the past, not the number. | Once, in the Book only, never a push: "One hundred letters for Asha." One action: "Hear the first one." |
-| **First grandparent letter** | A letter arriving in the post. | Envelope signed "From Nani" in Literata italic; parent approves. Push: "Nani wrote a letter to Asha." |
+| **First grandparent letter** (v1.1, D-057) | A letter arriving in the post. | Letter card signed "From Nani" in Literata italic, opened by the quotation pair; parent approves. Push: "Nani wrote a letter to Asha." |
 | **First Read together** | Lights going down at bedtime. | After the last word, the moon drawing: "That was Papa, Month 3." Then stillness, no next prompt. |
-| **Printed book cover** | A book that sits on a shelf for years. | Cloth in paper or `accent` brown, envelope line debossed, child's first name in Literata, "Year One" below. No cover photo by default (opinion: photos date the object; use one on the title page). |
+| **Printed book cover** | A book that sits on a shelf for years. | Cloth in paper or `accent` brown, the quotation pair debossed (context `book.cover.emboss`: symbol alone, 18 to 30 mm, lower third, blind or accentDeep foil), child's first name in Literata, "Year One" below. No cover photo by default (opinion: photos date the object; use one on the title page). |
 
 ## 7. Production
 
 | Work | Who | Why |
 |---|---|---|
 | Screenshots, preview, type, copy | In-house | Real UI; changes each release. |
-| ~15 line drawings | **Commission** one illustrator, ideally with South Asian domestic reference | One hand makes a system. |
+| ~15 line drawings | **Commission** one illustrator, ideally with South Asian domestic reference | One hand makes a system. The brief excludes the logo: the mark is fixed (D-051). |
 | Photo and film | **Commission** a documentary family photographer and small crew | Real homes need patience; agencies stage. |
 | Casting | In-house: friends of friends, early users who opt in | Real families, not models. |
 | Voices | Cast families only | Never voice actors for letters. |

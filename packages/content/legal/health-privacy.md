@@ -19,7 +19,7 @@ Early Letters does not ask about anyone's health, and we don't analyze what you 
 |---|---|---|---|
 | Health details inside letters | Words in a letter, its original transcript and its fixes that mention a condition, treatment, symptom, medication, pregnancy or mental health | You, and family members writing to the same child | To keep, sync and show the book you asked for |
 | Due date | A due date entered before the child is born, which shows a pregnancy | You | To date letters and sort the "Before You" chapter |
-| Recordings and photos | The audio of spoken letters you back up or send from the web page; photos you add | You, and family members | So your family can hear and see them. Some laws list voice recordings and face images as biometric data. We never make a voiceprint or face template from them. |
+| Recordings and photos | The audio of spoken letters you back up or send from the web page; photos you add | You, and family members | To keep them for you and restore them to a new phone. Family can see photos in the book; family listening to recordings comes in a later version. Some laws list voice recordings and face images as biometric data. We never make a voiceprint or face template from them. |
 
 **What we do not collect.** We don't ask health questions, connect to health apps or devices, use your location, or make guesses about anyone's health on our servers. The app may show a gentle support card if a letter suggests someone could use help. That check runs only on your phone, its result stays on your phone, and nothing about it is sent to us.
 

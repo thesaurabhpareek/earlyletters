@@ -2,10 +2,26 @@
  * Brand and voice rules, enforced on every word the product says.
  * See VOICE.md. If a test here fails, fix the copy, not the test.
  */
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { book, en, PROMPTS, site, storeListing, pages } from '../src';
+import { brand } from '@scribe/brand';
+import {
+  accountEmails,
+  authEmails,
+  billingEmails,
+  book,
+  emailChrome,
+  emailLegal,
+  en,
+  familyEmails,
+  lifecycleEmails,
+  PROMPTS,
+  site,
+  storeListing,
+  pages,
+} from '../src';
 
 type Leaf = { path: string; text: string };
 
@@ -26,6 +42,11 @@ const ALL: Leaf[] = [
   ...leaves(pages, 'pages'),
   ...PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text })),
 ];
+const EMAIL: Leaf[] = leaves(
+  { authEmails, accountEmails, billingEmails, familyEmails, lifecycleEmails, emailChrome, emailLegal },
+  'email',
+);
+const PUBLIC: Leaf[] = [...leaves(storeListing, 'store'), ...leaves(site, 'site'), ...leaves(pages, 'pages')];
 const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(join(__dirname, '..', f), 'utf8') }));
 
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
@@ -135,5 +156,104 @@ describe('length limits', () => {
 describe('save failure reassurance', () => {
   it('tells people their words are safe on the phone', () => {
     expect(JSON.stringify(en.errors)).toMatch(/safe on this phone/i);
+  });
+});
+
+describe('brand name comes from packages/brand', () => {
+  // CLAUDE.md: the public name lives only in packages/brand. Copy uses `${brand.name}` (and friends), so a
+  // rename is one edit. Comments may name the product; string literals and template text may not.
+  const SRC = join(__dirname, '..', 'src');
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
+      d.isDirectory() ? files(join(dir, d.name)) : /\.tsx?$/.test(d.name) ? [join(dir, d.name)] : [],
+    );
+
+  /** Text of every string literal and template chunk in a file (comments are not tokens, so they are skipped). */
+  function literalText(file: string): Leaf[] {
+    const text = readFileSync(file, 'utf8');
+    const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest);
+    const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, text);
+    const out: Leaf[] = [];
+    const STRINGY = new Set([
+      ts.SyntaxKind.StringLiteral,
+      ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+      ts.SyntaxKind.TemplateHead,
+      ts.SyntaxKind.TemplateMiddle,
+      ts.SyntaxKind.TemplateTail,
+    ]);
+    let depth = 0; // brace depth inside template substitutions
+    const stack: number[] = [];
+    for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan()) {
+      if (kind === ts.SyntaxKind.OpenBraceToken) depth++;
+      if (kind === ts.SyntaxKind.CloseBraceToken) {
+        if (stack.length && stack[stack.length - 1] === depth) {
+          kind = scanner.reScanTemplateToken(false);
+          if (kind === ts.SyntaxKind.TemplateTail) stack.pop();
+        } else depth--;
+      }
+      if (kind === ts.SyntaxKind.TemplateHead) stack.push(depth);
+      if (STRINGY.has(kind)) {
+        const line = ts.getLineAndCharacterOfPosition(source, scanner.getTokenStart()).line;
+        out.push({ path: `${relative(SRC, file)}:${line + 1}`, text: scanner.getTokenValue() });
+      }
+    }
+    return out;
+  }
+
+  it('never types the brand name in packages/content/src', () => {
+    const name = new RegExp(brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const bad = files(SRC).flatMap(literalText).filter((l) => name.test(l.text));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('still renders the brand name where copy names the product', () => {
+    expect(en.app.name).toBe(brand.name);
+    expect(storeListing.appName).toBe(brand.storeName);
+    expect(emailChrome.signature).toBe(`Warmly,\n${brand.name}`);
+  });
+});
+
+describe('glossary (BRAND.md)', () => {
+  const COPY = [...ALL, ...EMAIL];
+
+  it('calls the edit feature Word for word, never tidying', () => {
+    expect(offenders(COPY, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
+  });
+
+  it('names the subscription Plus only', () => {
+    expect(offenders(COPY, /Early Letters Plus|Book Plus|\b(Premium|Pro)\b|Plus Yearly/)).toEqual([]);
+    expect(offenders(COPY, new RegExp(`${brand.name} Plus`))).toEqual([]);
+  });
+
+  it('says Apple Account, never Apple ID or store account', () => {
+    expect(offenders(COPY, /\bApple ID\b|\bstore account\b|\biCloud account\b/i)).toEqual([]);
+  });
+
+  it('never calls a release a beta in store or website copy', () => {
+    expect(offenders(PUBLIC, /\bbeta\b/i)).toEqual([]);
+    expect(Object.keys(storeListing)).not.toContain('promotionalTextBeta');
+  });
+
+  it('keeps v1.0 public copy to the co-parent, with no gift or approval promises', () => {
+    expect(offenders(PUBLIC, /\bgrandparents?\b|\bgifts?\b|\bapprov(e|es|ed|al)\b|\bcontributors?\b|\baunts?\b|\buncles?\b/i)).toEqual([]);
+  });
+
+  it('makes no Hindi-English mixing or word highlighting claims (v1.1)', () => {
+    const COMMS = [...PUBLIC, ...EMAIL];
+    expect(offenders(COMMS, /\bboth in (one|the same) sentence\b|\bmid-sentence\b|\bhighlight/i)).toEqual([]);
+    expect(offenders(COMMS, /while the words appear/i)).toEqual([]);
+  });
+
+  it('uses "note" only for something people make, never for what we send', () => {
+    expect(offenders(EMAIL, /\bnotes?\b/i)).toEqual([]);
+  });
+
+  it('names the sign-in buttons as the providers do', () => {
+    expect(offenders(COPY, /\b(Google|Apple) sign-in\b|\b(Google|Apple) login\b|\bmagic link\b/i)).toEqual([]);
+  });
+
+  it('uses one descriptor', () => {
+    expect(en.app.oneLine).toBe(`${brand.name}, the baby memory book you fill by talking.`);
+    expect(offenders(COPY, /\bthe memory book you fill by talking\b/i)).toEqual([]);
   });
 });

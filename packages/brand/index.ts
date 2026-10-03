@@ -58,6 +58,11 @@ export const brand = {
     paper: '#FBF8F3',
     paperRaised: '#FFFFFF',
     accent: '#8A5A3B',
+    /**
+     * One step deeper than accent (Oct 3 2026, logo r3 color-type, approved with the mark). App icon tile
+     * base, favicon on light, single-colour brand fills. paper on it 6.47, white on it 6.85, on accentSoft 5.58.
+     */
+    accentDeep: '#7F4F30',
     accentSoft: '#F1E6DC',
     line: '#E6DED3',
     // dark
@@ -68,7 +73,25 @@ export const brand = {
     accentDark: '#D9A47E',
     lineDark: '#33302C',
   },
+  /**
+   * App icon only (tile fills), not UI colours. Default: vertical gradient, paper mark.
+   * Dark: warm near-black, accentDark mark. Tinted: mark shape only (the system tints it).
+   * Mark on tile: 4.78 top, 5.53 middle, 6.47 bottom; dark 6.58 to 7.79.
+   */
+  icon: {
+    tileTop: '#9A613C',
+    tileBottom: '#7F4F30', // = colors.accentDeep
+    mark: '#FBF8F3', // = colors.paper, never pure white
+    darkTileTop: '#2C2926',
+    darkTileBottom: '#1F1B18',
+    darkMark: '#D9A47E', // = colors.accentDark
+  },
 } as const;
+
+// Named re-exports (not `export *`): tsx loads this package as CommonJS, and Node's CJS export detection cannot
+// see through a star re-export of a .ts file.
+export { ASSETS, CONTEXTS, REGISTRY_VERSION, asset, assetFor, assetForPath, assetPath } from './registry';
+export type { AssetFormat, AssetId, AssetKind, AssetStatus, BrandAsset, BrandContext, ContextId, Surface } from './registry';
 
 export function bundleId(): string {
   const reversed = brand.publisher.domain.split('.').reverse().join('.');

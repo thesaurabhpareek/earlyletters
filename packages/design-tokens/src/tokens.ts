@@ -5,6 +5,9 @@
  *
  * Source of truth for rationale: docs/design/DESIGN_LANGUAGE.md
  * Contrast ratios below were computed with the WCAG 2.x relative-luminance formula.
+ *
+ * Brand colours repeat packages/brand/index.ts (`brand.colors`, `brand.icon`) so this
+ * package stays dependency-free; test/brand-parity.test.ts fails if any value drifts.
  */
 
 /* ------------------------------------------------------------------ */
@@ -18,11 +21,13 @@ const light = {
   text: '#2B2722', // brand "ink"          14.00:1 on bg
   textMuted: '#6B645B', // brand "inkMuted"  5.51:1 on bg, 5.11:1 on surface
   accent: '#8A5A3B', // brand accent         5.50:1 on bg
+  accentDeep: '#7F4F30', // brand accentDeep: single-colour brand fills (favicon, foil); 6.47:1 on bg, never body text
   accentSoft: '#F1E6DC', // selected chips, highlight wash (text 12.07:1)
   onAccent: '#FFFFFF', // text/icons on accent  5.82:1
   line: '#E6DED3', // hairlines, dividers (decorative, never sole affordance)
   focus: '#2F6F8F', // focus ring             5.23:1 on bg
   recording: '#B5473A', // live mic state       5.05:1 on bg
+  destructive: '#B5473A', // delete/remove actions (D-029); equals recording today, always with icon + words
   success: '#3F7A55', // saved / delivered      4.80:1 on bg
   caution: '#94661A', // needs attention        4.75:1 on bg
 } as const;
@@ -34,13 +39,28 @@ const dark = {
   text: '#F2ECE4', // 15.66:1 on bg
   textMuted: '#B3AA9E', // 8.01:1 on bg
   accent: '#D9A47E', // 8.37:1 on bg
+  accentDeep: '#D9A47E', // = accentDark: on dark, single-colour brand fills use the dark accent (8.37:1)
   accentSoft: '#3A2E25', // text 11.20:1, accent 5.99:1
   onAccent: '#1E1612', // 8.11:1 on accent (dark ink on light accent)
   line: '#33302C',
   focus: '#8CC4DE', // 9.68:1 on bg
   recording: '#F08C7C', // 7.65:1 on bg
+  destructive: '#F08C7C', // = recording (D-029), 7.65:1 on bg
   success: '#8CC9A0', // 9.60:1 on bg
   caution: '#E3B866', // 9.90:1 on bg
+} as const;
+
+/**
+ * App icon tile only (brand.icon), never UI. Default: vertical gradient tileTop to
+ * tileBottom (= accentDeep) with a paper mark; dark: warm near-black with the accentDark mark.
+ */
+const icon = {
+  tileTop: '#9A613C',
+  tileBottom: '#7F4F30',
+  mark: '#FBF8F3',
+  darkTileTop: '#2C2926',
+  darkTileBottom: '#1F1B18',
+  darkMark: '#D9A47E',
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -201,6 +221,7 @@ const motion = {
 export const tokens = {
   light,
   dark,
+  icon,
   space,
   radius,
   type,

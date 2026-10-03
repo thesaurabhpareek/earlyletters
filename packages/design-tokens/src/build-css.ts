@@ -33,7 +33,7 @@ const SHADCN: Record<string, ColorKey> = {
   'muted-foreground': 'textMuted',
   accent: 'accentSoft',
   'accent-foreground': 'text',
-  destructive: 'recording',
+  destructive: 'destructive',
   border: 'line',
   input: 'line',
   ring: 'focus',

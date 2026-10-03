@@ -1,18 +1,30 @@
-import { brand } from '@scribe/brand';
-import { emailChrome } from '@scribe/content/src/emails/chrome.en';
+import { assetFor, brand } from '@scribe/brand';
 import type { CSSProperties } from 'react';
-import { ASSET_BASE, dark, fonts, layout, light, space } from '../tokens';
+import { ASSET_ORIGIN, dark, layout, light, space } from '../tokens';
 import { Block } from './primitives';
 import { cls } from './theme';
 
-/** Logo files B3 publishes to https://earlyletters.com/email/ (2x, shown at 160px wide). */
+/** Hosted URL of the first (2x) asset a registry context names. */
+const hosted = (context: 'email.header.light' | 'email.header.dark') => {
+  const a = assetFor(context)[0];
+  if (!a.url) throw new Error(`brand registry: ${a.id} has no hosted url`);
+  return `${ASSET_ORIGIN}${a.url}`;
+};
+
+/**
+ * Header logos, resolved through the brand registry (contexts `email.header.light` / `email.header.dark`).
+ * 2x PNGs with the halo, served from https://earlyletters.com/email/ and shown at `layout.logoWidth`.
+ */
 export const LOGO = {
-  light: `${ASSET_BASE}/logo-light.png`,
-  dark: `${ASSET_BASE}/logo-dark.png`,
+  light: hosted('email.header.light'),
+  dark: hosted('email.header.dark'),
 } as const;
 
+/** Alt text styled as the wordmark when images are blocked: EB Garamond where installed, else Georgia. */
+const wordmarkFallback = "'EB Garamond', Garamond, Georgia, 'Times New Roman', serif";
+
 export type EmailHeaderProps = {
-  /** Override the alt text. Defaults to the chrome copy, then the brand name. */
+  /** Override the alt text. Defaults to the brand name (packages/brand), which is what the logo says. */
   alt?: string;
 };
 
@@ -25,7 +37,7 @@ export type EmailHeaderProps = {
  * When images are blocked, the alt text is styled as a serif wordmark.
  */
 export function EmailHeader({ alt }: EmailHeaderProps = {}) {
-  const text = alt ?? emailChrome.header.alt ?? brand.name;
+  const text = alt ?? brand.name;
   const imgStyle = {
     display: 'block',
     width: layout.logoWidth,
@@ -35,9 +47,9 @@ export function EmailHeader({ alt }: EmailHeaderProps = {}) {
     outline: 'none',
     textDecoration: 'none',
     // Alt text styling (shown when images are off).
-    fontFamily: fonts.serif,
+    fontFamily: wordmarkFallback,
     fontSize: 22,
-    lineHeight: '28px',
+    lineHeight: `${layout.logoHeight}px`,
     fontWeight: 500,
     color: light.ink,
   } as const;

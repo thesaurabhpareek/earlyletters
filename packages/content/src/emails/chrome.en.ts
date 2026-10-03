@@ -11,14 +11,18 @@
  *   {unsubscribe}     commercial only: emailLegal.unsubscribe (L2 owns the wording)
  *   {postalAddress}   commercial only: emailLegal.postalLine. Never a home address (D-004)
  *
+ * The brand name and tagline come from packages/brand, never typed here (CLAUDE.md).
+ *
  * Rules: plain text, straight quotes, no dashes, no emoji. No "view in browser"
  * link (personal emails are never hosted). No social icons. No tracking.
  */
 
+import { brand } from '@scribe/brand';
+
 export const emailChrome = {
   header: {
     /** Alt text for the logo image. When images are blocked this is what shows, styled as the wordmark. */
-    alt: "Early Letters",
+    alt: brand.name,
     /** The logo is not a link: every email has one action, and that action is in the body. */
     linked: false,
   },
@@ -49,13 +53,13 @@ export const emailChrome = {
       ],
     },
     /** Last line of every footer, quiet. */
-    nameLine: "Early Letters. Exactly as you said it.",
+    nameLine: `${brand.name}. ${brand.tagline}`,
     /** Separator between footer links. A middle dot with spaces. */
     linkSeparator: " · ",
   },
 
   /** Letter-like sign-off. Two lines; <Signature> splits on the newline. */
-  signature: "Warmly,\nEarly Letters",
+  signature: `Warmly,\n${brand.name}`,
 } as const;
 
 export type EmailChrome = typeof emailChrome;

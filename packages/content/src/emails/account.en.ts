@@ -21,10 +21,11 @@
  *   {changeSummary}    the plain-language summary approved with the version (POLICY_VERSIONING s.5)
  *   {effectiveDate}    effective_at of the new version
  */
+import { brand } from '@scribe/brand';
 import type { EmailCopy } from './types';
 
 const FALLBACK = "Button not working? Copy and paste this link:";
-const OPEN_APP = { label: "Open Early Letters", urlVar: "{appUrl}" };
+const OPEN_APP = { label: `Open ${brand.name}`, urlVar: "{appUrl}" };
 const PLUS_NOT_CANCELLED =
   "If you have Plus, deleting your account does not cancel it. Billing continues through Apple until you cancel: on your iPhone, open Settings, tap your name, then Subscriptions.";
 const RECORDS_KEPT =
@@ -38,7 +39,7 @@ export const accountEmails = {
     preheader: "On {deletionDate}. Until then you can save a copy, or change your mind.",
     heading: "We have your request",
     body: [
-      "You asked to delete your Early Letters account on {requestDate}. Request number: {requestId}.",
+      `You asked to delete your ${brand.name} account on {requestDate}. Request number: {requestId}.`,
       "Your account, letters and recordings will be deleted from our servers on {deletionDate}. Our backups clear 7 days after that, and our service providers delete their copies within 45 days of your request.",
       "Until then, you can sign in to export a copy of everything, free, or to cancel the request. Both are in Settings, Your data.",
       "Letters you wrote in a book you share with a co-parent leave that book. The book stays with them.",
@@ -60,7 +61,7 @@ export const accountEmails = {
     preheader: "The deletion request is cancelled, and everything is back where it was.",
     heading: "Nothing will be deleted",
     body: [
-      "You cancelled request {requestId} to delete your Early Letters account. Nothing will be deleted.",
+      `You cancelled request {requestId} to delete your ${brand.name} account. Nothing will be deleted.`,
       "Your letters and books are back, for you and for the family you share them with.",
       "Welcome back to your book.",
     ],
@@ -132,7 +133,7 @@ export const accountEmails = {
     preheader: "One more step to confirm it is you. Nothing is deleted until then.",
     heading: "Thank you, we have your request",
     body: [
-      "We received a request to delete the Early Letters account for this email address. Request number: {requestId}.",
+      `We received a request to delete the ${brand.name} account for this email address. Request number: {requestId}.`,
       "To make sure it is really you, we will send a separate sign-in email to this address. Open it to confirm. Nothing is deleted until you do.",
       "Once you confirm, your account is set to be deleted 30 days later. Until then you can export a copy of everything, or change your mind.",
       "If you can open the app, you can also do this yourself: Settings, Your data, Delete account.",

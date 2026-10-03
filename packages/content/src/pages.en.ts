@@ -1,4 +1,4 @@
-// Hosted page copy for the Early Letters website: /about, /why, /contact,
+// Hosted page copy for the website: /about, /why, /contact,
 // /delete-account (D-042) and /404. Rendered by apps/web (lane D3).
 //
 // Sources for every factual claim: docs/legal/privacy-policy.md (1.3.0 draft,
@@ -13,6 +13,12 @@
 //
 // The why page is a manifesto, not a founder story: the repo holds no founder
 // story material, so it states no biographical facts.
+//
+// The brand name comes from packages/brand, never typed here (CLAUDE.md).
+// v1.0 family scope is co-parent only (Brief decision 5); recordings back up for
+// their owner only and are not shared (founder decision, Oct 3 2026); seven spoken
+// languages, no Hindi-English mixing claim (Brief 6); no word highlighting (Brief 9).
+import { brand } from '@scribe/brand';
 
 export type PageSection = {
   heading: string;
@@ -35,34 +41,34 @@ export type PageId = "about" | "why" | "contact" | "deleteAccount" | "notFound";
 export const pages = {
   about: {
     path: "/about",
-    title: "About Early Letters",
+    title: `About ${brand.name}`,
     metaDescription:
-      "Early Letters is the baby memory book you fill by talking. Your words kept exactly as you said them, private by default, made by an independent maker.",
+      `${brand.name} is the baby memory book you fill by talking. Your words kept exactly as you said them, private by default, made by an independent maker.`,
     sections: [
       {
         heading: "What it is",
         paragraphs: [
-          "Early Letters is the baby memory book you fill by talking. Parents and close family speak or type notes and letters to a child. A note is quick. A letter is longer. Both belong.",
-          "Each letter is filed under {child}'s age that month, signed with the name of the person who wrote it, like From Nani or From Papa, and kept with its original recording. One day {child} can read it, and hear it.",
-          "Early Letters is for families in the United States. Accounts are for adults 18 and over.",
+          `${brand.name} is the baby memory book you fill by talking. Parents speak or type notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
+          "Each letter is filed under {child}'s age that month, signed with the name of the person who wrote it, like From Mama or From Papa, and kept with its original recording. One day {child} can read it, and hear it.",
+          `${brand.name} is for families in the United States. Accounts are for adults 18 and over.`,
         ],
       },
       {
         heading: "We never rewrite your words",
         paragraphs: [
           "This is the rule everything else is built on. Software may remove and repair. It may never add meaning.",
-          "In practice, transcription only fixes the slips a microphone makes: a misheard word, a missing full stop, and, if you choose Lightly tidied, a stray um. Choose Word for word and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
+          "In practice, transcription only fixes the slips a microphone makes: a misheard word, a missing full stop, a stray um. We call this Word for word. Every small fix is marked on the page, so you can see it and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
           "Every fix is recorded and can be undone. The original transcript is kept unchanged with each letter, and Show exactly what I said brings it back whenever you like.",
-          "Your words stay in the language you said them. Hindi and English in the same sentence is how many families talk, and that is how it stays.",
+          "Speak English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them.",
         ],
       },
       {
         heading: "How privacy works",
         paragraphs: [
-          "Letters are private by default. Only the family you invite can read what you add to the book, and parents approve family letters before they go in. Each child has their own book and their own family list.",
+          "Letters are private by default. Only you, and {child}'s other parent if you invite them, can read what you add to the book. Each child has their own book.",
           "Transcription happens on your phone. No audio leaves your phone to turn speech into text.",
-          "Recordings stay on your phone unless you back them up. A backed-up recording is encrypted on your phone with AES-256-GCM before it is uploaded. We hold a locked copy of the key so we can help you restore your recordings on a new phone, which means we could technically open them. We only would in the narrow cases below.",
-          "When you sign in, your letter text syncs to our servers in the United States so your family and your next phone can read it. It is encrypted in transit and at rest, but it is not end-to-end encrypted. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. Each access is logged and reviewed.",
+          "Recordings stay on your phone unless you back them up. A backup is for you alone. A backed-up recording is encrypted on your phone with AES-256-GCM before it is uploaded. We hold a locked copy of the key so we can help you restore your recordings on a new phone, which means we could technically open them. We only would in the narrow cases below.",
+          "When you sign in, your letter text syncs to our servers in the United States so your co-parent and your next phone can read it. It is encrypted in transit and at rest, but it is not end-to-end encrypted. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. Each access is logged and reviewed.",
           "There are no ads. We never sell your data or share it with advertisers, and we never use your letters, recordings or photos to train models of any kind. Analytics stay off until you say yes, and they never include letter text, recordings, photos, names or birthdays.",
           "You can export your whole book, free, at any time, and delete your own letters, recordings or account whenever you like. The Privacy Policy has the full detail.",
         ],
@@ -70,14 +76,14 @@ export const pages = {
       {
         heading: "What it costs",
         paragraphs: [
-          "Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional, from {price}, and adds a few extras. Nothing you have already made is ever locked away.",
+          "Writing, reading, playing your recordings and export are free, always. Plus is optional: $3.99 a month with the first month free, or $29.99 a year with the first 2 months free. It adds a few extras. Nothing you have already made is ever locked away.",
         ],
       },
       {
         heading: "Who makes it",
         paragraphs: [
-          "Early Letters is made and run by an independent maker in California, not a large company. Because it is published by an individual, the maker's legal name appears where the law asks for it: on the App Store listing and in the Terms and Privacy Policy.",
-          "If Early Letters ever closes, you will hear at least 90 days ahead, and export will keep working the whole time.",
+          `${brand.name} is made and run by an independent maker in California, not a large company. Because it is published by an individual, the maker's legal name appears where the law asks for it: on the App Store listing and in the Terms and Privacy Policy.`,
+          `If ${brand.name} ever closes, you will hear at least 90 days ahead, and export will keep working the whole time.`,
           "Questions, ideas or a kind word are all welcome at hello@earlyletters.com. A person reads every message.",
         ],
       },
@@ -86,9 +92,9 @@ export const pages = {
 
   why: {
     path: "/why",
-    title: "Why Early Letters",
+    title: `Why ${brand.name}`,
     metaDescription:
-      "Most of what a family says to a small child is said once. Early Letters keeps those words exactly as they were said, in the voice that said them.",
+      `Most of what a family says to a small child is said once. ${brand.name} keeps those words exactly as they were said, in the voice that said them.`,
     sections: [
       {
         heading: "Said once",
@@ -101,22 +107,22 @@ export const pages = {
         heading: "A book you fill by talking",
         paragraphs: [
           "Baby books ask a lot of tired people. Blanks to fill, firsts to date, a pen to find, a quiet hour that the early years rarely give. Many stop after a few pages, and that is nobody's failing. The format simply asks for time that is spent elsewhere, usually on the child.",
-          "Some parents find their own way. They write to an email address set up just for their child, or talk into a voice memo in the car, and plan to hand it all over one day. Early Letters is made for that instinct. Talk to {child} for a minute, and your words become a letter in a book, filed under {child}'s age that month and signed with your name.",
+          `Some parents find their own way. They write to an email address set up just for their child, or talk into a voice memo in the car, and plan to hand it all over one day. ${brand.name} is made for that instinct. Talk to {child} for a minute, and your words become a letter in a book, filed under {child}'s age that month and signed with your name.`,
         ],
       },
       {
         heading: "Exactly as you said it",
         paragraphs: [
-          "At the centre of everything is one promise: we never rewrite your words. Not to make them tidier, not to make them sound more like a greeting card. Transcription only fixes the slips a microphone makes, a misheard word or a missing full stop, and every fix is kept and can be undone. The sentence that ends up in the book is one you actually said.",
-          "Why be so strict? Because the way you say a thing is part of what you mean. The sentence you started twice. The Hindi word in the middle of an English thought, because that word was the right one. The way Nani always says the name. Smooth those out and you get something easier to read and less true.",
+          "At the centre of everything is one promise: we never rewrite your words. Not to make them neater, not to make them sound more like a greeting card. Transcription only fixes the slips a microphone makes, a misheard word or a missing full stop, and every fix is kept and can be undone. The sentence that ends up in the book is one you actually said.",
+          "Why be so strict? Because the way you say a thing is part of what you mean. The sentence you started twice. The word from your first language, because that word was the right one. The way you always say the name. Smooth those out and you get something easier to read and less true.",
           "A letter to {child} is not a performance. It is you, on an ordinary day, and that is the version worth keeping. Not the best version. Yours.",
         ],
       },
       {
         heading: "A voice to come back to",
         paragraphs: [
-          "Words on a page are one thing. The sound of a voice is another. Each letter keeps its original recording, so one day {child} can read the words and hear them too: the pause before the punchline, the sleepy mumble at the end of a long night, Dadi telling the story of the first steps again and again.",
-          "Read together plays a letter in the voice of the person who wrote it, while the words appear on the page. It is made for bedtime, for a lap and a small hand on the screen, and for years of asking to hear the same one twice.",
+          "Words on a page are one thing. The sound of a voice is another. Each letter keeps its original recording, so one day {child} can read the words and hear them too: the pause before the punchline, the sleepy mumble at the end of a long night, the story of the first steps told again and again.",
+          "Read together plays a letter in your own voice, with the letter on the page. It is made for bedtime, for a lap and a small hand on the screen, and for years of asking to hear the same one twice.",
         ],
       },
       {
@@ -127,10 +133,10 @@ export const pages = {
         ],
       },
       {
-        heading: "Everyone who loves {child}",
+        heading: "Two parents, one book",
         paragraphs: [
-          "A child is surrounded by voices. Parents, grandparents, an aunt who calls every Sunday, a friend who was there the first week. Each of them can add letters of their own, signed the way the family says it. From Nani. From Papa. From Amma.",
-          "Every author chooses what to share, and parents decide what goes into the book. One child, every voice that loves them, in one place.",
+          "A child is surrounded by voices. Both parents can write to {child}, each letter signed the way the family says it. From Mama. From Papa. From Amma.",
+          "Each of you keeps private letters until you add them to the book, and the book belongs to you both. One child, two voices that love them, in one place.",
         ],
       },
       {
@@ -152,7 +158,7 @@ export const pages = {
     path: "/contact",
     title: "Contact",
     metaDescription:
-      "Write to Early Letters at hello@earlyletters.com for help, ideas, privacy and deletion requests, or press. A person reads every message.",
+      `Write to ${brand.name} at hello@earlyletters.com for help, ideas, privacy and deletion requests, or press. A person reads every message.`,
     sections: [
       {
         heading: "Write to us",
@@ -164,7 +170,7 @@ export const pages = {
       {
         heading: "What to write about",
         paragraphs: [
-          "Help with the app: signing in, inviting family, export, backup or anything that is not working the way you expect. Tell us what kind of phone you use and what you tapped, and we will take it from there.",
+          "Help with the app: signing in, inviting a co-parent, export, backup or anything that is not working the way you expect. Tell us what kind of phone you use and what you tapped, and we will take it from there.",
           "You never need to send us a letter or a recording to get help.",
           "Ideas and kind words are welcome too. They are read, every one.",
         ],
@@ -186,7 +192,7 @@ export const pages = {
       {
         heading: "Press",
         paragraphs: [
-          "Writing about Early Letters? Email hello@earlyletters.com with Press in the subject line and we will reply as soon as we can.",
+          `Writing about ${brand.name}? Email hello@earlyletters.com with Press in the subject line and we will reply as soon as we can.`,
         ],
       },
     ],
@@ -194,15 +200,15 @@ export const pages = {
 
   deleteAccount: {
     path: "/delete-account",
-    title: "Delete your Early Letters account",
+    title: `Delete your ${brand.name} account`,
     metaDescription:
-      "How to delete your Early Letters: Memory Book account, in the app or by email, what is deleted, what stays, and when.",
+      `How to delete your ${brand.storeName} account, in the app or by email, what is deleted, what stays, and when.`,
     sections: [
       {
         heading: "Delete your account in the app",
         paragraphs: [
-          "This page is for Early Letters: Memory Book. The quickest way to delete your account is in the app, and it works without contacting anyone.",
-          "Open Early Letters, tap Settings, then Your data, then Delete account.",
+          `This page is for ${brand.storeName}. The quickest way to delete your account is in the app, and it works without contacting anyone.`,
+          `Open ${brand.name}, tap Settings, then Your data, then Delete account.`,
           "The app shows what will happen to each book before you confirm, and offers Export everything first, free. If you have Plus, it reminds you how to cancel with Apple. To make sure it is you, it may ask for Face ID, your passcode or a code sent to your email, and then asks you to type to confirm.",
           "Once you confirm, the app shows the date your account will be deleted, 30 days later, and we send a receipt by email.",
         ],
@@ -259,7 +265,7 @@ export const pages = {
   notFound: {
     path: "/404",
     title: "Page not found",
-    metaDescription: "This page is not in the book. Head back to Early Letters, the baby memory book you fill by talking.",
+    metaDescription: `This page is not in the book. Head back to ${brand.name}, the baby memory book you fill by talking.`,
     sections: [
       {
         heading: "We looked under every month. This page is not in the book.",

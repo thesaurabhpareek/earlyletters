@@ -1,19 +1,19 @@
 {
-  "note": "Interim typographic lockup. Replace with direction A or B when chosen. Built by source/build.mjs.",
-  "displayWidthPx": 160,
-  "displayHeightPx": 28,
-  "fontSizePx": 24.57,
-  "files": {
-    "logo-light.png": "320x56",
-    "logo-light@1x.png": "160x28",
-    "logo-dark.png": "320x56",
-    "logo-dark@1x.png": "160x28",
-    "avatar-1024.png": "1024x1024",
-    "favicon-32.png": "32x32",
-    "apple-touch-icon.png": "180x180",
-    "icon-512.png": "512x512",
-    "icon-192.png": "192x192"
+  "note": "Built from the primary mark by packages/brand/scripts/build-touchpoints.mjs. Registry ids: email.logo.*, email.avatar, email.bimi.template.",
+  "source": {
+    "light": "packages/brand/assets/logo/primary/lockup-horizontal.svg",
+    "dark": "packages/brand/assets/logo/primary/lockup-horizontal-reversed.svg"
   },
+  "displayWidthPx": 154,
+  "displayHeightPx": 32,
+  "haloPx": 0.7,
   "alt": "Early Letters",
+  "files": {
+    "logo-light.png": "308x64",
+    "logo-light@1x.png": "154x32",
+    "logo-dark.png": "308x64",
+    "logo-dark@1x.png": "154x32",
+    "avatar-1024.png": "1024x1024"
+  },
   "hostedAt": "https://earlyletters.com/email/"
 }

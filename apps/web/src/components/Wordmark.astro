@@ -1,19 +1,14 @@
 ---
 import { brand } from '@scribe/brand';
 import { lockupSvg } from '../lib/logo';
-// Logo lockup from packages/brand/assets/logo (direction set in lib/logo.ts),
-// inlined so it takes the theme's ink colour. Falls back to a typographic
-// wordmark in Literata if no direction is set.
+// Primary lockup resolved through the brand registry (contexts web.header and
+// web.footer, see lib/logo.ts), inlined so it takes the theme's ink colour.
 interface Props { href?: string; size?: 'header' | 'footer' }
 const { href = '/', size = 'header' } = Astro.props;
-const svg = lockupSvg();
+const svg = lockupSvg(size);
 ---
 <a class={`wordmark ${size}`} href={href} aria-label={`${brand.name}, home`}>
-  {svg ? (
-    <Fragment set:html={svg} />
-  ) : (
-    <span class="type">{brand.name}</span>
-  )}
+  <Fragment set:html={svg} />
 </a>
 <style>
   .wordmark {
@@ -23,7 +18,7 @@ const svg = lockupSvg();
     color: var(--ink);
     text-decoration: none;
   }
-  .wordmark :global(.lockup) { height: 26px; width: auto; }
+  /* Heights from docs/brand/BRAND_SYSTEM.md: master lockup from 27px, small cut below. */
+  .wordmark :global(.lockup) { height: 28px; width: auto; }
   .footer :global(.lockup) { height: 22px; }
-  .type { font: 500 1.3125rem/1 var(--serif); }
 </style>

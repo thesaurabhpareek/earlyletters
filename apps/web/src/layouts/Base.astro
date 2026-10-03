@@ -5,6 +5,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { themeCss } from '../lib/tokens';
 import { SITE_URL } from '../lib/site';
+import { ogImage } from '../lib/logo';
 
 interface Props {
   /** Page title without the brand; omit on the home page. */
@@ -16,6 +17,7 @@ interface Props {
 const { title, description = `${brand.name}, the baby ${brand.category} you fill by talking.`, noindex = false } = Astro.props;
 const fullTitle = title ? `${title} | ${brand.name}` : `${brand.name}: ${brand.subtitle}`;
 const canonical = new URL(Astro.url.pathname, SITE_URL).toString();
+const og = ogImage(SITE_URL);
 ---
 <!doctype html>
 <html lang="en">
@@ -33,6 +35,13 @@ const canonical = new URL(Astro.url.pathname, SITE_URL).toString();
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={brand.name} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={og.url} />
+    <meta property="og:image:width" content={String(og.width)} />
+    <meta property="og:image:height" content={String(og.height)} />
+    <meta property="og:image:alt" content={`${brand.name}. ${brand.tagline}`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={og.url} />
     <link rel="icon" href="/favicon/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />

@@ -7,9 +7,10 @@
  * `child` value. URLs point at the product domain with obviously fake tokens,
  * except Apple's own subscriptions page. Never put a real family detail here.
  */
+import { brand } from '@scribe/brand';
 import type { EmailValues } from './fill';
 
-const SITE = 'https://earlyletters.com';
+const SITE = `https://${brand.publisher.domain}`;
 
 export const previewValues: EmailValues = {
   // people and addresses
@@ -33,7 +34,7 @@ export const previewValues: EmailValues = {
   exportUrl: `${SITE}/open/export/preview-not-a-real-link`,
   documentUrl: `${SITE}/privacy`,
   changesUrl: `${SITE}/privacy/changes`,
-  subscriptionTermsUrl: `${SITE}/terms/subscription`,
+  subscriptionTermsUrl: `${SITE}/subscription-terms`, // apps/web/src/lib/legal.ts
   manageUrl: 'https://apps.apple.com/account/subscriptions',
 
   // billing (fictional dates; prices are the D-001 list prices)

@@ -581,7 +581,7 @@ Rules and what is verified: [ICON_RULES.md](ICON_RULES.md).
 Every concept is composed the same way from its own \`symbol.svg\`: paper #FBF8F3 mark on sepia #8A5A3B (default), accentDark #D9A47E on warm near-black (dark), simulated tinted and clear. Mark sized by drawn bounds (geometric mean 56 percent of canvas, longest side capped at 80 percent). If a designer shipped \`app-icon-1024.png\`, \`submitted-vs-bench.png\` shows both.
 
 ## Files
-- `bench/COMPARE_V1.png`: every concept in default, dark, tinted, clear, 29 px and 16 px on one sheet (made with ImageMagick from the folders below).
+- \`bench/COMPARE_V1.png\`: every concept in default, dark, tinted, clear, 29 px and 16 px on one sheet (made with ImageMagick from the folders below).
 - \`sheet-home.png\`: four home screens side by side (light, dark, tinted, clear), 1x. Start here.
 - \`home-light.png\`, \`home-dark.png\`, \`home-tinted.png\`, \`home-clear.png\`: true device scale, 402x874 pt @3x (1206x2622 px). \`*-crop.png\`: native 3x pixels around the icon.
 - \`appearances.png\`: the six iOS appearances.

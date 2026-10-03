@@ -18,7 +18,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | ID | Decision | Status | Proceed? | Date |
 |---|---|---|---|---|
 | D-001 | Plus ships in v1.0, sold and managed only through the App Store (StoreKit 2 direct, ADR 0013) | Decided (founder); tooling recommended | Yes | 2026-10-03 |
-| D-002 | Family at v1.0 = co-parent and family contributors in the app; web contribution page in v1.1 | Decided (founder) | Yes | 2026-10-03 |
+| D-002 | Family at v1.0 = co-parent and family contributors in the app; web contribution page in v1.1 | **Superseded** by D-057 (Brief decision 5: co-parent only) | n/a | 2026-10-03 |
 | D-003 | Full opt-in product analytics (PostHog) and opt-in crash reports (Sentry) at launch | Decided (founder) | Yes | 2026-10-03 |
 | D-004 | Publish as an individual Apple Developer account; no LLC for now | Decided (founder) | Yes | 2026-10-03 |
 | D-005 | D-U-N-S and LLC off the critical path; domain and support email stay on it | Decided (founder) | Yes | 2026-10-03 |
@@ -35,7 +35,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-029 | Separate `destructive` colour token equal to today's terracotta | Recommended | Yes | 2026-10-03 |
 | D-030 | Beta runs on TestFlight; the v1.0 store listing carries no beta label; in-app About label and Terms 16.4 stay | Recommended (needs founder OK; amends K-13) | Yes for TestFlight; store copy waits | 2026-10-03 |
 | D-031 | Hindi script default (Devanagari, Roman or automatic) | Open (decide after the 14-recording experiment, by 30 Oct) | n/a | 2026-10-03 |
-| D-032 | "Shared voice": in v1.0, recordings of letters in a shared book upload (simple server-wrapped key) so family hear each other; backup of every recording stays Plus | Recommended (needs founder OK) | **No** (wait) | 2026-10-03 |
+| D-032 | "Shared voice": in v1.0, recordings of letters in a shared book upload (simple server-wrapped key) so family hear each other; backup of every recording stays Plus | **Superseded** by D-053 (backup in v1.0, sharing in v1.1) | n/a | 2026-10-03 |
 | D-033 | Free audio durability = the phone plus the user's own iCloud device backup plus export; fix the "only on this phone" copy | Recommended (needs founder OK) | Yes for storage path; copy waits | 2026-10-03 |
 | D-034 | Safety classifier ships only with a clinician's written sign-off by 20 Nov; otherwise a static resources row | Recommended (needs founder OK) | Yes | 2026-10-03 |
 | D-035 | Remote config and kill switches in a Supabase table with an audit trigger (answers BL-022) | Recommended | Yes | 2026-10-03 |
@@ -54,6 +54,16 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-048 | Apple Billing Grace Period on, 16 days | Recommended | Yes | 2026-10-03 |
 | D-049 | LEGAL-REQ-049 means exactly one `completed` consent row per original transaction (plus a `started` row) | Recommended (counsel confirms) | Yes | 2026-10-03 |
 | D-050 | Second consent at first family share (Washington) | Open (counsel) | n/a | 2026-10-03 |
+| D-051 | Primary mark = logo round 3 `final-a` (two opening quotation marks, large and small; EB Garamond wordmark); every earlier device retired | Decided (founder) | Yes | 2026-10-03 |
+| D-052 | The brand asset registry (`packages/brand/registry.ts`) is the single source; every touchpoint resolves files through `assetFor(context)` | Decided (founder) | Yes | 2026-10-03 |
+| D-053 | Recordings backup ships in v1.0; family hearing each other's recordings (sharing) moves to v1.1 | Decided (founder) | Yes | 2026-10-03 |
+| D-054 | The edit feature is named "Word for word" | Decided (founder) | Yes | 2026-10-03 |
+| D-055 | The website shows the Plus price | Decided (founder) | Yes | 2026-10-03 |
+| D-056 | The brand name comes only from `packages/brand`; content files build it with template literals | Decided (founder) | Yes | 2026-10-03 |
+| D-057 | Family at v1.0 = co-parent only (supersedes D-002) | Decided (founder, Brief 5); applied as coordinator default | Yes | 2026-10-03 |
+| D-058 | Plan display names "Plus Monthly" and "Plus Annual" | Recommended (coordinator default) | Yes | 2026-10-03 |
+| D-059 | Website footer line "(c) 2026 Early Letters" in ASCII, name from `brand.name` | Recommended (coordinator default) | Yes | 2026-10-03 |
+| D-060 | Old logo directions (round 1 a and b, round 2, round 3 except final-a, interim email lockup, E monogram) archived, not deleted | Recommended (coordinator default) | Yes | 2026-10-03 |
 
 ---
 
@@ -68,7 +78,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 - **Effects:** ADR 0013 added; ADR 0007 digital half superseded; PRD K-34, PRD-REQ-003, -017; LEGAL-REQ-029, -031, -037, -047, -049, -058; subprocessors 1.2.0, privacy-policy 1.3.0, privacy labels 1.2.0, data-policy 1.1.0, DATA_CLASSIFICATION 1.2.0, DELETION_AND_EXPORT_SPEC 1.1.0; BACKLOG M8 tasks; `plus.legal.cancel` names Apple only (App Review 2.3.10 bars other platforms' names in iOS metadata).
 
 ### D-002 Family scope at v1.0: co-parent and family contributors in the app; web page in v1.1
-- **Status:** Decided (founder, 3 Oct 2026).
+- **Status:** **Superseded by D-057** (Agent brief, `docs/agents/BRIEF-2026-10-03.md` decision 5, later on 3 Oct 2026: co-parent only at launch). Was: Decided (founder, 3 Oct 2026). Kept for history; do not build from it.
 - **Decision:** v1.0 ships co-parent and Family (contributor) roles in the iOS app: invites by link or code naming one child, explicit role, approvals by either parent, "Family can read", leave and remove with letter retention, per-child sharing (B-REQ-007, -009, -010, -011, PRD-REQ-014). Family members install the free app and sign in. The web contribution page (B-REQ-008), anonymous web identity (PRD-REQ-007, K-08), browser audio encryption (B-NFR-005 web part) and the Hindi web page (B-REQ-022) move to **v1.1**. Invite links open the app if installed, else the App Store page; nothing in v1.0 copy promises "no app needed".
 - **Rationale:** grandparents writing is a core research finding (UR R14), so it cannot wait; the web page is a second product (anonymous auth, browser crypto, `apps/web`; TDD 10 risk 10) and removes the riskiest security surface from v1.0 (TDD 04 finding 2).
 - **Alternatives:** co-parent only (TDD 10 Q3 recommendation; rejected by the founder); web page at launch (about 5 more weeks).
@@ -218,7 +228,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 - **Default if unanswered:** Devanagari for Hindi with English in Latin; Roman offered only if the experiment shows it works.
 
 ### D-032 Shared voice in v1.0
-- **Status:** Recommended (needs founder OK). Proceed: **no** for upload code; design and the key scheme spike may start.
+- **Status:** **Superseded by D-053** (founder, evening of 3 Oct 2026: backup yes in v1.0, sharing in v1.1). Was: Recommended (needs founder OK). Kept for history; the v1.1 design may reuse it.
 - **Problem:** with family in the app (D-002), a grandparent's letter text syncs, but their recording stays on their own phone. Today family hear a recording only once it is backed up (K-33), and backup is Plus (C 4.1). So in a Free family the parents could never hear Nani's voice, and "Read together, in their voices" fails for most families (TDD 10 contradiction 9).
 - **Decision (recommended):** v1.0 includes one audio upload pipeline using the simple scheme from TDD 10 (per-file AES-256-GCM key generated on the phone; the file key is wrapped by a server-held key in an Edge Function; members get playback through an Edge Function that checks `book_access` and returns a short-lived URL plus the unwrapped file key over TLS). Policy for what uploads: **Free** = recordings of letters that are in a shared book (a book with two or more members); **Plus** = every recording (private letters included) plus restore on a new phone. Vault mode, per-child keys, X25519 member grants and the synchronizable Keychain module (ADR 0006) move to later.
 - **Rationale:** keeps the core promise for every family; one pipeline for both tiers; Storage cost is small at launch (about 19 MB per family per month, ARCH 7); removes the custom native module from v1.0.
@@ -333,10 +343,77 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 
 ---
 
+## Brand and founder decisions of 3 Oct 2026 (evening)
+
+Sources: founder decisions relayed by the coordinator on the evening of 3 Oct 2026; open founder questions F-1 to F-10 in `docs/brand/CONSISTENCY_AUDIT.md` section 3; `docs/agents/BRIEF-2026-10-03.md`. Coordinator defaults are marked Recommended; the founder may override them with a new entry.
+
+### D-051 Primary mark: logo round 3 `final-a`
+- **Status:** Decided (founder, 3 Oct 2026).
+- **Decision:** the brand mark is r3 `final-a`: two opening quotation marks, one large and one small (0.62 of its size, leaning 14 degrees toward it), with an outlined EB Garamond wordmark; sepia "Leather" app icon tile `#9A613C` to `#7F4F30` with a paper mark, dark tile `#2C2926` to `#1F1B18` with an `#D9A47E` mark. `packages/brand/assets/logo/primary/` is its byte-identical packaged rebuild. It retires round 1 directions a ("envelope e") and b (script mark), round 2, the rest of round 3, the interim Literata email lockup, the serif "E" monogram favicon and avatar, and the "envelope line" brand motif (CREATIVE.md 3).
+- **Rationale:** quotation marks say "these are your exact words", the product's promise (CLAUDE.md constitution); the pair reads as parent and child (BRAND_SYSTEM.md 1). The neutral reviews of round 2 finalists shaped the round 3 brief; final-a was then chosen by the founder from the r3 presentation.
+- **Evidence:** presentation `docs/brand/logo-r3/early-letters-mark.html`; brief `docs/brand/logo-r3/BRIEF.md`; neutral reviews `docs/brand/logo-r2/neutral-review/` (`final-strategy.md`, `final-parents.md`, `final-culture-production.md`, plus `cold-read.md`, `strategy.md`, `parents.md`, `culture-production.md`); colour and type study `packages/brand/assets/logo/r3/color-type/RECOMMENDATION.md` and `PROPOSED_TOKENS.md`.
+- **Alternatives:** r3 `final-b`; round 1 directions a and b; the interim Literata lockup.
+- **Owner:** founder; design systems. **Date:** 2026-10-03.
+- **Effects:** `docs/brand/BRAND_SYSTEM.md` v1.0; DESIGN_LANGUAGE 2a; CREATIVE 3; EMAIL_IDENTITY v0.2; `accentDeep` and `icon` tokens in `packages/brand` and `@scribe/design-tokens` (parity test); splash spec in PRD A and TDD 01 (CA-042); CONSISTENCY_AUDIT CA-001 to CA-013, CA-040 to CA-044. Trademark clearance of the mark is still open.
+
+### D-052 The brand asset registry is the single source
+- **Status:** Decided (founder, 3 Oct 2026).
+- **Decision:** every brand asset has one permanent id in `packages/brand/registry.ts` (generated `registry.json` for plain Node), and every touchpoint (app icon, splash, headers, paywall, website, favicon, OG image, email, App Store, book, cards, press kit) is a context that lists the ids it uses. Code resolves files through `assetFor(context)` (or `asset(id)` when no context fits) and never hardcodes a brand file path. Contexts reference only `primary` assets; retired files are `deprecated` with `supersededBy`.
+- **Rationale:** the audit found rejected directions wired into the website and email because files were picked by path (CA-001, CA-008, CA-010).
+- **Owner:** design systems. **Date:** 2026-10-03.
+- **Effects:** `packages/brand/test/registry.test.ts`; BRAND_SYSTEM.md 2; `packages/emails` header and layout sizes; `apps/web` asset sync.
+
+### D-053 Recordings backup in v1.0; sharing in v1.1
+- **Status:** Decided (founder, evening of 3 Oct 2026). Supersedes D-032; answers CONSISTENCY_AUDIT F-2.
+- **Decision:** encrypted backup of recordings ships in v1.0. Family members hearing each other's recordings (sharing) is v1.1, consistent with Brief decision 9.
+- **Consequences:** copy must not promise family listening in v1.0 (CA-026: website and microphone purpose string). Plus scope, privacy pages and the mic string follow from this; the content and legal lanes own those edits.
+- **Owner:** founder; backend, content, legal. **Date:** 2026-10-03.
+
+### D-054 Edit feature name: "Word for word"
+- **Status:** Decided (founder, evening of 3 Oct 2026). Answers CONSISTENCY_AUDIT F-3.
+- **Decision:** the feature is named "Word for word". "Lightly tidied", "Tidying" and other words that suggest software tidied a letter leave the product (VOICE.md).
+- **Effects:** content lane renames the strings listed in CA-027 and updates the glossary row "What the machine changes".
+- **Owner:** founder; content. **Date:** 2026-10-03.
+
+### D-055 The website shows the price
+- **Status:** Decided (founder, evening of 3 Oct 2026). Answers CONSISTENCY_AUDIT F-4.
+- **Decision:** the website shows the Plus price from Brief decision 3 ($3.99 a month with a 1-month free trial; $29.99 a year with a 2-month free trial) instead of stripping `{price}`.
+- **Effects:** CA-029: `apps/web/src/lib/fill.ts` and `packages/content/BRAND.md` (web and content lanes).
+- **Owner:** founder; web, content. **Date:** 2026-10-03.
+
+### D-056 Brand name only from `packages/brand`
+- **Status:** Decided (founder, evening of 3 Oct 2026). Answers CONSISTENCY_AUDIT F-6.
+- **Decision:** CLAUDE.md stands: the public name lives only in `packages/brand/index.ts`. `packages/content` imports `brand` and builds strings with template literals (for example `` `${brand.name}, the baby memory book you fill by talking.` ``); no copy file types the name.
+- **Effects:** CA-035 (about 79 literals in `packages/content/src`).
+- **Owner:** founder; content. **Date:** 2026-10-03.
+
+### D-057 Family at v1.0: co-parent only
+- **Status:** Decided (founder, Brief decision 5); recorded here as the coordinator default answer to CONSISTENCY_AUDIT F-1. Supersedes D-002.
+- **Decision:** v1.0 invites only a co-parent. Other family members (grandparents and the rest), their approvals and the web contribution page come later; the database keeps contributor support and the app hides that path.
+- **Effects:** CA-024 (site, store, BRAND.md copy); CREATIVE.md tags grandparent moments v1.1; PRD K-35 to be updated by the PM lane.
+- **Owner:** founder; PM. **Date:** 2026-10-03.
+
+### D-058 Plan display names: Plus Monthly and Plus Annual
+- **Status:** Recommended (coordinator default; answers CONSISTENCY_AUDIT F-5). Proceed: yes.
+- **Decision:** App Store Connect display names are exactly "Plus Monthly" and "Plus Annual", matching the subscription terms; copy says "Plus" (CA-030).
+- **Owner:** founder (App Store Connect); content. **Date:** 2026-10-03.
+
+### D-059 Website footer line
+- **Status:** Recommended (coordinator default; answers CONSISTENCY_AUDIT F-7). Proceed: yes.
+- **Decision:** the website footer reads "(c) 2026 Early Letters", with the name from `brand.name`. ASCII "(c)", not the copyright sign: the content rules test (`packages/content/test/rules.test.ts`) rejects any `\p{Extended_Pictographic}` character, and U+00A9 is one. The individual publisher's legal name appears only inside the legal pages (D-004). Email footers keep no copyright line (EMAIL_IDENTITY 5.2).
+- **Owner:** web; content. **Date:** 2026-10-03.
+
+### D-060 Old logo directions archived
+- **Status:** Recommended (coordinator default; answers CONSISTENCY_AUDIT F-8). Proceed: yes.
+- **Decision:** round 1 directions a and b, round 2, round 3 (except what `primary/` rebuilds), the interim email lockup and the E monogram stay in the repo as history, registered `deprecated.*` in the registry, and are not deleted. Nothing may use, copy or link them (D-052).
+- **Owner:** design systems. **Date:** 2026-10-03.
+
+---
+
 ## Decisions that still need the founder (in priority order)
 
 1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). Needed by 16 Oct.
-2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). Needed by 23 Oct.
+2. ~~D-032~~ answered by D-053 (backup in v1.0, sharing in v1.1).
 3. **D-001 tooling** StoreKit 2 direct versus RevenueCat (ADR 0013). Override window closes when BL-213 starts (about 9 Nov).
 4. **D-030** Beta on TestFlight; no beta line in the store listing. Needed before the store listing is written (week 13).
 5. **D-004 hedge** Accept the guideline 5.1.1(ix) risk as an individual, or start an entity in parallel. Needed by 27 Nov.

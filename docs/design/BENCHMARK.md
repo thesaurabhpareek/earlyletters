@@ -62,7 +62,7 @@ HIG text was read from Apple's documentation JSON for the same URLs.
 
 **Adopt**
 1. **Audio and transcript live together** in one entry (S6). We go further: the audio is the primary artefact, text is its caption.
-2. **"On This Day" resurfacing**, reframed as "One month ago, Mama wrote…" on Tonight.
+2. **"On This Day" resurfacing**, reframed as "One month ago, Mama wrote..." on Tonight.
 3. **Print as the end state** (S6). Lay out the Book screen like spreads so the print edition is a continuation, not a different product.
 4. **E2E encryption as a headline trust claim** (S6), if engineering can support it.
 
@@ -77,7 +77,7 @@ HIG text was read from Apple's documentation JSON for the same URLs.
 **Adopt**
 1. **Breath as a visual metaphor.** Headspace's animated, breath-led motion (S7) validates our "breathing glow" on the recording screen.
 2. **Emotional range, not forced cheer.** Copy and empty states allow "hard day" letters; nothing assumes a smile.
-3. **One ownable shape echoed in type and UI** (the smile curve, S7). Ours: the soft envelope-flap arc used in the capture surface and chapter covers **(opinion)**.
+3. **One ownable shape echoed in type and UI** (the smile curve, S7). Ours: the quotation pair (the primary mark, docs/brand/BRAND_SYSTEM.md 1); its curve may echo in the capture surface and chapter covers **(opinion)**. The earlier envelope-flap arc is retired.
 
 **Avoid**
 - **Bright, "bold and lively" palette** (S7). Right for a mental-health brand fighting greyness; wrong for a night-time keepsake whose dark mode must not glare.

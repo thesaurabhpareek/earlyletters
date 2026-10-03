@@ -70,7 +70,7 @@ We collect only what the book needs. Many things never leave your phone. The tab
 3. **Fixes are small and visible.** The app only repairs microphone and grammar slips, like a misheard name or a stray "um". It never adds meaning. The original transcript is kept unchanged, and you can undo any fix.
 4. **Optional editing help (not on at launch).** We may later offer an optional step where a hosted open model suggests more small fixes. If we do, we will ask you first, send only text (never audio), and the same no-retention and no-training terms will apply. We will update this policy before turning it on.
 
-Speech recognition works out which words were said. It does not identify who is speaking, tell voices apart, or keep any measurement of your voice. It keeps only the text and the timing of each word, so the book can highlight words as a recording plays.
+Speech recognition works out which words were said. It does not identify who is speaking, tell voices apart, or keep any measurement of your voice. It keeps only the text and the timing of each word, so that a later version of the book can highlight words as a recording plays.
 
 ## 5. Why we use information
 
@@ -107,7 +107,7 @@ We do not use information about a child for anything except building that child'
 
 **Your working notes stay yours.** Only the author of a letter can see its original transcript and the list of fixes. Everyone else who can read the letter sees the final text and can play the recording if it is available to them.
 
-**Recordings.** A recording that is not backed up stays on the phone it was made on. Family members can play recordings that are backed up, or that were sent from the web page, and a copy may stay on their phone after playing.
+**Recordings.** A recording stays on the phone it was made on unless its author backs it up. At launch, a backup is for its author alone: no one else, including a co-parent, can play another person's recordings. When family listening arrives in a later version, family members will be able to play recordings that are backed up, or that were sent from the web page, and a copy may stay on their phone after playing. We will update this policy before that happens.
 
 **People who have left.** If someone leaves or is removed, they can no longer read the book. Recordings they already played may still be on their phone, and backups made before they left stay readable with the keys they already had.
 
@@ -119,7 +119,7 @@ We do not use information about a child for anything except building that child'
 
 Each access is logged and reviewed.
 
-**Recordings you back up.** Recordings are encrypted on your phone before they are uploaded. In **Standard** backup mode, a locked copy of the key is held on our servers so you can get your recordings back if you lose your phone, and so family can play recordings on the web page. This means we could technically open them, under the same narrow conditions, and our server does unlock a recording briefly when a family member plays it on the web page. In **Vault** mode, no copy of the key is held by us: only you and the family devices you approve can open them, and if you lose every device and your Recovery Kit, no one can open those backups, including us.
+**Recordings you back up.** Recordings are encrypted on your phone before they are uploaded. In **Standard** backup mode, a locked copy of the key is held on our servers so you can get your recordings back if you lose your phone (and, once the family web page is available, so family can play recordings there). This means we could technically open them, under the same narrow conditions, and once the web page is available our server will unlock a recording briefly when a family member plays it there. In **Vault** mode, no copy of the key is held by us: only you and the family devices you approve can open them, and if you lose every device and your Recovery Kit, no one can open those backups, including us.
 
 **Legal requests.** We disclose information to authorities only when a valid legal process requires it, and we push back on requests that are too broad. Where the law allows, we tell you first. We will publish how many requests we receive.
 

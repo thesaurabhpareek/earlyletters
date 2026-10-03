@@ -23,13 +23,18 @@
  *   {manageUrl}            Apple subscriptions page (L3 to confirm the exact URL; UNVERIFIED)
  *   {subscriptionTermsUrl} published Subscription terms
  *
+ * Names (BRAND.md glossary): the product is "Plus", never "Early Letters Plus" or "Book Plus"; plans are
+ * "Plus Monthly" and "Plus Annual" (must equal the App Store display names). What we send is a "reminder",
+ * never a "note" ("note" only means a short letter someone makes). The brand name comes from packages/brand.
+ *
  * Every entry here is legal-sensitive. Counsel confirms wording once (BL-104).
  */
+import { brand } from '@scribe/brand';
 import type { EmailCopy } from './types';
 
 const FALLBACK = "Button not working? Copy and paste this link:";
 const CANCEL_STEPS =
-  "To cancel, on your iPhone open Settings, tap your name, then Subscriptions, then Early Letters. Or in the app: Settings, Plan, Manage subscription.";
+  `To cancel, on your iPhone open Settings, tap your name, then Subscriptions, then ${brand.name}. Or in the app: Settings, Plan, Manage subscription.`;
 const STAYS_FREE =
   "Whatever you decide, every letter and recording you made stays yours to read, play and export, free.";
 const REFUNDS_AND_TERMS =
@@ -47,7 +52,7 @@ export const billingEmails = {
     preheader: "Free until {trialEndDate}. A copy of what you agreed to, to keep.",
     heading: "Plus is on, free until {trialEndDate}",
     body: [
-      "Thank you for trying Early Letters Plus. This email is your copy of what you agreed to on {agreedDate}. Please keep it.",
+      "Thank you for trying Plus. This email is your copy of what you agreed to on {agreedDate}. Please keep it.",
       "Your plan: {planName}. The free trial runs until {trialEndDate}.",
       "After the trial, Plus renews automatically at {price} {billingPeriod} until you cancel. Apple charges your Apple Account on {trialEndDate}, then at the start of each new {periodUnit}.",
       "To avoid being charged, cancel by {cancelByDate}, at least 24 hours before the trial ends. Plus keeps working until the trial ends.",
@@ -71,7 +76,7 @@ export const billingEmails = {
     preheader: "A copy of your plan, the price and how to cancel, for your records.",
     heading: "Plus is on. Thank you.",
     body: [
-      "Thank you for choosing Early Letters Plus. This email is your copy of what you agreed to on {agreedDate}. Please keep it.",
+      "Thank you for choosing Plus. This email is your copy of what you agreed to on {agreedDate}. Please keep it.",
       "Your plan: {planName}, {price} {billingPeriod}, charged by Apple to your Apple Account.",
       "Plus renews automatically at {price} {billingPeriod} until you cancel. Your next renewal is on {renewalDate}.",
       "To avoid the next charge, cancel by {cancelByDate}, at least 24 hours before it renews. Plus keeps working until then.",
@@ -92,14 +97,14 @@ export const billingEmails = {
     id: 'trial-ending-week',
     subject: "Your free trial ends on {trialEndDate}",
     preheader: "Nothing to do if you want to keep Plus, and an easy way out if not.",
-    heading: "A note before your trial ends",
+    heading: "A reminder before your trial ends",
     body: [
-      "Your free trial of Early Letters Plus ({planName}) ends on {trialEndDate}.",
+      "Your free trial of {planName} ends on {trialEndDate}.",
       "If you keep it, Plus renews automatically: Apple charges {price} {billingPeriod} on {trialEndDate}, then at the start of each new {periodUnit}, until you cancel.",
       "If you would rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
       CANCEL_STEPS,
       STAYS_FREE,
-      "We will send one more note a few days before the trial ends.",
+      "We will send one more reminder a few days before the trial ends.",
     ],
     cta: MANAGE_CTA,
     fallback: FALLBACK,
@@ -112,15 +117,15 @@ export const billingEmails = {
   'trial-ending-long': {
     id: 'trial-ending-long',
     subject: "Your Plus trial ends on {trialEndDate}",
-    preheader: "An early note, so the date and the price are never a surprise.",
-    heading: "An early note about your trial",
+    preheader: "An early reminder, so the date and the price are never a surprise.",
+    heading: "An early reminder about your trial",
     body: [
-      "Your free trial of Early Letters Plus ({planName}) ends on {trialEndDate}.",
+      "Your free trial of {planName} ends on {trialEndDate}.",
       "If you keep it, Plus renews automatically: Apple charges {price} {billingPeriod} on {trialEndDate}, then at the start of each new {periodUnit}, until you cancel.",
       "If you would rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
       CANCEL_STEPS,
       STAYS_FREE,
-      "We will send another note closer to the date.",
+      "We will send another reminder closer to the date.",
     ],
     cta: MANAGE_CTA,
     fallback: FALLBACK,
@@ -136,7 +141,7 @@ export const billingEmails = {
     preheader: "Apple charges {price} on {trialEndDate} unless you cancel by {cancelByDate}.",
     heading: "Your trial ends on {trialEndDate}",
     body: [
-      "Your free trial of Early Letters Plus ({planName}) ends on {trialEndDate}. This is our last note before then.",
+      "Your free trial of {planName} ends on {trialEndDate}. This is our last reminder before then.",
       "If you keep it, Plus renews automatically: Apple charges {price} {billingPeriod} on {trialEndDate}, then at the start of each new {periodUnit}, until you cancel.",
       "If you would rather not continue, cancel by {cancelByDate}. Plus keeps working until the trial ends.",
       CANCEL_STEPS,
@@ -155,13 +160,13 @@ export const billingEmails = {
     preheader: "Your yearly plan, the price, and how to change it if you want to.",
     heading: "Your annual plan renews on {renewalDate}",
     body: [
-      "Your Early Letters Plus plan ({planName}) renews automatically on {renewalDate}.",
+      "Your plan, {planName}, renews automatically on {renewalDate}.",
       "Apple will charge {price} for another year, unless you cancel by {cancelByDate}.",
       PLUS_INCLUDES,
       "If you want to keep it, there is nothing to do.",
       CANCEL_STEPS,
       STAYS_FREE,
-      "We will send one more note about a week before it renews.",
+      "We will send one more reminder about a week before it renews.",
     ],
     cta: MANAGE_CTA,
     fallback: FALLBACK,
@@ -176,7 +181,7 @@ export const billingEmails = {
     preheader: "Apple charges {price} for another year unless you cancel by {cancelByDate}.",
     heading: "A quick reminder about your plan",
     body: [
-      "Your Early Letters Plus plan ({planName}) renews automatically on {renewalDate}, at {price} for another year.",
+      "Your plan, {planName}, renews automatically on {renewalDate}, at {price} for another year.",
       "If you want to keep it, there is nothing to do.",
       "If you would rather not continue, cancel by {cancelByDate}. Plus keeps working until {renewalDate}.",
       CANCEL_STEPS,
@@ -192,11 +197,11 @@ export const billingEmails = {
   // the AB 2863 annual reminder (product, charges, how to cancel, in the same medium); counsel confirms.
   'anniversary-reminder': {
     id: 'anniversary-reminder',
-    subject: "Your yearly note about Plus",
+    subject: "Your yearly reminder about Plus",
     preheader: "What your plan includes, what it costs, and how to change it.",
-    heading: "Once a year, a short note about your plan",
+    heading: "Once a year, a short reminder about your plan",
     body: [
-      "We send this once a year, so nothing about Early Letters Plus is ever a surprise. There is nothing you need to do.",
+      "We send this once a year, so nothing about Plus is ever a surprise. There is nothing you need to do.",
       "Your plan: {planName}. It costs {price} {billingPeriod}, charged by Apple, and renews automatically until you cancel. Your next charge is on {renewalDate}.",
       PLUS_INCLUDES,
       "You can cancel any time. Plus keeps working until the end of the {periodUnit} you paid for.",
@@ -217,7 +222,7 @@ export const billingEmails = {
     preheader: "Nothing changes unless you agree. Here is what is new, and when.",
     heading: "The price of Plus changes on {effectiveDate}",
     body: [
-      "From {effectiveDate}, Early Letters Plus ({planName}) will cost {newPrice} {billingPeriod}. Today you pay {oldPrice}.",
+      "From {effectiveDate}, your plan, {planName}, will cost {newPrice} {billingPeriod}. Today you pay {oldPrice}.",
       "We never raise your price unless you agree. Apple will ask you to agree to the new price.",
       "If you agree, your plan renews at {newPrice} from {effectiveDate}. If you do not, it will not renew, and Plus ends when your current {periodUnit} ends.",
       "You can also cancel any time, before or after the change.",
@@ -238,7 +243,7 @@ export const billingEmails = {
     preheader: "Plus stays on until {accessEndDate}, and everything you made stays yours.",
     heading: "Done. Your plan will not renew.",
     body: [
-      "You turned off renewal for Early Letters Plus, so there will be no further charges.",
+      "You turned off renewal for Plus, so there will be no further charges.",
       "Plus keeps working until {accessEndDate}.",
       "After that, your books, letters and recordings all stay. Recordings already backed up stay stored and downloadable. New recordings are kept on your phone.",
       "Writing, reading, playing your recordings, export and family letters are free, always.",
@@ -257,7 +262,7 @@ export const billingEmails = {
     preheader: "Every letter and recording stays yours, to read, play and export.",
     heading: "Everything you made is still here",
     body: [
-      "Your Early Letters Plus plan ended on {accessEndDate}, and there will be no further charges.",
+      "Your Plus plan ended on {accessEndDate}, and there will be no further charges.",
       "Writing, reading, playing your recordings, export and family letters are free, always.",
       "Every book you already have stays open for writing, reading and export.",
       "Recordings already backed up stay stored, and you can download them any time. New recordings are kept on your phone.",
@@ -271,11 +276,11 @@ export const billingEmails = {
   // it has been, never counts. Helps a payer stop paying. Kind is our reading; L2 confirms.
   'plus-quiet': {
     id: 'plus-quiet',
-    subject: "A quiet note about your plan",
+    subject: "A quiet word about your plan",
     preheader: "If Plus is not right for this season, here is how to stop it. No hard feelings.",
     heading: "Your plan, at your pace",
     body: [
-      "You have Early Letters Plus at {price} {billingPeriod}. Some seasons are full of letters and some are not, and both are normal.",
+      "You have Plus at {price} {billingPeriod}. Some seasons are full of letters and some are not, and both are normal.",
       "If Plus is not earning its place right now, you can cancel and keep everything you made. Your book stays open, free.",
       "If you want to keep it, there is nothing to do.",
       CANCEL_STEPS,

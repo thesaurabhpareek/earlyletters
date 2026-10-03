@@ -10,11 +10,15 @@
  * this person inside the app (E-2).
  *
  * Placeholders: {parentName}, {deletionDate}, {appUrl}.
+ *
+ * v1.1: these reach family members beyond the co-parent, who join in v1.1 (Brief decision 5).
+ * In v1.0 no book has such members, so neither email is sent.
  */
+import { brand } from '@scribe/brand';
 import type { EmailCopy } from './types';
 
 const FALLBACK = "Button not working? Copy and paste this link:";
-const OPEN_APP = { label: "Open Early Letters", urlVar: "{appUrl}" };
+const OPEN_APP = { label: `Open ${brand.name}`, urlVar: "{appUrl}" };
 
 export const familyEmails = {
   // L2 review: B-REQ-016, DATA-REQ-053. To each contributor within 1 hour of a sole parent deleting
@@ -27,7 +31,7 @@ export const familyEmails = {
     body: [
       "{parentName} has decided to delete the book of letters you write to. It will be deleted on {deletionDate}.",
       "Every letter you wrote belongs to you. You can save a copy, with your recordings, before then.",
-      "Open Early Letters on your phone. Tap Settings. Then tap Your data, and Export everything.",
+      `Open ${brand.name} on your phone. Tap Settings. Then tap Your data, and Export everything.`,
       "If {parentName} changes their mind before {deletionDate}, the book stays, and we will let you know.",
       "Thank you for every word you gave this book.",
     ],

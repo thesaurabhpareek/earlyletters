@@ -1,3 +1,10 @@
+// DEPRECATED (Oct 3 2026): the B3 interim lockup and directions A/B were replaced by the primary mark.
+// Email logos, avatar and favicons are now built by packages/brand/scripts/build-touchpoints.mjs from
+// packages/brand/assets/logo/primary/. This script would overwrite them with retired art, so it refuses to run.
+if (!process.env.ALLOW_DEPRECATED_BRAND_BUILD) {
+  console.error('Deprecated: run node packages/brand/scripts/build-touchpoints.mjs instead (see docs/brand/BRAND_SYSTEM.md).');
+  process.exit(1);
+}
 // Email versions of logo directions A and B (lanes B1, B2).
 //
 //   node packages/brand/assets/email/source/build-directions.mjs [a] [b]

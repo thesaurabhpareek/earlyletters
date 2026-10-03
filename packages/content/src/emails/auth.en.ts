@@ -23,6 +23,7 @@
  * email says we never ask for codes by phone, text or chat. Copy never says
  * whether an account exists to anyone but the inbox owner (enumeration-safe).
  */
+import { brand } from '@scribe/brand';
 import type { EmailCopy } from './types';
 
 const FALLBACK = "Button not working? Copy and paste this link:";
@@ -94,7 +95,7 @@ export const authEmails = {
     id: 'welcome',
     subject: "Welcome. The first page is yours.",
     preheader: "A minute of talking is plenty. Here is how to begin, and what we promise.",
-    heading: "Welcome to Early Letters",
+    heading: `Welcome to ${brand.name}`,
     body: [
       "You are in. Here is all there is to it: open the app, tap the red circle and talk.",
       "A minute is plenty. A quiet day is fine too.",
@@ -102,7 +103,7 @@ export const authEmails = {
       "Only the family you invite can read your letters.",
       "Questions, or an idea? Just reply. A real person reads every email.",
     ],
-    cta: { label: "Open Early Letters", urlVar: "{appUrl}" },
+    cta: { label: `Open ${brand.name}`, urlVar: "{appUrl}" },
     fallback: FALLBACK,
     safety: "Did not sign up? Reply to this email and we will sort it out.",
     category: 'auth',
@@ -142,7 +143,7 @@ export const authEmails = {
     preheader: "Just letting you know. If this was you, there is nothing else to do.",
     heading: "Sign in with Apple was added",
     body: [
-      "You can now sign in to Early Letters with your Apple Account, as well as with {email}.",
+      `You can now sign in to ${brand.name} with your Apple Account, as well as with {email}.`,
       "If this was you, you are all set.",
     ],
     safety: "Was this not you? Reply to this email straight away and we will help you secure your account. We will never ask for a code or a password.",
@@ -154,11 +155,11 @@ export const authEmails = {
   // Supabase security notification "Sign-in method linked".
   'google-account-linked': {
     id: 'google-account-linked',
-    subject: "Google sign-in is now on your account",
+    subject: "Sign in with Google is now on your account",
     preheader: "Just letting you know. If this was you, there is nothing else to do.",
     heading: "Sign in with Google was added",
     body: [
-      "You can now sign in to Early Letters with your Google account, as well as with {email}.",
+      `You can now sign in to ${brand.name} with your Google Account, as well as with {email}.`,
       "If this was you, you are all set.",
     ],
     safety: "Was this not you? Reply to this email straight away and we will help you secure your account. We will never ask for a code or a password.",
@@ -173,7 +174,7 @@ export const authEmails = {
     preheader: "If this was you, there is nothing to do. If not, here is the next step.",
     heading: "Did you just sign in on {device}?",
     body: [
-      "Your Early Letters account was signed in on {device}, {when}.",
+      `Your ${brand.name} account was signed in on {device}, {when}.`,
       "If that was you, there is nothing to do.",
       "If it was not, reply to this email. We will sign that device out and help you secure your account.",
     ],
@@ -189,7 +190,7 @@ export const authEmails = {
     preheader: "Your account now uses a new address. If this was you, there is nothing to do.",
     heading: "Your sign-in email has changed",
     body: [
-      "The email for your Early Letters account changed from {oldEmail} to {newEmail}.",
+      `The email for your ${brand.name} account changed from {oldEmail} to {newEmail}.`,
       "Your letters, recordings and family are all still there. Sign-in links now go to the new address.",
       "If this was you, you are all set.",
     ],
@@ -205,7 +206,7 @@ export const authEmails = {
     preheader: "One tap and your sign-in links come here from now on. Works for {expiresIn}.",
     heading: "Is this your new address?",
     body: [
-      "You asked to sign in to Early Letters with {newEmail} instead of {oldEmail}.",
+      `You asked to sign in to ${brand.name} with {newEmail} instead of {oldEmail}.`,
       "Tap below to confirm. Your letters and family come with you. Nothing else changes.",
       "The link and the code work once, for {expiresIn}.",
     ],
@@ -226,7 +227,7 @@ export const authEmails = {
     preheader: "Enter it in the app to finish. It works for {expiresIn}. Keep it to yourself.",
     heading: "Here is your confirmation code",
     body: [
-      "You asked to delete your Early Letters account. To make sure it is really you, enter this code in the app.",
+      `You asked to delete your ${brand.name} account. To make sure it is really you, enter this code in the app.`,
       "Want a copy first? You can export every letter and recording, free, from Settings before you confirm.",
       "The code works once, for {expiresIn}.",
     ],

@@ -23,24 +23,39 @@ type PermissionCopyModule = typeof import('./src/lib/permission-copy');
 const ROOT = typeof __dirname === 'string' ? __dirname : process.cwd();
 
 /**
- * Loads a dependency-free TypeScript file at config time. Expo transpiles
- * only this file; nested .ts imports would need Node type stripping, which
- * EAS build images do not promise.
+ * Loads a TypeScript file at config time. Expo transpiles only this file, and
+ * Node type stripping is not promised on EAS build images, so each .ts file is
+ * transpiled here. Relative imports between them (packages/brand/index.ts
+ * re-exports ./registry) are resolved the same way; anything else goes to
+ * Node's require.
  */
-function loadTs<T>(relative: string): T {
+function loadTs<T>(relative: string, from = ROOT): T {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const ts = require('typescript') as typeof import('typescript');
-  const file = path.join(ROOT, relative);
+  const file = path.resolve(from, relative.endsWith('.ts') ? relative : `${relative}.ts`);
   const { outputText } = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
     fileName: file,
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   });
+  const localRequire = (id: string) => (id.startsWith('.') ? loadTs(id, path.dirname(file)) : require(id));
   const mod = { exports: {} as Record<string, unknown> };
-  new Function('module', 'exports', 'require', outputText)(mod, mod.exports, require);
+  new Function('module', 'exports', 'require', outputText)(mod, mod.exports, localRequire);
   return mod.exports as T;
 }
 
-const { brand, bundleId } = loadTs<BrandModule>('../../packages/brand/index.ts');
+const { brand, bundleId, assetFor } = loadTs<BrandModule>('../../packages/brand/index.ts');
+
+/**
+ * Icon files come from the brand registry (packages/brand/registry.ts), never
+ * from typed paths: context `app.icon` = default, dark, tinted 1024 masters.
+ * Registry paths are repo-relative; this config resolves from apps/mobile.
+ */
+const fromRepo = (p: string | undefined) => {
+  if (!p) throw new Error('brand registry: icon asset has no path');
+  return path.posix.join('..', '..', p);
+};
+const [iconDefault, iconDark, iconTinted] = assetFor('app.icon').map((a) => fromRepo(a.path));
+const webFavicon = fromRepo(assetFor('web.favicon').find((a) => a.format === 'png')?.path);
 const { permissionCopy } = loadTs<PermissionCopyModule>('./src/lib/permission-copy.ts');
 
 type AppEnv = 'development' | 'preview' | 'production';
@@ -57,15 +72,20 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: brand.codename,
   version: '1.0.0',
   orientation: 'portrait',
-  // TODO(design, A-REQ-001): the envelope mark does not exist yet; these are the scaffold icons.
-  icon: './assets/images/icon.png',
+  // Brand registry `app.icon` (approved mark, Oct 3 2026). Android uses this until its adaptive set exists.
+  icon: iconDefault,
   scheme: brand.scheme,
   userInterfaceStyle: 'automatic',
   backgroundColor: brand.colors.paper,
   ios: {
     bundleIdentifier: appId,
-    // TODO(design): scaffold Icon Composer file; replace with the brand icon.
-    icon: './assets/expo.icon',
+    // Brand registry `app.icon`: light/dark/tinted 1024 PNGs, each opaque and square (ExpoConfig `IOSIcons`,
+    // checked in @expo/config-types for SDK 57; https://docs.expo.dev/develop/user-interface/app-icons/).
+    // TODO(design): Expo SDK 54+ also accepts an Icon Composer `.icon` folder here, which gives iOS 26 the real
+    // Liquid Glass layers and replaces all three PNGs. Build it on a Mac in Icon Composer from
+    // packages/brand/assets/logo/primary/symbol.svg with the tile gradient set in Composer (not baked),
+    // register it in the brand registry, then point this at it. The scaffold ./assets/expo.icon is not ours.
+    icon: { light: iconDefault, dark: iconDark, tinted: iconTinted },
     supportsTablet: false,
     infoPlist: {
       CADisableMinimumFrameDurationOnPhone: true,
@@ -73,6 +93,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: appId,
+    // TODO(design, Android is v1.1): scaffold adaptive layers; build them from the brand registry (logo.symbol.*) when Android starts.
     adaptiveIcon: {
       backgroundColor: brand.colors.paper,
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -83,7 +104,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   web: {
     output: 'single',
-    favicon: './assets/images/favicon.png',
+    favicon: webFavicon,
   },
   plugins: [
     'expo-router',

@@ -1,8 +1,9 @@
 /**
- * Email design tokens. Colours come from @scribe/brand (the single source);
- * the only values derived here are the dark `accentSoft`, `onAccent` and
- * `surface`, copied from docs/design/DESIGN_LANGUAGE.md section 2 where their
- * contrast ratios are computed.
+ * Email design tokens. Brand colours come from @scribe/brand (the single source);
+ * the UI roles brand does not define (light `surface`, dark `accentSoft` and
+ * `onAccent`) are imported from @scribe/design-tokens, where their contrast
+ * ratios are computed (docs/design/DESIGN_LANGUAGE.md section 2). No hex value is
+ * typed in this file; packages/design-tokens/test/brand-parity.test.ts checks it.
  *
  * Email-specific choices:
  * - No pure white (#FFFFFF) and no pure black anywhere. Apple Mail and several
@@ -14,9 +15,13 @@
  * - Type sizes are px (email clients ignore rem roots). 17px body keeps iOS
  *   Mail from auto-scaling text and reads comfortably on a 375px screen.
  */
-import { brand } from '@scribe/brand';
+import { asset, brand } from '@scribe/brand';
+import { tokens } from '@scribe/design-tokens';
 
 const c = brand.colors;
+
+/** Primary email logo, resolved through the registry (packages/brand/registry.ts), never by file name. */
+const emailLogo = asset('email.logo.light@1x').dimensions!;
 
 export type Palette = {
   /** Outer background, behind the sheet. */
@@ -34,7 +39,7 @@ export type Palette = {
 };
 
 export const light: Palette = {
-  desk: '#F5EFE7', // DESIGN_LANGUAGE `surface` (light); ink on it 12.98:1
+  desk: tokens.light.surface, // ink on it 12.98:1
   sheet: c.paper,
   ink: c.ink,
   inkMuted: c.inkMuted,
@@ -50,8 +55,8 @@ export const dark: Palette = {
   ink: c.inkDark,
   inkMuted: c.inkMutedDark,
   accent: c.accentDark,
-  accentSoft: '#3A2E25', // DESIGN_LANGUAGE dark `accentSoft`; ink on it 11.20:1
-  onAccent: '#1E1612', // DESIGN_LANGUAGE dark `onAccent`; on accent 8.11:1
+  accentSoft: tokens.dark.accentSoft, // ink on it 11.20:1
+  onAccent: tokens.dark.onAccent, // on accent 8.11:1
   line: c.lineDark,
 };
 
@@ -94,9 +99,9 @@ export const layout = {
   radiusSmall: 8,
   /** Minimum tap target, WCAG 2.5.5 / Apple HIG. Button renders 48px tall. */
   tapTarget: 44,
-  /** B3 interim lockup: 320x56 PNG shown at 160x28 (packages/brand/assets/email/manifest.json). */
-  logoWidth: 160,
-  logoHeight: 28,
+  /** Header logo display size, from the brand registry (`email.logo.light@1x`; the 2x file is shown at this size). */
+  logoWidth: emailLogo.width,
+  logoHeight: emailLogo.height,
 } as const;
 
 /** Where email images live. Nothing is ever loaded from any other host. */
