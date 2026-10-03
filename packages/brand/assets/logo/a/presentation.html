@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo direction A</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: Literata; font-weight: 400; src: url(../../../../../node_modules/@fontsource/literata/files/literata-latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: Literata; font-weight: 500; src: url(../../../../../node_modules/@fontsource/literata/files/literata-latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: Literata; font-weight: 400; font-style: italic; src: url(../../../../../node_modules/@fontsource/literata/files/literata-latin-400-italic.woff2) format('woff2'); }
+  @font-face { font-family: Mukta; font-weight: 400; src: url(../../../../../node_modules/@fontsource/mukta/files/mukta-latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: Mukta; font-weight: 500; src: url(../../../../../node_modules/@fontsource/mukta/files/mukta-latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: Mukta; font-weight: 600; src: url(../../../../../node_modules/@fontsource/mukta/files/mukta-latin-600-normal.woff2) format('woff2'); }
+
+  :root {
+    --ink: #2B2722; --muted: #6B645B; --paper: #FBF8F3; --raised: #FFFFFF; --accent: #8A5A3B; --soft: #F1E6DC; --line: #E6DED3;
+    --d-ink: #F2ECE4; --d-muted: #B3AA9E; --d-paper: #161412; --d-raised: #201D1A; --d-accent: #D9A47E; --d-line: #33302C;
+    --serif: Literata, Georgia, 'Times New Roman', serif;
+    --sans: Mukta, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.5; }
+  img { display: block; }
+  code { overflow-wrap: anywhere; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 40px; }
+  .eyebrow { font: 500 13px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  h2 { font: 500 30px/1.2 var(--serif); margin: 10px 0 18px; letter-spacing: -.005em; }
+  p { margin: 0 0 12px; max-width: 62ch; }
+  section { padding: 72px 0; border-top: 1px solid var(--line); }
+  .dark { background: var(--d-paper); color: var(--d-ink); }
+  .dark .eyebrow { color: var(--d-muted); }
+
+  /* hero */
+  .hero { display: grid; grid-template-columns: 1fr 1fr; min-height: 560px; }
+  .hero > div { display: grid; place-items: center; padding: 64px 40px; position: relative; overflow: hidden; }
+  /* the fold continues across the page at the exact height of the crease (source/metrics.json) */
+  .mark { position: relative; width: min(380px, 72%); }
+  .mark img { width: 100%; position: relative; }
+  .mark::before { content: ''; position: absolute; left: -60vw; right: -60vw; top: var(--crease); height: 1px; margin-top: -.5px; background: var(--line); }
+  .dark .mark::before { background: var(--d-line); }
+  .hero .tag { position: absolute; left: 32px; bottom: 26px; }
+
+  /* rationale */
+  .rationale { display: grid; grid-template-columns: 300px 1fr; gap: 64px; align-items: start; }
+  .rationale .big { font: 400 21px/1.6 var(--serif); }
+  .rationale .big p { max-width: 58ch; margin-bottom: 18px; }
+  .anatomy { background: var(--raised); border-radius: 20px; padding: 28px; position: relative; }
+  .anatomy img { width: 100%; }
+  .anatomy .note { font: 400 13px/1.4 var(--sans); color: var(--muted); margin-top: 14px; }
+
+  /* sizes */
+  .sizes { display: grid; grid-template-columns: 1fr 1fr; border-radius: 20px; overflow: hidden; }
+  .sizes > div { display: flex; align-items: flex-end; gap: 44px; padding: 44px 40px 30px; }
+  .sizes figure { margin: 0; display: grid; gap: 12px; justify-items: center; }
+  .sizes figcaption { font: 500 12px/1 var(--sans); letter-spacing: .06em; color: var(--muted); }
+  .sizes .dark figcaption { color: var(--d-muted); }
+  .px16 { width: 16px; } .px32 { width: 32px; } .px64 { width: 64px; } .px512 { width: 200px; }
+  .sizes .lbl512 { display: block; }
+
+  /* lockups */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .tile { border-radius: 20px; padding: 56px 40px; display: grid; place-items: center; min-height: 260px; position: relative; background: var(--raised); }
+  .tile.paper { background: var(--soft); }
+  .tile.dark { background: var(--d-paper); }
+  .tile .tag { position: absolute; left: 22px; top: 18px; }
+  .tile img.h { width: min(420px, 90%); }
+  .tile img.s { width: 190px; }
+  .tile img.w { width: min(360px, 86%); }
+
+  /* icons */
+  .icons { display: flex; gap: 36px; align-items: flex-end; flex-wrap: wrap; }
+  .icons figure { margin: 0; display: grid; gap: 10px; justify-items: center; }
+  .squircle { border-radius: 22.37%; overflow: hidden; box-shadow: 0 1px 2px rgba(43,39,34,.08), 0 8px 24px rgba(43,39,34,.10); }
+  .icons img { width: 180px; }
+  .icons figcaption { font: 400 13px/1.3 var(--sans); color: var(--muted); text-align: center; }
+
+  /* phones */
+  .phones { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; }
+  .phone { width: 340px; height: 690px; border-radius: 52px; padding: 12px; background: #1d1b19; box-shadow: 0 30px 60px -20px rgba(43,39,34,.35); }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; padding: 18px 16px; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  .screen.light { background: radial-gradient(120% 80% at 20% 0%, #efe3d3 0%, #d9c7b2 45%, #b8a28c 100%); }
+  .screen.night { background: radial-gradient(120% 80% at 20% 0%, #3a332c 0%, #221e1a 50%, #141210 100%); }
+  .status { display: flex; justify-content: space-between; font: 600 14px/1 inherit; color: #fff; padding: 6px 10px 0; }
+  .batt { width: 24px; height: 11px; border: 1.5px solid rgba(255,255,255,.9); border-radius: 3.5px; position: relative; margin-top: 1px; }
+  .batt::after { content: ''; position: absolute; inset: 1.5px 5px 1.5px 1.5px; background: #fff; border-radius: 1.5px; }
+  .island { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 96px; height: 28px; background: #000; border-radius: 20px; }
+  .apps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 4px; margin-top: 44px; }
+  .app { display: grid; justify-items: center; gap: 6px; min-width: 0; }
+  .app i { width: 56px; height: 56px; border-radius: 12.5px; display: block; }
+  .app span { font: 500 10px/1.1 inherit; letter-spacing: -.01em; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.25); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .app img { width: 56px; height: 56px; border-radius: 12.5px; }
+  .dock { position: absolute; left: 12px; right: 12px; bottom: 12px; height: 86px; border-radius: 32px; background: rgba(255,255,255,.28); backdrop-filter: blur(12px); display: flex; justify-content: space-around; align-items: center; padding: 0 12px; }
+  .night .dock { background: rgba(255,255,255,.12); }
+  .dock i { width: 56px; height: 56px; border-radius: 12.5px; display: block; }
+  /* neutral placeholder apps: flat tiles, no marks */
+  .p1 { background: #e9e3da; } .p2 { background: #7b8d84; } .p3 { background: #c9a98a; } .p4 { background: #5d6a78; }
+  .p5 { background: #f4efe7; } .p6 { background: #a3a08f; } .p7 { background: #8b7766; } .p8 { background: #d8d2c7; }
+  .night .p1 { background: #3b3732; } .night .p2 { background: #3f4a45; } .night .p3 { background: #4a3d31; } .night .p4 { background: #2f3740; }
+  .night .p5 { background: #34302b; } .night .p6 { background: #44423a; } .night .p7 { background: #3d342d; } .night .p8 { background: #393530; }
+
+  /* email */
+  .mail { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .client { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: #f3efe9; }
+  .client.dark { border-color: var(--d-line); background: #0f0e0d; }
+  .chrome { padding: 14px 18px; font: 400 13px/1.45 var(--sans); color: var(--muted); border-bottom: 1px solid var(--line); background: var(--raised); }
+  .client.dark .chrome { background: var(--d-raised); color: var(--d-muted); border-color: var(--d-line); }
+  .chrome b { color: var(--ink); font-weight: 600; }
+  .client.dark .chrome b { color: var(--d-ink); }
+  .msg { margin: 22px auto; width: calc(100% - 44px); max-width: 480px; background: var(--paper); border-radius: 14px; padding: 30px 32px 28px; }
+  .client.dark .msg { background: var(--d-paper); }
+  .msg .hdr { padding-bottom: 22px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+  .client.dark .msg .hdr { border-color: var(--d-line); }
+  .msg .hdr img { height: 26px; width: auto; }
+  .msg h3 { font: 500 24px/1.25 var(--serif); margin: 0 0 12px; }
+  .msg p { font: 400 16px/1.55 var(--sans); color: var(--muted); }
+  .client.dark .msg p { color: var(--d-muted); }
+  .msg .btn { display: inline-block; margin: 8px 0 18px; padding: 13px 26px; border-radius: 999px; background: var(--accent); color: #fff; font: 600 16px/1 var(--sans); }
+  .client.dark .msg .btn { background: var(--d-accent); color: #1d1610; }
+  .msg .code { font: 500 22px/1 var(--serif); letter-spacing: .14em; color: var(--ink); background: var(--soft); border-radius: 10px; padding: 14px 18px; display: inline-block; }
+  .client.dark .msg .code { color: var(--d-ink); background: #2a231d; }
+  .msg .sig { font: italic 400 16px/1.4 var(--serif); color: var(--ink); margin-top: 22px; }
+  .client.dark .msg .sig { color: var(--d-ink); }
+
+  /* book */
+  .books { display: flex; gap: 56px; align-items: flex-end; justify-content: center; padding: 30px 0 10px; }
+  .spine { width: 58px; height: 400px; border-radius: 3px 5px 5px 3px; display: flex; flex-direction: column; align-items: center; padding: 26px 0 22px; justify-content: space-between; box-shadow: inset -6px 0 10px rgba(0,0,0,.08), inset 3px 0 4px rgba(255,255,255,.25), 0 14px 30px -12px rgba(43,39,34,.35); }
+  .spine.cloth { background: linear-gradient(90deg, #7d5135, #8A5A3B 30%, #8f5f40 70%, #7a4f33); }
+  .spine.linen { background: linear-gradient(90deg, #e9e0d3, #F1E6DC 30%, #f3e9df 70%, #e6dccf); }
+  .spine .title { position: relative; width: 58px; height: 210px; }
+  .spine .title img { position: absolute; width: 196px; height: auto; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(90deg); }
+  .spine .yr { font: 500 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; writing-mode: vertical-rl; white-space: nowrap; }
+  .spine.cloth .yr { color: #F2ECE4; } .spine.linen .yr { color: var(--muted); }
+  .cover { width: 290px; height: 400px; border-radius: 3px 8px 8px 3px; background: var(--soft); display: grid; place-items: center; box-shadow: inset 8px 0 10px -6px rgba(0,0,0,.12), 0 18px 34px -14px rgba(43,39,34,.35); position: relative; }
+  .cover img { width: 150px; }
+  .cover .yr { position: absolute; bottom: 34px; font: 500 12px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+
+  /* files */
+  .files { columns: 3; column-gap: 32px; font: 400 14px/1.9 ui-monospace, 'SF Mono', Menlo, monospace; color: var(--muted); }
+  .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .rule { background: var(--raised); border-radius: 16px; padding: 22px 24px; }
+  .rule h4 { font: 600 15px/1.3 var(--sans); margin: 0 0 6px; }
+  .rule p { font-size: 15px; color: var(--muted); margin: 0; }
+  footer { padding: 40px 0 60px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+
+  @media (max-width: 900px) {
+    .wrap { padding: 0 16px; }
+    .hero, .rationale, .sizes, .grid2, .mail, .rules { grid-template-columns: 1fr; }
+    .files { columns: 1; }
+    .sizes > div { gap: 22px; padding: 28px 20px; flex-wrap: wrap; }
+    .px512 { width: 140px; }
+    .hero > div { min-height: 400px; }
+    .books { gap: 22px; flex-wrap: wrap; }
+    .cover { width: 220px; height: 300px; }
+    .cover img { width: 120px; }
+    .spine { height: 300px; }
+    .spine .title { height: 170px; }
+    .spine .title img { width: 140px; }
+    .phone { width: 330px; height: 670px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div><div class="mark" style="--crease:30.12%"><img src="lockup-stacked.svg" alt="Early Letters, stacked lockup in ink"></div><span class="eyebrow tag">Direction A, the letter. On paper</span></div>
+  <div class="dark"><div class="mark" style="--crease:30.12%"><img src="lockup-stacked-accent-reversed.svg" alt="Early Letters, stacked lockup reversed with accent symbol"></div><span class="eyebrow tag">At night</span></div>
+</header>
+
+<section>
+  <div class="wrap rationale">
+    <div class="anatomy">
+      <img src="symbol.svg" alt="The symbol: a lowercase e with a fold line through its crossbar">
+      <p class="note">Literata e, SemiBold, opened along the centre of its crossbar. The two halves part by 22 units on a 1000 unit em, so each half of the bar keeps its weight. The opening widens in the icon cut (42) and the small cut (46) so the fold survives on a phone and in a browser tab.</p>
+    </div>
+    <div>
+      <span class="eyebrow">Rationale</span>
+      <h2>Folded once, opened for years</h2>
+      <div class="big">
+        <p>The symbol is a lowercase e folded once along its crossbar, the same crease a letter gets when it goes into an envelope and the one it keeps after it has been opened again and again.</p>
+        <p>It is cut from Literata, the serif the letters are read in, so the mark, the wordmark and every letter in the book share one voice; the only invention is the fold.</p>
+        <p>At 16 pixels it is simply a sturdy e, on a book spine it is a quiet monogram, and it never borrows the stock language of envelopes, seals or quills.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Sizes</span>
+    <h2>From browser tab to book cover</h2>
+    <div class="sizes">
+      <div>
+        <figure><img class="px16" src="favicon.svg" alt=""><figcaption>16</figcaption></figure>
+        <figure><img class="px32" src="favicon.svg" alt=""><figcaption>32</figcaption></figure>
+        <figure><img class="px64" src="symbol.svg" alt=""><figcaption>64</figcaption></figure>
+        <figure><img class="px512" src="symbol.svg" alt=""><figcaption>512 (shown at 200)</figcaption></figure>
+      </div>
+      <div class="dark">
+        <figure><img class="px16" src="source/favicon-dark-preview.svg" alt=""><figcaption>16</figcaption></figure>
+        <figure><img class="px32" src="source/favicon-dark-preview.svg" alt=""><figcaption>32</figcaption></figure>
+        <figure><img class="px64" src="symbol-reversed.svg" alt=""><figcaption>64</figcaption></figure>
+        <figure><img class="px512" src="symbol-accent-reversed.svg" alt=""><figcaption>512 (shown at 200)</figcaption></figure>
+      </div>
+    </div>
+    <p style="margin-top:16px;color:var(--muted);font-size:15px">16 and 32 use <code>favicon.svg</code>, a small-size cut: Bold weight with the opening twice as wide, so the fold still reads as a line, not a smudge. It switches to light ink in dark mode through <code>prefers-color-scheme</code>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Lockups</span>
+    <h2>Wordmark, horizontal, stacked</h2>
+    <div class="grid2">
+      <div class="tile"><span class="eyebrow tag">Horizontal, ink</span><img class="h" src="lockup-horizontal.svg" alt=""></div>
+      <div class="tile dark"><span class="eyebrow tag">Horizontal, reversed</span><img class="h" src="lockup-horizontal-reversed.svg" alt=""></div>
+      <div class="tile paper"><span class="eyebrow tag">Horizontal, accent</span><img class="h" src="lockup-horizontal-accent.svg" alt=""></div>
+      <div class="tile dark"><span class="eyebrow tag">Horizontal, accent reversed</span><img class="h" src="lockup-horizontal-accent-reversed.svg" alt=""></div>
+      <div class="tile"><span class="eyebrow tag">Wordmark</span><img class="w" src="wordmark.svg" alt=""></div>
+      <div class="tile paper"><span class="eyebrow tag">Stacked, accent</span><img class="s" src="lockup-stacked-accent.svg" alt=""></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">App icon</span>
+    <h2>On the home screen</h2>
+    <div class="icons" style="margin-bottom:48px">
+      <figure><img class="squircle" src="app-icon-1024.png" alt=""><figcaption>Primary: paper e on accent</figcaption></figure>
+      <figure><img class="squircle" src="app-icon-paper-1024.png" alt=""><figcaption>Alternate: ink on paper</figcaption></figure>
+      <figure><img class="squircle" src="app-icon-dark-1024.png" alt=""><figcaption>iOS dark appearance</figcaption></figure>
+    </div>
+    <div class="phones">
+      <div class="phone"><div class="screen light"><div class="island"></div>
+        <div class="status"><span>9:41</span><span class="batt"></span></div>
+        <div class="apps">
+          <div class="app"><i class="p1"></i><span>Clock</span></div><div class="app"><i class="p2"></i><span>Maps</span></div><div class="app"><i class="p3"></i><span>Notes</span></div><div class="app"><i class="p4"></i><span>Tasks</span></div>
+          <div class="app"><i class="p5"></i><span>Radio</span></div><div class="app"><img src="app-icon-1024.png" alt=""><span>Early Letters</span></div><div class="app"><i class="p6"></i><span>Diary</span></div><div class="app"><i class="p7"></i><span>Books</span></div>
+          <div class="app"><i class="p8"></i><span>Files</span></div><div class="app"><i class="p2"></i><span>Health</span></div><div class="app"><i class="p3"></i><span>Music</span></div><div class="app"><i class="p1"></i><span>Home</span></div>
+        </div>
+        <div class="dock"><i class="p5"></i><i class="p4"></i><i class="p8"></i><i class="p2"></i></div>
+      </div></div>
+      <div class="phone"><div class="screen night"><div class="island"></div>
+        <div class="status"><span>9:41</span><span class="batt"></span></div>
+        <div class="apps">
+          <div class="app"><i class="p1"></i><span>Clock</span></div><div class="app"><i class="p2"></i><span>Maps</span></div><div class="app"><i class="p3"></i><span>Notes</span></div><div class="app"><i class="p4"></i><span>Tasks</span></div>
+          <div class="app"><i class="p5"></i><span>Radio</span></div><div class="app"><img src="app-icon-dark-1024.png" alt=""><span>Early Letters</span></div><div class="app"><i class="p6"></i><span>Diary</span></div><div class="app"><i class="p7"></i><span>Books</span></div>
+          <div class="app"><i class="p8"></i><span>Files</span></div><div class="app"><i class="p2"></i><span>Health</span></div><div class="app"><i class="p3"></i><span>Music</span></div><div class="app"><i class="p1"></i><span>Home</span></div>
+        </div>
+        <div class="dock"><i class="p5"></i><i class="p4"></i><i class="p8"></i><i class="p2"></i></div>
+      </div></div>
+    </div>
+    <p style="margin:28px auto 0;color:var(--muted);font-size:15px;text-align:center">Mock, not iOS. "Early Letters" is 13 characters, close to the width iOS gives a home screen label; check truncation on a device before choosing the display name.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Email</span>
+    <h2>In the inbox</h2>
+    <div class="mail">
+      <div class="client">
+        <div class="chrome"><b>Early Letters</b> &lt;hello@earlyletters.com&gt;<br>Your sign-in link</div>
+        <div class="msg">
+          <div class="hdr"><img src="lockup-horizontal-accent.svg" alt="Early Letters"></div>
+          <h3>Here is your sign-in link</h3>
+          <p>Tap the button on this phone to sign in. The link works once, for the next hour.</p>
+          <span class="btn">Sign in</span>
+          <p>Opening it on another device? Enter this code in the app instead.</p>
+          <span class="code">482 913</span>
+          <div class="sig">With care, Early Letters</div>
+        </div>
+      </div>
+      <div class="client dark">
+        <div class="chrome"><b>Early Letters</b> &lt;hello@earlyletters.com&gt;<br>Your sign-in link</div>
+        <div class="msg">
+          <div class="hdr"><img src="lockup-horizontal-accent-reversed.svg" alt="Early Letters"></div>
+          <h3 style="color:var(--d-ink)">Here is your sign-in link</h3>
+          <p>Tap the button on this phone to sign in. The link works once, for the next hour.</p>
+          <span class="btn">Sign in</span>
+          <p>Opening it on another device? Enter this code in the app instead.</p>
+          <span class="code">482 913</span>
+          <div class="sig">With care, Early Letters</div>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:16px;color:var(--muted);font-size:15px">Mock only; the real header and copy belong to the email identity lane. In email, use the PNG renders served from the brand domain, never inline SVG.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Print</span>
+    <h2>On the shelf</h2>
+    <div class="books">
+      <div class="spine cloth"><img src="symbol-reversed.svg" alt="" style="width:26px"><div class="title"><img src="wordmark-reversed.svg" alt=""></div><span class="yr">Year One</span></div>
+      <div class="spine linen"><img src="symbol-accent.svg" alt="" style="width:26px"><div class="title"><img src="wordmark.svg" alt=""></div><span class="yr">Year Two</span></div>
+      <div class="cover"><img src="lockup-stacked.svg" alt=""><span class="yr">Year One</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Use</span>
+    <h2>A few rules</h2>
+    <div class="rules">
+      <div class="rule"><h4>Clear space</h4><p>Leave space equal to the wordmark's x-height on every side of a lockup, and a quarter of the symbol's width around the symbol on its own.</p></div>
+      <div class="rule"><h4>Minimum size</h4><p>Symbol 16 px with the favicon cut, 24 px otherwise. Horizontal lockup 96 px wide. Stacked lockup 64 px wide.</p></div>
+      <div class="rule"><h4>Colour</h4><p>Ink on paper, light ink on night, or the accent symbol with an ink wordmark. Never set the e in two colours or fill the crease.</p></div>
+      <div class="rule"><h4>The crease</h4><p>Always level, always the background showing through. Do not tilt it, extend it past the e, or animate it opening.</p></div>
+      <div class="rule"><h4>Wordmark</h4><p>Outlined artwork only. Do not retype it in Literata: the spacing and the joined tt are drawn by hand.</p></div>
+      <div class="rule"><h4>Not allowed</h4><p>Seals, quills, ribbons, envelope frames, outlines, shadows, gradients, or a second symbol beside the e.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Files</span>
+    <h2>In this folder</h2>
+    <div class="files">
+      symbol.svg<br>symbol-reversed.svg<br>symbol-accent.svg<br>symbol-accent-reversed.svg<br>
+      wordmark.svg<br>wordmark-reversed.svg<br>wordmark-accent.svg<br>wordmark-accent-reversed.svg<br>
+      lockup-horizontal.svg<br>lockup-horizontal-reversed.svg<br>lockup-horizontal-accent.svg<br>lockup-horizontal-accent-reversed.svg<br>
+      lockup-stacked.svg<br>lockup-stacked-reversed.svg<br>lockup-stacked-accent.svg<br>lockup-stacked-accent-reversed.svg<br>
+      favicon.svg<br>app-icon-1024.png<br>app-icon-paper-1024.png<br>app-icon-dark-1024.png<br>
+      png/ (1600 px renders, transparent)<br>source/ (build script)<br>LICENSE-NOTES.md
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">Logo direction A for Early Letters. Outlined from Literata (SIL Open Font License 1.1). Rebuild with <code>node packages/brand/assets/logo/a/source/build.mjs</code>.</div></footer>
+</body>
+</html>

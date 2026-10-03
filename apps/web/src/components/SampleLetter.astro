@@ -1,0 +1,83 @@
+---
+import { sampleLetter } from '../lib/sample';
+// One orchestrated moment on the page: the Read together wash (accentSoft,
+// radius 4) moves word by word across the letter once, the way the app
+// highlights a letter while it plays in the author's voice. Reduced motion:
+// no movement, the letter simply sits there.
+const words = sampleLetter.words.split(' ');
+---
+<figure class="letter">
+  <p class="dateline">{sampleLetter.dateline}</p>
+  <blockquote class="body">
+    <p>{words.map((w, i) => <><span class="w" style={`--i:${i}`}>{w}</span>{i < words.length - 1 ? ' ' : ''}</>)}</p>
+  </blockquote>
+  <figcaption>
+    <span class="from">{sampleLetter.signoff}</span>
+    <span class="voice" aria-label={`Voice recording, ${sampleLetter.duration}`}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+      {sampleLetter.duration}
+    </span>
+  </figcaption>
+</figure>
+<style>
+  .letter {
+    margin: 0;
+    padding: var(--s8) var(--s6) var(--s6);
+    background: var(--paper-raised);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-2);
+    border: 1px solid var(--line);
+    max-width: 30rem;
+  }
+  .dateline {
+    color: var(--ink-muted);
+    font: 500 0.875rem/1.3 var(--sans);
+    letter-spacing: 0.04em;
+  }
+  .body { margin: var(--s5) 0 0; }
+  .body p {
+    font: 400 1.375rem/1.6 var(--serif);
+    color: var(--ink);
+  }
+  .w {
+    border-radius: 4px;
+    padding: 0.04em 0.12em;
+    margin: 0 -0.12em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  figcaption {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s4);
+    margin-top: var(--s6);
+    padding-top: var(--s4);
+    border-top: 1px solid var(--line);
+  }
+  .from { font: italic 400 1.125rem/1.4 var(--serif); color: var(--ink); }
+  .voice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink-muted);
+    font: 500 0.875rem/1 var(--sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .voice svg { width: 14px; height: 14px; color: var(--accent); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .w {
+      animation: wash 0.62s ease-in-out both;
+      animation-delay: calc(1.1s + var(--i) * 0.34s);
+    }
+    @keyframes wash {
+      0%, 100% { background-color: transparent; }
+      25%, 70% { background-color: var(--accent-soft); }
+    }
+  }
+  @media (min-width: 60rem) {
+    .letter { max-width: 34rem; padding: var(--s10) var(--s9) var(--s8); }
+    .body p { font-size: 1.625rem; }
+  }
+</style>

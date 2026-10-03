@@ -1,0 +1,64 @@
+---
+import { legalDocs } from '../lib/legal';
+import { brand } from '@scribe/brand';
+import Wordmark from './Wordmark.astro';
+import { CONTACT_EMAIL, PUBLISHER_PLACEHOLDER } from '../lib/site';
+
+const legal = await legalDocs();
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="wrap grid">
+    <div class="sign">
+      <Wordmark size="footer" />
+      <p class="tag">{brand.tagline}</p>
+      <p class="mail"><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+    </div>
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/why">Why {brand.name}</a></li>
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+      <ul>
+        {legal.map((doc) => <li><a href={`/${doc.id}`}>{doc.data.title}</a></li>)}
+        <li><a href="/delete-account">Delete your account</a></li>
+      </ul>
+    </nav>
+    <p class="fine">
+      &copy; {year} <span class="placeholder" title="TODO(founder): publisher name, see D-004">{PUBLISHER_PLACEHOLDER}</span>
+    </p>
+  </div>
+</footer>
+<style>
+  .site-footer {
+    margin-top: var(--section);
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-muted);
+    font-size: 1rem;
+  }
+  .grid {
+    display: grid;
+    gap: var(--s8);
+    padding-block: var(--s10) var(--s8);
+  }
+  .tag { margin-top: var(--s2); font: italic 400 1.0625rem/1.5 var(--serif); color: var(--ink); }
+  .mail { margin-top: var(--s3); }
+  nav { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s6); }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+  li a:hover { color: var(--ink); text-decoration: underline; }
+  .fine { font-size: 0.875rem; border-top: 1px solid var(--line); padding-top: var(--s5); }
+  @media (min-width: 48rem) {
+    .grid { grid-template-columns: 1.2fr 1fr; align-items: start; }
+    .fine { grid-column: 1 / -1; }
+  }
+</style>

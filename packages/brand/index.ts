@@ -21,12 +21,12 @@ const publisher = {
   kind: 'individual',
   /** TODO(founder): never put a real name here; legal documents carry it. */
   legalName: 'TODO: individual publisher (name set in legal documents, not in code)',
-  /** Reverse of this domain prefixes every app's bundle ID. TODO(founder, BL-100): real domain. */
-  domain: 'example.com',
-  /** TODO(founder, BL-100): mailbox on the real domain. */
-  supportEmail: 'support@example.com',
-  /** TODO(founder, BL-100): published, versioned Privacy Policy URL. */
-  privacyUrl: 'https://example.com/privacy',
+  /** Reverse of this domain prefixes every app's bundle ID (com.earlyletters.scribe). Set Oct 3 2026 (BL-100). earlyletters.app 308-redirects here. */
+  domain: 'earlyletters.com',
+  /** Human inbox on Resend. One address for support, privacy and replies (docs/emails/BRIEF.md). */
+  supportEmail: 'hello@earlyletters.com',
+  /** Hosted Privacy Policy. Draft until counsel signs off; not deployed yet. */
+  privacyUrl: 'https://earlyletters.com/privacy',
 } as const;
 
 export const brand = {

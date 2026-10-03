@@ -1,0 +1,9 @@
+---
+import Page from '../layouts/Page.astro';
+import Sections from '../components/Sections.astro';
+import { pages } from '../lib/pages';
+const p = pages.about;
+---
+<Page title={p.title} description={p.metaDescription}>
+  <Sections sections={p.sections} />
+</Page>

@@ -1,0 +1,180 @@
+/*
+ * Early Letters web. "Quiet UI, loud letters": Mukta for everything you
+ * operate, Literata for everything you read. Colour variables are injected
+ * by Base.astro from @scribe/brand and @scribe/design-tokens.
+ */
+
+/* Fonts: self-hosted, Latin subset only, font-display: swap (set by @fontsource). */
+@import '@fontsource/literata/latin-400.css';
+@import '@fontsource/literata/latin-400-italic.css';
+@import '@fontsource/literata/latin-500.css';
+@import '@fontsource/mukta/latin-400.css';
+@import '@fontsource/mukta/latin-500.css';
+@import '@fontsource/mukta/latin-600.css';
+
+:root {
+  --serif: Literata, Georgia, 'Times New Roman', serif;
+  --sans: Mukta, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* 4pt spacing scale (DESIGN_LANGUAGE 4) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+  --s8: 32px; --s9: 40px; --s10: 48px; --s12: 64px;
+  --section: clamp(64px, 10vw, 128px);
+
+  --r-sm: 8px; --r-md: 14px; --r-lg: 20px; --r-pill: 9999px;
+
+  --gutter: 20px;
+  --wide: 72rem;
+  --measure: 34em; /* letter measure (DESIGN_LANGUAGE 3, web) */
+
+  --shadow-1: 0 2px 6px rgb(43 39 34 / 0.06);
+  --shadow-2: 0 6px 16px rgb(43 39 34 / 0.10);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shadow-1: none;
+    --shadow-2: none;
+  }
+}
+
+@media (min-width: 48rem) {
+  :root { --gutter: 40px; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: var(--s6);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1.125rem; /* 18px, token "body" */
+  line-height: 1.5;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+img, svg { display: block; max-width: 100%; }
+
+/* ---------- type ---------- */
+
+h1, h2, h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-wrap: balance;
+  margin: 0;
+}
+
+p { margin: 0; text-wrap: pretty; }
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+a:hover { text-decoration-thickness: 2px; }
+
+/* ---------- focus and skip link ---------- */
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip {
+  position: absolute;
+  left: var(--s4);
+  top: -100px;
+  z-index: 10;
+  padding: var(--s3) var(--s5);
+  background: var(--paper-raised);
+  color: var(--ink);
+  border: 2px solid var(--focus);
+  border-radius: var(--r-sm);
+  font-weight: 600;
+}
+.skip:focus { top: var(--s4); }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- layout ---------- */
+
+.wrap {
+  width: 100%;
+  max-width: calc(var(--wide) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---------- controls ---------- */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 0 var(--s8);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 1.0625rem/1 var(--sans);
+  text-decoration: none;
+  cursor: pointer;
+}
+.button:hover { text-decoration: none; filter: brightness(1.06); }
+.button:active { transform: translateY(1px); }
+
+.button.quiet {
+  background: transparent;
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* Placeholder text that someone still has to write. Never ships unnoticed. */
+.placeholder {
+  color: var(--caution);
+  border-bottom: 1px dashed currentColor;
+  font-style: normal;
+}
+.placeholder-block {
+  border: 1px dashed var(--caution);
+  border-radius: var(--r-md);
+  padding: var(--s4) var(--s5);
+  color: var(--ink-muted);
+}
+.placeholder-block strong { color: var(--caution); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root { --ink-muted: var(--ink); --line: var(--ink-muted); }
+}

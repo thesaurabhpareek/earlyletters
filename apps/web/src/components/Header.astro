@@ -1,0 +1,53 @@
+---
+import Wordmark from './Wordmark.astro';
+import { mainNav } from '../lib/site';
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+<header class="site-header">
+  <div class="wrap bar">
+    <Wordmark />
+    <nav aria-label="Main">
+      <ul>
+        {mainNav.map((item) => (
+          <li>
+            <a href={item.href} aria-current={path === item.href ? 'page' : undefined}>{item.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+<style>
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s2) var(--s6);
+    padding-block: var(--s4);
+  }
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--s5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--ink-muted);
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  nav a:hover { color: var(--ink); }
+  nav a[aria-current='page'] {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 0.35em;
+  }
+</style>

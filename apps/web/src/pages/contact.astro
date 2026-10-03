@@ -1,0 +1,19 @@
+---
+import Page from '../layouts/Page.astro';
+import Sections from '../components/Sections.astro';
+import { pages } from '../lib/pages';
+import { CONTACT_EMAIL } from '../lib/site';
+const p = pages.contact;
+---
+<Page title={p.title} description={p.metaDescription}>
+  <p class="address"><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+  <Sections sections={p.sections} />
+</Page>
+<style>
+  .address {
+    margin: calc(-1 * var(--s4)) 0 var(--s10);
+    font: 400 clamp(1.5rem, 1.1rem + 2vw, 2.25rem)/1.2 var(--serif);
+    overflow-wrap: anywhere;
+  }
+  .address a { text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+</style>

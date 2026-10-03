@@ -1,0 +1,32 @@
+---
+import Page from '../layouts/Page.astro';
+import Sections from '../components/Sections.astro';
+import Rich from '../components/Rich.astro';
+import { pages } from '../lib/pages';
+import { fillCap } from '../lib/fill';
+// The story reads as one long letter. Its last section is the line the whole
+// brand stands on, so it closes the page at display size.
+const p = pages.why;
+const body = p.sections.slice(0, -1);
+const coda = p.sections[p.sections.length - 1];
+---
+<Page title={p.title} description={p.metaDescription} tone="reading">
+  <Sections sections={body} />
+  <section class="coda" aria-labelledby="coda-title">
+    <h2 id="coda-title">{fillCap(coda.heading)}</h2>
+    {coda.paragraphs.map((t) => <Rich text={t} />)}
+  </section>
+</Page>
+<style>
+  .coda {
+    margin-top: var(--section);
+    padding-top: var(--s9);
+    border-top: 1px solid var(--line);
+  }
+  .coda h2 {
+    font-size: clamp(2.25rem, 1.5rem + 3.4vw, 4rem) !important;
+    line-height: 1.06 !important;
+    letter-spacing: -0.01em;
+    margin: 0 0 var(--s6) !important;
+  }
+</style>

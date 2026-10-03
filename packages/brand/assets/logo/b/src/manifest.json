@@ -1,0 +1,51 @@
+{
+  "variants": {
+    "ink": {
+      "fg": "#2B2722",
+      "bg": "#FBF8F3",
+      "label": "Ink on paper"
+    },
+    "reversed": {
+      "fg": "#F2ECE4",
+      "bg": "#161412",
+      "label": "Reversed"
+    },
+    "accent": {
+      "fg": "#8A5A3B",
+      "bg": "#FBF8F3",
+      "label": "Accent on paper"
+    },
+    "accent-reversed": {
+      "fg": "#D9A47E",
+      "bg": "#161412",
+      "label": "Accent, reversed"
+    }
+  },
+  "files": [
+    "symbol.svg",
+    "symbol-small.svg",
+    "wordmark.svg",
+    "lockup-horizontal.svg",
+    "lockup-stacked.svg",
+    "symbol-reversed.svg",
+    "symbol-small-reversed.svg",
+    "wordmark-reversed.svg",
+    "lockup-horizontal-reversed.svg",
+    "lockup-stacked-reversed.svg",
+    "symbol-accent.svg",
+    "symbol-small-accent.svg",
+    "wordmark-accent.svg",
+    "lockup-horizontal-accent.svg",
+    "lockup-stacked-accent.svg",
+    "symbol-accent-reversed.svg",
+    "symbol-small-accent-reversed.svg",
+    "wordmark-accent-reversed.svg",
+    "lockup-horizontal-accent-reversed.svg",
+    "lockup-stacked-accent-reversed.svg",
+    "favicon.svg"
+  ],
+  "nodes": {
+    "master": 47,
+    "small": 39
+  }
+}

@@ -4,5 +4,12 @@
   "private": true,
   "description": "The product's public identity. Rename the product here only.",
   "main": "index.ts",
-  "types": "index.ts"
+  "types": "index.ts",
+  "devDependencies": {
+    "opentype.js": "2.0.0",
+    "wawoff2": "2.0.1",
+    "@fontsource/literata": "5.3.0",
+    "@fontsource/mukta": "5.3.0",
+    "@fontsource/tiro-devanagari-hindi": "*"
+  }
 }

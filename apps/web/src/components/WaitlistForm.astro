@@ -1,0 +1,41 @@
+---
+import { site } from '@scribe/content';
+import { WAITLIST_ENDPOINT } from '../lib/site';
+interface Props { id: string }
+const { id } = Astro.props;
+const inputId = `${id}-email`;
+---
+{/* TODO(founder): wire WAITLIST_ENDPOINT to a first-party handler (no third-party embed, no tracking). Until then the form does not send anything. */}
+<form
+  class="waitlist"
+  method="post"
+  action={WAITLIST_ENDPOINT ?? undefined}
+  data-waitlist={WAITLIST_ENDPOINT ? 'live' : 'todo'}
+>
+  <label for={inputId}>{site.waitlist.label}</label>
+  <div class="row">
+    <input id={inputId} name="email" type="email" autocomplete="email" inputmode="email" required spellcheck="false" />
+    <button class="button" type="submit">{site.waitlist.button}</button>
+  </div>
+  <p class="status" role="status" aria-live="polite"></p>
+</form>
+<style>
+  .waitlist { max-width: 36rem; }
+  label { display: block; font-weight: 500; font-size: 1rem; margin-bottom: var(--s2); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--s3); }
+  input {
+    flex: 1 1 14rem;
+    min-height: 56px;
+    padding: 0 var(--s5);
+    border: 1.5px solid var(--ink-muted);
+    border-radius: var(--r-pill);
+    background: var(--paper-raised);
+    color: var(--ink);
+    font: 400 1.125rem/1 var(--sans);
+  }
+  input:focus-visible { outline-offset: 2px; border-color: var(--focus); }
+  .button { flex: 0 0 auto; }
+  .status:empty { display: none; }
+  .status { margin-top: var(--s3); color: var(--ink-muted); }
+  @media (max-width: 30rem) { .button { flex: 1 1 100%; } }
+</style>

@@ -1,0 +1,34 @@
+---
+import Rich from './Rich.astro';
+import { fillCap } from '../lib/fill';
+import type { PageSection } from '../lib/pages';
+interface Props {
+  sections: readonly PageSection[];
+  /** Paragraphs matching this are shown as an in-app path callout. */
+  callout?: RegExp;
+}
+const { sections, callout } = Astro.props;
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+---
+{sections.map((s) => (
+  <section aria-labelledby={slug(s.heading)}>
+    <h2 id={slug(s.heading)}>{fillCap(s.heading)}</h2>
+    {s.paragraphs.map((p) =>
+      callout && callout.test(p) ? (
+        <div class="callout"><Rich text={p} /></div>
+      ) : (
+        <Rich text={p} />
+      ),
+    )}
+  </section>
+))}
+<style>
+  section + section { margin-top: var(--s10); }
+  .callout {
+    margin: 1em 0;
+    padding: var(--s4) var(--s5);
+    background: var(--accent-soft);
+    border-radius: var(--r-md);
+    font-weight: 500;
+  }
+</style>

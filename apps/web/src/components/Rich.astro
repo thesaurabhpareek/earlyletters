@@ -1,0 +1,45 @@
+---
+/**
+ * Renders one plain-text paragraph from @scribe/content. Email addresses
+ * become mailto links, and the names of our own pages become links to them.
+ * Copy stays plain text; nothing is reworded here.
+ */
+import { fill } from '../lib/fill';
+interface Props { text: string; as?: 'p' | 'span' }
+const { text, as: Tag = 'p' } = Astro.props;
+
+const LINKS: Array<[RegExp, string]> = [
+  [/\bPrivacy Policy\b/, '/privacy'],
+  [/\bTerms\b(?= and Privacy Policy)/, '/terms'],
+  [/\bdelete account page\b/, '/delete-account'],
+  [/\bhome page\b/, '/'],
+];
+
+type Part = { t: string; href?: string };
+let parts: Part[] = [{ t: fill(text) }];
+
+const split = (re: RegExp, href: (m: string) => string) => {
+  parts = parts.flatMap((p) => {
+    if (p.href) return [p];
+    const out: Part[] = [];
+    let rest = p.t;
+    const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+    let m: RegExpExecArray | null;
+    let last = 0;
+    while ((m = g.exec(rest))) {
+      if (m.index > last) out.push({ t: rest.slice(last, m.index) });
+      out.push({ t: m[0], href: href(m[0]) });
+      last = m.index + m[0].length;
+    }
+    if (last < rest.length) out.push({ t: rest.slice(last) });
+    return out;
+  });
+};
+
+split(/[\w.+-]+@[\w-]+\.[\w.-]*\w/, (m) => `mailto:${m}`);
+for (const [re, href] of LINKS) split(re, () => href);
+// Do not link a page to itself.
+const here = Astro.url.pathname.replace(/\/$/, '') || '/';
+parts = parts.map((p) => (p.href === here ? { t: p.t } : p));
+---
+<Tag>{parts.map((p) => (p.href ? <a href={p.href}>{p.t}</a> : p.t))}</Tag>

@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo Direction B</title>
+<meta name="description" content="Logo direction B, The voice, kept: symbol, wordmark, lockups, sizes and mocks.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:Literata;font-weight:400;src:url(../../../../../node_modules/@fontsource/literata/files/literata-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Literata;font-weight:500;src:url(../../../../../node_modules/@fontsource/literata/files/literata-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Literata;font-style:italic;font-weight:400;src:url(../../../../../node_modules/@fontsource/literata/files/literata-latin-400-italic.woff2) format("woff2")}
+@font-face{font-family:Mukta;font-weight:400;src:url(../../../../../node_modules/@fontsource/mukta/files/mukta-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Mukta;font-weight:500;src:url(../../../../../node_modules/@fontsource/mukta/files/mukta-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Mukta;font-weight:600;src:url(../../../../../node_modules/@fontsource/mukta/files/mukta-latin-600-normal.woff2) format("woff2")}
+
+:root{
+  --ink:#2B2722;--muted:#6B645B;--paper:#FBF8F3;--raised:#FFFFFF;--surface:#F5EFE7;--accent:#8A5A3B;--accent-soft:#F1E6DC;--line:#E6DED3;
+  --d-ink:#F2ECE4;--d-muted:#B3AA9E;--d-paper:#161412;--d-raised:#201D1A;--d-accent:#D9A47E;--d-line:#33302C;
+  --serif:Literata,Georgia,"Times New Roman",serif;
+  --sans:Mukta,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.55 var(--sans)}
+img{display:block;max-width:100%;height:auto}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+@media (min-width:720px){.wrap{padding:0 40px}}
+section{padding:56px 0;border-top:1px solid var(--line)}
+section.dark{background:var(--d-paper);color:var(--d-ink);border-top-color:var(--d-line)}
+.eyebrow{font:500 13px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.dark .eyebrow{color:var(--d-muted)}
+h1,h2{font-family:var(--serif);font-weight:500;letter-spacing:-.01em;margin:0}
+h1{font-size:clamp(34px,6vw,56px);line-height:1.1}
+h2{font-size:clamp(24px,3.4vw,32px);line-height:1.2;margin-bottom:12px}
+p{margin:0 0 12px;max-width:62ch}
+.lede{font:400 clamp(19px,2.2vw,22px)/1.6 var(--serif);max-width:58ch}
+.muted{color:var(--muted)}.dark .muted{color:var(--d-muted)}
+.small{font-size:14px;line-height:1.45}
+.grid{display:grid;gap:20px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.tile{background:var(--raised);border:1px solid var(--line);border-radius:14px;padding:28px;display:flex;flex-direction:column;justify-content:space-between;gap:20px;min-height:200px}
+.tile.paper{background:var(--paper)}
+.tile.d{background:var(--d-raised);border-color:var(--d-line)}
+.tile.dd{background:var(--d-paper);border-color:var(--d-line)}
+.tile .cap{font:500 13px/1.3 var(--sans);color:var(--muted);letter-spacing:.02em}
+.tile.d .cap,.tile.dd .cap{color:var(--d-muted)}
+.center{display:flex;align-items:center;justify-content:center;flex:1}
+
+/* hero */
+header.hero{padding-top:48px;padding-bottom:56px}
+.hero .lockup{width:min(100%,640px);margin:40px 0 36px}
+.hero .meta{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:14px;color:var(--muted)}
+
+/* anatomy */
+.anatomy{position:relative;max-width:760px;margin:24px auto 0}
+.anatomy img{width:100%}
+.labels{display:grid;grid-template-columns:24% 52% 24%;margin-top:14px;font:500 14px/1.3 var(--sans);color:var(--muted);text-align:center}
+.labels span{border-top:1px solid var(--line);padding-top:8px;margin:0 4px}
+.labels b{display:block;font:500 17px/1.3 var(--serif);color:var(--ink);margin-bottom:2px}
+
+/* sizes */
+.sizes{display:flex;align-items:flex-end;flex-wrap:wrap;gap:28px 36px}
+.sizes figure{margin:0;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.sizes figcaption{font:500 13px/1.2 var(--sans);color:var(--muted)}
+.dark .sizes figcaption{color:var(--d-muted)}
+.px{image-rendering:pixelated;border:1px solid var(--line)}
+.big512{width:512px;max-width:100%}
+
+/* wordmark detail */
+.detail{overflow:hidden;border-radius:14px;border:1px solid var(--line);background:var(--raised);aspect-ratio:2.2/1;position:relative}
+.detail img{position:absolute;width:240%;max-width:none;left:-104%;top:4%}
+
+/* email mock */
+.mail{max-width:600px;margin:0 auto;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--paper);box-shadow:0 6px 16px rgba(43,39,34,.08)}
+.mail .chrome{background:var(--surface);padding:10px 16px;font:400 13px/1.4 var(--sans);color:var(--muted);border-bottom:1px solid var(--line)}
+.mail .chrome b{color:var(--ink);font-weight:600}
+.mail .hd{padding:28px 32px 20px;border-bottom:1px solid var(--line)}
+.mail .hd img{width:176px}
+.mail .bd{padding:28px 32px 32px;background:var(--raised)}
+.mail h3{font:500 26px/1.25 var(--serif);margin:0 0 14px}
+.mail p{font-size:17px;color:var(--ink)}
+.mail .btn{display:inline-block;background:var(--accent);color:#fff;font:600 17px/1 var(--sans);padding:16px 26px;border-radius:999px;margin:8px 0 18px;text-decoration:none}
+.mail .code{font:500 28px/1 var(--serif);letter-spacing:.18em;background:var(--accent-soft);padding:14px 18px;border-radius:8px;display:inline-block;margin:4px 0 18px}
+.mail .ft{padding:20px 32px 26px;font-size:13px;line-height:1.5;color:var(--muted);background:var(--paper)}
+.mail.dk{background:var(--d-paper);border-color:var(--d-line);box-shadow:none}
+.mail.dk .chrome{background:#1B1917;color:var(--d-muted);border-color:var(--d-line)}.mail.dk .chrome b{color:var(--d-ink)}
+.mail.dk .hd{border-color:var(--d-line)}
+.mail.dk .bd{background:var(--d-raised)}
+.mail.dk h3,.mail.dk p{color:var(--d-ink)}
+.mail.dk .btn{background:var(--d-accent);color:#1E1612}
+.mail.dk .code{background:#3A2E25;color:var(--d-ink)}
+.mail.dk .ft{background:var(--d-paper);color:var(--d-muted)}
+
+/* iOS home screen */
+.phones{display:flex;flex-wrap:wrap;gap:32px;justify-content:center}
+.phone{width:320px;max-width:100%;aspect-ratio:390/844;border-radius:46px;padding:12px;background:#0d0c0b;box-shadow:0 18px 40px rgba(0,0,0,.18)}
+.screen{width:100%;height:100%;border-radius:36px;overflow:hidden;position:relative;padding:54px 18px 0;
+  background:radial-gradient(120% 80% at 20% 10%,#E9DCCB 0%,#D8C3AA 45%,#B99A7C 100%)}
+.screen.night{background:radial-gradient(120% 80% at 20% 10%,#2c2620 0%,#1c1815 50%,#0f0d0c 100%)}
+.status{position:absolute;top:14px;left:28px;right:24px;display:flex;justify-content:space-between;font:600 14px/1 -apple-system,"Segoe UI",sans-serif;color:#1b1714}
+.night .status{color:#f2ece4}
+.island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:96px;height:28px;border-radius:20px;background:#000}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 14px}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;font:500 11px/1.1 -apple-system,"Segoe UI",sans-serif;color:#1b1714;text-align:center}
+.night .app{color:#f2ece4}
+.ico{width:100%;aspect-ratio:1;border-radius:22.5%;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.ico img{width:100%;height:100%}
+.ph{background:rgba(255,255,255,.55)}
+.ph.b{background:rgba(255,255,255,.35)}
+.night .ph{background:rgba(255,255,255,.14)}.night .ph.b{background:rgba(255,255,255,.08)}
+.dock{position:absolute;left:12px;right:12px;bottom:12px;padding:14px;border-radius:30px;background:rgba(255,255,255,.35);display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.night .dock{background:rgba(255,255,255,.1)}
+.app.focus .ico{outline:2px solid rgba(0,0,0,.0)}
+
+/* usage */
+.rules{display:grid;gap:12px;padding:0;margin:0;list-style:none}
+.rules li{padding:14px 16px;border-radius:10px;background:var(--surface)}
+.rules b{font-weight:600}
+.clear{position:relative;padding:12%;border:1px dashed var(--accent);border-radius:6px;background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(138,90,59,.06) 8px 16px)}
+.clear .inner{background:var(--raised);padding:0}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+td,th{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:13px;letter-spacing:.03em;text-transform:uppercase}
+.swatch{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid rgba(0,0,0,.1)}
+footer{padding:40px 0 64px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+
+<header class="hero wrap" id="top">
+  <p class="eyebrow">Early Letters &middot; logo direction B</p>
+  <h1>The voice, kept.</h1>
+  <img class="lockup" src="lockup-horizontal.svg" alt="Early Letters horizontal lockup">
+  <p class="lede">One pen stroke tells the whole product. A voice runs along the line, rises into a handwritten e, and leaves as an underline on the same line it came from.</p>
+  <div class="meta"><span>Symbol: one stroke, 47 nodes</span><span>Wordmark: Literata 500, outlined and redrawn</span><span>Colours: @scribe/brand tokens</span></div>
+</header>
+
+<section id="idea">
+  <div class="wrap">
+    <p class="eyebrow">Rationale</p>
+    <h2>Said once. Kept exactly. Read for years.</h2>
+    <p>The symbol is one continuous stroke with three movements. It starts as a soft wave along the line, the sound of someone talking to {child}. The wave settles and lifts into a lowercase e written by hand, the first letter of the name and of every early letter. Then the pen comes back down and keeps going as an underline: the words stay where they were said.</p>
+    <p>Only the first movement is a wave. Everything after it is steady ink, which is the product's promise in one gesture: the machine never adds meaning, it only keeps what was said. The pen is drawn the way a real nib behaves, finer where the voice begins and fuller where it becomes writing.</p>
+    <div class="anatomy">
+      <img src="symbol.svg" alt="Symbol">
+      <div class="labels"><span><b>Voice</b>a wave on the line</span><span><b>Letter</b>a handwritten e</span><span><b>Line</b>kept, underlined</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="paper">
+  <div class="wrap">
+    <p class="eyebrow">The system on paper</p>
+    <h2>Ink and accent on paper</h2>
+    <p class="muted">Ink <span class="swatch" style="background:#2B2722"></span>#2B2722 for everyday use. Accent <span class="swatch" style="background:#8A5A3B"></span>#8A5A3B, a sepia like fountain pen ink, for covers, gifts and the printed book.</p>
+    <div class="grid g2" style="margin-top:24px">
+      <div class="tile paper"><div class="center"><img src="lockup-horizontal.svg" alt="" style="width:88%"></div><span class="cap">lockup-horizontal.svg</span></div>
+      <div class="tile paper"><div class="center"><img src="lockup-stacked.svg" alt="" style="width:62%"></div><span class="cap">lockup-stacked.svg</span></div>
+      <div class="tile paper"><div class="center"><img src="lockup-horizontal-accent.svg" alt="" style="width:88%"></div><span class="cap">lockup-horizontal-accent.svg</span></div>
+      <div class="tile paper"><div class="center"><img src="lockup-stacked-accent.svg" alt="" style="width:62%"></div><span class="cap">lockup-stacked-accent.svg</span></div>
+    </div>
+    <div class="grid g4" style="margin-top:20px">
+      <div class="tile"><div class="center"><img src="symbol.svg" alt="" style="width:70%"></div><span class="cap">symbol.svg</span></div>
+      <div class="tile"><div class="center"><img src="symbol-accent.svg" alt="" style="width:70%"></div><span class="cap">symbol-accent.svg</span></div>
+      <div class="tile" style="grid-column:span 2"><div class="center"><img src="wordmark.svg" alt="" style="width:80%"></div><span class="cap">wordmark.svg</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="dark" class="dark">
+  <div class="wrap">
+    <p class="eyebrow">The system at night</p>
+    <h2>Reversed and accent on dark</h2>
+    <p class="muted">The app is tuned for 2 a.m. first, so the reversed marks are first-class: paper ink <span class="swatch" style="background:#F2ECE4"></span>#F2ECE4 and accent <span class="swatch" style="background:#D9A47E"></span>#D9A47E on <span class="swatch" style="background:#161412"></span>#161412.</p>
+    <div class="grid g2" style="margin-top:24px">
+      <div class="tile dd"><div class="center"><img src="lockup-horizontal-reversed.svg" alt="" style="width:88%"></div><span class="cap">lockup-horizontal-reversed.svg</span></div>
+      <div class="tile dd"><div class="center"><img src="lockup-stacked-reversed.svg" alt="" style="width:62%"></div><span class="cap">lockup-stacked-reversed.svg</span></div>
+      <div class="tile dd"><div class="center"><img src="lockup-horizontal-accent-reversed.svg" alt="" style="width:88%"></div><span class="cap">lockup-horizontal-accent-reversed.svg</span></div>
+      <div class="tile d"><div class="center"><img src="lockup-stacked-accent-reversed.svg" alt="" style="width:62%"></div><span class="cap">lockup-stacked-accent-reversed.svg on paperRaised #201D1A</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="sizes">
+  <div class="wrap">
+    <p class="eyebrow">Sizes</p>
+    <h2>16, 32, 64, 512</h2>
+    <p class="muted">Three optical sizes from one drawing. <b>favicon</b> (16 to 24px) is drawn on the pixel grid: a 2px pen, the line snapped to whole rows, the e 12 percent taller so its eye stays open. <b>symbol-small</b> (24 to 40px) has a heavier, even pen and a wider wave. <b>symbol</b> (48px up) has the full pen. Bottom row: actual 16 and 32px renders, magnified 8x and 4x with no smoothing.</p>
+    <div class="sizes" style="margin-top:28px">
+      <figure><img src="favicon.svg" alt="" style="width:16px"><figcaption>16</figcaption></figure>
+      <figure><img src="symbol-small.svg" alt="" style="width:32px"><figcaption>32</figcaption></figure>
+      <figure><img src="symbol.svg" alt="" style="width:64px"><figcaption>64</figcaption></figure>
+      <figure><img class="big512" src="symbol.svg" alt=""><figcaption>512</figcaption></figure>
+    </div>
+    <div class="sizes" style="margin-top:28px">
+      <figure><img class="px" src="png/favicon-16.png" alt="" style="width:128px;height:128px"><figcaption>favicon 16px, 8x</figcaption></figure>
+      <figure><img class="px" src="png/favicon-32.png" alt="" style="width:128px;height:128px"><figcaption>favicon 32px, 4x</figcaption></figure>
+      <figure><img class="px" src="png/symbol-small-64.png" alt="" style="width:128px"><figcaption>symbol-small 64px, 2x</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="sizes-dark" class="dark">
+  <div class="wrap">
+    <div class="sizes">
+      <figure><img src="symbol-small-reversed.svg" alt="" style="width:16px"><figcaption>16</figcaption></figure>
+      <figure><img src="symbol-small-reversed.svg" alt="" style="width:32px"><figcaption>32</figcaption></figure>
+      <figure><img src="symbol-accent-reversed.svg" alt="" style="width:64px"><figcaption>64</figcaption></figure>
+      <figure><img class="big512" src="symbol-accent-reversed.svg" alt=""><figcaption>512</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="craft">
+  <div class="wrap">
+    <p class="eyebrow">Construction</p>
+    <h2>Drawn as a pen draws</h2>
+    <div class="grid g2" style="align-items:start;margin-top:12px">
+      <div class="tile" style="padding:16px"><img src="src/construction.svg" alt="Centreline and outline of the symbol"></div>
+      <div>
+        <p><b>Centreline</b> (dashed, square nodes): nine hand-placed cubic curves, three for the voice and six for the letter and line. Every join has collinear handles, so the line never kinks.</p>
+        <p><b>Pen</b>: a broad nib held at minus 35 degrees, with 24 percent contrast, so down-strokes are fuller than up-strokes, the way handwriting looks. The wave starts at 70 percent weight and grows to full ink as it becomes the letter.</p>
+        <p><b>Outline</b> (round nodes): the pen is expanded and refitted to 47 cubic nodes, then shipped as a single filled path. No strokes, so it scales the same in every renderer, email client and print RIP.</p>
+        <p><b>Optical corrections</b>: every turn's radius was checked against the pen's half-width so inner curves never pinch; the eye of the e turns in one long curve; the upstroke leaves the line early so it crosses the bowl as a clean X; the underline rises 3 percent and thins slightly at the end, where a pen lifts.</p>
+        <p class="muted small">Rebuild: <code>npx tsx packages/brand/assets/logo/b/src/build.ts</code> then <code>python3 packages/brand/assets/logo/b/src/render.py</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="wordmark">
+  <div class="wrap">
+    <p class="eyebrow">Wordmark</p>
+    <h2>Literata, quietly redrawn</h2>
+    <div class="grid g2" style="align-items:center;margin-top:12px">
+      <div class="detail"><svg viewBox="505 8 290 128" role="img" aria-label="Detail of the joined tt" style="position:absolute;inset:0;width:100%;height:100%"><image href="wordmark.svg" width="899.04" height="156.95"/></svg></div>
+      <div>
+        <p>Literata 500, the product's display serif, outlined from the OFL font so the wordmark never depends on a font being installed.</p>
+        <p><b>One bar for tt.</b> The two t's in Letters share a single crossbar, written in one movement, the way letters join when someone writes by hand. It is the only ornament, and it echoes the symbol without copying it.</p>
+        <p><b>Spacing</b>: tracked in 0.4 percent and kerned pair by pair for display sizes (Ea, ly, y and L, Le, rs), so the name reads as one word group rather than set type.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="email">
+  <div class="wrap">
+    <p class="eyebrow">In use</p>
+    <h2>Email header</h2>
+    <p class="muted">Mock only; the real header and footer belong to B3 and D1. The lockup sits on paper, 176px wide, left aligned with the body text.</p>
+    <div class="grid g2" style="margin-top:24px;align-items:start">
+      <div class="mail">
+        <div class="chrome"><b>Early Letters</b> &lt;hello@earlyletters.com&gt;<br>Your sign-in link</div>
+        <div class="hd"><img src="lockup-horizontal.svg" alt="Early Letters"></div>
+        <div class="bd">
+          <h3>Here is your sign-in link.</h3>
+          <p>Tap the button on this phone to open the memory book.</p>
+          <a class="btn">Sign in</a>
+          <p class="small" style="color:var(--muted)">On another device? Enter this code instead.</p>
+          <div class="code">{code}</div>
+          <p class="small" style="color:var(--muted)">Did not ask for this? You can ignore it.</p>
+        </div>
+        <div class="ft">Sent by Early Letters because someone asked to sign in with this address.</div>
+      </div>
+      <div class="mail dk">
+        <div class="chrome"><b>Early Letters</b> &lt;hello@earlyletters.com&gt;<br>Your sign-in link</div>
+        <div class="hd"><img src="lockup-horizontal-reversed.svg" alt="Early Letters"></div>
+        <div class="bd">
+          <h3>Here is your sign-in link.</h3>
+          <p>Tap the button on this phone to open the memory book.</p>
+          <a class="btn">Sign in</a>
+          <p class="small" style="color:var(--d-muted)">On another device? Enter this code instead.</p>
+          <div class="code">{code}</div>
+          <p class="small" style="color:var(--d-muted)">Did not ask for this? You can ignore it.</p>
+        </div>
+        <div class="ft">Sent by Early Letters because someone asked to sign in with this address.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="home">
+  <div class="wrap">
+    <p class="eyebrow">In use</p>
+    <h2>iOS home screen</h2>
+    <p class="muted">Primary: paper writing on sepia, like the cover of a cloth-bound book; it holds its own on light and dark wallpapers. Dark appearance: sepia on night. Alternate (png/app-icon-paper-1024.png): ink on paper. Other icons are neutral placeholders.</p>
+    <div class="phones" style="margin-top:28px">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="status"><span>9:41</span><span>&#9679;&#9679;&#9679;</span></div>
+        <div class="apps">
+          <div class="app"><div class="ico ph"></div>Calendar</div><div class="app"><div class="ico ph b"></div>Camera</div><div class="app"><div class="ico ph"></div>Clock</div><div class="app"><div class="ico ph b"></div>Weather</div>
+          <div class="app"><div class="ico ph b"></div>Maps</div><div class="app"><div class="ico"><img src="app-icon-1024.png" alt=""></div>Early Letters</div><div class="app"><div class="ico ph"></div>Music</div><div class="app"><div class="ico ph b"></div>Files</div>
+          <div class="app"><div class="ico ph"></div>Health</div><div class="app"><div class="ico ph b"></div>Books</div><div class="app"><div class="ico ph"></div>Wallet</div><div class="app"><div class="ico ph b"></div>Home</div>
+        </div>
+        <div class="dock"><div class="ico ph"></div><div class="ico ph b"></div><div class="ico ph"></div><div class="ico ph b"></div></div>
+      </div></div>
+      <div class="phone"><div class="screen night">
+        <div class="island"></div><div class="status"><span>9:41</span><span>&#9679;&#9679;&#9679;</span></div>
+        <div class="apps">
+          <div class="app"><div class="ico ph"></div>Calendar</div><div class="app"><div class="ico ph b"></div>Camera</div><div class="app"><div class="ico ph"></div>Clock</div><div class="app"><div class="ico ph b"></div>Weather</div>
+          <div class="app"><div class="ico ph b"></div>Maps</div><div class="app"><div class="ico"><img src="png/app-icon-dark-1024.png" alt=""></div>Early Letters</div><div class="app"><div class="ico ph"></div>Music</div><div class="app"><div class="ico ph b"></div>Files</div>
+          <div class="app"><div class="ico ph"></div>Health</div><div class="app"><div class="ico ph b"></div>Books</div><div class="app"><div class="ico ph"></div>Wallet</div><div class="app"><div class="ico ph b"></div>Home</div>
+        </div>
+        <div class="dock"><div class="ico ph"></div><div class="ico ph b"></div><div class="ico ph"></div><div class="ico ph b"></div></div>
+      </div></div>
+      <div style="display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center">
+        <img src="app-icon-1024.png" alt="App icon" style="width:180px;border-radius:22.5%;box-shadow:0 4px 14px rgba(43,39,34,.15)">
+        <span class="small muted">app-icon-1024.png, shown masked</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="use">
+  <div class="wrap">
+    <p class="eyebrow">Use</p>
+    <h2>Clear space, minimum sizes, and care</h2>
+    <div class="grid g2" style="margin-top:16px;align-items:start">
+      <div>
+        <div class="clear"><div class="inner"><img src="lockup-horizontal.svg" alt=""></div></div>
+        <p class="small muted" style="margin-top:10px">Clear space on every side: the cap height of the E. For the symbol alone: a quarter of its width.</p>
+        <table style="margin-top:12px">
+          <tr><th>Asset</th><th>Minimum</th></tr>
+          <tr><td>lockup-horizontal</td><td>120px wide on screen, 30mm in print</td></tr>
+          <tr><td>lockup-stacked</td><td>96px wide, 24mm</td></tr>
+          <tr><td>symbol</td><td>48px wide, 12mm; below that use symbol-small</td></tr>
+          <tr><td>symbol-small</td><td>24px; on a book spine at 8mm and up</td></tr><tr><td>favicon</td><td>16px only</td></tr>
+        </table>
+      </div>
+      <ul class="rules">
+        <li><b>Keep it one colour.</b> The wave is not a separate element; never tint it, animate it like an equaliser, or detach it from the e.</li>
+        <li><b>Keep it still.</b> In motion, the only allowed animation is the stroke being written once, left to right, at a calm pace (MOTION standard curve). No looping.</li>
+        <li><b>Paper behind it.</b> On photographs, place it on a paper or night panel. Never over a face.</li>
+        <li><b>No additions.</b> No microphone, bubble, heart, sparkle, outline, shadow or gradient. No restyling the wordmark in another typeface.</li>
+        <li><b>Spine.</b> On a printed book spine, set the symbol-small rotated with the spine text, accent on paper cloth or reversed on dark cloth.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="files">
+  <div class="wrap">
+    <p class="eyebrow">Files</p>
+    <h2>What is in this folder</h2>
+    <table>
+      <tr><th>File</th><th>What</th></tr>
+      <tr><td class="mono">symbol*.svg, symbol-small*.svg</td><td>The mark, master and small optical size, in ink, reversed, accent, accent-reversed</td></tr>
+      <tr><td class="mono">wordmark*.svg</td><td>Outlined Literata 500 wordmark with the joined tt</td></tr>
+      <tr><td class="mono">lockup-horizontal*.svg, lockup-stacked*.svg</td><td>Symbol and wordmark on a shared baseline</td></tr>
+      <tr><td class="mono">favicon.svg</td><td>Micro cut on a 16px grid, swaps to paper ink when the browser is in dark mode</td></tr>
+      <tr><td class="mono">app-icon-1024.png</td><td>iOS App Store icon, paper on sepia, opaque RGB, no alpha, square corners (iOS masks it)</td></tr>
+      <tr><td class="mono">png/</td><td>Transparent PNG renders, favicons 16/32/48, apple-touch-icon 180, dark and paper app icon alternates</td></tr>
+      <tr><td class="mono">src/</td><td>build.ts (geometry, type outlining, composition), geometry.mjs (pen expansion and curve fitting), render.py</td></tr>
+      <tr><td class="mono">LICENSE-NOTES.md</td><td>SIL OFL 1.1 notes for Literata (outlined into the wordmark) and the fonts used on this page</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer class="wrap">Direction B, prepared for founder review, Oct 3 2026. Name not yet trademark cleared; clearance should include this mark.</footer>
+</body>
+</html>

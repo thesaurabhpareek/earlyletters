@@ -1,0 +1,198 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+
+/** Every Markdown file in src/content/legal becomes /<file name>. */
+export async function getStaticPaths() {
+  const docs = await getCollection('legal');
+  return docs.map((doc) => ({ params: { legal: doc.id }, props: { doc } }));
+}
+
+const { doc } = Astro.props;
+const { Content, headings } = await render(doc);
+const isDraft = doc.data.status.trim().toLowerCase().startsWith('draft');
+const toc = headings.filter((h) => h.depth === 2);
+
+const asDate = (v: unknown) => {
+  if (v instanceof Date) {
+    return v.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+  }
+  return typeof v === 'string' ? v : undefined;
+};
+const effective = asDate(doc.data.effectiveDate);
+const updated = asDate(doc.data.lastUpdated);
+---
+<Base title={doc.data.title} description={doc.data.description ?? doc.data.summary} noindex={isDraft}>
+  {isDraft && (
+    <div class="draft" role="note">
+      <div class="wrap">
+        <p><strong>Draft, pending legal review.</strong> This page is not in effect yet and may change.</p>
+      </div>
+    </div>
+  )}
+  <div class="wrap legal">
+    <header class="doc-head">
+      <h1>{doc.data.title}</h1>
+      {(effective || updated) && (
+        <dl class="meta">
+          {effective && <div><dt>Effective</dt><dd>{effective}</dd></div>}
+          {updated && <div><dt>Last updated</dt><dd>{updated}</dd></div>}
+        </dl>
+      )}
+    </header>
+
+    {toc.length > 1 && (
+      <nav class="toc" aria-labelledby="toc-title">
+        <details open>
+          <summary id="toc-title">Contents</summary>
+          {/* Unnumbered list: the documents number their own sections. */}
+          <ul>
+            {toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}
+          </ul>
+        </details>
+      </nav>
+    )}
+
+    <article class="prose">
+      <Content />
+    </article>
+  </div>
+</Base>
+
+<style>
+  .draft {
+    background: var(--accent-soft);
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 1rem;
+  }
+  .draft p { padding-block: var(--s3); }
+  .draft strong { font-weight: 600; }
+
+  .legal {
+    display: grid;
+    gap: var(--s8);
+    padding-top: var(--s9);
+  }
+  .doc-head h1 {
+    font-size: clamp(2.25rem, 1.7rem + 2.4vw, 3.25rem);
+    line-height: 1.1;
+    max-width: 20ch;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s1) var(--s6);
+    margin: var(--s4) 0 0;
+    color: var(--ink-muted);
+    font-size: 1rem;
+  }
+  .meta dt { display: inline; font-weight: 500; }
+  .meta dt::after { content: ':'; }
+  .meta dd { display: inline; margin: 0 0 0 0.3em; }
+
+  .toc summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  .toc ul {
+    list-style: none;
+    margin: var(--s2) 0 0;
+    padding-left: 0;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: var(--ink-muted);
+  }
+  .toc li { padding-block: 6px; }
+  .toc a { color: var(--ink-muted); text-decoration: none; }
+  .toc a:hover { color: var(--ink); text-decoration: underline; }
+
+  @media (min-width: 64rem) {
+    .legal {
+      grid-template-columns: 16rem minmax(0, 1fr);
+      grid-template-areas: 'head head' 'toc prose';
+      column-gap: var(--s12);
+    }
+    .doc-head { grid-area: head; }
+    .toc { grid-area: toc; }
+    .toc details { position: sticky; top: var(--s6); max-height: calc(100vh - 48px); overflow: auto; }
+    .prose { grid-area: prose; }
+  }
+
+  /* ---------- long-form reading ---------- */
+  .prose {
+    max-width: 66ch;
+    font: 400 1.1875rem/1.7 var(--serif);
+    color: var(--ink);
+    font-variant-numeric: oldstyle-nums;
+    hyphens: manual;
+  }
+  .prose :global(h1) { display: none; } /* title comes from frontmatter */
+  .prose :global(h2) {
+    position: relative;
+    margin: 2.4em 0 0.6em;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    font-variant-numeric: lining-nums;
+  }
+  .prose :global(h3) {
+    position: relative;
+    margin: 1.8em 0 0.4em;
+    font: 600 1.125rem/1.35 var(--sans);
+  }
+  .prose :global(h2:first-child) { margin-top: 0; }
+  .prose :global(p),
+  .prose :global(ul),
+  .prose :global(ol),
+  .prose :global(table),
+  .prose :global(blockquote) { margin: 0 0 1em; }
+  .prose :global(ul),
+  .prose :global(ol) { padding-left: 1.4em; }
+  .prose :global(li) { margin-bottom: 0.4em; }
+  .prose :global(li::marker) { color: var(--ink-muted); }
+  .prose :global(strong) { font-weight: 500; }
+  .prose :global(a) { overflow-wrap: anywhere; }
+  .prose :global(blockquote) {
+    padding: var(--s4) var(--s5);
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  }
+  .prose :global(hr) { border: 0; border-top: 1px solid var(--line); margin: 2.4em 0; }
+  .prose :global(table) {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font: 400 1rem/1.5 var(--sans);
+  }
+  .prose :global(th),
+  .prose :global(td) {
+    padding: var(--s2) var(--s3);
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+    min-width: 8rem;
+  }
+  .prose :global(th) { font-weight: 600; border-bottom-color: var(--ink-muted); }
+  .prose :global(code) { font-size: 0.9em; }
+
+  /* Anchor added by src/lib/heading-anchors.mjs: shows on hover or focus. */
+  .prose :global(.anchor) {
+    display: inline-block;
+    margin-left: 0.35em;
+    padding-inline: 0.15em;
+    color: var(--ink-muted);
+    text-decoration: none;
+    opacity: 0;
+  }
+  .prose :global(.anchor::before) { content: '#'; }
+  .prose :global(h2:hover .anchor),
+  .prose :global(h3:hover .anchor),
+  .prose :global(.anchor:focus-visible) { opacity: 1; }
+  @media (hover: none) { .prose :global(.anchor) { opacity: 0.6; } }
+  .prose :global(:target) { scroll-margin-top: var(--s6); }
+</style>

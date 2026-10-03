@@ -1,0 +1,45 @@
+---
+import Base from './Base.astro';
+interface Props {
+  title: string;
+  /** Optional standfirst under the title, set in the reading serif. */
+  lede?: string;
+  description?: string;
+  noindex?: boolean;
+  /** "reading" for story pages (Literata body), "plain" for utility pages. */
+  tone?: 'reading' | 'plain';
+}
+const { title, lede, description, noindex, tone = 'plain' } = Astro.props;
+---
+<Base title={title} description={description ?? lede} noindex={noindex}>
+  <div class={`wrap page ${tone}`}>
+    <header>
+      <h1>{title}</h1>
+      {lede && <p class="lede">{lede}</p>}
+    </header>
+    <div class="body">
+      <slot />
+    </div>
+  </div>
+</Base>
+<style>
+  .page { padding-top: var(--s9); }
+  header { max-width: 44rem; }
+  h1 {
+    font-size: clamp(2.25rem, 1.6rem + 3vw, 3.75rem);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    margin-top: var(--s5);
+    font: 400 1.375rem/1.55 var(--serif);
+    color: var(--ink-muted);
+  }
+  .body { margin-top: var(--s10); max-width: 66ch; }
+  .reading .body { font: 400 1.25rem/1.7 var(--serif); }
+  .body :global(p + p) { margin-top: 1em; }
+  .body :global(h2) { margin: 1.8em 0 0.5em; font-size: 1.625rem; line-height: 1.2; }
+  .body :global(h2:first-child) { margin-top: 0; }
+  .body :global(ul), .body :global(ol) { padding-left: 1.3em; margin: 0 0 1em; }
+  .body :global(li) { margin-bottom: 0.5em; }
+</style>

@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+import Rich from '../components/Rich.astro';
+import { pages } from '../lib/pages';
+const p = pages.notFound;
+const s = p.sections[0];
+---
+<Base title={p.title} description={p.metaDescription} noindex>
+  <div class="wrap"><div class="nf">
+    <h1>{p.title}</h1>
+    <p class="line">{s.heading}</p>
+    <div class="more">
+      {s.paragraphs.map((t) => <Rich text={t} />)}
+    </div>
+    <a class="button" href="/">Home</a>
+  </div></div>
+</Base>
+<style>
+  .nf { padding-top: var(--s12); max-width: 46rem; }
+  h1 { font: 500 1rem/1.4 var(--sans); color: var(--ink-muted); }
+  .line {
+    margin-top: var(--s4);
+    font: 500 clamp(2rem, 1.4rem + 3vw, 3.5rem)/1.12 var(--serif);
+    text-wrap: balance;
+  }
+  .more { margin: var(--s8) 0; max-width: 34rem; color: var(--ink-muted); }
+  .more :global(p + p) { margin-top: var(--s3); }
+</style>

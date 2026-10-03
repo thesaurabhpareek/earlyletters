@@ -1,0 +1,19 @@
+{
+  "note": "Interim typographic lockup. Replace with direction A or B when chosen. Built by source/build.mjs.",
+  "displayWidthPx": 160,
+  "displayHeightPx": 28,
+  "fontSizePx": 24.57,
+  "files": {
+    "logo-light.png": "320x56",
+    "logo-light@1x.png": "160x28",
+    "logo-dark.png": "320x56",
+    "logo-dark@1x.png": "160x28",
+    "avatar-1024.png": "1024x1024",
+    "favicon-32.png": "32x32",
+    "apple-touch-icon.png": "180x180",
+    "icon-512.png": "512x512",
+    "icon-192.png": "192x192"
+  },
+  "alt": "Early Letters",
+  "hostedAt": "https://earlyletters.com/email/"
+}

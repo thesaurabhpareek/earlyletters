@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { book, en, PROMPTS, site, storeListing } from '../src';
+import { book, en, PROMPTS, site, storeListing, pages } from '../src';
 
 type Leaf = { path: string; text: string };
 
@@ -23,6 +23,7 @@ const ALL: Leaf[] = [
   ...leaves(storeListing, 'store'),
   ...leaves(site, 'site'),
   ...leaves(book, 'book'),
+  ...leaves(pages, 'pages'),
   ...PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text })),
 ];
 const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(join(__dirname, '..', f), 'utf8') }));

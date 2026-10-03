@@ -1,0 +1,22 @@
+---
+import Page from '../layouts/Page.astro';
+import Sections from '../components/Sections.astro';
+import { pages } from '../lib/pages';
+const p = pages.deleteAccount;
+---
+<Page title={p.title} description={p.metaDescription}>
+  <nav class="jump" aria-label="On this page">
+    <ul>
+      {p.sections.map((s) => (
+        <li><a href={`#${s.heading.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}>{s.heading}</a></li>
+      ))}
+    </ul>
+  </nav>
+  <Sections sections={p.sections} callout={/tap Settings, then /} />
+</Page>
+<style>
+  .jump { margin-bottom: var(--s10); padding-bottom: var(--s6); border-bottom: 1px solid var(--line); }
+  .jump ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0 var(--s8); }
+  @media (min-width: 48rem) { .jump ul { grid-template-columns: 1fr 1fr; } }
+  .jump a { display: inline-flex; align-items: center; min-height: 44px; font-size: 1rem; }
+</style>
