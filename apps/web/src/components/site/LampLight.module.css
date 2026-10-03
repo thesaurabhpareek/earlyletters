@@ -1,0 +1,32 @@
+.lamp {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.layer {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+.amber {
+  width: 120vmax;
+  height: 120vmax;
+  margin: -60vmax 0 0 -60vmax;
+  background: radial-gradient(closest-side, rgba(243, 201, 139, 0.3), rgba(217, 164, 126, 0.14) 38%, rgba(120, 80, 50, 0.05) 62%, transparent);
+}
+.rose {
+  width: 100vmax;
+  height: 100vmax;
+  margin: -50vmax 0 0 -50vmax;
+  opacity: 0.12;
+  background: radial-gradient(closest-side, rgba(240, 140, 124, 0.26), rgba(196, 110, 120, 0.12) 40%, rgba(90, 50, 70, 0.05) 64%, transparent);
+}
+.gold {
+  width: 54vmax;
+  height: 54vmax;
+  margin: -27vmax 0 0 -27vmax;
+  background: radial-gradient(closest-side, rgba(255, 224, 160, 0.34), rgba(243, 201, 139, 0.12) 46%, transparent);
+}
