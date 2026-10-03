@@ -5,8 +5,7 @@
  * use the permanent codename "scribe" and never change.
  *
  * WARNING: `bundleId` cannot be changed after the first build is uploaded to
- * App Store Connect. Set `publisher.domain` to the real domain before the
- * first EAS build (BL-100).
+ * App Store Connect. `publisher.domain` is set to earlyletters.com (Oct 3 2026).
  */
 
 /**
@@ -21,12 +20,15 @@ const publisher = {
   kind: 'individual',
   /** TODO(founder): never put a real name here; legal documents carry it. */
   legalName: 'TODO: individual publisher (name set in legal documents, not in code)',
-  /** Reverse of this domain prefixes every app's bundle ID. TODO(founder, BL-100): real domain. */
-  domain: 'example.com',
-  /** TODO(founder, BL-100): mailbox on the real domain. */
-  supportEmail: 'support@example.com',
-  /** TODO(founder, BL-100): published, versioned Privacy Policy URL. */
-  privacyUrl: 'https://example.com/privacy',
+  /**
+   * Reverse of this domain prefixes every app's bundle ID: com.earlyletters.scribe.
+   * Registered Oct 3 2026 (Porkbun). Do not change after the first App Store upload.
+   */
+  domain: 'earlyletters.com',
+  /** Mailbox on the real domain. TODO(founder, BL-100): create the mailbox before beta. */
+  supportEmail: 'support@earlyletters.com',
+  /** Published, versioned Privacy Policy URL. TODO(founder, BL-100): publish the page before beta. */
+  privacyUrl: 'https://earlyletters.com/privacy',
 } as const;
 
 export const brand = {
