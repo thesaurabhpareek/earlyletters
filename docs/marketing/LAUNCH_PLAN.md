@@ -239,6 +239,142 @@ The system review prompt appears at most three times in 365 days; Apple advises 
 
 ---
 
+## 7. Calendar, week by week
+
+Weeks and dates follow `docs/ROADMAP.md` section 1. "Agent" work is drafts in this repo. "Founder" lists only the marketing actions that need the founder, with time estimates (E). If submission moves, everything from week 14 on moves with it, day for day.
+
+### 7.1 Before submission
+
+| Week | Dates | Roadmap context | Marketing work (agents) | Founder (marketing only) |
+|---|---|---|---|---|
+| 1 | 5 to 9 Oct | M0, M1 | This plan (PR #38). Section 1.2 list to `content` and `legal` | Read section 1.2 and decide whether the store and site copy follows the brief (15 min). Trademark clearance for "Early Letters" (CR-122, open Gap) |
+| 2 | 12 to 16 Oct | M0; D-023 due | Product page and screenshot storyboard brief (standing duty 2) | none |
+| 3 | 19 to 23 Oct | BL-103: app record created | Keyword research with sources (standing duty 4) | When creating the app record, confirm "Early Letters: Memory Book" is accepted as the name (5 min) |
+| 4 | 26 to 30 Oct | M3 device spike; D-031 due | Featuring nomination text (App Launch, window 18 to 29 Jan) | Submit the nomination in App Store Connect (30 min) [M7][M8] |
+| 5 | 2 to 6 Nov | Counsel package due | Beta recruitment materials (standing duty 5). Store and site claims list added to the counsel package (LEGAL-REQ-044) | Approve recruitment drafts (30 min) |
+| 6 | 9 to 13 Nov | **Go or cut checkpoint**; C0 starts | Re-check every claim against any cut taken on 13 Nov (ROADMAP section 4) | Start BL-109: personal messages to friends with babies (1 h) |
+| 7 | 16 to 20 Nov | M6 to M10 | Screener answers summarised by coverage slot, never by name in the repo | Follow-ups (1 h) |
+| 8 | 23 to 27 Nov | Thanksgiving 26 Nov | Screenshot frames drafted from design, with the fictional "Asha" family | none |
+| 9 | 30 Nov to 4 Dec | **D-045 by Fri 4 Dec** | Coverage check of the chosen families against section 5.2 | Pick 20 to 30 C1 families (30 min) |
+| 10 | 7 to 11 Dec | Feature freeze; **C1 build to Beta App Review by Fri 11 Dec** | Marketing lines for the C1 welcome note (BL-280); three survey questions (section 5.3) | Send TestFlight email invitations once the build is approved (30 min) |
+| 11 | 14 to 18 Dec | **C1 starts** | Capture screenshots from the frozen build | none |
+| 12 | 21 to 25 Dec | Holiday | Day-7 survey (21 Dec) | none |
+| 13 | 28 Dec to 1 Jan | Holiday | none | none |
+| 14 | 4 to 8 Jan | C1 exit; counsel sign-off; **D-030** | Day-21 survey (4 Jan). Survey learnings into the listing. Final listing text to `content` for `store.en.ts`. Launch email draft. Update the featuring nomination if the window moved | Approve the listing, screenshots and launch email; enter them in App Store Connect; set "Manually release this version" (2 h) |
+| 15 | 11 to 15 Jan | **Submit Mon 11 Jan** | Launch-day checklist (7.2) final | Submit; answer App Review within a day |
+
+### 7.2 Launch day (on approval; target week of 18 Jan)
+
+Mon 18 Jan 2027 is the third Monday of January, so it is Martin Luther King Jr. Day, a US federal holiday (derived from the statutory rule; the OPM calendar was not opened). Release on a Tuesday to Thursday the founder can stay near the phone (A). Order matters: nothing announces the app until it can be downloaded.
+
+1. Press "Release this version" in App Store Connect; wait until the product page loads on a phone on the US storefront (it can take up to 24 hours [M10]).
+2. Website thread flips the site from waitlist to App Store badge (`NEXT_PUBLIC_APP_STORE_URL`), using a campaign link (section 8).
+3. Set the launch promotional text.
+4. Send the one launch email to the waitlist (with its own campaign link; no open or click tracking pixels).
+5. Founder's personal messages to friends and the C1 families: a thank-you and the link. No request for ratings or reviews (section 5.4).
+6. Watch support mail (hello@earlyletters.com) and crash rates in App Store Connect for the first 48 hours.
+
+### 7.3 First six weeks after release
+
+| Week | Dates (if release 19 Jan) | Marketing work (agents) | Founder |
+|---|---|---|---|
+| L1 | 18 to 22 Jan | Launch day (7.2). Daily read of the section 8 measures that exist | Launch actions (3 h) |
+| L2 | 25 to 29 Jan | First weekly report. Buffer week if a rejection moved the launch | 30 min read |
+| L3 | 1 to 5 Feb | Custom product page drafts for Spanish and Hindi speakers (section 4, channel 8) | Approve and create pages (1 h) |
+| L4 | 8 to 12 Feb | Week-4 retention read for the launch cohort (server). Review of what C1 and support mail say people expected but did not find | 30 min |
+| L5 | 15 to 19 Feb | First product page optimisation test, if traffic allows [M11] | Approve test (15 min) |
+| L6 | 22 to 26 Feb | Six-week review against section 8; plan for the v1.1 story (grandparents writing, the web page, Hindi and English in one sentence, word highlighting), aimed at March (ROADMAP section 6) | 1 h review |
+
+---
+
+## 8. Success measures (within the analytics limits)
+
+### 8.1 What we can and cannot see
+
+| Source | Covers | Limits |
+|---|---|---|
+| **App Store Connect acquisition** | Impressions, product page views, downloads, and per-campaign results through campaign links (`pt`, `ct` parameters) [M5] | A campaign shows only after first-time downloads from at least five people, and each metric needs at least 5 in the date range [M5]. A first-time download within 24 hours of using the link is attributed [M5] |
+| **App Store Connect usage** | Sessions, active devices, retention, crashes | Only from users who agreed to share diagnostics and usage information with app developers [M6]. It is an opt-in sample too |
+| **App Store Connect subscriptions** | Trials, paid conversions, renewals, refunds | Under brief decision 3 no server of ours sees purchases and there is no RevenueCat, so Apple's own reports are the money source. `docs/analytics/TRACKING_PLAN.md` still names RevenueCat (source "R"); `analytics` to update (section 10) |
+| **Server aggregates** | Accounts, books, letters by mode, co-parent invites and acceptances; the north star "weekly keeping families" | Signed-in users only; letters kept only on the phone are invisible. Cells under 10 accounts suppressed (TRACKING_PLAN 1.4) |
+| **Device analytics (PostHog)** | Behaviour inside the app | Only after the person opts in, which is asked after the first letter in a later session; nothing before is sent or queued (TRACKING_PLAN rule 1). Rates are among consenting users, likely more engaged than the rest. Never divide a device count by a server total |
+| **Waitlist** | Signups (website thread) | One email, for the launch notice only (`data-policy.md`) |
+
+Rules for marketing reports: label every number with its source; no per-person rows; no letter text, child names or audio anywhere (CLAUDE.md privacy rules); no email open or click pixels.
+
+### 8.2 Measures and targets
+
+Targets marked A are assumptions to revisit after the first cohorts; those copied from `TRACKING_PLAN.md` are marked TP.
+
+**Before submission (pass or fail):**
+
+| Measure | Target |
+|---|---|
+| Every store and site claim approved by `legal` before it goes live | 100% |
+| The listing, screenshots and keywords contain no "beta", no learning or health words, no "kids" | Zero occurrences |
+| C1 families active at the start of C1, with the coverage list in section 5.2 met | 15 to 25 families (ROADMAP M12) |
+| Featuring nomination submitted | By 30 Oct |
+| App Review rejections caused by metadata | Zero |
+
+**First six weeks after release:**
+
+| Measure | Source | Target |
+|---|---|---|
+| Product page conversion (downloads per product page view) | ASC | Baseline in L1 to L2; no target until a baseline exists (A) |
+| First-time downloads by campaign (website, launch email, founder network) | ASC campaign links | Report only; tells us which channel is worth the founder's hours |
+| Share of first-letter users with an account by day 7 | Server | 50% or more (TP) |
+| Share of books with a co-parent invite in the first 30 days | Server | Set after the first cohort (TP) |
+| Weekly keeping families (north star) | Server | Report weekly; never shown to users (TP) |
+| Active writers at week 4 / first-letter users | Server | 35% or more (TP) |
+| Median time to first letter | Device (consenting only) | 90 seconds or less (TP); labelled as a consenting-user number |
+| Trial starts per first-letter user by day 90 | ASC plus server | 15% or more (TP); only a partial read at six weeks |
+| Refunds | ASC | Under 3% (TP) |
+| Ratings asked for outside the system prompt | Process | Zero |
+| Support messages about a promised feature that is not there | Founder's count by category | Zero (A); any one means a claim needs fixing |
+
+---
+
+## 9. Risks
+
+| # | Risk | Likelihood, impact (E) | Signal | Response |
+|---|---|---|---|---|
+| 1 | Store or site copy promises v1.0 does not have (section 1.2) | High, high | Listing still has the 1.2 lines in week 14 | `content` fixes before week 14; `legal` signs claims. Deceptive-claims risk is the compliance register's top item |
+| 2 | Brand search: "early letters" returns alphabet and phonics apps [M17] | High, medium | Our app is not first for its own name after launch | "Memory Book" in the name; keywords per duty 4; every link goes straight to the App Store URL, not to search; custom product pages. Learning words stay out of metadata, which also keeps us from looking child-directed (2.3.8) |
+| 3 | Name not cleared as a trademark (compliance register CR-122, Gap) | U, high | No clearance search by week 3 | Founder task in week 1; `product` to add a backlog item (section 10) |
+| 4 | Date slips 2 to 4 weeks (ROADMAP's most likely slip) | Medium, low for marketing | Go or cut checkpoint red | Calendar is keyed to submission; update the featuring nomination; nothing announces the app before it is live |
+| 5 | Rejection under 5.1.1(ix) as an individual publisher (D-004) | Medium, high | App Review message | No health language in metadata; Lifestyle category; launch comms wait for approval |
+| 6 | "Beta" leaks into store metadata | Low after D-030, medium impact | `store.en.ts` still has the beta lines | D-030 change set (section 1.2 row 6) |
+| 7 | Privacy promise said before it is true (for example "never used to train models" before CN-7 closes) | Medium, high | `legal` has not closed CN-7 by week 14 | Use only claims in the approved registry; calm wording (brief decision 11) |
+| 8 | Friends and family from C1 post reviews at launch | Medium, medium | Reviews from people we know | We never ask (section 5.4). If the founder wants to mention reviews at all, `legal` drafts the disclosure first [M14] |
+| 9 | Founder time goes to the critical path and marketing slips | High, medium | Week-14 founder tasks not done by 8 Jan | Agents draft everything; founder actions are limited to about ten short moments (section 7); the listing is the only one that blocks submission |
+| 10 | Numbers mislead: opt-in samples look better than reality | High, medium | Device rates far above server rates | Label sources; decide on server and ASC numbers; size the bias as TRACKING_PLAN 1.4 describes |
+| 11 | C1 families lose letters moving from the TestFlight build to the App Store version | U, high | Any report in week L1 | QA to confirm the path before the welcome note (U); welcome note tells families to export a copy before switching |
+| 12 | Parents expect grandparents to write, because the category talks about family | Medium, medium | Support messages, reviews | Say clearly what v1.0 does; no dates for later features in store copy |
+| 13 | A close competitor ships the same promise (Dearest, Apple Journal) | Low to medium, medium | Their listings change | Our difference is the child's book by month of age, both parents in it, and "nothing rewritten" shown on screen |
+
+---
+
+## 10. Hand-offs and open questions
+
+**To `content`:** section 1.2 rows 1 to 8; screenshot frame changes in 6.2; the launch email once drafted. Final words stay in `packages/content`.
+
+**To `legal`:** the claims list (section 1.2 and the listing) for the counsel package by week 5; CN-7 before any "never used to train models" line; the launch email as a commercial email (CAN-SPAM, postal address per D-004); whether a post-launch thank-you offer code for C1 families is acceptable; FTC review-rule disclosure if reviews are ever mentioned to people we know.
+
+**To `product`:**
+1. Reconcile `docs/ROADMAP.md` with the Oct 3 brief (family scope, shared voice, word highlighting, Google sign-in, Family Sharing on or off: BL-103 says off, brief decision 3 says on).
+2. Update BL-109's coverage list (the grandparent slot cannot be tested in v1.0).
+3. Add a task for trademark clearance before submission (CR-122).
+4. Decide whether v1.0 has a review-prompt moment (section 6.4).
+5. Confirm C2 (public link) is skipped before submission (section 5.1).
+
+**To `analytics`:** replace RevenueCat ("R") with App Store Connect subscription reports in `TRACKING_PLAN.md` under brief decision 3; agree the campaign-link naming (`ct` values) and the traffic threshold for a product page optimisation test.
+
+**To the website thread (`feat/web-scroll-film`), for information only:** put an App Store campaign link behind the badge; keep the waitlist to its stated purpose (one launch notice); its v1.0 claims (scenes S05, S08 to S10) already fit the brief. No website copy is written in this plan.
+
+**Open questions for the founder:** none blocking this plan. The decisions above that are marked for the founder (D-030 store beta line, D-045 cohorts) are already in the roadmap.
+
+---
+
 ## 11. Sources
 
 All opened 3 Oct 2026 unless marked.
@@ -247,6 +383,8 @@ All opened 3 Oct 2026 unless marked.
 - [M2] US Census Bureau, language spoken at home, ACS 2018 to 2022 5-year estimates (press release, Dec 2023): https://www.census.gov/newsroom/press-releases/2023/language-at-home-acs-5-year.html (opened via cdn.www.census.gov)
 - [M3] Apple, Creating your product page: https://developer.apple.com/app-store/product-page/
 - [M4] Apple, App Review Guidelines (2.2, 2.3.7, 2.3.8, 3.2.2(x), introduction on manipulating ratings): https://developer.apple.com/app-store/review/guidelines/
+- [M5] Apple, App Store Connect Analytics: Campaign links (`pt`, `ct`, `mt`; thresholds of 5; first-time download within 24 hours): https://developer.apple.com/help/app-store-connect-analytics/acquisition/campaign-links
+- [M6] Apple, App Store Connect Analytics: App usage ("App usage data is collected only from users who have agreed to share diagnostics and usage information with app developers."): https://developer.apple.com/help/app-store-connect-analytics/engagement/app-usage
 - [M7] Apple, Getting featured on the App Store (lead time: "a minimum of two weeks notice", "up to three months in advance"): https://developer.apple.com/app-store/getting-featured/
 - [M8] Apple, Nominate your app for featuring (App Launch nomination type; "a minimum lead time of 3 weeks"): https://developer.apple.com/help/app-store-connect/manage-featuring-nominations/nominate-your-app-for-featuring/
 - [M9] Apple, Pre-orders (new apps: release 2 to 180 days after the pre-order is published; automatic download on release day): https://developer.apple.com/app-store/pre-orders/
