@@ -1,166 +1,180 @@
 /**
- * Local-first store (PRD P0: nothing is ever lost).
+ * Local-first store (PRD P0: nothing is ever lost). The facade screens use.
  *
  * Every entry is written to SQLite on the phone before anything else
- * happens. Sync to Supabase comes later (PowerSync, ADR 0004) and will read
- * from these same rows. Column names mirror supabase/migrations so the
- * sync layer is a straight mapping.
+ * happens. The sync engine is not chosen yet (DECISIONS D-023); it will
+ * read from these same rows through the repositories.
+ *
+ * Layout (MOB-04): this file owns the one connection, resolves defaults
+ * (active child, the signature at save time) and emits change events. The
+ * SQL and the write rules live in `db/repos/*`, which are engine-neutral
+ * (`SqlDb`) and tested in Node against a real SQLite engine. This file never
+ * imports expo-sqlite; `db/repos/open-native.ts` opens the file.
+ *
+ * Boot: call `openStore()` once and branch on its result (WS-07). Any other
+ * call opens lazily and throws the open error, as before.
  *
  * Multi-child: `children` holds one row per book; the active child lives in
  * `settings` under `activeChildId`. Every entry and draft carries `child_id`.
- * Per-child preferences are columns on `children`; device preferences are
- * `getSetting` / `setSetting`. API for other screens: src/lib/README.md.
- *
- * Runs in Expo Go (expo-sqlite) on iOS and Android.
+ * API for other screens: src/lib/README.md.
  */
 import * as Crypto from 'expo-crypto';
-import * as SQLite from 'expo-sqlite';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
-import { expoSqlDb, OPEN_PRAGMAS } from './db/expo-adapter';
-import { migrate } from './db/migrations';
+import { migrate, userVersion, type MigrationResult } from './db/migrations';
+import {
+  children,
+  createChangeBus,
+  drafts,
+  entries,
+  letters,
+  orphans,
+  settings,
+  uuidv7From,
+  type Child,
+  type Draft,
+  type DraftState,
+  type Entry,
+  type Family,
+  type Member,
+  type NewChild,
+  type OrphanAudio,
+  type RepoContext,
+  type Table,
+} from './db/repos';
+import type { NewDraft } from './db/repos/drafts';
+import { openNativeDb, type OpenedDb } from './db/repos/open-native';
 
-export type EntryKind = 'note' | 'letter' | 'not_much';
-export type CaptureMode = 'spoken' | 'typed' | 'mixed';
+export type {
+  CaptureMode,
+  Child,
+  Draft,
+  DraftState,
+  Entry,
+  EntryKind,
+  Family,
+  Member,
+  NewChild,
+  OrphanAudio,
+  TranscriptStatus,
+} from './db/repos';
+export type { Table as StoreTable } from './db/repos';
+export { AudioMissingError } from './db/repos/letters';
+export { EntryTombstonedError } from './db/repos/entries';
 
-export interface Entry {
-  id: string;
-  kind: EntryKind;
-  occurredOn: string; // YYYY-MM-DD, local
-  capturedAt: string; // ISO timestamp
-  captureMode: CaptureMode;
-  editLevel: EditLevel;
-  promptKey: string | null;
-  engineVersion: number;
-  rawTranscript: string;
-  machineEdits: Edit[];
-  finalText: string;
-  inBook: boolean;
-  soundsLikeMe: boolean | null;
-  /** Book this entry belongs to. Defaults to the active child on save. */
-  childId?: string;
-  /** Author's account id; null until sign-in exists (all local entries are the phone owner's). */
-  authorId?: string;
-  /** Signature at save time ("Papa"), so a later rename never rewrites old letters. */
-  authorSignsAs?: string;
-  /** Local file URI of the AAC M4A recording (ADR 0005), kept in the app's document directory. */
-  audioUri?: string | null;
-  audioDurationMs?: number | null;
-  /** SHA-256 (hex) of the audio file, computed when recording stopped (DATA-REQ-046). */
-  audioSha256?: string | null;
-  audioBytes?: number | null;
-  /**
-   * 'waiting': a spoken letter kept without words yet (transcriber not ready).
-   * `rawTranscript` and `finalText` are '' until the words are set once
-   * (setWordsForWaitingEntry). null: the letter has its words.
-   */
-  transcriptStatus?: TranscriptStatus;
-}
+// ── Connection ───────────────────────────────────────────────────────────
+export const DB_FILE_NAME = 'scribe.db';
 
-export type TranscriptStatus = 'waiting' | null;
-
-/** Single-child view of the active child (kept for existing callers). */
-export interface Family {
-  childName: string;
-  childBirthday: string | null; // YYYY-MM-DD
-  signsAs: string; // what the child calls this parent
-  childDueDate?: string | null; // YYYY-MM-DD while expecting
-}
-
-export interface Child {
-  id: string;
-  name: string;
-  birthday: string | null; // YYYY-MM-DD
-  dueDate: string | null; // YYYY-MM-DD, set while expecting
-  signsAs: string; // what this child calls the current user
-  remindersOn: boolean;
-  familyCanRead: boolean;
-}
-
-export interface NewChild {
-  name: string;
-  birthday: string | null;
-  dueDate: string | null;
-  signsAs: string;
-}
-
-export interface Member {
-  id: string;
-  signsAs: string;
-  role: 'parent' | 'contributor';
-  status: 'active' | 'invited';
+/** Opening failed before or during migration. Code only: SQLite text can quote values. */
+export class StoreOpenError extends Error {
+  constructor(cause: unknown) {
+    super('local_db_open_failed');
+    this.cause = cause;
+  }
 }
 
 /**
- * recording: the mic was live when this row was last written (created when
- * recording starts); ready: audio closed and hashed, or a typed draft;
- * unrecoverable: the file is empty, kept for the parent to decide.
+ * What `openStore()` reports to boot (WS-07):
+ * - `{ ok: true, newer: false, error: null }`: migrated to the latest version; use the app.
+ * - `{ ok: false, newer: true, error: null }`: the file was written by a newer build
+ *   (an update rolled back). It is left untouched; show "update the app".
+ * - `{ ok: false, newer: false, error }`: open or migration failed and rolled back.
+ *   `error` is a MigrationError (`local_db_migration_failed:<n>`) or a
+ *   StoreOpenError (`local_db_open_failed`). Show recovery; `openStore()` may be called again.
  */
-export type DraftState = 'recording' | 'ready' | 'unrecoverable';
-
-/** An unfinished capture. Written when recording starts, so a crash or a closed sheet loses nothing. */
-export interface Draft {
-  id: string;
-  childId: string;
-  captureMode: CaptureMode;
-  promptKey: string | null;
-  createdAt: string;
-  audioUri: string | null;
-  audioDurationMs: number | null;
-  /** Immutable once set: the transcript exactly as heard (or typed). */
-  rawTranscript: string | null;
-  /** Typed text being written (Write screen autosave). */
-  typedText: string | null;
-  state: DraftState;
-  audioSha256: string | null;
-  audioBytes: number | null;
-  /** Set when the launch sweep recovered this take after a kill, or re-attached a stray file. */
-  recoveredAt: string | null;
+export interface OpenStoreResult {
+  ok: boolean;
+  newer: boolean;
+  error: Error | null;
+  /** Versions before and after this open; null when the file could not be opened. */
+  migration: MigrationResult | null;
 }
 
-let db: SQLite.SQLiteDatabase | null = null;
-const listeners = new Set<() => void>();
+export interface OpenStoreOptions {
+  /** Opens the database. Defaults to expo-sqlite on `scribe.db`; tests pass a node:sqlite opener. */
+  open?: () => OpenedDb;
+  /** Clock for stamps. Defaults to the device clock. */
+  now?: () => string;
+  /** Row id maker. Defaults to `uuidv7`. */
+  newId?: (atMs?: number) => string;
+}
 
+let conn: { opened: OpenedDb; ctx: RepoContext; result: OpenStoreResult } | null = null;
+const bus = createChangeBus();
+
+/**
+ * Opens the database, sets the durability pragmas and runs the versioned
+ * migrator. Idempotent once it has succeeded (later calls return the same
+ * result, options ignored); after a failure the next call tries again.
+ * Never throws.
+ *
+ * A newer file stays open, so the lazy calls below keep working as they did
+ * before this facade (MOB-09 makes boot stop on `newer`; WS-07).
+ */
+export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
+  if (conn) return conn.result;
+  const now = options.now ?? (() => new Date().toISOString());
+  const newId = options.newId ?? ((atMs?: number) => uuidv7(atMs));
+  let opened: OpenedDb;
+  try {
+    opened = (options.open ?? (() => openNativeDb(DB_FILE_NAME)))();
+  } catch (e) {
+    return { ok: false, newer: false, error: new StoreOpenError(e), migration: null };
+  }
+  let migration: MigrationResult;
+  try {
+    migration = migrate(opened.db, { now: now(), newId: () => newId() });
+  } catch (e) {
+    try {
+      opened.close();
+    } catch {
+      // already failing; the migration error is the one to report
+    }
+    return { ok: false, newer: false, error: e instanceof Error ? e : new StoreOpenError(e), migration: null };
+  }
+  const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
+  conn = { opened, ctx: { db: opened.db, now, newId }, result };
+  return result;
+}
+
+/** Closes the connection; the next call opens again. For tests and a future "reset this phone". */
+export function closeStore(): void {
+  const c = conn;
+  conn = null;
+  c?.opened.close();
+}
+
+/** The repository context, opening on first use. Throws the open error, as before. */
+function ctx(): RepoContext {
+  if (conn) return conn.ctx;
+  const r = openStore();
+  const c = conn as { ctx: RepoContext } | null; // openStore sets it on success
+  if (!c) throw r.error ?? new StoreOpenError(null);
+  return c.ctx;
+}
+
+// ── Change events (MOB-05) ───────────────────────────────────────────────
 /** Subscribe to any store change (child switch, save, delete). Returns an unsubscribe. */
 export function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function changed(): void {
-  listeners.forEach((l) => l());
+  return bus.subscribe(listener);
 }
 
 /**
- * Opens scribe.db, sets the durability pragmas and runs the versioned
- * migrator (src/lib/db/migrations.ts). A failed step rolls back and throws
- * `local_db_migration_failed:<n>`; the database is left as it was.
+ * Subscribe to changes of some tables only, for example `subscribeTo('entries', read)`
+ * on a screen that lists letters. The listener receives the tables that changed.
  */
-function open(): SQLite.SQLiteDatabase {
-  if (db) return db;
-  const d = SQLite.openDatabaseSync('scribe.db');
-  d.execSync(OPEN_PRAGMAS);
-  migrate(expoSqlDb(d), { now: new Date().toISOString(), newId: () => uuidv7() });
-  db = d;
-  return d;
+export function subscribeTo(tables: Table | readonly Table[], listener: (changed: readonly Table[]) => void): () => void {
+  return bus.subscribeTo(tables, listener);
 }
 
 /** The schema version on this phone (`PRAGMA user_version`), for diagnostics. */
 export function localSchemaVersion(): number {
-  return open().getFirstSync<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0;
+  return userVersion(ctx().db);
 }
 
 /** UUIDv7: time-ordered, generated on the device, so offline saves sync idempotently. */
 export function uuidv7(now = Date.now()): string {
-  const b = Crypto.getRandomBytes(16);
-  const ts = BigInt(now);
-  for (let i = 0; i < 6; i++) b[i] = Number((ts >> BigInt(8 * (5 - i))) & 0xffn);
-  b[6] = (b[6] & 0x0f) | 0x70;
-  b[8] = (b[8] & 0x3f) | 0x80;
-  const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  return uuidv7From(Crypto.getRandomBytes(16), now);
 }
 
 export function todayISO(d = new Date()): string {
@@ -169,50 +183,27 @@ export function todayISO(d = new Date()): string {
 
 // ── Device settings ──────────────────────────────────────────────────────
 export function getSetting(key: string): string | null {
-  return open().getFirstSync<{ value: string }>('SELECT value FROM settings WHERE key = ?', key)?.value ?? null;
+  return settings.getSetting(ctx(), key);
 }
 
 export function setSetting(key: string, value: string): void {
-  open().runSync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value);
-  changed();
+  settings.setSetting(ctx(), key, value);
+  bus.emit('settings');
 }
 
 export function deleteSetting(key: string): void {
-  open().runSync('DELETE FROM settings WHERE key = ?', key);
-  changed();
+  settings.deleteSetting(ctx(), key);
+  bus.emit('settings');
 }
 
 // ── Children ─────────────────────────────────────────────────────────────
-interface ChildRow {
-  id: string;
-  name: string;
-  birthday: string | null;
-  due_date: string | null;
-  signs_as: string;
-  reminders_on: number;
-  family_can_read: number;
-}
-
-const childFromRow = (r: ChildRow): Child => ({
-  id: r.id,
-  name: r.name,
-  birthday: r.birthday,
-  dueDate: r.due_date,
-  signsAs: r.signs_as,
-  remindersOn: r.reminders_on === 1,
-  familyCanRead: r.family_can_read === 1,
-});
-
 /** Visible children, oldest book first. */
 export function listChildren(): Child[] {
-  return open()
-    .getAllSync<ChildRow>('SELECT * FROM children WHERE hidden_at IS NULL ORDER BY created_at ASC')
-    .map(childFromRow);
+  return children.listVisible(ctx());
 }
 
 export function getChild(id: string): Child | null {
-  const r = open().getFirstSync<ChildRow>('SELECT * FROM children WHERE id = ?', id);
-  return r ? childFromRow(r) : null;
+  return children.get(ctx(), id);
 }
 
 /** The active child's id, falling back to the first visible child. */
@@ -232,42 +223,37 @@ export function setActiveChildId(id: string): void {
 }
 
 export function addChild(input: NewChild): Child {
-  const id = uuidv7();
-  const now = new Date().toISOString();
-  open().runSync(
-    'INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    id, input.name, input.birthday, input.dueDate, input.signsAs, now, now,
-  );
-  if (!getSetting('activeChildId')) open().runSync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', 'activeChildId', id);
-  changed();
-  return getChild(id)!;
+  const c = ctx();
+  const id = c.newId();
+  const tables: Table[] = ['children'];
+  c.db.transaction(() => {
+    children.insert(c, id, input);
+    if (!settings.getSetting(c, 'activeChildId')) {
+      settings.setSetting(c, 'activeChildId', id);
+      tables.push('settings');
+    }
+  });
+  bus.emit(...tables);
+  return children.get(c, id)!;
 }
 
 export function updateChild(id: string, patch: Partial<Omit<Child, 'id'>>): void {
-  const c = getChild(id);
-  if (!c) return;
-  const n = { ...c, ...patch };
-  open().runSync(
-    `UPDATE children SET name = ?, birthday = ?, due_date = ?, signs_as = ?, reminders_on = ?, family_can_read = ?, updated_at = ?
-     WHERE id = ?`,
-    n.name, n.birthday, n.dueDate, n.signsAs, n.remindersOn ? 1 : 0, n.familyCanRead ? 1 : 0, new Date().toISOString(), id,
-  );
-  changed();
+  if (children.update(ctx(), id, patch)) bus.emit('children');
 }
 
 /** "Hide this book" (PRD B F2.4): stops prompts for this child; restorable. */
 export function hideChild(id: string): void {
-  open().runSync('UPDATE children SET hidden_at = ?, updated_at = ? WHERE id = ?', new Date().toISOString(), new Date().toISOString(), id);
-  changed();
+  children.hide(ctx(), id);
+  bus.emit('children');
 }
 
 export function unhideChild(id: string): void {
-  open().runSync('UPDATE children SET hidden_at = NULL, updated_at = ? WHERE id = ?', new Date().toISOString(), id);
-  changed();
+  children.unhide(ctx(), id);
+  bus.emit('children');
 }
 
 export function listHiddenChildren(): Child[] {
-  return open().getAllSync<ChildRow>('SELECT * FROM children WHERE hidden_at IS NOT NULL ORDER BY created_at ASC').map(childFromRow);
+  return children.listHidden(ctx());
 }
 
 // ── Family view of the active child (stable, single-child API) ───────────
@@ -329,101 +315,28 @@ export function listMembers(_childId: string): Member[] {
 }
 
 // ── Entries ──────────────────────────────────────────────────────────────
-interface Row {
-  id: string;
-  kind: EntryKind;
-  occurred_on: string;
-  captured_at: string;
-  capture_mode: CaptureMode;
-  edit_level: EditLevel;
-  prompt_key: string | null;
-  engine_version: number;
-  raw_transcript: string;
-  machine_edits: string;
-  final_text: string;
-  in_book: number;
-  sounds_like_me: number | null;
-  child_id: string | null;
-  author_id: string | null;
-  author_signs_as: string | null;
-  audio_uri: string | null;
-  audio_duration_ms: number | null;
-  audio_sha256: string | null;
-  audio_bytes: number | null;
-  transcript_status: string | null;
-}
-
-function parseEdits(json: string): Edit[] {
-  try {
-    const v = JSON.parse(json) as unknown;
-    return Array.isArray(v) ? (v as Edit[]) : [];
-  } catch {
-    return []; // a damaged edit list must never hide the letter itself
-  }
-}
-
-const fromRow = (r: Row): Entry => ({
-  id: r.id,
-  kind: r.kind,
-  occurredOn: r.occurred_on,
-  capturedAt: r.captured_at,
-  captureMode: r.capture_mode,
-  editLevel: r.edit_level,
-  promptKey: r.prompt_key,
-  engineVersion: r.engine_version,
-  rawTranscript: r.raw_transcript,
-  machineEdits: parseEdits(r.machine_edits),
-  finalText: r.final_text,
-  inBook: r.in_book === 1,
-  soundsLikeMe: r.sounds_like_me === null ? null : r.sounds_like_me === 1,
-  childId: r.child_id ?? undefined,
-  authorId: r.author_id ?? undefined,
-  authorSignsAs: r.author_signs_as ?? undefined,
-  audioUri: r.audio_uri,
-  audioDurationMs: r.audio_duration_ms,
-  audioSha256: r.audio_sha256,
-  audioBytes: r.audio_bytes,
-  transcriptStatus: r.transcript_status === 'waiting' ? 'waiting' : null,
-});
-
-/** The one INSERT for entries. Callers decide whether it runs alone or inside a transaction. */
-function writeEntry(d: SQLite.SQLiteDatabase, e: Entry): void {
+/**
+ * Defaults for a first insert, resolved here (not in the repository): the
+ * book is the active child, the signature is what that child calls you now.
+ * Ignored by the database when the row already exists.
+ */
+function insertDefaults(e: Entry): entries.InsertDefaults {
   const childId = e.childId ?? getActiveChildId();
-  const signsAs = e.authorSignsAs ?? (childId ? (getChild(childId)?.signsAs ?? null) : null);
-  d.runSync(
-    `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key,
-       engine_version, raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at,
-       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms, audio_sha256, audio_bytes, transcript_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET
-       final_text = excluded.final_text, machine_edits = excluded.machine_edits,
-       edit_level = excluded.edit_level, in_book = excluded.in_book,
-       sounds_like_me = excluded.sounds_like_me,
-       child_id = CASE WHEN entries.synced_at IS NULL THEN excluded.child_id ELSE entries.child_id END,
-       updated_at = excluded.updated_at`,
-    e.id, e.kind, e.occurredOn, e.capturedAt, e.captureMode, e.editLevel, e.promptKey,
-    e.engineVersion, e.rawTranscript, JSON.stringify(e.machineEdits), e.finalText,
-    e.inBook ? 1 : 0, e.soundsLikeMe === null ? null : e.soundsLikeMe ? 1 : 0, new Date().toISOString(),
-    childId, e.authorId ?? null, signsAs, e.audioUri ?? null, e.audioDurationMs ?? null,
-    e.audioSha256 ?? null, e.audioBytes ?? null, e.transcriptStatus ?? null,
-  );
+  const authorSignsAs = e.authorSignsAs ?? (childId ? (getChild(childId)?.signsAs ?? null) : null);
+  return { childId, authorSignsAs };
 }
 
 /**
  * Insert or update an entry that has no draft (typed "not much" lines, dev
  * seed). raw_transcript, captured_at, the audio file and, once synced,
- * child_id are never changed after the first insert (DATA-REQ-040).
- * Capture screens use saveLetterFromDraft instead.
+ * child_id are never changed after the first insert (DATA-REQ-040). An
+ * update without `childId` keeps the stored book. Throws
+ * EntryTombstonedError for a deleted letter. Capture screens use
+ * saveLetterFromDraft instead.
  */
 export function saveEntry(e: Entry): void {
-  writeEntry(open(), e);
-  changed();
-}
-
-export class AudioMissingError extends Error {
-  constructor() {
-    super('audio_missing');
-  }
+  entries.upsert(ctx(), e, insertDefaults(e));
+  bus.emit('entries');
 }
 
 /**
@@ -435,13 +348,9 @@ export class AudioMissingError extends Error {
  * nothing (`audioExists` is checked by the caller just before).
  */
 export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
-  if (e.audioUri && !audioExists) throw new AudioMissingError();
-  const d = open();
-  d.withTransactionSync(() => {
-    writeEntry(d, { ...e, id: draftId });
-    d.runSync('DELETE FROM drafts WHERE id = ?', draftId);
-  });
-  changed();
+  const c = ctx();
+  letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists);
+  bus.emit('entries', 'drafts');
 }
 
 /**
@@ -453,62 +362,29 @@ export function saveVoiceOnlyFromDraft(
   draft: Draft,
   opts: { childId: string; authorSignsAs: string; inBook: boolean; engineVersion: number; audioExists?: boolean },
 ): Entry {
-  if (!draft.audioUri || opts.audioExists === false) throw new AudioMissingError();
-  const entry: Entry = {
-    id: draft.id,
-    kind: 'letter',
-    occurredOn: todayISO(new Date(draft.createdAt)),
-    capturedAt: draft.createdAt,
-    captureMode: 'spoken',
-    editLevel: 'verbatim',
-    promptKey: draft.promptKey,
-    engineVersion: opts.engineVersion,
-    rawTranscript: '',
-    machineEdits: [],
-    finalText: '',
-    inBook: opts.inBook,
-    soundsLikeMe: null,
-    childId: opts.childId,
-    authorSignsAs: opts.authorSignsAs,
-    audioUri: draft.audioUri,
-    audioDurationMs: draft.audioDurationMs,
-    audioSha256: draft.audioSha256,
-    audioBytes: draft.audioBytes,
-    transcriptStatus: 'waiting',
-  };
+  if (opts.audioExists === false) throw new letters.AudioMissingError();
+  const entry = letters.voiceOnlyEntry(draft, { ...opts, occurredOn: todayISO(new Date(draft.createdAt)) });
   saveLetterFromDraft(draft.id, entry);
   return entry;
 }
 
 /** Spoken letters still waiting for their words, oldest first (the transcription queue reads this). */
 export function listWaitingForWords(childId: string): Entry[] {
-  return open()
-    .getAllSync<Row>(
-      "SELECT * FROM entries WHERE child_id = ? AND deleted_at IS NULL AND transcript_status = 'waiting' ORDER BY captured_at ASC",
-      childId,
-    )
-    .map(fromRow);
+  return entries.listWaiting(ctx(), childId);
 }
 
 /**
  * Sets the words of a voice-only letter, once. raw_transcript is written
  * only while it is still '' and the letter is waiting: the first transcript
  * that exists becomes the immutable raw (TDD 03 FM-9). Returns false if the
- * letter already had words.
+ * letter already had words or was deleted.
  */
 export function setWordsForWaitingEntry(
   id: string,
   w: { rawTranscript: string; machineEdits: Edit[]; finalText: string; editLevel: EditLevel; engineVersion: number },
 ): boolean {
-  const d = open();
-  const res = d.runSync(
-    `UPDATE entries SET raw_transcript = ?, machine_edits = ?, final_text = ?, edit_level = ?, engine_version = ?,
-       transcript_status = NULL, updated_at = ?
-     WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = ''`,
-    w.rawTranscript, JSON.stringify(w.machineEdits), w.finalText, w.editLevel, w.engineVersion, new Date().toISOString(), id,
-  );
-  const done = res.changes === 1;
-  if (done) changed();
+  const done = entries.setWordsOnce(ctx(), id, w);
+  if (done) bus.emit('entries');
   return done;
 }
 
@@ -519,92 +395,37 @@ export function listEntries(): Entry[] {
 }
 
 export function listEntriesForChild(childId: string): Entry[] {
-  return open()
-    .getAllSync<Row>(
-      'SELECT * FROM entries WHERE deleted_at IS NULL AND child_id = ? ORDER BY occurred_on DESC, captured_at DESC',
-      childId,
-    )
-    .map(fromRow);
+  return entries.listForChild(ctx(), childId);
 }
 
 export function getEntry(id: string): Entry | null {
-  const r = open().getFirstSync<Row>('SELECT * FROM entries WHERE id = ? AND deleted_at IS NULL', id);
-  return r ? fromRow(r) : null;
+  return entries.get(ctx(), id);
 }
 
-export function setEntryInBook(id: string, inBook: boolean): void {
-  open().runSync('UPDATE entries SET in_book = ?, updated_at = ? WHERE id = ?', inBook ? 1 : 0, new Date().toISOString(), id);
-  changed();
+/** Add to book / make private. Never touches text. Returns false for a missing or deleted letter. */
+export function setEntryInBook(id: string, inBook: boolean): boolean {
+  const done = entries.setInBook(ctx(), id, inBook);
+  if (done) bus.emit('entries');
+  return done;
 }
 
 /** Tombstone, never a hard delete (matches the server schema). */
 export function deleteEntry(id: string): void {
-  open().runSync('UPDATE entries SET deleted_at = ?, updated_at = ? WHERE id = ?', new Date().toISOString(), new Date().toISOString(), id);
-  changed();
+  if (entries.tombstone(ctx(), id)) bus.emit('entries');
 }
 
+/** Local Undo of deleteEntry. Becomes a restore intent with sync (MOB-03, WS-09). */
 export function undeleteEntry(id: string): void {
-  open().runSync('UPDATE entries SET deleted_at = NULL, updated_at = ? WHERE id = ?', new Date().toISOString(), id);
-  changed();
+  if (entries.undelete(ctx(), id)) bus.emit('entries');
 }
 
 // ── Drafts (capture in progress) ─────────────────────────────────────────
-interface DraftRow {
-  id: string;
-  child_id: string;
-  capture_mode: CaptureMode;
-  prompt_key: string | null;
-  created_at: string;
-  audio_uri: string | null;
-  audio_duration_ms: number | null;
-  raw_transcript: string | null;
-  typed_text: string | null;
-  state: string;
-  audio_sha256: string | null;
-  audio_bytes: number | null;
-  recovered_at: string | null;
-}
-
-const draftState = (s: string): DraftState => (s === 'recording' || s === 'unrecoverable' ? s : 'ready');
-
-const draftFromRow = (r: DraftRow): Draft => ({
-  id: r.id,
-  childId: r.child_id,
-  captureMode: r.capture_mode,
-  promptKey: r.prompt_key,
-  createdAt: r.created_at,
-  audioUri: r.audio_uri,
-  audioDurationMs: r.audio_duration_ms,
-  rawTranscript: r.raw_transcript,
-  typedText: r.typed_text,
-  state: draftState(r.state),
-  audioSha256: r.audio_sha256,
-  audioBytes: r.audio_bytes,
-  recoveredAt: r.recovered_at,
-});
-
-type NewDraft = Pick<Draft, 'childId' | 'captureMode' | 'promptKey' | 'audioUri' | 'audioDurationMs'> & {
-  typedText?: string | null;
-  state?: DraftState;
-  audioSha256?: string | null;
-  audioBytes?: number | null;
-  recoveredAt?: string | null;
-  /** Defaults to now. The launch sweep passes the file's own time. */
-  createdAt?: string;
-};
-
 export function createDraft(input: NewDraft): Draft {
-  const id = uuidv7();
-  open().runSync(
-    `INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms, typed_text,
-       state, audio_sha256, audio_bytes, recovered_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, input.childId, input.captureMode, input.promptKey, input.createdAt ?? new Date().toISOString(),
-    input.audioUri, input.audioDurationMs, input.typedText ?? null,
-    input.state ?? 'ready', input.audioSha256 ?? null, input.audioBytes ?? null, input.recoveredAt ?? null,
-  );
-  changed();
-  return getDraft(id)!;
+  const c = ctx();
+  const id = c.newId();
+  drafts.insert(c, id, input);
+  bus.emit('drafts');
+  return drafts.get(c, id)!;
 }
 
 /**
@@ -616,9 +437,9 @@ export function createRecordingDraft(input: { childId: string; promptKey: string
   return createDraft({ ...input, captureMode: 'spoken', audioDurationMs: 0, state: 'recording' });
 }
 
-/** Elapsed time so far, written every few seconds so a recovered take shows a sensible length. */
+/** Elapsed time so far, written every few seconds so a recovered take shows a sensible length. No event. */
 export function setRecordingProgress(id: string, durationMs: number): void {
-  open().runSync("UPDATE drafts SET audio_duration_ms = ? WHERE id = ? AND state = 'recording'", Math.round(durationMs), id);
+  drafts.setRecordingProgress(ctx(), id, durationMs);
 }
 
 /**
@@ -630,87 +451,64 @@ export function finalizeDraftAudio(
   id: string,
   f: { audioUri?: string | null; durationMs?: number | null; sha256: string | null; bytes: number | null; state: DraftState; recovered?: boolean },
 ): void {
-  open().runSync(
-    `UPDATE drafts SET audio_uri = COALESCE(?, audio_uri), audio_duration_ms = COALESCE(?, audio_duration_ms),
-       audio_sha256 = ?, audio_bytes = ?, state = ?, recovered_at = CASE WHEN ? THEN ? ELSE recovered_at END
-     WHERE id = ?`,
-    f.audioUri ?? null, f.durationMs == null ? null : Math.round(f.durationMs), f.sha256, f.bytes, f.state,
-    f.recovered ? 1 : 0, new Date().toISOString(), id,
-  );
-  changed();
+  drafts.finalizeAudio(ctx(), id, f);
+  bus.emit('drafts');
 }
 
 /** Stores the hash computed just before save, for drafts finalized without one. */
 export function setDraftAudioHash(id: string, sha256: string, bytes: number): void {
-  open().runSync('UPDATE drafts SET audio_sha256 = ?, audio_bytes = ? WHERE id = ?', sha256, bytes, id);
+  drafts.setAudioHash(ctx(), id, sha256, bytes);
 }
 
 export function getDraft(id: string): Draft | null {
-  const r = open().getFirstSync<DraftRow>('SELECT * FROM drafts WHERE id = ?', id);
-  return r ? draftFromRow(r) : null;
+  return drafts.get(ctx(), id);
 }
 
 /** Drafts waiting to be read back, newest first. A take still recording is not listed. */
 export function listDrafts(childId: string): Draft[] {
-  return open()
-    .getAllSync<DraftRow>("SELECT * FROM drafts WHERE child_id = ? AND state != 'recording' ORDER BY created_at DESC", childId)
-    .map(draftFromRow);
+  return drafts.listForChild(ctx(), childId);
 }
 
 /** Sets the raw transcript once. Later calls are ignored: raw is immutable. */
 export function setDraftTranscript(id: string, raw: string): void {
-  open().runSync('UPDATE drafts SET raw_transcript = ? WHERE id = ? AND raw_transcript IS NULL', raw, id);
+  drafts.setTranscriptOnce(ctx(), id, raw);
 }
 
 export function setDraftTyped(id: string, text: string): void {
-  open().runSync('UPDATE drafts SET typed_text = ? WHERE id = ?', text, id);
+  drafts.setTyped(ctx(), id, text);
 }
 
 export function setDraftChild(id: string, childId: string): void {
-  open().runSync('UPDATE drafts SET child_id = ? WHERE id = ?', childId, id);
+  drafts.setChild(ctx(), id, childId);
 }
 
 /** Removes the row only. Audio files are deleted by the explicit Discard in Listen, never here. */
 export function deleteDraft(id: string): void {
-  open().runSync('DELETE FROM drafts WHERE id = ?', id);
-  changed();
+  drafts.remove(ctx(), id);
+  bus.emit('drafts');
 }
 
 // ── Launch sweep support (capture/sweep.ts) ──────────────────────────────
 /** Every row that points at audio, tombstoned letters included. */
 export function audioRows(): { drafts: SweepDraft[]; entries: SweepEntry[] } {
-  const d = open();
-  return {
-    drafts: d
-      .getAllSync<{ id: string; audio_uri: string | null; state: string }>('SELECT id, audio_uri, state FROM drafts')
-      .map((r) => ({ id: r.id, audioUri: r.audio_uri, state: r.state })),
-    entries: d
-      .getAllSync<{ id: string; audio_uri: string }>('SELECT id, audio_uri FROM entries WHERE audio_uri IS NOT NULL')
-      .map((r) => ({ id: r.id, audioUri: r.audio_uri })),
-  };
+  const c = ctx();
+  return { drafts: drafts.audioRows(c), entries: entries.audioRows(c) };
 }
 
 /** The app container moved (iOS update): point the row at the same file's current path. */
 export function rebaseAudioUri(table: 'drafts' | 'entries', id: string, uri: string): void {
-  open().runSync(`UPDATE ${table === 'drafts' ? 'drafts' : 'entries'} SET audio_uri = ? WHERE id = ?`, uri, id);
-}
-
-export interface OrphanAudio {
-  fileName: string;
-  bytes: number | null;
-  foundAt: string;
+  if (table === 'drafts') drafts.rebaseAudioUri(ctx(), id, uri);
+  else entries.rebaseAudioUri(ctx(), id, uri);
 }
 
 /** Recordings on this phone with no letter (Settings > Recordings). Never deleted automatically. */
 export function listOrphanAudio(): OrphanAudio[] {
-  return open()
-    .getAllSync<{ file_name: string; bytes: number | null; found_at: string }>('SELECT * FROM orphan_audio ORDER BY found_at ASC')
-    .map((r) => ({ fileName: r.file_name, bytes: r.bytes, foundAt: r.found_at }));
+  return orphans.list(ctx());
 }
 
 export function reportOrphanAudio(fileName: string, bytes: number | null): void {
-  open().runSync('INSERT OR IGNORE INTO orphan_audio (file_name, bytes, found_at) VALUES (?, ?, ?)', fileName, bytes, new Date().toISOString());
-  changed();
+  orphans.report(ctx(), fileName, bytes);
+  bus.emit('orphan_audio');
 }
 
 /** A stray recording becomes a draft on a book (it shows on Tonight), in one transaction with its report row. */
@@ -718,17 +516,7 @@ export function reattachOrphanAudio(
   fileName: string,
   input: { childId: string; audioUri: string; createdAt: string; sha256: string | null; bytes: number | null; state: DraftState },
 ): Draft {
-  const d = open();
-  const id = uuidv7(Date.parse(input.createdAt) || Date.now());
-  d.withTransactionSync(() => {
-    d.runSync(
-      `INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms,
-         state, audio_sha256, audio_bytes, recovered_at)
-       VALUES (?, ?, 'spoken', NULL, ?, ?, NULL, ?, ?, ?, ?)`,
-      id, input.childId, input.createdAt, input.audioUri, input.state, input.sha256, input.bytes, new Date().toISOString(),
-    );
-    d.runSync('DELETE FROM orphan_audio WHERE file_name = ?', fileName);
-  });
-  changed();
-  return getDraft(id)!;
+  const d = orphans.reattach(ctx(), fileName, input);
+  bus.emit('drafts', 'orphan_audio');
+  return d;
 }
