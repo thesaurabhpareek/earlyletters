@@ -56,12 +56,16 @@ const LETTERS: { daysAgo: number; promptKey: string | null; raw: string; spoken:
 export const ASHA_REVIEW_RAW =
   'Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.';
 
-export function seedAsha(): { draftId: string } | null {
+/**
+ * `waiting`: the Review draft has no words yet and one voice-only letter sits
+ * in the book, for the "waiting for words" previews (TDD 03 FM-9).
+ */
+export function seedAsha(opts: { waiting?: boolean } = {}): { draftId: string } | null {
   if (listChildren().length > 0) return null;
   const now = Date.now();
   const child = addChild({ name: 'Asha', birthday: todayISO(new Date(now - 214 * DAY)), dueDate: null, signsAs: 'Mama' });
   const dictionary = dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs });
-  setSetting('ageAttested', 'yes');
+  setSetting('ageGate.passed', '1'); // the 18+ gate boolean (PRD-REQ-019, DECISIONS D-026)
   for (const l of LETTERS) {
     const at = new Date(now - l.daysAgo * DAY);
     const clean = l.spoken ? faithfulClean(l.raw, { level: 'clean', dictionary }) : null;
@@ -93,7 +97,29 @@ export function seedAsha(): { draftId: string } | null {
     audioUri: 'file:///preview/asha-draft.m4a',
     audioDurationMs: 31000,
   });
-  setDraftTranscript(draft.id, ASHA_REVIEW_RAW);
+  if (opts.waiting) {
+    const at = new Date(now - 3 * DAY);
+    saveEntry({
+      id: uuidv7(at.getTime()),
+      kind: 'letter',
+      occurredOn: todayISO(at),
+      capturedAt: at.toISOString(),
+      captureMode: 'spoken',
+      editLevel: 'verbatim',
+      promptKey: null,
+      engineVersion: ENGINE_VERSION,
+      rawTranscript: '',
+      machineEdits: [],
+      finalText: '',
+      inBook: false,
+      soundsLikeMe: null,
+      childId: child.id,
+      authorSignsAs: 'Mama',
+      audioUri: 'file:///preview/asha-voice.m4a',
+      audioDurationMs: 54000,
+      transcriptStatus: 'waiting',
+    });
+  } else setDraftTranscript(draft.id, ASHA_REVIEW_RAW);
   setSetting('preview.draftId', draft.id);
   return { draftId: draft.id };
 }

@@ -4,11 +4,16 @@ import { ScrollView, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { devShortcutsAllowed } from '@/lib/build-env';
 import { copy } from '@/lib/copy';
 
 interface Props {
   onNotNow: () => void;
-  /** Development builds only: lets testers pass the gate before purchases exist. */
+  /**
+   * Development profile only: lets the founder pass the gate before purchases
+   * exist. Ignored unless `devShortcutsAllowed` (build profile AND __DEV__),
+   * so no preview or store build can show it.
+   */
   onContinueDev?: () => void;
   /** Defaults are the second-book gate (PRD C 4.1, C-REQ-023). */
   title?: string;
@@ -42,7 +47,7 @@ export function PlusGate({ onNotNow, onContinueDev, title, body, keepNote, icon 
         <Button variant="ghost" onPress={onNotNow}>
           <Text className="text-primary">{copy.common.notNowButton}</Text>
         </Button>
-        {onContinueDev && (
+        {devShortcutsAllowed && onContinueDev && (
           <Button variant="outline" onPress={onContinueDev}>
             <Text>{copy.common.continueButton}</Text>
           </Button>

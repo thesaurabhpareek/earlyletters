@@ -1,0 +1,30 @@
+# Fails any change that edits, renames or deletes an applied migration.
+# The applied list lives in .github/migrations-applied.txt. Runs on every
+# pull request (no path filter, so it can be a required check).
+name: Migration guard
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: applied migrations unchanged
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Compare with the base
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: node .github/scripts/migration-guard.mjs "$BASE" "$HEAD_SHA"

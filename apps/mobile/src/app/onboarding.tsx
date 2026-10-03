@@ -1,16 +1,15 @@
 /**
- * First run (PRD B F1, essentials): a neutral 18+ question, what we promise,
- * the child's name (twins or more: add them all now, each book is free),
- * birthday or due date, and what the child calls you. One step per screen;
- * Continue is full width at the bottom.
+ * First run (PRD B F1, essentials): what we promise, the child's name (twins
+ * or more: add them all now, each book is free), birthday or due date, and
+ * what the child calls you. One step per screen; Continue is full width at
+ * the bottom.
  *
  * Disclosures: the "we can mishear" note sits on the promise step
  * (in-app-disclosures.md 2, help.mistakes). The beta label is NOT shown
  * here: in-app-disclosures.md 1 and PRD.md K-13 limit it to Settings > About.
- * Age (founder decision, Oct 2 2026): 18+ only. Asked first, before any child
- * details, so a "no" leaves nothing behind. "No" shows a calm stop screen with
- * a way back; nothing is stored for it. "Yes" stores only `ageAttested=yes`
- * and the time, never an age or a birthday.
+ * Age (PRD-REQ-019): the 18+ entry gate runs at the app root before any
+ * route, this one included (components/gate/age-gate-screen.tsx), so first
+ * run is only ever reached by someone who answered Yes.
  */
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
@@ -25,10 +24,10 @@ import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
-import { addChild, getActiveChildId, setActiveChildId, setSetting, todayISO } from '@/lib/store';
+import { addChild, getActiveChildId, setActiveChildId, todayISO } from '@/lib/store';
 
-type Step = 'welcome' | 'adult' | 'stop' | 'promise' | 'child' | 'signsAs' | 'finish';
-const ORDER: Step[] = ['welcome', 'adult', 'promise', 'child', 'signsAs', 'finish'];
+type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
+const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
 const DAY = 864e5;
 /** Twins, triplets or more; a sane ceiling for one first run. */
 const MAX_FIRST_RUN_CHILDREN = 6;
@@ -52,27 +51,17 @@ export default function Onboarding() {
   const [birthday, setBirthday] = useState<Date>(new Date());
   const [dueDate, setDueDate] = useState<Date>(new Date(Date.now() + 60 * DAY));
   const [signsAs, setSignsAs] = useState('');
-  const [adult, setAdult] = useState<boolean | null>(null); // nothing preselected (K-07)
   const child = joinNames(names, 'your child');
   const namedCount = names.filter((n) => n.trim()).length;
-  const g = copy.ageGate;
 
   const next = () => {
     haptic('tap');
-    // Under 18: stop here. Nothing has been entered yet and nothing is stored.
-    if (step === 'adult' && adult === false) return setStep('stop');
     setStep(ORDER[ORDER.indexOf(step) + 1]);
   };
 
   const back = () => {
     haptic('tap');
     setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
-  };
-
-  const answeredByMistake = () => {
-    haptic('tap');
-    setAdult(null);
-    setStep('adult');
   };
 
   const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? v.slice(0, 60) : x)));
@@ -99,27 +88,21 @@ export default function Onboarding() {
         }),
       );
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
-    // Only the yes is stored, never an age (LEGAL-REQ-002). Under 18 never reaches here.
-    setSetting('ageAttested', 'yes');
-    setSetting('ageAttestedAt', new Date().toISOString());
     haptic('success');
     router.replace('/');
   };
 
   const input = 'h-14 rounded-2xl border border-muted-foreground/60 bg-card px-4 text-lg text-foreground';
-  const disabled =
-    (step === 'child' && names.some((n) => !n.trim())) || (step === 'signsAs' && !signsAs.trim()) || (step === 'adult' && adult === null);
+  const disabled = (step === 'child' && names.some((n) => !n.trim())) || (step === 'signsAs' && !signsAs.trim());
 
   const cta = {
     welcome: o.welcome.startButton,
-    adult: copy.common.continueButton,
-    stop: g.mistakeButton,
     promise: o.promise.cta,
     child: o.child.cta,
     signsAs: o.signsAs.cta,
     finish: o.finish.cta,
   }[step];
-  const centred = step === 'welcome' || step === 'finish' || step === 'stop';
+  const centred = step === 'welcome' || step === 'finish';
 
   const segment = (selected: boolean, label: string, onPress: () => void) => (
     <Pressable
@@ -138,7 +121,7 @@ export default function Onboarding() {
     <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerClassName="flex-grow px-5 pb-6" keyboardShouldPersistTaps="handled">
-          {step !== 'welcome' && step !== 'stop' && (
+          {step !== 'welcome' && (
             <Button variant="ghost" size="sm" className="-ml-4 mt-2 self-start" onPress={back}>
               <Text className="text-primary">{copy.common.backButton}</Text>
             </Button>
@@ -286,25 +269,6 @@ export default function Onboarding() {
               </>
             )}
 
-            {step === 'adult' && (
-              <>
-                <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">{g.title}</Text>
-                <Text className="text-lg text-muted-foreground">{g.body}</Text>
-                <View className="flex-row gap-3" accessibilityRole="radiogroup">
-                  {segment(adult === true, g.yesButton, () => setAdult(true))}
-                  {segment(adult === false, g.noButton, () => setAdult(false))}
-                </View>
-              </>
-            )}
-
-            {step === 'stop' && (
-              <View accessibilityLiveRegion="polite" className="gap-4">
-                <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">{g.stopTitle}</Text>
-                <Text className="text-xl leading-8 text-foreground">{g.stopBody}</Text>
-                <Text className="text-base leading-6 text-muted-foreground">{g.stopNote}</Text>
-              </View>
-            )}
-
             {step === 'finish' && (
               <>
                 <Text role="heading" className="font-serif text-5xl leading-[56px] text-foreground">{o.finish.title}</Text>
@@ -316,9 +280,8 @@ export default function Onboarding() {
           {/* Controls never animate in (MOTION principle 2). */}
           <Button
             size="lg"
-            variant={step === 'stop' ? 'secondary' : 'default'}
             disabled={disabled}
-            onPress={step === 'finish' ? finish : step === 'stop' ? answeredByMistake : next}>
+            onPress={step === 'finish' ? finish : next}>
             <Text>{cta}</Text>
           </Button>
         </ScrollView>

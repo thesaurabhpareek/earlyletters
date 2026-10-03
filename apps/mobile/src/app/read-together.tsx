@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { canStartReadTogether, FREE_READ_TOGETHER_SESSIONS, recordReadTogetherSession } from '@/lib/read-together';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
@@ -34,7 +35,7 @@ export default function ReadTogether() {
   const counted = useRef(false);
   const [index, setIndex] = useState(0);
 
-  const letters = useMemo(() => (child ? listEntriesForChild(child.id).filter((e) => e.inBook).reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const letters = useMemo(() => (child ? listEntriesForChild(child.id).filter((e) => e.inBook && e.transcriptStatus !== 'waiting').reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One session per opening; counted once, only when allowed.
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function ReadTogether() {
           keepNote={p.keepNote}
           icon={<BookOpenTextIcon size={28} color={c.accent} />}
           onNotNow={close}
-          onContinueDev={__DEV__ ? () => setAllowed(true) : undefined}
+          onContinueDev={devShortcutsAllowed ? () => setAllowed(true) : undefined}
         />
       </SafeAreaView>
     );
@@ -117,13 +118,11 @@ export default function ReadTogether() {
           </Text>
           <Text
             selectable
-            maxFontSizeMultiplier={2}
             className="font-serif text-foreground"
             style={{ fontSize: BODY.fontSize * scale, lineHeight: BODY.lineHeight * scale }}>
             {entry.finalText}
           </Text>
           <Text
-            maxFontSizeMultiplier={2}
             className="self-end font-serif italic text-foreground"
             style={{ fontSize: BODY.fontSize * scale, lineHeight: BODY.lineHeight * scale }}>
             {fill(copy.book.signature, { signsAs })}

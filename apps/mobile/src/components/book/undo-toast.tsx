@@ -10,10 +10,12 @@ import { useMotion } from '@/lib/motion';
 interface Props {
   message: string;
   onUndo: () => void;
+  /** Close without undoing. The toast never times out (WCAG 2.2.1, COMPONENTS 2.14). */
+  onDismiss?: () => void;
 }
 
-/** COMPONENTS.md 2.14: quiet confirmation with a 44pt Undo, announced to VoiceOver. */
-export function UndoToast({ message, onUndo }: Props) {
+/** COMPONENTS.md 2.14: quiet confirmation with a 44pt Undo, announced to VoiceOver; stays until Undo or Close. */
+export function UndoToast({ message, onUndo, onDismiss }: Props) {
   const insets = useSafeAreaInsets();
   const { enter } = useMotion();
   useEffect(() => {
@@ -26,6 +28,11 @@ export function UndoToast({ message, onUndo }: Props) {
         <Button size="sm" variant="secondary" onPress={onUndo} accessibilityLabel={copy.common.undoButton}>
           <Text>{copy.common.undoButton}</Text>
         </Button>
+        {onDismiss && (
+          <Button size="sm" variant="ghost" onPress={onDismiss} accessibilityLabel={copy.common.closeButton}>
+            <Text className="text-background">{copy.common.closeButton}</Text>
+          </Button>
+        )}
       </View>
     </Animated.View>
   );

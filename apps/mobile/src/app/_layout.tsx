@@ -7,6 +7,9 @@ import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
 import { tokens } from '@scribe/design-tokens';
+import { AgeGateScreen } from '@/components/gate/age-gate-screen';
+import { useAgeGate } from '@/lib/age-gate';
+import { runLaunchSweep } from '@/lib/capture/sweep';
 import { getSetting, subscribe } from '@/lib/store';
 import { useStoreReady } from '@/dev/store-ready';
 
@@ -40,9 +43,28 @@ function Root() {
     colors: { ...base.colors, background: c.bg, card: c.surfaceRaised, text: c.text, border: c.line, primary: c.accent },
   };
 
+  // 18+ entry gate (PRD-REQ-019): until it passes, no route renders, so first
+  // run, Tonight, invites and every deep link sit behind it.
+  const gate = useAgeGate();
+
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
+
+  // After the first frame, never awaited: finish takes cut off by a kill,
+  // rebase moved paths, keep stray recordings (lib/capture/sweep.ts).
+  useEffect(() => {
+    if (gate.decision === 'pass') void runLaunchSweep();
+  }, [gate.decision]);
+
+  if (gate.decision !== 'pass') {
+    return (
+      <ThemeProvider value={theme}>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        <AgeGateScreen decision={gate.decision} refresh={gate.refresh} />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider value={theme}>

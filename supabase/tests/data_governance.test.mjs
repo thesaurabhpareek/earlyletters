@@ -3,22 +3,23 @@
 // per-child settings, policy acceptances, cross-child isolation.
 // Promoted from supabase/tests/drafts/data_governance.test.mjs (TC-01 to TC-13).
 // Fictional family "Asha" only (CLAUDE.md). Run all DB tests: npm run test:db
+// Fixture changes on 3 Oct 2026 (20261003*): device-id create_child, invites with
+// an explicit role (no more editing child_invites.role by hand), and Terms, age
+// and sensitive-data consent recorded for every person before they write content.
 import { createDb, users } from './harness.mjs';
 
-const { check, as, sys, one, fails, done } = await createDb(process.argv.slice(2));
-const { A, B, C, N, S } = users;
+const { check, as, sys, one, fails, done, publishPolicies, consent, newChild, join: joinAs } = await createDb(process.argv.slice(2));
+const { A, B, C, N, S, U } = users;
 check(`${process.argv.length - 2} migrations apply cleanly`, true);
-await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('${S}')`);
+await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('${S}'),('${U}')`);
+await publishPolicies();
+for (const u of [A, B, C, N, S]) await consent(u);
 
-const CHILD = (await one(A, `select public.create_child('Asha', '2025-05-20') as id`)).id;
-const join = async (uid, role, child = CHILD, inviter = A) => {
-  const t = (await one(inviter, `select public.create_child_invite('${child}') as t`)).t;
-  if (role === 'contributor') await sys(`update child_invites set role='contributor' where token_hash = sha256(convert_to('${t}','UTF8'))`);
-  await as(uid, `select public.accept_child_invite('${t}')`);
-};
+const CHILD = await newChild(A);
+const join = (uid, role, child = CHILD, inviter = A) => joinAs(uid, role, child, inviter);
 await join(B, 'parent');
 await join(N, 'contributor');
-const SOLO = (await one(S, `select public.create_child('Asha', '2025-05-20') as id`)).id;
+const SOLO = await newChild(S);
 
 let seq = 0;
 const newEntry = async (author, child = CHILD, inBook = true) => {
@@ -89,8 +90,15 @@ check('co-parent gets no row from the entries table', (await as(B, `select 1 fro
 for (const col of ['raw_transcript', 'machine_edits', 'stt_meta', 'raw_sha256', 'deleted_reason']) {
   check(`book_entries does not expose ${col}`, await fails(() => as(B, `select ${col} from book_entries`)));
 }
-check('contributor sees the book through the view only', (await as(N, `select id from book_entries where child_id='${CHILD}'`)).rows.length === 3
+// B-REQ-009, B-REQ-011 (B F9). Replaces the earlier assertion that a contributor
+// sees every in-book letter: that was the bug (TDD 02 C2), not the requirement.
+check('[B-REQ-011] with "Family can read" off, a contributor reads only own letters',
+  (await as(N, `select id from book_entries where child_id='${CHILD}'`)).rows.map((r) => r.id).join() === nBook
   && (await as(N, `select id from entries`)).rows.length === 1);
+check('[B-REQ-009] a contributor\'s letter waits for a parent instead of entering the book',
+  (await sys(`select approval, in_book from entries where id='${nBook}'`)).rows.every((r) => r.approval === 'pending' && r.in_book === false));
+check('[B F9] parents see the pending family letter', (await one(B, `select approval from book_entries where id='${nBook}'`))?.approval === 'pending'
+  && (await as(A, `select 1 from book_entries where id='${nBook}'`)).rows.length === 1);
 check('author still sees own private letter in the view', (await as(A, `select 1 from book_entries where id='${await newEntry(A, CHILD, false)}'`)).rows.length === 1);
 check('book view search works for co-parents', (await as(B, `select id from book_entries where child_id='${CHILD}' and search @@ plainto_tsquery('simple', 'walked')`)).rows.length === 3);
 check('co-parent can read the in-book photo of another author', await (async () => {
@@ -121,6 +129,8 @@ check('cannot write prefs for someone else', await fails(() => as(A, `insert int
 check('cannot write prefs for a book you do not belong to', await fails(() => as(B, `insert into child_member_prefs (child_id, profile_id) values ('${SOLO}', '${B}')`)));
 await as(B, `update children set family_can_read=true, nickname='Ashu', due_date=null where id='${CHILD}'`);
 check('parent changes shared book settings', (await sys(`select family_can_read from children where id='${CHILD}'`)).rows[0].family_can_read === true);
+check('[B-REQ-011] with "Family can read" on, a contributor reads in-book letters, never others\' private or pending ones',
+  (await as(N, `select id from book_entries where child_id='${CHILD}' order by id`)).rows.map((r) => r.id).join() === [aBook, bBook, nBook].sort().join());
 check('contributor cannot change book settings', await fails(() => as(N, `update children set name='X' where id='${CHILD}'`), 'SCPAR'));
 check('parent sets auto-add for a family member', (await one(A, `select public.set_member_auto_add('${CHILD}', '${N}', true) as ok`)).ok === true
   && (await sys(`select auto_add_letters from child_members where profile_id='${N}'`)).rows[0].auto_add_letters === true);
@@ -128,9 +138,8 @@ check('contributor cannot set auto-add', await fails(() => as(N, `select public.
 check('child photo path must sit in the child folder', await fails(() => as(A, `update children set photo_path='${SOLO}/0192b000-0000-7000-8000-000000000999.jpg' where id='${CHILD}'`)));
 
 // ── Policy acceptances (POLICY_VERSIONING.md 7.2) ─────────────────────────
-await sys(`insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
-  values ('terms', '1.0.0', 'initial', false, now() - interval '1 day', now() - interval '1 day', now() - interval '1 day', sha256('t'::bytea), 'https://example.invalid/terms/1.0.0', 'First version')`);
-check('a new user is asked to accept the Terms', (await as(B, `select document from policy_actions_needed()`)).rows.some((r) => r.document === 'terms'));
+// terms 1.0.0 is published by the publishPolicies() fixture.
+check('a new user is asked to accept the Terms', (await as(U, `select document from policy_actions_needed()`)).rows.some((r) => r.document === 'terms'));
 const actA = (await one(A, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios', 'en-US') as id`)).id;
 await as(B, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`);
 const accepted = await one(A, `select document, version, accepted_at, profile_id from policy_acceptances where id='${actA}'`);
@@ -143,7 +152,7 @@ check('unknown versions are refused', await fails(() => as(A, `select public.rec
 check('anonymous visitors cannot record acts', !(await sys(`select has_function_privilege('anon', 'public.record_policy_act(text,text,text,text,text,text,text,text,timestamptz,bytea,jsonb)', 'execute') ok`)).rows[0].ok);
 
 // ── TC-08 Delete book with a co-parent = remove own letters and leave ─────
-const BOOK2 = (await one(B, `select public.create_child('Asha', '2025-05-20') as id`)).id;
+const BOOK2 = await newChild(B);
 await join(A, 'parent', BOOK2, B);
 const a2 = await newEntry(A, BOOK2); const b2 = await newEntry(B, BOOK2);
 check('with a co-parent, delete = leave and remove own letters',
@@ -193,6 +202,7 @@ check("contributor's deletion removes only their letters", !(await exists('entri
 
 // ── Sole parent book deletion ─────────────────────────────────────────────
 await join(C, 'contributor', SOLO, S);
+await as(S, `update children set family_can_read=true where id='${SOLO}'`);
 check('contributor reads the solo book while live', (await as(C, `select 1 from book_entries where child_id='${SOLO}'`)).rows.length === 1);
 check('sole parent schedules book deletion', (await one(S, `select public.request_book_deletion('${SOLO}', 'ios') as m`)).m === 'book_scheduled');
 check('a book being deleted leaves members\' view', (await as(C, `select 1 from book_entries where child_id='${SOLO}'`)).rows.length === 0);
@@ -204,9 +214,10 @@ check('whole book folder queued for Storage deletion', (await sys(`select 1 from
 
 // ── Short-lived records ───────────────────────────────────────────────────
 check('safety_events no longer exists (PRD K-06)', (await sys(`select to_regclass('public.safety_events') r`)).rows[0].r === null);
+const bActs = (await sys(`select count(*)::int n from policy_acceptances where profile_id='${B}'`)).rows[0].n;
 await sys(`select public.purge_due(now() + interval '3 years 1 day')`);
 check('pseudonymised acceptances are deleted after 3 years', (await sys(`select 1 from policy_acceptances where id='${actA}'`)).rows.length === 0);
-check('live acceptances are kept', (await sys(`select count(*)::int n from policy_acceptances where profile_id='${B}'`)).rows[0].n === 1);
+check('live acceptances are kept', bActs >= 3 && (await sys(`select count(*)::int n from policy_acceptances where profile_id='${B}'`)).rows[0].n === bActs);
 check('retention purge does not open the append-only guard afterwards', await fails(() => sys(`delete from policy_acceptances`)));
 
 done();

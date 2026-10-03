@@ -1,9 +1,9 @@
 ---
 title: Early Letters in-app and store disclosures
-version: 1.2.0
+version: 1.3.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-02
+last_updated: 2026-10-03
 owner: founder
 related: terms-of-service.md (1.3.0), subscription-terms.md (1.2.0), packages/content/VOICE.md, docs/legal/memos/lawyer-1.md
 ---
@@ -45,7 +45,7 @@ Rules: shown once per install, after the first transcript appears and before the
 |---|---|---|---|
 | `plus.legal.renewTrial` | Plus sheet, directly under the chosen plan when trial-eligible | {trialLength} free, then {price} a {period}. Renews automatically until you cancel. Cancel by {cancelByDate} and you pay nothing. | up to 123 filled |
 | `plus.legal.renewNoTrial` | Plus sheet, under the chosen plan when not trial-eligible | {price} a {period}, charged now. Renews automatically until you cancel at least 24 hours before it renews. | up to 101 filled |
-| `plus.legal.cancel` | Plus sheet, above the links | Cancel any time in Settings, Plan, Manage subscription, or in your Apple or Google account. | 91 |
+| `plus.legal.cancel` | Plus sheet, above the links | Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions. | 95 |
 | `plus.legal.agree` | Plus sheet, directly above the purchase button | By subscribing, you agree that Plus renews automatically at this price until you cancel. | 88 |
 | `plus.legal.links` | Plus sheet footer; each label is a link | Terms of Service, Privacy Policy, Subscription terms, Restore (four separate labels) | 16, 14, 18, 7 |
 | `plus.ack.body` | Confirmation sheet after purchase, and the same text in the confirmation email | Plus is on, free until {date}. Then {price} a {period} until you cancel. Cancel by {cancelByDate} to pay nothing. | up to 125 filled |
@@ -66,7 +66,7 @@ Rules:
 | Key | Where it appears | String | Chars |
 |---|---|---|---|
 | `auth.legal.accept` | Above the sign-in buttons | By continuing, you confirm you are 18 or older and agree to the Terms and Privacy Policy. | 89 |
-| `web.legal.accept` | Family web page, above the first Send | By sending, you confirm you are 18 or older and agree to the Terms and Privacy Policy. | 86 |
+| `web.legal.accept` | Family web page (v1.1, PRD K-35), above the first Send | By sending, you confirm you are 18 or older and agree to the Terms and Privacy Policy. | 86 |
 
 Rule: the acceptance stores the Terms version and time (POLICY_VERSIONING section 7). Terms 1.5 and 2.1 rely on this line.
 
@@ -74,10 +74,10 @@ Rule: the acceptance stores the Terms version and time (POLICY_VERSIONING sectio
 
 | Key | Where it appears | String | Chars |
 |---|---|---|---|
-| `store.description.betaLine` | App Store and Google Play description, last paragraph | Early Letters is in beta. We are still building, and some things may change. Your letters are always yours to export. | 117 |
+| `store.description.betaLine` | App Store and Google Play description, last paragraph. **Pending founder decision D-030 (PRD K-37):** recommended not to use it in the v1.0 App Store listing, because Guideline 2.2 keeps betas on TestFlight; the in-app label in section 1 stays | Early Letters is in beta. We are still building, and some things may change. Your letters are always yours to export. | 117 |
 | `store.description.subscriptionLine` | App Store and Google Play description, after the feature list | Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional and renews automatically until you cancel. | 145 |
 | `store.description.legalLinks` | Last lines of the description | Terms of Use: {TERMS_URL} Privacy Policy: {PRIVACY_URL} | varies |
-| `store.promotionalText.beta` | App Store promotional text (optional, changeable without review) | Now in beta. Tell us what you think at {SUPPORT_EMAIL}. | 55 |
+| `store.promotionalText.beta` | App Store promotional text (optional, changeable without review). **Pending D-030:** recommended not used at v1.0 | Now in beta. Tell us what you think at {SUPPORT_EMAIL}. | 55 |
 
 Rules: `packages/content/src/store.en.ts` does not yet end its description with `store.description.legalLinks`; the content owner must add it (Apple expects a Terms of Use link for auto-renewing subscriptions). No "beta" in the app name or subtitle (30-character fields are reserved for the name and category). Remove the beta lines when the label ends.
 
@@ -95,6 +95,7 @@ Rules: `packages/content/src/store.en.ts` does not yet end its description with 
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.3.0 | 2026-10-03 | draft-for-counsel | Alignment with PRD.md 1.3: `plus.legal.cancel` names only Apple (Plus is sold through the App Store only at v1.0, ADR 0013; App Review 2.3.10 bars other platforms' names in iOS copy); `store.description.betaLine` and `store.promotionalText.beta` marked pending D-030 (recommended: TestFlight beta, no store beta line); `web.legal.accept` ships with the web page in v1.1. Patch-level wording; counsel to confirm. |
 | 1.2.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2: `subscriptionLine` uses "playing your recordings" and matches `store.en.ts` (K-11); beta ends only on the founder's decision (K-13). Patch-level wording; counsel to confirm. |
 | 1.1.0 | 2026-10-02 | draft-for-counsel | Consumer-law review: paywall strings take trial length and cancel-by date from the store offer; clearer renewal wording; consent line now names automatic renewal; acknowledgment string; prominence, one-tap cancel and consent-log rules; 18+ acceptance strings (3a); store legal-links gap flagged. Beta and mistakes strings unchanged. |
 | 1.0.0 | 2026-10-02 | draft-for-counsel | First draft, prepared by Claude for counsel review, at the founder's request. |

@@ -27,9 +27,9 @@ The machine may remove and repair. It may never add meaning.
 ## Commands
 ```bash
 npm install            # once, at the repo root
-npm test               # engine (95) + content rules (16) + analytics (39) + tokens (4) + experiments (11)
+npm test               # engine (237) + mobile (31) + content rules (16) + analytics (39) + tokens (4) + experiments (11); Node 22+
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
-npm run test:db        # access rules, data governance, classification, performance (4 files)
+npm run test:db        # access matrix, security, governance, classification, entitlements, purge, performance (8 files)
 npm run typecheck
 npm run mobile         # start the iOS app
 ```

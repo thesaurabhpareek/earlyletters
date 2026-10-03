@@ -2,6 +2,8 @@
 
 Lead C. Draft v2, 2 Oct 2026. This version applies the founder pricing decision of 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict log** (K-01, K-03, K-04, K-05, K-06, K-11, K-12, K-17, K-28); [PRD.md](PRD.md) wins where they differ.
 
+> **PRD.md 1.3 (3 Oct 2026) overrides here:** Plus ships in v1.0 through the App Store only, with StoreKit 2 direct and App Store Server Notifications V2; every mention of RevenueCat below is superseded by ADR 0013 (K-34): the random `appUserID` becomes the App Store `appAccountToken`, and refunds and cancellation run only through Apple at v1.0 (Google Play rows apply when Android ships). Notice days in C-REQ-024 to C-REQ-026 and section 4.3 are superseded by the K-38 windows (final trial notice at E-4d12h; annual renewal inside [E-31d, E-30d]). A purchase requires an account and contributors never see the Plus sheet (PRD-REQ-022). Lock-screen names default off and C-REQ-009 is v1.0 (D-025).
+
 Scope: reminders, celebrations, settings, Plus pricing, funnel analytics. **A** owns launch, intro and sign-in; **B** owns first-run, children, family, privacy, themes.
 
 Sources: **U** USER_RESEARCH, **C** COMPETITIVE_RESEARCH, **ARCH** ARCHITECTURE, **ADR6/7/8** backup, payments, analytics; **DL/MO/CR** design docs; **V** VOICE; **S** strings.en.ts; **[P#]** platform rules (list at end); **A:** our assumption.

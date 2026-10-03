@@ -32,7 +32,6 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, sca
     <Text
       className="font-serif text-foreground"
       style={{ fontSize: body.fontSize * scale, lineHeight: body.lineHeight * scale }}
-      maxFontSizeMultiplier={2}
       selectable>
       {segments.map((s, i) => {
         if (s.edit === null) return s.text;

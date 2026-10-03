@@ -4,7 +4,7 @@ import { Pressable, View, useColorScheme } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { Text } from '@/components/ui/text';
-import { copy, fill } from '@/lib/copy';
+import { copy, fill, pendingCopy } from '@/lib/copy';
 import type { useMotion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
@@ -29,7 +29,7 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
   const signature = fill(copy.book.signature, { signsAs });
   const date = shortDateline(child, entry.occurredOn);
   const spoken = entry.captureMode !== 'typed';
-  const excerpt = entry.finalText.replace(/\s+/g, ' ').trim();
+  const excerpt = entry.transcriptStatus === 'waiting' ? pendingCopy.book.waitingForWords : entry.finalText.replace(/\s+/g, ' ').trim();
 
   const label = [signature, datelineA11y(child, entry.occurredOn), excerpt, entry.inBook ? null : copy.book.privateLabel, spoken ? copy.book.recordingOnPhone : null]
     .filter(Boolean)

@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/text';
 import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { isoOf, longDate } from '@/lib/dates';
+import { devShortcutsAllowed } from '@/lib/build-env';
 import { addChild, getActiveChild, newChildNeedsPlus, setActiveChildId, todayISO } from '@/lib/store';
 import { PlusGate } from './plus-gate';
 
@@ -31,7 +32,7 @@ export function AddChildForm() {
   const [tried, setTried] = useState(false);
 
   if (gated && !passedGate) {
-    return <PlusGate onNotNow={() => router.back()} onContinueDev={__DEV__ ? () => setPassedGate(true) : undefined} />;
+    return <PlusGate onNotNow={() => router.back()} onContinueDev={devShortcutsAllowed ? () => setPassedGate(true) : undefined} />;
   }
 
   const trimmed = name.trim();

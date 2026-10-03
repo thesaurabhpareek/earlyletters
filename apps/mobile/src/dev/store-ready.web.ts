@@ -3,7 +3,8 @@
  * worker, and its sync calls time out if the worker is still loading the
  * wasm. Warm the worker with one async open before the first sync read.
  * In development, or in a preview export built with EXPO_PUBLIC_WEB_PREVIEW=1,
- * `?seed=asha` fills the store with the fictional family.
+ * `?seed=asha` fills the store with the fictional family; `?seed=asha-waiting`
+ * does the same with a recording waiting for its words.
  */
 import * as SQLite from 'expo-sqlite';
 import { useEffect, useState } from 'react';
@@ -19,8 +20,9 @@ export function useStoreReady(): boolean {
       const warm = await SQLite.openDatabaseAsync(':memory:');
       await warm.closeAsync();
       const preview = __DEV__ || process.env.EXPO_PUBLIC_WEB_PREVIEW === '1';
-      if (preview && new URLSearchParams(window.location.search).get('seed') === 'asha') {
-        (await import('./asha-seed')).seedAsha();
+      const seed = new URLSearchParams(window.location.search).get('seed');
+      if (preview && (seed === 'asha' || seed === 'asha-waiting')) {
+        (await import('./asha-seed')).seedAsha({ waiting: seed === 'asha-waiting' });
       }
       ready = true;
       if (live) setOk(true);

@@ -79,7 +79,7 @@ export const site = {
     },
     {
       q: "Can grandparents add letters?",
-      a: "Yes. Invite them and they can talk or type letters of their own, signed with their name, like From Nani. Parents approve family letters before they go into the book.",
+      a: "Yes. Invite them and they can talk or type letters of their own in the free app on their phone, signed with their name, like From Nani. Parents approve family letters before they go into the book.",
     },
     {
       q: "Which languages can I use?",

@@ -1,8 +1,8 @@
 ---
 title: Early Letters App Privacy labels, Data safety form, privacy manifest and permission strings
-version: 1.1.0
+version: 1.2.0
 status: draft-for-counsel
-last_updated: 2026-10-02
+last_updated: 2026-10-03
 effective_date: TBD
 owner: founder
 reviewers: outside privacy counsel (TBD), iOS engineer
@@ -19,7 +19,7 @@ From Apple's App Privacy Details page [R1]:
 - **Free-form content.** We need not disclose every kind of data users might type or say into free-form fields, but we must disclose a specific data type when we ask for it (for example a name, a due date) or when a feature uploads a media type (photos, recordings).
 - **Linked to identity** unless stripped of direct identifiers before collection and never re-linked. We claim "not linked" only where engineering can guarantee those conditions (see 1.3).
 - **Tracking** means linking our data with third-party data for targeted ads or ad measurement, or sharing with a data broker. We do neither.
-- Our third-party SDKs (PostHog, Sentry, RevenueCat, Supabase, PowerSync, Google Sign-In) count as our collection.
+- Our third-party SDKs (PostHog, Sentry, Supabase, `expo-iap` for StoreKit; PowerSync only if used, D-023; Google Sign-In from v1.1) count as our collection. RevenueCat is not used (ADR 0013).
 
 From Google Play's Data safety guidance [R4]: collection is any transmission off device; on-device processing and end-to-end encrypted data need not be disclosed; transfers to service providers acting on our behalf are not "sharing"; ephemeral in-memory processing need not be disclosed.
 
@@ -58,8 +58,8 @@ From Google Play's Data safety guidance [R4]: collection is any transmission off
 | Browsing History | Browsing History | No | | | | |
 | Search History | Search History | No | | | | In-app search runs on the local database. Revisit if server search is added. |
 | Identifiers | User ID | **Yes** | Yes | No | App Functionality | Supabase account ID, used for sync and access control. If the analytics ID is judged linked (1.3), add Analytics. |
-| Identifiers | Device ID | No | | | | No IDFA, no IDFV sent. Engineering check: confirm PostHog, Sentry and RevenueCat send no IDFV or vendor device ID; if any does, declare Device ID. |
-| Purchases | Purchase History | **Yes** | Yes | No | App Functionality, Analytics | RevenueCat receipts and entitlements, held per account on our server (PRD K-28), so linked to the account. RevenueCat asks customers to select both purposes [R6]. |
+| Identifiers | Device ID | No | | | | No IDFA, no IDFV sent. Engineering check: confirm PostHog and Sentry send no IDFV or vendor device ID (and that `expo-iap` sends nothing off the device except to Apple); if any does, declare Device ID. |
+| Purchases | Purchase History | **Yes** | Yes | No | App Functionality, Analytics | App Store transaction and renewal status for a random `appAccountToken`, held per account on our server as entitlements (PRD K-28, ADR 0013), so linked to the account. Analytics purpose because business totals come from the entitlement ledger (PRD-REQ-017); drop it if counsel reads server aggregates as App Functionality only. |
 | Usage Data | Product Interaction | **Yes** | **No** (conditional, 1.3) | No | Analytics | Allowlisted PostHog events (ADR 0008; PRD K-01, PRD-REQ-016; C-REQ-034), sent only after the user opts in (Apple 5.1.1(ii); compliance register CR-082). Children appear only as ordinals and a `child_count_bucket` property, never ids, names or birthdays. Apple's label has no "optional" flag, so the type is still declared. |
 | Usage Data | Advertising Data | No | | | | |
 | Usage Data | Other Usage Data | No | | | | |
@@ -80,7 +80,7 @@ Answer "No" (not linked) only if all of these hold in the shipped build. Otherwi
 5. Neither SDK initializes before the user opts in, so no event, crash or device metadata leaves the phone before a choice.
 6. Account deletion may pass the current analytics ID to the deletion function once, in memory, so PostHog events can be deleted (privacy policy CN-18). It is never written to our database or logs, so condition 2 still holds. If engineering instead stores it, answer "Yes" (linked).
 
-Note: the RevenueCat `appUserID` is random (C-REQ-034) but RevenueCat entitlements are mapped to books on our server, so Purchases stay "Linked".
+Note: the App Store `appAccountToken` is random (ADR 0013) but entitlements are mapped to accounts and books on our server, so Purchases stay "Linked".
 
 ### 1.4 What the label will show (expected)
 
@@ -124,7 +124,7 @@ Same app, same SDKs, so the answers mirror section 1. Play's form differs in thr
 | App activity | Installed apps, Other actions | No | | | | |
 | App info and performance | Crash logs | Yes | No | No | Optional (crash reporting is opt-in, LEGAL-REQ-003) | App functionality |
 | App info and performance | Diagnostics | Yes | No | No | Optional | App functionality, Analytics |
-| Device or other IDs | Device or other IDs | Yes | No | No | Optional | Analytics (random PostHog ID), App functionality (random RevenueCat ID) |
+| Device or other IDs | Device or other IDs | Yes | No | No | Optional | Analytics (random PostHog ID), App functionality (random App Store account token) |
 
 Server transcription data is ephemeral (in memory, not retained) and may be marked as such if the form asks; it is still covered by "Voice or sound recordings" because of backup.
 
@@ -142,13 +142,13 @@ Apple's current required-reason API categories and approved reasons [R2]:
 | `NSPrivacyAccessedAPICategoryActiveKeyboards` | `activeInputModes` | 3EC4.1 custom keyboard apps; 54BD.1 customize UI based on active keyboards |
 | `NSPrivacyAccessedAPICategoryUserDefaults` | `UserDefaults` | **CA92.1** app-only data; 1C8F.1 App Group; C56D.1 SDK wrapper only; AC6B.1 MDM managed config |
 
-Apple rejects uploads that use these APIs without declared reasons (since 1 May 2024) [R2]. Each third-party SDK must ship its own manifest; it cannot rely on the app's [R2]. Apple's list of SDKs that must ship a signed manifest includes `hermes` (React Native), `GoogleSignIn`, `AppAuth`, `GTMAppAuth`, `GTMSessionFetcher`, `OpenSSL` and `BoringSSL`; Sentry, PostHog, RevenueCat and op-sqlite are not on that list [R3], but should still ship manifests.
+Apple rejects uploads that use these APIs without declared reasons (since 1 May 2024) [R2]. Each third-party SDK must ship its own manifest; it cannot rely on the app's [R2]. Apple's list of SDKs that must ship a signed manifest includes `hermes` (React Native), `GoogleSignIn`, `AppAuth`, `GTMAppAuth`, `GTMSessionFetcher`, `OpenSSL` and `BoringSSL`; Sentry, PostHog and op-sqlite (and RevenueCat, no longer used) are not on that list [R3], but should still ship manifests.
 
 ### 3.2 What our app likely uses, and why
 
 | Category | Reason | Who uses it | Why we think so |
 |---|---|---|---|
-| UserDefaults | CA92.1 | React Native, Expo modules, PostHog, Sentry, RevenueCat, our settings | Universal in RN apps; Expo's guide uses it as the example [R5] |
+| UserDefaults | CA92.1 | React Native, Expo modules (including `expo-iap`), PostHog, Sentry, our settings | Universal in RN apps; Expo's guide uses it as the example [R5] |
 | FileTimestamp | C617.1 | RN and Expo file system, our audio files, model download cache, op-sqlite, PowerSync attachment queue | Reading size and dates of files in our container (audio `.m4a`, model files, photos) |
 | SystemBootTime | 35F9.1 | React Native (`mach_absolute_time` for timers and performance), Sentry, recorder elapsed time | Elapsed time between in-app events. Only durations leave the device. |
 | DiskSpace | E174.1 | Our model downloader (574 MB Whisper model, ADR 0001), recorder, export | We must check free space before downloading the model or writing an export, and visibly decline or warn. Do not use 85F4.1 unless Settings displays free space; "storage used" by our own files is not disk space. |
@@ -238,11 +238,12 @@ Android equivalents (later): `RECORD_AUDIO` with an in-app explanation using the
 - [R8] Sentry, Server-side data scrubbing (IP storage setting): https://docs.sentry.io/security-legal-pii/scrubbing/server-side-scrubbing/
 - Repository: `docs/ARCHITECTURE.md`; ADR 0001, 0002, 0006, 0007, 0008; PRD A, B, C; `apps/mobile/app.json`; `apps/mobile/package.json`; `packages/content/src/strings.en.ts`; `packages/content/VOICE.md`.
 
-Unverified: whether Sentry, PostHog or RevenueCat RN SDKs send IDFV by default; exact Sentry IP setting name; the Play target audience form wording.
+Unverified: whether the Sentry or PostHog RN SDKs send IDFV by default; which required-reason APIs `expo-iap` declares in its own manifest; exact Sentry IP setting name; the Play target audience form wording.
 
 ## Changelog
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.0 | 2026-10-03 | Alignment with PRD.md 1.3 (ADR 0013, D-001): RevenueCat removed from the SDK list, Purchases source and identifiers; App Store `appAccountToken` described; `expo-iap` added; PowerSync conditional on D-023; Google Sign-In from v1.1. Labels unchanged in substance (Purchases stay Linked). |
 | 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`): Sensitive Info and Play Health info declared for the due date (PRD K-25); Purchases per account (K-28); analytics child-count note; "not linked" condition for analytics deletion; microphone string adds cloud transcription; stale reminder-string note resolved; checklist adds `safety_events` drop, due-date, biometric and child-input checks. Pre-submission draft; nothing published. |
 | 1.0.0 | 2026-10-02 | First draft for counsel and engineering review. |

@@ -110,7 +110,6 @@ export default function Write() {
             textAlignVertical="top"
             accessibilityLabel={pendingCopy.write.label}
             accessibilityHint={copy.tonight.typing.placeholder}
-            maxFontSizeMultiplier={2}
           />
         </ScrollView>
       </KeyboardAvoidingView>

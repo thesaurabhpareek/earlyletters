@@ -1,7 +1,9 @@
 # Early Letters: Launch PRD (integrated)
 
-Owner: lead PM. Version 1.2, 2 Oct 2026. Status: integrated draft; founder decisions of 2 Oct applied (section 4); remaining founder questions in section 9.
-Codename `scribe`. Public name from `packages/brand` only.
+Owner: lead PM. Version 1.3, 3 Oct 2026. Status: integrated draft; founder decisions of 1, 2 and 3 Oct applied (section 4); TDD 01 to 10 findings folded in (section 3.0 release tiers, K-34 to K-43); remaining founder questions in section 9 and `docs/DECISIONS.md`.
+Codename `scribe`. Public name and publisher identity from `packages/brand` only.
+
+Companion documents (1.3): `docs/DECISIONS.md` (dated decision log, D-###), `docs/ROADMAP.md` (milestones to App Store submission, target **Mon 11 Jan 2027**), `docs/BACKLOG.md` (tasks BL-###), `docs/adr/0013-apple-native-subscriptions.md`, `docs/tdd/01` to `10` (technical designs; TDD 10 is the red-team critique).
 
 This is the single launch PRD. It does not repeat the section drafts; it links them, indexes every requirement, and records how every contradiction between them was resolved. Where this file and a section draft disagree, **this file wins** until the founder changes it. Where the legal drafts and this file disagree on a legal duty, the legal drafts win and the conflict goes in section 5.
 
@@ -19,13 +21,17 @@ Other inputs (all read for this integration): `docs/legal/*` (Terms 1.1.0, Subsc
 
 Early Letters is a baby memory book families fill by talking. A parent speaks for a minute, the phone transcribes it, fixes only mechanical slips (never meaning), keeps the voice, and files the letter by the child's month of age. Co-parents and grandparents write too; parents choose what goes in the book.
 
-**Launch shape (founder decisions, 1 and 2 Oct 2026; second set of 2 Oct applied in 1.2):**
-- **US App Store first.** iOS only at launch; every pattern must port to Android unchanged (one Expo codebase). US storefront only (LEGAL-REQ-058); the web contribution page stays reachable worldwide for invited family.
+**Launch shape (founder decisions, 1 and 2 Oct 2026; second set of 2 Oct applied in 1.2; 3 Oct applied in 1.3):**
+- **US App Store first.** iOS only at launch; every pattern must port to Android unchanged (one Expo codebase). US storefront only (LEGAL-REQ-058). The web contribution page moves to v1.1 (K-35); when it ships it stays reachable worldwide for invited family.
+- **Family in the app at launch (founder, 3 Oct).** Co-parent and Family (contributor) roles ship in v1.0 inside the iOS app: invites, approvals, per-child sharing. Family members install the free app (K-35, D-002).
+- **Plus at launch, through Apple only (founder, 3 Oct).** Sold, managed, cancelled and refunded only through the App Store; StoreKit 2 direct with App Store Server Notifications V2, no third-party billing service (K-34, ADR 0013, D-001).
+- **Individual publisher (founder, 3 Oct).** Published under the founder's personal Apple Developer account; no LLC for now. The founder's legal name is the App Store seller and the provider named in the legal documents (K-36, D-004).
+- **Target App Store submission: Monday 11 January 2027** (`docs/ROADMAP.md`).
 - **Free forever core:** write, read, play back recordings, export, family authors, and every backup already made (stays stored and downloadable after a lapse).
 - **Multiple children:** each child has their own profile and book, managed separately (own settings, own family list). The first book you start is free; **additional children are part of Plus** (K-12, K-28). Every child added together in first run (twins or more) stays free, and a book you joined as a co-parent does not count as your free book (PRD-REQ-015).
 - **Full product analytics**, opt-in per Apple 5.1.1(ii) and content-free (K-01).
 - **Plus:** $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Lifetime at about $99.99 later (P2). Read together is free for 3 sessions, then Plus (decided; the count is a remote-config value, PRD-REQ-020).
-- **Beta product** with light, standard "it can make mistakes" disclosures (section 5, K-13 and K-14). The beta ends only when the founder says so; no date or metric ends it, and the label and disclosures stay until then.
+- **Beta product** with light, standard "it can make mistakes" disclosures (section 5, K-13 and K-14). The beta ends only when the founder says so; no date or metric ends it, and the label and disclosures stay until then. Recommended in 1.3 (D-030, needs founder OK): the pre-launch beta runs on TestFlight and the v1.0 store listing carries no beta line (App Review 2.2); the in-app About label and Terms 16.4 stay (K-37).
 - **Adults only (18+).** An 18+ entry gate comes before first run; under 18 sees a stop screen and cannot use the app at all, not even on the phone alone (K-07, PRD-REQ-019).
 - **Digital only.** v1 has export and the PDF book; printed books are a future launch and are not promised in product, store or legal copy (K-32).
 - **Data classification:** L1 Public, L2 Internal, L3 Confidential (PII), L4 Restricted (encryption required). Section 7.10.
@@ -47,6 +53,7 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 14. Product analytics are a full, typed, content-free catalogue owned by the analytics engineer, sent only after opt-in; business totals come from server aggregates (K-01, PRD-REQ-016 to PRD-REQ-018).
 15. Revisions to B and C that version 1.0 listed as done had not been written; they are applied in 1.1 (K-30).
 16. (1.2) Founder decisions of 2 Oct applied: twins, joined books, Read together, beta end, 18+ only, digital only, analytics volume (section 4). Lawyer 2's nine remaining privacy claims fixed in `packages/content` (K-21, section 8).
+17. (1.3) Founder decisions of 3 Oct applied: Plus in v1.0 through Apple only (K-34), family contributors in the app at v1.0 with the web page in v1.1 (K-35), full opt-in analytics confirmed, individual publisher (K-36). TDD 01 to 10 findings resolved or recommended (K-37 to K-43, `docs/DECISIONS.md`); requirements re-tiered into v1.0 gate, v1.1 and later (section 3.0); notice windows replaced (K-38); RevenueCat removed everywhere.
 
 ---
 
@@ -55,16 +62,17 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 ### 2.1 In scope for launch (P0 unless noted)
 | Area | What ships | Appendix |
 |---|---|---|
-| Entry | Branded splash, 4-story intro (remote switch to 3 or none), first letter before account, Keep the book sheet, Apple/Google/email sign-in, magic link plus code, invites by link or code, offline entry | A |
-| Consent | Terms acceptance record, 18+ entry gate before first run (stop screen, no local-only mode), sensitive-data consent, analytics opt-in, AI-processing consent (server ASR, opt-in), web contributor notice | A, legal |
+| Entry | Branded splash, one welcome screen (4-story intro in v1.1, D-043), first letter before account, Keep the book sheet, Sign in with Apple and email (Google in v1.1, D-044), magic link plus code, invites by link or code, offline entry | A |
+| Consent | Terms acceptance record, 18+ entry gate before first run (stop screen, no local-only mode), sensitive-data consent (enforced server-side, BL-114), analytics opt-in. AI-processing consent and the web contributor notice ship with their features in v1.1 | A, legal |
 | First run | Child name plus birthday or due date, signature, languages and Hindi script, goals, dictionary from names | B |
 | Capture | Speak or type, on-device transcription, faithful edits with diff, one-time "it can make mistakes" card, save offline | ARCH, core, legal |
-| Family | Co-parent and Family roles, invites, web contribution page (no install), approvals, leave and remove with letter retention, visibility model, private by default | B |
+| Family | Co-parent and Family roles **in the app**, invites by link or code (one child each), approvals, leave and remove with letter retention, visibility model, private by default; family-letter push without content. Web contribution page in v1.1 (K-35) | B |
+| Shared voice (pending D-032) | Recordings of letters in a shared book upload encrypted so every member can play them (Free); every recording for Plus. If not approved by 23 Oct, family letters are text-only in v1.0 (K-40) | PRD |
 | Book | Month chapters, Before You, Read together (3 free sessions, then Plus; remote config), quiet milestones, birthdays and month-age notes; PDF book in export (no print) | B, C |
 | Children | One profile and book per child; child switcher; per-child settings; per-child family list; second and later child's book through Plus (children added together in first run free; joined books do not count) | B, C, PRD |
 | Analytics | Opt-in consent sheet, typed content-free event catalogue, server-side business aggregates, withdrawal in Settings > Privacy | C, analytics |
 | Habit | Primed notification permission after the first letter, a few evenings a week default, smart quiet window, back-off (P1) | C |
-| Plus | Monthly and annual products, per-book entitlement, paywall disclosures, notices, grace, lapse, restore, refunds | C |
+| Plus | Monthly and annual App Store subscriptions (StoreKit 2 direct, ADR 0013), per-account entitlement inherited by books, paywall disclosures, notices (K-38 windows), grace, lapse, restore, refunds through Apple | C, ADR 0013 |
 | Data | Export everything (free, offline), Recently deleted with 30-day undo, delete book, delete account (in-app and web), deletion SLA | C, legal |
 | Settings | All controls within 2 taps, Privacy consents list, Legal list, About with beta label | C, legal |
 | Store | US-only listing, adult-facing metadata, privacy labels and manifest generated from the data map | legal |
@@ -72,12 +80,15 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 ### 2.2 Out of scope for launch
 Android build (specified, not shipped); lifetime purchase; printed books and print credit (future launch, v1 is digital only, K-32); web gift codes; gift a year of Plus (P1); sealed letters (P1); sibling letters and any child-input feature (flagged, counsel); Hindi app UI (P2); passkeys, SMS, passwords; child accounts; EU, UK, India, Canada storefronts; server-side LLM edit pass (not on at launch per Privacy Policy section 4).
 
+Moved out of v1.0 in 1.3 (each with its decision; full list in section 3.0): web contribution page and anonymous web identity (K-35, v1.1); Google sign-in (D-044, v1.1); 4-story intro (D-043, v1.1); server transcription and the AI gateway (v1.1; nothing leaves the phone for AI in v1.0); Vault mode, per-child keys, member key grants and the synchronizable Keychain module (ADR 0006 parts, later); the safety classifier unless a clinician signs off by 20 Nov (D-034); load test at 2x the 100k targets (before 25k families).
+
 ### 2.3 Launch gates
 1. Every item in the launch acceptance checklist (section 6) passes.
 2. Every P0 LEGAL-REQ and DATA-REQ passes (they are launch blockers by their own terms).
 3. Counsel has reviewed the Terms, Privacy Policy, Subscription terms, in-app disclosures and the claims registry.
-4. `packages/brand` holds the real company name and domain (A Q3); universal links, SMTP and the Apple Services ID depend on it. Still a founder choice (section 9 Q5).
-5. The beta label stays until the founder ends the beta; ending it is a release that changes Terms 16.4, About and the store line together (K-13).
+4. `packages/brand` holds the real domain and support email (universal links, SMTP and the Apple Services ID depend on them; BL-100). The publisher is the founder as an individual (K-36): the legal name is entered in the published legal documents and App Store Connect, never in code, where `publisher.legalName` stays a TODO placeholder. No LLC or D-U-N-S is required for launch (D-005).
+5. The beta label stays until the founder ends the beta; ending it is a release that changes Terms 16.4, About and any store line together (K-13; store placement per K-37).
+6. (1.3) Every v1.0-gate requirement in section 3.0 passes; v1.1 requirements do not block v1.0 but their LEGAL-REQ bind the day their feature ships.
 
 ---
 
@@ -85,26 +96,46 @@ Android build (specified, not shipped); lifetime purchase; printed books and pri
 
 Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** later. "Rev" marks a requirement revised by the conflict log (section 5) with the entry number. Full text and acceptance criteria live in the appendix named by the ID prefix.
 
+### 3.0 Release tiers (1.3)
+
+TDD 10 found about 150 PRD requirements, 50 P0 LEGAL-REQ and 55 DATA-REQ marked launch-blocking, sized for a team the product does not have. 1.3 sorts them into three tiers. **Everything not listed below keeps its priority from sections 3.1 to 3.4** (P0 = v1.0 gate). A LEGAL-REQ or DATA-REQ is never dropped; a feature-scoped one binds the day its feature ships, which its own text allows for P1 and which counsel confirms for the P0 ones marked "counsel" (BL-104).
+
+| Tier | Requirements | Why | Decision |
+|---|---|---|---|
+| **v1.0 gate (added or confirmed by 1.3)** | C-REQ-020 to C-REQ-029, C-NFR-002 to C-NFR-004, PRD-REQ-003, -015, -020, -022; LEGAL-REQ-046 to -050 | Plus ships at launch through the App Store | D-001, K-34 |
+| v1.0 gate | B-REQ-007, -009, -010, -011, B-NFR-002 (token handling), B-NFR-003, B-NFR-004, PRD-REQ-014; C-REQ-007 (family-letter notifications) | Family contributors in the app at launch | D-002, K-35 |
+| v1.0 gate | PRD-REQ-016 to -018; LEGAL-REQ-003, -017 | Full opt-in analytics at launch | D-003 |
+| v1.0 gate (pending founder OK) | PRD-REQ-021 shared voice | Family hear each other's voices | D-032, K-40 |
+| v1.0 gate (raised from P1) | C-REQ-009 lock-screen name toggle (default off) | The safe default needs the toggle | D-025 |
+| **v1.1** | B-REQ-008 web contribution page; PRD-REQ-007 web contributor identity; B-NFR-005 (browser encryption part); B-REQ-022 Hindi web page; LEGAL-REQ-010 and LEGAL-REQ-035 bind from here (counsel) | Web page deferred by the founder | D-002, K-35 |
+| v1.1 | A-REQ-017 Google sign-in; A-REQ-019 account linking (P1) | Apple plus email meets Guideline 4.8 | D-044 |
+| v1.1 | A-REQ-003, A-REQ-004 to A-REQ-011 (story intro) | One welcome screen at v1.0; A-REQ-005's "Sign in reachable" applies to the welcome screen | D-043 |
+| v1.1 | LEGAL-REQ-004, -005, -020 and the AI-processing consent | No server transcription or AI gateway in v1.0 | TDD 10 section 2 |
+| v1.0 reduced, full flow before Android | LEGAL-REQ-030 web deletion page: static page plus email route at v1.0 (counsel) | Source is Google Play (CR-091); Apple requires in-app deletion, which ships | D-042 |
+| Later | ADR 0006 Vault mode, Recovery Kit, per-child keys, member key grants; LEGAL-REQ-022(a) and -023 apply to the v1.0 shared-voice scheme in reduced form (counsel) | Highest complexity per user benefit; not portable to Android | D-032, TDD 10 risk 9 |
+| Later | PRD 7.8 load test at 2x the 100k targets (2x the 1k targets stays a v1.0 gate) | 100k families is a year-one hope | TDD 10 section 2 |
+| Conditional | Safety classifier (on-device tiers and support card): ships only with clinician sign-off by 20 Nov; otherwise a static resources row | False negatives and positives both hurt | D-034 |
+
 ### 3.1 Section A: entry and sign-in
 | ID | P | Area | Requirement | Rev |
 |---|---|---|---|---|
 | A-REQ-001 | P0 | Launch | Branded splash | |
 | A-REQ-002 | P0 | Launch | Splash never waits on network, model or sync | |
-| A-REQ-003 | P1 | Launch | Brand moment, 900 ms max, Reduce Motion fade | |
-| A-REQ-004 | P0 | Stories | Gestures | |
-| A-REQ-005 | P0 | Stories | Skip and Sign in reachable at any text size | |
-| A-REQ-006 | P0 | Stories | Timing, pause, story 4 never advances | |
-| A-REQ-007 | P0 | Stories | Screen readers | |
-| A-REQ-008 | P0 | Stories | Reduce Motion | |
-| A-REQ-009 | P1 | Stories | Silent intro | |
-| A-REQ-010 | P1 | Stories | Stories show once | |
-| A-REQ-011 | P1 | Stories | Remote variant switch | |
-| A-REQ-012 | P0 | Account timing | Letter first, no sign-in required (18+ entry gate first) | K-07 |
+| A-REQ-003 | P1 (v1.1) | Launch | Brand moment, 900 ms max, Reduce Motion fade (stories in v1.1, D-043) | 3.0 |
+| A-REQ-004 | P0 (v1.1) | Stories | Gestures (stories in v1.1, D-043) | 3.0 |
+| A-REQ-005 | P0 (v1.1) | Stories | Skip and Sign in reachable at any text size (stories in v1.1, D-043) | 3.0 |
+| A-REQ-006 | P0 (v1.1) | Stories | Timing, pause, story 4 never advances (stories in v1.1, D-043) | 3.0 |
+| A-REQ-007 | P0 (v1.1) | Stories | Screen readers (stories in v1.1, D-043) | 3.0 |
+| A-REQ-008 | P0 (v1.1) | Stories | Reduce Motion (stories in v1.1, D-043) | 3.0 |
+| A-REQ-009 | P1 (v1.1) | Stories | Silent intro (stories in v1.1, D-043) | 3.0 |
+| A-REQ-010 | P1 (v1.1) | Stories | Stories show once (stories in v1.1, D-043) | 3.0 |
+| A-REQ-011 | P1 (v1.1) | Stories | Remote variant switch (stories in v1.1, D-043) | 3.0 |
+| A-REQ-012 | P0 | Account timing | Letter first, no sign-in required (18+ entry gate first; welcome screen at v1.0, D-043) | K-07 |
 | A-REQ-013 | P0 | Account timing | Keep the book sheet after the first letter | K-02 |
 | A-REQ-014 | P0 | Account timing | Later works locally (adults only) | K-11, K-07 |
 | A-REQ-015 | P0 | Account timing | Re-ownership of local data in one transaction | |
 | A-REQ-016 | P0 | Methods | Sign in with Apple on iOS | |
-| A-REQ-017 | P0 | Methods | Google sign-in | |
+| A-REQ-017 | P0 (v1.1) | Methods | Google sign-in (v1.1, D-044) | 3.0 |
 | A-REQ-018 | P0 | Methods | Email link and 6-digit code | |
 | A-REQ-019 | P1 | Methods | Ways to sign in (link and unlink) | |
 | A-REQ-020 | P1 | Methods | Apple on Android | |
@@ -148,7 +179,7 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | B-REQ-005 | P0 | Children | Expecting mode and Before You | |
 | B-REQ-006 | P0 | Dictionary | Automatic terms from names and signatures | |
 | B-REQ-007 | P0 | Family | Invite by link and code with explicit role | K-18 |
-| B-REQ-008 | P0 | Family | Web contribution page, no install | K-08 |
+| B-REQ-008 | P0 (v1.1) | Family | Web contribution page, no install (moved to v1.1, K-35) | K-08, K-35 |
 | B-REQ-009 | P0 | Family | Approval by either parent | |
 | B-REQ-010 | P0 | Family | Remove and leave with letter retention | |
 | B-REQ-011 | P0 | Privacy | Private by default; visibility per F9 | K-09 |
@@ -162,7 +193,7 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | B-REQ-019 | P1 | Personalization | Book themes and templates (extra themes Plus) | |
 | B-REQ-020 | P1 | Letters | Write to several children; sibling letters (sibling part behind counsel flag) | K-19 |
 | B-REQ-021 | P1 | Children | Merge duplicate books; move a letter | |
-| B-REQ-022 | P1 | Family | Hindi invite messages and Hindi web page | |
+| B-REQ-022 | P1 (v1.1) | Family | Hindi invite messages and Hindi web page (web page v1.1, K-35) | K-35 |
 | B-REQ-023 | P1 | Family | Auto-add, thank you, make all private | |
 | B-REQ-024 | P1 | Personalization | Author and child photos | |
 | B-REQ-025 | P2 | Later | Came-home date; Hindi app UI; leave letters after account deletion | |
@@ -170,7 +201,7 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | B-NFR-002 | P0 | Privacy | Tokens in URL fragment; hashes only | |
 | B-NFR-003 | P0 | Security | RLS mapping with access and parity tests | K-09 |
 | B-NFR-004 | P0 | Security | Invite and code rate limits | |
-| B-NFR-005 | P0 | Security | Web audio encrypted in the browser | |
+| B-NFR-005 | P0 (v1.1) | Security | Web audio encrypted in the browser (ships with the web page, K-35; in-app shared voice uses PRD-REQ-021) | K-35 |
 | B-NFR-006 | P0 | Accessibility | AX5, screen readers, web WCAG 2.2 AA | |
 | B-NFR-007 | P0 | Localization | Any script for names; locale dates | |
 | B-NFR-008 | P0 | Performance | First-run and web page budgets | |
@@ -188,7 +219,7 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | C-REQ-006 | P0 | Reminders | Copy rotation | |
 | C-REQ-007 | P0 | Reminders | Pause all; separate channels | |
 | C-REQ-008 | P1 | Reminders | Back-off | |
-| C-REQ-009 | P1 | Reminders | Lock-screen name toggle | |
+| C-REQ-009 | P0 (raised) | Reminders | Lock-screen name toggle, default off (remote config) | D-025, K-43 |
 | C-REQ-010 | P0 | Celebrate | Quiet milestones | |
 | C-REQ-011 | P0 | Celebrate | Birthdays and month-ages | |
 | C-REQ-012 | P0 | Celebrate | Pause celebrations per book | |
@@ -229,7 +260,7 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 |---|---|---|---|---|
 | PRD-REQ-001 | P0 | Consent | **One ask per session.** After the first letter, at most one permission or consent sheet per app session, in this order: Keep the book (A F3), reminder prime (C F1), analytics consent (LEGAL-REQ-003). Never stacked; never during recording, review or export. | K-01, K-02 |
 | PRD-REQ-002 | P0 | Consent | **Account creation sequence:** provider sign-in with the Terms notice and 18+ confirmation line (the entry gate, PRD-REQ-019, was already answered Yes; `age_attested` goes in the `terms` acceptance context), then the sensitive-data consent (`sensitiveConsent.*`), then sync. Each step records its own `policy_acceptances` row. | K-07, K-15 |
-| PRD-REQ-003 | P0 | Plus | **Notice schedule** in section 5, K-04, driven by RevenueCat webhooks with idempotency keys; email and in-app always, push only on the 3-day trial notice. | K-04 |
+| PRD-REQ-003 | P0 | Plus | **Notice schedule** in section 5, K-38 (replaces the K-04 day counts), recomputed from App Store snapshots (App Store Server Notifications V2 plus App Store Server API re-reads, ADR 0013) with idempotency keys; windows stored as data; nothing sent outside its hard window; email and in-app always, push only on the final trial notice. | K-04, K-34, K-38 |
 | PRD-REQ-004 | P0 | Privacy | **Author-only working material.** `raw_transcript`, `machine_edits` and `stt_meta` are readable only by the author, through a security-barrier view for everyone else. | K-09 |
 | PRD-REQ-005 | P0 | Children | **Child-input flag.** `together` prompts, "Write one together" and sibling letters are behind a `child-input` flag that is off in production until counsel signs off (LEGAL-REQ-059). | K-19 |
 | PRD-REQ-006 | P0 | Data | **Drop `safety_events`.** A new migration drops the table and its insert policy; tiers live in the local database only. | K-06 |
@@ -243,10 +274,13 @@ Priority: **P0** launch blocker, **P1** launch target or launch quarter, **P2** 
 | PRD-REQ-014 | P0 | Children | **Per-child sharing.** Invites, roles, approvals and "Family can read" are per child. An invite names exactly one child at launch (multi-book picker P1, defaulting to the current child). RLS and sync streams scope every read to the child's members. | K-12, K-09 |
 | PRD-REQ-015 | P0 | Plus | **Additional children are Plus.** A Free user may start one book. Starting another book while you already started a non-deleted book (`children.created_by` = you; hidden counts) needs Plus. **Books you joined as a co-parent do not count** (founder, 2 Oct). **Every child added together in first run is free**, whatever their dates (founder, 2 Oct); those books count as started books afterwards. A lapse never closes an existing book. Contributors are never gated. Server function `create_child` enforces the rule (first-run batch flag checked server-side: only on an account's first `create_child` call or batch); the client only shows the sheet. | K-12, K-28 |
 | PRD-REQ-016 | P0 | Analytics | **Product analytics, opt-in.** A typed event catalogue in `packages/analytics` covering entry, first run, capture, review, book, family, children, reminders, Plus, settings and errors. Enum, count, duration and bucket properties only; children as ordinals; random analytics id. Nothing is queued or sent before consent. | K-01 |
-| PRD-REQ-017 | P0 | Analytics | **Server aggregates for business totals.** Accounts, books, letters saved, family letters, trials, conversions and churn come from Postgres counts and RevenueCat, with no per-user content, so decisions do not depend on the consenting share. | K-01 |
+| PRD-REQ-017 | P0 | Analytics | **Server aggregates for business totals.** Accounts, books, letters saved, family letters, trials, conversions and churn come from Postgres counts and the purchase ledger (`store_subscriptions` and `store_notifications`, fed by App Store notifications), cross-checked against App Store Connect reports, with no per-user content, so decisions do not depend on the consenting share. | K-01, K-34 |
 | PRD-REQ-019 | P0 | Consent | **18+ entry gate, no local-only mode.** Before any first-run screen, story 4 action or invite flow, a neutral "Are you 18 or older?" (Yes, No, nothing preselected), plus iOS Declared Age Range where required. Yes is stored on the install as a boolean only. No, or an under-18 signal, shows a stop screen (the product is currently for adults 18 and over); nothing is created, recorded or stored; the stop screen stays for 24 hours (anti-retry) before the question can be asked again. A store signal or report after an account exists closes the account per Terms 2.1. Copy `ageGate.*` (mobile engineer); web page keeps its Send-time 18+ confirmation. | K-07, LEGAL-REQ-002 |
 | PRD-REQ-020 | P0 | Plus | **Read together free sessions.** A Free book allows 3 Read together sessions (a session starts when playback with word highlight begins), then Plus. The number is remote config `read_together_free_sessions` (default 3, audit-logged, C-NFR-009); copy that states the number reads it from config, and store and site copy change in the same release if it changes. Playing any single recording is always free. | K-11 |
 | PRD-REQ-018 | P0 | Analytics | **Withdrawal and deletion.** Turning analytics off stops sending within the session and calls `optOut()`; account deletion requests deletion of the analytics id's events from PostHog and Sentry within the published clock. | K-01, LEGAL-REQ-003 |
+| PRD-REQ-021 | P0 (pending D-032) | Family | **Shared voice.** A recording of a letter in a book with two or more members uploads, encrypted on the phone with a per-file key wrapped by a server-held key, so every member who can read the letter can play it (Free). Plus uploads every recording, private letters included, and restores them on a new phone. Downloading or playing an uploaded recording never checks entitlement. Deleting a letter or leaving a book removes cached copies on the next sync. Upload URLs are issued server-side only. | K-40, K-33 |
+| PRD-REQ-022 | P0 | Plus | **Purchase rules.** A purchase requires a signed-in account (Keep the book sheet first); contributors never see the Plus sheet (a quiet line instead); no offer appears in a book already covered by another parent; restore never moves an active subscription between two accounts. | K-34, D-036, D-047 |
+| PRD-REQ-023 | P0 | Legal | **Publisher identity.** The publisher (individual), domain, support and privacy contacts come only from `packages/brand` (`publisher`); the legal name is never written into code (`publisher.legalName` stays a TODO marker that no screen renders) and appears only in published legal documents and App Store Connect. Release builds fail if the domain, support email or privacy URL still holds a placeholder (BL-117). | K-36 |
 
 ### 3.5 Legal and data requirements (linked, not duplicated)
 All live in [ENGINEERING_REQUIREMENTS.md](../legal/ENGINEERING_REQUIREMENTS.md) (LEGAL-REQ) and [DELETION_AND_EXPORT_SPEC.md](../legal/DELETION_AND_EXPORT_SPEC.md) (DATA-REQ). P0 items are launch blockers.
@@ -289,6 +323,10 @@ All live in [ENGINEERING_REQUIREMENTS.md](../legal/ENGINEERING_REQUIREMENTS.md) 
 | (2 Oct) Under 18 not allowed at all; no local-only mode; clean stop screen | K-07; PRD-REQ-019; section 9 Q4 closed |
 | (2 Oct) About 13M analytics events a month at 100k families is accepted | K-01; section 7.8; section 9 Q8 closed |
 | (2 Oct) Company name and domain still pending; earlyletters.com, .app and .co reported available on 2 Oct | Section 9 Q5 stays open; `packages/brand` placeholders kept |
+| (3 Oct) Plus ships in v1.0 "via Apple subscription management to keep it Apple focused" | K-34; ADR 0013 (StoreKit 2 direct, no RevenueCat); PRD-REQ-003, -017, -022; D-001 |
+| (3 Oct) Family scope at launch: co-parent and family contributors in the app; web contribution page in v1.1 | K-35; section 3.0; D-002 |
+| (3 Oct) Full opt-in PostHog analytics at launch, as decided 2 Oct | K-01 stands; TDD 10 risk 15 recommendation declined; D-003 |
+| (3 Oct) Publish with a personal (individual) Apple Developer account; no LLC for now | K-36; launch gate 4; PRD-REQ-023; D-004, D-005; section 9 Q5 narrowed to the domain |
 
 ---
 
@@ -300,9 +338,10 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - **Conflict.** A section 7 proposed analytics on by default in the US; A-NFR-002 starts analytics after the first frame; ADR 0008 ties `defaultOptIn` to a consent sheet. Compliance register CR-082 and LEGAL-REQ-003 require consent "even if such data is considered to be anonymous". The Privacy Policy already says analytics are off until you say yes.
 - **Decision.** Analytics (PostHog) and crash reports (Sentry) are **opt-in**. Nothing leaves the device before a choice. The consent sheet is the third ask under PRD-REQ-001, shown on a later session after the first letter. Declining changes nothing, including Plus. Withdrawal in Settings > Privacy.
 - **Why.** Apple's wording is explicit; the Privacy Policy is already written this way; a rejection at review costs more than the lost data.
-- **Consequence.** Funnel numbers in A section 10 and C section 9 cover consenting users only. Core business numbers (accounts, letters saved, trials, conversions) come from server-side aggregates (Postgres counts, RevenueCat), which need no device analytics.
+- **Consequence.** Funnel numbers in A section 10 and C section 9 cover consenting users only. Core business numbers (accounts, letters saved, trials, conversions) come from server-side aggregates (Postgres counts, the entitlement ledger; RevenueCat until 1.3, K-34), which need no device analytics.
 - **Founder update, 2 Oct 2026: full product analytics are wanted.** This does not change consent; it changes scope. The catalogue covers the whole product (PRD-REQ-016), not only the funnel in C-REQ-034. Rules: allowlisted enums, counts, durations and buckets; children as ordinals (`first`, `second`, `third_plus`) and a `child_count_bucket` user property, never ids or names; no screen-name autocapture, replay or touches (ADR 0008); every property tagged L2 in the data map; consent copy in `analyticsConsent.*` (section 8). Business totals come from server aggregates (PRD-REQ-017).
 - **Founder update, 2 Oct 2026 (second set): volume accepted.** About 13M events a month at 100k families (section 7.8) is accepted; budget PostHog above the free tier. The catalogue is not capped for cost; the per-user ceiling in section 7.7 still applies.
+- **Founder update, 3 Oct 2026: confirmed for launch.** TDD 10 risk 15 recommended no third-party SDKs at v1.0; the founder kept full opt-in PostHog (and Sentry on the same switch) at launch (D-003). Release-gate crash rates come from App Store Connect and Xcode Organizer, which cover every user (TDD 06 P-7); analytics-id deletion happens at request time through a stateless function (TDD 05 X-02, BL-235).
 - **Docs changed.** A section 7 and A-NFR-002 revised; B-NFR-001 and C-REQ-034 revised (1.1). **Owner action (analytics engineer):** ADR 0008 states `defaultOptIn: false` and Sentry opt-in; publish the event catalogue in `docs/analytics` with an L-level per property; implement PRD-REQ-016 and 018 in `packages/analytics`. **Owner action (legal, privacy counsel):** approve `analyticsConsent.*` wording and the privacy label "Usage Data / Diagnostics, not linked, not tracking" for consenting users.
 
 ### K-02. Notification permission timing: B versus C (and A)
@@ -335,6 +374,7 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
   If a notice day is the child's birthday, it moves one day earlier (it stays inside every window). No reminder sends on a notice day.
 - **Why.** 18 days sits inside both the 15 to 21 day promise in the Terms and the 3 to 21 day ARL window, with margin for time zones. 30 days sits inside 15 to 45 and matches "about 30" in the Terms. The monthly 7-day notice honours UR R16 without a legal duty. Push only once keeps disclosures light.
 - **Docs changed.** C-REQ-024, -025, -026 and C section 4.3 revised. **Owner action.** LEGAL-REQ-047 table: annual trial "7 and 3" becomes "18 and 3"; monthly trial adds 7 days.
+- **Superseded 3 Oct 2026 by K-38.** TDD 05 X-06 and TDD 08 C-1 showed that D-3, "+/- 1 day" on D-30 and the birthday shift break Virginia, Massachusetts and the Terms' "at least 3 days before the last day to cancel". The schedule is now the K-38 table (hard windows, final trial notice at E-4d12h). LEGAL-REQ-047 was updated the same day.
 
 ### K-05. 90-day shutdown notice everywhere
 - **Conflict.** CR recommended at least 60 days; Terms 1.1.0 commit to 90 and record that the Privacy Policy and deletion spec were moved from 60 to 90; C-REQ-016 lists a "shutdown and portability pledge" without a number.
@@ -360,6 +400,7 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - **Decision.** **Split by surface.** The mobile app never uses anonymous auth (A stands). The web contribution page uses Supabase anonymous sign-in, created **at the first Send** (not on page load, per LEGAL-REQ-010), bound to the redeemed invite and the contributor's `child_members` row, with a hashed, revocable personal return link that restores the session on any browser. Anonymous identities are linkable to a full account when the contributor installs the app (manual linking on). Enable Supabase's recommended CAPTCHA for anonymous sign-ins if the per-IP limit or abuse requires it (provider would join the subprocessor list; **Unverified** which provider).
 - **Why.** A's two reasons do not apply on the web: the page needs network anyway, and one family's Send rate is far below 30 per hour per IP. A grandparent with no app, no email and no password is the core of B-REQ-008 and UR R14.
 - **Docs changed.** A section 0 decision 4 and B section 6 item 12 revised. **Owner action.** Verify anonymous-session role claims and linking (POLICY_VERSIONING note; B "to verify").
+- **1.3: deferred to v1.1 with the web page (K-35).** The design stands for v1.1, with TDD 04's correction that return visits go through a contributor gateway rather than a restored anonymous session (TDD 04 X-6, X-7). The `is_anonymous()` guards ship in v1.0 anyway (BL-114) so nothing depends on remembering them later.
 
 ### K-09. Raw transcripts are author-only
 - **Conflict.** `entries_select` returns whole rows to book members, including another author's `raw_transcript`, `machine_edits` and `stt_meta` (DELETION spec F9, OQ-8). Export already excludes others' raw transcripts. B F9 does not say.
@@ -402,6 +443,7 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - **Decision.** The label and body appear **only** in Settings > Help and Legal > About (caption style, no badge colour) and as the last paragraph of the store description. Never on Tonight, Listening, Review, the Book, the intro, the sign-in sheet or the Plus sheet. Not in the app name or subtitle. Optional App Store promotional text may say "Now in beta". All beta strings are removed in the same release that removes Terms 16.4.
 - **Founder decision, 2 Oct 2026 (second set): the beta ends only when the founder says so.** No version, date, crash-free or other metric trigger. Until then the label, the About body, the store line and Terms 16.4 stay. Ending it is one release: remove `settings.about.beta.*`, `store.promotionalTextBeta` and the store beta paragraph, publish Terms with 16.4 removed (version bump per POLICY_VERSIONING), update in-app-disclosures section 4.
 - **Docs changed.** `about.beta.*` and the store beta line added (section 8); C-REQ-016 lists About.
+- **1.3: store placement amended by recommendation K-37 (needs founder OK).** In-app placement stands.
 
 ### K-14. "It can make mistakes" note
 - **Decision.** One-time card on Review the first time a spoken letter is transcribed on the install, before the first save; never for typed letters; never again as a nag. Always available under Settings > Help and Legal > How transcription works. Uses "fix", not "tidy" (VOICE). Same text once on the web page after a contributor's first spoken letter.
@@ -465,7 +507,7 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 
 ### K-28. Plus scope: per book versus per account
 - **Conflict.** C-REQ-021 made the entitlement per book (C OQ3 open). With additional children behind Plus, a per-book model would need one purchase per extra child, but Apple allows a person one active subscription per subscription group, so a third child could never be funded. Gifts (C-REQ-030) are naturally per book.
-- **Decision.** Plus is held by the subscriber's account. A book has Plus when any of its parents holds Plus or a gift is active on it. Every member's Plus features then work in that book (co-parent included). Creating an additional book checks the creator's own entitlement or the twins exception. RevenueCat `appUserID` stays a random id mapped server-side.
+- **Decision.** Plus is held by the subscriber's account. A book has Plus when any of its parents holds Plus or a gift is active on it. Every member's Plus features then work in that book (co-parent included). Creating an additional book checks the creator's own entitlement or the twins exception. ~~RevenueCat `appUserID` stays a random id mapped server-side.~~ (1.3, K-34) The App Store `appAccountToken` is a random id per account (`app_account_tokens`), mapped server-side; never the profile id, email or analytics id.
 - **Why.** Store mechanics; one price for any number of children matches "additional children are part of Plus".
 - **Docs changed.** C F4, C-REQ-021, OQ3. **Owner action (data architect):** `entitlements` table keyed by profile, plus `book_has_plus(child_id)` function used by RLS-free feature checks; gift grants keyed by child.
 
@@ -491,6 +533,67 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - **Conflict.** Site privacy point 3 and the recordings FAQ listed "share them with family" as a separate way recordings leave the phone; Terms 12.1 lists only backup and the web page; Lawyer 2 H4 row 20 asked the PRD B owner to confirm.
 - **Decision (product, 2 Oct 2026).** Confirmed: in the app, family hear a recording only once it is backed up, because member playback uses the per-child key grants on backed-up files (ADR 0006 section 3, `book.recordingElsewhere`). Sharing is not a separate exit. Copy now says recordings leave the phone only if you back them up or choose cloud transcription, and family can hear a recording once it is backed up. Web contributors' own recordings leave their browser by design (B-NFR-005), which Terms 12.1 already states.
 - **Owner action (legal, terms counsel).** Terms 12.1 should also name cloud transcription (consented, ADR 0002) as an exit.
+- **1.3:** with family in the app at v1.0, K-33 means Free families could never hear each other's voices. K-40 proposes shared voice.
+
+### K-34. Plus through Apple only, StoreKit 2 direct (founder, 3 Oct 2026)
+- **Conflict.** ADR 0007, TDD 08, C-REQ-021 and LEGAL-REQ-029, -031, -037, -047, -049 assumed RevenueCat. TDD 10 recommended shipping 1.0 free.
+- **Founder decision.** Plus ships in v1.0 "via Apple subscription management to keep it Apple focused".
+- **Decision.** Auto-renewable subscriptions sold, managed, cancelled and refunded only through the App Store. StoreKit 2 through `expo-iap`; App Store Server Notifications V2 to an Edge Function; App Store Server API for verification and reconcile; random `appAccountToken` per account; no third-party billing processor (ADR 0013, which compares the two options and lets the founder override until week 6). Prices, trials, per-account entitlement (K-28), the additional-book rule (PRD-REQ-015) and the keep-and-leave rule are unchanged. New PRD-REQ-022 (account required, contributors never offered, no double offers, restore never moves an active plan).
+- **Why.** Founder direction; one fewer processor, DPA, SDK and console; every cancel and refund path is Apple's own screen.
+- **Docs changed.** PRD-REQ-003, -017, -022; K-28; checklist 6.5; 7.2; ADR 0013; ADR 0007 status; LEGAL-REQ-029, -031, -037, -047, -049, -058; subprocessors 1.2.0; privacy-policy 1.3.0; privacy labels 1.2.0; data-policy 1.1.0; DATA_CLASSIFICATION 1.2.0; DELETION_AND_EXPORT_SPEC 1.1.0; `plus.legal.cancel` (Apple only; App Review 2.3.10). **Owner action (analytics engineer):** TRACKING_PLAN lifecycle totals from the entitlement ledger instead of RevenueCat. **Owner action (PRD C owner):** C 4.2 refunds row and C-REQ-021 wording follow ADR 0013 (C carries a 1.3 banner meanwhile).
+
+### K-35. Family contributors in the app at v1.0; web contribution page in v1.1 (founder, 3 Oct 2026)
+- **Conflict.** B-REQ-008 made the web page P0 for grandparents without the app; TDD 10 recommended co-parent only for v1.0.
+- **Founder decision.** Co-parent and family contributors in the app at v1.0; the web contribution page in v1.1.
+- **Decision.** v1.0 ships Family roles, invites by link or code naming one child, approvals, leave and remove, "Family can read", per-child sharing and family-letter push, all in the iOS app. Invite links open the app or, if not installed, the App Store page; invite messages say so (`family.shareMessage.*` updated). B-REQ-008, PRD-REQ-007, the browser part of B-NFR-005 and B-REQ-022 move to v1.1, and LEGAL-REQ-010 and -035 bind from then (counsel to confirm). The visibility model moves into one `book_access` table (D-024) and the cross-child leak test gates v1.0. Contributors see the child's name, nickname and birthday month and day, never the due date (D-039).
+- **Why.** Grandparents writing is a core research finding (UR R14); the web page is a second product and the riskiest security surface (TDD 10 risk 10, TDD 04 finding 2).
+- **Consequence.** v1.0 contributors need an iPhone. Overseas grandparents without the app wait for v1.1 (section 9 Q6 now applies to v1.1).
+- **Docs changed.** Section 2, 3.0; checklist 6.2 web line marked v1.1; `packages/content` share messages, store and site family copy (no "no app needed" promise); B carries a 1.3 banner.
+
+### K-36. Individual publisher (founder, 3 Oct 2026)
+- **Conflict.** Launch gate 4, compliance register (California LLC), Terms (counsel note: "form the LLC before launch"), Privacy Policy CN-1 and TDD 10 M0 all assumed an LLC and D-U-N-S.
+- **Founder decision.** Publish with a personal (individual) Apple Developer account; no LLC for now.
+- **Decision.** The founder's legal name is the App Store seller and the provider named in Terms, Privacy Policy, Subscription terms and the Consumer Health Data policy, with a contact address and email. `packages/brand` keeps a TODO placeholder for the name (PRD-REQ-023). D-U-N-S and LLC leave the critical path; the domain and support email stay on it (D-005).
+- **Implications** (detail in `docs/DECISIONS.md` D-004): no liability shield (Terms and disclaimers help, do not replace an entity; reconsider before scale); App Review Guideline 5.1.1(ix) says apps "that require sensitive user information should be submitted by a legal entity", a medium-likelihood, high-impact risk for a baby memory book that can hold health details, mitigated by positioning and a founder hedge decision by 27 Nov; transfer to an organisation account later is possible after a first release, with Apple's subscription and Sign in with Apple transfer steps.
+- **Docs changed.** Launch gate 4; checklist 6.7; legal documents (Terms 1.4.0, Privacy 1.3.0, Subscription terms 1.3.0, CHD 1.1.0, register 1.2.0); `packages/brand`.
+
+### K-37. Where "beta" appears (recommended, needs founder OK)
+- **Conflict.** K-13 puts a beta paragraph in the store description and optional "Now in beta" promotional text. App Review Guideline 2.2 (opened 3 Oct 2026): "Demos, betas, and trial versions of your app don't belong on the App Store - use TestFlight instead." (TDD 10 risk 4, contradiction 11.)
+- **Recommendation.** The pre-launch beta is TestFlight (C0, then C1; D-045). The v1.0 listing has no beta paragraph and no beta promotional text. The in-app About label, About body and Terms 16.4 stay until the founder ends the beta (K-13 founder decision unchanged).
+- **On founder OK:** remove `storeListing.description`'s last paragraph and `storeListing.promotionalTextBeta`; in-app-disclosures section 4 marks the store line not used. Until then the strings stay in `packages/content` and are simply not pasted into App Store Connect at M13 without the founder's answer (D-030).
+
+### K-38. Auto-renewal notice windows (replaces K-04's day counts)
+- **Conflict.** K-04 (D-3 final trial notice, birthday shift one day earlier), LEGAL-REQ-047 (D-7 and D-3 for annual trials; "+/- 1 day" on D-30), Lawyer 1 H1 (trials at least 3 days before the last day to cancel, which is trial end minus 24 h, so D-4; annual renewal about D-30 because Virginia and Utah need at least 30 and Massachusetts at most 30 before the cancel deadline), TDD 05 X-06 and TDD 08 4.3 (agree except the long-trial window).
+- **Decision.** The D-022 table in `docs/DECISIONS.md` is the schedule: trial final at `E - 4d 12h` in `[E-5d, E-4d]` with the one push; trial long at `E - 18d` in `[E-21d, E-16d]`; trial week at `E - 7d` in `[E-8d, E-5d]`; annual renewal at `E - 30d 12h` in `[E-31d, E-30d]` and at `E - 7d` in `[E-8d, E-6d]`; anniversary reminder for monthly plans; price increase at `effective - 25d` in `[-30d, -7d]` with the store's opt-in consent. Nothing is sent outside its window; a miss pages the founder. Emails ignore the birthday; a push or card avoids the birthday only inside its window. Counsel confirms the table once (BL-104).
+- **Docs changed.** PRD-REQ-003; K-04 note; checklist 6.5; LEGAL-REQ-047 (ENGINEERING_REQUIREMENTS 1.1.0). **Owner action (PRD C owner):** C-REQ-025 and C-REQ-026 day counts follow K-38 (C banner meanwhile).
+
+### K-39. Sync engine (recommended, needs founder OK)
+- **Conflict.** ADR 0004 picks PowerSync with op-sqlite; the app ships expo-sqlite (BL-032); TDD 02 found PowerSync cannot replicate the `book_entries` view; TDD 05 OQ-L15 blocks PowerSync for L4 data until a written no-training clause exists; TDD 06 P-1 found a restore could delete letters from every device under PowerSync's normal resync; TDD 10 recommends an outbox and cursor on expo-sqlite.
+- **Recommendation.** D-023: outbox push and cursor pull on expo-sqlite for v1.0, one visibility predicate (`book_access`, D-024), a restore epoch, and PowerSync revisited at 10k families. Needs the founder's OK by 16 Oct because it reverses an accepted ADR; ADR 0004 carries a status note. The `LocalStore` interface and migrator (BL-111) proceed now because both options need them.
+- **Docs changed.** 7.2 and 7.3 budgets name the sync push and pull generically; BACKLOG BL-173 is `needs-decision`.
+
+### K-40. Shared voice (recommended, needs founder OK)
+- **Conflict.** With family in the app (K-35), a grandparent's recording stays on the grandparent's phone unless backed up (K-33), and backup is Plus (C 4.1). In a Free family nobody would hear Nani's voice, against "Read together, in their voices" and the free family promise (TDD 10 contradiction 9).
+- **Recommendation.** PRD-REQ-021 and D-032: one encrypted upload pipeline with a simple server-wrapped key (TDD 10's v1.1 scheme, moved into v1.0). Free uploads recordings of letters in shared books; Plus uploads every recording and restores them. Vault mode and the full ADR 0006 hierarchy stay later. Needs the founder's OK by 23 Oct; if declined, family letters are text-only at v1.0 (ROADMAP section 4, first cut).
+- **On founder OK:** recordings claims in `packages/content` (K-21, K-33 copy), the Privacy Policy short version and section 4, and Terms 12.1 change in one PR (BL-205).
+
+### K-41. Retention clocks
+- **Conflict.** LEGAL-REQ-033 said invite hashes 30 days and ops and security logs 12 months; DATA-REQ-060, data-policy, the migration and K-18 said 90 days for invites; DATA-REQ-066 keeps `audit_events` 24 months (TDD 02 finding 10, TDD 04 X-8, TDD 05 X-14, X-27).
+- **Decision.** Invite and return-link hashes: 90 days after use, revocation or expiry (D-020). `audit_events`: 24 months; `ops_audit_log`, `security_events`, escrow-unwrap logs: 12 months (D-021). Both clocks in Privacy Policy section 10. LEGAL-REQ-033 updated 3 Oct (counsel confirms OQ-L9).
+
+### K-42. Free audio durability and the "only on this phone" claim (recommended, needs founder OK)
+- **Conflict.** `settings.recordings.onPhoneBody` says recordings "live only on this phone" without backup, but app documents are in the user's iCloud device backup by default (TDD 10 risk 8, contradiction 10; Lawyer 2 L1; TDD 05 X-29).
+- **Recommendation.** D-033: keep recordings in a backed-up directory (the model stays excluded) and say "on this phone and in your iPhone's own backup, if you use one". Restore drill each release candidate (BL-284). The copy changes on the founder's OK.
+
+### K-43. TDD resolutions applied without changing founder decisions
+- 18+ gate stores `ageGate.passed` and, after a No only, `ageGate.stoppedAt`; no `ageAttestedAt`; no instant retry (D-026; implements PRD-REQ-019).
+- Lock-screen child names off by default, remote-config flippable; C-REQ-009 raised to v1.0 (D-025).
+- Letter text never capped for Dynamic Type (D-027); dates in the device locale (D-028); `destructive` colour token (D-029).
+- Remote config and kill switches in a Supabase table (D-035, BL-022).
+- Read together sessions counted per book on the device in v1.0 (D-037).
+- `create_child` takes client ids, a first-run batch capped at 6, and honours books created offline under Plus (D-038).
+- Minimum iOS 17 (D-040); two Supabase environments and an agent fence for `supabase/` and auth (D-041).
+- Hindi script default is open until the experiment (D-031, 30 Oct).
 
 ### Owner follow-ups (not editable by product)
 | Owner | Action | Entry |
@@ -510,6 +613,12 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 | Data architect | `create_child`: count only books the caller started; first-run batch exemption; `read_together_free_sessions` remote config key | PRD-REQ-015, PRD-REQ-020 |
 | Legal, terms counsel | Terms 12.1 adds cloud transcription as an exit; confirm print deferral wording (Terms 1.3.0) | K-33, K-32 |
 | Brand owner | `packages/content/BRAND.md`: remove "Printed books ... come later" or mark it roadmap; "by default" on on-device transcription | K-32, K-21 |
+| Analytics engineer | `docs/analytics/TRACKING_PLAN.md`: lifecycle totals from the entitlement ledger and App Store Connect, not RevenueCat | K-34 |
+| PRD C owner | C-REQ-021, C 4.2 refunds row, C-REQ-025, C-REQ-026 follow ADR 0013 and K-38; add PRD-REQ-022's account-first purchase rule to C | K-34, K-38 |
+| PRD B owner | B F6 (web page) marked v1.1; invite flow F5 for in-app contributors; contributor child-data view (D-039) | K-35 |
+| PRD A owner | Welcome screen replaces the story intro at v1.0; Google sign-in v1.1 | D-043, D-044 |
+| Data architect | `book_access`, approvals, client ids, consent gates, billing tables `app_account_tokens`, `store_subscriptions`, `store_notifications` (BACKLOG M1, M5, M8) | K-34, K-35, K-39 |
+| Founder | D-023 by 16 Oct; D-032 by 23 Oct; D-030 before the listing; D-004 hedge by 27 Nov; domain in week 1 | K-36, K-37, K-39, K-40 |
 
 ---
 
@@ -520,8 +629,8 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 ### 6.1 Entry and account
 - [ ] [auto] Cold start never waits on network: with airplane mode on, the first route renders and the splash hides (A-REQ-002).
 - [ ] [auto] Fresh install: user saves a first letter with no sign-in, no OS permission prompt other than the microphone, and no network request to PostHog or Sentry (A-REQ-012, LEGAL-REQ-003, LEGAL-REQ-007).
-- [ ] [auto] Story intro: with VoiceOver on, auto-advance is off and each story is one element with Next and Previous actions (A-REQ-007).
-- [ ] [auto] After the first save, the Keep the book sheet opens with Apple, Google, Email and Later; Later keeps record, review, save, book, export working (A-REQ-013, A-REQ-014).
+- [ ] [auto] (1.3) The welcome screen is one VoiceOver-navigable page with Start a book, I was invited and Sign in reachable at AX5 (A-REQ-005, D-043). ~~Story intro auto-advance check (A-REQ-007)~~ moves to v1.1 with the stories.
+- [ ] [auto] After the first save, the Keep the book sheet opens with Apple, Email and Later (Google in v1.1, D-044); Later keeps record, review, save, book, export working (A-REQ-013, A-REQ-014).
 - [ ] [auto] Fresh install: before any first-run screen, story 4 action or invite flow, the app asks "Are you 18 or older?" with nothing preselected (PRD-REQ-019, LEGAL-REQ-002).
 - [ ] [auto] Answering No (or an under-18 Declared Age Range signal) shows the stop screen; no child row, letter, recording, dictionary term, auth user or network request exists afterwards; there is no path to record or write; relaunching within 24 hours shows the stop screen again (PRD-REQ-019).
 - [ ] [auto] Answering Yes stores only a boolean on the install (no age or birth date anywhere on the device or server) and the gate never shows again on that install (PRD-REQ-019).
@@ -536,8 +645,11 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] Only name plus birthday or due date are required; nothing asks for surname, gender, photo or contacts (B-REQ-001).
 - [ ] [auto] A Hindi plus Devanagari choice transcribes with Hindi enabled and renders Devanagari, untranslated (B-REQ-003).
 - [ ] [auto] A contributor calling invite creation is rejected; a parent invite carries an explicit role (B-REQ-007; `create_child_invite` fix, LEGAL-REQ-024).
-- [ ] [manual] A grandparent without the app records, plays back and sends in 4 taps or fewer after microphone permission in iOS Safari and Android Chrome, with an 18+ confirmation as part of Send (B-REQ-008, LEGAL-REQ-010).
-- [ ] [auto] A web page load sends nothing but the invite token check until Send; the anonymous session is created at Send (K-08).
+- [ ] [manual] (1.3) A grandparent invited as Family installs the app from the invite link, passes the 18+ gate, signs in, and saves a first letter to the named child's book; both parents see it as pending (B-REQ-007, B-REQ-009, K-35).
+- [ ] [auto] (1.3) An invite names exactly one child; the Family member sees nothing of a sibling's book; a contributor without "Family can read" sees only their own letters (PRD-REQ-014, B-REQ-011).
+- [ ] [auto] (1.3, if D-032 is approved) A parent plays a contributor's recording from a shared book on their own phone; a Free single-member book uploads no audio; deleting the letter removes the cached copy on the next sync (PRD-REQ-021).
+- [ ] ~~[manual] A grandparent without the app records ... in iOS Safari and Android Chrome (B-REQ-008, LEGAL-REQ-010).~~ v1.1 (K-35).
+- [ ] ~~[auto] A web page load sends nothing but the invite token check until Send (K-08).~~ v1.1 (K-35).
 - [ ] [auto] A contributor's letter is pending for both parents, invisible to other contributors, and no control edits it (B-REQ-009).
 - [ ] [auto] A parent calling `delete_entry()` on another author's letter fails; no UI offers it (DATA-REQ-015).
 - [ ] [auto] Deleting the account of the parent who created a book leaves the co-parent's and contributors' letters intact (DATA-REQ-012).
@@ -564,8 +676,10 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] The Plus sheet never appears at launch, during recording or export, in the Book list, on a birthday, or during first run (C-REQ-023, K-12).
 - [ ] [auto] Neither plan is preselected; price, period, auto-renewal, trial end date (if eligible) and cancel route are visible at default size and wrap at AX5 (C-REQ-022, LEGAL-REQ-046).
 - [ ] [auto] A trial-ineligible user sees no "free" wording (C-REQ-022).
-- [ ] [auto] Notice scheduler with clock control sends exactly the K-04 schedule: annual renewal on day 30 and day 7; annual-plan trial on day 18 and day 3; monthly trial on day 7 and day 3; one push only at day 3; annual reminder for a 12-month monthly subscriber (PRD-REQ-003, LEGAL-REQ-047).
-- [ ] [auto] Each purchase writes one `auto-renewal-terms` acceptance matching the RevenueCat transaction (LEGAL-REQ-049).
+- [ ] [auto] Notice scheduler with clock control sends exactly the K-38 schedule over a synthetic year: annual renewal inside `[E-31d, E-30d]` and `[E-8d, E-6d]`; annual-plan trial inside `[E-21d, E-16d]` and `[E-5d, E-4d]`; monthly trial inside `[E-8d, E-5d]` and `[E-5d, E-4d]`; one push only with the final trial notice; annual reminder for a 12-month monthly subscriber; nothing outside a window; a cancelled renewal skips its pending notices (PRD-REQ-003, LEGAL-REQ-047).
+- [ ] [auto] Each purchase writes one `started` and exactly one `completed` `auto-renewal-terms` acceptance matching the App Store transaction (LEGAL-REQ-049, D-049).
+- [ ] [auto] A signed-out user tapping a Plus feature sees the Keep the book sheet before any Plus sheet; a contributor never sees the Plus sheet; no offer appears in a book covered by the other parent (PRD-REQ-022).
+- [ ] [auto] A forged or duplicated App Store notification changes nothing (JWS verification, `notificationUUID` dedupe, state re-read from the App Store Server API) (ADR 0013).
 - [ ] [auto] With the entitlement service unreachable and a lapsed account, write, read, play, export and download backed-up audio all succeed with no Plus UI (C-NFR-004, LEGAL-REQ-050).
 - [ ] [auto] A lapsed user keeps both child books writable; creating a third shows the Plus sheet (C-REQ-028).
 - [ ] [manual] Restore on a new iPhone shows Plus within 10 seconds (C-REQ-020).
@@ -576,7 +690,7 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] Every Settings row, including each consent and Export and Delete, is reachable in 2 taps or fewer (C-REQ-016, LEGAL-REQ-008).
 - [ ] [auto] A lapsed, offline user exports a ZIP with every own entry (raw transcript, edits, final text), audio, photos, PDF and `account.json`; family letters have no raw transcript (C-REQ-017, LEGAL-REQ-034, DATA-REQ-050).
 - [ ] [auto] Account deletion: export offered first, subscription notice with manage link before confirm, 30-day undo, then a cross-system verification script finds no remaining rows or objects except pseudonymised acceptances and the suppression hash (C-REQ-019, LEGAL-REQ-029).
-- [ ] [manual] `https://<domain>/delete-account` completes a deletion request without the app (LEGAL-REQ-030).
+- [ ] [manual] `https://<domain>/delete-account` explains in-app deletion and accepts a deletion request by email, handled by the runbook within LEGAL-REQ-031 times (v1.0 reading of LEGAL-REQ-030, D-042; the full web flow ships before Android).
 - [ ] [auto] Purge job deletes tombstones older than 30 days; backups bound to 7 days (LEGAL-REQ-031, DATA-REQ-030).
 - [ ] [auto] Settings > Help and Legal > About shows the beta label and body; no beta string appears on Tonight, Listening, Review, Book, intro, sign-in or Plus screens (K-13). The label has no date, version or metric switch; only a release removes it (K-13, founder 2 Oct).
 
@@ -588,7 +702,9 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] Log canary scan finds zero fixture names, letter text or tokens in any log, URL, push payload or analytics event (LEGAL-REQ-014).
 - [ ] [auto] AI gateway returns 403 without an active `ai-processing` consent and for any `source='web'` entry without the contributor's own consent (LEGAL-REQ-004, LEGAL-REQ-005).
 - [ ] [manual] Terms, Privacy Policy (with the K-10 sentence fixed), Subscription terms and Consumer Health Data Privacy Policy are published at versioned URLs and linked in-app and in the store listing.
-- [ ] [manual] `packages/brand` has the real legal name and domain; no `example.com` anywhere in the build.
+- [ ] [manual] `packages/brand` has the real domain, support email and privacy URL; no `example.com` anywhere in the build; the publisher legal name appears in the published legal documents and App Store Connect only, never in code (PRD-REQ-023, K-36).
+- [ ] [manual] (1.3) The store listing and promotional text contain no "beta" wording unless the founder keeps it against K-37; the category is Lifestyle; review notes describe a family memory journal that does not require health information (K-36, K-37).
+- [ ] [auto] (1.3) No string in the iOS app or its store metadata names another mobile platform or store (App Review 2.3.10).
 - [ ] [auto] No product, store or website string mentions printed books, print or ordering a book (K-32).
 
 ### 6.8 Children (multi-child)
@@ -641,13 +757,13 @@ Reference devices: **iPhone SE (3rd gen)** for budgets, plus a current iPhone; A
 | Auth token exchange | `signInWithIdToken`, `verifyOtp` | 1.5 s | 3 s | Yes |
 | Read RPC and REST (RLS) | `policy_actions_needed`, invite lookup, member list | 300 ms | 800 ms | Yes |
 | Write RPC | `accept_child_invite`, `create_child_invite`, `review_family_letter`, `leave_child` | 500 ms | 1.2 s | Yes |
-| Sync upload batch | PowerSync `uploadData`, up to 50 ops | 800 ms | 2 s | Yes |
+| Sync upload batch | Outbox push RPC (or PowerSync `uploadData` if D-023 is declined), up to 50 ops as one bulk upsert | 800 ms | 2 s | Yes |
 | Edge Function, light | invite redemption, escrow unwrap, notice scheduler calls | 600 ms | 1.5 s (cold start included) | Yes |
 | Server transcription gateway (consented only) | up to 2 minutes of audio | 4 s | 10 s | No |
 | Storage upload start | signed URL plus first byte of audio upload | 1 s | 2.5 s | No |
-| Store webhook processing | RevenueCat to entitlement row | 5 s | 60 s (reconcile) | Yes |
+| Store notification processing | App Store Server Notification V2 to entitlement row (re-read from the App Store Server API) | 5 s | 60 s (reconcile) | Yes |
 | Entitlement active after store success | client sees Plus | 5 s | 10 s | Yes (C-NFR-002) |
-| Web contribution page | LCP on 4G, page weight | LCP 2.5 s; 300 KB or less | | Yes (B-NFR-008) |
+| Web contribution page (v1.1) | LCP on 4G, page weight | LCP 2.5 s; 300 KB or less | | Yes when it ships (B-NFR-008) |
 
 Error budget: server 5xx rate under 0.1% per endpoint class per day; auth success 97% per method weekly (A-NFR-013).
 
@@ -665,7 +781,7 @@ Error budget: server 5xx rate under 0.1% per endpoint class per day; auth succes
 ### 7.4 Offline behaviour
 - Works fully offline: launch, intro, first-run profile, record, on-device transcription (once the model is on the phone), review, save, book, playback of local audio, Read together on local audio, export, local reminders, settings that do not need the server.
 - Before the on-device model is ready (574 MB, downloads after first run, Wi-Fi by default, resumable): typed letters work; spoken letters save the audio and transcribe when the model arrives, or via server transcription only with consent.
-- Needs network, with honest copy and nothing lost: sign-in, invites, approvals (queued visibly), backup, purchases and restore, web contribution.
+- Needs network, with honest copy and nothing lost: sign-in, invites, approvals (queued visibly), backup and shared voice uploads, purchases and restore, web contribution (v1.1).
 - Queued writes survive app kill and reboot; "Not sent yet" state is visible; zero data loss in a kill-during-save test (500 iterations, gate).
 
 ### 7.5 Stability
@@ -716,7 +832,7 @@ Assumptions from ARCH section 7: 2.2 members per family; 20 entries per family p
 | Database size | Under 8 GB | About 150 GB |
 | Cumulative backed-up audio | About 115 GB | About 11.4 TB |
 
-All section 7.2 budgets must hold at these loads. Load-test at **2 times the 100k targets** in staging before the product passes 25k families; load-test at 2 times the 1k targets before public launch (gate). PowerSync concurrent-client plan must be sized before passing 1k concurrent clients.
+All section 7.2 budgets must hold at these loads. Load-test at **2 times the 100k targets** in staging before the product passes 25k families; load-test at 2 times the 1k targets before public launch (gate). PowerSync concurrent-client plan must be sized before passing 1k concurrent clients (only if D-023 is declined and PowerSync is used).
 
 ### 7.9 Security and privacy (summary)
 TLS 1.2 or later everywhere, no ATS exceptions (LEGAL-REQ-021); RLS on every table with access and parity tests (LEGAL-REQ-024); tokens in Keychain or Keystore only (A-NFR-008); content never in URLs, logs, pushes or analytics (LEGAL-REQ-014); no ad or tracking SDKs (LEGAL-REQ-016); kill switches effective within 5 minutes (LEGAL-REQ-040).
@@ -794,6 +910,19 @@ Added in version 1.2 (2 Oct, founder decisions and Lawyer 2 H4):
 | `store.description`, `site.faq` | No print promises; export described as letters, recordings and a PDF; Read together free for 3 sessions then Plus; twins or more added together at setup are free | K-32, K-11, PRD-REQ-015 |
 | `children.add.plusNote`, `joinedNote` (new), `twinsHelp` | First book you start is free; joined books do not count; the Add a child sheet makes no twins price promise (that exemption is first run only) | PRD-REQ-015 |
 
+Added in version 1.3 (3 Oct, founder decisions of 3 Oct; `npx vitest run` in `packages/content`: 16 of 16; `npm run typecheck`: clean):
+
+| Key | Now | Entry |
+|---|---|---|
+| `family.shareMessage.imessage`, `whatsapp` | The invite link opens the free app or helps the invitee get it; no web-page promise in v1.0 | K-35 |
+| `plus.legal.cancel` | "...or in your Apple Account subscriptions." (no other platform named in the iOS app; App Review 2.3.10) | K-34 |
+| `storeListing.description` (family section) | Family add letters "from the free app on their own phone" | K-35 |
+| `site.faq` "Can grandparents add letters?" | Names the free app on their phone | K-35 |
+| `web.*` comment, `store.en.ts` header comments | Web page ships in v1.1; store beta strings flagged pending D-030 | K-35, K-37 |
+| `packages/brand` | `publisher` (individual, TODO placeholders for name, domain, emails, privacy URL); `company` kept as an alias for existing imports | K-36 |
+
+Not changed in 1.3, waiting for the founder: store beta paragraph and `promotionalTextBeta` (K-37, D-030); recordings claims for shared voice (K-40, D-032); "only on this phone" durability line (K-42, D-033). Not changed, owner tasks: `ageGate.stopBody` brand literal and the retired `ageGate.mistakeButton` (BL-037, D-026); lock-screen-safe notification variants (BL-157, D-025).
+
 Not changed here (owner follow-ups): "tidy" wording (K-26); paywall legal strings from in-app-disclosures section 3, which need the content test's placeholder allowlist extended with `monthlyPrice`, `annualPrice`, `date` and `period` when C builds the sheet; `BRAND.md` pillar text "On-device transcription only fixes" should gain "by default" at the next brand review.
 
 ---
@@ -810,12 +939,23 @@ Resolved 2 Oct 2026 (second set of founder decisions; kept for the record):
 
 Still open:
 
-5. **Company name and domain.** Still pending founder choice. The founder reports earlyletters.com, earlyletters.app and earlyletters.co all available (checked 2 Oct 2026; not re-verified here, and availability can change until registered). `packages/brand` keeps its placeholders. This blocks universal links, SMTP, the Apple Services ID, legal URLs, store submission and BL-053; registering the chosen domain (and ideally the other two as defensive redirects) is the unblocking step.
-6. **Overseas grandparents.** Confirm the web page stays reachable worldwide (register recommendation). If counsel later asks for a geo-block, the feature effectively disappears for them; that is a founder call.
+5. **Domain** (company resolved 3 Oct: individual publisher, K-36). Still pending founder choice of the domain. The founder reports earlyletters.com, earlyletters.app and earlyletters.co all available (checked 2 Oct 2026; not re-verified here, and availability can change until registered). This blocks universal links, SMTP, the Apple Services ID, legal URLs, the bundle id, store submission and BL-053; registering the chosen domain (and ideally the other two as defensive redirects) in week 1 is the unblocking step (BL-100).
+6. **Overseas grandparents (now a v1.1 question, K-35).** Confirm the web page stays reachable worldwide when it ships (register recommendation). At v1.0 overseas grandparents need the app, which is available only on the US App Store (LEGAL-REQ-058). If counsel later asks for a geo-block, the feature effectively disappears for them; that is a founder call.
 9. **First-run sibling scope (confirm the reading).** The decision says twins "or multiple children" added together in first run all stay free. 1.2 applies it literally: any children added in first run, including siblings with different birthdays, are free, which also guarantees no paywall in first run. If you meant only same-date multiples (twins, triplets), say so; the rule becomes one condition in `create_child` and the first-run "Add another child" step must then explain that a sibling with a different date is added later (Plus).
-10. **Second consent at first family share (Lawyer 2 HN-4, counsel first).** Washington may need a sharing consent separate from the sync consent. Recommended: one extra tap the first time you invite family or add a letter to a shared book. Product supports it; it waits for counsel's answer.
+10. **Second consent at first family share (Lawyer 2 HN-4, counsel first).** Washington may need a sharing consent separate from the sync consent. Recommended: one extra tap the first time you invite family or add a letter to a shared book. Product supports it; it waits for counsel's answer. Now on the v1.0 path because family ships at launch (D-050, needed by week 6).
 
-Owner actions outside product (tracked, not founder questions): ADR 0008 opt-in wording; LEGAL-REQ-033 and -047 table edits; Privacy Policy section 12 sentence; Subscription terms and in-app-disclosures "listening" wording; DESIGN_LANGUAGE real-name example; BRAND.md print line and "by default"; Terms 12.1 cloud transcription exit (K-33).
+Added 3 Oct 2026 (full entries in `docs/DECISIONS.md`; the founder answers there):
+
+11. **Sync engine** (D-023, K-39): outbox and cursor on expo-sqlite instead of PowerSync, reversing ADR 0004. By 16 Oct.
+12. **Shared voice** (D-032, K-40): family hear each other's recordings in v1.0, free; full backup stays Plus. By 23 Oct.
+13. **StoreKit direct or RevenueCat** (ADR 0013): recommended StoreKit direct per your direction; override window closes when BL-213 starts (about 9 Nov).
+14. **Store beta line** (D-030, K-37): TestFlight beta and no beta line in the listing. Before the listing is written (week 13).
+15. **Individual-publisher hedge** (D-004): accept the Guideline 5.1.1(ix) risk, or start an entity in parallel. By 27 Nov.
+16. **Beta cohorts** (D-045): friendly-family TestFlight only before submission; public link after. By 4 Dec.
+17. **Safety classifier** (D-034): ship only with a clinician's sign-off by 20 Nov, else a static resources row.
+18. **Free durability copy** (D-033, K-42): rely on the user's own device backup and fix the "only on this phone" line.
+
+Owner actions outside product (tracked, not founder questions): ADR 0008 opt-in wording; ~~LEGAL-REQ-033 and -047 table edits~~ (done 3 Oct, ENGINEERING_REQUIREMENTS 1.1.0); Privacy Policy section 12 sentence; Subscription terms and in-app-disclosures "listening" wording; DESIGN_LANGUAGE real-name example; BRAND.md print line and "by default"; Terms 12.1 cloud transcription exit (K-33).
 
 ## Changelog
 | Version | Date | Change |
@@ -823,3 +963,4 @@ Owner actions outside product (tracked, not founder questions): ADR 0008 opt-in 
 | 1.0 | 2026-10-02 | First integrated PRD: index, conflict log K-01 to K-27, launch checklist, NFR budgets, copy fixes. |
 | 1.1 | 2026-10-02 | Founder decisions of 2 Oct: multi-child (K-12 rewritten, PRD-REQ-011 to 015, checklist 6.8), full opt-in analytics (K-01, PRD-REQ-016 to 018, checklist 6.9), Plus per account (K-28), K-29 to K-31, owner follow-up table; B and C revisions actually applied; new copy. |
 | 1.2 | 2026-10-02 | Second set of founder decisions of 2 Oct: first-run children free and joined books not counted (PRD-REQ-015), Read together 3 sessions in remote config (PRD-REQ-020), beta ends on founder say-so (K-13), 18+ entry gate with no local-only mode (PRD-REQ-019, K-07), digital only (K-32), analytics volume accepted; Lawyer 2 H4 claims fixed (K-21, K-33, section 8); checklist 6.1, 6.5, 6.6, 6.7, 6.8 updated; section 9 resolved items closed, Q5 updated, Q9 and Q10 added. |
+| 1.3 | 2026-10-03 | Founder decisions of 3 Oct: Plus in v1.0 through Apple only with StoreKit 2 direct (K-34, ADR 0013, PRD-REQ-003, -017, -022), family contributors in the app at v1.0 and the web page in v1.1 (K-35), full opt-in analytics confirmed (K-01), individual publisher (K-36, PRD-REQ-023, launch gate 4). TDD 01 to 10 folded in: release tiers (3.0), notice windows replaced (K-38), retention clocks (K-41), TDD resolutions (K-43); recommendations needing the founder (K-37 store beta line, K-39 sync engine, K-40 shared voice as PRD-REQ-021, K-42 durability copy). Checklist 6.1, 6.2, 6.5, 6.7 and NFR 7.2, 7.4, 7.8 updated. Section 9 Q5 narrowed to the domain; Q11 to Q18 added. Companion `docs/DECISIONS.md`, `docs/ROADMAP.md` (submission Mon 11 Jan 2027). |

@@ -3,10 +3,11 @@
  * a native module and is not in Expo Go. The module is required lazily so
  * Expo Go never touches it.
  *
- * Model: ggml file downloaded on first run (not bundled) to
- * <documents>/models/<MODEL_FILE>. Download, SHA-256 check and Wi-Fi rules
- * are a separate task; until the file exists, availability() says
- * 'model-missing'.
+ * Model: ggml file downloaded on first run (not bundled) to Application
+ * Support/models/<MODEL_FILE>, excluded from iCloud backup (ADR 0001,
+ * lib/model-files.ts; Documents/models where the native module is absent).
+ * Download, SHA-256 check and Wi-Fi rules are a separate task (BL-065);
+ * until the file exists, availability() says 'model-missing'.
  *
  * Audio: whisper.rn reads 16 kHz WAV or raw PCM only. We record AAC M4A
  * (ADR 0005) and must decode on the fly without storing the PCM copy. That
@@ -14,7 +15,8 @@
  * expo-audio AudioStream capture at 16 kHz) is not built yet, so M4A input
  * reports 'decoder-missing'. WAV input works as-is.
  */
-import { File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
+import { modelsDirectory } from './model-files';
 import type { TranscribeResult as WhisperResult, WhisperContext } from 'whisper.rn/index';
 import { dictionaryPrompt, TranscriberUnavailable, type Transcriber, type UnavailableReason } from './transcribe';
 
@@ -37,9 +39,13 @@ function loadModule(): WhisperModule | null {
 }
 
 function modelFile(): File | null {
-  for (const name of [MODEL_FILE, FALLBACK_MODEL_FILE]) {
-    const f = new File(Paths.document, 'models', name);
-    if (f.exists) return f;
+  // Application Support first; Documents/models is where earlier dev builds put a hand-copied model.
+  const dirs = [modelsDirectory().dir, new Directory(Paths.document, 'models')];
+  for (const dir of dirs) {
+    for (const name of [MODEL_FILE, FALLBACK_MODEL_FILE]) {
+      const f = new File(dir, name);
+      if (f.exists) return f;
+    }
   }
   return null;
 }

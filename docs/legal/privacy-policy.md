@@ -1,14 +1,14 @@
 ---
 title: Early Letters Privacy Policy
-version: 1.2.0
+version: 1.3.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-02
+last_updated: 2026-10-03
 owner: founder
 reviewers: outside privacy counsel (TBD)
 ---
 
-> **Drafting notice.** This document was drafted by an AI (Claude) acting as privacy counsel and privacy engineer, for review by a licensed attorney. It is not legal advice and must not be published until counsel has reviewed it. Text in square brackets like [CN-4] points to a numbered note for counsel in Appendix A; remove those tags, Appendix A and this notice before publishing. Placeholders in braces ({COMPANY_LEGAL_NAME}, {COMPANY_ADDRESS}, {PRIVACY_EMAIL}) must be filled in. The privacy review for version 1.1.0 is `docs/legal/memos/lawyer-2.md`.
+> **Drafting notice.** This document was drafted by an AI (Claude) acting as privacy counsel and privacy engineer, for review by a licensed attorney. It is not legal advice and must not be published until counsel has reviewed it. Text in square brackets like [CN-4] points to a numbered note for counsel in Appendix A; remove those tags, Appendix A and this notice before publishing. Placeholders in braces ({PUBLISHER_LEGAL_NAME}, {CONTACT_ADDRESS}, {PRIVACY_EMAIL}) must be filled in. The privacy review for version 1.1.0 is `docs/legal/memos/lawyer-2.md`.
 
 # Early Letters Privacy Policy
 
@@ -28,15 +28,17 @@ Early Letters is a memory book you fill by talking. Parents and close family spe
 
 ## 1. Who we are
 
-Early Letters is run by {COMPANY_LEGAL_NAME}, a California company at {COMPANY_ADDRESS} ("we", "us"). We decide how and why your information is used, so we are responsible for it. Reach us at {PRIVACY_EMAIL}. [CN-1]
+Early Letters is made and run by {PUBLISHER_LEGAL_NAME}, an individual based in California ("we", "us"). Our contact address is {CONTACT_ADDRESS}. We decide how and why your information is used, so we are responsible for it. Reach us at {PRIVACY_EMAIL}. [CN-1]
 
 ## 2. What this policy covers
 
 This policy covers:
 
 - the Early Letters app for iPhone (and for Android when it launches),
-- the family contribution web page that grandparents and other family can use without the app,
+- the family contribution web page that grandparents and other family can use without the app (coming after the first version; at launch, family members write from the app),
 - our website and waitlist.
+
+Some features described in this policy arrive after the first version of the app: the family contribution web page and cloud transcription. Until a feature is available, the parts of this policy about it do not apply to you. [CN-20]
 
 It does not cover Apple, Google or other companies you deal with directly, such as when you buy through the App Store or sign in with Apple or Google. Their own privacy policies apply to what they collect.
 
@@ -59,7 +61,7 @@ We collect only what the book needs. Many things never leave your phone. The tab
 | Names and words | Spellings for names, nicknames, places and home words, and how the microphone tends to mishear them | You, and the app (from your profile) | Your phone and our database |
 | Family and invites | Who is in each child's book, their role and relationship ("Nani"), invites you send (we keep only a scrambled fingerprint of each invite link, never the link itself), approvals | You and your family | Our database |
 | Web contributions | A family member's name and relationship, that they confirmed they are 18 or older, their recording (encrypted in their browser before upload) or typed letter, and a private return link (stored only as a scrambled fingerprint) | The family member | Our database and private storage |
-| Purchases | Whether you have Plus, product, trial and renewal dates, refunds. We never see your card details. | Apple or Google, through RevenueCat | RevenueCat and our database |
+| Purchases | Whether you have Plus, product, trial and renewal dates, refunds, and the store country Apple reports. We never see your card details. | Apple, through the App Store (Google Play when Android launches). Apple tells us the status of your subscription under a random ID, not your name or email | Our database. Apple keeps its own purchase records as the store |
 | App usage (only if you agree) | Which features are used, as counts and categories (for example "letter saved, spoken, 1 to 2 minutes"), how many children's books you have as a range, app version, device model and OS version, a random analytics ID | The app, after you say yes | PostHog |
 | Crash reports (only if you agree) | Technical details of a crash or error, with letter text, names and links removed before sending | The app, after you say yes | Sentry |
 | Support cards | That the app showed a support card, and when. Never the words that led to it. | The app | Your phone only [CN-10] |
@@ -137,7 +139,6 @@ We use a small number of companies to run Early Letters. Each one acts on our in
 | Supabase | Database, sign-in, file storage, our server functions | Account, profiles, letters, photos, encrypted recordings, family data | United States (us-west-1, California) |
 | PowerSync | Keeps the copy on your phone in sync with our database | Copies of the rows you are allowed to see, while syncing | United States |
 | Groq; DeepInfra (backup) | Cloud transcription, only if you agree | The recording sent, briefly, in memory | United States |
-| RevenueCat | Manages Plus subscriptions and receipts from Apple and Google | Purchase records linked to a random ID | United States |
 | PostHog | Product analytics without content, only if you agree | App usage, random analytics ID | United States |
 | Sentry | Crash and error reports, with content removed, only if you agree | Technical crash data | United States |
 | Vercel | Hosts our website and the family contribution page | Web requests; encrypted uploads pass through | United States |
@@ -170,6 +171,7 @@ Your phone's own backups (for example iCloud Backup, or a backup to your compute
 | App usage analytics (if you agreed) | Up to 12 months (proposed) |
 | Crash reports (if you agreed) | Up to 90 days (proposed) |
 | Activity records (for example "a letter was deleted", without any content) | 24 months; when you delete your account they no longer show who you are |
+| Security and staff-access logs (sign-in events, our staff's access to accounts, key unlocks), without content | 12 months |
 | Purchase records | As long as your account exists, then as required for tax and accounting (proposed: 7 years for transaction records only) |
 | Consent and policy-acceptance records | Life of the account plus 3 years, to show what you agreed to. When you delete your account they no longer show your name or email. |
 | Support emails | 2 years after your last message (proposed) |
@@ -181,7 +183,7 @@ Your phone's own backups (for example iCloud Backup, or a backup to your compute
 - A book where you are the only parent is deleted with everything in it, including family letters. Each family member is offered a copy of their own letters first.
 - Letters you wrote to someone else's book are removed from it.
 - Copies that family already saved or played on their own phones stay with them.
-- We ask RevenueCat to delete its record of you and revoke your Sign in with Apple token. If analytics is on, the app resets its analytics ID and asks PostHog to delete the events sent under it. Analytics are not linked to your account, so we can't find them from an email request alone. [CN-18]
+- We delete the random ID that links your account to your App Store purchases and revoke your Sign in with Apple token. Apple keeps its own purchase records as the store, and deleting your account does not cancel Plus; cancel it in your Apple Account. If analytics is on, the app resets its analytics ID and asks PostHog to delete the events sent under it. Analytics are not linked to your account, so we can't find them from an email request alone. [CN-18]
 
 ## 11. Security
 
@@ -249,9 +251,9 @@ This section is our notice at collection and our privacy policy under the Califo
 
 | CCPA category | Examples | Source | Purpose | Disclosed for a business purpose to | Sold or shared | How long we keep it |
 |---|---|---|---|---|---|---|
-| Identifiers | Email, name, random account and analytics IDs | You; Apple or Google sign-in | Account, sync, support, analytics | Supabase, PowerSync, RevenueCat, PostHog, email provider | No | Life of the account; analytics up to 12 months |
+| Identifiers | Email, name, random account and analytics IDs | You; Apple or Google sign-in | Account, sync, support, analytics | Supabase, PostHog, email provider (and PowerSync if we use it) | No | Life of the account; analytics up to 12 months |
 | Customer records (Cal. Civ. Code 1798.80(e)) | Name, email | You | Account | Supabase, email provider | No | Life of the account |
-| Commercial information | Plus purchases, trials, refunds | Apple or Google via RevenueCat | Subscriptions | RevenueCat, Supabase | No | Life of the account, then transaction records 7 years (proposed) |
+| Commercial information | Plus purchases, trials, refunds | Apple, through the App Store | Subscriptions | Supabase | No | Life of the account, then transaction records 7 years (proposed) |
 | Internet or other electronic network activity | Feature usage counts, crash reports | The app, only if you agree | Analytics, fixing problems | PostHog, Sentry | No | Up to 12 months (usage) and 90 days (crashes) |
 | Audio, electronic, visual or similar information | Recordings you back up or send for transcription; photos | You | The book; transcription | Supabase, Groq or DeepInfra (only with consent), Vercel (encrypted uploads) | No | Until you delete them or your account |
 | Sensitive personal information | Letter contents (letters to your family, which we are not the intended reader of); information about a child under 16 (name, birthday, photos); a due date | You | Only to provide the book you asked for | Supabase, PowerSync | No | Until you delete them or your account |
@@ -297,13 +299,15 @@ Each version has a number and an effective date. Earlier versions are kept at {P
 
 ## 20. Contact
 
-{COMPANY_LEGAL_NAME}, {COMPANY_ADDRESS}. Email {PRIVACY_EMAIL}. We read every message and reply within 10 business days, and within the legal deadlines in section 14.
+{PUBLISHER_LEGAL_NAME}, {CONTACT_ADDRESS}. Email {PRIVACY_EMAIL}. We read every message and reply within 10 business days, and within the legal deadlines in section 14.
 
 ---
 
 ## Appendix A. Notes for counsel (remove before publishing)
 
-**CN-1. Controller entity.** `packages/brand/index.ts` still has `TODO Company LLC` and `example.com`. The LLC must be formed and named before App Store submission (the seller name appears on the store page). Confirm whether a privacy contact or DPO-style role needs to be named.
+**CN-1. Controller identity (updated 3 Oct 2026).** Founder decision (`docs/DECISIONS.md` D-004): the app is published under the founder's individual Apple Developer account, with no LLC for now. The controller is the founder as an individual; the App Store shows the founder's legal name as the seller. Fill {PUBLISHER_LEGAL_NAME} and a {CONTACT_ADDRESS} counsel accepts for an individual (a mailing address rather than a home address, if lawful for each notice). Confirm whether "we" is acceptable for an individual and whether any state law needs a named privacy contact. `packages/brand` holds only a TODO marker for the name (never in code). If an entity is formed later, the controller changes, which is a major change for published users (POLICY_VERSIONING 2.1 item 9, counsel to classify) and an app transfer (D-004 point 5).
+
+**CN-20. Features after the first version.** PRD.md 1.3 (3 Oct 2026) moved the web contribution page to v1.1 and has no cloud transcription in v1.0. The sentence in section 2 keeps the policy accurate at launch without rewriting every row; when each feature ships, remove its mention from that sentence (minor change). If the founder approves "shared voice" (D-032), recordings of letters in a shared book upload encrypted so family can hear them; the short version, section 4 and Terms 12.1 then change before publication.
 
 **CN-2. COPPA analysis.** Recommendation: COPPA should not apply to v1 as designed, but the margin is product-dependent. Full analysis in `memos/lawyer-2.md` finding H5.
 
@@ -326,7 +330,7 @@ Each version has a number and an effective date. Earlier versions are kept at {P
 
 **CN-6. Third-party AI disclosure and brand voice.** Apple 5.1.2(i) requires clear disclosure and explicit permission before sharing personal data with third-party AI [L5]. The brand voice forbids naming the technology in product copy. This policy names it (sections 4 and 8) because a legal disclosure must be accurate. Confirm the consent sheet wording also satisfies 5.1.2(i) while following the voice guide as far as possible; we recommend the sheet names the provider category ("an outside speech recognition service") and links here. Web contributors' audio is transcribed on a parent's phone (PRD K-09), so section 4 states it never goes to these services.
 
-**CN-7. No-training promise.** Verified as of 2 October 2026 for Supabase, PostHog, Groq, DeepInfra (for the models we use), and Cloudflare. Sentry, PowerSync, RevenueCat and Vercel have weaker or silent terms; see subprocessors.md section 4. **Launch gate:** PowerSync holds letter text and has no written no-training clause. Section 6 cannot be published as written until PowerSync confirms in writing or the gap is otherwise closed.
+**CN-7. No-training promise.** Verified as of 2 October 2026 for Supabase, PostHog, Groq, DeepInfra (for the models we use), and Cloudflare. Sentry, PowerSync and Vercel have weaker or silent terms (RevenueCat, also silent, is no longer used, ADR 0013); see subprocessors.md section 4. **Launch gate:** PowerSync holds letter text and has no written no-training clause. Section 6 cannot be published as written until PowerSync confirms in writing or the gap is otherwise closed.
 
 **CN-8. Staff access.** Text is not end-to-end encrypted (ADR 0006). The service role can read entries. The policy commits to logged access. Engineering must build an access log for service-role reads of `entries`, `entry_versions` and storage before launch, or the sentence must be softened.
 
@@ -376,6 +380,7 @@ Unverified in this pass: CalOPPA Do Not Track requirement; CTDPA 15-day revocati
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct). Provider is the founder as an individual (section 1, CN-1; placeholders renamed). RevenueCat removed: purchases come from Apple's App Store under a random ID (section 3, processors table, section 10 deletion, CCPA table; ADR 0013). Section 2 notes that the family web page and cloud transcription arrive after the first version (CN-20). Section 10 lists the 12-month security and staff-access log clock beside 24-month activity records (D-021). Pre-publication draft, no users bound; if published, the controller change would be major and the rest minor. |
 | 1.2.0 | 2026-10-02 | Product alignment with PRD.md 1.2 (founder decision 2 Oct, K-07): no use of any kind under 18, including local use; age asked before first use (intro, section 12). CN-10 points at the promoted governance migration. Pre-publication draft, no users bound; minor (clarifies a narrower audience, adds protection). |
 | 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`). Short version: "by default" on transcription, recovery-key qualifier, no-voiceprint line, deletion line narrowed to "your book" and "your own letters" (PRD K-29). Sections 3 and 5: 18+ confirmation and age signal, per-child profiles, Plus per account, analytics child-count range. Section 7: author-only transcripts (K-09), per-child family lists, how family hear recordings, Standard-mode web playback unlock. Section 10: published deletion clock (31 / 38 / 45 days, K-23), decided invite expiry (K-18), activity records, account-deletion effects on shared and sole-parent books (K-22), analytics deletion limits. Section 11: web uploads no longer described as unreadable to us. Section 12: parent-control sentence corrected (K-10), child-input features unavailable, under-18 closure. Section 13: biometric statement, consent placement and withdrawal in Settings. Section 14: export scope, web deletion page, request extension, provider list on request. Section 15: retention per category, letters as communications, biometric sentence corrected. Section 16: biometric and CHD pointers. Health notice renamed Consumer Health Data Privacy Policy. Pre-publication draft, no users bound; if 1.0.0 had been published this would be major under POLICY_VERSIONING 2.1 item 4 (narrower deletion statement). |
 | 1.0.0 | 2026-10-02 | First draft for counsel review. |

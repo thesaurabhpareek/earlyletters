@@ -384,8 +384,8 @@ export const en = {
       removeButton: "Remove",
     },
     shareMessage: {
-      imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. Tap here to join:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Join here:",
+      imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the free app on your iPhone, or helps you get it:",
+      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Get the free app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
@@ -665,7 +665,7 @@ export const en = {
     },
   },
 
-  // Web contribution page (apps/web). Same text as review.firstNote.body (in-app-disclosures.md section 2).
+  // Web contribution page (apps/web), ships in v1.1 (PRD.md K-35). Same text as review.firstNote.body (in-app-disclosures.md section 2).
   web: {
     firstNote: {
       title: "Please have a read",
@@ -681,7 +681,7 @@ export const en = {
       renewMonthly: "Free for 1 month, then {price} a month. Renews automatically until you cancel, at least 24 hours before it renews.",
       renewNoTrialAnnual: "{price} a year, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",
       renewNoTrialMonthly: "{price} a month, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",
-      cancel: "Cancel any time in Settings, Plan, Manage subscription, or in your Apple or Google account.",
+      cancel: "Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions.",
       termsLink: "Terms of Service",
       privacyLink: "Privacy Policy",
       subscriptionTermsLink: "Subscription terms",

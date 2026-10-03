@@ -1,7 +1,23 @@
 # Early Letters (`scribe`) — System Architecture
 
-Status: Proposed, 1 October 2026. Owner: founder. Audience: founder, Claude Code sessions, future engineers.
+Status: Proposed, 1 October 2026; **updated 3 October 2026** (see the status box below). Owner: founder. Audience: founder, Claude Code sessions, future engineers.
 Every factual claim about a model, library, licence, price or limit cites a page opened on 1 Oct 2026 (see Sources, numbered [S#]). Anything not backed by an opened page is marked **Unverified**. Prices change; re-check before committing money.
+
+> **Status update, 3 Oct 2026. Read this before anything below.** Later decisions win over this document where they differ (PRD.md 1.3, `docs/DECISIONS.md`, TDD 01 to 10). Agents must not rebuild what was removed.
+>
+> | Topic in this document | Current position | Source |
+> |---|---|---|
+> | Payments through RevenueCat (diagram `RC`, section 7, section 10) | **Superseded.** Plus ships in v1.0 through the App Store only: StoreKit 2 via `expo-iap`, App Store Server Notifications V2 to an Edge Function, App Store Server API re-reads, random `appAccountToken`; no RevenueCat | ADR 0013, D-001, PRD K-34 |
+> | Printed books, Lulu, card payments (`LULU`, `PAY`, "print orders") | **Future launch.** v1 is digital only | PRD K-32 |
+> | `safety_events` server row (section 4 step 4) | **Removed.** Tiers are computed and stored on the device only; the table is dropped | PRD K-06, LEGAL-REQ-015 |
+> | PowerSync with op-sqlite (sections 1, 3, 4, 5, 8, 10; R4) | **Under review.** Recommended for v1.0: outbox push and cursor pull on expo-sqlite (already shipped), one visibility table `book_access`; ADR 0004 stands until the founder confirms | D-023, D-024, PRD K-39 |
+> | Encrypted backup with per-child keys, iCloud Keychain sync and escrow (ADR 0006; `KC`, step 8) | **Reduced for v1.0 (pending D-032).** One per-file key wrapped by a server-held key; Free uploads recordings in shared books, Plus uploads all; Vault mode and member key grants later | D-032, PRD K-40 |
+> | "Auth - magic link" | Sign in with Apple plus email link and 6-digit code at v1.0; Google in v1.1 | PRD A, D-044 |
+> | Web contribution page on `apps/web` | **v1.1.** v1.0 family members write from the iOS app | D-002, PRD K-35 |
+> | AI gateway and cloud transcription (`AIC`, `OAI`, step 3 model pass) | **Not in v1.0.** On-device transcription and rules-only fixes; gateway in v1.1 with consent | PRD section 3.0 |
+> | Analytics (`OBS`) | PostHog and Sentry, opt-in only, at launch | D-003, PRD K-01 |
+> | Speech model in the app sandbox | Model in Application Support, excluded from backup; recordings stay in a backed-up directory | ADR 0001, D-033 |
+> | Section 7 cost model | See TDD 06 section 4 and TDD 10 section 5.2 for the current estimates (model egress, PowerSync clients) | TDD 06, TDD 10 |
 
 ---
 
@@ -41,28 +57,25 @@ flowchart LR
     ASR[On-device ASR - whisper.rn + whisper large-v3-turbo q5_0]
     CORE[packages/core - faithful clean + verifier + safety tiers]
     AIC[AI client - packages/ai interface]
-    DB[(op-sqlite local DB + FTS)]
-    PS[PowerSync client + attachment queue]
+    DB[(expo-sqlite local DB + FTS; engine per D-023)]
+    PS[Sync client - outbox push and cursor pull per D-023; audio upload queue]
     CRY[Crypto - react-native-quick-crypto AES-256-GCM]
-    KC[Key store - iCloud Keychain synchronizable item]
+    KC[Key store - Keychain; synchronizable item later, ADR 0006]
     FILES[(App sandbox: audio .m4a, photos)]
     OBS[PostHog + Sentry - allowlisted events only]
   end
 
   subgraph Supa["Supabase (managed)"]
-    AUTH[Auth - magic link]
+    AUTH[Auth - Sign in with Apple, email link and code]
     PG[(Postgres + RLS)]
     ST[(Storage - encrypted audio blobs, photos)]
-    EF[Edge Functions - AI gateway, key escrow, invites, print orders]
+    EF[Edge Functions - App Store notifications, plan reconcile, notices, invites, purge worker, key unwrap; AI gateway v1.1]
   end
 
-  PSC[PowerSync Cloud - read replication]
+  PSC[PowerSync Cloud - only if D-023 is declined]
   OAI[Open-model APIs - Groq / DeepInfra / Cloudflare, OpenAI-compatible]
-  RC[RevenueCat]
-  APPLE[App Store / StoreKit]
-  LULU[Lulu Print API]
-  PAY[Card payments for printed books - Stripe or Apple Pay, Unverified pricing]
-  WEB[apps/web - Next.js on Vercel: landing, waitlist, book reader]
+  APPLE[App Store - StoreKit 2, Server Notifications V2, Server API]
+  WEB[apps/web - Next.js on Vercel: landing, waitlist, legal pages; contribution page v1.1]
 
   UI --> REC --> FILES
   FILES --> ASR --> CORE --> DB
@@ -76,12 +89,12 @@ flowchart LR
   CRY <--> KC
   CRY <-. optional escrow .-> EF
   UI --> AUTH
-  UI --> RC --> APPLE
-  EF --> LULU
+  UI -- expo-iap --> APPLE
+  APPLE -- notifications V2 --> EF
+  EF -- Server API re-read --> APPLE
   WEB --> AUTH
   WEB --> PG
   WEB --> ST
-  WEB --> PAY
   UI --> OBS
 ```
 
@@ -92,11 +105,11 @@ flowchart LR
 | 1. Capture | Phone | expo-audio records AAC-LC mono M4A (ADR 0005). Typed entries skip to step 3. | `audio/<entry_id>.m4a` in app sandbox; local row `status=recorded` |
 | 2. Transcribe | Phone | whisper.rn runs large-v3-turbo q5_0 (or small q5_1 on low-memory devices) with the family dictionary rendered into the initial prompt, Silero VAD, token timestamps on. If the model is not downloaded yet, the entry waits in a queue; the audio is safe. | `raw_transcript` (immutable), `stt_meta` {engine, model, version, prompt hash, per-token timestamps, avg log-prob} |
 | 3. Clean | Phone (rules) + optional model | `faithfulClean()` applies dictionary fixes, fillers, repeats. If the edit pass is enabled, the AI gateway proposes typed edits as JSON; the verifier accepts or rejects each one. | `machine_edits` (accepted + rejected, with source), `final_text`, `engine_version` |
-| 4. Safety tier | Phone | Deterministic tiers in `packages/core/safety.ts`. Never blocks the save; may show a gentle resource card. | `safety_events` row (tier + rule id, no text) |
+| 4. Safety tier | Phone | Deterministic tiers in `packages/core/safety.ts`, behind `safety_card_enabled` (D-034). Never blocks the save; may show a gentle resource card. | Local database only; no server row (PRD K-06) |
 | 5. Review | Phone | Author sees cleaned text with every edit visible and undoable; can lock phrases and add dictionary terms (which teach future transcriptions). | Updated `machine_edits`, `entry_versions` via trigger |
 | 6. Save | Phone | Single local transaction. App is now "done" from the user's view. | local DB |
-| 7. Sync | Phone ↔ Supabase | PowerSync uploads the write queue through the Supabase client (RLS enforced on every mutation [S27]); downloads rows the user may see via Sync Streams. | Postgres |
-| 8. Backup (opt-in) | Phone → Storage | Audio encrypted on device (per-file key, AES-256-GCM), uploaded by the PowerSync attachment queue, retried until success [S29]. | `audio_blobs` row (path, size, sha256, wrapped file key), ciphertext in Storage |
+| 7. Sync | Phone ↔ Supabase | v1.0 (recommended, D-023): an outbox pushes batches through one idempotent RPC under RLS; a cursor pull fetches own rows and rows `book_access` allows. (ADR 0004 alternative: PowerSync uploads through the Supabase client [S27] and downloads through Sync Streams.) | Postgres |
+| 8. Shared voice and backup | Phone → Storage | Audio encrypted on device (per-file key, AES-256-GCM); the file key is wrapped by a server-held key (D-032, pending). Free uploads recordings of letters in shared books; Plus uploads all. Own upload queue, retried until success. | `audio_blobs` row (path, size, sha256, wrapped file key), ciphertext in Storage |
 | 9. Book | Phone / web | Entries where `in_book = true` (author's choice; family contributions need parent approval) grouped by child's month of age. PDF rendered from a shared HTML book template in `packages/book`. | PDF on device; nothing extra server-side |
 | 10. Read together | Phone (web later) | Plays the M4A; highlights words using timestamps mapped from raw tokens to final text through the stored edit offsets (fillers removed by an edit simply have no highlight). | `alignment` JSON (word → start/end ms, source, quality score) |
 
@@ -142,7 +155,7 @@ Assumptions for cost columns: an active family makes **20 spoken entries/month, 
 - Analytics: ~300 events/family/month.
 - Supabase Pro $25/month includes 100k MAU then $0.00325/MAU, 8 GB DB then $0.125/GB, 100 GB files then $0.0213/GB, 250 GB egress then $0.09/GB [S13][S14].
 - PowerSync Pro from $49/month: 30 GB sync, 10 GB storage, 1,000 concurrent clients; $1/GB and $30 per 1,000 extra clients [S16].
-- Apple commission 15% under Small Business Program (≤ $1M proceeds) [S19]. RevenueCat free to $2.5k MTR then 1% [S18].
+- Apple commission 15% under Small Business Program (≤ $1M proceeds) [S19]. RevenueCat free to $2.5k MTR then 1% [S18] (no longer used: ADR 0013).
 
 ### Monthly run-rate
 
@@ -162,7 +175,7 @@ Assumptions for cost columns: an active family makes **20 spoken entries/month, 
 | Vercel (web) | **Unverified** (Hobby is reportedly non-commercial; assume Pro ~$20) | Unverified |
 | **Total** | **≈ $85–$135 / month (~$0.10 per family)** | **≈ $1.8k–$2.4k / month (~$0.02 per family)** |
 
-Not included: Apple Developer fee (Unverified), RevenueCat 1% above $2.5k MTR, Lulu print costs (pass-through to buyer). The dominant 100k costs are MAU and the cumulative audio store, not AI. Moving server ASR to a self-hosted GPU only makes sense once fallback spend is a meaningful share of the bill (GPU pricing **Unverified**, not researched).
+Not included: Apple Developer fee ($99 a year, individual or organisation, Apple enrollment page opened 3 Oct 2026), Lulu print costs (pass-through to buyer, future launch). RevenueCat's 1% no longer applies (ADR 0013). The dominant 100k costs are MAU and the cumulative audio store, not AI. Moving server ASR to a self-hosted GPU only makes sense once fallback spend is a meaningful share of the bill (GPU pricing **Unverified**, not researched).
 
 ## 8. Security and privacy architecture
 
@@ -256,11 +269,12 @@ Base URLs above are **Unverified** (from general knowledge); confirm when wiring
 - Sentry (Developer) + PostHog with allowlist.
 
 **Phase 1 — Public v1 (iOS)**
+> 3 Oct 2026: the v1.0 scope is now `docs/ROADMAP.md` section 5 and PRD.md section 3.0. Backup and server ASR below are reduced or moved to v1.1; family and Plus ship at v1.0.
 - Encrypted backup with iCloud Keychain + escrow default, Vault mode option, Recovery Kit.
 - Family invites, approvals, memory book, on-device PDF export.
 - Read together using Whisper token timestamps with a quality gate (hide highlighting when alignment confidence is low rather than show wrong highlights).
 - Server ASR fallback (Groq, ZDR on) with consent. Edit pass on only if Phase 0 shows rules miss a meaningful share of errors.
-- RevenueCat paywall; PowerSync Pro; Supabase Pro.
+- Plus paywall through StoreKit 2 direct (ADR 0013, replaces RevenueCat); sync per D-023 (PowerSync Pro only if declined); Supabase Pro.
 
 **Phase 1.x**
 - `apps/web` Next.js: landing, waitlist, then browser book reader.
@@ -285,7 +299,7 @@ Open questions: Does a meaningful share of target families code-switch? Is the L
 
 ## 12. Decisions index
 
-ADRs in `docs/adr/`: 0001 on-device ASR, 0002 server ASR fallback, 0003 edit-pass model strategy, 0004 sync engine, 0005 audio format, 0006 encrypted backup, 0007 payments and printed books, 0008 analytics and crash reporting, 0009 word alignment, 0010 web app placement, 0011 requirements and agent workflow, 0012 open models for transcription and grammar (2026 refresh).
+ADRs in `docs/adr/`: 0001 on-device ASR, 0002 server ASR fallback, 0003 edit-pass model strategy, 0004 sync engine, 0005 audio format, 0006 encrypted backup, 0007 payments and printed books, 0008 analytics and crash reporting, 0009 word alignment, 0010 web app placement, 0011 requirements and agent workflow, 0012 open models for transcription and grammar (2026 refresh), 0013 Apple-native subscriptions (StoreKit 2 direct; supersedes 0007's digital half), 0101 UI component library. Dated product and architecture decisions: `docs/DECISIONS.md`. Milestones: `docs/ROADMAP.md`.
 
 ## Sources (opened 1 Oct 2026)
 

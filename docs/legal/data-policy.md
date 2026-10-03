@@ -1,13 +1,16 @@
 ---
 title: Data governance and retention policy
 product: "{brand.name} (codename scribe)"
-version: 1.0.0
+version: 1.1.0
 status: draft-for-counsel
 effective_date: TBD
 owner: founder (data governance lead role)
 approver: outside counsel
 companion: DELETION_AND_EXPORT_SPEC.md (flows, export, integrity controls, DATA-REQ acceptance criteria)
 changelog:
+  - version: 1.1.0
+    date: 2026-10-03
+    summary: Alignment with PRD.md 1.3 and docs/DECISIONS.md. RevenueCat removed (ADR 0013); purchases come from Apple's App Store Server API under a random appAccountToken (never the profile uuid; fixes the 4.6 conflict in TDD 02 OQ-B1, TDD 05 X-17). Invite hashes keyed on use, revocation or expiry (D-020). Ops and security logs 12 months beside 24-month audit events (D-021). Minor.
   - version: 1.0.0
     date: 2026-10-02
     summary: First draft. Data inventory, classification, ownership model, retention schedule, backup and processor deletion windows, legal holds, roles. Aligned with privacy-policy.md section 10, terms-of-service.md sections 6 to 8 and 12, compliance-register.md, POLICY_VERSIONING.md (all drafts of 2 Oct 2026).
@@ -72,7 +75,7 @@ Region: Supabase project in **us-west-1** (AWS, California). Status column: **Li
 | `profile_settings` | languages, Hindi script, goals, entry defaults | S (languages), A | Account holder | Life of account | Transcription settings, prompt mix (PRD B F1, F3) | Planned (B) |
 | `children` | `name`, `date_of_birth`, `created_by`; planned nickname, due date, photo, theme, `family_can_read`, `hidden_at`; `deleted_at`, `deletion_request_id` | S | Parents jointly | Until book purge (30 days after book deletion) | Book identity, month-of-age chapters | Live; deletion columns Draft |
 | `child_members` | child, profile, role, joined | A | Parents jointly | Until leave, removal, book purge or account deletion | Access control | Live |
-| `child_invites` | `token_hash` (SHA-256), role, expiry, accepted by/at, inviter | A | Parents | 90 days after expiry (proposed, Privacy Policy section 10) | Invite security and support | Live; purge Draft |
+| `child_invites` | `token_hash` (SHA-256), role, expiry, accepted by/at, inviter | A | Parents | 90 days after use, revocation or expiry, keyed on `coalesce(revoked_at, accepted_at, expires_at)` (D-020; Privacy Policy section 10) | Invite security and support | Live; purge Draft |
 | `member_return_links` | hashed bearer token for web contributors | A | Contributor | Until revoked or rotated, then 90 days (proposed) | Return access without a password (PRD B F6) | Planned (B) |
 | `entries` metadata | ids, kind, dates, capture mode, edit level, prompt key, engine version, `in_book`, `audio_kept_on_device`, `sounds_like_me`, `deleted_at`, `deleted_reason` | A/C | Author | Life of entry; tombstone 30 days; then purged | Book assembly, sync, reproducibility | Live; reason Draft |
 | `entries.raw_transcript` | exact ASR or typed text, immutable | C (may contain S) | Author | Life of entry | Fidelity: the original is never lost (CLAUDE.md) | Live |
@@ -151,7 +154,7 @@ Storage objects are **not** in database backups, and a deleted object cannot be 
 |---|---|---|---|---|
 | Supabase | everything server-side | Processor | Our purge and `deleteUser`; backups roll off | [D1][D6] |
 | PowerSync Cloud | synced rows | Processor | Follows Postgres; daily compaction | [D8] |
-| RevenueCat | app user id (profile uuid), purchase history | Processor | `DELETE /subscribers/{app_user_id}`, queued asynchronously; 200 and 404 both mean done | [D3] |
+| Apple (App Store, independent party; not a processor) | random `appAccountToken` per account (`app_account_tokens.app_account_token`, never the profile uuid), transaction and renewal status | Independent controller as the store | We delete our `app_account_tokens` mapping and pseudonymise the purchase ledger (`store_subscriptions.profile_id` set null); Apple keeps its own records (ADR 0013). RevenueCat is not used | ADR 0013 |
 | PostHog | events under analytics id | Processor | `DELETE` person with `delete_events=true`; events deleted asynchronously off-peak (weekends on Cloud) | [D4] |
 | Sentry | scrubbed crash events | Processor | Retention expiry; per-event deletion via API if ever identifiable | [D5] |
 | Email provider (custom SMTP, not chosen; A-REQ-026) | address, message log | Processor | Provider contact and log deletion API (**Unverified** until chosen) | |
@@ -190,6 +193,8 @@ Every letter, book and account moves through the same states. The spec gives the
 | Analytics events | 12 months (proposed) | Provider deletion | |
 | Crash events | 90 days (proposed) | Provider deletion | |
 | Audit events | 24 months | Hard delete; actor id nulled at account deletion | Security evidence |
+| Ops audit log, security events, key-unwrap log | 12 months | Hard delete | LEGAL-REQ-033, -037; D-021 |
+| Purchase ledger (`store_subscriptions`, no price or receipt) | 7 years | Pseudonymised at account deletion (`profile_id` set null) | Tax and dispute records (TDD 08 3.3) |
 | Deletion requests and receipts | 3 years after completion | Hard delete | Proof of deletion |
 | Policy acceptances | Life of account plus 3 years, pseudonymised at deletion | Hard delete | ARL proof-of-consent (POLICY_VERSIONING.md) |
 | Purchase and print transaction records | 7 years (proposed) | Hard delete | Tax and accounting (counsel) |

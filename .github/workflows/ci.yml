@@ -1,0 +1,99 @@
+# Pull request and branch CI (TDD 07 section 10). Budget: under 10 minutes
+# end to end. Every job has a timeout; the longest path is install (4) plus
+# one check job (5). Branch protection requires only the `required` job.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  # Fixed seed in CI; the nightly run sets a random one (TDD 03 7.2).
+  SCRIBE_FUZZ_SEED: 20261003
+
+jobs:
+  install:
+    name: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - id: modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            experiments/node_modules
+          key: node-modules-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
+
+  unit:
+    name: tests and content rules
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Content rules (VOICE.md, BRAND.md)
+        run: npm test -w @scribe/content
+      - name: Engine, verifier fuzz, entitlements, analytics, tokens, experiments
+        run: npm test
+
+  db:
+    name: database rules
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Access rules, governance, classification, performance (PGlite)
+        run: npm run test:db
+
+  typecheck:
+    name: typecheck
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Packages and experiments
+        run: npm run typecheck -w packages -w experiments --if-present
+      - name: apps/mobile
+        working-directory: apps/mobile
+        run: npx tsc --noEmit
+
+  required:
+    name: required
+    if: always()
+    needs: [install, unit, db, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: All checks passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then echo "A required check did not pass ($r)."; exit 1; fi
+          done

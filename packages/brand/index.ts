@@ -5,9 +5,30 @@
  * use the permanent codename "scribe" and never change.
  *
  * WARNING: `bundleId` cannot be changed after the first build is uploaded to
- * App Store Connect. Set `company.domain` to the real company domain before
- * the first EAS build.
+ * App Store Connect. Set `publisher.domain` to the real domain before the
+ * first EAS build (BL-100).
  */
+
+/**
+ * Who publishes the app. Founder decision, Oct 3 2026 (docs/DECISIONS.md D-004):
+ * an individual Apple Developer account, no company for now. The seller name on
+ * the App Store is the founder's personal legal name; it is entered only in App
+ * Store Connect and the published legal documents, never in code. Nothing in
+ * the app renders `legalName`.
+ */
+const publisher = {
+  /** 'individual' until the founder forms an entity and transfers the app (D-004). */
+  kind: 'individual',
+  /** TODO(founder): never put a real name here; legal documents carry it. */
+  legalName: 'TODO: individual publisher (name set in legal documents, not in code)',
+  /** Reverse of this domain prefixes every app's bundle ID. TODO(founder, BL-100): real domain. */
+  domain: 'example.com',
+  /** TODO(founder, BL-100): mailbox on the real domain. */
+  supportEmail: 'support@example.com',
+  /** TODO(founder, BL-100): published, versioned Privacy Policy URL. */
+  privacyUrl: 'https://example.com/privacy',
+} as const;
+
 export const brand = {
   /** Brand name. Decided Oct 1 2026. Not yet trademark-cleared. */
   name: 'Early Letters',
@@ -20,14 +41,9 @@ export const brand = {
   tagline: 'Exactly as you said it.',
   /** Printed product naming pattern. */
   printTitle: (year: number) => `Early Letters: Year ${year === 1 ? 'One' : year === 2 ? 'Two' : year === 3 ? 'Three' : year}`,
-  company: {
-    /** Legal entity name shown as the App Store seller. TODO: set after LLC formation. */
-    legalName: 'TODO Company LLC',
-    /** Reverse of this domain prefixes every app's bundle ID. TODO: real domain. */
-    domain: 'example.com',
-    supportEmail: 'support@example.com',
-    privacyUrl: 'https://example.com/privacy',
-  },
+  publisher,
+  /** Deprecated alias of `publisher`, kept so existing imports (`brand.company.privacyUrl`) keep working. */
+  company: publisher,
   /** URL scheme for deep links. Lowercase, no spaces. */
   scheme: 'scribe',
   /** Permanent codename. Do not change. */
@@ -55,6 +71,6 @@ export const brand = {
 } as const;
 
 export function bundleId(): string {
-  const reversed = brand.company.domain.split('.').reverse().join('.');
+  const reversed = brand.publisher.domain.split('.').reverse().join('.');
   return `${reversed}.${brand.codename}`;
 }

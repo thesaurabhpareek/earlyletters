@@ -11,6 +11,7 @@
  * @scribe/core faithfulClean, so every machine edit is verified and reversible.
  */
 import type { DictionaryTerm } from '@scribe/core';
+import { devShortcutsAllowed } from './build-env';
 import { createSampleTranscriber } from './transcribe-sample';
 import { createWhisperTranscriber } from './transcribe-whisper';
 
@@ -61,13 +62,14 @@ export interface Transcriber {
 
 /**
  * Picks the transcriber for this device: whisper when it can run, otherwise
- * the sample transcriber in development builds only. In release builds with
- * no usable model this returns null, and the recording is kept audio-only.
+ * the sample transcriber in the development profile only (build-env.ts). In
+ * preview and store builds with no usable model this returns null, and
+ * Review offers to keep the recording until its words can be made.
  */
 export async function getTranscriber(): Promise<Transcriber | null> {
   const whisper = createWhisperTranscriber();
   if ((await whisper.availability()) === null) return whisper;
-  if (__DEV__) return createSampleTranscriber();
+  if (devShortcutsAllowed) return createSampleTranscriber();
   return null;
 }
 

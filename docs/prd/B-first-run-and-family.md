@@ -2,6 +2,8 @@
 
 Owner: PM Lead B. Draft, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict log** (K-01, K-02, K-07, K-08, K-09, K-12, K-18); [PRD.md](PRD.md) wins where they differ. iOS at launch; every requirement must also work on Android (one Expo codebase). Siblings: **Section A** (launch, intro, sign-in, "I was invited"), **Section C** (reminders, celebrations, settings, pricing, paywall).
 
+> **PRD.md 1.3 (3 Oct 2026) overrides here:** the web contribution page (F6, B-REQ-008, B-REQ-022, the browser part of B-NFR-005) moves to **v1.1**; Family contributors join and write **in the iOS app** at v1.0 (K-35, D-002). Visibility lives in one `book_access` table (D-024); contributors see the child's name, nickname and birthday month and day, never the due date (D-039). Shared voice (recordings of shared-book letters uploaded so family can hear them) is recommended for v1.0, pending the founder (K-40, PRD-REQ-021).
+
 ---
 
 ## 1. Goals and non-goals

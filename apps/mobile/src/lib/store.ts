@@ -16,6 +16,9 @@
 import * as Crypto from 'expo-crypto';
 import * as SQLite from 'expo-sqlite';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
+import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
+import { expoSqlDb, OPEN_PRAGMAS } from './db/expo-adapter';
+import { migrate } from './db/migrations';
 
 export type EntryKind = 'note' | 'letter' | 'not_much';
 export type CaptureMode = 'spoken' | 'typed' | 'mixed';
@@ -43,7 +46,18 @@ export interface Entry {
   /** Local file URI of the AAC M4A recording (ADR 0005), kept in the app's document directory. */
   audioUri?: string | null;
   audioDurationMs?: number | null;
+  /** SHA-256 (hex) of the audio file, computed when recording stopped (DATA-REQ-046). */
+  audioSha256?: string | null;
+  audioBytes?: number | null;
+  /**
+   * 'waiting': a spoken letter kept without words yet (transcriber not ready).
+   * `rawTranscript` and `finalText` are '' until the words are set once
+   * (setWordsForWaitingEntry). null: the letter has its words.
+   */
+  transcriptStatus?: TranscriptStatus;
 }
+
+export type TranscriptStatus = 'waiting' | null;
 
 /** Single-child view of the active child (kept for existing callers). */
 export interface Family {
@@ -77,7 +91,14 @@ export interface Member {
   status: 'active' | 'invited';
 }
 
-/** An unfinished capture. Written before Review so a crash or a closed sheet loses nothing. */
+/**
+ * recording: the mic was live when this row was last written (created when
+ * recording starts); ready: audio closed and hashed, or a typed draft;
+ * unrecoverable: the file is empty, kept for the parent to decide.
+ */
+export type DraftState = 'recording' | 'ready' | 'unrecoverable';
+
+/** An unfinished capture. Written when recording starts, so a crash or a closed sheet loses nothing. */
 export interface Draft {
   id: string;
   childId: string;
@@ -90,6 +111,11 @@ export interface Draft {
   rawTranscript: string | null;
   /** Typed text being written (Write screen autosave). */
   typedText: string | null;
+  state: DraftState;
+  audioSha256: string | null;
+  audioBytes: number | null;
+  /** Set when the launch sweep recovered this take after a kill, or re-attached a stray file. */
+  recoveredAt: string | null;
 }
 
 let db: SQLite.SQLiteDatabase | null = null;
@@ -107,91 +133,23 @@ function changed(): void {
   listeners.forEach((l) => l());
 }
 
-function columns(d: SQLite.SQLiteDatabase, table: string): Set<string> {
-  return new Set(d.getAllSync<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name));
-}
-
+/**
+ * Opens scribe.db, sets the durability pragmas and runs the versioned
+ * migrator (src/lib/db/migrations.ts). A failed step rolls back and throws
+ * `local_db_migration_failed:<n>`; the database is left as it was.
+ */
 function open(): SQLite.SQLiteDatabase {
   if (db) return db;
   const d = SQLite.openDatabaseSync('scribe.db');
-  d.execSync(`
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS entries (
-      id TEXT PRIMARY KEY NOT NULL,
-      kind TEXT NOT NULL,
-      occurred_on TEXT NOT NULL,
-      captured_at TEXT NOT NULL,
-      capture_mode TEXT NOT NULL,
-      edit_level TEXT NOT NULL,
-      prompt_key TEXT,
-      engine_version INTEGER NOT NULL,
-      raw_transcript TEXT NOT NULL,
-      machine_edits TEXT NOT NULL,
-      final_text TEXT NOT NULL,
-      in_book INTEGER NOT NULL DEFAULT 0,
-      sounds_like_me INTEGER,
-      updated_at TEXT NOT NULL,
-      deleted_at TEXT,
-      synced_at TEXT
-    );
-    CREATE INDEX IF NOT EXISTS entries_occurred ON entries (occurred_on) WHERE deleted_at IS NULL;
-    CREATE TABLE IF NOT EXISTS children (
-      id TEXT PRIMARY KEY NOT NULL,
-      name TEXT NOT NULL,
-      birthday TEXT,
-      due_date TEXT,
-      signs_as TEXT NOT NULL,
-      reminders_on INTEGER NOT NULL DEFAULT 1,
-      family_can_read INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
-      hidden_at TEXT
-    );
-    CREATE TABLE IF NOT EXISTS drafts (
-      id TEXT PRIMARY KEY NOT NULL,
-      child_id TEXT NOT NULL,
-      capture_mode TEXT NOT NULL,
-      prompt_key TEXT,
-      created_at TEXT NOT NULL,
-      audio_uri TEXT,
-      audio_duration_ms INTEGER,
-      raw_transcript TEXT,
-      typed_text TEXT
-    );
-  `);
-
-  // Additive migration for installs created before multi-child and audio.
-  const have = columns(d, 'entries');
-  const add: [string, string][] = [
-    ['child_id', 'TEXT'],
-    ['author_id', 'TEXT'],
-    ['author_signs_as', 'TEXT'],
-    ['audio_uri', 'TEXT'],
-    ['audio_duration_ms', 'INTEGER'],
-  ];
-  for (const [name, type] of add) if (!have.has(name)) d.execSync(`ALTER TABLE entries ADD COLUMN ${name} ${type}`);
-  d.execSync('CREATE INDEX IF NOT EXISTS entries_child ON entries (child_id, occurred_on) WHERE deleted_at IS NULL');
-
-  // One-time: the single-child `family` setting becomes the first child.
-  const childCount = d.getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM children')?.n ?? 0;
-  const legacy = d.getFirstSync<{ value: string }>('SELECT value FROM settings WHERE key = ?', 'family');
-  if (childCount === 0 && legacy) {
-    const f = JSON.parse(legacy.value) as Family;
-    const id = uuidv7();
-    const now = new Date().toISOString();
-    d.withTransactionSync(() => {
-      d.runSync(
-        'INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        id, f.childName, f.childBirthday, f.childDueDate ?? null, f.signsAs, now, now,
-      );
-      d.runSync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', 'activeChildId', id);
-      d.runSync('UPDATE entries SET child_id = ? WHERE child_id IS NULL', id);
-      d.runSync('DELETE FROM settings WHERE key = ?', 'family');
-    });
-  }
+  d.execSync(OPEN_PRAGMAS);
+  migrate(expoSqlDb(d), { now: new Date().toISOString(), newId: () => uuidv7() });
   db = d;
   return d;
+}
+
+/** The schema version on this phone (`PRAGMA user_version`), for diagnostics. */
+export function localSchemaVersion(): number {
+  return open().getFirstSync<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0;
 }
 
 /** UUIDv7: time-ordered, generated on the device, so offline saves sync idempotently. */
@@ -216,6 +174,11 @@ export function getSetting(key: string): string | null {
 
 export function setSetting(key: string, value: string): void {
   open().runSync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value);
+  changed();
+}
+
+export function deleteSetting(key: string): void {
+  open().runSync('DELETE FROM settings WHERE key = ?', key);
   changed();
 }
 
@@ -385,6 +348,18 @@ interface Row {
   author_signs_as: string | null;
   audio_uri: string | null;
   audio_duration_ms: number | null;
+  audio_sha256: string | null;
+  audio_bytes: number | null;
+  transcript_status: string | null;
+}
+
+function parseEdits(json: string): Edit[] {
+  try {
+    const v = JSON.parse(json) as unknown;
+    return Array.isArray(v) ? (v as Edit[]) : [];
+  } catch {
+    return []; // a damaged edit list must never hide the letter itself
+  }
 }
 
 const fromRow = (r: Row): Entry => ({
@@ -397,7 +372,7 @@ const fromRow = (r: Row): Entry => ({
   promptKey: r.prompt_key,
   engineVersion: r.engine_version,
   rawTranscript: r.raw_transcript,
-  machineEdits: JSON.parse(r.machine_edits) as Edit[],
+  machineEdits: parseEdits(r.machine_edits),
   finalText: r.final_text,
   inBook: r.in_book === 1,
   soundsLikeMe: r.sounds_like_me === null ? null : r.sounds_like_me === 1,
@@ -406,31 +381,135 @@ const fromRow = (r: Row): Entry => ({
   authorSignsAs: r.author_signs_as ?? undefined,
   audioUri: r.audio_uri,
   audioDurationMs: r.audio_duration_ms,
+  audioSha256: r.audio_sha256,
+  audioBytes: r.audio_bytes,
+  transcriptStatus: r.transcript_status === 'waiting' ? 'waiting' : null,
 });
 
-/**
- * Insert or update an entry. raw_transcript, captured_at and the audio file
- * are never changed after the first insert (raw_transcript is immutable).
- */
-export function saveEntry(e: Entry): void {
+/** The one INSERT for entries. Callers decide whether it runs alone or inside a transaction. */
+function writeEntry(d: SQLite.SQLiteDatabase, e: Entry): void {
   const childId = e.childId ?? getActiveChildId();
   const signsAs = e.authorSignsAs ?? (childId ? (getChild(childId)?.signsAs ?? null) : null);
-  open().runSync(
+  d.runSync(
     `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key,
        engine_version, raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at,
-       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms, audio_sha256, audio_bytes, transcript_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        final_text = excluded.final_text, machine_edits = excluded.machine_edits,
        edit_level = excluded.edit_level, in_book = excluded.in_book,
-       sounds_like_me = excluded.sounds_like_me, child_id = excluded.child_id,
+       sounds_like_me = excluded.sounds_like_me,
+       child_id = CASE WHEN entries.synced_at IS NULL THEN excluded.child_id ELSE entries.child_id END,
        updated_at = excluded.updated_at`,
     e.id, e.kind, e.occurredOn, e.capturedAt, e.captureMode, e.editLevel, e.promptKey,
     e.engineVersion, e.rawTranscript, JSON.stringify(e.machineEdits), e.finalText,
     e.inBook ? 1 : 0, e.soundsLikeMe === null ? null : e.soundsLikeMe ? 1 : 0, new Date().toISOString(),
     childId, e.authorId ?? null, signsAs, e.audioUri ?? null, e.audioDurationMs ?? null,
+    e.audioSha256 ?? null, e.audioBytes ?? null, e.transcriptStatus ?? null,
   );
+}
+
+/**
+ * Insert or update an entry that has no draft (typed "not much" lines, dev
+ * seed). raw_transcript, captured_at, the audio file and, once synced,
+ * child_id are never changed after the first insert (DATA-REQ-040).
+ * Capture screens use saveLetterFromDraft instead.
+ */
+export function saveEntry(e: Entry): void {
+  writeEntry(open(), e);
   changed();
+}
+
+export class AudioMissingError extends Error {
+  constructor() {
+    super('audio_missing');
+  }
+}
+
+/**
+ * Review's save (DATA-REQ-048): the letter is inserted and its draft removed
+ * in one transaction, so a kill leaves either the full letter or the intact
+ * draft, never both and never neither. The audio must already be closed and
+ * hashed (`e.audioSha256`, see capture/recorder.ts `ensureAudioHash`); a
+ * spoken letter whose file is gone is refused rather than saved pointing at
+ * nothing (`audioExists` is checked by the caller just before).
+ */
+export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
+  if (e.audioUri && !audioExists) throw new AudioMissingError();
+  const d = open();
+  d.withTransactionSync(() => {
+    writeEntry(d, { ...e, id: draftId });
+    d.runSync('DELETE FROM drafts WHERE id = ?', draftId);
+  });
+  changed();
+}
+
+/**
+ * Keep a spoken letter without words (TDD 03 FM-9, TDD 01 3.6): the
+ * recording is the true original; words are set once later
+ * (setWordsForWaitingEntry). Saved private unless the parent chose the book.
+ */
+export function saveVoiceOnlyFromDraft(
+  draft: Draft,
+  opts: { childId: string; authorSignsAs: string; inBook: boolean; engineVersion: number; audioExists?: boolean },
+): Entry {
+  if (!draft.audioUri || opts.audioExists === false) throw new AudioMissingError();
+  const entry: Entry = {
+    id: draft.id,
+    kind: 'letter',
+    occurredOn: todayISO(new Date(draft.createdAt)),
+    capturedAt: draft.createdAt,
+    captureMode: 'spoken',
+    editLevel: 'verbatim',
+    promptKey: draft.promptKey,
+    engineVersion: opts.engineVersion,
+    rawTranscript: '',
+    machineEdits: [],
+    finalText: '',
+    inBook: opts.inBook,
+    soundsLikeMe: null,
+    childId: opts.childId,
+    authorSignsAs: opts.authorSignsAs,
+    audioUri: draft.audioUri,
+    audioDurationMs: draft.audioDurationMs,
+    audioSha256: draft.audioSha256,
+    audioBytes: draft.audioBytes,
+    transcriptStatus: 'waiting',
+  };
+  saveLetterFromDraft(draft.id, entry);
+  return entry;
+}
+
+/** Spoken letters still waiting for their words, oldest first (the transcription queue reads this). */
+export function listWaitingForWords(childId: string): Entry[] {
+  return open()
+    .getAllSync<Row>(
+      "SELECT * FROM entries WHERE child_id = ? AND deleted_at IS NULL AND transcript_status = 'waiting' ORDER BY captured_at ASC",
+      childId,
+    )
+    .map(fromRow);
+}
+
+/**
+ * Sets the words of a voice-only letter, once. raw_transcript is written
+ * only while it is still '' and the letter is waiting: the first transcript
+ * that exists becomes the immutable raw (TDD 03 FM-9). Returns false if the
+ * letter already had words.
+ */
+export function setWordsForWaitingEntry(
+  id: string,
+  w: { rawTranscript: string; machineEdits: Edit[]; finalText: string; editLevel: EditLevel; engineVersion: number },
+): boolean {
+  const d = open();
+  const res = d.runSync(
+    `UPDATE entries SET raw_transcript = ?, machine_edits = ?, final_text = ?, edit_level = ?, engine_version = ?,
+       transcript_status = NULL, updated_at = ?
+     WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = ''`,
+    w.rawTranscript, JSON.stringify(w.machineEdits), w.finalText, w.editLevel, w.engineVersion, new Date().toISOString(), id,
+  );
+  const done = res.changes === 1;
+  if (done) changed();
+  return done;
 }
 
 /** Entries for the active child (unchanged signature). */
@@ -480,7 +559,13 @@ interface DraftRow {
   audio_duration_ms: number | null;
   raw_transcript: string | null;
   typed_text: string | null;
+  state: string;
+  audio_sha256: string | null;
+  audio_bytes: number | null;
+  recovered_at: string | null;
 }
+
+const draftState = (s: string): DraftState => (s === 'recording' || s === 'unrecoverable' ? s : 'ready');
 
 const draftFromRow = (r: DraftRow): Draft => ({
   id: r.id,
@@ -492,18 +577,72 @@ const draftFromRow = (r: DraftRow): Draft => ({
   audioDurationMs: r.audio_duration_ms,
   rawTranscript: r.raw_transcript,
   typedText: r.typed_text,
+  state: draftState(r.state),
+  audioSha256: r.audio_sha256,
+  audioBytes: r.audio_bytes,
+  recoveredAt: r.recovered_at,
 });
 
-export function createDraft(input: Omit<Draft, 'id' | 'createdAt' | 'rawTranscript' | 'typedText'> & { typedText?: string | null }): Draft {
+type NewDraft = Pick<Draft, 'childId' | 'captureMode' | 'promptKey' | 'audioUri' | 'audioDurationMs'> & {
+  typedText?: string | null;
+  state?: DraftState;
+  audioSha256?: string | null;
+  audioBytes?: number | null;
+  recoveredAt?: string | null;
+  /** Defaults to now. The launch sweep passes the file's own time. */
+  createdAt?: string;
+};
+
+export function createDraft(input: NewDraft): Draft {
   const id = uuidv7();
   open().runSync(
-    `INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms, typed_text)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, input.childId, input.captureMode, input.promptKey, new Date().toISOString(),
+    `INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms, typed_text,
+       state, audio_sha256, audio_bytes, recovered_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    id, input.childId, input.captureMode, input.promptKey, input.createdAt ?? new Date().toISOString(),
     input.audioUri, input.audioDurationMs, input.typedText ?? null,
+    input.state ?? 'ready', input.audioSha256 ?? null, input.audioBytes ?? null, input.recoveredAt ?? null,
   );
   changed();
   return getDraft(id)!;
+}
+
+/**
+ * Draft-first recording (TDD 01 3.4 rule 1): the row exists, with the file
+ * path, before the microphone goes live. A kill mid-take leaves a
+ * `recording` row the launch sweep can recover.
+ */
+export function createRecordingDraft(input: { childId: string; promptKey: string | null; audioUri: string | null }): Draft {
+  return createDraft({ ...input, captureMode: 'spoken', audioDurationMs: 0, state: 'recording' });
+}
+
+/** Elapsed time so far, written every few seconds so a recovered take shows a sensible length. */
+export function setRecordingProgress(id: string, durationMs: number): void {
+  open().runSync("UPDATE drafts SET audio_duration_ms = ? WHERE id = ? AND state = 'recording'", Math.round(durationMs), id);
+}
+
+/**
+ * The take is closed: one statement records where the file is, its length,
+ * size and SHA-256, and the new state. A null hash means hashing failed; the
+ * audio is still kept and hashed again before save.
+ */
+export function finalizeDraftAudio(
+  id: string,
+  f: { audioUri?: string | null; durationMs?: number | null; sha256: string | null; bytes: number | null; state: DraftState; recovered?: boolean },
+): void {
+  open().runSync(
+    `UPDATE drafts SET audio_uri = COALESCE(?, audio_uri), audio_duration_ms = COALESCE(?, audio_duration_ms),
+       audio_sha256 = ?, audio_bytes = ?, state = ?, recovered_at = CASE WHEN ? THEN ? ELSE recovered_at END
+     WHERE id = ?`,
+    f.audioUri ?? null, f.durationMs == null ? null : Math.round(f.durationMs), f.sha256, f.bytes, f.state,
+    f.recovered ? 1 : 0, new Date().toISOString(), id,
+  );
+  changed();
+}
+
+/** Stores the hash computed just before save, for drafts finalized without one. */
+export function setDraftAudioHash(id: string, sha256: string, bytes: number): void {
+  open().runSync('UPDATE drafts SET audio_sha256 = ?, audio_bytes = ? WHERE id = ?', sha256, bytes, id);
 }
 
 export function getDraft(id: string): Draft | null {
@@ -511,8 +650,11 @@ export function getDraft(id: string): Draft | null {
   return r ? draftFromRow(r) : null;
 }
 
+/** Drafts waiting to be read back, newest first. A take still recording is not listed. */
 export function listDrafts(childId: string): Draft[] {
-  return open().getAllSync<DraftRow>('SELECT * FROM drafts WHERE child_id = ? ORDER BY created_at DESC', childId).map(draftFromRow);
+  return open()
+    .getAllSync<DraftRow>("SELECT * FROM drafts WHERE child_id = ? AND state != 'recording' ORDER BY created_at DESC", childId)
+    .map(draftFromRow);
 }
 
 /** Sets the raw transcript once. Later calls are ignored: raw is immutable. */
@@ -528,7 +670,65 @@ export function setDraftChild(id: string, childId: string): void {
   open().runSync('UPDATE drafts SET child_id = ? WHERE id = ?', childId, id);
 }
 
+/** Removes the row only. Audio files are deleted by the explicit Discard in Listen, never here. */
 export function deleteDraft(id: string): void {
   open().runSync('DELETE FROM drafts WHERE id = ?', id);
   changed();
+}
+
+// ── Launch sweep support (capture/sweep.ts) ──────────────────────────────
+/** Every row that points at audio, tombstoned letters included. */
+export function audioRows(): { drafts: SweepDraft[]; entries: SweepEntry[] } {
+  const d = open();
+  return {
+    drafts: d
+      .getAllSync<{ id: string; audio_uri: string | null; state: string }>('SELECT id, audio_uri, state FROM drafts')
+      .map((r) => ({ id: r.id, audioUri: r.audio_uri, state: r.state })),
+    entries: d
+      .getAllSync<{ id: string; audio_uri: string }>('SELECT id, audio_uri FROM entries WHERE audio_uri IS NOT NULL')
+      .map((r) => ({ id: r.id, audioUri: r.audio_uri })),
+  };
+}
+
+/** The app container moved (iOS update): point the row at the same file's current path. */
+export function rebaseAudioUri(table: 'drafts' | 'entries', id: string, uri: string): void {
+  open().runSync(`UPDATE ${table === 'drafts' ? 'drafts' : 'entries'} SET audio_uri = ? WHERE id = ?`, uri, id);
+}
+
+export interface OrphanAudio {
+  fileName: string;
+  bytes: number | null;
+  foundAt: string;
+}
+
+/** Recordings on this phone with no letter (Settings > Recordings). Never deleted automatically. */
+export function listOrphanAudio(): OrphanAudio[] {
+  return open()
+    .getAllSync<{ file_name: string; bytes: number | null; found_at: string }>('SELECT * FROM orphan_audio ORDER BY found_at ASC')
+    .map((r) => ({ fileName: r.file_name, bytes: r.bytes, foundAt: r.found_at }));
+}
+
+export function reportOrphanAudio(fileName: string, bytes: number | null): void {
+  open().runSync('INSERT OR IGNORE INTO orphan_audio (file_name, bytes, found_at) VALUES (?, ?, ?)', fileName, bytes, new Date().toISOString());
+  changed();
+}
+
+/** A stray recording becomes a draft on a book (it shows on Tonight), in one transaction with its report row. */
+export function reattachOrphanAudio(
+  fileName: string,
+  input: { childId: string; audioUri: string; createdAt: string; sha256: string | null; bytes: number | null; state: DraftState },
+): Draft {
+  const d = open();
+  const id = uuidv7(Date.parse(input.createdAt) || Date.now());
+  d.withTransactionSync(() => {
+    d.runSync(
+      `INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms,
+         state, audio_sha256, audio_bytes, recovered_at)
+       VALUES (?, ?, 'spoken', NULL, ?, ?, NULL, ?, ?, ?, ?)`,
+      id, input.childId, input.createdAt, input.audioUri, input.state, input.sha256, input.bytes, new Date().toISOString(),
+    );
+    d.runSync('DELETE FROM orphan_audio WHERE file_name = ?', fileName);
+  });
+  changed();
+  return getDraft(id)!;
 }

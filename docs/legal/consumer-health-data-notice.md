@@ -1,10 +1,10 @@
 ---
 title: Early Letters Consumer Health Data Privacy Policy
 key: health-privacy
-version: 1.0.0
+version: 1.1.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-02
+last_updated: 2026-10-03
 owner: founder
 reviewers: outside privacy counsel (TBD)
 ---
@@ -70,7 +70,7 @@ How to ask: email {PRIVACY_EMAIL}, or use the web page at {WEB_DELETION_URL} for
 
 We will tell you in the app and by email at least 30 days before any change to how we collect, use or share consumer health data, and ask for your agreement again where the law requires.
 
-{COMPANY_LEGAL_NAME}, {COMPANY_ADDRESS}. Email {PRIVACY_EMAIL}.
+{PUBLISHER_LEGAL_NAME}, {CONTACT_ADDRESS}. Email {PRIVACY_EMAIL}.
 
 ---
 
@@ -97,7 +97,7 @@ Consent text must list categories, purpose, recipients and how to withdraw [L1].
 
 **HN-9. Due date in Apple's label.** Apple lists "pregnancy or childbirth information" as Sensitive Info; app-store-privacy-labels.md 1.1.0 declares it.
 
-**HN-10. Affiliates.** Confirm the company has no affiliates when the LLC is formed; if it does, Washington requires naming specific affiliates.
+**HN-10. Affiliates and provider identity (updated 3 Oct 2026).** The founder publishes as an individual with no LLC for now (`docs/DECISIONS.md` D-004), so there are no affiliates to name. Confirm MHMDA duties apply the same way to an individual "regulated entity" (the Act has no revenue threshold), and revisit this note if an entity is formed.
 
 ## Appendix B. Sources
 
@@ -113,4 +113,5 @@ Not opened: Nevada NRS 603A text; Connecticut General Statutes 42-515 ff. text (
 
 | Version | Date | Change |
 |---|---|---|
+| 1.1.0 | 2026-10-03 | Provider is the founder as an individual ({PUBLISHER_LEGAL_NAME}, {CONTACT_ADDRESS}); HN-10 updated (no affiliates). Pre-publication draft; no users bound. |
 | 1.0.0 | 2026-10-02 | First draft for counsel review (`memos/lawyer-2.md`). |

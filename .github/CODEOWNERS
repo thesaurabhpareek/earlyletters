@@ -1,0 +1,29 @@
+# Code owners. Replace the placeholder handle when the team grows; the
+# comments name the reviewer each area will need then (TDD 07 sections 8, 9).
+
+*                                   @thesaurabhpareek
+
+# The constitution: verifier, edit types, cleaning pipeline (engine owner)
+/packages/core/src/verify.ts        @thesaurabhpareek
+/packages/core/src/meaning.ts       @thesaurabhpareek
+/packages/core/src/types.ts         @thesaurabhpareek
+/packages/core/src/pipeline.ts      @thesaurabhpareek
+/CLAUDE.md                          @thesaurabhpareek
+
+# Plus gates and what stays free forever (founder plus counsel)
+/packages/core/src/plan.ts          @thesaurabhpareek
+
+# Every word the product says (brand and voice owner)
+/packages/content/                  @thesaurabhpareek
+/packages/brand/                    @thesaurabhpareek
+
+# Analytics catalogue and tracking plan (analytics engineer plus privacy counsel)
+/packages/analytics/src/            @thesaurabhpareek
+/docs/analytics/                    @thesaurabhpareek
+
+# Database schema, access rules and their tests (data architect)
+/supabase/migrations/               @thesaurabhpareek
+/supabase/tests/                    @thesaurabhpareek
+
+# CI, branch rules and the applied-migrations list
+/.github/                           @thesaurabhpareek

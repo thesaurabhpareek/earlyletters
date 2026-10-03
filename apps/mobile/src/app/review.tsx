@@ -5,12 +5,18 @@
  * explains itself in plain words and can be put back (withoutEdit). The raw
  * transcript is set once on the draft and never changed. Saving writes the
  * entry locally first, then the success haptic, then the settle animation.
+ *
+ * Save is one transaction (DATA-REQ-048): the audio is hashed first, then
+ * the letter is inserted and the draft removed together. When words are not
+ * available (no transcriber, model not ready, failure) the parent can keep
+ * the recording as a letter waiting for its words (TDD 03 FM-9). Sample
+ * words (development builds) are never saved as a transcript.
  */
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PauseIcon, PlayIcon } from 'phosphor-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
+import { Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
 import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -25,30 +31,32 @@ import {
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { Transcript } from '@/components/capture/transcript';
+import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { setAudioMode } from '@/lib/audio-mode';
-import { copy, fill, pendingCopy } from '@/lib/copy';
+import { ensureAudioHash } from '@/lib/capture/recorder';
+import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import {
-  deleteDraft,
   dictionaryFor,
   getChild,
   getDraft,
   getSetting,
   listChildren,
-  saveEntry,
+  saveLetterFromDraft,
+  saveVoiceOnlyFromDraft,
   setDraftChild,
   setDraftTranscript,
   setSetting,
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { getTranscriber } from '@/lib/transcribe';
+import { getTranscriber, TranscriberUnavailable } from '@/lib/transcribe';
 
 const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
   filler: 'filler',
@@ -60,14 +68,15 @@ const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
   paragraph: 'paragraph',
 };
 
-type Phase = 'transcribing' | 'ready' | 'failed' | 'saved';
+/** waiting: no words for this recording right now (no transcriber, model not ready, or it failed). */
+type Phase = 'transcribing' | 'ready' | 'waiting' | 'saved';
 
 export default function Review() {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const r = copy.review;
   const motion = useMotion();
   const { draftId } = useLocalSearchParams<{ draftId: string }>();
-  const [draft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : null));
+  const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : null));
   const [childId, setChildId] = useState(draft?.childId ?? '');
   const child = childId ? getChild(childId) : null;
 
@@ -75,7 +84,13 @@ export default function Review() {
   const spoken = !!draft?.audioUri;
   const captureMode = typed && spoken ? 'mixed' : typed ? 'typed' : 'spoken';
 
-  const [phase, setPhase] = useState<Phase>(typed || draft?.rawTranscript ? 'ready' : 'transcribing');
+  const [phase, setPhase] = useState<Phase>(
+    typed || draft?.rawTranscript ? 'ready' : draft?.state === 'unrecoverable' ? 'waiting' : 'transcribing',
+  );
+  const [waitReason, setWaitReason] = useState<'unavailable' | 'failed'>(draft?.state === 'unrecoverable' ? 'failed' : 'unavailable');
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [voiceOnly, setVoiceOnly] = useState(false);
   const [raw, setRaw] = useState<string>(typed ? draft!.typedText! : (draft?.rawTranscript ?? ''));
   const [isSample, setIsSample] = useState(false);
   const [level, setLevel] = useState<EditLevel>(typed ? 'verbatim' : 'clean');
@@ -109,15 +124,17 @@ export default function Review() {
     setPhase('transcribing');
     try {
       const t = await getTranscriber();
-      if (!t) throw new Error('unavailable');
+      if (!t) throw new TranscriberUnavailable('model-missing');
       const res = await t.transcribe({ audioUri: draft.audioUri, durationMs: draft.audioDurationMs, dictionary });
       if (n !== attempt.current) return;
       if (!t.isSample) setDraftTranscript(draft.id, res.raw); // raw is set once, never changed
       setIsSample(t.isSample);
       setRaw(res.raw);
       setPhase('ready');
-    } catch {
-      if (n === attempt.current) setPhase('failed');
+    } catch (e) {
+      if (n !== attempt.current) return;
+      setWaitReason(e instanceof TranscriberUnavailable ? 'unavailable' : 'failed');
+      setPhase('waiting');
     }
   };
 
@@ -182,56 +199,87 @@ export default function Review() {
   };
 
   const pickChild = () => {
-    const all = listChildren();
-    if (all.length < 2 || !draft) return;
-    Alert.alert(
-      fill(pendingCopy.listen.toChild, { child: child?.name ?? '' }),
-      undefined,
-      [
-        ...all.map((ch) => ({
-          text: ch.name,
-          onPress: () => {
-            haptic('tap');
-            setDraftChild(draft.id, ch.id);
-            setChildId(ch.id);
-          },
-        })),
-        { text: copy.common.cancelButton, style: 'cancel' as const },
-      ],
-    );
+    if (listChildren().length < 2 || !draft) return;
+    haptic('tap');
+    setPickerOpen(true);
+  };
+  const chooseChild = (id: string) => {
+    if (!draft) return;
+    setDraftChild(draft.id, id);
+    setChildId(id);
   };
 
   // Save: commit, haptic, then animate (MOTION principle 3).
   const settle = useSharedValue(1);
   const settleStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.9 + 0.1 * settle.value }], opacity: settle.value }));
-  const save = (inBook: boolean) => {
-    if (!draft || !child) return;
-    player.pause();
-    saveEntry({
-      id: draft.id,
-      kind: 'letter',
-      occurredOn: draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO(),
-      capturedAt: draft.createdAt,
-      captureMode,
-      editLevel: level,
-      promptKey: draft.promptKey,
-      engineVersion: ENGINE_VERSION,
-      rawTranscript: raw,
-      machineEdits: applied,
-      finalText,
-      inBook,
-      soundsLikeMe,
-      childId: child.id,
-      authorSignsAs: child.signsAs,
-      audioUri: draft.audioUri,
-      audioDurationMs: draft.audioDurationMs,
-    });
-    deleteDraft(draft.id);
+  const finishSave = (inBook: boolean) => {
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');
     settle.value = motion.spring(0, 'gentle');
     setTimeout(() => router.back(), 900); // sequenceMaxMs; a tap skips it
+  };
+
+  const saving = useRef(false);
+  const save = async (inBook: boolean) => {
+    if (!draft || !child || saving.current || isSample) return; // sample words are never saved
+    saving.current = true;
+    player.pause();
+    setSaveFailed(false);
+    try {
+      const audio = await ensureAudioHash(draft);
+      saveLetterFromDraft(
+        draft.id,
+        {
+          id: draft.id,
+          kind: 'letter',
+          occurredOn: draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO(),
+          capturedAt: draft.createdAt,
+          captureMode,
+          editLevel: level,
+          promptKey: draft.promptKey,
+          engineVersion: ENGINE_VERSION,
+          rawTranscript: raw,
+          machineEdits: applied,
+          finalText,
+          inBook,
+          soundsLikeMe,
+          childId: child.id,
+          authorSignsAs: child.signsAs,
+          audioUri: draft.audioUri,
+          audioDurationMs: draft.audioDurationMs,
+          audioSha256: audio.sha256,
+          audioBytes: audio.bytes,
+        },
+        audio.exists,
+      );
+      finishSave(inBook);
+    } catch {
+      saving.current = false;
+      setSaveFailed(true); // the draft is intact; nothing was half-saved
+    }
+  };
+
+  /** Keep the recording as a letter waiting for its words (private until the parent adds it). */
+  const keepRecordingOnly = async () => {
+    if (!draft || !child || saving.current) return;
+    saving.current = true;
+    player.pause();
+    setSaveFailed(false);
+    try {
+      const audio = await ensureAudioHash(draft);
+      const fresh = getDraft(draft.id) ?? draft;
+      saveVoiceOnlyFromDraft(
+        { ...fresh, audioSha256: audio.sha256, audioBytes: audio.bytes },
+        { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
+      );
+      setDraft(fresh);
+      setVoiceOnly(true);
+      finishSave(false);
+    } catch {
+      saving.current = false;
+      setSaveFailed(true);
+    }
   };
 
   const dismissFirstNote = () => {
@@ -262,13 +310,17 @@ export default function Review() {
           <Animated.View style={settleStyle}>
             <Card className="rounded-3xl border-0 bg-card p-6">
               <Text className="font-serif text-xl leading-8 text-foreground" numberOfLines={4}>
-                {finalText}
+                {voiceOnly ? pendingCopy.book.waitingForWords : finalText}
               </Text>
             </Card>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(250).duration(200)} className="mt-6 items-center" accessibilityLiveRegion="polite">
             <Text className="text-lg text-success">
-              {savedTo === 'book' ? fill(r.destination.addedToast, { child: child.name }) : r.destination.privateToast}
+              {voiceOnly
+                ? pendingCopy.review.voiceOnlyToast
+                : savedTo === 'book'
+                  ? fill(r.destination.addedToast, { child: child.name })
+                  : r.destination.privateToast}
             </Text>
           </Animated.View>
         </Pressable>
@@ -292,7 +344,12 @@ export default function Review() {
 
       <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
         <View className="gap-1">
-          <Pressable onPress={pickChild} disabled={!many} accessibilityRole={many ? 'button' : 'text'} className="min-h-11 justify-center">
+          <Pressable
+            onPress={pickChild}
+            disabled={!many}
+            accessibilityRole={many ? 'button' : 'text'}
+            accessibilityLabel={many ? fill(pendingCopy.review.toChildA11y, { child: child.name }) : undefined}
+            className="min-h-11 justify-center">
             <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline.toUpperCase()}</Text>
           </Pressable>
           <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">{r.title}</Text>
@@ -302,6 +359,7 @@ export default function Review() {
         {isSample && (
           <View className="rounded-2xl border border-caution p-3">
             <Text className="text-sm text-caution">{pendingCopy.review.sampleBanner}</Text>
+            <Text className="text-sm text-caution">{pendingCopy.review.sampleNotSaved}</Text>
           </View>
         )}
 
@@ -326,19 +384,31 @@ export default function Review() {
           </Card>
         )}
 
-        {phase === 'failed' && (
-          <Card className="gap-3 rounded-3xl border-0 bg-card p-6">
-            <Text className="text-lg font-semibold text-foreground">{copy.errors.transcriptionFailed.title}</Text>
-            <Text className="text-base leading-6 text-foreground">{copy.errors.transcriptionFailed.body}</Text>
+        {phase === 'waiting' && (
+          <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
+            <Text role="heading" className="text-lg font-semibold text-foreground">
+              {waitReason === 'failed' ? copy.errors.transcriptionFailed.title : pendingCopy.review.waitingTitle}
+            </Text>
+            <Text className="text-base leading-6 text-foreground">
+              {waitReason === 'failed' ? copy.errors.transcriptionFailed.body : pendingCopy.review.waitingBody}
+            </Text>
             <View className="flex-row flex-wrap gap-3">
-              <Button onPress={transcribe}>
-                <Text>{copy.errors.transcriptionFailed.button}</Text>
-              </Button>
+              {waitReason === 'failed' && draft.state !== 'unrecoverable' && (
+                <Button variant="secondary" onPress={transcribe}>
+                  <Text>{copy.errors.transcriptionFailed.button}</Text>
+                </Button>
+              )}
               <Button variant="secondary" onPress={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}>
                 <Text>{copy.errors.micDenied.typeButton}</Text>
               </Button>
             </View>
           </Card>
+        )}
+
+        {saveFailed && (
+          <Text className="text-base text-caution" accessibilityLiveRegion="assertive">
+            {copy.errors.generic.body}
+          </Text>
         )}
 
         {phase === 'ready' && (
@@ -354,17 +424,16 @@ export default function Review() {
                     autoFocus
                     textAlignVertical="top"
                     accessibilityLabel={pendingCopy.write.label}
-                    maxFontSizeMultiplier={2}
                   />
                 ) : showOriginal ? (
                   <View className="gap-2">
                     <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{r.originalLabel.toUpperCase()}</Text>
-                    <Text className="font-serif text-xl leading-8 text-foreground" maxFontSizeMultiplier={2} selectable>
+                    <Text className="font-serif text-xl leading-8 text-foreground" selectable>
                       {raw}
                     </Text>
                   </View>
                 ) : userText !== null ? (
-                  <Text className="font-serif text-xl leading-8 text-foreground" maxFontSizeMultiplier={2} selectable>
+                  <Text className="font-serif text-xl leading-8 text-foreground" selectable>
                     {userText}
                   </Text>
                 ) : (
@@ -420,7 +489,7 @@ export default function Review() {
             {!typed && userText === null && !editing && (
               <View className="gap-1">
                 <Text className="text-base text-muted-foreground">
-                  {applied.length === 0 ? r.noChanges : fill(r.changesLabel, { count: applied.length })}
+                  {applied.length === 0 ? r.noChanges : plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))}
                 </Text>
                 {/* Every edit as a row: the VoiceOver path to the underlines (COMPONENTS 2.19). */}
                 {!showOriginal &&
@@ -453,9 +522,11 @@ export default function Review() {
               </View>
             )}
 
-            <Button variant="ghost" size="sm" className="self-start px-0" onPress={() => setEditing((v) => !v)}>
-              <Text className="text-primary">{editing ? copy.common.doneButton : pendingCopy.review.editTextButton}</Text>
-            </Button>
+            {!isSample && (
+              <Button variant="ghost" size="sm" className="self-start px-0" onPress={() => setEditing((v) => !v)}>
+                <Text className="text-primary">{editing ? copy.common.doneButton : pendingCopy.review.editTextButton}</Text>
+              </Button>
+            )}
 
             {!typed && (
               <View className="gap-3">
@@ -486,7 +557,7 @@ export default function Review() {
       </ScrollView>
 
       {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll. */}
-      {phase === 'ready' && (
+      {phase === 'ready' && !isSample && (
         <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
           <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing} accessibilityHint={r.destination.title}>
             <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
@@ -496,6 +567,22 @@ export default function Review() {
           </Button>
         </View>
       )}
+      {/* No words to save (or only sample words): keep the recording itself. */}
+      {spoken && (phase === 'waiting' || (phase === 'ready' && isSample)) && (
+        <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
+          <Button size="lg" onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp}>
+            <Text>{pendingCopy.review.voiceOnlyButton}</Text>
+          </Button>
+        </View>
+      )}
+
+      <WhoseBookSheet
+        visible={pickerOpen}
+        books={listChildren()}
+        selectedId={child.id}
+        onSelect={chooseChild}
+        onClose={() => setPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }

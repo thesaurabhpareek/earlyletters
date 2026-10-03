@@ -1,9 +1,9 @@
 ---
 title: Early Letters Plus Subscription Terms
-version: 1.2.0
+version: 1.3.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-02
+last_updated: 2026-10-03
 owner: founder
 shown_at: Plus sheet (paywall), Settings > Plan, website
 ---
@@ -34,20 +34,20 @@ Writing, reading, playing your recordings, export and family authors are free, a
 | Plus Monthly | {monthlyPrice} (US $3.99) | Every month | 1 month |
 | Plus Annual | {annualPrice} (US $29.99) | Every year | 2 months |
 
-The price, the length of any free trial and the date to cancel by are shown in the app before you subscribe, and those are the terms that apply to you. One free trial per person, as Apple or Google decides. If you are not eligible, no trial is shown. Plus is offered in the United States.
+The price, the length of any free trial and the date to cancel by are shown in the app before you subscribe, and those are the terms that apply to you. One free trial per person, as the store decides. If you are not eligible, no trial is shown. Plus is offered in the United States.
 
 ## Automatic renewal
 
 - **Your plan renews automatically** at the end of each period, and at the end of your free trial, at the price shown above, until you cancel.
 - **When you are charged:** at the end of your free trial, then at the start of each new month or year. With no free trial, you are charged when you confirm the purchase.
-- **Who charges you:** your Apple Account or Google Play account. We never see your card details.
+- **Who charges you:** Apple, through your Apple Account (Google Play, once the Android app is available). We never see your card details.
 - **Your agreement:** we keep a record of what you agreed to and when, and send you a copy by email.
 
 ## How to cancel
 
 Cancel at any time:
 - **iPhone:** Settings, tap your name, Subscriptions, Early Letters, Cancel Subscription. Or in Early Letters: Settings, Plan, Manage subscription.
-- **Android:** Google Play, Payments and subscriptions, Subscriptions, Early Letters, Cancel subscription. Or in Early Letters: Settings, Plan, Manage subscription.
+- **Android (once available):** Google Play, Payments and subscriptions, Subscriptions, Early Letters, Cancel subscription. Or in Early Letters: Settings, Plan, Manage subscription.
 
 To avoid the next charge, cancel at least 24 hours before your free trial or current period ends. Plus keeps working until then. Deleting the app or your account does not cancel your plan. We never put an offer or extra step between you and cancelling.
 
@@ -62,11 +62,11 @@ We tell you by email and in the app:
 
 ## Gifts
 
-A gift of a year of Plus is paid once and never renews or charges anyone again.
+Gifts of Plus are not available yet. When they are, a gift of a year of Plus is paid once and never renews or charges anyone again.
 
 ## Refunds
 
-Apple handles refunds for App Store purchases: reportaproblem.apple.com, or Settings, Plan, Request a refund in Early Letters. For Google Play purchases, ask Google or contact us at {SUPPORT_EMAIL}. Unless the law or the store's policy says otherwise, there are no partial refunds for unused time. A refund never changes your letters, recordings or backups.
+Apple handles refunds for App Store purchases: reportaproblem.apple.com, or Settings, Plan, Request a refund in Early Letters. For Google Play purchases (once the Android app is available), ask Google or contact us at {SUPPORT_EMAIL}. Unless the law or the store's policy says otherwise, there are no partial refunds for unused time. A refund never changes your letters, recordings or backups.
 
 ## If Plus ends
 
@@ -74,7 +74,7 @@ Your books, letters and recordings stay. Recordings already backed up stay store
 
 ## Questions
 
-{COMPANY_LEGAL_NAME}, {COMPANY_ADDRESS}, {SUPPORT_EMAIL}
+{PUBLISHER_LEGAL_NAME}, {CONTACT_ADDRESS}, {SUPPORT_EMAIL}
 
 [Terms of Service]({TERMS_URL}) | [Privacy Policy]({PRIVACY_URL})
 
@@ -90,6 +90,7 @@ Sources: Terms of Service Appendix A, items L1, L7, L8, L10 to L14, S1, S5, S6, 
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.3.0 | 2026-10-03 | draft-for-counsel | Alignment with PRD.md 1.3 (founder decisions of 3 Oct): Plus is sold and managed only through Apple at launch (ADR 0013); Google Play lines apply once Android ships; gifts marked not available yet (P1); provider is an individual ({PUBLISHER_LEGAL_NAME}, {CONTACT_ADDRESS}; D-004). Reminder wording already matches the K-38 windows. Pre-publication draft, no users bound; minor. |
 | 1.2.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2: "listening" becomes "playing your recordings" (K-11); Read together free sessions and the books-for-more-children rule as decided by the founder on 2 Oct (PRD-REQ-015, PRD-REQ-020). Pre-publication draft, no users bound; minor (clarifies free scope). |
 | 1.1.0 | 2026-10-02 | draft-for-counsel | Consumer-law review: filled the Plus feature list from PRD C 4.1; trial terms follow what the app shows (the trial experiment varies length); consent record and emailed copy; no obstacles to cancelling; reminder windows aligned to Terms 14.6; opt-in for price increases; gifts never renew. Pre-publication draft; if published over 1.0.0 this would be major (POLICY_VERSIONING 2.1 item 6). |
 | 1.0.0 | 2026-10-02 | draft-for-counsel | First draft, prepared by Claude for counsel review, from the pricing decision of 1 Oct 2026. |

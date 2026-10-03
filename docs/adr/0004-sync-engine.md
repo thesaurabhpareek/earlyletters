@@ -2,6 +2,8 @@
 
 Status: Accepted. Date: 2026-10-01.
 
+> **Status note, 3 Oct 2026: proposed for amendment, not yet superseded.** `docs/DECISIONS.md` D-023 (PRD.md K-39) recommends an outbox push and cursor pull on expo-sqlite for v1.0 instead of PowerSync with op-sqlite, because the app already ships expo-sqlite, PowerSync cannot replicate the `book_entries` view (TDD 02 finding 3), PowerSync holds L4 data without a written no-training clause (TDD 05 OQ-L15), a database restore under PowerSync's normal resync could delete letters on every device (TDD 06 P-1), and one visibility predicate (`book_access`, D-024) is simpler than RLS plus Sync Streams (TDD 10 section 2). This ADR stays in force until the founder confirms D-023 (requested by 16 Oct 2026); BACKLOG BL-173 is `needs-decision` meanwhile. If confirmed, this ADR becomes "Superseded for v1.0 by D-023; revisit PowerSync at 10k families or when attachment sync outgrows the simple queue".
+
 ## Context
 Offline-first: every read and write must hit a local SQLite DB; Supabase Postgres + RLS is the source of truth and already has 36 access tests. Audio and photos are files that need an offline upload queue. A hand-rolled sync is the most common way solo projects lose data.
 

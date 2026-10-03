@@ -1,11 +1,14 @@
 ---
 title: Data classification
 product: "{brand.name} (codename scribe)"
-version: 1.1.0
+version: 1.2.0
 status: draft-for-counsel
 owner: founder (data governance lead role)
 companion: data-policy.md (retention, ownership), DELETION_AND_EXPORT_SPEC.md (DATA-REQ), ENGINEERING_REQUIREMENTS.md (LEGAL-REQ), PRD.md section 7.10
 changelog:
+  - version: 1.2.0
+    date: 2026-10-03
+    summary: Alignment with PRD.md 1.3 and docs/DECISIONS.md. RevenueCat removed (ADR 0013); the App Store account token (`app_account_tokens`) and original transaction id are L3, storefront L2. Device settings use `ageGate.passed` and `ageGate.stoppedAt` only; `ageAttested` and `ageAttestedAt` retired (D-026). Open issue 3 has a recommended answer (D-039: contributors never see the due date or birth year) and issue 4 a recommended default (D-025: lock-screen names off, and server pushes never carry the child's name). Minor.
   - version: 1.1.0
     date: 2026-10-02
     summary: Adds the device-only 18+ entry gate state (PRD.md 1.2, PRD-REQ-019). Minor.
@@ -380,7 +383,7 @@ Each must get column comments in the migration that creates it; the CI gate enfo
 |---|---|
 | `profile_settings` (languages, Hindi script, goals, reminder cadence) | Languages and goals L4 (PRD 7.10); cadence and reading size L2 |
 | `member_return_links` (hashed bearer token) | Hash L3 |
-| `entitlements` (PRD K-28), purchase ledger | Product and dates L2; profile id and RevenueCat app user id L3 |
+| `store_subscriptions` (PRD K-28, purchase ledger), `store_notifications`, `app_account_tokens` | Product, dates, status, storefront and notification ids L2; profile id, `app_account_token` (the random `appAccountToken`) and `original_transaction_id` L3 (ADR 0013; column comments in the 3 Oct migration are authoritative) |
 | `audio_blobs` (path, size, sha256, wrapped file key) | Wrapped key L4; sha256 of ciphertext L3; path L3 |
 | `child_key_grants`, escrow wraps | L4 |
 | `waitlist` (web) | Email L3 |
@@ -444,7 +447,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 |---|---|---|
 | `activeChildId` | L3 | Book id |
 | `appearance`, `readingSize`, `reminders.cadence`, `reminders.paused`, `review.firstNoteSeen` | L2 | Device preferences |
-| `ageAttested`, `ageAttestedAt` | L3 | Age attestation (no birth date is stored, K-07) |
+| `ageGate.passed` (after Yes), `ageGate.stoppedAt` (after No only) | L2 | 18+ entry gate state (PRD-REQ-019, D-026). `ageAttested` and `ageAttestedAt` are retired; the server records `age_attested: true` in the `terms` acceptance context |
 | `family` (legacy, migrated away on open) | L4 | Contained child name and birthday |
 
 ### 4.6 Device: files and secure storage
@@ -523,7 +526,7 @@ Sentry crash events: L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` s
 | PowerSync Cloud bucket storage | L4 (replicated rows) | Sync Streams mirror RLS; co-members' streams must select from `book_entries` columns only (no raw transcript); parity test TC-15 to build |
 | PostHog | L2 | Section 4.7 |
 | Sentry | L2 | Scrubbed |
-| RevenueCat | L3 | Random app user id mapped server-side |
+| Apple App Store Server API and Notifications (independent party, not a processor) | L3 | We receive transaction status for a random `appAccountToken`; no third-party billing processor (ADR 0013) |
 | AI providers (only with consent) | L4 in transit | Zero retention, no training (LEGAL-REQ-020) |
 | Email provider | L3 | Transactional only; no content in subjects or bodies |
 | Support mailbox | L4 | People may paste letters; handled as L4 |
@@ -538,8 +541,8 @@ Sentry crash events: L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` s
 
 1. **`goals_set{keys}` sends goal keys, but PRD 7.10 classifies goals as L4.** Either goals are reclassified (counsel, with the goal list) or the property becomes `goal_count`. Owner: analytics engineer and privacy counsel. Until resolved, do not ship this property.
 2. **`languages_set{multilingual}`** is a boolean reduction of L4 languages (rule 1.1.2). Acceptable as L2 only if counsel agrees a single boolean is not an ethnicity proxy; B-NFR-001 already rejects language names.
-3. **Due date and birthday are visible to contributors** (children row is readable by all members). L4 handling is met (RLS, encryption at rest), but whether grandparents should see a due date is a product and counsel decision (K-25).
-4. **Lock-screen child names** (C-REQ-009 toggle) put L4 in local notification text. PRD 7.10 bans L4 in push payloads; local notifications are not server push, but the toggle must default off and never apply to server-sent pushes.
+3. **Due date and birthday are visible to contributors** (children row is readable by all members). L4 handling is met (RLS, encryption at rest), but whether grandparents should see a due date is a product and counsel decision (K-25). **Recommended 3 Oct 2026 (D-039, counsel to confirm):** contributors see name, nickname and birthday month and day only; never the due date or birth year (BL-175).
+4. **Lock-screen child names** (C-REQ-009 toggle) put L4 in local notification text. PRD 7.10 bans L4 in push payloads; local notifications are not server push, but the toggle must default off and never apply to server-sent pushes. **Recommended 3 Oct 2026 (D-025):** default off through remote config; family-letter pushes from the server never carry the child's name (BL-196).
 5. **Supabase encryption at rest** is **Unverified** in writing (LEGAL-REQ-022(c)); record it before launch.
 6. **`policy_acceptances.locale`** is classified L3 as a language proxy; counsel may decide it is L2.
 7. **`data-map.yaml`** (PRD 7.10 item 1) is not built. The database part of the gate exists via column comments; device stores, SDKs and analytics need the same machine check.

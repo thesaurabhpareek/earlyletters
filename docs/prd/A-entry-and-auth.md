@@ -2,6 +2,7 @@
 
 Owner: Lead A. Draft v1, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict log** (K-01, K-07, K-08, K-11, K-15, K-16, K-24); [PRD.md](PRD.md) wins where they differ. iOS at launch, Android later; every requirement must work on both.
 Siblings: **B** (first-run profile, children, goals, co-parent and privacy, templates and themes), **C** (reminders, celebrations, preferences, settings, pricing, trial and paywall).
+> **PRD.md 1.3 (3 Oct 2026) overrides here:** v1.0 opens on one welcome screen, then the 18+ gate; the 4-story intro (A-REQ-003 to A-REQ-011) moves to v1.1 (D-043). Sign-in at v1.0 is Sign in with Apple and email link plus code; Google sign-in (A-REQ-017) and linking move to v1.1 (D-044). The "I was invited" path now serves Family contributors in the app (K-35). See PRD.md section 3.0.
 Evidence keys: **UR** `docs/research/USER_RESEARCH.md`, **CR** `COMPETITIVE_RESEARCH.md`, **ARCH** `docs/ARCHITECTURE.md`, **DL** `docs/design/DESIGN_LANGUAGE.md`, **MO** `MOTION.md`, **CRE** `CREATIVE.md`, **CMP** `COMPONENTS.md`, **VOICE**/**BRAND** `packages/content/`. External sources [A#] at the end.
 
 ## 0. Key decisions

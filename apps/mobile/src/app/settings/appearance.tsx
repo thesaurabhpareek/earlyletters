@@ -43,7 +43,7 @@ export default function AppearanceSettings() {
       </Section>
 
       <View className="rounded-[14px] border border-border bg-card p-5" accessible accessibilityLabel={fill(copy.reader.preview, { child })}>
-        <Text maxFontSizeMultiplier={2} className="font-serif text-foreground" style={{ fontSize: 20 * scale, lineHeight: 32 * scale }}>
+        <Text className="font-serif text-foreground" style={{ fontSize: 20 * scale, lineHeight: 32 * scale }}>
           {fill(copy.reader.preview, { child })}
         </Text>
       </View>

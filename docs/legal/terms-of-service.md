@@ -1,16 +1,16 @@
 ---
 title: Early Letters Terms of Service
-version: 1.3.0
+version: 1.4.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-02
+last_updated: 2026-10-03
 owner: founder
-applies_to: Early Letters iOS app, Android app (later), family contribution web page, apps/web
+applies_to: Early Letters iOS app, Android app (later), family contribution web page (from v1.1), apps/web
 ---
 
-> **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice and is not ready to publish. Placeholders appear in curly braces, for example {COMPANY_LEGAL_NAME}. Notes for counsel appear as **[COUNSEL: ...]** and must be removed before publication. Law and store rules were checked on 2 October 2026; sources are in Appendix A, open decisions in Appendix B. The consumer-law review for this version is docs/legal/memos/lawyer-1.md.
+> **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice and is not ready to publish. Placeholders appear in curly braces, for example {PUBLISHER_LEGAL_NAME}. Notes for counsel appear as **[COUNSEL: ...]** and must be removed before publication. Law and store rules were checked on 2 October 2026; sources are in Appendix A, open decisions in Appendix B. The consumer-law review for this version is docs/legal/memos/lawyer-1.md.
 
-> **[COUNSEL NOTE FOR THE FOUNDER. Not part of the Terms; remove before publication.]** These Terms limit what a user can claim against the company. They do not by themselves protect you personally. What limits personal liability is running Early Letters through the LLC (or other entity) and keeping it separate: form it before launch, sign every contract, store account and vendor agreement in its name, use its own bank account, never mix personal and company money, and keep it in good standing with the California Secretary of State and Franchise Tax Board. Recommended before launch: technology errors and omissions (tech E&O) insurance combined with cyber liability (data breach response, notification costs, regulatory defense), and general liability once printed books ship. Counsel to confirm the entity type, coverage limits and any exclusions for children's data.
+> **[COUNSEL NOTE FOR THE FOUNDER. Not part of the Terms; remove before publication.]** Updated 3 Oct 2026: the founder decided to publish as an individual with no LLC for now (`docs/DECISIONS.md` D-004). These Terms limit what a user can claim, but **they do not protect you personally**: with no entity, every claim is against you and your personal assets. The liability cap (Section 21) and the beta and "it can make mistakes" lines (Sections 11.5, 16.4) reduce exposure; they do not replace an entity. Recommended: price technology errors and omissions (tech E&O) plus cyber liability insurance now, and form an entity and transfer the app before scale (before the public beta link or paid marketing, 1,000 families, $2,000 a month in proceeds, the first hire, or Android). When an entity exists: sign every contract, store account and vendor agreement in its name, use its own bank account, and keep it in good standing. Counsel to confirm the individual's contact address for Section 26.1(h) and notices (a mailing address rather than a home address, where lawful), and coverage limits and exclusions for children's data.
 
 # Early Letters Terms of Service
 
@@ -32,7 +32,7 @@ This summary is here to help. The full terms below are what count.
 
 ## 1. Who we are and what these terms cover
 
-1.1 Early Letters is run by {COMPANY_LEGAL_NAME}, a California {ENTITY_TYPE} ("**we**", "**us**"). Our address is {COMPANY_ADDRESS}.
+1.1 Early Letters is made and run by {PUBLISHER_LEGAL_NAME}, an individual based in California ("**we**", "**us**"). Our contact address is {CONTACT_ADDRESS}. **[COUNSEL: individual publisher per founder decision of 3 Oct 2026 (D-004); confirm "we" is acceptable and that a successor entity can take over these Terms by assignment under 27.3.]**
 
 1.2 These Terms of Service ("**Terms**") are an agreement between you and us. They cover the Early Letters apps, the family contribution web page, our websites, and any related services (together, the "**Service**").
 
@@ -63,7 +63,7 @@ This summary is here to help. The full terms below are what count.
 
 3.1 **You can start without an account.** You can write, save, read and export letters on your phone before you create an account. Those letters live only on that phone until you sign in.
 
-3.2 **Signing in.** To invite family, back up recordings, or use a second phone, you need an account. You can sign in with Apple, Google or email. Apple and Google sign-in are also governed by their own terms.
+3.2 **Signing in.** To invite family, back up recordings, or use a second phone, you need an account. You can sign in with Apple or email, and with Google where the app offers it. Apple and Google sign-in are also governed by their own terms.
 
 3.3 **Keep it safe.** Please keep your phone, your email and your sign-in methods secure. You are responsible for what happens through your account unless it happens because of our mistake. Tell us at {SUPPORT_EMAIL} if you think someone else has used your account.
 
@@ -198,7 +198,7 @@ This summary is here to help. The full terms below are what count.
 
 ## 12. Keeping your letters safe
 
-12.1 **Where things are kept.** Recordings are kept on your phone. When you are signed in, letter text syncs to our servers so it can reach your other devices and your family. Recordings leave your phone only if you turn on backup (part of Plus) or send a letter from the family web page.
+12.1 **Where things are kept.** Recordings are kept on your phone. When you are signed in, letter text syncs to our servers so it can reach your other devices and your family. Recordings leave your phone only if you turn on backup (part of Plus) or, once the family web page is available, send a letter from it. **[COUNSEL: two pending changes. (1) K-33: name cloud transcription (consented) as an exit when it ships (v1.1). (2) If the founder approves "shared voice" (D-032), recordings of letters in a shared book upload, encrypted, so family can hear them, for every user; this sentence changes before publication.]**
 
 12.2 **Backup.** Backed-up recordings are encrypted on your phone before upload. In the standard setting, we can help you recover your backup if you lose your phone and your keys. If you choose **Vault mode**, only your keys and your Recovery Kit can open your backup. **If you lose them, neither you nor we can recover those recordings.** The app asks you to confirm this before you turn Vault mode on.
 
@@ -384,7 +384,7 @@ California law governs these Terms and any dispute about the Service, without re
 
 These terms apply in addition to the rest of these Terms, and win if there is a conflict about the iOS app ("**the App**"):
 
-(a) **Acknowledgement.** These Terms are between you and {COMPANY_LEGAL_NAME} only, not with Apple. We, not Apple, are solely responsible for the App and its content. These Terms do not set usage rules for the App that conflict with the Apple Media Services Terms and Conditions.
+(a) **Acknowledgement.** These Terms are between you and {PUBLISHER_LEGAL_NAME} only, not with Apple. We, not Apple, are solely responsible for the App and its content. These Terms do not set usage rules for the App that conflict with the Apple Media Services Terms and Conditions.
 
 (b) **Scope of license.** Your license to the App is a non-transferable license to use it on any Apple-branded products that you own or control, as permitted by the Usage Rules in the Apple Media Services Terms and Conditions, except that the App may be accessed, acquired and used by other accounts associated with the purchaser through Family Sharing or volume purchasing.
 
@@ -398,7 +398,7 @@ These terms apply in addition to the rest of these Terms, and win if there is a 
 
 (g) **Legal compliance.** You represent and warrant that (i) you are not located in a country subject to a US government embargo, or designated by the US government as a "terrorist supporting" country; and (ii) you are not listed on any US government list of prohibited or restricted parties.
 
-(h) **Developer name and address.** Questions, complaints or claims about the App go to: {COMPANY_LEGAL_NAME}, {COMPANY_ADDRESS}, {SUPPORT_PHONE}, {SUPPORT_EMAIL}.
+(h) **Developer name and address.** Questions, complaints or claims about the App go to: {PUBLISHER_LEGAL_NAME}, {CONTACT_ADDRESS}, {SUPPORT_PHONE}, {SUPPORT_EMAIL}.
 
 (i) **Third-party terms.** You must comply with any third-party terms that apply when you use the App, such as your mobile data plan.
 
@@ -426,12 +426,12 @@ Google is not a party to these Terms and is not responsible for the app. Your pu
 
 27.7 **Language.** If we translate these Terms, the English version controls, unless the law where you live says otherwise.
 
-27.8 **Notices.** We send notices to the email linked to your account, or in the app. You send notices to {SUPPORT_EMAIL} or {COMPANY_ADDRESS}.
+27.8 **Notices.** We send notices to the email linked to your account, or in the app. You send notices to {SUPPORT_EMAIL} or {CONTACT_ADDRESS}.
 
 ## 28. Contact us
 
-{COMPANY_LEGAL_NAME}
-{COMPANY_ADDRESS}
+{PUBLISHER_LEGAL_NAME}
+{CONTACT_ADDRESS}
 Email: {SUPPORT_EMAIL}
 Phone: {SUPPORT_PHONE}
 
@@ -497,15 +497,16 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 8. **Court orders and safety removals** (Section 9.4), CSAM reporting (Section 10.3).
 9. **Liability cap and carve-outs** (Section 21), indemnity (Section 22).
 10. **Print Terms** to draft before print launch (Section 15).
-11. **Product alignment to fix in PRD C** (owner: PRD agent): (a) annual renewal notice about 30 days before renewal, plus 7 days; (b) trials over one month: first notice 16 to 21 days before the trial ends; (c) every trial: last notice at least 3 days before the last day to cancel (trial end minus 24 hours), so D-4, not D-3; (d) price-change notice 7 to 30 days before, with opt-in store consent for every increase; (e) log proof of consent for each purchase; (f) trial length comes from the store offer, because the section 8 experiment varies it; (g) monthly renewal receipt email if counsel says Massachusetts applies.
+11. **Product alignment to fix in PRD C** (owner: PRD agent): (a) annual renewal notice about 30 days before renewal, plus 7 days; (b) trials over one month: first notice 16 to 21 days before the trial ends; (c) every trial: last notice at least 3 days before the last day to cancel (trial end minus 24 hours), so D-4, not D-3; (d) price-change notice 7 to 30 days before, with opt-in store consent for every increase; (e) log proof of consent for each purchase; (f) trial length comes from the store offer, because the section 8 experiment varies it; (g) monthly renewal receipt email if counsel says Massachusetts applies. **Resolved 3 Oct 2026:** PRD.md 1.3 K-38 adopts these windows as hard windows (final trial notice at trial end minus 4 days 12 hours; annual renewal inside 30 to 31 days; long trials inside 16 to 21 days); LEGAL-REQ-047 updated.
 12. **Shutdown notice period.** Resolved in 1.1.0: 90 days everywhere. Privacy Policy section 18 and DELETION_AND_EXPORT_SPEC.md were changed from 60 to 90 days; their owners should confirm.
-13. **Entity and insurance.** Form the LLC before launch and operate only through it; obtain tech E&O plus cyber insurance (see the note at the top).
+13. **Entity and insurance.** Founder decided 3 Oct 2026 to launch as an individual (D-004); the LLC is no longer a launch condition. Open: insurance for an individual; the trigger for forming an entity and transferring the app; App Review Guideline 5.1.1(ix) risk (apps that "require sensitive user information should be submitted by a legal entity"; D-004 point 4). See the note at the top.
 14. ~~**Beta end date** (Section 16.4)~~ (founder decided 2 Oct 2026: when the founder says so) and liability cap amount (Section 21.1).
 
 ## Changelog
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.4.0 | 2026-10-03 | draft-for-counsel | Alignment with PRD.md 1.3 (founder decisions of 3 Oct). Provider is the founder as an individual (1.1, 26.1(a) and (h), 27.8, signature block; placeholders renamed to {PUBLISHER_LEGAL_NAME} and {CONTACT_ADDRESS}); founder note on liability rewritten for an individual; Appendix B items 11 (resolved by K-38) and 13 (entity no longer a launch condition) updated. Google sign-in where offered (3.2; v1.1). Family web page marked as later (12.1, applies_to). Plus remains billed by Apple only at launch; Section 14's Google Play lines apply when Android ships. Pre-publication draft, no users bound; if published, the provider change would be major. |
 | 1.3.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2 (founder decisions of 2 Oct). Adults only covers every use, including pre-account use on the phone; age asked at first open (1.5, 2.1; PRD K-07). Printed books marked not offered yet; print clauses apply only once print launches (1.3, 6.1, 7.1, 15; PRD K-32). Beta end note updated (16.4 counsel note; PRD K-13). Pre-publication draft, no users bound; 2.1 would be major if 1.2.0 had been published (POLICY_VERSIONING 2.1 item 9, counsel to classify). |
 | 1.2.0 | 2026-10-02 | draft-for-counsel | Consumer-law review (docs/legal/memos/lawyer-1.md). 18+ confirmation at acceptance and under-18 handling (1.5, 2.1); more-than-one-voice rule (5.4); family may keep copies already made (7.2); 11.5 and 11.6 merged into one light mistakes line; trial terms follow what the app shows (14.2); consent records (14.3); reminder windows set to the multi-state overlap (14.6); opt-in for every price increase (14.8); no obstacles to cancelling (14.10); CLRA named in 21.2; Apple license scope matched to Apple's minimum terms (26.1(b)); sources L10 to L14. Pre-publication draft, no users bound; if published over 1.1.0 this would be major under POLICY_VERSIONING 2.1 items 6 and 7. |
 | 1.1.0 | 2026-10-02 | draft-for-counsel | Founder request: added beta section (16.4) and summary line; added "It can make mistakes" (11.6); tightened disclaimers (20.2, 20.3); liability floor lowered from $100 to $50 and carve-outs widened (21); founder note on entity and insurance; shutdown notice aligned at 90 days across legal docs. |

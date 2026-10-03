@@ -1,13 +1,13 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { BookOpenIcon, LockSimpleIcon, PlayIcon, TrashIcon } from 'phosphor-react-native';
-import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, ScrollView, View, useColorScheme } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { copy, fill } from '@/lib/copy';
+import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { deleteEntry, getActiveChild, getChild, getEntry, setEntryInBook, undeleteEntry, type Entry } from '@/lib/store';
@@ -18,7 +18,6 @@ import { ReadingSizeSheet } from '@/components/book/reading-size-sheet';
 import { UndoToast } from '@/components/book/undo-toast';
 import { authorOf, getReadingSize, isOwnEntry, setReadingSize, type ReadingSize } from '@/components/child/child-store';
 
-const UNDO_MS = 10_000;
 const BODY = { size: 20, leading: 32 }; // tokens.type.letterBody
 
 /** Letter reading view (DESIGN_LANGUAGE 12): a page, not a card. */
@@ -33,11 +32,6 @@ export default function Letter() {
   const [showOriginal, setShowOriginal] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [deleted, setDeleted] = useState<Entry | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
 
   const headerRight = () => (
     <Pressable
@@ -61,12 +55,12 @@ export default function Letter() {
           <Text role="heading" className="font-serif text-2xl text-foreground">
             {copy.settings.delete.entryToast}
           </Text>
-          <Text className="text-base text-muted-foreground">{copy.reader.deletedBody}</Text>
+          <Text className="text-base text-muted-foreground">{pendingCopy.reader.deletedUndoBody}</Text>
         </Animated.View>
         <UndoToast
           message={copy.settings.delete.entryToast}
+          onDismiss={() => router.back()}
           onUndo={() => {
-            if (timer.current) clearTimeout(timer.current);
             undeleteEntry(deleted.id);
             haptic('tap');
             setEntry(getEntry(deleted.id));
@@ -98,6 +92,7 @@ export default function Letter() {
   const spoken = entry.captureMode !== 'typed';
   const own = isOwnEntry(entry);
   const canShowOriginal = own && spoken && entry.rawTranscript !== entry.finalText;
+  const waiting = entry.transcriptStatus === 'waiting';
   const text = showOriginal ? entry.rawTranscript : entry.finalText;
 
   const toggleInBook = () => {
@@ -108,13 +103,11 @@ export default function Letter() {
     setStatus(next ? fill(copy.review.destination.addedToast, { child: child.name }) : copy.review.destination.privateToast);
   };
 
-  const remove = async () => {
+  const remove = () => {
     deleteEntry(entry.id); // tombstone; restorable
     haptic('warning');
+    // Undo stays until the parent taps Undo, Close or Back: no timed navigation (TDD 09 A11Y-F03).
     setDeleted(entry);
-    const sr = await AccessibilityInfo.isScreenReaderEnabled();
-    // With VoiceOver on, the undo stays until the reader leaves (COMPONENTS 2.14).
-    if (!sr) timer.current = setTimeout(() => router.back(), UNDO_MS);
   };
 
   return (
@@ -136,16 +129,17 @@ export default function Letter() {
         {showOriginal && (
           <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{copy.review.originalLabel.toUpperCase()}</Text>
         )}
-        <Text
-          selectable
-          maxFontSizeMultiplier={2}
-          className="font-serif text-foreground"
-          style={{ fontSize: BODY.size * scale, lineHeight: BODY.leading * scale }}>
-          {text}
-        </Text>
+        {waiting ? (
+          <Text className="font-serif italic text-muted-foreground" style={{ fontSize: BODY.size * scale, lineHeight: BODY.leading * scale }}>
+            {pendingCopy.book.waitingForWords}
+          </Text>
+        ) : (
+          <Text selectable className="font-serif text-foreground" style={{ fontSize: BODY.size * scale, lineHeight: BODY.leading * scale }}>
+            {text}
+          </Text>
+        )}
 
         <Text
-          maxFontSizeMultiplier={2}
           className="self-end font-serif italic text-foreground"
           style={{ fontSize: BODY.size * scale, lineHeight: BODY.leading * scale }}>
           {signature}

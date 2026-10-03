@@ -19,9 +19,14 @@ import { normalizeChars } from './text';
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 2;
+export const ENGINE_VERSION = 3;
 // 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
 //   collapse; "in in", "so so" become suggestions; "what it was was" kept.
+// 3 (2026-10-03): verifier hardening (BL-064, TDD 03 7.1). Refuses edits that
+//   change negation, tense, modals, contractions, numbers, quotes, sentence
+//   type (? !), names or pronouns outside the dictionary, mid-sentence
+//   capitals, and removals that are emphasis or a complete phrase said twice.
+//   Rules-only output for every existing fixture is unchanged.
 
 export interface CleanOptions {
   level: EditLevel;
@@ -69,7 +74,7 @@ export function faithfulClean(raw: string, opts: CleanOptions): CleanResult {
   // Offered, not applied: only ones the verifier would accept right now and
   // that do not collide with an applied edit (an accepted one drops out here).
   const suggestions = (level === 'clean' ? repeatSuggestionEdits(raw) : []).filter(
-    (s) => checkEdit(s, restCtx) === null && !applied.some((a) => overlaps(a, s) || (a.start === s.start && a.end === s.end)),
+    (s) => checkEdit(s, restCtx) === null && !applied.some((a) => overlaps(a, s) || a.start === s.start),
   );
 
   return {

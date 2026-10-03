@@ -2,6 +2,8 @@
 
 Status: Accepted. Date: 2026-10-01.
 
+> **Status note, 3 Oct 2026: digital-purchase half superseded by ADR 0013.** The founder decided Plus ships in v1.0 "via Apple subscription management to keep it Apple focused" (`docs/DECISIONS.md` D-001). ADR 0013 replaces RevenueCat with StoreKit 2 direct (`expo-iap`), App Store Server Notifications V2 and the App Store Server API. The expo-iap note below ("repo archived Aug 2026") refers to the old standalone repository; the package is maintained in the openiap monorepo (npm 5.8.2, 30 Sep 2026). The printed-book half of this ADR stays valid as future roadmap; v1 is digital only (PRD.md K-32).
+
 ## Context
 Monetization undecided: one-time unlock, subscription, or both, plus printed books. Must follow App Store rules. Founder should not maintain receipt validation.
 
