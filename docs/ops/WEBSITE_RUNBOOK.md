@@ -67,7 +67,7 @@ changing any variable below means **Redeploy**, never "it will pick it up".
 | `RESEND_SEGMENT_ID` | same as the key | Plain | runtime | Resend segment (audience) that receives the sign-ups. Needed together with the key. |
 | `APPLE_TEAM_ID` | Production | Plain | build | 10 characters, A-Z and 0-9. For the apple-app-site-association file. Both this and `IOS_BUNDLE_ID` must be set or the file answers 404. Verified (route code). |
 | `IOS_BUNDLE_ID` | Production | Plain | build | The app's real bundle id, exactly as in App Store Connect. Set it explicitly: `packages/brand` still has the placeholder domain `example.com`, so the brand default is wrong. The bundle id cannot change after the first upload to App Store Connect. Verified (repo). |
-| `SITE_MODE` | Optional | Plain | build | `coming-soon` shows the holding page, `film` shows the scroll film. Unset: holding page on Production, film on previews and locally (`src/lib/site-mode.ts`, 4 tests). To publish the film on Production set `SITE_MODE=film` and Redeploy. Verified (repo, production-like and preview-like builds). |
+| `SITE_MODE` | Optional | Plain | build | `coming-soon` shows the organised home page (`components/landing`), `film` shows the scroll film. Unset: the organised home page on Production, film on previews and locally (`src/lib/site-mode.ts`, 4 tests). To publish the film on Production set `SITE_MODE=film` and Redeploy. Verified (repo, production-like and preview-like builds). |
 | `ENABLE_LAB` | **Preview only**, `1` | Plain | build | Publishes the `/lab/*` scene test pages. Leave unset in Production: they answer 404 there. Verified (`next.config.ts`). |
 | `LEGAL_DOCS_DIR` | not set | | build | Test override for the legal loader. Do not set. |
 
