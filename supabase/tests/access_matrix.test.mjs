@@ -27,7 +27,7 @@ const CHILD = await newChild(A);
 await join(B, 'parent', CHILD, A);
 await join(N, 'contributor', CHILD, A);
 await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'contributor')`, [CHILD, W]);
-await as(W, `select public.record_policy_act('contributor-notice', '1.0.0', 'accept', 'web_contributor_page', 'web.send', '1', 'web', null, null, null, '{"age_attested": true}'::jsonb)`, [], { anonymous: true });
+await as(W, `select public.record_policy_act('${uuid7()}', 'contributor-notice', '1.0.0', 'accept', 'web_contributor_page', 'web.send', '1', 'web', null, null, null, '{"age_attested": true}'::jsonb)`, [], { anonymous: true });
 
 let seq = 0;
 const letter = async (author, inBook) => {
@@ -56,9 +56,6 @@ await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', 'x
 await sys(`insert into storage_purge_queue (bucket_id, object_path, reason) values ('entry-photos', 'x/', 'orphan')`);
 const dreq = (await sys(`insert into deletion_requests (kind, profile_id, status, source, scheduled_for) values ('account', $1, 'cancelled', 'ios', now()) returning id`, [C])).rows[0].id;
 await sys(`insert into deletion_request_steps (request_id, step) values ($1, 'auth_user')`, [dreq]);
-await one(A, `select public.my_app_account_token()`);
-await sys(`select public.apply_store_transaction('00000000-0000-4000-8000-0000000000a1', 'SUBSCRIBED', null, now(), 'production', '2000000000000001',
-  (select app_account_token from app_account_tokens where profile_id=$1), 'el_plus_monthly_399', 'active', now() + interval '30 days')`, [A]);
 
 const PERSONAS = ['parent', 'coparent', 'contributor', 'outsider', 'anonymous', 'anon'];
 const UID = { parent: A, coparent: B, contributor: N, outsider: C, anonymous: W };
@@ -85,7 +82,8 @@ async function attempt(persona, sql, params) {
 //                                                               parent  coparent contrib outsider anonymous anon
 const READS = [
   ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, 0]],
-  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, 0]],
+  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 0, 0, 0, 0]],
+  ['book_children', 'select 1 from book_children where id=$1', [CHILD],               [1, 1, 1, 0, 0, '42501']],
   ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, 0]],
   ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         [3, 3, 0, 0, 0, 0]],
   ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, 0]],
@@ -103,12 +101,11 @@ const READS = [
   ['legal_holds', 'select 1 from legal_holds', [],                                    [0, 0, 0, 0, 0, 0]],
   ['purge_ledger', 'select 1 from purge_ledger', [],                                  [0, 0, 0, 0, 0, 0]],
   ['storage_purge_queue', 'select 1 from storage_purge_queue', [],                    [0, 0, 0, 0, 0, 0]],
-  ['app_account_tokens', 'select 1 from app_account_tokens', [],                      [0, 0, 0, 0, 0, 0]],
-  ['store_subscriptions', 'select 1 from store_subscriptions', [],                    [0, 0, 0, 0, 0, 0]],
-  ['store_notifications', 'select 1 from store_notifications', [],                    [0, 0, 0, 0, 0, 0]],
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], [1, 1, 1, 0, 0, '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], [1, 0, 0, 0, 0, '42501']],
+  // DB-05 / D-039: the birth year and the due date are parents only.
+  ['children: date_of_birth and due_date', 'select 1 from children where id=$1 and (date_of_birth is not null or due_date is null)', [CHILD], [1, 1, 0, 0, 0, 0]],
 ];
 
 const NEW_ID = '0192f000-0000-7000-8000-0000000000ff';
@@ -119,8 +116,8 @@ const WRITES = [
   ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
   ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
   ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
-  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', 'none']],
-  ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-05-20')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'none', 'none', 'none', 'none']],
+  ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-04-12')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: add self', `insert into child_members (child_id, profile_id) values ('${CHILD}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
   ['child_invites: insert directly', `insert into child_invites (child_id, invited_by, token_hash, role) values ('${CHILD}', auth.uid(), '\\x00', 'parent')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
@@ -128,19 +125,25 @@ const WRITES = [
   ['child_member_prefs: edit own', `update child_member_prefs set signs_as='Mumma' where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
   ['profiles: edit own', `update profiles set signs_as='Papa' where id = auth.uid()`, ['ok', 'ok', 'ok', 'ok', 'none', 'none']],
   ['policy_acceptances: insert directly', `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform) values (auth.uid(), 'terms', '1.0.0', 'accept', 'signin_sheet', 'x', '1', 'ios')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['store_subscriptions: insert', `insert into store_subscriptions (original_transaction_id, profile_id, product_id, status, environment, last_signed_at) values ('9', auth.uid(), 'p', 'active', 'production', now())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['app_account_tokens: insert', `insert into app_account_tokens (profile_id) values (auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['legal_holds: insert', `insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', '${CHILD}', 'other', 'x', 'x', '2027-01-01')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: upload to own folder', null,                                             ['ok', 'ok', 'ok', '42501', '42501', '42501']],
+  // DB-01: every view is read-only for every persona (a write through the
+  // definer-owned view would skip RLS, the tombstone rules and the audit log).
+  ['book_entries: update A\'s letter', `update book_entries set final_text='x' where id='${aBook}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_entries: delete A\'s letter', `delete from book_entries where id='${aBook}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_entries: insert', `insert into book_entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode, engine_version, final_text) values ('${NEW_ID}', '${CHILD}', auth.uid(), 'letter', '2026-09-29', now(), 'spoken', 1, 'x')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_children: update', `update book_children set name='X' where id='${CHILD}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_children: delete', `delete from book_children where id='${CHILD}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // my_policy_state (DISTINCT ON) is not auto-updatable, so Postgres refuses writes
+  // with 55000 before checking grants; hardening.test.mjs checks its grants directly.
 ];
 
-// A holds Plus in this fixture (see apply_store_transaction above), so A may start
-// another book; the no-Plus refusal (SCPLS) is covered in children_entitlements.test.mjs.
+// The server does not enforce Plus (founder decision 3: StoreKit 2 on the device),
+// so anyone signed in and consented may start another book.
 const RPCS = [
-  ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-05-20')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['create_first_run_children', `select public.create_first_run_children('[{"id": "${uuid7()}", "name": "Asha", "date_of_birth": "2025-05-20"}]')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
-  ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['create_child_invite', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['create_child_invite (parent role)', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'parent', sha256(gen_random_uuid()::text::bytea), sha256(gen_random_uuid()::text::bytea))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['accept_child_invite', `select public.accept_child_invite('${token}')`,               ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
   ['revoke_invite', `select public.revoke_invite('${inviteId}')`,                        ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
   ['review_family_letter', `select public.review_family_letter('${nSent}', 'added')`,    ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
@@ -148,15 +151,13 @@ const RPCS = [
   ['set_member_auto_add', `select public.set_member_auto_add('${CHILD}', '${N}', true)`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['delete_entry', `select public.delete_entry('${aBook}')`,                             ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
   ['restore_entry', `select public.restore_entry('${aBook}')`,                           ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
-  ['request_book_deletion', `select public.request_book_deletion('${CHILD}', 'ios')`,    ['ok', 'ok', 'SCDEL', 'SCDEL', 'SCANO', '42501']],
-  ['cancel_book_deletion', `select public.cancel_book_deletion('${CHILD}')`,             ['ok', 'ok', 'SCDEL', 'SCDEL', 'SCANO', '42501']],
+  ['request_book_deletion', `select public.request_book_deletion('${CHILD}', 'ios')`,    ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['cancel_book_deletion', `select public.cancel_book_deletion('${CHILD}')`,             ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['request_account_deletion', `select * from public.request_account_deletion('ios')`,   ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['cancel_account_deletion', `select public.cancel_account_deletion()`,                 ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['record_policy_act', `select public.record_policy_act('privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['record_policy_act', `select public.record_policy_act('${uuid7()}', 'privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['policy_actions_needed', `select * from public.policy_actions_needed()`,              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['my_sync_gate', `select * from public.my_sync_gate()`,                                ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['get_plan_state', `select * from public.get_plan_state()`,                            ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['my_app_account_token', `select public.my_app_account_token()`,                       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -164,7 +165,6 @@ const HELPERS = {
   'is_child_parent(uuid)': [`select public.is_child_parent('${CHILD}') v`, [true, true, false, false, false, '42501']],
   'child_is_live(uuid)': [`select public.child_is_live('${CHILD}') v`, [true, true, true, true, true, '42501']],
   'can_read_entry_photo(text)': [`select public.can_read_entry_photo('${photo}') v`, [true, true, false, false, false, '42501']],
-  'book_has_plus(uuid)': [`select public.book_has_plus('${CHILD}') v`, [true, true, true, false, false, '42501']],
   'is_anonymous()': [`select public.is_anonymous() v`, [false, false, false, false, true, '42501']],
   'require_user()': [`select public.require_user() is not null v`, [true, true, true, true, 'SCANO', '42501']],
   'my_role_in(uuid)': [`select public.my_role_in('${CHILD}') v`, ['parent', 'parent', 'contributor', null, 'contributor', '42501']],
@@ -176,12 +176,11 @@ const HELPERS = {
 // Service role only (Edge Functions, cron, runbooks).
 const SERVICE_ONLY = [
   `select public.purge_due()`, `select public.prepare_account_purge('${dreq}')`, `select public.finalize_account_deletion('${dreq}', '{}')`,
-  `select public.apply_store_transaction(null, 'SUBSCRIBED', null, now(), 'production', '1', null, 'p', 'active', now())`,
-  `select public.has_plus('${A}')`, `select public.record_purge_attempt(1, true)`, `select public.record_deletion_step('${dreq}', 'auth_user', 'done')`,
+  `select public.record_purge_attempt(1, true)`, `select public.record_deletion_step('${dreq}', 'auth_user', 'done')`,
   `select * from public.content_gate_state('${A}')`, `select public.has_active_consent('${A}', 'terms')`,
-  `select public.audit('purge_run', null, null, null)`, `select public.create_child_row('${A}', '${uuid7()}', 'Asha', '2025-05-20', null, true)`,
+  `select public.audit('purge_run', null, null, null)`,
   `select public.enqueue_storage_purge('entry-photos', 'x', false, 'orphan')`, `select public.is_held('child', '${CHILD}')`,
-  `select public.entry_is_held('${aBook}')`, `select public.store_environment_allowed('production')`, `select public.purge_backoff(1)`,
+  `select public.entry_is_held('${aBook}')`, `select public.purge_backoff(1)`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));

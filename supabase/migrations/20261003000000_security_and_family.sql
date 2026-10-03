@@ -10,12 +10,16 @@
 --
 -- Fixes (requirement ids in brackets):
 --  1. Invite escalation [TDD 02 C1, TDD 04 S-1, LEGAL-REQ-024, B-REQ-007]:
---     create_child_invite(uuid) is dropped. The new create_child_invite(p_child,
---     p_role, p_signs_as) needs an explicit role, a parent caller, a live book and
---     consent, and is rate limited per book and per parent. Contributors cannot
---     create any invite. accept_child_invite refuses revoked, expired, used and
+--     create_child_invite(uuid) is dropped. The new create_child_invite(p_id,
+--     p_child, p_role, p_token_hash, p_code_hash, p_signs_as) needs an explicit role, a
+--     parent caller, a live book and consent, and is rate limited per book and per
+--     parent. Contributors cannot create any invite. Every invite has a link token
+--     (SHA-256 stored) and an 8-character code (HMAC under a Vault pepper stored).
+--     accept_child_invite (link) and accept_child_invite_by_code (service role only,
+--     for the invite-redeem Edge Function) refuse revoked, expired, used and
 --     deleted-book invites and existing members; retries by the same person are
---     idempotent. Invites are readable by parents only (S-9).
+--     idempotent. Open invites made by the old function are revoked on upgrade.
+--     Invites are readable by parents only (S-9).
 --  2. Family visibility [B-REQ-009, B-REQ-011, B F9, TDD 04 S-3, S-4]:
 --     entries.approval. A contributor's in_book means "send to the parents"; the
 --     server keeps their letter pending until a parent adds it (or adds it at
@@ -47,20 +51,51 @@
 --   SCRAT rate limited                         retry after the window
 --   SCAPR approval columns are server-owned    permanent
 --   28000 not signed in                        refresh the session
--- Existing: SCIMM, SCTMB, SCLPG, SCDEL (also "book is deleted"), SCPAR (parents only).
+-- Existing: SCIMM, SCTMB, SCLPG, SCDEL (also "book is deleted"), SCPAR (parents only),
+--   SCACD (account deletion pending), SCPRG (id purged for good), SCCFG (server setting missing).
+--   SCVER a newer policy version must be accepted first   show policy_actions_needed()
+--
+-- Review fixes on 3 Oct 2026 (WS-01):
+--  * DB-01: book_entries is replaced below; its write grants are revoked again after the replace.
+--  * DB-05 / D-039: children rows are readable by parents only. Every member reads
+--    book_children (name, nickname, birthday month and day; never the due date or birth year).
+--  * PSEC-04: photo objects cannot be updated (no overwrite in place); deleting your own
+--    photo needs current membership of a live book.
+--  * DB-09: "only a parent" raises SCPAR; record_policy_act raises real codes.
+--  * DB-12: dictionary terms are unique per owner, per book, ignoring case.
+--  * Retry safety (founder decision 17): create_child_invite and record_policy_act
+--    take a required client UUIDv7 key (p_id), stored as the row's primary key. A
+--    replay with the same key and the same arguments returns the original result
+--    with no side effects (no second row, no audit, no rate-limit count); the same
+--    key with different arguments, or someone else's key, raises SCCID.
+--    Invites: the CLIENT generates the secret token (32 random bytes, hex) and sends
+--    only p_token_hash = sha256(utf8(token)); the server never sees or returns the
+--    token, so a replay has nothing secret to re-send. accept_child_invite(p_token)
+--    is unchanged.
 
 -- ─── 1. Shared predicates ────────────────────────────────────────────────
 -- Supabase sets request.jwt.claims for every API request. Reading the setting
 -- directly (as auth.jwt() does) keeps this testable in the PGlite harness.
 create or replace function public.is_anonymous()
-returns boolean language sql stable set search_path = public, pg_catalog as $$
+returns boolean language sql stable set search_path = pg_catalog, public as $$
   select coalesce((nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'is_anonymous')::boolean, false);
+$$;
+
+-- RFC 9562 UUIDv7: version nibble 7, variant 10xx, 48-bit Unix ms timestamp
+-- between 2024-01-01 and one day from now. Client-made ids and idempotency keys.
+create or replace function public.is_valid_client_uuid7(p_id uuid)
+returns boolean language sql stable set search_path = pg_catalog, public as $$
+  select p_id is not null
+     and substr(p_id::text, 15, 1) = '7'
+     and substr(p_id::text, 20, 1) in ('8', '9', 'a', 'b')
+     and to_timestamp((('x' || lpad(substr(replace(p_id::text, '-', ''), 1, 12), 16, '0'))::bit(64)::bigint) / 1000.0)
+         between timestamptz '2024-01-01 00:00:00+00' and now() + interval '1 day';
 $$;
 
 -- Every RPC starts with this. Returns the caller's id.
 -- volatile on purpose: a planner may skip an unreferenced stable call; a guard must always run.
 create or replace function public.require_user()
-returns uuid language plpgsql volatile set search_path = public, pg_catalog as $$
+returns uuid language plpgsql volatile set search_path = pg_catalog, public as $$
 declare v_uid uuid := auth.uid();
 begin
   if v_uid is null then
@@ -108,12 +143,12 @@ create policy entry_photos_no_anonymous on storage.objects as restrictive for al
 -- client-context triggers, which run as `authenticated` and cannot read other
 -- members' rows directly.
 create or replace function public.my_role_in(p_child uuid)
-returns text language sql stable security definer set search_path = public, pg_catalog as $$
+returns text language sql stable security definer set search_path = pg_catalog, public as $$
   select role from child_members where child_id = p_child and profile_id = auth.uid();
 $$;
 
 create or replace function public.my_auto_add_in(p_child uuid)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select coalesce((select auto_add_letters from child_members
                     where child_id = p_child and profile_id = auth.uid() and role = 'contributor'), false);
 $$;
@@ -125,7 +160,7 @@ $$;
 -- A person with a current accept acts only when a re-consent version is in force.
 create or replace function public.policy_actions_needed()
 returns table (document text, version text, effective_at timestamptz, summary text)
-language plpgsql stable security definer set search_path = public, pg_catalog as $$
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user();
 begin
   return query
@@ -159,7 +194,7 @@ $$;
 -- durable: re-accepting a later Terms version does not ask the age again.
 create or replace function public.content_gate_state(p_profile uuid)
 returns table (terms_current boolean, age_attested boolean, sensitive_data boolean)
-language sql stable security definer set search_path = public, pg_catalog as $$
+language sql stable security definer set search_path = pg_catalog, public as $$
   select public.has_active_consent(p_profile, 'terms'),
          exists (select 1 from policy_acceptances a
                   where a.profile_id = p_profile and a.document = 'terms' and a.action = 'accept'
@@ -170,7 +205,7 @@ $$;
 -- The caller's gate, for the app's consent sheet and Settings (never takes a profile id).
 create or replace function public.my_sync_gate()
 returns table (terms_current boolean, age_attested boolean, sensitive_data boolean, content_allowed boolean)
-language plpgsql stable security definer set search_path = public, pg_catalog as $$
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user();
 begin
   return query select g.terms_current, g.age_attested, g.sensitive_data,
@@ -180,21 +215,19 @@ end;
 $$;
 
 create or replace function public.can_write_content()
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select auth.uid() is not null and not public.is_anonymous()
      and coalesce((select g.terms_current and g.age_attested and g.sensitive_data
                      from public.content_gate_state(auth.uid()) g), false);
 $$;
 
--- Raises SCCON (pause, not reject) when the caller may not write content.
-create or replace function public.require_content_consent()
-returns void language plpgsql volatile security definer set search_path = public, pg_catalog as $$
+-- Raises SCCON (pause, not reject) when p_profile may not write content.
+create or replace function public.require_content_consent_of(p_profile uuid)
+returns void language plpgsql volatile security definer set search_path = pg_catalog, public as $$
 declare g record;
 begin
-  if auth.uid() is null then raise exception 'not authenticated' using errcode = '28000'; end if;
-  if public.is_anonymous() then raise exception 'not available to anonymous sessions' using errcode = 'SCANO'; end if;
-  select * into g from public.content_gate_state(auth.uid());
-  if not (g.terms_current and g.age_attested and g.sensitive_data) then
+  select * into g from public.content_gate_state(p_profile);
+  if not coalesce(g.terms_current and g.age_attested and g.sensitive_data, false) then
     raise exception 'consent required before content is stored'
       using errcode = 'SCCON',
             detail = concat_ws(',', case when not g.terms_current then 'terms' end,
@@ -205,9 +238,19 @@ begin
 end;
 $$;
 
+-- Raises SCCON (pause, not reject) when the caller may not write content.
+create or replace function public.require_content_consent()
+returns void language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated' using errcode = '28000'; end if;
+  if public.is_anonymous() then raise exception 'not available to anonymous sessions' using errcode = 'SCANO'; end if;
+  perform public.require_content_consent_of(auth.uid());
+end;
+$$;
+
 -- Generic client-write gate for tables whose every insert or update is content.
 create or replace function public.client_content_gate()
-returns trigger language plpgsql set search_path = public, pg_catalog as $$
+returns trigger language plpgsql set search_path = pg_catalog, public as $$
 begin
   if current_user in ('authenticated', 'anon') then
     perform public.require_content_consent();
@@ -231,14 +274,29 @@ alter policy entry_photos_author_insert on storage.objects with check (
   and public.child_is_live(((storage.foldername(name))[1])::uuid)
   and public.can_write_content()
 );
-alter policy entry_photos_author_update on storage.objects
-  using (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text)
-  with check (bucket_id = 'entry-photos' and (storage.foldername(name))[2] = (select auth.uid())::text
-              and public.can_write_content());
+-- PSEC-04: no UPDATE on photo objects at all. A photo is replaced by uploading a new
+-- object (new entry id path) and deleting the old one, so a person who left a book
+-- can never overwrite a photo that is still shown in it. Dropping a policy needs the
+-- dashboard's approval (APPLY.md step 9).
+drop policy if exists entry_photos_author_update on storage.objects;
+-- Deleting your own photo needs current membership of a live book. The CASE keeps
+-- the uuid cast from running on paths outside the {child_id}/{author_id}/ layout.
+alter policy entry_photos_author_delete on storage.objects using (
+  bucket_id = 'entry-photos'
+  and (storage.foldername(name))[2] = (select auth.uid())::text
+  and case when (storage.foldername(name))[1] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+           then public.is_child_member(((storage.foldername(name))[1])::uuid)
+                and public.child_is_live(((storage.foldername(name))[1])::uuid)
+           else false end
+);
 
 -- record_policy_act: anonymous sessions may record only the web contributor
 -- notice; context keys are allowlisted (TDD 05 7.1); age_attested must be true.
+-- p_id is the client's UUIDv7 idempotency key and becomes policy_acceptances.id
+-- (primary key, so unique). A replay with the same key returns the same row id.
+drop function if exists public.record_policy_act(text, text, text, text, text, text, text, text, timestamptz, bytea, jsonb);
 create or replace function public.record_policy_act(
+  p_id uuid,
   p_document text,
   p_version text,
   p_action text,
@@ -250,14 +308,32 @@ create or replace function public.record_policy_act(
   p_client_recorded_at timestamptz default null,
   p_rendered_sha256 bytea default null,
   p_context jsonb default '{}'::jsonb
-) returns uuid language plpgsql security definer set search_path = public, pg_catalog as $$
-declare v_ver policy_versions%rowtype; v_id uuid; v_ctx jsonb := coalesce(p_context, '{}'::jsonb);
+) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+declare v_ver policy_versions%rowtype; v_prev policy_acceptances%rowtype; v_ctx jsonb := coalesce(p_context, '{}'::jsonb);
 begin
   if auth.uid() is null then raise exception 'not authenticated' using errcode = '28000'; end if;
   if public.is_anonymous() and p_method is distinct from 'web_contributor_page' then
     raise exception 'anonymous sessions may only record the web contributor notice' using errcode = 'SCANO';
   end if;
-  if p_method = 'support_assisted' then raise exception 'support-assisted acts are recorded by the service role'; end if;
+  if not public.is_valid_client_uuid7(p_id) then
+    raise exception 'act id must be a UUIDv7 made on the device' using errcode = 'SCCID';
+  end if;
+  -- Replay (lost response): same key, same act -> the original row, nothing new.
+  select * into v_prev from policy_acceptances where id = p_id;
+  if found then
+    if v_prev.profile_id is not distinct from auth.uid()
+       and (v_prev.document, v_prev.version, v_prev.action, v_prev.method, v_prev.surface, v_prev.app_version,
+            v_prev.platform, v_prev.locale, v_prev.rendered_sha256, v_prev.context)
+           is not distinct from
+           (p_document, p_version, p_action, p_method, p_surface, p_app_version,
+            p_platform, p_locale, p_rendered_sha256, v_ctx) then
+      return p_id;
+    end if;
+    raise exception 'act id already used for a different act' using errcode = 'SCCID';
+  end if;
+  if p_method = 'support_assisted' then
+    raise exception 'support-assisted acts are recorded by the service role' using errcode = '22023';
+  end if;
   if jsonb_typeof(v_ctx) <> 'object'
      or exists (select 1 from jsonb_object_keys(v_ctx) k
                  where k not in ('auth', 'age_attested', 'age_signal', 'scope', 'crash', 'usage',
@@ -268,25 +344,26 @@ begin
     raise exception 'age_attested can only be true' using errcode = '22023';
   end if;
   select * into v_ver from policy_versions where document = p_document and version = p_version;
-  if not found then raise exception 'unknown document version'; end if;
-  if v_ver.new_users_from > now() then raise exception 'version not yet published'; end if;
+  if not found or v_ver.new_users_from > now() then
+    raise exception 'unknown document version' using errcode = 'P0002';
+  end if;
   -- Accepting a superseded version is refused so stale clients cannot pin old terms.
   if p_action = 'accept' and exists (
        select 1 from policy_versions n
         where n.document = p_document and n.new_users_from <= now()
           and (n.major, n.minor, n.patch) > (v_ver.major, v_ver.minor, v_ver.patch)
           and n.requires_reconsent) then
-    raise exception 'a newer version requires acceptance';
+    raise exception 'a newer version requires acceptance' using errcode = 'SCVER',
+      hint = 'Fetch policy_actions_needed() and show that version.';
   end if;
   if p_client_recorded_at is not null and p_client_recorded_at > now() + interval '5 minutes' then
     p_client_recorded_at := null;  -- device clock in the future; keep server time only
   end if;
-  insert into policy_acceptances (profile_id, document, version, action, method, surface,
+  insert into policy_acceptances (id, profile_id, document, version, action, method, surface,
                                   client_recorded_at, app_version, platform, locale, rendered_sha256, context)
-  values (auth.uid(), p_document, p_version, p_action, p_method, p_surface,
-          p_client_recorded_at, p_app_version, p_platform, p_locale, p_rendered_sha256, v_ctx)
-  returning id into v_id;
-  return v_id;
+  values (p_id, auth.uid(), p_document, p_version, p_action, p_method, p_surface,
+          p_client_recorded_at, p_app_version, p_platform, p_locale, p_rendered_sha256, v_ctx);
+  return p_id;
 end;
 $$;
 
@@ -294,8 +371,16 @@ $$;
 alter table public.child_invites alter column role drop default;
 alter table public.child_invites add column if not exists revoked_at timestamptz;
 alter table public.child_invites add column if not exists signs_as text check (char_length(signs_as) <= 30);
+-- Invite code (A-REQ-029, TDD 04 3.4.1): HMAC-SHA256 under the Vault secret
+-- invite_code_pepper, so a database dump cannot brute-force the 40-bit codes offline.
+alter table public.child_invites add column if not exists code_hash bytea unique;
 create index if not exists child_invites_inviter_created_idx on public.child_invites (invited_by, created_at);
 create index if not exists child_invites_child_created_idx on public.child_invites (child_id, created_at);
+
+-- Upgrade (M1 fix pack): every open invite made by the old create_child_invite(uuid)
+-- is untrusted. Any member could mint one and its role defaulted to 'parent' (the
+-- escalation this file fixes), so none of them may be accepted after this file.
+update public.child_invites set revoked_at = now() where accepted_at is null and revoked_at is null;
 
 -- Parents only (S-9): contributors no longer see who else was invited.
 alter policy child_invites_select on public.child_invites using (public.is_child_parent(child_id));
@@ -311,16 +396,76 @@ alter table public.audit_events add constraint audit_events_action_check check (
 
 drop function if exists public.create_child_invite(uuid);
 
--- Returns the raw token once; only its SHA-256 is stored. Co-parent invites
--- last 7 days, family invites 14 (K-18). Limits (B-NFR-004): 20 invites per
--- book and 20 per parent in any 24 hours.
-create or replace function public.create_child_invite(p_child uuid, p_role text, p_signs_as text default null)
-returns text language plpgsql security definer set search_path = public, pg_catalog as $$
+-- RFC 2104 HMAC-SHA256 on the built-in sha256(), so no extension schema is needed.
+create or replace function public.hmac_sha256(p_key bytea, p_msg bytea)
+returns bytea language plpgsql immutable strict set search_path = pg_catalog, public as $$
+declare k bytea := p_key; ipad bytea; opad bytea;
+begin
+  if octet_length(k) > 64 then k := sha256(k); end if;
+  k := k || decode(repeat('00', 64 - octet_length(k)), 'hex');
+  ipad := k; opad := k;
+  for i in 0..63 loop
+    ipad := set_byte(ipad, i, get_byte(k, i) # 54);   -- 0x36
+    opad := set_byte(opad, i, get_byte(k, i) # 92);   -- 0x5c
+  end loop;
+  return sha256(opad || sha256(ipad || p_msg));
+end;
+$$;
+
+-- Invite codes: 8 symbols of Crockford base32 (0-9 and A-Z without I, L, O, U),
+-- about 40 bits, shown as XXXX-XXXX. Normal form: upper case, spaces and hyphens
+-- removed, O read as 0 and I or L read as 1. Returns null for anything else. The
+-- app normalises the same way and sends p_code_hash = sha256(utf8(normal form)).
+create or replace function public.normalise_invite_code(p_code text)
+returns text language sql immutable set search_path = pg_catalog, public as $$
+  select case when v ~ '^[0-9A-HJKMNP-TV-Z]{8}$' then v end
+    from (select translate(upper(regexp_replace(coalesce(p_code, ''), '[[:space:]-]', '', 'g')), 'OIL', '011') as v) x;
+$$;
+
+-- What child_invites.code_hash stores: HMAC-SHA256(invite_code_pepper, sha256 of the
+-- normal form). Raises SCCFG when the pepper is missing or short (fails closed).
+create or replace function public.invite_code_digest(p_code_sha256 bytea)
+returns bytea language sql stable security definer set search_path = pg_catalog, public as $$
+  select public.hmac_sha256(convert_to(public.require_server_secret('invite_code_pepper'), 'UTF8'), p_code_sha256);
+$$;
+
+-- Retry-safe invites (founder decision 17). The client generates the invite secret
+-- (32 random bytes, hex encoded, 64 characters) and the 8-character code, keeps both
+-- for the share sheet, and sends only p_token_hash = sha256(utf8(token)),
+-- p_code_hash = sha256(utf8(normalised code)) and a UUIDv7 key p_id, which becomes
+-- child_invites.id. The server never sees or returns the token or the code, so a
+-- replay after a lost response returns the same invite id and the client still holds
+-- both. Co-parent invites last 7 days, family invites 14 (K-18). Limits
+-- (B-NFR-004): 20 invites per book and 20 per parent in any 24 hours; replays do
+-- not count. Returns the invite id.
+create or replace function public.create_child_invite(p_id uuid, p_child uuid, p_role text, p_token_hash bytea,
+                                                      p_code_hash bytea, p_signs_as text default null)
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_uid uuid := public.require_user();
-  v_token text;
-  v_id uuid;
+  v_prev child_invites%rowtype;
+  v_code bytea;
 begin
+  if not public.is_valid_client_uuid7(p_id) then
+    raise exception 'invite id must be a UUIDv7 made on the device' using errcode = 'SCCID';
+  end if;
+  if p_token_hash is null or octet_length(p_token_hash) <> 32 then
+    raise exception 'token hash must be a SHA-256 digest (32 bytes)' using errcode = '22023';
+  end if;
+  if p_code_hash is null or octet_length(p_code_hash) <> 32 then
+    raise exception 'code hash must be a SHA-256 digest (32 bytes)' using errcode = '22023';
+  end if;
+  v_code := public.invite_code_digest(p_code_hash);
+  -- Replay: same key, same caller, same arguments -> the same invite, nothing new.
+  select * into v_prev from child_invites where id = p_id;
+  if found then
+    if v_prev.invited_by = v_uid and v_prev.child_id = p_child and v_prev.role is not distinct from p_role
+       and v_prev.token_hash = p_token_hash and v_prev.code_hash is not distinct from v_code
+       and v_prev.signs_as is not distinct from nullif(btrim(p_signs_as), '') then
+      return p_id;
+    end if;
+    raise exception 'invite id already used for a different invite' using errcode = 'SCCID';
+  end if;
   if p_role is null or p_role not in ('parent', 'contributor') then
     raise exception 'invite role must be parent or contributor' using errcode = 'SCINV';
   end if;
@@ -335,19 +480,22 @@ begin
      or (select count(*) from child_invites where invited_by = v_uid and created_at > now() - interval '24 hours') >= 20 then
     raise exception 'too many invites today' using errcode = 'SCRAT';
   end if;
-  -- 244 random bits from two v4 UUIDs; core Postgres, no extension needed.
-  v_token := replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
-  insert into child_invites (child_id, invited_by, token_hash, role, signs_as, expires_at)
-    values (p_child, v_uid, sha256(convert_to(v_token, 'UTF8')), p_role, nullif(btrim(p_signs_as), ''),
-            now() + case p_role when 'parent' then interval '7 days' else interval '14 days' end)
-    returning id into v_id;
-  perform public.audit('invite_created', 'membership', v_id, p_child, jsonb_build_object('role', p_role));
-  return v_token;
+  if exists (select 1 from child_invites where token_hash = p_token_hash) then
+    raise exception 'token already used; generate a new one' using errcode = 'SCINV';
+  end if;
+  if exists (select 1 from child_invites where code_hash = v_code) then
+    raise exception 'code already used; generate a new one' using errcode = 'SCINV';
+  end if;
+  insert into child_invites (id, child_id, invited_by, token_hash, code_hash, role, signs_as, expires_at)
+    values (p_id, p_child, v_uid, p_token_hash, v_code, p_role, nullif(btrim(p_signs_as), ''),
+            now() + case p_role when 'parent' then interval '7 days' else interval '14 days' end);
+  perform public.audit('invite_created', 'membership', p_id, p_child, jsonb_build_object('role', p_role));
+  return p_id;
 end;
 $$;
 
 create or replace function public.revoke_invite(p_invite uuid)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user(); v_child uuid;
 begin
   select child_id into v_child from child_invites where id = p_invite;
@@ -363,31 +511,62 @@ begin
 end;
 $$;
 
-create or replace function public.accept_child_invite(p_token text)
-returns uuid language plpgsql security definer set search_path = public, pg_catalog as $$
-declare
-  v_uid uuid := public.require_user();
-  v_inv child_invites%rowtype;
+-- The checks every redemption shares (link or code). Internal: p_uid is the
+-- caller already authenticated by accept_child_invite (JWT) or by the invite-redeem
+-- Edge Function (accept_child_invite_by_code).
+create or replace function public.join_book_by_invite(p_invite uuid, p_uid uuid)
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+declare v_inv child_invites%rowtype;
 begin
-  select * into v_inv from child_invites
-    where token_hash = sha256(convert_to(coalesce(p_token, ''), 'UTF8'))
-    for update;
+  select * into v_inv from child_invites where id = p_invite for update;
   if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
-  -- Same person retrying after a lost response: idempotent.
-  if v_inv.accepted_by = v_uid then return v_inv.child_id; end if;
+  -- Same person retrying after a lost response: idempotent. Someone who joined and
+  -- then left cannot come back on the used invite (they need a new one).
+  if v_inv.accepted_by = p_uid
+     and exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = p_uid) then
+    return v_inv.child_id;
+  end if;
   if v_inv.accepted_at is not null then raise exception 'invite already used' using errcode = 'SCINV'; end if;
   if v_inv.revoked_at is not null then raise exception 'invite revoked' using errcode = 'SCINV'; end if;
   if v_inv.expires_at < now() then raise exception 'invite expired' using errcode = 'SCINV'; end if;
   if not public.child_is_live(v_inv.child_id) then raise exception 'invite not found' using errcode = 'SCINV'; end if;
   -- No role change through invites (covers the inviter accepting their own link).
-  if exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = v_uid) then
+  if exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = p_uid) then
     raise exception 'already a member of this book' using errcode = 'SCINV';
   end if;
-  perform public.require_content_consent();
-  insert into child_members (child_id, profile_id, role) values (v_inv.child_id, v_uid, v_inv.role);
-  update child_invites set accepted_by = v_uid, accepted_at = now() where id = v_inv.id;
-  perform public.audit('member_joined', 'membership', v_uid, v_inv.child_id, jsonb_build_object('role', v_inv.role));
+  perform public.require_content_consent_of(p_uid);
+  insert into child_members (child_id, profile_id, role) values (v_inv.child_id, p_uid, v_inv.role);
+  update child_invites set accepted_by = p_uid, accepted_at = now() where id = v_inv.id;
+  insert into audit_events (actor_id, actor_kind, action, subject_type, subject_id, child_id, detail)
+    values (p_uid, 'user', 'member_joined', 'membership', p_uid, v_inv.child_id, jsonb_build_object('role', v_inv.role));
   return v_inv.child_id;
+end;
+$$;
+
+create or replace function public.accept_child_invite(p_token text)
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+declare v_uid uuid := public.require_user(); v_id uuid;
+begin
+  select id into v_id from child_invites where token_hash = sha256(convert_to(coalesce(p_token, ''), 'UTF8'));
+  if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  return public.join_book_by_invite(v_id, v_uid);
+end;
+$$;
+
+-- Typed or spoken code (A-REQ-029). Codes are low entropy, so this is NOT granted
+-- to authenticated: only the invite-redeem Edge Function calls it, with the service
+-- role, after verifying the caller's JWT (refusing anonymous sessions) and applying
+-- the attempt limits in TDD 04 3.11 (10 per hour per user and per hashed IP, a global
+-- failure breaker). p_user is the verified caller. Same outcomes as accept_child_invite.
+create or replace function public.accept_child_invite_by_code(p_user uuid, p_code text)
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+declare v_norm text := public.normalise_invite_code(p_code); v_id uuid;
+begin
+  if p_user is null then raise exception 'caller id is required' using errcode = '22023'; end if;
+  if v_norm is null then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  select id into v_id from child_invites where code_hash = public.invite_code_digest(sha256(convert_to(v_norm, 'UTF8')));
+  if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  return public.join_book_by_invite(v_id, p_user);
 end;
 $$;
 
@@ -413,7 +592,7 @@ create index if not exists entries_family_review_idx on public.entries (child_id
 -- parents turned on auto-add for this member. Parents' letters: approval
 -- stays 'not_needed' and in_book is the author's choice.
 create or replace function public.entries_family_rules()
-returns trigger language plpgsql set search_path = public, pg_catalog as $$
+returns trigger language plpgsql set search_path = pg_catalog, public as $$
 declare
   v_content boolean;
   v_role text;
@@ -500,7 +679,7 @@ alter policy entries_author_insert on public.entries
 -- (default 'pending'): the update applies only from that state, so when both
 -- parents act at once the first wins and the second gets the current state back.
 create or replace function public.review_family_letter(p_entry uuid, p_decision text, p_expected text default 'pending')
-returns text language plpgsql security definer set search_path = public, pg_catalog as $$
+returns text language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user(); v entries%rowtype;
 begin
   if p_decision not in ('added', 'set_aside') or p_expected not in ('pending', 'added', 'set_aside') then
@@ -530,7 +709,7 @@ $$;
 -- the client cannot express "un-send" by writing in_book. Never consent-gated:
 -- it only narrows who reads the letter. Idempotent.
 create or replace function public.withdraw_family_letter(p_entry uuid)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user();
 begin
   if not exists (select 1 from entries where id = p_entry and author_id = v_uid) then
@@ -544,7 +723,7 @@ $$;
 
 -- Auto-add applies to family members only.
 create or replace function public.set_member_auto_add(p_child uuid, p_member uuid, p_on boolean)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user();
 begin
   if not public.is_child_parent(p_child) then
@@ -581,10 +760,52 @@ select e.id, e.child_id, e.author_id, e.author_signs_as, e.kind, e.occurred_on, 
                                          where m.profile_id = (select auth.uid()) and m.role = 'parent')))));
 comment on view public.book_entries is
   'Letters a member may read (B F9), without the author''s working material (raw transcript, its hash, machine edits, STT metadata). PRD K-09.';
+-- DB-01: read-only for everyone, repeated after every create or replace of the view.
+revoke all on public.book_entries from public, anon;
+revoke insert, update, delete, truncate, references, trigger on public.book_entries from authenticated;
+grant select on public.book_entries to authenticated;
+
+-- ─── 4a. What members see about the child (DB-05, D-039) ─────────────────
+-- The children table holds the birth year and the due date (health data, K-25).
+-- Parents read and edit it; contributors no longer see its rows at all.
+alter policy children_member_select on public.children using (public.is_child_parent(id));
+alter policy children_member_update on public.children
+  using (public.is_child_parent(id)) with check (public.is_child_parent(id));
+
+-- Every member of a live book reads this: name, nickname, birthday month and day.
+-- Never the due date or the birth year. Security-barrier view owned by the
+-- migration role (like book_entries), so it reads children without the caller's RLS.
+create view public.book_children with (security_barrier = true) as
+select c.id, c.name, c.nickname,
+       extract(month from c.date_of_birth)::int as birth_month,
+       extract(day from c.date_of_birth)::int as birth_day
+  from public.children c
+ where c.deleted_at is null
+   and not (select public.is_anonymous())
+   and c.id in (select m.child_id from public.child_members m where m.profile_id = (select auth.uid()));
+-- DB-01 rule for every view: select only.
+revoke all on public.book_children from public, anon;
+revoke insert, update, delete, truncate, references, trigger on public.book_children from authenticated;
+grant select on public.book_children to authenticated;
+comment on view public.book_children is
+  'What every member of a live book sees about the child (D-039): name, nickname, birthday month and day. Never the due date or birth year.';
+comment on column public.book_children.id is 'L3 book id';
+comment on column public.book_children.name is 'L4 child name';
+comment on column public.book_children.nickname is 'L4 child nickname';
+comment on column public.book_children.birth_month is 'L4 birthday month (no year)';
+comment on column public.book_children.birth_day is 'L4 birthday day of month (no year)';
+
+-- ─── 4b. Dictionary terms per owner, per book, ignoring case (DB-12) ─────
+-- Was unique (owner_id, term): the same name could not be saved for two books,
+-- and "Nani" and "nani" were two terms. Null child_id (all books) counts as one
+-- value. APPLY.md step 8 checks for duplicates first.
+alter table public.dictionary_terms drop constraint if exists dictionary_terms_owner_id_term_key;
+create unique index if not exists dictionary_terms_owner_child_term_key
+  on public.dictionary_terms (owner_id, child_id, lower(term)) nulls not distinct;
 
 -- Photos follow the letters.
 create or replace function public.can_read_entry_photo(p_name text)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select not public.is_anonymous() and exists (
     select 1 from entries e
       join children c on c.id = e.child_id and c.deleted_at is null
@@ -599,7 +820,7 @@ $$;
 -- and no longer schedules a RevenueCat step (founder: StoreKit 2 direct, no RevenueCat).
 create or replace function public.request_account_deletion(p_source text, p_had_active_subscription boolean default null)
 returns table (request_id uuid, scheduled_for timestamptz)
-language plpgsql security definer set search_path = public, pg_catalog as $$
+language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_uid uuid := public.require_user();
   v_id uuid;
@@ -643,7 +864,7 @@ end;
 $$;
 
 create or replace function public.cancel_account_deletion()
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user(); v_id uuid;
 begin
   select id into v_id from deletion_requests
@@ -659,14 +880,14 @@ end;
 $$;
 
 create or replace function public.request_book_deletion(p_child uuid, p_source text)
-returns text language plpgsql security definer set search_path = public, pg_catalog as $$
+returns text language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user(); v_id uuid;
 begin
   if p_source is null or p_source not in ('ios', 'android', 'web') then
     raise exception 'source must be ios, android or web' using errcode = '22023';
   end if;
   if not exists (select 1 from child_members where child_id = p_child and profile_id = v_uid and role = 'parent') then
-    raise exception 'only a parent can delete a book' using errcode = 'SCDEL';
+    raise exception 'only a parent can delete a book' using errcode = 'SCPAR';
   end if;
   if exists (select 1 from child_members where child_id = p_child and role = 'parent' and profile_id <> v_uid) then
     update entries set deleted_at = now(), deleted_reason = 'book_deletion'
@@ -689,16 +910,16 @@ end;
 $$;
 
 create or replace function public.cancel_book_deletion(p_child uuid)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user(); v_req uuid;
 begin
   if not exists (select 1 from child_members where child_id = p_child and profile_id = v_uid and role = 'parent') then
-    raise exception 'only a parent can restore a book' using errcode = 'SCDEL';
+    raise exception 'only a parent can restore a book' using errcode = 'SCPAR';
   end if;
   select deletion_request_id into v_req from children where id = p_child and deleted_at is not null for update;
   if not found then return false; end if;
   if exists (select 1 from deletion_requests where id = v_req and kind = 'account') then
-    raise exception 'cancel the account deletion to restore this book' using errcode = 'SCDEL';
+    raise exception 'cancel the account deletion to restore this book' using errcode = 'SCACD';
   end if;
   update children set deleted_at = null, deletion_request_id = null where id = p_child;
   update deletion_requests set status = 'cancelled', cancelled_at = now() where id = v_req and status in ('scheduled', 'held');
@@ -708,7 +929,7 @@ end;
 $$;
 
 create or replace function public.delete_entry(p_entry uuid)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user();
 begin
   if not exists (select 1 from entries where id = p_entry and author_id = v_uid) then
@@ -720,7 +941,7 @@ end;
 $$;
 
 create or replace function public.restore_entry(p_entry uuid)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user(); v entries%rowtype;
 begin
   select * into v from entries where id = p_entry for update;
@@ -729,7 +950,7 @@ begin
   end if;
   if v.deleted_at is null then return true; end if;
   if v.deleted_reason = 'account_deletion' then
-    raise exception 'cancel the account deletion to restore these letters' using errcode = 'SCDEL';
+    raise exception 'cancel the account deletion to restore these letters' using errcode = 'SCACD';
   end if;
   if not public.child_is_live(v.child_id) then
     raise exception 'restore the book first' using errcode = 'SCDEL';
@@ -744,15 +965,23 @@ $$;
 revoke execute on function public.content_gate_state(uuid) from public, anon, authenticated;
 revoke execute on function public.client_content_gate() from public, anon, authenticated;
 revoke execute on function public.entries_family_rules() from public, anon, authenticated;
+revoke execute on function public.require_content_consent_of(uuid) from public, anon, authenticated;
+revoke execute on function public.join_book_by_invite(uuid, uuid) from public, anon, authenticated;
+revoke execute on function public.hmac_sha256(bytea, bytea) from public, anon, authenticated;
+revoke execute on function public.normalise_invite_code(text) from public, anon, authenticated;
+revoke execute on function public.invite_code_digest(bytea) from public, anon, authenticated;
+revoke execute on function public.accept_child_invite_by_code(uuid, text) from public, anon, authenticated;
 
 -- Called as the signed-in user by RLS policies and client-context triggers.
 revoke execute on function public.is_anonymous() from public, anon;
+revoke execute on function public.is_valid_client_uuid7(uuid) from public, anon;
 revoke execute on function public.require_user() from public, anon;
 revoke execute on function public.my_role_in(uuid) from public, anon;
 revoke execute on function public.my_auto_add_in(uuid) from public, anon;
 revoke execute on function public.can_write_content() from public, anon;
 revoke execute on function public.require_content_consent() from public, anon;
 grant execute on function public.is_anonymous() to authenticated;
+grant execute on function public.is_valid_client_uuid7(uuid) to authenticated;
 grant execute on function public.require_user() to authenticated;
 grant execute on function public.my_role_in(uuid) to authenticated;
 grant execute on function public.my_auto_add_in(uuid) to authenticated;
@@ -761,13 +990,15 @@ grant execute on function public.require_content_consent() to authenticated;
 
 -- RPCs (each starts with require_user()).
 revoke execute on function public.my_sync_gate() from public, anon;
-revoke execute on function public.create_child_invite(uuid, text, text) from public, anon;
+revoke execute on function public.create_child_invite(uuid, uuid, text, bytea, bytea, text) from public, anon;
+revoke execute on function public.record_policy_act(uuid, text, text, text, text, text, text, text, text, timestamptz, bytea, jsonb) from public, anon;
 revoke execute on function public.revoke_invite(uuid) from public, anon;
 revoke execute on function public.accept_child_invite(text) from public, anon;
 revoke execute on function public.review_family_letter(uuid, text, text) from public, anon;
 revoke execute on function public.withdraw_family_letter(uuid) from public, anon;
 grant execute on function public.my_sync_gate() to authenticated;
-grant execute on function public.create_child_invite(uuid, text, text) to authenticated;
+grant execute on function public.create_child_invite(uuid, uuid, text, bytea, bytea, text) to authenticated;
+grant execute on function public.record_policy_act(uuid, text, text, text, text, text, text, text, text, timestamptz, bytea, jsonb) to authenticated;
 grant execute on function public.revoke_invite(uuid) to authenticated;
 grant execute on function public.accept_child_invite(text) to authenticated;
 grant execute on function public.review_family_letter(uuid, text, text) to authenticated;
@@ -778,12 +1009,18 @@ begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.content_gate_state(uuid) to service_role';
     execute 'grant execute on function public.is_anonymous() to service_role';
+    -- Only the invite-redeem Edge Function (service role) redeems codes.
+    execute 'grant execute on function public.accept_child_invite_by_code(uuid, text) to service_role';
+    -- The secret-derived digest and the internal join stay off the service key's RPC surface.
+    execute 'revoke execute on function public.invite_code_digest(bytea) from service_role';
+    execute 'revoke execute on function public.join_book_by_invite(uuid, uuid) from service_role';
   end if;
 end;
 $$;
 
 -- ─── 7. Classification ───────────────────────────────────────────────────
 comment on column public.child_invites.revoked_at is 'L2 system timestamp';
+comment on column public.child_invites.code_hash is 'L3 HMAC-SHA256 of the invite code under the Vault pepper (code itself is L4, never stored)';
 comment on column public.child_invites.signs_as is 'L3 signature the inviter suggested ("Nani")';
 comment on column public.entries.approval is 'L2 family review state (not_needed, pending, added, set_aside)';
 comment on column public.entries.reviewed_by is 'L3 person id of the reviewing parent; nulled at account deletion';
