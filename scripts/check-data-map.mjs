@@ -345,7 +345,7 @@ function checkShape(map) {
       const w = `pending_changes[${i}]`;
       if (!checkKeys(w, p, ['pr', 'branch', 'note', 'adds', 'removes'])) return;
       if (!Number.isInteger(p.pr)) err(`${w}: pr must be a number`);
-      for (const k of ['adds', 'removes']) if (!Array.isArray(p[k]) || p[k].some((x) => !isStr(x))) err(`${w}: ${k} must be a list of table or table.column names`);
+      for (const k of ['adds', 'removes']) if (!Array.isArray(p[k]) || p[k].some((x) => !isStr(x))) err(`${w}: ${k} must be a list of table, table.column or analytics.events.<event>.<prop> names`);
     });
   }
   if (map.open_issues !== undefined && (!Array.isArray(map.open_issues) || map.open_issues.some((x) => !isStr(x)))) err('open_issues must be a list of strings');
@@ -551,16 +551,20 @@ async function checkAnalytics(map) {
   const mapGlobals = isObj(a.global_props) ? a.global_props : {};
   const mapEvents = isObj(a.events) ? a.events : {};
   let props = 0;
+  // Differences an open pull request will make (pending_changes with
+  // analytics.events.<event>.<prop> keys) are warnings, not gaps.
+  const { adds, removes } = pendingSets(map);
+  const gap = (key, msg, set) => (set.has(key) ? warn(`${key}: ${msg} (pending PR #${set.get(key)})`) : err(`${key}: ${msg}`));
 
   const compareProps = (where, catalogProps, mapProps) => {
     for (const [p, spec] of Object.entries(catalogProps)) {
       props++;
       const level = spec?.level;
       if (level !== 'L2') err(`${where}.${p}: catalog level is ${level}; analytics properties must be L2 (DATA_CLASSIFICATION rule 1.1.9)`);
-      if (!(p in mapProps)) err(`${where}.${p}: in catalog.ts but missing from the data map`);
+      if (!(p in mapProps)) gap(`${where}.${p}`, 'in catalog.ts but missing from the data map', adds);
       else if (mapProps[p] !== level) err(`${where}.${p}: level ${mapProps[p]} in the map, ${level} in catalog.ts`);
     }
-    for (const p of Object.keys(mapProps)) if (!(p in catalogProps)) err(`${where}.${p}: in the data map but not in catalog.ts`);
+    for (const p of Object.keys(mapProps)) if (!(p in catalogProps)) gap(`${where}.${p}`, 'in the data map but not in catalog.ts', removes);
   };
 
   compareProps('analytics.global_props', GLOBAL_PROPS, mapGlobals);

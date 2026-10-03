@@ -54,6 +54,11 @@ pending_changes:
     note: "Removes server entitlements (founder decision 3) and adds the book_children view (D-039)"
     adds: [book_children]
     removes: [app_account_tokens, store_subscriptions, store_notifications, profiles.first_run_closed_at]
+  - pr: 31
+    branch: fix/analytics-enums-core
+    note: "Renames ordinal to child_ordinal and replaces child_added.mode with has_date (PDATA-10, PPRIV-02); levels stay L2"
+    adds: [analytics.events.child_added.has_date, analytics.events.child_added.child_ordinal, analytics.events.child_switched.child_ordinal, analytics.events.child_setting_changed.child_ordinal]
+    removes: [analytics.events.child_added.mode, analytics.events.child_added.ordinal, analytics.events.child_switched.ordinal, analytics.events.child_setting_changed.ordinal]
 
 hosts:
   - id: supabase
