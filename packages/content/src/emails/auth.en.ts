@@ -17,7 +17,8 @@
  *   {code}        6-digit one-time code               (Supabase .Token)
  *   {expiresIn}   human duration, e.g. "1 hour"; L3 sets the values
  *   {device}      plain device name, e.g. "an iPhone"; never a location
- *   {when}        date and time of the event, in words
+ *   {when}        date and time of the event, in words, in the account holder's time zone with
+ *                 its short name, e.g. "Saturday, October 3, 2026 at 9:14 pm ET" (CUS-19)
  *
  * Rules: no password is ever asked for (there is none). Every code-bearing
  * email says we never ask for codes by phone, text or chat. Copy never says
@@ -43,7 +44,7 @@ export const authEmails = {
       "Someone, most likely you, just tried to start a new account with {email}. There is already one, so we did not make a second.",
       "Easy to do on very little sleep. Your letters are right where you left them.",
       "Tap below to sign in instead. The link works once, for {expiresIn}.",
-      "If you first joined with Apple, tap Sign in with Apple in the app instead.",
+      "If you first joined with Apple or Google, tap Sign in with Apple or Sign in with Google in the app instead.",
     ],
     cta: { label: "Sign in to my book", urlVar: "{signInUrl}" },
     code: { label: CODE_LABEL, codeVar: "{code}" },
@@ -99,13 +100,13 @@ export const authEmails = {
     body: [
       "You are in. Here is all there is to it: open the app, tap the red circle and talk.",
       "A minute is plenty. A quiet day is fine too.",
-      "Every letter is kept exactly as you said it. We fix microphone slips, and we never rewrite your words.",
-      "Only the family you invite can read your letters.",
-      "Questions, or an idea? Just reply. A real person reads every email.",
+      "Every letter is kept exactly as you said it. Word for word fixes only small slips, marked so you can undo them. We never rewrite your words.",
+      "Your letters are private. Only you, and your co-parent if you invite them, can read them in the app. Our staff look only in the rare cases our Privacy Policy describes.",
+      "Ideas are welcome too. Just reply.",
     ],
     cta: { label: `Open ${brand.name}`, urlVar: "{appUrl}" },
     fallback: FALLBACK,
-    safety: "Did not sign up? Reply to this email and we will sort it out.",
+    safety: "Did not sign up? Reply to this email and we will fix it.",
     category: 'auth',
     kind: 'transactional',
   },
@@ -115,16 +116,14 @@ export const authEmails = {
   'sign-in-trouble': {
     id: 'sign-in-trouble',
     subject: "Trouble signing in? Here is a fresh link",
-    preheader: "Plus the usual culprits, and how to get past each one in a minute.",
+    preheader: "A fresh link, and the quick fixes for the usual snags.",
     heading: "Let's get you back to your book",
     body: [
-      "Sign-in links are a little shy. They work once, for {expiresIn}, and like to be opened on the phone that asked for them.",
-      "Here is a fresh one. Tap it on the phone where the app is open.",
-      "Link opened on your laptop or another phone? Enter the code below in the app instead.",
-      "Looking for a password? Good news, there is not one. We will never ask you for one.",
-      "Joined with Apple? Tap Sign in with Apple in the app.",
-      "If you chose Hide My Email when you joined, Apple made you a private address ending in privaterelay.appleid.com. It forwards to your inbox, and your book is under that address, not this one. Sign in with Apple and you are straight back in.",
-      "Used a different email before? Your book stays with the address you first used. Try that one in the app.",
+      "Here is a fresh link. Tap it on the phone where the app is open. It works once, for {expiresIn}.",
+      "If it opens on another device, type the code below in the app instead.",
+      "Joined with Apple or Google? Use that button in the app. If you chose Hide My Email, your book is under Apple's private address, and Sign in with Apple takes you straight there.",
+      "See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email.",
+      "Looking for a password? There is not one, and we will never ask you for one.",
     ],
     cta: { label: "Sign in to my book", urlVar: "{signInUrl}" },
     code: { label: CODE_LABEL, codeVar: "{code}" },
@@ -144,9 +143,9 @@ export const authEmails = {
     heading: "Sign in with Apple was added",
     body: [
       `You can now sign in to ${brand.name} with your Apple Account, as well as with {email}.`,
-      "If this was you, you are all set.",
+      "If this was you, there is nothing else to do.",
     ],
-    safety: "Was this not you? Reply to this email straight away and we will help you secure your account. We will never ask for a code or a password.",
+    safety: "Was this not you? Reply to this email right away, with Not me in the subject, and we will help you secure your account. We will never ask for a code or a password.",
     category: 'auth',
     kind: 'transactional',
   },
@@ -160,9 +159,25 @@ export const authEmails = {
     heading: "Sign in with Google was added",
     body: [
       `You can now sign in to ${brand.name} with your Google Account, as well as with {email}.`,
-      "If this was you, you are all set.",
+      "If this was you, there is nothing else to do.",
     ],
-    safety: "Was this not you? Reply to this email straight away and we will help you secure your account. We will never ask for a code or a password.",
+    safety: "Was this not you? Reply to this email right away, with Not me in the subject, and we will help you secure your account. We will never ask for a code or a password.",
+    category: 'auth',
+    kind: 'transactional',
+  },
+
+  // A passkey added after sign-in (founder decision 4; content review CNT-08). Same shape as apple-account-linked.
+  // No Supabase template; custom sender on the passkey-registered event.
+  'passkey-added': {
+    id: 'passkey-added',
+    subject: "A passkey was added to your account",
+    preheader: "Just letting you know. If this was you, there is nothing else to do.",
+    heading: "A passkey was added",
+    body: [
+      `You can now sign in to ${brand.name} with a passkey on {device}, as well as with {email}.`,
+      "If this was you, there is nothing else to do.",
+    ],
+    safety: "Was this not you? Reply to this email right away, with Not me in the subject, and we will help you secure your account. We will never ask for a code or a password.",
     category: 'auth',
     kind: 'transactional',
   },
@@ -176,7 +191,7 @@ export const authEmails = {
     body: [
       `Your ${brand.name} account was signed in on {device}, {when}.`,
       "If that was you, there is nothing to do.",
-      "If it was not, reply to this email. We will sign that device out and help you secure your account.",
+      "If it was not, reply to this email with Not me in the subject. We will sign that device out and help you secure your account.",
     ],
     safety: "We will never ask for a sign-in code or a password, by email, phone, text or chat.",
     category: 'auth',
@@ -191,10 +206,10 @@ export const authEmails = {
     heading: "Your sign-in email has changed",
     body: [
       `The email for your ${brand.name} account changed from {oldEmail} to {newEmail}.`,
-      "Your letters, recordings and family are all still there. Sign-in links now go to the new address.",
-      "If this was you, you are all set.",
+      "Your letters, recordings and books are all still there. Sign-in links now go to the new address.",
+      "If this was you, there is nothing else to do.",
     ],
-    safety: "Was this not you? Reply to this email straight away, from this address, and we will help you put it right. We will never ask for a code or a password.",
+    safety: "Was this not you? Reply to this email right away, from this address, with Not me in the subject, and we will help you put it right. We will never ask for a code or a password.",
     category: 'auth',
     kind: 'transactional',
   },
@@ -207,7 +222,7 @@ export const authEmails = {
     heading: "Is this your new address?",
     body: [
       `You asked to sign in to ${brand.name} with {newEmail} instead of {oldEmail}.`,
-      "Tap below to confirm. Your letters and family come with you. Nothing else changes.",
+      "Tap below to confirm. Your letters and books come with you. Nothing else changes.",
       "The link and the code work once, for {expiresIn}.",
     ],
     cta: { label: "Confirm new email", urlVar: "{confirmUrl}" },

@@ -2,7 +2,7 @@
 title: "Consumer Health Data Privacy Policy"
 slug: "health-privacy"
 effectiveDate: "TBD"
-version: "1.1.1"
+version: "1.2.0"
 status: "draft"
 summary: "Letters are free-form, so they can mention health details such as a fever, a hospital stay or a pregnancy. This policy explains how we handle that information under Washington, Nevada and Connecticut consumer health data laws, and we follow it for everyone in the United States. We use it only to keep and show your book, and we never sell it or use it for ads."
 ---
@@ -17,9 +17,9 @@ Early Letters does not ask about anyone's health, and we don't analyze what you 
 
 | Kind | Examples | Where it comes from | Why we have it |
 |---|---|---|---|
-| Health details inside letters | Words in a letter, its original transcript and its fixes that mention a condition, treatment, symptom, medication, pregnancy or mental health | You, and family members writing to the same child | To keep, sync and show the book you asked for |
+| Health details inside letters | Words in a letter, its original transcript and its fixes that mention a condition, treatment, symptom, medication, pregnancy or mental health | You, and your co-parent writing to the same child | To keep, sync and show the book you asked for |
 | Due date | A due date entered before the child is born, which shows a pregnancy | You | To date letters and sort the "Before You" chapter |
-| Recordings and photos | The audio of spoken letters you back up or send from the web page; photos you add | You, and family members | To keep them for you and restore them to a new phone. Family can see photos in the book; family listening to recordings comes in a later version. Some laws list voice recordings and face images as biometric data. We never make a voiceprint or face template from them. |
+| Recordings and photos | The audio of spoken letters you back up; photos you add | You, and your co-parent | To keep them for you and restore them to a new phone. Your co-parent can see photos in the book; family listening to recordings comes in a later version. Some laws list voice recordings and face images as biometric data. We never make a voiceprint or face template from them. |
 
 **What we do not collect.** We don't ask health questions, connect to health apps or devices, use your location, or make guesses about anyone's health on our servers. The app may show a gentle support card if a letter suggests someone could use help. That check runs only on your phone, its result stays on your phone, and nothing about it is sent to us.
 
@@ -27,20 +27,18 @@ Letters you keep only on your phone, without signing in, never reach us.
 
 ## 3. How we use it
 
-Only to provide Early Letters: storing your letters, syncing them to your other phones, showing them to the family you choose, transcribing speech, keeping backups, and exporting your book. We never use consumer health data for advertising, marketing, profiling, research or training AI models, and we never sell it.
+Only to provide Early Letters: storing your letters, syncing them to your other phones, showing them to your co-parent, transcribing speech on your phone, keeping backups, exporting your book, and answering messages you send us. We never use consumer health data for advertising, marketing, profiling, research or training AI models, we never give it to anyone for that, and we never sell it.
 
 ## 4. Your agreement
 
 Before anything you write is first synced to your account, we ask for your agreement in a separate, plain step. If you say no, you can keep using Early Letters on your phone, and syncing, backup and family sharing stay off. You can withdraw your agreement at any time in Settings, Privacy, Sync and family sharing. Syncing then stops, and we offer to delete what you already synced.
 
-Cloud transcription has its own separate agreement, asked before any audio leaves your phone.
-
 ## 5. Who receives it
 
 | Who | What | Why |
 |---|---|---|
-| Family you invite to a child's book | Letters you add to that book, their recordings if backed up, photos, the child's due date | Because you chose to share the book with them. Co-parents read the book; other family read it only if a parent turns that on. |
-| Our service providers (processors) | What each needs to run its part of the service | Hosting, sync, cloud transcription (only if you agree), backups. They act only on our instructions under contract and must delete data when we ask. The list, with contact details, is at [earlyletters.com/subprocessors](/subprocessors). |
+| The co-parent you invite to a child's book | Letters you add to that book, photos, the child's due date | Because you chose to share the book with them. At launch only a co-parent can join; recordings stay with the person who made them. |
+| Our service providers (processors) | What each needs to run its part of the service | Hosting, sync, backups, sending email, and receiving and answering the messages you send us (Resend, Porkbun forwarding and our support mailbox). They act only on our instructions under contract and must delete data when we ask. The list, with contact details, is at [earlyletters.com/subprocessors](/subprocessors). |
 | Authorities | Only what a valid legal process requires | See the [Privacy Policy](/privacy), section 7. |
 
 We have no affiliates. We don't share consumer health data with anyone else, and we never sell it. We don't use geofences or any location data. Inside our company, only the founder and named engineers can reach stored letters, and only for support you ask for, security, or a legal requirement. Each access is logged.

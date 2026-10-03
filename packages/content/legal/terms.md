@@ -2,7 +2,7 @@
 title: "Terms of Service"
 slug: "terms"
 effectiveDate: "TBD"
-version: "1.5.0"
+version: "1.6.0"
 status: "draft"
 summary: "These terms are the agreement between you and us for Early Letters. Your words and recordings stay yours, and writing, reading, playing your recordings and export are free, always. Plus is an optional subscription you can cancel at any time, and Early Letters is for adults 18 and over in the United States."
 ---
@@ -13,10 +13,10 @@ This summary is here to help. The full terms below are what count.
 
 - Early Letters is for adults 18 and over. Children are who the letters are written to, not users.
 - Early Letters is in beta. Features may change or break, so please export a copy from time to time.
-- Your words and recordings are yours. We only use them to run Early Letters for you and the family you invite.
-- We never rewrite your letters. Transcription only fixes microphone and grammar slips, and you can see and undo every fix. Speech recognition can still get things wrong, so please read your letters before you save them.
-- Writing, reading, listening, export and family authors are free, always. Past letters are never put behind a payment.
-- Plus is optional. It renews automatically through Apple or Google until you cancel. We tell you before free months end and before an annual plan renews, and we never raise your price without your agreement.
+- Your words and recordings are yours. We only use them to run Early Letters for you and the co-parent you invite.
+- We never rewrite your letters. Transcription only fixes small slips, like a stray "um", a misheard name or a one-word grammar slip, and you can see and undo every fix. Speech recognition can still get things wrong, so please read your letters before you save them.
+- Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Past letters are never put behind a payment.
+- Plus is optional. It renews automatically through Apple until you cancel. We tell you before free months end and before an annual plan renews, and we never raise your price without your agreement.
 - Co-parents are equals. Neither can remove the other or delete the other's letters.
 - If we ever close Early Letters, we will give you at least 90 days' notice and a way to take everything with you.
 - If something goes wrong, contact us first. You can always use small claims court.
@@ -27,14 +27,14 @@ This summary is here to help. The full terms below are what count.
 
 1.1 Early Letters is made and run by {publisherLegalName}, an individual based in California ("**we**", "**us**"). Our contact address is {postalAddress}.
 
-1.2 These Terms of Service ("**Terms**") are an agreement between you and us. They cover the Early Letters apps, the family contribution web page, our websites, and any related services (together, the "**Service**").
+1.2 These Terms of Service ("**Terms**") are an agreement between you and us. They cover the Early Letters apps, the family contribution web page (once available), our websites, and any related services (together, the "**Service**").
 
 1.3 These documents are part of the Terms:
 - the **[Privacy Policy](/privacy)**, which explains what data we collect, why, and who processes it;
 - the **[Subscription Terms](/subscription-terms)**, shown before you subscribe to Plus;
 - the **Print Terms**, if and when we offer printed books (Section 15). Printed books are not offered yet.
 
-1.4 If you got the app from the Apple App Store or Google Play, Section 26 also applies.
+1.4 If you got the app from the Apple App Store, or from Google Play once the Android app is available, Section 26 also applies.
 
 1.5 You accept these Terms when you tap to continue on the sign-in screen, where you also confirm you are 18 or older. You also confirm you are 18 or older when you first open the app, before you can use it at all. If you use the Service before creating an account, these Terms apply to that use too. If you do not agree, please do not use the Service. We record which version you accepted and when.
 
@@ -52,11 +52,11 @@ This summary is here to help. The full terms below are what count.
 
 3.1 **You can start without an account.** You can write, save, read and export letters on your phone before you create an account. Those letters live only on that phone until you sign in.
 
-3.2 **Signing in.** To invite family, back up recordings, or use a second phone, you need an account. You can sign in with Apple, or with your email address using a sign-in link or a 6-digit code that we email to you, and with Google where the app offers it. Apple and Google sign-in are also governed by their own terms.
+3.2 **Signing in.** To invite a co-parent, back up recordings, or use a second phone, you need an account. You can sign in with Apple, with Google, or with your email address using a sign-in link or a 6-digit code that we email to you. Sign in with Apple and Sign in with Google are also governed by Apple's and Google's own terms.
 
 3.3 **Keep it safe.** Please keep your phone, your email and your sign-in methods secure. You are responsible for what happens through your account unless it happens because of our mistake. Tell us at [hello@earlyletters.com](mailto:hello@earlyletters.com) if you think someone else has used your account.
 
-3.4 **Invite links and return links are like keys.** Anyone who has an unused invite link or code, or a family member's personal return link for the web page, can use it. Share them only with the person they are meant for. A parent can cancel an invite, and a family member can ask for a new return link, which stops the old one.
+3.4 **Invite links and return links are like keys.** Anyone who has an unused invite link or code, or, once the family web page is available, a family member's personal return link for it, can use it. Share them only with the person they are meant for. A parent can cancel an invite, and a family member can ask for a new return link, which stops the old one.
 
 3.5 **One person per account.** An account is for one person. Please use your real relationship to the child (for example "Nani" or "Papa") so the family knows who wrote each letter.
 
@@ -67,6 +67,8 @@ This summary is here to help. The full terms below are what count.
 4.2 **Roles.** There are two roles:
 - **Co-parent.** Writes, reads the whole book, invites family, and chooses which family letters go in the book. Co-parents in the same book have equal rights.
 - **Family.** Writes to the child. A co-parent chooses which family letters go in the book. Family members can read other letters in the book only if a co-parent turns that on.
+
+At launch, the Family role is not available yet; the parts of these Terms about family members apply when it is.
 
 4.3 **Private until you choose.** A letter is private to its author until the author chooses to add it to the child's book. A family letter goes in the book only when a co-parent adds it. Nobody can edit another person's words.
 
@@ -99,7 +101,7 @@ This summary is here to help. The full terms below are what count.
 6.2 **What we will not do with Your Content.**
 - We will not sell it.
 - We will not use it for advertising, or show ads in the Service.
-- We will not use it to train or improve machine learning models, ours or anyone else's.
+- We will not use it, or give it to anyone, to train or improve machine learning models.
 - We will not use it in marketing without asking you separately, in writing, each time.
 - We will not read or listen to it, except when you ask us to (for example in a support request), when needed to keep the Service secure or working, or when the law requires.
 
@@ -123,7 +125,7 @@ This summary is here to help. The full terms below are what count.
 
 8.3 **Deleting a book.** Only a sole co-parent can delete a whole book. If there are two co-parents, choosing delete removes only your own letters and you leave the book. A deleted book can be restored for 30 days. If a book with family members is deleted, each family member is offered a way to save a copy of their own letters for 30 days.
 
-8.4 **Deleting your account.** You can [delete your account](/delete-account) in the app at any time. We first offer you an export. Deleting your account removes your letters, recordings and backups from every book you wrote in, after a 30-day period in which you can change your mind. Letters other people wrote are not affected. Deleting your account does not cancel a Plus subscription; you cancel that with Apple or Google (Section 14).
+8.4 **Deleting your account.** You can [delete your account](/delete-account) in the app at any time. We first offer you an export. Deleting your account removes your letters, recordings and backups from every book you wrote in, after a 30-day period in which you can change your mind. Letters other people wrote are not affected. If you share a book with a co-parent, we tell them that your letters are no longer in it. Deleting your account does not cancel a Plus subscription; you cancel that with Apple (Section 14).
 
 8.5 **Letters already in someone's hands.** Section 7.2 applies to copies others already have.
 
@@ -179,7 +181,7 @@ This summary is here to help. The full terms below are what count.
 
 12.1 **Where things are kept.** Recordings are kept on your phone. When you are signed in, letter text syncs to our servers so it can reach your other devices and your family. Recordings leave your phone only if you turn on backup (part of Plus) or, once the family web page is available, send a letter from it.
 
-12.2 **Backup.** Backed-up recordings are encrypted on your phone before upload. In the standard setting, we can help you recover your backup if you lose your phone and your keys. If you choose **Vault mode**, only your keys and your Recovery Kit can open your backup. **If you lose them, neither you nor we can recover those recordings.** The app asks you to confirm this before you turn Vault mode on.
+12.2 **Backup.** Backed-up recordings are encrypted on your phone before upload. We hold a locked copy of the keys, so we can help you recover your backup if you lose your phone.
 
 12.3 **Export.** You can export everything at any time, free, as a file with your letters, recordings and a book PDF. Export works on your phone without a connection.
 
@@ -191,7 +193,7 @@ This summary is here to help. The full terms below are what count.
 - writing and recording letters, spoken or typed, with no limit;
 - reading your letters and playing their recordings;
 - exporting everything, including after a Plus plan ends;
-- inviting co-parents and family, and family letters.
+- inviting a co-parent and writing together, and, once they are available, inviting family and family letters.
 
 13.2 **Past letters are never put behind a payment.** If you stop paying for Plus, every letter and recording you already made stays readable, playable and exportable. Recordings already backed up stay stored, can be restored to a new phone, and can be downloaded.
 
@@ -199,28 +201,28 @@ This summary is here to help. The full terms below are what count.
 
 ## 14. Plus subscriptions
 
-14.1 **What Plus is.** Plus is an optional subscription that adds extras, such as encrypted backup of recordings, Read together beyond the free tries, books for more than one child, and extra themes. What Plus includes is shown in the app before you subscribe. The [Subscription Terms](/subscription-terms) are part of these Terms.
+14.1 **What Plus is.** Plus is an optional subscription that adds extras, such as encrypted backup of recordings, Read together beyond the free tries, and books for more than one child. What Plus includes is shown in the app before you subscribe. The [Subscription Terms](/subscription-terms) are part of these Terms.
 
 14.2 **Prices and trials.** At launch, Plus costs US $3.99 a month with a one-month free trial, or US $29.99 a year with a two-month free trial. The price, the length of any free trial and the date by which to cancel are shown in the app before you subscribe, and those are the terms that apply to you. Free trials are for new subscribers, one per person, as the store decides. If you are not eligible, the app shows the price without a trial. Early Letters is offered in the United States.
 
-14.3 **Automatic renewal.** Plus renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. Apple charges your Apple Account (on Android, once available, Google Play charges your Google Account). By subscribing you agree to this, and we keep a record of what you agreed to and when.
+14.3 **Automatic renewal.** Plus renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. Apple charges your Apple Account (on Android, once available, Google Play charges your Google Account). By subscribing you agree to this, and we keep a record of the date your plan started, from the status the app reports to us (Section 14.6).
 
-14.4 **Billing is handled by Apple or Google.** If you subscribe in the app, Apple or Google processes the payment, and their terms also apply. We do not see or store your card details.
+14.4 **Billing is handled by Apple.** If you subscribe in the app, Apple processes the payment (Google Play, once the Android app is available), and their terms also apply. We do not see or store your card details, and we do not receive your receipts.
 
 14.5 **How to cancel.** You can cancel at any time:
 - **iPhone:** Settings, tap your name, Subscriptions, Early Letters, Cancel Subscription. Or in Early Letters: Settings, Plan, Manage subscription.
-- **Android:** Google Play, Payments and subscriptions, Subscriptions, Early Letters, Cancel subscription. Or in Early Letters: Settings, Plan, Manage subscription.
+- **Android (once available):** Google Play, Payments and subscriptions, Subscriptions, Early Letters, Cancel subscription. Or in Early Letters: Settings, Plan, Manage subscription.
 
 To avoid being charged, cancel at least 24 hours before a free trial or period ends. After you cancel, Plus keeps working until the end of the period you already paid for or the end of your free trial, and then stops. Deleting the app or your account does not cancel a subscription.
 
-14.6 **Reminders we send.** We tell you, in the app and by email:
+14.6 **Reminders we send.** So that we can send these reminders, the app tells us the status of your plan: which plan you have, the date a free trial ends, the date it renews, and whether you turned renewal off. It never sends us your payment or card details or your receipts. The app reports this when you start Plus and each time you open it, so if you cancel in your iPhone Settings, we learn it the next time you open Early Letters, and a reminder may still reach you; if you have already cancelled, there is nothing to do. We tell you, in the app and by email:
 - when a free trial starts: the date it ends, the date to cancel by, the price after, and how to cancel;
 - before a free trial ends: at least 3 days before the last day to cancel; for a free trial longer than one month, also 16 to 21 days before it ends;
 - before an annual plan renews: about 30 days before, and again about 7 days before;
 - at least once a year for every Plus plan, with what Plus is, what it costs, how often you are charged, and how to cancel;
 - before a price change, as described in 14.8.
 
-14.7 **Refunds.** Refunds for purchases made through Apple are decided by Apple; you can ask at [reportaproblem.apple.com](https://reportaproblem.apple.com) or in Early Letters under Settings, Plan, Request a refund. For purchases through Google Play, you can ask Google or contact us, and we will follow Google Play's rules and the law. Unless the law or the store's policy says otherwise, we do not give partial refunds for unused time. A refund ends Plus for that period. It never affects your letters, recordings or existing backups.
+14.7 **Refunds.** Refunds for purchases made through Apple are decided by Apple; you can ask at [reportaproblem.apple.com](https://reportaproblem.apple.com) or in Early Letters under Settings, Plan, Request a refund. For purchases through Google Play (once the Android app is available), you can ask Google or contact us, and we will follow Google Play's rules and the law. Unless the law or the store's policy says otherwise, we do not give partial refunds for unused time. A refund ends Plus for that period. It never affects your letters, recordings or existing backups.
 
 14.8 **Price changes.** We may change the price of Plus. We will tell you 7 to 30 days before a new price applies to you, by email and in the app, with how to cancel. Your plan will not renew at a higher price unless you agree to it. A price change never applies to a period you have already paid for.
 
@@ -230,7 +232,7 @@ To avoid being charged, cancel at least 24 hours before a free trial or period e
 
 14.11 **When Plus ends.** Section 13.2 applies. In addition, all your existing books stay fully usable, including extra children's books; creating another book needs Plus again. New recordings stay on your phone instead of being backed up.
 
-14.12 **Who Plus covers.** Plus applies to the book or books described on the Plus screen when you subscribe, including for the other co-parent in that book. A co-parent can also get Plus through Apple Family Sharing, which is turned on for Plus.
+14.12 **Who Plus covers.** Plus applies to the Apple Account that buys it and, through Apple Family Sharing, which is turned on for Plus, to the people in that Apple Account's Family Sharing group. A co-parent gets Plus from your plan only if they are in the same Apple Family Sharing group. If they are not, your plan does not cover them: each co-parent's Plus is their own, and they can subscribe separately if they want its extras. Either way, everything in Section 13 stays free for both of you, and you both keep writing in and reading the shared book.
 
 14.13 **Gifts.** Gifts of Plus are not available yet. When they are, a gift is paid once, does not renew and is never charged again, and any refund of a gift goes only to the person who bought it.
 
@@ -361,7 +363,7 @@ These terms apply in addition to the rest of these Terms, and win if there is a 
 
 (j) **Third-party beneficiary.** Apple and Apple's subsidiaries are third-party beneficiaries of these Terms. Once you accept these Terms, Apple has the right (and is deemed to have accepted the right) to enforce them against you as a third-party beneficiary.
 
-### 26.2 If you got the app from Google Play
+### 26.2 If you got the app from Google Play (once available)
 
 Google is not a party to these Terms and is not responsible for the app. Your purchases through Google Play are also governed by Google Play's terms. Section 14 explains how to manage and cancel Plus on Android.
 

@@ -462,6 +462,42 @@
       "status": "primary",
       "version": "1.0.0",
       "date": "2026-10-03",
+      "id": "icon.app.58",
+      "title": "App icon at 58 px, hand-tuned (sub-pixel offset)",
+      "path": "packages/brand/assets/logo/primary/png/icon-58.png",
+      "dimensions": {
+        "width": 58,
+        "height": 58,
+        "unit": "px"
+      },
+      "fill": "#FBF8F3",
+      "background": "gradient #9A613C to #7F4F30 (dithered)",
+      "surface": "any"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.app.58.dark",
+      "title": "App icon at 58 px, dark, hand-tuned",
+      "path": "packages/brand/assets/logo/primary/png/icon-58-dark.png",
+      "dimensions": {
+        "width": 58,
+        "height": 58,
+        "unit": "px"
+      },
+      "fill": "#D9A47E",
+      "background": "gradient #2C2926 to #1F1B18",
+      "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
       "id": "icon.app.60",
       "title": "App icon at 60 px, hand-tuned (sub-pixel offset)",
       "path": "packages/brand/assets/logo/primary/png/icon-60.png",
@@ -486,6 +522,114 @@
       "dimensions": {
         "width": 60,
         "height": 60,
+        "unit": "px"
+      },
+      "fill": "#D9A47E",
+      "background": "gradient #2C2926 to #1F1B18",
+      "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.app.80",
+      "title": "App icon at 80 px, hand-tuned (sub-pixel offset)",
+      "path": "packages/brand/assets/logo/primary/png/icon-80.png",
+      "dimensions": {
+        "width": 80,
+        "height": 80,
+        "unit": "px"
+      },
+      "fill": "#FBF8F3",
+      "background": "gradient #9A613C to #7F4F30 (dithered)",
+      "surface": "any"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.app.80.dark",
+      "title": "App icon at 80 px, dark, hand-tuned",
+      "path": "packages/brand/assets/logo/primary/png/icon-80-dark.png",
+      "dimensions": {
+        "width": 80,
+        "height": 80,
+        "unit": "px"
+      },
+      "fill": "#D9A47E",
+      "background": "gradient #2C2926 to #1F1B18",
+      "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.app.87",
+      "title": "App icon at 87 px, hand-tuned (sub-pixel offset)",
+      "path": "packages/brand/assets/logo/primary/png/icon-87.png",
+      "dimensions": {
+        "width": 87,
+        "height": 87,
+        "unit": "px"
+      },
+      "fill": "#FBF8F3",
+      "background": "gradient #9A613C to #7F4F30 (dithered)",
+      "surface": "any"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.app.87.dark",
+      "title": "App icon at 87 px, dark, hand-tuned",
+      "path": "packages/brand/assets/logo/primary/png/icon-87-dark.png",
+      "dimensions": {
+        "width": 87,
+        "height": 87,
+        "unit": "px"
+      },
+      "fill": "#D9A47E",
+      "background": "gradient #2C2926 to #1F1B18",
+      "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.app.120",
+      "title": "App icon at 120 px, hand-tuned (sub-pixel offset)",
+      "path": "packages/brand/assets/logo/primary/png/icon-120.png",
+      "dimensions": {
+        "width": 120,
+        "height": 120,
+        "unit": "px"
+      },
+      "fill": "#FBF8F3",
+      "background": "gradient #9A613C to #7F4F30 (dithered)",
+      "surface": "any"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.app.120.dark",
+      "title": "App icon at 120 px, dark, hand-tuned",
+      "path": "packages/brand/assets/logo/primary/png/icon-120-dark.png",
+      "dimensions": {
+        "width": 120,
+        "height": 120,
         "unit": "px"
       },
       "fill": "#D9A47E",
@@ -599,6 +743,174 @@
       "fill": "#D9A47E",
       "background": "gradient #2C2926 to #1F1B18",
       "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "svg",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.notification.svg",
+      "title": "Notification glyph: small-cut symbol, white on transparent, 24 x 24 canvas with the mark in the 20 px live area",
+      "path": "packages/brand/assets/notification/glyph.svg",
+      "dimensions": {
+        "width": 24,
+        "height": 24,
+        "unit": "viewBox"
+      },
+      "fill": "#FFFFFF",
+      "background": "transparent",
+      "surface": "dark",
+      "minSize": {
+        "px": 24,
+        "dimension": "square"
+      },
+      "notes": "Android status-bar small icon (v1.1) and any monochrome notification slot. The OS tints it; never colour or tile it."
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.notification.24",
+      "title": "Notification glyph at 24 px (Android mdpi)",
+      "path": "packages/brand/assets/notification/glyph-24.png",
+      "dimensions": {
+        "width": 24,
+        "height": 24,
+        "unit": "px"
+      },
+      "fill": "#FFFFFF",
+      "background": "transparent",
+      "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.notification.36",
+      "title": "Notification glyph at 36 px (Android hdpi)",
+      "path": "packages/brand/assets/notification/glyph-36.png",
+      "dimensions": {
+        "width": 36,
+        "height": 36,
+        "unit": "px"
+      },
+      "fill": "#FFFFFF",
+      "background": "transparent",
+      "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.notification.48",
+      "title": "Notification glyph at 48 px (Android xhdpi)",
+      "path": "packages/brand/assets/notification/glyph-48.png",
+      "dimensions": {
+        "width": 48,
+        "height": 48,
+        "unit": "px"
+      },
+      "fill": "#FFFFFF",
+      "background": "transparent",
+      "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.notification.72",
+      "title": "Notification glyph at 72 px (Android xxhdpi)",
+      "path": "packages/brand/assets/notification/glyph-72.png",
+      "dimensions": {
+        "width": 72,
+        "height": 72,
+        "unit": "px"
+      },
+      "fill": "#FFFFFF",
+      "background": "transparent",
+      "surface": "dark"
+    },
+    {
+      "kind": "icon",
+      "format": "png",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "id": "icon.notification.96",
+      "title": "Notification glyph at 96 px (Android xxxhdpi)",
+      "path": "packages/brand/assets/notification/glyph-96.png",
+      "dimensions": {
+        "width": 96,
+        "height": 96,
+        "unit": "px"
+      },
+      "fill": "#FFFFFF",
+      "background": "transparent",
+      "surface": "dark"
+    },
+    {
+      "kind": "image",
+      "id": "video.endcard.landscape",
+      "title": "Video end card 1920 x 1080: stacked lockup with the canonical tagline on paper",
+      "path": "packages/brand/assets/video/end-card-1920x1080.png",
+      "format": "png",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080,
+        "unit": "px"
+      },
+      "fill": "#2B2722",
+      "background": "#FBF8F3",
+      "surface": "any",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03"
+    },
+    {
+      "kind": "image",
+      "id": "video.endcard.portrait",
+      "title": "Video end card 1080 x 1920 (9:16 stories, Play, the App Store preview at 886 x 1920 crops the sides only)",
+      "path": "packages/brand/assets/video/end-card-1080x1920.png",
+      "format": "png",
+      "dimensions": {
+        "width": 1080,
+        "height": 1920,
+        "unit": "px"
+      },
+      "fill": "#2B2722",
+      "background": "#FBF8F3",
+      "surface": "any",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03"
+    },
+    {
+      "kind": "image",
+      "id": "social.post.template",
+      "title": "Social post background plate 1080 x 1350 (4:5): accent pair opens the quote at top left, small-cut lockup at the foot, quote area empty",
+      "path": "packages/brand/assets/social/post-template-1080x1350.png",
+      "format": "png",
+      "dimensions": {
+        "width": 1080,
+        "height": 1350,
+        "unit": "px"
+      },
+      "fill": "#8A5A3B / #2B2722",
+      "background": "#FBF8F3",
+      "surface": "any",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "notes": "Set the quote in Literata 400, ink, 56 to 64 px, left aligned at x 96, starting 48 px under the pair. Real recorded words only, with the speaker credited by relationship (\"Papa, Month 3\")."
     },
     {
       "kind": "favicon",
@@ -1123,6 +1435,68 @@
     },
     {
       "kind": "font",
+      "id": "font.reading.web",
+      "title": "Literata 400, latin, woff2 (email and web; headings, letters)",
+      "path": "packages/brand/assets/fonts/literata/literata-latin-400-normal.woff2",
+      "format": "woff2",
+      "surface": "any",
+      "url": "/fonts/literata-latin-400-normal.woff2",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "notes": "Licence: packages/brand/assets/fonts/literata/OFL.txt (SIL OFL 1.1)."
+    },
+    {
+      "kind": "font",
+      "id": "font.reading.web.500",
+      "title": "Literata 500, latin, woff2 (email and web headings)",
+      "path": "packages/brand/assets/fonts/literata/literata-latin-500-normal.woff2",
+      "format": "woff2",
+      "surface": "any",
+      "url": "/fonts/literata-latin-500-normal.woff2",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03"
+    },
+    {
+      "kind": "font",
+      "id": "font.reading.web.italic",
+      "title": "Literata 400 italic, latin, woff2 (sign-off, tagline)",
+      "path": "packages/brand/assets/fonts/literata/literata-latin-400-italic.woff2",
+      "format": "woff2",
+      "surface": "any",
+      "url": "/fonts/literata-latin-400-italic.woff2",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03"
+    },
+    {
+      "kind": "font",
+      "id": "font.ui.web",
+      "title": "Mukta 400, latin, woff2 (email and web UI text)",
+      "path": "packages/brand/assets/fonts/mukta/mukta-latin-400-normal.woff2",
+      "format": "woff2",
+      "surface": "any",
+      "url": "/fonts/mukta-latin-400-normal.woff2",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03",
+      "notes": "Licence: packages/brand/assets/fonts/mukta/OFL.txt (SIL OFL 1.1)."
+    },
+    {
+      "kind": "font",
+      "id": "font.ui.web.600",
+      "title": "Mukta 600, latin, woff2 (buttons, emphasis)",
+      "path": "packages/brand/assets/fonts/mukta/mukta-latin-600-normal.woff2",
+      "format": "woff2",
+      "surface": "any",
+      "url": "/fonts/mukta-latin-600-normal.woff2",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03"
+    },
+    {
+      "kind": "font",
       "id": "font.devanagari",
       "title": "Tiro Devanagari Hindi: Devanagari runs inside letters (Literata has no Devanagari)",
       "format": "npm",
@@ -1157,9 +1531,20 @@
     {
       "kind": "source",
       "id": "source.touchpoints.build",
-      "title": "Builds email logos, avatar, BIMI template, favicon set and OG image from the primary mark",
+      "title": "Builds email logos, avatar, BIMI template, favicon set, OG image, notification glyphs, video end cards, social plate and the web font copies from the primary mark",
       "path": "packages/brand/scripts/build-touchpoints.mjs",
       "format": "mjs",
+      "surface": "any",
+      "status": "primary",
+      "version": "1.0.0",
+      "date": "2026-10-03"
+    },
+    {
+      "kind": "source",
+      "id": "source.logo.favicon",
+      "title": "Favicon SVG as emitted by the mark build; copied unchanged to favicon.svg by build-touchpoints (use favicon.svg, never this file)",
+      "path": "packages/brand/assets/logo/primary/favicon.svg",
+      "format": "svg",
       "surface": "any",
       "status": "primary",
       "version": "1.0.0",
@@ -1281,7 +1666,29 @@
         "icon.app.dark",
         "icon.app.tinted"
       ],
-      "rule": "Ship the 1024 masters only; iOS scales. Never add text, a border, or rounded corners (the system masks). Final glass check in Icon Composer on a device."
+      "rule": "The 1024 masters plus the hand-tuned asset catalog sizes (context app.notification), or an Icon Composer .icon with a small-size variant. Never add text, a border, or rounded corners (the system masks). Final glass check in Icon Composer on a device."
+    },
+    "app.notification": {
+      "title": "Notifications, Settings and Spotlight (small sizes)",
+      "assets": [
+        "icon.app.40",
+        "icon.app.60",
+        "icon.app.58",
+        "icon.app.87",
+        "icon.app.80",
+        "icon.app.120",
+        "icon.app.40.dark",
+        "icon.app.60.dark",
+        "icon.app.58.dark",
+        "icon.app.87.dark",
+        "icon.notification.svg",
+        "icon.notification.24",
+        "icon.notification.36",
+        "icon.notification.48",
+        "icon.notification.72",
+        "icon.notification.96"
+      ],
+      "rule": "iOS draws notifications with the app icon: ship the hand-tuned PNGs for 20 pt @2x/@3x (40/60), 29 pt @2x/@3x (58/87) and 40 pt @2x/@3x (80/120) in the asset catalog so iOS never downsamples the 1024 master. 40 px and below are the small cut. Monochrome slots (Android status bar, v1.1) use the small-cut glyph, white on transparent; the OS tints it."
     },
     "app.splash": {
       "title": "Launch screen",
@@ -1364,7 +1771,7 @@
         "email.logo.light@2x",
         "email.logo.light@1x"
       ],
-      "rule": "img 154 x 32, left aligned, not a link, alt = brand name styled as a serif wordmark (EMAIL_IDENTITY.md 4)."
+      "rule": "img 154 x 32, left aligned, not a link, on a paper plate (background-image) that Gmail forced dark does not invert; alt = brand name in Georgia, not a stand-in wordmark (EMAIL_IDENTITY.md 4)."
     },
     "email.header.dark": {
       "title": "Email header, dark-mode swap",
@@ -1399,6 +1806,93 @@
         "icon.app.default"
       ],
       "rule": "1024 x 1024 PNG, opaque RGB, no alpha, no rounded corners."
+    },
+    "appstore.screenshot-frame": {
+      "title": "App Store and Play screenshot frame (caption band and device area)",
+      "status": "planned",
+      "release": "v1.0",
+      "assets": [
+        "logo.symbol.accent",
+        "logo.symbol.reversed",
+        "color.paper",
+        "color.paperDark",
+        "color.ink",
+        "color.inkDark",
+        "font.reading",
+        "font.ui"
+      ],
+      "rule": "Caption band on top, 22 percent of the frame height, paper (paperDark on the dark-mode frame). Headline Literata 500, ink, sentence case, 6 words or fewer, 84 px at 1260 x 2736 (64 px at 1080 x 1920); optional subline Mukta 400 inkMuted at 0.5 x. Symbol per appstore.screenshot-badge. Safe area 64 px from every edge. No lockup, price, rating or award text. Only v1.0 features (docs/design/CREATIVE.md 4)."
+    },
+    "play.feature-graphic": {
+      "title": "Google Play feature graphic 1024 x 500",
+      "status": "planned",
+      "release": "v1.1",
+      "assets": [
+        "logo.symbol.accent",
+        "logo.symbol.reversed",
+        "color.paper",
+        "color.paperDark",
+        "font.reading.web.italic"
+      ],
+      "rule": "The pair (accent on paper, or reversed on paperDark) left of centre with the tagline in the canonical treatment (BRAND_SYSTEM.md 5). Keep everything inside the central 924 x 400; no price or promo text. Android ships in v1.1."
+    },
+    "video.end-card": {
+      "title": "Last beat of every video (store preview, film, social cuts)",
+      "assets": [
+        "video.endcard.landscape",
+        "video.endcard.portrait"
+      ],
+      "rule": "Hold at least 1 second, no motion on the mark, no sound sting. 16:9 and 9:16 PNGs; the 886 x 1920 App Store preview crops the 9:16 card at the sides (the lockup stays inside)."
+    },
+    "social.post-template": {
+      "title": "Social post (4:5) and story (9:16) templates",
+      "assets": [
+        "social.post.template",
+        "video.endcard.portrait",
+        "font.reading"
+      ],
+      "rule": "Posts: the 1080 x 1350 plate, quote in Literata 400 ink from a real recording, credited by relationship. Stories: the 9:16 end card closes the story. One logo per post: the plate already carries it."
+    },
+    "export.pdf": {
+      "title": "Free PDF export of the book (v1.0)",
+      "status": "planned",
+      "release": "v1.0",
+      "assets": [
+        "logo.lockup.stacked.ink",
+        "logo.symbol.small.ink",
+        "font.wordmark",
+        "font.reading",
+        "font.devanagari",
+        "color.ink",
+        "color.inkMuted",
+        "color.paper"
+      ],
+      "rule": "Cover: stacked lockup at the foot, the child's name (as the parent typed it) and the title in EB Garamond. Interior per book.page. Running footer: page number and month in Mukta 9 pt inkMuted; no logo on interior pages. Colophon on the last page: horizontal lockup and \"Kept exactly as you said it.\""
+    },
+    "book.page": {
+      "title": "Printed book and PDF interior pages (title page, letter pages, colophon)",
+      "status": "planned",
+      "release": "v1.1",
+      "assets": [
+        "logo.symbol.small.ink",
+        "font.wordmark",
+        "font.reading",
+        "font.devanagari",
+        "color.ink",
+        "color.inkMuted"
+      ],
+      "rule": "Title page and cover title in EB Garamond (brand display); letters in Literata, Devanagari in Tiro Devanagari Hindi. The small-cut symbol may mark a section break at most once per page (the only place the mark is used as a divider); never as a bullet or a pattern."
+    },
+    "email.type": {
+      "title": "Email web fonts (progressive)",
+      "assets": [
+        "font.reading.web",
+        "font.reading.web.500",
+        "font.reading.web.italic",
+        "font.ui.web",
+        "font.ui.web.600"
+      ],
+      "rule": "@font-face from https://earlyletters.com/fonts/ only, hidden from Outlook for Windows. Fallbacks unchanged: Georgia for Literata, the platform UI font for Mukta."
     },
     "appstore.screenshot-badge": {
       "title": "Brand mark on App Store screenshot frames",

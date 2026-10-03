@@ -2,9 +2,9 @@ import { Body, Head, Html, Preview } from '@react-email/components';
 import { Children, isValidElement, type ReactNode } from 'react';
 import { layout, light, space } from '../tokens';
 import { EmailFooter } from './footer';
-import { GhostClose, GhostOpen, MsoHead } from './mso';
+import { GhostClose, GhostOpen, Mso, MsoHead } from './mso';
 import { tableProps } from './primitives';
-import { baseCss, cls, darkCss, useForcedTheme, type Theme } from './theme';
+import { baseCss, cls, darkCss, fontCss, useForcedTheme, type Theme } from './theme';
 
 export type EmailLayoutProps = {
   /** Inbox preview line. Required: without it clients show the first body text. */
@@ -30,7 +30,16 @@ export function EmailLayout({ preheader, theme: themeProp = 'auto', title, lang 
   const scheme = theme === 'auto' ? 'light dark' : theme === 'dark' ? 'dark' : 'light only';
 
   return (
-    <Html lang={lang} dir="ltr" {...{ 'xmlns:o': 'urn:schemas-microsoft-com:office:office' }}>
+    <Html
+      lang={lang}
+      dir="ltr"
+      {...{
+        'xmlns:o': 'urn:schemas-microsoft-com:office:office',
+        // VML namespaces for the Outlook pill button (actions.tsx).
+        'xmlns:v': 'urn:schemas-microsoft-com:vml',
+        'xmlns:w': 'urn:schemas-microsoft-com:office:word',
+      }}
+    >
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
@@ -40,13 +49,14 @@ export function EmailLayout({ preheader, theme: themeProp = 'auto', title, lang 
         <MsoHead />
         <style dangerouslySetInnerHTML={{ __html: baseCss() }} />
         {theme !== 'light' ? <style dangerouslySetInnerHTML={{ __html: darkCss(theme) }} /> : null}
+        <Mso html={`<!--[if !mso]><!--><style>${fontCss()}</style><!--<![endif]-->`} />
       </Head>
       <Body id="body" className={cls.desk} style={{ margin: 0, padding: 0, backgroundColor: light.desk }}>
         <Preview className={cls.preheader}>{preheader}</Preview>
         <table {...tableProps} className={cls.desk} bgcolor={light.desk} style={{ backgroundColor: light.desk }}>
           <tbody>
             <tr>
-              <td align="center" className={cls.gutter} style={{ padding: `${space[8]}px ${space[4]}px ${space[10]}px` }}>
+              <td align="center" className={cls.gutter} style={{ padding: `${space[8]}px ${layout.gutterMobile}px ${space[10]}px` }}>
                 <GhostOpen width={layout.maxWidth} />
                 <table
                   {...tableProps}
@@ -65,7 +75,7 @@ export function EmailLayout({ preheader, theme: themeProp = 'auto', title, lang 
                       <td
                         className={cls.pad}
                         align="left"
-                        style={{ padding: `${layout.pad}px ${layout.pad}px ${space[8]}px`, textAlign: 'left' }}
+                        style={{ padding: `${layout.pad}px ${layout.padMobile}px ${space[8]}px`, textAlign: 'left' }}
                       >
                         {sheet}
                       </td>
@@ -76,7 +86,7 @@ export function EmailLayout({ preheader, theme: themeProp = 'auto', title, lang 
                   <table {...tableProps} style={{ maxWidth: layout.maxWidth }}>
                     <tbody>
                       <tr>
-                        <td className={cls.pad} style={{ padding: `${space[6]}px ${layout.pad}px 0`, textAlign: 'left' }}>
+                        <td className={cls.pad} style={{ padding: `${space[6]}px ${layout.padMobile}px 0`, textAlign: 'left' }}>
                           {footers}
                         </td>
                       </tr>

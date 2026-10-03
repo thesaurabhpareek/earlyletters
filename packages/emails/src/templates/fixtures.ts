@@ -19,6 +19,7 @@ export const previewValues: EmailValues = {
   newEmail: 'asha.family@example.com',
   parentName: 'Mumma',
   signsAs: 'Nani',
+  coParentName: 'Papa', // coparent-left: the co-parent closing their account
 
   // one-time links and codes (auth)
   code: '482913',
@@ -32,6 +33,7 @@ export const previewValues: EmailValues = {
   // links
   appUrl: `${SITE}/open`,
   exportUrl: `${SITE}/open/export/preview-not-a-real-link`,
+  confirmDeleteUrl: `${SITE}/delete-account/confirm#token=preview-not-a-real-token`, // deletion-confirm (web route to build)
   documentUrl: `${SITE}/privacy`,
   changesUrl: `${SITE}/privacy/changes`,
   subscriptionTermsUrl: `${SITE}/subscription-terms`, // apps/web/src/lib/legal.ts

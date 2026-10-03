@@ -1,6 +1,6 @@
 # Early Letters: Email identity
 
-v0.2, 2026-10-03 (v0.2: every section describes only the primary mark, r3 final-a, D-051; interim lockup, E monogram and directions A and B removed). Owner: B3 (brief: `docs/emails/BRIEF.md`). Brand rules: `docs/brand/BRAND_SYSTEM.md`; files resolve through `packages/brand/registry.ts` (D-052). Copy: `packages/content/src/emails/chrome.en.ts`. Assets: `packages/brand/assets/email/`, `packages/brand/assets/favicon/`.
+v0.3, 2026-10-03 (v0.3: the shipped layout is documented as the spec: a paper sheet on a desk, two template families, italic sign-off, paper plate behind the logo for Gmail forced dark, self-hosted web fonts, 15-minute links; reviews DSN-01, DSN-09, BRD-03, BRD-10, BRD-13. v0.2: every section describes only the primary mark, r3 final-a, D-051; interim lockup, E monogram and directions A and B removed). Owner: B3 (brief: `docs/emails/BRIEF.md`). Brand rules: `docs/brand/BRAND_SYSTEM.md`; files resolve through `packages/brand/registry.ts` (D-052). Copy: `packages/content/src/emails/chrome.en.ts`. Assets: `packages/brand/assets/email/`, `packages/brand/assets/favicon/`.
 **(opinion)** marks judgement. **UNVERIFIED** marks a claim not confirmed against a primary source on this date.
 
 An email from us should read like a short letter from a kind friend who happens to run a careful company: one idea, one action, a sign-off, and a quiet footer that tells you why it came. The design language rule applies unchanged: **quiet UI, loud letters**.
@@ -12,7 +12,7 @@ An email from us should read like a short letter from a kind friend who happens 
 1. **One action per email.** The logo is not a link. The footer has at most three small text links. Nothing competes with the button in the body.
 2. **Same face every time.** One From name, one address, one header, one footer. Recognition is our best phishing defence: people learn what a real Early Letters email looks like.
 3. **Readable with images off, in dark mode, and on a lock screen.** Every element degrades to text that still makes sense.
-4. **Nothing watches the reader.** No tracking pixels, no click tracking, no remote fonts or images from other hosts, no "view in browser" (personal mail is never hosted).
+4. **Nothing watches the reader.** No tracking pixels, no click tracking, no fonts or images from any host but `earlyletters.com`, no per-recipient URLs, no "view in browser" (personal mail is never hosted). The logo already loads from that host, so a font from it reveals nothing new (BRD-03).
 
 ---
 
@@ -42,7 +42,7 @@ An email from us should read like a short letter from a kind friend who happens 
 - **Never put a sign-in code or link in the subject or preheader.** Both show on lock screens and in notification previews.
 
 **Preheader**
-- 40 to 90 characters. Adds the next useful fact, never repeats the subject. Example: subject "Your sign-in link", preheader "It works once, for 1 hour. You can also use the code inside."
+- 40 to 90 characters. Adds the next useful fact, never repeats the subject. Example: subject "Your sign-in link", preheader "It works once, for 15 minutes. You can also use the code inside."
 - Rendered as hidden text at the top of the body, followed by a spacer run (`&#847;&zwnj;&nbsp;` repeated) so body text does not leak into the preview (D1 owns the markup).
 
 ---
@@ -68,7 +68,7 @@ Why: the header's only job is recognition in the first glance. Every extra eleme
 Sizes come from `packages/brand/registry.ts` (contexts `email.header.light` and `email.header.dark`) and reach the template through `packages/emails/src/tokens.ts` (`layout.logoWidth`, `layout.logoHeight`); see docs/brand/BRAND_SYSTEM.md 3 for clear space. Keep the display height between 24 and 40 and the width at or under 200. The wordmark is artwork: never set the name in live text as the header.
 
 ### 4.3 Alt text
-`alt` is the brand name from `packages/brand/index.ts`. Style the `img` so the alt text itself looks like a wordmark when images are blocked: `font-family: 'EB Garamond', Garamond, Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 32px; font-weight: 500; color: #2B2722`. Outlook desktop and some corporate clients block images by default; the reader then sees the name in EB Garamond if installed, else Georgia: a readable stand-in, never a substitute logo elsewhere.
+`alt` is the brand name from `packages/brand/index.ts`, styled in the email serif so the header line keeps its weight when images are blocked: `font-family: Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 32px; font-weight: 400; color: #2B2722`. It is plain text, not a stand-in wordmark: DESIGN_LANGUAGE.md forbids retyping the name in a font to imitate the logo, so no EB Garamond here (BRD-13).
 
 ### 4.4 Dark mode
 Three client behaviours, three answers:
@@ -77,15 +77,21 @@ Three client behaviours, three answers:
 |---|---|---|
 | Honours `prefers-color-scheme` | Apple Mail (iOS, macOS), Outlook for Mac, some others | Ship two `img` tags. `logo-light.png` shown by default; `logo-dark.png` hidden (`display:none; mso-hide:all; max-height:0; overflow:hidden`) and swapped in by `@media (prefers-color-scheme: dark)`. |
 | Rewrites colours with attribute hooks | Outlook.com and Outlook apps (`[data-ogsc]`, `[data-ogsb]`) | Same swap, duplicated under `[data-ogsc] .logo-light {display:none}` / `[data-ogsc] .logo-dark {display:block}`. **UNVERIFIED** in current Outlook builds; D1 tests. |
-| Forces dark colours, ignores our CSS, does not swap images | Gmail apps on iOS and Android | `logo-light.png` stays. It carries a **halo**, so it still reads on a dark page. |
+| Forces dark colours, ignores our CSS, does not swap images | Gmail apps on iOS and Android | `logo-light.png` stays, on a **paper plate** Gmail does not invert (below). |
+| Inverts everything, no background images | Classic Outlook for Windows (dark theme) | `logo-light.png` stays; its **halo** keeps it legible. The dark logo never reaches Word (non-mso conditional plus `mso-hide:all`). |
 
 **The halo.** Each transparent PNG has the glyph outline stroked underneath in the opposite surface colour: `logo-light` has a 0.7 px paper (`#FBF8F3`) edge at 92 percent opacity; `logo-dark` has a 0.7 px near-black (`#161412`) edge. On the background it was made for, the edge matches the page and disappears. When a client puts it on the wrong background, the edge outlines every letter so the name stays readable. To be checked on `#FBF8F3`, `#FFFFFF`, `#161412`, `#1F1F1F`, `#2B2B2B` and `#121212` with the primary lockup (the earlier render in `email/source/` shows the deprecated interim lockup and is not a reference). It looks like outline lettering in the forced case: legible, slightly less elegant, and only in clients that refuse to let us choose **(opinion: the right trade)**.
 
-Why not a solid background plate behind the logo? A cream rectangle on a dark Gmail page is louder than an outlined wordmark and breaks "quiet". Why not an accent-colour logo that works on both? `#8A5A3B` on Gmail's dark surfaces is about 3:1, below what a small serif needs.
+**The paper plate (v0.3, DSN-01).** v0.2 rejected a plate as louder than outline lettering. The design review rendered both and found the opposite: the halo alone reads as an embossed hairline at about 1.3:1, and Gmail's apps are the largest dark-mode audience, so this is the first thing many readers see. The light logo now sits in a table cell whose paper colour is set twice, as `background-color` and as `background-image: linear-gradient(#FBF8F3,#FBF8F3)`. Gmail inverts colours but not background images, so the cell stays paper: a small paper chip (6 px corners, 8 px clear on the right) holding the ink logo. In light mode the chip is the sheet colour and invisible; clients that honour our dark CSS remove it (`.el-logo-plate{background-image:none;background-color:transparent}`, also under `[data-ogsb]`) and swap in the reversed logo. The halo stays for classic Outlook, which inverts and ignores background images. Verified in a simulated Gmail inversion render (colours inverted, images and background images untouched); a real-device check in Gmail iOS and Android is still due before launch (README, client matrix).
 
-Whether Gmail's apps ever invert images is reported from community testing, not from Google documentation: **UNVERIFIED**. The halo covers both outcomes.
+Why not an accent-colour logo that works on both? `#8A5A3B` on Gmail's dark surfaces is about 3:1, below what a small serif needs.
 
-### 4.5 Hosting
+Gmail leaving background images alone is reported from community testing (Litmus, Email on Acid), not from Google documentation: **UNVERIFIED** on current builds. If it fails, the halo still keeps the logo legible.
+
+### 4.5 Type (BRD-03)
+Literata (400, 500, 400 italic) and Mukta (400, 600), latin subsets, are self-hosted at `https://earlyletters.com/fonts/` (registry context `email.type`) and declared with `@font-face` in their own `<style>` block, hidden from classic Outlook. Apple Mail, iOS Mail and Outlook for Mac use them, so the most common inbox matches the app. Everyone else keeps the fallbacks, unchanged: Georgia for Literata, the platform UI font for Mukta.
+
+### 4.6 Hosting
 Images load only from `https://earlyletters.com/email/` (brief). Paths: `/email/logo-light.png`, `/email/logo-dark.png` (2x files; the `@1x` files are for previews and any client that mis-scales). No query strings, no per-recipient URLs (they would be a tracking pixel by another name).
 
 ---
@@ -99,7 +105,7 @@ Every email ends with a letter-like sign-off before the footer:
 Warmly,
 Early Letters
 ```
-Literata 400, 18/27, `ink`; the second line Literata 500. 24 px above. Security notices keep the same sign-off: the warmth is in two words and does not undercut the message **(opinion)**. An email's copy can override it with `signoff`. Never a person's name (the founder's name stays out of code, D-004).
+Literata 400 italic, 17 px on a 1.65 line height, `ink`, both lines (decided v0.3, BRD-10: italic reads as a hand-written close; the code was right and the spec is changed to match). 8 px above in notices; in letters it follows the action (section 8). Security notices keep the same sign-off: the warmth is in two words and does not undercut the message **(opinion)**. An email's copy can override it with `signoff`. Never a person's name (the founder's name stays out of code, D-004).
 
 ### 5.2 Footer contents and order
 A 1 px `line` rule, 32 px below the signature, then 24 px, then the lines in this order. Mukta 400, **13/19 px** (the product's floor; nothing smaller), `inkMuted` (`#6B645B` light, `#B3AA9E` dark; 5.5:1 and 8.0:1). Links underlined, same colour. 8 px between lines, 16 px before the name line.
@@ -154,9 +160,17 @@ People who use Sign in with Apple and choose "Hide My Email" get an address like
 
 ---
 
-## 8. Mocks (375 px)
+## 8. Layout and mocks (375 px)
 
-Six frames to render with the primary lockup: transactional light, dark with logo swap, Gmail forced dark (halo), images blocked, commercial light and dark. The diagrams below are the layout; the logo in every frame is `assetFor('email.header.light' | 'email.header.dark')`.
+**The sheet (v0.3).** Every email is one paper sheet (`#FBF8F3`, 1 px `line` border, 14 px corners, 600 px max, fluid below) on a slightly deeper desk (`#F5EFE7`; dark: `#201D1A` on `#161412`). The footer sits on the desk under the sheet. The ASCII frames below predate the sheet and show its contents only; the rendered gallery (`npm run build -w @scribe/emails`, then `packages/emails/out/index.html`) is the visual reference.
+
+**Two template families (v0.3, BRD-10).**
+| Family | Emails | Body | Order |
+|---|---|---|---|
+| **Notice** (`CopyEmail`) | Sign-in, security, billing, account | Mukta 17/1.6 | Heading, body, key facts (`KeyFacts`), button, code, hairline, fallback, safety note, sign-off |
+| **Letter** (`LetterEmail`, built on the `Letter` component) | Welcome, family | Literata 18/1.65 | Heading, body, button, sign-off, hairline, fallback, quiet note. The action comes before the sign-off by default (`actionPlacement`, DSN-04) |
+
+Mocks to check with the primary lockup: transactional light, dark with logo swap, Gmail forced dark (plate), images blocked, commercial light and dark.
 
 **Light, transactional**
 ```
@@ -166,10 +180,10 @@ Six frames to render with the primary lockup: transactional light, dark with log
 |                                     |  24
 |  Here is your sign-in link          |  Literata 500 24/31
 |  Tap below to open your book. The   |  Mukta 17/26
-|  link works once, for 1 hour.       |
+|  link works once, for 15 minutes.   |
 |  ( Sign in to my book )             |  accent pill, white text
 |                                     |  24
-|  Warmly,                            |  Literata 18/27
+|  Warmly,                            |  Literata italic 17/28
 |  Early Letters                      |
 |                                     |  32
 |  -----------------------------------|  1px line #E6DED3
@@ -204,7 +218,9 @@ Six frames to render with the primary lockup: transactional light, dark with log
 |  Help . Privacy . Email preferences |
 ```
 
-**Images blocked:** the logo line becomes the alt text "Early Letters" styled per 4.3 (EB Garamond if installed, else Georgia), ink. Everything else is unchanged.
+**Images blocked:** the logo line becomes the alt text "Early Letters" in Georgia, ink (4.3). Everything else is unchanged.
+
+**Gmail forced dark:** the sheet and text invert; the ink logo stays on its paper chip (4.4); the button keeps a light fill with dark text.
 
 ---
 
@@ -222,6 +238,8 @@ Everything below is built from the primary mark (`packages/brand/assets/logo/pri
 | `avatar-1024.png` | `email.avatar` | The default app icon (opaque 1024) for Apple Branded Mail. |
 | `avatar.tiny-ps.svg` | `email.bimi.template` | SVG Tiny PS template for BIMI. Do not publish yet (section 6). |
 | `manifest.json` | `email.manifest` | Sizes, halo, alt text, hosting path. |
+
+`packages/brand/assets/fonts/literata/`, `fonts/mukta/` (context `email.type`, served at `/fonts/`): five latin woff2 files and each family's `OFL.txt`.
 
 `packages/brand/assets/favicon/` (context `web.favicon`, `web.apple-touch`): `favicon.svg` (small-cut symbol, accentDeep `#7F4F30` on light and accentDark `#D9A47E` on dark via `prefers-color-scheme`), `favicon-32.png`, `apple-touch-icon.png` (180, full-bleed square, iOS rounds it), `icon-192.png`, `icon-512.png` (app icon tile), `site.webmanifest`.
 

@@ -400,15 +400,15 @@ export const en = {
     },
     shareMessage: {
       imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the free app on your iPhone, or helps you get it:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Get the free app and join here:",
+      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk. Your voice is kept too. It is on iPhone for now. Get the free app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
       title: "Welcome, {signsAs}.",
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
-      howStep1: "Tap the microphone and talk, in any language.",
-      howStep2: "We write down your words exactly as you said them.",
+      howStep1: "Tap the red circle and talk, in the language you speak.",
+      howStep2: "Your words are kept exactly as you said them.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your voice is kept too, so {child} can hear you tell it.",
       privacyNote: "Only {child}'s parents see your letters until they go in the book.",
@@ -520,6 +520,24 @@ export const en = {
       family: "Family",
       reminders: "Reminders",
       data: "Your data",
+      // Labels the emails point to (customer review CUS-03): "Settings, Plan, Manage subscription" and friends.
+      plan: "Plan",
+      account: "Account",
+    },
+    // Settings > Plan. Every billing email and the Subscription terms name these exact labels.
+    plan: {
+      manageLabel: "Manage subscription",
+      refundLabel: "Request a refund",
+      // Plus reaches a co-parent only through Apple Family Sharing (Terms 14.12, D-061).
+      includedByFamilySharing: "Included through Family Sharing",
+      familySharingHelp: "Plus is shared through Apple Family Sharing. {child}'s other parent gets it too if you are in the same Apple family. Otherwise each of you has your own plan, and everything free stays free for both of you.",
+    },
+    // Settings > Account. The sign-in emails name these exact labels.
+    account: {
+      emailLabel: "Sign-in email",
+      methodsLabel: "Sign-in methods",
+      signOutButton: "Sign out",
+      signOutOthersButton: "Sign out other devices",
     },
     signsAsLabel: "Sign my letters as",
     childLabel: "Child",
@@ -545,7 +563,7 @@ export const en = {
       title: "Encrypted backup",
       offLabel: "Backup is off",
       onLabel: "Backup is on",
-      body: "Copies your recordings to our servers, encrypted on this phone first, so a new phone can bring them back. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
+      body: "Copies your recordings to our servers, encrypted on this phone first, so a new phone can bring them back. We keep a recovery key so we can help you restore them.",
       // Backup is for the owner only in v1.0: no one else can play a backed-up recording (founder decision, Oct 3 2026).
       honestNote: "Without backup, your recordings stay only on this phone. Your letters sync when you are signed in, so your co-parent and your next phone can read them.",
       turnOnButton: "Turn on backup",
@@ -555,10 +573,11 @@ export const en = {
     },
     export: {
       title: "Export",
-      body: "Download every letter and recording, any time, free. Plain text and audio files.",
+      body: "Download every letter and recording, any time, free. A PDF of the book, plus plain text and audio files.",
       button: "Export everything",
       preparing: "Gathering every letter. This can take a minute.",
       ready: "Your export is ready.",
+      whereItGoes: "You choose where to keep it, for example in the Files app.",
     },
     delete: {
       entryTitle: "Delete this letter?",
@@ -576,6 +595,11 @@ export const en = {
       bookTypeToConfirmLabel: "Type {child}'s name to confirm",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
+      // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
+      accountScheduledTitle: "Your account is set to be deleted",
+      accountScheduledBody: "Until then you can export everything, or cancel and keep your account just as it is.",
+      accountScheduledDateLabel: "Deletion date",
+      cancelDeletionButton: "Cancel deletion",
     },
     reminders: {
       cadenceLabel: "Reminders",
@@ -610,7 +634,7 @@ export const en = {
       sensitiveLabel: "Sync and family sharing",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
       sensitiveHelp: "Letters can hold health details about you or {child}. Turn this off to stop syncing, and we will offer to delete what already synced.",
-      aiLabel: "Cloud transcription",
+      aiLabel: "Cloud transcription", // v1.1 only: hidden in v1.0 (no audio leaves the phone; PRD 3.0)
       lockScreenLabel: "Names in notifications",
     },
   },
@@ -708,7 +732,7 @@ export const en = {
       restoreLink: "Restore",
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
-    promise: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras.",
+    promise: "Writing, reading, playing your recordings, export and writing with {child}'s other parent are free, always. Plus adds a few extras.",
   },
 
   errors: {
@@ -810,6 +834,24 @@ export const en = {
     remindersNotYet: "Your choice is saved. Reminders start in a coming update.",
     legalTitle: "Legal",
     versionLabel: "Version",
+  },
+
+  // Sign-in screens the emails point to (customer review CUS-03, CUS-06, CUS-07). Copy only; the mobile lane wires them.
+  auth: {
+    checkEmailTitle: "Check your email",
+    checkEmailBody: "We sent a sign-in link and a 6-digit code. Tap the link on this phone, or type the code here.",
+    enterCodeLabel: "6-digit code",
+    troubleButton: "Trouble signing in?",
+    noEmailHelp: "Nothing yet? Wait a minute, then check Spam, Junk or Promotions for an email from hello@earlyletters.com. Still nothing? Use Sign in with Apple or Google, or write to us.",
+    emptyBookHelp: "See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email.",
+  },
+
+  // In-app card for the remaining parent when a co-parent deletes their account (CNT-08, CUS-04).
+  // The coparent-left email says the same; the card stays until dismissed.
+  coParentLeft: {
+    title: "Some letters are no longer in the book",
+    body: "The person who wrote them is closing their account. Letters you wrote are not affected.",
+    dismissButton: "Okay",
   },
 
   // 18+ only (founder decision, Oct 2 2026). Asked before any child details; only "yes" is stored, never an age.

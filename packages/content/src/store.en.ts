@@ -18,13 +18,13 @@ export const storeListing = {
     "journal,diary,keepsake,newborn,parents,milestones,family,toddler,audio,bilingual,scrapbook",
   description: `${brand.name} is the baby memory book you fill by talking.
 
-Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. ${brand.name} keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for a lifetime.
+Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. ${brand.name} keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for years.
 
 EXACTLY AS YOU SAID IT
-Transcription happens on your phone by default. It only fixes the mistakes a microphone makes, like a misheard word or a missing full stop, and every small fix is marked so you can undo it. We never rewrite your words. Every sentence in your book is one you actually said.
+Transcription happens on your phone by default. Word for word fixes only small slips, like a stray um, a misheard name or a missing full stop, and every small fix is marked so you can undo it. We never rewrite your words. Every sentence in your book is one you actually said.
 
 YOUR VOICE, KEPT
-The original recording stays with each letter, on your phone by default. With the optional backup, recordings are encrypted on your phone before upload, and only you can restore them. We keep a recovery key so we can help you, unless you choose Vault mode. Years from now, your child can hear how you sounded when you said it.
+The original recording stays with each letter, on your phone by default. With the optional backup, recordings are encrypted on your phone before upload, and a backup is for you alone. We keep a recovery key so we can help you restore it on a new phone. Years from now, your child can hear how you sounded when you said it.
 
 READ TOGETHER
 Open any letter and it plays in your own voice, with the letter on the page. Listen together at bedtime. Your first 3 Read together sessions are free; after that, Read together is part of Plus. Playing any single recording is always free.
@@ -33,13 +33,13 @@ NOTES AND LETTERS
 Some days are a quick note. Some days are a proper letter. Both belong. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores. Come back whenever you like.
 
 WRITE IT TOGETHER
-Invite your child's other parent to add letters of their own from the free app on their own phone. Each one is signed, like "From Papa" or "From Mama", and you both read the whole book.
+Invite your child's other parent to add letters of their own from the free app on their own iPhone. Each one is signed, like "From Papa" or "From Mama", and you both read the whole book.
 
 SEVEN LANGUAGES, AS SPOKEN
 Speak English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. ${brand.name} keeps your words in the language you said them.
 
 PRIVATE BY DEFAULT
-Your letters are yours. Only the family you invite can read them, and you decide what goes into the book. No ads. We never sell your data or share it with advertisers.
+Your letters are yours. Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists. No ads. We never sell your data or share it with advertisers.
 
 A BOOK FOR EACH CHILD
 Each child gets their own book, with their own months and settings. Switch between them in one tap. Your first child's book is free, and so are twins or more you add together when you set up. Books you start for more children later are part of Plus.

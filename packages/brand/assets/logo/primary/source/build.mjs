@@ -38,8 +38,9 @@ console.log('wordmark ascender', ASC, 'x0', WM.x0, 'x1', WM.x1);
 function normalise(shapes, H = 1000) { const b = bbox(shapes); const s = H / b.h; return shapes.map((sh) => transform(sh, { s, tx: -b.x0 * s, ty: -b.y0 * s })); }
 const padVB = (b, p) => { const m = Math.max(b.w, b.h) * p; return `${r(b.x0 - m)} ${r(b.y0 - m)} ${r(b.w + 2 * m)} ${r(b.h + 2 * m)}`; };
 
-// 16/29/40/60/180 as in r3; 32 (favicon PNG), 192 and 512 (web manifest) added in primary. <= 40 px uses the small cut.
-const SIZES = [16, 29, 32, 40, 60, 180, 192, 512];
+// 16/29/40/60/180 as in r3; 32 (favicon PNG), 192 and 512 (web manifest) added in primary; 58, 80, 87, 120 (iOS asset
+// catalog: Settings, Spotlight, notifications) added 2026-10-03 for BRD-04. <= 40 px uses the small cut.
+const SIZES = [16, 29, 32, 40, 58, 60, 80, 87, 120, 180, 192, 512];
 const facts = {};
 for (const [slug, V] of Object.entries({ primary: MARK })) {
   const OUT = ROOT; const PNG = path.join(OUT, 'png'); fs.mkdirSync(PNG, { recursive: true });

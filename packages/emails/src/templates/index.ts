@@ -18,6 +18,7 @@ import * as welcome from './auth/welcome';
 import * as signInTrouble from './auth/sign-in-trouble';
 import * as appleAccountLinked from './auth/apple-account-linked';
 import * as googleAccountLinked from './auth/google-account-linked';
+import * as passkeyAdded from './auth/passkey-added';
 import * as newDeviceSignIn from './auth/new-device-sign-in';
 import * as emailChangedOldAddress from './auth/email-changed-old-address';
 import * as emailChangedNewAddress from './auth/email-changed-new-address';
@@ -29,6 +30,8 @@ import * as familyBookRestored from './family/family-book-restored';
 import * as accountDeleted from './account/account-deleted';
 import * as accountDeletionCancelled from './account/account-deletion-cancelled';
 import * as accountDeletionScheduled from './account/account-deletion-scheduled';
+import * as coparentLeft from './account/coparent-left';
+import * as deletionConfirm from './account/deletion-confirm';
 import * as bookDeletionCancelled from './account/book-deletion-cancelled';
 import * as bookDeletionScheduled from './account/book-deletion-scheduled';
 import * as deletionRequestReceived from './account/deletion-request-received';
@@ -71,6 +74,7 @@ const groups: Record<string, TemplateModule[]> = {
     signInTrouble,
     appleAccountLinked,
     googleAccountLinked,
+    passkeyAdded,
     newDeviceSignIn,
     emailChangedOldAddress,
     emailChangedNewAddress,
@@ -88,9 +92,11 @@ const groups: Record<string, TemplateModule[]> = {
     accountDeleted,
     accountDeletionCancelled,
     accountDeletionScheduled,
+    coparentLeft,
     bookDeletionCancelled,
     bookDeletionScheduled,
     deletionRequestReceived,
+    deletionConfirm,
     exportReady,
     policyUpdate,
     privacyRequestReceived,

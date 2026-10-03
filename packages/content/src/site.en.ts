@@ -14,6 +14,11 @@ const price = {
 } as const;
 
 export const site = {
+  /** Open Graph and social card text: first contact, so it carries the descriptor (BRAND.md naming; brand review BRD-12). */
+  og: {
+    title: brand.name,
+    description: `${brand.name}, the baby memory book you fill by talking. ${brand.tagline}`,
+  },
   hero: {
     headline: "Letters to your child, in your voice",
     subhead:
@@ -24,7 +29,7 @@ export const site = {
   benefits: [
     {
       title: "Exactly as you said it",
-      body: "Transcription happens on your phone by default and only fixes microphone slips. Every small fix is marked, and you can undo it. We never rewrite your words. Every sentence is one you actually said.",
+      body: "Word for word: transcription happens on your phone and fixes only small slips, like a stray um or a misheard name. Every small fix is marked, and you can undo it. We never rewrite your words.",
     },
     {
       title: "Your voice, kept",
@@ -36,7 +41,7 @@ export const site = {
     },
     {
       title: "Write it together",
-      body: "Invite {child}'s other parent to add letters of their own, from their own phone. Each one is signed, like From Papa or From Mama.",
+      body: "Invite {child}'s other parent to add letters of their own, from their own iPhone. Each one is signed, like From Papa or From Mama.",
     },
   ],
   howItWorks: {
@@ -67,10 +72,10 @@ export const site = {
   privacy: {
     title: "Our promise, in plain words",
     points: [
-      "Your letters are private by default. Only the family you invite can read what you add to the book.",
-      "We never rewrite your words. Transcription happens on your phone by default. If you ever choose cloud transcription, we ask first.",
-      "Your recordings stay on your phone unless you back them up or choose cloud transcription. A backup is for you alone.",
-      "Backups are encrypted on your phone first. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
+      "Your letters are private by default. Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists.",
+      "We never rewrite your words. Transcription happens on your phone, and no audio leaves it to turn speech into text.",
+      "Your recordings stay on your phone unless you back them up. A backup is for you alone.",
+      "Backups are encrypted on your phone first. We keep a recovery key so we can help you restore them on a new phone.",
       "No ads. We never sell your data or share it with advertisers.",
       "You can export your book, free, at any time.",
       "You can delete your own letters and recordings whenever you like.",
@@ -80,11 +85,11 @@ export const site = {
   faq: [
     {
       q: "Who can see my letters?",
-      a: "You, and {child}'s other parent if you invite them. Letters are private by default, and you decide what goes into the book. When you sign in, your letters sync to our servers so your co-parent and your next phone can read them. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. That access is restricted and logged.",
+      a: "You, and {child}'s other parent if you invite them. Letters are private by default, and you decide what goes into the book. When you sign in, your letters sync to our servers so your co-parent and your next phone can read them. They are encrypted on the way and on our servers, but not end-to-end, so our staff could technically open them. They look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. That access is restricted and logged.",
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone by default and only fixes microphone and grammar slips, like a misheard word or a missing full stop. Every small fix is marked, and you can undo it. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone. Word for word fixes only small slips: a stray um, a misheard name, a missing full stop, or a one-word grammar slip like we was to we were. Every small fix is marked, and you can undo it, or choose Exactly as said to keep every word as it came. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
@@ -92,7 +97,15 @@ export const site = {
     },
     {
       q: "Can {child}'s other parent write too?",
-      a: "Yes. Invite them from the app and they can talk or type letters of their own on their own phone, each one signed with their name, like From Papa. You both read the whole book.",
+      a: "Yes. Invite them from the app and they can talk or type letters of their own on their own iPhone, each one signed with their name, like From Papa. You both read the whole book.",
+    },
+    {
+      q: "Does my co-parent need an iPhone?",
+      a: `Yes, for now. ${brand.name} is on iPhone first. Android is coming, and their place in the book will be waiting.`,
+    },
+    {
+      q: "If one of us has Plus, does the other need it too?",
+      a: "Not if you share an Apple family. Plus is shared through Apple Family Sharing, so a co-parent in the same Apple family gets it too. If you are in different Apple families, each of you has your own plan. Writing, reading, playing your recordings and export stay free for both of you either way.",
     },
     {
       q: "Which languages can I use?",
@@ -108,7 +121,11 @@ export const site = {
     },
     {
       q: "What happens to my recordings?",
-      a: "Each recording stays on your phone by default, attached to its letter. It leaves your phone only if you back it up or choose cloud transcription. A backup is for you alone. Backups are encrypted on your phone first, and we keep a recovery key so we can help you restore them, unless you choose Vault mode. You can delete your recordings and letters whenever you like.",
+      a: "Each recording stays on your phone by default, attached to its letter. It leaves your phone only if you back it up. A backup is for you alone. Backups are encrypted on your phone first, and we keep a recovery key so we can help you restore them on a new phone. You can delete your recordings and letters whenever you like.",
+    },
+    {
+      q: "What happens to my recordings if I change phones?",
+      a: "Your letters come with you when you sign in. Recordings come with you if backup is on (part of Plus), or if you move to the new phone with an iPhone backup or Quick Start. Without either, export them first.",
     },
   ],
   waitlist: {

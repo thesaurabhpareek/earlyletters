@@ -13,6 +13,13 @@ The founder wants one standardised brand across every touchpoint. earlyletters.c
    - Every transactional email loads `https://earlyletters.com/email/<file>`. The registry contexts are `email.header.light`, `email.header.dark` and `email.avatar`.
    - At build, copy `packages/brand/assets/email/*.png` to `apps/web/public/email/`. Otherwise every email logo returns 404 once mail is live.
 
+2a. **The site must serve the brand fonts at `/fonts/`** (added 2026-10-03, review BRD-03).
+   - Every email declares `@font-face` for Literata (400, 500, 400 italic) and Mukta (400, 600) from `https://earlyletters.com/fonts/<file>.woff2`. Registry context `email.type`; ids `font.reading.web`, `font.reading.web.500`, `font.reading.web.italic`, `font.ui.web`, `font.ui.web.600`. Files: `packages/brand/assets/fonts/{literata,mukta}/`, each with its `OFL.txt`.
+   - `apps/web/scripts/sync-brand-assets.mjs` already copies every registry asset with a `url`, so the five files land in `public/fonts/` with no code change. Check the build output lists `fonts` among the served folders.
+   - Headers for `/fonts/*` (E3, `vercel.json`): `Content-Type: font/woff2`, `Access-Control-Allow-Origin: *` (webmail clients fetch fonts cross-origin), `Cache-Control: public, max-age=31536000, immutable`. No cookies, no redirects, no query strings.
+   - The site may use the same files for its own Literata and Mukta instead of a second copy.
+   - Until `/fonts/` is live, emails fall back to Georgia and the system UI font; nothing breaks.
+
 3. **Legal pages.**
    - Web-ready drafts are in `packages/content/legal/`: `terms.md`, `privacy.md`, `subscription-terms.md`, `health-privacy.md` and `subprocessors.md`. `REVIEW_NOTES.md` is not a page.
    - Routes, per Brief decision 13: `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, plus `/subscription-terms`.

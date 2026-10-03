@@ -18,7 +18,7 @@
  * the responsive rules are emitted as two separate blocks.
  */
 import { createContext, useContext } from 'react';
-import { dark, layout, type Palette } from '../tokens';
+import { dark, layout, webFonts, type Palette } from '../tokens';
 
 export type Theme = 'auto' | 'light' | 'dark';
 
@@ -41,8 +41,18 @@ export const cls = {
   btn: 'el-btn',
   btnText: 'el-btn-text',
   rule: 'el-rule',
+  /** The decorative hairline; skipped in plain text. */
+  divider: 'el-divider',
   logoLight: 'el-logo-light',
   logoDark: 'el-logo-dark',
+  /** Paper plate behind the light logo; Gmail does not invert background-image, so the logo keeps its paper there. */
+  logoPlate: 'el-logo-plate',
+  /** Fallback link block; skipped in the plain-text part (the button line already carries the URL). */
+  fallback: 'el-fallback',
+  facts: 'el-facts',
+  factRow: 'el-fact-row',
+  factLabel: 'el-fact-label',
+  factValue: 'el-fact-value',
   pad: 'el-pad',
   gutter: 'el-gutter',
   heading: 'el-heading',
@@ -66,6 +76,7 @@ function darkDeclarations(p: Palette, prefix = ''): string {
     `${s(cls.rule)}{border-color:${p.line} !important;}`,
     `${s(cls.logoLight)}{display:none !important;}`,
     `${s(cls.logoDark)}{display:block !important;max-height:none !important;overflow:visible !important;}`,
+    `${s(cls.logoPlate)}{background-image:none !important;background-color:transparent !important;}`,
   ].join('\n');
 }
 
@@ -82,6 +93,7 @@ function outlookDeclarations(p: Palette): string {
     `[data-ogsc] .${cls.btnText}{color:${p.onAccent} !important;}`,
     `[data-ogsc] .${cls.logoLight}{display:none !important;}`,
     `[data-ogsc] .${cls.logoDark}{display:block !important;max-height:none !important;overflow:visible !important;}`,
+    `[data-ogsb] .${cls.logoPlate}{background-image:none !important;background-color:transparent !important;}`,
   ].join('\n');
 }
 
@@ -96,6 +108,17 @@ export function darkCss(theme: Theme): string {
   ].join('\n');
 }
 
+/**
+ * Progressive web fonts (registry context `email.type`), self-hosted on earlyletters.com/fonts/. Apple Mail, iOS
+ * Mail and Outlook for Mac use them; every other client keeps the fallback stack. Emitted as its own <style> block
+ * (Gmail drops a block it will not parse) and hidden from classic Outlook, which otherwise falls back to Times.
+ */
+export function fontCss(): string {
+  return webFonts
+    .map((f) => `@font-face{font-family:'${f.family}';font-style:${f.style};font-weight:${f.weight};font-display:swap;src:url(${f.url}) format('woff2');}`)
+    .join('\n');
+}
+
 /** Responsive and client-reset CSS. Independent of theme. */
 export function baseCss(): string {
   return [
@@ -107,10 +130,14 @@ export function baseCss(): string {
     'a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;font-size:inherit !important;font-family:inherit !important;font-weight:inherit !important;line-height:inherit !important;}',
     // Gmail's equivalent for auto-linked text.
     'u + #body a{color:inherit;text-decoration:none;font-size:inherit;font-family:inherit;font-weight:inherit;line-height:inherit;}',
+    // Mobile first (DSN-10): the inline padding is the phone layout, so clients that strip <style> still fit a
+    // 375px screen. Wider screens get the desktop measure here; classic Outlook gets it from MsoHead.
+    `@media only screen and (min-width:${layout.maxWidth + 1}px){`,
+    `.${cls.gutter}{padding-left:${layout.gutter}px !important;padding-right:${layout.gutter}px !important;}`,
+    `.${cls.pad}{padding-left:${layout.pad}px !important;padding-right:${layout.pad}px !important;}`,
+    '}',
     `@media only screen and (max-width:${layout.maxWidth}px){`,
-    `.${cls.gutter}{padding-left:${layout.gutterMobile}px !important;padding-right:${layout.gutterMobile}px !important;}`,
-    `.${cls.pad}{padding-left:${layout.padMobile}px !important;padding-right:${layout.padMobile}px !important;}`,
-    `.${cls.heading}{font-size:24px !important;}`,
+    `.${cls.heading}{font-size:${24}px !important;}`,
     '}',
     '@media only screen and (max-width:480px){',
     `.${cls.btnWrap}{width:100% !important;}`,

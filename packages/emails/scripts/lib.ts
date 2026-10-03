@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { createElement, type ComponentType } from 'react';
 import { renderEmail, renderEmailText } from '../src/components/render';
 import { assetFor } from '@scribe/brand';
-import { ASSET_BASE, dark, fonts, light } from '../src/tokens';
+import { ASSET_BASE, ASSET_ORIGIN, dark, fonts, light } from '../src/tokens';
 
 export const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
 export const TEMPLATES_DIR = join(PACKAGE_ROOT, 'src', 'templates');
@@ -23,8 +23,14 @@ const GALLERY_ASSETS = (['email.header.light', 'email.header.dark'] as const).ma
   return { src: join(REPO_ROOT, a.path!), name: a.url!.replace(/^\/email\//, '') };
 });
 
-/** Gallery variants load images from out/email/ instead of the live site. Shipped HTML is untouched. */
-const localAssets = (html: string) => html.split(`${ASSET_BASE}/`).join('../email/');
+/** Gallery copies of the web fonts (registry context email.type), served from out/fonts/. */
+const GALLERY_FONTS = assetFor('email.type').map((a) => ({ src: join(REPO_ROOT, a.path!), name: a.url!.replace(/^\/fonts\//, '') }));
+
+/**
+ * Gallery variants load images from out/email/ and fonts from out/fonts/ instead of the live site, so previews
+ * look right before the site serves them. Shipped HTML is untouched.
+ */
+const localAssets = (html: string) => html.split(`${ASSET_BASE}/`).join('../email/').split(`${ASSET_ORIGIN}/fonts/`).join('../fonts/');
 
 export type TemplateModule = {
   default: ComponentType<any>;
@@ -160,6 +166,8 @@ export async function buildAll(opts: { dirs: string[]; outDir: string }): Promis
   for (const t of templates) rendered.push(await renderTemplate(t));
   await mkdir(join(opts.outDir, 'gallery'), { recursive: true });
   await mkdir(join(opts.outDir, 'email'), { recursive: true });
+  await mkdir(join(opts.outDir, 'fonts'), { recursive: true });
+  for (const f of GALLERY_FONTS) await copyFile(f.src, join(opts.outDir, 'fonts', f.name));
   for (const f of GALLERY_ASSETS) {
     await copyFile(f.src, join(opts.outDir, 'email', f.name)).catch(() => {
       console.warn(`Gallery: ${f.src} not found; previews will show alt text.`);

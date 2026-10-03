@@ -57,7 +57,7 @@ describe('brand registry: assets', () => {
   });
 
   it('opaque assets have no alpha channel (App Store and Apple Branded Mail need opaque RGB)', () => {
-    for (const id of ['icon.app.default', 'icon.app.dark', 'icon.app.tinted', 'email.avatar', 'og.image'] as const) {
+    for (const id of ['icon.app.default', 'icon.app.dark', 'icon.app.tinted', 'email.avatar', 'og.image', 'video.endcard.landscape', 'video.endcard.portrait', 'social.post.template'] as const) {
       expect(pngSize(join(ROOT, asset(id).path!)).colourType, id).toBe(2);
     }
   });
@@ -78,7 +78,7 @@ describe('brand registry: assets', () => {
     expect(new Set(served.map((a) => a.url)).size).toBe(served.length);
     for (const a of served) {
       expect(a.status, a.id).toBe('primary');
-      expect(a.url, a.id).toMatch(/^\/(favicon|email|og)\/[\w.@-]+$/);
+      expect(a.url, a.id).toMatch(/^\/(favicon|email|og|fonts)\/[\w.@-]+$/);
       expect(statSync(join(ROOT, a.path!)).isFile(), a.id).toBe(true);
     }
   });
@@ -111,6 +111,8 @@ describe('brand registry: contexts', () => {
     'email.header.light', 'email.header.dark', 'email.avatar', 'email.footer',
     'appstore.icon', 'appstore.screenshot-badge', 'book.cover.emboss', 'book.spine',
     'gift.card', 'invite.card', 'social.avatar', 'press.kit',
+    'app.notification', 'appstore.screenshot-frame', 'play.feature-graphic', 'video.end-card', 'social.post-template',
+    'export.pdf', 'book.page', 'email.type',
   ];
 
   it('covers every required touchpoint', () => {
@@ -130,6 +132,30 @@ describe('brand registry: contexts', () => {
     expect(bad).toEqual([]);
   });
 
+  it('planned contexts say when they are needed; live contexts point at real artwork', () => {
+    for (const [id, c] of Object.entries(CONTEXTS) as [ContextId, (typeof CONTEXTS)[ContextId]][]) {
+      if ('status' in c && c.status === 'planned') expect((c as { release?: string }).release, id).toMatch(/^v1\.[01]$/);
+      else expect(assetFor(id).some((a) => a.kind !== 'color'), `${id} has no artwork`).toBe(true);
+    }
+  });
+
+  it('app.notification carries hand-tuned small sizes (small cut at 40 px and below) and the monochrome glyph', () => {
+    const got = assetFor('app.notification');
+    for (const px of [40, 58, 60, 80, 87, 120]) expect(got.map((a) => a.id), String(px)).toContain(`icon.app.${px}`);
+    const glyph = got.filter((a) => a.id.startsWith('icon.notification.') && a.format === 'png');
+    expect(glyph.length).toBeGreaterThan(0);
+    for (const a of glyph) expect(pngSize(join(ROOT, a.path!)).colourType, a.id).toBe(6); // RGBA: white on transparent
+  });
+
+  it('email.type fonts are self-hosted woff2 under /fonts/ with their OFL licence alongside', () => {
+    for (const a of assetFor('email.type')) {
+      expect(a.format, a.id).toBe('woff2');
+      expect(a.url, a.id).toMatch(/^\/fonts\/[\w-]+\.woff2$/);
+      expect(readFileSync(join(ROOT, a.path!)).subarray(0, 4).toString('latin1'), a.id).toBe('wOF2');
+      expect(existsSync(join(ROOT, a.path!, '..', 'OFL.txt')), a.id).toBe(true);
+    }
+  });
+
   it('app.icon has default, dark and tinted 1024 masters', () => {
     expect(assetFor('app.icon').map((a) => [a.surface, a.dimensions?.width])).toEqual([['any', 1024], ['dark', 1024], ['tinted', 1024]]);
   });
@@ -137,6 +163,16 @@ describe('brand registry: contexts', () => {
   it('throws on unknown ids and contexts', () => {
     expect(() => asset('logo.nope' as never)).toThrow(/unknown asset id/);
     expect(() => assetFor('nope' as never)).toThrow(/unknown context/);
+  });
+});
+
+describe('brand registry: every shipped file is registered', () => {
+  // BRD-15: a brand file nobody can look up is a file somebody will pick by name.
+  const shipped = ['assets/email', 'assets/favicon', 'assets/og', 'assets/notification', 'assets/video', 'assets/social', 'assets/logo/primary', 'assets/logo/primary/png'];
+  it.each(shipped)('%s', (dir) => {
+    const files = readdirSync(join(BRAND, dir)).filter((f) => statSync(join(BRAND, dir, f)).isFile() && !f.startsWith('.'));
+    const missing = files.map((f) => `packages/brand/${dir}/${f}`).filter((p) => !assetForPath(p));
+    expect(missing).toEqual([]);
   });
 });
 

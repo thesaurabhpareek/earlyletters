@@ -9,6 +9,9 @@ export type EmailCopy = {
   preheader: string;          // 40 to 90 chars, adds to the subject, never repeats it
   heading: string;            // Literata, the one line that matters
   body: string[];             // paragraphs, plain text, placeholders in {braces}
+  /** Optional key facts (price, dates) shown as label and value rows after the body. They repeat the body,
+   *  never replace it. Two to five rows. Rendered by KeyFacts in CopyEmail. */
+  facts?: { label: string; value: string }[];
   cta?: { label: string; urlVar: string }; // urlVar e.g. "{signInUrl}"
   code?: { label: string; codeVar: string }; // e.g. "{code}"
   fallback?: string;          // "Button not working? Paste this link" style line

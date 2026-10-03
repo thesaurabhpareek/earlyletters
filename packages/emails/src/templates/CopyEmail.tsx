@@ -1,7 +1,7 @@
 /**
  * The generic renderer: one EmailCopy (from @scribe/content) to one email.
  *
- * Layout, top to bottom: header, heading, body, the one action (button and,
+ * Layout, top to bottom: header, heading, body, key facts (when the copy has them), the one action (button and,
  * when there is one, the code for the other device), then the quiet part
  * (fallback link, safety line), signature, footer.
  *
@@ -18,6 +18,7 @@ import {
   EmailHeader,
   EmailLayout,
   Heading,
+  KeyFacts,
   LinkFallback,
   Note,
   Paragraph,
@@ -46,6 +47,7 @@ export function CopyEmail({ copy, values }: CopyEmailProps) {
       {copy.body.map((p, i) => (
         <Paragraph key={i}>{f(p)}</Paragraph>
       ))}
+      {copy.facts?.length ? <KeyFacts facts={copy.facts.map((k) => ({ label: f(k.label), value: f(k.value) }))} /> : null}
 
       {copy.cta && href ? <Button href={href}>{f(copy.cta.label)}</Button> : null}
       {copy.code ? <CodeBox label={f(copy.code.label)} code={token(copy.code.codeVar, values)} /> : null}

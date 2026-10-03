@@ -1,6 +1,6 @@
 # Early Letters: Creative Direction
 
-v0.2, 2026-10-03 (v0.1 2026-10-01; v0.2 replaces the envelope-line motif with the quotation-mark system of the approved primary mark, D-051). Companion to `DESIGN_LANGUAGE.md`, `MOTION.md` (timing) and `docs/brand/BRAND_SYSTEM.md` (the mark, its files and registry contexts). Sources C1 to C15 were opened for this review. **(opinion)** marks judgement. Sample family: fictional "Asha".
+v0.3, 2026-10-03 (v0.3: store screenshots and preview video show only v1.0 features, brand-review BRD-01, 02, 07, 08, 09, 17; v0.1 2026-10-01; v0.2 replaces the envelope-line motif with the quotation-mark system of the approved primary mark, D-051). Companion to `DESIGN_LANGUAGE.md`, `MOTION.md` (timing) and `docs/brand/BRAND_SYSTEM.md` (the mark, its files and registry contexts). Sources C1 to C15 were opened for this review. **(opinion)** marks judgement. Sample family: fictional "Asha".
 
 ## 1. Benchmark
 
@@ -35,15 +35,16 @@ v0.2, 2026-10-03 (v0.1 2026-10-01; v0.2 replaces the envelope-line motif with th
 ### The brand device: two opening quotation marks
 The mark (BRAND_SYSTEM.md 1) is the only brand device: a large and a small opening quotation mark, leaning together, parent and child, the moment before someone speaks. It replaces the earlier "one continuous line that folds into an envelope" motif everywhere. Files come from the registry (`assetFor(context)`), never from a path.
 - **The pair** (`logo.symbol.*`) is the signature: debossed or foiled on the printed cover, centred on the splash, top-left of the caption band on store screenshots, on the Play feature graphic.
-- **The small mark** (`logo.symbol.small.*`, the small cut) is the system's punctuation: a bullet in lists, a section divider in the book and on the site, a closing flourish at the foot of a printed page. One per divider, never a pattern or a repeat.
-- **The pair opens a quote.** On cards (invite, gift, social) a letter's line may open with the pair in `accent` or `textMuted`, then the words in Literata. Opening only: never closing marks, never a speech bubble, never a mark rotated or mirrored.
+- **The small cut** (`logo.symbol.small.*`) is the same pair drawn for 12 to 23 px, not a separate "small mark". It is a logo, not a glyph: never a bullet, never decoration on the site. Its one extra use is a section break in the printed book and the PDF, at most once per page (context `book.page`). Everywhere else use a plain rule or space. One logo per screen or page section (BRAND_SYSTEM.md 9).
+- **The end-of-letter mark.** A printed letter may end with the small-cut pair, still opening quotes: the letters are still being written. Never closing quotes.
+- **The pair opens a quote.** On cards (invite, gift, social) a letter's line may open with the pair in `accent` or `inkMuted`, then the words in Literata. Opening only: never closing marks, never a speech bubble, never a mark rotated or mirrored.
 - **One colour** per use: ink, inkDark, accent (the one warm moment on paper) or accentDeep foil. No gradient outside the app icon tile.
 - **The wordmark is artwork.** Never retype the name in EB Garamond or Literata to stand in for the lockup; EB Garamond appears only as outlined artwork and brand display (cover title pages, gift cards, OG image).
 
 ### Illustration
 Line drawings are illustration, not the brand mark. They may show any object (envelope, lamp, moon, page, window), never stand in for the logo, never sit locked up with the wordmark, and never reshape a quotation mark into an object. Where a surface needs to say "Early Letters", it uses the mark from the registry; where it needs to set a mood, it may use a drawing. The web scroll film (`docs/web`, branch `feat/web-scroll-film`, another lane) draws a window, lamp, moon, envelope and page: that is allowed under this rule, and the film's brand moment is still the quotation mark from `web.header` or the symbol, not an envelope.
 - **Motif:** single-line drawings of the objects of a letter and a night (a page, a lamp, a moon, a window). One drawing per screen at most.
-- **Line:** single weight, 1.5pt at a 24pt artboard (2pt on store art), round caps. Ink `textMuted` #6B645B on paper #FBF8F3; dark #B3AA9E on #161412. One optional `accentSoft` #F1E6DC wash behind the main object.
+- **Line:** single weight, 1.5pt at a 24pt artboard (2pt on store art), round caps. Ink `inkMuted` #6B645B on paper #FBF8F3; dark #B3AA9E on #161412. One optional `accentSoft` #F1E6DC wash behind the main object.
 - **No faces, no mascot, no drawn babies.** Objects imply people: glasses on an open book, shoes by a door, a dupatta over a chair arm. Drawn from real homes.
 - **Never:** wax seals, quills, ribbons, sparkles, confetti.
 - One SVG master for iOS and Android.
@@ -69,23 +70,34 @@ Headlines in Literata 500, sentence case, 6 words or fewer per frame. Support in
 ### Real voice in video
 - The voice is the soundtrack. Original recording untouched: high-pass only, no pitch or character change.
 - Music optional, at least 18 dB under the voice or silent while it plays (opinion); one solo instrument at most.
-- Every spoken line is on screen; both stores autoplay muted (C10, C14). In product footage the Read together highlight is the caption.
+- Every spoken line is on screen; both stores autoplay muted (C10, C14). Burn the captions in (v1.0 Read together has no word highlight; from v1.1 the highlight can be the caption).
 
 ## 4. Store
 
-### Six screenshots
+### Six screenshots: v1.0 set
+
+Only what v1.0 does (BRAND.md "Proof discipline"; rule 1 of this file: never show a promise the product cannot keep). Frame spec: registry context `appstore.screenshot-frame`.
 
 | # | Headline | Screen | Treatment |
 |---|---|---|---|
-| 1 | Exactly as you said it. | Letter view, "From Papa", Month 4, a Hinglish letter: "Asha, aaj tumne pehli baar spoon pakda, and then threw it at me." | Paper. Shows in search. |
-| 2 | Talk for a minute. | Listening: breathing glow, transcript lines arriving. | Subline "It becomes a letter." |
-| 3 | Read together, in their voice. | Read together, highlight mid-sentence, Large Print. | **Dark mode**, moon drawing (C10). |
-| 4 | From Nani, from Papa, from everyone. | Month chapter, letters signed by three people. | Subline "Only the family you invite." |
-| 5 | Your words stay in the language you said them. | Devanagari and English letter from Dadi. | Bilingual headline. |
+| 1 | Exactly as you said it. | Letter view, "From Papa", Month 4, a single-language English letter: "Asha, today you held the spoon by yourself for the first time, and then threw it at me." | Paper. Shows in search. |
+| 2 | Talk for a minute. | Listening: breathing glow, transcript lines arriving. | Subline "Your words, on the page." |
+| 3 | Read together, in their voice. | Read together: the letter on the page, audio playing (no word highlight), Large Print. | **Dark mode**, moon drawing (C10). |
+| 4 | From Mama, from Papa. | Month chapter, letters signed by the two parents. | Subline "Two voices, one book." |
+| 5 | Your words stay in the language you said them. | A Devanagari letter from a parent (Hindi only, one language per letter). | Bilingual headline. |
 | 6 | A book that grows month by month. | Chapter covers, Month 1 to 6. | Subline "Free PDF any time." No print claim until print ships. |
 
+### v1.1 set (do not ship before the features do)
+
+| # | Headline | Screen | Needs |
+|---|---|---|---|
+| 1 | Exactly as you said it. | A Hinglish letter: "Asha, aaj tumne pehli baar spoon pakda, and then threw it at me." | Hindi and English in one letter |
+| 3 | Read together, in their voice. | Read together with the word highlight moving. | Word highlighting |
+| 4 | From Nani, from Papa, from everyone. | Letters signed by three people. Subline "Only the family you invite." | Family beyond the co-parent (D-057) |
+| 5 | Your words stay in the language you said them. | Devanagari and English letter from Dadi. | Grandparents, mixed languages |
+
 **App Store:** 1260x2736 (6.9"), JPG or PNG, no alpha, up to 10 (C11); must show the app in use (C12).
-**Google Play:** up to 8 per device type, 9:16, long side at most twice the short side (C14). **1260x2736 fails (ratio 2.17)**, so export 1080x1920 separately. Add a 1024x500 feature graphic (the quotation pair, `logo.symbol.accent` on paper or `logo.symbol.reversed` on paperDark, plus "Exactly as you said it." in Literata) and a 512x512 icon. No price or promo text; a separate set per language (C15). Android frames or frameless (opinion).
+**Google Play:** up to 8 per device type, 9:16, long side at most twice the short side (C14). **1260x2736 fails (ratio 2.17)**, so export 1080x1920 separately. Add a 1024x500 feature graphic (context `play.feature-graphic`, planned for v1.1 with Android: the quotation pair, `logo.symbol.accent` on paper or `logo.symbol.reversed` on paperDark, plus the tagline in its canonical treatment, Literata 400 italic inkMuted, BRAND_SYSTEM.md 5) and a 512x512 icon. No price or promo text; a separate set per language (C15). Android frames or frameless (opinion).
 
 ### Preview video: "Tuesday" (25s)
 App Store: screen capture only, no hands or people; narration allowed; 15 to 30s; 886x1920; 30 fps max (C12, C13). The narration is the real parent's in-app recording.
@@ -95,11 +107,13 @@ App Store: screen capture only, no hands or people; narration allowed; 15 to 30s
 | 0 to 3 | Tonight, prompt "What made Asha laugh today?" Caption "Exactly as you said it." | Room tone. |
 | 3 to 9 | Speak; breathing glow; lines arrive. | Real Papa: "Asha, today you found the light switch. On, off, on, off. Your Nani was not amused." |
 | 9 to 13 | Review: one quiet underline fixed; Save; letter settles into Month 9. | His laugh, then quiet. |
-| 13 to 18 | Book scrolls back; "From Nani" opens. | Nani, one sentence in Hindi, words on screen. |
-| 18 to 24 | Read together, dark, highlight moving. | Papa's letter from the start. |
-| 24 to 25 | "Early Letters. The baby memory book you fill by talking." | Out on his voice, no sting. |
+| 13 to 18 | Book scrolls back; Mama's letter from Month 3 opens. | Mama, one sentence, words on screen. |
+| 18 to 24 | Read together, dark, the letter on the page while it plays (no highlight in v1.0). | Papa's letter from the start. |
+| 24 to 25 | End card (context `video.end-card`): stacked lockup with the tagline. | Out on his voice, no sting. |
 
-**Play:** same cut on YouTube, public or unlisted, ads off; first 30s autoplay muted (C14). Burn in captions; auto-captions will struggle with Hinglish (opinion).
+v1.1 cut, once the features ship: the 13 to 18 beat becomes "From Nani" in Hindi, and 18 to 24 shows the word highlight.
+
+**Play:** same cut on YouTube, public or unlisted, ads off; first 30s autoplay muted (C14). Burn in captions; auto-captions will struggle with Hindi (opinion).
 
 ## 5. Launch creative
 
@@ -138,7 +152,7 @@ How each should feel; timing is in `MOTION.md`.
 | **100 letters** | Finding an old note in a coat pocket. The reward is the past, not the number. | Once, in the Book only, never a push: "One hundred letters for Asha." One action: "Hear the first one." |
 | **First grandparent letter** (v1.1, D-057) | A letter arriving in the post. | Letter card signed "From Nani" in Literata italic, opened by the quotation pair; parent approves. Push: "Nani wrote a letter to Asha." |
 | **First Read together** | Lights going down at bedtime. | After the last word, the moon drawing: "That was Papa, Month 3." Then stillness, no next prompt. |
-| **Printed book cover** | A book that sits on a shelf for years. | Cloth in paper or `accent` brown, the quotation pair debossed (context `book.cover.emboss`: symbol alone, 18 to 30 mm, lower third, blind or accentDeep foil), child's first name in Literata, "Year One" below. No cover photo by default (opinion: photos date the object; use one on the title page). |
+| **Printed book cover** | A book that sits on a shelf for years. | Cloth in paper or `accent` brown, the quotation pair debossed (context `book.cover.emboss`: symbol alone, 18 to 30 mm, lower third, blind or accentDeep foil), child's first name in EB Garamond (brand display, BRAND_SYSTEM.md 5), "Year One" below in EB Garamond; interior pages in Literata (context `book.page`). No cover photo by default (opinion: photos date the object; use one on the title page). |
 
 ## 7. Production
 
@@ -150,7 +164,7 @@ How each should feel; timing is in `MOTION.md`.
 | Casting | In-house: friends of friends, early users who opt in | Real families, not models. |
 | Voices | Cast families only | Never voice actors for letters. |
 
-**First-wave assets:** 6 screenshots x (App Store 1260x2736, Play 1080x1920) x (English, Hindi); preview video (App Store 886x1920, Play YouTube cut); Play feature graphic and icon; 15 SVG drawings; photo library from the shot list with 3 to 4 families; 60s film with 15s and 6s cutdowns; three social templates; grandparent invite card.
+**First-wave assets:** 6 screenshots x (App Store 1260x2736, Play 1080x1920) x (English, Hindi); preview video (App Store 886x1920, Play YouTube cut); Play feature graphic and icon; 15 SVG drawings; photo library from the shot list with 3 to 4 families; 60s film with 15s and 6s cutdowns; three social templates (post plate `social.post.template` and the 9:16 end card exist; story and cover still to make); grandparent invite card (v1.1).
 
 ### Consent rules (flag for counsel)
 - **Adults:** model release for image, voice and likeness, with media, territory, duration and paid ads listed separately.

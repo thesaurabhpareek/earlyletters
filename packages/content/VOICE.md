@@ -72,7 +72,7 @@ Family beyond the co-parent joins in v1.1. Until then this guidance applies to a
 - Bigger ideas, fewer words. One instruction per sentence.
 - Name the action plainly: "Tap the red circle and talk."
 - Avoid app terms like "sync" or "feed".
-- Reassure on privacy early: "Only the family you invite can see your letters."
+- Reassure on privacy early: "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists."
 - Make them feel wanted, not managed: "Your stories belong in {child}'s book."
 - Avoid "senior" or "elderly". They are Nani, Dada, Grandma, Pop.
 

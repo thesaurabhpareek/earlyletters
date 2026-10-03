@@ -10,6 +10,8 @@ export {
   Paragraph,
   Button,
   CodeBox,
+  KeyFacts,
+  Letter,
   LinkFallback,
   Divider,
   Signature,

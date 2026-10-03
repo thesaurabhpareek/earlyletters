@@ -1,7 +1,7 @@
 import { emailChrome } from '@scribe/content/src/emails/chrome.en';
-import type { ReactNode } from 'react';
-import { fonts, layout, light, space, type } from '../tokens';
-import { Block, bgcolor, tableProps } from './primitives';
+import type { CSSProperties, ReactNode } from 'react';
+import { fonts, light, space, type } from '../tokens';
+import { Block, tableProps } from './primitives';
 import { cls } from './theme';
 
 /** The one line that matters. Literata (Georgia fallback), medium weight. */
@@ -17,7 +17,9 @@ export function Heading({ children }: { children: ReactNode }) {
         fontWeight: type.heading.weight,
         color: light.ink,
         letterSpacing: '-0.2px',
-      }}
+        // No one-word orphan on phones (Apple Mail and iOS Mail honour it; others ignore it).
+        textWrap: 'balance',
+      } as CSSProperties}
     >
       {children}
     </h1>
@@ -54,12 +56,15 @@ export function Paragraph({ variant = 'ui', children }: ParagraphProps) {
 }
 
 export type NoteProps = {
-  /** `quiet`: small muted aside. `safety`: the "did not ask for this?" line, on a soft wash. */
+  /** `quiet`: small muted aside. `safety`: the "did not ask for this?" line, set off by a quiet rule on the left. */
   tone?: 'quiet' | 'safety';
   children: ReactNode;
 };
 
-/** Secondary text in the UI sans. Calm, never alarming: no red, no icons. */
+/**
+ * Secondary text in the UI sans. Calm, never alarming: no red, no icons. The safety note has no fill, so the
+ * accent wash stays exclusive to the code box and never competes with it.
+ */
 export function Note({ tone = 'quiet', children }: NoteProps) {
   const text = (
     <p
@@ -82,12 +87,10 @@ export function Note({ tone = 'quiet', children }: NoteProps) {
         <tbody>
           <tr>
             <td
-              className={cls.soft}
-              {...bgcolor(light.accentSoft)}
+              className={cls.rule}
               style={{
-                backgroundColor: light.accentSoft,
-                borderRadius: layout.radiusSmall,
-                padding: `${space[4]}px ${space[5]}px`,
+                borderLeft: `3px solid ${light.line}`,
+                padding: `${space[1]}px 0 ${space[1]}px ${space[4]}px`,
               }}
             >
               {text}
@@ -137,7 +140,7 @@ export function Divider() {
               <tbody>
                 <tr>
                   <td
-                    className={cls.rule}
+                    className={`${cls.rule} ${cls.divider}`}
                     style={{ borderTop: `1px solid ${light.line}`, fontSize: 0, lineHeight: 0, height: 1 }}
                   >
                     &nbsp;

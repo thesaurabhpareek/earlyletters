@@ -26,7 +26,7 @@ export const lifecycleEmails = {
     body: [
       "{parentName} is keeping a book of letters for a child you love, and would like yours in it.",
       `To write, open ${brand.name} and tap the red circle.`,
-      "Then just talk, in any language. A minute is plenty.",
+      "Then just talk, in the language you speak. A minute is plenty.",
       "Your words are kept exactly as you said them. Your voice is kept too.",
       "{parentName} reads your letters first, then adds them to the book. Until then, only the parents can see them.",
     ],

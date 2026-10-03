@@ -47,12 +47,12 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-041 | Two Supabase projects, migrations only from CI on a tag; unattended agent runs paused for `supabase/` and auth | Recommended | Yes | 2026-10-03 |
 | D-042 | `/delete-account` at v1.0 is a static page plus an email route; the full web flow ships before Android | Recommended (counsel confirms) | Yes | 2026-10-03 |
 | D-043 | v1.0 entry: one welcome screen then the 18+ gate; 4-story intro in v1.1 | Recommended | Yes | 2026-10-03 |
-| D-044 | Sign in with Apple and email link plus code at v1.0; Google sign-in in v1.1 | Recommended | Yes | 2026-10-03 |
+| D-044 | Sign in with Apple and email link plus code at v1.0; Google sign-in in v1.1 | **Superseded** by D-062 (Google at v1.0, Brief decision 4) | n/a | 2026-10-03 |
 | D-045 | Beta cohorts before submission: founding family, then 15 to 25 friendly families for 3 weeks; public TestFlight link optional, after submission | Recommended (needs founder OK) | Yes | 2026-10-03 |
 | D-046 | Speech model files on a zero-egress host, never on Supabase egress | Recommended (founder picks the host) | Yes | 2026-10-03 |
 | D-047 | Restore never moves an active subscription between two accounts | Recommended | Yes | 2026-10-03 |
 | D-048 | Apple Billing Grace Period on, 16 days | Recommended | Yes | 2026-10-03 |
-| D-049 | LEGAL-REQ-049 means exactly one `completed` consent row per original transaction (plus a `started` row) | Recommended (counsel confirms) | Yes | 2026-10-03 |
+| D-049 | LEGAL-REQ-049 means exactly one `completed` consent row per original transaction (plus a `started` row) | **Superseded** by D-064 (no App Store notifications to reconcile from) | n/a | 2026-10-03 |
 | D-050 | Second consent at first family share (Washington) | Open (counsel) | n/a | 2026-10-03 |
 | D-051 | Primary mark = logo round 3 `final-a` (two opening quotation marks, large and small; EB Garamond wordmark); every earlier device retired | Decided (founder) | Yes | 2026-10-03 |
 | D-052 | The brand asset registry (`packages/brand/registry.ts`) is the single source; every touchpoint resolves files through `assetFor(context)` | Decided (founder) | Yes | 2026-10-03 |
@@ -64,6 +64,10 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-058 | Plan display names "Plus Monthly" and "Plus Annual" | Recommended (coordinator default) | Yes | 2026-10-03 |
 | D-059 | Website footer line "(c) 2026 Early Letters" in ASCII, name from `brand.name` | Recommended (coordinator default) | Yes | 2026-10-03 |
 | D-060 | Old logo directions (round 1 a and b, round 2, round 3 except final-a, interim email lockup, E monogram) archived, not deleted | Recommended (coordinator default) | Yes | 2026-10-03 |
+| D-062 | Sign in with Apple, Sign in with Google and email link plus code at v1.0 (supersedes D-044 timing) | Decided (founder, Brief decision 4) | Yes | 2026-10-03 |
+| D-063 | Plus server side at v1.0: no App Store Server Notifications or App Store Server API; the app's status report (D-061) is the only server input (supersedes the server half of D-001) | Decided (founder, Brief 3 and D-061) | Yes | 2026-10-03 |
+| D-064 | Purchase consent record written from the app at purchase completion, not reconciled from App Store notifications (supersedes D-049) | Recommended (counsel confirms) | Yes | 2026-10-03 |
+| D-061 | The app reports subscription status only (plan, trial end, renewal date, cancelled flag) so we can send the auto-renewal reminder emails; narrows Brief decision 3 | Decided (founder) | Yes | 2026-10-03 |
 
 ---
 
@@ -407,6 +411,39 @@ Sources: founder decisions relayed by the coordinator on the evening of 3 Oct 20
 - **Status:** Recommended (coordinator default; answers CONSISTENCY_AUDIT F-8). Proceed: yes.
 - **Decision:** round 1 directions a and b, round 2, round 3 (except what `primary/` rebuilds), the interim email lockup and the E monogram stay in the repo as history, registered `deprecated.*` in the registry, and are not deleted. Nothing may use, copy or link them (D-052).
 - **Owner:** design systems. **Date:** 2026-10-03.
+
+## Founder decision of 3 Oct 2026, 19:30 UTC
+
+Source: founder decision relayed by the coordinator at 19:30 UTC on 3 Oct 2026, answering legal review LGL-01 (`docs/reviews/2026-10-03/legal.md`; close to its Option A, narrower).
+
+### D-061 The app reports subscription status only, so we can send the auto-renewal reminders
+- **Status:** Decided (founder, 3 Oct 2026, 19:30 UTC). Narrows Brief decision 3 (`docs/agents/BRIEF-2026-10-03.md`); amends D-001 (server side), D-022 (data source), D-049 (consent source) and D-012 (co-parent coverage).
+- **Decision:** the app reports subscription **status only** to our server: the plan, the trial end date, the renewal date and a cancelled (renewal off) flag. It reports when a purchase or trial completes in the app and on each launch, read on the device from StoreKit 2. It never reports payment or card data and never sends receipts. Purpose: to send the reminder emails California's auto-renewal law (Bus. & Prof. Code 17602) requires and Terms 14.6 promises. Everything else in Brief decision 3 stands: Apple still processes payments, Apple's own subscription UI, restore and manage sheets; no RevenueCat; no App Store Server Notifications endpoint; server code does not enforce Plus. A co-parent gets Plus only through Apple Family Sharing (same Apple family); otherwise each co-parent's Plus is their own (Terms 14.12).
+- **Rules that follow (content and legal lanes, 3 Oct 2026):** only a device whose transaction is the person's own purchase reports, so Family Sharing members get no billing email; a cancellation made in iOS Settings is seen on the next app open, so every reminder says "If you have already cancelled, there is nothing to do."; the status is deleted with the account; no purchase records are kept; `{price}` in emails is the published price of the reported plan (US only); a price increase cannot be seen from the status, so the `price-increase` email stays later and Apple's opt-in consent mode is the only one used (LGL-19).
+- **Rationale:** without any server signal the D-022 emails had no trigger, and Terms 14.6 and the Subscription Terms promised reminders the system could not send (LGL-01). Status only is the smallest data flow that keeps that promise.
+- **Alternatives:** Option B, in-app local notifications only and no billing email (counsel unsure it meets 17602 and other states); App Store Server Notifications (rejected by Brief 3); RevenueCat (rejected by Brief 3).
+- **Owner:** founder; payments engineer (status report and scheduler), content and legal (copy). **Date:** 2026-10-03.
+- **Effects:** `docs/emails/CATALOG.md` section 7 un-parked with this trigger; `docs/emails/COMPLIANCE.md` 5.2 and 5.5; `packages/content/src/emails/billing.en.ts` header and reminders; Privacy Policy 1.5.0 (sections 3, 5, 10, 15), Terms 1.6.0 (14.3, 14.4, 14.6, 14.12), Subscription Terms 1.4.0, subprocessor page 1.4.0 (Apple row); `packages/content/legal/REVIEW_NOTES.md` 3.2 item 16 (counsel questions, including 17602(a)(6) proof of consent). Engineering, outside these lanes: a small status table and an authenticated, idempotent report endpoint in `packages/api`; the D-022 scheduler reads it; D-001 and D-049 text still describe ASSN and need a superseding edit by the PM lane.
+
+### D-062 Sign-in methods at v1.0 (supersedes D-044)
+- **Status:** Decided (founder, Brief decision 4, `docs/agents/BRIEF-2026-10-03.md`). Supersedes the Google timing in D-044.
+- **Decision:** v1.0 offers Sign in with Apple, Sign in with Google, and email sign-in link plus 6-digit code. Passkeys can be added after sign-in. No passwords.
+- **Rationale:** the founder's call; App Review 4.8 is met because Sign in with Apple is offered alongside Google.
+- **Owner:** founder; security, mobile. **Date:** 2026-10-03.
+- **Effects:** `google-account-linked` and `passkey-added` emails at v1.0 (CATALOG section 4); Privacy Policy 1.5.0 sections 3 and 15, Terms 1.6.0 3.2, subprocessor page (Supabase row); `supabase/auth-email.md` Google provider "On" (L3 lane); Google OAuth app verification and the Google identity step at account deletion (REVIEW_NOTES 3.2 item 20).
+
+### D-063 Plus on the server at v1.0 (supersedes the server half of D-001)
+- **Status:** Decided (founder, Brief decision 3 as narrowed by D-061). Supersedes D-001's "Server: App Store Server Notifications V2 to a Supabase Edge Function, App Store Server API for verification and reconcile" and the per-account `appAccountToken` binding; D-047 (server-side restore binding) falls with it.
+- **Decision:** StoreKit 2 on the device with Apple's own subscription UI, restore and manage sheets; entitlement from `Transaction.currentEntitlements` on the device. No App Store Server Notifications endpoint, no App Store Server API calls, no RevenueCat, no server-side entitlement tables, and server code does not enforce Plus. The server's only Plus input is the status report in D-061. A co-parent gets Plus only through Apple Family Sharing (narrows D-012 "books inherit it from any parent").
+- **Owner:** founder; payments engineer. **Date:** 2026-10-03.
+- **Effects:** ADR 0013 server sections; DELETION_AND_EXPORT_SPEC 2.6.3 step 4 becomes "delete the plan status row"; Terms 14.12 and the Subscription Terms (content lane, done).
+
+### D-064 Purchase consent records (supersedes D-049)
+- **Status:** Recommended; counsel confirms (REVIEW_NOTES 3.2 item 16). Proceed: yes.
+- **Decision:** when a purchase or trial completes in the app, the first D-061 status report also carries the consent facts: product, offer type, the Subscription Terms version shown, and the time. One record per original purchase, kept for the life of the account plus 3 years (Privacy Policy section 10), pseudonymised at account deletion. No receipt, payment data or transaction id in clear.
+- **Rationale:** D-049 reconciled consent rows from App Store notifications, which D-063 removes; Cal. Bus. & Prof. Code 17602(a)(6) still asks for proof of consent (legal review LGL-04).
+- **Owner:** payments engineer; counsel. **Date:** 2026-10-03.
+- **Effects:** Terms 14.3 currently says only "the date your plan started"; if this entry is confirmed, the content lane widens it to "what you agreed to and when".
 
 ---
 

@@ -47,6 +47,46 @@ const host = (u: string) => {
   }
 };
 
+/** Minimal XML well-formedness check for a markup fragment: tags balance and nest, attributes are quoted. */
+function wellFormed(xml: string): boolean {
+  const stack: string[] = [];
+  for (const m of xml.matchAll(/<(\/?)([A-Za-z][\w:.-]*)((?:\s+[\w:.-]+="[^"<]*")*)\s*(\/?)>|<[^>]*>/g)) {
+    if (!m[2]) return false; // a tag the strict pattern could not read
+    if (m[1]) {
+      if (stack.pop() !== m[2]) return false;
+    } else if (!m[4]) stack.push(m[2]);
+  }
+  return stack.length === 0;
+}
+
+describe('components', () => {
+  it('KeyFacts reads as "Label: value" in plain text and as label/value rows in HTML', () => {
+    const r = all.find((x) => x.name === 'pipeline-sample')!;
+    expect(r.text).toContain('Works for: {expiresIn}\nSent to: {email}');
+    expect(r.html).toMatch(/<table[^>]*class="el-facts"/);
+  });
+
+  it('Letter puts the action before the sign-off by default', () => {
+    const r = all.find((x) => x.name === 'letter-sample')!;
+    expect(r.html.indexOf('el-btn-text')).toBeGreaterThan(0);
+    expect(r.html.indexOf('el-btn-text')).toBeLessThan(r.html.indexOf('Warmly,'));
+  });
+
+  it('plain text prints the action URL once (the fallback block is skipped) and keeps the safety note', () => {
+    const r = all.find((x) => x.name === 'pipeline-sample')!;
+    const url = 'https://earlyletters.com/auth/confirm?token_hash=fixture-not-a-real-token&type=email';
+    expect(r.text.split(url).length - 1).toBe(1);
+    expect(r.text).not.toContain('Button not working?');
+    expect(r.text).toContain('Did not ask for this?');
+  });
+
+  it('fallback URLs break at path boundaries, never mid-word', () => {
+    const r = all.find((x) => x.name === 'pipeline-sample')!;
+    expect(r.html).toContain('https:/<wbr/>/<wbr/>earlyletters.com/<wbr/>auth/');
+    expect(r.html).not.toContain('break-all');
+  });
+});
+
 describe('pipeline', () => {
   it('discovers the fixture and writes html, txt and the gallery', async () => {
     const names = all.map((r) => r.name);
@@ -122,7 +162,19 @@ describe('every rendered email', () => {
       const bad = resources.filter((u) => !u.startsWith(`${ASSET_ORIGIN}/`));
       expect(bad, r.name).toEqual([]);
       expect(r.html, r.name).not.toMatch(/<link[^>]+rel="stylesheet"/i);
-      expect(r.html, r.name).not.toMatch(/@import|@font-face/i);
+      expect(r.html, r.name).not.toMatch(/@import/i);
+    }),
+  );
+
+  it(
+    'loads web fonts only from earlyletters.com/fonts/, as woff2, hidden from classic Outlook',
+    each((r) => {
+      const faces = [...r.html.matchAll(/@font-face\{([^}]*)\}/g)].map((m) => m[1]!);
+      expect(faces.length, r.name).toBeGreaterThan(0);
+      for (const f of faces) expect(f, r.name).toMatch(new RegExp(`src:url\\(${ASSET_ORIGIN.replace(/\./g, '\\.')}/fonts/[\\w-]+\\.woff2\\) format\\('woff2'\\)`));
+      const block = r.html.match(/<!--\[if !mso\]><!--><style>(@font-face[\s\S]*?)<\/style><!--<!\[endif\]-->/);
+      expect(block, `${r.name}: @font-face block must sit inside a non-mso conditional`).not.toBeNull();
+      expect(block![1]!.match(/@font-face/g)!.length, r.name).toBe(faces.length);
     }),
   );
 
@@ -178,6 +230,53 @@ describe('every rendered email', () => {
     each((r) => {
       expect(r.html, r.name).not.toContain('data-mso');
       expect(r.html, r.name).toContain('<!--[if mso]><table role="presentation" align="center" width="600"');
+    }),
+  );
+
+  it(
+    'balances its Outlook conditional comments',
+    each((r) => {
+      const opens = (r.html.match(/<!--\[if /g) ?? []).length;
+      const closes = (r.html.match(/<!\[endif\]-->/g) ?? []).length;
+      expect(closes, r.name).toBe(opens);
+    }),
+  );
+
+  it(
+    'gives classic Outlook a well-formed VML pill for every button, and hides the HTML button from it',
+    each((r) => {
+      const htmlButtons = [...r.html.matchAll(/<a[^>]*class="el-btn el-btn-text"[^>]*href="([^"]*)"|<a[^>]*href="([^"]*)"[^>]*class="el-btn el-btn-text"/g)].map((m) => (m[1] ?? m[2])!);
+      const vml = [...r.html.matchAll(/<!--\[if mso\]>(<v:roundrect[\s\S]*?)<!\[endif\]-->/g)].map((m) => m[1]!);
+      expect(vml.length, r.name).toBe(htmlButtons.length);
+      if (htmlButtons.length === 0) return;
+      expect(r.html, r.name).toMatch(/<html[^>]*xmlns:v="urn:schemas-microsoft-com:vml"/);
+      vml.forEach((v, i) => {
+        expect(wellFormed(v), `${r.name}: ${v}`).toBe(true);
+        expect(v, r.name).toMatch(/arcsize="50%"/);
+        expect(v, r.name).toMatch(/style="height:48px;v-text-anchor:middle;width:\d+px;"/);
+        expect(v, r.name).toContain(`href="${htmlButtons[i]}"`);
+        const label = v.match(/<center[^>]*>([^<]+)<\/center>/)![1]!;
+        expect(r.html, r.name).toContain(`>${label}</`);
+      });
+      // Every HTML button sits inside <!--[if !mso]><!--> ... <!--<![endif]-->.
+      for (const m of r.html.matchAll(/class="el-btn el-btn-text"/g)) {
+        const before = r.html.slice(0, m.index);
+        expect(before.lastIndexOf('<!--[if !mso]><!-->'), r.name).toBeGreaterThan(before.lastIndexOf('<!--<![endif]-->'));
+      }
+    }),
+  );
+
+  it(
+    'keeps the light logo on a paper plate Gmail does not invert, removed by every dark rule',
+    each((r) => {
+      const plate = r.html.match(/<table[^>]*class="el-logo-plate"[^>]*>[\s\S]*?<\/table>/);
+      expect(plate, r.name).not.toBeNull();
+      expect(plate![0], r.name).toMatch(/background-image:linear-gradient\(#FBF8F3,\s*#FBF8F3\)/);
+      expect(plate![0], r.name).toContain('el-logo-light');
+      expect(r.html, r.name).toMatch(/\.el-logo-plate\{background-image:none !important;background-color:transparent !important;\}[\s\S]*@media|@media \(prefers-color-scheme: dark\)\{[\s\S]*\.el-logo-plate\{background-image:none/);
+      expect(r.html, r.name).toContain('[data-ogsb] .el-logo-plate{background-image:none !important');
+      // The dark logo never reaches classic Outlook.
+      expect(r.html, r.name).toMatch(/<!--\[if !mso\]><!--><div class="el-logo-dark"/);
     }),
   );
 

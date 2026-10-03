@@ -7,6 +7,10 @@
 //                   avatar-1024.png, avatar.tiny-ps.svg (BIMI template, do not publish yet), manifest.json
 //   assets/favicon/ favicon.svg, favicon-32.png, apple-touch-icon.png, icon-192.png, icon-512.png, site.webmanifest
 //   assets/og/      og-image.png (1200x630)
+//   assets/notification/ glyph-{24,36,48,72,96}.png, glyph.svg (monochrome small-cut symbol, context app.notification)
+//   assets/video/   end-card-1920x1080.png, end-card-1080x1920.png (context video.end-card)
+//   assets/social/  post-template-1080x1350.png (background plate, context social.post-template)
+//   assets/fonts/   literata/*.woff2, mukta/*.woff2 + OFL.txt (web and email fonts, from @fontsource; context email.type)
 // Every file here has an id in packages/brand/registry.ts; the registry test fails if one goes missing.
 // Name and tagline are read from packages/brand/index.ts (never typed here).
 import sharp from 'sharp';
@@ -25,6 +29,10 @@ const PRIMARY = path.join(BRAND, 'assets/logo/primary');
 const EMAIL = path.join(BRAND, 'assets/email');
 const FAVICON = path.join(BRAND, 'assets/favicon');
 const OG = path.join(BRAND, 'assets/og');
+const NOTIFY = path.join(BRAND, 'assets/notification');
+const VIDEO = path.join(BRAND, 'assets/video');
+const SOCIAL = path.join(BRAND, 'assets/social');
+const FONTS = path.join(BRAND, 'assets/fonts');
 const req = createRequire(import.meta.url);
 
 const indexSrc = fs.readFileSync(path.join(BRAND, 'index.ts'), 'utf8');
@@ -171,7 +179,6 @@ async function ogImage() {
   const tagY = top + LH + 26 + 30; // baseline
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
 <rect width="${W}" height="${H}" fill="${C.paper}"/>
-<rect x="0" y="${H - 10}" width="${W}" height="10" fill="${C.accentDeep}"/>
 <svg x="${((W - LW) / 2).toFixed(2)}" y="${top.toFixed(2)}" width="${LW.toFixed(2)}" height="${LH}" viewBox="${lx} ${ly} ${lw} ${lh}">${lockBody}</svg>
 <path fill="${C.inkMuted}" transform="translate(${((W - t.w) / 2 - t.x0).toFixed(2)} ${tagY.toFixed(2)})" d="${t.d}"/>
 </svg>`;
@@ -180,7 +187,106 @@ async function ogImage() {
   return sizeOf(buf);
 }
 
+// ---------------------------------------------------------------- canonical tagline lockup (BRAND_SYSTEM.md 5, "Tagline")
+// Stacked lockup, then the tagline in Literata 400 italic, inkMuted, centred. Size = 0.5 x the wordmark em; baseline
+// 0.68 em below the bottom of the lockup's box. These are the OG image's proportions (approved with the mark).
+// EB Garamond em in the stacked lockup = lockup display height x 1000 / viewBox height (wordmark is in font units).
+function taglineLockup({ W, H, ground, ink, muted, LH, cy = H / 2 }) {
+  const lock = read(ground === C.paper ? 'lockup-stacked.svg' : 'lockup-stacked-reversed.svg');
+  const [lx, ly, lw, lh] = viewBox(lock);
+  const body = lock.replace(/<\/?svg[^>]*>/g, '').replace(/<title>[\s\S]*?<\/title>/, '');
+  const LW = (LH * lw) / lh;
+  const em = (LH * 1000) / lh;
+  const t = outlineText(req.resolve('@fontsource/literata/files/literata-latin-400-italic.woff'), TAGLINE, 0.5 * em);
+  const block = LH + 0.68 * em; // lockup box + tagline baseline
+  const top = cy - block / 2;
+  const tagY = top + LH + 0.68 * em;
+  return `<rect width="${W}" height="${H}" fill="${ground}"/>
+<svg x="${((W - LW) / 2).toFixed(2)}" y="${top.toFixed(2)}" width="${LW.toFixed(2)}" height="${LH}" viewBox="${lx} ${ly} ${lw} ${lh}">${body.replace(/fill="#[0-9A-F]{6}"/g, `fill="${ink}"`)}</svg>
+<path fill="${muted}" transform="translate(${((W - t.w) / 2 - t.x0).toFixed(2)} ${tagY.toFixed(2)})" d="${t.d}"/>`;
+}
+
+// ---------------------------------------------------------------- video end cards (CREATIVE.md 4, last beat)
+async function endCards() {
+  const out = {};
+  for (const [W, H, LH] of [[1920, 1080, 420], [1080, 1920, 460]]) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${taglineLockup({ W, H, ground: C.paper, ink: C.ink, muted: C.inkMuted, LH })}</svg>`;
+    const buf = await sharp(Buffer.from(svg)).flatten({ background: C.paper }).png({ compressionLevel: 9 }).toBuffer();
+    write(path.join(VIDEO, `end-card-${W}x${H}.png`), buf);
+    out[`${W}x${H}`] = await sizeOf(buf);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- social post template (4:5 background plate)
+// Paper ground; the accent pair opens the quote at the top left; the small-cut horizontal lockup sits at the foot.
+// The quote itself (Literata 400, ink, 56 to 64 px, max 6 lines) is set by whoever makes the post, never baked in.
+async function socialTemplate() {
+  const W = 1080, H = 1350, M = 96;
+  const sym = read('symbol-accent.svg');
+  const [sx, sy, sw, sh] = viewBox(sym);
+  const symBody = sym.replace(/<\/?svg[^>]*>/g, '').replace(/<title>[\s\S]*?<\/title>/, '');
+  const SH = 88, SW = (SH * sw) / sh;
+  const lock = read('lockup-horizontal-small.svg');
+  const [lx, ly, lw, lh] = viewBox(lock);
+  const lockBody = lock.replace(/<\/?svg[^>]*>/g, '').replace(/<title>[\s\S]*?<\/title>/, '');
+  const LH = 44, LW = (LH * lw) / lh;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+<rect width="${W}" height="${H}" fill="${C.paper}"/>
+<svg x="${M}" y="${M + 24}" width="${SW.toFixed(2)}" height="${SH}" viewBox="${sx} ${sy} ${sw} ${sh}">${symBody}</svg>
+<svg x="${M - LH * 0.15}" y="${H - M - LH}" width="${LW.toFixed(2)}" height="${LH}" viewBox="${lx} ${ly} ${lw} ${lh}">${lockBody}</svg>
+</svg>`;
+  const buf = await sharp(Buffer.from(svg)).flatten({ background: C.paper }).png({ compressionLevel: 9 }).toBuffer();
+  write(path.join(SOCIAL, 'post-template-1080x1350.png'), buf);
+  return sizeOf(buf);
+}
+
+// ---------------------------------------------------------------- notification glyph (small cut, monochrome)
+// Android status-bar small icon: white on transparent, 24 dp with the mark inside the 20 dp live area, at mdpi to
+// xxxhdpi. Android is v1.1; the files are ready so nobody redraws the mark when it ships. iOS draws notifications
+// with the app icon (icon.app.40 / .60 / .58 / .87).
+async function notificationGlyphs() {
+  const sym = read('symbol-small.svg');
+  const [sx, sy, sw, sh] = viewBox(sym);
+  const d = sym.match(/ d="([^"]+)"/)[1];
+  const s = 20 / Math.max(sw, sh);
+  const tx = 12 - (sx + sw / 2) * s, ty = 12 - (sy + sh / 2) * s;
+  const glyph = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><title>${NAME}</title><path fill="#FFFFFF" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${s.toFixed(6)})" d="${d}"/></svg>\n`;
+  write(path.join(NOTIFY, 'glyph.svg'), glyph);
+  const out = {};
+  for (const px of [24, 36, 48, 72, 96]) {
+    const buf = await sharp(Buffer.from(glyph), { density: 72 * (px / 24) }).resize(px, px).png({ compressionLevel: 9 }).toBuffer();
+    write(path.join(NOTIFY, `glyph-${px}.png`), buf);
+    out[px] = await sizeOf(buf);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- web and email fonts (BRD-03)
+// Latin subsets of Literata (400, 500, 400 italic) and Mukta (400, 600) from @fontsource, served at
+// https://earlyletters.com/fonts/ (registry font.reading.web*, font.ui.web*). SIL OFL 1.1, licence copied alongside.
+const WEB_FONTS = {
+  literata: ['literata-latin-400-normal.woff2', 'literata-latin-500-normal.woff2', 'literata-latin-400-italic.woff2'],
+  mukta: ['mukta-latin-400-normal.woff2', 'mukta-latin-600-normal.woff2'],
+};
+function webFonts() {
+  for (const [family, files] of Object.entries(WEB_FONTS)) {
+    const pkg = path.dirname(req.resolve(`@fontsource/${family}/package.json`));
+    fs.mkdirSync(path.join(FONTS, family), { recursive: true });
+    for (const f of files) {
+      fs.copyFileSync(path.join(pkg, 'files', f), path.join(FONTS, family, f));
+      console.log('wrote', path.relative(ROOT, path.join(FONTS, family, f)));
+    }
+    fs.copyFileSync(path.join(pkg, 'LICENSE'), path.join(FONTS, family, 'OFL.txt'));
+    console.log('wrote', path.relative(ROOT, path.join(FONTS, family, 'OFL.txt')));
+  }
+}
+
 const email = await emailLogos();
 await favicons();
 const og = await ogImage();
-console.log(JSON.stringify({ emailLogo: email, og }));
+const video = await endCards();
+const social = await socialTemplate();
+const notification = await notificationGlyphs();
+webFonts();
+console.log(JSON.stringify({ emailLogo: email, og, video, social, notification }));

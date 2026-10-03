@@ -9,7 +9,7 @@ This is the full list of email the product sends, will send later, and will neve
 
 1. **Email is for things a person needs to know or keep.** Receipts, legal notices, account and data changes, and the first hello. Nothing that exists to bring someone back into the app.
 2. **One event, one email.** Every send carries an idempotency key (event + subject id + period). Nothing is ever re-sent because it was not opened; we do not know if it was opened (tracking stays off).
-3. **Restraint over reach.** The app already has gentle, local, user-controlled reminders (`en.notifications`). Email never duplicates them. Push from the server is used for exactly one billing notice (D-022 trial final) and family letters (C, D-025).
+3. **Restraint over reach.** The app already has gentle, local, user-controlled reminders (`en.notifications`). Email never duplicates them. Push from the server is used for exactly one billing notice (D-022 trial final) and, from v1.1, family letters (C, D-025).
 4. **No child names and no letter content in any email.** See section 2.
 5. **No commercial email at v1.0.** Every v1.0 email is transactional or relationship mail. Commercial mail (a newsletter, product news) comes later, opt-in only, from a separate subdomain.
 6. **Dates, not countdowns.** We write "on Tuesday, September 29, 2026", never "in 3 days" or "48 hours left". Dates follow D-028.
@@ -23,7 +23,7 @@ This is the full list of email the product sends, will send later, and will neve
 | E-2 | Adult display names (`{parentName}`, `{signsAs}`) are allowed only in emails to members of the same book. | They are L3, already shared with that person inside the app. |
 | E-3 | Invites are never emailed by us. The parent shares the link from their own Messages or WhatsApp (`en.family.shareMessage`). | A note from Nani's own child beats a brand email; we would otherwise email an address whose owner never asked to hear from us. |
 | E-4 | Contributors and co-parents who join by invite get a role-specific welcome (`welcome-family`, `welcome-coparent`) **instead of** C1's `welcome`. | C1's welcome is written for a parent starting a book; Nani is joining one. Needs the sender to branch on how the account was created (see section 9). |
-| E-5 | Removing a family member, a member leaving, a declined invite and a letter kept aside send **no email**. | PRD B F5 and F7: silence beats a rejection notice inside a family. |
+| E-5 | Removing a family member, a member leaving, a declined invite and a letter kept aside send **no email**. One exception: when a co-parent asks to delete their account, the remaining parent gets `coparent-left` (founder instruction, 3 Oct 2026), because letters in the shared book disappear and silence would read as a fault. | PRD B F5 and F7: silence beats a rejection notice inside a family. |
 | E-6 | Billing problems, renewal receipts and refunds send **no email from us**. Apple sends its own; the app shows Apple's in-app billing message. | Two emails about one charge confuse people and can read as a phishing pattern. |
 
 ## 3. Legend
@@ -49,7 +49,8 @@ Listed so the catalog is complete. C1 owns the copy in `auth.en.ts`; ids are C1'
 | `apple-account-linked` | Sign in with Apple added to an existing account | Fn | T | Email only | 1.0 | Per event | C1 / D2 / security |
 | `email-changed-old-address`, `email-changed-new-address` | User changes their sign-in email (Supabase Change Email template; notice to the old address, confirmation to the new) | Auth | T | Email only | 1.0 | Per request | C1 / D2 / L3 |
 | `new-device-sign-in` | Sign-in on a device not seen before | Fn | T | Email only | 1.0 | At most 1 per device; never for the first device | C1 / D2 / security |
-| `google-account-linked` | Google sign-in added (founder decision 4, Oct 3) | Fn | T | Email only | 1.0 | Per event | C1 / D2 / security |
+| `google-account-linked` | Sign in with Google added (founder decision 4, Oct 3) | Fn | T | Email only | 1.0 | Per event | C1 / D2 / security |
+| `passkey-added` | A passkey is added after sign-in (founder decision 4; content review CNT-08) | Fn | T | Email only | 1.0 | Per event | C1 / D2 / security |
 
 ## 5. Onboarding and lifecycle (copy: C2, `lifecycle.en.ts`)
 
@@ -66,8 +67,8 @@ There is deliberately almost nothing here. No drips, no tips series, no re-engag
 
 | id | Trigger | Sender | Kind | Channels | Priority | Cap | Owner |
 |---|---|---|---|---|---|---|---|
-| `family-book-closing` | A sole parent deletes a book that has contributors (B-REQ-016, DATA-REQ-053). Sent to each contributor within 1 hour | Fn | T | Email + card (no push) | LB | 1 per contributor per deletion request | C2 / D2 / privacy engineer |
-| `family-book-restored` | The parent cancels that deletion within 30 days. Sent only to people who got `family-book-closing` | Fn | T | Email + card | 1.0 | 1 per contributor per request | C2 / D2 / privacy engineer |
+| `family-book-closing` | A sole parent deletes a book that has contributors (B-REQ-016, DATA-REQ-053). Sent to each contributor within 1 hour | Fn | T | Email + card (no push) | 1.1 (no contributors at v1.0, D-057) | 1 per contributor per deletion request | C2 / D2 / privacy engineer |
+| `family-book-restored` | The parent cancels that deletion within 30 days. Sent only to people who got `family-book-closing` | Fn | T | Email + card | 1.1 | 1 per contributor per request | C2 / D2 / privacy engineer |
 | `family-letter` | A family letter waits for approval | push (`en.notifications.familyLetter`) | n/a | **Push and in-app only. No email.** | n/a | C owns timing | C |
 | `family-added` | A parent adds a contributor's letter to the book | push (`en.notifications.familyAdded`) | n/a | **Push and in-app only. No email.** | n/a | C owns timing | C |
 | `family-digest` | Opt-in weekly email of new family letters for parents who do not use push | Fn | T? | Email, opt-in only, off by default | later | 1 per week, only when something arrived; no counts in the subject | C2 / D2 / backend |
@@ -76,6 +77,8 @@ There is deliberately almost nothing here. No drips, no tips series, no re-engag
 Not sent, by decision E-3 and E-5: invite emails, invite reminders, invite expired, invite declined, member removed, member left, letter kept aside.
 
 ## 7. Billing and subscription (copy: C2, `billing.en.ts`)
+
+**Trigger (D-061, founder, 3 Oct 2026; un-parks this section).** The app reports subscription **status only** to our server: plan, trial end date, renewal date and a cancelled (renewal off) flag. It reports when a purchase or trial completes in the app and on each launch. Never payment or card data, never receipts, no App Store Server Notifications, and the server still does not enforce Plus. Only the device whose transaction is the person's own purchase reports, so Family Sharing members get no billing email. A cancellation in iOS Settings is seen on the next app open, so every reminder carries "If you have already cancelled, there is nothing to do." `{price}` comes from the published price of the reported plan (US only); a price increase cannot be seen from the status, so `price-increase` stays later.
 
 Every notice in D-022 is here. Schedule, windows and suppression rules are D-022's, not this page's: `E` = trial or period end, `C` = cancel deadline = `E - 24h`. A cancelled renewal skips every pending renewal or trial notice for that period. A missed window pages the founder; nothing is sent late. All rows are legal-sensitive (`// L2 review` in the copy file).
 
@@ -90,8 +93,8 @@ Every notice in D-022 is here. Schedule, windows and suppression rules are D-022
 | `annual-renewal-short` | Annual renewal, short | Annual, will renew; `E-7d`, window `[E-8d, E-6d]` | Fn | T | Email + card | LB (as above) | Once per period | C2 / D2 / payments |
 | `anniversary-reminder` | Anniversary reminder | Monthly plans, each subscription anniversary; same day | Fn | T | Email only (D-022) | LB (first fires 12 months after launch) | Once per subscription year | C2 / D2 / payments |
 | `price-increase` | Price increase | Approved increase with the store's opt-in consent; `effective-25d`, window `[-30d, -7d]` | Fn | T? | Email + card | later (must exist before any price change) | Once per change | C2 / D2 / payments, counsel |
-| `plus-cancelled` | not in D-022 | Auto-renew turned off (App Store notification `DID_CHANGE_RENEWAL_STATUS`, off) | Fn | T | Email + card | 1.0 | Once per period; not re-sent if renewal is turned on and off again within 24 h | C2 / D2 / payments |
-| `plus-ended` | not in D-022 | Plus ends (expiry, refund or revocation) | Fn | T | Email + card | 1.0 | Once per period | C2 / D2 / payments |
+| `plus-cancelled` | not in D-022 | A status report shows renewal turned off (seen on the next app open, D-061) | Fn | T | Email + card | 1.0 | Once per period; not re-sent if renewal is turned on and off again within 24 h | C2 / D2 / payments |
+| `plus-ended` | not in D-022 | The reported renewal or trial end date passes with renewal off, or a status report shows no active plan (D-061) | Fn | T | Email + card | 1.0 | Once per period | C2 / D2 / payments |
 | `plus-quiet` | C-REQ-031 dormant payer | Plus with no saves in 60 days | Fn | T? | Email only | 1.1 | At most once every 6 months; never in a trial; never within 14 days of another billing email | C2 / D2 / payments |
 | `gift-*` | n/a | Gift a year of Plus (paid once, never renews) | Fn | T | Email | later | Per gift | C2 / D2 / payments |
 
@@ -109,6 +112,8 @@ Billing copy rules (from Subscription terms 1.3.0 and D-022): every notice names
 | `book-deletion-scheduled` | Sole parent deletes a book (`request_book_deletion()`) | Fn | T | Email + in-app | 1.0 | Once per request | C2 / D2 / privacy engineer |
 | `book-deletion-cancelled` | `cancel_book_deletion()` | Fn | T | Email + in-app | 1.0 | Once per request | C2 / D2 / privacy engineer |
 | `deletion-request-received` | Deletion asked for by email through `/delete-account` (D-042), before identity is confirmed | Ops | T | Email only | LB (D-042 route) | Once per request | C2 / D2 / support runbook |
+| `deletion-confirm` | Sent right after `deletion-request-received`. One-time link to `/delete-account/confirm` (web, any browser; route still to build), which shows the date and one button; pressing it files the request with `source='support'` (DATA-REQ-021) and `account-deletion-scheduled` follows (customer review CUS-14) | Ops or Fn | T | Email only | LB (D-042 route) | Once per request; link expires | C2 / D2 / web / support runbook |
+| `coparent-left` | A co-parent's `request_account_deletion()` succeeds. To the remaining parent of each shared book, within 1 hour. Their letters left the book at request (DELETION spec 2.6.2); no email if the leaver cancels within the hour | Fn | T | Email + in-app card (`en.coParentLeft`) | 1.0 | Once per request per remaining parent | C2 / D2 / privacy engineer |
 | `privacy-request-received` | Access, correction, provider-list or other rights request by email (Privacy Policy section 14) | Ops | T | Email only | 1.0 | Once per request | C2 / D2 / support runbook |
 | `export-ready` | Server-built export finished (DATA-REQ-054); link valid 7 days | Fn | T | Email + card | 1.1 (BL-309) | Once per export | C2 / D2 / privacy engineer |
 | `policy-update` | Major change to a policy (POLICY_VERSIONING section 5), on `published_at`, at least 30 days before `effective_at` | Fn | T? (FTC CAN-SPAM rule 16 CFR 316.3 lists notice of a change in account terms as transactional; L2 confirms) | Email + in-app card until accepted or effective | 1.0 (needed before the first major change after launch) | Once per major version per account; sent even with marketing off; all accounts including Apple relay | C2 / D2 / legal |
@@ -180,10 +185,10 @@ For L3: register the private-relay senders (section 11); make the send pipeline 
 
 For C1: the bounce row in Settings (rule 10.4) needs one in-app string; and E-4 means `welcome` should say it is for a parent starting a book.
 
-Conflict to resolve (PM): DATA-REQ-053 promises contributors "a server export link valid 30 days" when a sole parent deletes a book, but server export (DATA-REQ-054) is P1 and ROADMAP puts it in v1.1 (BL-309). At v1.0 contributors are in the app (D-002) and can export from their own phone, so `family-book-closing` points them to the app. `family-export-ready` adds the link in 1.1.
+Conflict to resolve (PM): DATA-REQ-053 promises contributors "a server export link valid 30 days" when a sole parent deletes a book, but server export (DATA-REQ-054) is P1 and ROADMAP puts it in v1.1 (BL-309). D-002 is superseded by D-057: at v1.0 there are no contributors, so `family-book-closing` is 1.1. When contributors arrive they are in the app and can export from their own phone, so `family-book-closing` points them to the app. `family-export-ready` adds the link in 1.1.
 
 ## Reconciliation with founder decisions of Oct 3 (docs/agents/BRIEF-2026-10-03.md)
 - Decision 4: Google sign-in is v1.0. `google-account-linked` moves to v1.0. Sign-in copy says "sign-in link", never "magic link" (VOICE.md).
 - Decision 5: family at launch is co-parent only. `welcome-family` moves to v1.1; `welcome-coparent` stays v1.0.
-- Decision 3: payments are Apple only and no server of ours sees purchases. The billing section above assumes our server knows about trials, renewals and price changes. Under decision 3 it cannot, so every billing email is PARKED pending a founder and counsel decision on whether Apple's own App Store notices satisfy D-022 and California's auto-renewal law. Prices are now $3.99/month (1-month trial) and $29.99/year (2-month trial).
+- Decision 3: payments are Apple only. Billing emails were PARKED because no server of ours saw purchases. **Un-parked by D-061 (founder, 3 Oct 2026, 19:30 UTC):** the app reports subscription status only (plan, trial end date, renewal date, cancelled flag) so the D-022 reminders can be sent; see the trigger note in section 7. Apple still processes payments; no RevenueCat; no App Store Server Notifications. Prices are $3.99/month (1-month trial) and $29.99/year (2-month trial).
 - Decision 13: the health data policy lives at /health-privacy.

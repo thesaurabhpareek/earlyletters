@@ -66,7 +66,8 @@ Sources: `BRIEF.md` required list, `CATALOG.md` as of 3 Oct 2026 08:00, and the 
 | `sign-in-trouble` | T | (iii) | User requested. |
 | `reauthenticate-code` | T | (ii) security | |
 | `apple-account-linked` | T | (ii) security, (iii) change to account | |
-| `google-account-linked` (v1.1) | T | as above | |
+| `google-account-linked` (v1.0, Brief decision 4) | T | as above | |
+| `passkey-added` | T | (ii) security, (iii) change to account | Added 3 Oct 2026 evening (content review CNT-08). |
 | `new-device-sign-in` | T | (ii) security | |
 | `email-changed-old-address` | T | (ii)/(iii) | Should not show the full new address (L3 to decide; a masked form is enough). |
 | `email-changed-new-address` | T | (iii) | |
@@ -78,7 +79,7 @@ Sources: `BRIEF.md` required list, `CATALOG.md` as of 3 Oct 2026 08:00, and the 
 |---|---|---|---|
 | `welcome-family` | **T, confirmed with conditions** | (iii) new account and membership of a book | Same as `welcome`. Never mention Plus or gifting (gifts would be a sales pitch to a grandparent). |
 | `welcome-coparent` | **T, confirmed with conditions** | as above | Same. Do not mention that the co-parent's own Plus would cover more books. |
-| `family-book-closing` | T | (iii) change in their standing in a book | Contributors have accounts at v1.0 (D-002). Name the book by the parent's display name (E-2), not the child (section 7). |
+| `family-book-closing` (1.1) | T | (iii) change in their standing in a book | No contributors at v1.0 (D-057 supersedes D-002); sent from v1.1. Name the book by the parent's display name (E-2), not the child (section 7). |
 | `family-book-restored` | T | (iii) | |
 | `family-digest` (later, opt-in) | **T under CAN-SPAM; subscription message for Gmail** | (v) delivering service content they opted into | Needs a one-click unsubscribe (RFC 8058) and an in-body "stop these" link, because Gmail requires it for "subscribed messages" (section 4.4). Unsubscribing stops the digest only. No letter text (section 7). |
 | `family-export-ready` (1.1) | T | (v) | Link must be authenticated and expire. |
@@ -113,6 +114,8 @@ Sources: `BRIEF.md` required list, `CATALOG.md` as of 3 Oct 2026 08:00, and the 
 | `book-deletion-scheduled` | T | (iii) | |
 | `book-deletion-cancelled` | T | (iii) | |
 | `deletion-request-received` (Ops) | T | (iii); legal obligation | Contains no data about the person beyond the request. |
+| `deletion-confirm` (Ops or Fn) | T | (iii); legal obligation | Added 3 Oct 2026 evening (customer review CUS-14). One-time link to `/delete-account/confirm`; states expiry; no promotion. |
+| `coparent-left` | T | (iii) change in their standing in a book (a co-member's letters leave it) | Added 3 Oct 2026 evening (CNT-08, CUS-04, founder instruction). Names the leaver by display name only (E-2), no child name (E-1), no letter content. Counsel questions in `packages/content/legal/REVIEW_NOTES.md` 3.2 item 18. |
 | `privacy-request-received` (Ops) | T | (iii) | |
 | `export-ready` (1.1) | T | (v) | |
 | `policy-update` | **T, confirmed** | (iii) "notification concerning a change in the terms or features of" the account | Legal change notices are transactional. Keep the subject factual ("We are updating our Privacy Policy"), first paragraph the change, no feature launch news in the same email. If a policy change is bundled with a new feature announcement, the feature part must be secondary and after the change, or send separately. |
@@ -276,7 +279,7 @@ The only way to stop transactional email is to close the account. Keep the count
 
 ### 5.2 Required fields, by notice
 
-Field codes. Every value comes from the App Store snapshot for that subscription, never from list prices in code.
+Field codes. Under D-061 (founder, 3 Oct 2026) every date and the plan come from the subscription status the app reports (plan, trial end date, renewal date, cancelled flag), never from list prices in code; the status carries no price, so `{price}` is the published price of the reported plan (US only, Brief decision 3). No App Store Server Notifications and no receipts reach us. Counsel questions: `packages/content/legal/REVIEW_NOTES.md` 3.2 item 16.
 
 | Code | Field | Placeholder (suggested) | Why |
 |---|---|---|---|
@@ -326,8 +329,8 @@ Every billing email checked against 5.2. All are transactional; none contains a 
 
 | id | Result | Change requested (C2) |
 |---|---|---|
-| `trial-started` | Has A1, A3 to A8, A10, A11; refunds line | Add `PLUS_INCLUDES` (A2: the acknowledgment should state what was bought) and a cancellation-policy line: "Unless the law or Apple's policy says otherwise, there are no partial refunds for unused time." (A9, Subscription terms "Refunds") |
-| `plus-started` | Same as above | Same two additions |
+| `trial-started` | Has A1, A3 to A8, A10, A11; refunds line | Add `PLUS_INCLUDES` (A2: the acknowledgment should state what was bought) and a cancellation-policy line: "Unless the law or Apple's policy says otherwise, there are no partial refunds for unused time." (A9, Subscription terms "Refunds"). **Applied 3 Oct 2026 evening (LGL-12).** |
+| `plus-started` | Same as above | Same two additions. **Applied.** |
 | `trial-ending-week`, `trial-ending-long`, `trial-ending-final` | Complete for 17602(b)(1) | None |
 | `annual-renewal-long` | Complete for 17602(b)(2) and the annual reminder | None |
 | `annual-renewal-short` | Complete | None |
@@ -335,8 +338,9 @@ Every billing email checked against 5.2. All are transactional; none contains a 
 | `price-increase` | Has P1 to P4, A8 | None |
 | `plus-cancelled`, `plus-ended` | Informational; no offer | None ("you can turn renewal back on" is a fact, not a pitch) |
 | `plus-quiet` | Transactional; helps a payer stop | None; keep it free of feature lists |
-| File header | `{cancelByDate}` is described as "E minus 24 hours, as a date (C)" | Change the description to the 5.3 rule (last local day that ends before `C`), so the sender does not print a date a Pacific-time user could miss |
-| File header | `{manageUrl}` marked UNVERIFIED | Point it at our `/cancel` help page (section 11, D2 row) |
+| File header | `{cancelByDate}` is described as "E minus 24 hours, as a date (C)" | Change the description to the 5.3 rule (last local day that ends before `C`), so the sender does not print a date a Pacific-time user could miss. **Applied.** |
+| File header | `{manageUrl}` marked UNVERIFIED | Point it at our `/cancel` help page (section 11, D2 row). **Applied in the header; the `/cancel` web route and the fixture value are still to change (web and D2 lanes).** |
+| All reminders (added 3 Oct 2026 evening) | D-061 sees a cancellation made in iOS Settings only on the next app open | Every trial and renewal reminder carries "If you have already cancelled, there is nothing to do." **Applied.** |
 
 ### 5.6 Open for counsel
 

@@ -57,8 +57,8 @@ export const pages = {
         heading: "We never rewrite your words",
         paragraphs: [
           "This is the rule everything else is built on. Software may remove and repair. It may never add meaning.",
-          "In practice, transcription only fixes the slips a microphone makes: a misheard word, a missing full stop, a stray um. We call this Word for word. Every small fix is marked on the page, so you can see it and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
-          "Every fix is recorded and can be undone. The original transcript is kept unchanged with each letter, and Show exactly what I said brings it back whenever you like.",
+          "In practice, transcription fixes only small slips: a misheard word, a missing full stop, a stray um, or a one-word grammar slip like we was to we were. We call this Word for word. Every small fix is marked on the page, so you can see it and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
+          "Every fix is recorded and can be undone. Exactly what you said is kept unchanged with each letter, and Show exactly what I said brings it back whenever you like.",
           "Speak English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them.",
         ],
       },
@@ -107,14 +107,14 @@ export const pages = {
         heading: "A book you fill by talking",
         paragraphs: [
           "Baby books ask a lot of tired people. Blanks to fill, firsts to date, a pen to find, a quiet hour that the early years rarely give. Many stop after a few pages, and that is nobody's failing. The format simply asks for time that is spent elsewhere, usually on the child.",
-          `Some parents find their own way. They write to an email address set up just for their child, or talk into a voice memo in the car, and plan to hand it all over one day. ${brand.name} is made for that instinct. Talk to {child} for a minute, and your words become a letter in a book, filed under {child}'s age that month and signed with your name.`,
+          `Some parents find their own way. They write to an email address set up just for their child, or talk into a voice memo in the car, and plan to hand it all over one day. ${brand.name} is made for that instinct. Talk to {child} for a minute, and your words are kept as a letter in a book, filed under {child}'s age that month and signed with your name.`,
         ],
       },
       {
         heading: "Exactly as you said it",
         paragraphs: [
           "At the centre of everything is one promise: we never rewrite your words. Not to make them neater, not to make them sound more like a greeting card. Transcription only fixes the slips a microphone makes, a misheard word or a missing full stop, and every fix is kept and can be undone. The sentence that ends up in the book is one you actually said.",
-          "Why be so strict? Because the way you say a thing is part of what you mean. The sentence you started twice. The word from your first language, because that word was the right one. The way you always say the name. Smooth those out and you get something easier to read and less true.",
+          "Why be so strict? Because the way you say a thing is part of what you mean. The sentence you started twice. The way your own language says it, because those were the right words. The way you always say the name. Smooth those out and you get something easier to read and less true.",
           "A letter to {child} is not a performance. It is you, on an ordinary day, and that is the version worth keeping. Not the best version. Yours.",
         ],
       },
@@ -171,6 +171,7 @@ export const pages = {
         heading: "What to write about",
         paragraphs: [
           "Help with the app: signing in, inviting a co-parent, export, backup or anything that is not working the way you expect. Tell us what kind of phone you use and what you tapped, and we will take it from there.",
+          "Someone else in your account? Put Not me in the subject. We answer those first, within 1 business day.",
           "You never need to send us a letter or a recording to get help.",
           "Ideas and kind words are welcome too. They are read, every one.",
         ],
@@ -178,7 +179,17 @@ export const pages = {
       {
         heading: "Trouble signing in",
         paragraphs: [
-          "If a sign-in link opened on a different device, use the 6-digit code from the same email instead. If you signed in with Apple and chose Hide My Email, your account uses the private address Apple made for you, so tell us that when you write and we will help you find your way back in.",
+          "If a sign-in link opened on a different device, use the 6-digit code from the same email instead. If you joined with Google, tap Sign in with Google in the app. If you signed in with Apple and chose Hide My Email, your account uses the private address Apple made for you, so tell us that when you write and we will help you find your way back in.",
+          "No email arrived? Wait a minute, then check Spam, Junk or Promotions for an email from hello@earlyletters.com. Still nothing? Use Sign in with Apple or Sign in with Google, or write to us.",
+          "See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email. If your letters are still missing, write to us and we will help you find the right account.",
+        ],
+      },
+      {
+        heading: "Common questions",
+        paragraphs: [
+          `Does my co-parent need an iPhone? Yes, for now. ${brand.name} is on iPhone first. Android is coming, and their place in the book will be waiting.`,
+          "If one of us has Plus, does the other need it too? Not if you share an Apple family. Plus is shared through Apple Family Sharing, so a co-parent in the same Apple family gets it too. If you are in different Apple families, each of you has your own plan. Writing, reading, playing your recordings and export stay free for both of you either way.",
+          "New phone, where are my recordings? Your letters come with you when you sign in. Recordings come with you if backup is on (part of Plus), or if you moved to the new phone with an iPhone backup or Quick Start. If you still have the old phone, open the app there and export your recordings, or turn on backup.",
         ],
       },
       {
@@ -217,17 +228,17 @@ export const pages = {
         heading: "Or ask by email",
         paragraphs: [
           "If you cannot use the app, email hello@earlyletters.com from the address on your account, with Delete my account in the subject line.",
-          "Before we act, we confirm it is you by sending a sign-in link to that address. If you signed in with Apple and chose Hide My Email, say so in your message and we will help you confirm it is you.",
-          "We reply within 10 business days. Once we have confirmed it is you, your request follows the same steps and timeline as a deletion from the app.",
+          "Before we act, we confirm it is you. We send an email to that address with a link that confirms the request. The link opens a page in any web browser, so you do not need the app or an iPhone. The page shows the date your account will be deleted and how to cancel, and has one button, Delete my account.",
+          "If you signed in with Apple and chose Hide My Email, say so in your message and we will help you confirm it is you.",
+          "We reply within 10 business days. Once you confirm, your request follows the same steps and timeline as a deletion from the app.",
         ],
       },
       {
         heading: "What is deleted",
         paragraphs: [
-          "Your letters, recordings and photos are removed from every book, including a book you share with a co-parent. That book stays with your co-parent.",
-          "A book where you are the only parent is deleted with everything in it, including family letters. Each family member is offered a copy of their own letters first.",
-          "Letters you wrote to someone else's book are removed from it.",
-          "Your profile, your family memberships and your account itself are deleted. We revoke your Sign in with Apple token and delete the random ID that links your account to your App Store purchases. If you turned analytics on, we ask our analytics provider to delete the events sent under your analytics ID.",
+          "Your letters, recordings and photos are removed from every book, including a book you share with a co-parent. That book stays with your co-parent, and we let them know that your letters are no longer in it. If you would like them to keep a copy, export yours first and share it.",
+          "A book where you are the only parent is deleted with everything in it.",
+          "Your profile, your family memberships and your account itself are deleted. We revoke your Sign in with Apple token, remove your Sign in with Google link, and delete the status of your Plus plan that the app reported to us. If you turned analytics on, we ask our analytics provider to delete the events sent under your analytics ID.",
         ],
       },
       {
@@ -241,8 +252,8 @@ export const pages = {
       {
         heading: "What stays",
         paragraphs: [
-          "Copies that family already saved or played on their own phones stay with them, and so do any exports you made and your phone's own backups, such as iCloud Backup. Those are in your hands, not ours.",
-          "Some records are kept without any letter, recording or photo in them. Records of what you agreed to are kept for 3 years and no longer show your name or email. Activity records, such as a letter was deleted, are kept for 24 months and no longer show who you are. Purchase records are kept as tax and accounting law requires, transaction details only. Support emails are deleted 2 years after your last message.",
+          "Any exports you made, and your phone's own backups, such as iCloud Backup, stay with you. Those are in your hands, not ours.",
+          "A few records stay, with no letters or recordings in them: a record of what you agreed to (3 years, without your name), activity records such as a letter was deleted (24 months, without your name) and support emails (2 years after your last one).",
           "Apple keeps its own purchase records as the store.",
         ],
       },

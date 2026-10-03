@@ -27,10 +27,25 @@ export async function renderEmailText(element: ReactElement): Promise<string> {
         // Headings keep their case: shouting is not our voice.
         { selector: 'h1', options: { uppercase: false } },
         // The hairline divider is decoration.
-        { selector: 'td.el-rule', format: 'skip' },
+        { selector: 'td.el-divider', format: 'skip' },
         // Show the dark logo's alt text once at most (the light one is already skipped).
         { selector: 'div.el-logo-dark', format: 'skip' },
+        // The button line already carries the URL; the "Button not working?" block would print it twice.
+        { selector: 'div.el-fallback', format: 'skip' },
+        // Button: "Sign in to my book https://..." without brackets.
+        { selector: 'a.el-btn', format: 'anchor', options: { linkBrackets: false } },
+        // Key facts read as "Label: value" lines.
+        { selector: 'table.el-facts', format: 'block' },
+        { selector: 'tr.el-fact-row', format: 'block', options: { leadingLineBreaks: 1, trailingLineBreaks: 1 } },
+        { selector: 'td.el-fact-label', format: 'factLabel' },
+        { selector: 'td.el-fact-value', format: 'inline' },
       ],
+      formatters: {
+        factLabel: (elem: { children: unknown[] }, walk: (nodes: unknown[], b: unknown) => void, builder: { addInline: (s: string) => void }) => {
+          walk(elem.children, builder);
+          builder.addInline(': ');
+        },
+      },
     },
   });
   return text.replace(/\n[ \u00A0]+\n/g, '\n\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';

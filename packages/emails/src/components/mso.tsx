@@ -7,6 +7,10 @@
  * HTML contains only the bare conditional comments. Every other client sees a
  * comment and ignores it.
  */
+import type { ReactNode } from 'react';
+import { layout } from '../tokens';
+import { cls } from './theme';
+
 export const MSO_MARKER_ATTR = 'data-mso';
 
 export function Mso({ html }: { html: string }) {
@@ -26,10 +30,27 @@ export function GhostClose() {
   return <Mso html="<!--[if mso]></td></tr></table><![endif]-->" />;
 }
 
-/** Outlook DPI fix, so 2x images and px sizes are not rescaled at 120 dpi. */
+/**
+ * Outlook DPI fix, so 2x images and px sizes are not rescaled at 120 dpi. Also gives classic Outlook (no media
+ * queries) the desktop sheet padding, since the inline padding is the phone layout (mobile first). The @font-face
+ * block is hidden from Word (layout.tsx), so it never falls back to Times New Roman.
+ */
 export function MsoHead() {
   return (
-    <Mso html='<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->' />
+    <Mso
+      html={`<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><style>.${cls.pad}{padding-left:${layout.pad}px !important;padding-right:${layout.pad}px !important;}</style><![endif]-->`}
+    />
+  );
+}
+
+/** Wraps children so classic Outlook (Word) never sees them; every other client does. */
+export function NotMso({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <Mso html="<!--[if !mso]><!-->" />
+      {children}
+      <Mso html="<!--<![endif]-->" />
+    </>
   );
 }
 

@@ -75,6 +75,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | The edit feature | Word for word | Lightly tidied, Tidying, tidy, tidied, cleaned up, polished, improved, corrected | Founder decision. |
 | What the machine changes | small fixes, shown as marks you can undo | edits, corrections, improvements | |
 | The untouched words | "Exactly what you said"; setting "Exactly as said" | raw transcript, original text | |
+| Record control | the red circle ("Tap the red circle and talk") | microphone button, record button, big round button | Brand review BRD-11; colour token `recording` is a UI state, never a brand fill. |
 | Listening mode | Read together (two words, capital R only) | Read Together, story mode, bedtime mode, playback | No word highlighting claims until v1.1. |
 | Quiet-day action | Not much today (in quotes when named in prose) | skip, check in, log | |
 | Who signed it | "From {signsAs}" | author, contributor, poster | "author" allowed only in legal text. |
@@ -91,7 +92,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Email sign-in | sign-in link; 6-digit code | magic link, login link, one-time password, OTP | "Magic link" only as Supabase's dashboard name in internal docs. |
 | Sign-in buttons | Sign in with Apple; Sign in with Google | Apple login, Google sign-in, log in | "Sign in with Google is now on your account". |
 | Action | sign in / sign out | log in, log out, login | |
-| Privacy promise | private by default; "only the family you invite" | secure vault, military-grade, 100% private | "Vault mode" is a feature name; capital V. |
+| Privacy promise | private by default; "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists." | "only the family you invite", secure vault, military-grade, 100% private, end-to-end (letters are encrypted at rest, not end-to-end) | No Vault mode or cloud transcription in v1.0 public copy. |
 | Release state | early version ("early version, can make mistakes", in the app only) | beta (in app, store and website copy), preview, alpha | TestFlight is the only beta (Brief 10). Legal terms may say beta until counsel changes them. |
 | Email sign-off | "Warmly," then the brand name | The Early Letters Team, Love, Cheers, Best | `emailChrome.signature`. |
 | Footer line | brand name, then the tagline "Exactly as you said it." | other tagline variants | `emailChrome.footer.nameLine`. |

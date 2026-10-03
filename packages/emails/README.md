@@ -26,6 +26,7 @@ open out/index.html                      # gallery: 375px light and dark frames 
   <Heading>The one line that matters</Heading>
   <Paragraph>UI sans, 17px.</Paragraph>
   <Paragraph variant="letter">Reading serif, 18px, for mail written like a letter.</Paragraph>
+  <KeyFacts facts={[{ label: 'Price', value: '{newPrice} a year' }, { label: 'Renews on', value: '{date}' }]} />
   <Button href="{signInUrl}">Sign in to my book</Button>
   <CodeBox label="Or enter this code in the app" code="{code}" />
   <Divider />
@@ -46,16 +47,18 @@ Placeholders such as `{signInUrl}` stay literal in the HTML for the sender to fi
 | Component | Notes |
 |---|---|
 | `EmailLayout preheader theme? title? lang?` | html/head/body; `color-scheme` and `supported-color-schemes` metas; reset, responsive and dark CSS; 600px sheet, fluid below, Outlook ghost table; preheader via React Email `Preview` (padded so body text does not leak into the inbox preview). `theme`: `auto` (default, ship this), `light`, `dark` (gallery). |
-| `EmailHeader alt?` | Light logo 160x28 (2x PNG), dark logo swapped in where supported. Alt text styled as a serif wordmark when images are blocked. Not a link. |
+| `EmailHeader alt?` | Light logo 154x32 (2x PNG) on a paper plate that survives Gmail's forced dark, dark logo swapped in where supported (hidden from classic Outlook). Alt text in Georgia when images are blocked. Not a link. |
 | `EmailFooter kind whyText? values?` | Lines from `emailChrome.footer[kind]` with `{whyYouGotThis}`, `{unsubscribe}`, `{postalAddress}` from `emailLegal`; link row; name line. Unsubscribe renders as a link when L2's `unsubscribeLink` exists. |
-| `Heading` | Serif 26px (24px on phones), weight 500. |
+| `Heading` | Serif 26px (24px on phones), weight 500, `text-wrap: balance` (no one-word orphan). |
 | `Paragraph variant?` | `ui` sans 17/1.6 (default), `letter` serif 18/1.65. |
-| `Button href` | Filled `<td bgcolor>` plus padded link (React Email `Button`, which adds Outlook `mso-padding-alt` spacing). 48px tall, pill, full width at 480px and below. |
-| `CodeBox code label` | Monospace 30px, tabular, `user-select: all`, digits read one by one by screen readers. |
-| `LinkFallback href label` | Full URL as visible, wrapping text. |
+| `Button href label?` | Label as `label` or plain-text children. Filled `<td bgcolor>` plus padded link, 48px tall, pill, full width at 480px and below. Classic Outlook gets a VML `v:roundrect` pill instead (`arcsize="50%"`, width from the label length); the HTML button is hidden from it. `top` sets the space above. |
+| `CodeBox code label` | Monospace 30px, tabular, `user-select: all`, digits read one by one by screen readers. The accent wash is reserved for it. |
+| `KeyFacts facts` | The two to five facts a notice turns on (price, renewal date, trial end), as label/value rows: label muted 14px, value ink 17px semibold, hairlines between. Repeats the sentences, never replaces them; words from `@scribe/content`. Plain text: `Label: value`. Use in price-increase, trial-ending-*, annual-renewal-*, account-deletion-scheduled, book-deletion-scheduled. |
+| `LinkFallback href label` | Full URL as visible text, breaking only after `/ ? & =`. Skipped in plain text (the button line already has the URL). |
+| `Letter signoff? action? fallback? note? actionPlacement?` | Letter-email body: paragraphs, the one action, sign-off, hairline, fallback, quiet note. `actionPlacement`: `before-signoff` (default; keeps the action above the fold on a 375px phone) or `after-signoff` (a postscript, no hairline above it). |
 | `Divider` | Table-cell hairline (Outlook safe). Decorative only. |
 | `Signature text?` | Serif italic; `\n` becomes a line break. |
-| `Note tone` | `quiet`: small muted sans. `safety`: on the soft wash. Never red, never an icon. |
+| `Note tone` | `quiet`: small muted sans. `safety`: 15px ink with a 3px `line` rule on the left, no fill. Never red, never an icon. |
 
 Tokens: colours come from `@scribe/brand`; the dark `accentSoft` (#3A2E25) and `onAccent` (#1E1612) and the light desk (#F5EFE7) come from `docs/design/DESIGN_LANGUAGE.md`, where their contrast ratios are computed. No pure white or pure black is used anywhere; text on the light button is paper (#FBF8F3, 5.5:1).
 
@@ -66,15 +69,17 @@ Three layers, because no single technique reaches every client:
 1. **Inline light palette everywhere.** Clients that strip `<style>` (Gmail with non-Google accounts) or ignore dark targeting still get a finished, readable email.
 2. **Our own dark palette** under `@media (prefers-color-scheme: dark)` with `el-*` classes and `!important` (Apple Mail, Outlook for Mac/iOS/Android, Thunderbird, Proton). `<meta name="color-scheme" content="light dark">` and `supported-color-schemes` tell Apple Mail we handle dark ourselves, so it does not auto-darken.
 3. **Outlook rewrite markers.** The same rules repeated under `[data-ogsc]` (text) and `[data-ogsb]` (backgrounds), the attributes Outlook.com and the Outlook apps add when they recolour an email.
-4. **Forced inversion we cannot target** (Gmail iOS and Android apps, classic Outlook for Windows). The light palette is chosen to survive it: warm mid-tones, no #FFFFFF or #000000, button text that is not pure white. What we cannot fix in code: the light logo is dark ink on a transparent PNG, so after inversion it sits on a dark background. **Ask for B3:** add a 1 to 2px paper-coloured halo (or a translucent paper outline) to `logo-light.png` so it reads on both (technique from Litmus, source 3).
+4. **Forced inversion we cannot target** (Gmail iOS and Android apps, classic Outlook for Windows). The light palette is chosen to survive it: warm mid-tones, no #FFFFFF or #000000, button text that is not pure white. The light logo sits on a **paper plate**: its cell sets the paper colour both as `background-color` and as `background-image: linear-gradient(paper, paper)`. Gmail inverts colours but not background images, so the plate stays paper and the ink logo stays legible on a small chip; in light mode the plate is invisible, and every dark rule (`el-logo-plate`) removes it. Classic Outlook ignores background images, so the logo PNG also keeps its 0.7px paper halo. Simulated with an inversion render (colours inverted, images and background images untouched); confirm on Gmail iOS/Android before launch.
 
 Dark CSS and responsive CSS are separate `<style>` blocks: Gmail drops a whole block it cannot parse, so dark rules can never take the responsive rules down with them.
 
-Logo swap: the dark logo sits in a `div` with `display:none; max-height:0; overflow:hidden; mso-hide:all` and is shown by the dark rules; `mso-hide:all` covers classic Outlook, where `display:none` does not inherit to inner tables (source 5).
+Logo swap: the dark logo sits in a `div` with `display:none; max-height:0; overflow:hidden; mso-hide:all` and is shown by the dark rules. It is also wrapped in `<!--[if !mso]><!-->` and its `img` carries `mso-hide:all`, so classic Outlook (where `display:none` does not inherit to inner tables, source 5) never shows both logos.
+
+Mobile first: the inline sheet padding (24px) and gutter (12px) are the phone layout, so clients that strip `<style>` still fit a phone. `@media (min-width:601px)` raises them to 40px and 16px; classic Outlook gets 40px from a conditional style in `MsoHead`.
 
 Gallery: `out/gallery/<name>.dark.html` is rendered with `theme="dark"`, which emits the dark rules unscoped, so the dark frame shows our dark palette in any browser. Gallery variants load the logos from `out/email/` (copied from `packages/brand/assets/email`); the shipped `out/<name>.html` always points at `https://earlyletters.com/email/`.
 
-Web fonts: none are loaded. Font stacks name Literata and Mukta first (used if installed), then Georgia and the platform UI font. A remote font fetch is one more request from the reader's device and only Apple Mail would use it. If the founder wants Literata in Apple Mail, self-host WOFF2 at `https://earlyletters.com/email/fonts/` and add `@font-face` in `EmailLayout`; the test then needs its `@font-face` check relaxed for that host only.
+Web fonts (progressive, BRD-03): `EmailLayout` declares `@font-face` for Literata 400, 500 and 400 italic and Mukta 400 and 600 (latin woff2), self-hosted at `https://earlyletters.com/fonts/` (registry context `email.type`, files in `packages/brand/assets/fonts/`, OFL alongside). The declarations are their own `<style>` block inside `<!--[if !mso]><!-->`, so Gmail can drop that block alone and classic Outlook never sees a web-font name (which would send it to Times New Roman). Apple Mail, iOS Mail and Outlook for Mac load them; everyone else keeps the stacks as before: Georgia, then the platform UI font. The font host is the same as the logo host, so no new party learns that a reader opened the email. The gallery copies the fonts to `out/fonts/` so previews show them before the site serves `/fonts/`.
 
 ## Client support matrix
 
@@ -84,9 +89,9 @@ Status: Yes / Partial / No / UNVERIFIED (not confirmed from a primary or test-ba
 |---|---|---|---|---|---|
 | Apple Mail macOS / iOS | Yes [1] | Partial [2] | Auto-darkens transparent or #FFFFFF backgrounds [4] | Yes [6] | Full dark palette, logo swap |
 | Gmail web | No [1] | Partial; only `light only` honoured per caniemail's Google IssueTracker note [2] | No change [3][4] | Head only, 16KB limit [6] | Light palette; style blocks kept small (tested < 16KB) |
-| Gmail iOS / Android | No [1] | Partial, as above [2] | Full invert [3]; Android when the email is not already dark [4] | Head only [6] | Inversion-safe light palette; logo halo requested from B3 |
+| Gmail iOS / Android | No [1] | Partial, as above [2] | Full invert [3]; Android when the email is not already dark [4] | Head only [6] | Inversion-safe light palette; logo on a background-image paper plate |
 | Gmail with non-Google accounts (IMAP) | No [1] | UNVERIFIED | UNVERIFIED | UNVERIFIED (commonly reported as stripped) | Everything essential is inline |
-| Outlook Windows (classic, Word engine) | No [1][4] | No [2] | Full invert [3][4] | Buggy, declare before use [6] | Ghost table, `bgcolor` cells, `mso-hide`, DPI fix |
+| Outlook Windows (classic, Word engine) | No [1][4] | No [2] | Full invert [3][4] | Buggy, declare before use [6] | Ghost table, `bgcolor` cells, VML pill button, `mso-hide`, DPI fix, desktop padding via conditional style, no web fonts |
 | New Outlook for Windows | UNVERIFIED | No [2] | UNVERIFIED | UNVERIFIED | Same as Outlook.com, assumed |
 | Outlook.com | Partial, via data attributes [1] | No [2] | Partial invert [3][4] | Partial [6] | `[data-ogsc]` / `[data-ogsb]` rules; image swap works here [4] |
 | Outlook iOS / Android | Partial, via data attributes [1] | No [2] | Partial invert [3][4] | Partial [6] | Media query and data-attribute rules |
@@ -124,5 +129,5 @@ caniemail data for several clients is two to three years old; treat "Yes/No" as 
 
 ## Tests (`test/emails.test.ts`)
 
-Run over every template in `src/templates` plus `test/fixtures/pipeline-sample.tsx`:
-colour-scheme metas and dark rules present; non-empty preheader kept out of the plain text; images, CSS and fonts only from `earlyletters.com` (no `@font-face`, `@import` or stylesheet links); links only to `earlyletters.com`, `mailto:`, `{placeholders}` or the allowlist (`apps.apple.com`, Apple's subscription page); no tracking pixels (only the two logos, never 0 or 1px), no UTM or click-tracking URLs; no em or en dashes, curly quotes or ellipsis characters in HTML or text; HTML under 102KB and each style block under 16KB; `lang`, viewport, presentation tables and alt text; no Outlook marker spans left; a real plain-text part.
+Run over every template in `src/templates` plus `test/fixtures/` (`pipeline-sample`, every component once; `letter-sample`, the `Letter` layout):
+colour-scheme metas and dark rules present; non-empty preheader kept out of the plain text; images, CSS and fonts only from `earlyletters.com` (no `@import` or stylesheet links; `@font-face` only for woff2 under `/fonts/`, inside a non-mso conditional); Outlook conditionals balanced; one well-formed VML pill per button with the same href and label, HTML button hidden from mso; the light logo on the background-image plate, removed by the dark and `[data-ogsb]` rules; component checks (KeyFacts plain text, Letter order, URL printed once in plain text, `<wbr>` breaks); links only to `earlyletters.com`, `mailto:`, `{placeholders}` or the allowlist (`apps.apple.com`, Apple's subscription page); no tracking pixels (only the two logos, never 0 or 1px), no UTM or click-tracking URLs; no em or en dashes, curly quotes or ellipsis characters in HTML or text; HTML under 102KB and each style block under 16KB; `lang`, viewport, presentation tables and alt text; no Outlook marker spans left; a real plain-text part.

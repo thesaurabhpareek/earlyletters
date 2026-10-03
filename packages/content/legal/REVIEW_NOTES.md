@@ -8,11 +8,11 @@ Prepared 3 Oct 2026 by an AI (Claude, lane L1) for review by a licensed attorney
 
 | Web file | Slug | Version | Source (repo draft) | Source version | Why it exists |
 |---|---|---|---|---|---|
-| `terms.md` | `/terms` | 1.5.0 | `docs/legal/terms-of-service.md` | 1.4.0 | Required |
-| `privacy.md` | `/privacy` | 1.4.0 | `docs/legal/privacy-policy.md` | 1.3.0 | Required |
-| `subscription-terms.md` | `/subscription-terms` | 1.3.1 | `docs/legal/subscription-terms.md` | 1.3.0 | Part of the Terms (Section 1.3, 14.1); shown before purchase |
-| `consumer-health-data.md` | `/consumer-health-data` | 1.1.1 | `docs/legal/consumer-health-data-notice.md` | 1.1.0 | See 1.1 below |
-| `subprocessors.md` | `/subprocessors` | 1.3.0 | `docs/legal/subprocessors.md` section 2 | 1.2.0 | The Privacy Policy (section 8) and the CHD policy (section 5) point to a public list |
+| `terms.md` | `/terms` | 1.6.0 | `docs/legal/terms-of-service.md` | 1.4.0 | Required |
+| `privacy.md` | `/privacy` | 1.5.0 | `docs/legal/privacy-policy.md` | 1.3.0 | Required |
+| `subscription-terms.md` | `/subscription-terms` | 1.4.0 | `docs/legal/subscription-terms.md` | 1.3.0 | Part of the Terms (Section 1.3, 14.1); shown before purchase |
+| `health-privacy.md` | `/health-privacy` | 1.2.0 | `docs/legal/consumer-health-data-notice.md` | 1.1.0 | See 1.1 below |
+| `subprocessors.md` | `/subprocessors` | 1.4.0 | `docs/legal/subprocessors.md` section 2 | 1.2.0 | The Privacy Policy (section 8) and the CHD policy (section 5) point to a public list |
 
 ### 1.1 Why a Consumer Health Data policy is included
 
@@ -36,7 +36,7 @@ The Privacy Policy section 8 says "The full list, with each provider's contact d
 4. Removed the H1 title (the page title comes from frontmatter) so that section headings start at H2 and the table of contents is built from H2 and H3. No heading text was changed. Numbered clauses (for example "14.6") stay as paragraphs inside their H2 section.
 5. Placeholders: `{PUBLISHER_LEGAL_NAME}` became `{publisherLegalName}`; `{CONTACT_ADDRESS}` became `{postalAddress}`; `{SUPPORT_PHONE}` became `{supportPhone}`; `{COUNTY}` became `{county}`; `{TERMS_ARCHIVE_URL}` became `{termsArchiveUrl}`; `{POLICY_ARCHIVE_URL}` became `{privacyArchiveUrl}`.
 6. **Contact email.** `{SUPPORT_EMAIL}` and `{PRIVACY_EMAIL}` both became `hello@earlyletters.com` (mailto link), per the brief (one human inbox, no no-reply). The sources kept two placeholders; a separate privacy address (for example `privacy@`) can be added later as an alias. Founder to confirm.
-7. URLs resolved to site paths: Privacy Policy `/privacy`; Terms `/terms`; Subscription Terms `/subscription-terms`; CHD policy `/consumer-health-data`; subprocessor list `/subprocessors`; web deletion page `/delete-account`. `reportaproblem.apple.com` became a link.
+7. URLs resolved to site paths: Privacy Policy `/privacy`; Terms `/terms`; Subscription Terms `/subscription-terms`; CHD policy `/health-privacy`; subprocessor list `/subprocessors`; web deletion page `/delete-account`. `reportaproblem.apple.com` became a link.
 
 ### 2.2 `terms.md`
 
@@ -62,7 +62,7 @@ The Privacy Policy section 8 says "The full list, with each provider's contact d
 1. Plans table: "{monthlyPrice} (US $3.99)" became "US $3.99" and "{annualPrice} (US $29.99)" became "US $29.99". The `{monthlyPrice}` and `{annualPrice}` tokens are in-app paywall variables that a static page cannot fill. The paywall copy should keep them. Meaning unchanged because the app is US only (Section "Plans" and Terms 14.2).
 2. Terms and Privacy links resolved; contact filled.
 
-### 2.5 `consumer-health-data.md`
+### 2.5 `health-privacy.md`
 
 1. Removed the line "Version 1.0.0. Effective date: TBD." (it contradicted the source frontmatter 1.1.0).
 2. Privacy Policy, subprocessor list and deletion page linked; "See the Privacy Policy, section 7" linked.
@@ -93,8 +93,34 @@ I kept the source wording in each case. Each needs a decision by the owner named
 11. **Deletion page scope.** LEGAL-REQ-030 describes `/delete-account` as a page where the user enters an email and confirms with a link and code; D-042 (counsel to confirm) makes v1.0 a static page plus an email route. Privacy section 14 and CHD section 6 say "on the web at /delete-account" and "use the web page ... for deletion", which fits either, provided the page offers the email route. LEGAL-REQ-030 also uses the banned term "magic link".
 12. **Email and consumer health data.** CHD section 5 lists processor purposes as hosting, sync, cloud transcription and backups; it does not mention email. That is accurate only if no email ever carries health details (for example a due date, letter text, or a letter excerpt in a family notification). If any email will, add email to CHD section 5. Owner: C2 (email catalog) and privacy drafter.
 13. **Staff access "logged".** Privacy section 7 ("Each access is logged and reviewed") and CHD section 5 ("Each access is logged") depend on the service-role access log (CN-8), which is not built.
-14. **Brand file.** `packages/brand/index.ts` still has `domain: 'example.com'`, `supportEmail: 'support@example.com'` and `privacyUrl: 'https://example.com/privacy'` (BL-100), while the brief fixes `earlyletters.com` and `hello@earlyletters.com`. Owner: founder (outside this lane).
+14. **Brand file.** Resolved: `packages/brand/index.ts` now reads `earlyletters.com` (legal review LGL-16).
 15. **Voice rules versus legal accuracy.** The brief bans "AI" and loss language in product voice. The legal pages keep "train AI models" (Privacy, CHD, subprocessors) and Terms 12.2 and 12.4 ("If you lose them, neither you nor we can recover those recordings"; "a lost phone") because these are required disclosures (Privacy CN-6). If legal Markdown is ever added to `packages/content/test/rules.test.ts`, it needs an exemption for these. No em dashes, en dashes, curly quotes or ellipsis characters appear in any file in this folder.
+
+### 3.1 Changes of 3 Oct 2026, evening (content and legal lanes)
+
+Applied from `docs/reviews/2026-10-03/legal.md` (LGL), `customer.md` (CUS), `content.md` (CNT) and founder decision D-061 (`docs/DECISIONS.md`). Versions bumped as drafts (Terms 1.6.0, Privacy 1.5.0, Subscription Terms 1.4.0, CHD 1.2.0, Subprocessors 1.4.0); counsel classifies them.
+
+- **D-061 (LGL-01, LGL-02):** Terms 14.3, 14.4, 14.6, Subscription Terms "Automatic renewal" and "Reminders from us", Privacy section 3 (row "Plus plan status"), 5, 10 and 15 (Commercial information), and the Apple row on the subprocessor page now say the app reports plan, trial end date, renewal date and the renewal-off flag, never payment data or receipts. "Apple tells us" and the random purchase ID are gone. Purchase records (7 years) are removed (LGL-14).
+- **Terms 14.12 and Subscription Terms (LGL-03):** Plus covers a co-parent only through Apple Family Sharing; otherwise each co-parent's Plus is their own.
+- **Vault mode, iCloud Keychain, cloud transcription (LGL-05, CUS-01):** removed from Privacy (short version, sections 2, 3, 4, 5, 7, 8, 10, 11, 14, 15), Terms 12.2, CHD 3 to 5 and the subprocessor page (Groq and DeepInfra rows removed). Backup is described as ARCHITECTURE.md records it for v1.0 (per-file keys locked with a server-held key).
+- **Family scope (LGL-08):** Privacy 2, 3, 7, 10, 17; Terms short version, 3.2, 3.4, 4.2, 8.4, 13.1; CHD 2 and 5 now describe the co-parent only at launch.
+- **Google (LGL-09, LGL-10):** Google Play marked "once the Android app is available" everywhere in the Terms; Sign in with Google described as available at launch (Privacy 3 and 15, Terms 3.2, subprocessor page).
+- **Location (LGL-11):** "Our servers and our service providers are in the United States."
+- **No-training (LGL-07):** the categorical "none of them may train" is replaced by what the contracts support (see item 19).
+- **Support inbox (LGL-06):** Resend receiving, Porkbun forwarding and the mailbox provider are disclosed (see item 17).
+
+### 3.2 New open items of 3 Oct 2026, evening (numbering continues from section 3)
+
+16. **D-061 status report and the auto-renewal law (LGL-01, LGL-04, LGL-18).** Counsel: (a) is an app-reported status (plan, trial end, renewal date, renewal-off flag) a sufficient basis for the 17602(a)(3) acknowledgment, the (b) notices and the (h) annual reminder; (b) a cancellation in iOS Settings is seen only when the app next opens, so every reminder now says "If you have already cancelled, there is nothing to do", and Terms 14.6 says so; is that acceptable; (c) 17602(a)(6) proof of consent: we now keep only "the date your plan started" from the first status report (Terms 14.3), not a consent row reconciled from Apple; is that enough, or must the app also send the consent text version; (d) the status has no price, so `{price}` must come from the published price of the reported plan (US only, Brief 3); the `price-increase` email cannot be driven by the status and stays "later". Family Sharing members' apps do not report, so they get no billing email (LGL-12).
+17. **Support mailbox (LGL-06).** The repo names Resend receiving and Porkbun forwarding (`docs/emails/SECURITY.md` 36) but no mailbox provider, so the pages use `{supportMailboxProvider}`, `{supportMailboxRegion}`, `{supportMailboxPrivacyContact}`, `{forwardingRegion}` and `{porkbunPrivacyContact}`. Founder: which mailbox is hello@ read in, and is Porkbun forwarding kept (SECURITY Q1)? Counsel: is a personal consumer mailbox acceptable for support mail that can hold consumer health data (MHMDA processor contract), and is a DPA in place with each.
+18. **`coparent-left` email (new, founder instruction of 3 Oct 2026; CNT-08, CUS-04).** `docs/legal/DELETION_AND_EXPORT_SPEC.md` 2.6.1 and 2.6.2 say a deleting co-parent's letters are tombstoned at request, leave the book at once, return if the request is cancelled, and are deleted at day 30; DATA-REQ-020 keeps the book and the other parent's letters. **The spec is silent** on (a) telling the remaining parent at all (CATALOG E-5 says a member leaving sends no email; this email is a deliberate exception), (b) whether the remaining parent may get a copy of the leaver's letters, and (c) whether naming the leaver's request to the other parent is acceptable when parents are separating (Terms 9). The copy says we cannot give a copy because each letter belongs to its author (Privacy 14, Terms 5.1), and suggests asking the leaver to export and share. Counsel and the PM to confirm; spec OQ-1 (CN-13, "leave my letters for {child}") is related.
+19. **No-training claims (LGL-07).** What is verified, from `docs/legal/subprocessors.md`: Supabase has a written no-training clause [V1 to V3]; PostHog's clause bars third parties and subprocessors [V12, V13]; Sentry only partly; Vercel only on paid Pro with the opt-out confirmed; PowerSync has none; **Resend has none** in its DPA, terms or privacy policy and lists Anthropic and RunPod as subprocessors (item 8). Privacy 6 and 8, the CHD policy, Terms 6.2 and the subprocessor page now promise only what we do ("we never give it to anyone to train") plus the Supabase clause. **Counsel: get Resend's written confirmation before publication**, more so now that Resend also receives support mail, which is content.
+20. **Google sign-in (LGL-10).** Brief decision 4 makes it v1.0; D-044 still says v1.1 and needs a superseding entry (PM lane). The deletion copy says we "remove your Sign in with Google link"; DELETION spec 2.6.3 step 3 revokes only Apple. Engineering to confirm the step (and whether Google token revocation is wanted); Google OAuth app verification and privacy-policy URL (UNVERIFIED for `email profile` scopes).
+21. **Backup key design (LGL-05).** The pages now follow ARCHITECTURE.md ("one per-file key wrapped by a server-held key"). Backend owner confirms this is the v1.0 design; LEGAL-REQ escrow logging must cover the unwraps.
+22. **Terms 13.1 (LGL-08).** Section 13 cannot be changed for existing users (13.3). It now reads "inviting a co-parent and writing together, and, once they are available, inviting family and family letters". Founder confirms the forever-free promise for the family feature.
+23. **Who Plus covers, before purchase (LGL-03).** `en.settings.plan.familySharingHelp` carries the Family Sharing explanation for the Plus screen. Counsel: must it sit on the purchase sheet itself (17602(a)(1) clear and conspicuous)?
+24. **Deletion by email (CUS-14, D-042, DATA-REQ-021).** Support now sends `deletion-confirm`, whose link opens `/delete-account/confirm` in any browser. That web route does not exist yet. Counsel: is a one-time emailed link to the account address enough verification for an MHMDA or CCPA deletion request.
+25. **Resend retention (LGL-17)** and **placeholder build guard (LGL-15)** are unchanged: still open for counsel and the web lane.
 
 ## 4. Open legal questions (carried from the removed counsel notes)
 
@@ -197,6 +223,8 @@ Placeholders
 - [ ] `{county}`: venue county for Terms 23.2 and 23.3.
 - [ ] `{termsArchiveUrl}`, `{privacyArchiveUrl}`: permanent versioned URLs (section 3 item 9).
 - [ ] `{modelHost}`: the speech-model host (D-046).
+- [ ] `{supportMailboxProvider}`, `{supportMailboxRegion}`, `{supportMailboxPrivacyContact}`: the mailbox where hello@ is read (section 3 item 17).
+- [ ] `{forwardingRegion}`, `{porkbunPrivacyContact}`: Porkbun forwarding, or delete the Porkbun rows if the founder picks a single route (SECURITY Q1).
 - [ ] `effectiveDate` on every page; `published_at`, `new_users_from`, `effective_at` rows per POLICY_VERSIONING 3.
 
 Launch gates named in the sources
@@ -206,7 +234,8 @@ Launch gates named in the sources
 - [ ] D-032 decided and Terms 12.1 and the Privacy short version, sections 4 and 7 match it.
 - [ ] `safety_events` drop migration applied (CN-10); `children.created_by` fix shipped (CN-13); staff access log built or the "logged" claims softened (CN-8).
 - [ ] Vercel paid Pro with training opt-out; Sentry scrubbing and IP storage settings (subprocessors gaps 4 and 5).
-- [ ] Terms 14.6 reminder schedule implemented exactly (D-022).
+- [ ] Terms 14.6 reminder schedule implemented exactly (D-022), driven by the app's status report (D-061).
+- [ ] `/delete-account/confirm` web route live before `deletion-confirm` is sent (section 3 item 24).
 
 Apple
 - [ ] App Store Connect Privacy Policy URL: `https://earlyletters.com/privacy` (the floating URL, POLICY_VERSIONING 4).
@@ -222,7 +251,7 @@ Google (when Android ships)
 - [ ] Play Console privacy policy URL; account deletion web link `https://earlyletters.com/delete-account` with retention disclosure (CR-091, LEGAL-REQ-030 full flow before Android per D-042); Data safety form; target audience 18+.
 
 Links and placement
-- [ ] Washington homepage link to `/consumer-health-data` in the footer of every site page, on the waitlist form, in the App Store description legal-links line and in Settings, Help and Legal (HN-6); also the contribution page from v1.1.
+- [ ] Washington homepage link to `/health-privacy` in the footer of every site page, on the waitlist form, in the App Store description legal-links line and in Settings, Help and Legal (HN-6); also the contribution page from v1.1.
 - [ ] Footer links to `/terms`, `/privacy`, `/subscription-terms`, `/subprocessors`, `/delete-account`, `/contact`.
 - [ ] In-app Settings, Legal lists Terms, Privacy, CHD policy and Subprocessors (register K8, LEGAL-REQ-008), opening versioned URLs.
 - [ ] Publish PR per POLICY_VERSIONING 9: manifest with hashes, `policy_versions` migration row, Internet Archive snapshot, evidence archive.

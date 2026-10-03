@@ -12,6 +12,7 @@ import {
   EmailHeader,
   EmailLayout,
   Heading,
+  KeyFacts,
   LinkFallback,
   Note,
   Paragraph,
@@ -34,6 +35,7 @@ export default function PipelineSample({ signInUrl, code }: PipelineSampleProps)
       <Heading>Tap to open Asha&apos;s book</Heading>
       <Paragraph>This sample exists so the render pipeline has something to render. It uses each component once.</Paragraph>
       <Paragraph>The link and the code work once, for {'{expiresIn}'}.</Paragraph>
+      <KeyFacts facts={[{ label: 'Works for', value: '{expiresIn}' }, { label: 'Sent to', value: '{email}' }]} />
       <Button href={signInUrl}>Sign in to my book</Button>
       <CodeBox label="Or enter this code in the app" code={code} />
       <Divider />
