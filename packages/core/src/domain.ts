@@ -54,8 +54,10 @@ export const DRAFT_STATES = Object.freeze(['recording', 'ready', 'unrecoverable'
 export type DraftState = (typeof DRAFT_STATES)[number];
 
 /**
- * Plus state as the device sees it (`PlanView['state']`). Every value but
- * `none` is a store_subscriptions.status on the server.
+ * Plus state as the device sees it (`PlanView['state']`). Under founder
+ * decision 3 the device decides Plus from StoreKit; while the pending
+ * migrations still define store_subscriptions, every value but `none` is also
+ * its status.
  */
 export const PLAN_STATES = Object.freeze([
   'none',

@@ -72,7 +72,13 @@ describe('core enums equal the migration CHECK constraints', () => {
     expect(sorted(checkValues(table, column))).toEqual(sorted(values));
   });
 
-  it('store_subscriptions.status is PLAN_STATES without the device-only `none`', () => {
+  // Founder decision 3 (BRIEF 2026-10-03) removes server-side entitlements, and
+  // PR #32 drops store_subscriptions from the pending migrations. Until that
+  // merges the table exists and must match; after it, PLAN_STATES is device-only.
+  const definesStoreSubscriptions = STATEMENTS.some((s) =>
+    /^\s*create table\s+(if not exists\s+)?public\.store_subscriptions\b/i.test(s),
+  );
+  it.runIf(definesStoreSubscriptions)('store_subscriptions.status is PLAN_STATES without the device-only `none`', () => {
     expect(sorted(checkValues('store_subscriptions', 'status'))).toEqual(sorted(PLAN_STATES.filter((s) => s !== 'none')));
   });
 
