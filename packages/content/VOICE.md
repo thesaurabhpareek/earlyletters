@@ -70,5 +70,18 @@ Bad: "7 days in a row. Keep it going."
 - Straight quotes only. No em or en dashes. Use commas, full stops or "to".
 - Three full stops, never the single ellipsis character, and rarely at all.
 - No emoji.
-- Use {child} in templates. Never "he", "she", "him" or "her" for the child.
+- Use {child} in templates. Never "he", "she", "him" or "her" for the child, or for anyone else in a string.
 - No claims we cannot prove. No rankings, no ratings, no invented reviews.
+
+## What the checker also holds us to
+
+`test/rules.test.ts` enforces these too. If one fails, change the words, not the test.
+
+- No daily rhythm anywhere: no "daily", "every day" or "a few words a day". Reminders, notifications and moments never count days, runs or gaps.
+- Moments celebrate what exists. No comparisons, no totals per person, no mention of Plus.
+- The store and the website speak to adults. No "kids", no "for children", nothing that suggests a child uses the app alone.
+- Digital only for now. No print, printed books or ordering a copy. "Large print" as a reading size is fine.
+- "Beta" lives only in Settings, About. The store listing never says it.
+- In the iOS app and its store listing, name only Apple platforms. No other phone platform or app store.
+- If we ever talk about closing, the notice is 90 days, the same as the Terms and the Privacy Policy.
+- Exclamation marks are budgeted per surface: none in notifications, the store listing, the book or prompts.

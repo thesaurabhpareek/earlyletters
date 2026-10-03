@@ -217,7 +217,7 @@ A PR is done only when all of these hold. The PR template (BL-003) repeats them 
 - Scope (re-scoped 3 Oct per TDD 05 X-05): `docs/legal/data-map.yaml` with a schema is the single inventory for tables, columns, buckets, device stores, SDKs, log streams, hosts and analytics properties, each with class, L-level, owner, retention and destinations; `scripts/data-map.mjs` checks migrations (`create table`, `add column`), column comments, buckets, dependencies and hosts against it and fails CI on any gap; `data-policy.md` section 4 and DATA_CLASSIFICATION section 4 become generated or checked tables. (Source: TDD 05 NEW-03.)
 
 #### BL-118 Content rule additions and claims registry [High]
-- Status: ready. Mode: agent. Owner: content. Milestone: M1. Size: M.
+- Status: in-review (PR #46). Mode: agent. Owner: content. Milestone: M1. Size: M.
 - Satisfies: C-REQ-005, C-REQ-015, K-13, K-32, LEGAL-REQ-044, LEGAL-REQ-045, PRD-REQ-008, PRD-REQ-009.
 - Scope: rules for reminder rhythm words ("daily", "every day", "in a row", "missed", day counts), "kids" and child-directed phrases, print and ordering, beta placement (only About strings and, until D-030 is answered, the store beta lines), other platforms' names in iOS copy (App Review 2.3.10), the 90-day pledge wording, gendering outside prompts; `claims.ts` registry with the content rule that every claim string is registered. Scope the exclamation-mark rule per surface (TDD 07 Q-17). (Source: TDD 07 BL-Q05, TDD 05 NEW-19.)
 
