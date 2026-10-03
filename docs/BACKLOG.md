@@ -882,6 +882,107 @@ All depend on BL-030 unless marked. Order: BL-255, BL-256, BL-267, BL-268 first;
 
 ---
 
+## Brand, email and web handoffs (BL-340 to BL-369; from the email and brand lane, 3 Oct 2026)
+
+Source: branch `feat/email-brand-library`, the reviews in `docs/reviews/2026-10-03/`, the audit `docs/brand/CONSISTENCY_AUDIT.md`, decisions D-071 to D-081, and the activity record `docs/brand/activity/`. Ids BL-340 to BL-369 are reserved for this block. (They were drafted as BL-300 to BL-318, which the v1.1 table already uses.)
+
+**Assignment rule for this block (proposed for all tasks).** When an agent picks up a task, the PR that takes it changes the status line to `in-review (PR #n). Assignee: agent:<handle>, run <run id>`, so every task names the agent identity and run that did it. Founder tasks say `Assignee: founder`.
+
+#### BL-340 Brand system: primary mark, asset registry, brand book
+- Status: in-review (PR #48). Assignee: agent:design-systems, runs a84743e25427a87b5, ae4698bb9d7faf53f. Mode: agent. Owner: design systems. Milestone: M11. Size: M.
+- Satisfies: D-071, D-072.
+- Scope: `packages/brand` primary mark, `registry.ts` with `assetFor(context)` and tests, email logos, favicons, OG image, fonts for email; `docs/brand/BRAND_SYSTEM.md`.
+
+#### BL-341 Email library and Supabase auth templates
+- Status: in-review (PR #49). Assignee: agent:design-systems and agent:content, runs listed in `docs/brand/activity/2026-10-03.jsonl`. Mode: agent. Owner: design systems. Milestone: M5. Size: L.
+- Satisfies: D-044, D-080, D-054; LEGAL-REQ on transactional email (see `docs/emails/COMPLIANCE.md`).
+- Scope: `packages/emails` (components, 39 templates, render and Supabase export), `packages/content/src/emails`, `supabase/templates`, `docs/emails`.
+
+#### BL-342 Copy and legal web drafts after the founder decisions of 3 Oct
+- Status: in-review (PR #49). Assignee: agent:content and agent:legal. Mode: agent. Owner: content. Milestone: M9. Size: M.
+- Satisfies: D-073 to D-081.
+- Scope: `packages/content/src` (site, store, pages, strings), `packages/content/legal/*.md` (drafts, counsel review pending), glossary in `BRAND.md`.
+
+#### BL-343 App icon and splash from the registry
+- Status: ready. Mode: pair (needs a Mac for the Icon Composer file). Owner: mobile engineer. Milestone: M11. Size: S.
+- Satisfies: D-071; audit CA-003, CA-004, CA-006.
+- Scope: build the iOS 26 Icon Composer file from `icon.app.default`, `icon.app.dark` and `icon.app.tinted`; splash from `app.splash`; remove Expo scaffold images (CA-005); confirm EAS accepts icon paths outside `apps/mobile`.
+
+#### BL-344 Brand fonts and type scale in the app
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M11. Size: M.
+- Satisfies: audit CA-017, CA-018; DESIGN_LANGUAGE type scale.
+- Scope: load Literata, Mukta and Tiro Devanagari Hindi with expo-font (subset); map headings to `tokens.type`; welcome screen uses the stacked lockup artwork (CA-007, D-079).
+
+#### BL-345 Move app strings into packages/content and wire new keys
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M4. Size: M.
+- Satisfies: CLAUDE.md content rules; audit CA-036; review CUS-03.
+- Scope: move `pendingCopy` and permission strings into content; wire `en.settings.plan`, `en.settings.account`, `en.auth`, `en.coParentLeft`; rename `tidy*` keys to "Word for word" (D-074); microphone purpose string without "share with family"; hide v1.1 family screens.
+
+#### BL-346 App reports subscription status to the server
+- Status: ready. Mode: pair. Owner: payments engineer. Milestone: M8. Size: M. Depends on: BL-347.
+- Satisfies: D-080 (narrows Brief decision 3), D-022.
+- Scope: after StoreKit 2 entitlement checks, send plan, trial end, renewal date and cancelled flag only (no payment data, no receipts) through `packages/api`.
+
+#### BL-347 Subscription status table and endpoint
+- Status: ready. Mode: pair (founder `approve-migration`). Owner: data architect. Milestone: M8. Size: M.
+- Satisfies: D-080; data map entry required (DATA-REQ-001).
+- Scope: new migration and RPC per the `packages/api` contract; RLS tests; retention; privacy data map row. Platform coordinator area.
+
+#### BL-348 Renewal and trial reminder scheduler
+- Status: blocked (BL-347). Mode: agent. Owner: sync owner. Milestone: M8. Size: M.
+- Satisfies: D-022, D-080; California B&P 17602 notices (`docs/emails/COMPLIANCE.md`).
+- Scope: schedule `trial-*`, `annual-renewal-*` and `price-increase` emails from reported status; payers only; idempotent sends; suppression-safe (never put transactional mail on Resend's account-wide suppression list).
+
+#### BL-349 Supabase Auth sends through Resend
+- Status: ready. Mode: pair. Owner: security engineer. Milestone: M5. Size: S.
+- Satisfies: D-044, D-054; `supabase/auth-email.md`.
+- Scope: custom SMTP or Send Email Hook per the runbook; apply `supabase/templates`; sending-only Resend key for earlyletters.com; redirect allowlist; OTP 6 digits, 15-minute expiry.
+
+#### BL-350 Send the new account emails
+- Status: blocked (BL-349). Mode: agent. Owner: sync owner. Milestone: M9. Size: S.
+- Satisfies: review CUS-04, CUS-14.
+- Scope: send `coparent-left`, `deletion-confirm`, `passkey-added` and `new-device-sign-in` through the email hook with the React Email templates.
+
+#### BL-351 Sign-in providers removed at account deletion
+- Status: ready. Mode: agent. Owner: security engineer. Milestone: M9. Size: S.
+- Satisfies: Apple 5.1.1(v); D-042; review LGL findings.
+- Scope: revoke Apple tokens and unlink Google at deletion; reauthentication within 10 minutes before deletion (`docs/emails/SECURITY.md`).
+
+#### BL-352 Website serves brand assets, email images and fonts
+- Status: ready. Mode: agent. Owner: web lane (E3, BR2 in `docs/web/TEAM.md`). Milestone: M12. Size: S.
+- Satisfies: D-072; handoff `docs/web/handoffs/2026-10-03-brand-and-legal-for-web.md` items 1, 2, 2a, 4.
+- Scope: `/email/*`, `/fonts/*` with CORS and cache headers, registry-driven logo and OG image, security headers adapted to Next.js.
+
+#### BL-353 Website legal and account routes
+- Status: ready. Mode: agent. Owner: web lane (E1). Milestone: M9. Size: M.
+- Satisfies: Brief decision 13; D-042; handoff items 3 and 5.
+- Scope: `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, `/subscription-terms` from `packages/content/legal` with draft banner, noindex and a build guard against unfilled placeholders; `/delete-account`, `/delete-account/confirm`, `/cancel`, `/auth/callback` (never verifies the token) and the AASA file; "iPhone only for now" on `/open` for Android.
+
+#### BL-354 Counsel review of the legal drafts
+- Status: ready. Mode: human. Owner: founder. Milestone: M9. Size: M.
+- Satisfies: `packages/content/legal/REVIEW_NOTES.md` (open questions, including `coparent-left` and D-081).
+- Scope: counsel sign-off, effective dates, versions; written no-training confirmation from Resend.
+
+#### BL-355 Trademark clearance for the name and the mark
+- Status: ready. Mode: human. Owner: founder. Milestone: M0. Size: S.
+- Satisfies: D-071; `docs/brand/logo-r2/neutral-review/final-strategy.md`.
+- Scope: professional clearance search for "Early Letters" and the quotation-mark drawing (classes 9, 16, 41, 42); file the specific drawing, not "quotation marks".
+
+#### BL-356 Support inbox route and postal address
+- Status: needs-decision (founder). Mode: human. Owner: founder. Milestone: M0. Size: S.
+- Satisfies: review CUS-16, LGL findings; CAN-SPAM postal address before any commercial email.
+- Scope: one route for hello@ (Resend inbox or Porkbun forwarding, not both); PO box or private mailbox for `{postalAddress}`; name the mailbox provider in subprocessors.
+
+#### BL-357 Email DNS hardening for both domains
+- Status: ready. Mode: human. Owner: founder. Milestone: M0. Size: S.
+- Satisfies: `docs/emails/SECURITY.md` DNS section.
+- Scope: remove Porkbun forwarding MX and SPF include; add `earlyletters.app` sending records; DMARC from none to quarantine after launch; MTA-STS and TLS-RPT; register both domains with Apple's private email relay.
+
+#### BL-358 Five-second parent test of the mark
+- Status: ready. Mode: human. Owner: founder. Milestone: M11. Size: S.
+- Satisfies: D-071 (final-a versus final-b).
+- Scope: about 20 parents, the icon at 60 and 29 px, "what does this app do?"; keep final-a unless final-b clearly wins.
+
 ## v1.1 and later (kept for ordering; not in the v1.0 window)
 
 | BL | Task | Requirements | Source |
