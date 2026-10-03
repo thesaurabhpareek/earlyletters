@@ -11,13 +11,15 @@
 //
 // Env: GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_OUTPUT, AGENTS_PAUSED,
 //      ONLY_AGENT, FORCE_TASK, FORCE_MODE, and which engines can run:
-//      HAS_OPENROUTER_KEY + HAS_AGENTS_APP (opencode), HAS_ANTHROPIC_KEY (claude-code).
+//      HAS_OPENROUTER_KEY + HAS_AGENTS_APP (opencode), HAS_ANTHROPIC_KEY (claude-code),
+//      and whose comments count as agent messages: AGENTS_APP_CLIENT_ID, AGENTS_BOT_LOGINS.
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
-  isFounderComment, standingChanged,
+  isFounderComment, standingChanged, trustContext, isTrusted, pendingTargets, handoffSettled,
+  matchingPaths, stewardVerdict, startsWithMarker,
 } from "./lib.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
@@ -36,6 +38,7 @@ const env = process.env;
 
 const roster = loadRoster();
 const repo = repoSlug(roster);
+const trust = trustContext(roster, process.env);
 const now = new Date();
 const today = todayUTC(now);
 const runId = env.GITHUB_RUN_ID ?? `local-${now.getTime()}`;
@@ -65,6 +68,17 @@ const owners = ownerMap(roster);
 
 const openPRs = ghAll(`/repos/${repo}/pulls?state=open`);
 const taken = takenIds(openPRs);
+
+// Open handoffs (agent-to-agent messages, docs/agents/AGENT-COMMS.md). Only
+// issues opened by a trusted identity count; anything else is ignored.
+const handoffs = ghAll(`/repos/${repo}/issues?state=open&labels=handoff`, { allowFail: true })
+  .filter((i) => !i.pull_request && isTrusted(i, trust))
+  .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  .map((issue) => {
+    const comments = ghAll(`/repos/${repo}/issues/${issue.number}/comments`, { allowFail: true });
+    return { issue, comments, pending: pendingTargets(issue, comments, trust) };
+  });
+const inbox = (handle) => handoffs.filter((h) => h.pending.includes(handle));
 
 const running = LOCAL ? new Set() : runningAgents();
 const developSha = gh(`/repos/${repo}/branches/${roster.base_branch}`, { allowFail: true })?.commit?.sha ?? "";
@@ -103,11 +117,36 @@ function prFacts(pr) {
   const changesRequested = reviews.some(
     (r) => isFounderComment(r, roster) && r.state === "CHANGES_REQUESTED" && new Date(r.submitted_at) > headAt,
   );
-  const redTeam = [...reviews, ...comments].find((c) => (c.body ?? "").includes(`red-team:${sha}`));
+  const all = [...reviews, ...comments];
+  const redTeam = all.find((c) => isTrusted(c, trust) && startsWithMarker(c.body, `<!-- red-team:${sha} -->`));
   const redVerdict = redTeam ? (redTeam.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase() : undefined;
-  const facts = { sha, failing, pending, founderNew, changesRequested, redTeam: !!redTeam, redVerdict };
+  const stewardFix = roster.agents
+    .filter((a) => a.kind === "steward")
+    .filter((a) => stewardVerdict(all, a.handle, sha, trust)?.startsWith("fix"))
+    .map((a) => a.handle);
+  const facts = { sha, failing, pending, founderNew, changesRequested, redTeam: !!redTeam, redVerdict, all, stewardFix };
   prCache.set(pr.number, facts);
   return facts;
+}
+
+const filesCache = new Map();
+function prFiles(pr) {
+  if (!filesCache.has(pr.number)) {
+    filesCache.set(pr.number, ghAll(`/repos/${repo}/pulls/${pr.number}/files`, { allowFail: true }).map((f) => f.filename));
+  }
+  return filesCache.get(pr.number);
+}
+
+/** Open PRs this steward should review: they touch its review paths and lack its verdict for the head commit. */
+function stewardTargets(agent) {
+  return openPRs
+    // Only agent PRs and the founder's own: a drive-by PR from anyone else must
+    // not spend steward runs or put its text into a brief.
+    .filter((pr) => !pr.draft && agentOfPR(pr) !== agent.handle)
+    .filter((pr) => agentOfPR(pr) || pr.user?.login === roster.founder)
+    .filter((pr) => matchingPaths(prFiles(pr), agent.review_paths).length)
+    .filter((pr) => !stewardVerdict(prFacts(pr).all, agent.handle, pr.head.sha, trust))
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 }
 
 function attentionReasons(pr) {
@@ -118,6 +157,7 @@ function attentionReasons(pr) {
   if (f.changesRequested) reasons.push("founder requested changes");
   else if (f.founderNew.length) reasons.push("founder commented after the last commit");
   if (f.redVerdict?.startsWith("fix")) reasons.push("red team: fix first");
+  if (f.stewardFix.length) reasons.push(`steward fix first: ${f.stewardFix.join(", ")}`);
   return reasons;
 }
 
@@ -161,7 +201,7 @@ for (const agent of roster.agents) {
   const queue = tasks.filter(
     (t) => primaryOwner(t, owners) === h && !taken.has(t.id) && !claimedTasks.has(t.id) && eligibility(t, byId).ok,
   );
-  const row = { agent, open: mine.length, queue: queue.length, now: "" };
+  const row = { agent, open: mine.length, queue: queue.length, inbox: inbox(h).length, now: "" };
   rows.push(row);
 
   const claim = state.claims[h];
@@ -204,7 +244,7 @@ for (const agent of roster.agents) {
   if (CLAIM) {
     state.claims[h] = { mode: a.mode, task: a.task, pr: a.pr, at: now.toISOString(), run: runId, source: LOCAL ? "local" : "actions" };
   }
-  if (a.task) claimedTasks.add(a.task);
+  if (a.task && a.mode === "task") claimedTasks.add(a.task);
   if (a.mode === "digest") state.lastDigest = today;
   if (a.mode === "standing") state.standing[h] = { develop: developSha, at: now.toISOString() };
   row.now = `starting: ${work.label}`;
@@ -217,7 +257,16 @@ function nextWork(agent, mine, queue) {
     const reasons = attentionReasons(pr);
     if (reasons.length) return { mode: "maintain", pr: pr.number, reason: reasons.join("; "), label: `maintain #${pr.number}` };
   }
-  // 2. Kind-specific work.
+  // 2. Answer handoffs addressed to me (oldest first). Other agents are waiting.
+  const waiting = inbox(h)[0];
+  if (waiting) {
+    return { mode: "handoff", task: `#${waiting.issue.number}`, reason: waiting.issue.title, label: `handoff #${waiting.issue.number}` };
+  }
+  // 3. Kind-specific work.
+  if (agent.kind === "steward") {
+    const pick = stewardTargets(agent)[0];
+    if (pick) return { mode: "steward-review", pr: pick.number, reason: pick.title, label: `steward review #${pick.number}` };
+  }
   if (agent.kind === "reviewer") {
     const candidates = reviewTargets.filter((pr) => !prFacts(pr).redTeam && !prFacts(pr).pending);
     const pick = candidates.find(sensitive) ?? candidates[0];
@@ -228,7 +277,7 @@ function nextWork(agent, mine, queue) {
     return due ? { mode: "digest", label: "digest" } : undefined;
   }
   if (mine.length >= agent.wip_limit) return undefined;
-  // 3. Backlog task, then standing duty, but only if something changed since
+  // 4. Backlog task, then standing duty, but only if something changed since
   //    this agent's last standing run (saves a run that would find nothing new).
   if (queue.length) return { mode: "task", task: queue[0].id, reason: queue[0].title, label: `task ${queue[0].id}` };
   if (!standingChanged(state.standing[h], developSha, founderNotesSince(h, state.standing[h]?.at))) return undefined;
@@ -298,14 +347,14 @@ function renderBoard() {
     `Updated ${now.toISOString().slice(0, 16).replace("T", " ")} UTC by ${env.GITHUB_RUN_ID ? `[the dispatcher](${runUrl})` : runUrl}. Status: **${status}**.`,
     `Runs today: **${usedToday()} of ${totalCap}**. Estimated spend today: **$${spend.cost.toFixed(2)}** from ${spend.n} run receipts.`,
     "",
-    "| Agent | Engine and model | Now | Runs today | Open PRs | Ready tasks |",
-    "|---|---|---|---|---|---|",
+    "| Agent | Engine and model | Now | Runs today | Open PRs | Ready tasks | Handoffs waiting |",
+    "|---|---|---|---|---|---|---|",
   ];
   for (const r of rows) {
     const j = journals.get(r.agent.handle);
     const name = j ? `[\`${r.agent.handle}\`](${j.html_url})` : `\`${r.agent.handle}\``;
     const engine = `${r.agent.engine}: ${String(r.agent.model).replace(/^openrouter\//, "")}`;
-    lines.push(`| ${name} ${r.agent.title} | ${engine} | ${r.now} | ${state.runs[r.agent.handle] ?? 0}/${r.agent.daily_runs} | ${r.open} | ${r.agent.backlog_owner_names.length ? r.queue : "n/a"} |`);
+    lines.push(`| ${name} ${r.agent.title} | ${engine} | ${r.now} | ${state.runs[r.agent.handle] ?? 0}/${r.agent.daily_runs} | ${r.open} | ${r.agent.backlog_owner_names.length ? r.queue : "n/a"} | ${r.inbox} |`);
   }
   const forFounder = openPRs.filter((pr) => agentOfPR(pr) && !pr.draft && !attentionReasonsSafe(pr).length);
   const needsFounder = openPRs.filter((pr) => labelNames(pr).includes("needs:founder"));
@@ -316,6 +365,15 @@ function renderBoard() {
   lines.push(`- **PRs blocked on you (${needsFounder.length}):** ${needsFounder.map((pr) => `#${pr.number}`).join(", ") || "none"}`);
   lines.push(`- **Backlog decisions (${decisions.length}):** ${decisions.map((t) => t.id).join(", ") || "none"}`);
   lines.push(`- **Founder tasks ready (${human.length}):** ${human.map((t) => t.id).join(", ") || "none"}`);
+  lines.push("", "## Agent conversations", "");
+  const pendingAll = handoffs.filter((x) => x.pending.length);
+  lines.push(`- **Open handoffs:** ${handoffs.length}; **waiting for a reply:** ${pendingAll.length}.`);
+  for (const x of pendingAll.slice(0, 10)) {
+    const days = Math.floor((now - new Date(x.issue.created_at)) / 86_400_000);
+    lines.push(`- #${x.issue.number} ${x.issue.title} (waiting on ${x.pending.map((p) => `\`${p}\``).join(", ")}, ${days}d)`);
+  }
+  if (closedHandoffs.length) lines.push(`- Closed this tick (every recipient replied): ${closedHandoffs.map((n) => `#${n}`).join(", ")}`);
+  if (!String(env.AGENTS_BOT_LOGINS ?? "").trim()) lines.push("- Note: the repository variable `AGENTS_BOT_LOGINS` is empty. PR reviews carry no app id, so red-team and steward reviews posted by the agents GitHub App are not recognised until it is set (HARNESS section 12).");
   lines.push("", "Pause everything: set the repository variable `AGENTS_PAUSED` to `true`. Change caps and models in `agents/roster.json`.");
   lines.push("", writeState(state));
   return lines.join("\n");
@@ -327,6 +385,21 @@ function attentionReasonsSafe(pr) {
 function redLabel(pr) {
   const v = prCache.get(pr.number)?.redVerdict;
   return v ? `, red team: ${v}` : "";
+}
+
+// ---------- close settled handoffs ----------
+
+const closedHandoffs = [];
+for (const x of paused ? [] : handoffs) {
+  if (!handoffSettled(x.issue, x.comments, trust, now)) continue;
+  closedHandoffs.push(x.issue.number);
+  if (DRY) continue;
+  gh(`/repos/${repo}/issues/${x.issue.number}/comments`, {
+    method: "POST",
+    body: { body: "Closed by the dispatcher: every recipient replied at least 48 hours ago. The founder or the sender can reopen it to continue." },
+    allowFail: true,
+  });
+  gh(`/repos/${repo}/issues/${x.issue.number}`, { method: "PATCH", body: { state: "closed", state_reason: "completed" }, allowFail: true });
 }
 
 // ---------- output ----------

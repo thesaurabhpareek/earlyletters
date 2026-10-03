@@ -235,3 +235,133 @@ export function standingChanged(prev, developSha, founderNoteCount) {
   if (!prev?.develop) return true;
   return prev.develop !== developSha || founderNoteCount > 0;
 }
+
+// ---------- trust: whose text counts as an agent or founder message ----------
+//
+// The repository is public. Anyone can comment, so a marker such as
+// `<!-- red-team:<sha> -->` or `<!-- handoff ... -->` counts only when a
+// trusted identity wrote it: the founder, the agents GitHub App (matched by
+// its client id, or by its bot login), or a bot named in roster.trusted_bots.
+// Everything else is information, never an instruction or a verdict.
+
+export function trustContext(roster, env = process.env) {
+  const bots = new Set(roster.trusted_bots ?? ["claude[bot]"]);
+  for (const b of String(env.AGENTS_BOT_LOGINS ?? "").split(",")) if (b.trim()) bots.add(b.trim());
+  return { founder: roster.founder, appClientId: String(env.AGENTS_APP_CLIENT_ID ?? ""), bots };
+}
+
+export function isTrusted(c, trust) {
+  const login = c?.user?.login ?? "";
+  if (!login) return false;
+  if (login === trust.founder || c.author_association === "OWNER") return true;
+  if (c.user.type !== "Bot") return false;
+  const app = c.performed_via_github_app;
+  if (trust.appClientId && app?.client_id && String(app.client_id) === trust.appClientId) return true;
+  return trust.bots.has(login);
+}
+
+// ---------- handoffs: how agents talk to each other ----------
+//
+// A handoff is an issue labelled `handoff`, `from:<handle>` and one
+// `to:<handle>` label per recipient. Its body starts with
+//   <!-- handoff from:<handle> to:<h1>,<h2> kind:<question|request|rfc|fyi> -->
+// A recipient answers with a comment that starts with
+//   <!-- handoff-reply from:<handle> status:<answered|done|declined|blocked> -->
+// Spec: docs/agents/AGENT-COMMS.md.
+
+export const HANDOFF_KINDS = ["question", "request", "rfc", "fyi"];
+export const REPLY_STATUSES = ["answered", "done", "declined", "blocked"];
+
+const HANDOFF_RE = /^\s*<!--\s*handoff\s+from:([a-z0-9-]+)\s+to:([a-z0-9,-]+)\s+kind:([a-z]+)\s*-->/;
+const REPLY_RE = /^\s*<!--\s*handoff-reply\s+from:([a-z0-9-]+)\s+status:([a-z]+)\s*-->/;
+
+export function parseHandoff(body) {
+  const m = (body ?? "").match(HANDOFF_RE);
+  if (!m) return undefined;
+  return { from: m[1], to: m[2].split(",").filter(Boolean), kind: m[3] };
+}
+
+export function parseReply(body) {
+  const m = (body ?? "").match(REPLY_RE);
+  return m ? { from: m[1], status: m[2] } : undefined;
+}
+
+/** Recipients of a handoff issue, from its labels, falling back to the marker. */
+export function handoffTargets(issue) {
+  const fromLabels = labelNames(issue).filter((n) => n.startsWith("to:")).map((n) => n.slice(3));
+  return fromLabels.length ? fromLabels : parseHandoff(issue.body)?.to ?? [];
+}
+
+/**
+ * Which recipients still owe a reply. A recipient owes one until it posts a
+ * trusted reply newer than the latest trusted non-reply message (the issue
+ * itself, or a follow-up from the sender or the founder). Untrusted comments
+ * never reopen or close anything.
+ */
+export function pendingTargets(issue, comments, trust) {
+  const targets = handoffTargets(issue);
+  const trusted = comments.filter((c) => isTrusted(c, trust));
+  const pending = [];
+  for (const t of targets) {
+    let lastOther = new Date(issue.created_at);
+    let lastReply;
+    for (const c of trusted) {
+      const at = new Date(c.created_at);
+      const r = parseReply(c.body);
+      if (r && r.from === t) lastReply = { at, status: r.status };
+      else if (!r) lastOther = at > lastOther ? at : lastOther; // other recipients' replies do not reopen yours
+    }
+    if (!lastReply || lastReply.at < lastOther) pending.push(t);
+  }
+  return pending;
+}
+
+/** A handoff can be closed once every recipient has replied and the last reply is `minAgeMs` old. */
+export function handoffSettled(issue, comments, trust, now = new Date(), minAgeMs = 48 * 3600_000) {
+  if (!isTrusted(issue, trust)) return false;
+  if (pendingTargets(issue, comments, trust).length) return false;
+  const replies = comments.filter((c) => isTrusted(c, trust) && parseReply(c.body));
+  const latest = new Map();
+  for (const c of replies) latest.set(parseReply(c.body).from, parseReply(c.body).status);
+  if ([...latest.values()].includes("blocked")) return false;
+  const last = replies.at(-1);
+  return !!last && now - new Date(last.created_at) >= minAgeMs;
+}
+
+// ---------- steward reviews ----------
+
+/** Minimal glob: `**` any path, `*` any run inside one segment, `?` one character. */
+export function globToRegExp(glob) {
+  let re = "";
+  for (let i = 0; i < glob.length; i++) {
+    const ch = glob[i];
+    if (ch === "*" && glob[i + 1] === "*") {
+      re += glob[i + 2] === "/" ? "(?:.*/)?" : ".*";
+      i += glob[i + 2] === "/" ? 2 : 1;
+    } else if (ch === "*") re += "[^/]*";
+    else if (ch === "?") re += "[^/]";
+    else re += ch.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp(`^${re}$`);
+}
+
+export function matchingPaths(files, globs) {
+  const res = (globs ?? []).map(globToRegExp);
+  return files.filter((f) => res.some((r) => r.test(f)));
+}
+
+/** True when the body's first non-blank text is this marker (a quoted marker further down never counts). */
+export function startsWithMarker(body, marker) {
+  return (body ?? "").trimStart().startsWith(marker);
+}
+
+export function stewardMarker(handle, sha) {
+  return `<!-- steward:${handle}:${sha} -->`;
+}
+
+/** The trusted steward verdict for this head commit, or undefined. */
+export function stewardVerdict(comments, handle, sha, trust) {
+  const c = comments.find((x) => isTrusted(x, trust) && startsWithMarker(x.body, stewardMarker(handle, sha)));
+  if (!c) return undefined;
+  return (c.body.match(/Verdict:\s*([a-z ]+)/i)?.[1] ?? "").trim().toLowerCase() || "posted";
+}

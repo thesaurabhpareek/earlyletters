@@ -4,13 +4,13 @@
 // maps to an agent. Runs in CI (.github/workflows/agents-check.yml).
 //
 //   node scripts/agents/check.mjs
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { ROOT, loadRoster, ownerMap, parseBacklog, readText } from "./lib.mjs";
 
 const CLAUDE_MODELS = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5-20251001"]);
 const OPENCODE_MODEL = /^openrouter\/[a-z0-9~-]+\/[a-z0-9.:-]+$/;
-const KINDS = new Set(["worker", "reviewer", "planner", "digest"]);
+const KINDS = new Set(["worker", "reviewer", "planner", "digest", "steward"]);
 
 export function check(root = ROOT) {
   const errors = [];
@@ -33,6 +33,13 @@ export function check(root = ROOT) {
     }
     if (!(typeof a.max_budget_usd === "number" && a.max_budget_usd > 0)) errors.push(`${where}: max_budget_usd must be a positive number (set it on the agent or as the engine default)`);
     if (a.effort && !["low", "medium", "high", "xhigh", "max"].includes(a.effort)) errors.push(`${where}: effort "${a.effort}" is not low, medium, high, xhigh or max`);
+    if (a.kind === "steward") {
+      if (!Array.isArray(a.review_paths) || !a.review_paths.length || !a.review_paths.every((g) => typeof g === "string" && g && !g.startsWith("/"))) {
+        errors.push(`${where}: a steward needs review_paths, a non-empty list of repo-relative globs`);
+      }
+    } else if (a.review_paths) {
+      warnings.push(`${where}: review_paths is only used for kind "steward"`);
+    }
     if (a.timeout_minutes > 350) errors.push(`${where}: timeout_minutes must stay under the 6-hour job limit`);
 
     const charterPath = join(root, ".claude", "agents", `${a.handle}.md`);
@@ -52,6 +59,20 @@ export function check(root = ROOT) {
     else {
       const n = readFileSync(memPath, "utf8").split("\n").length;
       if (n > 150) warnings.push(`${where}: MEMORY.md is ${n} lines; the limit is 120`);
+    }
+  }
+
+  if (roster.trusted_bots && !(Array.isArray(roster.trusted_bots) && roster.trusted_bots.every((b) => /\[bot\]$/.test(b)))) {
+    errors.push("trusted_bots must be a list of bot logins ending in [bot]");
+  }
+
+  // Engineering chapters name an owner; it must be an agent on the roster.
+  const engDir = join(root, "docs", "engineering");
+  if (existsSync(engDir)) {
+    for (const f of readdirSync(engDir).filter((n) => /^\d\d-.*\.md$/.test(n))) {
+      const owner = frontmatter(readFileSync(join(engDir, f), "utf8")).owner;
+      if (!owner) errors.push(`docs/engineering/${f}: frontmatter has no owner`);
+      else if (!seen.has(owner)) errors.push(`docs/engineering/${f}: owner "${owner}" is not an agent on the roster`);
     }
   }
 
