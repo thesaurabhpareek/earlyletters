@@ -58,7 +58,7 @@ Settings, Your data, **Delete your account**. You can do it all in the app. Ther
 
 ## Deleting the app
 
-Deleting the app removes everything it keeps on this phone, including recordings. If you are signed in and synced, your letters are still in your account. Recordings are kept only on your phone, so export first if you want to keep them.
+Deleting the app removes everything it keeps on this phone, including recordings. If you are signed in and synced, your letters are still in your account. Your recordings live on this phone, so export them first to keep a copy.
 
 Deleting the app does not cancel Plus. Cancel with Apple: see [Plus and your Apple subscription](subscriptions.md).
 

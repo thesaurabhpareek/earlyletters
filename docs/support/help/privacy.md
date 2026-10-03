@@ -38,11 +38,11 @@ Each recording stays on the phone it was made on, with its letter. It is not sen
 
 Your iPhone's own backup, such as iCloud Backup, may include what the app keeps on your phone. That backup is in your Apple account, not ours. To keep a copy of your recordings anywhere you like, export your book.
 
-We never make a voiceprint. Recordings are kept so your family can hear them, and that is all.
+We never make a voiceprint. Recordings are kept so they can be played, and that is all.
 
 ## Usage and crash reports
 
-They help us find what is broken. They stay off until you say yes, and nothing in the app depends on them. When they are on, they hold counts and screen names, like "a letter was saved", and never what you wrote or said. Turn them on or off in Settings, Privacy.
+They help us find what is broken. They stay off until you say yes, and nothing in the app depends on them. When they are on, they say which screens you open and what happened, like "a letter was saved", and never what you wrote or said. Turn them on or off in Settings, Privacy.
 
 ## Notifications
 
@@ -75,7 +75,7 @@ Our Privacy Policy is at https://earlyletters.com/privacy, and our Consumer Heal
 
 ## Writing to us
 
-You never need to send your letters, recordings or {child}'s name to get help. If you would like us to look at something in your book, we will ask you first.
+You never need to send your letters, recordings or {child}'s name to get help. We look at something in your book only if you ask us to.
 
 ---
 

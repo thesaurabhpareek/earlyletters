@@ -92,7 +92,7 @@ Your books, letters and recordings stay. Every book stays open for writing, read
 
 ## Price changes
 
-We never raise your price unless you agree. Apple asks you first.
+We never raise your price unless you agree first. Apple asks you before any new price applies.
 
 ## Gifts
 

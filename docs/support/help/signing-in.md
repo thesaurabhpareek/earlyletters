@@ -48,7 +48,7 @@ When you sign in on a phone that already has letters, the app asks which book th
 
 ## Signing out
 
-If some letters have not reached your account yet, the app waits until they have before it signs you out. Your letters are never left behind.
+If some letters have not reached your account yet, the app waits until they have before it signs you out. Your letters always reach your account first.
 
 ## Still stuck?
 
