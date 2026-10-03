@@ -200,7 +200,7 @@ const ACTIVE = planFromSnapshot(snap([tx()])).view;
 const SHARED = planFromSnapshot(snap([tx({ ownership: 'familyShared' })])).view;
 const LAPSED = planFromSnapshot(snap([], [status({ state: 'expired', expiresAt: at(-5) })])).view;
 const FREE = EMPTY_PLAN.view;
-const started: BookFacts = { birthday: '2025-05-20' };
+const started: BookFacts = { birthday: '2025-04-12' };
 const joinedBook: BookFacts = { birthday: '2025-02-01', createdByMe: false };
 const ctx = (over: Partial<GateContext> = {}): GateContext => ({ now: NOW, today: '2026-10-03', plan: FREE, books: [], ...over });
 

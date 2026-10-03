@@ -56,7 +56,7 @@ const DAY = 864e5;
 /** Twins, triplets or more; a sane ceiling for one first run. */
 const MAX_FIRST_RUN_CHILDREN = 6;
 
-/** "Asha", "Asha and Dev", "Asha, Dev and Mira". */
+/** "Asha", "Asha and Dev", "Asha, Dev and Nina". */
 function joinNames(names: string[], fallback: string): string {
   const n = names.map((x) => x.trim()).filter(Boolean);
   if (n.length === 0) return fallback;

@@ -12,7 +12,7 @@ const me = { role: 'parent' as const, is_me: true, signs_as: 'Mumma' };
 const books: SyncBook[] = [
   { id: 'b1', name: 'Asha', role: 'parent', members: [me, { role: 'parent', is_me: false, signs_as: 'Papa' }] },
   { id: 'b2', name: 'Ravi', role: 'parent', members: [me, { role: 'contributor', is_me: false, signs_as: 'Nani' }] },
-  { id: 'b3', name: 'Mira', role: 'parent', members: [me] },
+  { id: 'b3', name: 'Tara', role: 'parent', members: [me] },
   { id: 'b4', name: 'Kai', role: 'contributor', members: [{ role: 'contributor', is_me: true, signs_as: 'Aunty' }] },
   { id: 'b5', name: 'Leo', role: 'parent', members: [me, { role: 'parent', is_me: false, signs_as: null }] },
 ];
@@ -30,7 +30,7 @@ describe('what happens to each book', () => {
       "Asha's book stays with Papa, with their letters. Your 12 letters leave it.",
       "Ravi's book will be deleted, with your letter in it.",
       accountDeletionCopy.what.deletedFamily,
-      "Mira's book will be deleted.",
+      "Tara's book will be deleted.",
       'Your letters to Kai will be removed.',
       "Leo's book stays with your co-parent, with their letters. Your letter leaves it.",
       accountDeletionCopy.what.copies,

@@ -72,7 +72,7 @@ await db.exec(`
   set session_replication_role = replica;
   insert into auth.users (id) values ${users.map(([u]) => `(${u})`).join(', ')};
   insert into profiles (id, signs_as, created_at) values ${users.map(([u, at]) => `(${u}, 'Papa', ${at})`).join(', ')};
-  insert into children (id, name, date_of_birth, created_by) values ${books.map(([c, by]) => `(${c}, 'Asha', date '2025-05-20', ${by})`).join(', ')};
+  insert into children (id, name, date_of_birth, created_by) values ${books.map(([c, by]) => `(${c}, 'Asha', date '2025-04-12', ${by})`).join(', ')};
   insert into child_members (child_id, profile_id, role) values ${members.map(([c, p, r]) => `(${c}, ${p}, '${r}')`).join(', ')};
   insert into entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode, engine_version,
                        raw_transcript, final_text, machine_edits, in_book, approval, created_at)

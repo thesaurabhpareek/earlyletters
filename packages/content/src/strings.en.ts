@@ -37,7 +37,7 @@ export const en = {
     playButton: "Play",
     pauseButton: "Pause",
     signature: "From {signsAs}",
-    // Two or more names: "Asha and Dev", "Asha, Dev and Mira" (the app joins the first ones with commas).
+    // Two or more names: "Asha and Dev", "Asha, Dev and Nina" (the app joins the first ones with commas).
     andJoin: "{a} and {b}",
   },
 
