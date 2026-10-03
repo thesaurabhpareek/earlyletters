@@ -17,7 +17,8 @@ dependencies (inject your own Supabase client).
 | `test/drift.test.ts` | Parses the migrations and fails on any difference |
 
 The contract describes the schema **after PR #32** (`fix/db-pending-hardening`):
-no entitlement objects and no `SCPLS`.
+no entitlement objects, no `SCPLS`, and idempotency keys on
+`create_child_invite` and `record_policy_act`.
 
 ## Version rules
 
@@ -46,6 +47,35 @@ if (!r.ok) {
 
 The injected client only needs `rpc(fn, args)` returning `{ data, error }`.
 Configure it to sign with the user's JWT and to send a request id header.
+
+## Retry safety
+
+Every command is safe to retry after a lost response. Commands that create
+something (`create_child`, `create_child_invite`, `record_policy_act`) take a
+device UUIDv7 `p_id` as an idempotency key:
+
+- Make the key once per intent, persist it with the queued write, and **reuse
+  the same key and arguments on every retry**.
+- Same key and same arguments returns the original id with no side effects.
+- Same key with different arguments, or another user's key, raises `SCCID`
+  (not retryable; the offline queue rejects the write).
+
+Invites: the client generates the secret. Make a 32-byte random token from a
+CSPRNG, hex encode it (64 characters), and send only
+`p_token_hash = sha256(utf8(token))` as bytea hex (`\x` followed by 64 hex digits). The
+server never sees or returns the token; `create_child_invite` returns the
+invite id. Persist the token with `p_id` before the first call so a retry
+sends the same pair; a hash already used under another key raises `SCINV`
+(make a new token and key), and a hash that is not 32 bytes raises `22023`.
+The token goes in the share link and is sent to `accept_child_invite(p_token)`.
+
+```ts
+const token = toHex(crypto.getRandomValues(new Uint8Array(32)));
+const hash = '\\x' + toHex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))));
+const invite = { p_id: uuidv7(), p_child: childId, p_role: 'contributor', p_token_hash: hash } as const;
+// persist { invite, token }, then on every attempt:
+const r = await callRpc(supabase, 'create_child_invite', invite);
+```
 
 ## Adding an RPC
 

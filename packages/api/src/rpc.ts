@@ -58,10 +58,20 @@ export interface RpcContract {
   };
 
   // ─── Invites ───────────────────────────────────────────────────────────
+  /**
+   * Retry-safe invite. The client makes the secret, the server never sees it:
+   *  1. token = 32 random bytes from a CSPRNG, hex encoded (64 lower-case chars);
+   *  2. p_token_hash = sha256(utf8(token)) as ByteaHex ('\\x' + 64 hex chars);
+   *  3. p_id = a new UUIDv7 (becomes child_invites.id).
+   * Persist p_id and token together before the first call, and reuse the same
+   * key and token on every retry: a replay returns the same invite id with no
+   * side effects (no new row, no rate-limit count). Put the token in the share
+   * link; the recipient sends it to accept_child_invite.
+   */
   create_child_invite: {
-    request: { p_child: Uuid; p_role: MemberRole; p_signs_as?: string | null };
-    /** The raw invite token, returned once. Only its SHA-256 is stored. */
-    response: string;
+    request: { p_id: ClientUuid7; p_child: Uuid; p_role: MemberRole; p_token_hash: ByteaHex; p_signs_as?: string | null };
+    /** The invite id (same as p_id). No token is returned. */
+    response: Uuid;
   };
   revoke_invite: {
     request: { p_invite: Uuid };
@@ -105,8 +115,14 @@ export interface RpcContract {
   };
 
   // ─── Policies and consent ──────────────────────────────────────────────
+  /**
+   * Retry-safe policy act. p_id is a device UUIDv7 made once per act and
+   * becomes policy_acceptances.id. Reuse the same key and arguments on every
+   * retry: a replay returns the same id and records nothing new.
+   */
   record_policy_act: {
     request: {
+      p_id: ClientUuid7;
       p_document: string;
       p_version: string;
       p_action: PolicyAction;
@@ -153,7 +169,11 @@ export type RpcKind = 'command' | 'query' | 'helper';
 
 /**
  * How a retry after a lost response behaves (decision 17: safe under retries).
- *  - client_id: the request carries a device UUIDv7 that makes it idempotent.
+ *  - client_id: the request carries a device UUIDv7 idempotency key. Same key
+ *    and same arguments returns the original result with no side effects;
+ *    the same key with different arguments (or another user's key) raises
+ *    SCCID. Make the key once per intent, persist it, and reuse it (with the
+ *    same arguments) on every retry.
  *  - compare_and_set: applies only from the state named in `param`.
  *  - natural: repeating the call converges on the same end state.
  *  - none: each call creates something new; retry only when the first call surely failed.
@@ -234,15 +254,12 @@ export const RPC_CATALOG = Object.freeze({
   },
   create_child_invite: {
     kind: 'command',
-    params: [p('p_child', 'uuid'), p('p_role', 'text'), p('p_signs_as', 'text', true)],
-    sqlReturns: 'text',
-    idempotency: {
-      kind: 'none',
-      note: 'Each call creates a new invite and token and counts toward the 20 per day limit. No client id parameter exists yet.',
-    },
+    params: [p('p_id', 'uuid'), p('p_child', 'uuid'), p('p_role', 'text'), p('p_token_hash', 'bytea'), p('p_signs_as', 'text', true)],
+    sqlReturns: 'uuid',
+    idempotency: { kind: 'client_id', param: 'p_id' },
     consentGated: true,
     allowsAnonymous: false,
-    errors: [...AUTH, 'SCINV', 'SCPAR', 'SCDEL', 'SCCON', 'SCRAT'],
+    errors: [...AUTH, 'SCCID', 'SCINV', '22023', 'SCPAR', 'SCDEL', 'SCCON', 'SCRAT'],
     migration: '20261003000000_security_and_family.sql',
   },
   revoke_invite: {
@@ -328,6 +345,7 @@ export const RPC_CATALOG = Object.freeze({
   record_policy_act: {
     kind: 'command',
     params: [
+      p('p_id', 'uuid'),
       p('p_document', 'text'),
       p('p_version', 'text'),
       p('p_action', 'text'),
@@ -341,13 +359,10 @@ export const RPC_CATALOG = Object.freeze({
       p('p_context', 'jsonb', true),
     ],
     sqlReturns: 'uuid',
-    idempotency: {
-      kind: 'none',
-      note: 'Append-only: each call records a new act. A duplicate after a lost response is harmless for consent state (latest act wins) but adds a row.',
-    },
+    idempotency: { kind: 'client_id', param: 'p_id' },
     consentGated: false,
     allowsAnonymous: true,
-    errors: ['28000', 'SCANO', '22023', 'P0002', 'SCVER', '23514'],
+    errors: ['28000', 'SCANO', 'SCCID', '22023', 'P0002', 'SCVER', '23514'],
     migration: '20261003000000_security_and_family.sql',
   },
   policy_actions_needed: {
@@ -478,7 +493,7 @@ export const RPC_CATALOG = Object.freeze({
     consentGated: false,
     allowsAnonymous: true,
     errors: [],
-    migration: '20261003010000_children_and_entitlements.sql',
+    migration: '20261003000000_security_and_family.sql',
   },
 } satisfies Record<RpcName, RpcSpec>);
 

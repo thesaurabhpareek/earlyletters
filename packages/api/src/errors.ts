@@ -91,7 +91,8 @@ export const API_ERRORS = Object.freeze({
   }),
   SCINV: spec({
     code: 'SCINV',
-    meaning: 'Invite cannot be created or accepted: bad role, not found, used, revoked, expired, or already a member.',
+    meaning:
+      'Invite cannot be created or accepted: bad role, token hash already used by another invite (generate a new token and key), not found, used, revoked, expired, or already a member.',
     category: 'conflict',
     httpStatus: 409,
     retryable: false,
@@ -213,7 +214,8 @@ export const API_ERRORS = Object.freeze({
   }),
   SCCID: spec({
     code: 'SCCID',
-    meaning: 'Client id is not a device UUIDv7 (version, variant, timestamp), or the child id is already used by someone else.',
+    meaning:
+      'Client id or idempotency key is not a device UUIDv7 (version, variant, timestamp), or was already used with different arguments or by another user. Not retryable: the offline queue rejects the write. A replay with the same key and arguments is a normal success, not this error.',
     category: 'invalid',
     httpStatus: 422,
     retryable: false,
@@ -264,7 +266,7 @@ export const API_ERRORS = Object.freeze({
   '22023': spec({
     code: '22023',
     meaning:
-      'Invalid argument: names, dates, decision, policy context keys, deletion source, captured_at more than a day ahead, support-assisted acts from a client.',
+      'Invalid argument: names, dates, decision, policy context keys, deletion source, captured_at more than a day ahead, support-assisted acts from a client, invite token hash not 32 bytes.',
     category: 'invalid',
     httpStatus: 400,
     retryable: false,

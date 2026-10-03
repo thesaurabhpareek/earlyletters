@@ -77,6 +77,9 @@ describe('errors registry', () => {
     expect(syncDisposition('SCCON')).toBe('pause');
     expect(errorSpec('SCPRG')?.clientAction).toBe('drop_local_row');
     expect(syncDisposition('XX999')).toBe('retry');
+    // A reused key with different arguments is a client bug: never retried.
+    expect(syncDisposition('SCCID')).toBe('reject');
+    expect(errorSpec('SCCID')?.retryable).toBe(false);
     expect(errorSpec('XX999')).toBeUndefined();
   });
 
@@ -91,6 +94,26 @@ describe('rpc catalog', () => {
   it('names are unique and params are p_-prefixed', () => {
     expect(new Set(RPC_NAMES).size).toBe(RPC_NAMES.length);
     for (const n of RPC_NAMES) for (const p of RPC_CATALOG[n].params) expect(p.name).toMatch(/^p_/);
+  });
+
+  it('retry-safe commands carry a client_id idempotency key (#32)', () => {
+    for (const n of ['create_child', 'create_child_invite', 'record_policy_act'] as const) {
+      expect(RPC_CATALOG[n].idempotency, n).toEqual({ kind: 'client_id', param: 'p_id' });
+      expect(RPC_CATALOG[n].params[0], n).toEqual({ name: 'p_id', sqlType: 'uuid', optional: false });
+      expect(RPC_CATALOG[n].errors, n).toContain('SCCID');
+    }
+  });
+
+  it('create_child_invite takes a token hash and returns the invite id, never a token', () => {
+    const spec = RPC_CATALOG.create_child_invite;
+    expect(spec.params.map((p) => p.name)).toEqual(['p_id', 'p_child', 'p_role', 'p_token_hash', 'p_signs_as']);
+    expect(spec.params.find((p) => p.name === 'p_token_hash')?.sqlType).toBe('bytea');
+    expect(spec.sqlReturns).toBe('uuid');
+    expect(spec.params.some((p) => (p.name as string) === 'p_token')).toBe(false);
+  });
+
+  it('no RPC is left without retry safety (kind none)', () => {
+    expect(RPC_NAMES.filter((n) => (RPC_CATALOG[n].idempotency.kind as string) === 'none')).toEqual([]);
   });
 
   it('optional params come last (PostgREST named args do not need it, but SQL defaults do)', () => {

@@ -156,10 +156,11 @@ export type ChildMemberPrefsUpsert = Pick<ChildMemberPrefsRow, 'child_id' | 'pro
 
 // ─── child_invites (parents only; written only by RPCs) ──────────────────
 export interface ChildInviteRow {
+  /** The client's UUIDv7 idempotency key (create_child_invite p_id). */
   id: Uuid;
   child_id: Uuid;
   invited_by: Uuid;
-  /** SHA-256 of the token. The raw token is returned once by create_child_invite. */
+  /** sha256(utf8(token)). The token is made on the device and never sent to or returned by the server. */
   token_hash: ByteaHex;
   role: MemberRole;
   expires_at: IsoTimestamp;
@@ -495,6 +496,7 @@ export const POLICY_VERSION_COLUMNS = [
 
 // ─── policy_acceptances (own rows, read only; write via record_policy_act) ──
 export interface PolicyAcceptanceRow {
+  /** The client's UUIDv7 idempotency key (record_policy_act p_id) for client-recorded acts. */
   id: Uuid;
   profile_id: Uuid | null;
   subject_hash: ByteaHex | null;
