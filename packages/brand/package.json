@@ -16,5 +16,10 @@
     "@fontsource/mukta": "5.3.0",
     "@fontsource/tiro-devanagari-hindi": "*",
     "vitest": "^3.2.7"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./registry": "./registry.ts",
+    "./package.json": "./package.json"
   }
 }

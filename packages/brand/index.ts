@@ -133,10 +133,8 @@ export const brand = {
   },
 } as const;
 
-// Named re-exports (not `export *`): tsx loads this package as CommonJS, and Node's CJS export detection cannot
-// see through a star re-export of a .ts file.
-export { ASSETS, CONTEXTS, REGISTRY_VERSION, asset, assetFor, assetForPath, assetPath } from './registry';
-export type { AssetFormat, AssetId, AssetKind, AssetStatus, BrandAsset, BrandContext, ContextId, Surface } from './registry';
+// The asset registry has its own entry, `@scribe/brand/registry` (registry.ts), so this file stays a
+// single plain module that Deno (Supabase functions) can import directly.
 
 export function bundleId(): string {
   const reversed = brand.publisher.domain.split('.').reverse().join('.');

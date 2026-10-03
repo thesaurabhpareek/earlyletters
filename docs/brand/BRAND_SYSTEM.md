@@ -28,7 +28,7 @@ Approved by the founder on 2026-10-03 as r3 `final-a`. `primary/` is a byte-iden
 Every asset has one stable dot-notation id with a path, format, dimensions, the colour and surface it is for, a minimum size, status (`primary` or `deprecated`), version and date. Every touchpoint is a **context** that lists the ids it uses, light first.
 
 ```ts
-import { assetFor, asset, assetPath } from '@scribe/brand';
+import { assetFor, asset, assetPath } from '@scribe/brand/registry';
 
 assetFor('email.header.light');           // [email.logo.light@2x, email.logo.light@1x]
 asset('logo.lockup.horizontal.ink').minSize; // { px: 27, dimension: 'height', below: 'logo.lockup.horizontal.small.ink' }
