@@ -150,7 +150,7 @@ export const authEmails = {
     kind: 'transactional',
   },
 
-  // v1.1: Google sign-in arrives with the web page and Android (D-044).
+  // v1.0: Sign in with Apple, Google and email link (founder decision 4, docs/agents/BRIEF-2026-10-03.md; supersedes D-044 timing).
   // Supabase security notification "Sign-in method linked".
   'google-account-linked': {
     id: 'google-account-linked',

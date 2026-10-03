@@ -37,7 +37,7 @@ It does not cover Apple, Google or other companies you deal with directly, such 
 
 Early Letters is for adults. You must be 18 or older to use it at all, including on your phone without an account. The app asks before you can use it, and if the answer is no it stops and keeps nothing. We ask you to confirm your age again when you create an account or send a letter from the web page. A book is *about* a child, but the child does not use Early Letters. You can keep a book for more than one child; each child has their own book. See section 12.
 
-Health information has its own short policy, our [Consumer Health Data Privacy Policy](/consumer-health-data). It sits alongside this one.
+Health information has its own short policy, our [Consumer Health Data Privacy Policy](/health-privacy). It sits alongside this one.
 
 ## 3. What we collect
 
@@ -205,7 +205,7 @@ No system is perfectly secure. If a breach affects your information, we will tel
 
 ## 13. Health, voice and other sensitive details
 
-Letters are free-form, so a parent may mention a child's health, a hospital stay, a pregnancy, family beliefs or other sensitive things. We treat everything in a letter as private content: it is protected the same way, never analyzed for advertising, never sent to analytics, and never used to make decisions about you. Our [Consumer Health Data Privacy Policy](/consumer-health-data) explains your rights under Washington's My Health My Data Act, Nevada's and Connecticut's consumer health data laws, and similar laws.
+Letters are free-form, so a parent may mention a child's health, a hospital stay, a pregnancy, family beliefs or other sensitive things. We treat everything in a letter as private content: it is protected the same way, never analyzed for advertising, never sent to analytics, and never used to make decisions about you. Our [Consumer Health Data Privacy Policy](/health-privacy) explains your rights under Washington's My Health My Data Act, Nevada's and Connecticut's consumer health data laws, and similar laws.
 
 - **Due dates.** If you start a book before your child is born, we store the due date. Information about a pregnancy is health information under some state laws. We use it only to date letters and sort the book.
 - **Languages.** The languages you speak with your child help the app transcribe you correctly. We keep them in a table only you can read, and never send them to analytics.
@@ -270,7 +270,7 @@ Residents of states with consumer privacy laws (including Colorado, Connecticut,
 
 **Sensitive data.** Some states, including Connecticut, require consent before processing sensitive data such as health information. We ask for it as described in section 13, and we process it only as needed to keep and show the book you asked for.
 
-**Consumer health data (Washington, Nevada, Connecticut and similar laws).** See our [Consumer Health Data Privacy Policy](/consumer-health-data).
+**Consumer health data (Washington, Nevada, Connecticut and similar laws).** See our [Consumer Health Data Privacy Policy](/health-privacy).
 
 **Biometric privacy laws (for example Illinois, Texas and Washington).** We do not create or collect biometric identifiers such as voiceprints or face geometry (section 13).
 

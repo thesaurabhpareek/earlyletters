@@ -1,7 +1,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 
 /** Reading order for legal links. Unknown documents follow, by title. */
-const ORDER = ['terms', 'privacy', 'subscription-terms', 'consumer-health-data', 'subprocessors'];
+const ORDER = ['terms', 'privacy', 'subscription-terms', 'health-privacy', 'subprocessors'];
 
 export async function legalDocs(): Promise<CollectionEntry<'legal'>[]> {
   const rank = (d: CollectionEntry<'legal'>) => d.data.order ?? (ORDER.includes(d.id) ? ORDER.indexOf(d.id) : 50);

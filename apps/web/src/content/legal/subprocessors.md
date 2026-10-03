@@ -9,7 +9,7 @@ summary: "These are the companies that help us run Early Letters and may handle 
 
 We use a small number of companies to run Early Letters. Each one acts on our instructions, under a written contract, and may use your information only to provide its service to us. We require them to protect it at least as well as our [Privacy Policy](/privacy) does, and to delete it when we ask. None of them may sell it or use your content to train AI models.
 
-The last column of each table gives the provider's privacy contact, so you can reach them directly. Our [Consumer Health Data Privacy Policy](/consumer-health-data) explains your right to this list.
+The last column of each table gives the provider's privacy contact, so you can reach them directly. Our [Consumer Health Data Privacy Policy](/health-privacy) explains your right to this list.
 
 We will update this list at least 30 days before adding a provider that handles letters or recordings.
 

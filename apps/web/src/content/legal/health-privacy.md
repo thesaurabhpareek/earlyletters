@@ -1,6 +1,6 @@
 ---
 title: "Consumer Health Data Privacy Policy"
-slug: "consumer-health-data"
+slug: "health-privacy"
 effectiveDate: "TBD"
 version: "1.1.1"
 status: "draft"

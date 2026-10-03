@@ -49,7 +49,7 @@ Listed so the catalog is complete. C1 owns the copy in `auth.en.ts`; ids are C1'
 | `apple-account-linked` | Sign in with Apple added to an existing account | Fn | T | Email only | 1.0 | Per event | C1 / D2 / security |
 | `email-changed-old-address`, `email-changed-new-address` | User changes their sign-in email (Supabase Change Email template; notice to the old address, confirmation to the new) | Auth | T | Email only | 1.0 | Per request | C1 / D2 / L3 |
 | `new-device-sign-in` | Sign-in on a device not seen before | Fn | T | Email only | 1.0 | At most 1 per device; never for the first device | C1 / D2 / security |
-| `google-account-linked` | Google sign-in added (D-044) | Fn | T | Email only | 1.1 | Per event | C1 / D2 / security |
+| `google-account-linked` | Google sign-in added (founder decision 4, Oct 3) | Fn | T | Email only | 1.0 | Per event | C1 / D2 / security |
 
 ## 5. Onboarding and lifecycle (copy: C2, `lifecycle.en.ts`)
 
@@ -57,7 +57,7 @@ There is deliberately almost nothing here. No drips, no tips series, no re-engag
 
 | id | Trigger | Sender | Kind | Channels | Priority | Cap | Owner |
 |---|---|---|---|---|---|---|---|
-| `welcome-family` | First sign-in that came from accepting a Family (contributor) invite. Replaces `welcome` | Fn | T? | Email only (the app shows the contributor welcome screen) | 1.0 | Once per account, ever | C2 / D2 / backend |
+| `welcome-family` | First sign-in that came from accepting a Family (contributor) invite. Replaces `welcome` | Fn | T? | Email only (the app shows the contributor welcome screen) | 1.1 (v1.0 family is co-parent only, founder decision 5) | Once per account, ever | C2 / D2 / backend |
 | `welcome-coparent` | First sign-in that came from accepting a Co-parent invite. Replaces `welcome` | Fn | T? | Email only | 1.0 | Once per account, ever | C2 / D2 / backend |
 | `news-confirm` | Opt-in to a future newsletter (double opt-in) | Fn on `news.` subdomain | C | Email only | later | Once per opt-in | C2 / D2 / L2 |
 | `book-printed` | A printed book (Year One) ships | Fn | T | Email + card | later (D-010) | Per order | C2 / D2 / print |
@@ -181,3 +181,9 @@ For L3: register the private-relay senders (section 11); make the send pipeline 
 For C1: the bounce row in Settings (rule 10.4) needs one in-app string; and E-4 means `welcome` should say it is for a parent starting a book.
 
 Conflict to resolve (PM): DATA-REQ-053 promises contributors "a server export link valid 30 days" when a sole parent deletes a book, but server export (DATA-REQ-054) is P1 and ROADMAP puts it in v1.1 (BL-309). At v1.0 contributors are in the app (D-002) and can export from their own phone, so `family-book-closing` points them to the app. `family-export-ready` adds the link in 1.1.
+
+## Reconciliation with founder decisions of Oct 3 (docs/agents/BRIEF-2026-10-03.md)
+- Decision 4: Google sign-in is v1.0. `google-account-linked` moves to v1.0. Sign-in copy says "sign-in link", never "magic link" (VOICE.md).
+- Decision 5: family at launch is co-parent only. `welcome-family` moves to v1.1; `welcome-coparent` stays v1.0.
+- Decision 3: payments are Apple only and no server of ours sees purchases. The billing section above assumes our server knows about trials, renewals and price changes. Under decision 3 it cannot, so every billing email is PARKED pending a founder and counsel decision on whether Apple's own App Store notices satisfy D-022 and California's auto-renewal law. Prices are now $3.99/month (1-month trial) and $29.99/year (2-month trial).
+- Decision 13: the health data policy lives at /health-privacy.
