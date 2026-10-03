@@ -142,8 +142,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
-      - name: Migration guard and audit gate (node:test)
-        run: node --test .github/scripts/migration-guard.test.mjs .github/scripts/audit-gate.test.mjs
+      - name: Migration guard, audit gate and fence rules (node:test)
+        run: node --test .github/scripts/migration-guard.test.mjs .github/scripts/audit-gate.test.mjs .github/scripts/fence-paths.test.mjs
 
   required:
     name: required

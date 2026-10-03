@@ -7,12 +7,13 @@ CI, review rules and branch protection for `thesaurabhpareek/earlyletters`.
 | `workflows/ci.yml` | On every pull request and every push to `develop` and `main`: install (cached by `package-lock.json`), then in parallel: `npm test` (content rules included), `npm run test:db`, typecheck for every workspace (`apps/mobile` with `npx tsc --noEmit`), lint (skipped with a notice until a root `lint` script exists), `expo config --type public` for `apps/mobile`, and the tests for the scripts in this folder. A `required` job sums them up. Every job has a timeout; the longest path is 9 minutes. |
 | `workflows/migration-guard.yml` | Fails a change that edits, renames or deletes a migration listed in `migrations-applied.txt`, removes a line from that list, or adds a migration that sorts before the newest applied one. Runs the guard and reads its exception list from a trusted ref, never from the pull request (see below). |
 | `workflows/security.yml` | gitleaks over the full history (config `gitleaks.toml`), and `npm audit --omit=dev --audit-level=high` through `scripts/audit-gate.mjs` with the dated ignore list `audit-ignore.json`. Also weekly on Mondays. Not part of `required`. |
-| `workflows/fence.yml` | The agent fence (D-041): fails a pull request that touches `supabase/**`, `.github/**` or auth code unless it has the `approve-migration` label. Advisory until branch protection exists (see below). |
+| `workflows/fence.yml` | The agent fence (D-041): fails a pull request that touches `supabase/**`, `.github/**` or auth code unless it has the `approve-migration` label. Path rules in `scripts/fence-paths.mjs`, read from the base commit. Advisory until branch protection exists (see below). |
 | `dependabot.yml` | Weekly update pull requests into `develop`: npm (Expo and React Native packages grouped) and GitHub Actions (SHA pins). |
 | `migrations-applied.txt` | The migrations applied to the live database. Add a line in the same PR that records applying one (see `supabase/APPLY.md`). |
 | `migration-exceptions.txt` | Reviewed exceptions to the applied-migration rule, one `file@blob-sha` per line. Today: only `20261001000000_scribe_hardening.sql`, reconciled with what was applied in commit 3730551. |
 | `scripts/migration-guard.mjs` | The guard itself. Run it locally with `node .github/scripts/migration-guard.mjs origin/develop`. Tests: `node --test .github/scripts/migration-guard.test.mjs`. |
-| `scripts/audit-gate.mjs` | Applies the ignore list to `npm audit --json`. Locally: `npm audit --omit=dev --json \| node .github/scripts/audit-gate.mjs`. Tests: `node --test .github/scripts/audit-gate.test.mjs`. |
+| `scripts/audit-gate.mjs` | Applies the ignore list to `npm audit --json`, and fails closed when the audit did not produce a real report. Locally: `npm audit --omit=dev --json \| node .github/scripts/audit-gate.mjs`. Tests: `node --test .github/scripts/audit-gate.test.mjs`. |
+| `scripts/fence-paths.mjs` | Decides which changed paths the fence treats as fenced. Locally: `git diff --name-only origin/develop \| node .github/scripts/fence-paths.mjs`. Tests: `node --test .github/scripts/fence-paths.test.mjs`. |
 | `actions/setup` | Node 22 plus the cached `node_modules`, or `npm ci` on a cache miss. |
 | `CODEOWNERS` | Review routing. One placeholder owner today; comments name the reviewer each area needs later. |
 | `pull_request_template.md` | The checklist from `CLAUDE.md`. |
@@ -36,7 +37,19 @@ Note for the release pull request (`develop` into `main`): the base, `main`, pre
 
 ## The fence and its limitation
 
-`fence.yml` fails when a pull request touches `supabase/**`, `.github/**` or authentication code (any file or folder under `apps/` or `packages/` named `auth`, `session` or `sign-in`) and has no `approve-migration` label. It runs on `pull_request_target`, so the base branch's copy of the workflow is used, and it never checks out pull request code; it only lists the changed files through the API.
+`fence.yml` fails when a pull request touches `supabase/**`, `.github/**` or authentication code and has no `approve-migration` label. It runs on `pull_request_target`, so the base branch's copy of the workflow is used, and it never checks out pull request code: it lists the changed files through the API, and fetches the path rules (`scripts/fence-paths.mjs`) from the pull request's base commit through the API, so a pull request cannot loosen the rules that judge it. Until the base has that file (only the pull request that adds it), the workflow uses a built-in fallback pattern and prints a warning.
+
+### Where auth code must live
+
+The fence recognises authentication code by name, not by reading it. So the convention is: **auth code lives in a folder, or a file whose name, starts with one of these words** (case does not matter, anywhere in the repository, and Expo Router names such as `(auth)/`, `[session]` or `_login` count):
+
+`auth` (also `authentication`, `authState`, `authorization`), `oauth`, `session`, `sign-in`/`signin`/`sign_in`, `sign-up`, `sign-out`, `login`/`log-in`, `logout`/`log-out`, `passkey`, `token`, `credential`.
+
+Examples that are fenced: `apps/mobile/src/features/authentication/useLogin.ts`, `apps/mobile/src/authState.ts`, `apps/mobile/src/login.ts`, `packages/api/src/token.ts`, `auth/index.ts`, `services/auth/handler.ts`, `apps/mobile/app/(auth)/welcome.tsx`.
+
+Deliberately not fenced: `docs/**` (prose and decision records, no code runs from it), `packages/design-tokens/**` (design tokens, not credentials), and names that start like these words but are not auth (`author*`, `tokenize*`/`tokenise*`).
+
+A file that handles sign-in, sessions or credentials under any other name (for example `useAccount.ts` calling the Supabase auth client) is not fenced. Do not do that: put it under an `auth/` folder or rename it. Reviewers should reject auth logic outside a recognised path. To change the rules, edit `scripts/fence-paths.mjs` and its fixtures in `scripts/fence-paths.test.mjs` in the same pull request; the change takes effect once merged into the base.
 
 What it does not do, until the founder turns on branch protection (CI-01):
 

@@ -4,7 +4,9 @@
 #
 # Runs on pull_request_target so the copy of this workflow on the base branch
 # is used, not the one in the pull request. It never checks out or runs pull
-# request code: it only reads the changed-file list through the API.
+# request code: it reads the changed-file list through the API, and the path
+# rules (.github/scripts/fence-paths.mjs, tested by fence-paths.test.mjs) from
+# the base commit through the API.
 #
 # Limitation: until branch protection makes the `fence` check required, this
 # is advisory; a failing check does not stop a merge. See .github/README.md.
@@ -33,19 +35,32 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'approve-migration') }}
-          # Fenced paths (extended regex on the repo-relative path):
-          #   supabase/**            database schema, access rules, tests, config
-          #   .github/**             CI, guard, fence, CODEOWNERS
-          #   auth paths             any file or folder under apps/ or packages/
-          #                          named auth, session or sign-in (plus .ext or -suffix)
-          FENCE: '^(supabase/|\.github/|(apps|packages)/(.*/)?(auth|session|sign-?in)([._-][^/]*)?(/|$))'
+          RULES: .github/scripts/fence-paths.mjs
+          # Bootstrap only, used when the base commit predates RULES: the same
+          # rule as fence-paths.mjs, roughly, as an extended regex (case
+          # insensitive). docs/** is excluded below in that case too.
+          FALLBACK_FENCE: '^(supabase/|\.github/)|(^|/)[^a-z0-9/]*(o?auth|session|sign[-_]?(in|up|out)|log[-_]?(in|out)|passkey|token|credential)'
         run: |
           # filename and, for renames, previous_filename: moving a file out of
           # a fenced folder is still a change to it.
           files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" \
             --jq '.[] | .filename, (.previous_filename // empty)' | sort -u)
-          hits=$(printf '%s\n' "$files" | grep -E "$FENCE" || true)
+
+          # The path rules come from the base commit through the API, never
+          # from the pull request, so a pull request cannot loosen the rules
+          # that judge it. No pull request code is checked out or run.
+          rules="$RUNNER_TEMP/fence-paths.mjs"
+          if gh api -H 'Accept: application/vnd.github.raw+json' \
+              "repos/$REPO/contents/$RULES?ref=$BASE_SHA" > "$rules" 2>/dev/null && [ -s "$rules" ]; then
+            echo "Fence rules from $RULES at base $BASE_SHA."
+            hits=$(printf '%s\n' "$files" | node "$rules")
+          else
+            echo "::warning title=fence bootstrap::The base commit has no $RULES; using the built-in fallback pattern."
+            hits=$(printf '%s\n' "$files" | grep -iE "$FALLBACK_FENCE" | grep -vE '^(docs|packages/design-tokens)/' || true)
+          fi
+
           if [ -z "$hits" ]; then
             echo "No fenced paths touched."
             exit 0

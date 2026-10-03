@@ -59,7 +59,14 @@ jobs:
           node-version: 22
       # Reads only package-lock.json; no install needed. The dated ignore list
       # is .github/audit-ignore.json. Never run `npm audit fix --force`.
+      # npm exits nonzero both when it finds advisories (some are on the ignore
+      # list) and when the audit itself fails, so its status is captured, not
+      # discarded, and handed to the gate. The gate fails closed on empty or
+      # non-JSON output, an npm `error` object, a report without the expected
+      # shape, or a nonzero exit that no reported advisory explains.
       - name: npm audit --omit=dev --audit-level=high, with the reviewed ignore list
         run: |
-          npm audit --omit=dev --audit-level=high --json > "$RUNNER_TEMP/audit.json" || true
-          node .github/scripts/audit-gate.mjs --level high --ignore .github/audit-ignore.json < "$RUNNER_TEMP/audit.json"
+          status=0
+          npm audit --omit=dev --audit-level=high --json > "$RUNNER_TEMP/audit.json" || status=$?
+          echo "npm audit exit status: $status"
+          node .github/scripts/audit-gate.mjs --level high --ignore .github/audit-ignore.json --npm-exit "$status" < "$RUNNER_TEMP/audit.json"
