@@ -85,7 +85,8 @@ async function attempt(persona, sql, params) {
 //                                                               parent  coparent contrib outsider anonymous anon
 const READS = [
   ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, 0]],
-  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, 0]],
+  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 0, 0, 0, 0]],
+  ['book_children', 'select 1 from book_children where id=$1', [CHILD],               [1, 1, 1, 0, 0, '42501']],
   ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, 0]],
   ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         [3, 3, 0, 0, 0, 0]],
   ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, 0]],
@@ -109,6 +110,8 @@ const READS = [
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], [1, 1, 1, 0, 0, '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], [1, 0, 0, 0, 0, '42501']],
+  // DB-05 / D-039: the birth year and the due date are parents only.
+  ['children: date_of_birth and due_date', 'select 1 from children where id=$1 and (date_of_birth is not null or due_date is null)', [CHILD], [1, 1, 0, 0, 0, 0]],
 ];
 
 const NEW_ID = '0192f000-0000-7000-8000-0000000000ff';
@@ -119,7 +122,7 @@ const WRITES = [
   ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
   ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
   ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
-  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', 'none']],
+  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'none', 'none', 'none', 'none']],
   ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-05-20')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: add self', `insert into child_members (child_id, profile_id) values ('${CHILD}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
@@ -132,6 +135,15 @@ const WRITES = [
   ['app_account_tokens: insert', `insert into app_account_tokens (profile_id) values (auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['legal_holds: insert', `insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', '${CHILD}', 'other', 'x', 'x', '2027-01-01')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: upload to own folder', null,                                             ['ok', 'ok', 'ok', '42501', '42501', '42501']],
+  // DB-01: every view is read-only for every persona (a write through the
+  // definer-owned view would skip RLS, the tombstone rules and the audit log).
+  ['book_entries: update A\'s letter', `update book_entries set final_text='x' where id='${aBook}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_entries: delete A\'s letter', `delete from book_entries where id='${aBook}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_entries: insert', `insert into book_entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode, engine_version, final_text) values ('${NEW_ID}', '${CHILD}', auth.uid(), 'letter', '2026-09-29', now(), 'spoken', 1, 'x')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_children: update', `update book_children set name='X' where id='${CHILD}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_children: delete', `delete from book_children where id='${CHILD}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // my_policy_state (DISTINCT ON) is not auto-updatable, so Postgres refuses writes
+  // with 55000 before checking grants; hardening.test.mjs checks its grants directly.
 ];
 
 // A holds Plus in this fixture (see apply_store_transaction above), so A may start
@@ -148,8 +160,8 @@ const RPCS = [
   ['set_member_auto_add', `select public.set_member_auto_add('${CHILD}', '${N}', true)`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['delete_entry', `select public.delete_entry('${aBook}')`,                             ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
   ['restore_entry', `select public.restore_entry('${aBook}')`,                           ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
-  ['request_book_deletion', `select public.request_book_deletion('${CHILD}', 'ios')`,    ['ok', 'ok', 'SCDEL', 'SCDEL', 'SCANO', '42501']],
-  ['cancel_book_deletion', `select public.cancel_book_deletion('${CHILD}')`,             ['ok', 'ok', 'SCDEL', 'SCDEL', 'SCANO', '42501']],
+  ['request_book_deletion', `select public.request_book_deletion('${CHILD}', 'ios')`,    ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['cancel_book_deletion', `select public.cancel_book_deletion('${CHILD}')`,             ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['request_account_deletion', `select * from public.request_account_deletion('ios')`,   ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['cancel_account_deletion', `select public.cancel_account_deletion()`,                 ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['record_policy_act', `select public.record_policy_act('privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],

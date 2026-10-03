@@ -18,6 +18,9 @@
 --    came first, instead of always after expiry.
 --  * App Store notification ledger rows are kept 7 years (transactions, DATA_CLASSIFICATION 2).
 --  * finalize_account_deletion also nulls entries.reviewed_by (new column).
+--  * (WS-01, 3 Oct 2026) purge_due keeps entry and book ids in purge_ledger for good
+--    (DB-02); service-only state errors use 55000 instead of SCDEL (DB-09); API roles
+--    hold no sequence privileges (PDB-02).
 -- Letters into deleted books are refused in 20261003000000 (entries_family_rules, SCDEL).
 
 alter table public.storage_purge_queue add column if not exists next_attempt_at timestamptz not null default now();
@@ -28,7 +31,7 @@ create index if not exists deletion_request_steps_due_idx on public.deletion_req
 
 -- Enqueue, or re-arm a row that was already done.
 create or replace function public.enqueue_storage_purge(p_bucket text, p_path text, p_prefix boolean, p_reason text, p_request uuid default null)
-returns void language sql security definer set search_path = public, pg_catalog as $$
+returns void language sql security definer set search_path = pg_catalog, public as $$
   insert into storage_purge_queue (bucket_id, object_path, is_prefix, reason, request_id)
   values (p_bucket, p_path, p_prefix, p_reason, p_request)
   on conflict (bucket_id, object_path) do update
@@ -39,12 +42,12 @@ $$;
 
 -- Backoff: 1 min x 2^(attempts - 1), capped at 6 hours.
 create or replace function public.purge_backoff(p_attempts int)
-returns interval language sql immutable set search_path = public, pg_catalog as $$
+returns interval language sql immutable set search_path = pg_catalog, public as $$
   select least(interval '6 hours', interval '1 minute' * power(2, greatest(p_attempts, 1) - 1));
 $$;
 
 create or replace function public.record_purge_attempt(p_id bigint, p_ok boolean, p_error_code text default null)
-returns void language sql security definer set search_path = public, pg_catalog as $$
+returns void language sql security definer set search_path = pg_catalog, public as $$
   update storage_purge_queue
      set attempts = attempts + 1,
          done_at = case when p_ok then now() end,
@@ -55,7 +58,7 @@ $$;
 
 -- p_status: 'done', 'not_applicable', 'failed' (terminal, alerts), or 'pending' (retry with backoff).
 create or replace function public.record_deletion_step(p_request uuid, p_step text, p_status text, p_error_code text default null)
-returns void language plpgsql security definer set search_path = public, pg_catalog as $$
+returns void language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
   if p_status not in ('done', 'not_applicable', 'failed', 'pending') then
     raise exception 'unknown step status' using errcode = '22023';
@@ -74,7 +77,7 @@ $$;
 drop function if exists public.purge_due(timestamptz);
 
 create or replace function public.purge_due(p_now timestamptz default now(), p_limit int default 500)
-returns jsonb language plpgsql security definer set search_path = public, pg_catalog as $$
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   r record;
   v_children int := 0;
@@ -143,8 +146,9 @@ begin
   perform set_config('app.retention_purge', 'off', true);
   delete from store_notifications where received_at < p_now - interval '7 years';
 
-  -- 5. Housekeeping.
-  delete from purge_ledger where purged_at < p_now - interval '60 days';
+  -- 5. Housekeeping. Entry and book ids stay in the ledger for good (DB-02: a purged
+  --    id must never be re-inserted); only person and object-path rows age out.
+  delete from purge_ledger where entity_type in ('profile', 'storage_object') and purged_at < p_now - interval '60 days';
   delete from storage_purge_queue where done_at is not null and done_at < p_now - interval '7 days';
 
   perform public.audit('purge_run', 'system', null, null,
@@ -155,13 +159,13 @@ end;
 $$;
 
 create or replace function public.finalize_account_deletion(p_request uuid, p_receipt jsonb)
-returns void language plpgsql security definer set search_path = public, pg_catalog as $$
+returns void language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid;
 begin
   select profile_id into v_uid from deletion_requests where id = p_request and kind = 'account' and status = 'executing' for update;
-  if not found then raise exception 'request not executing' using errcode = 'SCDEL'; end if;
+  if not found then raise exception 'request not executing' using errcode = '55000'; end if;
   if exists (select 1 from profiles where id = v_uid) then
-    raise exception 'auth user still exists' using errcode = 'SCDEL';
+    raise exception 'auth user still exists' using errcode = '55000';
   end if;
   insert into purge_ledger (entity_type, entity_id) values ('profile', v_uid::text) on conflict do nothing;
   update audit_events set actor_id = null where actor_id = v_uid;
@@ -194,6 +198,10 @@ begin
   end if;
 end;
 $$;
+
+-- PDB-02: the API roles hold no sequence privileges (repeated from 20261002020000
+-- so the end state does not depend on which sequences earlier files created).
+revoke all on all sequences in schema public from public, anon, authenticated;
 
 comment on column public.storage_purge_queue.next_attempt_at is 'L2 system timestamp (retry backoff)';
 comment on column public.storage_purge_queue.last_error_code is 'L2 HTTP status or error class';

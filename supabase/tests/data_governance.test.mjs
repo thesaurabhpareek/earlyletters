@@ -14,6 +14,8 @@ check(`${process.argv.length - 2} migrations apply cleanly`, true);
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('${S}'),('${U}')`);
 await publishPolicies();
 for (const u of [A, B, C, N, S]) await consent(u);
+// DB-07: profile deletion needs the consent pepper; the suite sets a test value.
+await sys(`select set_config('app.consent_pepper', 'test-pepper-0123456789abcdef0123456789', false)`);
 
 const CHILD = await newChild(A);
 const join = (uid, role, child = CHILD, inviter = A) => joinAs(uid, role, child, inviter);
@@ -74,8 +76,9 @@ check('users cannot read legal holds', (await as(A, 'select * from legal_holds')
 check('users cannot read the purge queue or ledger', (await as(A, 'select 1 from storage_purge_queue union all select 1 from purge_ledger')).rows.length === 0);
 
 // ── TC-09, TC-10 Children guard and last parent ───────────────────────────
-check('member cannot tombstone the book directly', await fails(() => as(N, `update children set deleted_at=now() where id='${CHILD}'`), 'SCDEL'));
-check('contributor cannot delete the book', await fails(() => as(N, `select public.request_book_deletion('${CHILD}', 'ios')`), 'SCDEL'));
+check('[DB-09] a parent cannot tombstone the book directly (SCTMB)', await fails(() => as(B, `update children set deleted_at=now() where id='${CHILD}'`), 'SCTMB'));
+check('[DB-05] a contributor cannot even see the book row to tombstone it', (await as(N, `update children set deleted_at=now() where id='${CHILD}'`)).affectedRows === 0);
+check('[DB-09] contributor cannot delete the book (SCPAR)', await fails(() => as(N, `select public.request_book_deletion('${CHILD}', 'ios')`), 'SCPAR'));
 check('sole parent cannot simply leave', await fails(() => as(S, `delete from child_members where profile_id='${S}'`), 'SCLPG'));
 
 // ── K-09 Raw transcripts are author-only ──────────────────────────────────
@@ -131,7 +134,9 @@ await as(B, `update children set family_can_read=true, nickname='Ashu', due_date
 check('parent changes shared book settings', (await sys(`select family_can_read from children where id='${CHILD}'`)).rows[0].family_can_read === true);
 check('[B-REQ-011] with "Family can read" on, a contributor reads in-book letters, never others\' private or pending ones',
   (await as(N, `select id from book_entries where child_id='${CHILD}' order by id`)).rows.map((r) => r.id).join() === [aBook, bBook, nBook].sort().join());
-check('contributor cannot change book settings', await fails(() => as(N, `update children set name='X' where id='${CHILD}'`), 'SCPAR'));
+check('[DB-05] contributor cannot change book settings (the row is not visible to them)',
+  (await as(N, `update children set name='X' where id='${CHILD}'`)).affectedRows === 0
+  && (await sys(`select name from children where id='${CHILD}'`)).rows[0].name === 'Asha');
 check('parent sets auto-add for a family member', (await one(A, `select public.set_member_auto_add('${CHILD}', '${N}', true) as ok`)).ok === true
   && (await sys(`select auto_add_letters from child_members where profile_id='${N}'`)).rows[0].auto_add_letters === true);
 check('contributor cannot set auto-add', await fails(() => as(N, `select public.set_member_auto_add('${CHILD}', '${N}', false)`), 'SCPAR'));

@@ -28,8 +28,13 @@
 --
 -- Custom SQLSTATEs (PowerSync uploadData must treat these as PERMANENT, not retry):
 --   SCIMM immutable column changed     SCTMB illegal tombstone transition
---   SCLPG last parent cannot leave     SCDEL deletion rule violated
---   SCPAR parents-only book setting
+--   SCLPG last parent cannot leave     SCDEL the book or letter is deleted
+--   SCPAR parents only                 SCACD an account deletion is pending (cancel it to restore)
+--   SCPRG this id was purged and can never come back
+--   SCCFG server setting missing (ops alert, not a client error)
+-- Review fixes on 3 Oct 2026 (WS-01): DB-01 view write grants revoked, DB-02 purged
+-- entry ids refused (SCPRG) and entry/book ledger rows kept, DB-06/DB-14 indexes,
+-- DB-07 pepper fails closed, DB-09 SCDEL split, DB-11 search_path order, PDB-02 sequences.
 
 -- ─── 0. Deleting the book creator's account must not delete the book ─────
 -- children.created_by was ON DELETE CASCADE: when the parent who created a book
@@ -55,7 +60,7 @@ alter table public.children add constraint children_photo_path_scoped
   check (photo_path is null or photo_path ~ ('^' || id::text || '/[0-9a-f-]{36}\.(jpg|jpeg|heic|png)$'));
 
 create or replace function public.is_child_parent(p_child uuid)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select exists (select 1 from child_members
                  where child_id = p_child and profile_id = auth.uid() and role = 'parent');
 $$;
@@ -63,13 +68,13 @@ $$;
 -- Clients may not tombstone, restore or re-own a book directly, and only parents
 -- may change book settings (children_member_update lets any member update).
 create or replace function public.children_guard()
-returns trigger language plpgsql set search_path = public, pg_catalog as $$
+returns trigger language plpgsql set search_path = pg_catalog, public as $$
 begin
   if current_user in ('authenticated', 'anon') then
     if new.deleted_at is distinct from old.deleted_at
        or new.deletion_request_id is distinct from old.deletion_request_id
        or new.created_by is distinct from old.created_by then
-      raise exception 'children: use request_book_deletion() / cancel_book_deletion()' using errcode = 'SCDEL';
+      raise exception 'children: use request_book_deletion() / cancel_book_deletion()' using errcode = 'SCTMB';
     end if;
     if not public.is_child_parent(old.id) then
       raise exception 'children: only a parent can change book settings' using errcode = 'SCPAR';
@@ -82,7 +87,7 @@ create trigger children_guard before update on public.children
   for each row execute function public.children_guard();
 
 create or replace function public.child_is_live(p_child uuid)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select exists (select 1 from children where id = p_child and deleted_at is null);
 $$;
 
@@ -107,9 +112,15 @@ alter table public.entries add constraint entries_photo_path_scoped
   check (photo_path is null
          or photo_path ~ ('^' || child_id::text || '/' || author_id::text || '/' || id::text || '\.(jpg|jpeg|heic|png)$')) not valid;
 
+-- Security definer so it can read purge_ledger, which has no client policies.
+-- Replaced in 20261003010000 (adds the UUIDv7 and captured_at checks).
 create or replace function public.entries_before_insert()
-returns trigger language plpgsql set search_path = public, pg_catalog as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
+  -- DB-02: a purged letter never comes back, even from a stale device's upsert.
+  if exists (select 1 from purge_ledger where entity_type = 'entry' and entity_id = new.id::text) then
+    raise exception 'entries: this letter was deleted for good' using errcode = 'SCPRG';
+  end if;
   new.raw_sha256 := sha256(convert_to(new.raw_transcript, 'UTF8'));
   if new.deleted_at is not null then
     -- Created and deleted offline before the first sync: tombstone starts now.
@@ -126,7 +137,7 @@ create trigger entries_insert_guard before insert on public.entries
 
 -- Replaces the core guard (same trigger name keeps pointing at this function).
 create or replace function public.entries_guard_immutable()
-returns trigger language plpgsql set search_path = public, pg_catalog as $$
+returns trigger language plpgsql set search_path = pg_catalog, public as $$
 declare
   v_client boolean := current_user in ('authenticated', 'anon');
 begin
@@ -173,7 +184,7 @@ alter table public.entry_versions add column if not exists machine_edits jsonb;
 alter table public.entry_versions add column if not exists superseded_by uuid;
 
 create or replace function public.entries_record_version()
-returns trigger language plpgsql security definer set search_path = public, pg_catalog as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
   if new.final_text is distinct from old.final_text
      or new.in_book is distinct from old.in_book
@@ -186,6 +197,12 @@ end;
 $$;
 
 create index if not exists entries_tombstone_idx on public.entries (deleted_at) where deleted_at is not null;
+-- DB-06: a full (non-partial) index on child_id, for the children FK cascade and
+-- purge_due's per-book scans, which also see tombstoned rows.
+create index if not exists entries_child_occurred_idx on public.entries (child_id, occurred_on);
+-- DB-14: entries_book_idx (child_id, occurred_on) where deleted_at is null is covered
+-- by entries_child_occurred_idx and entries_book_page_idx.
+drop index if exists public.entries_book_idx;
 -- Book list and chapter pages: newest first within one child, live in-book letters only.
 create index if not exists entries_book_page_idx on public.entries (child_id, occurred_on desc, captured_at desc)
   where in_book and deleted_at is null;
@@ -219,14 +236,18 @@ select e.id, e.child_id, e.author_id, e.author_signs_as, e.kind, e.occurred_on, 
         and e.child_id in (select m.child_id from public.child_members m
                              join public.children c on c.id = m.child_id and c.deleted_at is null
                             where m.profile_id = (select auth.uid())));
+-- DB-01: Supabase grants insert/update/delete on new views to the API roles. The
+-- view is auto-updatable and runs as its owner, so a write through it would skip
+-- RLS, the tombstone rules and the audit log. Read-only for everyone.
 revoke all on public.book_entries from public, anon;
+revoke insert, update, delete, truncate, references, trigger on public.book_entries from authenticated;
 grant select on public.book_entries to authenticated;
 comment on view public.book_entries is
   'Book letters for members without the author''s working material (raw transcript, its hash, machine edits, STT metadata). PRD K-09.';
 
 -- Photos: own folder, or the photo of a live in-book letter in a live book you belong to.
 create or replace function public.can_read_entry_photo(p_name text)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select exists (
     select 1 from entries e
      where e.photo_path = p_name and e.in_book and e.deleted_at is null
@@ -262,7 +283,7 @@ create trigger child_member_prefs_touch before update on public.child_member_pre
   for each row execute function public.touch_updated_at();
 
 create or replace function public.set_member_auto_add(p_child uuid, p_member uuid, p_on boolean)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
   if not public.is_child_parent(p_child) then
     raise exception 'only a parent can change auto-add' using errcode = 'SCPAR';
@@ -293,12 +314,12 @@ create table public.legal_holds (
 create index legal_holds_active_idx on public.legal_holds (scope, scope_id) where released_at is null;
 
 create or replace function public.is_held(p_scope text, p_id uuid)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select exists (select 1 from legal_holds where scope = p_scope and scope_id = p_id and released_at is null);
 $$;
 
 create or replace function public.entry_is_held(p_entry uuid)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select exists (
     select 1 from entries e
     where e.id = p_entry
@@ -330,14 +351,14 @@ create index audit_events_actor_idx on public.audit_events (actor_id, at);
 create index audit_events_child_idx on public.audit_events (child_id, at);
 
 create or replace function public.audit(p_action text, p_subject_type text, p_subject uuid, p_child uuid, p_detail jsonb default '{}'::jsonb)
-returns void language sql security definer set search_path = public, pg_catalog as $$
+returns void language sql security definer set search_path = pg_catalog, public as $$
   insert into audit_events (actor_id, actor_kind, action, subject_type, subject_id, child_id, detail)
   values (auth.uid(), case when auth.uid() is null then 'system' else 'user' end,
           p_action, p_subject_type, p_subject, p_child, coalesce(p_detail, '{}'::jsonb));
 $$;
 
 create or replace function public.entries_audit()
-returns trigger language plpgsql security definer set search_path = public, pg_catalog as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
   if old.deleted_at is null and new.deleted_at is not null and new.deleted_reason = 'user' then
     perform public.audit('entry_deleted', 'entry', new.id, new.child_id);
@@ -352,7 +373,7 @@ create trigger entries_audit after update on public.entries
 
 -- ─── 4. Last-parent guard and membership audit ───────────────────────────
 create or replace function public.child_members_guard()
-returns trigger language plpgsql security definer set search_path = public, pg_catalog as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
   if old.role = 'parent'
      and exists (select 1 from children c where c.id = old.child_id and c.deleted_at is null)
@@ -367,7 +388,7 @@ create trigger child_members_guard before delete on public.child_members
   for each row execute function public.child_members_guard();
 
 create or replace function public.child_members_audit()
-returns trigger language plpgsql security definer set search_path = public, pg_catalog as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
   if auth.uid() is null then return null; end if;   -- cascades and service jobs log elsewhere
   if auth.uid() = old.profile_id then
@@ -424,7 +445,7 @@ create table public.deletion_request_steps (
 -- Request account deletion. Idempotent: a second call returns the open request.
 create or replace function public.request_account_deletion(p_source text, p_had_active_subscription boolean default null)
 returns table (request_id uuid, scheduled_for timestamptz)
-language plpgsql security definer set search_path = public, pg_catalog as $$
+language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_uid uuid := auth.uid();
   v_id uuid;
@@ -469,7 +490,7 @@ end;
 $$;
 
 create or replace function public.cancel_account_deletion()
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := auth.uid(); v_id uuid;
 begin
   if v_uid is null then raise exception 'not authenticated'; end if;
@@ -489,12 +510,12 @@ $$;
 -- With a co-parent: equals rule (B F8, B-REQ-016) - only the caller's own
 -- letters are removed and the caller leaves; the book stays.
 create or replace function public.request_book_deletion(p_child uuid, p_source text)
-returns text language plpgsql security definer set search_path = public, pg_catalog as $$
+returns text language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := auth.uid(); v_id uuid;
 begin
   if v_uid is null then raise exception 'not authenticated'; end if;
   if not exists (select 1 from child_members where child_id = p_child and profile_id = v_uid and role = 'parent') then
-    raise exception 'only a parent can delete a book' using errcode = 'SCDEL';
+    raise exception 'only a parent can delete a book' using errcode = 'SCPAR';
   end if;
   if exists (select 1 from child_members where child_id = p_child and role = 'parent' and profile_id <> v_uid) then
     update entries set deleted_at = now(), deleted_reason = 'book_deletion'
@@ -517,17 +538,17 @@ end;
 $$;
 
 create or replace function public.cancel_book_deletion(p_child uuid)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := auth.uid(); v_req uuid;
 begin
   if not exists (select 1 from child_members where child_id = p_child and profile_id = v_uid and role = 'parent') then
-    raise exception 'only a parent can restore a book' using errcode = 'SCDEL';
+    raise exception 'only a parent can restore a book' using errcode = 'SCPAR';
   end if;
   select deletion_request_id into v_req from children where id = p_child and deleted_at is not null for update;
   if not found then return false; end if;
   -- A book deleted as part of an account deletion comes back only by cancelling that request.
   if exists (select 1 from deletion_requests where id = v_req and kind = 'account') then
-    raise exception 'cancel the account deletion to restore this book' using errcode = 'SCDEL';
+    raise exception 'cancel the account deletion to restore this book' using errcode = 'SCACD';
   end if;
   update children set deleted_at = null, deletion_request_id = null where id = p_child;
   update deletion_requests set status = 'cancelled', cancelled_at = now() where id = v_req and status in ('scheduled', 'held');
@@ -539,7 +560,7 @@ $$;
 -- Delete one of your own letters. Works even after you left or were removed
 -- from the book (entries_author_update requires membership). Idempotent.
 create or replace function public.delete_entry(p_entry uuid)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
   if not exists (select 1 from entries where id = p_entry and author_id = auth.uid()) then
     raise exception 'entry not found' using errcode = 'P0002';
@@ -551,7 +572,7 @@ $$;
 
 -- Restore one of your own letters from Recently deleted. Idempotent.
 create or replace function public.restore_entry(p_entry uuid)
-returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v entries%rowtype;
 begin
   select * into v from entries where id = p_entry for update;
@@ -560,7 +581,7 @@ begin
   end if;
   if v.deleted_at is null then return true; end if;
   if v.deleted_reason = 'account_deletion' then
-    raise exception 'cancel the account deletion to restore these letters' using errcode = 'SCDEL';
+    raise exception 'cancel the account deletion to restore these letters' using errcode = 'SCACD';
   end if;
   if not public.child_is_live(v.child_id) then
     raise exception 'restore the book first' using errcode = 'SCDEL';
@@ -599,7 +620,7 @@ create table public.policy_versions (
 -- Versions are immutable; a major change to a document that needs an affirmative act
 -- must require re-consent; major changes need 30 days' notice unless counsel approves.
 create or replace function public.policy_versions_guard()
-returns trigger language plpgsql set search_path = public, pg_catalog as $$
+returns trigger language plpgsql set search_path = pg_catalog, public as $$
 declare v_affirm boolean;
 begin
   if tg_op = 'UPDATE' then
@@ -653,7 +674,7 @@ comment on table public.policy_acceptances is
 
 -- Rows are immutable except the pseudonymisation step and the retention purge.
 create or replace function public.policy_acceptances_guard()
-returns trigger language plpgsql set search_path = public, pg_catalog as $$
+returns trigger language plpgsql set search_path = pg_catalog, public as $$
 begin
   if tg_op = 'DELETE' then
     if current_setting('app.retention_purge', true) is distinct from 'on' then
@@ -677,11 +698,19 @@ create trigger policy_acceptances_guard before update or delete on public.policy
 
 -- Pseudonymise before the profile row disappears. The pepper is a server-only
 -- setting (APPLY.md step 6) so hashes cannot be reversed by guessing UUIDs.
+-- DB-07: fails closed. Without a pepper of at least 32 characters no profile can be
+-- deleted (SCCFG), rather than silently hashing with an empty pepper. There is no
+-- bypass flag; the test suite sets its own test pepper.
 create or replace function public.policy_acceptances_pseudonymise()
-returns trigger language plpgsql security definer set search_path = public, pg_catalog as $$
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
+declare v_pepper text := current_setting('app.consent_pepper', true);
 begin
+  if v_pepper is null or char_length(v_pepper) < 32 then
+    raise exception 'app.consent_pepper is not set (APPLY.md step 6)' using errcode = 'SCCFG',
+      hint = 'Ops: set the pepper for this environment; never change it once set.';
+  end if;
   update policy_acceptances
-     set subject_hash = sha256(convert_to(old.id::text || coalesce(current_setting('app.consent_pepper', true), ''), 'UTF8')),
+     set subject_hash = sha256(convert_to(old.id::text || v_pepper, 'UTF8')),
          pseudonymised_at = now(),
          profile_id = null
    where profile_id = old.id;
@@ -704,21 +733,25 @@ create or replace function public.record_policy_act(
   p_client_recorded_at timestamptz default null,
   p_rendered_sha256 bytea default null,
   p_context jsonb default '{}'::jsonb
-) returns uuid language plpgsql security definer set search_path = public, pg_catalog as $$
+) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_ver policy_versions%rowtype; v_id uuid;
 begin
   if auth.uid() is null then raise exception 'not authenticated'; end if;
-  if p_method = 'support_assisted' then raise exception 'support-assisted acts are recorded by the service role'; end if;
+  if p_method = 'support_assisted' then
+    raise exception 'support-assisted acts are recorded by the service role' using errcode = '22023';
+  end if;
   select * into v_ver from policy_versions where document = p_document and version = p_version;
-  if not found then raise exception 'unknown document version'; end if;
-  if v_ver.new_users_from > now() then raise exception 'version not yet published'; end if;
+  if not found or v_ver.new_users_from > now() then
+    raise exception 'unknown document version' using errcode = 'P0002';
+  end if;
   -- Accepting a superseded version is refused so stale clients cannot pin old terms.
   if p_action = 'accept' and exists (
        select 1 from policy_versions n
         where n.document = p_document and n.new_users_from <= now()
           and (n.major, n.minor, n.patch) > (v_ver.major, v_ver.minor, v_ver.patch)
           and n.requires_reconsent) then
-    raise exception 'a newer version requires acceptance';
+    raise exception 'a newer version requires acceptance' using errcode = 'SCVER',
+      hint = 'Fetch policy_actions_needed() and show that version.';
   end if;
   if p_client_recorded_at is not null and p_client_recorded_at > now() + interval '5 minutes' then
     p_client_recorded_at := null;  -- device clock in the future; keep server time only
@@ -740,11 +773,12 @@ select distinct on (a.document)
  order by a.document, a.accepted_at desc;
 
 revoke all on public.my_policy_state from public, anon;
+revoke insert, update, delete, truncate, references, trigger on public.my_policy_state from authenticated;   -- DB-01
 grant select on public.my_policy_state to authenticated;
 
 create or replace function public.policy_actions_needed()
 returns table (document text, version text, effective_at timestamptz, summary text)
-language sql stable security definer set search_path = public, pg_catalog as $$
+language sql stable security definer set search_path = pg_catalog, public as $$
   with cur as (
     select distinct on (v.document) v.*
       from policy_versions v join policy_documents d on d.key = v.document
@@ -764,7 +798,7 @@ language sql stable security definer set search_path = public, pg_catalog as $$
 $$;
 
 create or replace function public.has_active_consent(p_profile uuid, p_document text)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select coalesce((
     select a.action = 'accept'
       from policy_acceptances a
@@ -822,7 +856,7 @@ create table public.purge_ledger (
 );
 
 create or replace function public.purge_due(p_now timestamptz default now())
-returns jsonb language plpgsql security definer set search_path = public, pg_catalog as $$
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   r record;
   v_children int := 0;
@@ -888,8 +922,9 @@ begin
   delete from policy_acceptances where pseudonymised_at < p_now - interval '3 years';
   perform set_config('app.retention_purge', 'off', true);
 
-  -- 5. Housekeeping.
-  delete from purge_ledger where purged_at < p_now - interval '60 days';
+  -- 5. Housekeeping. Entry and book ids stay in the ledger for good (DB-02: a purged
+  --    id must never be re-inserted); only person and object-path rows age out.
+  delete from purge_ledger where entity_type in ('profile', 'storage_object') and purged_at < p_now - interval '60 days';
   delete from storage_purge_queue where done_at is not null and done_at < p_now - interval '7 days';
 
   perform public.audit('purge_run', 'system', null, null,
@@ -902,11 +937,11 @@ $$;
 -- deletes Storage objects and the auth user (Supabase refuses to delete a user
 -- who still owns Storage objects).
 create or replace function public.prepare_account_purge(p_request uuid)
-returns jsonb language plpgsql security definer set search_path = public, pg_catalog as $$
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid; v_entries int; v_books int;
 begin
   select profile_id into v_uid from deletion_requests where id = p_request and kind = 'account' and status = 'executing' for update;
-  if not found then raise exception 'request not executing' using errcode = 'SCDEL'; end if;
+  if not found then raise exception 'request not executing' using errcode = '55000'; end if;
   if public.is_held('profile', v_uid)
      or exists (select 1 from entries e where e.author_id = v_uid
                 and (public.is_held('entry', e.id) or public.is_held('child', e.child_id))) then
@@ -949,13 +984,13 @@ $$;
 
 -- Called after the auth user is deleted (profiles and everything keyed to it cascade).
 create or replace function public.finalize_account_deletion(p_request uuid, p_receipt jsonb)
-returns void language plpgsql security definer set search_path = public, pg_catalog as $$
+returns void language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid;
 begin
   select profile_id into v_uid from deletion_requests where id = p_request and kind = 'account' and status = 'executing' for update;
-  if not found then raise exception 'request not executing' using errcode = 'SCDEL'; end if;
+  if not found then raise exception 'request not executing' using errcode = '55000'; end if;
   if exists (select 1 from profiles where id = v_uid) then
-    raise exception 'auth user still exists' using errcode = 'SCDEL';
+    raise exception 'auth user still exists' using errcode = '55000';
   end if;
   insert into purge_ledger (entity_type, entity_id) values ('profile', v_uid::text) on conflict do nothing;
   update audit_events set actor_id = null where actor_id = v_uid;
@@ -1000,6 +1035,11 @@ create policy policy_acceptances_own_read on public.policy_acceptances for selec
 -- or the service role (publishing, support-assisted, retention purge).
 
 -- ─── 9. Function privileges ──────────────────────────────────────────────
+-- DB-11: security-definer functions resolve pg_catalog before public. The two from
+-- the applied core file are re-pinned here (alter, not replace: bodies unchanged).
+alter function public.handle_new_user() set search_path = pg_catalog, public;
+alter function public.is_child_member(uuid) set search_path = pg_catalog, public;
+
 -- Internal: triggers, helpers and service-role jobs.
 revoke execute on function public.children_guard() from public, anon, authenticated;
 revoke execute on function public.entries_before_insert() from public, anon, authenticated;
@@ -1053,6 +1093,11 @@ begin
   end if;
 end;
 $$;
+
+-- PDB-02: identity sequences (audit_events, storage_purge_queue) are written only by
+-- security-definer code; the API roles get no sequence privileges. Re-checked at the
+-- end of 20261003020000_purge_batching.sql.
+revoke all on all sequences in schema public from public, anon, authenticated;
 
 -- ─── 10. Classification (docs/legal/DATA_CLASSIFICATION.md) ──────────────
 -- Every column in `public` starts with its level: L1 Public, L2 Internal,

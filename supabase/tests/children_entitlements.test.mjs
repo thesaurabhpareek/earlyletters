@@ -7,6 +7,8 @@ const { A, B, C, N, S, U } = users;
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}'),('${N}'),('${S}'),('${U}')`);
 await publishPolicies();
 for (const u of [A, B, C, N, S]) await consent(u);
+// DB-07: profile deletion needs the consent pepper; the suite sets a test value.
+await sys(`select set_config('app.consent_pepper', 'test-pepper-0123456789abcdef0123456789', false)`);
 
 const create = (uid, id, name = 'Asha', dob = '2025-05-20', due = null) =>
   as(uid, `select public.create_child($1, $2, $3::date, $4::date) as id`, [id, name, dob, due]).then((r) => r.rows[0].id);

@@ -24,6 +24,10 @@
 --
 -- New SQLSTATEs: SCCID invalid or reused client id (permanent),
 --                SCPLS Plus needed to start another book (keep the book on the phone; TDD 08 2.5).
+-- Review fixes on 3 Oct 2026 (WS-01):
+--  * DB-15: letter ids must be device UUIDv7 (SCCID) and captured_at may not be more
+--    than a day in the future (22023), checked in entries_before_insert.
+--  * DB-02 / DB-09: a purged book id is refused with SCPRG (was SCDEL).
 
 -- ─── 1. Profiles: first-run batch flag ──────────────────────────────────
 alter table public.profiles add column if not exists first_run_closed_at timestamptz;
@@ -33,7 +37,7 @@ update public.profiles p set first_run_closed_at = now()
 
 -- profiles_update_self lets a person edit their own row; the batch flag is server-owned.
 create or replace function public.profiles_guard()
-returns trigger language plpgsql set search_path = public, pg_catalog as $$
+returns trigger language plpgsql set search_path = pg_catalog, public as $$
 begin
   if current_user in ('authenticated', 'anon')
      and (new.id is distinct from old.id or new.first_run_closed_at is distinct from old.first_run_closed_at
@@ -55,12 +59,38 @@ alter table public.children add constraint children_has_date
 -- RFC 9562 UUIDv7: version nibble 7, variant 10xx, 48-bit Unix ms timestamp
 -- between 2024-01-01 and one day from now.
 create or replace function public.is_valid_client_uuid7(p_id uuid)
-returns boolean language sql stable set search_path = public, pg_catalog as $$
+returns boolean language sql stable set search_path = pg_catalog, public as $$
   select p_id is not null
      and substr(p_id::text, 15, 1) = '7'
      and substr(p_id::text, 20, 1) in ('8', '9', 'a', 'b')
      and to_timestamp((('x' || lpad(substr(replace(p_id::text, '-', ''), 1, 12), 16, '0'))::bit(64)::bigint) / 1000.0)
          between timestamptz '2024-01-01 00:00:00+00' and now() + interval '1 day';
+$$;
+
+-- Letters (DB-15). Same body as 20261002020000 plus the id and clock checks.
+create or replace function public.entries_before_insert()
+returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
+begin
+  if not public.is_valid_client_uuid7(new.id) then
+    raise exception 'entries: letter id must be a UUIDv7 made on the device' using errcode = 'SCCID';
+  end if;
+  if new.captured_at > now() + interval '1 day' then
+    raise exception 'entries: captured_at is in the future' using errcode = '22023';
+  end if;
+  -- DB-02: a purged letter never comes back, even from a stale device's upsert.
+  if exists (select 1 from purge_ledger where entity_type = 'entry' and entity_id = new.id::text) then
+    raise exception 'entries: this letter was deleted for good' using errcode = 'SCPRG';
+  end if;
+  new.raw_sha256 := sha256(convert_to(new.raw_transcript, 'UTF8'));
+  if new.deleted_at is not null then
+    -- Created and deleted offline before the first sync: tombstone starts now.
+    new.deleted_at := now();
+    new.deleted_reason := 'user';
+  else
+    new.deleted_reason := null;
+  end if;
+  return new;
+end;
 $$;
 
 -- ─── 4. Entitlements (Apple, StoreKit 2 direct) ─────────────────────────
@@ -112,14 +142,14 @@ alter table public.store_notifications enable row level security;  -- no policie
 -- Production counts production purchases only. Dev and staging set
 -- `alter database postgres set app.store_environment = 'sandbox'` (APPLY.md).
 create or replace function public.store_environment_allowed(p_environment text)
-returns boolean language sql stable set search_path = public, pg_catalog as $$
+returns boolean language sql stable set search_path = pg_catalog, public as $$
   select coalesce(p_environment = 'production'
                   or (p_environment = 'sandbox' and current_setting('app.store_environment', true) = 'sandbox'), false);
 $$;
 
 -- Account Plus: trial, active or grace, and not past its end (5 minutes of skew).
 create or replace function public.has_plus(p_profile uuid)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select exists (
     select 1 from store_subscriptions s
      where s.profile_id = p_profile
@@ -132,7 +162,7 @@ $$;
 -- Book Plus (K-28): any parent of the book holds Plus. Members only; everyone
 -- else gets false, so it cannot be used to probe who pays.
 create or replace function public.book_has_plus(p_child uuid)
-returns boolean language sql stable security definer set search_path = public, pg_catalog as $$
+returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select not public.is_anonymous()
      and exists (select 1 from child_members me where me.child_id = p_child and me.profile_id = auth.uid())
      and exists (select 1 from child_members m join children c on c.id = m.child_id and c.deleted_at is null
@@ -143,7 +173,7 @@ $$;
 create or replace function public.get_plan_state()
 returns table (has_plus boolean, status text, product_id text, expires_at timestamptz,
                grace_expires_at timestamptz, will_renew boolean, environment text)
-language plpgsql stable security definer set search_path = public, pg_catalog as $$
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user();
 begin
   return query
@@ -159,7 +189,7 @@ $$;
 
 -- The appAccountToken the app passes to Product.purchase(options:). Stable per person.
 create or replace function public.my_app_account_token()
-returns uuid language plpgsql security definer set search_path = public, pg_catalog as $$
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user(); v_token uuid;
 begin
   insert into app_account_tokens (profile_id) values (v_uid) on conflict (profile_id) do nothing;
@@ -192,7 +222,7 @@ create or replace function public.apply_store_transaction(
   p_will_renew boolean default null,
   p_original_purchase_at timestamptz default null,
   p_storefront text default null
-) returns jsonb language plpgsql security definer set search_path = public, pg_catalog as $$
+) returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_profile uuid;
   v_rows int;
@@ -256,7 +286,7 @@ drop function if exists public.create_child(text, date);
 -- Shared body. p_free skips the Plus rule (first-run batch only).
 create or replace function public.create_child_row(p_uid uuid, p_id uuid, p_name text, p_date_of_birth date,
                                                    p_due_date date, p_free boolean)
-returns uuid language plpgsql security definer set search_path = public, pg_catalog as $$
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_creator uuid; v_found boolean;
 begin
   if not public.is_valid_client_uuid7(p_id) then
@@ -269,7 +299,7 @@ begin
     raise exception 'child id already in use' using errcode = 'SCCID';
   end if;
   if exists (select 1 from purge_ledger where entity_type = 'child' and entity_id = p_id::text) then
-    raise exception 'this book was deleted' using errcode = 'SCDEL';
+    raise exception 'this book was deleted for good' using errcode = 'SCPRG';
   end if;
   if p_name is null or char_length(btrim(p_name)) not between 1 and 60 then
     raise exception 'name must be 1 to 60 characters' using errcode = '22023';
@@ -296,7 +326,7 @@ $$;
 
 create or replace function public.create_child(p_id uuid, p_name text, p_date_of_birth date default null,
                                                p_due_date date default null)
-returns uuid language plpgsql security definer set search_path = public, pg_catalog as $$
+returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_uid uuid := public.require_user();
 begin
   -- One person's creates are serialised so two offline books cannot both take the free slot.
@@ -312,7 +342,7 @@ $$;
 -- All free while the batch is open; the call closes it. A retry of the same batch
 -- returns the same ids. After the batch is closed each child follows create_child's rule.
 create or replace function public.create_first_run_children(p_children jsonb)
-returns uuid[] language plpgsql security definer set search_path = public, pg_catalog as $$
+returns uuid[] language plpgsql security definer set search_path = pg_catalog, public as $$
 declare
   v_uid uuid := public.require_user();
   v_open boolean;

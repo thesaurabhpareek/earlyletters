@@ -234,7 +234,7 @@ check('[X-01] a new user during the notice window is offered the new version', o
 check('[X-01] and can accept it', (await codeOf(() => consent(U, { version: '2.0.0' }))) === 'ok');
 check('[X-01] after accepting, nothing is asked and content is allowed',
   (await as(U, `select 1 from policy_actions_needed() where document='terms'`)).rows.length === 0 && (await gate(U)).content_allowed);
-check('[X-01] the old version is refused to new users', (await codeOf(() => as(C, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`))) === 'P0001');
+check('[X-01] the old version is refused to new users', (await codeOf(() => as(C, `select public.record_policy_act('terms', '1.0.0', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`))) === 'SCVER');
 check('[X-01] existing acceptors are not asked until the change is in force',
   (await as(A, `select 1 from policy_actions_needed() where document='terms'`)).rows.length === 0 && (await gate(A)).content_allowed);
 
