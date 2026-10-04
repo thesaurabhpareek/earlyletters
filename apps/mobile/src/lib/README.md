@@ -80,7 +80,9 @@ Plus is StoreKit 2 on this phone through the plan engine (ADR 0013, founder deci
 - `dates.ts`: the one date format, via `Intl` in the device's English locale (en-US "Tuesday, September 29, 2026"; other English locales their own order; non-English falls back to en-GB): `dayDate(iso)`, `longDate(iso)`, `letterDateline(child, iso)` (age sentence from core), `ageText(child, iso)`, `isoOf(date)`. Never call `toLocaleDateString` in screens.
 - `copy.ts`: also `plural(count, one, other)` until content has plural forms.
 - `read-together.ts`: free Read together sessions are counted per book on this phone, only when a session ran on a free try (never under Plus; D-037). `readTogetherGate(childId?)` (the plan engine's decision), `canStartReadTogether(childId?)`, `recordReadTogetherSession(childId?)`, `readTogetherSessions(childId)`, `freeReadTogetherSessions()` (default 3; remote config may only raise it). The root layout calls `setReadTogetherFreeSessionsSource(() => effectiveFreeSessions(getRemoteConfig()))`.
-- `haptics.ts`: `haptic('tap' | 'press' | 'soft' | 'success' | 'warning')`.
+- `haptics.ts`: `haptic('tap' | 'press' | 'soft' | 'success' | 'warning')`; vocabulary and throttle in `haptics.shared.ts` (tested).
+- `a11y.ts`: `announce`, `useFocusOnMount`, `useTheme`, `useIsAccessibilitySize`, `useIsLargeText`; the pure thresholds (`isAccessibilitySize`, `isLargeText`, `FONT_SCALE`) live in `a11y.logic.ts` (tested).
+- `analytics/`: `track.ts` is what screens call (plus `childIndexOf`, `ordinalOf`, `promptKindOf`, `wordCountOf`, `fromReminderWithin2h`); `ask.ts` + `ask-sequencer.logic.ts` (tested) decide when the consent sheet appears, and `components/consent/consent-ask.tsx` (mounted in the root layout) shows it.
 - `motion.ts`: `useMotion()`, `useReducedMotion()`; never read Reduce Motion elsewhere.
 - `audio-mode.ts`: `setAudioMode('idle' | 'recording' | 'playback')`; always restore `idle`.
 

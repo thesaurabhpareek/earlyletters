@@ -26,6 +26,7 @@ import { Card } from '@/components/ui/card';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { announce, useTheme } from '@/lib/a11y';
+import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
 import { copy, fill, greetingKey, pendingCopy } from '@/lib/copy';
 import { ageText, dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
@@ -116,6 +117,8 @@ export default function Tonight() {
 
   const start = (mode: 'spoken' | 'typed') => {
     const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
+    const active = getActiveChildId();
+    trackCaptureStarted({ mode, source: 'tonight', promptKind: promptKindOf(prompt.key), childIndex: childIndexOf(active), role: 'parent' });
     router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
   };
 

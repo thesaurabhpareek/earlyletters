@@ -28,6 +28,7 @@ import { setAudioMode } from '@/lib/audio-mode';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useReducedMotion } from '@/lib/motion';
+import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
 import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
 import { deleteDraft, getActiveChild, setRecordingProgress } from '@/lib/store';
 
@@ -58,6 +59,9 @@ export default function Listen() {
   const db = useSharedValue(-160);
   const [phase, setPhase] = useState<Phase>('asking');
   const announcedMinute = useRef(0);
+  useEffect(() => {
+    if (phase === 'denied') track('error_shown', { code: 'mic_denied' });
+  }, [phase]);
 
   // Metering into the UI thread; never setState per frame.
   useEffect(() => {
@@ -186,6 +190,7 @@ export default function Listen() {
         onPress: async () => {
           const id = takeId.current;
           ended.current = true;
+          trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: lastDuration.current || null });
           const uri = recorder.uri;
           if (id) await abandonTake(recorder, id);
           else await setAudioMode('idle').catch(() => {});
