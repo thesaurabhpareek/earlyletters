@@ -5,7 +5,7 @@ Generated from the web end-to-end flows (`apps/mobile/e2e-web/*.flow.ts`), run a
 (402 x 874 CSS px at 3x). Nothing here is a mock-up: every screen is a screenshot of the running app, and `text` in each step JSON is the
 visible text read from the page.
 
-- Journeys: **20**, steps: **116** (happy 87, unhappy 29), screenshots: **116**, plus **29** full-length captures of scrolling screens (`<id>-full.png`).
+- Journeys: **20**, steps: **131** (happy 92, unhappy 39), screenshots: **131**, plus **34** full-length captures of scrolling screens (`<id>-full.png`).
 - Files: `steps/<id>.json` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines), `screens/<id>.png`, `screens/<id>-full.png`.
 - Regenerate: `npm run e2e:web:journey -w @scribe/mobile` then `node apps/mobile/e2e-web/support/build-index.mjs`.
 - Seeded steps use the fictional family Asha (the web preview switch `EXPO_PUBLIC_WEB_PREVIEW=1`, `?seed=asha`), because the web build has no speech model and cannot produce words from a recording. They are the real screens with data filled in; each such step says so.
@@ -20,16 +20,19 @@ visible text read from the page.
 | J01-02 | happy | **Yes is chosen.** The person taps Yes. Continue turns on. Only a yes/no flag is stored on the phone, never an age. | J01-01 | [png](screens/J01-02.png) |
 | J01-03 | happy | **Welcome.** The envelope, the name, one line of what the book is. Two buttons: begin, or "I was invited". | J01-02 | [png](screens/J01-03.png) |
 | J01-04 | happy | **The promise.** What the app does with words (tidies, never rewrites), that the voice is kept on the phone, that it can mishear, and that it is private by default. | J01-03 | [png](screens/J01-04.png) |
-| J01-05 | unhappy | **Child step with no name.** Nothing typed yet. Continue is disabled, so an empty name can never be saved (there is no error message on this step, the button is simply off). | J01-04 | [png](screens/J01-05.png) |
-| J01-06 | unhappy | **A very long name is cut at 60 characters.** The person pastes 90 letters. The field keeps the first 60 and stops, so a name can never break the layout of the book. No warning is shown. | J01-05 | [png](screens/J01-06.png) |
-| J01-07 | happy | **Name entered, birthday is today.** The name is in. The birthday defaults to today; on a phone the date is a compact picker (the web build shows it as a plain date pill and cannot open the iOS picker). | J01-05 | [png](screens/J01-07.png) |
-| J01-08 | happy | **Not born yet: due date instead.** Choosing "Not here yet" turns the date into a due date. The picker only allows dates up to 305 days ahead; a future birthday is not selectable on a phone (not testable on web, where the picker does not open). | J01-07 | [png](screens/J01-08.png) |
-| J01-09 | happy | **Add another child (twins or more).** A second name field appears, each with a remove button. Every book made in first run is free. | J01-07 | [png](screens/J01-09.png) |
-| J01-10 | happy | **What does Asha call you?.** The name the child will call this parent, which signs every letter. Sign my letters is off until something is chosen or typed. | J01-07 | [png](screens/J01-10.png) |
-| J01-11 | happy | **Signature chosen.** Tapping a suggestion fills the field and previews the signature in script. | J01-10 | [png](screens/J01-11.png) |
-| J01-12 | happy | **Choose the spoken language.** A sheet lists the languages letters can be spoken in. Choosing one only starts that language's downloads (the download itself is native and cannot run on web). | J01-11 | [png](screens/J01-12.png) |
-| J01-13 | happy | **The book is open.** A page with one line. The only action is to write the first letter. | J01-12 | [png](screens/J01-13.png) |
-| J01-14 | happy | **Tonight, for the first time.** The home tab: a greeting with the signature name, one gentle prompt, Speak and Type side by side, and "Not much today" for quiet days. | J01-13 | [png](screens/J01-14.png) |
+| J01-05 | unhappy | **Child step with no name.** Nothing typed yet. Continue is off and a line above it says why: "Add a name to continue." An empty name can never be saved. | J01-04 | [png](screens/J01-05.png) |
+| J01-06 | unhappy | **A very long name stops at 60 characters, and says so.** The person pastes 90 letters. The field keeps the first 60 and a quiet line explains the limit, so nothing is cut without a word. The limit is the same one the book and the server use. | J01-05 | [png](screens/J01-06.png) |
+| J01-07 | unhappy | **Name entered, no birthday chosen yet.** The birthday is not filled in for the person: the date row is empty (on a phone it says "Choose a date") and Continue waits, with a line saying what is needed. A seven-month-old can no longer be saved as "0 days" by an unseen default. "Born today" is one tap for a newborn. | J01-05 | [png](screens/J01-07.png) |
+| J01-08 | unhappy | **A birthday in the future.** On the web the date can be typed; a day after today is refused in words (on a phone the picker simply does not offer it). | J01-05 | [png](screens/J01-08.png) |
+| J01-09 | happy | **An older baby: the birthday is chosen.** The person picks the real birthday (about seven months ago). Continue turns on. Letters will be filed by the baby's true age. | J01-05 | [png](screens/J01-09.png) |
+| J01-10 | unhappy | **Not born yet: due date not chosen.** Choosing "Not here yet" turns the date into a due date, which is not filled in either. Continue waits and says why. | J01-09 | [png](screens/J01-10.png) |
+| J01-11 | unhappy | **A due date too far ahead.** A due date can be at most 305 days away, the same range the phone picker offers. | J01-10 | [png](screens/J01-11.png) |
+| J01-12 | unhappy | **A second name left empty.** Twins or more: an empty second field keeps Continue off, and the line says to fill it in or remove it. | J01-07 | [png](screens/J01-12.png) |
+| J01-13 | happy | **What does Asha call you?.** The name the child will call this parent, which signs every letter. Sign my letters is off until something is chosen or typed. | J01-07 | [png](screens/J01-13.png) |
+| J01-14 | happy | **Signature chosen.** Tapping a suggestion fills the field and previews the signature in script. | J01-13 | [png](screens/J01-14.png) |
+| J01-15 | happy | **Choose the spoken language.** A sheet lists the languages letters can be spoken in. Choosing one only starts that language's downloads (the download itself is native and cannot run on web). | J01-14 | [png](screens/J01-15.png) |
+| J01-16 | happy | **The book is open.** A page with one line. The only action is to write the first letter. | J01-15 | [png](screens/J01-16.png) |
+| J01-17 | happy | **Tonight, for the first time.** The home tab: a greeting with the signature name, one gentle prompt, Speak and Type side by side, and "Not much today" for quiet days. | J01-16 | [png](screens/J01-17.png) |
 
 ## J02 Under 18: the stop screen and the way back
 
@@ -54,6 +57,18 @@ visible text read from the page.
 | J03-07 | happy | **One child's settings.** Name, date, signature, a reminders switch, the co-parent row ("Soon") and a "Family can read" switch that stays off in v1.0. Hide this book is offered because there is more than one (its confirm dialog is native and does not appear on web). | J03-06 | [png](screens/J03-07.png) |
 | J03-08 | unhappy | **A third book needs Plus.** Starting another book after first run is a Plus feature. The screen says every existing book stays open, and offers Not now. Buying needs StoreKit, which does not exist on web, so the page says Plus is not available on this device. | J03-07 | [png](screens/J03-08.png) |
 | J03-09 | happy | **Not now returns to Settings.** Declining the gate changes nothing and goes back. | J03-08 | [png](screens/J03-09.png) [full](screens/J03-09-full.png) |
+| J03-20 | happy | **Child settings: every detail row opens.** Name, birthday and "Sign my letters to Asha as" each open to change. Before this they were read-only. | J03-07 | [png](screens/J03-20.png) |
+| J03-21 | unhappy | **An empty name.** Save stays off and a line says why: "Add a name to save." A book can never lose its name. | J03-20 | [png](screens/J03-21.png) [full](screens/J03-21-full.png) |
+| J03-22 | unhappy | **A very long name.** The field stops at 60 and says so softly; nothing is cut without a word. | J03-21 | [png](screens/J03-22.png) [full](screens/J03-22-full.png) |
+| J03-23 | happy | **Name changed (trimmed).** The new name shows in the row and in the title. Letters already written are not touched. | J03-22 | [png](screens/J03-23.png) |
+| J03-24 | unhappy | **An empty signature.** Save stays off with a line saying what is missing. | J03-23 | [png](screens/J03-24.png) [full](screens/J03-24-full.png) |
+| J03-25 | happy | **Signature changed.** New letters are signed Papa. Letters already written keep the signature they were written with. | J03-24 | [png](screens/J03-25.png) |
+| J03-26 | unhappy | **A birthday in the future.** Refused in words; Save stays off. | J03-25 | [png](screens/J03-26.png) [full](screens/J03-26-full.png) |
+| J03-27 | happy | **Birthday corrected.** A baby who was saved as born today is now about seven months old; letters are filed by the true age from here on. | J03-26 | [png](screens/J03-27.png) |
+| J03-30 | happy | **Before the due date: no offer.** While the due date is still ahead, settings show the due date and nothing else is asked. | J03-07 | [png](screens/J03-30.png) |
+| J03-31 | happy | **After the due date: a gentle offer.** One quiet card: "Asha was born, set the birthday". No count of days, no nudging; it simply waits. | J03-30 | [png](screens/J03-31.png) |
+| J03-32 | unhappy | **A birthday that has not come yet.** Refused in words; the button stays off. Letters written before the birthday stay in Before You. | J03-31 | [png](screens/J03-32.png) [full](screens/J03-32-full.png) |
+| J03-33 | happy | **Birthday set.** The due date is replaced by the birthday; the offer is gone. The child and every letter keep their place. | J03-32 | [png](screens/J03-33.png) |
 
 ## J04 Tonight, prompts, and the usage-sharing ask
 

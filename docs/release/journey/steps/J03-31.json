@@ -6,11 +6,10 @@
   "note": "One quiet card: \"Asha was born, set the birthday\". No count of days, no nudging; it simply waits.",
   "from": "J03-30",
   "shot": "screens/J03-31.png",
-  "full": "screens/J03-31-full.png",
   "route": "/settings/children/:id",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,7 +21,7 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
+  "scrolls": false,
   "text": "Asha's book Your due date has come. Tell us the day and your letters find their place. Asha was born, set the birthday Name and birthday Name Asha Due date October 14, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha's book Family see the letters you add to Asha's book. This starts once family can join.",
   "lines": [
     "Asha's book",

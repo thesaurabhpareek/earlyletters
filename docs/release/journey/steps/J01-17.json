@@ -6,11 +6,10 @@
   "note": "The home tab: a greeting with the signature name, one gentle prompt, Speak and Type side by side, and \"Not much today\" for quiet days.",
   "from": "J01-16",
   "shot": "screens/J01-17.png",
-  "full": "screens/J01-17-full.png",
   "route": "/",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,7 +21,7 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
+  "scrolls": false,
   "text": "Asha · 6 months and 3 weeks The house is quiet, Mama. What do you want Asha to know about today? A thought to start with Who gets the biggest smile from Asha these days? Another thought Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 6 months and 3 weeks",

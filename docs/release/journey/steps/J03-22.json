@@ -9,8 +9,8 @@
   "full": "screens/J03-22-full.png",
   "route": "/settings/children/:id",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
