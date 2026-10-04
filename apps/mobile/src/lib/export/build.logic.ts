@@ -12,7 +12,11 @@
  *   version. Other people's letters carry only what the book shows (4.1).
  * - Original recordings, byte for byte. A recording that is not on this
  *   phone is listed with `audio_missing`.
- * - The printable book holds the letters in the book that have words.
+ * - The printable book holds the letters in the book that have words. A quiet-day mark never prints
+ *   (D-084), even if an old row says it is in the book.
+ * - A quiet-day mark is exported as a row in entries.json with `final_text: ''` (the whole history
+ *   stays complete) and a small letters/ file with the date and the label only. Old rows that hold
+ *   the former template sentence export the same way: the sentence is not a person's words.
  */
 import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
@@ -146,6 +150,11 @@ export function oldestFirst<T extends Pick<Entry, 'occurredOn' | 'capturedAt' | 
 const signsAsOf = (e: Entry, child: Child) => e.authorSignsAs ?? child.signsAs;
 const spoken = (e: Entry) => e.captureMode !== 'typed';
 const waiting = (e: Entry) => e.transcriptStatus === 'waiting';
+const quiet = (e: Pick<Entry, 'kind'>) => e.kind === 'not_much';
+/** What the printable book may hold: kept in the book, has words, is not a quiet-day mark. */
+const printable = (e: Entry) => e.inBook && !quiet(e) && !waiting(e) && e.finalText.trim().length > 0;
+/** The words an exported row carries. A quiet-day mark has none, whatever an old row stored. */
+const wordsOf = (e: Entry) => (quiet(e) ? '' : e.finalText);
 
 /** Matches components/book/chapters.ts provenanceOf (not importable here: it uses the app alias). */
 function provenance(e: Entry): string {
@@ -180,6 +189,8 @@ export function audioMissingReason(e: SnapshotEntry): 'not_on_this_device' | nul
 
 function letterText(e: SnapshotEntry, child: SnapshotChild, locale: string): string {
   const l = exportCopy.letterFile;
+  // A quiet-day mark: the date and the label only. No author, no words, no signature (D-084).
+  if (quiet(e)) return `${l.date}: ${letterDateline(child, e.occurredOn, locale)}\n\n${copy.book.quietDay.label}\n`;
   const lines = [
     `${l.to}: ${child.name}`,
     `${l.from}: ${signsAsOf(e, child)}`,
@@ -244,6 +255,12 @@ function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): stri
         .map(
           (ch) => `<h3>${escapeHtml(chapterName(ch.month))}</h3>\n${ch.entries
             .map((e) => {
+              if (quiet(e)) {
+                return `<article class="mark">
+<p class="date">${escapeHtml(dayDate(e.occurredOn, snapshot.locale))} &middot; ${escapeHtml(copy.book.quietDay.label)}</p>
+<p class="file"><a href="${encodeURI(letterPath(folders.get(child.id)!, e))}">${escapeHtml(letterPath(folders.get(child.id)!, e))}</a></p>
+</article>`;
+              }
               const missing = audioMissingReason(e);
               const audio =
                 spoken(e) && e.own && e.audioUri && e.audioOnPhone
@@ -276,7 +293,7 @@ ${audio}
 <style>
 body{margin:0 auto;max-width:42rem;padding:2rem 1.25rem 4rem;background:${c.paper};color:${c.ink};font-family:${SERIF};font-size:1.15rem;line-height:1.6}
 h1,h2,h3{font-weight:500;line-height:1.25}h1{font-size:2rem}h2{font-size:1.6rem;margin-top:3rem}h3{font-size:1.2rem;color:${c.accent};margin-top:2.5rem}
-article{border-top:1px solid ${c.line};padding:1.25rem 0}
+article{border-top:1px solid ${c.line};padding:1.25rem 0}article.mark{padding:.5rem 0}article.mark p{margin:.15rem 0}
 .date,.note,.file,.intro{font-family:${SANS};font-size:.85rem;color:${c.inkMuted}}
 .tag{border:1px solid ${c.line};border-radius:999px;padding:0 .5rem;margin-left:.5rem}
 .sig{text-align:end;font-style:italic}
@@ -307,7 +324,7 @@ export function paperFor(locale: string): Paper {
 
 export function bookHtml(child: SnapshotChild, entries: SnapshotEntry[], locale: string): string {
   const c = brand.colors;
-  const inBook = entries.filter((e) => e.inBook && !waiting(e) && e.finalText.trim().length > 0);
+  const inBook = entries.filter(printable);
   const chapters = chaptersOf(child, inBook);
   const years = [...new Set(chapters.map((ch) => yearOf(ch.month)))];
   const subtitle =
@@ -406,7 +423,7 @@ export function planExport(snapshot: ExportSnapshot): ExportPlan {
 
   const books: BookJob[] = [];
   for (const child of snapshot.children) {
-    const mine = entries.filter((e) => e.childId === child.id && e.inBook && !waiting(e) && e.finalText.trim().length > 0);
+    const mine = entries.filter((e) => e.childId === child.id && printable(e));
     if (mine.length === 0) continue;
     books.push({ childId: child.id, path: `book/${folders.get(child.id)}.pdf`, html: bookHtml(child, mine, snapshot.locale), letters: mine.length });
   }
@@ -472,7 +489,7 @@ export async function dataFiles(
       edit_level: e.editLevel,
       language: null,
       words: waiting(e) ? 'waiting_for_words' : 'ready',
-      final_text: e.finalText,
+      final_text: wordsOf(e),
       in_book: e.inBook,
       text_file: letterPath(folders.get(child.id)!, e),
       photo: null,

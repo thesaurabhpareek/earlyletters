@@ -199,7 +199,6 @@ export const en = {
     },
     typing: {
       placeholder: "Write it the way you would say it.",
-      letterPlaceholder: "Dear {child},",
       saveButton: "Save",
     },
     // A take that was recorded but not yet read back (TDD 01 3.4).
@@ -233,19 +232,12 @@ export const en = {
     autosaved: "Saved on this phone",
   },
 
+  // D-084: "Not much today" stores a mark with no text. The app never writes a sentence for the person.
   notMuch: {
     button: "Not much today",
-    confirmTitle: "That counts.",
-    confirmBody: "Some days are just days. We will keep a small line for today.",
-    template: "{weekday}. Not much today. Just {child}, and us, and an ordinary day.",
-    templateAlt: [
-      "{weekday}. A quiet one. {child} was here, and so were we.",
-      "{weekday}. Nothing big to tell. Just a day with {child} in it.",
-      "{weekday}. Tired tonight. Loved {child} all day anyway.",
-    ],
-    addWordButton: "Add a few words",
-    saveButton: "Keep this line",
+    confirmBody: "Marks today without writing anything.",
     savedToast: "Kept. Rest well.",
+    undo: "Undo",
   },
 
   review: {
@@ -390,6 +382,13 @@ export const en = {
     // v1.0: recordings stay on the phone that made them (D-059), so a co-parent's voice is on their own phone.
     recordingElsewhere: "Recording kept on {signsAs}'s phone",
     privateLabel: "Private",
+    // D-084: a quiet-day mark is the app's own small line, never a letter: no text, no signature.
+    quietDay: {
+      label: "A quiet day",
+      a11y: "{date}. A quiet day, kept.",
+      remove: "Remove this mark",
+      removedToast: "Removed.",
+    },
     familyLabel: "From family", // v1.1
     filters: {
       all: "All",

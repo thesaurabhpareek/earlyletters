@@ -28,8 +28,10 @@ import { haptic } from '@/lib/haptics';
 import { childIndexOf, track, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
 import { canStartReadTogether, freeReadTogetherSessions, readTogetherGate, readTogetherSessions, recordReadTogetherSession } from '@/lib/read-together';
+import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
+import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
 
 
@@ -45,7 +47,7 @@ export default function ReadTogether() {
   const [autoNext, setAutoNext] = useState(false);
   const [startNext, setStartNext] = useState(false);
 
-  const letters = useMemo(() => (child ? listEntriesForChild(child.id).filter((e) => e.inBook && e.transcriptStatus !== 'waiting').reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const letters = useMemo(() => (child ? readableInBook(listEntriesForChild(child.id)).reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One session per opening; counted once, only when allowed.
   const session = useRef<{ startedAt: number; furthest: number } | null>(null);
@@ -153,17 +155,17 @@ export default function ReadTogether() {
             {month !== null && month > 0 ? fill(rt.nowReading, { signsAs, month }) : `${signsAs}, ${chapterTitle(month)}`}
           </Text>
           {letterWords(entry) === 'nobodySpoke' ? (
-            <Text variant="signature" scale={scale} tone="muted">
-              {bookCopy.nobodySpoke}
-            </Text>
+            <AppNote scale={scale}>{bookCopy.nobodySpoke}</AppNote>
           ) : (
             <Text variant="letterBody" scale={scale} selectable>
               {entry.finalText}
             </Text>
           )}
-          <Text variant="signature" scale={scale} className="self-end">
-            {fill(copy.book.signature, { signsAs })}
-          </Text>
+          {showsSignature(letterWords(entry)) ? (
+            <Text variant="signature" scale={scale} className="self-end">
+              {fill(copy.book.signature, { signsAs })}
+            </Text>
+          ) : null}
           {spoken ? (
             <AudioPlayer
               key={entry.id}

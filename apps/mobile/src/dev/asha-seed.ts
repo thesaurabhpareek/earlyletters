@@ -60,9 +60,12 @@ export const ASHA_REVIEW_RAW =
  * `waiting`: the Review draft has no words yet and one voice-only letter sits
  * in the book, for the "waiting for words" previews (TDD 03 FM-9).
  * `quiet`: one kept recording in which nobody spoke (words came back empty),
- * for the calm "nobody spoke" note on the card and the letter page.
+ * for the calm "no words in this one" note on the card and the letter page.
+ * `marks`: two quiet-day marks saved the way older builds saved them, holding the template
+ * sentence (D-084): one on a day with no letter (listed as "A quiet day"), one on the day of
+ * a letter (hidden). The old sentence must never show.
  */
-export function seedAsha(opts: { waiting?: boolean; quiet?: boolean } = {}): { draftId: string } | null {
+export function seedAsha(opts: { waiting?: boolean; quiet?: boolean; marks?: boolean } = {}): { draftId: string } | null {
   if (listChildren().length > 0) return null;
   const now = Date.now();
   const child = addChild({ name: 'Asha', birthday: todayISO(new Date(now - 214 * DAY)), dueDate: null, signsAs: 'Mama' });
@@ -144,6 +147,29 @@ export function seedAsha(opts: { waiting?: boolean; quiet?: boolean } = {}): { d
       audioDurationMs: 18000,
       transcriptStatus: null,
     });
+  }
+  if (opts.marks) {
+    for (const daysAgo of [1, 4]) {
+      const at = new Date(now - daysAgo * DAY);
+      const sentence = 'Today. Not much today. Just Asha, and us, and an ordinary day.';
+      saveEntry({
+        id: uuidv7(at.getTime() + 1),
+        kind: 'not_much',
+        occurredOn: todayISO(at),
+        capturedAt: at.toISOString(),
+        captureMode: 'typed',
+        editLevel: 'verbatim',
+        promptKey: null,
+        engineVersion: ENGINE_VERSION,
+        rawTranscript: sentence,
+        machineEdits: [],
+        finalText: sentence,
+        inBook: false,
+        soundsLikeMe: null,
+        childId: child.id,
+        authorSignsAs: 'Mama',
+      });
+    }
   }
   setSetting('preview.draftId', draft.id);
   return { draftId: draft.id };

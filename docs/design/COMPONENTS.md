@@ -210,6 +210,13 @@ type LetterCardProps = {
 - **Builds on:** our Card + PhotoFrame + Signature + Text; long-press through `platform/action-menu` (never Expo UI directly). Web: same composition with shadcn `Card` + `ContextMenu`.
 - **Android later:** same card and transition code (MOTION 5f is the v1 default on both). `action-menu.android.tsx` opens a `fitToContents` Sheet listing Share / Edit / Delete instead of a context menu; `accessibilityActions` unchanged. Android back and predictive back run the dismiss path.
 
+### 2.5b AppNote and QuietDayRow (the app's own words, D-084)
+The Book is a record of what people said. When the app must say something, it says it small and unsigned, and never in the letter's type.
+- **AppNote:** `components/book/app-note.tsx`. A small Info glyph and one line in the `footnote` style (sans, muted). Never serif, never italic, no "From ..." line under it. Used for a recording that is waiting for its words and for one with no words in it ("No words in this one. The recording is kept just as it is."), on the LetterCard, the letter page and Read together. Plain text for VoiceOver (the glyph is hidden). The Reading Size scale applies on the letter page and Read together.
+- **QuietDayRow:** `components/book/quiet-day-row.tsx`. "Not much today" stores a mark with no words, so the Book shows a small row, not a card: a Moon glyph, the date and "A quiet day", muted sans, unsigned, no Private chip. Minimum height 44 pt, Dynamic Type uncapped. It is not a button into a letter page. VoiceOver reads "{date}. A quiet day, kept." Long-press, or the VoiceOver action "Remove this mark", removes it with an Undo toast ("Removed.", 2.14).
+- **Rules:** a mark is hidden on a day that also has a letter. It never enters a count, a chapter line, a streak or an insight; a chapter of only marks shows no count line. It is never printed, read aloud in Read together, or moved into the book. In the export it is a row with `final_text: ''` and a small file holding the date and the label.
+- **Android later:** same components.
+
 ### 2.6 Chip
 - **Purpose:** filters (month, author), tags, and selection of one or many options.
 - **Variants:** `filter` (toggle, selected = `text` fill + `bg` label), `choice` (single-select group), `tag` (read-only, `accentSoft`), `input` (removable, trailing ×).

@@ -25,7 +25,7 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useTheme } from '@/lib/a11y';
-import { copy, fill, pendingCopy } from '@/lib/copy';
+import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { createDraft, deleteDraft, getActiveChild, getDraft, setDraftTyped, todayISO } from '@/lib/store';
 
@@ -127,9 +127,8 @@ export default function Write() {
             className="mt-3"
             value={text}
             onChangeText={onChange}
-            placeholder={fill(copy.tonight.typing.letterPlaceholder, { child: child.name })}
+            placeholder={copy.tonight.typing.placeholder}
             autoFocus
-            accessibilityHint={copy.tonight.typing.placeholder}
           />
         </ScrollView>
         <View className="border-t border-border bg-background px-5 pb-2 pt-3">

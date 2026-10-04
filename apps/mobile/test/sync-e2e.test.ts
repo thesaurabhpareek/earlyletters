@@ -11,7 +11,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { migrate } from '../src/lib/db/migrations';
+import { MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
 import { createSyncEngine, type SyncEngine } from '../src/lib/sync/engine';
 import { digestOf } from '../src/lib/sync/merge';
@@ -445,4 +445,33 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     expect((await server(ids.paused))?.final_text).toBe('Written while paused, then edited.');
     expect(local(A2, ids.paused)?.final_text).toBe('Written while paused, then edited.');
   }, 120_000);
+
+  it('[D-084] the quiet-day migration blanks an old sentence through the outbox; the server accepts it and keeps the old text in history', async () => {
+    // A mark saved by an older build: it holds the template sentence, and it already reached the server.
+    const old = 'Tuesday. Not much today. Just Asha, and us, and an ordinary day.';
+    const id = uuid7(clock.t + ++seq);
+    A1.transaction(() => {
+      A1.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version, raw_transcript,
+           machine_edits, final_text, in_book, sounds_like_me, updated_at, child_id, author_id, author_signs_as)
+         VALUES (?, 'not_much', '2026-09-30', ?, 'typed', 'verbatim', NULL, 2, ?, '[]', ?, 0, NULL, ?, ?, ?, 'Mama')`,
+        id, iso(), old, old, iso(), ASHA, readSetting(A1, 'sync.ownerId'),
+      );
+      enqueueEntryUpsert(A1, id, ALL_GROUPS, ctx());
+    });
+    await engineOn(A1, A, serverFor(A)).sync();
+    expect((await server(id))?.final_text).toBe(old);
+
+    clock.t += 1000;
+    const v5 = MIGRATIONS.find((m) => m.version === 5)!;
+    A1.transaction(() => v5.up(A1, ctx()));
+    expect(local(A1, id)).toMatchObject({ final_text: '', raw_transcript: old, sync_state: 'pending' });
+    expect(outboxTypes(A1)).toEqual(['entry.upsert']);
+
+    const report = await engineOn(A1, A, serverFor(A)).sync();
+    expect(report).toMatchObject({ pushed: 1, rejected: 0 });
+    expect(await server(id)).toMatchObject({ final_text: '', raw_transcript: old }); // raw never changes
+    expect((await sys('select 1 from entry_versions where entry_id = $1 and final_text = $2', [id, old])).rows.length).toBe(1);
+    expect(local(A1, id)?.sync_state).toBe('synced');
+  }, 60_000);
 });

@@ -36,6 +36,10 @@ We speak about time, not endings. The promise is that {child} will read and hear
 
 We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, tidied or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." Transcription only fixes microphone and grammar slips.
 
+## The app's own words
+
+The app's own words are small and unsigned, and never sit in the letter's type. The Book shows only what a person said or typed, in the letter's serif, signed by them. When the app has to say something, such as "A quiet day" or "No words in this one. The recording is kept just as it is.", it uses the small muted note style and never a signature. "Not much today" stores a mark with no sentence (D-084); we never write a line for the person.
+
 ## Word for word
 
 The edit feature is called **Word for word** (founder decision, Oct 3 2026, D-074). It removes an "um" or a stumble, fixes a misheard name, spelling, script and punctuation, and nothing else. Each of these is a **small fix**, shown in the letter as a mark the person can tap and undo. The setting that keeps every um and false start is **Exactly as said**; the untouched words are "exactly what you said".
