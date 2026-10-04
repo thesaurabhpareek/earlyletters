@@ -31,6 +31,7 @@ import { copy, fill, greetingKey, pendingCopy } from '@/lib/copy';
 import { ageText, dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
+import { armListenStart } from '@/lib/resilience/start-intent';
 import { getActiveChildId, getFamily, listDrafts, listEntries, saveEntry, subscribe, todayISO, uuidv7, type Draft, type Family } from '@/lib/store';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -119,6 +120,7 @@ export default function Tonight() {
     const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
     const active = getActiveChildId();
     trackCaptureStarted({ mode, source: 'tonight', promptKind: promptKindOf(prompt.key), childIndex: childIndexOf(active), role: 'parent' });
+    if (mode === 'spoken') armListenStart(); // the tap that lets Listen start the microphone
     router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
   };
 
