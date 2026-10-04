@@ -180,7 +180,7 @@ export const accountEmails = {
   // request_account_deletion(). Facts from DELETION_AND_EXPORT_SPEC 2.6.1 step 6 and 2.6.2: the leaver's
   // letters are tombstoned at request and leave the book at once; they come back if the leaver cancels
   // within 30 days; the book and the remaining parent's letters are untouched (DATA-REQ-020). The spec
-  // does not cover telling the remaining parent or giving them a copy: see REVIEW_NOTES 3.18.
+  // does not cover telling the remaining parent or giving them a copy: see docs/legal/COUNSEL_PACKET.md.
   // No child name (E-1). {coParentName} is already shown to this person in the app (E-2).
   'coparent-left': {
     id: 'coparent-left',

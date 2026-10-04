@@ -115,7 +115,7 @@ Sources: `BRIEF.md` required list, `CATALOG.md` as of 3 Oct 2026 08:00, and the 
 | `book-deletion-cancelled` | T | (iii) | |
 | `deletion-request-received` (Ops) | T | (iii); legal obligation | Contains no data about the person beyond the request. |
 | `deletion-confirm` (Ops or Fn) | T | (iii); legal obligation | Added 3 Oct 2026 evening (customer review CUS-14). One-time link to `/delete-account/confirm`; states expiry; no promotion. |
-| `coparent-left` | T | (iii) change in their standing in a book (a co-member's letters leave it) | Added 3 Oct 2026 evening (CNT-08, CUS-04, founder instruction). Names the leaver by display name only (E-2), no child name (E-1), no letter content. Counsel questions in `packages/content/legal/REVIEW_NOTES.md` 3.2 item 18. |
+| `coparent-left` | T | (iii) change in their standing in a book (a co-member's letters leave it) | Added 3 Oct 2026 evening (CNT-08, CUS-04, founder instruction). Names the leaver by display name only (E-2), no child name (E-1), no letter content. Counsel questions in `docs/legal/COUNSEL_PACKET.md`. |
 | `privacy-request-received` (Ops) | T | (iii) | |
 | `export-ready` (1.1) | T | (v) | |
 | `policy-update` | **T, confirmed** | (iii) "notification concerning a change in the terms or features of" the account | Legal change notices are transactional. Keep the subject factual ("We are updating our Privacy Policy"), first paragraph the change, no feature launch news in the same email. If a policy change is bundled with a new feature announcement, the feature part must be secondary and after the change, or send separately. |
@@ -279,7 +279,7 @@ The only way to stop transactional email is to close the account. Keep the count
 
 ### 5.2 Required fields, by notice
 
-Field codes. Under D-080 (founder, 3 Oct 2026) every date and the plan come from the subscription status the app reports (plan, trial end date, renewal date, cancelled flag), never from list prices in code; the status carries no price, so `{price}` is the published price of the reported plan (US only, Brief decision 3). No App Store Server Notifications and no receipts reach us. Counsel questions: `packages/content/legal/REVIEW_NOTES.md` 3.2 item 16.
+Field codes. Under D-080 (founder, 3 Oct 2026) every date and the plan come from the subscription status the app reports (plan, trial end date, renewal date, cancelled flag), never from list prices in code; the status carries no price, so `{price}` is the published price of the reported plan (US only, Brief decision 3). No App Store Server Notifications and no receipts reach us. Counsel questions: `docs/legal/COUNSEL_PACKET.md`.
 
 | Code | Field | Placeholder (suggested) | Why |
 |---|---|---|---|
