@@ -1,5 +1,7 @@
 # Early Letters — User Research (people, behaviour, onboarding, willingness to pay)
 
+> **Note, 4 Oct 2026 (D-051):** Dated 1 Oct 2026; it predates D-051. Its requirement R15 (already-made letters stay playable and exportable whether or not the user pays; the paywall gates only new creation or premium features) is consistent with the 4 Oct model. Findings that recommend unlimited free writing are not the current promise.
+
 Status: desk research, 1 Oct 2026. No primary interviews yet. Competitor coverage lives in `COMPETITIVE_RESEARCH.md`.
 Labels: **F** = Fact (sourced) · **S** = Signal (anecdotal or qualitative, sourced) · **A** = Assumption (ours, to validate). [Sn] refers to the Sources list.
 

@@ -1,5 +1,7 @@
 # earlyletters.com: storyboard v0 (the scroll film)
 
+> **Note, 4 Oct 2026 (D-051):** scene S10 below ("Free to write, read and keep", one sentence about Plus) predates the decision that Plus is the membership with 2 free letters. The scene copy lives in `apps/web/src/content/site.ts`, owned by the website and content agents; this file was not used to change it. Needs a rewrite before launch.
+
 Owner: coordinator. Status: v0, 2026-10-03. Copy lives in `apps/web/src/content/site.ts`; this file says what we see and how scenes hand off. The content team's decks (docs/web/copy/) may change words, not structure, unless the coordinator merges a structural change.
 
 ## The idea
@@ -31,7 +33,7 @@ Creative platform (CREATIVE.md): **Said once. Heard for years.** Territory A (Ex
 | S07 | `years-later` | dusk | 3 | "Years from now". A reading lamp, a small pair of shoes by a bed (line drawings). The phone shows the same letter, "From Papa, Month 9", playing. "Said once. Heard for years." Optional "Hear this letter" (hidden until a released recording exists). | Dusk light, lamp drawing on, phone rises, playback moves. Calm, slow. | SC5 |
 | S08 | `languages` | night | 2.5 | "Today you found the light switch." in English, then the same sentence in Hindi, Spanish, Mandarin, French, Arabic (right to left) and Portuguese. "Say it in your language." | Large type cross-fades and slides per language; each script set in an appropriate font; Arabic enters from the right. | SC5 |
 | S09 | `private` | night | 2 | An envelope line drawing closes. "Private by default." Five plain promises arrive one at a time. | Envelope flap draws closed; promises enter with 30 ms stagger. | SC6 |
-| S10 | `pricing` | night | 1.5 | "Free to write, read and keep." One sentence about Plus. | Minimal: one fade-up. A breath before the end card. | SC6 |
+| S10 | `pricing` | night | 1.5 | "Free to write, read and keep." One sentence about Plus. | Minimal: one fade-up. A breath before the end card. | SC6 *(Predates D-051; "free" sentence is superseded.)* |
 | S11 | `start` | night | 1.5 | End card: "Tell Meera about today." The one action: email capture before launch, the official App Store badge after. Footer below. | Lamp light returns softly behind the card. | SC6 |
 
 The persistent action (header on desktop, bottom pill on phones) is owned by SC6 and is always reachable: before launch it jumps to `#start` and focuses the email field; after launch it opens the App Store.

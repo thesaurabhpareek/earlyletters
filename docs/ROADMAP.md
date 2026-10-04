@@ -39,7 +39,7 @@ Assumptions [A]: AI agents write most code in single-concern PRs (ADR 0011); the
 | **M5 Account, sync, co-parent** | 4 to 8 | M0 domain (SMTP, Services ID, universal links); M1; **D-023 answer by 16 Oct** | Sign in with Apple and email link plus code; Terms acceptance and sensitive-data consent recorded server-side; re-own local data in one transaction; `book_access` migration; sync client per D-023 with idempotency, rejected-write and restore-epoch tests; co-parent invite; two-phone test | BL-050 to BL-054, BL-170 to BL-178, BL-024 |
 | **M6 Family contributors in the app** | 7 to 10 | M5 | Family role invites by link or code (one child each), invite-redeem with rate limits, contributor first run, approvals (add, keep aside, auto-add), leave and remove with letter retention, "Family can read", family-letter push without content; visibility matrix and cross-child leak tests green | BL-190 to BL-196 |
 | **M7 Shared voice** (if D-032 approved by 23 Oct) | 8 to 11 | M5, M6 (sharing model), D-032 | Encrypted upload of recordings in shared books (Free) and all recordings (Plus); member playback through an Edge Function; wrap-key custody and unwrap log; bucket registry and purge cover audio; delete propagates to member devices | BL-200 to BL-206, BL-232 |
-| **M8 Plus through the App Store** | 3 to 12 | M0 (Paid Apps Agreement, products), M5 (accounts) | expo-iap spike on SDK 57 (wk 3); plan engine and notice windows as pure, table-tested code (wk 4 to 5); billing migration and `create_child` Plus rules (wk 6); App Store notifications endpoint, `sync_plan`, reconcile (wk 7 to 9); purchase, restore, manage, refund, Plus sheet, Settings > Plan (wk 8 to 10); notice scheduler with hard windows and the year-long clock test (wk 9 to 12); sandbox checklist S-1 to S-10 signed (wk 11 to 12) | BL-036, BL-210 to BL-222 |
+| **M8 Plus through the App Store** | 3 to 12 | M0 (Paid Apps Agreement, products), M5 (accounts) | expo-iap spike on SDK 57 (wk 3); plan engine and notice windows as pure, table-tested code (wk 4 to 5); billing migration and `create_child` Plus rules (wk 6); App Store notifications endpoint, `sync_plan`, reconcile (wk 7 to 9); purchase, restore, manage, refund, Plus sheet, Settings > Plan (wk 8 to 10); notice scheduler with hard windows and the year-long clock test (wk 9 to 12); sandbox checklist S-1 to S-10 signed (wk 11 to 12) | BL-036, BL-210 to BL-222 Amended 4 Oct 2026 (D-051, D-052): M8 also carries the letter allowance gate, the never-discard rule, paywall at the limit and the Redeem a code row; see section 9. |
 | **M9 Privacy, deletion, disclosures, ops** | 7 to 12 | M5 | In-app account deletion with 30-day undo; purge worker and cross-system verification script; `analytics-forget`; ops audit log and runbook wrapper; data map canonical; privacy labels and manifest generated with evidence; log canary; kill switches; WISP; static `/delete-account` page; value-free validation trigger | BL-016, BL-231 to BL-249 |
 | **M10 Opt-in analytics** | 7 to 10 | BL-020, BL-021, BL-023; counsel approves `analyticsConsent.*` | PostHog and Sentry initialise only after consent; nothing queued before; withdrawal in Settings; network-capture test proves zero requests before consent | BL-020, BL-021, BL-250 to BL-252 |
 | **M11 Accessibility and design system** | 3 to 11 (parallel) | BL-030 spike | Tokens (destructive, type scale, control contrast), standard components, letter text uncapped, AX5 stacking on every P0 screen, persistent toast, locale dates and plurals, VoiceOver script on SE 3 | BL-030, BL-255 to BL-273 |
@@ -158,3 +158,24 @@ Decision D-004 (founder, 3 Oct 2026). Full reasoning and sources in `docs/DECISI
 | Guideline 2.2 rejection for "beta" in metadata | Store copy still says beta | D-030 |
 | ARL notice bug after launch | Any notice outside its window | Hard-window refusal pages the founder instead of sending late; year-long clock test gates every release |
 | Shared Apple IDs and restore confusion | Support tickets | D-047 rule; measure |
+
+---
+
+## 9. Membership change (D-051) and early-tester offer codes (D-052), 4 Oct 2026
+
+No dates are set for this work. It is added to M8 and shares its critical path; the effect on the 11 Jan 2027 target has not been estimated (unverified, the payments and mobile leads must size it).
+
+**Engineering work (not started)**
+1. Entitlement gate on letter creation: `add_letter` in the plan engine, server enforcement beside `create_child`, remote config `free_letters_allowance` (default 2) (TDD 08 section 14).
+2. Never discard an in-progress letter at the limit: keep on the phone, offer Plus, sync when Plus starts (PRD-REQ-025).
+3. Paywall at the limit, reworked Plus sheet and Settings > Plan; lapse behaviour changed (existing letters stay open, new letters need Plus).
+4. Supabase entitlement and free-tier test changes (owners: data architect, payments engineer; `supabase/**` is untouched by the docs change).
+5. Content-free analytics events for the limit moment (analytics engineer).
+6. **Redeem a code** row in Settings > Plan (PRD-REQ-027), and `OFFER_REDEEMED` mapping, built next to the BL-213 server work (D-052, `docs/ops/OFFER_CODES.md` on branch `docs/offer-codes-runbook`).
+7. Decide the open edges before the paywall is built (D-051: family letters, second child's book, offline counting, Read together interplay, first-run children).
+
+**Dependencies (no dates)**
+- **Counsel review** of the new subscription and "what stays free" wording, the changed promise line, and offer-code wording in the Subscription terms, before any release. It joins the counsel package in section 8 (turnaround risk already listed).
+- **App Store disclosures and review notes:** paywall and subscription disclosures for a freemium model, review notes describing 2 free letters then Plus, and the privacy and subscription metadata in App Store Connect. Apple's current guideline text must be re-read at the time (unverified here).
+- **Content and legal copy** are owned by other agents; engineering cannot ship the paywall until the promise line and `plus.*` strings change.
+- **Offer codes** need the subscription in App Store Connect and the app installable; whether the free period can be exactly 6 months, and whether TestFlight testers need codes, are unverified.

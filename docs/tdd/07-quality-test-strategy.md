@@ -1,5 +1,7 @@
 # TDD 07: Quality and test strategy
 
+> **Note, 4 Oct 2026 (D-051, `docs/DECISIONS.md`):** the founder changed the business model. Plus is now the membership that unlocks the product: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book. Anywhere this file treats writing as free or Plus as optional, that is superseded; open edges are listed in D-051 and not decided here. Test impact: free-tier tests and E2E-L need the letter-limit cases (TDD 08 section 14.2 item 6); rows 45 and 62 here are under review (D-051 edges 2, 5, 6).
+
 Owner: head of quality engineering. Version 0.1, 3 Oct 2026. Status: draft for founder and engineering review.
 Inputs read: `CLAUDE.md`, `docs/prd/PRD.md` 1.2 (section 6 checklist, section 7 budgets), PRD appendices A, B, C, `docs/legal/ENGINEERING_REQUIREMENTS.md`, `DATA_CLASSIFICATION.md`, `DELETION_AND_EXPORT_SPEC.md` (TC-01 to TC-20), `docs/analytics/TRACKING_PLAN.md`, `docs/BACKLOG.md`, TDDs 01 to 06, every test file in `packages/*/test`, `supabase/tests`, `experiments`, and `apps/mobile/src`.
 
