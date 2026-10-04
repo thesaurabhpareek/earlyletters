@@ -1,0 +1,33 @@
+{
+  "id": "J10-04",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Large print",
+  "note": "The page re-sets at the largest size, cross-fading rather than animating the size.",
+  "from": "J10-03",
+  "shot": "screens/J10-04.png",
+  "full": "screens/J10-04-full.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Reading size Standard Large Large print",
+  "lines": [
+    "Reading size",
+    "Standard",
+    "Large",
+    "Large print"
+  ]
+}

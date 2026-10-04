@@ -1,0 +1,41 @@
+{
+  "id": "J10-02",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Show exactly what I said",
+  "note": "The raw words replace the tidied ones, under an \"original\" label.",
+  "from": "J10-01",
+  "shot": "screens/J10-02.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Tuesday, August 4, 2026. Asha is 5 months old. Exactly what you said So it rained all morning so we we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, lightly tidied Recording kept on this phone Show tidied version Make private Delete",
+  "lines": [
+    "Aa",
+    "Tuesday, August 4, 2026. Asha is 5 months old.",
+    "Exactly what you said",
+    "So it rained all morning so we we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:42",
+    "Spoken, lightly tidied",
+    "Recording kept on this phone",
+    "Show tidied version",
+    "Make private",
+    "Delete"
+  ]
+}

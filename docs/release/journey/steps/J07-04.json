@@ -1,0 +1,30 @@
+{
+  "id": "J07-04",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Saved to the book",
+  "note": "The letter settles into a card with a confirmation, then Review closes on its own after a moment (or on tap).",
+  "from": "J07-03",
+  "shot": "screens/J07-04.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "You put both hands on the window today and watched the rain. Added to Asha's book.",
+  "lines": [
+    "You put both hands on the window today and watched the rain.",
+    "Added to Asha's book."
+  ]
+}

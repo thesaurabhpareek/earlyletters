@@ -1,0 +1,39 @@
+{
+  "id": "J11-02",
+  "journey": "read-together",
+  "kind": "happy",
+  "title": "Next letter",
+  "note": "Next and Back one move through the book. The date line names who wrote it and the month of age.",
+  "from": "J11-01",
+  "shot": "screens/J11-02.png",
+  "route": "/read-together",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close 2 / 5 Mama, Month 2 You laughed today. A real one. It sounded like a little hiccup that surprised you as much as it surprised me. From Mama Hear Mama 0:00 0:42 Play the next one on its own Back one Next letter",
+  "lines": [
+    "Close",
+    "2 / 5",
+    "Mama, Month 2",
+    "You laughed today. A real one. It sounded like a little hiccup that surprised you as much as it surprised me.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:42",
+    "Play the next one on its own",
+    "Back one",
+    "Next letter"
+  ]
+}

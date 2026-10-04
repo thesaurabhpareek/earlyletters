@@ -1,0 +1,32 @@
+{
+  "id": "J02-04",
+  "journey": "under-18",
+  "kind": "unhappy",
+  "title": "After 24 hours: \"I answered by mistake\"",
+  "note": "Only once a day has passed does the stop screen offer a way back. (Browser clock moved forward 25 hours; the logic is the app's own.)",
+  "from": "J02-03",
+  "shot": "screens/J02-04.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Thank you for telling us. Early Letters is currently for adults 18 and over. Nothing you entered has been kept. I answered by mistake",
+  "lines": [
+    "Thank you for telling us.",
+    "Early Letters is currently for adults 18 and over.",
+    "Nothing you entered has been kept.",
+    "I answered by mistake"
+  ]
+}

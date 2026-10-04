@@ -1,0 +1,29 @@
+{
+  "id": "J07-07",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Kept private",
+  "note": "Keep private saves the letter outside the book. It stays on the phone and can be added later.",
+  "from": "J07-03",
+  "shot": "screens/J07-07.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "A private one, only for us.",
+  "lines": [
+    "A private one, only for us."
+  ]
+}

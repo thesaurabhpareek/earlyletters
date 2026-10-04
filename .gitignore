@@ -61,3 +61,4 @@ experiments/results/
 # web end-to-end build and results (apps/mobile/e2e-web)
 apps/mobile/e2e-web/.web-dist/
 apps/mobile/e2e-web/.results/
+apps/mobile/e2e-web/.web-dist-seed/

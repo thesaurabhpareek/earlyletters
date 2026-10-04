@@ -1,0 +1,40 @@
+{
+  "id": "J07-05",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Back on Tonight",
+  "note": "The person lands back on Tonight.",
+  "from": "J07-04",
+  "shot": "screens/J07-05.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 0 days Good evening, Mama. What do you want Asha to know about today? A thought to start with What does Asha's face do while sleeping? Another thought Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 0 days",
+    "Good evening, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "What does Asha's face do while sleeping?",
+    "Another thought",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

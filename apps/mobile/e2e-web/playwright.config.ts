@@ -23,6 +23,13 @@ export default defineConfig({
   use: {
     baseURL: process.env.E2E_WEB_URL, // set by global setup
     ...devices['iPhone 13'],
+    // iPhone 17 Pro: 402x874 CSS px at 3x. Chromium emulation with touch and an iOS Safari-like user agent.
+    viewport: { width: 402, height: 874 },
+    contextOptions: { screen: { width: 402, height: 874 } },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 19_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.0 Mobile/15E148 Safari/604.1',
     browserName: 'chromium',
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',

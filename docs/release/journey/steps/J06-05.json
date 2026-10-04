@@ -1,0 +1,52 @@
+{
+  "id": "J06-05",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Undo the put-back",
+  "note": "Undo re-applies the tidy-up. Every edit is reversible both ways.",
+  "from": "J06-04",
+  "shot": "screens/J06-05.png",
+  "full": "screens/J06-05-full.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Close Hear it Asha · 7 months Read it back We only fixed what got in the way of your words. Nothing added. Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. 2 small fixes Filler \" um, \" Repeat \" you \" Show exactly what I said Keep it word for word Change words Does this sound like you? Add to Asha's book Keep private",
+  "lines": [
+    "Close",
+    "Hear it",
+    "Asha · 7 months",
+    "Read it back",
+    "We only fixed what got in the way of your words. Nothing added.",
+    "Asha,",
+    "today you",
+    "held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "2 small fixes",
+    "Filler",
+    "\"",
+    "um,",
+    "\"",
+    "Repeat",
+    "\"",
+    "you",
+    "\"",
+    "Show exactly what I said",
+    "Keep it word for word",
+    "Change words",
+    "Does this sound like you?",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

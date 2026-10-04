@@ -1,0 +1,33 @@
+{
+  "id": "J11-05",
+  "journey": "read-together",
+  "kind": "unhappy",
+  "title": "The fourth opening: the Plus gate",
+  "note": "After the free tries in this book, Read together shows the Plus gate with a plain note that every letter stays readable and playable in the Book. Buying needs StoreKit and Apple's store view, which do not exist on web, so the gate says Plus is not available on this device.",
+  "from": "J11-04",
+  "shot": "screens/J11-05.png",
+  "route": "/read-together",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Read together is part of Plus You have read together 3 times for free. Plus keeps it open whenever you like. Every letter stays open to read and hear, with or without Plus. Plus is not available on this device yet. Not now",
+  "lines": [
+    "Read together is part of Plus",
+    "You have read together 3 times for free. Plus keeps it open whenever you like.",
+    "Every letter stays open to read and hear, with or without Plus.",
+    "Plus is not available on this device yet.",
+    "Not now"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "J01-01",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "The age question",
+  "note": "The first screen is one neutral question, with nothing preselected. Continue stays off until the person picks Yes or No.",
+  "from": "J00-open",
+  "shot": "screens/J01-01.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Are you 18 or older? We ask everyone the same question. Yes No Continue",
+  "lines": [
+    "Are you 18 or older?",
+    "We ask everyone the same question.",
+    "Yes",
+    "No",
+    "Continue"
+  ]
+}

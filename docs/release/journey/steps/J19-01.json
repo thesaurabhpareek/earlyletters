@@ -1,0 +1,34 @@
+{
+  "id": "J19-01",
+  "journey": "errors",
+  "kind": "unhappy",
+  "title": "Unknown route (404)",
+  "note": "The app has no designed not-found screen: this is Expo Router's default \"Unmatched Route\" page, with a developer-facing \"Sitemap\" link. Reached only by a malformed deep link. Worth a real screen before launch.",
+  "from": "J00-open",
+  "shot": "screens/J19-01.png",
+  "route": "/this-page-does-not-exist",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Unmatched Route Page could not be found. http://127.0.0.1:42019/this-page-does-not-exist?seed=asha Go back • Sitemap",
+  "lines": [
+    "Unmatched Route",
+    "Page could not be found.",
+    "http://127.0.0.1:42019/this-page-does-not-exist?seed=asha",
+    "Go back",
+    "•",
+    "Sitemap"
+  ]
+}
