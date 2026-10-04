@@ -13,7 +13,9 @@ test('[J19] a route that does not exist', async ({ app, record }) => {
   await expect(app.getByRole('button', { name: 'Speak' })).toBeVisible();
 });
 
-// scribe://listen on a phone is sent to Tonight before routing (+native-intent). The web has no system links; opening the
+// scribe://listen on a phone is sent to Tonight before routing (+native-intent): outside links are an allowlist (home, the invite
+// landing, sign-in links), so any other path, including /review and /settings/delete-account, also goes to Tonight (unit tests in
+// test/coparent-soon.test.ts; a real iPhone check is in the device test plan). The web has no system links; opening the
 // address directly is the same as a restored or stale screen, which Listen must also refuse to start by itself.
 test('[J19] a link to Listen does not start recording by itself', async ({ app, record }) => {
   const step = journey(record, 'J19', 'errors', 2, 'J19-01');

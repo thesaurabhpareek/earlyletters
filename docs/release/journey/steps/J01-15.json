@@ -3,13 +3,13 @@
   "journey": "first-run",
   "kind": "happy",
   "title": "Choose the spoken language",
-  "note": "A sheet lists the languages letters can be spoken in. Choosing one only starts that language's downloads (the download itself is native and cannot run on web).",
+  "note": "A sheet lists the languages letters can be spoken in. Choosing one only stores it: nothing downloads until the person taps at the end of first run.",
   "from": "J01-14",
   "shot": "screens/J01-15.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {

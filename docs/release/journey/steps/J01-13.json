@@ -6,11 +6,10 @@
   "note": "The name the child will call this parent, which signs every letter. Sign my letters is off until something is chosen or typed.",
   "from": "J01-07",
   "shot": "screens/J01-13.png",
-  "full": "screens/J01-13-full.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,7 +21,7 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
+  "scrolls": false,
   "text": "Back What does Asha call you? This is how your letters will be signed. A few ideas Mama Papa Amma Appa Mummy Daddy Ma Baba Not talking yet? Pick the name you hope to hear. Spoken language English Your words stay in the language you speak. We never translate them. Add what Asha calls you to continue. Sign my letters",
   "lines": [
     "Back",

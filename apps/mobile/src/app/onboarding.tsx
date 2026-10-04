@@ -33,6 +33,8 @@ import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDa
 import { DateField } from '@/components/child/date-field';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
+import { SpeechConsentCard } from '@/components/speech/speech-consent-card';
+import { authorSpeechLanguage } from '@/lib/models/author-language';
 import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip, ChipGroup, ChoiceGroup } from '@/components/ui/choice-group';
@@ -44,7 +46,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill, pendingCopy } from '@/lib/copy';
-import { inviteHref } from '@/lib/family/entry.logic';
+import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { ordinalOf, track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
@@ -81,6 +83,7 @@ export default function Onboarding() {
   const child = joinNames(names, 'your child');
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
+  const doors = visibleCoParentDoors(capabilities.coParent);
   const [languageOpen, setLanguageOpen] = useState(false);
 
   // "I already have a book" or "I was invited": once sign-in or joining brings a book to this
@@ -94,8 +97,8 @@ export default function Onboarding() {
     return subscribe(done);
   }, [step]);
 
-  // The language letters are spoken in (founder decisions 6 and 15): choosing it starts only
-  // that language's downloads (its text rules here; its speech model through the speech engine).
+  // The language letters are spoken in (founder decisions 6 and 15): choosing it stores it and fetches its
+  // small text rules. The speech model (large) downloads only after the explicit ask on the last step (D-087).
   const chooseLanguage = (code: LanguageCode) => {
     spoken.setPrimary(code);
     setLanguageOpen(false);
@@ -336,6 +339,8 @@ export default function Onboarding() {
                   {o.finish.title}
                 </Text>
                 <Text variant="body">{fill(o.finish.body, { child })}</Text>
+                {/* One explicit ask for the speech download: nothing starts until the person taps (D-087). */}
+                <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
               </>
             )}
           </Animated.View>
@@ -347,13 +352,15 @@ export default function Onboarding() {
             </Text>
           ) : null}
           <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} />
-          {step === 'welcome' && (
+          {step === 'welcome' && (capabilities.signIn || doors.joinButton) && (
             <View className="mt-2 gap-1">
-              {/* v1.0 has no accounts (lib/capabilities.ts): no sign-in here; "I was invited" opens co-parent coming soon. */}
+              {/* v1.0 has no accounts (lib/capabilities.ts), so no sign-in and no "I was invited": no invite can exist without a server. Both come back with co-parent sharing. */}
               {capabilities.signIn ? (
                 <Button variant="quiet" fullWidth label={o.welcome.signInButton} onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'sign_in' } })} />
               ) : null}
-              <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)} />
+              {doors.joinButton ? (
+                <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)} />
+              ) : null}
             </View>
           )}
         </ScrollView>

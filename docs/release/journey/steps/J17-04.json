@@ -1,0 +1,32 @@
+{
+  "id": "J17-04",
+  "journey": "family-coming-soon",
+  "kind": "happy",
+  "title": "No \"I was invited\" door",
+  "note": "No invite can exist without a server, so the button that could only open a coming-soon sheet is gone. It returns with co-parent sharing. An invite link that is opened still lands on the coming-soon sheet.",
+  "from": "J01-03",
+  "shot": "screens/J17-04.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Early Letters The baby memory book you fill by talking. A few words at a time, in your own voice. Kept for your child to read and hear for years. Begin the book",
+  "lines": [
+    "Early Letters",
+    "The baby memory book you fill by talking.",
+    "A few words at a time, in your own voice. Kept for your child to read and hear for years.",
+    "Begin the book"
+  ]
+}

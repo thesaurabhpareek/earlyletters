@@ -200,8 +200,9 @@ export const GLOBAL_PROPS = {
  * 2: Apple-only Plus events, cadence values, packs replace model_download (3 Oct 2026).
  * 3: shared core enums (`mixed` capture mode, roles `parent | contributor`), `child_ordinal`
  *    replaces `ordinal`, `child_added.has_date` replaces `mode`, required properties enforced.
+ * 4: two content-free events for the co-parent teaser (`coparent_soon_opened`, `coparent_soon_notify`, D-087).
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -209,6 +210,7 @@ export const SCHEMA_VERSION = 3;
  */
 export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.freeze({
   3: '971df5e782a0d91011fe559476313e6c40cc52babd65f779bb71422f61ed6a35',
+  4: 'da690a2d1f1a577e7e1b08224eb36f6f20c94c05532b3b36b5ae26a108af179e',
 });
 
 // ---------------------------------------------------------------------------
@@ -340,6 +342,22 @@ export const EVENTS = {
     reqs: ['B-REQ-007'],
     level: 'L2',
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
+  },
+  // The co-parent teaser (D-087): measures interest without any content. `surface` is only the Family tab or the
+  // invite sheet (every door except the tab opens the sheet). Nothing about the book or the child.
+  coparent_soon_opened: {
+    area: 'entry',
+    when: 'The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens)',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: { surface: oneOf('tab', 'sheet') },
+  },
+  coparent_soon_notify: {
+    area: 'entry',
+    when: 'Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us)',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: {},
   },
   local_merge_choice: {
     area: 'entry',

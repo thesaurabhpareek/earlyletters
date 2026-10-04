@@ -3,13 +3,13 @@
   "journey": "first-run",
   "kind": "happy",
   "title": "Welcome",
-  "note": "The envelope, the name, one line of what the book is. Two buttons: begin, or \"I was invited\".",
+  "note": "The envelope, the name, one line of what the book is. One button: begin. (v1.0 has no \"I was invited\": no invite can exist without a server, so the door is hidden until co-parent sharing ships.)",
   "from": "J01-02",
   "shot": "screens/J01-03.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,12 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "Early Letters The baby memory book you fill by talking. A few words at a time, in your own voice. Kept for your child to read and hear for years. Begin the book I was invited",
+  "text": "Early Letters The baby memory book you fill by talking. A few words at a time, in your own voice. Kept for your child to read and hear for years. Begin the book",
   "lines": [
     "Early Letters",
     "The baby memory book you fill by talking.",
     "A few words at a time, in your own voice. Kept for your child to read and hear for years.",
-    "Begin the book",
-    "I was invited"
+    "Begin the book"
   ]
 }

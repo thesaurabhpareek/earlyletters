@@ -235,7 +235,8 @@ prepared_by: AI (Claude), legal and privacy counsel support (legal-alignment age
 ### Q25. The "If you are struggling" support row
 - **Context.** The safety classifier is deferred to v1.1 (D-059); v1.0 ships a static, always-available row in Settings with resources. Terms 20.3 says prompts and resource cards are general information only.
 - **Question.** Does a static resources list need anything beyond verified, current US resources and the Terms 20.3 disclaimer (no clinician sign-off, which D-034 required only for the classifier)?
-- **Default.** Verified national resources, re-checked each release; no clinician sign-off.
+- **Default.** Verified national resources, re-checked each release; no clinician sign-off. Re-checked in primary sources (988lifeline.org, postpartum.net), including the 988 language options, before submit (D-087; founder task FT-36).
+- **Scope (D-087).** The list is shown as United States only ("They are for people in the United States."). Nothing picks lines by region and no country is stored (LEGAL-REQ-058). When a second storefront opens, extend this question: a verified list per region (a directory such as findahelpline.com or IASP, or national lines checked one by one) and whether the region comes from the device or the storefront. Not needed for v1.0.
 - **Deadline.** 16 Oct (before the external beta).
 - **Documents.** Terms 20.3; CHD policy 2; Privacy Policy 5, 13; DECISIONS D-034, D-059.
 

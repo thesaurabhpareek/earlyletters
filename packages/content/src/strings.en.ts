@@ -1043,9 +1043,14 @@ export const en = {
 
   // Static resources row (D-034): v1.0 has no on-device safety classifier. Resources verified 3 Oct 2026
   // on mchb.hrsa.gov, 988lifeline.org and postpartum.net. Clinician and counsel to review the wording.
+  // Scope (D-087): the app ships in the US storefront only (LEGAL-REQ-058), so the list says it is for the
+  // United States and nothing picks lines by region. FOUNDER TASK (FT-36): before submit, check primary
+  // sources (988lifeline.org, postpartum.net) including the 988 language options. Only after that check
+  // may the 988 line below say "Press 2 for Spanish, or say your language to reach an interpreter."
+  // Do NOT add that sentence on the strength of search snippets.
   struggling: {
     title: "If you are struggling",
-    body: "The early months can be very hard. You do not have to carry it alone. These lines are free and confidential.",
+    body: "The early months can be very hard. You do not have to carry it alone. These lines are free and confidential. They are for people in the United States.",
     resources: [
       {
         name: "National Maternal Mental Health Hotline",

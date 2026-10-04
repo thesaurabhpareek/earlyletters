@@ -6,7 +6,7 @@ import { authorSpeechLanguage } from '@/lib/models/author-language';
 import { SPEECH_MODELS, VAD_MODEL_ID, type SpeechLanguage } from '@/lib/models/catalog';
 import { speechSettingsCopy } from '@/lib/models/copy';
 import { planFor, speechPackHost } from '@/lib/models/speech-packs';
-import { removeSpeechPack, requestSpeechFor, speechDownloadHold, speechDownloadProgress, wordsState } from '@/lib/transcription-queue';
+import { removeSpeechPack, speechDownloadHold, startSpeechDownload, speechDownloadProgress, wordsState } from '@/lib/transcription-queue';
 import { languageNames } from '@/lib/transcription-queue/copy';
 import { useWordsTick } from '@/lib/transcription-queue/use-words';
 
@@ -111,7 +111,7 @@ function SpeechRow({ language }: { language: SpeechLanguage }) {
     <ListRow
       title={name}
       subtitle={subtitle}
-      onPress={!files ? undefined : installed ? confirmRemove : progress === null && hold === null ? () => void requestSpeechFor(language) : undefined}
+      onPress={!files ? undefined : installed ? confirmRemove : progress === null && hold === null ? () => void startSpeechDownload(language) : undefined}
       accessibilityHint={installed ? s.removeHint : s.downloadHint}
     />
   );

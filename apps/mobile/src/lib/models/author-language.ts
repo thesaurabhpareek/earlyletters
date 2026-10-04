@@ -2,10 +2,10 @@
  * The author's spoken language on this phone (B-REQ-003, founder decision 6).
  *
  * One author per phone in v1.0 (the co-parent has their own phone), so this
- * is a device setting. Choosing a language starts its speech download and
- * nothing else (founder decision 15): Portuguese fetches what Portuguese
- * needs. The language picker (language agent / onboarding) calls
- * `setAuthorSpeechLanguage`.
+ * is a device setting. Choosing a language only stores it (D-087): the speech
+ * download starts when the person has said yes to it (models/speech-consent.ts),
+ * and then it fetches what that language needs (founder decision 15). The
+ * language picker (language agent / onboarding) calls `setAuthorSpeechLanguage`.
  *
  * Each recording remembers the language it was spoken in
  * (`rememberLetterLanguage`), so changing the setting later never makes an
@@ -36,7 +36,7 @@ export function setAuthorSpeechLanguage(lang: SpeechLanguage): void {
   listeners.forEach((l) => l(lang));
 }
 
-/** The queue listens so it can start the new language's download at once. */
+/** The queue listens so it can start the new language's download at once, but only after a yes to downloads. */
 export function onAuthorSpeechLanguage(listener: (lang: SpeechLanguage) => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

@@ -2,14 +2,15 @@
   "id": "J01-16",
   "journey": "first-run",
   "kind": "happy",
-  "title": "The book is open",
-  "note": "A page with one line. The only action is to write the first letter.",
+  "title": "The book is open, and one ask about the speech download",
+  "note": "A page with one line, then one card: \"Get your words ready\", the real size for this phone, that it waits for Wi-Fi and resumes, and two buttons: Download on Wi-Fi or Not now. Nothing downloads until the person taps. The first letter can always be written either way (the voice is always kept). The download itself is native and cannot run on web; on a phone this needs a real iPhone check.",
   "from": "J01-15",
   "shot": "screens/J01-16.png",
+  "full": "screens/J01-16-full.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -21,12 +22,18 @@
       "bottom": 34
     }
   },
-  "scrolls": false,
-  "text": "Back The book is open. Say one thing about Asha today. That is a letter. Write the first one",
+  "scrolls": true,
+  "text": "Back The book is open. Say one thing about Asha today. That is a letter. Get your words ready Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB. It waits for Wi-Fi, and carries on where it left off if it is interrupted. Download on Wi-Fi Not now You can do this later in Settings, Recordings. Your voice is always kept. Write the first one",
   "lines": [
     "Back",
     "The book is open.",
     "Say one thing about Asha today. That is a letter.",
+    "Get your words ready",
+    "Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB.",
+    "It waits for Wi-Fi, and carries on where it left off if it is interrupted.",
+    "Download on Wi-Fi",
+    "Not now",
+    "You can do this later in Settings, Recordings. Your voice is always kept.",
     "Write the first one"
   ]
 }

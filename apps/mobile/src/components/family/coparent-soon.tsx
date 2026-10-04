@@ -10,7 +10,8 @@
  * glyphs, and one optional action.
  *
  * - "Tell me when it's here" stores a day on this phone (lib/family/coming-soon.logic.ts):
- *   no network, no account, no analytics event. It turns into a quiet confirmation.
+ *   no network, no account. It turns into a quiet confirmation. Two content-free events measure the
+ *   teaser (coparent_soon_opened, coparent_soon_notify); nothing else leaves the phone.
  * - Remote config `flags.familyTeaser = 'quiet'` keeps the drawing and a plain line
  *   about this phone and drops the teaser copy. It cannot turn sharing on.
  *
@@ -40,6 +41,7 @@ import { announce, useTheme } from '@/lib/a11y';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { hasRequestedCoParentNotify, requestCoParentNotify } from '@/lib/family/coming-soon.logic';
+import { track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { useRemoteConfig } from '@/lib/remote';
@@ -114,6 +116,7 @@ function NotifyAction() {
       onPress={() => {
         haptic('success');
         request();
+        track('coparent_soon_notify', {}); // content-free: no book, no child, no text
         announce(n.done);
       }}
     />
@@ -135,6 +138,11 @@ export function CoParentSoon({ presentation, childName, onClose }: CoParentSoonP
   const child = childName?.trim() || s.childFallback;
   const quiet = familyTeaser === 'quiet';
   const sheet = presentation === 'sheet';
+
+  // Content-free count of how often the teaser is seen. The tab stays mounted, so this fires each time it comes into focus.
+  useEffect(() => {
+    if (focused) track('coparent_soon_opened', { surface: sheet ? 'sheet' : 'tab' });
+  }, [focused, sheet]);
 
   const body = (
     <ScrollView

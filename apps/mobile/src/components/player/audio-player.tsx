@@ -25,6 +25,7 @@ import {
 } from '@/lib/player';
 import { track } from '@/lib/analytics/track';
 import { getActiveChild, getChild, getEntry, type Entry } from '@/lib/store';
+import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 import { cn } from '@/lib/utils';
 
 export interface AudioPlayerProps {
@@ -91,6 +92,8 @@ function PlayableRecording({
     startAt: handoff?.at,
     onFinish,
   });
+  // Read together only: the screen stays on while a recording is actually playing, never when idle or paused.
+  useKeepAwakeWhile(context === 'readTogether' && p.playing, KEEP_AWAKE_TAGS.readTogether);
   const [width, setWidth] = useState(0);
   const [drag, setDrag] = useState<number | null>(null);
 

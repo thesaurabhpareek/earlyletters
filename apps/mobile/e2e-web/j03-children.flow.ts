@@ -35,7 +35,7 @@ test('[J03] more than one child: twins in first run, the switcher, settings, and
   await step('happy', 'Settings, with both children listed', 'Each child has a row; "Add a child" sits below them.');
   await app.getByText('Asha', { exact: true }).first().click();
   await expect(app.getByText(/Birthday|Due date/).first()).toBeVisible();
-  await step('happy', 'One child\'s settings', 'Name, date, signature, a reminders switch, the co-parent row ("Soon") and a "Family can read" switch that stays off in v1.0. Hide this book is offered because there is more than one (its confirm dialog is native and does not appear on web).');
+  await step('happy', 'One child\'s settings', 'Name, date, signature, a reminders switch, and the co-parent row ("Soon"). The "Family can read" switch is hidden in v1.0 because it cannot be turned on. Hide this book is offered because there is more than one (its confirm dialog is native and does not appear on web).');
   await app.goBack();
   await app.getByText('Add a child', { exact: true }).last().click();
   await expect(app.getByText('Another book is part of Plus')).toBeVisible();

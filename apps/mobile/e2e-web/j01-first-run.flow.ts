@@ -12,7 +12,8 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await btn(app, 'Continue').click();
 
   await expect(app.getByText('Begin the book')).toBeVisible();
-  await step('happy', 'Welcome', 'The envelope, the name, one line of what the book is. Two buttons: begin, or "I was invited".');
+  await step('happy', 'Welcome', 'The envelope, the name, one line of what the book is. One button: begin. (v1.0 has no "I was invited": no invite can exist without a server, so the door is hidden until co-parent sharing ships.)');
+  await expect(btn(app, 'I was invited')).toHaveCount(0);
   await startOnboarding(app);
   await step('happy', 'The promise', 'What the app does with words (tidies, never rewrites), that the voice is kept on the phone, that it can mishear, and that it is private by default.');
   await toChildStep(app);
@@ -71,12 +72,20 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
 
   await app.getByText('Spoken language').click();
   await expect(app.getByText('Choose a language')).toBeVisible();
-  await step('happy', 'Choose the spoken language', 'A sheet lists the languages letters can be spoken in. Choosing one only starts that language\'s downloads (the download itself is native and cannot run on web).');
+  await step('happy', 'Choose the spoken language', 'A sheet lists the languages letters can be spoken in. Choosing one only stores it: nothing downloads until the person taps at the end of first run.');
   await app.getByRole('button', { name: 'Close' }).click();
 
   await btn(app, 'Sign my letters').click();
   await expect(app.getByText('The book is open.')).toBeVisible();
-  await step('happy', 'The book is open', 'A page with one line. The only action is to write the first letter.');
+  await expect(app.getByText('Get your words ready')).toBeVisible();
+  await expect(btn(app, 'Download on Wi-Fi')).toBeVisible();
+  await expect(btn(app, 'Not now')).toBeVisible();
+  await expect(app.getByText(/one-time download of \d+(\.\d)? (MB|GB)/)).toBeVisible();
+  await expect(app.getByText(/Your voice is always kept/)).toBeVisible();
+  await step('happy', 'The book is open, and one ask about the speech download', 'A page with one line, then one card: "Get your words ready", the real size for this phone, that it waits for Wi-Fi and resumes, and two buttons: Download on Wi-Fi or Not now. Nothing downloads until the person taps. The first letter can always be written either way (the voice is always kept). The download itself is native and cannot run on web; on a phone this needs a real iPhone check.');
+  await btn(app, 'Not now').click();
+  await expect(app.getByText('Not now. Your voice is kept either way.')).toBeVisible();
+  await step('happy', 'Not now is a calm answer', 'The card says it is fine and nothing else changes. The first Review will offer the same button if words are waiting.');
 
   await btn(app, /Write the first one/).click();
   await expect(app.getByRole('heading', { level: 1 })).toBeVisible();

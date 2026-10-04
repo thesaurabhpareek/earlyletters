@@ -6,11 +6,10 @@
   "note": "The person pastes 90 letters. The field keeps the first 60 and a quiet line explains the limit, so nothing is cut without a word. The limit is the same one the book and the server use.",
   "from": "J01-05",
   "shot": "screens/J01-06.png",
-  "full": "screens/J01-06-full.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,7 +21,7 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
+  "scrolls": false,
   "text": "Back Who is this book for? Their name A name can have up to 60 characters. Add another child Birthday Not here yet Birthday Born today We sort letters by AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's month of age. Choose AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's birthday to continue. Continue",
   "lines": [
     "Back",
