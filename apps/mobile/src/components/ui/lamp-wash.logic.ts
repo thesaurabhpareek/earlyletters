@@ -2,6 +2,7 @@
  * Pure maths for LampWash, kept free of React Native so it can be unit tested
  * (including the light-mode contrast guarantee).
  */
+import { tokens } from '@scribe/design-tokens';
 
 export type LampTone = 'amber' | 'rose' | 'dusk';
 export type LampScheme = 'light' | 'dark';
@@ -13,9 +14,9 @@ export type LampScheme = 'light' | 'dark';
  * they exist. Until then LampWash also accepts them as the `colors` prop.
  */
 export const LAMP_DEFAULTS: Record<LampTone, string> = {
-  amber: '#F3C98B',
-  rose: '#F08C7C',
-  dusk: '#8076E2',
+  amber: tokens.atmosphere.lamp,
+  rose: tokens.atmosphere.lampRose,
+  dusk: tokens.atmosphere.lampDusk,
 };
 
 /** Peak opacity of the whole wash at intensity 1. Light is a whisper so text pairs hold 4.5:1. */

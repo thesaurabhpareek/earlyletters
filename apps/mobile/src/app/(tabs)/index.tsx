@@ -1,4 +1,5 @@
 import { Redirect, router, useFocusEffect } from 'expo-router';
+import { LampWash } from '@/components/ui/lamp-wash';
 import { MicrophoneIcon, PencilSimpleIcon } from 'phosphor-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
@@ -109,6 +110,7 @@ export default function Tonight() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
+      <LampWash anchor="top" intensity={0.8} />
       <ScrollView contentContainerClassName="flex-grow gap-6 px-5 pb-8 pt-4">
         <Animated.View entering={motion.enter(0)} className="gap-2">
           <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline}</Text>
@@ -119,7 +121,7 @@ export default function Tonight() {
         </Animated.View>
 
         <Animated.View key={prompt.key} entering={motion.enter(1)} layout={motion.reduced ? undefined : REFLOW}>
-          <Card className="gap-4 rounded-3xl border-0 bg-card p-6 shadow-sm shadow-black/5">
+          <Card className="gap-4 rounded-3xl border-0 bg-card p-6 shadow-sm shadow-foreground/5 dark:border dark:border-border dark:shadow-none">
             <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{t.promptLabel.toUpperCase()}</Text>
             <Text className="font-serif text-2xl leading-9 text-foreground">{renderTemplate(prompt.text, { child })}</Text>
             <Pressable

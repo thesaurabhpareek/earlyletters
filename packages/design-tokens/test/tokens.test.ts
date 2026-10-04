@@ -66,7 +66,7 @@ describe('web css', () => {
     for (const m of rootBlock.matchAll(/--([a-z-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)) siteVars[m[1]] = m[2].toLowerCase();
     // Tokens that were darkened for WCAG after the site copied them. The site owner
     // must adopt the token value; remove the entry once apps/web is updated.
-    const STALE_ON_SITE: Record<string, string> = { recording: '#b5473a' };
+    const STALE_ON_SITE: Record<string, string> = {};
     const ours = webColorVars();
     let compared = 0;
     for (const [name, value] of Object.entries(siteVars)) {

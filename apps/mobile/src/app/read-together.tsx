@@ -8,6 +8,7 @@
  * sessions on this phone, then the Plus gate (lib/read-together.ts).
  */
 import { router, useLocalSearchParams } from 'expo-router';
+import { LampWash } from '@/components/ui/lamp-wash';
 import { BookOpenTextIcon } from 'phosphor-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View, useColorScheme } from 'react-native';
@@ -109,6 +110,7 @@ export default function ReadTogether() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      <LampWash anchor="top" intensity={0.6} />
       <View className="flex-row items-center justify-between px-5 pt-2">
         <Button variant="ghost" size="sm" className="-ml-4" onPress={close}>
           <Text className="text-primary">{copy.common.closeButton}</Text>

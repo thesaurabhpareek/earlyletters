@@ -43,7 +43,7 @@ export function useMotion() {
         ? withTiming(to, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
         : withSpring(to, springConfig(token));
     },
-    fade: (to: number, duration = FADE_MS) => {
+    fade: (to: number, duration: number = FADE_MS) => {
       'worklet';
       return withTiming(to, { duration, reduceMotion: ReduceMotion.Never });
     },
