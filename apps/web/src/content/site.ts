@@ -76,8 +76,8 @@ export const site = {
     /** Before the App Store link exists (src/lib/launch.ts decides the mode). */
     prelaunch: {
       eyebrow: 'Coming soon to iPhone',
-      button: "Tell me when it's ready",
-      pill: "Tell me when it's ready",
+      button: "Keep me informed",
+      pill: "Keep me informed",
     },
     live: {
       eyebrow: 'Free on iPhone',
@@ -213,13 +213,13 @@ export const site = {
     placeholder: 'you@example.com',
     hint: 'Just your email address, nothing else.',
     note: `One email when ${NAME} is ready. We never share your address, and every email has an unsubscribe link.`,
-    button: "Tell me when it's ready",
+    button: "Keep me informed",
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Keep me informed',
     sending: 'Sending',
     success: `Thank you. We will write once, when ${NAME} is ready.`,
     error: 'That did not go through. Please check your email and try again.',
-    rateLimited: 'Too many tries just now. Please wait a minute and try again.',
+    rateLimited: 'Please give it a minute, then try once more.',
     server: 'That did not go through on our side. Please try again in a moment.',
     honeypotLabel: 'Company',
   },

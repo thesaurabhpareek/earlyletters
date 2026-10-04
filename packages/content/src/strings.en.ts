@@ -166,7 +166,7 @@ export const en = {
       saving: "Keeping your words safe.",
       saved: "Saved, in your words.",
       savedLetter: "Signed and kept.",
-      transcribing: "Writing down what you said.",
+      transcribing: "Listening back to what you said.",
     },
     typing: {
       placeholder: "Write it the way you would say it.",
@@ -228,7 +228,7 @@ export const en = {
       },
       punctuation: {
         label: "Punctuation",
-        explain: "We added commas and full stops where you paused.",
+        explain: "We added commas and periods where you paused.",
       },
       grammarSlip: {
         label: "Small slip",
@@ -393,7 +393,7 @@ export const en = {
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
       howStep1: "Tap the microphone and talk, in any language.",
-      howStep2: "We write down your words exactly as you said them.",
+      howStep2: "Your words are kept exactly as you said them.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your voice is kept too, so {child} can hear you tell it.",
       privacyNote: "Only {child}'s parents see your letters until they go in the book.",
@@ -450,8 +450,8 @@ export const en = {
       body: "A new chapter in {child}'s book is open.",
     },
     birthday: {
-      title: "Happy birthday, {child}",
-      body: "A year of letters. Want to read them together today?",
+      title: "A good day to read together",
+      body: "Want to read {child}'s letters together today?",
     },
   },
 
@@ -578,7 +578,7 @@ export const en = {
       title: "About",
       beta: {
         label: "Beta",
-        body: "Early Letters is in beta. Some things may change or break. Export a copy of your letters now and then.",
+        body: "Early Letters is in beta. A few things may still be settling in. Export a copy of your letters now and then.",
         exportCta: "Export a copy",
       },
     },
@@ -693,7 +693,7 @@ export const en = {
 
   errors: {
     saveFailed: {
-      title: "Not saved to the book yet",
+      title: "Kept here, not in the book yet",
       body: "Your words are safe on this phone. We will try again on our own.",
       button: "Try again now",
     },
@@ -704,12 +704,12 @@ export const en = {
       typeButton: "Type instead",
     },
     transcriptionFailed: {
-      title: "We could not write this one down",
+      title: "We could not catch the words this time",
       body: "The recording is safe on this phone. You can try again or type it.",
       button: "Try again",
     },
     offline: {
-      title: "You're offline",
+      title: "No connection, and that's fine",
       body: "Keep talking. Everything is saved on this phone.",
     },
     backupFailed: {
@@ -725,7 +725,7 @@ export const en = {
       body: "New recordings may not fit. Turning on backup or freeing space will help.",
     },
     generic: {
-      title: "Something went wrong",
+      title: "That did not work this time",
       body: "Your words are safe. Please try again.",
     },
   },
@@ -742,7 +742,7 @@ export const en = {
     },
     preview: "Dear {child}, today you laughed at the rain.",
     deletedBody: "Going back to the book in a moment.",
-    notFoundTitle: "This letter is not here anymore.",
+    notFoundTitle: "That letter is not in the book right now.",
     notFoundCta: "Back to the book",
     openHint: "Opens the letter.",
   },
