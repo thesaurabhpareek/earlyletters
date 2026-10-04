@@ -2,14 +2,14 @@
   "id": "J01-09",
   "journey": "first-run",
   "kind": "happy",
-  "title": "An older baby: the birthday is chosen",
-  "note": "The person picks the real birthday (about seven months ago). Continue turns on. Letters will be filed by the baby's true age.",
-  "from": "J01-05",
+  "title": "Add another child (twins or more)",
+  "note": "A second name field appears, each with a remove button. Every book made in first run is free.",
+  "from": "J01-07",
   "shot": "screens/J01-09.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,17 +22,18 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Birthday Born today We sort letters by Asha's month of age. Continue",
+  "text": "Back Who is this book for? Their name 1 Their name 2 Twins or more? Add them now. Each child gets their own book. Add another child Birthday Not here yet Birthday Sunday, October 4, 2026 We sort letters by Asha's month of age. Continue",
   "lines": [
     "Back",
     "Who is this book for?",
-    "Their name",
-    "You can add a nickname later.",
+    "Their name 1",
+    "Their name 2",
+    "Twins or more? Add them now. Each child gets their own book.",
     "Add another child",
     "Birthday",
     "Not here yet",
     "Birthday",
-    "Born today",
+    "Sunday, October 4, 2026",
     "We sort letters by Asha's month of age.",
     "Continue"
   ]

@@ -1,0 +1,39 @@
+{
+  "id": "J11-01",
+  "journey": "read-together",
+  "kind": "happy",
+  "title": "Read together, first letter",
+  "note": "Chrome-free, Large Print by default: one letter at a time, oldest first, with a \"Hear Mama\" player for the recording on the phone. This opening is free try 1 of 3 for this book. (Seeded family Asha. Playback itself is native audio and is not exercised on web.)",
+  "from": "J09-03",
+  "shot": "screens/J11-01.png",
+  "route": "/read-together",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close 1 / 5 Mama, The first weeks Asha, you are four days old and the whole house is quiet. Your Nani made dal and nobody ate it because we were all watching you sleep. From Mama Hear Mama 0:00 0:42 Play the next one on its own Back one Next letter",
+  "lines": [
+    "Close",
+    "1 / 5",
+    "Mama, The first weeks",
+    "Asha, you are four days old and the whole house is quiet. Your Nani made dal and nobody ate it because we were all watching you sleep.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:42",
+    "Play the next one on its own",
+    "Back one",
+    "Next letter"
+  ]
+}

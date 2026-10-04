@@ -1,0 +1,30 @@
+{
+  "id": "J06-11",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Kept private",
+  "note": "The letter is saved outside the book. It is only on this phone and can be added later from the letter page.",
+  "from": "J06-02",
+  "shot": "screens/J06-11.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Kept just for you.",
+  "lines": [
+    "Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Kept just for you."
+  ]
+}

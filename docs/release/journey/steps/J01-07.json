@@ -1,15 +1,15 @@
 {
   "id": "J01-07",
   "journey": "first-run",
-  "kind": "unhappy",
-  "title": "Name entered, no birthday chosen yet",
-  "note": "The birthday is not filled in for the person: the date row is empty (on a phone it says \"Choose a date\") and Continue waits, with a line saying what is needed. A seven-month-old can no longer be saved as \"0 days\" by an unseen default. \"Born today\" is one tap for a newborn.",
+  "kind": "happy",
+  "title": "Name entered, birthday is today",
+  "note": "The name is in. The birthday defaults to today; on a phone the date is a compact picker (the web build shows it as a plain date pill and cannot open the iOS picker).",
   "from": "J01-05",
   "shot": "screens/J01-07.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,7 +22,7 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Birthday Born today We sort letters by Asha's month of age. Choose Asha's birthday to continue. Continue",
+  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Birthday Sunday, October 4, 2026 We sort letters by Asha's month of age. Continue",
   "lines": [
     "Back",
     "Who is this book for?",
@@ -32,9 +32,8 @@
     "Birthday",
     "Not here yet",
     "Birthday",
-    "Born today",
+    "Sunday, October 4, 2026",
     "We sort letters by Asha's month of age.",
-    "Choose Asha's birthday to continue.",
     "Continue"
   ]
 }

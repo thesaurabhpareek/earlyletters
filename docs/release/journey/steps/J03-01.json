@@ -6,11 +6,10 @@
   "note": "Twins or more: each name gets a field and a remove button. All books made here are free; they share the date.",
   "from": "J01-06",
   "shot": "screens/J03-01.png",
-  "full": "screens/J03-01-full.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,8 +21,8 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
-  "text": "Back Who is this book for? Their name 1 Their name 2 Twins or more? Add them now. Each child gets their own book. Add another child Birthday Not here yet Birthday We sort letters by Asha and Nila's month of age. Continue",
+  "scrolls": false,
+  "text": "Back Who is this book for? Their name 1 Their name 2 Twins or more? Add them now. Each child gets their own book. Add another child Birthday Not here yet Birthday Sunday, October 4, 2026 We sort letters by Asha and Ashu's month of age. Continue",
   "lines": [
     "Back",
     "Who is this book for?",
@@ -34,7 +33,8 @@
     "Birthday",
     "Not here yet",
     "Birthday",
-    "We sort letters by Asha and Nila's month of age.",
+    "Sunday, October 4, 2026",
+    "We sort letters by Asha and Ashu's month of age.",
     "Continue"
   ]
 }

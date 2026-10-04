@@ -1,0 +1,34 @@
+{
+  "id": "J04-04",
+  "journey": "tonight-and-prompts",
+  "kind": "happy",
+  "title": "A later session: \"Help us make it better?\"",
+  "note": "Never in the first session. On a later session with at least one letter, a calm sheet asks once whether to share which screens are opened and when something crashes, never any words, recordings or names. \"Don't share\" and \"Share usage\" are equal; closing it without choosing asks at most once more. (Shown on a tab screen only, 1.2 seconds after it opens.)",
+  "from": "J04-02",
+  "shot": "screens/J04-04.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Help us make it better? Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names. Nothing is shared unless you say yes. Saying no changes nothing else. Don't share Share usage You can change this any time in Settings, Privacy.",
+  "lines": [
+    "Help us make it better?",
+    "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
+    "Nothing is shared unless you say yes. Saying no changes nothing else.",
+    "Don't share",
+    "Share usage",
+    "You can change this any time in Settings, Privacy."
+  ]
+}

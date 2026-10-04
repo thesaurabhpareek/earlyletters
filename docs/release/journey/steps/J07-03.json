@@ -1,0 +1,36 @@
+{
+  "id": "J07-03",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Review a typed letter",
+  "note": "Typed words are kept exactly as typed: no tidying, no list of changes, no \"does this sound like you\". The person chooses where it goes.",
+  "from": "J07-02",
+  "shot": "screens/J07-03.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Asha · 0 days Read it back You put both hands on the window today and watched the rain. Change words Private letters stay with you. You can add them to the book later. Add to Asha's book Keep private",
+  "lines": [
+    "Close",
+    "Asha · 0 days",
+    "Read it back",
+    "You put both hands on the window today and watched the rain.",
+    "Change words",
+    "Private letters stay with you. You can add them to the book later.",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

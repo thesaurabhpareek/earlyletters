@@ -1,0 +1,36 @@
+{
+  "id": "J09-01",
+  "journey": "the-book",
+  "kind": "happy",
+  "title": "An empty book",
+  "note": "One drawing, one plain sentence, one action: \"Write a letter\". No counts, no gaps, nothing to fill in.",
+  "from": "J07-04",
+  "shot": "screens/J09-01.png",
+  "route": "/book",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "For Asha Asha's book The first page is waiting. Say one true thing about Asha today. That is how every book begins. Write a letter Tonight Book Family",
+  "lines": [
+    "For Asha",
+    "Asha's book",
+    "The first page is waiting.",
+    "Say one true thing about Asha today. That is how every book begins.",
+    "Write a letter",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

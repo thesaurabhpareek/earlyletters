@@ -81,7 +81,8 @@
     "typecheck": "tsc --noEmit",
     "e2e:web": "playwright test -c e2e-web/playwright.config.ts",
     "e2e:web:journey": "JOURNEY_SHOTS=1 playwright test -c e2e-web/playwright.config.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e:web:index": "node e2e-web/support/build-index.mjs"
   },
   "private": true
 }

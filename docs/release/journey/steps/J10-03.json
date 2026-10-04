@@ -1,0 +1,32 @@
+{
+  "id": "J10-03",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Reading size sheet",
+  "note": "A small \"Aa\" sheet changes the letter size live behind it: Standard, Large, Large print.",
+  "from": "J10-02",
+  "shot": "screens/J10-03.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Reading size Standard Large Large print",
+  "lines": [
+    "Reading size",
+    "Standard",
+    "Large",
+    "Large print"
+  ]
+}

@@ -6,11 +6,10 @@
   "note": "The title asks what both children call the parent, so one signature covers every book made here.",
   "from": "J03-01",
   "shot": "screens/J03-02.png",
-  "full": "screens/J03-02-full.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,11 +21,11 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
-  "text": "Back What do Asha and Nila call you? This is how your letters will be signed. A few ideas Mama Papa Amma Appa Mummy Daddy Ma Baba Not talking yet? Pick the name you hope to hear. Spoken language English Your words stay in the language you speak. We never translate them. Add what Asha and Nila calls you to continue. Sign my letters",
+  "scrolls": false,
+  "text": "Back What do Asha and Ashu call you? This is how your letters will be signed. A few ideas Mama Papa Amma Appa Mummy Daddy Ma Baba Not talking yet? Pick the name you hope to hear. Spoken language English Your words stay in the language you speak. We never translate them. Sign my letters",
   "lines": [
     "Back",
-    "What do Asha and Nila call you?",
+    "What do Asha and Ashu call you?",
     "This is how your letters will be signed.",
     "A few ideas",
     "Mama",
@@ -41,7 +40,6 @@
     "Spoken language",
     "English",
     "Your words stay in the language you speak. We never translate them.",
-    "Add what Asha and Nila calls you to continue.",
     "Sign my letters"
   ]
 }

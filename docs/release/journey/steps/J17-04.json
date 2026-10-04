@@ -1,0 +1,40 @@
+{
+  "id": "J17-04",
+  "journey": "family-coming-soon",
+  "kind": "unhappy",
+  "title": "I was invited, but invites are not open yet",
+  "note": "Someone who was invited sees the same coming-soon sheet instead of an invite screen: they can write their own book now and the shared book comes later.",
+  "from": "J01-03",
+  "shot": "screens/J17-04.png",
+  "full": "screens/J17-04-full.png",
+  "route": "/invite",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Coming soon Write to your child, together Soon your child's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name your child calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Only the people you invite can read your child's book. A letter you keep private stays yours. Tell me when it's here Close",
+  "lines": [
+    "Coming soon",
+    "Write to your child, together",
+    "Soon your child's other parent can write in this same book, from their own phone.",
+    "One book, two voices",
+    "Your letters and theirs sit side by side, each signed with the name your child calls you.",
+    "Each from your own phone",
+    "Write whenever it suits you, and read every shared letter wherever you are.",
+    "Private to your family",
+    "Only the people you invite can read your child's book. A letter you keep private stays yours.",
+    "Tell me when it's here",
+    "Close"
+  ]
+}

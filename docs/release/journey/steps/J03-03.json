@@ -8,8 +8,8 @@
   "shot": "screens/J03-03.png",
   "route": "/onboarding",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,11 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "Back The book is open. Say one thing about Asha and Nila today. That is a letter. Write the first one",
+  "text": "Back The book is open. Say one thing about Asha and Ashu today. That is a letter. Write the first one",
   "lines": [
     "Back",
     "The book is open.",
-    "Say one thing about Asha and Nila today. That is a letter.",
+    "Say one thing about Asha and Ashu today. That is a letter.",
     "Write the first one"
   ]
 }

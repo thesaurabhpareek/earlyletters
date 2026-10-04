@@ -7,8 +7,8 @@
   "shot": "screens/J00-open.png",
   "route": "/",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {

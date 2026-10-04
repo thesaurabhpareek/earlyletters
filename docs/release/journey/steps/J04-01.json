@@ -1,0 +1,42 @@
+{
+  "id": "J04-01",
+  "journey": "tonight-and-prompts",
+  "kind": "happy",
+  "title": "Tonight with a letter waiting",
+  "note": "With a recording waiting on Review, a quiet card says so above Speak and Type. (Seeded fictional family Asha, 7 months.)",
+  "from": "J01-14",
+  "shot": "screens/J04-01.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months The house is quiet, Mama. What do you want Asha to know about today? A thought to start with What is Asha's favorite thing in the house this week? Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "The house is quiet, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "What is Asha's favorite thing in the house this week?",
+    "Another thought",
+    "A letter is waiting to be read back.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}
