@@ -1,12 +1,14 @@
 # Legal Engineering Requirements (`LEGAL-REQ-###`)
 
-Version 1.1.0, 3 Oct 2026 (changelog at the end). Status: draft for counsel.
+Version 1.2.0, 3 Oct 2026 (changelog at the end). Status: draft for counsel.
 
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. These requirements translate `compliance-register.md` into testable rules for the technical design and code. Where a requirement rests on an unverified legal reading it says so; build it anyway unless counsel removes it, because each one is cheap now and expensive after launch.
 
 **How to use this file.** Technical design agents and Claude Code sessions MUST satisfy every P0 requirement before public launch (TestFlight beyond the founding family counts as public). P1 requirements must be met before the feature they cover ships. Each requirement has acceptance criteria in Given/When/Then form that should become automated tests where the "Test" line says so. When a requirement conflicts with a PRD, this file wins until counsel or the founder decides otherwise; the conflict is listed in `compliance-register.md` s.4.
 
 **Release tiers (PRD.md 1.3 section 3.0, 3 Oct 2026).** A requirement tied to a feature binds the day that feature ships. The web contribution page moved to v1.1 (founder decision, PRD K-35), so LEGAL-REQ-010 and LEGAL-REQ-035 bind from v1.1, and the web parts of LEGAL-REQ-002, -005 and -014 apply from then; server transcription and the AI gateway are not in v1.0, so LEGAL-REQ-004, -005 and -020 bind when they ship. LEGAL-REQ-030 is met at v1.0 by a static page plus an email route, with the full web flow before Android (D-042). **Counsel to confirm these readings** (BL-104). Nothing here is dropped.
+
+**Second round of founder decisions (3 Oct 2026, D-051 to D-070).** Co-parent only (D-055): LEGAL-REQ-005, -010 and -035 bind when other family members or the web page ship. No audio leaves the phone, no backup, no photos, no cloud transcription in v1.0 (D-059): LEGAL-REQ-004, -005, -013, -020, -022(a) and -023 bind when the feature they cover ships. Apple-only Plus checked on the device with no server (D-053, ADR 0013): LEGAL-REQ-046 to -050 are rewritten below; -049 (per-purchase consent rows) is retired in favour of per-release evidence, pending counsel (Q-003 memo, COUNSEL_PACKET Q8). Sync is the outbox and cursor engine on Supabase (D-023): no PowerSync obligations remain.
 
 **Sources** are register rows (`CR-###`, which carry the citations [L#]) and repo documents. "Policy" means `POLICY_VERSIONING.md`.
 
@@ -66,7 +68,7 @@ At account creation (after Terms, as a separate act, never pre-checked, never bu
 Source: CR-020 (Connecticut sensitive-data consent; applies to any controller processing sensitive data from 1 Jul 2026), CR-022, CR-031 (MHMDA "separate and distinct" consents; consent cannot be bundled with general terms). Counsel to confirm whether MHMDA's "necessary to provide the requested service" exemption makes this unnecessary for Washington alone; Connecticut still needs it.
 
 ### LEGAL-REQ-007 (P0) Permission priming and accurate purpose strings
-Microphone, notifications and photo access are requested only at the moment of use, after an in-app explanation, with purpose strings approved by counsel and stored in `packages/content`. Photos use the system picker (no full-library permission). Contacts, location, tracking (ATT), Bluetooth and speech-recognition permissions are never requested.
+Microphone and notifications (and photo access, once photos ship) are requested only at the moment of use, after an in-app explanation, with purpose strings approved by counsel and stored in `packages/content`. Photos, when they ship, use the system picker (no full-library permission). Contacts, location, tracking (ATT), Bluetooth and speech-recognition permissions are never requested.
 - Given first launch, When the user reaches Tonight, Then no OS permission prompt has appeared.
 - Given the Info.plist and Android manifest, When CI inspects them, Then only `NSMicrophoneUsageDescription` (and photo-picker-compatible keys) and notification permission are present; any other permission key fails the build.
 - Given microphone denied, When the user taps record, Then a typed-entry path and an Open Settings link are offered, with no repeated OS prompt.
@@ -74,7 +76,7 @@ Microphone, notifications and photo access are requested only at the moment of u
 Source: CR-083 (Apple 5.1.1(iii),(iv)); PRD C-REQ-001; PRD B non-goals (no contacts, no location).
 
 ### LEGAL-REQ-008 (P0) Every consent is visible and withdrawable in two taps
-Settings > Privacy lists each consent (AI processing, sensitive data, analytics, backup mode) with its state, the version accepted, a link to the text, and a control to withdraw or grant. Settings > Legal lists Terms, Privacy Policy, Consumer Health Data Privacy Policy, Subprocessors, Accessibility statement, Licences, Legal-process guidelines, Portability pledge.
+Settings > Privacy lists each consent (in v1.0: sensitive data and analytics; AI processing and backup mode when those features ship) with its state, the version accepted, a link to the text, and a control to withdraw or grant. Settings > Legal lists Terms, Privacy Policy, Consumer Health Data Privacy Policy, Subprocessors, Accessibility statement, Licences, Legal-process guidelines, Portability pledge.
 - Given any consent, When the user opens Settings, Then they can withdraw it in at most 2 taps and the change is recorded with `method='settings_toggle'`.
 - Test: automated UI.
 Source: CR-081, CR-082 (easy withdrawal), CR-031; PRD C-REQ-016 (add rows).
@@ -109,7 +111,7 @@ The server stores only fields listed in the data map (`docs/legal/data-map.yaml`
 - Test: automated (schema-to-data-map diff).
 Source: CR-083 (5.1.1(iii)), CR-022 (state minimisation), PRD B non-goals.
 
-### LEGAL-REQ-013 (P0) Strip location and device metadata from photos
+### LEGAL-REQ-013 (P1, binds when photos ship) Strip location and device metadata from photos
 Photos are re-encoded or stripped of EXIF/XMP GPS and device serial metadata on the device before upload or export to the server. The original stays only on the device.
 - Given a photo with GPS EXIF, When attached and synced, Then the stored object contains no GPS tags.
 - Test: automated (fixture image).
@@ -173,12 +175,12 @@ All network traffic uses TLS 1.2 or later; iOS App Transport Security has no exc
 Source: CR-110, CR-090 (Data safety "encrypted in transit").
 
 ### LEGAL-REQ-022 (P0) Encryption at rest
-(a) Audio uploaded to Storage is always client-encrypted (AES-256-GCM, per-file key, ADR 0006), including web contributor uploads (B-NFR-005). (b) On the device, the local database and audio files use iOS Data Protection at least "complete until first user authentication" and are excluded from iCloud device backup only where the ADR says so (model files). (c) Supabase Postgres and Storage encryption at rest is confirmed in writing from Supabase documentation (Unverified today) and recorded in the data map. (d) Whether the local database is encrypted (op-sqlite SQLCipher) is decided in Phase 0 and the privacy claims match the decision.
+(a) When audio upload ships (not v1.0, D-059): audio uploaded to Storage is always client-encrypted (AES-256-GCM, per-file key, ADR 0006), including web contributor uploads (B-NFR-005). (b) On the device, the local database and audio files use iOS Data Protection at least "complete until first user authentication"; recordings and the database are included in the user's own device backup and speech models and packs are excluded (D-033). (c) Supabase Postgres and Storage encryption at rest is confirmed in writing from Supabase documentation (Unverified today) and recorded in the data map. (d) The local expo-sqlite database is not separately encrypted (no SQLCipher; security review 2026-10-04); privacy claims must not say the local database is encrypted beyond iOS Data Protection.
 - Given an uploaded audio object, When downloaded with service credentials, Then its bytes are not a valid M4A file without the key.
 - Test: automated.
 Source: CR-110, CR-017 (encryption relevant to breach liability), CR-010 (claims).
 
-### LEGAL-REQ-023 (P0) Escrow key controls
+### LEGAL-REQ-023 (P0 when backup ships; not in v1.0) Escrow key controls
 The server escrow key that can unwrap Standard-mode child content keys is held only as an Edge Function secret, never in the database or its backups; every unwrap is logged (profile id, child id, reason code, time; no content); unwraps are rate-limited per child; the key can be rotated without user action; Vault-mode children are never escrowed.
 - Given a database dump, When searched, Then no escrow key material is present.
 - Given 100 unwraps for one child in an hour, When the next is requested, Then it is refused and an alert fires.
@@ -186,7 +188,7 @@ The server escrow key that can unwrap Standard-mode child content keys is held o
 Source: CR-110, CR-017, CR-010 (escrow disclosure); ADR 0006.
 
 ### LEGAL-REQ-024 (P0) Access control is tested
-Every table has RLS enabled; every policy and security-definer function has an access test in `supabase/tests`; PowerSync Sync Streams have the parity test required by ADR 0004. The P0 security fix to `create_child_invite` (any member can mint a parent invite) and the other RLS deltas in PRD B s.5 land before any non-founder family data exists.
+Every table has RLS enabled; every policy and security-definer function has an access test in `supabase/tests`; the sync pull RPCs use the same `book_access` predicate as RLS and have access tests (D-023, D-024). The P0 security fix to `create_child_invite` (any member can mint a parent invite) and the other RLS deltas in PRD B s.5 land before any non-founder family data exists.
 - Given CI, When `npm run test:db` runs, Then all access tests and parity tests pass, and a table without RLS fails the build.
 - Test: automated.
 Source: CR-110; PRD B s.5 RLS mapping; ARCH s.8.
@@ -220,10 +222,10 @@ Source: CR-110 (reasonable security; amended COPPA rule's written-programme mode
 ## 4. Deletion, retention and export
 
 ### LEGAL-REQ-029 (P0) In-app account deletion, end to end
-Settings > Your data > Delete account follows PRD C-REQ-019 (export offered first, subscription-billing notice with manage link, 30-day undo, type to confirm) and, when it completes, deletes or de-identifies the account everywhere: Postgres rows (profiles cascade; entries, versions, dictionary, memberships), Storage objects (audio, photos, avatars, inbox), sync replicas if any (PowerSync buckets only if that engine is used, D-023), our App Store billing mapping (`app_account_tokens` deleted; `store_subscriptions` and auto-renewal consent rows pseudonymised; Apple keeps its own records as merchant of record, so no third-party billing call exists, ADR 0013), PostHog person (random id, deleted at request time through `analytics-forget`, TDD 05 X-02) and Sentry user context if any, email-provider contact (keeping only a hashed suppression entry), Sign in with Apple token revocation (A-NFR-011). Consent records are pseudonymised, not deleted (Policy s.7.1). The user receives a confirmation email when deletion completes.
-- Given a fixture account with entries, audio, photos, a subscription and analytics, When deletion completes, Then a verification script finds no row or object referencing the profile id or analytics id in any system, except pseudonymised `policy_acceptances` and the hashed suppression entry.
-- Given a co-parent and contributors on the book, When one parent deletes, Then PRD B-REQ-016 rules apply (book stays for the other parent; contributors offered export).
-- Test: automated (deletion verification script across systems, run in staging).
+Settings > Your data > Delete account follows PRD C-REQ-019 (export offered first, subscription-billing notice with Apple's manage link, 30-day undo, type to confirm) and, when it completes, deletes or de-identifies the account everywhere: Postgres rows (profiles cascade; entries, versions, dictionary, memberships), Storage objects if any, the stored Apple refresh token after revoking it with Apple (A-NFR-011; capture not built yet, security review H3), PostHog events under every analytics id the phone kept (deleted at request time through the stateless `analytics-forget`, TRACKING_PLAN 7), any Resend contact (none kept in v1.0). Plus is not touched: Apple holds it and we hold no purchase record (ADR 0013). Consent records are pseudonymised, not deleted (Policy s.7.1). The user receives a confirmation email when deletion completes, and the app wipes local data after offering one more export (DATA-REQ-023).
+- Given a fixture account with entries, a co-parent book and analytics, When deletion completes, Then a verification script finds no row or object referencing the profile id in any system, except pseudonymised `policy_acceptances`, deletion records and the hashed suppression entry if any.
+- Given a co-parent on the book, When one parent deletes, Then the book stays for the other parent with their letters (DATA-REQ-012).
+- Test: automated (deletion verification script across systems, run in staging); `supabase/functions/purge-worker` tests.
 Source: CR-084 (Apple 5.1.1(v)), CR-091 (Play), CR-031 (MHMDA deletion flowed down to processors), CR-014.
 
 ### LEGAL-REQ-030 (P0) Web deletion request page
@@ -238,7 +240,7 @@ Source: CR-091 (Google Play web link requirement [L16]).
 | Letter or recording deleted by the author | Hidden from all members within one sync; hard-deleted from Postgres and Storage 30 days after deletion (undo window) |
 | Account or book deletion confirmed | Undo for 30 days; then hard delete from primary systems within 24 hours of the window ending |
 | Database and storage backups | Deleted data ages out of all backups within 35 days of the hard delete (backup retention must be configured to 30 days or less; Supabase backup retention Unverified) |
-| Processors (PostHog, Sentry, email provider; PowerSync only if used) | Deletion API calls issued within 24 hours of the hard delete (PostHog at request time, TDD 05 X-02); failures retried and alerted. Apple is not our processor for purchases (merchant of record); we delete our own mapping |
+| Processors (PostHog, Resend) | PostHog deleted at request time (`analytics-forget`); Resend keeps no contacts in v1.0 and ages out sent-message data after 30 days, so the completion email remains until about day 60 (the stated exception, Privacy Policy section 10); failures retried and alerted. Apple is not our processor for purchases and we hold no purchase record |
 | Rights request by email or web (access, deletion, correction) | Acknowledged within 10 days; completed within 45 days (CCPA response window, Unverified statute text) |
 - Given the scheduled purge job, When it runs daily, Then it deletes every tombstone older than 30 days and logs counts only.
 - Given a processor deletion failure, When retries exhaust, Then an alert fires within 24 hours.
@@ -262,12 +264,13 @@ Each data category in the data map has a retention rule and a job or trigger tha
 | Web contributor return links | Until revoked, or 24 months of inactivity with notice to the inviting parent (proposed) |
 | Ops audit log (`ops_audit_log`), security logs (`security_events`), key-unwrap logs | 12 months |
 | Product and dispute audit events (`audit_events`, enum-only) | 24 months (DATA-REQ-066; D-021; both clocks listed in the Privacy Policy) |
-| Purchase ledger (`store_subscriptions`, no price or receipt) | 7 years, pseudonymised at account deletion |
 | Analytics events (PostHog) | Provider retention set to 12 months or less (setting Unverified) |
-| Crash reports (Sentry) | 90 days |
+| Crash reports (Sentry, when added; not in v1.0) | 90 days |
+| Emails sent through Resend | 30 days after sending (provider retention) |
+| Apple refresh token (`ops.apple_tokens`) | Until revoked at account deletion |
 | Policy acceptances | Account life + 3 years (pseudonymised after deletion) |
 | Email suppression hashes | Indefinitely (to honour opt-outs) |
-| Purchase disclosure records (ARL) | 3 years, or 1 year after the subscription ends, whichever is longer |
+| Purchase disclosure records (ARL) | Not kept by us: Apple holds the transaction; we keep per-release evidence of the purchase screen (POLICY_VERSIONING 8; Q-003 memo C-5) |
 - Given each rule, When its job runs in staging with time travel, Then data past retention is gone and data within retention is untouched.
 - Test: automated.
 Source: CR-084 (5.1.1(i) retention disclosure), CR-091, CR-050 (ARL records [L7]), CR-031.
@@ -295,7 +298,7 @@ Source: CR-014, CR-022, CR-031.
 ## 5. Breach response hooks
 
 ### LEGAL-REQ-037 (P0) Security event logging
-Log, without content: auth events (sign-in, failures, method linking), service-role and runbook use (LEGAL-REQ-025), escrow unwraps (LEGAL-REQ-023), Storage bulk reads and signed-URL creation counts per account, admin console logins (Supabase, Vercel, App Store Connect, PostHog, Sentry, email provider), RLS-denied spikes. Retained 12 months.
+Log, without content: auth events (sign-in, failures, method linking), service-role and runbook use (LEGAL-REQ-025, `ops.audit_log`), escrow unwraps once backup exists (LEGAL-REQ-023), Storage bulk reads and signed-URL creation counts per account, admin console logins (Supabase, Vercel, App Store Connect, PostHog, Resend, Porkbun, the download host, Google Cloud), RLS-denied spikes. Retained 12 months (D-021).
 - Given each event type, When triggered in staging, Then a log entry with actor, action, target ids and time exists.
 - Test: automated.
 Source: CR-110, CR-111.
@@ -313,7 +316,7 @@ A runbook script, given an incident scope (tables, buckets, time window, child o
 Source: CR-017, CR-030, CR-101, CR-111.
 
 ### LEGAL-REQ-040 (P0) Kill switches
-Remote, audited switches to: revoke all sessions (force re-auth), disable the AI gateway, disable the web contribution page and return links, pause Storage signed-URL issuance, and rotate the escrow key. Local recording, reading and export keep working when any switch is on.
+Remote, audited switches to: revoke all sessions (force re-auth; the `forceReauthEpoch` remote-config field is parsed but not yet acted on, security review L3), pause sync, and pause pack downloads. When their features ship: disable the AI gateway, disable the web contribution page and return links, pause Storage signed-URL issuance, and rotate the escrow key. Local recording, reading and export keep working when any switch is on.
 - Given each switch, When flipped in staging, Then the effect occurs within 5 minutes and local features still work offline.
 - Test: automated.
 Source: CR-110, CR-111.
@@ -358,49 +361,50 @@ Source: CR-001, CR-002, CR-003 (COPPA directed-to-children factors [L1]; Apple 2
 ## 7. Subscriptions
 
 ### LEGAL-REQ-046 (P0) Paywall disclosures next to the button
-The Plus sheet shows, near the purchase button and readable at default text size: price, billing period, that it renews automatically until cancelled, the trial length and the date the first charge will occur (if eligible), what Plus includes, and how to cancel. No plan is preselected (PRD C-REQ-022). Prices come from the store (localized), never hardcoded.
-- Given an eligible user choosing Annual, When the sheet renders, Then the text includes "$29.99 a year", the trial end date computed from today, "renews automatically" and "cancel any time in Settings" (final words from content/counsel), and VoiceOver reads them with the button.
-- Test: automated snapshot + accessibility test.
-Source: CR-050 (ARL clear and conspicuous terms, express affirmative consent), CR-051 (ROSCA), CR-087 (Apple 3.1.2(c)).
+The purchase screen is Apple's `SubscriptionStoreView` (ADR 0013): Apple shows each plan's price, period and any free trial for eligible people, one subscribe button per plan (no plan preselected, PRD C-REQ-022), Restore, and the Terms and Privacy links (to https://earlyletters.com/terms and /privacy). Our marketing content above the plans states what Plus adds, that writing, reading, playing recordings, export and writing with a co-parent stay free, that plans renew automatically until cancelled at least 24 hours before the end, how to cancel, and Family Sharing (`billingCopy.store`). Nothing we add may make the free period more prominent than Apple's price, or state a trial length that Apple's offer does not.
+- Given the store view on a release build, When rendered at the default and the largest Dynamic Type size, Then Apple's plans and all of our marketing content are visible and wrap without truncation, and VoiceOver reads them.
+- Given a non-eligible account (sandbox), Then nothing we show mentions a free trial.
+- Test: on-device check per release (screenshots into the evidence pack, POLICY_VERSIONING 8) plus a content test on `billingCopy.store`.
+Source: CR-050, CR-051 (ROSCA), CR-087 (Apple 3.1.2(c)); ADR 0013.
 
-### LEGAL-REQ-047 (P0) Notice timing engine
-*Revised 3 Oct 2026 per PRD.md 1.3 K-38 (TDD 05 X-06, TDD 08 4.3, Lawyer 1 H1).* Server-driven notices, recomputed from App Store snapshots (App Store Server Notifications V2 plus App Store Server API re-reads; ADR 0013), sent by email plus in-app card (one push only with the final trial notice), with idempotency keys. `E` = trial end or period end (App Store instant, UTC); `C` = cancel deadline = `E - 24h`. The windows are stored as data; nothing is ever sent outside its hard window, and a missed window alerts the founder instead of sending late. We do not store the user's state, so everyone gets the strictest window.
+### LEGAL-REQ-047 (P0) Notice timing engine (on the device)
+*Rewritten 3 Oct 2026 for D-053 and ADR 0013 (no server sees purchases); position and law in `memos/q-003-subscription-notices.md`, counsel to confirm (COUNSEL_PACKET Q8).* The app schedules plan reminders as local notifications plus an in-app note (in Settings, Plan and on the next open inside the window), from StoreKit data on the phone: the entitlement's expiration date, `RenewalInfo.willAutoRenew` and the introductory-offer type. Only on phones where the transaction's ownership is `purchased` (family members through Family Sharing are not billed and get none). Recomputed on every launch and on every `Transaction.updates` event; all pending reminders are cancelled when auto-renew is off. Nothing leaves the phone. `E` = trial end or period end (UTC); `C` = cancel deadline = `E - 24h`. Windows are data; a missed window is skipped, never sent late.
 
-| Notice | Applies when | Target | Hard window | Required by |
+| Reminder | Applies when | Target | Hard window | Required by |
 |---|---|---|---|---|
-| Purchase or trial acknowledgment (terms, cancel instructions) | Purchase or trial start | Immediately | Within 1 hour | ARL acknowledgment (CR-050) |
-| Trial ending, 31 days or less | Monthly plan's 1-month trial that will renew | `E - 7d` | `[E-8d, E-5d]` | Courtesy (UR R16); Virginia "within 30 days" for a 31-day trial |
-| Trial ending, over 31 days | Annual plan's 2-month trial that will renew | `E - 18d` | `[E-21d, E-16d]` | ARL 3 to 21 days; NY 3 to 21 days before `C`; Terms "16 to 21 days" |
-| Trial ending, final | Every trial that will renew | `E - 4d 12h` | `[E-5d, E-4d]` | At least 3 days before `C` (Subscription terms; Utah) |
-| Annual renewal, long | Annual plan, will renew, not in a trial | `E - 30d 12h` | `[E-31d, E-30d]` | ARL 15 to 45; NY 15 to 45 before `C`; Virginia and Utah 30 to 60; Massachusetts at most 30 before `C` |
+| Purchase or trial confirmation (in app, with "Save a copy" through the share sheet) | Purchase or trial start | When Apple's sheet closes with `purchased` | Same session | CA 17602(a)(3) retained acknowledgment; MA calendar date to cancel by |
+| Trial ending, over 31 days | Annual plan's 2-month trial that will convert | `E - 18d` | `[E-21d, E-16d]` | CA (b)(1); NY 3 to 21 days before `C`; VA within 30 days of the end; UT at least 3 days; MA 5 to 30 before `C`; NYC |
+| Trial ending, 31 days or less | Monthly plan's 1-month trial that will convert | `E - 7d` | `[E-8d, E-5d]` | VA if over 30 days; UT; courtesy |
+| Trial ending, final | Every trial that will convert | `E - 4d 12h` | `[E-5d, E-4d]` | UT at least 3 days before expiry; courtesy |
+| Annual renewal, long | Annual plan, will renew, not in a trial | `E - 30d 12h` | `[E-31d, E-30d]` | UT 30 to 60 before renewal and MA at most 30 before `C` meet only here; CA 15 to 45; NY 15 to 45 before `C` |
 | Annual renewal, short | Annual plan, will renew | `E - 7d` | `[E-8d, E-6d]` | Courtesy |
-| Annual reminder for every active subscription, monthly included | Each subscription year | Anniversary | Same day | AB 2863 annual reminder [L7] |
-| Price increase | Approved increase, store opt-in consent only | `effective - 25d` | `[-30d, -7d]` | ARL [L7]; Lawyer 1 M1 |
+| Yearly reminder for every subscription, monthly included | Each subscription anniversary | Anniversary | Same day | CA 17602(h), read broadly |
+| Price increase | Never for existing subscribers ("keep current price" in App Store Connect) | n/a | n/a | CA (g); NY (c); NYC |
 
-- Given an annual subscription renewing on 1 March 00:00 UTC, When the scheduler runs, Then the long renewal notice is sent between 29 January 00:00 and 30 January 00:00 UTC, and a short notice between 21 and 23 February; none is sent outside its window.
-- Given a 2-month trial ending at `E`, When the scheduler runs, Then notices go inside `[E-21d, E-16d]` and `[E-5d, E-4d]`, and only the second carries a push.
-- Given the user turns auto-renew off, When the next scheduler run happens, Then every pending trial or renewal notice for that period is skipped.
-- Given a monthly subscriber for 12 months, When the anniversary arrives, Then one annual reminder email is sent.
-- Given push is off, Then email and in-app still go out.
-- Given the child's birthday falls inside a window, Then emails still go in the window, and a push or card avoids the birthday only if the window allows.
-- Test: automated (scheduler with clock control over a synthetic year, DST and leap-year cases).
-Source: CR-050, CR-051; register s.4 K1; Lawyer 1 H1; counsel confirms the table once (TDD 05 OQ-L7).
+- Given an annual subscription renewing on 1 March 00:00 UTC, When the app runs at any time before 29 January, Then a local notification is scheduled inside 29 January 00:00 to 30 January 00:00 UTC, and a short one inside 21 to 23 February; none outside its window.
+- Given a 2-month trial ending at `E`, Then reminders are scheduled inside `[E-21d, E-16d]` and `[E-5d, E-4d]`.
+- Given auto-renew turned off in Apple's settings, When the app next launches or receives `Transaction.updates`, Then every pending plan reminder is cancelled.
+- Given a family member (`familyShared`), Then no plan reminder is scheduled.
+- Given notifications are not allowed, Then the in-app note still appears in Settings, Plan and on the next open inside each window.
+- Given the child's birthday falls inside a window, Then the reminder still goes inside its window (no birthday shifting outside a window).
+- Test: automated (scheduler with clock control over a synthetic year, DST, leap day, trials of 28 to 31 and 59 to 62 days).
+Source: CR-050, CR-051, CR-052; Q-003 memo sections 4 and 5; ADR 0013.
 
 ### LEGAL-REQ-048 (P0) Cancellation is easy
-Settings > Plan shows the renewal date and a "Manage or cancel" button that opens the platform's subscription management (iOS `showManageSubscriptions`; Google Play deep link). Every notice email includes the same instructions and a link to a web page explaining how to cancel on each platform. Any retention offer appears alongside, never instead of, the cancel route.
+Settings > Plan shows the trial end or renewal date and a "Manage subscription" button that opens Apple's subscription management (`AppStore.showManageSubscriptions`). Every plan reminder and the purchase confirmation include the same instructions. No retention offer is shown before Apple's screen.
 - Given a subscriber, When they tap Manage or cancel, Then the system subscription sheet opens in one tap.
 - Test: automated UI.
 Source: CR-050 (online cancellation by a prominent direct link [L7]), CR-051.
 
-### LEGAL-REQ-049 (P0) Purchase consent records
-Every purchase start and completion writes a `policy_acceptances` row for `auto-renewal-terms` (`method='paywall_purchase'`, product id, intro-offer type, storefront in `context`), linked to the exact disclosure version shown. Retained per LEGAL-REQ-033.
-- Given a completed purchase, When the App Store notification is reconciled, Then exactly one `completed` acceptance row matches the App Store original transaction's product and time (± 10 minutes), alongside the `started` row written at purchase start (D-049; counsel to confirm the reading).
-- Test: automated.
-Source: CR-050 (consent records 3 years or 1 year after termination [L7]); Policy s.7.3.
+### LEGAL-REQ-049 (Retired 3 Oct 2026, pending counsel) Purchase consent records
+*Retired by D-053 and ADR 0013: no server of ours sees a purchase, so there is no per-purchase `auto-renewal-terms` row and D-049 no longer applies.* Replacement, until counsel answers COUNSEL_PACKET Q8 (memo C-5): Apple's transaction record is the per-person proof; for each release the evidence pack (POLICY_VERSIONING 8) keeps screenshots of Apple's store view with our marketing content at default and largest text size, the Subscription Terms version and the `billingCopy.store` strings, so the exact disclosure shown to any purchaser can be reconstructed from the app version.
+- Given a release candidate, When the release checklist runs, Then `docs/legal/evidence/store/<version>/` holds the purchase-screen screenshots and the content hash of `billingCopy.store`.
+- Test: release checklist (manual).
+Source: CR-050 (consent records 3 years or 1 year after termination [L7]); Q-003 memo.
 
 ### LEGAL-REQ-050 (P0) Keep-and-leave promise enforced in code
-Writing, reading, playback of recordings, export, family authors and downloading already backed-up audio never call the entitlement service and never show a paywall (PRD C-NFR-004, C-REQ-017, C-REQ-028). A lapse, refund or billing failure removes only Plus extras.
-- Given entitlement service unreachable and a lapsed account, When the user writes, reads, plays and exports, Then all succeed with no Plus UI.
+Writing, reading, playback of recordings, export and writing with a co-parent never consult the StoreKit entitlement and never show a paywall (PRD C-NFR-004, C-REQ-017, C-REQ-028). A lapse, refund or billing failure removes only Plus extras (new books beyond the free ones, Read together after the free sessions); existing books stay fully usable.
+- Given StoreKit unavailable and a lapsed plan, When the user writes, reads, plays and exports, Then all succeed with no Plus UI.
 - Test: automated.
 Source: CR-012 (honouring "free" promises), CR-010.
 
@@ -459,7 +463,7 @@ Engineering provides a service-role script that can preserve a specific account'
 Source: CR-112, CR-113.
 
 ### LEGAL-REQ-058 (P0) Launch geography controls
-iOS availability is set to the United States storefront only (Android likewise later). The website and app contain no EU/UK/India-targeted pricing, language or marketing. The web contribution page is reachable from any country but collects only what LEGAL-REQ-010 allows, sets no non-essential cookies, and stores no IP-derived location. No code stores a user's country or state except the storefront country that Apple reports on App Store transactions (stored with the entitlement, L2).
+iOS availability is set to the United States storefront only (Android likewise later). The website and app contain no EU/UK/India-targeted pricing, language or marketing. The web contribution page is reachable from any country but collects only what LEGAL-REQ-010 allows, sets no non-essential cookies, and stores no IP-derived location. No code stores a user's country or state. The storefront Apple reports stays on the phone (ADR 0013).
 - Given App Store Connect, When the release checklist runs, Then territory availability equals {United States} and the evidence is saved.
 - Given the web contribution page, When loaded, Then only strictly necessary cookies or storage are set.
 - Test: manual checklist + automated cookie check.
@@ -504,5 +508,6 @@ Citations [L#] are listed with URLs in `compliance-register.md` (all opened 2 Oc
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.0 | 2026-10-03 | Alignment with the founder decisions of 3 Oct 2026, second round (D-051 to D-070). Release-tier paragraph for D-055 and D-059 (013, 022(a), 023 and the web and AI requirements bind when their features ship). 007 and 008 scoped to v1.0 permissions and consents. 022: device backup decided (D-033), no SQLCipher. 024: sync access tests replace PowerSync parity (D-023). 029 rewritten to the built purge worker (Apple token revocation, PostHog at request, Resend, no purchase mapping). 031 and 033: Resend 30-day exception; purchase ledger and ARL record rows removed. 037 consoles updated. 040: v1.0 switches, `forceReauthEpoch` gap (security review L3). 046 to 050 rewritten for Apple-only Plus on the device: Apple's store view (046), on-device reminder engine (047, Q-003), Apple's manage sheet (048), 049 retired for per-release evidence, 050 keep-and-leave without an entitlement service. 058: no storefront stored. Not a published document; no notice. |
 | 1.1.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct; `docs/DECISIONS.md`). Release-tier note: web-page requirements (010, 035 and web parts of 002, 005, 014) bind from v1.1; AI requirements (004, 005, 020) bind when the gateway ships; 030 reduced at v1.0 (D-042); counsel to confirm. RevenueCat removed (ADR 0013): 029 deletion steps, 031 processors, 037 consoles, 049 reconciliation, 058 storefront source. 033: invite hashes 90 days keyed on use, revocation or expiry (K-18, D-020); `audit_events` 24 months beside 12-month ops and security logs (D-021); purchase ledger 7 years. 047 rewritten to the K-38 hard windows (final trial notice at E-4d12h; annual renewal inside [E-31d, E-30d]; long trial inside [E-21d, E-16d]). Not a published document; no notice. |
 | 1.0.0 | 2026-10-02 | First version; 2 Oct revision of 002 for the 18+ entry gate. |

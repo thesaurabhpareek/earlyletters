@@ -2,9 +2,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, Platform, Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
-import { Choices, Section, ToggleRow } from '@/components/settings/settings-ui';
+import { ChoiceGroup } from '@/components/ui/choice-group';
+import { ListSection, ToggleRow } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { noteAskShown } from '@/lib/analytics/ask';
+import { track } from '@/lib/analytics/track';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import {
@@ -69,6 +72,8 @@ export default function Reminders() {
       if (on && (await needsPriming())) {
         // iOS has never asked: the priming sheet comes first, and its one button opens the alert.
         setPriming(true);
+        track('reminder_prime_shown', { source: 'settings' });
+        noteAskShown();
         return;
       }
       if (on) setPermission(await enableReminders());
@@ -82,8 +87,12 @@ export default function Reminders() {
   const continueFromPriming = async () => {
     setPriming(false);
     setBusy(true);
+    track('reminder_prime_result', { choice: 'yes' });
     try {
-      setPermission(await enableReminders());
+      // The priming sheet shows only while iOS has never asked, so this is the OS alert's answer.
+      const answer = await enableReminders();
+      track('os_permission_result', { granted: answer === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
+      setPermission(answer);
     } finally {
       setPrefs(readPrefs());
       setBusy(false);
@@ -119,9 +128,9 @@ export default function Reminders() {
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-      <Section footer={r.help}>
-        <ToggleRow first title={s.enabledLabel} value={prefs.enabled} disabled={busy} onChange={(v) => void toggle(v)} />
-      </Section>
+      <ListSection footer={r.help}>
+        <ToggleRow title={s.enabledLabel} value={prefs.enabled} disabled={busy} onValueChange={(v) => void toggle(v)} />
+      </ListSection>
 
       {prefs.enabled && permission === 'denied' && (
         <View accessible={false} className="gap-3 rounded-[14px] bg-secondary p-4">
@@ -137,12 +146,12 @@ export default function Reminders() {
 
       {prefs.enabled && (
         <>
-          <Section title={s.howOftenTitle}>
-            <Choices options={cadenceOptions} value={cadence} onChange={(v) => update({ cadence: v })} />
-          </Section>
+          <ListSection title={s.howOftenTitle}>
+            <ChoiceGroup label={s.howOftenTitle} layout="list" options={cadenceOptions} value={cadence} onChange={(v) => update({ cadence: v })} />
+          </ListSection>
 
           {cadence !== 'everyEvening' && (
-            <Section title={s.eveningsTitle} footer={cadence === 'weekly' ? s.eveningHelp : s.eveningsHelp}>
+            <ListSection title={s.eveningsTitle} footer={cadence === 'weekly' ? s.eveningHelp : s.eveningsHelp}>
               <View
                 accessibilityRole={cadence === 'weekly' ? 'radiogroup' : undefined}
                 className="flex-row flex-wrap gap-2 px-3 py-3">
@@ -166,10 +175,10 @@ export default function Reminders() {
                   );
                 })}
               </View>
-            </Section>
+            </ListSection>
           )}
 
-          <Section title={s.timeTitle} footer={s.quietHelp}>
+          <ListSection title={s.timeTitle} footer={s.quietHelp}>
             <View className="min-h-12 flex-row items-center gap-3 px-4 py-2">
               <Text className="flex-1 text-base text-foreground">{r.timeLabel}</Text>
               {Platform.OS === 'ios' || pickerOpen ? (
@@ -198,25 +207,28 @@ export default function Reminders() {
               )}
             </View>
             {lateNote && (
-              <Text accessibilityLiveRegion="polite" className="border-t border-border px-4 py-3 text-sm text-muted-foreground">
+              <Text variant="footnote" accessibilityLiveRegion="polite" className="px-4 py-3">
                 {s.lateNightClamp}
               </Text>
             )}
-          </Section>
+          </ListSection>
 
-          <Section>
-            <ToggleRow first title={s.monthNotesLabel} subtitle={s.monthNotesHelp} value={prefs.monthNotes} onChange={(v) => update({ monthNotes: v })} />
+          <ListSection>
+            <ToggleRow title={s.monthNotesLabel} description={s.monthNotesHelp} value={prefs.monthNotes} onValueChange={(v) => update({ monthNotes: v })} />
             <ToggleRow
               title={copy.settings.privacy.lockScreenLabel}
-              subtitle={prefs.namesOnLockScreen ? s.namesHelpOn : s.namesHelpOff}
+              description={prefs.namesOnLockScreen ? s.namesHelpOn : s.namesHelpOff}
               value={prefs.namesOnLockScreen}
-              onChange={(v) => update({ namesOnLockScreen: v })}
+              onValueChange={(v) => {
+                update({ namesOnLockScreen: v });
+                track('settings_changed', { key: 'lock_screen_names' });
+              }}
             />
-          </Section>
+          </ListSection>
 
-          <Section footer={prefs.paused ? s.pausedHelp : undefined}>
-            <ToggleRow first title={r.pauseLabel} value={prefs.paused} onChange={(v) => update({ paused: v })} />
-          </Section>
+          <ListSection footer={prefs.paused ? s.pausedHelp : undefined}>
+            <ToggleRow title={r.pauseLabel} value={prefs.paused} onValueChange={(v) => update({ paused: v })} />
+          </ListSection>
         </>
       )}
 

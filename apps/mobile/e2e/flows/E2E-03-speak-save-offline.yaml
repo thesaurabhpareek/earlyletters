@@ -1,0 +1,140 @@
+# E2E-03  Speak, review, save offline: a letter waiting for its words.
+# With no speech model on the phone (e2eTranscriber none, offline), Review offers
+# to keep the recording now; its words follow when the language is ready
+# (TDD 03 FM-9, ADR 0015). Then the background stop and the kill recovery.
+# Proves: A-REQ-012 (first letter with no sign-in and no OS prompt but the
+# microphone), A-REQ-013 and A-REQ-014 (Keep the book sheet after the first
+# save; Not now keeps everything working), A-REQ-030 (offline), LEGAL-REQ-011
+# and DATA-REQ-048 (backgrounding stops and keeps the take; a kill never loses
+# it), K-14 (no "please have a read" card without words).
+# Simulator note: the simulator records from the Mac's input; on a CI runner
+# with no microphone the file is silent, which is fine here (no words are
+# expected). Real audio is DEVICE_TEST_PLAN S1-10 to S1-14.
+appId: ${APP_ID}
+name: E2E-03 Speak, review, save offline
+tags:
+  - e2e
+  - E2E-03
+  - A-REQ-012
+  - A-REQ-013
+  - A-REQ-014
+  - A-REQ-030
+  - LEGAL-REQ-011
+  - DATA-REQ-048
+  - K-14
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_TRANSCRIBER: "none"
+- runFlow: ../subflows/pass-age-gate.yaml
+- runFlow: ../subflows/first-run-one-child.yaml
+# 1. Speak: the microphone prompt is the only system alert.
+- tapOn:
+    id: "tonight.speak"
+- assertVisible:
+    text: ".*Would Like to Access the Microphone.*"
+- tapOn:
+    text: "Allow"
+- assertVisible:
+    id: "listen.screen"
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: "4000"
+- tapOn:
+    id: "listen.finish"
+    enabled: true
+# 2. Review: no words yet, so no "please have a read" card; keep the voice.
+- assertVisible:
+    id: "review.screen"
+- assertNotVisible:
+    id: "review.firstNote"
+- extendedWaitUntil:
+    visible:
+      id: "review.keepVoice"
+    timeout: 15000
+- tapOn:
+    id: "review.keepVoice"
+- assertVisible:
+    id: "review.saved"
+# 3. First letter on this phone, signed out: the Keep the book sheet. Not now.
+- extendedWaitUntil:
+    visible:
+      id: "signIn.sheet"
+    timeout: 5000
+- assertVisible:
+    id: "signIn.later"
+- tapOn:
+    id: "signIn.later"
+- assertVisible:
+    id: "tonight.screen"
+# 4. The letter is in the book, private, waiting for its words.
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "book.letter.waitingForWords"
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "letter.waitingForWords"
+- runFlow: ../subflows/go-back.yaml
+# 5. Background during recording: the take stops, is kept and Review opens on return.
+- tapOn:
+    id: "tab.tonight"
+- tapOn:
+    id: "tonight.speak"
+- assertVisible:
+    id: "listen.screen"
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: "3000"
+- pressKey: home
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: "3000"
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible:
+      id: "review.screen"
+    timeout: 10000
+- tapOn:
+    id: "review.keepVoice"
+- assertVisible:
+    id: "review.saved"
+# 6. Kill during recording: the launch sweep keeps the take; Tonight offers it.
+- extendedWaitUntil:
+    visible:
+      id: "tonight.screen"
+    timeout: 5000
+- tapOn:
+    id: "tonight.speak"
+- assertVisible:
+    id: "listen.screen"
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: "3000"
+- stopApp
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_TRANSCRIBER: "none"
+- extendedWaitUntil:
+    visible:
+      id: "tonight.waiting"
+    timeout: 10000
+- tapOn:
+    id: "tonight.waiting"
+- assertVisible:
+    id: "review.screen"
+- stopApp

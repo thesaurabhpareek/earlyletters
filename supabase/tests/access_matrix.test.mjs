@@ -57,8 +57,12 @@ await sys(`insert into storage_purge_queue (bucket_id, object_path, reason) valu
 const dreq = (await sys(`insert into deletion_requests (kind, profile_id, status, source, scheduled_for) values ('account', $1, 'cancelled', 'ios', now()) returning id`, [C])).rows[0].id;
 await sys(`insert into deletion_request_steps (request_id, step) values ($1, 'auth_user')`, [dreq]);
 // One sync receipt and one rate window, both A's, so the own-rows rules are shown for others.
+// (Joining above counted against B's and N's "membership" windows; cleared so A's is the only row.)
+await sys(`delete from sync_rate_windows`);
 await sys(`insert into sync_op_receipts (op_id, profile_id) values ($1, $2)`, [uuid7(), A]);
 await sys(`insert into sync_rate_windows (profile_id, bucket, window_start, hits) values ($1, 'push', now(), 1)`, [A]);
+// One idempotency key, A's (20261005000000): the table is reached only through functions.
+await sys(`insert into idempotency_keys (profile_id, idem_key, fn, request_sha256, result) values ($1, $2, 'record_policy_act', '\\x00', '{}')`, [A, uuid7()]);
 
 const PERSONAS = ['parent', 'coparent', 'contributor', 'outsider', 'anonymous', 'anon'];
 const UID = { parent: A, coparent: B, contributor: N, outsider: C, anonymous: W };
@@ -107,6 +111,8 @@ const READS = [
   ['sync_epochs', 'select 1 from sync_epochs', [],                                    [1, 1, 1, 1, 0, 0]],
   ['sync_op_receipts', 'select 1 from sync_op_receipts', [],                          [1, 0, 0, 0, 0, 0]],
   ['sync_rate_windows', 'select 1 from sync_rate_windows', [],                        [1, 0, 0, 0, 0, 0]],
+  // Idempotency keys (20261005000000): no client access at all; create_child_invite and record_policy_act use them.
+  ['idempotency_keys', 'select 1 from idempotency_keys', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], [1, 1, 1, 0, 0, '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], [1, 0, 0, 0, 0, '42501']],
@@ -131,6 +137,10 @@ const WRITES = [
   ['policy_acceptances: insert directly', `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform) values (auth.uid(), 'terms', '1.0.0', 'accept', 'signin_sheet', 'x', '1', 'ios')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['legal_holds: insert', `insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', '${CHILD}', 'other', 'x', 'x', '2027-01-01')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: upload to own folder', null,                                             ['ok', 'ok', 'ok', '42501', '42501', '42501']],
+  // 20261005000000: a letter's language is the author's; rate counters change only through rate_hit().
+  ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
+  ['sync_rate_windows: reset own counter', `delete from sync_rate_windows where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['sync_rate_windows: lower own counter', `update sync_rate_windows set hits = 0 where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
 ];
 
 // Plus is checked on the device only (ADR 0013, 20261004000000_plus_on_device_only.sql):
@@ -139,7 +149,8 @@ const RPCS = [
   ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-05-20')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_first_run_children', `select public.create_first_run_children('[{"id": "${uuid7()}", "name": "Asha", "date_of_birth": "2025-05-20"}]')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
-  ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  // D-069 (20261005000000): the book already has two parents, so a further co-parent invite is SCCAP.
+  ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['SCCAP', 'SCCAP', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['accept_child_invite', `select public.accept_child_invite('${token}')`,               ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
   ['revoke_invite', `select public.revoke_invite('${inviteId}')`,                        ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
   ['review_family_letter', `select public.review_family_letter('${nSent}', 'added')`,    ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
@@ -158,6 +169,11 @@ const RPCS = [
   ['sync_books', `select public.sync_books()`,                                            ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['sync_pull', `select public.sync_pull('{}'::jsonb, 10)`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['sync_push', `select public.sync_push('[]'::jsonb)`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // Membership and rate limits (20261005000000; behaviour in db_followup_family_cap.test.mjs).
+  // leave_child: a non-member gets 'not_member' (idempotent), so the outsider's call succeeds and changes nothing.
+  ['leave_child', `select public.leave_child('${CHILD}')`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['remove_child_member', `select public.remove_child_member('${CHILD}', '${N}')`,      ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['rate_hit', `select public.rate_hit('membership')`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -182,6 +198,9 @@ const SERVICE_ONLY = [
   `select public.enqueue_storage_purge('entry-photos', 'x', false, 'orphan')`, `select public.is_held('child', '${CHILD}')`,
   `select public.entry_is_held('${aBook}')`, `select public.purge_backoff(1)`,
   `select public.sync_begin_epoch('drill', null)`, `select public.sync_housekeeping(now(), 10)`,
+  // Internal helpers (20261005000000): called only from security-definer functions.
+  `select public.max_parents_per_book()`, `select public.request_idempotency_key()`,
+  `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));

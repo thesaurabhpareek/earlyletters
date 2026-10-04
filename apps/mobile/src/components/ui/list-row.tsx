@@ -15,13 +15,15 @@
  */
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import * as React from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Toggle } from '@/components/platform/toggle';
 import { Text } from '@/components/ui/text';
 import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
+import { DIVIDER_INSET, withDividers } from './list-row.logic';
 
 export function ListSection({ title, footer, children, className }: { title?: string; footer?: string; children: React.ReactNode; className?: string }) {
+  // Fragments count as one row; pass rows directly (arrays and conditionals are fine).
   const rows = React.Children.toArray(children).filter(Boolean);
   return (
     <View className={cn('gap-2', className)}>
@@ -31,11 +33,9 @@ export function ListSection({ title, footer, children, className }: { title?: st
         </Text>
       ) : null}
       <View className="overflow-hidden rounded-lg bg-card dark:border dark:border-border">
-        {rows.map((row, i) => (
-          <View key={i} className={i > 0 ? 'border-t border-border ml-4' : undefined}>
-            {row}
-          </View>
-        ))}
+        {withDividers(rows, rowHasLeading).map((item) =>
+          item.type === 'divider' ? <ListDivider key={item.key} inset={item.inset} /> : <React.Fragment key={item.key}>{item.row}</React.Fragment>,
+        )}
       </View>
       {footer ? (
         <Text variant="footnote" className="px-4">
@@ -46,21 +46,35 @@ export function ListSection({ title, footer, children, className }: { title?: st
   );
 }
 
+/** A ListRow with a leading icon: its divider lines up with the row's text, not the icon. */
+function rowHasLeading(row: React.ReactNode): boolean {
+  return React.isValidElement<{ leading?: unknown }>(row) && row.type === ListRow && !!row.props.leading;
+}
+
+/** The hairline between two rows: inset from the leading edge, never the row itself (list-row.logic.ts). */
+export function ListDivider({ inset = DIVIDER_INSET }: { inset?: number }) {
+  return <View accessible={false} importantForAccessibility="no" className="bg-border" style={{ height: StyleSheet.hairlineWidth, marginLeft: inset }} />;
+}
+
 export type ListRowProps = {
   title: string;
   subtitle?: string;
   leading?: React.ReactNode;
   trailing?: 'chevron' | 'none' | string | React.ReactNode;
   variant?: 'default' | 'destructive';
+  /** A value shown before the chevron (Apple Settings "Reminders  Few times a week  >"). With a string `trailing`, that string wins. */
+  value?: string;
   onPress?: () => void;
   disabled?: boolean;
   accessibilityHint?: string;
+  /** 'link' for rows that open a web page (Privacy Policy, Terms). */
+  accessibilityRole?: 'button' | 'link';
 };
 
-export function ListRow({ title, subtitle, leading, trailing = 'none', variant = 'default', onPress, disabled, accessibilityHint }: ListRowProps) {
+export function ListRow({ title, subtitle, leading, trailing = 'none', value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button' }: ListRowProps) {
   const { c } = useTheme();
   const ax = useIsAccessibilitySize();
-  const value = typeof trailing === 'string' && trailing !== 'chevron' && trailing !== 'none' ? trailing : null;
+  const value = typeof trailing === 'string' && trailing !== 'chevron' && trailing !== 'none' ? trailing : (valueProp ?? null);
   const node = trailing !== 'chevron' && trailing !== 'none' && typeof trailing !== 'string' ? trailing : null;
   const label = [title, subtitle, value].filter(Boolean).join(', ');
 
@@ -81,14 +95,14 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', variant =
         ) : null}
       </View>
       {node}
-      {trailing === 'chevron' && Platform.OS !== 'android' ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
+      {trailing === 'chevron' && !disabled && Platform.OS !== 'android' ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
     </>
   );
 
   const rowClass = 'min-h-11 flex-row items-center gap-3 px-4 py-3';
   if (!onPress) {
     return (
-      <View className={rowClass} accessible accessibilityLabel={label}>
+      <View className={rowClass} accessible accessibilityLabel={label} accessibilityState={disabled ? { disabled: true } : undefined}>
         {body}
       </View>
     );
@@ -97,7 +111,7 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', variant =
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      role="button"
+      role={accessibilityRole}
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!disabled }}

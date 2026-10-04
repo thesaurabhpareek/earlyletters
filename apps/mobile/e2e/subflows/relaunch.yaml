@@ -1,0 +1,17 @@
+# Kill and relaunch without clearing anything (a cold start of the same
+# install). Same parameters as launch-fresh.yaml; launch arguments are not
+# persisted by iOS, so each relaunch passes them again.
+appId: ${APP_ID}
+---
+- launchApp:
+    stopApp: true
+    arguments:
+      e2eSeed: none
+      e2eOffline: ${E2E_OFFLINE || "0"}
+      e2eTranscriber: ${E2E_TRANSCRIBER || "auto"}
+      e2eClockOffsetHours: ${E2E_CLOCK_OFFSET_HOURS || "0"}
+      e2eConfig: '${E2E_CONFIG || "{}"}'
+- runFlow:
+    when:
+      true: ${E2E_DEV_CLIENT == "1"}
+    file: dev-client-open.yaml

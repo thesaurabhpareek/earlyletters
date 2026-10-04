@@ -5,9 +5,10 @@ import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, ScrollView, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
-import { Section } from '@/components/settings/settings-ui';
+import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { trackExportCompleted, trackExportFailed, trackExportStarted } from '@/lib/analytics/track';
 import { copy } from '@/lib/copy';
 import {
   cleanupExports,
@@ -64,6 +65,8 @@ export default function ExportScreen() {
 
   const start = async () => {
     haptic('press');
+    const startedAt = Date.now();
+    trackExportStarted({ letters: summary?.letters ?? 0 });
     signal.current = { aborted: false };
     setState({ kind: 'running', progress: { phase: 'books', fraction: 0 } });
     void activateKeepAwakeAsync(KEEP_AWAKE).catch(() => {});
@@ -73,12 +76,19 @@ export default function ExportScreen() {
         onProgress: (progress) => setState((prev) => (prev.kind === 'running' ? { kind: 'running', progress } : prev)),
       });
       pending.current = result;
+      trackExportCompleted({ bytes: result.bytes, durationMs: Date.now() - startedAt });
       haptic('success');
       AccessibilityInfo.announceForAccessibility(e.ready);
       setState({ kind: 'ready', result });
     } catch (err) {
-      if (err instanceof ExportCancelledError) setState({ kind: 'cancelled' });
-      else setState({ kind: 'failed', reason: err instanceof ExportTooLargeError ? 'tooBig' : err instanceof ExportLowSpaceError ? 'lowSpace' : 'other' });
+      if (err instanceof ExportCancelledError) {
+        trackExportFailed({ reason: 'cancelled' });
+        setState({ kind: 'cancelled' });
+      } else {
+        const reason = err instanceof ExportTooLargeError ? 'tooBig' : err instanceof ExportLowSpaceError ? 'lowSpace' : 'other';
+        trackExportFailed({ reason: reason === 'tooBig' ? 'too_large' : reason === 'lowSpace' ? 'low_space' : 'unknown' });
+        setState({ kind: 'failed', reason });
+      }
     } finally {
       void deactivateKeepAwake(KEEP_AWAKE).catch(() => {});
     }
@@ -111,13 +121,11 @@ export default function ExportScreen() {
         <Text className="text-sm leading-5 text-muted-foreground">{s.offlineNote}</Text>
       </View>
 
-      <Section title={s.includesTitle}>
-        {[s.includesLetters, s.includesRecordings, s.includesBook, s.includesData].map((line, i) => (
-          <View key={line} className={i === 0 ? 'px-4 py-3' : 'border-t border-border px-4 py-3'}>
-            <Text className="text-base leading-6 text-foreground">{line}</Text>
-          </View>
+      <ListSection title={s.includesTitle}>
+        {[s.includesLetters, s.includesRecordings, s.includesBook, s.includesData].map((line) => (
+          <ListRow key={line} title={line} />
         ))}
-      </Section>
+      </ListSection>
 
       {(state.kind === 'idle' || state.kind === 'cancelled' || state.kind === 'shared' || state.kind === 'failed') && (
         <View className="gap-3">
