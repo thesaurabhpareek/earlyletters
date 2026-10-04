@@ -89,10 +89,19 @@ Why not an accent-colour logo that works on both? `#8A5A3B` on Gmail's dark surf
 Gmail leaving background images alone is reported from community testing (Litmus, Email on Acid), not from Google documentation: **UNVERIFIED** on current builds. If it fails, the halo still keeps the logo legible.
 
 ### 4.5 Type (BRD-03)
-Literata (400, 500, 400 italic) and Mukta (400, 600), latin subsets, are self-hosted at `https://earlyletters.com/fonts/` (registry context `email.type`) and declared with `@font-face` in their own `<style>` block, hidden from classic Outlook. Apple Mail, iOS Mail and Outlook for Mac use them, so the most common inbox matches the app. Everyone else keeps the fallbacks, unchanged: Georgia for Literata, the platform UI font for Mukta.
+**No web fonts (3 Oct 2026, email library merge).** Develop's privacy rule wins: nothing in an email loads from a server. A font file fetched from `earlyletters.com/fonts/` is a request that tells us the email was opened, exactly like a pixel, so `@font-face` is off. Every client uses the fallbacks: Georgia (or a locally installed Literata) for headings and the sign-off, the platform UI font for body text. The self-hosted set (Literata 400, 500, 400 italic; Mukta 400, 600; registry context `email.type`) stays wired behind `EmailAssets.webFonts`, off by default. **Founder decision needed** to turn it on; the cost of leaving it off is that Apple Mail no longer matches the app's type exactly.
 
-### 4.6 Hosting
-Images load only from `https://earlyletters.com/email/` (brief). Paths: `/email/logo-light.png`, `/email/logo-dark.png` (2x files; the `@1x` files are for previews and any client that mis-scales). No query strings, no per-recipient URLs (they would be a tracking pixel by another name).
+### 4.6 Images: the logo travels inside the email
+**Decision (3 Oct 2026, email library merge): inline attachments, nothing hosted.** The header logo is sent as two inline PNG attachments (light and dark, the registry's 2x files) and the HTML points at them by Content-ID: `<img src="cid:el-logo-light">`, `<img src="cid:el-logo-dark">`. `renderForResend()` in `packages/emails/src/send.ts` returns `{ html, text, attachments }` for the sender.
+
+Evidence (Resend docs, read 3 Oct 2026: "Embed inline images" and the `POST /emails` reference): an attachment takes `content_id` (REST) or `contentId` (Node SDK), plus `filename` or `content_type`; `content` is a Buffer or Base64 string; the content id must be under 128 characters; at most 40MB per email after Base64; inline images are **not** supported on the batch endpoint, so these emails are sent one at a time. Resend also notes that "inline images may be rejected by some clients (especially webmail)".
+
+Trade-offs, accepted:
+- Clients that drop inline images show the alt text: the brand name in the email serif (4.3). The email still reads as ours.
+- Size: about 22KB of Base64 per email for the two logos. Well inside every limit; the HTML itself is unchanged.
+- Some clients list inline images as attachments (a paperclip icon) even when they are shown in the body. To check on Outlook for Windows and Gmail web before launch.
+- Supabase Auth sends over SMTP and cannot attach files, so the auth templates (`supabase/templates`) use the **text wordmark**: the brand name set in the email serif where the logo would sit. This bends 4.2's "never set the name in live text as the header", deliberately, for those six emails only; they move to the inline logo when auth mail moves to the Send Email Hook (`supabase/auth-email.md` section 7).
+- Remote fallback: `logo: 'remote'` loads `/email/logo-light.png` and `/email/logo-dark.png` from `https://earlyletters.com/email/` (no query strings, no per-recipient URLs). **Off by default**; only if the founder decides a server request is acceptable.
 
 ---
 

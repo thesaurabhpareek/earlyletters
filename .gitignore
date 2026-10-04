@@ -73,3 +73,6 @@ experiments/results/
 
 # generated token CSS is committed (consumed by Uniwind and web)
 !packages/design-tokens/dist/
+
+# rendered email previews
+packages/emails/out/

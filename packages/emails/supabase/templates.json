@@ -1,6 +1,0 @@
-{
-  "magic_link": {
-    "subject": "Your sign-in link for Early Letters",
-    "content_path": "packages/emails/supabase/magic-link.html"
-  }
-}
