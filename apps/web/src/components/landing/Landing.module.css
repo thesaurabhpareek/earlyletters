@@ -12,11 +12,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px var(--gutter);
-  /* A fade into the page rather than a frosted bar, so headlines do not smear as they pass under it. */
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--night) 82%, transparent), color-mix(in srgb, var(--night) 0%, transparent));
+  padding: 14px var(--gutter) 36px;
+  /* Solid behind the mark, then a fade into the page, so text passing under never shows through the mark and headlines do not smear. */
+  background: linear-gradient(to bottom, var(--night) 0, var(--night) 55%, color-mix(in srgb, var(--night) 0%, transparent) 100%);
+  pointer-events: none;
 }
 .brand {
+  pointer-events: auto;
   font-family: var(--font-serif);
   font-size: 20px;
   color: var(--night-ink);
