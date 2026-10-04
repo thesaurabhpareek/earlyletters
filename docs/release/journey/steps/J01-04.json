@@ -1,0 +1,38 @@
+{
+  "id": "J01-04",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "The promise",
+  "note": "What the app does with words (tidies, never rewrites), that the voice is kept on the phone, that it can mishear, and that it is private by default.",
+  "from": "J01-03",
+  "shot": "screens/J01-04.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Exactly as you said it. Word for word: we fix only what the microphone got wrong. A stray \"um\", a misheard name, a missing comma. Every small fix is marked, and you can undo it. We never rewrite, shorten or write for you. Every sentence is one you said. Your voice stays too The recording is kept on this phone, so one day your child can hear you say it. We can mishear Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong. Private by default. You choose what goes in the book. That sounds right",
+  "lines": [
+    "Back",
+    "Exactly as you said it.",
+    "Word for word: we fix only what the microphone got wrong. A stray \"um\", a misheard name, a missing comma. Every small fix is marked, and you can undo it.",
+    "We never rewrite, shorten or write for you. Every sentence is one you said.",
+    "Your voice stays too",
+    "The recording is kept on this phone, so one day your child can hear you say it.",
+    "We can mishear",
+    "Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
+    "Private by default. You choose what goes in the book.",
+    "That sounds right"
+  ]
+}

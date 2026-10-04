@@ -1,0 +1,42 @@
+{
+  "id": "J10-05",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Make private",
+  "note": "The letter leaves the book; a \"Private\" mark and a toast confirm it. Moving it back is one tap.",
+  "from": "J10-04",
+  "shot": "screens/J10-05.png",
+  "full": "screens/J10-05-full.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Aa Tuesday, August 4, 2026. Asha is 5 months old. Private So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, word for word Recording kept on this phone Show exactly what I said Add to book Kept just for you.",
+  "lines": [
+    "Aa",
+    "Tuesday, August 4, 2026. Asha is 5 months old.",
+    "Private",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:42",
+    "Spoken, word for word",
+    "Recording kept on this phone",
+    "Show exactly what I said",
+    "Add to book",
+    "Kept just for you."
+  ]
+}

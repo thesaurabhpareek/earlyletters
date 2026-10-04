@@ -1,0 +1,40 @@
+{
+  "id": "J10-10",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "A recording in which nobody spoke",
+  "note": "The page says nobody spoke; the recording is still there and can be kept.",
+  "from": "J10-01",
+  "shot": "screens/J10-10.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Friday, October 2, 2026. Asha is 6 months and 4 weeks old. Private A quiet recording. Nobody spoke, and it is kept just as it is. From Mama Hear Mama 0:00 0:18 Spoken, exactly as said Recording kept on this phone Add to book Delete",
+  "lines": [
+    "Aa",
+    "Friday, October 2, 2026. Asha is 6 months and 4 weeks old.",
+    "Private",
+    "A quiet recording. Nobody spoke, and it is kept just as it is.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:18",
+    "Spoken, exactly as said",
+    "Recording kept on this phone",
+    "Add to book",
+    "Delete"
+  ]
+}
