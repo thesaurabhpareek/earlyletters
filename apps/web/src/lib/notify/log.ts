@@ -18,7 +18,7 @@ function safeStatus(value: unknown): string {
   return typeof value === 'number' && Number.isInteger(value) && value >= 100 && value <= 599 ? String(value) : 'none';
 }
 
-export function logNotify(event: NotifyEvent, detail?: { name?: unknown; status?: unknown }): void {
+export function logNotify(event: NotifyEvent, detail?: { name?: unknown; status?: unknown; code?: unknown }): void {
   switch (event) {
     case 'config_missing_dev':
       console.warn('[notify] RESEND_API_KEY or RESEND_SEGMENT_ID is not set: not saving the address (development only)');
@@ -30,7 +30,7 @@ export function logNotify(event: NotifyEvent, detail?: { name?: unknown; status?
       console.error(`[notify] provider error name=${safeName(detail?.name)} status=${safeStatus(detail?.status)}`);
       return;
     case 'unexpected_error':
-      console.error(`[notify] unexpected error name=${safeName(detail?.name)}`);
+      console.error(`[notify] unexpected error name=${safeName(detail?.name)} code=${safeName(detail?.code)}`);
       return;
   }
 }
