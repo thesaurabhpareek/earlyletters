@@ -1,115 +1,127 @@
-import type { Decision } from '@scribe/core';
 import { BooksIcon } from 'phosphor-react-native/src/icons/Books';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
-import { billingCopy, presentPlusStore, usePlan } from '@/lib/billing';
+import { billingCopy, presentPlusStore, redeemOfferCode, usePlan } from '@/lib/billing';
 import { devShortcutsAllowed } from '@/lib/build-env';
-import { copy } from '@/lib/copy';
+import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 
 interface Props {
-  onNotNow: () => void;
   /**
-   * Plus is on now (bought in Apple's store view, restored, or an Ask to Buy
-   * approval arrived while this was open). The caller carries on.
+   * `keep_letter` (D-082, D-083): shown at the Keep step when the free letters are used up. The only
+   * variant today; starting a book and Read together are no longer gated.
    */
-  onPlus?: () => void;
+  variant?: 'keep_letter';
+  /** The book's name, for the title only. Never sent anywhere. */
+  childName: string;
+  /** Plus was bought once and has ended: the sheet says so instead of selling. */
+  lapsed?: boolean;
+  /** Letters ever kept, a number for analytics. */
+  lettersKept: number;
   /**
-   * Development profile only: lets the founder pass the gate without a
-   * StoreKit build (Expo Go). Ignored unless `devShortcutsAllowed` (build
-   * profile AND __DEV__), so no preview or store build can show it.
+   * Leave the letter held: it stays on the phone, untouched, waiting in Tonight. The caller leaves
+   * Review. Nothing is kept and nothing is lost.
+   */
+  onHold: () => void;
+  /**
+   * Plus is on now (bought in Apple's store view, restored, an Ask to Buy approval arrived, or an offer
+   * code). The caller shows the letter again for the person to tap Keep themselves (D-083).
+   */
+  onPlus: () => void;
+  /**
+   * Development profile only: lets the founder pass the gate without a StoreKit build (Expo Go).
+   * Ignored unless `devShortcutsAllowed` (build profile AND __DEV__).
    */
   onContinueDev?: () => void;
-  /** Defaults are the second-book gate (PRD C 4.1, C-REQ-023). */
-  title?: string;
-  body?: string;
-  keepNote?: string;
-  icon?: ReactNode;
-  /**
-   * The plan engine's decision (lib/billing). An offer shows the button that
-   * opens Apple's store view; a quiet decision (a birthday, a contributor)
-   * explains without selling. Defaults to an offer.
-   */
-  decision?: Decision;
-  /** What asked for Plus, for `plus_offer_viewed` (analytics only). */
-  trigger?: 'second_child' | 'read_together';
 }
 
 /**
- * The Plus gate: says what this needs, then hands over to Apple's own
- * subscription store view (ADR 0013), which shows the plans, prices, any free
- * trial, Restore and the legal links. Content sits near the top (no floating block).
+ * The Keep gate: says plainly that the letter is safe, then hands over to Apple's own subscription store
+ * view (ADR 0013), which shows the plans, prices, any free trial the person is eligible for, Restore and
+ * the legal links. This screen never types a price or a trial. Content sits near the top (no floating block).
  */
-export function PlusGate({ onNotNow, onPlus, onContinueDev, title, body, keepNote, icon, decision, trigger = 'second_child' }: Props) {
+export function PlusGate({ childName, lapsed = false, lettersKept, onHold, onPlus, onContinueDev }: Props) {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
-  const x = copy.childrenExtra;
+  const k = billingCopy.keepGate;
   const g = billingCopy.gate;
   const plan = usePlan();
   const [opening, setOpening] = useState(false);
+  const [offline, setOffline] = useState(false);
   const continued = useRef(false);
+  const awaitingCode = useRef(false);
 
   const carryOn = () => {
     if (continued.current) return;
     continued.current = true;
     haptic('success');
-    onPlus?.();
+    track('plus_started_from_gate', { letters_kept: Math.min(1000, Math.max(0, lettersKept)) });
+    if (awaitingCode.current) track('offer_code_redeemed', {});
+    onPlus();
   };
 
   useEffect(() => {
     if (plan.plusOn) carryOn();
   }, [plan.plusOn]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const offer = !decision || decision.kind === 'offer';
-  const canOpen = offer && plan.storeSupport === 'available';
-  const note = !offer
-    ? decision?.kind === 'quiet' && decision.reason === 'birthday'
-      ? g.birthday
-      : decision?.kind === 'quiet' && decision.reason === 'contributor'
-        ? g.contributor
-        : null
-    : plan.storeSupport === 'needs_ios_17'
-      ? g.needsNewerIos
-      : plan.storeSupport === 'unsupported'
-        ? g.unavailable
-        : null;
+  const canOpen = plan.storeSupport === 'available';
+  const note = plan.storeSupport === 'needs_ios_17' ? g.needsNewerIos : plan.storeSupport === 'unsupported' ? g.unavailable : offline ? k.offline : null;
 
   const open = async () => {
     haptic('tap');
     setOpening(true);
+    setOffline(false);
     try {
-      track('plus_offer_viewed', { trigger });
+      track('plus_offer_viewed', { trigger: 'keep_letter' });
       const outcome = await presentPlusStore();
-      if (outcome !== 'busy') track('plus_offer_closed', { trigger, outcome });
+      if (outcome !== 'busy') track('plus_offer_closed', { trigger: 'keep_letter', outcome });
+      if (outcome === 'unavailable') setOffline(true);
       if (outcome === 'purchased') carryOn();
     } finally {
       setOpening(false);
     }
   };
 
+  const redeem = async () => {
+    haptic('tap');
+    awaitingCode.current = true;
+    const outcome = await redeemOfferCode();
+    if (outcome !== 'presented') {
+      awaitingCode.current = false;
+      if (outcome === 'unavailable') setOffline(true);
+    }
+  };
+
   return (
     <ScrollView contentContainerClassName="gap-4 px-5 pb-10 pt-8">
       <View accessible={false} className="h-14 w-14 items-center justify-center rounded-full bg-secondary">
-        {icon ?? <BooksIcon size={28} color={c.accent} />}
+        <BooksIcon size={28} color={c.accent} />
       </View>
       <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">
-        {title ?? x.plusGateTitle}
+        {fill(k.title, { child: childName })}
       </Text>
-      <Text className="text-lg leading-7 text-foreground">{body ?? copy.children.add.plusNote}</Text>
-      <Text className="text-base leading-6 text-muted-foreground">{keepNote ?? copy.children.add.keepNote}</Text>
+      <Text className="text-lg leading-7 text-foreground">{lapsed ? k.lapsedBody : k.body}</Text>
+      <Text className="text-base leading-6 text-muted-foreground" accessibilityLiveRegion="polite">
+        {k.heldNote}
+      </Text>
       <View className="gap-3 pt-4">
         {canOpen && (
           <Button size="lg" onPress={open} disabled={opening} accessibilityHint={opening ? g.opening : undefined}>
-            <Text>{x.plusCta}</Text>
+            <Text>{k.seePlus}</Text>
           </Button>
         )}
         {note && <Text className="text-center text-sm leading-5 text-muted-foreground">{note}</Text>}
-        <Button variant="ghost" onPress={onNotNow}>
-          <Text className="text-primary">{copy.common.notNowButton}</Text>
+        <Button variant="secondary" onPress={onHold}>
+          <Text>{k.holdButton}</Text>
         </Button>
+        {canOpen && (
+          <Button variant="ghost" onPress={redeem} disabled={opening}>
+            <Text className="text-primary">{k.redeemLink}</Text>
+          </Button>
+        )}
         {devShortcutsAllowed && onContinueDev && (
           <Button variant="outline" onPress={onContinueDev}>
             <Text>{copy.common.continueButton}</Text>

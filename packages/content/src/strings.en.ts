@@ -53,6 +53,7 @@ export const en = {
       title: "{app}",
       subtitle: "The baby memory book you fill by talking.",
       body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
+      freeLine: "Your first two letters are free.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
       joinButton: "I was invited",
@@ -441,11 +442,6 @@ export const en = {
     noRecording: "This one was typed. Read it aloud together.",
     recordingElsewhere: "{signsAs}'s voice is on their phone. Read this one aloud together.",
     empty: "Letters you add to the book will be here to read together.",
-    plusGate: {
-      title: "Read together is part of Plus",
-      body: "You have read together {count} times for free. Plus keeps it open whenever you like.",
-      keepNote: "Every letter stays open to read and hear, with or without Plus.",
-    },
     endOfMonth: "That was Month {month}. You are so loved.",
     endOfMonthAlt: "That was Month {month}. Every word was for you.",
     endOfBook: "That is every letter so far. More are still being written.",
@@ -777,11 +773,7 @@ export const en = {
     add: {
       title: "Add a child",
       body: "Each child gets their own book, with their own months, family and settings.",
-      // PRD-REQ-015 (founder, 2 Oct 2026): one free book you start; books you joined as a co-parent do not count;
-      // children added together in first run are all free, so this sheet's twins line makes no price promise.
-      plusNote: "The first book you start is free, always. Books you start for more children are part of Plus.",
-      joinedNote: "A book you joined as a co-parent does not count as your free book.",
-      keepNote: "Every book you already have stays open for writing, reading and export, with or without Plus.",
+      // D-082, D-083: starting a book is free; the free letters are one pool across every book.
       twinsHelp: "Twins or more? Each child gets their own book.",
       cta: "Add {child}'s book",
     },
@@ -835,7 +827,7 @@ export const en = {
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
     // D-073: encrypted backup of the owner's recordings is part of Plus in v1.0.
-    promise: "Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds encrypted backup of your recordings, Read together whenever you like after the first 3 times in each book, and books for more children.",
+    promise: "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus lets you keep adding letters, and adds encrypted backup of your recordings.",
   },
 
   errors: {
@@ -897,8 +889,6 @@ export const en = {
     nameRequired: "Add a name to continue.",
     notSet: "Not set",
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
-    plusGateTitle: "Another book is part of Plus",
-    plusCta: "See what Plus adds",
     plusNotYet: "Plus is not available on this device yet.",
   },
 
@@ -953,7 +943,7 @@ export const en = {
     languageHelp: "The language you speak your letters in.",
     // "Settings, Plan" is the path the Plus legal text and Subscription Terms name.
     planLabel: "Plan",
-    planHelp: "Plus: backup, Read together whenever you like, and more books.", // D-073
+    planHelp: "Your first two letters are free. Plus lets you keep adding.", // D-082
     remindersLabel: "Reminders",
     exportLabel: "Export your book",
     exportHelp: "Every letter and recording, free, any time.",

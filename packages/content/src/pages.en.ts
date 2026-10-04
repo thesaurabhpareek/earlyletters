@@ -76,7 +76,7 @@ export const pages = {
       {
         heading: "What it costs",
         paragraphs: [
-          "Writing, reading, playing your recordings and export are free, always. Plus is optional: $3.99 a month with the first month free, or $29.99 a year with the first 2 months free. It adds a few extras. Nothing you have already made is ever locked away.",
+          "Your first two letters are free. After that, keeping another letter is part of Plus: $3.99 a month with the first month free, or $29.99 a year with the first 2 months free. Reading, playing your recordings and export are never locked away, with or without Plus.",
         ],
       },
       {
@@ -188,7 +188,7 @@ export const pages = {
         heading: "Common questions",
         paragraphs: [
           `Does my co-parent need an iPhone? Yes, for now. ${brand.name} is on iPhone first. Android is coming, and their place in the book will be waiting.`,
-          "If one of us has Plus, does the other need it too? Not if you share an Apple family. Plus is shared through Apple Family Sharing, so a co-parent in the same Apple family gets it too. If you are in different Apple families, each of you has your own plan. Writing, reading, playing your recordings and export stay free for both of you either way.",
+          "If one of us has Plus, does the other need it too? Not if you share an Apple family. Plus is shared through Apple Family Sharing, so a co-parent in the same Apple family gets it too. If you are in different Apple families, each of you has your own plan. Reading, playing your recordings and export stay free for both of you either way.",
           "New phone, where are my recordings? Your letters come with you when you sign in. Recordings come with you if backup is on (part of Plus), or if you moved to the new phone with an iPhone backup or Quick Start. If you still have the old phone, open the app there and export your recordings, or turn on backup.",
         ],
       },

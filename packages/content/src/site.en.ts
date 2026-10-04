@@ -114,7 +114,7 @@ export const site = {
     },
     {
       q: "If one of us has Plus, does the other need it too?",
-      a: "Not if you share an Apple family. Plus is shared through Apple Family Sharing, so a co-parent in the same Apple family gets it too. If you are in different Apple families, each of you has your own plan. Writing, reading, playing your recordings and export stay free for both of you either way.",
+      a: "Not if you share an Apple family. Plus is shared through Apple Family Sharing, so a co-parent in the same Apple family gets it too. If you are in different Apple families, each of you has your own plan. Reading, playing your recordings and export stay free for both of you either way.",
     },
     {
       q: "Which languages can I use?",
@@ -127,7 +127,7 @@ export const site = {
     {
       q: "How much does it cost?",
       // D-075: the website shows the price. D-073: backup is part of Plus in v1.0.
-      a: `Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is optional: ${price.monthly}, or ${price.annual}. It adds encrypted backup of every recording, books for more children, Read together after your first 3 sessions, and a few extras. Your first child's book is free, and so are twins or more you add together when you set up.`,
+      a: `Your first two letters are free, across every book. After that, keeping another letter is part of Plus: ${price.monthly}, or ${price.annual}. Plus also adds encrypted backup of every recording. Reading, playing your recordings, Read together and export are never locked away, with or without Plus. Starting a book for each child is free.`,
     },
     {
       q: "What happens to my recordings?",

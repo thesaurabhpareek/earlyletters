@@ -42,8 +42,8 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | 4 | Weekly letters | Letters per active family per week; spoken versus typed; book versus private | S `weekly_keeping_families`, `letters_per_active_family`; D for `prompt_kind`, `from_notification_2h`, edit counts | `letter_saved`, `transcription_completed` | Set after first cohorts | C-REQ-034 |
 | 5 | Co-parent | Co-parent invites sent and accepted within 7 days; families with two voices | S `family_invites`, `letters_per_active_family`; D for channel | `invite_created`, `invite_accepted`, `invite_failed` | Set after first cohorts | B-REQ-007 |
 | 6 | Languages | Families by spoken-letter language; pack download success and failure by pack | S `language_mix` (once a server language column exists); D | `language_set`, `pack_download` | Pack failure under 2% of starts (Decision) | B-REQ-003, decision 15 |
-| 7 | Read together | Share of monthly active parents who start Read together; finish rate; tries used before an offer | D only | `read_together_started`, `read_together_ended`, `read_together_try_used` | Set after first cohorts | C-REQ-034 |
-| 8 | Trial to paid | Offer views to purchases (D); trials, trial to paid, annual share, refunds (ASC) | ASC for money; D for offer views | `plus_offer_viewed`, `plus_offer_closed`, `plan_changed` | Trial to paid 40% or more; annual 60% or more; refunds under 3% (C section 9) | C-REQ-034, C-REQ-023 |
+| 7 | Read together | Share of monthly active parents who start Read together; finish rate (no session limit since D-082) | D only | `read_together_started`, `read_together_ended` | Set after first cohorts | C-REQ-034 |
+| 8 | Trial to paid | Offer views to purchases (D); trials, trial to paid, annual share, refunds (ASC) | ASC for money; D for offer views | `plus_offer_viewed`, `plus_offer_closed`, `plan_changed`, `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | Trial to paid 40% or more; annual 60% or more; refunds under 3% (C section 9) | C-REQ-034, C-REQ-023 |
 | 9 | Retention | Active writers at week 4 and week 26 of their first-letter cohort | S `retention_cohorts` | `app_opened`, `letter_saved`, `book_opened` | Week 4: 35% or more; month 6: 20% or more (C section 9) | PRD-REQ-016 |
 
 ### 1.3 Guardrails
@@ -87,7 +87,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-64 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+68 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
@@ -156,9 +156,8 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `book_opened` | Book tab shown for a child | `child_ordinal` (enum: first \| second \| third_plus)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016 |
 | `letter_opened` | A letter is opened to read | `author_relation` (enum: self \| other_parent \| family)<br>`has_audio` (bool) | PRD-REQ-016 |
 | `playback_started` | A recording starts playing | `surface` (enum: letter \| review \| read_together)<br>`author_relation` (enum: self \| other_parent \| family)<br>`version` (enum: listening_copy \| original) | PRD-REQ-016 |
-| `read_together_started` | Read together session starts | `child_ordinal` (enum: first \| second \| third_plus)<br>`access` (enum: plus \| try)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-016 |
+| `read_together_started` | Read together session starts | `child_ordinal` (enum: first \| second \| third_plus)<br>`access` (enum: plus \| free)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-016 |
 | `read_together_ended` | Read together session ends | `reason` (enum: finished \| stopped \| interrupted)<br>`session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m)<br>`letters_heard` (int 0 to 50) | PRD-REQ-016 |
-| `read_together_try_used` | A free Read together try is used (Free tier) | `n` (int 1 to 10) | C-REQ-034 |
 
 #### family
 
@@ -206,9 +205,14 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `plus_offer_viewed` | Apple's subscription store view presented | `trigger` (enum: chapter_complete \| second_child \| backup \| read_together \| themes \| settings) | C-REQ-034, C-REQ-023 |
-| `plus_offer_closed` | Apple's subscription store view closed | `trigger` (enum: chapter_complete \| second_child \| backup \| read_together \| themes \| settings)<br>`outcome` (enum: purchased \| dismissed \| unavailable) | C-REQ-034, C-NFR-002 |
+| `plus_offer_viewed` | Apple's subscription store view presented | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings) | C-REQ-034, C-REQ-023 |
+| `plus_offer_closed` | Apple's subscription store view closed | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings)<br>`outcome` (enum: purchased \| dismissed \| unavailable) | C-REQ-034, C-NFR-002 |
 | `plan_changed` | The plan StoreKit reports on this device changed state (observed; production transactions only) | `from_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`to_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`period` (enum: month \| year \| unknown)<br>`ownership` (enum: purchased \| family_shared \| unknown) | C-REQ-034, C-NFR-002 |
+| `free_allowance_reached` | The last free letter was kept, so the next Keep will ask for Plus (once per phone) | `allowance` (int 2 to 100) | C-REQ-034, C-REQ-023 |
+| `keep_gate_shown` | The Keep sheet asked for Plus (the letter is held on the phone) | `letters_kept` (int 0 to 1000)<br>`allowance` (int 2 to 100)<br>`lapsed` (int 0 to 1) | C-REQ-034, C-REQ-023 |
+| `letter_held` | The person chose to keep the letter on the phone for now instead of starting Plus | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
+| `plus_started_from_gate` | Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code) | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
+| `offer_code_redeemed` | Apple's offer code sheet closed and Plus was on afterwards | (none) | C-REQ-034 |
 | `restore_result` | Restore purchases finished | `outcome` (enum: restored \| nothing \| cancelled \| failed \| unavailable) | C-REQ-034, C-NFR-003 |
 
 #### errors
@@ -225,7 +229,7 @@ Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum
 
 | Property | Type and values | Level | Why |
 |---|---|---|---|
-| `schema_version` | int 1 to 1000 (currently 3; required; a test pins the catalogue fingerprint, so a changed event needs a new version) | L2 | Lets queries span catalogue changes |
+| `schema_version` | int 1 to 1000 (currently 4; required; a test pins the catalogue fingerprint, so a changed event needs a new version) | L2 | Lets queries span catalogue changes |
 | `child_count_bucket`? | enum: none, one, two, three_plus | L2 | K-01 asks for it as a user property; LEGAL-REQ-017 forbids person properties beyond the id. Decision: send it as an event property, which satisfies both |
 | `sample_pct`? | int 1 to 99 | L2 | Present only on sampled events, so counts can be re-weighted |
 
@@ -411,6 +415,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `reminder_prime_shown`, `reminder_prime_result`, `os_permission_result`, `reminder_sent`, `reminder_suppressed` | `lib/reminders/priming-sheet.tsx`, `scheduler.ts` | reminders | to wire |
 | `export_started`, `export_completed`, `export_failed`, `export_shared` | `app/settings/export.tsx` around `runExport` and `shareExport` | export | to wire |
 | `plus_offer_viewed`, `plus_offer_closed`, `restore_result` | around `presentPlusStore()` and `restorePurchases()` (`app/settings/plus.tsx`, gates) | payments | to wire |
+| `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | `app/review.tsx` (after a Keep), `components/child/plus-gate.tsx`, `app/settings/plus.tsx` (D-082, D-083; numbers only) | payments | wired |
 | `settings_changed` | appearance, reading size, names in notifications, packs on mobile data, listening copy | settings owners | to wire |
 | `moment_shown`, `resurface_*` | celebrate cards | book | to wire |
 | `error_shown`, `sync_failed` | `components/ui` toast and errors; `lib/sync/engine.ts` after retries | design, sync | to wire |

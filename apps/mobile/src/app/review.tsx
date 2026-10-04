@@ -12,6 +12,13 @@
  * the recording as a letter waiting for its words (TDD 03 FM-9). Sample
  * words (development builds) are never saved as a transcript.
  *
+ * The Keep gate (D-082, D-083): the first 2 letters are free, then keeping another needs
+ * Plus. It runs here, at the Keep buttons (spoken, typed, or a voice kept without words),
+ * after the recording is hashed and BEFORE anything is saved. When Plus is needed, the
+ * sheet opens and nothing is written: the draft stays exactly where it is, so a closed
+ * sheet, a kill or no network never loses a letter. After Plus starts, this same Review
+ * shows again and the person taps Keep themselves.
+ *
  * Words come from the transcription queue (src/lib/transcription-queue),
  * never from a transcriber called here, so reopening Review never starts a
  * second job (TDD 03 FM-18). Progress is honest: "Part 2 of 5" from the
@@ -43,6 +50,7 @@ import {
 import { tokens } from '@scribe/design-tokens';
 import { Transcript } from '@/components/capture/transcript';
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
+import { PlusGate } from '@/components/child/plus-gate';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -53,9 +61,11 @@ import { setAudioMode } from '@/lib/audio-mode';
 import { ensureAudioHash } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
+import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
+import { afterLetterKept, billingCopy, freeLettersAllowance, hasPlus, keepLetterGate, type KeepGate } from '@/lib/billing';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
@@ -120,6 +130,10 @@ export default function Review() {
   const job = useWordsJob(phase === 'transcribing' ? draft?.id : null);
   const download = useSpeechDownload(phase === 'transcribing' && job?.phase === 'waiting_for_pack' ? language : null);
   const [saveFailed, setSaveFailed] = useState(false);
+  // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
+  const [gate, setGate] = useState<KeepGate | null>(null);
+  // The calm line on the saved card after the second free letter (once: the count passes it once).
+  const [secondFree, setSecondFree] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [voiceOnly, setVoiceOnly] = useState(false);
   const [keptForWords, setKeptForWords] = useState(false);
@@ -290,6 +304,32 @@ export default function Review() {
     setTimeout(leave, 900); // sequenceMaxMs; a tap skips it
   };
 
+  // Development profile only (Expo Go has no StoreKit): lets the founder pass the sheet.
+  const devPass = useRef(false);
+  /** True when the Keep sheet opened instead: the caller returns without saving. Never throws. */
+  const keepNeedsPlus = async (): Promise<boolean> => {
+    if (devPass.current) return false;
+    const g = await keepLetterGate();
+    if (g.decision.kind === 'allow') return false;
+    track('keep_gate_shown', {
+      letters_kept: Math.min(1000, g.lettersKept),
+      allowance: Math.min(100, Math.max(2, g.allowance)),
+      lapsed: g.decision.lapsed ? 1 : 0,
+    });
+    setGate(g);
+    return true;
+  };
+
+  /** After the letter is saved: copy the count to the Keychain, and note the moment the free letters are used. */
+  const noteKept = async () => {
+    const kept = await afterLetterKept();
+    const allowance = freeLettersAllowance();
+    if (!hasPlus() && kept === allowance) {
+      track('free_allowance_reached', { allowance: Math.min(100, allowance) });
+      if (allowance === 2) setSecondFree(true);
+    }
+  };
+
   const saving = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
@@ -298,6 +338,10 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
+      if (await keepNeedsPlus()) {
+        saving.current = false; // held: the draft is untouched
+        return;
+      }
       const firstLetter = !hasAnyLetter();
       saveLetterFromDraft(
         draft.id,
@@ -339,6 +383,7 @@ export default function Review() {
         fromNotificationWithin2h: fromReminderWithin2h(),
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
+      await noteKept();
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
@@ -355,6 +400,10 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
+      if (await keepNeedsPlus()) {
+        saving.current = false; // held: the draft is untouched
+        return;
+      }
       const firstLetter = !hasAnyLetter();
       const fresh = getDraft(draft.id) ?? draft;
       saveVoiceOnlyFromDraft(
@@ -377,6 +426,7 @@ export default function Review() {
       setDraft(fresh);
       setKeptForWords(phase === 'transcribing' && job?.outcome !== 'no_speech');
       setVoiceOnly(true);
+      await noteKept();
       finishSave(false, firstLetter);
     } catch {
       saving.current = false;
@@ -405,6 +455,32 @@ export default function Review() {
   const openE = openEdit !== null ? applied[openEdit] : null;
   const many = listChildren().length > 1;
 
+  if (gate && gate.decision.kind === 'offer' && phase !== 'saved') {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <PlusGate
+          variant="keep_letter"
+          childName={child.name}
+          lapsed={gate.decision.lapsed}
+          lettersKept={gate.lettersKept}
+          onHold={() => {
+            track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+            router.back(); // the draft stays: Tonight shows "A letter is waiting"
+          }}
+          onPlus={() => setGate(null)} // the same Review again; the person taps Keep
+          onContinueDev={
+            devShortcutsAllowed
+              ? () => {
+                  devPass.current = true;
+                  setGate(null);
+                }
+              : undefined
+          }
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (phase === 'saved') {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-background px-5">
@@ -426,6 +502,7 @@ export default function Review() {
                   ? fill(r.destination.addedToast, { child: child.name })
                   : r.destination.privateToast}
             </Text>
+            {secondFree && <Text className="mt-1 text-base text-muted-foreground">{billingCopy.keepGate.secondFreeNote}</Text>}
           </Animated.View>
         </Pressable>
       </SafeAreaView>
