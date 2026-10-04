@@ -1,0 +1,6089 @@
+{
+  "generatedFrom": "docs/BACKLOG.md + docs/release/overlay.json",
+  "totals": {
+    "tasks": 175,
+    "open": 167,
+    "done": 5,
+    "startableNow": 42,
+    "agent": 138,
+    "human": 23,
+    "pair": 11,
+    "blocked": 113,
+    "needsDecision": 4
+  },
+  "problems": [],
+  "milestones": {
+    "M0": {
+      "tasks": 10,
+      "done": 0
+    },
+    "M12": {
+      "tasks": 13,
+      "done": 0
+    },
+    "M1": {
+      "tasks": 26,
+      "done": 5
+    },
+    "M2": {
+      "tasks": 12,
+      "done": 0
+    },
+    "M3": {
+      "tasks": 10,
+      "done": 0
+    },
+    "M4": {
+      "tasks": 12,
+      "done": 0
+    },
+    "M5": {
+      "tasks": 14,
+      "done": 0
+    },
+    "M6": {
+      "tasks": 7,
+      "done": 0
+    },
+    "M7": {
+      "tasks": 6,
+      "done": 0
+    },
+    "M8": {
+      "tasks": 21,
+      "done": 0
+    },
+    "M9": {
+      "tasks": 18,
+      "done": 0
+    },
+    "M10": {
+      "tasks": 6,
+      "done": 0
+    },
+    "M11": {
+      "tasks": 19,
+      "done": 0
+    },
+    "M13": {
+      "tasks": 1,
+      "done": 0
+    }
+  },
+  "tasks": [
+    {
+      "id": "BL-100",
+      "title": "Domain and support mailbox",
+      "severity": "Critical",
+      "milestone": "M0",
+      "timing": "week 1",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "D-005; prerequisite for A-REQ-022, A-REQ-026, LEGAL-REQ-053, BL-053.",
+      "scope": "choose the domain (earlyletters.com, .app, .co were reported available on 2 Oct; re-check), register it plus defensive redirects, create `support@` and `privacy@` mailboxes, then set `packages/brand` `publisher.domain`, `supportEmail` and `privacyUrl` in one PR (agent may open it",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 22,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-101",
+      "title": "Apple Developer Program, individual enrollment",
+      "severity": null,
+      "milestone": "M0",
+      "timing": "week 1",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "D-004.",
+      "scope": "enroll as an individual with a 2FA Apple Account; add App Store Connect users only as needed; record who holds which role. The seller name will be the founder's legal name (D-004).",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 12,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-102",
+      "title": "Paid Applications Agreement, tax and banking",
+      "severity": null,
+      "milestone": "M0",
+      "timing": "week 2",
+      "size": "S",
+      "statusRaw": "blocked (BL-101)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-101"
+      ],
+      "satisfies": "C-REQ-021 (prerequisite for sandbox and production purchases); Small Business Program enrollment.",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 10,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-103",
+      "title": "App Store Connect setup: app record, bundle ids, subscriptions",
+      "severity": null,
+      "milestone": "M0",
+      "timing": "week 3",
+      "size": "M",
+      "statusRaw": "blocked (BL-100, BL-101, BL-102)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder",
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-100",
+        "BL-101",
+        "BL-102"
+      ],
+      "satisfies": "C-REQ-021, C-REQ-027, LEGAL-REQ-058, D-001, D-048.",
+      "scope": "production bundle id from `bundleId()` after BL-100 (suffixed ids for dev and preview, TDD 01 R-10); app record; subscription group \"Plus\"; `el_plus_monthly_399` (1-month free intro offer) and `el_plus_annual_2999` (2-month free intro offer); experiment arm products created but n",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 9,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-104",
+      "title": "Counsel engagement and sign-off",
+      "severity": null,
+      "milestone": "M0",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "PRD 2.3 gate 3; LEGAL-REQ-044.",
+      "scope": "send the v1.0 scope (PRD 1.3 section 2) and the questions in Lawyer 1, Lawyer 2 and TDD 05 section 13 by week 1; full package (Terms 1.4.0, Privacy Policy 1.3.0, CHD notice 1.1.0, Subscription terms 1.3.0, in-app disclosures 1.3.0, claims registry) by week 5; sign-off by week 14.",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 1,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-105",
+      "title": "Perinatal clinician review of safety copy",
+      "severity": null,
+      "milestone": "M0",
+      "timing": "answer by 20 Nov",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "D-034; LEGAL-REQ-015.",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-106",
+      "title": "Vendor evidence and console security",
+      "severity": null,
+      "milestone": "M0",
+      "timing": "weeks 1 to 5",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-022(c), LEGAL-REQ-026, LEGAL-REQ-028, DATA-REQ-062, LEGAL-REQ-020.",
+      "scope": "2FA on every console (Supabase, Apple, GitHub, PostHog, Sentry, email provider, EAS, model host) with evidence; Supabase encryption at rest in writing; DPAs accepted and archived as dated PDFs (Supabase, PostHog, Sentry, email provider); retention settings (PostHog 12 months, Sen",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-107",
+      "title": "Staging and production Supabase projects",
+      "severity": null,
+      "milestone": "M0",
+      "timing": "weeks 1 to 2",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-005, DATA-REQ-030, D-041.",
+      "scope": "create `scribe-staging` and `scribe-prod` (US region); production built clean from migrations, never by hand inserts into `schema_migrations` (TDD 02 C20); backups and PITR settings recorded (DATA-REQ-030; TDD 06 OQ-4); CI deploy secrets scoped per environment. (Source: TDD 02 SB",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 3,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-108",
+      "title": "EAS account and build credentials",
+      "severity": null,
+      "milestone": "M0",
+      "timing": "week 2",
+      "size": "S",
+      "statusRaw": "blocked (BL-101)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-101"
+      ],
+      "satisfies": "TDD 01 3.10.",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-109",
+      "title": "Recruit the C1 beta families",
+      "severity": null,
+      "milestone": "M12",
+      "timing": "weeks 6 to 10",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "D-045; TDD 07 11.1 coverage list (two co-parent pairs, three grandparents in the app, two Hindi or code-switching speakers, one twins family, two VoiceOver or large-text users).",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-005",
+      "title": "Founder setup for the workflow",
+      "severity": null,
+      "milestone": "M1",
+      "timing": "week 1",
+      "size": null,
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "none (process; D-041).",
+      "scope": "create Issue labels `inbox`, `bug`, `idea`, `beta`, `S0` to `S3`, `approve-migration`; update the scheduled-run prompt to \"follow the protocol at the top of docs/BACKLOG.md\"; turn on branch protection for `main` requiring CI; pause unattended runs for `supabase/**` and auth until",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [
+        "supabase",
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-053",
+      "title": "Sign-in provider and email setup",
+      "severity": null,
+      "milestone": "M0",
+      "timing": "weeks 2 to 3",
+      "size": null,
+      "statusRaw": "blocked (BL-100)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder",
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-100"
+      ],
+      "satisfies": "A-REQ-016, A-REQ-022, A-REQ-026, A-NFR-009, LEGAL-REQ-026.",
+      "scope": "custom SMTP on the domain with SPF, DKIM, DMARC; Apple Services ID and key with a named owner and rotation date; AASA file for universal links. Google client ids move to v1.1 (D-044). Secrets stay out of the repo. (Was needs-decision on company and domain; company is decided by D",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 11,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-001",
+      "title": "Point CLAUDE.md at the backlog",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "none (process; ADR 0011).",
+      "scope": "add a short \"Work selection\" section to `CLAUDE.md` that links this file and its run protocol, and adds the `-bl-###-` branch pattern to \"Branches and commits\". No other edits to `CLAUDE.md`.",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-002",
+      "title": "Traceability check",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "none (process; ADR 0011).",
+      "scope": "`scripts/trace.mjs` (Node, no dependencies). Collect IDs defined in the five source files (A/B/C-REQ, A/B/C-NFR, LEGAL-REQ, DATA-REQ) plus PRD-REQ in PRD.md. Collect IDs cited in this file, in test titles across `packages/*/test`, `experiments`, `supabase/tests`, and in `.github/",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 55,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-003",
+      "title": "Pull request template",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "none (process; ADR 0011).",
+      "scope": "`.github/pull_request_template.md` with `Task: BL-###`, `Satisfies:`, `Data classes touched:`, `Budgets checked:`, `Closes #` (optional), and the Definition of Done as a checklist.",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-004",
+      "title": "Continuous integration",
+      "severity": "Critical",
+      "milestone": "M1",
+      "timing": "week 1",
+      "size": null,
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [
+        "BL-002"
+      ],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-024 (access rules are tested on every change).",
+      "scope": "`.github/workflows/ci.yml` on pull requests and `main`: Node 20, `npm ci`, `npm run typecheck`, `npm test`, `npm run test:db`, parallel jobs, npm and PGlite caches, under 8 minutes. No secrets. Nightly and release workflows follow in BL-275 and BL-283. (Source: TDD 07 BL-Q28.)",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 52,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-110",
+      "title": "Requirement ids in test titles; database harness sections",
+      "severity": null,
+      "milestone": "M1",
+      "timing": "week 1",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "DoD 1.",
+      "scope": "retitle existing tests with requirement ids; JUnit output and named sections with fresh fixtures in the DB harness; mark `data_governance.test.mjs` line 92 `[KNOWN-DEFECT B-REQ-011]` until BL-175 replaces it. (Source: TDD 07 BL-Q01.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-121",
+      "title": "Mobile test harness and lint",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-014 (lint), DoD 1.",
+      "scope": "vitest for `apps/mobile/src/lib/*.logic.ts`, Node SQLite integration tests, a `test` script so root `npm test` covers the app; lint rules (banned imports, no `console` in release); remove unused `expo-symbols` and `expo-glass-effect`. (Source: TDD 01 BL-M01.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 53,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "apps/mobile"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-117",
+      "title": "CI security and platform scans",
+      "severity": "High",
+      "milestone": "M1",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-004)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-004"
+      ],
+      "satisfies": "LEGAL-REQ-007, LEGAL-REQ-016, LEGAL-REQ-019, LEGAL-REQ-021, LEGAL-REQ-026, LEGAL-REQ-027, LEGAL-REQ-060, A-NFR-008, A-NFR-010.",
+      "scope": "SDK and import denylist (ads, attribution, tracking, AdSupport, AppTrackingTransparency, HealthKit, face and diarization libraries); manifest lint (permissions, ATS, scheme); gitleaks; Semgrep and SQL lint; OSV and npm audit; placeholder scan (`example.com`, `TODO` publisher valu",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-122",
+      "title": "Agent fence and review rule",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-004)",
+      "status": "blocked",
+      "mode": "pair",
+      "owners": [
+        "founder",
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-004"
+      ],
+      "satisfies": "D-041.",
+      "scope": "path rules so PRs touching `supabase/**` or auth code require the `approve-migration` label and an independent review agent run; limit unattended runs to two a day; document in ADR 0011's consequences (PR body proposes the ADR edit).",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "founder",
+        "agent": null,
+        "reviewer": "independent-reviewer",
+        "support": [
+          "qa-engineer"
+        ]
+      },
+      "touches": [
+        "supabase",
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-010",
+      "title": "Entry immutability, checksum and version history",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "done (commit 81d9546, `20261002020000_data_governance.sql`; remote apply is BL-015)",
+      "status": "done",
+      "mode": "agent",
+      "owners": [],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-040, DATA-REQ-041, DATA-REQ-042, DATA-REQ-046, DATA-REQ-013 (findings F2, F6, F7, F8).",
+      "scope": "new migration with the immutability guard (including `created_at`), server-set `raw_sha256`, versioning of `machine_edits`, server-clock tombstones via `delete_entry` and `restore_entry`.",
+      "source": "backlog",
+      "level": 0,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "agent": null,
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-011",
+      "title": "Members see the book, not the raw transcript",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "done (commit 81d9546; remote apply is BL-015)",
+      "status": "done",
+      "mode": "agent",
+      "owners": [],
+      "dependsOn": [
+        "BL-010"
+      ],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-003, DATA-REQ-047, LEGAL-REQ-024 (findings F3, F9).",
+      "scope": "restrict non-author reads of `raw_transcript`, `machine_edits`, `stt_meta`; `photo_path` must start with `{child_id}/{author_id}/`; Storage read policy matches.",
+      "source": "backlog",
+      "level": 0,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "agent": null,
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-012",
+      "title": "No cascade across authors, no orphaned books",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "done (commit 81d9546; remote apply is BL-015)",
+      "status": "done",
+      "mode": "agent",
+      "owners": [],
+      "dependsOn": [
+        "BL-010"
+      ],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-012, DATA-REQ-014, DATA-REQ-015, DATA-REQ-016, B-REQ-016 (findings F1, F4, F5).",
+      "scope": "",
+      "source": "backlog",
+      "level": 0,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "agent": null,
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-013",
+      "title": "Audit log and deletion state machine",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "done (commit 81d9546; remote apply is BL-015)",
+      "status": "done",
+      "mode": "agent",
+      "owners": [],
+      "dependsOn": [
+        "BL-012"
+      ],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-045, DATA-REQ-010, DATA-REQ-011, DATA-REQ-019, DATA-REQ-020, DATA-REQ-026, DATA-REQ-035, DATA-REQ-006, LEGAL-REQ-029, LEGAL-REQ-033.",
+      "scope": "`audit_events` (enum-only detail), `deletion_requests`, `deletion_request_steps`, `legal_holds`, `purge_ledger`, `storage_purge_queue`, `request_account_deletion`, `cancel_account_deletion`, `purge_due`. The worker is BL-234.",
+      "source": "backlog",
+      "level": 0,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "agent": null,
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-014",
+      "title": "Policy acceptance records",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "done (commit 81d9546; remote apply is BL-015)",
+      "status": "done",
+      "mode": "agent",
+      "owners": [],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-001, LEGAL-REQ-009, A-REQ-034.",
+      "scope": "",
+      "source": "backlog",
+      "level": 0,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "agent": null,
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-112",
+      "title": "Fix migration: parent-only invites with explicit role",
+      "severity": "Critical",
+      "milestone": "M1",
+      "timing": "week 1",
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [
+        "BL-004"
+      ],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-024, B-REQ-007, B-NFR-002, B-NFR-004, K-18, D-020.",
+      "scope": "replace `create_child_invite(uuid)` with `create_child_invite(p_child, p_role, p_signs_as, p_relation, p_large_print)`: parents only, explicit role, expiry 7 days (co-parent) or 14 days (Family), token plus 8-character code (both hashed), 20 invites per parent per day; `revoked_a",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 11,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-113",
+      "title": "Fix migration: client ids for children, due date, live books only",
+      "severity": "High",
+      "milestone": "M1",
+      "timing": "week 2",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [
+        "BL-004"
+      ],
+      "blockedBy": [],
+      "satisfies": "A-REQ-015, DATA-REQ-044, B-REQ-005, PRD-REQ-015 (shape only), D-038.",
+      "scope": "`create_child(p_id uuid, p_name, p_date_of_birth, p_due_date, p_first_run_batch boolean, p_client_created_at)` idempotent on `p_id`; check birth date or due date present; `entries_author_insert` also requires `child_is_live(child_id)`. Plus rules arrive in BL-213. (Source: TDD 02",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 18,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-114",
+      "title": "Fix migration: server consent gates and anonymous guards",
+      "severity": "Critical",
+      "milestone": "M1",
+      "timing": "week 2",
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "data architect",
+        "privacy engineer"
+      ],
+      "dependsOn": [
+        "BL-004"
+      ],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-001, LEGAL-REQ-002, LEGAL-REQ-006, LEGAL-REQ-008, LEGAL-REQ-009, PRD-REQ-002, K-08 (guards ready for v1.1).",
+      "scope": "`profiles.content_sync_allowed` (L2) maintained by trigger from `policy_acceptances` (terms accepted with `age_attested`, sensitive-data accepted and not withdrawn); RLS `WITH CHECK` on `entries`, `dictionary_terms`, `child_member_prefs` and `create_child` reads it; `my_consent_a",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 19,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "privacy-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-115",
+      "title": "Fix migration: policy versioning and pepper",
+      "severity": "Critical",
+      "milestone": "M1",
+      "timing": "week 2",
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer"
+      ],
+      "dependsOn": [
+        "BL-004"
+      ],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-001, LEGAL-REQ-009, LEGAL-REQ-026, DATA-REQ-006, DATA-REQ-064.",
+      "scope": "X-01 (`policy_actions_needed` offers new users the newest version with `new_users_from <= now()`; test \"new user during the notice window\"); X-11 (clients cannot claim `source='support'`); X-12 (raise if the pepper is empty or short; move the pepper to Supabase Vault or an Edge s",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 15,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-116",
+      "title": "Access-test harness: default grants, RLS matrix, upgrade test",
+      "severity": "High",
+      "milestone": "M1",
+      "timing": "week 2",
+      "size": "L",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-024, B-NFR-003, PRD-REQ-004, PRD-REQ-014.",
+      "scope": "harness mirrors Supabase default grants to `anon` and `authenticated` before migrations, then asserts `anon` reads nothing; generated access matrix from persona fixtures (parent, co-parent, Family, left member, anonymous claims, stranger); migration upgrade-path test; fold `rls.t",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 1,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-015",
+      "title": "Apply the migration pack to staging, then production",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-107, BL-004, BL-112 to BL-115)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-107",
+        "BL-004",
+        "BL-112",
+        "BL-115"
+      ],
+      "satisfies": "DATA-REQ-006, DATA-REQ-005.",
+      "scope": "CI applies all migrations to `scribe-staging` with `supabase db push` on a tag (D-041), never through the SQL editor; set the consent pepper as a secret before the cron; schedule the hourly `purge_due()` cron; confirm PITR and backup settings against DATA-REQ-030; repeat for prod",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-016",
+      "title": "Data map is canonical",
+      "severity": "High",
+      "milestone": "M1",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer"
+      ],
+      "dependsOn": [
+        "BL-002"
+      ],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-001, DATA-REQ-002, LEGAL-REQ-012, LEGAL-REQ-027, LEGAL-REQ-041, PRD-REQ-010.",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-118",
+      "title": "Content rule additions and claims registry",
+      "severity": "High",
+      "milestone": "M1",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "content"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "C-REQ-005, C-REQ-015, K-13, K-32, LEGAL-REQ-044, LEGAL-REQ-045, PRD-REQ-008, PRD-REQ-009.",
+      "scope": "rules for reminder rhythm words (\"daily\", \"every day\", \"in a row\", \"missed\", day counts), \"kids\" and child-directed phrases, print and ordering, beta placement (only About strings and, until D-030 is answered, the store beta lines), other platforms' names in iOS copy (App Review ",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "content",
+        "agent": "content-designer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-119",
+      "title": "`child-input` flag in the prompt selector",
+      "severity": "High",
+      "milestone": "M1",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "PRD-REQ-005, LEGAL-REQ-059, B-REQ-013.",
+      "scope": "prompt selection in `packages/core` takes a flag (default off) and never returns `together` prompts while it is off; replace the test that asserts the `together: true` path. (Source: TDD 07 BL-Q04, Q-07.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-120",
+      "title": "Verifier hardening and property tests",
+      "severity": "High",
+      "milestone": "M1",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "CLAUDE.md constitution, DATA-REQ-040, DATA-REQ-041, DATA-REQ-042.",
+      "scope": "reject the eight meaning-changing edits reproduced in TDD 03 7.1 (negation, tense, `stt_fix` to any dictionary term, contraction, mood); fast-check property suite with the TDD 03 invariants; bump `ENGINE_VERSION` if any rule outcome changes. Required before any model edit pass. (",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 1,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-111",
+      "title": "LocalStore interface and schema migrator",
+      "severity": "High",
+      "milestone": "M1",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer",
+        "sync owner"
+      ],
+      "dependsOn": [
+        "BL-121"
+      ],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-040, DATA-REQ-044, DATA-REQ-048 (part), PRD-REQ-011.",
+      "scope": "every SQL call behind a `LocalStore` repository; `PRAGMA user_version` migrations in transactions, tested against fixture DB files from every previous version; `journal_mode=WAL`, `synchronous=FULL`, `foreign_keys=ON`; immutable-after-sync guard (no `child_id` upsert, no direct u",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 52,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "sync-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-032",
+      "title": "Local store and atomic save",
+      "severity": null,
+      "milestone": "M1",
+      "timing": null,
+      "size": null,
+      "statusRaw": "superseded (by BL-111 for the store and migrator, BL-130 for the atomic save; the engine choice is D-023)",
+      "status": "superseded",
+      "mode": null,
+      "owners": [],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": null,
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-030",
+      "title": "Day-1 component spike on a real iPhone",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": null,
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder",
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "none directly (ADR 0101 section 8 gate for all UI tasks).",
+      "scope": "prove Uniwind, Reanimated 4.5.1, Expo Router form sheet and one Expo UI `Host` render together with the React Compiler on. Also check: Uniwind contrast variant, `Uniwind.setTheme` effect on RN `Appearance`, Hermes `Intl.DateTimeFormat` and `PluralRules`, `accessibilityShowsLargeC",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 18,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-031",
+      "title": "App identity and build configuration from the brand package",
+      "severity": "High",
+      "milestone": "M2",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "A-NFR-010, A-REQ-001, LEGAL-REQ-007, LEGAL-REQ-026.",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 17,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-037",
+      "title": "18+ root gate and stop screen",
+      "severity": "Critical",
+      "milestone": "M2",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "PRD-REQ-019, LEGAL-REQ-002, A-REQ-012, D-006, D-026.",
+      "scope": "a root-level boot gate (before any first-run screen, welcome action, invite or deep link) asking \"Are you 18 or older?\" (Yes, No, nothing preselected) with `ageGate.*` copy; iOS Declared Age Range where the API exists, used in memory only. Yes stores `ageGate.passed = 1`; No or a",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 15,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-040",
+      "title": "Boot sequence, launch path and splash",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-030, BL-111, BL-037)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-030",
+        "BL-111",
+        "BL-037"
+      ],
+      "satisfies": "A-REQ-001, A-REQ-002, A-NFR-001, A-NFR-002.",
+      "scope": "",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 7,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-137",
+      "title": "Welcome screen for v1.0",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-030)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer",
+        "content"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-030"
+      ],
+      "satisfies": "A-REQ-001, A-REQ-005 (Sign in reachable), D-043.",
+      "scope": "one static welcome screen (\"Start a book\", \"I was invited\", \"Sign in\") before the 18+ gate takes the first action; copy in `packages/content`; works at AX5 and with VoiceOver.",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "content-designer"
+        ]
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-041",
+      "title": "Story intro",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": null,
+      "statusRaw": "deferred (v1",
+      "status": "deferred",
+      "mode": null,
+      "owners": [],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": null,
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-042",
+      "title": "Recording and saving the first letter",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": null,
+      "statusRaw": "superseded (by BL-130 for capture and save, BL-142 for the voice-only path)",
+      "status": "superseded",
+      "mode": null,
+      "owners": [],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": null,
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-130",
+      "title": "Recorder session and atomic save",
+      "severity": "Critical",
+      "milestone": "M2",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-111)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-111"
+      ],
+      "satisfies": "LEGAL-REQ-007, LEGAL-REQ-011, DATA-REQ-046, DATA-REQ-048, A-REQ-012, A-REQ-030, PRD 7.4.",
+      "scope": "draft row written when recording starts; background, interruption and swipe-dismiss stop and keep the take; one-time microphone primer before the OS prompt; low-storage warning below 1 GB; atomic save (letter, audio reference, dictionary updates) in one transaction after the audi",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 19,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-134",
+      "title": "Launch sweeps and integrity checks",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-111)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-111"
+      ],
+      "satisfies": "DATA-REQ-011, DATA-REQ-032, DATA-REQ-046.",
+      "scope": "delete local files of letters tombstoned over 30 days; re-attach or quarantine orphan audio; `PRAGMA integrity_check` after an app update and weekly. (Source: TDD 01 BL-M15.)",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-136",
+      "title": "Local schema for per-person settings, dictionary, versions, first-run batch",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-111)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-111"
+      ],
+      "satisfies": "PRD-REQ-013, PRD-REQ-015, B-REQ-006, DATA-REQ-041.",
+      "scope": "local `child_member_prefs`, `dictionary_terms`, `entry_versions`, `first_run_batch`; first run creates all children in one transaction and marks the batch for `create_first_run_children`. (Source: TDD 01 BL-M07.)",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 7,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-135",
+      "title": "Kill-during-save device run (500x)",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-130)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "QA engineer",
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-130"
+      ],
+      "satisfies": "PRD 7.4, DATA-REQ-048. (Source: TDD 07 BL-Q30.)",
+      "scope": "",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-033",
+      "title": "Minimal first-run profile",
+      "severity": null,
+      "milestone": "M2",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-111, BL-037, BL-136)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-111",
+        "BL-037",
+        "BL-136"
+      ],
+      "satisfies": "B-REQ-001, B-REQ-002, B-REQ-003, B-REQ-006, B-NFR-007, B-NFR-009, LEGAL-REQ-012, A-REQ-035.",
+      "scope": "child name and birthday or due date (required), \"What does {child} call you?\" signature, languages and Hindi script preference (default per D-031); names and signature seed dictionary terms through `packages/core`. Works offline. Birthdays stored as calendar dates. Copy in `packa",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 6,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-043",
+      "title": "On-device transcription spike and the 14-recording experiment",
+      "severity": "Critical",
+      "milestone": "M3",
+      "timing": "weeks 2 to 4",
+      "size": null,
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "human",
+      "owners": [
+        "founder",
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "none directly (ADR 0001, 0012; D-031).",
+      "scope": "run the 14-recording experiment; measure time to transcript, memory, battery and heat on iPhone SE 3, a 12 and a current iPhone with the BL-140 decoder prototype; decide the default tier (turbo q5_0 or small q5_1) and the Hindi script default by 30 Oct. Results into ADR 0001 and ",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-140",
+      "title": "Audio decode module (M4A to 16 kHz PCM in memory)",
+      "severity": "Critical",
+      "milestone": "M3",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "ADR 0005, LEGAL-REQ-018, DATA-REQ-046.",
+      "scope": "Expo module `scribe-audio-decode` (`probe`, `decodeRange`, `sha256File`, `fsyncFile`) over AVAudioFile and AVAudioConverter; no PCM file ever written; contract test on device. (Source: TDD 03 BL-061.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 5,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-141",
+      "title": "Whisper engine v2",
+      "severity": "Critical",
+      "milestone": "M3",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-140)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-140"
+      ],
+      "satisfies": "ADR 0001, ADR 0009, B-REQ-003, B-REQ-006, LEGAL-REQ-019.",
+      "scope": "bundled Silero VAD, chunk planner in `packages/core`, per-chunk `transcribeData` with the dictionary prompt, `tokenTimestamps` with `maxLen: 1` merged into words with exact offsets, `SttMeta`, context lifecycle, Core ML off by default, abort cleanup, silence and loop guard. Repla",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 4,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-142",
+      "title": "Transcription queue and voice-only save",
+      "severity": "Critical",
+      "milestone": "M3",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-130, BL-141)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer",
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-130",
+        "BL-141"
+      ],
+      "satisfies": "PRD 7.4, A-REQ-030, LEGAL-REQ-015.",
+      "scope": "one job at a time, persisted status, resume after kill; a spoken letter saves with its audio before text exists and is shown as a voice letter until transcribed (TDD 03 OQ-4: kept local until transcribed, TDD 01 OQ-2); block Save on sample transcripts in release builds; on-device",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "speech-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-143",
+      "title": "Model manager",
+      "severity": "High",
+      "milestone": "M3",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-022)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-022"
+      ],
+      "satisfies": "PRD 7.7, ADR 0001, D-046.",
+      "scope": "manifest with device tiers; resumable Range download to `Application Support/models/*.part` on Wi-Fi by default; SHA-256 verified before rename; excluded from backup (TDD 10 contradiction 2); storage-pressure check; remove and re-download in Settings; versioned URLs on the zero-e",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-144",
+      "title": "Transcription persistence and alignment column",
+      "severity": "High",
+      "milestone": "M3",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-111)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect",
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-111"
+      ],
+      "satisfies": "PRD-REQ-004, DATA-REQ-040, DATA-REQ-041, DATA-REQ-042, DATA-REQ-001.",
+      "scope": "draft candidates, `stt_meta`, accepted and rejected `machine_edits`, author edit layer, `audio_sha256`; migration for `entries.alignment` (L4, final text only) and `audio_sha256` with classification comments; `book_entries` exposes `alignment` but never `stt_meta`; access tests. ",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "speech-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-145",
+      "title": "Word alignment projection and quality gate",
+      "severity": "High",
+      "milestone": "M3",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-141, BL-144)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-141",
+        "BL-144"
+      ],
+      "satisfies": "ADR 0009, PRD-REQ-020.",
+      "scope": "pure projection of word timings through accepted edits onto `final_text` with a quality gate (word, sentence or none); Read together consumes `quality`; no raw transcript leak. (Source: TDD 03 BL-068.)",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-148",
+      "title": "Author edits keep the version-replay invariant",
+      "severity": null,
+      "milestone": "M3",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-041.",
+      "scope": "model Review's free-text \"Change words\" as an author edit layer so `final_text` stays reproducible from `raw_transcript`, machine edits and author edits. (Source: TDD 01 X-8.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-147",
+      "title": "Golden-audio corpus v1",
+      "severity": null,
+      "milestone": "M3",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "pair",
+      "owners": [
+        "speech engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "TDD 03 7.5 release gate. (Source: TDD 03 BL-069.)",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "pair",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-146",
+      "title": "Suggestions UX in Review",
+      "severity": null,
+      "milestone": "M3",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-120)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "speech engineer",
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-120"
+      ],
+      "satisfies": "ADR 0012, DATA-REQ-042. (Source: TDD 03 BL-067.)",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "speech engineer",
+        "agent": "speech-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-022",
+      "title": "Remote config and kill switches",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready (decided as a Supabase table, D-035)",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "data architect",
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-040, C-NFR-009, A-REQ-011, PRD-REQ-005, PRD-REQ-020.",
+      "scope": "`app_config` table (public read of non-secret keys, service-role write, audit trigger) with the D-035 keys; client with bundled defaults, cache and refresh after first frame and on foreground, never awaited at launch, fail-safe kill-switch semantics; Edge Functions read kill swit",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 2,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-034",
+      "title": "Child switcher and per-child local scope",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-111, BL-033)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-111",
+        "BL-033"
+      ],
+      "satisfies": "B-REQ-004, PRD-REQ-011, PRD-REQ-012.",
+      "scope": "every local query scoped by `child_id`; \"For {child}\" switcher and a \"Whose book?\" form sheet (replaces the `Alert.alert` picker, which Android cannot render with more than 3 buttons) with `children.switcher.*` copy; \"To {child}\" in recording and Review, changeable before save; l",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 4,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-035",
+      "title": "Per-child settings",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-034)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-034"
+      ],
+      "satisfies": "PRD-REQ-013, B-REQ-014, C-REQ-012, C-REQ-016.",
+      "scope": "Settings > Children list and \"{child}'s book\" page with the three scopes in PRD.md K-12; hide and show again; include in my reminders; pause celebrations per person per child. All rows 2 taps or fewer. Copy `children.settings.*`.",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-023",
+      "title": "Ask sequencer and analytics consent sheet",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-020, BL-040)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer",
+        "analytics engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-020",
+        "BL-040"
+      ],
+      "satisfies": "PRD-REQ-001, PRD-REQ-016, LEGAL-REQ-003, LEGAL-REQ-008.",
+      "scope": "pure `nextAsk(state)` in `packages/core` returning at most one of Keep the book, reminder prime, analytics consent per session after the first letter, never during recording, review or export; consent sheet with `analyticsConsent.*` copy, nothing preselected; Settings > Privacy r",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "analytics-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-150",
+      "title": "Offline export (ZIP and PDF)",
+      "severity": "Critical",
+      "milestone": "M4",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-111)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-111"
+      ],
+      "satisfies": "C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to DATA-REQ-053, DATA-REQ-056, LEGAL-REQ-013.",
+      "scope": "streaming ZIP64 export from local files with a manifest of hashes, every own entry (raw, edits, final), audio, photos with EXIF stripped, the PDF book and `account.json`; family letters without raw transcripts; works offline and in every plan state; under 2 minutes for a 230 MB y",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-151",
+      "title": "Notification planner and local reminders",
+      "severity": "High",
+      "milestone": "M4",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-034)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-034"
+      ],
+      "satisfies": "C-REQ-001 to C-REQ-007, C-REQ-010 to C-REQ-012, C-REQ-015, B-REQ-014, B-REQ-015, PRD-REQ-013, LEGAL-REQ-054, D-025.",
+      "scope": "pure planner in `packages/core` (cadence \"a few evenings a week\" default, 07:00 to 21:30, smart quiet, rotation across included children, month-age and birthday notes, hidden-book and due-date rules, DST); primed permission after the first letter (via BL-023); `expo-notifications",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-157",
+      "title": "Lock-screen-safe notification copy",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "content"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "D-025, C-REQ-009.",
+      "scope": "notification title and body variants without `{child}` for when names are hidden; Settings toggle label and help line; lock-screen length rules pass.",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "content",
+        "agent": "content-designer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-154",
+      "title": "Read together free sessions per book",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-022, BL-036)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-022",
+        "BL-036"
+      ],
+      "satisfies": "PRD-REQ-020, LEGAL-REQ-050, D-037.",
+      "scope": "count per book on the device, only when highlighted playback starts in try mode, limit from remote config; delete `FREE_READ_TOGETHER_SESSIONS`; single-recording playback never limited. (Source: TDD 01 BL-M13, TDD 08 C-3, TDD 07 BL-Q20.)",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-160",
+      "title": "Book and Read together release pass",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-145, BL-034)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-145",
+        "BL-034"
+      ],
+      "satisfies": "B-REQ-005, C-REQ-010, C-REQ-011, ADR 0009.",
+      "scope": "month chapters and Before You; playback; Read together word highlight from `alignment` with the quality gate (sentence-level or plain playback fallback); quiet milestones inline; 60-letter chapter p95 500 ms.",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-156",
+      "title": "Content and localisation debt",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "content",
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "CLAUDE.md content rules, B-NFR-007, K-24, D-028.",
+      "scope": "move `pendingCopy` and screen literals into `packages/content`; dates through `Intl.DateTimeFormat` with the device locale in `packages/core`; plurals through `Intl.PluralRules` with `{ one, other }` strings; assembled sentences become templates (`readTogether.position`); `caps` ",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "content",
+        "agent": "content-designer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "design-systems-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-158",
+      "title": "Help: \"If you are struggling\" row",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "content",
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "D-034, LEGAL-REQ-015.",
+      "scope": "a static, always-available row in Settings > Help with verified US resources (clinician-reviewed wording); the on-device card stays behind `safety_card_enabled`, off unless BL-105 signs off.",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "content",
+        "agent": "content-designer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-159",
+      "title": "Settings information architecture",
+      "severity": null,
+      "milestone": "M4",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-035)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-035"
+      ],
+      "satisfies": "C-REQ-016, LEGAL-REQ-008, K-13, K-17.",
+      "scope": "every row within 2 taps; Privacy rows (analytics, sensitive data, backup and shared voice, lock-screen names, audience); Help and Legal (About with the beta label, How transcription works, Support with content-free \"Copy diagnostics\", If you are struggling, Terms, Privacy Policy,",
+      "source": "backlog",
+      "level": 7,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-050",
+      "title": "Keep-the-book sheet with notice and terms",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-130)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-130"
+      ],
+      "satisfies": "A-REQ-013, A-REQ-014, A-REQ-031, A-REQ-034, LEGAL-REQ-001, LEGAL-REQ-045.",
+      "scope": "sheet after the first save with Apple, Email and Later (Google in v1.1, D-044); child-data notice and the Terms line with the 18+ confirmation above the buttons; record `age_attested` in the `terms` acceptance context; Later keeps everything working locally and the sheet returns ",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 14,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-170",
+      "title": "Secure session, deep links and invite tokens",
+      "severity": "High",
+      "milestone": "M5",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-040)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer",
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-040"
+      ],
+      "satisfies": "A-REQ-028, A-REQ-032, A-REQ-033, A-NFR-008, LEGAL-REQ-026.",
+      "scope": "`expo-secure-store` with the large-secure-store pattern; deep link parser; invite token to Keychain before any UI; tokens never logged; sign-out only after unsynced letters sync; \"sign out other devices\". (Source: TDD 01 BL-M14, TDD 04 task 11.)",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "security-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-172",
+      "title": "Auth configuration as code",
+      "severity": "High",
+      "milestone": "M5",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-053)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-053"
+      ],
+      "satisfies": "A-REQ-018, A-REQ-025, A-REQ-026, A-REQ-027, A-NFR-009.",
+      "scope": "JWT lifetime 15 minutes, OTP settings, SMTP, anonymous sign-in off in v1.0 (K-08 is v1.1), CAPTCHA decision, documented in `docs/security/`; residual OTP risk accepted per TDD 04 X-1. (Source: TDD 04 SEC-03.)",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 5,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-171",
+      "title": "Sign in with Apple and token capture",
+      "severity": "Critical",
+      "milestone": "M5",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-053, BL-172)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-053",
+        "BL-172"
+      ],
+      "satisfies": "A-REQ-016, A-NFR-009, A-NFR-011, DATA-REQ-019, DATA-REQ-033, LEGAL-REQ-055.",
+      "scope": "native Sign in with Apple; spike whether Supabase yields the Apple refresh token; if not, an `apple-token-store` Edge Function exchanges the authorisation code; `apple_tokens` table (service only, encrypted); keep each user's Apple subject id (needed for revocation and for a futu",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 3,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase",
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-051",
+      "title": "Email link and code sign-in",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-050, BL-053)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-050",
+        "BL-053"
+      ],
+      "satisfies": "A-REQ-018, A-REQ-023, A-REQ-024, A-REQ-025, A-REQ-027, A-NFR-008.",
+      "scope": "one email with link and 6-digit code; scanner-safe page; resend limits; session tokens only in Keychain-backed storage.",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-054",
+      "title": "Sensitive-data consent screen",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-050, BL-114)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer",
+        "privacy engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-050",
+        "BL-114"
+      ],
+      "satisfies": "PRD-REQ-002, LEGAL-REQ-006, A-REQ-034.",
+      "scope": "one plain screen after a new account is created and before the first sync, copy `sensitiveConsent.*` (counsel to approve; CHD notice HN-4). \"Agree and sync\" records `sensitive-data` accept; \"Keep on this phone\" records decline and keeps sync, backup and family off. Settings > Pri",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "privacy-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-175",
+      "title": "Visibility migration: `book_access`, approvals, leave and remove",
+      "severity": "Critical",
+      "milestone": "M5",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-112)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-112"
+      ],
+      "satisfies": "B-REQ-009, B-REQ-010, B-REQ-011, DATA-REQ-016, DATA-REQ-017, PRD-REQ-004, PRD-REQ-014, D-024, D-039.",
+      "scope": "`book_access` table and triggers; `entries.approval`, `reviewed_by`, `reviewed_at`, `source`; contributors' `in_book` derived from approval; `review_family_letter`, `leave_child(p_keep_in_book)`, `remove_child_member(p_set_aside)`; `book_entries` rewritten on `book_access` with a",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 8,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-173",
+      "title": "Sync design and server RPCs",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "needs-decision (D-023: outbox and cursor on expo-sqlite recommended; PowerSync is the alternative)",
+      "status": "needs-decision",
+      "mode": "pair",
+      "owners": [
+        "sync owner",
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "DATA-REQ-043, DATA-REQ-044, DATA-REQ-030, DATA-REQ-031, PRD 7.3, ADR 0004 (amended or kept).",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 8,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "sync owner",
+        "agent": "sync-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "data-architect"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-174",
+      "title": "Sync client",
+      "severity": "Critical",
+      "milestone": "M5",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-173, BL-111)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "sync owner",
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-173",
+        "BL-111"
+      ],
+      "satisfies": "DATA-REQ-043, A-REQ-033, PRD 7.3, PRD 7.4.",
+      "scope": "outbox with retries and ordering; `rejected_writes` kept and surfaced; consent rejection (42501) treated as \"paused by consent\"; sign-out guard; never blocks recording, review, save or reading. Tests TC-16 and BL-Q11. (Source: TDD 02 SB-08, TDD 07 BL-Q11.)",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 6,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "sync owner",
+        "agent": "sync-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-052",
+      "title": "Re-own local letters on sign-in",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": null,
+      "statusRaw": "blocked (BL-111, BL-051, BL-113)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-111",
+        "BL-051",
+        "BL-113"
+      ],
+      "satisfies": "A-REQ-015, DATA-REQ-044.",
+      "scope": "move every local row to the signed-in user id in one transaction before any sync, using client ids accepted by `create_child` (BL-113); on failure nothing changes and Retry shows. Tests cover crash mid-transaction (A-NFR-013: no lost letter).",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-176",
+      "title": "Co-parent invite in the app",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-175, BL-170)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-175",
+        "BL-170"
+      ],
+      "satisfies": "B-REQ-007, PRD-REQ-014, A-REQ-029.",
+      "scope": "invite a co-parent by link or code naming one child; accept in the app (universal link or pasted code); both parents see in-book letters; invite expiry and resend.",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-178",
+      "title": "Profile settings and shared dictionary terms",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-175)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-175"
+      ],
+      "satisfies": "B-REQ-003, B-REQ-006.",
+      "scope": "`profile_settings` (owner only); dictionary unique `(owner_id, child_id, term)` with shared read for child-level `child`, `nickname` and `family` kinds; split owner and child terms in the tests (TDD 07 Q-10). (Source: TDD 02 M11 / SB-17.)",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-177",
+      "title": "Cross-device integration stack and two-phone test",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-174)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer",
+        "sync owner"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-174"
+      ],
+      "satisfies": "PRD 7.3, DATA-REQ-043, LEGAL-REQ-014.",
+      "scope": "Supabase CLI stack in CI for sync tests and a chaos suite (offline, kill, duplicate push); manual two-phone script (letter on one phone visible on the co-parent's in p95 5 s). (Source: TDD 02 SB-15.)",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "sync-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-024",
+      "title": "Server business aggregates",
+      "severity": null,
+      "milestone": "M5",
+      "timing": null,
+      "size": null,
+      "statusRaw": "ready (Plus totals added after BL-213)",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "analytics engineer",
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "PRD-REQ-017.",
+      "scope": "daily counts (accounts, books, letters saved, family letters, books per family bucket) and, after BL-213, trials, conversions, refunds and churn from `store_subscriptions` and `store_notifications`; counts only, cells under 10 suppressed; service role only with an access test. (S",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "analytics engineer",
+        "agent": "analytics-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "data-architect"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-190",
+      "title": "Invite redemption function with rate limits",
+      "severity": "High",
+      "milestone": "M6",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-112, BL-236)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-112",
+        "BL-236"
+      ],
+      "satisfies": "B-NFR-004, A-REQ-028, B-NFR-002.",
+      "scope": "`invite-redeem` Edge Function (token in the body, never logged) with per-device and per-IP limits (10 code attempts per hour per device; global failed-attempt brake with alert) calling `accept_child_invite` as the user; refuses anonymous callers for any role in v1.0. (Source: TDD",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-191",
+      "title": "Contributor first run in the app",
+      "severity": null,
+      "milestone": "M6",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-176, BL-190)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer",
+        "content"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-176",
+        "BL-190"
+      ],
+      "satisfies": "B-REQ-007, B-REQ-002, PRD-REQ-014, D-002.",
+      "scope": "\"I was invited\" path after the 18+ gate: sign in, accept, welcome (`family.contributorWelcome.*`), signature, first letter to the named child; contributors never create a child unless they start their own book; contributors never see the Plus sheet (D-036).",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "content-designer"
+        ]
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-192",
+      "title": "Approvals",
+      "severity": null,
+      "milestone": "M6",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-175, BL-174)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-175",
+        "BL-174"
+      ],
+      "satisfies": "B-REQ-009, B-REQ-023 (auto-add and thank you).",
+      "scope": "pending family letters for both parents (first action wins); Add to the book, Keep it aside, Send a thank you; per-member \"Add family letters automatically\"; contributor sees \"With {inviter}\" or \"In the book\".",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-193",
+      "title": "Leave and remove with letter retention",
+      "severity": null,
+      "milestone": "M6",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-175)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-175"
+      ],
+      "satisfies": "B-REQ-010, B-REQ-016, LEGAL-REQ-032.",
+      "scope": "leave (keep or take my letters from the book) and remove a Family member (parents are equals and cannot remove each other); honest copy about copies already on other phones.",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-194",
+      "title": "Family can read and per-child sharing",
+      "severity": null,
+      "milestone": "M6",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-175)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-175"
+      ],
+      "satisfies": "B-REQ-011, PRD-REQ-014.",
+      "scope": "\"Family can read {child}'s book\" per book (private by default); invite names one child and says so; member list per child.",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-195",
+      "title": "Visibility matrix and cross-child leak tests",
+      "severity": "Critical",
+      "milestone": "M6",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-175, BL-116)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "security engineer",
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-175",
+        "BL-116"
+      ],
+      "satisfies": "LEGAL-REQ-024, B-NFR-003, B-REQ-006 to B-REQ-011, PRD-REQ-004, PRD-REQ-014.",
+      "scope": "generated matrix for every role and book state through RLS and through the pull RPCs; Nani invited to Asha's book only sees nothing of the sibling's book; contributor without \"Family can read\" sees only own letters. (Source: TDD 07 BL-Q12, TDD 04 SEC-04.)",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "qa-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-196",
+      "title": "Family-letter push without content",
+      "severity": null,
+      "milestone": "M6",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-192)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect",
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-192"
+      ],
+      "satisfies": "C-REQ-007, LEGAL-REQ-054, C-NFR-005.",
+      "scope": "an Edge Function sends APNs pushes directly (no third-party push service) for a new family letter and \"your letter is in the book\". Server payloads never carry the child's name or letter text (PRD 7.10; DATA_CLASSIFICATION open issue 4); when lock-screen names are on, the app may",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-200",
+      "title": "Audio key scheme and format",
+      "severity": null,
+      "milestone": "M7",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "needs-decision (D-032)",
+      "status": "needs-decision",
+      "mode": "pair",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-022(a) (counsel reading), ADR 0006 (v1.0 subset).",
+      "scope": "per-file AES-256-GCM on the phone (react-native-quick-crypto spike), file key wrapped by a server-held key through an Edge Function; `packages/crypto/FORMAT.md` versioned; known-answer tests and fuzz. Vault mode and per-child keys stay later. (Source: TDD 04 SEC-08 reduced, TDD 1",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 4,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-201",
+      "title": "Audio blobs, bucket and upload policy",
+      "severity": null,
+      "milestone": "M7",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-200, BL-213, BL-232)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-200",
+        "BL-213",
+        "BL-232"
+      ],
+      "satisfies": "C-NFR-008, DATA-REQ-047, D-032.",
+      "scope": "`audio_blobs` (path, size, sha256, wrapped file key), `entry-audio` bucket with path rules; signed upload URLs issued server-side only when the entry is in a shared book (Free) or `book_has_plus` (Plus); downloads of already uploaded audio never check entitlement. (Source: TDD 02",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-202",
+      "title": "Upload queue on the phone",
+      "severity": null,
+      "milestone": "M7",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-201, BL-174)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-201",
+        "BL-174"
+      ],
+      "satisfies": "PRD 7.3 (backed-up audio restore), D-032.",
+      "scope": "resumable, background-safe uploads after encryption; retries with backoff; state visible in Settings; never blocks recording or reading.",
+      "source": "backlog",
+      "level": 7,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-203",
+      "title": "Member playback and deletion propagation",
+      "severity": null,
+      "milestone": "M7",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-201)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect",
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-201"
+      ],
+      "satisfies": "B-REQ-011, LEGAL-REQ-032, PRD-REQ-014.",
+      "scope": "an Edge Function checks `book_access`, unwraps the file key and returns it with a short-lived URL; device cache with eviction; deleting a letter or leaving a book removes cached copies on next sync.",
+      "source": "backlog",
+      "level": 7,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-206",
+      "title": "Wrap-key custody",
+      "severity": "High",
+      "milestone": "M7",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-200)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "security engineer",
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-200"
+      ],
+      "satisfies": "LEGAL-REQ-023, LEGAL-REQ-040.",
+      "scope": "key only in Edge secrets, never in the database or its backups; sealed offline copy and yearly recovery drill; rotation runbook; every unwrap logged without content; kill switch `escrow_unwrap`. (Source: TDD 06 BL-R18, TDD 04 3.6.4.)",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-205",
+      "title": "Shared-voice copy and legal alignment",
+      "severity": null,
+      "milestone": "M7",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "needs-decision (D-032)",
+      "status": "needs-decision",
+      "mode": "agent",
+      "owners": [
+        "content",
+        "legal"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "K-21, K-33, LEGAL-REQ-044.",
+      "scope": "on approval, update the recordings claims in `packages/content` (Settings, store, site) and the Privacy Policy short version, section 4 and Terms 12.1 to say recordings of letters in a shared book upload, encrypted, so family can hear them.",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "content",
+        "agent": "content-designer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "legal-drafter"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-036",
+      "title": "Plan rules engine",
+      "severity": null,
+      "milestone": "M8",
+      "timing": "week 4",
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "PRD-REQ-015, PRD-REQ-020, C-REQ-023, LEGAL-REQ-050, D-036, D-007, D-008.",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 18,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-212",
+      "title": "Notice windows as data",
+      "severity": null,
+      "milestone": "M8",
+      "timing": "week 5",
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-047, PRD-REQ-003, D-022.",
+      "scope": "`notice_windows` seed (the D-022 table) and a pure `scheduleFor(snapshot)` with tests N-1 to N-10 (1 March leap and non-leap, 31-day months, DST, trials of 31 and 32 days, cancel after scheduling, birthday inside the window). (Source: TDD 08 BL-P01.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 2,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-210",
+      "title": "expo-iap spike on Expo SDK 57",
+      "severity": "Critical",
+      "milestone": "M8",
+      "timing": "week 3",
+      "size": "S",
+      "statusRaw": "blocked (BL-031, BL-103 for sandbox; the StoreKit configuration file works earlier)",
+      "status": "blocked",
+      "mode": "pair",
+      "owners": [
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-031",
+        "BL-103"
+      ],
+      "satisfies": "ADR 0013.",
+      "scope": "`expo-iap` 5.8.x in a dev build: products load, purchase with `appAccountToken`, `currentEntitlementIOS`, `isEligibleForIntroOfferIOS`, `showManageSubscriptionsIOS`, `beginRefundRequestIOS`, transaction updates after a kill; record results in ADR 0013. Fallback per ADR 0013 if it",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 8,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-211",
+      "title": "App Store Server API and JWS verification in Deno",
+      "severity": null,
+      "milestone": "M8",
+      "timing": "week 3",
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "ADR 0013.",
+      "scope": "does `@apple/app-store-server-library` run in Supabase Edge Functions through `npm:`? If not, `jose` plus Apple Root CA G3 verification and an ES256 JWT client. Tests use generated test keys, never Apple's.",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 11,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-213",
+      "title": "Billing migration and Plus rules on the server",
+      "severity": "Critical",
+      "milestone": "M8",
+      "timing": "week 6",
+      "size": "L",
+      "statusRaw": "blocked (BL-113, BL-114, BL-036)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect",
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-113",
+        "BL-114",
+        "BL-036"
+      ],
+      "satisfies": "K-28, PRD-REQ-015, C-REQ-021, C-REQ-028, D-038.",
+      "scope": "`app_account_tokens`, `store_subscriptions` (one row per original transaction; 7-year ledger, pseudonymised at deletion), `store_notifications` (`notification_uuid` idempotency), `apply_store_transaction()`, `has_plus`, `book_has_plus`, `get_plan_state`, `my_app_account_token()`;",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 16,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "payments-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-214",
+      "title": "App Store notifications endpoint, `sync_plan`, reconcile",
+      "severity": "Critical",
+      "milestone": "M8",
+      "timing": "weeks 7 to 9",
+      "size": "L",
+      "statusRaw": "blocked (BL-211, BL-213)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-211",
+        "BL-213"
+      ],
+      "satisfies": "C-NFR-002, C-REQ-027, C-REQ-029, LEGAL-REQ-049, PRD-REQ-003.",
+      "scope": "`appstore-notifications` (JWS verified, dedupe on `notificationUUID`, map by `appAccountToken`, re-read Get All Subscription Statuses, upsert, recompute notices, consent reconcile, logs without ids); `sync_plan()` RPC from the client's signed transaction; `plan-reconcile` hourly ",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 10,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-215",
+      "title": "Mobile plan module",
+      "severity": null,
+      "milestone": "M8",
+      "timing": "weeks 8 to 10",
+      "size": "M",
+      "statusRaw": "blocked (BL-210, BL-214, BL-050)",
+      "status": "blocked",
+      "mode": "pair",
+      "owners": [
+        "payments engineer",
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-210",
+        "BL-214",
+        "BL-050"
+      ],
+      "satisfies": "C-REQ-020, C-NFR-003, C-NFR-004, D-036, D-047.",
+      "scope": "`apps/mobile/src/lib/plan.ts`: configure only when signed in; purchase with `appAccountToken` and `finishTransaction` after server confirmation; restore with the D-047 rule; manage and refund; cache precedence (server, StoreKit, cache); replace the `hasPlus` and `isJoinedBook` st",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 7,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [
+        "apps/mobile"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-216",
+      "title": "Plus sheet",
+      "severity": "High",
+      "milestone": "M8",
+      "timing": "week 10",
+      "size": "M",
+      "statusRaw": "blocked (BL-036, BL-215)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "payments engineer",
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-036",
+        "BL-215"
+      ],
+      "satisfies": "C-REQ-022, C-REQ-023, LEGAL-REQ-046, C-NFR-006, C-NFR-007.",
+      "scope": "TDD 08 section 6 rules (no preselection, eligibility from the store, disclosures above the button at AX5, no urgency, no hardcoded prices, never on quiet surfaces); delete `plus-gate.tsx` and the `onContinueDev` bypass; CI bundle grep fails on any dev bypass in production. (Sourc",
+      "source": "backlog",
+      "level": 7,
+      "unblocks": 4,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "design-systems-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-217",
+      "title": "Purchase consent records",
+      "severity": null,
+      "milestone": "M8",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-214)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-214"
+      ],
+      "satisfies": "LEGAL-REQ-049, D-049. (Source: TDD 08 BL-P06.)",
+      "scope": "",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-218",
+      "title": "Notice scheduler and emails",
+      "severity": "Critical",
+      "milestone": "M8",
+      "timing": "weeks 9 to 12",
+      "size": "L",
+      "statusRaw": "blocked (BL-212, BL-214, BL-053)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "payments engineer",
+        "content"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-212",
+        "BL-214",
+        "BL-053"
+      ],
+      "satisfies": "PRD-REQ-003, C-REQ-024 to C-REQ-026, LEGAL-REQ-047, LEGAL-REQ-053, LEGAL-REQ-054.",
+      "scope": "pg_cron every 15 minutes; transactional templates without child names or promotion, with date, price string, cancel-by date (US Pacific in email, OQ-4) and cancel instructions; in-app cards; one push only for the final trial notice; hard-window refusal that pages the founder; the",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "content-designer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-219",
+      "title": "Settings > Plan",
+      "severity": null,
+      "milestone": "M8",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-215)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-215"
+      ],
+      "satisfies": "C-REQ-016, LEGAL-REQ-048, C-REQ-029.",
+      "scope": "status and dates, \"Plus is on for {child}'s book\" coverage line, Manage or cancel in one tap, Restore, Request a refund; deleting the app does not cancel (said plainly). (Source: TDD 08 BL-P08.)",
+      "source": "backlog",
+      "level": 7,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-220",
+      "title": "Account deletion billing step",
+      "severity": null,
+      "milestone": "M8",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-213, BL-234)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-213",
+        "BL-234"
+      ],
+      "satisfies": "C-REQ-019, LEGAL-REQ-029.",
+      "scope": "billing notice and Manage link before the final confirm; at hard delete remove `app_account_tokens`, set `store_subscriptions.profile_id` null and pseudonymise consent rows; no third-party call (ADR 0013). (Source: TDD 08 BL-P10.)",
+      "source": "backlog",
+      "level": 7,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-221",
+      "title": "Keep-and-leave end-to-end run",
+      "severity": "High",
+      "milestone": "M8",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-215, BL-216, BL-275)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-215",
+        "BL-216",
+        "BL-275"
+      ],
+      "satisfies": "LEGAL-REQ-050, C-REQ-028, C-NFR-004.",
+      "scope": "Maestro run with the App Store and entitlement hosts blocked and a lapsed fixture: write, read, play, export and play shared audio work; two books writable; a third offers Plus. (Source: TDD 08 BL-P11.)",
+      "source": "backlog",
+      "level": 8,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-222",
+      "title": "Sandbox checklist on device",
+      "severity": null,
+      "milestone": "M8",
+      "timing": "weeks 11 to 12; every build that changes purchase code",
+      "size": "S",
+      "statusRaw": "blocked (BL-215, BL-218)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder",
+        "payments engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-215",
+        "BL-218"
+      ],
+      "satisfies": "C-NFR-002, C-NFR-003, C-REQ-020, C-REQ-027, C-REQ-029, LEGAL-REQ-048.",
+      "scope": "S-1 to S-10 from TDD 08 9.1 with sandbox Apple Accounts against staging; signed evidence in `docs/qa/evidence/`.",
+      "source": "backlog",
+      "level": 7,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-236",
+      "title": "Operations tables migration",
+      "severity": "High",
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-115)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect",
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-115"
+      ],
+      "satisfies": "LEGAL-REQ-025, LEGAL-REQ-037, LEGAL-REQ-040, DATA-REQ-006, D-021.",
+      "scope": "`ops_audit_log` (append-only, 12 months), `security_events` (12 months), `rate_limits` (hashed keys, daily salt), `kill_switches` use by functions; `deletion_request_steps.next_attempt_at`, queue `last_error_code`; `purge_due(p_limit)` batching; re-enqueue on conflict with a done",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 13,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "security-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-232",
+      "title": "Bucket registry and purge coverage",
+      "severity": "Critical",
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-236)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-236"
+      ],
+      "satisfies": "DATA-REQ-011, DATA-REQ-047, DATA-REQ-066, LEGAL-REQ-031.",
+      "scope": "a `bucket_registry` function; `purge_due` and `prepare_account_purge` enqueue every registered bucket (photos, `entry-audio`, avatars, exports); export expiry sweep; CI fails if a bucket in the data map is missing from the registry; shared-area object ownership handled by copy (T",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 6,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-233",
+      "title": "In-app account deletion flow",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-051)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-051"
+      ],
+      "satisfies": "C-REQ-019, LEGAL-REQ-029, DATA-REQ-019 to DATA-REQ-023, K-22.",
+      "scope": "export offered first; co-parent told their letters leave the shared book; billing notice (BL-220); type to confirm; 30-day undo; device wipe on next launch after completion.",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-234",
+      "title": "Purge worker",
+      "severity": "Critical",
+      "milestone": "M9",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-232, BL-236, BL-171)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-232",
+        "BL-236",
+        "BL-171"
+      ],
+      "satisfies": "DATA-REQ-011, DATA-REQ-019 to DATA-REQ-023, DATA-REQ-033, DATA-REQ-034, DATA-REQ-036, LEGAL-REQ-029, LEGAL-REQ-031, LEGAL-REQ-038.",
+      "scope": "`purge-worker` Edge Function draining the queue and account steps (Postgres, Storage, Auth user, Apple token revocation, email provider suppression), backoff, verification step, SLA monitor and alerts; fake-vendor tests TC-19. (Source: TDD 05 NEW-06, TDD 02 SB-13, TDD 07 BL-Q22.)",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-235",
+      "title": "Analytics deletion at request time",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-020)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "analytics engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-020"
+      ],
+      "satisfies": "DATA-REQ-033, PRD-REQ-018, D-003.",
+      "scope": "stateless `analytics-forget` function called once by the deletion flow with the current analytics id in memory; logs counts only; the `posthog` deletion step marked not applicable at execution; disclosure that cancelling deletion cannot restore analytics. (Source: TDD 05 NEW-07, ",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "analytics engineer",
+        "agent": "analytics-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-237",
+      "title": "Runbook wrapper, DSAR log, support deletion",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-236)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-236"
+      ],
+      "satisfies": "LEGAL-REQ-025, LEGAL-REQ-036, LEGAL-REQ-057, DATA-REQ-027.",
+      "scope": "`scripts/runbook.mjs` writes `ops_audit_log` first and refuses without a ticket; `privacy_requests` table and `ops/dsar.mjs`; `support_request_deletion` (service role, grace 0 for under-13 reports). (Source: TDD 05 NEW-11, TDD 04 SEC-10.)",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-238",
+      "title": "Cross-system deletion verification script",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-234)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-234"
+      ],
+      "satisfies": "LEGAL-REQ-029, DATA-REQ-034. (Source: TDD 05 NEW-16.)",
+      "scope": "",
+      "source": "backlog",
+      "level": 7,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-239",
+      "title": "Network capture, consent gating and log canary",
+      "severity": "High",
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-275)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer",
+        "privacy engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-275"
+      ],
+      "satisfies": "LEGAL-REQ-003, LEGAL-REQ-014, LEGAL-REQ-015, DATA-REQ-004, A-NFR-012.",
+      "scope": "proxy-based E2E checks (zero PostHog or Sentry requests before consent; nothing queued on disk; no tier in any request); canary family \"Asha\" never in device logs, function logs, push payloads or analytics bodies; typed ops logger with redaction; Sentry scrub rules for PostgREST ",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "privacy-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-240",
+      "title": "Sensitive-data withdrawal modes",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-054)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-054"
+      ],
+      "satisfies": "LEGAL-REQ-006. (Source: TDD 05 NEW-08, X-08; default mode `offer` until counsel answers OQ-L1.)",
+      "scope": "",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-231",
+      "title": "Privacy labels and manifest rendered from the data map",
+      "severity": "High",
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-016)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-016"
+      ],
+      "satisfies": "LEGAL-REQ-042, LEGAL-REQ-043.",
+      "scope": "`PrivacyInfo.xcprivacy` and the App Store label answers generated per build with an evidence hash; release script fails on drift. (Source: TDD 05 NEW-04.)",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-241",
+      "title": "Security programme documents and runbooks",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-028, LEGAL-REQ-039, LEGAL-REQ-040.",
+      "scope": "`docs/security/WISP.md` (short form), `risk-register.md`, runbooks RB-1 to RB-8 in `docs/runbooks/`, `affected_users` script and breach templates. (Source: TDD 04 SEC-20, SEC-14; TDD 06 BL-R16.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-242",
+      "title": "Health views, cron and alerts",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-236)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-236"
+      ],
+      "satisfies": "DATA-REQ-036, LEGAL-REQ-038.",
+      "scope": "content-free health views, `ops-health` cron, uptime check on the RPC endpoint, alerts for deletion SLA, notice-window misses and 5xx spikes to the founder's phone (channel per TDD 06 OQ-2). (Source: TDD 06 BL-R08.)",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-243",
+      "title": "Static deletion and privacy-choices pages",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-100)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "privacy engineer",
+        "content"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-100"
+      ],
+      "satisfies": "D-042, LEGAL-REQ-030 (v1.0 part), LEGAL-REQ-045.",
+      "scope": "`https://<domain>/delete-account` and `/privacy-choices` as static pages naming the app and explaining in-app deletion and the email route; versioned legal pages published at their URLs.",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "privacy engineer",
+        "agent": "privacy-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "content-designer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-244",
+      "title": "Value-free validation for content tables",
+      "severity": "High",
+      "milestone": "M9",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-014.",
+      "scope": "a trigger that checks lengths and enums and raises without echoing the row, so Postgres error `DETAIL` never carries letter text (TDD 06 P-2). (Source: TDD 06 BL-R07.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-245",
+      "title": "Device data-protection assertions",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-130)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-130"
+      ],
+      "satisfies": "LEGAL-REQ-022(b), DATA-REQ-023.",
+      "scope": "assert the iOS Data Protection class on the database and audio files, Keychain options, wipe on deletion, app-switcher snapshot masking; record the SQLCipher \"no for v1\" decision under LEGAL-REQ-022(d). (Source: TDD 04 SEC-11 reduced.)",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-247",
+      "title": "Server restore drill and ledger replay",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-173, BL-107)",
+      "status": "blocked",
+      "mode": "pair",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-173",
+        "BL-107"
+      ],
+      "satisfies": "DATA-REQ-030, DATA-REQ-031.",
+      "scope": "restore staging to a new project, bump the restore epoch, prove clients re-upload and nothing is deleted on any device; replay the purge ledger. (Source: TDD 02 SB-20, TDD 06 BL-R10 drill.)",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-248",
+      "title": "Email-code abuse detection",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-236, BL-172)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-236",
+        "BL-172"
+      ],
+      "satisfies": "A-REQ-027 (residual), LEGAL-REQ-037. (Source: TDD 04 SEC-06; sign-in alert email P1.)",
+      "scope": "",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-249",
+      "title": "Session kill switch",
+      "severity": null,
+      "milestone": "M9",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-236)",
+      "status": "blocked",
+      "mode": "pair",
+      "owners": [
+        "security engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-236"
+      ],
+      "satisfies": "LEGAL-REQ-040.",
+      "scope": "spike `db_pre_request` epoch check and signing-key revocation; runbook and drill so all sessions end within 5 minutes. (Source: TDD 04 SEC-07, X-2.)",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "security engineer",
+        "agent": "security-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-020",
+      "title": "Typed analytics catalogue and allowlist",
+      "severity": null,
+      "milestone": "M10",
+      "timing": null,
+      "size": null,
+      "statusRaw": "ready (package exists with 39 tests; this task closes the gaps)",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "analytics engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-003, LEGAL-REQ-017, LEGAL-REQ-016, A-NFR-012, B-NFR-001, C-NFR-005, C-REQ-034, PRD-REQ-016, PRD-REQ-018.",
+      "scope": "confirm the full product catalogue (PRD.md K-01) and add purchase and family events from TDD 08 section 12 and TDD 03 4.5; never send goal keys (TDD 05 X-23); children only as ordinals and `child_count_bucket`; every property L2 in the data map.",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 6,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "analytics engineer",
+        "agent": "analytics-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-021",
+      "title": "Crash and log scrubber",
+      "severity": null,
+      "milestone": "M10",
+      "timing": null,
+      "size": null,
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "analytics engineer"
+      ],
+      "dependsOn": [
+        "BL-020"
+      ],
+      "blockedBy": [],
+      "satisfies": "LEGAL-REQ-014, A-NFR-012, DATA-REQ-004.",
+      "scope": "pure `scrubEvent()` and `scrubBreadcrumb()` in `packages/analytics` matching Sentry's `beforeSend` shape; `setUser` never called.",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "analytics engineer",
+        "agent": "analytics-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-251",
+      "title": "Consent version and pending acts",
+      "severity": null,
+      "milestone": "M10",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-020)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "analytics engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-020"
+      ],
+      "satisfies": "LEGAL-REQ-003, LEGAL-REQ-009.",
+      "scope": "the local consent store keeps `{status, version, decided_at}`; a newer major version counts as unknown; pending acts upload through `record_policy_act` on sign-in. (Source: TDD 05 X-13.)",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "analytics engineer",
+        "agent": "analytics-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-250",
+      "title": "Analytics wiring in the app",
+      "severity": null,
+      "milestone": "M10",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-020, BL-021, BL-023, BL-251; counsel approval of `analyticsConsent.*`)",
+      "status": "blocked",
+      "mode": "pair",
+      "owners": [
+        "analytics engineer",
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-020",
+        "BL-021",
+        "BL-023",
+        "BL-251"
+      ],
+      "satisfies": "PRD-REQ-016, PRD-REQ-018, LEGAL-REQ-003, LEGAL-REQ-017, A-NFR-012, D-003.",
+      "scope": "settings KV adapter, lazy PostHog only after consent, router `screen_view` with route templates, AppState flush, Sentry gated on the same consent with BL-021 scrubbers, Settings > Privacy toggle, queued `record_policy_act`. (Source: TDD 01 BL-M11.)",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "analytics engineer",
+        "agent": "analytics-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-252",
+      "title": "Analytics contract test with the real SDK",
+      "severity": null,
+      "milestone": "M10",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-250)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-250"
+      ],
+      "satisfies": "PRD checklist 6.9 (nothing queued on disk before consent).",
+      "scope": "vendor-adapter test with the real PostHog React Native SDK under jest-expo, plus a container scan after a fresh install. (Source: TDD 07 section 8, Q-11.)",
+      "source": "backlog",
+      "level": 6,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-255",
+      "title": "Accessibility helpers",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "`announce`, `useFocusOnMount`, `useIsAccessibilitySize`, `useTheme`, `useContrastPreference`. (Source: TDD 09 BL-070.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 2,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-256",
+      "title": "Token additions, including `destructive`",
+      "severity": "High",
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "type scale, control-contrast values that pass 3:1 (input borders, outline buttons, switch off-track, edit underline), target sizes, motion additions, `destructive` token, tests. (Source: TDD 09 BL-071.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 8,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-257",
+      "title": "Type tokens and `Text` variants",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-256)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-256"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 5,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-258",
+      "title": "Fonts, including Devanagari",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-030)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-030"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-259",
+      "title": "Buttons with minimum heights",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-256, BL-257)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-256",
+        "BL-257"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-260",
+      "title": "Text fields with announced errors",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-255, BL-257)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-255",
+        "BL-257"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-261",
+      "title": "Choice groups, chips, segmented control",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-256)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-256"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-262",
+      "title": "Sheets through formSheet",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-030)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-030"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-263",
+      "title": "Toggle and list rows",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-030)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-030"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 2,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-264",
+      "title": "Persistent toast; delete without a timed undo",
+      "severity": "High",
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-255)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-255"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-265",
+      "title": "Uncapped letter text with script runs",
+      "severity": "High",
+      "milestone": "M11",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-257, BL-258)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-257",
+        "BL-258"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-266",
+      "title": "AX5 stacking pass on every P0 screen",
+      "severity": "High",
+      "milestone": "M11",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-259 to BL-263)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-259",
+        "BL-263"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-267",
+      "title": "Motion rules",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-268",
+      "title": "Accessibility lint rules",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-269",
+      "title": "Component tests at default size and AX5",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-259 to BL-263, BL-278)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-259",
+        "BL-263",
+        "BL-278"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-270",
+      "title": "Native tabs",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-030)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-030"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-271",
+      "title": "Increase Contrast and Reduce Transparency variants",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-256, BL-030)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-256",
+        "BL-030"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-272",
+      "title": "Recording-without-words state",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "blocked (BL-142)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "design systems"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-142"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "design systems",
+        "agent": "design-systems-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-273",
+      "title": "Accessibility statement",
+      "severity": null,
+      "milestone": "M11",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "content",
+        "legal"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "content",
+        "agent": "content-designer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "legal-drafter"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-278",
+      "title": "Component test harness",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-030)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-030"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-275",
+      "title": "Maestro harness and nightly workflow",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-004, BL-031, BL-111)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-004",
+        "BL-031",
+        "BL-111"
+      ],
+      "satisfies": "all E2E checklist lines.",
+      "scope": "`e2e` build profile, seed, clock and config deep links (blocked in release builds), mitmproxy scripts, container and export inspectors; nightly and release workflows on macOS. (Source: TDD 07 BL-Q25, TDD 01 BL-M16.)",
+      "source": "backlog",
+      "level": 3,
+      "unblocks": 7,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-276",
+      "title": "E2E flows 01 to 04",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-275, BL-037, BL-033, BL-130, BL-050)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-275",
+        "BL-037",
+        "BL-033",
+        "BL-130",
+        "BL-050"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-277",
+      "title": "E2E flows 05 to 15",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-275 and each feature)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-275"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-044",
+      "title": "Device budget check",
+      "severity": null,
+      "milestone": "M12",
+      "timing": "every release candidate",
+      "size": null,
+      "statusRaw": "blocked (BL-040)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder",
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-040"
+      ],
+      "satisfies": "A-NFR-001, A-NFR-003, B-NFR-008, C-NFR-007, PRD 7.1, PRD 7.7.",
+      "scope": "",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-279",
+      "title": "Manual scripts and evidence",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "S",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "manual checklist lines in PRD section 6; LEGAL-REQ-051.",
+      "scope": "scripts M-01 to M-09, VoiceOver script V-1 to V-7, XCUITest accessibility audit target, `docs/qa/evidence/` template. (Source: TDD 07 BL-Q23, TDD 09 BL-088.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-280",
+      "title": "Beta programme setup",
+      "severity": null,
+      "milestone": "M12",
+      "timing": "week 6 (C0), week 10 (C1)",
+      "size": "M",
+      "statusRaw": "blocked (BL-275)",
+      "status": "blocked",
+      "mode": "pair",
+      "owners": [
+        "QA engineer",
+        "founder"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-275"
+      ],
+      "satisfies": "D-045, TDD 07 section 11.",
+      "scope": "TestFlight internal and external groups; welcome note (no screenshots of letters); content-free \"Report a problem\"; triage board with `beta` and `S0` to `S3` labels; exit criteria from ROADMAP M12. (Source: TDD 07 BL-Q29.)",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "founder"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-282",
+      "title": "Load test at 2x the 1k-family targets",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "L",
+      "statusRaw": "blocked (BL-107, BL-174)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-107",
+        "BL-174"
+      ],
+      "satisfies": "",
+      "scope": "",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-289",
+      "title": "Realistic database performance data",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "ready",
+      "status": "ready",
+      "mode": "agent",
+      "owners": [
+        "data architect"
+      ],
+      "dependsOn": [],
+      "blockedBy": [],
+      "satisfies": "",
+      "scope": "300-word letters with `stt_meta`, `machine_edits` and versions; write-path timings with triggers on; `purge_due(p_limit)` on 10k due rows. (Source: TDD 06 BL-R01, BL-R02.)",
+      "source": "backlog",
+      "level": 1,
+      "unblocks": 0,
+      "startable": true,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-284",
+      "title": "Durability drill",
+      "severity": null,
+      "milestone": "M12",
+      "timing": "every release candidate",
+      "size": "S",
+      "statusRaw": "blocked (BL-150, BL-174)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder",
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-150",
+        "BL-174"
+      ],
+      "satisfies": "D-033, PRD 7.5.",
+      "scope": "iCloud device backup then restore to a second phone; export ZIP then re-read; sign in on a new phone and re-download text (and shared audio if D-032).",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [
+        "auth"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "id": "BL-283",
+      "title": "Release engineering and the founder checklist",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-275)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "QA engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-275"
+      ],
+      "satisfies": "TDD 10 section 3; PRD 2.3.",
+      "scope": "`docs/ops/RELEASE.md` (20 lines the founder runs per release, each linking automated evidence); release workflow from `ios-v*` tags; OTA gate questions (\"does this change collection or destinations?\"); pre-submission checklist; review-notes template with a demo account and the 5.",
+      "source": "backlog",
+      "level": 4,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "QA engineer",
+        "agent": "qa-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-288",
+      "title": "Android CI build (parity watch)",
+      "severity": null,
+      "milestone": "M12",
+      "timing": null,
+      "size": "M",
+      "statusRaw": "blocked (BL-031)",
+      "status": "blocked",
+      "mode": "agent",
+      "owners": [
+        "mobile engineer"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-031"
+      ],
+      "satisfies": "",
+      "scope": "Android build in CI and the small parity fixes (`haptics.android.ts`, BackHandler in Listen, audio mode); not shipped. (Source: TDD 01 BL-M20.)",
+      "source": "backlog",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "id": "BL-286",
+      "title": "Store listing and submission",
+      "severity": null,
+      "milestone": "M13",
+      "timing": "weeks 14 to 15",
+      "size": "M",
+      "statusRaw": "blocked (BL-104, BL-231, BL-280 exit)",
+      "status": "blocked",
+      "mode": "human",
+      "owners": [
+        "founder",
+        "content"
+      ],
+      "dependsOn": [],
+      "blockedBy": [
+        "BL-104",
+        "BL-231",
+        "BL-280"
+      ],
+      "satisfies": "LEGAL-REQ-041 to LEGAL-REQ-045, LEGAL-REQ-058, D-030.",
+      "scope": "listing text (store beta line per D-030), screenshots, Lifestyle category, privacy labels entered with evidence, review notes, products attached to the version, territories = United States; submit Mon 11 Jan 2027.",
+      "source": "backlog",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "source": "overlay",
+      "blockedBy": [],
+      "dependsOn": [],
+      "owners": [
+        "founder"
+      ],
+      "satisfies": "D-051, PRD-REQ-024 to -026",
+      "scope": "Founder answers: do family letters count toward the 2 free letters; what a second child's book gets without Plus; entitlement counted on device or server (recommended server); Read together free sessions versus the allowance; first-run children (D-007, D-008, PRD-REQ-015); letters made offline past the limit; lapsed-user wording. Record in docs/DECISIONS.md.",
+      "id": "BL-223",
+      "title": "Decide the open edges of D-051",
+      "severity": "Critical",
+      "milestone": "M8",
+      "timing": "before week 5",
+      "size": "S",
+      "status": "needs-decision",
+      "statusRaw": "needs-decision (D-051 open edges 1 to 8)",
+      "mode": "human",
+      "level": 1,
+      "unblocks": 6,
+      "startable": false,
+      "assignee": {
+        "kind": "founder",
+        "agent": null
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "source": "overlay",
+      "blockedBy": [],
+      "dependsOn": [
+        "BL-223"
+      ],
+      "owners": [
+        "payments engineer"
+      ],
+      "satisfies": "PRD-REQ-024, PRD-REQ-025, PRD-REQ-026, D-051, TDD 08 14.1",
+      "scope": "packages/core/src/plan.ts: add_letter, letter_limit trigger, lettersUsed and freeLettersAllowance inputs, new truth-table rows, property test that going over the allowance never changes a read, play or export decision. Rewrites the tests that assert the old plan (first book free, free forever).",
+      "id": "BL-224",
+      "title": "Plan engine: add_letter gate and truth table [Critical]",
+      "severity": "Critical",
+      "milestone": "M8",
+      "timing": "week 4 to 5",
+      "size": "M",
+      "status": "blocked",
+      "statusRaw": "blocked (BL-223)",
+      "mode": "agent",
+      "level": 2,
+      "unblocks": 3,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "source": "overlay",
+      "blockedBy": [],
+      "dependsOn": [
+        "BL-224",
+        "BL-213"
+      ],
+      "owners": [
+        "data architect",
+        "payments engineer"
+      ],
+      "satisfies": "PRD-REQ-024, LEGAL-REQ-061, D-051",
+      "scope": "supabase/**: a letter-creation rule beside create_child; counts letters per account; raises a plus_required style error over the allowance without Plus; raw_transcript immutability untouched; free-tier DB tests rewritten. FENCED: approve-migration label and independent review.",
+      "id": "BL-225",
+      "title": "Server enforcement of the letter allowance [Critical]",
+      "severity": "Critical",
+      "milestone": "M8",
+      "timing": "week 6 to 7",
+      "size": "M",
+      "status": "blocked",
+      "statusRaw": "blocked (BL-224, BL-213)",
+      "mode": "agent",
+      "level": 5,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "payments-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "source": "overlay",
+      "blockedBy": [],
+      "dependsOn": [
+        "BL-224",
+        "BL-216"
+      ],
+      "owners": [
+        "mobile engineer",
+        "payments engineer"
+      ],
+      "satisfies": "PRD-REQ-025, LEGAL-REQ-062, D-051",
+      "scope": "On a refused save keep the letter as an unsynced local entry, show the Plus sheet once, sync when Plus starts; never delete or hide it; no recording ever lost; reword lapse strings that say you can keep writing.",
+      "id": "BL-226",
+      "title": "App save gate: keep the in-progress letter, offer Plus once [Critical]",
+      "severity": "Critical",
+      "milestone": "M8",
+      "timing": "week 8 to 9",
+      "size": "M",
+      "status": "blocked",
+      "statusRaw": "blocked (BL-224, BL-216)",
+      "mode": "agent",
+      "level": 8,
+      "unblocks": 1,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "mobile engineer",
+        "agent": "mobile-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "payments-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "source": "overlay",
+      "blockedBy": [],
+      "dependsOn": [
+        "BL-223"
+      ],
+      "owners": [
+        "data architect",
+        "mobile engineer"
+      ],
+      "satisfies": "D-035, D-051",
+      "scope": "Add the key (default 2, audit-logged) to app_config and the client cache; never awaited at launch. FENCED for the supabase part.",
+      "id": "BL-227",
+      "title": "Remote config key free_letters_allowance",
+      "severity": null,
+      "milestone": "M8",
+      "timing": "week 6",
+      "size": "S",
+      "status": "blocked",
+      "statusRaw": "blocked (BL-223)",
+      "mode": "agent",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "data architect",
+        "agent": "data-architect",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [
+        "supabase"
+      ],
+      "fenced": true,
+      "needsMigrationLabel": true
+    },
+    {
+      "source": "overlay",
+      "blockedBy": [],
+      "dependsOn": [
+        "BL-226"
+      ],
+      "owners": [
+        "analytics engineer"
+      ],
+      "satisfies": "D-003, D-051",
+      "scope": "Events: allowance reached, paywall shown at the limit, letter held on phone, Plus started from the limit. No entry text, no counts that identify content. Zero requests before consent test extended.",
+      "id": "BL-228",
+      "title": "Content-free analytics for the limit moment",
+      "severity": null,
+      "milestone": "M10",
+      "timing": "week 9 to 10",
+      "size": "S",
+      "status": "blocked",
+      "statusRaw": "blocked (BL-226)",
+      "mode": "agent",
+      "level": 9,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "analytics engineer",
+        "agent": "analytics-engineer",
+        "reviewer": "independent-reviewer",
+        "support": []
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "source": "overlay",
+      "blockedBy": [],
+      "dependsOn": [
+        "BL-223"
+      ],
+      "owners": [
+        "content",
+        "legal"
+      ],
+      "satisfies": "Apple 3.1.2(c), D-051, in-app-disclosures 2.0.0",
+      "scope": "packages/content strings for the moment of the third letter, Plus sheet, Settings > Plan and lapse; counsel-facing disclosures stay in step; every claim supported; no countdown or pressure language. Counsel sign-off is a human step (BL-104).",
+      "id": "BL-229",
+      "title": "Paywall at the limit, Plus sheet and lapse copy [High]",
+      "severity": "High",
+      "milestone": "M8",
+      "timing": "week 7 to 8",
+      "size": "M",
+      "status": "blocked",
+      "statusRaw": "blocked (BL-223)",
+      "mode": "agent",
+      "level": 2,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "agent",
+        "role": "content",
+        "agent": "content-designer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "legal-drafter"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    },
+    {
+      "source": "overlay",
+      "blockedBy": [],
+      "dependsOn": [
+        "BL-210",
+        "BL-214",
+        "BL-216"
+      ],
+      "owners": [
+        "payments engineer",
+        "mobile engineer"
+      ],
+      "satisfies": "PRD-REQ-027, D-052, docs/ops/OFFER_CODES.md",
+      "scope": "Settings > Plan row and a quiet link on the Plus sheet open StoreKit's redemption sheet, then refresh entitlement; server maps OFFER_REDEEMED and the following SUBSCRIBED or DID_RENEW to entitlements with the real end date; confirm notice windows cover an offer-code free period (unverified); confirm the purchase library exposes the sheet (unverified). Purchase SDK work is a pair task.",
+      "id": "BL-230",
+      "title": "Redeem a code row and OFFER_REDEEMED mapping [High]",
+      "severity": "High",
+      "milestone": "M8",
+      "timing": "week 10 to 12",
+      "size": "M",
+      "status": "blocked",
+      "statusRaw": "blocked (BL-210, BL-214, BL-216)",
+      "mode": "pair",
+      "level": 8,
+      "unblocks": 0,
+      "startable": false,
+      "assignee": {
+        "kind": "pair",
+        "role": "payments engineer",
+        "agent": "payments-engineer",
+        "reviewer": "independent-reviewer",
+        "support": [
+          "mobile-engineer"
+        ]
+      },
+      "touches": [],
+      "fenced": false,
+      "needsMigrationLabel": false
+    }
+  ]
+}
