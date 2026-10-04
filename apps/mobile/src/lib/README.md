@@ -72,6 +72,7 @@ Plus is StoreKit 2 on this phone through the plan engine (ADR 0013, founder deci
 
 ## Other modules
 - `age-gate.logic.ts` (pure, tested) and `age-gate.ts`: `useAgeGate()` for the root layout, `answerAgeGate`, `reopenAgeGate`.
+- `capabilities.ts`: the one build-time switch for server features (`EXPO_PUBLIC_SERVER_FEATURES=on`; off in every v1.0 eas.json profile). `serverFeaturesEnabled()`, `capabilities.{signIn,sync,coParent}`. Off: no Supabase client is constructed, `startSync()` returns at once, remote documents never fall back to the Supabase URL, sign-in, Account and Delete account are not offered, and every co-parent entry point shows coming soon (`family/entry.logic.ts`, `components/family/coparent-soon.tsx`; local flag `family.coParentNotify` via `family/coming-soon.logic.ts`). Remote config cannot change it.
 - `build-env.ts`: `APP_ENV` from `EXPO_PUBLIC_APP_ENV` (eas.json profile; `.env.development` locally) and `devShortcutsAllowed` (development profile AND `__DEV__`). Every dev bypass checks this, never `__DEV__` alone.
 - `model-files.ts`: Whisper models in Application Support, excluded from backup (ADR 0001) through `modules/scribe-files`; falls back to Documents/models without the native module.
 - `permission-copy.ts`: OS purpose strings (part of `pendingCopy`), read by `app.config.ts` at build time.
