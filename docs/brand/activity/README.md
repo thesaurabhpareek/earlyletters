@@ -19,4 +19,4 @@ Gaps, stated honestly:
 
 Files: `2026-10-03.jsonl` (43 runs).
 
-Numbering note: lane decisions are D-071 to D-081 and lane backlog tasks are BL-340 to BL-358 (renumbered after the second-round wave landed on develop).
+Numbering note: lane decisions are D-071 to D-081 and lane backlog tasks are BL-351 to BL-369 (renumbered twice: after the second-round wave and after the 4 Oct backlog consolidation; the jsonl records use the ids of their time).

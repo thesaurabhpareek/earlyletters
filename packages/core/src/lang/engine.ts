@@ -684,7 +684,7 @@ export class LanguageRules {
   /**
    * A rough sound key for names in any of this language's scripts. English
    * pack: exactly the legacy soundKey. Others romanize first, so "मीरा",
-   * "ميرا" and "Meera" share the consonants m-r.
+   * "ميرا" and "Mira" share the consonants m-r.
    */
   soundKey(text: string): string {
     let s = this.romanize(text).toLowerCase().replace(/[’‘′]/g, "'");

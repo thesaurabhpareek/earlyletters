@@ -1,0 +1,37 @@
+# First run for one child (PRD B F1): welcome, promise, the child's name with
+# today's date as birthday, the signature, finish. Parameters: CHILD_NAME
+# (default Asha), SIGNS_AS (default Mama). Fictional family only (CLAUDE.md).
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: "onboarding.step.welcome"
+- tapOn:
+    id: "onboarding.cta"
+- assertVisible:
+    id: "onboarding.step.promise"
+- tapOn:
+    id: "onboarding.cta"
+- assertVisible:
+    id: "onboarding.step.child"
+- tapOn:
+    id: "onboarding.child.name.0"
+- inputText: ${CHILD_NAME || "Asha"}
+- hideKeyboard
+- tapOn:
+    id: "onboarding.cta"
+    enabled: true
+- assertVisible:
+    id: "onboarding.step.signsAs"
+- tapOn:
+    id: "onboarding.signsAs.input"
+- inputText: ${SIGNS_AS || "Mama"}
+- hideKeyboard
+- tapOn:
+    id: "onboarding.cta"
+    enabled: true
+- assertVisible:
+    id: "onboarding.step.finish"
+- tapOn:
+    id: "onboarding.cta"
+- assertVisible:
+    id: "tonight.screen"

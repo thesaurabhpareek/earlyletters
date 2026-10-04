@@ -44,6 +44,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
+import { ordinalOf, track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
@@ -126,6 +127,8 @@ export default function Onboarding() {
         }),
       );
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
+    // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
+    for (const c of created) track('child_added', { mode: expecting ? 'due_date' : 'birthday', ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
     haptic('success');
     router.replace('/');
   };

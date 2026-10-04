@@ -12,4 +12,4 @@ Five reviewers with no stake in the work, each reading only the repository and n
 
 The design screenshots (5 MB) are kept out of `develop`. They are on the branch `archive/brand-explorations-2026-10-03` under `docs/reviews/2026-10-03/design-shots/`.
 
-Numbering note: decision and backlog ids in these reviews were updated after they were written. The lane drafted D-051 to D-064 and BL-340 to BL-358; they are now D-071 to D-081 (see the "third round" section of docs/DECISIONS.md) and BL-340 to BL-358.
+Numbering note: decision and backlog ids in these reviews were updated after they were written. The lane drafted D-051 to D-064 and BL-340 to BL-358; they are now D-071 to D-081 (see the "third round" section of docs/DECISIONS.md) and BL-351 to BL-369.

@@ -1,0 +1,9 @@
+# Book tab, then the gear: Settings home (C-REQ-016: every row within 2 taps of here).
+appId: ${APP_ID}
+---
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.settings"
+- assertVisible:
+    id: "settings.screen"

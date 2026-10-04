@@ -14,7 +14,7 @@ import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PencilSimpleLineIcon } from 'phosphor-react-native/src/icons/PencilSimpleLine';
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +31,9 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { deleteEntry, getActiveChild, getChild, getEntry, setEntryInBook, undeleteEntry, type Entry } from '@/lib/store';
 import { provenanceOf } from '@/components/book/chapters';
+import { bookCopy } from '@/components/book/copy';
+import { letterWords } from '@/components/book/letter-words.logic';
+import { track } from '@/lib/analytics/track';
 import { PrivateChip } from '@/components/book/letter-card';
 import { letterDateline } from '@/lib/dates';
 import { ReadingSizeSheet } from '@/components/book/reading-size-sheet';
@@ -57,6 +60,12 @@ function Letter() {
   const [sizeOpen, setSizeOpen] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [deleted, setDeleted] = useState<Entry | null>(null);
+
+  // letter_opened once per open (who wrote it, relative to you, and whether it has a recording; never which letter).
+  useEffect(() => {
+    const e = getEntry(id);
+    if (e) track('letter_opened', { author_relation: isOwnEntry(e) ? 'self' : 'other_parent', has_audio: !!e.audioUri });
+  }, [id]);
 
   const headerRight = () => (
     <Pressable
@@ -90,6 +99,7 @@ function Letter() {
           message={copy.settings.delete.entryToast}
           onDismiss={() => router.back()}
           onUndo={() => {
+            track('letter_deleted', { action: 'restored', destination: deleted.inBook ? 'book' : 'private' });
             undeleteEntry(deleted.id);
             setEntry(getEntry(deleted.id));
             setDeleted(null);
@@ -118,7 +128,7 @@ function Letter() {
   const spoken = entry.captureMode !== 'typed';
   const own = isOwnEntry(entry);
   const canShowOriginal = own && spoken && entry.rawTranscript !== entry.finalText;
-  const waiting = entry.transcriptStatus === 'waiting';
+  const words = letterWords(entry);
   const text = showOriginal ? entry.rawTranscript : entry.finalText;
   const crossFade = FadeIn.duration(150).reduceMotion(ReduceMotion.Never);
 
@@ -133,6 +143,7 @@ function Letter() {
   const remove = () => {
     deleteEntry(entry.id); // tombstone; restorable
     haptic('warning');
+    track('letter_deleted', { action: 'deleted', destination: entry.inBook ? 'book' : 'private' });
     // Undo stays until the parent taps Undo, Close or Back: no timed navigation (TDD 09 A11Y-F03).
     setDeleted(entry);
   };
@@ -157,9 +168,10 @@ function Letter() {
             </Text>
           )}
           <Animated.View key={`${size}:${showOriginal}`} entering={crossFade}>
-            {waiting ? (
+            {words !== 'words' && !showOriginal ? (
+              // Waiting for words, or nobody spoke: a calm italic note, never an empty page.
               <Text variant="signature" scale={scale} tone="muted">
-                {pendingCopy.book.waitingForWords}
+                {words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke}
               </Text>
             ) : (
               <Text variant="letterBody" scale={scale} selectable>
@@ -214,6 +226,7 @@ function Letter() {
         onChange={(v) => {
           setSize(v);
           setReadingSize(v);
+          track('settings_changed', { key: 'reading_size' });
         }}
         onClose={() => setSizeOpen(false)}
       />

@@ -1,11 +1,13 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, TextInput, View, useColorScheme } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
+import { Toggle } from '@/components/platform/toggle';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { copy, fill } from '@/lib/copy';
+import { ordinalOf, track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { isoOf, longDate } from '@/lib/dates';
 import { devShortcutsAllowed } from '@/lib/build-env';
@@ -53,6 +55,7 @@ export function AddChildForm() {
     const signsAs = getActiveChild()?.signsAs ?? '';
     const child = addChild({ name: trimmed, birthday: expecting ? null : iso, dueDate: expecting ? iso : null, signsAs });
     setActiveChildId(child.id);
+    track('child_added', { mode: expecting ? 'due_date' : 'birthday', ordinal: ordinalOf(child.id), in_first_run: false, added_together: false });
     haptic('success');
     router.dismissTo('/book');
   };
@@ -92,15 +95,14 @@ export function AddChildForm() {
             <Text className="text-base text-foreground">{o.expectingLabel}</Text>
             <Text className="text-sm text-muted-foreground">{o.expectingHelp}</Text>
           </View>
-          <Switch
+          <Toggle
+            label={o.expectingLabel}
+            description={o.expectingHelp}
             value={expecting}
             onValueChange={(v) => {
-              haptic('tap');
               setExpecting(v);
               setDate(new Date());
             }}
-            trackColor={{ true: c.accent, false: c.line }}
-            accessibilityLabel={o.expectingLabel}
           />
         </View>
 

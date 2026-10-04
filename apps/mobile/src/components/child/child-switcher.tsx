@@ -1,21 +1,26 @@
-// android: same (RN Modal renders as a bottom panel on both platforms)
+// android: same (ui/sheet is @gorhom/bottom-sheet on both platforms)
+/**
+ * "For Asha" with a chevron atop the Book (PRD B F2.2). A second child's book is
+ * three taps away or fewer. The picker is the app's one `Sheet` with a radio list
+ * (ChoiceGroup "list"), so it looks, moves and reads like Reading Size and Whose book.
+ * The eyebrow uses the Text `caps` style: VoiceOver hears "For Asha", not letters.
+ */
 import { router } from 'expo-router';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
-import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PlusIcon } from 'phosphor-react-native/src/icons/Plus';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, View, useColorScheme } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { tokens } from '@scribe/design-tokens';
+import { Pressable } from 'react-native';
+import { Button } from '@/components/ui/button';
+import { ChoiceGroup } from '@/components/ui/choice-group';
+import { Sheet } from '@/components/ui/sheet';
 import { Text } from '@/components/ui/text';
+import { useTheme } from '@/lib/a11y';
+import { ordinalOf, track } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
-import { haptic } from '@/lib/haptics';
 import { useChildren } from './use-children';
 
-/** "For Asha" with a chevron atop the Book (PRD B F2.2). A second child's book is 3 taps away or fewer. */
 export function ChildSwitcher() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
-  const insets = useSafeAreaInsets();
+  const { c } = useTheme();
   const { children, active, select } = useChildren();
   const [open, setOpen] = useState(false);
   const s = copy.children.switcher;
@@ -32,51 +37,36 @@ export function ChildSwitcher() {
         accessibilityHint={s.hint}
         hitSlop={8}
         className="min-h-11 flex-row items-center gap-1 self-start">
-        <Text maxFontSizeMultiplier={1.5} className="text-xs font-medium tracking-[1.5px] text-muted-foreground">
-          {fill(s.label, { child: active.name }).toUpperCase()}
+        <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
+          {fill(s.label, { child: active.name })}
         </Text>
         <CaretDownIcon size={14} color={c.textMuted} weight="bold" />
       </Pressable>
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={close} accessibilityViewIsModal>
-        <Pressable className="flex-1 bg-black/30" onPress={close} accessibilityLabel={copy.common.closeButton} accessibilityRole="button" />
-        <View className="max-h-[70%] rounded-t-[28px] bg-card px-5 pt-3" style={{ paddingBottom: insets.bottom + 16 }}>
-          <View className="mb-3 h-1 w-10 self-center rounded-full bg-border" />
-          <Text role="heading" className="mb-2 font-serif text-2xl text-foreground">
-            {s.title}
-          </Text>
-          <ScrollView>
-            {children.map((ch) => {
-              const selected = ch.id === active.id;
-              return (
-                <Pressable
-                  key={ch.id}
-                  onPress={() => {
-                    haptic('tap');
-                    select(ch.id);
-                    close();
-                  }}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  className="min-h-14 flex-row items-center justify-between border-b border-border py-3">
-                  <Text className="flex-1 text-lg text-foreground">{fill(copy.book.title, { child: ch.name })}</Text>
-                  {selected && <CheckIcon size={20} color={c.accent} weight="bold" />}
-                </Pressable>
-              );
-            })}
-            <Pressable
-              onPress={() => {
-                close();
-                router.push('/settings/children/new');
-              }}
-              accessibilityRole="button"
-              className="min-h-14 flex-row items-center gap-2 py-3">
-              <PlusIcon size={20} color={c.accent} weight="bold" />
-              <Text className="text-lg font-medium text-primary">{s.addButton}</Text>
-            </Pressable>
-          </ScrollView>
-        </View>
-      </Modal>
+      <Sheet open={open} onClose={close} title={s.title}>
+        <ChoiceGroup
+          label={s.title}
+          layout="list"
+          className="-mx-4"
+          value={active.id}
+          options={children.map((ch) => ({ value: ch.id, label: fill(copy.book.title, { child: ch.name }) }))}
+          onChange={(id) => {
+            select(id);
+            track('child_switched', { ordinal: ordinalOf(id), surface: 'book' });
+          }}
+          onSelect={close}
+        />
+        <Button
+          variant="quiet"
+          className="self-start px-0"
+          onPress={() => {
+            close();
+            router.push('/settings/children/new');
+          }}>
+          <PlusIcon size={20} color={c.accent} weight="bold" />
+          <Text>{s.addButton}</Text>
+        </Button>
+      </Sheet>
     </>
   );
 }
