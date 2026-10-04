@@ -6,7 +6,7 @@
   "note": "The letter settles into a card with \"Added to Asha's book\". Review closes by itself or on tap.",
   "from": "J06-09",
   "shot": "screens/J06-10.png",
-  "route": "/",
+  "route": "/review",
   "viewport": {
     "width": 402,
     "height": 874
