@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const resend = vi.hoisted(() => ({
   create: vi.fn(),
+  send: vi.fn(),
   segmentsAdd: vi.fn(),
   constructed: vi.fn(),
 }));
@@ -17,6 +18,7 @@ vi.mock('resend', () => ({
       resend.constructed(key);
     }
     contacts = { create: resend.create, segments: { add: resend.segmentsAdd } };
+    emails = { send: resend.send };
   },
 }));
 
@@ -59,6 +61,7 @@ function loggedText(spies: ReturnType<typeof consoleSpies>): string {
 
 beforeEach(() => {
   resend.create.mockReset().mockResolvedValue({ data: { id: 'c_1', object: 'contact' }, error: null, headers: null });
+  resend.send.mockReset().mockResolvedValue({ data: { id: 'e_1' }, error: null, headers: null });
   resend.segmentsAdd.mockReset().mockResolvedValue({ data: { id: 'c_1' }, error: null, headers: null });
   resend.constructed.mockReset();
   vi.stubEnv('RESEND_API_KEY', 're_test_key');
@@ -465,5 +468,44 @@ describe('API key repair and format check', () => {
     const text = loggedText(spies);
     expect(text).toContain('not in the expected format');
     expect(text).not.toContain('re_abc');
+  });
+});
+
+describe('welcome email', () => {
+  it('sends one short hello from the verified domain after a sign-up', async () => {
+    const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
+    expect(response.status).toBe(200);
+    expect(resend.send).toHaveBeenCalledTimes(1);
+    const [payload] = resend.send.mock.calls[0] as [Record<string, unknown>];
+    expect(payload.to).toEqual([NORMALISED]);
+    expect(payload.from).toBe('Early Letters <hello@earlyletters.com>');
+    expect(payload.replyTo).toBe('hello@earlyletters.com');
+    expect(String(payload.subject)).toContain('You are on the list');
+    expect(String(payload.html)).toContain('<h1');
+    expect(String(payload.text)).toContain('You are on the list.');
+  });
+
+  it('does not send for a bot (honeypot) or an invalid address', async () => {
+    await call(post({ email: EMAIL, company: 'Acme', t: 5000 }));
+    await call(post({ email: 'not-an-address', company: '', t: 5000 }));
+    expect(resend.send).not.toHaveBeenCalled();
+  });
+
+  it('keeps the sign-up when the send fails, and logs no address', async () => {
+    resend.send.mockResolvedValue({ data: null, error: { name: 'validation_error', statusCode: 422, message: `bad ${NORMALISED}` }, headers: null });
+    const spies = consoleSpies();
+    const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
+    expect(response.status).toBe(200);
+    expect(resend.create).toHaveBeenCalledTimes(1);
+    const text = loggedText(spies);
+    expect(text).toContain('welcome email not sent');
+    expect(text).not.toContain(NORMALISED);
+  });
+
+  it('keeps the sign-up when the send throws', async () => {
+    resend.send.mockRejectedValue(new TypeError('boom'));
+    consoleSpies();
+    const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
+    expect(response.status).toBe(200);
   });
 });

@@ -16,7 +16,7 @@
 import type { NotifyResult } from './client';
 import { normalizeEmail } from './email';
 import { logNotify } from './log';
-import { subscribe } from './provider';
+import { sendWelcome, subscribe } from './provider';
 import { clientKey, createRateLimiter } from './rate-limit';
 
 type ErrorCode = Extract<NotifyResult, { ok: false }>['error'];
@@ -123,6 +123,7 @@ export async function handleNotify(request: Request): Promise<Response> {
     if (!ceiling.allowed) return fail('rate_limited', ceiling.retryAfterSeconds);
 
     const outcome = await subscribe(email, config);
+    if (outcome === 'ok') await sendWelcome(email, config);
     return outcome === 'ok' ? ok() : fail(outcome, outcome === 'rate_limited' ? 30 : undefined);
   } catch (error) {
     // The error code of the underlying cause (for example ERR_INVALID_CHAR): a fixed vocabulary, never message text.
