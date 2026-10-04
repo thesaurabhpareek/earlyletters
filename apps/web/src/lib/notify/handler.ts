@@ -122,8 +122,8 @@ export async function handleNotify(request: Request): Promise<Response> {
     const ceiling = providerCeiling.hit('provider');
     if (!ceiling.allowed) return fail('rate_limited', ceiling.retryAfterSeconds);
 
-    const { outcome, contactId } = await subscribe(email, config);
-    if (outcome === 'ok') await sendWelcome(email, config, contactId);
+    const { outcome, contactId, existing } = await subscribe(email, config);
+    if (outcome === 'ok' && !existing) await sendWelcome(email, config, contactId);
     return outcome === 'ok' ? ok() : fail(outcome, outcome === 'rate_limited' ? 30 : undefined);
   } catch (error) {
     // The error code of the underlying cause (for example ERR_INVALID_CHAR): a fixed vocabulary, never message text.

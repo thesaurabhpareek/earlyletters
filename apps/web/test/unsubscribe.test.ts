@@ -71,6 +71,15 @@ describe('POST /api/unsubscribe', () => {
     expect(resend.update).toHaveBeenCalledWith({ id: ID, unsubscribed: true }, expect.anything());
   });
 
+  it('a mail app one-click request (form-encoded body, token in the query) is answered 200, not a redirect', async () => {
+    const { makeUnsubscribeToken } = await tokens();
+    const token = makeUnsubscribeToken(ID, SECRET);
+    const res = await handle(post(`https://earlyletters.com/api/unsubscribe?t=${token}`, { form: 'List-Unsubscribe=One-Click' }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('location')).toBeNull();
+    expect(resend.update).toHaveBeenCalledWith({ id: ID, unsubscribed: true }, expect.anything());
+  });
+
   it('the page form: token in the body, redirect back to the done page', async () => {
     const { makeUnsubscribeToken } = await tokens();
     const token = makeUnsubscribeToken(ID, SECRET) as string;

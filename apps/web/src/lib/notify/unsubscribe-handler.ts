@@ -27,12 +27,12 @@ export async function handleUnsubscribe(request: Request): Promise<Response> {
     if (!isSameOrigin(request)) return new Response('Bad request', { status: 400, headers: NO_STORE });
 
     const url = new URL(request.url);
-    const isForm = (request.headers.get('content-type') ?? '').toLowerCase().startsWith('application/x-www-form-urlencoded');
-    let token = url.searchParams.get('t');
-    if (isForm) {
-      const form = new URLSearchParams(await request.text());
-      token = form.get('t') ?? token;
-    }
+    const isFormEncoded = (request.headers.get('content-type') ?? '').toLowerCase().startsWith('application/x-www-form-urlencoded');
+    const form = new URLSearchParams(isFormEncoded ? await request.text() : '');
+    // A mail app's one-click request (RFC 8058) is also form-encoded: its body is `List-Unsubscribe=One-Click` and the
+    // token is in the query. Only the confirm page's form carries the token in the body, and only it gets a redirect.
+    const isForm = isFormEncoded && form.has('t');
+    const token = form.get('t') ?? url.searchParams.get('t');
 
     const back = (query: string) => new Response(null, { status: 303, headers: { ...NO_STORE, Location: `/unsubscribe?${query}` } });
 

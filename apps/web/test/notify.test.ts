@@ -64,7 +64,7 @@ function loggedText(spies: ReturnType<typeof consoleSpies>): string {
 beforeEach(() => {
   resend.create.mockReset().mockResolvedValue({ data: { id: 'contact-0001-created', object: 'contact' }, error: null, headers: null });
   resend.send.mockReset().mockResolvedValue({ data: { id: 'e_1' }, error: null, headers: null });
-  resend.get.mockReset().mockResolvedValue({ data: { id: 'contact-0001-existing' }, error: null, headers: null });
+  resend.get.mockReset().mockResolvedValue({ data: null, error: { name: 'not_found', statusCode: 404, message: 'not found' }, headers: null });
   resend.update.mockReset().mockResolvedValue({ data: { id: 'c_1' }, error: null, headers: null });
   resend.segmentsAdd.mockReset().mockResolvedValue({ data: { id: 'c_1' }, error: null, headers: null });
   resend.constructed.mockReset();
@@ -529,11 +529,31 @@ describe('welcome email unsubscribe link', () => {
     expect(payload.text).toContain('Unsubscribe: https://earlyletters.com/unsubscribe?t=');
   });
 
-  it('uses the stored contact for an address that was already on the list', async () => {
-    resend.create.mockResolvedValue({ data: null, error: { name: 'validation_error', statusCode: 409, message: 'exists' }, headers: null });
-    await call(post({ email: EMAIL, company: '', t: 5000 }));
-    const [payload] = resend.send.mock.calls[0] as [{ html: string }];
-    expect(payload.html).toContain('unsubscribe?t=contact-0001-existing.');
+  it('gives an address that is already on the list no second welcome email', async () => {
+    resend.get.mockResolvedValue({ data: { id: 'contact-0001-existing', unsubscribed: false }, error: null, headers: null });
+    const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
+    expect(response.status).toBe(200);
+    expect(resend.create).not.toHaveBeenCalled();
+    expect(resend.segmentsAdd).toHaveBeenCalledTimes(1);
+    expect(resend.send).not.toHaveBeenCalled();
+  });
+
+  it('leaves an address that has unsubscribed alone, with the same answer as anyone else', async () => {
+    resend.get.mockResolvedValue({ data: { id: 'contact-0001-existing', unsubscribed: true }, error: null, headers: null });
+    const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(resend.create).not.toHaveBeenCalled();
+    expect(resend.segmentsAdd).not.toHaveBeenCalled();
+    expect(resend.send).not.toHaveBeenCalled();
+  });
+
+  it('still saves and welcomes when the lookup fails', async () => {
+    resend.get.mockRejectedValue(new Error('network'));
+    const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
+    expect(response.status).toBe(200);
+    expect(resend.create).toHaveBeenCalledTimes(1);
+    expect(resend.send).toHaveBeenCalledTimes(1);
   });
 
   it('falls back to a mailto link when no secret is set, and still sends', async () => {
