@@ -53,6 +53,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha".
 
 ## Branches and commits
-- `main` is always releasable. Work on short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `exp/<what>` (experiments), `docs/<what>`.
+- `develop` is the integration branch and always green; `main` is live (website and tagged releases). Every change is a PR into `develop`. Full rules: `docs/DEVELOPMENT.md`.
+- Short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `test/<what>`, `qa/<what>`, `exp/<what>` (experiments), `docs/<what>`.
 - One concern per pull request. Database changes ship as a new migration file; never edit a migration that has been applied.
 - Release tags: `ios-v<major>.<minor>.<patch>`.
