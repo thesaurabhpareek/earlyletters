@@ -1,8 +1,8 @@
-# ADR 0017: An engineering compendium owned by five steward agents
+# ADR 0021: An engineering compendium owned by five steward agents
 
 - **Status:** Proposed, 2026-10-03 (founder asked for engineering process and principles that become the foundation of all future work).
 - **Deciders:** founder.
-- **Depends on:** ADR 0016 (handoffs, steward kind, trusted markers).
+- **Depends on:** ADR 0020 (handoffs, steward kind, trusted markers).
 - **Related:** `docs/engineering/`, `agents/roster.json`, `.claude/agents/{principal-architect,data-steward,security-architect,compliance-engineer,ai-eng-lead}.md`.
 
 ## Context

@@ -12,7 +12,7 @@ applies_to: CLAUDE.md, docs/agents/**, .claude/agents/**, agents/**, scripts/age
 
 ## Purpose
 
-Almost every line in this repo is written by an agent, mostly on open-weight models (DeepSeek V4.1 Flash; GLM-5.2 for the red team, ADR 0015), and one founder reviews it all. This chapter sets how agents are instructed, given context, shaped into tasks, checked and measured, so their output stays small, verifiable and faithful to the constitution. Harness mechanics live in `docs/agents/`; this chapter is the standard they must meet. Sources: `docs/engineering/research/ai-engineering-sources.md` (ids K1 to D1 below).
+Almost every line in this repo is written by an agent, mostly on open-weight models (DeepSeek V4.1 Flash; GLM-5.2 for the red team, ADR 0019), and one founder reviews it all. This chapter sets how agents are instructed, given context, shaped into tasks, checked and measured, so their output stays small, verifiable and faithful to the constitution. Harness mechanics live in `docs/agents/`; this chapter is the standard they must meet. Sources: `docs/engineering/research/ai-engineering-sources.md` (ids K1 to D1 below).
 
 ## Principles
 
@@ -83,7 +83,7 @@ Almost every line in this repo is written by an agent, mostly on open-weight mod
 
 **AIE-R23 (MUST)** Agent quality is measured weekly per agent from receipts and GitHub: runs, cost per run, cost per merged PR, PR acceptance rate (merged over merged plus closed), red-team fix-first rate, findings per PR, revert rate within 14 days, cap-hit rate, and runs with no journal entry. *Why:* AI raises throughput and instability together (D1); volume alone hides it. *Enforced by:* receipts carry cost, turns, minutes and model (`scripts/agents/receipt.mjs`, pending PR #4); not yet: AIE-G8 (tokens, PR link, aggregation).
 
-**AIE-R24 (MUST)** A model or engine change is a roster PR with an eval note: the last 10 runs' metrics, the reason, and the result on at least three recent merged tasks replayed on the new model. Proposed triggers to move an agent to a stronger model: acceptance under 50% over 10 PRs, fix-first over 50%, or cap hits over 20% of runs. *Why:* vendor benchmarks are self-reported (ADR 0015); our receipts are the evidence. *Enforced by:* founder approval of `agents/roster.json` (CODEOWNERS, pending PR #4); review (ai-eng-lead).
+**AIE-R24 (MUST)** A model or engine change is a roster PR with an eval note: the last 10 runs' metrics, the reason, and the result on at least three recent merged tasks replayed on the new model. Proposed triggers to move an agent to a stronger model: acceptance under 50% over 10 PRs, fix-first over 50%, or cap hits over 20% of runs. *Why:* vendor benchmarks are self-reported (ADR 0019); our receipts are the evidence. *Enforced by:* founder approval of `agents/roster.json` (CODEOWNERS, pending PR #4); review (ai-eng-lead).
 
 ## How to apply it
 
@@ -133,7 +133,7 @@ Only the founder grants one, in the PR body for a one-off (`Exception: AIE-R13, 
 
 ## References
 
-Repo: `CLAUDE.md`; `docs/agents/OPERATING_MODEL.md` sections 3, 4, 6, 8, 9; `docs/agents/HARNESS.md` sections 3, 8, 9; `docs/agents/CHARTER_TEMPLATE.md`; `docs/agents/BRIEF-2026-10-03.md` decision 7; ADR 0011, ADR 0014, ADR 0015; D-041; `scripts/agents/{brief,dispatch,lib,receipt,run-opencode,check}.mjs`; `packages/core/test/verify.fuzz.test.ts`; findings PINF-01, PINF-03, DOC-04, DOC-14, MOB-13, CI-01, CORE-08; chapters 01 (CODE-R02, CODE-R03, CODE-R05) and 06 (SEC-R21).
+Repo: `CLAUDE.md`; `docs/agents/OPERATING_MODEL.md` sections 3, 4, 6, 8, 9; `docs/agents/HARNESS.md` sections 3, 8, 9; `docs/agents/CHARTER_TEMPLATE.md`; `docs/agents/BRIEF-2026-10-03.md` decision 7; ADR 0011, ADR 0018, ADR 0019; D-041; `scripts/agents/{brief,dispatch,lib,receipt,run-opencode,check}.mjs`; `packages/core/test/verify.fuzz.test.ts`; findings PINF-01, PINF-03, DOC-04, DOC-14, MOB-13, CI-01, CORE-08; chapters 01 (CODE-R02, CODE-R03, CODE-R05) and 06 (SEC-R21).
 
 External (all checked 2026-10-03; details in `docs/engineering/research/ai-engineering-sources.md`):
 - K1 https://x.com/karpathy/status/1886192184808149383

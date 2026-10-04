@@ -1,6 +1,6 @@
 # Engineering compendium
 
-How we build Early Letters: the standards every engineer and every agent follows, owned by five steward agents, applied to every PR, and kept true to the code. Adopted 2026-10-03 (ADR 0017).
+How we build Early Letters: the standards every engineer and every agent follows, owned by five steward agents, applied to every PR, and kept true to the code. Adopted 2026-10-03 (ADR 0021).
 
 **Start with `PRINCIPLES.md`.** It is one page, every agent run loads it, and each line names the rules behind it. Open a chapter only when your work touches its paths, and search it by rule id.
 

@@ -25,7 +25,7 @@ Seeded on 3 Oct 2026 during the compendium drafting run. Facts verified on branc
 - Roster: 19 agents before the five stewards; red-team on `openrouter/z-ai/glm-5.2`, everyone else on the DeepSeek default.
 
 ## Decisions and constraints I must respect
-- ADR 0014 (plain-code dispatcher, agents never merge), ADR 0015 (open-weight default; red team on a different model family).
+- ADR 0018 (plain-code dispatcher, agents never merge), ADR 0019 (open-weight default; red team on a different model family).
 - D-041: `supabase/**` and auth need an independent review run and the founder's `approve-migration` label.
 - PINF-01 (no write connectors), PINF-02 (agent identity separate from the founder), PINF-03 (prompt injection).
 - Only the founder edits `agents/roster.json`, `CLAUDE.md`, `OPERATING_MODEL.md`, workflows.

@@ -39,7 +39,7 @@ How sources were read: `x.com` and some vendor pages refused the fetch tool, so 
 - Agents need ground truth from the environment at each step (tool results, code execution), checkpoints for human feedback, and stopping conditions such as an iteration cap.
 - Design the agent-computer interface: "poka-yoke" tools so mistakes are hard (absolute paths fixed a class of errors).
 - Quote: "finding the simplest solution possible, and only increasing complexity when needed".
-- Supports: AIE-R18 (stop conditions), AIE-R24, the plain-code dispatcher (ADR 0014).
+- Supports: AIE-R18 (stop conditions), AIE-R24, the plain-code dispatcher (ADR 0018).
 
 **A2. Effective context engineering for AI agents.** Anthropic Applied AI team, 29 Sep 2025. https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents. Checked 2026-10-03.
 - Context rot: recall falls as token count grows, so context is a finite attention budget.
@@ -64,7 +64,7 @@ How sources were read: `x.com` and some vendor pages refused the fetch tool, so 
 - Supports: AIE-R01, AIE-R02.
 
 **C2. OpenCode rules.** OpenCode docs. https://opencode.ai/docs/rules/. Checked 2026-10-03.
-- OpenCode (our default engine, ADR 0015) loads `AGENTS.md`, and falls back to `CLAUDE.md` only when no `AGENTS.md` exists.
+- OpenCode (our default engine, ADR 0019) loads `AGENTS.md`, and falls back to `CLAUDE.md` only when no `AGENTS.md` exists.
 - Quote: "only AGENTS.md is used" (when both exist).
 - Supports: AIE-R02 (a stray `AGENTS.md` would silently drop the constitution from open-weight runs).
 
@@ -155,4 +155,4 @@ How sources were read: `x.com` and some vendor pages refused the fetch tool, so 
 1. **TDD inside the agent loop.** Karpathy (K4) and Beck (B1) recommend tests first; Boeckeler's small eval (F3) found no clear benefit and recommends mutation testing on regression suites instead. Chapter 09 asks for tests stated from the requirement, first or alongside, and does not mandate red-green ritual.
 2. **How close the human stays.** Karpathy (K4) says watch them like a hawk; Morris (F4) says inspecting every line makes the human the bottleneck and the harness should do more. Our setup splits it: the harness checks everything; the founder reviews small PRs plus the red-team verdict.
 3. **Autonomy trend.** K4 reports a jump in agent coherence around December 2025, while DORA (D1) finds rising instability alongside rising throughput. We raise autonomy per agent only on measured receipts (AIE-R24), not on general claims.
-4. **Model evidence.** Vendor benchmarks for DeepSeek and GLM are self-reported (ADR 0015, HARNESS section 3). None of these sources evaluate open-weight models in a harness like ours; our receipts are the only evidence that counts.
+4. **Model evidence.** Vendor benchmarks for DeepSeek and GLM are self-reported (ADR 0019, HARNESS section 3). None of these sources evaluate open-weight models in a harness like ours; our receipts are the only evidence that counts.
