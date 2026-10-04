@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; the next block starts at BL-350.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Added from the product agent's reconcile PR (#45), each checked free on develop: BL-123, BL-124 (trademark), BL-152, BL-153 (copy for the v1.0 scope), BL-180 (passkeys, needs a decision), BL-226 and BL-253 (already done, recorded for traceability). That PR's other new ids were not carried over: BL-179 (Google sign-in is in BL-053 and D-054), BL-223 (answered by BL-342), BL-224, BL-225 and BL-246 (the legal documents already match D-053, D-059 on develop), and its v1.1 rows BL-315, BL-316, BL-318 and BL-322 (develop defers those to FUTURE ids; its BL-322 would have collided with the security follow-up above). Free for later splits: BL-125 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-155, BL-161 to BL-169, BL-179, BL-181 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-225, BL-227 to BL-230, BL-246, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; the next block starts at BL-350.
 
 ---
 
@@ -39,13 +39,13 @@ Severity tags: **[Critical]** blocks launch or makes a published statement false
 
 | Status | v1.0 tasks |
 |---|---|
-| Done in code | BL-003, BL-004, BL-010 to BL-014, BL-020, BL-023, BL-024, BL-031, BL-033 to BL-035, BL-036, BL-037, BL-040, BL-050 to BL-052, BL-054, BL-100, BL-111 to BL-114, BL-116, BL-120, BL-121, BL-130, BL-137, BL-140 to BL-143, BL-150, BL-151, BL-154, BL-157 to BL-160, BL-170, BL-172 to BL-174, BL-176, BL-215, BL-216, BL-219, BL-220, BL-233 to BL-235, BL-238, BL-240, BL-250, BL-255 to BL-264, BL-267, BL-289 |
+| Done in code | BL-003, BL-004, BL-010 to BL-014, BL-020, BL-023, BL-024, BL-031, BL-033 to BL-035, BL-036, BL-037, BL-040, BL-050 to BL-052, BL-054, BL-100, BL-111 to BL-114, BL-116, BL-120, BL-121, BL-130, BL-137, BL-140 to BL-143, BL-150, BL-151, BL-154, BL-157 to BL-160, BL-170, BL-172 to BL-174, BL-176, BL-215, BL-216, BL-219, BL-220, BL-233 to BL-235, BL-238, BL-240, BL-250, BL-255 to BL-264, BL-267, BL-289, BL-226, BL-253 |
 | Done in part (remainder named in the task) | BL-115 (rest is BL-334), BL-118 (rest is T5-08), BL-122, BL-134, BL-136, BL-156, BL-171 (rest is BL-330), BL-236, BL-237, BL-239, BL-241, BL-242 |
 | In progress this wave | BL-021 and BL-266 (mobile-polish), BL-275 to BL-277, BL-279, BL-283 (qa-e2e), BL-331 to BL-333 (db-followup, `20261005000000` builds and applies), legal alignment (`docs/legal/**`, legal-alignment). Done this wave: the security review (`docs/reviews/2026-10-04-security-privacy.md`) |
-| Needs the founder | BL-005, BL-015, BL-030, BL-043, BL-044, BL-053, BL-101 to BL-104, BL-106 to BL-109, BL-122, BL-135, BL-177, BL-222, BL-245, BL-247, BL-280, BL-284, BL-286, BL-335 to BL-337, BL-339, BL-346 |
-| Ready for agents (v1.0 first) | **BL-330, BL-347, BL-322, BL-342, BL-349** (the five that gate C1 or make a published statement true), then BL-323 to BL-326, BL-334, BL-341, BL-001, BL-002, BL-110, BL-117, BL-119, BL-148, BL-244, BL-251, BL-252, BL-265, BL-268, BL-270, BL-272, BL-273, BL-278; v1.0.1: BL-343, BL-344 |
+| Needs the founder | BL-005, BL-015, BL-030, BL-043, BL-044, BL-053, BL-101 to BL-104, BL-106 to BL-109, BL-122, BL-135, BL-177, BL-222, BL-245, BL-247, BL-280, BL-284, BL-286, BL-335 to BL-337, BL-339, BL-346, BL-123 (trademark, FT-28 and FT-35) |
+| Ready for agents (v1.0 first) | **BL-330, BL-347, BL-322, BL-342, BL-349** (the five that gate C1 or make a published statement true), then BL-323 to BL-326, BL-334, BL-341, BL-001, BL-002, BL-110, BL-117, BL-119, BL-148, BL-244, BL-251, BL-252, BL-265, BL-268, BL-270, BL-272, BL-273, BL-278; v1.0.1: BL-343, BL-344, BL-124, BL-152, BL-153 |
 | Blocked | BL-221 (BL-275), BL-243 (website thread), BL-269 (BL-278), BL-340 (first preview build) |
-| Needs a decision | BL-338 (Q-009), BL-348 (invite link format, FT-04), BL-345 (counsel, FT-47) |
+| Needs a decision | BL-338 (Q-009), BL-348 (invite link format, FT-04), BL-345 (counsel, FT-47), BL-180 (passkeys at v1.0 or later) |
 | Superseded or deferred | Everything in M6 and M7, most of M8's server half, BL-016, BL-022, BL-041, BL-105, BL-118 (rest), BL-144 to BL-147, BL-175, BL-178, BL-231, BL-232, BL-248, BL-249, BL-271, BL-282, BL-288, the v1.1 table |
 
 ### Critical path to submission, in order
@@ -121,6 +121,18 @@ Exact steps, time, cost and deadlines are in `docs/FOUNDER_TASKS.md`. This secti
 
 #### BL-109 Recruit the C1 beta families
 - Status: needs-founder (FT-26). Coverage (D-045, updated for D-055): two or more co-parent pairs, at least one Hindi and one Spanish speaker, one other non-English language, one VoiceOver or large-text user, one set of twins. Grandparents are not in v1.0.
+
+#### BL-123 Trademark clearance for "Early Letters" [Critical]
+- Status: needs-founder (FT-28 knockout search, FT-35 opinion if needed), after BL-124. Mode: human. Owner: founder, legal. Milestone: M0, send to counsel by week 3 (with BL-104); result before the store listing (BL-286). Size: S (founder time).
+- Satisfies: compliance register CR-122 (trademark not cleared; clearance before store submission).
+- Scope: the founder sends the question pack (BL-124) to counsel, alone or inside the BL-104 package; counsel decides how to clear the name and advises. The founder records the outcome in the compliance register (CR-122 evidence) and, if counsel advises any change, opens a decision entry before BL-286, because `packages/brand`, the bundle id (BL-103), the domains and the store name all carry the name. Agents never write a legal conclusion, a likelihood or a cost about the name. (CR-122 asked for clearance before the domain purchase too; the domains are already bought, brief decision 13, so the remaining gate is store submission.)
+- Done when: CR-122 no longer reads "Gap" and links the founder's record of counsel's answer.
+
+#### BL-124 Trademark question pack for counsel
+- Status: ready. Mode: agent. Owner: legal. Milestone: M0, week 2. Size: S.
+- Satisfies: compliance register CR-122; prepares BL-123.
+- Scope: a draft for counsel in `docs/legal/memos/` that states only facts from the repo, each with its source path: the marks in use (`brand.name`, `storeName`, `tagline` and the `printTitle` pattern in `packages/brand/index.ts`); the domains (brief decision 13); the publisher is an individual (D-004) with a possible later transfer to an organisation (D-004 point 5); US storefront only at launch (LEGAL-REQ-058), Android and printed books later (K-32); submission date (`docs/ROADMAP.md`). Then open questions for counsel: what a clearance should cover, which goods and services to consider, whether and when to file, what to do if a similar mark turns up, and whether the tagline or the print title need their own check. No legal conclusions, no likelihoods and no costs. Content rules apply.
+- Done when: the file exists, every fact cites a repo path, it contains questions only, and the founder can send it as written.
 
 #### BL-005 Founder setup for the workflow
 - Status: needs-founder (FT-20). CI exists (BL-004). Remaining: branch protection on `develop` and `main` requiring the `required` job; labels `inbox`, `bug`, `idea`, `beta`, `S0` to `S3`, `approve-migration`; accept ADR 0011.
@@ -308,6 +320,22 @@ All database files below are **written and tested but not applied** to any remot
 #### BL-157 Lock-screen-safe notification copy
 - Status: done (`packages/content` lock-screen strings; Settings > Reminders toggle).
 
+#### BL-152 Store and site copy match the v1.0 scope [Critical]
+- Status: ready. Mode: agent. Owner: content. Milestone: M4, week 4 (before the website goes live). Size: S.
+- Satisfies: LEGAL-REQ-044, D-030; brief 3 Oct decisions 5, 6, 9 and 10 (D-055, D-056, D-059 and D-060 on `develop`).
+- Scope (re-checked against `develop` at 8896000, 4 Oct 2026: the lines below are still present): commits 9be06db and a66376a already rewrote `packages/content/src/store.en.ts` and `site.en.ts` for co-parent only, no recording upload, no word highlight, the seven letter languages and no beta; each file's header comment cites D-055, D-059 and D-060. The line list this task first carried (marketing launch plan section 1.2, PR #38, line numbers at 3688796) no longer applies. What is left is a check pass, in the product voice, without adding new claims:
+  - Store line 52 and site line 33 (at 7cc43b1) say the co-parents' book "holds both your voices". With no audio upload in v1.0 (D-059), each phone plays only its own recordings, so the line may promise shared voices. Content decides the wording.
+  - Site lines 109 to 112 keep a `gift` block ("A gift from the grandparents") marked "Not on the v1.0 page". Nothing in this repo renders it at 7cc43b1, and the website is built in a separate thread (brief decision 13), so say in the PR body that it must stay off the v1.0 page.
+  - Read every other line once against the done-when.
+- Founder answers now on `develop` (they replace the two lines that waited here): the brief never names backup, but D-053 records that Plus gates only Read together after 3 free sessions per book and books for more children, and that the Terms must drop "encrypted backup"; D-059 records no audio upload in v1.0, and its effects answer D-033: recordings stay on the phone and in the person's own iPhone backup.
+- Done when: no line in `store.en.ts` or `site.en.ts` promises family contributors, shared voices, word highlighting, mixed-language letters, a backup run by us, cloud transcription or a beta; the content rules test passes; the PR lists every line changed, or says none needed a change.
+
+#### BL-153 In-app strings match the v1.0 scope
+- Status: ready. Mode: agent. Owner: content. Milestone: M4. Size: S.
+- Satisfies: LEGAL-REQ-044; brief 3 Oct decisions 5 and 9 (D-055 and D-059 on `develop`).
+- Scope (re-checked against `develop` at 8896000, 4 Oct 2026: the lines below are still present): commits 9be06db and a66376a retired the recording-backup, backup-failed and cloud-transcription strings (see the "Retired 3 Oct 2026" note at the end of `packages/content/src/strings.en.ts`). Still there, at 7cc43b1 line numbers: 141 (invite body "Grandparents, aunts, uncles"), 397 to 398 (`familyBody`, `familyCta` "Invite family"), 565 (`firstGrandparentLetter`), 611 to 621 (`settings.backup.*`: "Encrypted backup", "Turn on backup", "Last backed up"), and 881 (`backupNotYet` "Backup arrives in a later update"). The file itself lists `settings.backup.*` and `backupNotYet` as still used by the recordings screen. For each: rewrite for v1.0, or move it into a clearly marked v1.1 group that no v1.0 screen imports (check `apps/mobile` usage and name any screen change needed for `mobile` in the PR body). Co-parent strings stay.
+- Done when: no string a v1.0 screen can show promises family contributors, a backup run by us or cloud transcription; the content rules test passes.
+
 #### BL-154 Read together free sessions per book
 - Status: done (`src/lib/read-together.ts` with `billing/plan.logic.ts`: count per book on the device; remote config may only raise the reviewed 3, ADR 0013).
 
@@ -335,6 +363,13 @@ All database files below are **written and tested but not applied** to any remot
 
 #### BL-172 Auth configuration as code [High]
 - Status: done as documentation (`docs/ops/AUTH_SETUP.md`); dashboard values are FT-12.
+
+#### BL-180 Add a passkey after sign-in
+- Status: needs-decision (passkeys at v1.0 or later?). Mode: agent plus spike. Owner: security engineer, mobile engineer. Milestone: M5. Depends on: BL-171, BL-051. Size: M.
+- Satisfies: brief 3 Oct decision 4 ("Passkeys can be added after sign-in"; PRD 2.2 lists passkeys out of scope, change proposed to the founder).
+- Scope: spike first and record the result in `docs/security/`: does Supabase Auth support passkeys (WebAuthn) as a sign-in factor (Unverified), and which maintained Expo-compatible library calls the iOS passkey APIs (Unverified). If a standard path exists, a signed-in user can add a passkey in Settings and later sign in with Face ID or Touch ID; `webcredentials` association on the domain (BL-053). If the only path needs our own server-side WebAuthn code, stop and set this task to needs-decision (brief decision 1, standard over custom).
+- Done when: the spike result is recorded, and either a dev build adds and uses a passkey, or the task carries the founder question.
+- Why the decision (3 Oct): brief decision 4 says "Passkeys can be added after sign-in", and D-054 on `develop` repeats it; neither says in which release. PRD 2.2 lists passkeys out of scope. If the founder says v1.0, this task becomes `blocked (BL-171, BL-051)` (BL-171 is done in part, BL-051 is on develop) and the spike can start once both are done; if later, it moves to the v1.1 table.
 
 #### BL-171 Sign in with Apple and token capture [Critical]
 - Status: done in part (9be06db, `src/lib/auth/apple.ts`: native sign-in with a hashed nonce). Token capture is not built; it is BL-330.
@@ -479,6 +514,13 @@ D-053 (founder, 3 Oct): Apple only, on the device; no server sees purchases; no 
 #### BL-222 Sandbox checklist on device
 - Status: needs-founder (FT-09 sandbox testers, FT-22 first run, FT-39 every release candidate). Checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11.
 
+#### BL-226 Plus on the device: design note for decision 3
+- Status: done (commit 9be06db, merged in 7cc43b1; ADR 0013 as amended there is the design note). Mode: agent. Owner: payments engineer. Milestone: M8, week 3. Size: S.
+- Satisfies: ADR 0013, C-REQ-020, C-NFR-003, C-NFR-004, LEGAL-REQ-046, LEGAL-REQ-050; brief 3 Oct decision 3.
+- Scope: `docs/payments/PLUS_ON_DEVICE.md`, the design that replaces the server half of TDD 08 and ADR 0013: where Plus comes from (StoreKit 2 entitlements on the device, own or through Family Sharing); the states the app must handle (active, in trial, grace period, billing retry, expired, refunded or revoked) and what each gate in `packages/core/src/plan.ts` does in each; the offline cache rule; which TDD 08 sections and BL tasks decision 3 supersedes; a checklist of LEGAL-REQ-046 disclosures against Apple's own subscription view; the questions BL-210 must answer. Every StoreKit API named is marked Verified (with the Apple documentation page) or Unverified. Propose the ADR 0013 amendment text in the PR body; do not edit `plan.ts` (founder code-owned).
+- Done when: the note exists, every API claim is marked, and BL-210, BL-215 and BL-216 can cite it.
+- Done on `develop` (checked 3 Oct against 7cc43b1): `docs/adr/0013-apple-native-subscriptions.md`, amended in 9be06db, covers this scope in one place instead of a separate file: where Plus comes from (`Transaction.currentEntitlements`, own or through Family Sharing), the states (trial, active, grace, billing retry, expired, revoked) mapped by `planFromSnapshot` in `apps/mobile/src/lib/billing`, the offline cache, the TDD 08 sections it supersedes ("What changes elsewhere"), a requirements check that includes the pre-purchase disclosures, with V (verified) or U (unverified) marks on its API claims. BL-216 keeps the line-by-line LEGAL-REQ-046 check against Apple's view.
+
 #### BL-342 Plan reminders on the device, the trial timeline and "Save a copy" (new; FUTURE G-12 pulled into v1.0) [Critical]
 - Status: ready. Mode: agent. Owner: payments engineer (`src/lib/billing`), reminders owner. Size: S (about 2 to 3 engineer-days, Q-003 memo).
 - Why v1.0: Subscription Terms 1.4.0 ("Receipts and reminders") and in-app disclosures 1.4.0 now promise that the app reminds before a trial ends, before an annual renewal and once a year, and shows what was agreed right after subscribing with a button to save a copy. Without this task those sentences are false at launch. Legal-alignment's position memo (`docs/legal/memos/q-003-subscription-notices.md`) is the default unless counsel objects by Fri 23 Oct (FT-33).
@@ -571,6 +613,13 @@ D-053 (founder, 3 Oct): Apple only, on the device; no server sees purchases; no 
 
 #### BL-252 Analytics contract test with the real SDK
 - Status: ready. Mode: agent. Owner: QA engineer.
+
+#### BL-253 Tracking plan: Plus totals from App Store Connect only
+- Status: done (commit a66376a, merged in 7cc43b1; TRACKING_PLAN draft 2). Mode: agent. Owner: analytics engineer. Milestone: M10. Size: S.
+- Satisfies: PRD-REQ-017 (Plus part replaced by brief 3 Oct decision 3), D-003.
+- Scope: `docs/analytics/TRACKING_PLAN.md` still names RevenueCat and a server purchase ledger as the source of trials, conversions, renewals, cancellations and refunds (section 0 items 4 and 5, the 1.2 source codes and row 7, the section 2 billing row, the section 4 Plus row, 6.2 "RevenueCat ids", 8.3 pricing test arm). Brief decision 3 removes both. Replace them with App Store Connect reports and the device purchase events among consenters, following the metric tree's section 3.4 and its item R-3 (PR #40). Do not add any per-user join between App Store data and our accounts.
+- Done when: the tracking plan names no RevenueCat id or server purchase ledger; every Plus metric cites an App Store Connect report or is marked device-only; analytics tests still pass.
+- Done on `develop` (checked 3 Oct against 7cc43b1): `docs/analytics/TRACKING_PLAN.md` draft 2 (a66376a) names RevenueCat only as not used and a server purchase ledger only as something that does not exist; the trial-to-paid row cites App Store Connect for money and device events for offer views, and the billing lifecycle row cites App Store Connect reports. CI at 7cc43b1 passes "tests and content rules", which runs the analytics suite.
 
 ---
 
