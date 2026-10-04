@@ -23,6 +23,7 @@ Every factual claim cites a page opened for this review. **(opinion)** marks des
 | H4 | [HIG: Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars) | Navigation |
 | H5 | [HIG: Materials](https://developer.apple.com/design/human-interface-guidelines/materials) | Liquid Glass |
 | H6 | [HIG: Motion](https://developer.apple.com/design/human-interface-guidelines/motion) and [Playing haptics](https://developer.apple.com/design/human-interface-guidelines/playing-haptics) | Motion, haptics |
+| H7 | [HIG: Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars) (read 2026-10-03 from the documentation JSON) | Large title to inline title on scroll |
 
 HIG text was read from Apple's documentation JSON for the same URLs.
 
@@ -133,6 +134,64 @@ HIG text was read from Apple's documentation JSON for the same URLs.
 - Tab bars are for **navigation, not actions**; keep them visible; single-word labels (H4).
 - **Don't use Liquid Glass in the content layer**; use it sparingly; standard materials remain for content (H5).
 - Motion should be purposeful, "brief and precise" (H6). Haptics should be used consistently and complement other feedback; prefer short haptics for discrete events (H6).
+
+## 9. Screens: which pattern came from where (Oct 3 2026 polish)
+
+Each row is a pattern now in the app, the product it comes from and the evidence. "Observed" means seen in the shipping app, not stated in an opened source. Motion and haptic values come from `tokens.motion` and `lib/haptics.ts`, never from the screen.
+
+### Tonight (`src/app/(tabs)/index.tsx`)
+| Pattern | Source | Evidence |
+|---|---|---|
+| Time-of-day greeting as the page title ("Good evening, Mama.") | Things 3 "This Evening" | S8 |
+| One prompt in a raised card, "Another thought" to swap it; the prompt cross-fades in place | Apple Journal reflection prompts | S5 |
+| Speak and Type as equal twins in the thumb zone, static from the first frame | Airbnb sticky Reserve bar (observed); HIG motion "brief and precise" | COMPONENTS 1 (observed), H6 |
+| Dateline in small tracked caps above the title | Day One entry dateline (observed); Apple Journal date header (observed) | observed |
+| Content enters once with a 30 ms stagger; controls never animate in | HIG Motion; MOTION principle 2 | H6 |
+| "Not much today" confirms with a check, a word and a soft haptic, no counter | Headspace "kind, warm and welcoming" tone; our no-streak rule | S7 |
+
+### Book (`src/app/(tabs)/book.tsx`, `components/book/*`)
+| Pattern | Source | Evidence |
+|---|---|---|
+| Large title that hands over to an inline title in a material bar as you scroll | Apple large titles ("transitions to a standard title as people begin scrolling the content") | H7 |
+| Months as typographic headings, not boxed sections | Things 3 headings | S8 |
+| Letter cards: radius 14, no hard border in light, whole card one target, muted metadata below, press scale 0.98 | Airbnb listing cards | S4, COMPONENTS 1 (observed) |
+| "This month is open" as a warm tinted card, never a count of missing days | Day One "On This Day" resurfacing, minus streaks | S6 |
+| Empty book: one line drawing that draws once and breathes, one sentence, one action | Headspace breath-led animation; Calm's slow breathing pace | S7, M10, M11 |
+| A recording shown as a quiet "microphone 0:42" line, not a fake button | Day One audio entries (audio and text in one entry) | S6 |
+
+### Letter (`src/app/letter/[id].tsx`, `components/book/reading-size-sheet.tsx`)
+| Pattern | Source | Evidence |
+|---|---|---|
+| "Aa" opens a small sheet; each size previewed at its own size; the page behind changes live; text cross-fades, never animates its size | Apple Books Themes & Settings | S9 |
+| Sheet with a grabber, sized to its content | HIG Sheets (grabber on resizable sheets) | H3 |
+| Signature at the end in the italic reading face | Apple Books reading typography; DESIGN_LANGUAGE "each one signed" | S9 |
+| The few actions in an inset grouped list (Make private, Delete) | Apple Settings / Journal settings lists (observed) | observed |
+| Delete is immediate with a persistent Undo (no confirm dialog, no timer) | Airbnb wishlist undo (observed), Apple Mail Undo Send (observed); WCAG 2.2.1 | COMPONENTS 1, TDD 09 A11Y-F03 |
+| Provenance and "kept on this phone" as small icon lines under the letter | Apple Journal privacy as visible UI | S5 |
+
+### First run (`src/app/onboarding.tsx`)
+| Pattern | Source | Evidence |
+|---|---|---|
+| One drawing, one large serif line, one action per screen | Headspace illustration-led screens; Calm | S7, M10 |
+| An open envelope at the start, a page with one line at the end | CREATIVE 6 (our own drawings, `ui/line-art.tsx`) | CREATIVE |
+| Birthday / Not here yet as a segmented choice that stacks at large text | Apple segmented controls; HIG accessibility (no truncation) | H1, H2 |
+| Name suggestions as chips that fill the field ("Mama", "Papa") | Airbnb category chips (observed) | COMPONENTS 1 |
+| VoiceOver focus moves to each step's heading | HIG Accessibility | H2 |
+
+### Listening and Write (`src/app/listen.tsx`, `src/app/write.tsx`)
+| Pattern | Source | Evidence |
+|---|---|---|
+| One breathing glow driven by the voice; nothing else moves | Apple Watch Breathe, Calm pacing; Voice Memos waveform avoided | M9, M10, MOTION 1 |
+| Pause and Finish as equal buttons that stack at large text; "Let it go" quiet and confirmed | HIG Accessibility; Voice Memos (observed) | H2 |
+| Writing surface with no box, the reading face at letter size, the prompt as a quiet line above | Day One editor (observed); Apple Notes (observed) | observed |
+| Save in the thumb zone above the keyboard, not alone in the top-right | DESIGN_LANGUAGE principle 2 (2 a.m., one thumb) | TDD 09 A11Y-F16 |
+
+### Tab bar (`src/app/(tabs)/_layout.tsx`)
+| Pattern | Source | Evidence |
+|---|---|---|
+| Three single-word tabs, always visible, navigation only, no haptic | HIG Tab bars | H4 |
+| Labels do not scale; long press shows the Large Content Viewer on iOS | HIG Typography (truncation) and Accessibility | H1, H2 |
+| Paper bar with a hairline (not Liquid Glass yet) | HIG Materials: no glass in the content layer; NativeTabs deferred to a device spike | H5, COMPONENT_LIBRARY 0.1 |
 
 ## Synthesis (opinion)
 

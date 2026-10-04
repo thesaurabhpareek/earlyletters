@@ -1,0 +1,123 @@
+# SKETCH, NOT ENABLED. GitHub Actions only runs files under .github/workflows,
+# and this one is named .example on purpose. To enable it later the
+# coordinator copies it to .github/workflows/ios-e2e.yml (TDD 07 section 10.1,
+# "nightly.yml" macOS half), after:
+#   - the testIDs and e2e seams in apps/mobile/e2e/TESTID_REQUESTS.md exist,
+#   - eas.json has the `e2e` profile (request B-1) and one finished e2e build,
+#   - the e2e Supabase project and the repository secrets below exist.
+#
+# Facts used (opened 3 Oct 2026):
+#   - `macos-26` is a GitHub-hosted arm64 runner (3 CPU, 7 GB); "Nested
+#     virtualization is not supported", so no Docker: the backend is the hosted
+#     scribe-e2e project, not a local Supabase stack (GitHub runner reference).
+#   - Maestro 2.11.0 (29 Sep 2026) needs Java 17+ and runs iOS on simulators only.
+#   - `eas build:list --platform ios --simulator --build-profile e2e --status finished --json`
+#     lists simulator builds (eas-cli 24.10.0 README).
+# Assumptions: the JSON field `artifacts.buildUrl` holds the .tar.gz of the .app;
+# the simulator device type name "iPhone SE (3rd generation)" exists on the
+# runner's Xcode 26 runtime (check `xcrun simctl list devicetypes`).
+#
+# Cost note (A): macOS minutes are billed at a multiple of Linux minutes; run
+# nightly and per release candidate, not per pull request (TDD 07 section 0 item 5).
+# Alternative with no macOS runner of ours: EAS Workflows has a built-in
+# `type: maestro` job that installs an EAS simulator build and runs flows
+# (Expo docs, "Run E2E tests on EAS Workflows with Maestro").
+
+name: iOS E2E (Maestro)
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Run one flow (prefix, for example E2E-05); empty runs the suite"
+        required: false
+        default: ""
+  # schedule:
+  #   - cron: "0 10 * * *"   # 03:00 Pacific during PDT; nightly once enabled
+
+concurrency:
+  group: ios-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  maestro-ios:
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: e2e   # holds the secrets below; never production values
+    env:
+      APP_ID: com.earlyletters.scribe.preview
+      MAESTRO_VERSION: "2.11.0"
+      MAESTRO_CLI_NO_ANALYTICS: "true"
+      MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: "true"
+      MAESTRO_DISABLE_UPDATE_CHECK: "true"
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      MAESTRO_E2E_SUPABASE_URL: ${{ secrets.MAESTRO_E2E_SUPABASE_URL }}
+      MAESTRO_E2E_PROJECT_REF: ${{ secrets.MAESTRO_E2E_PROJECT_REF }}
+      MAESTRO_E2E_SERVICE_KEY: ${{ secrets.MAESTRO_E2E_SERVICE_KEY }}
+      MAESTRO_PROD_PROJECT_REF: ${{ secrets.MAESTRO_PROD_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies (lint script and eas-cli need them)
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint the flows (ids requested, files present)
+        run: node apps/mobile/e2e/bin/lint-flows.mjs
+
+      - name: Install Maestro CLI (pinned)
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | MAESTRO_VERSION="$MAESTRO_VERSION" bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Download the latest e2e simulator build from EAS
+        working-directory: apps/mobile
+        run: |
+          URL="$(npx -y eas-cli@latest build:list --platform ios --simulator --build-profile e2e \
+                 --status finished --limit 1 --json --non-interactive | node -e '
+                   let s=""; process.stdin.on("data",d=>s+=d).on("end",()=>{
+                     const b=JSON.parse(s)[0]; if(!b) process.exit(1);
+                     process.stdout.write(b.artifacts.buildUrl); });')"
+          mkdir -p "$RUNNER_TEMP/app"
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/app.tar.gz"
+          tar -xzf "$RUNNER_TEMP/app.tar.gz" -C "$RUNNER_TEMP/app"
+          echo "APP_PATH=$(find "$RUNNER_TEMP/app" -maxdepth 2 -name '*.app' | head -n 1)" >> "$GITHUB_ENV"
+
+      - name: Boot an iPhone SE (3rd generation) simulator
+        run: |
+          UDID="$(xcrun simctl create e2e-se "iPhone SE (3rd generation)")"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Run the single-simulator suite
+        run: |
+          apps/mobile/e2e/bin/run-suite.sh --udid "$UDID" --app "$APP_PATH" --junit \
+            ${{ inputs.only != '' && format('--only {0}', inputs.only) || '' }}
+        env:
+          OUT: ${{ runner.temp }}/maestro
+
+      - name: Upload artifacts (fictional family only; 14 days)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-ios-${{ github.run_id }}
+          path: ${{ runner.temp }}/maestro
+          retention-days: 14
+
+  # Two simulators for E2E-13 (co-parent round trip). Same setup, then:
+  #   A=$(xcrun simctl create mama "iPhone 16"); B=$(xcrun simctl create papa "iPhone 16")
+  #   boot both, then apps/mobile/e2e/bin/run-coparent.sh "$A" "$B" --app "$APP_PATH"
+  # Left out of the sketch until the single-simulator job is green for a week.
