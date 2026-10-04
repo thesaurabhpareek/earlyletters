@@ -1,0 +1,39 @@
+{
+  "id": "J12-02",
+  "journey": "plus",
+  "kind": "unhappy",
+  "title": "Restore purchases cannot reach the App Store",
+  "note": "Restore asks StoreKit. With no store (web) the app answers calmly that the App Store could not be reached and to try again. On a phone with no Plus purchase it would say none was found.",
+  "from": "J12-01",
+  "shot": "screens/J12-02.png",
+  "route": "/settings/plus",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Plan Plus Plus is off. Every book and letter stays yours. Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds encrypted backup of your recordings, Read together whenever you like after the first 3 times in each book, and books for more children. Manage subscription Change or cancel in Apple's subscriptions screen. Restore purchases Finds Plus bought with this Apple Account. Apple handles payment for Plus. We never see your card details. The App Store could not be reached. Please try again in a moment. Plus is not available on this device yet.",
+  "lines": [
+    "Plan",
+    "Plus",
+    "Plus is off. Every book and letter stays yours.",
+    "Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds encrypted backup of your recordings, Read together whenever you like after the first 3 times in each book, and books for more children.",
+    "Manage subscription",
+    "Change or cancel in Apple's subscriptions screen.",
+    "Restore purchases",
+    "Finds Plus bought with this Apple Account.",
+    "Apple handles payment for Plus. We never see your card details.",
+    "The App Store could not be reached. Please try again in a moment.",
+    "Plus is not available on this device yet."
+  ]
+}

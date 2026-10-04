@@ -1,0 +1,40 @@
+{
+  "id": "J03-01",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "Two names in first run",
+  "note": "Twins or more: each name gets a field and a remove button. All books made here are free; they share the date.",
+  "from": "J01-06",
+  "shot": "screens/J03-01.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Who is this book for? Their name 1 Their name 2 Twins or more? Add them now. Each child gets their own book. Add another child Birthday Not here yet Birthday Sunday, October 4, 2026 We sort letters by Asha and Ashu's month of age. Continue",
+  "lines": [
+    "Back",
+    "Who is this book for?",
+    "Their name 1",
+    "Their name 2",
+    "Twins or more? Add them now. Each child gets their own book.",
+    "Add another child",
+    "Birthday",
+    "Not here yet",
+    "Birthday",
+    "Sunday, October 4, 2026",
+    "We sort letters by Asha and Ashu's month of age.",
+    "Continue"
+  ]
+}

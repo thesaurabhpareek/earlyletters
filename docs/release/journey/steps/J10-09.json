@@ -1,0 +1,40 @@
+{
+  "id": "J10-09",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "A letter waiting for its words",
+  "note": "The page shows a calm italic note instead of an empty page; the recording is there.",
+  "from": "J10-01",
+  "shot": "screens/J10-09.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Thursday, October 1, 2026. Asha is 6 months and 3 weeks old. Private A recording, waiting for its words. From Mama Hear Mama 0:00 0:54 Spoken, exactly as said Recording kept on this phone Add to book Delete",
+  "lines": [
+    "Aa",
+    "Thursday, October 1, 2026. Asha is 6 months and 3 weeks old.",
+    "Private",
+    "A recording, waiting for its words.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:54",
+    "Spoken, exactly as said",
+    "Recording kept on this phone",
+    "Add to book",
+    "Delete"
+  ]
+}

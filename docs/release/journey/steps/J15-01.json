@@ -1,0 +1,37 @@
+{
+  "id": "J15-01",
+  "journey": "export",
+  "kind": "happy",
+  "title": "Export your book",
+  "note": "What is inside (every letter as text, every recording, a printable book per child, a data file with the words as heard, every tidy-up and the final text) and that nothing is sent anywhere. (Seeded fictional family Asha.)",
+  "from": "J14-01",
+  "shot": "screens/J15-01.png",
+  "route": "/settings/export",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Export Download every letter and recording, any time, free. A PDF of the book, plus plain text and audio files. Works without a connection. Nothing is sent anywhere. What is inside Every letter and note, as text Every recording on this phone, exactly as it was made A printable book for each child, by month A data file with your words as heard, every small fix, and the final text Export everything",
+  "lines": [
+    "Export",
+    "Download every letter and recording, any time, free. A PDF of the book, plus plain text and audio files.",
+    "Works without a connection. Nothing is sent anywhere.",
+    "What is inside",
+    "Every letter and note, as text",
+    "Every recording on this phone, exactly as it was made",
+    "A printable book for each child, by month",
+    "A data file with your words as heard, every small fix, and the final text",
+    "Export everything"
+  ]
+}

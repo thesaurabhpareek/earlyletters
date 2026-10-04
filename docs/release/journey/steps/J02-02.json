@@ -1,0 +1,31 @@
+{
+  "id": "J02-02",
+  "journey": "under-18",
+  "kind": "unhappy",
+  "title": "The stop screen",
+  "note": "A calm explanation with no way to continue or go back. No child, letter or recording exists, only the time of the No is stored.",
+  "from": "J02-01",
+  "shot": "screens/J02-02.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Thank you for telling us. Early Letters is currently for adults 18 and over. Nothing you entered has been kept.",
+  "lines": [
+    "Thank you for telling us.",
+    "Early Letters is currently for adults 18 and over.",
+    "Nothing you entered has been kept."
+  ]
+}

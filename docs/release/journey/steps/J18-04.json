@@ -1,0 +1,40 @@
+{
+  "id": "J18-04",
+  "journey": "dark-mode",
+  "kind": "happy",
+  "title": "A letter, dark",
+  "note": "The letter page in the dark theme.",
+  "from": "J18-03",
+  "shot": "screens/J18-04.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Tuesday, August 4, 2026. Asha is 5 months old. So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, word for word Recording kept on this phone Show exactly what I said Make private Delete",
+  "lines": [
+    "Aa",
+    "Tuesday, August 4, 2026. Asha is 5 months old.",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:42",
+    "Spoken, word for word",
+    "Recording kept on this phone",
+    "Show exactly what I said",
+    "Make private",
+    "Delete"
+  ]
+}

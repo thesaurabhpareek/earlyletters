@@ -1,0 +1,32 @@
+{
+  "id": "J07-01",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Write, empty",
+  "note": "A page, not a form: the child's name and age, the prompt as a quiet line, and a blank letter. Save is off until something is typed.",
+  "from": "J01-14",
+  "shot": "screens/J07-01.png",
+  "route": "/write",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Asha · 0 days Tell Asha how the name was chosen. Save",
+  "lines": [
+    "Close",
+    "Asha · 0 days",
+    "Tell Asha how the name was chosen.",
+    "Save"
+  ]
+}

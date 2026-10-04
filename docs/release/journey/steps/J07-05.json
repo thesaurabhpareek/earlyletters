@@ -1,0 +1,42 @@
+{
+  "id": "J07-05",
+  "journey": "typed-letter",
+  "kind": "unhappy",
+  "title": "Closed before finishing",
+  "note": "Closing keeps the words as a draft. Tonight now shows a quiet card to pick the letter back up.",
+  "from": "J07-01",
+  "shot": "screens/J07-05.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 0 days The house is quiet, Mama. What do you want Asha to know about today? A thought to start with Tell Asha how the name was chosen. Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 0 days",
+    "The house is quiet, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "Tell Asha how the name was chosen.",
+    "Another thought",
+    "A letter is waiting to be read back.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

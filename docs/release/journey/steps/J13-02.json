@@ -1,0 +1,57 @@
+{
+  "id": "J13-02",
+  "journey": "reminders",
+  "kind": "unhappy",
+  "title": "On, but notifications are not allowed",
+  "note": "With the switch on and the phone's notification permission not granted, the screen explains it and offers \"Open Settings\" (native; it does nothing on web). The choices below stay editable. On iOS, the first time, a priming sheet comes before the iOS alert; the web build has no notification permission, so it skips straight to this state.",
+  "from": "J13-01",
+  "shot": "screens/J13-02.png",
+  "full": "screens/J13-02-full.png",
+  "route": "/settings/reminders",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Reminders Reminders A gentle nudge a few evenings a week, at the time you choose. Never late at night. Notifications are off for this app Turn them on in your phone's Settings and your reminders start again. Open Settings How often Weekly A few times a week Every evening Which evenings Sun Mon Tue Wed Thu Fri Sat Pick the evenings that suit you. Time Reminder time 8:30 PM Reminders come between 7 AM and 9:30 PM, and stay quiet on a day you have already written. Month notes A short note on the day a new month begins in each book, and on birthdays. Names in notifications Notifications say \"your little one\" and show no names on the lock screen. Pause all reminders",
+  "lines": [
+    "Reminders",
+    "Reminders",
+    "A gentle nudge a few evenings a week, at the time you choose. Never late at night.",
+    "Notifications are off for this app",
+    "Turn them on in your phone's Settings and your reminders start again.",
+    "Open Settings",
+    "How often",
+    "Weekly",
+    "A few times a week",
+    "Every evening",
+    "Which evenings",
+    "Sun",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Pick the evenings that suit you.",
+    "Time",
+    "Reminder time",
+    "8:30 PM",
+    "Reminders come between 7 AM and 9:30 PM, and stay quiet on a day you have already written.",
+    "Month notes",
+    "A short note on the day a new month begins in each book, and on birthdays.",
+    "Names in notifications",
+    "Notifications say \"your little one\" and show no names on the lock screen.",
+    "Pause all reminders"
+  ]
+}

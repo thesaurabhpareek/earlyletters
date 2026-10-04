@@ -1,0 +1,42 @@
+{
+  "id": "J06-12",
+  "journey": "review-and-edits",
+  "kind": "unhappy",
+  "title": "Close without saving",
+  "note": "Closing leaves the draft where it was: the \"A letter is waiting to be read back\" card is still on Tonight. Nothing is deleted. (\"Let it go\", the only delete, is a native confirm dialog that does not appear on web.)",
+  "from": "J06-02",
+  "shot": "screens/J06-12.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months The house is quiet, Mama. What do you want Asha to know about today? A thought to start with What is Asha's favorite thing in the house this week? Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "The house is quiet, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "What is Asha's favorite thing in the house this week?",
+    "Another thought",
+    "A letter is waiting to be read back.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}
