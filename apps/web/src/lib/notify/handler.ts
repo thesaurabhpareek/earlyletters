@@ -111,7 +111,9 @@ export async function handleNotify(request: Request): Promise<Response> {
     const outcome = await subscribe(email, config);
     return outcome === 'ok' ? ok() : fail(outcome, outcome === 'rate_limited' ? 30 : undefined);
   } catch (error) {
-    logNotify('unexpected_error', { name: error instanceof Error ? error.name : undefined });
+    // The error code of the underlying cause (for example ERR_INVALID_CHAR): a fixed vocabulary, never message text.
+    const cause = error instanceof Error ? (error.cause as { code?: unknown } | undefined) : undefined;
+    logNotify('unexpected_error', { name: error instanceof Error ? error.name : undefined, code: cause?.code });
     return fail('server');
   }
 }
