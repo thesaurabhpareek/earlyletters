@@ -6,6 +6,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { book, en, PROMPTS, site, storeListing } from '../src';
+// Copy that lives in the mobile app until it has a home here (apps/mobile/src/lib/copy.ts).
+import { pendingCopy } from '../../../apps/mobile/src/lib/copy';
 
 type Leaf = { path: string; text: string };
 
@@ -23,6 +25,7 @@ const ALL: Leaf[] = [
   ...leaves(storeListing, 'store'),
   ...leaves(site, 'site'),
   ...leaves(book, 'book'),
+  ...leaves(pendingCopy, 'pending'),
   ...PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text })),
 ];
 const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(join(__dirname, '..', f), 'utf8') }));
@@ -96,6 +99,8 @@ describe('prompts', () => {
 
   it('uses only known placeholders', () => {
     const allowed = new Set(['child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n']);
+    // Pending-copy only: {app} is filled from packages/brand at build time.
+    for (const p of ['app', 'minutes', 'seconds', 'letters', 'notes', 'a', 'b']) allowed.add(p);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);
   });
@@ -126,7 +131,7 @@ describe('length limits', () => {
   });
 
   it('buttons stay short', () => {
-    const buttons = ALL.filter((l) => /(button|cta|Button|Cta)$/.test(l.path) || /\.(cta|button)\b/i.test(l.path));
+    const buttons = ALL.filter((l) => /(button|cta|Button|Cta|Confirm)$/.test(l.path) || /\.(cta|button)\b/i.test(l.path));
     for (const b of buttons) expect(b.text.length, b.path).toBeLessThanOrEqual(22);
   });
 });

@@ -7,7 +7,7 @@ export const site = {
     subhead:
       "Early Letters is the baby memory book you fill by talking. Private by design: your letters stay on your phone, and every word is kept exactly as you said it, ready to read together for years.",
   },
-  primaryCta: "Join the waitlist",
+  primaryCta: "Keep me informed",
   benefits: [
     {
       title: "Exactly as you said it",
@@ -71,7 +71,7 @@ export const site = {
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone by default and only fixes microphone and grammar slips, like a misheard word or a missing full stop. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone by default and only fixes microphone and grammar slips, like a misheard word or a missing period. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
@@ -105,7 +105,7 @@ export const site = {
   },
   waitlist: {
     label: "Your email",
-    button: "Join the waitlist",
+    button: "Keep me informed",
     success: "Thank you. We will write when Early Letters is ready for you.",
     error: "That did not go through. Please check your email address and try again.",
   },
