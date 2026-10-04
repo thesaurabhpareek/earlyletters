@@ -48,7 +48,10 @@ r = await push(A, [firstRun]);
 check('a retried op is reported as a duplicate and changes nothing', r.results[0].ok && r.results[0].dup === true);
 await join(B, 'parent', CHILD, A);
 await join(N, 'contributor', CHILD, A);
+// A third parent: allowed here only by raising the D-069 setting (20261005000000, default 2).
+await sys(`select set_config('app.max_parents_per_book', '3', false)`);
 await join(V, 'parent', CHILD, A);
+await sys(`select set_config('app.max_parents_per_book', '', false)`);
 
 const letter = (id, { child = CHILD, text = 'She walked to me.', raw = 'um she walked to me', inBook = true, extra = {} } = {}) => ({
   id, child_id: child, kind: 'letter', occurred_on: '2026-09-29', captured_at: '2026-09-29T20:00:00Z', capture_mode: 'spoken',

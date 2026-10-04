@@ -45,7 +45,12 @@ check('[B-REQ-007] the role must be explicit', (await codeOf(() => as(A, `select
 check('[LEGAL-REQ-024] the old one-argument invite function is gone', (await codeOf(() => as(A, `select public.create_child_invite($1::uuid)`, [CHILD]))) === '42883');
 check('child_invites.role has no default', (await sys(`select column_default from information_schema.columns where table_name='child_invites' and column_name='role'`)).rows[0].column_default === null);
 
+// D-069 (20261005000000): this book already has two parents, so a further
+// co-parent invite is refused (SCCAP; db_followup_family_cap.test.mjs). These
+// checks need one open co-parent invite, so the setting is raised just for it.
+await sys(`select set_config('app.max_parents_per_book', '3', false)`);
 const tParent = await invite(B, CHILD, 'parent');
+await sys(`select set_config('app.max_parents_per_book', '', false)`);
 const tFamily = await invite(A, CHILD, 'contributor');
 const life = async (t) => (await sys(`select round(extract(epoch from expires_at - created_at) / 86400) d from child_invites where token_hash = sha256(convert_to($1,'UTF8'))`, [t])).rows[0].d;
 check('[K-18] co-parent invites last 7 days, family invites 14', Number(await life(tParent)) === 7 && Number(await life(tFamily)) === 14);
