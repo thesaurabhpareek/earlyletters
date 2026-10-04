@@ -2,11 +2,11 @@
   "id": "J01-14",
   "journey": "first-run",
   "kind": "happy",
-  "title": "Signature chosen",
-  "note": "Tapping a suggestion fills the field and previews the signature in script.",
+  "title": "Tonight, for the first time",
+  "note": "The home tab: a greeting with the signature name, one gentle prompt, Speak and Type side by side, and \"Not much today\" for quiet days.",
   "from": "J01-13",
   "shot": "screens/J01-14.png",
-  "route": "/onboarding",
+  "route": "/",
   "viewport": {
     "width": 402,
     "height": 874
@@ -22,24 +22,19 @@
     }
   },
   "scrolls": false,
-  "text": "Back What does Asha call you? This is how your letters will be signed. A few ideas Mama Papa Amma Appa Mummy Daddy Ma Baba From Mama Spoken language English Your words stay in the language you speak. We never translate them. Sign my letters",
+  "text": "Asha · 0 days The house is quiet, Mama. What do you want Asha to know about today? A thought to start with Tell Asha how the name was chosen. Another thought Speak Type Not much today Tonight Book Family",
   "lines": [
-    "Back",
-    "What does Asha call you?",
-    "This is how your letters will be signed.",
-    "A few ideas",
-    "Mama",
-    "Papa",
-    "Amma",
-    "Appa",
-    "Mummy",
-    "Daddy",
-    "Ma",
-    "Baba",
-    "From Mama",
-    "Spoken language",
-    "English",
-    "Your words stay in the language you speak. We never translate them.",
-    "Sign my letters"
+    "Asha · 0 days",
+    "The house is quiet, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "Tell Asha how the name was chosen.",
+    "Another thought",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
   ]
 }

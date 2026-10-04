@@ -229,6 +229,12 @@ export const en = {
     toChild: "To {child}",
     audience: "Only you, until you add it to the book.",
     elapsedA11y: "{minutes} min {seconds} s recorded",
+    // Shown when Listen opens without a tap on Speak (a link, a restored screen): nothing records until the person taps.
+    ready: {
+      title: "Ready when you are",
+      body: "Nothing is recording yet. Tap Start when you want to speak.",
+      startButton: "Start",
+    },
     discardButton: "Let it go",
     discardTitle: "Let this recording go?",
     discardBody: "It will be removed from this phone.",
@@ -879,6 +885,32 @@ export const en = {
     generic: {
       title: "Something went wrong",
       body: "Your words are safe. Please try again.",
+    },
+    // A screen could not draw (root error boundary). Calm, no codes, no stack.
+    crash: {
+      title: "Something went wrong on our side",
+      body: "Your letters and recordings are safe on this phone. Nothing was removed.",
+      tryAgainButton: "Try again",
+      tonightButton: "Go to Tonight",
+    },
+    // A link or route the app does not have (replaces the router's developer page).
+    notFoundPage: {
+      title: "We could not find that page",
+      body: "The link may be old or mistyped. Your book is right where you left it.",
+      button: "Back to Tonight",
+    },
+    // The book could not be opened at launch (database open or update step failed). Never deletes anything.
+    launch: {
+      title: "We could not open your book just now",
+      body: "Your letters and recordings are safe on this phone. Nothing has been removed, and nothing will be unless you choose it.",
+      hint: "Trying again often works. If it does not, restarting the phone can help.",
+      tryAgainButton: "Try again",
+      exportButton: "Export what's readable",
+      exportingTitle: "Gathering your files",
+      exportNothing: "We did not find any recordings or files to export on this phone.",
+      exportFailed: "We could not make the export, and nothing was changed. Your files are still on this phone. You can try again.",
+      readme:
+        "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
     },
   },
 

@@ -1,10 +1,10 @@
 {
   "id": "J01-10",
   "journey": "first-run",
-  "kind": "unhappy",
-  "title": "Not born yet: due date not chosen",
-  "note": "Choosing \"Not here yet\" turns the date into a due date, which is not filled in either. Continue waits and says why.",
-  "from": "J01-09",
+  "kind": "happy",
+  "title": "What does Asha call you?",
+  "note": "The name the child will call this parent, which signs every letter. Sign my letters is off until something is chosen or typed.",
+  "from": "J01-07",
   "shot": "screens/J01-10.png",
   "route": "/onboarding",
   "viewport": {
@@ -22,18 +22,24 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Due date Letters written before birth go into a part of the book called Before You. Choose the due date to continue. Continue",
+  "text": "Back What does Asha call you? This is how your letters will be signed. A few ideas Mama Papa Amma Appa Mummy Daddy Ma Baba Not talking yet? Pick the name you hope to hear. Spoken language English Your words stay in the language you speak. We never translate them. Sign my letters",
   "lines": [
     "Back",
-    "Who is this book for?",
-    "Their name",
-    "You can add a nickname later.",
-    "Add another child",
-    "Birthday",
-    "Not here yet",
-    "Due date",
-    "Letters written before birth go into a part of the book called Before You.",
-    "Choose the due date to continue.",
-    "Continue"
+    "What does Asha call you?",
+    "This is how your letters will be signed.",
+    "A few ideas",
+    "Mama",
+    "Papa",
+    "Amma",
+    "Appa",
+    "Mummy",
+    "Daddy",
+    "Ma",
+    "Baba",
+    "Not talking yet? Pick the name you hope to hear.",
+    "Spoken language",
+    "English",
+    "Your words stay in the language you speak. We never translate them.",
+    "Sign my letters"
   ]
 }

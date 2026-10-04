@@ -2,8 +2,8 @@
   "id": "J01-06",
   "journey": "first-run",
   "kind": "unhappy",
-  "title": "A very long name stops at 60 characters, and says so",
-  "note": "The person pastes 90 letters. The field keeps the first 60 and a quiet line explains the limit, so nothing is cut without a word. The limit is the same one the book and the server use.",
+  "title": "A very long name is cut at 60 characters",
+  "note": "The person pastes 90 letters. The field keeps the first 60 and stops, so a name can never break the layout of the book. No warning is shown.",
   "from": "J01-05",
   "shot": "screens/J01-06.png",
   "route": "/onboarding",
@@ -22,19 +22,18 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name A name can have up to 60 characters. Add another child Birthday Not here yet Birthday Born today We sort letters by AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's month of age. Choose AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's birthday to continue. Continue",
+  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Birthday Sunday, October 4, 2026 We sort letters by AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's month of age. Continue",
   "lines": [
     "Back",
     "Who is this book for?",
     "Their name",
-    "A name can have up to 60 characters.",
+    "You can add a nickname later.",
     "Add another child",
     "Birthday",
     "Not here yet",
     "Birthday",
-    "Born today",
+    "Sunday, October 4, 2026",
     "We sort letters by AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's month of age.",
-    "Choose AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's birthday to continue.",
     "Continue"
   ]
 }

@@ -1,0 +1,33 @@
+{
+  "id": "J20-02",
+  "journey": "crash",
+  "kind": "unhappy",
+  "title": "The book cannot be opened (fault injected)",
+  "note": "If opening the database or updating it throws, a recovery screen replaces the app: the letters are safe on the phone, nothing is removed, and there are two actions: Try again and Export what's readable. No delete, reset or rebuild exists here. Reached only by a preview-only switch (?fault=launch-once); on a phone it follows a failed database open or update.",
+  "from": "J20-01",
+  "shot": "screens/J20-02.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "We could not open your book just now Your letters and recordings are safe on this phone. Nothing has been removed, and nothing will be unless you choose it. Trying again often works. If it does not, restarting the phone can help. Try again Export what's readable",
+  "lines": [
+    "We could not open your book just now",
+    "Your letters and recordings are safe on this phone. Nothing has been removed, and nothing will be unless you choose it.",
+    "Trying again often works. If it does not, restarting the phone can help.",
+    "Try again",
+    "Export what's readable"
+  ]
+}

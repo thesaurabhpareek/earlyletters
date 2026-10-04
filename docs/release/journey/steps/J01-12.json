@@ -1,10 +1,10 @@
 {
   "id": "J01-12",
   "journey": "first-run",
-  "kind": "unhappy",
-  "title": "A second name left empty",
-  "note": "Twins or more: an empty second field keeps Continue off, and the line says to fill it in or remove it.",
-  "from": "J01-07",
+  "kind": "happy",
+  "title": "Choose the spoken language",
+  "note": "A sheet lists the languages letters can be spoken in. Choosing one only starts that language's downloads (the download itself is native and cannot run on web).",
+  "from": "J01-11",
   "shot": "screens/J01-12.png",
   "route": "/onboarding",
   "viewport": {
@@ -22,20 +22,22 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name 1 Their name 2 Twins or more? Add them now. Each child gets their own book. Add another child Birthday Not here yet Birthday Born today We sort letters by Asha's month of age. Fill in or remove this name to continue. Continue",
+  "text": "Choose a language Close English हिन्दी Hindi Español Spanish 中文 Mandarin Chinese Français French العربية Arabic Português Portuguese",
   "lines": [
-    "Back",
-    "Who is this book for?",
-    "Their name 1",
-    "Their name 2",
-    "Twins or more? Add them now. Each child gets their own book.",
-    "Add another child",
-    "Birthday",
-    "Not here yet",
-    "Birthday",
-    "Born today",
-    "We sort letters by Asha's month of age.",
-    "Fill in or remove this name to continue.",
-    "Continue"
+    "Choose a language",
+    "Close",
+    "English",
+    "हिन्दी",
+    "Hindi",
+    "Español",
+    "Spanish",
+    "中文",
+    "Mandarin Chinese",
+    "Français",
+    "French",
+    "العربية",
+    "Arabic",
+    "Português",
+    "Portuguese"
   ]
 }
