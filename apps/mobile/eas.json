@@ -7,6 +7,8 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
+      "environment": "development",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "development",
         "EXPO_PUBLIC_SERVER_FEATURES": "off"
@@ -14,6 +16,8 @@
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
+      "environment": "preview",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview",
         "EXPO_PUBLIC_SERVER_FEATURES": "off"
@@ -21,6 +25,8 @@
     },
     "production": {
       "autoIncrement": true,
+      "channel": "production",
+      "environment": "production",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_SERVER_FEATURES": "off"
