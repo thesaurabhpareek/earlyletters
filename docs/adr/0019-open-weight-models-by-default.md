@@ -1,13 +1,13 @@
-# ADR 0015: Open-weight models by default, through OpenCode and OpenRouter
+# ADR 0019: Open-weight models by default, through OpenCode and OpenRouter
 
 - **Status:** Accepted, 2026-10-03.
 - **Deciders:** founder ("I would not want to burn that amount of money").
-- **Amends:** ADR 0014 (the agent harness). Everything there stands except the engine.
+- **Amends:** ADR 0018 (the agent harness). Everything there stands except the engine.
 - **Related:** `agents/roster.json` (`engines`), `scripts/agents/run-opencode.mjs`, `docs/agents/HARNESS.md` sections 3, 9 and 10.
 
 ## Context
 
-ADR 0014 ran every agent on Claude through the API. At the team's daily cap that models out at roughly $420 to $3,400 a month, too much for this project. Open-weight models have improved sharply: on their own model cards, DeepSeek V4.1 Flash, GLM-5.3 and Kimi K3 report agentic coding results close to recent Claude Opus versions, at a fraction of the price. Those results are self-reported, run in each vendor's harness, and compared with older Claude versions, so they are a signal, not a guarantee.
+ADR 0018 ran every agent on Claude through the API. At the team's daily cap that models out at roughly $420 to $3,400 a month, too much for this project. Open-weight models have improved sharply: on their own model cards, DeepSeek V4.1 Flash, GLM-5.3 and Kimi K3 report agentic coding results close to recent Claude Opus versions, at a fraction of the price. Those results are self-reported, run in each vendor's harness, and compared with older Claude versions, so they are a signal, not a guarantee.
 
 Running Claude Code itself against other vendors' models raises licence and support questions I could not settle from Anthropic's documentation, so the open-weight path uses an open-source agent runner instead.
 

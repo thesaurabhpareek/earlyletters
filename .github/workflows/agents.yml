@@ -9,7 +9,7 @@
 # Needs for opencode: OPENROUTER_API_KEY secret (a key with a budget), the
 # AGENTS_APP_CLIENT_ID variable and AGENTS_APP_PRIVATE_KEY secret. For
 # claude-code: ANTHROPIC_API_KEY. Pause: repository variable AGENTS_PAUSED=true.
-# Structure and process: docs/agents/HARNESS.md. Decisions: ADR 0014, ADR 0015.
+# Structure and process: docs/agents/HARNESS.md. Decisions: ADR 0018, ADR 0019.
 name: Agents
 
 on:
