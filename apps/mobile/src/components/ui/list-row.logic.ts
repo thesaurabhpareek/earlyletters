@@ -27,3 +27,22 @@ export function withDividers<T>(rows: readonly T[], hasLeading: (row: T) => bool
   });
   return out;
 }
+
+/**
+ * A row that can be pressed always shows what it will do: a chevron (it opens something), a value
+ * followed by a chevron, or its own control (a switch, a check). Rows with a value but no chevron
+ * (language, child fields, Restore purchases, Tidying, English model, Family can read) read as
+ * captions, not controls (QA journey critique, "_journey"). Destructive rows say the action in
+ * words and never carry a chevron. Android's list rows omit it by platform convention (`android`).
+ */
+export function showsChevron(row: {
+  pressable: boolean;
+  disabled?: boolean;
+  destructive?: boolean;
+  /** The row already has its own trailing control (a switch, a node). */
+  hasTrailingNode: boolean;
+  android?: boolean;
+}): boolean {
+  if (row.android || row.disabled || row.destructive || row.hasTrailingNode) return false;
+  return row.pressable;
+}

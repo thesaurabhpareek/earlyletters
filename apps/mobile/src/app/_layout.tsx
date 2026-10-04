@@ -5,15 +5,14 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeSessions } from '@scribe/api';
-import { tokens } from '@scribe/design-tokens';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { RootErrorBoundary } from '@/components/resilience/error-boundary';
 import { LaunchRecovery } from '@/components/resilience/launch-recovery';
 import { UIProvider } from '@/components/ui/provider';
+import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
 import { startAnalytics } from '@/lib/analytics';
 import { startAnalyticsObservers } from '@/lib/analytics/observers';
@@ -112,8 +111,8 @@ export default function RootLayout() {
 
 function Root() {
   useAppearance();
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const c = tokens[scheme];
+  // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
+  const { c, scheme } = useTheme();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,

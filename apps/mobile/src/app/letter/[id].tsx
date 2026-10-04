@@ -23,6 +23,7 @@ import { AudioPlayer } from '@/components/player/audio-player';
 import { Button, LARGE_CONTENT } from '@/components/ui/button';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { UIProvider } from '@/components/ui/provider';
+import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
@@ -110,14 +111,8 @@ function Letter() {
   }
 
   if (!entry || !child) {
-    return (
-      <View className="flex-1 items-start justify-center gap-5 bg-background px-6">
-        <Text variant="title1" asHeading>
-          {copy.reader.notFoundTitle}
-        </Text>
-        <Button size="lg" label={copy.reader.notFoundCta} onPress={() => router.back()} />
-      </View>
-    );
+    // The one state pattern. A pushed screen: the native header has the back arrow; the action goes to the book.
+    return <StateScreen kind="notFound" title={copy.reader.notFoundTitle} primary={{ label: copy.reader.notFoundCta, onPress: () => router.back() }} />;
   }
 
   const scale = tokens.readingScale[size];

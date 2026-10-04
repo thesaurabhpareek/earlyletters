@@ -10,11 +10,11 @@ import { EnvelopeSimpleIcon } from 'phosphor-react-native/src/icons/EnvelopeSimp
 import { FingerprintIcon } from 'phosphor-react-native/src/icons/Fingerprint';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View, useColorScheme } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
@@ -22,10 +22,11 @@ import { cn } from '@/lib/utils';
 import { authCopy } from './copy';
 import { authErrorMessage } from './messages';
 import { useAuth } from './session-provider';
+import { useTheme, useScheme } from '@/lib/a11y';
 
 const tryAgainLabel = copy.common.tryAgainButton;
 
-export const useColors = () => tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+export const useColors = () => useTheme().c;
 
 /** Closes the whole sheet (the modal group), not just the current step. */
 export function useCloseSheet(): () => void {
@@ -38,11 +39,17 @@ export function useCloseSheet(): () => void {
   }, [navigation]);
 }
 
-export function SheetFrame({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+/**
+ * The frame of a sign-in or invite sheet. `closeLabel` adds the modal idiom's Close, top right
+ * (lib/navigation.logic.ts); steps that have their own decision button ("Not now") leave it out.
+ */
+export function SheetFrame({ children, footer, closeLabel, closeDisabled }: { children: ReactNode; footer?: ReactNode; closeLabel?: string; closeDisabled?: boolean }) {
+  const close = useCloseSheet();
   return (
     <SafeAreaView edges={['bottom']} className="flex-1 bg-background">
+      {closeLabel ? <ModalHeader onClose={close} closeLabel={closeLabel} closeDisabled={closeDisabled} className="pt-3" /> : null}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView contentContainerClassName="gap-5 px-6 pb-8 pt-8" keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerClassName={cn('gap-5 px-6 pb-8', closeLabel ? 'pt-4' : 'pt-8')} keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
         {footer ? <View className="gap-3 px-6 pb-4">{footer}</View> : null}
@@ -92,7 +99,7 @@ const BUTTON_HEIGHT = 52;
 
 /** Apple's own button (ASAuthorizationAppleIDButton): approved artwork, localized, accessible (HIG). */
 export function AppleButton({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
-  const dark = useColorScheme() === 'dark';
+  const dark = useScheme() === 'dark';
   return (
     <View pointerEvents={disabled ? 'none' : 'auto'} style={{ opacity: disabled ? 0.5 : 1 }}>
       <AppleAuthentication.AppleAuthenticationButton

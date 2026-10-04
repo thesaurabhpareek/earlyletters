@@ -137,10 +137,14 @@ export type ChipProps = {
   icon?: PhosphorIcon;
   onPress?: () => void;
   accessibilityHint?: string;
+  /** What the chip is to VoiceOver. 'radio' (one of a set) and 'checkbox' (many) read as checked; default 'button' reads as selected. */
+  role?: 'button' | 'radio' | 'checkbox';
+  /** Spoken name when the visible label is short ("M" for Monday). */
+  accessibilityLabel?: string;
   className?: string;
 };
 
-export function Chip({ label, variant = 'suggestion', selected = false, icon: IconCmp, onPress, accessibilityHint, className }: ChipProps) {
+export function Chip({ label, variant = 'suggestion', selected = false, icon: IconCmp, onPress, accessibilityHint, role = 'button', accessibilityLabel, className }: ChipProps) {
   const { c } = useTheme();
   const press = usePressScale('control', !!onPress);
   const tag = variant === 'tag';
@@ -169,10 +173,10 @@ export function Chip({ label, variant = 'suggestion', selected = false, icon: Ic
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
       hitSlop={4}
-      role="button"
-      accessibilityLabel={label}
+      role={role}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ selected }}
+      accessibilityState={role === 'button' ? { selected } : { checked: selected }}
       className={cn(
         'min-h-9 flex-row items-center gap-1.5 rounded-full px-4 py-1.5',
         selected ? 'bg-secondary' : 'bg-card',

@@ -1,9 +1,8 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Toggle } from '@/components/platform/toggle';
-import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { copy, fill } from '@/lib/copy';
@@ -14,6 +13,7 @@ import { devShortcutsAllowed } from '@/lib/build-env';
 import { addChild, getActiveChild, setActiveChildId, todayISO } from '@/lib/store';
 import { newChildNeedsPlus, startBookGate } from '@/lib/billing';
 import { PlusGate } from './plus-gate';
+import { useTheme } from '@/lib/a11y';
 
 const DAY = 86_400_000;
 
@@ -23,7 +23,7 @@ const DAY = 86_400_000;
  * and books joined as co-parent never count (billing.newChildNeedsPlus).
  */
 export function AddChildForm() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const o = copy.onboarding.child;
   const x = copy.childrenExtra;
   const [gated] = useState(newChildNeedsPlus);

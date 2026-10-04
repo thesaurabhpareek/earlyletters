@@ -1,8 +1,7 @@
 import type { Decision } from '@scribe/core';
 import { BooksIcon } from 'phosphor-react-native/src/icons/Books';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ScrollView, View, useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
+import { ScrollView, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
@@ -10,6 +9,7 @@ import { billingCopy, presentPlusStore, usePlan } from '@/lib/billing';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
+import { useTheme } from '@/lib/a11y';
 
 interface Props {
   onNotNow: () => void;
@@ -45,7 +45,7 @@ interface Props {
  * trial, Restore and the legal links. Content sits near the top (no floating block).
  */
 export function PlusGate({ onNotNow, onPlus, onContinueDev, title, body, keepNote, icon, decision, trigger = 'second_child' }: Props) {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const x = copy.childrenExtra;
   const g = billingCopy.gate;
   const plan = usePlan();
