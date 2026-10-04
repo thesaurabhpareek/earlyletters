@@ -25,7 +25,7 @@ Note on {name}: stands for the public name from `packages/brand`. "Meera" is the
 | 10 | Early access (destination) | 24 | 24 |
 | | **Total** | **360** | **318** |
 
-Reduction: 42 words, about 12 percent. The pricing block alone goes from 80 to 66 words, and from one paragraph to a lead, two plan cards and a reassurance line. The pricing count falls less than the layout suggests because the plan cards carry the prices; what changes most is how it reads (the longest unbroken run is now 11 words, was 62 words).
+Reduction: 42 words, about 12 percent overall; seven sections shrink or reflow, three are unchanged. The pricing block alone goes from 80 to 66 words, and from one paragraph to a lead, two plan cards and a reassurance line. The count falls less than the layout suggests because the plan cards carry the prices; what changes most is how it reads (the longest unbroken run was 75 words, now 16). Sections 4 and 7 get slightly longer in words because one sentence becomes short separate lines; to cut them, drop the 'Runs on your phone by default.' line (the hero trust line already says it) and the 'Your words stay in the language you said them.' sentence.
 
 ## 2. Where the page is text-heavy today (audit)
 
@@ -33,14 +33,14 @@ Longest single blocks on the home page, in word count:
 
 | Block | Words | Verdict |
 |---|---:|---|
-| s10 pricing support | 78 | Wall of text, one paragraph, five claims. Fix first. |
-| comingSoon.line (hero) | 31 | Two sentences, one is filler. Shorten. |
-| s06 book support | 23 | Two ideas in one sentence pair. Split. |
+| s10 pricing support | 75 | Wall of text, one paragraph, five claims, one 31-word sentence. Fix first. |
+| comingSoon.line (hero) | 29 | Two sentences, one is filler. Shorten. |
+| s09 five private lines | 45 | Five lines, two pairs say related things. Merge to three. |
+| s06 book support | 21 | Two ideas. Split. |
+| s07 years card | 21 | Overlaps s05. Merge. |
 | s04 proof support | 20 | Three ideas in two sentences. Split. |
-| s05 voice support | 20 | Overlaps s07 card. Merge. |
-| s07 years card | 20 | Overlaps s05. Merge. |
-| s08 languages support | 16 | Repeats the list shown below it. Shorten. |
-| s09 five private lines | 48 | Five lines, two pairs say related things. Merge to three. |
+| s05 voice support | 18 | Overlaps s07 card. Merge. |
+| s08 languages support | 14 | Repeats the list shown below it. Shorten. |
 
 Everything else (evening, how it works, early access) is already short and stays.
 
@@ -244,7 +244,7 @@ Facts: Facts carried: all five original claims (s09). Export and delete merged i
 
 ### 9. Pricing (the founder's block)  (80 words to 66)
 
-Source: s10 support (one 78-word paragraph)
+Source: s10 support (one 75-word paragraph)
 
 Before:
 
