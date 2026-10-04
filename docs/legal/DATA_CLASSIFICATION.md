@@ -463,7 +463,7 @@ See 4.9.
 | Column | Level | Note |
 |---|---|---|
 | `week` | L2 | week start (UTC) |
-| `role` | L2 | enum (co_parent, contributor) |
+| `role` | L2 | enum (parent, contributor) |
 | `sent` | L2 | count, k-anonymised |
 | `accepted` | L2 | count, k-anonymised with remainder |
 | `accepted_within_7d` | L2 | count, k-anonymised with remainder |

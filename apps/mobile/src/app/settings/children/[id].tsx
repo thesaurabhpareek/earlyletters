@@ -32,7 +32,7 @@ export default function ChildSettings() {
         text: s.hideLabel,
         style: 'destructive',
         onPress: () => {
-          track('child_setting_changed', { key: 'hidden', ordinal: ordinalOf(child.id) });
+          track('child_setting_changed', { key: 'hidden', child_ordinal: ordinalOf(child.id) });
           hideChild(child.id);
           router.back();
         },
@@ -56,7 +56,7 @@ export default function ChildSettings() {
           value={child.remindersOn}
           onValueChange={(v) => {
             updateChild(child.id, { remindersOn: v });
-            track('child_setting_changed', { key: 'include_in_reminders', ordinal: ordinalOf(child.id) });
+            track('child_setting_changed', { key: 'include_in_reminders', child_ordinal: ordinalOf(child.id) });
           }}
         />
       </ListSection>
