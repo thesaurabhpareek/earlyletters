@@ -25,7 +25,7 @@
 /supabase/migrations/               @thesaurabhpareek
 /supabase/tests/                    @thesaurabhpareek
 
-# The agent team: roster, charters, memory and the dispatcher (ADR 0014)
+# The agent team: roster, charters, memory and the dispatcher (ADR 0018)
 /agents/                            @thesaurabhpareek
 /.claude/                           @thesaurabhpareek
 /scripts/agents/                    @thesaurabhpareek

@@ -1,5 +1,5 @@
 {
-  "$comment": "The Early Letters agent team. Edit engines, models and caps here; the dispatcher reads this file on every tick. Structure and process: docs/agents/HARNESS.md. Rules agents follow: docs/agents/OPERATING_MODEL.md. Decisions: ADR 0014, ADR 0015.",
+  "$comment": "The Early Letters agent team. Edit engines, models and caps here; the dispatcher reads this file on every tick. Structure and process: docs/agents/HARNESS.md. Rules agents follow: docs/agents/OPERATING_MODEL.md. Decisions: ADR 0018, ADR 0019.",
   "version": 1,
   "repo": "thesaurabhpareek/earlyletters",
   "base_branch": "develop",

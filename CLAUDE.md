@@ -55,7 +55,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 ## Agents
 - How the harness works, end to end: `docs/agents/HARNESS.md`. The team (19 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`.
 - Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
-- Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0014, ADR 0015): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
+- Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
 
 ## Saving work (every session, human or AI)
 - A usage limit can stop any session at any moment, and anything not pushed exists only in that session's workspace.
