@@ -46,7 +46,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, edi
   const { c } = useTheme();
   const mark = c.editMark;
   return (
-    <Text variant="letterBody" scale={scale} selectable>
+    <Text variant="letterBody" scale={scale} selectable testID="review.transcript">
       {segments.map((s, i) => {
         if (s.edit === null) return s.text;
         if (s.edit === restoredIndex) {
