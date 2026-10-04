@@ -4,6 +4,8 @@ Owner: `marketing` (Growth and Marketing Lead). Status: draft 1, 3 Oct 2026. Dra
 
 Aligned to: `docs/ROADMAP.md` (submission Mon 11 Jan 2027, release target week of 18 Jan), `docs/BACKLOG.md` (BL-109, BL-280, BL-286), `docs/DECISIONS.md` (D-004, D-030, D-045), and the founder brief `docs/agents/BRIEF-2026-10-03.md`. Where the brief and the roadmap differ on scope, this plan follows the brief because it is the newer founder record (section 1).
 
+**Update, 4 Oct 2026 (v1.0 on-device only).** The founder decided on 3 Oct that v1.0 ships on the phone only: no sign-in, no sync, no server copy of letters, and co-parent sharing moves to v1.1 (brief decisions 4 and 5, as amended in PR #33). This plan was drafted before that change was written into the brief. Every place below that relied on co-parent sharing, an account, or a server total is marked **v1.1** and is not a v1.0 claim. `docs/DECISIONS.md`, the PRD and the ROADMAP on `develop` still describe the older scope and are for `product` to reconcile.
+
 Labels: **F** fact with a source in section 11; **E** estimate; **A** assumption to validate; **U** unverified. Sources [M#] are listed at the end; [S#] refer to `docs/research/COMPETITIVE_RESEARCH.md` or `USER_RESEARCH.md` as marked.
 
 ---
@@ -11,10 +13,10 @@ Labels: **F** fact with a source in section 11; **E** estimate; **A** assumption
 ## 0. The plan on one page
 
 - **Positioning:** letters a parent speaks to their child, in their own words and voice, kept exactly as said, in a book by month of age. The memory book you fill by talking.
-- **Who first:** US expecting and new parents on iPhone, especially those already writing or recording to their child, and multilingual families who will speak in one of the seven v1.0 languages. The co-parent joins free.
-- **How a solo founder reaches them without paid ads:** the App Store page and search, an Apple featuring nomination, the earlyletters.com waitlist with one launch email, the founder's own network, and the co-parent invite inside the product. No paid acquisition until the pen test and the entity question are settled (ROADMAP 6 item 9, D-004).
+- **Who first:** US expecting and new parents on iPhone, especially those already writing or recording to their child, and multilingual families who will speak in one of the seven v1.0 languages. The co-parent joining the same book is a v1.1 story.
+- **How a solo founder reaches them without paid ads:** the App Store page and search, an Apple featuring nomination, the earlyletters.com waitlist with one launch email, and the founder's own network. The co-parent invite inside the product is v1.1, so v1.0 has no built-in growth loop. No paid acquisition until the pen test and the entity question are settled (ROADMAP 6 item 9, D-004).
 - **Beta:** TestFlight only. C0 from 9 Nov, C1 (15 to 25 families) from 14 Dec. The store listing never says beta (brief decision 10).
-- **Biggest marketing risk right now:** the draft store and site copy in `packages/content` promises features the brief moved out of v1.0 (grandparents writing, hearing family voices, word highlighting, Hindi and English in one sentence, uploaded backup). Section 1.2 lists each line for `content` and `legal`.
+- **Biggest marketing risk right now:** the draft store and site copy in `packages/content` promises features the brief moved out of v1.0 (co-parent sharing and sign-in, grandparents writing, hearing family voices, word highlighting, Hindi and English in one sentence, uploaded backup). Section 1.2 lists each line for `content` and `legal`.
 - **Second risk:** searching "early letters" on the US App Store today returns alphabet and phonics apps [M17]. Every first contact pairs the name with "memory book".
 - **Measure with what we are allowed to see:** App Store Connect and server counts for totals; device analytics only from people who opted in, always labelled as such.
 
@@ -29,15 +31,15 @@ Labels: **F** fact with a source in section 11; **E** estimate; **A** assumption
 | Capture | Speak or type a letter; crash-safe capture; on-device transcription by default that only fixes slips; every change visible and undoable | Any rewriting, summarising or "story" mode, ever | CLAUDE.md constitution; brief 7 |
 | Voice | The original recording stays with the letter and plays on the phone that made it | Family hearing each other's recordings; any audio upload | Brief 9 ("no audio upload in v1.0") |
 | Read together | Playback of a letter in the author's voice | Word highlighting while it plays (v1.1) | Brief 9 |
-| Family | Co-parent shares the book | Grandparents and other family writing; the web contribution page (later) | Brief 5 |
+| Family | Nothing in v1.0. A designed "coming soon" screen for co-parent sharing; every letter stays on this phone | Co-parent sharing (v1.1); grandparents and other family writing and the web contribution page (after v1.1) | Brief 5 (amended, PR #33) |
 | Languages | Letters spoken in English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese, each in its own script | Hindi and English in one sentence (v1.1); app interface in other languages | Brief 6, 9 |
 | Book | Organised by month of age; free PDF and ZIP export, offline | Printed books | ROADMAP 5; K-32 |
-| Sign-in | Apple, Google, email magic link | Passwords | Brief 4 |
+| Sign-in | None in v1.0: the app works fully without an account | Sign in with Apple, Google, email magic link (v1.1); passwords never | Brief 4 and 5 (amended, PR #33) |
 | Plus | $3.99/month with a 1-month free trial, $29.99/year with a 2-month free trial, through Apple only; Family Sharing on | Lifetime, gifts | Brief 3; ROADMAP 6 |
 | Privacy | Private by default; no ads; never sold; not used to train models (see the CN-7 condition in 1.2) | "End-to-end encrypted"; Vault mode | Brief 11; ROADMAP 5; privacy-policy CN-7 |
 | Store | US storefront only, Lifestyle category, individual publisher | Other storefronts, Android | ROADMAP 7; compliance register |
 
-**Roadmap versus brief.** `docs/ROADMAP.md` still plans family contributors (D-002), shared voice (D-032), word highlighting and Apple-plus-email sign-in (D-044). The brief of the same day narrows family to the co-parent, defers audio upload and highlighting, and adds Google sign-in. This plan uses the brief. `product` owns reconciling the roadmap; flagged in the PR.
+**Roadmap versus brief.** `docs/ROADMAP.md` still plans family contributors (D-002), shared voice (D-032), word highlighting and Apple-plus-email sign-in (D-044). The brief defers audio upload and highlighting and, after the founder's v1.0 on-device-only decision, moves co-parent sharing, sign-in and sync to v1.1 too. This plan uses the brief. `product` owns reconciling the roadmap; flagged in the PR.
 
 ### 1.2 Draft copy that over-claims against v1.0 (hand-off to `content` and `legal`)
 
@@ -51,10 +53,11 @@ None of these are mine to edit. Each needs a decision before the listing or the 
 | 4 | `store.en.ts` "EVERY LANGUAGE, AS SPOKEN"; `site.en.ts` FAQ "Which languages?"; CREATIVE.md screenshot 1 (a Hindi and English letter) | "Hindi, English, both in one sentence, or any mix" | Brief 6 and 9: seven languages at v1.0; code-switching is v1.1 | Name the seven languages; screenshot 1 uses a single-language letter |
 | 5 | `store.en.ts` "YOUR VOICE, KEPT"; `site.en.ts` privacy point 4, FAQ "What happens to my recordings?", FAQ cost line "Plus ... adds backup for every recording" | Optional encrypted backup, recovery key, "unless you choose Vault mode" | Brief 9 (no audio upload); ROADMAP 5 (Vault mode out of v1.0); D-033, recommended and awaiting the founder (recordings are in the iPhone's own backup) | `product` confirms what backup means at v1.0; if D-033 is accepted, say "on your phone, and in your iPhone's own backup if you use one" (its wording) |
 | 6 | `store.en.ts` last description paragraph and `promotionalTextBeta` | "Early Letters is in beta..." | Brief 10: the store listing never says beta; App Review 2.2 [M4] | Remove both (the D-030 change set). The in-app "early version, can make mistakes" note stays |
-| 7 | `store.en.ts` `whatsNewV1` | "invite family, read together" | Brief 5 | "invite your co-parent" |
+| 7 | `store.en.ts` `whatsNewV1` | "invite family, read together" | Brief 5: no sharing in v1.0 | Say nothing about inviting anyone; "invite your co-parent" returns in v1.1 |
 | 8 | `site.en.ts` `gift` | "Give Early Letters" | Gifts are v1.1 or later (ROADMAP 6 item 6) | Hold until gifts exist |
 | 9 | Privacy policy section 6, any "never used to train" line in marketing | Not used to train models | Privacy policy CN-7: launch gate until the sync vendor confirms no-training in writing | Use the line only after `legal` marks CN-7 closed. Content rules also ban the word "AI", so say "never used to train models" |
 | 10 | `store.en.ts` keywords "grandparents", "milestones" | Search terms | "grandparents" promises scope (row 1); "milestones" reads as development tracking, which D-004 keeps out of metadata for the 5.1.1(ix) risk | Revisit in keyword research (standing duty 4) |
+| 11 | Any store, site or in-app line that says co-parent, "both parents", "invite", "sign in", "sync" or "on both phones" (including the "Two parents, one book" suggestion in row 1) | Two parents in one book; an account | Brief 4 and 5 as amended: v1.0 is on-device only | Use "every letter stays on this phone" and keep co-parent copy for the v1.1 launch. Row 1's direction changes from co-parent framing to a single-parent, on-this-phone framing |
 
 The website thread's storyboard (`docs/web/STORYBOARD.md` on `feat/web-scroll-film`) already matches v1.0 on two of these: scene S05 has no word highlight and scene S08 shows the seven languages one at a time.
 
@@ -117,7 +120,7 @@ Store metadata never names a competitor: App Review 2.3.7 bars subtitles that re
 | B | **Parents already writing or recording to their child** | Child email accounts handed over at 18, sealed birthday letters, monthly videos to a future self, Voice Memos of babble [S25][S26][S30][S30b in USER_RESEARCH] (S) | "You already do this. Now it lives in one book, by month, in your voice" | Highest intent |
 | C | **Multilingual families** speaking one of the seven v1.0 languages | 21.7% of US residents aged 5 and over speak a language other than English at home; 61.1% of those speak Spanish and 5.1% Chinese (ACS 2018 to 2022) [M2] (F). 72% of Indian Americans aged 5 and over speak a language other than English at home [S13 in USER_RESEARCH] (F) | "Say it in your language. It stays in the language you said it." | Strong, with limits: the app interface is English; one language per letter until v1.1 (A) |
 | D | **Fathers** | Often write letters or record videos to the future child rather than fill baby books [S25][S30 in USER_RESEARCH] (S) | "Tell {child} about today, in your own words" | Good (no separate creative; it is the same promise) |
-| E | **The co-parent** | Records split across two phones [S3x in USER_RESEARCH] (A) | "One book, both of you" | The one in-product growth loop at v1.0 |
+| E | **The co-parent** | Records split across two phones [S3x in USER_RESEARCH] (A) | "One book, both of you" | v1.1: co-parent sharing is not in v1.0. Not a v1.0 audience |
 
 ### 3.2 Who we do not target at v1.0
 
@@ -138,7 +141,7 @@ Constraints that shape this list: the founder has 15 to 20 hours a week for ever
 | 3 | **earlyletters.com waitlist** | The website thread's "tell me when it's ready" form; at release the page swaps to the App Store badge when `NEXT_PUBLIC_APP_STORE_URL` is set (`apps/web/src/lib/launch.ts` on `feat/web-scroll-film`) | 0 h until launch | Live when the website thread ships it (date U) | Marketing writes no website copy here; that thread owns it. Ask: put an App Store campaign link on the badge (section 8) |
 | 4 | **One launch email to the waitlist** | A single email on release day saying the app is out, with the App Store link | 1 h to approve and send | Launch day | Commercial email under CAN-SPAM, so it needs an unsubscribe and a postal address (LEGAL-REQ-053, CR-060); D-004 says use a mailing address that is not the family home. The waitlist's stated purpose is "launch notice" (`data-policy.md`), so one email fits it. No second email without `legal` |
 | 5 | **The founder's own network** | Personal messages to friends and colleagues with babies or expecting; the source of C1 beta families and of the first launch-week installs | 2 h for beta recruitment (weeks 6 to 7), 2 h at launch | Weeks 6 to 7, launch week | Agents draft templates; the founder personalises and sends. Never ask relatives or friends for App Store reviews (section 5.4) |
-| 6 | **Co-parent invite (in the product)** | Every first parent can invite the other parent to the same book | 0 h | From release | The only built-in growth loop at v1.0. Invite copy lives in `packages/content`; measure acceptance on the server (section 8) |
+| 6 | **Co-parent invite (in the product)** | v1.1. Every first parent can invite the other parent to the same book | 0 h | From v1.1 | Not available in v1.0, which has no built-in growth loop; v1.0 growth rests on channels 1 to 5. Invite copy lives in `packages/content`; acceptance is measured on the server once sync exists (section 8) |
 | 7 | **Parent communities, carefully** | Read and learn first. Where a community's own rules allow it, the founder may post once as the maker, plainly disclosed | 1 h a week, optional | After release | Each community's self-promotion rules not checked (U). Never post on someone else's behalf, never seed fake accounts, never use a beta family's words |
 | 8 | **Custom product pages for language communities** | Extra product pages with a Spanish or Hindi letter in screenshot 1, reached by their own URL [M12] | 2 h once screenshots exist | Launch week plus 2 to 3 | Up to 70 pages; screenshots, promotional text and previews can vary, and keywords can be assigned [M12]. The app interface stays English, so the page must say so (A) |
 
@@ -171,7 +174,7 @@ Internal testers are "up to 100 App Store Connect users with access to your cont
 
 BL-109's coverage list comes from TDD 07 and still asks for "three grandparents in the app". Under brief decision 5, family members other than the co-parent cannot write in v1.0, so that slot has nothing to test. Proposed coverage for `product` and QA to confirm:
 
-- at least 2 co-parent pairs (both parents active in one book);
+- co-parent pairs: not testable in v1.0 (no sharing); recruit them for the v1.1 beta instead;
 - speakers of at least 3 of the 7 v1.0 languages other than English: Spanish, Hindi and Arabic first, then Chinese if a family can be found. Spanish and Chinese are the largest US communities among the seven; Hindi is the smallest. US speakers aged 5 and over, ACS 2018 to 2022: Spanish 41.4 million, Chinese 3.49 million, Arabic 1.34 million, French 1.21 million, Portuguese 0.91 million, Hindi 0.88 million [M18] (F; the order holds within the published margins of error; the Census counts Mandarin and Cantonese together as Chinese). Why each is in the beta:
   - Spanish: by far the largest.
   - Hindi: not for size. It is the user research's named multilingual segment [S13 in USER_RESEARCH] and its highest-risk case for faithful transcription: a speech model dropped words where Hindi and English mix [S12 in USER_RESEARCH], and Hindi-speaking testers are likely to mix even with one language per letter (A).
@@ -228,7 +231,7 @@ CREATIVE.md's six frames are the base. Changes the v1.0 scope forces (section 1.
 | 1 | Exactly as you said it. | Use a single-language letter (English for the default page); the Hindi and English letter waits for v1.1 |
 | 2 | Talk for a minute. | None |
 | 3 | Read together, in their voice. | Show plain playback ("From Papa, Month 4" with the play control), no word highlight |
-| 4 | From Nani, from Papa, from everyone. | Becomes the co-parent frame: two authors, one book. Grandparents return in v1.1 |
+| 4 | From Nani, from Papa, from everyone. | Drop or replace with a single-author frame ("Letters from you, kept in one book"). Co-parent and grandparent frames return in v1.1 |
 | 5 | Your words stay in the language you said them. | One letter in one of the seven languages (Devanagari or Spanish), not mixed |
 | 6 | A book that grows month by month. | None ("Free PDF any time"; no print claim) |
 
@@ -303,7 +306,7 @@ Mon 18 Jan 2027 is the third Monday of January, so it is Martin Luther King Jr. 
 | **App Store Connect acquisition** | Impressions, product page views, downloads, and per-campaign results through campaign links (`pt`, `ct` parameters) [M5] | A campaign shows only after first-time downloads from at least five people, and each metric needs at least 5 in the date range [M5]. A first-time download within 24 hours of using the link is attributed [M5] |
 | **App Store Connect usage** | Sessions, active devices, retention, crashes | Only from users who agreed to share diagnostics and usage information with app developers [M6]. It is an opt-in sample too |
 | **App Store Connect subscriptions** | Trials, paid conversions, renewals, refunds | Under brief decision 3 no server of ours sees purchases and there is no RevenueCat, so Apple's own reports are the money source. `docs/analytics/TRACKING_PLAN.md` still names RevenueCat (source "R"); `analytics` to update (section 10) |
-| **Server aggregates** | Accounts, books, letters by mode, co-parent invites and acceptances; the north star "weekly keeping families" | Signed-in users only; letters kept only on the phone are invisible. Cells under 10 accounts suppressed (TRACKING_PLAN 1.4) |
+| **Server aggregates** | v1.1 only. Accounts, books, letters by mode, co-parent invites and acceptances; the north star "weekly keeping families". In v1.0 there is no account and no server copy, so there are no server totals | Signed-in users only; letters kept only on the phone are invisible. Cells under 10 accounts suppressed (TRACKING_PLAN 1.4) |
 | **Device analytics (PostHog)** | Behaviour inside the app | Only after the person opts in, which is asked after the first letter in a later session; nothing before is sent or queued (TRACKING_PLAN rule 1). Rates are among consenting users, likely more engaged than the rest. Never divide a device count by a server total |
 | **Waitlist** | Signups (website thread) | One email, for the launch notice only (`data-policy.md`) |
 
@@ -329,12 +332,12 @@ Targets marked A are assumptions to revisit after the first cohorts; those copie
 |---|---|---|
 | Product page conversion (downloads per product page view) | ASC | Baseline in L1 to L2; no target until a baseline exists (A) |
 | First-time downloads by campaign (website, launch email, founder network) | ASC campaign links | Report only; tells us which channel is worth the founder's hours |
-| Share of first-letter users with an account by day 7 | Server | 50% or more (TP) |
-| Share of books with a co-parent invite in the first 30 days | Server | Set after the first cohort (TP) |
-| Weekly keeping families (north star) | Server | Report weekly; never shown to users (TP) |
-| Active writers at week 4 / first-letter users | Server | 35% or more (TP) |
+| Share of first-letter users with an account by day 7 | Server (v1.1; no accounts in v1.0) | 50% or more (TP) |
+| Share of books with a co-parent invite in the first 30 days | Server (v1.1) | Set after the first cohort (TP) |
+| Weekly keeping families (north star) | Server (v1.1); in v1.0 read from opt-in device analytics only, labelled as such | Report weekly; never shown to users (TP) |
+| Active writers at week 4 / first-letter users | Server (v1.1); in v1.0 opt-in device analytics only | 35% or more (TP) |
 | Median time to first letter | Device (consenting only) | 90 seconds or less (TP); labelled as a consenting-user number. Only if counsel approves the one-time `analytics_opted_in` summary (TRACKING_PLAN section 2, LEGAL-REQ-003); otherwise this is not measured, and activation is read from ASC installs and server counts only |
-| Trial starts per first-letter user by day 90 | ASC plus server | 15% or more (TP); only a partial read at six weeks |
+| Trial starts per first-letter user by day 90 | ASC (server half is v1.1) | 15% or more (TP); only a partial read at six weeks |
 | Refunds | ASC | Under 3% (TP) |
 | Ratings asked for outside the system prompt | Process | Zero |
 | Support messages about a promised feature that is not there | Founder's count by category | Zero (A); any one means a claim needs fixing |
@@ -356,8 +359,8 @@ Targets marked A are assumptions to revisit after the first cohorts; those copie
 | 9 | Founder time goes to the critical path and marketing slips | High, medium | Week-14 founder tasks not done by 8 Jan | Agents draft everything; founder actions are limited to about ten short moments (section 7); the listing is the only one that blocks submission |
 | 10 | Numbers mislead: opt-in samples look better than reality | High, medium | Device rates far above server rates | Label sources; decide on server and ASC numbers; size the bias as TRACKING_PLAN 1.4 describes |
 | 11 | C1 families lose letters moving from the TestFlight build to the App Store version | U, high | Any report in week L1 | QA to confirm the path before the welcome note (U); welcome note tells families to export a copy before switching |
-| 12 | Parents expect grandparents to write, because the category talks about family | Medium, medium | Support messages, reviews | Say clearly what v1.0 does; no dates for later features in store copy |
-| 13 | A close competitor ships the same promise (Dearest, Apple Journal) | Low to medium, medium | Their listings change | Our difference is the child's book by month of age, both parents in it, and "nothing rewritten" shown on screen |
+| 12 | Parents expect co-parent sharing or grandparents to write, because the category talks about family | Medium, medium | Support messages, reviews | Say clearly what v1.0 does; no dates for later features in store copy |
+| 13 | A close competitor ships the same promise (Dearest, Apple Journal) | Low to medium, medium | Their listings change | Our difference is the child's book by month of age, in your own voice, and "nothing rewritten" shown on screen ("both parents in it" returns in v1.1) |
 
 ---
 
@@ -368,8 +371,8 @@ Targets marked A are assumptions to revisit after the first cohorts; those copie
 **To `legal`:** the claims list (section 1.2 and the listing) for the counsel package by week 5; CN-7 before any "never used to train models" line; the launch email as a commercial email (CAN-SPAM, postal address per D-004); whether a post-launch thank-you offer code for C1 families is acceptable; FTC review-rule disclosure if reviews are ever mentioned to people we know; the C1 screening form before week 6 (its five questions, the optional settings question, the form tool and where answers are kept, and the deletion dates in 5.3); what contact information the support page must show (Apple names "legal address, email address, telephone number" as examples, "as may be required by local law" [M19]; any postal address follows D-004, not the family home).
 
 **To `product`:**
-1. Reconcile `docs/ROADMAP.md` with the Oct 3 brief (family scope, shared voice, word highlighting, Google sign-in, Family Sharing on or off: BL-103 says off, brief decision 3 says on).
-2. Update BL-109's coverage list (the grandparent slot cannot be tested in v1.0).
+1. Reconcile `docs/ROADMAP.md`, `docs/DECISIONS.md` (D-002, D-032, D-036, D-044, D-051) and the PRD with the Oct 3 brief and the v1.0 on-device-only decision (family scope, sign-in, sync, shared voice, word highlighting, Family Sharing on or off: BL-103 says off, brief decision 3 says on).
+2. Update BL-109's coverage list (the grandparent slot and the co-parent pair slot cannot be tested in v1.0).
 3. Add a task for trademark clearance before submission (CR-122).
 4. Decide whether v1.0 has a review-prompt moment (section 6.4).
 5. Confirm C2 (public link) is skipped before submission (section 5.1).
