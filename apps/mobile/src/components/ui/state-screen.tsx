@@ -66,8 +66,8 @@ export function StateScreen(props: StateScreenProps) {
 }
 
 /**
- * The same screen without reading navigation: for the root ErrorBoundary, which renders when the
- * navigator itself has crashed and so has no navigation context to read.
+ * The same screen without reading navigation, for any caller outside a navigator. (The root crash screen is
+ * components/resilience/error-boundary.tsx, which stays plain React Native so it still draws when providers fail.)
  */
 export function StateScreenView({ kind, title, body, art, primary, quiet, header, focused = true }: StateScreenProps & { focused?: boolean }) {
   const spec = STATE_SPEC[kind];

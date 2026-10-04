@@ -8,6 +8,10 @@
  * the background, an audio interruption (call, Siri, alarm) and leaving the
  * screen all stop and keep the take, then Review opens. Only "Let it go",
  * confirmed, deletes audio. Never records in the background.
+ *
+ * Starts only from a tap: Tonight's Speak arms it (lib/resilience/start-intent.ts). Opened any other way
+ * (the scribe://listen link, a restored screen) it waits in the ready state until the person taps Start.
+ * The screen stays awake while a take is live or paused, and is released when it ends.
  */
 import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import { File } from 'expo-file-system';
@@ -31,8 +35,10 @@ import { useReducedMotion } from '@/lib/motion';
 import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
 import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
 import { deleteDraft, getActiveChild, setRecordingProgress } from '@/lib/store';
+import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
+import { consumeListenStart } from '@/lib/resilience/start-intent';
 
-type Phase = 'asking' | 'denied' | 'recording' | 'paused' | 'finishing';
+type Phase = 'ready' | 'asking' | 'denied' | 'recording' | 'paused' | 'finishing';
 
 function clock(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -57,7 +63,10 @@ export default function Listen() {
   });
   const status = useAudioRecorderState(recorder, 50); // 20 Hz metering (MOTION 5b)
   const db = useSharedValue(-160);
-  const [phase, setPhase] = useState<Phase>('asking');
+  // Read once on mount: was this opened by a tap on Speak? (A ref, so a re-render never re-reads it.)
+  const tapped = useRef<boolean | null>(null);
+  if (tapped.current === null) tapped.current = consumeListenStart();
+  const [phase, setPhase] = useState<Phase>(tapped.current ? 'asking' : 'ready');
   const announcedMinute = useRef(0);
   useEffect(() => {
     if (phase === 'denied') track('error_shown', { code: 'mic_denied' });
@@ -114,13 +123,21 @@ export default function Listen() {
     AccessibilityInfo.announceForAccessibility(t.listening);
   };
 
-  useEffect(() => {
+  const begin = () => {
+    setPhase('asking');
     start().catch(() => {
       if (takeId.current) void endTake('interruption');
       else setPhase('denied');
     });
+  };
+
+  useEffect(() => {
+    if (tapped.current) begin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A take that is live or paused keeps the screen on; every other phase, and leaving, releases it.
+  useKeepAwakeWhile(phase === 'recording' || phase === 'paused', KEEP_AWAKE_TAGS.listen);
 
   // App leaves the foreground: stop and keep (LEGAL-REQ-011, PRD checklist 6.3).
   // `inactive` alone (Control Center, a notification) does nothing; a real
@@ -210,6 +227,21 @@ export default function Listen() {
   const typeInstead = () => router.replace({ pathname: '/write', params: promptKey ? { promptKey } : {} });
 
   if (!child) return null;
+
+  if (phase === 'ready') {
+    const r = p.ready;
+    // Nothing is recording. A tap starts it; Close leaves without touching the microphone.
+    return (
+      <StateScreen
+        kind="empty"
+        art="envelope"
+        title={r.title}
+        body={r.body}
+        header={<ModalHeader onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))} />}
+        primary={{ label: r.startButton, onPress: begin }}
+      />
+    );
+  }
 
   if (phase === 'denied') {
     const e = copy.errors.micDenied;

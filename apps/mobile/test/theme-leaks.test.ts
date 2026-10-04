@@ -34,7 +34,10 @@ const offenders = (re: RegExp, allow: string[] = []) =>
 
 describe('theme: one source of truth for the colour scheme', () => {
   it('useColorScheme() is only read in lib/a11y.ts (everything else uses useScheme / useTheme)', () => {
-    expect(offenders(/\buseColorScheme\b/, ['lib/a11y.ts'])).toEqual([]);
+    expect(offenders(/\buseColorScheme\b/, [
+        'lib/a11y.ts',
+        'components/resilience/plain-screen.tsx', // the crash and launch-recovery card: no providers, so it reads the saved appearance, then the system scheme
+      ])).toEqual([]);
   });
 
   it('tokens.light, tokens.dark and tokens[scheme] are only read where both schemes are meant', () => {
@@ -43,6 +46,7 @@ describe('theme: one source of truth for the colour scheme', () => {
         'lib/a11y.ts', // paletteFor(): the one place a scheme picks a palette
         'lib/billing/actions.ts', // paywall config takes explicit light and dark values
         'components/platform/toggle.tsx', // paper-white switch thumb in both themes, as iOS draws it
+        'components/resilience/plain-screen.tsx', // draws when the providers above it failed, so it picks its own palette
       ]),
     ).toEqual([]);
   });

@@ -1,18 +1,19 @@
 /**
- * Any route the app does not have (a stale or mistyped link). The one state pattern, with the
- * one way forward: back to the book. Replaces expo-router's default "This screen doesn't exist".
+ * Not found: any path the app has no screen for (an old or mistyped link). Replaces Expo Router's developer
+ * "Unmatched Route" page, which shows the URL and a sitemap. Here: calm words, one way back to Tonight, and
+ * the address is never shown or logged.
  */
 import { router } from 'expo-router';
-import { StateScreen } from '@/components/ui/state-screen';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { copy } from '@/lib/copy';
+import { TONIGHT_HREF } from '@/lib/resilience/not-found.logic';
 
 export default function NotFound() {
+  const e = copy.errors.notFoundPage;
   return (
-    <StateScreen
-      kind="notFound"
-      title={copy.errors.generic.title}
-      body={copy.errors.generic.body}
-      primary={{ label: copy.reader.notFoundCta, onPress: () => router.replace('/book') }}
-    />
+    <SafeAreaView className="flex-1 justify-center bg-background px-5">
+      <EmptyState art="envelope" title={e.title} body={e.body} action={{ label: e.button, onPress: () => router.replace(TONIGHT_HREF) }} />
+    </SafeAreaView>
   );
 }

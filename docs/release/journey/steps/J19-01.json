@@ -3,7 +3,7 @@
   "journey": "errors",
   "kind": "unhappy",
   "title": "Unknown route (404)",
-  "note": "The app has no designed not-found screen: this is Expo Router's default \"Unmatched Route\" page, with a developer-facing \"Sitemap\" link. Reached only by a malformed deep link. Worth a real screen before launch.",
+  "note": "A designed not-found screen in the product voice replaces Expo Router's \"Unmatched Route\" page. It never shows the address, and has one way back: Back to Tonight. Reached by a malformed or old link.",
   "from": "J00-open",
   "shot": "screens/J19-01.png",
   "route": "/this-page-does-not-exist",
@@ -22,13 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Unmatched Route Page could not be found. http://127.0.0.1:34641/this-page-does-not-exist?seed=asha Go back • Sitemap",
+  "text": "We could not find that page The link may be old or mistyped. Your book is right where you left it. Back to Tonight",
   "lines": [
-    "Unmatched Route",
-    "Page could not be found.",
-    "http://127.0.0.1:34641/this-page-does-not-exist?seed=asha",
-    "Go back",
-    "•",
-    "Sitemap"
+    "We could not find that page",
+    "The link may be old or mistyped. Your book is right where you left it.",
+    "Back to Tonight"
   ]
 }

@@ -79,8 +79,8 @@ describe('(2) one shared pattern for loading, empty and error states', () => {
       ['app/read-together.tsx', /<StateScreen kind="empty"/], // J11-07
       ['app/letter/[id].tsx', /<StateScreen kind="notFound"/], // J10-11
       ['app/listen.tsx', /<StateScreen[\s\S]*kind="empty"/], // J05-04: microphone off
-      ['app/+not-found.tsx', /<StateScreen[\s\S]*kind="notFound"/], // Expo's default 404
-      ['app/_layout.tsx', /export function ErrorBoundary[\s\S]*<StateScreenView[\s\S]*kind="error"/], // the blank crash
+      ['app/+not-found.tsx', /<EmptyState[\s\S]*router\.replace/], // Expo's default 404 (#93's screen: one way back to Tonight)
+      ['app/_layout.tsx', /export function ErrorBoundary[\s\S]*<RootErrorBoundary/], // the blank crash (#93's boundary, not a second one)
     ];
     for (const [f, re] of uses) expect(read(f), `${f} ${re}`).toMatch(re);
   });
@@ -95,9 +95,11 @@ describe('(2) one shared pattern for loading, empty and error states', () => {
 
   it('the root crash screen reads nothing from navigation and never prints the error', () => {
     const layout = code(read('app/_layout.tsx'));
-    const boundary = layout.slice(layout.indexOf('export function ErrorBoundary'), layout.indexOf('export function ErrorBoundary') + 500);
-    expect(boundary).toMatch(/StateScreenView/);
+    expect(layout.match(/export function ErrorBoundary/g)).toHaveLength(1); // one implementation, not two
+    const boundary = code(read('components/resilience/error-boundary.tsx'));
+    const plain = code(read('components/resilience/plain-screen.tsx'));
     expect(boundary).not.toMatch(/\berror\b\.(message|stack)|console\./);
+    expect(plain).not.toMatch(/useIsFocused|useRouter|useNavigation|useLocalSearchParams|console\./);
   });
 
   it('loading never uses a spinner on the screens that moved', () => {

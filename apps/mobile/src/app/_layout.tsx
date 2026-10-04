@@ -3,14 +3,15 @@ import '@/global.css';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState } from 'react';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeSessions } from '@scribe/api';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
+import { RootErrorBoundary } from '@/components/resilience/error-boundary';
+import { LaunchRecovery } from '@/components/resilience/launch-recovery';
 import { UIProvider } from '@/components/ui/provider';
-import { StateScreenView } from '@/components/ui/state-screen';
-import { copy } from '@/lib/copy';
 import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
 import { startAnalytics } from '@/lib/analytics';
@@ -26,29 +27,13 @@ import { startPacks } from '@/lib/packs';
 import { setReadTogetherFreeSessionsSource } from '@/lib/read-together';
 import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
+import { useLaunch } from '@/lib/resilience/use-launch';
 import { getSetting, subscribe } from '@/lib/store';
 import { startSync } from '@/lib/sync';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
 import { useStoreReady } from '@/dev/store-ready';
 
 SplashScreen.preventAutoHideAsync();
-
-/**
- * A crash anywhere below the root shows the one state pattern instead of a blank screen. It
- * renders outside the navigator (which is what crashed), so it reads nothing from navigation and
- * the error itself is never shown or logged here (no content in crash text; PRIVACY). Nothing
- * the person wrote is lost: every letter is saved on the phone before anything can fail.
- */
-export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
-  return (
-    <StateScreenView
-      kind="error"
-      title={copy.errors.generic.title}
-      body={copy.errors.generic.body}
-      primary={{ label: copy.common.tryAgainButton, onPress: () => void retry() }}
-    />
-  );
-}
 
 /** Deep links (invites, sign-in) open as sheets over the tabs, never as the only screen. */
 export const unstable_settings = { initialRouteName: '(tabs)' };
@@ -105,9 +90,23 @@ function startServices(launchedAt: number): void {
 
 const launchedAt = Date.now();
 
-/** Native: always ready. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts). */
+/**
+ * A render error anywhere under the root layout lands here instead of a blank screen: calm words, Try again
+ * and Go to Tonight, no error text, nothing logged (components/resilience/error-boundary.tsx).
+ */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <RootErrorBoundary {...props} />;
+}
+
+/**
+ * Native: the store is always ready to open. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts).
+ * The database is opened once here; if opening or updating it throws, the recovery screen replaces the app
+ * (Try again, Export what is readable) and nothing is deleted.
+ */
 export default function RootLayout() {
-  return useStoreReady() ? <Root /> : null;
+  const launch = useLaunch(useStoreReady());
+  if (launch.status === 'recovery') return <LaunchRecovery onTryAgain={launch.retry} />;
+  return launch.status === 'ok' ? <Root /> : null;
 }
 
 function Root() {
@@ -127,6 +126,12 @@ function Root() {
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
+
+  // The native window behind everything is the page colour in both schemes, so a screen swap, a crash or an
+  // overscroll never shows white (iOS root view; on the web preview it is the body).
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(c.bg).catch(() => {});
+  }, [c.bg]);
 
   // After the first frame, never awaited: finish takes cut off by a kill,
   // rebase moved paths, keep stray recordings (lib/capture/sweep.ts); then
