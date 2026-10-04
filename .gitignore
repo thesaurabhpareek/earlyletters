@@ -62,4 +62,5 @@ experiments/results/
 apps/web/.next*
 apps/web/next-env.d.ts
 apps/web/*.tsbuildinfo
+apps/web/e2e/.results/
 __pycache__/
