@@ -4,7 +4,7 @@ version: 1.2.0
 status: draft-for-counsel
 effective_date: TBD
 owner: founder (data governance lead role)
-implements: data-policy.md v1.0.0
+implements: data-policy.md v1.1.0
 sql_migration: supabase/migrations/20261002020000_data_governance.sql (promoted 2 Oct 2026, pending live apply)
 sql_tests: supabase/tests/data_governance.test.mjs (run by npm run test:db)
 changelog:

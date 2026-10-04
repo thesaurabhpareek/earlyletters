@@ -1,11 +1,14 @@
 ---
 title: Data classification
 product: "{brand.name} (codename scribe)"
-version: 1.4.0
+version: 1.5.0
 status: draft-for-counsel
 owner: founder (data governance lead role)
 companion: data-policy.md (retention, ownership), DELETION_AND_EXPORT_SPEC.md (DATA-REQ), ENGINEERING_REQUIREMENTS.md (LEGAL-REQ), PRD.md section 7.10
 changelog:
+  - version: 1.5.0
+    date: 2026-10-04
+    summary: Factual alignment, no level changes to existing items. Machine-readable inventory `docs/legal/data-map.yaml` and its checker `scripts/check-data-map.mjs` added (section 0, open issue 7); the map is checked against the migrations, the analytics catalogue, the device SQLite migrations and the settings keys on develop at 8896000. Open issue 7 updated; no table in sections 4.1 to 4.9 changed.
   - version: 1.4.0
     date: 2026-10-03
     summary: Legal alignment (legal-alignment agent). Section 4.8 processors updated for v1.0 (sync on Supabase only, D-023; no crash SDK; Resend named; download host Cloudflare R2 candidate and Hugging Face, D-065, Q-001). Open issue 9 answered by app-store-privacy-labels.md 1.3.0. Note that the 1.3.0 summary below describes the alignment edits; the analytics owner's same-day regeneration (4.1 from migrations, 4.5 and 4.6 device keys, sync tables, packs, ops schema, ops-ledger, store_* removed, 4.9 insights) is also part of 1.3.0. Minor.
@@ -31,10 +34,10 @@ changelog:
 | Every column of every table and view in `public` carries a `COMMENT ON COLUMN` that starts with `L1`, `L2`, `L3` or `L4` | `supabase/migrations/*.sql` (from `20261002020000_data_governance.sql`) | Automated: `supabase/tests/classification.test.mjs` fails on any unlabelled column in `public`. The `ops` and `insights` schemas carry the same comments; `insights_aggregates.test.mjs` checks every insights column is L2 |
 | Content, child identity and dictionary columns are L4; person identifiers are at least L3 | same test | Automated |
 | Every `public` table has RLS on; the only views are the reviewed `book_entries` and `my_policy_state` | same test | Automated |
-| Storage buckets, device stores, SDKs, log streams, analytics properties | this document, sections 4.4 to 4.9; the analytics catalogue is enforced in code (`packages/analytics`, TRACKING_PLAN 6.3) | Manual review in the PR that adds them; machine-readable `docs/legal/data-map.yaml` (PRD 7.10 item 1) not yet built |
+| Storage buckets, device stores, SDKs, log streams, analytics properties | this document, sections 4.4 to 4.9; the analytics catalogue is enforced in code (`packages/analytics`, TRACKING_PLAN 6.3) | `docs/legal/data-map.yaml` (PRD 7.10 item 1) and this document. `scripts/check-data-map.mjs` fails when a `public` Postgres column (or its level against its comment), an analytics property, a device SQLite column or a device settings key is missing from the map. Buckets other than those in migrations, SDKs, hosts and logs stay a manual review item; the checker is not yet wired into CI |
 | L4 never in analytics, logs, URLs, push payloads | `packages/analytics` allowlist, log canary (LEGAL-REQ-014, -017) | Allowlist in `packages/analytics` (in progress); log canary not built |
 
-Rule for every PR: a new table, column, bucket, device column, SDK or analytics property ships with its level in the same PR. The database part is a CI gate today; the rest is a review checklist item until `data-map.yaml` exists.
+Rule for every PR: a new table, column, bucket, device column, SDK or analytics property ships with its level in the same PR, in `data-map.yaml` as well as here. The database comments are a CI gate today; `scripts/check-data-map.mjs` checks the map and becomes a gate once it is wired into CI.
 
 ## 1. Levels
 
@@ -758,6 +761,6 @@ Six views and `public.insights_aggregates(p_weeks)`: weekly keeping families, le
 4. **Lock-screen child names** (C-REQ-009 toggle) put L4 in local notification text. PRD 7.10 bans L4 in push payloads; local notifications are not server push, but the toggle must default off and never apply to server-sent pushes. **Recommended 3 Oct 2026 (D-025):** default off through remote config; family-letter pushes from the server never carry the child's name (BL-196).
 5. **Supabase encryption at rest** is **Unverified** in writing (LEGAL-REQ-022(c)); record it before launch.
 6. **`policy_acceptances.locale`** is classified L3 as a language proxy; counsel may decide it is L2.
-7. **`data-map.yaml`** (PRD 7.10 item 1) is not built. The database part of the gate exists via column comments; device stores, SDKs and analytics need the same machine check.
+7. **`data-map.yaml`** (PRD 7.10 item 1) is built, with `scripts/check-data-map.mjs`. Remaining: wire the checker into `npm test` and CI, add the `ops` and `insights` schemas to the map, and remove its `pending_changes` entry for PR #32 once that PR merges or is closed.
 8. **Installed packs reveal languages.** The pack files are public (L1), but the set installed on a phone shows which languages the author picked. Handled as L4 on the device (4.6); a backup or diagnostics feature must not include the list.
 9. **`plus.cache`** holds the person's plan state on the device (L3). It is not purchase history on our servers. **Answered 3 Oct 2026** (`app-store-privacy-labels.md` 1.3.0): Purchases is declared only for opt-in analytics plan-state events, not for App Functionality.
