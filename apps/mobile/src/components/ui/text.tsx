@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils';
+import { maxScaleFor, typeClass } from '@/lib/type-scale';
+import type { TypeToken } from '@scribe/design-tokens';
 import { Slot } from '@rn-primitives/slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
@@ -68,19 +70,24 @@ function Text({
   className,
   asChild = false,
   variant = 'default',
+  type,
   ...props
 }: React.ComponentProps<typeof RNText> &
   React.RefAttributes<typeof RNText> &
   TextVariantProps & {
     asChild?: boolean;
+    /** Token type style: applies its size, line height and Dynamic Type cap (tokens.type[].maxScale). */
+    type?: TypeToken;
   }) {
   const textClass = React.useContext(TextClassContext);
   const Component = asChild ? Slot : RNText;
   return (
     <Component
-      className={cn(textVariants({ variant }), textClass, className)}
+      className={cn(textVariants({ variant }), type && typeClass[type], textClass, className)}
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
+      // An explicit prop still wins, so existing screens behave as before.
+      maxFontSizeMultiplier={type ? maxScaleFor(type) : undefined}
       {...props}
     />
   );

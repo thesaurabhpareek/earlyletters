@@ -5,8 +5,38 @@
 /* Scan shared packages for class names (docs.uniwind.dev/monorepos). */
 @source '../../../packages';
 
-/* Fonts. v1 slice: system fonts. Backlog: bundle Literata (letters) and
-   Mukta (UI) per DESIGN_LANGUAGE.md so iOS and Android render the same. */
+/* Fonts. Fallback until the TTFs in assets/fonts are supplied (see
+   assets/fonts/README.md and src/lib/fonts.ts): then set these to
+   Literata and Mukta, the names in tokens.fontFamily. */
 @theme {
   --font-serif: Georgia;
+}
+
+/* Type scale: mirrors tokens.type (size / line height in px). The test in
+   test/type-scale.test.ts fails if this block drifts. Use these instead of
+   ad-hoc `text-4xl leading-[44px]`. Dynamic Type caps come from the shared
+   Text component's `type` prop, not from classes. */
+@theme {
+  --text-display: 34px;
+  --text-display--line-height: 41px;
+  --text-title1: 28px;
+  --text-title1--line-height: 34px;
+  --text-title2: 22px;
+  --text-title2--line-height: 28px;
+  --text-headline: 18px;
+  --text-headline--line-height: 23px;
+  --text-body: 18px;
+  --text-body--line-height: 24px;
+  --text-callout: 17px;
+  --text-callout--line-height: 22px;
+  --text-subhead: 16px;
+  --text-subhead--line-height: 21px;
+  --text-footnote: 14px;
+  --text-footnote--line-height: 19px;
+  --text-caption: 13px;
+  --text-caption--line-height: 17px;
+  --text-letter-body: 20px;
+  --text-letter-body--line-height: 32px;
+  --text-letter-dateline: 14px;
+  --text-letter-dateline--line-height: 18px;
 }
