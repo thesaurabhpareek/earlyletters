@@ -4,8 +4,10 @@
 // no spaces, no words already in the name or subtitle), whatsNew <= 4000, captions <= 40.
 //
 // v1.0 claims only (docs/DECISIONS.md, 3 Oct 2026):
-// - no "beta" anywhere (D-060, App Review 2.2): the beta runs on TestFlight;
+// - no "beta" anywhere (D-060, App Review 2.2): the beta runs on TestFlight; no "early version" or
+//   "early access" either, since the in-app note says "early version";
 // - no other platform's name (App Review 2.3.10); Apple's own Family Sharing is fine;
+// - adults only: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8);
 // - 7 spoken languages, one per letter, no mixing in one sentence (D-056, D-059);
 // - family = the co-parent only (D-055); no grandparent or web-page promise;
 // - recordings: owner-only encrypted backup ships in v1.0 (D-073, superseding D-059's "no audio upload");
