@@ -1,0 +1,60 @@
+# E2E-07  Add a child after first run: the Plus gate comes first.
+# Proves: PRD-REQ-015 and C-REQ-028 (a second book you start is Plus; the gate
+# is reached within 3 taps from the Book), C-REQ-023 (Not now creates nothing),
+# D-053 (enforced on the device; there is no server rule to test any more).
+# The twins half of PRD-REQ-015 (first-run children are free) is E2E-02.
+appId: ${APP_ID}
+name: E2E-07 Add a child, Plus gate
+tags:
+  - e2e
+  - E2E-07
+  - PRD-REQ-015
+  - C-REQ-028
+  - C-REQ-023
+  - D-053
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+      E2E_OFFLINE: "1"
+# 1. From the Book: switcher (tap 1), Add a child (tap 2): the gate.
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.childSwitcher"
+- tapOn:
+    id: "switcher.addChild"
+- assertVisible:
+    id: "plusGate.screen"
+- assertNotVisible:
+    id: "addChild.name"
+- tapOn:
+    id: "plusGate.notNow"
+# 2. Nothing was created: the switcher still lists one child.
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.childSwitcher"
+- assertVisible:
+    id: "switcher.child"
+    index: 0
+- assertNotVisible:
+    id: "switcher.child"
+    index: 1
+- tapOn:
+    id: "switcher.close"
+# 3. The same gate from Settings, Children, Add a child.
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.addChild"
+- assertVisible:
+    id: "plusGate.screen"
+- tapOn:
+    id: "plusGate.notNow"
+- assertVisible:
+    id: "settings.screen"
+- assertNotVisible:
+    id: "settings.child"
+    index: 1
+- stopApp

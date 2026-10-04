@@ -1,18 +1,22 @@
 /**
- * Read together (DESIGN_LANGUAGE 12, COMPONENTS 2.22, first slice).
+ * Read together (DESIGN_LANGUAGE 12, COMPONENTS 2.22).
  * Chrome-free, Large Print by default, one letter at a time, oldest first.
- * Voice playback with word highlight arrives with the audio player; until
- * then every letter reads as text and says where its recording is kept.
+ * v1.0 is plain playback (founder decision 3 Oct 2026): your own recordings
+ * on this phone play in the voice that said them; word highlighting is v1.1.
+ * Anyone else's letter, or a recording not on this phone, is read aloud.
  *
- * Allowance (founder decision, Oct 2 2026): FREE_READ_TOGETHER_SESSIONS free
- * sessions on this phone, then the Plus gate (lib/read-together.ts).
+ * Allowance (founder decisions, Oct 2 and 3 2026): a few free sessions in each
+ * Free book (remote config, default 3), then the Plus gate, which opens Apple's
+ * store view (lib/read-together.ts, lib/billing).
  */
 import { router, useLocalSearchParams } from 'expo-router';
-import { BookOpenTextIcon } from 'phosphor-react-native';
+import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View, useColorScheme } from 'react-native';
+import { Toggle } from '@/components/platform/toggle';
 import { tokens } from '@scribe/design-tokens';
 import { PlusGate } from '@/components/child/plus-gate';
+import { AudioPlayer } from '@/components/player/audio-player';
 import { authorOf } from '@/components/child/child-store';
 import { chapterTitle, monthFor } from '@/components/book/chapters';
 import { Button } from '@/components/ui/button';
@@ -21,29 +25,57 @@ import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
-import { canStartReadTogether, FREE_READ_TOGETHER_SESSIONS, recordReadTogetherSession } from '@/lib/read-together';
+import { childIndexOf, track, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
+import { hasPlus } from '@/lib/billing';
+import { canStartReadTogether, freeReadTogetherSessions, readTogetherGate, readTogetherSessions, recordReadTogetherSession } from '@/lib/read-together';
+import { bookCopy } from '@/components/book/copy';
+import { letterWords } from '@/components/book/letter-words.logic';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
 
-const BODY = tokens.type.letterBody;
 
 export default function ReadTogether() {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const rt = copy.readTogether;
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
-  const [allowed, setAllowed] = useState(canStartReadTogether);
+  const [allowed, setAllowed] = useState(() => canStartReadTogether(child?.id));
   const counted = useRef(false);
   const [index, setIndex] = useState(0);
+  // "Play the next one on its own": after a recording ends, turn the page and start the next voice.
+  const [autoNext, setAutoNext] = useState(false);
+  const [startNext, setStartNext] = useState(false);
 
   const letters = useMemo(() => (child ? listEntriesForChild(child.id).filter((e) => e.inBook && e.transcriptStatus !== 'waiting').reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One session per opening; counted once, only when allowed.
+  const session = useRef<{ startedAt: number; furthest: number } | null>(null);
   useEffect(() => {
     if (allowed && !counted.current && letters.length > 0) {
       counted.current = true;
-      recordReadTogetherSession();
+      const plus = hasPlus();
+      recordReadTogetherSession(child?.id);
+      session.current = { startedAt: Date.now(), furthest: 0 };
+      trackReadTogetherStarted({ childIndex: childIndexOf(child?.id), access: plus ? 'plus' : 'try', letters: letters.length });
+      if (!plus && child) track('read_together_try_used', { n: Math.min(10, Math.max(1, readTogetherSessions(child.id))) });
     }
-  }, [allowed, letters.length]);
+  }, [allowed, letters.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (session.current) session.current.furthest = Math.max(session.current.furthest, index);
+  }, [index]);
+  // Ended when the screen goes away: finished if the last page was reached, else stopped.
+  useEffect(
+    () => () => {
+      const s = session.current;
+      if (!s) return;
+      // `furthest` is a page index; past the last page means the end of the book was reached.
+      trackReadTogetherEnded({
+        reason: s.furthest >= letters.length ? 'finished' : 'stopped',
+        durationMs: Date.now() - s.startedAt,
+        lettersHeard: Math.min(s.furthest + 1, letters.length),
+      });
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const close = () => router.back();
 
@@ -53,7 +85,10 @@ export default function ReadTogether() {
       <SafeAreaView className="flex-1 bg-background">
         <PlusGate
           title={p.plusTitle}
-          body={fill(p.plusBody, { count: FREE_READ_TOGETHER_SESSIONS })}
+          body={fill(p.plusBody, { count: freeReadTogetherSessions() })}
+          decision={readTogetherGate(child?.id)}
+          trigger="read_together"
+          onPlus={() => setAllowed(true)}
           keepNote={p.keepNote}
           icon={<BookOpenTextIcon size={28} color={c.accent} />}
           onNotNow={close}
@@ -83,8 +118,9 @@ export default function ReadTogether() {
   const month = monthFor(child, entry.occurredOn);
   const spoken = entry.captureMode !== 'typed';
   const scale = tokens.readingScale.largePrint;
-  const go = (to: number) => {
-    haptic('tap');
+  const go = (to: number, auto = false) => {
+    if (!auto) haptic('tap');
+    setStartNext(auto);
     setIndex(Math.max(0, Math.min(letters.length, to)));
   };
 
@@ -113,21 +149,38 @@ export default function ReadTogether() {
         </View>
       ) : (
         <ScrollView key={entry.id} className="flex-1" contentContainerClassName="gap-6 px-5 pb-8 pt-6">
-          <Text maxFontSizeMultiplier={2.4} className="text-sm font-medium tracking-[0.6px] text-muted-foreground">
+          <Text variant="letterDateline">
             {month !== null && month > 0 ? fill(rt.nowReading, { signsAs, month }) : `${signsAs}, ${chapterTitle(month)}`}
           </Text>
-          <Text
-            selectable
-            className="font-serif text-foreground"
-            style={{ fontSize: BODY.fontSize * scale, lineHeight: BODY.lineHeight * scale }}>
-            {entry.finalText}
-          </Text>
-          <Text
-            className="self-end font-serif italic text-foreground"
-            style={{ fontSize: BODY.fontSize * scale, lineHeight: BODY.lineHeight * scale }}>
+          {letterWords(entry) === 'nobodySpoke' ? (
+            <Text variant="signature" scale={scale} tone="muted">
+              {bookCopy.nobodySpoke}
+            </Text>
+          ) : (
+            <Text variant="letterBody" scale={scale} selectable>
+              {entry.finalText}
+            </Text>
+          )}
+          <Text variant="signature" scale={scale} className="self-end">
             {fill(copy.book.signature, { signsAs })}
           </Text>
-          <Text className="text-base text-muted-foreground">{spoken ? copy.book.recordingOnPhone : rt.noRecording}</Text>
+          {spoken ? (
+            <AudioPlayer
+              key={entry.id}
+              entryId={entry.id}
+              context="readTogether"
+              autoPlay={autoNext && startNext}
+              onFinish={() => {
+                if (autoNext) go(index + 1, true);
+              }}
+            />
+          ) : (
+            <Text className="text-base text-muted-foreground">{rt.noRecording}</Text>
+          )}
+          <View className="min-h-11 flex-row items-center gap-3">
+            <Text className="flex-1 text-base text-foreground">{rt.autoplayLabel}</Text>
+            <Toggle label={rt.autoplayLabel} value={autoNext} onValueChange={setAutoNext} />
+          </View>
         </ScrollView>
       )}
 

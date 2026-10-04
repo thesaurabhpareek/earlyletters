@@ -7,9 +7,9 @@
  * focusable by VoiceOver, so Review also lists every edit as a row.
  */
 import type { Segment } from '@scribe/core';
-import { Pressable, View, useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
+import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { useTheme } from '@/lib/a11y';
 import { pendingCopy } from '@/lib/copy';
 
 interface Props {
@@ -26,13 +26,12 @@ interface Props {
 const MARK_W = 28;
 
 export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, scale = 1 }: Props) {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
-  const body = tokens.type.letterBody;
+  // editMark: full-strength underline colour (5.82:1 light, 7.64:1 dark; darker again under Increase
+  // Contrast), replacing accent at 60%, which failed 3:1 in light mode (TDD 09 2.7, A11Y-F04).
+  const { c } = useTheme();
+  const mark = c.editMark;
   return (
-    <Text
-      className="font-serif text-foreground"
-      style={{ fontSize: body.fontSize * scale, lineHeight: body.lineHeight * scale }}
-      selectable>
+    <Text variant="letterBody" scale={scale} selectable>
       {segments.map((s, i) => {
         if (s.edit === null) return s.text;
         if (s.edit === restoredIndex) {
@@ -56,7 +55,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, sca
                 accessibilityLabel={pendingCopy.review.removedA11y}
                 accessibilityHint={pendingCopy.review.editA11yHint}
                 style={{ width: MARK_W, height: h, justifyContent: 'flex-end', borderRadius: 4, backgroundColor: open ? c.accentSoft : undefined }}>
-                <View style={{ marginHorizontal: 4, marginBottom: 2, borderBottomWidth: 2, borderStyle: 'dotted', borderColor: `${c.accent}99` }} />
+                <View style={{ marginHorizontal: 4, marginBottom: 2, borderBottomWidth: 2, borderStyle: 'dotted', borderColor: mark }} />
               </Pressable>
             </View>
           );
@@ -72,7 +71,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, sca
             style={{
               textDecorationLine: 'underline',
               textDecorationStyle: 'dotted',
-              textDecorationColor: `${c.accent}99`,
+              textDecorationColor: mark,
               backgroundColor: open ? c.accentSoft : undefined,
             }}>
             {s.text}
