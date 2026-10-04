@@ -1,0 +1,46 @@
+# Builds the iOS app in the cloud and (optionally) uploads it to TestFlight. Manual only: run it from the
+# Actions tab. NOTHING here has been run: it needs your Expo and Apple accounts, so every assumption below is
+# UNVERIFIED until the first real run. The same thing from a Mac is two commands (docs/release/TESTFLIGHT.md).
+#
+# One-time setup the founder does first (see the runbook):
+#   1. EXPO_TOKEN secret (Expo account, Access tokens).
+#   2. Run `eas credentials` once on a Mac and sign in to Apple, or add an App Store Connect API key to EAS,
+#      so builds can sign without a prompt. This workflow uses --non-interactive and will fail without that.
+#   3. Create the App Store Connect app record for the bundle id the preflight prints.
+name: testflight
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: Upload to TestFlight after the build finishes
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tests and typecheck must pass before anything is built
+        run: |
+          npm run typecheck
+          npm test
+      - name: Preflight (configuration only; no secrets)
+        run: npm run preflight:testflight -w @scribe/mobile
+      - name: Build on EAS${{ inputs.submit && ' and submit to TestFlight' || '' }}
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then echo "EXPO_TOKEN secret is not set"; exit 1; fi
+          npx --yes eas-cli@latest build --platform ios --profile testflight --non-interactive --wait ${{ inputs.submit && '--auto-submit-with-profile=testflight' || '' }}

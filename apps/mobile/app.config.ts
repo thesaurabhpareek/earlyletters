@@ -79,6 +79,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       tinted: './assets/brand/icon-tinted.png',
     },
     supportsTablet: false,
+    config: {
+      // Export compliance: answers the encryption question once, in the build, instead of at every upload.
+      // True for this build: only the operating system's standard encryption. UNVERIFIED if the app ever adds
+      // its own encryption (for example audio upload): re-assess with counsel before that ships.
+      usesNonExemptEncryption: false,
+    },
     infoPlist: {
       CADisableMinimumFrameDurationOnPhone: true,
     },
