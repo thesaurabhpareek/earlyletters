@@ -60,3 +60,6 @@ experiments/results/
 
 # Founder real-data experiment config: never commit
 experiments/config.local.json
+
+# rendered email previews
+packages/emails/out/
