@@ -11,12 +11,15 @@ const open = async (app: import('@playwright/test').Page, text: RegExp) => {
 test('[J10] a letter: the page, the original words, reading size, make private, delete and undo', async ({ app, record }) => {
   const step = journey(record, 'J10', 'letter-detail', 1, 'J09-03');
   await open(app, /rained all morning/);
-  await expect(app.getByText('Show exactly what I said').or(app.getByText(/original/i)).first()).toBeVisible();
-  await step('happy', 'A letter, as a page', 'The words large in the letter face, signed "From Mama", with the recording player, how it was made, "Recording on this phone", and the actions below. (Seeded fictional family Asha; the seeded audio files do not exist, so the player is the closest honest state, see the note on the next step.)');
+  await expect(app.getByTestId('letter.view')).toHaveText('Exactly as said');
+  await expect(app.getByText(/Spoken, with small fixes|Spoken, exactly as said/)).toBeVisible();
+  await step('happy', 'A letter, as a page', 'The words large in the letter face, signed "From Mama", with the recording player, how it was made ("Spoken, with small fixes" when a fix was made, "Spoken, exactly as said" only when the words are untouched), "Recording on this phone", and the actions below. (Seeded fictional family Asha; the seeded audio files do not exist, so the player is the closest honest state, see the note on the next step.)');
 
-  await app.getByText('Show exactly what I said').click();
-  await step('happy', 'Show exactly what I said', 'The raw words replace the tidied ones, under an "original" label.');
-  await app.getByText(/Show tidied/i).click();
+  await app.getByTestId('letter.view').click();
+  await expect(app.getByTestId('letter.view')).toHaveText('With small fixes');
+  await step('happy', 'Exactly as said', 'The raw words replace the fixed ones, under an "Exactly what you said" label; the button now offers With small fixes.');
+  await app.getByTestId('letter.view').click();
+  await expect(app.getByText(/tidy|tidied/i)).toHaveCount(0);
 
   await app.getByRole('button', { name: /Reading size/i }).click();
   await expect(app.getByText('Large print')).toBeVisible();
@@ -52,7 +55,13 @@ test('[J10c] a letter waiting for words', async ({ app, record }) => {
   await app.getByText('Book', { exact: true }).last().click();
   await app.getByText(/waiting for its words/i).first().click();
   await expect(app.getByText(/waiting for its words/i).last()).toBeVisible();
-  await step('unhappy', 'A letter waiting for its words', 'The page shows a calm italic note instead of an empty page; the recording is there.');
+  // One way to write the words, and the way to get them (Try again or Get words ready) when that is what would help.
+  await expect(app.getByTestId('letter.write')).toHaveText('Write the words');
+  await expect(app.getByTestId('letter.retry').or(app.getByTestId('letter.getReady')).first()).toHaveText(/Try again|Get words ready/);
+  await step('unhappy', 'A letter waiting for its words', 'The page shows a calm italic note instead of an empty page, the reason words are not here yet, and Write the words with Try again or Get words ready. The recording is there and is never touched.');
+  await app.getByTestId('letter.write').click();
+  await expect(app.getByTestId('letter.writeWords.save')).toBeDisabled();
+  await step('unhappy', 'Write the words', 'The person types the words for this recording. Nothing is fixed: the words are exactly what they typed.');
 });
 
 test('[J10e] a recording in which nobody spoke', async ({ app, record }) => {
@@ -60,7 +69,8 @@ test('[J10e] a recording in which nobody spoke', async ({ app, record }) => {
   await seeded(app, 'asha-quiet');
   await app.getByText('Book', { exact: true }).last().click();
   await app.getByText(/nobody/i).first().click();
-  await step('unhappy', 'A recording in which nobody spoke', 'The page says nobody spoke; the recording is still there and can be kept.');
+  await expect(app.getByTestId('letter.recordAgain')).toHaveText('Record again');
+  await step('unhappy', 'A recording in which nobody spoke', 'The page says nobody spoke; the recording is still there, and Record again starts a new take without touching it.');
 });
 
 test('[J10d] a letter that does not exist', async ({ app, record }) => {

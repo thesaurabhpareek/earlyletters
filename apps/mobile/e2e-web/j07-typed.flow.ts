@@ -12,7 +12,7 @@ test('[J07] a typed letter: write, autosave, review, add to the book', async ({ 
   await step('happy', 'Typing, autosaved', 'After a pause "Saved on this phone" appears. Every pause saves a local draft, so a closed sheet or a crash loses nothing.');
   await btn(app, 'Save').click();
   await expect(app.getByText(/Add to .*book/)).toBeVisible();
-  await step('happy', 'Review a typed letter', 'Typed words are kept exactly as typed: no tidying, no list of changes, no "does this sound like you". The person chooses where it goes.');
+  await step('happy', 'Review a typed letter', 'Typed words are kept exactly as typed: no fixes, no list of changes, no "does this sound like you". The person chooses where it goes.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText(/added|in .*book/i).first()).toBeVisible();
   await step('happy', 'Saved to the book', 'The letter settles into a card with a confirmation, then Review closes on its own after a moment (or on tap).', undefined, { settle: 120 });

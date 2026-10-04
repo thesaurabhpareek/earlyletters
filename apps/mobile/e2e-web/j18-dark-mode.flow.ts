@@ -20,7 +20,7 @@ test('[J18] dark mode: the same screens at night', async ({ app, record }) => {
   await app.getByText('Tonight', { exact: true }).last().click();
   await app.getByText('Read it back').first().click();
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();
-  await step('happy', 'Review, dark', 'Review with its underlined tidy-ups in the dark theme.');
+  await step('happy', 'Review, dark', 'Review with its marked small fixes in the dark theme.');
   await btn(app, 'Close').click();
   await btn(app, /^Speak/).click();
   await expect(app.getByText('Listening.')).toBeVisible();
