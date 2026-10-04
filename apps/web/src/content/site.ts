@@ -214,6 +214,8 @@ export const site = {
     hint: 'Just your email address, nothing else.',
     note: `One email when ${NAME} is ready. We never share your address, and every email has an unsubscribe link.`,
     button: "Tell me when it's ready",
+    /** The single, quiet sign-up on the home page (components/landing). */
+    quietButton: 'Keep me informed',
     sending: 'Sending',
     success: `Thank you. We will write once, when ${NAME} is ready.`,
     error: 'That did not go through. Please check your email and try again.',

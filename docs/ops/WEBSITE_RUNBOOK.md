@@ -149,6 +149,13 @@ Rules:
    Verified (the API allows 301, 302, 307, 308; the dashboard flow is Edit > "Redirect to"). Inferred (exact dashboard labels).
 7. Run section 9, parts C and D, and the email-record diff from section 5.
 
+**Email sign-up ("Keep me informed").** There is exactly one, quiet, at the end of the home page (`components/landing`, the `quiet` variant of
+`NotifyForm`); no header or hero button asks for an email. It posts to `/api/notify`, which stores the address as a Resend contact in the
+segment `RESEND_SEGMENT_ID`, and it appears only when `RESEND_API_KEY` and `RESEND_SEGMENT_ID` were set at build time (then redeploy). Use a
+segment made for Early Letters, not one shared with another product (the account had only a segment named "General" on 2026-10-04).
+Verified (production build with test keys: one email field on the page, no other link to it, label "Keep me informed", validation message
+shown). Not run: a real sign-up (needs real keys).
+
 **Link previews (what shows when the link is shared).** `apps/web/src/app/layout.tsx` declares Open Graph and Twitter card tags; the
 picture is drawn at build time by `opengraph-image.tsx` (1200x630: the brand mark from `icon.svg`, the name and the promise, in Mukta from
 `_fonts/`). The icon files are `icon.svg`, `apple-icon.tsx` (180 px) and a `/favicon.ico` redirect. Image URLs are absolute and come from

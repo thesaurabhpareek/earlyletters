@@ -4,8 +4,9 @@
  * launch page: the hero recedes, "Meera is asleep." and the proof letter are pinned scenes that your scroll
  * plays, paragraphs fill from dim to bright as you read them, and the rest lift into place the same way. Every word comes from site.ts, which the copy rules check. The server
  * renders every scene in its finished state, so the page reads without JavaScript and with reduced motion
- * (scrub.tsx). The sign-up form appears only when the email service is configured at build time, so a visitor
- * never meets a form that cannot work (set RESEND_API_KEY and RESEND_SEGMENT_ID, then redeploy). The same code
+ * (scrub.tsx). The sign-up is one quiet field, once, at the end; no other button on the page asks for an email. It
+ * appears only when the email service is configured at build time, so a visitor never meets a form that cannot work
+ * (set RESEND_API_KEY and RESEND_SEGMENT_ID, then redeploy). The same code
  * serves earlyletters.com once the domain is attached.
  */
 import { site } from '@/content/site';
@@ -32,11 +33,6 @@ export function Landing() {
         <a href="#top" className={styles.brand}>
           {site.brand.name}
         </a>
-        {notifyReady ? (
-          <a href="#early-access" className={styles.headerButton}>
-            {site.cta.prelaunch.button}
-          </a>
-        ) : null}
       </header>
 
       <main id="top" className={styles.main}>
@@ -48,11 +44,6 @@ export function Landing() {
           <p className={styles.trust}>{site.comingSoon.trust}</p>
           <div className={styles.actions}>
             <p className={styles.pill}>{site.cta.prelaunch.eyebrow}</p>
-            {notifyReady ? (
-              <a href="#early-access" className={styles.primary}>
-                {site.cta.prelaunch.button}
-              </a>
-            ) : null}
           </div>
         </HeroStage>
 
@@ -173,7 +164,7 @@ export function Landing() {
               <>
                 <p className={styles.sub}>{s.s11.supportPrelaunch}</p>
                 <div className={styles.form}>
-                  <NotifyForm />
+                  <NotifyForm quiet />
                 </div>
               </>
             ) : (

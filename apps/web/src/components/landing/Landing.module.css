@@ -23,27 +23,6 @@
   color: var(--night-ink);
   text-decoration: none;
 }
-.headerButton,
-.primary {
-  display: inline-block;
-  padding: 12px 20px;
-  border-radius: 999px;
-  background: var(--night-accent);
-  color: var(--night-on-accent);
-  font: 600 15px/1 var(--font-sans);
-  text-decoration: none;
-  transition: filter 160ms, transform 160ms var(--ease-standard);
-}
-.headerButton:hover,
-.primary:hover {
-  filter: brightness(1.07);
-}
-.headerButton:active,
-.primary:active {
-  transform: scale(0.97);
-}
-.headerButton:focus-visible,
-.primary:focus-visible,
 .brand:focus-visible {
   outline: 2px solid var(--night-ink);
   outline-offset: 3px;
@@ -272,6 +251,9 @@
   color: var(--night-ink);
 }
 .sheen {
+  /* Gradient text paints only inside its box, so give the descenders room and take the space back. */
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
   background: linear-gradient(100deg, #f6efe6 0%, #f6efe6 30%, #f3c98b 44%, #f08c7c 56%, #f6efe6 70%, #f6efe6 100%);
   background-size: 260% 100%;
   background-position: 0% 50%;
