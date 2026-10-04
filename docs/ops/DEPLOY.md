@@ -80,7 +80,7 @@ This stops anyone else from creating a production tag. The production Environmen
 
 ### 4. Per-environment database settings
 
-These are database settings, not migrations, so CI does not apply them. After the first successful push to each project, apply the steps from `supabase/APPLY.md` that still apply: step 6 (consent pepper, a different random value per project, never reused), step 7 (purge cron), and step 11 only while the store tables still exist (brief decision 3 removes them).
+These are database settings, not migrations, so CI does not apply them. After the first successful push to each project, apply the steps from `supabase/APPLY.md` that still apply: step 6 (consent pepper, a different random value per project, never reused), step 7 (purge cron), step 15 (the hourly `scribe-sync-housekeeping` cron job and the purge worker schedule; Exposed schemas stay `public` only), and step 19 (optional parents-per-book setting). Step 11 (`app.store_environment`) is no longer needed: `20261004000000_plus_on_device_only.sql` removes the store tables.
 
 ### 5. Hosted auth (dashboard, per project)
 
