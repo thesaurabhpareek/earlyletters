@@ -7,6 +7,8 @@ persona: privacy engineering lead (turns legal requirements into systems)
 inputs: CLAUDE.md; docs/prd/PRD.md 1.2; docs/legal/* (ENGINEERING_REQUIREMENTS, DELETION_AND_EXPORT_SPEC, POLICY_VERSIONING, compliance-register 1.1.0, consumer-health-data-notice 1.0.0, data-policy, DATA_CLASSIFICATION, privacy-policy, app-store-privacy-labels, subprocessors, memos/lawyer-1.md, memos/lawyer-2.md); docs/analytics/TRACKING_PLAN.md; packages/analytics/src/*; supabase/migrations/20261002020000_data_governance.sql; supabase/tests/data_governance.test.mjs; supabase/APPLY.md; docs/BACKLOG.md
 ---
 
+> **Note, 4 Oct 2026 (D-051, `docs/DECISIONS.md`):** the founder changed the business model. Plus is now the membership that unlocks the product: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book. Anywhere this file treats writing as free or Plus as optional, that is superseded; open edges are listed in D-051 and not decided here. Compliance impact: LEGAL-REQ-050 (free paths never call entitlement) now applies to reading, playing and exporting existing letters only; the subscription disclosures, ARL notices and counsel review need the new promise wording (owners: legal, counsel). `docs/legal/**` was not changed.
+
 # TDD 05: Privacy and compliance engineering
 
 > **Not legal advice.** This is an engineering design written to implement requirements that were themselves AI-drafted for counsel review. Every place where the design rests on an unsettled legal reading is listed in section 13 for a licensed attorney.

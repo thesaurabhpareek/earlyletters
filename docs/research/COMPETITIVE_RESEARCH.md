@@ -1,5 +1,7 @@
 # Early Letters: Competitive and Market Research
 
+> **Note, 4 Oct 2026 (D-051):** Dated 1 Oct 2026; it predates D-051. Its recommendation "Free forever: writing, recording, reading, playback, export" and the line that memories are never held hostage are not the current promise: free is now the first 2 letters per account, and only the existing-letters-stay-open guarantee remains. The evidence on paywall anger (S2) is a risk for the new model (unverified how it applies to a paywall on new letters only).
+
 Prepared 2026-10-01. All prices and ratings were checked on 2026-10-01 on the page cited [S#]. Anything not confirmed on an opened page is marked **Unverified**. **Inferred** marks my own reasoning. Review quotes are paraphrased.
 
 **Bottom line.** The category splits three ways. **Prompted baby journals** (Qeepsake, BabyPage, Sproutbook) charge $45 to $96 a year and make money on print. **Private photo-sharing albums** (Tinybeans, 23snaps, Notabli) are freemium with tight limits. **Voice "life story" products for grandparents** (Remento, Storyworth) are one-year gift purchases at $69 to $199 with a book included. AI products are converging on "talk for 30 seconds, get a polished entry." I found nobody whose core promise is **faithful, unrewritten words plus the original voice, organised by the child's month of age, from several family authors**. The closest threats are Dearest (an indie app: letters, voice, iCloud-only, $49.99 a year) and Apple Journal (free, built in, with audio transcription).
@@ -146,7 +148,7 @@ Mobbin and Page Flows require a login, and App Store screenshots could not be in
 - **6 months free is unusually generous** (category: 7 to 30 days). It also ends when the baby is about 6 to 12 months old, right as the novelty fades. If you run it as a StoreKit trial, the card goes on file on day 1; if you run it as an app-side free period, there is no card and the conversion moment is weak.
 
 **Recommended:**
-- **Free forever:** writing, recording, reading, playback, export, and unlimited family authors. Protects trust (White space 6) and grows through grandparents.
+- **Free forever:** writing, recording, reading, playback, export, and unlimited family authors. Protects trust (White space 6) and grows through grandparents. *(Superseded 4 Oct 2026, D-051: free is the first 2 letters per account; existing letters stay open.)*
 - **Early Letters Plus:** about **$3.99/mo or $29.99/yr**, after a **1-month StoreKit trial** started at a value moment, such as the first chapter being complete. Annual is the default.
 - **Lifetime: $99.99**, introduced later, once storage costs are measured.
 - **Print:** an annual plan includes a credit toward "Year One"; the book carries QR codes to the audio (Remento precedent [S6]).
@@ -162,7 +164,7 @@ Mobbin and Page Flows require a login, and App Store screenshots could not be in
 2. Proper-noun protection: a family name dictionary (child, relatives, pets) is fed to transcription. [S27]
 3. The original audio is stored losslessly and is always playable beside the text. [S6]
 4. "Read together" plays letters in the author's voice. The print book has QR codes to the audio. [S6][S37]
-5. Reading, playback and full export (audio + text + PDF) stay free forever, including after a lapse. [S2][S39][S26]
+5. Reading, playback and full export (audio + text + PDF) stay free forever, including after a lapse. [S2][S39][S26] *(Still holds for letters already made, D-051.)*
 6. A published shutdown and data-portability pledge, at least 60 days' notice, with a ZIP export. [S19][S5]
 7. Invite grandparents and family by link, with no app install required for a first letter. [S25]
 8. Co-parent and family authors are free, not a paid tier. [S1][S2]

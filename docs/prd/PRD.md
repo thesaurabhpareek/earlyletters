@@ -1,6 +1,6 @@
 # Early Letters: Launch PRD (integrated)
 
-Owner: lead PM. Version 1.3, 3 Oct 2026. Status: integrated draft; founder decisions of 1, 2 and 3 Oct applied (section 4); TDD 01 to 10 findings folded in (section 3.0 release tiers, K-34 to K-43); remaining founder questions in section 9 and `docs/DECISIONS.md`.
+Owner: lead PM. Version 1.4, 4 Oct 2026 (1.4 applies the founder's 4 Oct pricing decision, D-051, and the early-tester offer-code intent, D-052; see the changelog and K-44, K-45; version 1.3 follows). Status: integrated draft; founder decisions of 1, 2 and 3 Oct applied (section 4); TDD 01 to 10 findings folded in (section 3.0 release tiers, K-34 to K-43); remaining founder questions in section 9 and `docs/DECISIONS.md`.
 Codename `scribe`. Public name and publisher identity from `packages/brand` only.
 
 Companion documents (1.3): `docs/DECISIONS.md` (dated decision log, D-###), `docs/ROADMAP.md` (milestones to App Store submission, target **Mon 11 Jan 2027**), `docs/BACKLOG.md` (tasks BL-###), `docs/adr/0013-apple-native-subscriptions.md`, `docs/tdd/01` to `10` (technical designs; TDD 10 is the red-team critique).
@@ -27,10 +27,10 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 - **Plus at launch, through Apple only (founder, 3 Oct).** Sold, managed, cancelled and refunded only through the App Store; StoreKit 2 direct with App Store Server Notifications V2, no third-party billing service (K-34, ADR 0013, D-001).
 - **Individual publisher (founder, 3 Oct).** Published under the founder's personal Apple Developer account; no LLC for now. The founder's legal name is the App Store seller and the provider named in the legal documents (K-36, D-004).
 - **Target App Store submission: Monday 11 January 2027** (`docs/ROADMAP.md`).
-- **Free forever core:** write, read, play back recordings, export, family authors, and every backup already made (stays stored and downloadable after a lapse).
-- **Multiple children:** each child has their own profile and book, managed separately (own settings, own family list). The first book you start is free; **additional children are part of Plus** (K-12, K-28). Every child added together in first run (twins or more) stays free, and a book you joined as a co-parent does not count as your free book (PRD-REQ-015).
+- **Membership, 2 free letters (founder, 4 Oct; D-051).** ~~Free forever core: write, read, play back recordings, export, family authors.~~ Plus is no longer optional and "free, always" is no longer the promise. The free version is the first **2 letters per account** (a letter is a saved entry, spoken or typed); after those, adding new letters needs Plus. Letters already made always stay readable, playable and exportable, and every backup already made stays stored and downloadable, if someone never subscribes or Plus ends. One membership covers the book; family authors add letters without their own. Open edges are listed in D-051 and section 9 Q19 (PRD-REQ-024 to -026).
+- **Multiple children (amended 4 Oct, D-051: what a second child's book gets without Plus is an open edge; the first-book-free wording below is under review):** each child has their own profile and book, managed separately (own settings, own family list). The first book you start is free; **additional children are part of Plus** (K-12, K-28). Every child added together in first run (twins or more) stays free, and a book you joined as a co-parent does not count as your free book (PRD-REQ-015).
 - **Full product analytics**, opt-in per Apple 5.1.1(ii) and content-free (K-01).
-- **Plus:** $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Lifetime at about $99.99 later (P2). Read together is free for 3 sessions, then Plus (decided; the count is a remote-config value, PRD-REQ-020).
+- **Plus (the membership):** $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial (unchanged by D-051). Lifetime at about $99.99 later (P2). Read together is free for 3 sessions, then Plus (decided; the count is a remote-config value, PRD-REQ-020; interplay with the 2 free letters is open, D-051). Apple offer codes may give early testers free months (D-052, PRD-REQ-027).
 - **Beta product** with light, standard "it can make mistakes" disclosures (section 5, K-13 and K-14). The beta ends only when the founder says so; no date or metric ends it, and the label and disclosures stay until then. Recommended in 1.3 (D-030, needs founder OK): the pre-launch beta runs on TestFlight and the v1.0 store listing carries no beta line (App Review 2.2); the in-app About label and Terms 16.4 stay (K-37).
 - **Adults only (18+).** An 18+ entry gate comes before first run; under 18 sees a stop screen and cannot use the app at all, not even on the phone alone (K-07, PRD-REQ-019).
 - **Digital only.** v1 has export and the PDF book; printed books are a future launch and are not promised in product, store or legal copy (K-32).
@@ -54,6 +54,7 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 15. Revisions to B and C that version 1.0 listed as done had not been written; they are applied in 1.1 (K-30).
 16. (1.2) Founder decisions of 2 Oct applied: twins, joined books, Read together, beta end, 18+ only, digital only, analytics volume (section 4). Lawyer 2's nine remaining privacy claims fixed in `packages/content` (K-21, section 8).
 17. (1.3) Founder decisions of 3 Oct applied: Plus in v1.0 through Apple only (K-34), family contributors in the app at v1.0 with the web page in v1.1 (K-35), full opt-in analytics confirmed, individual publisher (K-36). TDD 01 to 10 findings resolved or recommended (K-37 to K-43, `docs/DECISIONS.md`); requirements re-tiered into v1.0 gate, v1.1 and later (section 3.0); notice windows replaced (K-38); RevenueCat removed everywhere.
+18. (1.4) Founder decisions of 4 Oct applied: Plus is membership with 2 free letters per account, existing letters always stay open, one membership covers the book (D-051, K-44, PRD-REQ-024 to -026; PRD-REQ-015, -020, -022 and the "free, always" promise amended); early-tester free months through Apple offer codes, not our own code system (D-052, K-45, PRD-REQ-027).
 
 ---
 
@@ -65,15 +66,15 @@ Early Letters is a baby memory book families fill by talking. A parent speaks fo
 | Entry | Branded splash, one welcome screen (4-story intro in v1.1, D-043), first letter before account, Keep the book sheet, Sign in with Apple and email (Google in v1.1, D-044), magic link plus code, invites by link or code, offline entry | A |
 | Consent | Terms acceptance record, 18+ entry gate before first run (stop screen, no local-only mode), sensitive-data consent (enforced server-side, BL-114), analytics opt-in. AI-processing consent and the web contributor notice ship with their features in v1.1 | A, legal |
 | First run | Child name plus birthday or due date, signature, languages and Hindi script, goals, dictionary from names | B |
-| Capture | Speak or type, on-device transcription, faithful edits with diff, one-time "it can make mistakes" card, save offline | ARCH, core, legal |
+| Capture | Speak or type, on-device transcription, faithful edits with diff, one-time "it can make mistakes" card, save offline | ARCH, core, legal *Amended 4 Oct 2026 (D-051): saving a new letter beyond the first 2 per account needs Plus; an in-progress letter is never discarded (PRD-REQ-024, -025).* |
 | Family | Co-parent and Family roles **in the app**, invites by link or code (one child each), approvals, leave and remove with letter retention, visibility model, private by default; family-letter push without content. Web contribution page in v1.1 (K-35) | B |
 | Shared voice (pending D-032) | Recordings of letters in a shared book upload encrypted so every member can play them (Free); every recording for Plus. If not approved by 23 Oct, family letters are text-only in v1.0 (K-40) | PRD |
 | Book | Month chapters, Before You, Read together (3 free sessions, then Plus; remote config), quiet milestones, birthdays and month-age notes; PDF book in export (no print) | B, C |
-| Children | One profile and book per child; child switcher; per-child settings; per-child family list; second and later child's book through Plus (children added together in first run free; joined books do not count) | B, C, PRD |
+| Children | One profile and book per child; child switcher; per-child settings; per-child family list; second and later child's book through Plus (children added together in first run free; joined books do not count) | B, C, PRD *Amended 4 Oct 2026 (D-051): the free-book rules in this row are under review; see open edges.* |
 | Analytics | Opt-in consent sheet, typed content-free event catalogue, server-side business aggregates, withdrawal in Settings > Privacy | C, analytics |
 | Habit | Primed notification permission after the first letter, a few evenings a week default, smart quiet window, back-off (P1) | C |
-| Plus | Monthly and annual App Store subscriptions (StoreKit 2 direct, ADR 0013), per-account entitlement inherited by books, paywall disclosures, notices (K-38 windows), grace, lapse, restore, refunds through Apple | C, ADR 0013 |
-| Data | Export everything (free, offline), Recently deleted with 30-day undo, delete book, delete account (in-app and web), deletion SLA | C, legal |
+| Plus | Monthly and annual App Store subscriptions (StoreKit 2 direct, ADR 0013), per-account entitlement inherited by books, paywall disclosures, notices (K-38 windows), grace, lapse, restore, refunds through Apple | C, ADR 0013 *Amended 4 Oct 2026 (D-051, D-052): Plus is the membership that unlocks new letters after the 2 free per account; letter gate, never-discard rule and Redeem a code row (PRD-REQ-024 to -027).* |
+| Data | Export everything (free, offline), Recently deleted with 30-day undo, delete book, delete account (in-app and web), deletion SLA | C, legal *Amended 4 Oct 2026 (D-051): export of letters already made is never gated and needs no Plus; "free" is not a promise on new letters.* |
 | Settings | All controls within 2 taps, Privacy consents list, Legal list, About with beta label | C, legal |
 | Store | US-only listing, adult-facing metadata, privacy labels and manifest generated from the data map | legal |
 
@@ -227,7 +228,7 @@ TDD 10 found about 150 PRD requirements, 50 P0 LEGAL-REQ and 55 DATA-REQ marked 
 | C-REQ-014 | P1 | Celebrate | On this day (excludes local safety tiers) | K-06 |
 | C-REQ-015 | P0 | Celebrate | Never celebrated list | |
 | C-REQ-016 | P0 | Settings | Settings IA, 2 taps max (adds Privacy consents, Legal list, About) | K-13, K-17 |
-| C-REQ-017 | P0 | Data | Export, free forever, offline | |
+| C-REQ-017 | P0 | Data | Export, free forever, offline | *Amended 4 Oct 2026 (D-051): export of letters already made works offline in every plan state and never needs Plus; the "free forever" title is superseded (see C-REQ-017 in C).* |
 | C-REQ-018 | P0 | Data | Keep-safe nudge for audio not backed up | |
 | C-REQ-019 | P0 | Data | Delete account and data | |
 | C-REQ-020 | P0 | Plus | Restore purchases | |
@@ -272,15 +273,19 @@ TDD 10 found about 150 PRD requirements, 50 P0 LEGAL-REQ and 55 DATA-REQ marked 
 | PRD-REQ-012 | P0 | Children | **Child switcher.** "For {child}" atop Tonight and Book; one tap opens "Whose book?" listing active books, Add a child, Hidden books. "To {child}" always visible while recording and in Review, changeable before save. Last opened child remembered per device. Single child: no chevron. | K-12 |
 | PRD-REQ-013 | P0 | Children | **Per-child settings.** Settings > Children > {child}'s book. Book-level (parents edit, all members see): name, nickname, birthday or due date, photo, book look, family can read, hide, delete. Person-per-child: sign my letters as, include in my reminders, pause celebrations; auto-add per family member (parents). Person-global: cadence and time, languages, reading size, analytics. Each row 2 taps or fewer from Settings. | K-12, K-17 |
 | PRD-REQ-014 | P0 | Children | **Per-child sharing.** Invites, roles, approvals and "Family can read" are per child. An invite names exactly one child at launch (multi-book picker P1, defaulting to the current child). RLS and sync streams scope every read to the child's members. | K-12, K-09 |
-| PRD-REQ-015 | P0 | Plus | **Additional children are Plus.** A Free user may start one book. Starting another book while you already started a non-deleted book (`children.created_by` = you; hidden counts) needs Plus. **Books you joined as a co-parent do not count** (founder, 2 Oct). **Every child added together in first run is free**, whatever their dates (founder, 2 Oct); those books count as started books afterwards. A lapse never closes an existing book. Contributors are never gated. Server function `create_child` enforces the rule (first-run batch flag checked server-side: only on an account's first `create_child` call or batch); the client only shows the sheet. | K-12, K-28 |
+| PRD-REQ-015 | P0 | Plus | **Additional children are Plus.** A Free user may start one book. Starting another book while you already started a non-deleted book (`children.created_by` = you; hidden counts) needs Plus. **Books you joined as a co-parent do not count** (founder, 2 Oct). **Every child added together in first run is free**, whatever their dates (founder, 2 Oct); those books count as started books afterwards. A lapse never closes an existing book. Contributors are never gated. Server function `create_child` enforces the rule (first-run batch flag checked server-side: only on an account's first `create_child` call or batch); the client only shows the sheet. | K-12, K-28 **Amended 4 Oct 2026 (D-051): under review.** A free allowance of 2 letters per account now applies (PRD-REQ-024). Whether this book rule (first book free, first-run children free, joined books not counted) stays, changes or is replaced is an open edge (D-051 edges 2 and 6; D-007, D-008, D-014). Until decided, build nothing new on it; the text above is kept as history. |
 | PRD-REQ-016 | P0 | Analytics | **Product analytics, opt-in.** A typed event catalogue in `packages/analytics` covering entry, first run, capture, review, book, family, children, reminders, Plus, settings and errors. Enum, count, duration and bucket properties only; children as ordinals; random analytics id. Nothing is queued or sent before consent. | K-01 |
 | PRD-REQ-017 | P0 | Analytics | **Server aggregates for business totals.** Accounts, books, letters saved, family letters, trials, conversions and churn come from Postgres counts and the purchase ledger (`store_subscriptions` and `store_notifications`, fed by App Store notifications), cross-checked against App Store Connect reports, with no per-user content, so decisions do not depend on the consenting share. | K-01, K-34 |
 | PRD-REQ-019 | P0 | Consent | **18+ entry gate, no local-only mode.** Before any first-run screen, story 4 action or invite flow, a neutral "Are you 18 or older?" (Yes, No, nothing preselected), plus iOS Declared Age Range where required. Yes is stored on the install as a boolean only. No, or an under-18 signal, shows a stop screen (the product is currently for adults 18 and over); nothing is created, recorded or stored; the stop screen stays for 24 hours (anti-retry) before the question can be asked again. A store signal or report after an account exists closes the account per Terms 2.1. Copy `ageGate.*` (mobile engineer); web page keeps its Send-time 18+ confirmation. | K-07, LEGAL-REQ-002 |
-| PRD-REQ-020 | P0 | Plus | **Read together free sessions.** A Free book allows 3 Read together sessions (a session starts when playback with word highlight begins), then Plus. The number is remote config `read_together_free_sessions` (default 3, audit-logged, C-NFR-009); copy that states the number reads it from config, and store and site copy change in the same release if it changes. Playing any single recording is always free. | K-11 |
+| PRD-REQ-020 | P0 | Plus | **Read together free sessions.** A Free book allows 3 Read together sessions (a session starts when playback with word highlight begins), then Plus. The number is remote config `read_together_free_sessions` (default 3, audit-logged, C-NFR-009); copy that states the number reads it from config, and store and site copy change in the same release if it changes. Playing any single recording is always free. | K-11 *Amended 4 Oct 2026 (D-051): interplay with the 2 free letters is an open edge (D-051 edge 5; D-009, D-037). Until decided, the rule stands as written.* |
 | PRD-REQ-018 | P0 | Analytics | **Withdrawal and deletion.** Turning analytics off stops sending within the session and calls `optOut()`; account deletion requests deletion of the analytics id's events from PostHog and Sentry within the published clock. | K-01, LEGAL-REQ-003 |
 | PRD-REQ-021 | P0 (pending D-032) | Family | **Shared voice.** A recording of a letter in a book with two or more members uploads, encrypted on the phone with a per-file key wrapped by a server-held key, so every member who can read the letter can play it (Free). Plus uploads every recording, private letters included, and restores them on a new phone. Downloading or playing an uploaded recording never checks entitlement. Deleting a letter or leaving a book removes cached copies on the next sync. Upload URLs are issued server-side only. | K-40, K-33 |
-| PRD-REQ-022 | P0 | Plus | **Purchase rules.** A purchase requires a signed-in account (Keep the book sheet first); contributors never see the Plus sheet (a quiet line instead); no offer appears in a book already covered by another parent; restore never moves an active subscription between two accounts. | K-34, D-036, D-047 |
+| PRD-REQ-022 | P0 | Plus | **Purchase rules.** A purchase requires a signed-in account (Keep the book sheet first); contributors never see the Plus sheet (a quiet line instead); no offer appears in a book already covered by another parent; restore never moves an active subscription between two accounts. | K-34, D-036, D-047 *Amended 4 Oct 2026 (D-051): contributors never see the Plus sheet still holds; the book's membership covers family authors, so they need none. Whether their letters count toward the 2 free letters is open (D-051 edge 1). The Plus sheet may now also open at the letter limit for the account owner (PRD-REQ-024).* |
 | PRD-REQ-023 | P0 | Legal | **Publisher identity.** The publisher (individual), domain, support and privacy contacts come only from `packages/brand` (`publisher`); the legal name is never written into code (`publisher.legalName` stays a TODO marker that no screen renders) and appears only in published legal documents and App Store Connect. Release builds fail if the domain, support email or privacy URL still holds a placeholder (BL-117). | K-36 |
+| PRD-REQ-024 | P0 | Plus | **Free letter allowance (D-051).** An account may save its first **2 letters** without Plus (a letter is a saved entry, spoken or typed; an unsaved draft is not a letter). After those, saving a new letter needs Plus. The allowance is remote config `free_letters_allowance` (default 2, audit-logged, C-NFR-009); copy that states the number reads it from config. Enforced on the server as well as in the app. Open, not decided here: whether family letters count, what a second child's book gets without Plus, how entitlement is counted offline, how this interacts with Read together, and what first-run children and joined books get (D-051 edges 1, 2, 4, 5, 6). | K-44, D-051 |
+| PRD-REQ-025 | P0 | Plus | **Never discard an in-progress letter.** When the limit is hit, a letter being written, recorded or reviewed is never lost, discarded, truncated or hidden by the app. Recommended behaviour (not yet decided, D-051 edge 3): it stays on the phone and Plus is offered, and it is saved as soon as Plus starts. This follows the constitution: the machine may remove and repair, never take away a person's words. Same pattern as D-038 (a refused book is never deleted or hidden). | K-44, D-051, CLAUDE.md constitution |
+| PRD-REQ-026 | P0 | Plus | **Existing letters stay open.** Every letter already made stays readable, playable (including its recording) and exportable if the person never subscribes or Plus ends; backed-up audio stays stored and downloadable (C-NFR-008). These paths never consult entitlement (LEGAL-REQ-050). Only new letters need Plus. | K-44, D-051 |
+| PRD-REQ-027 | P1 | Plus | **Redeem a code (D-052, recommended mechanism).** Settings > Plan has a "Redeem a code" row (and a quiet link on the Plus sheet) that opens StoreKit's offer-code redemption sheet, then refreshes the entitlement from the App Store (the sheet has no callback; transaction updates carry the result). The server maps `OFFER_REDEEMED` and the following `SUBSCRIBED` or `DID_RENEW` notices to the entitlement with its real end date. We keep no code table, redemption RPC or secret of ours (App Review 3.1.1). Copy says plainly that the free months convert to the normal price unless renewal is turned off. One content-free analytics event, `offer_code_redeemed`. Unverified: whether `expo-iap` exposes the sheet, whether exactly 6 months is offered, whether notice windows cover an offer-code period. Priority P1 is a proposal; the founder wants it for early testers. | K-45, D-052, `docs/ops/OFFER_CODES.md` (branch `docs/offer-codes-runbook`) |
 
 ### 3.5 Legal and data requirements (linked, not duplicated)
 All live in [ENGINEERING_REQUIREMENTS.md](../legal/ENGINEERING_REQUIREMENTS.md) (LEGAL-REQ) and [DELETION_AND_EXPORT_SPEC.md](../legal/DELETION_AND_EXPORT_SPEC.md) (DATA-REQ). P0 items are launch blockers.
@@ -305,20 +310,20 @@ All live in [ENGINEERING_REQUIREMENTS.md](../legal/ENGINEERING_REQUIREMENTS.md) 
 ## 4. Decisions already made by the founder (1 Oct 2026)
 | Decision | Effect in this PRD |
 |---|---|
-| Free forever core: write, read, play back, export, family authors | C 4.1 table stands; promise line wording per K-11 |
+| Free forever core: write, read, play back, export, family authors | C 4.1 table stands; promise line wording per K-11 **Amended 4 Oct 2026 (D-051): superseded.** Free is now the first 2 letters per account; existing letters stay open; see PRD-REQ-024 to -026. |
 | Plus $3.99/month (1-month trial) or $29.99/year (2-month trial) | C-REQ-021 products `el_plus_monthly_399`, `el_plus_annual_2999` |
 | Lifetime about $99.99 later | C-REQ-032 P2 |
 | US App Store first, Android later, all patterns Android-workable | Section 2; LEGAL-REQ-058 |
 | Beta with light "can make mistakes" disclosures | K-13, K-14; strings added in section 8 |
 | (2 Oct) Multiple children, each with its own separately managed profile and book; additional children part of Plus | K-12, K-28; PRD-REQ-011 to 015 |
 | (2 Oct) Full product analytics, opt-in, content-free | K-01; PRD-REQ-016 to 018 |
-| (2 Oct) Free core includes backups already made | C-NFR-008, C-REQ-028 stand |
-| (2 Oct) Read together free for 3 sessions, then Plus (provisional; confirmed in the second set below) | K-11; PRD-REQ-020 |
+| (2 Oct) Free core includes backups already made | C-NFR-008, C-REQ-028 stand Stands (backups already made stay stored and downloadable). |
+| (2 Oct) Read together free for 3 sessions, then Plus (provisional; confirmed in the second set below) | K-11; PRD-REQ-020 Interplay with D-051 open. |
 | L1 to L4 data classification | Section 7.10 |
-| (2 Oct, second set) Twins or more added together in first run all stay free | PRD-REQ-015; K-12; section 9 Q2 closed |
-| (2 Oct) A book joined as co-parent does not count as your free book | PRD-REQ-015; K-12; section 9 Q7 closed |
+| (2 Oct, second set) Twins or more added together in first run all stay free | PRD-REQ-015; K-12; section 9 Q2 closed **Amended by D-051: open edge.** |
+| (2 Oct) A book joined as co-parent does not count as your free book | PRD-REQ-015; K-12; section 9 Q7 closed **Amended by D-051: open edge.** |
 | (2 Oct) Physical printed books are a future launch; v1 is digital only | K-32; print removed from v1 scope, copy, store text and Terms (kept as roadmap) |
-| (2 Oct) Read together is Plus after 3 free sessions (default; remote config) | PRD-REQ-020; K-11; section 9 Q1 closed |
+| (2 Oct) Read together is Plus after 3 free sessions (default; remote config) | PRD-REQ-020; K-11; section 9 Q1 closed Interplay with D-051 open. |
 | (2 Oct) Beta ends only when the founder says so; no date or metric trigger | K-13; section 9 Q3 closed |
 | (2 Oct) Under 18 not allowed at all; no local-only mode; clean stop screen | K-07; PRD-REQ-019; section 9 Q4 closed |
 | (2 Oct) About 13M analytics events a month at 100k families is accepted | K-01; section 7.8; section 9 Q8 closed |
@@ -327,6 +332,8 @@ All live in [ENGINEERING_REQUIREMENTS.md](../legal/ENGINEERING_REQUIREMENTS.md) 
 | (3 Oct) Family scope at launch: co-parent and family contributors in the app; web contribution page in v1.1 | K-35; section 3.0; D-002 |
 | (3 Oct) Full opt-in PostHog analytics at launch, as decided 2 Oct | K-01 stands; TDD 10 risk 15 recommendation declined; D-003 |
 | (3 Oct) Publish with a personal (individual) Apple Developer account; no LLC for now | K-36; launch gate 4; PRD-REQ-023; D-004, D-005; section 9 Q5 narrowed to the domain |
+| (4 Oct) Plus is membership: first 2 letters per account free, then Plus; existing letters stay readable, playable and exportable; one membership covers the book and family authors; prices, trials, Apple-only, US-only unchanged | K-44; PRD-REQ-024 to -026; amends PRD-REQ-015, -020, -022; D-051 |
+| (4 Oct) Early testers, neighbours and friends get free months (for example 6) through Apple offer codes, not our own code system (intent decided; mechanism recommended) | K-45; PRD-REQ-027; D-052 |
 
 ---
 
@@ -414,11 +421,13 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - **Why.** A published privacy statement that contradicts the product is a deception risk (CR-010) and contradicts the Terms.
 
 ### K-11. "Free, always" promise wording and Read together
+- **Amended 4 Oct 2026 (D-051, K-44): the "free, always" promise is superseded.** The wording below is kept as history and must not ship. The replacement promise (existing letters always stay readable, playable and exportable; only new letters need Plus) is owned by content and counsel.
 - **Conflict.** The promise line says "Writing, reading, **listening** and export are free, always", while Read together is Plus after 3 tries (C 4.1). Register item 10 and CR-012. A-REQ-014 lists Read together as working without an account.
 - **Decision.** Use "playing your recordings" instead of "listening" everywhere a promise appears: "Writing, reading, playing your recordings, export and family letters are free, always." Playback of any recording stays free; Read together (word highlight, sequenced playback) is the Plus feature after 3 tries. **Decided 2 Oct 2026 (founder):** 3 free sessions is the default, tunable through remote config (PRD-REQ-020). Store description and site cost answer now say so, so the free-scope promise and the paywall cannot be read as contradicting each other. A-REQ-014 reads "Read together within the free tries".
 - **Owner action.** Terms short version and 13.1 already say "reading your letters and playing their recordings" (13.1 matches); in-app-disclosures `store.description.subscriptionLine` and Subscription terms "What stays free" should switch "listening" to "playing your recordings".
 
 ### K-12. Multi-child profile management and Plus gating
+- **Amended 4 Oct 2026 (D-051, K-44):** the "first book free", "first-run children free" and "joined books do not count" parts are under review (open edges 2 and 6). Switcher, per-child settings and per-child sharing stand.
 - **Conflict.** C 4.1 and OQ6 put each extra book behind Plus provisionally; B-REQ-004 is P0 multi-child with "Add another child" for twins in first run; C-REQ-023 forbids any offer at launch or in first run; C F1 named "the most recently opened child" in a shared reminder; B F5 defaulted a multi-child invite to all children; C-REQ-012 said "per book" without saying whose choice; no document defined which settings are per child.
 - **Founder decision (2 Oct 2026).** Multiple children are supported, each with its own separately managed profile and book; additional children are part of Plus.
 - **Decision.**
@@ -506,6 +515,7 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - `docs/design/DESIGN_LANGUAGE.md` (empty-state example) uses a real child's name. CLAUDE.md requires the fictional "Asha". **Owner action:** design leads replace it.
 
 ### K-28. Plus scope: per book versus per account
+- **Amended 4 Oct 2026 (D-051):** per-account scope stands, now as the membership that unlocks new letters; one membership covers the book including family authors.
 - **Conflict.** C-REQ-021 made the entitlement per book (C OQ3 open). With additional children behind Plus, a per-book model would need one purchase per extra child, but Apple allows a person one active subscription per subscription group, so a third child could never be funded. Gifts (C-REQ-030) are naturally per book.
 - **Decision.** Plus is held by the subscriber's account. A book has Plus when any of its parents holds Plus or a gift is active on it. Every member's Plus features then work in that book (co-parent included). Creating an additional book checks the creator's own entitlement or the twins exception. ~~RevenueCat `appUserID` stays a random id mapped server-side.~~ (1.3, K-34) The App Store `appAccountToken` is a random id per account (`app_account_tokens`), mapped server-side; never the profile id, email or analytics id.
 - **Why.** Store mechanics; one price for any number of children matches "additional children are part of Plus".
@@ -595,6 +605,17 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 - Minimum iOS 17 (D-040); two Supabase environments and an agent fence for `supabase/` and auth (D-041).
 - Hindi script default is open until the experiment (D-031, 30 Oct).
 
+### K-44. Plus is membership: 2 free letters, then Plus (founder, 4 Oct 2026; D-051)
+- **Conflict.** The PRD promised writing, reading, playing recordings and export "free, always" and described Plus as optional extras (K-11, C 4.1, PRD-REQ-015, section 4 first row). The founder changed the business model.
+- **Founder decision.** Membership (the plan is still named Plus) unlocks the product. Free version: first 2 letters per account (a letter is a saved entry, spoken or typed); after that, new letters need Plus. Letters already made always stay readable, playable and exportable if someone never subscribes or Plus ends. One membership covers the book; family authors add letters without their own. Prices and trials unchanged ($3.99 a month with 1 month free; $29.99 a year with 2 months free; Apple only, ADR 0013; US only).
+- **Decision here.** New PRD-REQ-024 (allowance), -025 (never discard an in-progress letter; recommended, edge 3), -026 (existing letters stay open). PRD-REQ-015, -020, -022, K-11, K-12, K-28, C-REQ-017, C 4.1 and C-REQ-028 are marked amended in place; nothing is renumbered or deleted. The eight open edges are not decided: family letters and the allowance, a second child's book without Plus, in-progress letter at the limit, offline entitlement counting (compare D-037), Read together interplay, first-run children free (D-007, D-008), offline letters past the limit, lapsed wording.
+- **Why.** The founder: membership is what unlocks the features; the free version can have 1 to 2 letters to try, then a subscription. Rejected alternatives (all offered): 1 free letter, 2 per book, locking existing letters, export needing membership, each family author paying, removing free trials.
+- **Docs changed.** DECISIONS D-051; this file; C; TDD 08 (section 14 TODO); ROADMAP section 9; ADR 0013 and 0007 notes; website runbook, web and research notes. **Owner action (content, legal, counsel):** the promise line `plus.promise`, `plus.sheet`, `plus.lapsed`, store description, site FAQ, Subscription terms "What stays free", in-app disclosures; counsel review. **Owner action (engineering):** TDD 08 section 14. **Owner action (analytics):** limit-moment events.
+- **Risk to flag.** Apple review and consumer-protection exposure of a paywall that appears after the first 2 letters; unverified, counsel and App Store review notes (ROADMAP section 9).
+
+### K-45. Early-tester offer codes through Apple (founder intent, 4 Oct 2026; D-052)
+- **Decision.** The founder wants free months (for example 6) for early testers, neighbours and friends through an offer-code feature. Recommended mechanism: Apple offer codes and StoreKit's redemption sheet, with `OFFER_REDEEMED` mapped on the server; no code system of ours (App Review 3.1.1). New PRD-REQ-027. Whether exactly 6 months is available, whether the free period converts and can be switched off, and whether TestFlight testers need codes are unverified (`docs/ops/OFFER_CODES.md`).
+
 ### Owner follow-ups (not editable by product)
 | Owner | Action | Entry |
 |---|---|---|
@@ -618,6 +639,8 @@ Each entry: the conflict, the decision, and why. "Docs changed" lists what was e
 | PRD B owner | B F6 (web page) marked v1.1; invite flow F5 for in-app contributors; contributor child-data view (D-039) | K-35 |
 | PRD A owner | Welcome screen replaces the story intro at v1.0; Google sign-in v1.1 | D-043, D-044 |
 | Data architect | `book_access`, approvals, client ids, consent gates, billing tables `app_account_tokens`, `store_subscriptions`, `store_notifications` (BACKLOG M1, M5, M8) | K-34, K-35, K-39 |
+| Payments engineer, mobile, data architect | Letter allowance gate, server enforcement, `free_letters_allowance` config, never-discard rule, free-tier tests, Redeem a code row and `OFFER_REDEEMED` mapping (TDD 08 section 14) | K-44, K-45, PRD-REQ-024 to -027 |
+| Content, legal, counsel | Replace the "free, always" promise line everywhere (`plus.promise`, `plus.sheet`, `plus.lapsed`, store description, site FAQ), Subscription terms "What stays free", in-app disclosures, offer-code wording, App Store review notes; counsel review | K-44, K-45 |
 | Founder | D-023 by 16 Oct; D-032 by 23 Oct; D-030 before the listing; D-004 hedge by 27 Nov; domain in week 1 | K-36, K-37, K-39, K-40 |
 
 ---
@@ -675,13 +698,17 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 ### 6.5 Plus
 - [ ] [auto] The Plus sheet never appears at launch, during recording or export, in the Book list, on a birthday, or during first run (C-REQ-023, K-12).
 - [ ] [auto] Neither plan is preselected; price, period, auto-renewal, trial end date (if eligible) and cancel route are visible at default size and wrap at AX5 (C-REQ-022, LEGAL-REQ-046).
-- [ ] [auto] A trial-ineligible user sees no "free" wording (C-REQ-022).
+- [ ] [auto] A trial-ineligible user sees no "free" wording (C-REQ-022). *(Still holds; with D-051 the lapsed-user sheet wording is open edge 8.)*
 - [ ] [auto] Notice scheduler with clock control sends exactly the K-38 schedule over a synthetic year: annual renewal inside `[E-31d, E-30d]` and `[E-8d, E-6d]`; annual-plan trial inside `[E-21d, E-16d]` and `[E-5d, E-4d]`; monthly trial inside `[E-8d, E-5d]` and `[E-5d, E-4d]`; one push only with the final trial notice; annual reminder for a 12-month monthly subscriber; nothing outside a window; a cancelled renewal skips its pending notices (PRD-REQ-003, LEGAL-REQ-047).
 - [ ] [auto] Each purchase writes one `started` and exactly one `completed` `auto-renewal-terms` acceptance matching the App Store transaction (LEGAL-REQ-049, D-049).
 - [ ] [auto] A signed-out user tapping a Plus feature sees the Keep the book sheet before any Plus sheet; a contributor never sees the Plus sheet; no offer appears in a book covered by the other parent (PRD-REQ-022).
 - [ ] [auto] A forged or duplicated App Store notification changes nothing (JWS verification, `notificationUUID` dedupe, state re-read from the App Store Server API) (ADR 0013).
-- [ ] [auto] With the entitlement service unreachable and a lapsed account, write, read, play, export and download backed-up audio all succeed with no Plus UI (C-NFR-004, LEGAL-REQ-050).
-- [ ] [auto] A lapsed user keeps both child books writable; creating a third shows the Plus sheet (C-REQ-028).
+- [ ] [auto] With the entitlement service unreachable and a lapsed account, write, read, play, export and download backed-up audio all succeed with no Plus UI (C-NFR-004, LEGAL-REQ-050). *(Amended 4 Oct 2026, D-051: "write" now means reading existing letters; adding a new letter needs Plus. Read, play, export and download of backed-up audio stand.)*
+- [ ] [auto] A lapsed user keeps both child books writable; creating a third shows the Plus sheet (C-REQ-028). *(Amended 4 Oct 2026, D-051: superseded for new letters; see the new items below.)*
+- [ ] [auto] (1.4, D-051) An account with 2 saved letters and no Plus: the third save opens the Plus sheet; the server refuses a bypassed third letter; the in-progress letter is still on the phone and is saved when Plus starts (PRD-REQ-024, -025; edge 3 recommended, not decided).
+- [ ] [auto] (1.4, D-051) A lapsed or never-subscribed account with many letters: every existing letter reads, plays and exports with no Plus UI and with the entitlement service unreachable (PRD-REQ-026).
+- [ ] [auto] (1.4, D-051) Changing `free_letters_allowance` changes the limit without a release (PRD-REQ-024).
+- [ ] [manual] (1.4, D-052) Redeem a code in Settings > Plan opens the StoreKit sheet; a sandbox offer code gives Plus with its real end date within the usual refresh time (PRD-REQ-027; unverified until built).
 - [ ] [manual] Restore on a new iPhone shows Plus within 10 seconds (C-REQ-020).
 - [ ] [auto] An Apple refund webhook removes only the entitlement (C-REQ-029).
 - [ ] [auto] A Free book allows exactly `read_together_free_sessions` (default 3) Read together sessions; the next tap opens the Plus sheet; changing the remote value changes the limit without a release; single-recording playback is never limited (PRD-REQ-020).
@@ -709,9 +736,9 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 
 ### 6.8 Children (multi-child)
 - [ ] [auto] With two children, "To {child}" shows while recording and in Review; changing it in Review saves to the chosen child only (PRD-REQ-012).
-- [ ] [auto] A Free user with one book: Add a child reaches the Plus sheet in 3 taps; the server rejects `create_child` without Plus even if the client is bypassed (PRD-REQ-015).
-- [ ] [auto] First run with several children added together (twins, or siblings with different dates): one book each, no Plus sheet, no paywall request; the server accepts every `create_child` in that first-run batch without Plus (PRD-REQ-015).
-- [ ] [auto] A Free co-parent who joined one book and started none can start one book without Plus; starting a second needs Plus; the server enforces both (PRD-REQ-015).
+- [ ] [auto] A Free user with one book: Add a child reaches the Plus sheet in 3 taps; the server rejects `create_child` without Plus even if the client is bypassed (PRD-REQ-015). *(Amended 4 Oct 2026, D-051: under review, open edge 2.)*
+- [ ] [auto] First run with several children added together (twins, or siblings with different dates): one book each, no Plus sheet, no paywall request; the server accepts every `create_child` in that first-run batch without Plus (PRD-REQ-015). *(Amended 4 Oct 2026, D-051: under review, open edge 6.)*
+- [ ] [auto] A Free co-parent who joined one book and started none can start one book without Plus; starting a second needs Plus; the server enforces both (PRD-REQ-015). *(Amended 4 Oct 2026, D-051: under review, open edge 6.)*
 - [ ] [auto] A co-parent of a book whose other parent holds Plus gets Plus features in that book with no purchase (K-28).
 - [ ] [auto] Nani invited to Asha's book only receives no row, photo, member or audio from the sibling's book through API or sync (PRD-REQ-014).
 - [ ] [auto] Turning off "Include {child} in my reminders" removes reminders, month-age and birthday notes naming that child for that person only (PRD-REQ-013).
@@ -864,6 +891,8 @@ Enforcement (all P0, automated unless noted):
 
 Files: `packages/content/src/strings.en.ts`, `store.en.ts`, `site.en.ts`. Tests and typecheck pass (`npx vitest run`: 16 of 16; `npx tsc --noEmit`: clean).
 
+> **Amended 4 Oct 2026 (D-051):** this section records copy fixed on 2 Oct, including promise lines such as "free core plus optional Plus" and "free, always". Those lines are now out of date. Content copy is owned by another agent and was not changed here; see K-44 owner actions.
+
 | Key | Was | Now | Entry |
 |---|---|---|---|
 | `settings.backup.honestNote` | "Without backup, everything stays only on this phone." | Recordings stay only on this phone without backup; letters sync when signed in | K-21 |
@@ -955,6 +984,11 @@ Added 3 Oct 2026 (full entries in `docs/DECISIONS.md`; the founder answers there
 17. **Safety classifier** (D-034): ship only with a clinician's sign-off by 20 Nov, else a static resources row.
 18. **Free durability copy** (D-033, K-42): rely on the user's own device backup and fix the "only on this phone" line.
 
+Added 4 Oct 2026 (D-051, D-052; the founder answers in `docs/DECISIONS.md`):
+
+19. **Free-allowance edges** (D-051): do family letters count toward the 2 free letters; what a second child's book gets without Plus; confirm the in-progress letter is never discarded (recommended: keep on the phone, offer Plus); offline entitlement counting, device or server (compare D-037); Read together interplay; first-run children and joined books (D-007, D-008, Q9 above); letters made offline past the limit; lapsed and trial-ineligible wording.
+20. **Offer codes** (D-052): confirm Apple offer codes as the mechanism, the length (unverified whether 6 months exists) and who gets them; tell testers about conversion.
+
 Owner actions outside product (tracked, not founder questions): ADR 0008 opt-in wording; ~~LEGAL-REQ-033 and -047 table edits~~ (done 3 Oct, ENGINEERING_REQUIREMENTS 1.1.0); Privacy Policy section 12 sentence; Subscription terms and in-app-disclosures "listening" wording; DESIGN_LANGUAGE real-name example; BRAND.md print line and "by default"; Terms 12.1 cloud transcription exit (K-33).
 
 ## Changelog
@@ -964,3 +998,4 @@ Owner actions outside product (tracked, not founder questions): ADR 0008 opt-in 
 | 1.1 | 2026-10-02 | Founder decisions of 2 Oct: multi-child (K-12 rewritten, PRD-REQ-011 to 015, checklist 6.8), full opt-in analytics (K-01, PRD-REQ-016 to 018, checklist 6.9), Plus per account (K-28), K-29 to K-31, owner follow-up table; B and C revisions actually applied; new copy. |
 | 1.2 | 2026-10-02 | Second set of founder decisions of 2 Oct: first-run children free and joined books not counted (PRD-REQ-015), Read together 3 sessions in remote config (PRD-REQ-020), beta ends on founder say-so (K-13), 18+ entry gate with no local-only mode (PRD-REQ-019, K-07), digital only (K-32), analytics volume accepted; Lawyer 2 H4 claims fixed (K-21, K-33, section 8); checklist 6.1, 6.5, 6.6, 6.7, 6.8 updated; section 9 resolved items closed, Q5 updated, Q9 and Q10 added. |
 | 1.3 | 2026-10-03 | Founder decisions of 3 Oct: Plus in v1.0 through Apple only with StoreKit 2 direct (K-34, ADR 0013, PRD-REQ-003, -017, -022), family contributors in the app at v1.0 and the web page in v1.1 (K-35), full opt-in analytics confirmed (K-01), individual publisher (K-36, PRD-REQ-023, launch gate 4). TDD 01 to 10 folded in: release tiers (3.0), notice windows replaced (K-38), retention clocks (K-41), TDD resolutions (K-43); recommendations needing the founder (K-37 store beta line, K-39 sync engine, K-40 shared voice as PRD-REQ-021, K-42 durability copy). Checklist 6.1, 6.2, 6.5, 6.7 and NFR 7.2, 7.4, 7.8 updated. Section 9 Q5 narrowed to the domain; Q11 to Q18 added. Companion `docs/DECISIONS.md`, `docs/ROADMAP.md` (submission Mon 11 Jan 2027). |
+| 1.4 | 2026-10-04 | Founder decisions of 4 Oct: Plus is membership with 2 free letters per account and existing letters always open (D-051, K-44, PRD-REQ-024 to -026; PRD-REQ-015, -020, -022, K-11, K-12, K-28, C-REQ-017 and section 4 amended in place); early-tester offer codes through Apple (D-052, K-45, PRD-REQ-027); questions 19 and 20; checklist items added. Eight open edges not decided. |
