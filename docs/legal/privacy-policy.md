@@ -114,5 +114,4 @@ Each version has a number and an effective date. For a change that matters to ho
 
 | Version | Date | Change |
 |---|---|---|
-| 2.0.0 | 2026-10-04 | Rewritten for the first version, which keeps everything on the phone: no account, sync, co-parent, backup or server. Removed Supabase, Cloudflare, Sentry and sign-in text. Major in scope, but nothing is published and no one is bound, so no notice is owed. Earlier text is in git history. |
-| 1.4.0 | 2026-10-03 | Draft for the server version (sign-in, sync, co-parent). |
+| 2.0.0 | 2026-10-04 | Rewritten for the first version of the app, which keeps everything on your phone. |

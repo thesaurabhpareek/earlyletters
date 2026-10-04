@@ -35,5 +35,4 @@ When sign-in, sync or writing with a co-parent arrives, we will add the companie
 
 | Version | Date | Change |
 |---|---|---|
-| 2.0.0 | 2026-10-04 | Rewritten for the first version. Removed Supabase, Cloudflare, Groq, DeepInfra, Sentry, Lulu, Stripe and CAPTCHA providers, which v1.0 does not use. Vendor review notes moved to COUNSEL_PACKET.md. Nothing is published. Earlier text is in git history. |
-| 1.3.0 | 2026-10-03 | Draft for the server version. |
+| 2.0.0 | 2026-10-04 | Rewritten for the first version of the app. |

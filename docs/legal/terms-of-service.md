@@ -136,5 +136,4 @@ If you got the app from the Apple App Store, these terms also apply and win over
 
 | Version | Date | Change |
 |---|---|---|
-| 3.0.0 | 2026-10-04 | Rewritten for the first version: on the phone, no account, no co-parent, backup, web page, print or Android. Keeps the membership model (2 free letters), the transcription promise, the US $50 liability floor and courts rather than arbitration. Removed counsel notes and sources (now in COUNSEL_PACKET.md and BENCHMARK.md). Major in scope; nothing is published, so no notice is owed. Earlier text is in git history. |
-| 1.5.0 | 2026-10-03 | Draft for the server version. |
+| 3.0.0 | 2026-10-04 | Rewritten for the first version of the app, which keeps everything on your phone. |

@@ -45,5 +45,4 @@ When sign-in, sync or writing with a co-parent arrives, letters could leave your
 
 | Version | Date | Change |
 |---|---|---|
-| 2.0.0 | 2026-10-04 | Rewritten for the first version, which collects no consumer health data from the app. Removed sync, processor and consent text for the server version. Whether this policy is needed at all for v1.0 is a question in COUNSEL_PACKET.md; it stays as a short notice until counsel answers. Nothing is published. Earlier text is in git history. |
-| 1.2.0 | 2026-10-03 | Draft for the server version. |
+| 2.0.0 | 2026-10-04 | Rewritten for the first version of the app, which receives no consumer health data. |
