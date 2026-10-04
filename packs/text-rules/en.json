@@ -1,0 +1,744 @@
+{
+  "kind": "text-rules",
+  "schema": 1,
+  "language": "en",
+  "version": "1.0.0",
+  "engine": 1,
+  "name": {
+    "english": "English",
+    "native": "English"
+  },
+  "script": {
+    "primary": "Latn",
+    "variants": [],
+    "direction": "ltr",
+    "cased": true,
+    "segmentation": "space"
+  },
+  "attribution": [],
+  "normalization": {
+    "review": {
+      "status": "native-reviewed",
+      "by": "founding team, engine v3 (BL-064, TDD 03 7.1)",
+      "date": "2026-10-03",
+      "sources": [
+        "packages/core/test/verify.test.ts",
+        "packages/core/test/verify.fuzz.test.ts"
+      ]
+    },
+    "form": "NFC",
+    "dropFromFinal": [],
+    "ignoreForMatching": [],
+    "foldForMatching": {},
+    "house": {
+      "dashes": "replace",
+      "dashTo": ", ",
+      "quotes": "straight",
+      "ellipsis": "dots",
+      "spaces": "plain"
+    }
+  },
+  "punctuation": {
+    "review": {
+      "status": "native-reviewed",
+      "by": "founding team, engine v3 (BL-064, TDD 03 7.1)",
+      "date": "2026-10-03",
+      "sources": [
+        "packages/core/test/verify.test.ts",
+        "packages/core/test/verify.fuzz.test.ts"
+      ]
+    },
+    "sentenceEnd": [
+      ".",
+      "!",
+      "?"
+    ],
+    "terminal": ".",
+    "openers": [],
+    "pairOpeners": false,
+    "quotes": [],
+    "commas": [],
+    "localForms": {},
+    "localFormsSwallowSpace": false,
+    "spaceBefore": [],
+    "spaceInsideGuillemets": false
+  },
+  "fillers": {
+    "review": {
+      "status": "native-reviewed",
+      "by": "founding team, engine v3 (BL-064, TDD 03 7.1)",
+      "date": "2026-10-03",
+      "sources": [
+        "packages/core/test/verify.test.ts",
+        "packages/core/test/verify.fuzz.test.ts"
+      ]
+    },
+    "auto": [
+      "um",
+      "umm",
+      "ummm",
+      "uh",
+      "uhh",
+      "uhm",
+      "erm",
+      "er",
+      "hmm",
+      "hmmm",
+      "mm"
+    ],
+    "suggest": []
+  },
+  "meaning": {
+    "review": {
+      "status": "native-reviewed",
+      "by": "founding team, engine v3 (BL-064, TDD 03 7.1)",
+      "date": "2026-10-03",
+      "sources": [
+        "packages/core/test/verify.test.ts",
+        "packages/core/test/verify.fuzz.test.ts"
+      ]
+    },
+    "negations": [
+      "not",
+      "no",
+      "never",
+      "cannot",
+      "nobody",
+      "nothing",
+      "none",
+      "nowhere",
+      "neither",
+      "nor",
+      "nope",
+      "nah",
+      "nahi",
+      "nahin"
+    ],
+    "negationSuffixes": [
+      "n't"
+    ],
+    "negationPrefixes": [],
+    "modals": [
+      "can",
+      "could",
+      "will",
+      "would",
+      "shall",
+      "should",
+      "may",
+      "might",
+      "must",
+      "ought",
+      "can't",
+      "couldn't",
+      "won't",
+      "wouldn't",
+      "shan't",
+      "shouldn't",
+      "mightn't",
+      "mustn't"
+    ],
+    "numberWords": [
+      "zero",
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+      "six",
+      "seven",
+      "eight",
+      "nine",
+      "ten",
+      "eleven",
+      "twelve",
+      "thirteen",
+      "fourteen",
+      "fifteen",
+      "sixteen",
+      "seventeen",
+      "eighteen",
+      "nineteen",
+      "twenty",
+      "thirty",
+      "forty",
+      "fifty",
+      "sixty",
+      "seventy",
+      "eighty",
+      "ninety",
+      "hundred",
+      "thousand",
+      "million",
+      "half",
+      "once",
+      "twice",
+      "first",
+      "second",
+      "third",
+      "fourth",
+      "fifth",
+      "sixth",
+      "seventh",
+      "eighth",
+      "ninth",
+      "tenth",
+      "dozen"
+    ],
+    "functionWords": [
+      "a",
+      "an",
+      "the",
+      "is",
+      "are",
+      "was",
+      "were",
+      "be",
+      "been",
+      "being",
+      "am",
+      "has",
+      "have",
+      "had",
+      "having",
+      "do",
+      "does",
+      "did",
+      "will",
+      "would",
+      "can",
+      "could",
+      "shall",
+      "should",
+      "may",
+      "might",
+      "must",
+      "to",
+      "of",
+      "in",
+      "on",
+      "at",
+      "for",
+      "with",
+      "by",
+      "from",
+      "into",
+      "onto",
+      "up",
+      "and",
+      "or",
+      "but",
+      "so",
+      "if",
+      "that",
+      "than",
+      "then",
+      "as",
+      "i",
+      "me",
+      "my",
+      "we",
+      "us",
+      "our",
+      "you",
+      "your",
+      "he",
+      "him",
+      "his",
+      "she",
+      "her",
+      "it",
+      "its",
+      "they",
+      "them",
+      "their",
+      "this",
+      "these",
+      "those",
+      "it's",
+      "i'm",
+      "she's",
+      "he's",
+      "we're",
+      "they're",
+      "you're",
+      "don't",
+      "doesn't",
+      "didn't",
+      "isn't",
+      "wasn't",
+      "aren't",
+      "weren't"
+    ],
+    "pronouns": [
+      "hers",
+      "mine",
+      "yours",
+      "theirs",
+      "ours",
+      "myself",
+      "yourself",
+      "himself",
+      "herself",
+      "itself",
+      "ourselves",
+      "themselves",
+      "yourselves",
+      "i'll",
+      "i've",
+      "i'd",
+      "you'll",
+      "she'll",
+      "he'll",
+      "we'll",
+      "they'll",
+      "who",
+      "whom",
+      "whose",
+      "someone",
+      "somebody",
+      "everyone",
+      "everybody",
+      "anyone",
+      "anybody"
+    ],
+    "kinship": [
+      "mom",
+      "mommy",
+      "mum",
+      "mummy",
+      "mumma",
+      "mama",
+      "mamma",
+      "ma",
+      "mother",
+      "amma",
+      "ammi",
+      "maa",
+      "dad",
+      "daddy",
+      "papa",
+      "pappa",
+      "pa",
+      "father",
+      "baba",
+      "abba",
+      "appa",
+      "nani",
+      "nana",
+      "dadi",
+      "dada",
+      "nanu",
+      "grandma",
+      "grandpa",
+      "granny",
+      "gran",
+      "grandad",
+      "granddad",
+      "grandmother",
+      "grandfather",
+      "nanima",
+      "dadima",
+      "ajji",
+      "ajja",
+      "thatha",
+      "paati",
+      "bua",
+      "chacha",
+      "chachi",
+      "mausi",
+      "masi",
+      "mausa",
+      "mami",
+      "mamu",
+      "tau",
+      "tai",
+      "taiji",
+      "fufa",
+      "phupho",
+      "bhaiya",
+      "bhai",
+      "didi",
+      "dida",
+      "behen",
+      "aunty",
+      "auntie",
+      "aunt",
+      "uncle",
+      "sister",
+      "brother",
+      "sis",
+      "bro",
+      "baby",
+      "son",
+      "daughter",
+      "husband",
+      "wife",
+      "cousin",
+      "nanny",
+      "teacher"
+    ],
+    "alwaysCapitalized": [
+      "i",
+      "i'm",
+      "i've",
+      "i'll",
+      "i'd"
+    ],
+    "agreementGroups": [
+      [
+        "is",
+        "are",
+        "am"
+      ],
+      [
+        "was",
+        "were"
+      ],
+      [
+        "has",
+        "have"
+      ],
+      [
+        "do",
+        "does"
+      ],
+      [
+        "go",
+        "goes"
+      ],
+      [
+        "isn't",
+        "aren't"
+      ],
+      [
+        "wasn't",
+        "weren't"
+      ],
+      [
+        "hasn't",
+        "haven't"
+      ],
+      [
+        "doesn't",
+        "don't"
+      ],
+      [
+        "a",
+        "an"
+      ]
+    ],
+    "tenseGroups": [
+      [
+        "is",
+        "are",
+        "am",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being"
+      ],
+      [
+        "has",
+        "have",
+        "had",
+        "having"
+      ],
+      [
+        "do",
+        "does",
+        "did",
+        "done",
+        "doing"
+      ],
+      [
+        "go",
+        "goes",
+        "went",
+        "gone",
+        "going"
+      ],
+      [
+        "isn't",
+        "aren't",
+        "wasn't",
+        "weren't"
+      ],
+      [
+        "hasn't",
+        "haven't",
+        "hadn't"
+      ],
+      [
+        "doesn't",
+        "don't",
+        "didn't"
+      ]
+    ],
+    "agreementInflections": [
+      {
+        "add": "s"
+      },
+      {
+        "add": "es"
+      },
+      {
+        "strip": "y",
+        "add": "ies",
+        "afterConsonant": true
+      }
+    ],
+    "vowels": "aeiou",
+    "minStem": 3,
+    "tenseEndings": [
+      "ies",
+      "es",
+      "s",
+      "ied",
+      "ed",
+      "d",
+      "ing"
+    ],
+    "stemDropFinal": [
+      "e"
+    ]
+  },
+  "repeats": {
+    "review": {
+      "status": "native-reviewed",
+      "by": "founding team, engine v3 (BL-064, TDD 03 7.1)",
+      "date": "2026-10-03",
+      "sources": [
+        "packages/core/test/verify.test.ts",
+        "packages/core/test/verify.fuzz.test.ts"
+      ]
+    },
+    "always": [
+      "the",
+      "a",
+      "an",
+      "i",
+      "and",
+      "to",
+      "it",
+      "she",
+      "he",
+      "we",
+      "they",
+      "of",
+      "but"
+    ],
+    "suggest": [
+      "you",
+      "so",
+      "is",
+      "in",
+      "on",
+      "at",
+      "for",
+      "with",
+      "from",
+      "my",
+      "your",
+      "our",
+      "their",
+      "his",
+      "me",
+      "them",
+      "us",
+      "this"
+    ],
+    "dangling": [
+      "a",
+      "an",
+      "the",
+      "my",
+      "your",
+      "our",
+      "their",
+      "his",
+      "its",
+      "to",
+      "of",
+      "with",
+      "for",
+      "from",
+      "at",
+      "and",
+      "but",
+      "or",
+      "because",
+      "into",
+      "onto"
+    ],
+    "verifierExtra": [
+      "was"
+    ],
+    "cleft": {
+      "words": [
+        "was"
+      ],
+      "openers": [
+        "what",
+        "all",
+        "thing",
+        "things",
+        "problem",
+        "point",
+        "truth",
+        "reason",
+        "question",
+        "why",
+        "how",
+        "where",
+        "who"
+      ]
+    },
+    "subject": {
+      "words": [
+        "you"
+      ],
+      "objectVerbs": [
+        "tell",
+        "tells",
+        "told",
+        "telling",
+        "promise",
+        "promised",
+        "show",
+        "showed",
+        "remind",
+        "reminded",
+        "ask",
+        "asked",
+        "bet",
+        "assure",
+        "assured",
+        "warn",
+        "warned",
+        "teach",
+        "taught",
+        "wish",
+        "let",
+        "make",
+        "made",
+        "thank",
+        "thanked",
+        "give",
+        "gave",
+        "love",
+        "loved",
+        "see",
+        "saw",
+        "hear",
+        "heard",
+        "want",
+        "wanted",
+        "help",
+        "helped",
+        "watch",
+        "watched",
+        "know",
+        "knew",
+        "miss",
+        "missed",
+        "call",
+        "called",
+        "mean",
+        "meant"
+      ],
+      "clauseLeads": [
+        "and",
+        "but",
+        "so",
+        "then",
+        "because",
+        "cause",
+        "when",
+        "while",
+        "if",
+        "now",
+        "today",
+        "tonight",
+        "yesterday",
+        "also",
+        "oh",
+        "okay",
+        "ok"
+      ],
+      "discourseAfter": [
+        "know",
+        "see",
+        "mean"
+      ]
+    },
+    "maxPhrase": 4
+  },
+  "phonetic": {
+    "review": {
+      "status": "native-reviewed",
+      "by": "founding team, engine v3 (BL-064, TDD 03 7.1)",
+      "date": "2026-10-03",
+      "sources": [
+        "packages/core/test/verify.test.ts",
+        "packages/core/test/verify.fuzz.test.ts"
+      ]
+    },
+    "romanize": {},
+    "rewrite": [
+      {
+        "from": "sh",
+        "to": "S"
+      },
+      {
+        "from": "ch",
+        "to": "C"
+      },
+      {
+        "from": "ph",
+        "to": "f"
+      },
+      {
+        "from": "ck",
+        "to": "k"
+      },
+      {
+        "from": "q",
+        "to": "k"
+      },
+      {
+        "from": "x",
+        "to": "ks"
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "before": "eiy"
+      },
+      {
+        "from": "c",
+        "to": "k"
+      },
+      {
+        "from": "z",
+        "to": "s"
+      },
+      {
+        "from": "w",
+        "to": "v"
+      },
+      {
+        "from": "h",
+        "to": ""
+      }
+    ],
+    "vowels": "aeiouy",
+    "collapseDoubles": true,
+    "dropFinalAfterVowel": [
+      "r"
+    ],
+    "stripMarks": false,
+    "compareVowels": true
+  }
+}

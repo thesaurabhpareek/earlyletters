@@ -1,12 +1,35 @@
 /**
  * Copy helper. Every word comes from @scribe/content; screens never
  * hardcode user-facing text. Placeholders are filled with renderTemplate.
+ *
+ * `{app}` (the public name) is filled here, once, from packages/brand, so
+ * in-app copy never types the name and screens can render strings such as
+ * `copy.ageGate.stopBody` as they are (CLAUDE.md: the name lives only in
+ * packages/brand). Every other placeholder is left for `fill`.
+ *
+ * Feature-local copy files (`*copy.ts` under src/) are allowed for strings a
+ * feature is still settling, but they obey the same rules: the content rules
+ * test in packages/content scans them.
  */
-import { en } from '@scribe/content';
+import { brand } from '@scribe/brand';
+import { en, permissions } from '@scribe/content';
 import { renderTemplate } from '@scribe/core';
-import { permissionCopy } from './permission-copy';
 
-export const copy = en;
+const APP = /\{app\}/g;
+
+/** Deep copy of `value` with `{app}` replaced by the brand name. Shape and keys are unchanged. */
+export function withBrandName<T>(value: T, name: string = brand.name): T {
+  if (typeof value === 'string') return value.replace(APP, name) as T;
+  if (Array.isArray(value)) return value.map((v) => withBrandName(v, name)) as T;
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = withBrandName(v, name);
+    return out as T;
+  }
+  return value;
+}
+
+export const copy: typeof en = withBrandName(en);
 
 export function fill(text: string, values: Record<string, string | number> = {}): string {
   return renderTemplate(text, values);
@@ -29,73 +52,63 @@ export function greetingKey(hour = new Date().getHours()): keyof typeof en.tonig
 }
 
 /**
- * TODO(PM): strings missing from packages/content/src/strings.en.ts, used by
- * the capture screens (Mobile A). Written to VOICE.md rules (no dashes,
- * curly quotes, ellipses or emoji). The comment is the proposed key. When the
- * key lands in @scribe/content, switch the call site to `copy.<key>` and
- * delete the line here so the content rule tests cover it.
+ * @deprecated Every string now lives in @scribe/content (3 Oct 2026). This is a
+ * thin re-export so existing call sites keep working; new code uses `copy.*`
+ * directly (the content key is noted on each line). Remove a line once its
+ * last call site has moved.
  */
 export const pendingCopy = {
   onboarding: {
-    dueDateLabel: 'Due date', // onboarding.child.dueDateLabel (also proposed by Mobile B)
-    removeChild: 'Remove {child}', // onboarding.child.removeA11y (twins: remove an extra name row)
-    signsAsTitleMany: 'What do {child} call you?', // onboarding.signsAs.titleMany (twins: plural verb)
-    andJoin: '{a} and {b}', // common.andJoin (names list: "Asha and Dev")
-    mishearTitle: 'We can mishear', // onboarding.promise.mishearTitle (body reuses settings.help.mistakes)
+    dueDateLabel: copy.onboarding.child.dueDateLabel,
+    removeChild: copy.onboarding.child.removeA11y,
+    signsAsTitleMany: copy.onboarding.signsAs.titleMany,
+    andJoin: copy.common.andJoin,
+    mishearTitle: copy.onboarding.promise.mishearTitle,
   },
-  listen: {
-    toChild: 'To {child}', // listen.toChild (DESIGN_LANGUAGE 12, Listening)
-    audience: 'Only you, until you add it to the book.', // listen.audience (DESIGN_LANGUAGE 1.7)
-    elapsedA11y: '{minutes} min {seconds} s recorded', // listen.elapsedA11y
-    discardButton: 'Let it go', // listen.discardButton
-    discardTitle: 'Let this recording go?', // listen.discardTitle
-    discardBody: 'It will be removed from this phone.', // listen.discardBody
-    discardConfirm: 'Remove it', // listen.discardConfirm
-    keepButton: 'Keep it', // listen.keepButton
-  },
+  listen: copy.listen,
   review: {
-    putBack: 'Put back.', // review.putBackToast (MOTION 5d)
-    editA11yHint: 'Edited. Double tap to see what you said.', // review.editA11yHint (COMPONENTS 2.19)
-    removedA11y: 'Words taken out here', // review.removedA11y
-    editTextButton: 'Change words', // review.editTextButton
-    sampleBanner: 'Sample words for testing, not your recording.', // dev builds only; may stay out of content
-    sampleNotSaved: 'Sample words are never saved. Keep the recording only, or type it.', // dev builds only; may stay out of content
-    voiceOnlyButton: 'Keep the recording only', // review.voiceOnlyButton (ADR 0001: audio-only until the model is ready)
-    waitingTitle: 'Your voice is kept', // review.waiting.title (TDD 03 FM-9: no transcriber yet)
-    waitingBody: 'Words are not ready on this phone yet. Keep the recording now and the words can come later. You can also type it.', // review.waiting.body
-    voiceOnlyToast: 'Recording kept on this phone.', // review.destination.voiceOnlyToast
-    changesLabelOne: '1 small fix', // review.changesLabel one form (TDD 09 L4; content has only "{count} small fixes")
-    toChildA11y: 'To {child}. Change', // review.toChildA11y (TDD 09 A11Y-F12)
+    putBack: copy.review.putBackToast,
+    editA11yHint: copy.review.editA11yHint,
+    removedA11y: copy.review.removedA11y,
+    editTextButton: copy.review.editTextButton,
+    sampleBanner: copy.review.dev.sampleBanner,
+    sampleNotSaved: copy.review.dev.sampleNotSaved,
+    voiceOnlyButton: copy.review.voiceOnlyButton,
+    waitingTitle: copy.review.waiting.title,
+    waitingBody: copy.review.waiting.body,
+    voiceOnlyToast: copy.review.destination.voiceOnlyToast,
+    changesLabelOne: copy.review.changesLabelOne,
+    toChildA11y: copy.review.toChildA11y,
   },
   write: {
-    label: 'Your letter', // write.label (VoiceOver; visually hidden)
-    savedOnPhone: 'Saved on this phone', // write.autosaved (COMPONENTS 2.8)
+    label: copy.write.label,
+    savedOnPhone: copy.write.autosaved,
   },
   book: {
-    letters: '{count} letters', // book.chapterLetters (replaces chapterSubtitle when all are letters)
-    letterOne: '1 letter', // book.chapterSubtitleOne (exists)
-    notes: '{count} notes', // book.chapterNotes
-    noteOne: '1 note', // book.chapterNoteOne
-    lettersAndNotes: '{letters} and {notes}', // book.chapterMixed
-    waitingForWords: 'A recording, waiting for its words.', // book.waitingForWords (voice-only letter, TDD 01 OQ-11)
+    letters: copy.book.chapterLetters,
+    letterOne: copy.book.chapterSubtitleOne,
+    notes: copy.book.chapterNotes,
+    noteOne: copy.book.chapterNoteOne,
+    lettersAndNotes: copy.book.chapterMixed,
+    waitingForWords: copy.book.waitingForWords,
   },
   readTogether: {
-    plusTitle: 'Read together is part of Plus', // readTogether.plusGate.title
-    plusBody: 'You have read together {count} times for free. Plus keeps it open whenever you like.', // readTogether.plusGate.body
-    keepNote: 'Every letter stays open to read and hear, with or without Plus.', // readTogether.plusGate.keepNote
-    emptyBody: 'Letters you add to the book will be here to read together.', // readTogether.empty
+    plusTitle: copy.readTogether.plusGate.title,
+    plusBody: copy.readTogether.plusGate.body,
+    keepNote: copy.readTogether.plusGate.keepNote,
+    emptyBody: copy.readTogether.empty,
   },
   reader: {
-    deletedUndoBody: 'You can still undo this, or close to go back to the book.', // reader.deletedBody (no timed return, TDD 09 A11Y-F03)
+    deletedUndoBody: copy.reader.deletedBody,
   },
   tonight: {
-    waitingTitle: 'A letter is waiting to be read back.', // tonight.draftWaiting.title
+    waitingTitle: copy.tonight.draftWaiting.title,
   },
   recordings: {
-    orphansTitle: 'Recordings without a letter', // settings.recordings.orphansTitle (TDD 01 3.2.4)
-    orphansOne: '1 recording on this phone is not part of a letter yet. It stays on this phone.', // settings.recordings.orphansOne
-    orphansMany: '{count} recordings on this phone are not part of a letter yet. They stay on this phone.', // settings.recordings.orphansMany
+    orphansTitle: copy.settings.recordings.orphansTitle,
+    orphansOne: copy.settings.recordings.orphansOne,
+    orphansMany: copy.settings.recordings.orphansMany,
   },
-  /** iOS microphone purpose string, from docs/legal/app-store-privacy-labels.md 4 (counsel review pending). */
-  permissions: permissionCopy,
+  /** OS purpose strings with `{app}` unfilled; app.config.ts fills it at build time. */
+  permissions,
 } as const;

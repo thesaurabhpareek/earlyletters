@@ -1,18 +1,15 @@
 /**
- * The five haptic intents (COMPONENTS.md 0.2, MOTION.md 6). Screens call
- * haptic(intent), never expo-haptics directly. Never more than one per 100 ms.
- * iOS now; Android later maps to performAndroidHapticsAsync in haptics.android.ts.
+ * haptic(intent): the only way the app plays haptics (lint bans expo-haptics elsewhere).
+ * iOS: expo-haptics UIKit generators. Web: expo-haptics is a no-op there.
+ * Android: haptics.android.ts. Vocabulary and throttle: haptics.shared.ts.
  */
 import * as Haptics from 'expo-haptics';
+import { shouldPlay, type HapticIntent } from './haptics.shared';
 
-export type HapticIntent = 'tap' | 'press' | 'soft' | 'success' | 'warning';
-
-let last = 0;
+export type { HapticIntent } from './haptics.shared';
 
 export function haptic(intent: HapticIntent): void {
-  const now = Date.now();
-  if (now - last < 100) return;
-  last = now;
+  if (!shouldPlay(intent)) return;
   const run = (): Promise<void> => {
     switch (intent) {
       case 'tap':

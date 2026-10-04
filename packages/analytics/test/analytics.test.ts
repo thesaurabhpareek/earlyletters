@@ -3,6 +3,7 @@ import {
   createAnalytics,
   memoryStorage,
   recordingProvider,
+  SCHEMA_VERSION,
   STORAGE_KEYS,
   type Violation,
 } from '../src';
@@ -86,7 +87,7 @@ describe('consent gate', () => {
     await analytics.flush();
     const [evt] = provider.captured();
     expect(evt.event).toBe('letter_saved');
-    expect(evt.properties).toMatchObject({ ...validLetter, schema_version: 1 });
+    expect(evt.properties).toMatchObject({ ...validLetter, schema_version: SCHEMA_VERSION });
   });
 
   it('restores a persisted grant on init without a new id', async () => {
@@ -109,7 +110,7 @@ describe('allowlist', () => {
     // @ts-expect-error unknown property is a type error too
     analytics.track('screen_view', { route: 'book', referrer: 'settings' });
     await analytics.flush();
-    expect(provider.captured()[0].properties).toEqual({ route: 'book', schema_version: 1 });
+    expect(provider.captured()[0].properties).toEqual({ route: 'book', schema_version: SCHEMA_VERSION });
     expect(violations).toContainEqual({ kind: 'unknown_property', event: 'screen_view', property: '<unlisted>' });
   });
 
@@ -153,7 +154,7 @@ describe('allowlist', () => {
       extra: { a: 1 },
     });
     await analytics.flush();
-    expect(provider.captured()[0].properties).toEqual({ reason: 'finished', session_bucket: '1_5m', schema_version: 1 });
+    expect(provider.captured()[0].properties).toEqual({ reason: 'finished', session_bucket: '1_5m', schema_version: SCHEMA_VERSION });
   });
 });
 

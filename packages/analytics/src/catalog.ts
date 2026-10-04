@@ -1,15 +1,23 @@
 /**
  * The analytics event catalogue: the ONLY events and properties that may
  * leave the device (PRD-REQ-016, LEGAL-REQ-017). Human-readable version with
- * metrics and rationale: docs/analytics/TRACKING_PLAN.md. A test fails if the
- * two drift apart.
+ * metrics and rationale: docs/analytics/TRACKING_PLAN.md, whose section 3 is
+ * generated from this file (`npm run plan -w @scribe/analytics`); a test fails
+ * if the two drift apart.
  *
  * Rules for adding an event (read TRACKING_PLAN.md section 6 first):
  * - Enums, booleans and bounded integers only. No free text, ids, names,
- *   dates, language names or anything derived from letter content.
+ *   dates or anything derived from letter content.
+ * - Language appears only as `lang` (one of the seven v1.0 spoken-letter
+ *   languages, ISO 639-1) on the `languages` events, never next to a letter,
+ *   capture, book or family event (TRACKING_PLAN 6.2; counsel review pending,
+ *   DEBATES Q-004).
  * - Children appear only as `child_ordinal` or `child_count_bucket`.
  * - No event may fire at a time set by a child's birthday or due date
  *   (the timestamp itself would leak an L4 date). See TRACKING_PLAN 6.4.
+ * - Purchases are Apple's alone (founder decision 3): the app reports only
+ *   what it sees on the device. Renewals, refunds and churn come from App
+ *   Store Connect, never from events or a server of ours.
  * - Every property is L2 and every event cites the requirement it serves.
  */
 import { bool, int, oneOf, opt, type EventSpec } from './schema';
@@ -34,13 +42,93 @@ export const LETTERS_BUCKET = oneOf('0', '1', '2_4', '5_9', '10_49', '50_99', '1
 export const LATENCY_BUCKET = oneOf('lt_5s', '5_15s', '15_30s', '30_60s', 'gt_60s');
 export const DAYS_BUCKET = oneOf('d0', 'd1', 'd2_7', 'd8_30', 'd31_90', 'd91_plus');
 export const SESSION_BUCKET = oneOf('lt_1m', '1_5m', '5_15m', 'gt_15m');
-/** packages/core EditType. */
+/** packages/core EditType (a type test keeps them equal). */
 export const EDIT_TYPE = oneOf('filler', 'false_start', 'repeat', 'stt_fix', 'punctuation', 'agreement', 'paragraph');
-export const AUTH_METHOD = oneOf('apple', 'google', 'email');
-export const PLUS_PRODUCT = oneOf('monthly', 'annual', 'gift');
+export const EDIT_SOURCE = oneOf('rule', 'model');
+/** packages/core RejectReason (a type test keeps them equal). Why the verifier refused a machine edit. */
+export const REJECT_REASON = oneOf(
+  'original_mismatch',
+  'out_of_bounds',
+  'overlaps_protected',
+  'overlaps_other_edit',
+  'type_not_allowed_at_level',
+  'removal_only',
+  'not_a_filler',
+  'not_a_repeat',
+  'false_start_not_repeated',
+  'stt_fix_not_dictionary',
+  'punctuation_changed_letters',
+  'agreement_not_single_word',
+  'agreement_stem_mismatch',
+  'agreement_limit_per_sentence',
+  'paragraph_not_whitespace',
+  'inserted_content_word',
+  'change_ceiling_exceeded',
+  'splits_word',
+  'removal_adds_punctuation',
+  'changes_negation',
+  'changes_tense',
+  'changes_modal',
+  'changes_word',
+  'changes_number',
+  'changes_sentence_type',
+  'changes_quotes',
+  'case_change_not_allowed',
+  'case_change_not_sentence_start',
+  'removes_negation',
+  'repeat_is_emphasis',
+  'false_start_complete_phrase',
+  'stt_fix_protected_word',
+  'stt_fix_not_heard_as',
+  'not_vetted_for_language',
+);
+/** Sign-in methods (apps/mobile src/lib/auth AuthMethod). Passkeys are behind a flag at v1.0. */
+export const AUTH_METHOD = oneOf('apple', 'google', 'email', 'passkey');
+/** Where the sign-in sheet was opened from (src/lib/auth SignInTrigger). */
+export const SIGN_IN_TRIGGER = oneOf('first_letter', 'invite', 'invite_create', 'sign_in', 'settings');
+/** packages/core OfferTrigger. */
 export const PLUS_TRIGGER = oneOf('chapter_complete', 'second_child', 'backup', 'read_together', 'themes', 'settings');
+export const NETWORK = oneOf('wifi', 'cellular', 'none', 'unknown');
+/** Speech model in use, by role (src/lib/models/catalog.ts; ADR 0015). Never a file name or URL. */
+export const SPEECH_MODEL = oneOf('turbo', 'small', 'hindi_small', 'zh_turbo', 'server_default', 'none');
 
-/** Route templates only, never resolved paths (dynamic segments stay literal). */
+/**
+ * Spoken-letter languages in v1.0 (founder decision 6, 3 Oct 2026), as ISO
+ * 639-1 primary subtags: English, Hindi, Spanish, Mandarin Chinese, French,
+ * Arabic, Portuguese. A closed list: a language outside it is never sent.
+ */
+export const LANG = oneOf('en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt');
+export type Lang = (typeof LANG.values)[number];
+export const V1_LANGUAGES: readonly Lang[] = LANG.values;
+
+/**
+ * Downloadable packs (founder decision 15), by a short analytics id derived
+ * from the signed manifest's pack id (`packAnalyticsId` in packs.ts). A pack
+ * the catalogue does not know is sent as `other`, so failures are still
+ * counted, but its id never is.
+ */
+export const PACK_ID = oneOf(
+  'rules_en', 'rules_hi', 'rules_es', 'rules_zh', 'rules_fr', 'rules_ar', 'rules_pt',
+  'prompts_en', 'prompts_hi', 'prompts_es', 'prompts_zh', 'prompts_fr', 'prompts_ar', 'prompts_pt',
+  'model_vad', 'model_turbo', 'model_small', 'model_hindi_small', 'model_zh_turbo',
+  'other',
+);
+/** src/lib/packs PackFailure. */
+export const PACK_FAILURE = oneOf(
+  'no_manifest',
+  'not_in_manifest',
+  'needs_app_update',
+  'downloads_paused',
+  'waiting_for_wifi',
+  'offline',
+  'no_space',
+  'hash_mismatch',
+  'download_failed',
+  'cancelled',
+  'storage_error',
+);
+
+/** Route templates only, never resolved paths (dynamic segments stay literal). Map: routes.ts. */
 export const ROUTE = oneOf(
   'tonight',
   'book',
@@ -51,19 +139,26 @@ export const ROUTE = oneOf(
   'letter_detail',
   'onboarding',
   'read_together',
+  'sign_in',
+  'sign_in_email',
+  'sign_in_code',
+  'sign_in_verify',
+  'sign_in_consent',
   'invite',
-  'plus_sheet',
+  'invite_new',
   'settings',
+  'settings_account',
   'settings_appearance',
   'settings_reminders',
   'settings_recordings',
-  'settings_children',
   'settings_child_detail',
   'settings_child_new',
   'settings_privacy',
-  'settings_your_data',
-  'settings_help_legal',
-  'settings_about',
+  'settings_export',
+  'settings_language',
+  'settings_plus',
+  'settings_storage',
+  'settings_delete_account',
 );
 
 export const ERROR_CODE = oneOf(
@@ -92,8 +187,8 @@ export const GLOBAL_PROPS = {
   sample_pct: opt(int(1, 99)),
 } as const;
 
-/** Bump when an event or property changes meaning. */
-export const SCHEMA_VERSION = 1;
+/** Bump when an event or property changes meaning. 2: Apple-only Plus events, cadence values, packs replace model_download (3 Oct 2026). */
+export const SCHEMA_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // Events
@@ -127,7 +222,7 @@ export const EVENTS = {
   },
   screen_view: {
     area: 'app',
-    when: 'A route is shown. Sent by our router hook, never by SDK autocapture',
+    when: 'A route is shown. Sent by our router hook from the route template, never by SDK autocapture',
     reqs: ['ADR-0008', 'PRD-REQ-016'],
     level: 'L2',
     props: { route: ROUTE },
@@ -151,87 +246,72 @@ export const EVENTS = {
     },
   },
 
-  // --- Intro and sign-in (A section 10). Fire only after consent, which in
-  // practice means sign-in from Settings, backup or a later invite. --------
-  intro_story_view: {
-    area: 'entry',
-    when: 'An intro story is shown (reachable after consent only via replay)',
-    reqs: ['A-REQ-034', 'C-REQ-034'],
-    level: 'L2',
-    props: { index: int(1, 4), via: oneOf('auto', 'tap', 'swipe'), variant: oneOf('a', 'b') },
-  },
-  intro_paused: {
-    area: 'entry',
-    when: 'Intro auto-advance paused',
-    reqs: ['A-NFR-006'],
-    level: 'L2',
-    props: { index: int(1, 4) },
-  },
-  intro_skipped: {
-    area: 'entry',
-    when: 'Intro skipped',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { index: int(1, 4) },
-  },
-  intro_action: {
-    area: 'entry',
-    when: 'Intro exit action chosen',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { action: oneOf('start', 'invited', 'sign_in'), stories_seen: int(0, 4) },
-  },
+  // --- Sign-in (A section 10). Fire only after consent, which in practice
+  // means sign-in from Settings, a later invite, or a new session. ----------
   auth_sheet_shown: {
     area: 'entry',
     when: 'Keep the book / sign-in sheet shown',
     reqs: ['PRD-REQ-001', 'PRD-REQ-016'],
     level: 'L2',
-    props: { trigger: oneOf('first_letter', 'invite', 'backup', 'third_letter', 'sign_in', 'settings') },
+    props: { trigger: SIGN_IN_TRIGGER },
   },
   auth_method_selected: {
     area: 'entry',
-    when: 'A sign-in provider tapped',
+    when: 'A sign-in method tapped (observed from the auth state)',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
     props: { method: AUTH_METHOD },
   },
   auth_succeeded: {
     area: 'entry',
-    when: 'Sign-in completed',
+    when: 'A new session exists on this phone (observed from the auth state). New accounts are counted on the server',
     reqs: ['A-NFR-013', 'PRD-REQ-016'],
     level: 'L2',
-    props: { method: AUTH_METHOD, new_user: bool(), had_local_data: bool(), linked_existing: bool() },
+    props: { method: AUTH_METHOD, had_local_data: bool() },
   },
   auth_failed: {
     area: 'entry',
-    when: 'Sign-in failed or was cancelled',
+    when: 'Sign-in failed or was cancelled (observed). An under-18 answer is never sent',
     reqs: ['A-NFR-013'],
     level: 'L2',
     props: {
       method: AUTH_METHOD,
-      reason: oneOf('cancelled', 'network', 'expired', 'used', 'wrong_code', 'rate_limited', 'provider', 'unknown'),
+      reason: oneOf(
+        'cancelled',
+        'network',
+        'expired',
+        'wrong_code',
+        'code_paused',
+        'rate_limited',
+        'invalid_email',
+        'not_available',
+        'provider',
+        'session_expired',
+        'consent_unavailable',
+        'unknown',
+      ),
     },
   },
   auth_email_sent: {
     area: 'entry',
-    when: 'Email sign-in link or code sent',
+    when: 'Email sign-in link or code sent (observed); attempt counts sends in this sign-in',
     reqs: ['A-NFR-013'],
     level: 'L2',
     props: { attempt: int(1, 10) },
-  },
-  auth_email_verified: {
-    area: 'entry',
-    when: 'Email sign-in verified',
-    reqs: ['A-NFR-013'],
-    level: 'L2',
-    props: { via: oneOf('universal_link', 'scheme', 'code') },
   },
   auth_deferred: {
     area: 'entry',
     when: 'User chose Later on the sign-in sheet',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
-    props: { trigger: oneOf('first_letter', 'invite', 'backup', 'third_letter', 'sign_in', 'settings') },
+    props: { trigger: SIGN_IN_TRIGGER },
+  },
+  signed_out: {
+    area: 'entry',
+    when: 'The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost',
+    reqs: ['A-NFR-013', 'PRD-REQ-016'],
+    level: 'L2',
+    props: { reason: oneOf('user', 'apple_revoked', 'switch_account', 'session_lost') },
   },
   invite_opened: {
     area: 'entry',
@@ -308,8 +388,8 @@ export const EVENTS = {
     level: 'L2',
     props: { count: int(0, 5) },
   },
-  // `languages_set` from B-NFR-001 is intentionally absent: languages are L4
-  // (PRD 7.10) and even a multilingual flag is derived from them.
+  // `languages_set{multilingual}` from B-NFR-001 stays absent. Language usage
+  // is measured only by the `languages` events below (one language per event).
   dictionary_term_added: {
     area: 'children',
     when: 'A Names and words term saved (kind only, never the term)',
@@ -344,26 +424,15 @@ export const EVENTS = {
   },
   transcription_completed: {
     area: 'capture',
-    when: 'A spoken letter finishes transcription (or fails / waits for the model)',
+    when: 'A spoken letter finishes transcription, hears no speech, fails, or waits for its language model',
     reqs: ['PRD-REQ-016', 'NFR-7.7'],
     level: 'L2',
     props: {
       engine: oneOf('on_device', 'server'),
-      model: oneOf('turbo', 'small', 'server_default'),
+      model: SPEECH_MODEL,
       audio_bucket: AUDIO_BUCKET,
       latency_bucket: LATENCY_BUCKET,
-      outcome: oneOf('ok', 'failed', 'queued_for_model'),
-    },
-  },
-  model_download: {
-    area: 'capture',
-    when: 'Speech model download state changes',
-    reqs: ['NFR-7.7'],
-    level: 'L2',
-    props: {
-      stage: oneOf('started', 'completed', 'failed', 'removed'),
-      model: oneOf('turbo', 'small'),
-      network: oneOf('wifi', 'cellular'),
+      outcome: oneOf('ok', 'no_speech', 'failed', 'queued_for_model'),
     },
   },
   letter_saved: {
@@ -381,6 +450,7 @@ export const EVENTS = {
       words_bucket: WORDS_BUCKET,
       machine_edit_count: int(0, 500),
       edits_reverted_count: int(0, 500),
+      edits_rejected_count: opt(int(0, 500)),
       engine: oneOf('on_device', 'server', 'none', 'pending'),
       from_notification_2h: bool(),
     },
@@ -407,7 +477,14 @@ export const EVENTS = {
     when: 'A user undoes one machine edit (type and source only). Fidelity health signal for the constitution',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
-    props: { edit_type: EDIT_TYPE, source: oneOf('rule', 'model') },
+    props: { edit_type: EDIT_TYPE, source: EDIT_SOURCE },
+  },
+  machine_edit_rejected: {
+    area: 'capture',
+    when: 'The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span',
+    reqs: ['PRD-REQ-016', 'B-REQ-003'],
+    level: 'L2',
+    props: { edit_type: EDIT_TYPE, source: EDIT_SOURCE, reason: REJECT_REASON, count: int(1, 500) },
   },
   letter_deleted: {
     area: 'capture',
@@ -415,6 +492,34 @@ export const EVENTS = {
     reqs: ['PRD-REQ-016'],
     level: 'L2',
     props: { action: oneOf('deleted', 'restored'), destination: oneOf('book', 'private') },
+  },
+
+  // --- Languages and on-demand packs (founder decisions 6 and 15) -----------
+  // The only events that carry `lang`. Never add `lang` to letter, capture,
+  // book or family events: that would tie a language to letter behaviour.
+  language_set: {
+    area: 'languages',
+    when: 'An author adds, removes or makes primary one spoken-letter language (observed; one language per event)',
+    reqs: ['B-REQ-003', 'PRD-REQ-016'],
+    level: 'L2',
+    props: {
+      lang: LANG,
+      action: oneOf('added', 'removed', 'made_primary'),
+    },
+  },
+  pack_download: {
+    area: 'languages',
+    when: 'A language pack or speech model download changes state (observed). Named by analytics pack id and language code only',
+    reqs: ['B-REQ-003', 'NFR-7.7'],
+    level: 'L2',
+    props: {
+      pack: PACK_ID,
+      lang: opt(LANG),
+      pack_version: int(1, 1000),
+      stage: oneOf('started', 'completed', 'failed', 'removed'),
+      failure: opt(PACK_FAILURE),
+      network: NETWORK,
+    },
   },
 
   // --- Book and Read together ------------------------------------------------
@@ -437,7 +542,11 @@ export const EVENTS = {
     when: 'A recording starts playing',
     reqs: ['PRD-REQ-016'],
     level: 'L2',
-    props: { surface: oneOf('letter', 'review', 'read_together'), author_relation: AUTHOR_RELATION },
+    props: {
+      surface: oneOf('letter', 'review', 'read_together'),
+      author_relation: AUTHOR_RELATION,
+      version: oneOf('listening_copy', 'original'),
+    },
   },
   read_together_started: {
     area: 'book',
@@ -465,7 +574,7 @@ export const EVENTS = {
     props: { n: int(1, 10) },
   },
 
-  // --- Family -----------------------------------------------------------------
+  // --- Family (co-parent only at v1.0, founder decision 5) -------------------
   invite_created: {
     area: 'family',
     when: 'A parent creates an invite',
@@ -474,16 +583,39 @@ export const EVENTS = {
     props: {
       role: INVITE_ROLE,
       channel: oneOf('share_sheet', 'copy_link', 'code'),
-      large_print: bool(),
+      shared: bool(),
       child_ordinal: CHILD_ORDINAL,
     },
   },
   invite_accepted: {
     area: 'family',
-    when: 'An invite is accepted in the app (web page acceptances come from server aggregates)',
+    when: 'An invite is accepted in the app (observed). Server aggregates count every acceptance',
     reqs: ['B-NFR-001'],
     level: 'L2',
     props: { role: INVITE_ROLE, surface: oneOf('app') },
+  },
+  invite_failed: {
+    area: 'family',
+    when: 'Creating or accepting an invite failed (the reason class only)',
+    reqs: ['B-REQ-007'],
+    level: 'L2',
+    props: {
+      stage: oneOf('create', 'accept'),
+      reason: oneOf(
+        'expired',
+        'used',
+        'revoked',
+        'already_member',
+        'not_found',
+        'not_parent',
+        'rate_limited',
+        'consent_needed',
+        'book_deleted',
+        'signed_out',
+        'network',
+        'unknown',
+      ),
+    },
   },
   family_letter_reviewed: {
     area: 'family',
@@ -504,7 +636,7 @@ export const EVENTS = {
     when: 'A member leaves a book',
     reqs: ['B-REQ-010'],
     level: 'L2',
-    props: { role: oneOf('co_parent', 'contributor'), letters: oneOf('keep', 'take_out') },
+    props: { role: INVITE_ROLE, letters: oneOf('keep', 'take_out') },
   },
 
   // --- Reminders (C-REQ-034) -----------------------------------------------------
@@ -531,20 +663,21 @@ export const EVENTS = {
   },
   reminder_schedule_set: {
     area: 'reminders',
-    when: 'Reminder cadence or time saved',
+    when: 'Reminder cadence, time or pause saved (observed from the stored preferences)',
     reqs: ['C-REQ-034'],
     level: 'L2',
     props: {
-      cadence: oneOf('off', 'weekly', 'two_a_week', 'three_a_week'),
+      cadence: oneOf('off', 'weekly', 'few_times', 'every_evening'),
       hour_bucket: oneOf('morning', 'afternoon', 'evening', 'late_evening'),
+      paused: bool(),
     },
   },
   reminder_sent: {
     area: 'reminders',
-    when: 'Logged on next foreground for a local reminder that fired. Letter reminders only: month-age and birthday notes are excluded because their timing reveals the birth date',
+    when: 'Logged on next foreground for a local evening reminder that fired. Month-age and birthday notes are excluded because their timing reveals the birth date',
     reqs: ['C-REQ-034', 'C-NFR-001'],
     level: 'L2',
-    props: { type: oneOf('letter_reminder', 'family_digest'), variant_id: int(0, 99) },
+    props: { type: oneOf('letter_reminder', 'family_digest'), variant_id: opt(int(0, 99)) },
   },
   reminder_suppressed: {
     area: 'reminders',
@@ -555,10 +688,10 @@ export const EVENTS = {
   },
   notification_opened: {
     area: 'reminders',
-    when: 'User opens the app from a notification',
+    when: 'User opens the app from a notification (observed). Month-age and birthday notes are never reported',
     reqs: ['C-REQ-034'],
     level: 'L2',
-    props: { type: oneOf('letter_reminder', 'family_digest', 'family_letter', 'plan_notice'), variant_id: int(0, 99) },
+    props: { type: oneOf('letter_reminder', 'family_digest', 'family_letter', 'plan_notice'), variant_id: opt(int(0, 99)) },
   },
 
   // --- Celebrate ---------------------------------------------------------------------
@@ -607,37 +740,43 @@ export const EVENTS = {
         'reminders',
         'languages',
         'lock_screen_names',
-        'ai_processing',
         'sensitive_data',
-        'backup_mode',
-        'model_download_network',
+        'pack_cellular',
+        'listening_copy',
       ),
     },
   },
-  backup_mode_set: {
-    area: 'settings',
-    when: 'Backup mode chosen',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { mode: oneOf('off', 'standard', 'vault') },
-  },
   export_started: {
     area: 'settings',
-    when: 'Export started',
+    when: 'Export everything started (one ZIP made on the phone)',
     reqs: ['C-REQ-034', 'PRD-REQ-009'],
     level: 'L2',
-    props: { format: oneOf('pdf', 'archive', 'audio') },
+    props: { format: oneOf('archive'), letters_bucket: LETTERS_BUCKET },
   },
   export_completed: {
     area: 'settings',
-    when: 'Export finished',
+    when: 'Export finished and checked',
     reqs: ['C-REQ-034', 'C-NFR-007'],
     level: 'L2',
     props: {
-      format: oneOf('pdf', 'archive', 'audio'),
+      format: oneOf('archive'),
       size_bucket: oneOf('lt_10mb', '10_100mb', '100_500mb', 'gt_500mb'),
       duration_bucket: oneOf('lt_30s', '30s_2m', 'gt_2m'),
     },
+  },
+  export_failed: {
+    area: 'settings',
+    when: 'Export stopped before a file was ready',
+    reqs: ['C-REQ-034', 'C-NFR-007'],
+    level: 'L2',
+    props: { format: oneOf('archive'), reason: oneOf('cancelled', 'low_space', 'too_large', 'check_failed', 'unknown') },
+  },
+  export_shared: {
+    area: 'settings',
+    when: 'The share sheet for a finished export closed',
+    reqs: ['C-REQ-034'],
+    level: 'L2',
+    props: { result: oneOf('shared', 'dismissed') },
   },
   account_deletion: {
     area: 'settings',
@@ -647,62 +786,40 @@ export const EVENTS = {
     props: { stage: oneOf('started', 'export_offered', 'confirmed', 'undone') },
   },
 
-  // --- Plus (device side only; billing lifecycle is server-side, see plan 4.3) ---------
+  // --- Plus: Apple's SubscriptionStoreView and StoreKit on this device only
+  // (founder decision 3, ADR 0013). No server of ours sees purchases. ----------
   plus_offer_viewed: {
     area: 'plus',
-    when: 'Plus sheet shown',
+    when: "Apple's subscription store view presented",
     reqs: ['C-REQ-034', 'C-REQ-023'],
-    level: 'L2',
-    props: { trigger: PLUS_TRIGGER, arm: oneOf('a', 'b', 'c') },
-  },
-  plus_offer_dismissed: {
-    area: 'plus',
-    when: 'Plus sheet closed without purchase',
-    reqs: ['C-REQ-034'],
     level: 'L2',
     props: { trigger: PLUS_TRIGGER },
   },
-  purchase_started: {
+  plus_offer_closed: {
     area: 'plus',
-    when: 'Store purchase sheet requested',
-    reqs: ['C-REQ-034'],
-    level: 'L2',
-    props: { product: PLUS_PRODUCT, trigger: PLUS_TRIGGER },
-  },
-  trial_started: {
-    area: 'plus',
-    when: 'Store reports a successful trial start on this device',
-    reqs: ['C-REQ-034'],
-    level: 'L2',
-    props: { product: PLUS_PRODUCT },
-  },
-  purchase_succeeded: {
-    area: 'plus',
-    when: 'Store reports a successful paid purchase (no trial) on this device',
+    when: "Apple's subscription store view closed",
     reqs: ['C-REQ-034', 'C-NFR-002'],
     level: 'L2',
-    props: { product: PLUS_PRODUCT },
+    props: { trigger: PLUS_TRIGGER, outcome: oneOf('purchased', 'dismissed', 'unavailable') },
   },
-  purchase_failed: {
+  plan_changed: {
     area: 'plus',
-    when: 'Purchase failed or was cancelled',
+    when: 'The plan StoreKit reports on this device changed state (observed; production transactions only)',
     reqs: ['C-REQ-034', 'C-NFR-002'],
     level: 'L2',
-    props: { error_class: oneOf('cancelled', 'network', 'store', 'pending', 'not_allowed', 'unknown') },
+    props: {
+      from_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
+      to_state: oneOf('none', 'trial', 'active', 'grace', 'billing_retry', 'expired', 'refunded', 'revoked'),
+      period: oneOf('month', 'year', 'unknown'),
+      ownership: oneOf('purchased', 'family_shared', 'unknown'),
+    },
   },
   restore_result: {
     area: 'plus',
     when: 'Restore purchases finished',
     reqs: ['C-REQ-034', 'C-NFR-003'],
     level: 'L2',
-    props: { outcome: oneOf('restored', 'nothing_to_restore', 'failed') },
-  },
-  gift_purchased: {
-    area: 'plus',
-    when: 'A gift was bought on this device',
-    reqs: ['C-REQ-034'],
-    level: 'L2',
-    props: {},
+    props: { outcome: oneOf('restored', 'nothing', 'cancelled', 'failed', 'unavailable') },
   },
 
   // --- Errors ---------------------------------------------------------------------

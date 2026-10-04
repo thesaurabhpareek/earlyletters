@@ -1,35 +1,54 @@
 // web: apps/web/components/book/letter-card.tsx (not yet) | android: same
-import { LockSimpleIcon, PlayIcon } from 'phosphor-react-native';
-import { Pressable, View, useColorScheme } from 'react-native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
-import { tokens } from '@scribe/design-tokens';
+/**
+ * LetterCard (COMPONENTS 2.5): dateline, two-line serif excerpt, signature, private tag,
+ * and a quiet "has a recording" line. One VoiceOver element with a composed label; the
+ * excerpt truncates visually only.
+ * Look: Airbnb listing card (radius md 14, no hard border in light, whole card one tap
+ * target, metadata muted below) on paper; press scale 0.98 (Things 3 "objects").
+ * The recording line is information, not a control, until playback ships (TDD 09 A11Y-F25),
+ * so it has no pill and no accent colour.
+ */
+import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
+import { View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
+import { useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
-import type { useMotion } from '@/lib/motion';
+import { layoutSpring, type Motion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 import { datelineA11y, shortDateline } from './chapters';
+import { bookCopy } from './copy';
+import { letterWords } from './letter-words.logic';
 
 interface Props {
   entry: Entry;
   child: Child;
   /** Entering animation from useMotion().enter(i); undefined after the first 6 cards. */
-  entering?: ReturnType<ReturnType<typeof useMotion>['enter']>;
+  entering?: ReturnType<Motion['enter']>;
   reduced: boolean;
   onPress: (id: string) => void;
 }
 
-const S = tokens.motion.standard;
-const LAYOUT = LinearTransition.springify().stiffness(S.stiffness).damping(S.damping).mass(S.mass);
+const LAYOUT = layoutSpring('standard');
 
-/** COMPONENTS.md 2.5: dateline, two-line serif excerpt, signature, private label, play placeholder. */
+function clock(ms: number): string {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 export function LetterCard({ entry, child, entering, reduced, onPress }: Props) {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const { c } = useTheme();
   const signsAs = authorOf(entry, child);
   const signature = fill(copy.book.signature, { signsAs });
   const date = shortDateline(child, entry.occurredOn);
   const spoken = entry.captureMode !== 'typed';
-  const excerpt = entry.transcriptStatus === 'waiting' ? pendingCopy.book.waitingForWords : entry.finalText.replace(/\s+/g, ' ').trim();
+  const words = letterWords(entry);
+  // No words to show (waiting for them, or nobody spoke): a quiet italic note instead of an excerpt.
+  const waiting = words !== 'words';
+  const excerpt = words === 'waiting' ? pendingCopy.book.waitingForWords : words === 'nobodySpoke' ? bookCopy.nobodySpoke : entry.finalText.replace(/\s+/g, ' ').trim();
 
   const label = [signature, datelineA11y(child, entry.occurredOn), excerpt, entry.inBook ? null : copy.book.privateLabel, spoken ? copy.book.recordingOnPhone : null]
     .filter(Boolean)
@@ -37,48 +56,41 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
 
   return (
     <Animated.View entering={entering} layout={reduced ? undefined : LAYOUT} className="px-5 pb-3">
-      <Pressable
-        onPress={() => onPress(entry.id)}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityHint={copy.reader.openHint}
-        className="gap-3 rounded-[14px] border border-border bg-card p-4 shadow-sm shadow-black/5 active:opacity-90">
-        <Text maxFontSizeMultiplier={1.5} className="text-xs font-medium tracking-[0.6px] text-muted-foreground">
+      <Card radius="md" padding={4} onPress={() => onPress(entry.id)} accessibilityLabel={label} accessibilityHint={copy.reader.openHint} className="gap-2.5">
+        <Text variant="letterDateline" caps>
           {date}
         </Text>
 
-        <Text numberOfLines={2} maxFontSizeMultiplier={2} className="font-serif text-lg leading-7 text-foreground">
+        <Text numberOfLines={2} variant={waiting ? 'signature' : 'letterBody'} scale={0.9} tone={waiting ? 'muted' : 'default'}>
           {excerpt}
         </Text>
 
-        <View className="flex-row flex-wrap items-center justify-between gap-2">
-          <View className="flex-shrink flex-row flex-wrap items-center gap-2">
-            <Text maxFontSizeMultiplier={1.5} className="text-sm font-medium text-muted-foreground">
-              {signature}
-            </Text>
-            {!entry.inBook && <PrivateChip color={c.text} />}
-          </View>
-          {spoken && (
-            // Placeholder until playback lands: a visual cue inside the card, not its own control.
-            <View className="flex-row items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5">
-              <PlayIcon size={14} color={c.accent} weight="fill" />
-              <Text maxFontSizeMultiplier={1.5} className="text-sm font-medium text-primary">
-                {fill(copy.book.hearShort, { signsAs })}
+        <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
+          <Text variant="labelSmall" tone="muted">
+            {signature}
+          </Text>
+          {!entry.inBook && <PrivateChip color={c.text} />}
+          <View className="flex-1" />
+          {spoken && entry.audioDurationMs ? (
+            <View className="flex-row items-center gap-1" accessibilityElementsHidden>
+              <MicrophoneIcon size={14} color={c.textMuted} weight="regular" />
+              <Text variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>
+                {clock(entry.audioDurationMs)}
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
-      </Pressable>
+      </Card>
     </Animated.View>
   );
 }
 
-/** "Private" chip: accentSoft fill with full-strength text (12.07:1 light, 11.20:1 dark). */
+/** "Private" tag: accentSoft fill with full-strength text (12.07:1 light, 11.20:1 dark), lock + word. */
 export function PrivateChip({ color }: { color: string }) {
   return (
-    <View className="flex-row items-center gap-1 rounded-full bg-secondary px-2 py-0.5">
+    <View className="flex-row items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5">
       <LockSimpleIcon size={12} color={color} weight="bold" />
-      <Text maxFontSizeMultiplier={1.5} className="text-xs font-medium text-secondary-foreground">
+      <Text variant="caption" tone="default">
         {copy.book.privateLabel}
       </Text>
     </View>

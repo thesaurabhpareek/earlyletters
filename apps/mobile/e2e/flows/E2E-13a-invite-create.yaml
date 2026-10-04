@@ -1,0 +1,56 @@
+# E2E-13a  Co-parent invite round trip, simulator A (Mama): make the invite.
+# Run by bin/run-coparent.sh, which then reads the link from simulator A's
+# pasteboard (`xcrun simctl pbpaste`) and hands it to E2E-13b on simulator B.
+# Proves (with 13b and 13c): B-REQ-007 (a parent invites a co-parent to one
+# child's book; the link works once), A-REQ-028 (the invite survives the 18+
+# gate and sign-in on the other phone), PRD-REQ-014 (the invite names one
+# child), D-055 (co-parent only at launch).
+appId: ${APP_ID}
+name: E2E-13a Co-parent invite, create (simulator A)
+tags:
+  - e2e-coparent
+  - E2E-13
+  - B-REQ-007
+  - PRD-REQ-014
+  - D-055
+  - needs-backend
+env:
+  E2E_EMAIL: ${MAMA_EMAIL || "delivered+e2e13-mama@resend.dev"}
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+# Family tab: the invite card starts sign-in when signed out (PRD A F3.3a).
+- tapOn:
+    id: "tab.family"
+- assertVisible:
+    id: "family.screen"
+- tapOn:
+    id: "family.invite"
+- runFlow:
+    file: ../subflows/sign-in-email.yaml
+    env:
+      E2E_EMAIL: ${E2E_EMAIL}
+# Back on Family, signed in and consented: invite again; the book syncs first.
+- tapOn:
+    id: "tab.family"
+- tapOn:
+    id: "family.invite"
+- extendedWaitUntil:
+    visible:
+      id: "inviteNew.share"
+    timeout: 30000
+- tapOn:
+    id: "inviteNew.share"
+# The system share sheet: Copy puts the message (with the link) on A's pasteboard.
+- extendedWaitUntil:
+    visible:
+      text: "Copy"
+    timeout: 10000
+- tapOn: "Copy"
+- extendedWaitUntil:
+    visible:
+      id: "family.pending"
+    timeout: 15000
+- stopApp
