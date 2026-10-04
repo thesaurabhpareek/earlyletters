@@ -86,7 +86,7 @@ function parseStatusLine(task, line) {
   const mode = body.match(/Mode:\s*([a-z]+)/i);
   task.mode = mode ? mode[1].toLowerCase() : undefined;
   const owner = body.match(/Owner:\s*([^.]+)\./);
-  task.owners = owner ? owner[1].split(",").map((s) => s.trim().toLowerCase()).filter(Boolean) : [];
+  task.owners = owner ? owner[1].split(",").map((s) => s.replace(/\s*\([^)]*\)/g, "").trim().toLowerCase()).filter(Boolean) : [];
   const dep = body.match(/Depends on:\s*([^.]+)\./);
   task.dependsOn = dep ? [...dep[1].matchAll(BL_RE)].map((m) => m[0]) : [];
   const paren = task.statusText.match(/\(([^)]*)\)/);

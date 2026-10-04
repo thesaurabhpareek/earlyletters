@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Concept A: Open letter</title>
+  <!-- An opened envelope. The page inside carries one soft wave: a voice becoming a line of writing. -->
+  <rect width="1024" height="1024" fill="#8A5A3B"/>
+  <path d="M232 492 L512 292 L792 492 Z" fill="#E2CCB6" stroke="#E2CCB6" stroke-width="40" stroke-linejoin="round"/>
+  <rect x="328" y="268" width="368" height="380" rx="36" fill="#FBF8F3"/>
+  <path d="M396 404 C436 356 476 356 512 404 S588 452 628 404" fill="none" stroke="#8A5A3B" stroke-width="30" stroke-linecap="round"/>
+  <path d="M396 484 H560" fill="none" stroke="#D9C2AC" stroke-width="30" stroke-linecap="round"/>
+  <path d="M252 500 L512 668 L772 500 L772 736 Q772 776 732 776 L292 776 Q252 776 252 736 Z" fill="#F1E6DC" stroke="#F1E6DC" stroke-width="40" stroke-linejoin="round"/>
+</svg>

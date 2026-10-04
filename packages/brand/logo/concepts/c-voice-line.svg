@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Concept C: Voice line</title>
+  <!-- One continuous line: a short spoken wave that folds into an envelope (CREATIVE section 3 motif). -->
+  <rect width="1024" height="1024" fill="#F1E6DC"/>
+  <path d="M150 560 C178 500 206 500 226 560 C246 620 274 620 302 560 L324 520 L324 372 Q324 340 356 340 L700 340 Q732 340 732 372 L732 676 Q732 708 700 708 L356 708 Q324 708 324 676 L324 560 M336 360 L528 512 L720 360" fill="none" stroke="#8A5A3B" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

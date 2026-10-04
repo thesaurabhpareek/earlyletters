@@ -83,7 +83,9 @@
       "title": "Mobile Engineer (iOS first, Expo)",
       "department": "engineering",
       "backlog_owner_names": [
-        "mobile engineer"
+        "mobile engineer",
+        "export owner",
+        "reminders owner"
       ],
       "daily_runs": 4,
       "wip_limit": 3
@@ -103,7 +105,8 @@
       "title": "Security Engineer",
       "department": "engineering",
       "backlog_owner_names": [
-        "security engineer"
+        "security engineer",
+        "auth owner"
       ],
       "daily_runs": 2,
       "wip_limit": 2
@@ -133,7 +136,8 @@
       "title": "Sync and Backend Engineer",
       "department": "engineering",
       "backlog_owner_names": [
-        "sync owner"
+        "sync owner",
+        "family owner"
       ],
       "daily_runs": 2,
       "wip_limit": 2
@@ -216,7 +220,9 @@
       "handle": "ops",
       "title": "Release and Operations Engineer",
       "department": "operations",
-      "backlog_owner_names": [],
+      "backlog_owner_names": [
+        "platform"
+      ],
       "daily_runs": 1,
       "wip_limit": 1
     },

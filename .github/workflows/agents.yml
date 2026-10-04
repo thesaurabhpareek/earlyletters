@@ -32,7 +32,7 @@ permissions:
 jobs:
   plan:
     name: plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     concurrency:
       group: agents-plan
@@ -47,10 +47,10 @@ jobs:
       assignments: ${{ steps.dispatch.outputs.assignments }}
       count: ${{ steps.dispatch.outputs.count }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: develop
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
       - name: Dispatch
@@ -69,7 +69,7 @@ jobs:
     name: agent ${{ matrix.agent }}
     needs: plan
     if: needs.plan.outputs.count != '0' && needs.plan.outputs.count != ''
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: ${{ matrix.timeout }}
     strategy:
       fail-fast: false
@@ -87,7 +87,7 @@ jobs:
       actions: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: develop
           fetch-depth: 0
