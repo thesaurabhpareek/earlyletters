@@ -1,0 +1,39 @@
+{
+  "id": "J01-10",
+  "journey": "first-run",
+  "kind": "unhappy",
+  "title": "Not born yet: due date not chosen",
+  "note": "Choosing \"Not here yet\" turns the date into a due date, which is not filled in either. Continue waits and says why.",
+  "from": "J01-09",
+  "shot": "screens/J01-10.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Due date Letters written before birth go into a part of the book called Before You. Choose the due date to continue. Continue",
+  "lines": [
+    "Back",
+    "Who is this book for?",
+    "Their name",
+    "You can add a nickname later.",
+    "Add another child",
+    "Birthday",
+    "Not here yet",
+    "Due date",
+    "Letters written before birth go into a part of the book called Before You.",
+    "Choose the due date to continue.",
+    "Continue"
+  ]
+}

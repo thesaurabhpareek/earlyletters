@@ -1,0 +1,43 @@
+{
+  "id": "J01-15",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Choose the spoken language",
+  "note": "A sheet lists the languages letters can be spoken in. Choosing one only starts that language's downloads (the download itself is native and cannot run on web).",
+  "from": "J01-14",
+  "shot": "screens/J01-15.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Choose a language Close English हिन्दी Hindi Español Spanish 中文 Mandarin Chinese Français French العربية Arabic Português Portuguese",
+  "lines": [
+    "Choose a language",
+    "Close",
+    "English",
+    "हिन्दी",
+    "Hindi",
+    "Español",
+    "Spanish",
+    "中文",
+    "Mandarin Chinese",
+    "Français",
+    "French",
+    "العربية",
+    "Arabic",
+    "Português",
+    "Portuguese"
+  ]
+}

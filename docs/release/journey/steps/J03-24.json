@@ -1,0 +1,48 @@
+{
+  "id": "J03-24",
+  "journey": "children-and-books",
+  "kind": "unhappy",
+  "title": "An empty signature",
+  "note": "Save stays off with a line saying what is missing.",
+  "from": "J03-23",
+  "shot": "screens/J03-24.png",
+  "full": "screens/J03-24-full.png",
+  "route": "/settings/children/:id",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Asha Rose's book Name and birthday Name Asha Rose Birthday October 4, 2026 Sign my letters to Asha Rose as Mama Sign my letters to Asha Rose as Add what Asha Rose calls you to save. Cancel Save Include Asha Rose in my reminders Your reminder time is shared across your children. Messages about Asha Rose's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha Rose's book Family see the letters you add to Asha Rose's book. This starts once family can join.",
+  "lines": [
+    "Asha Rose's book",
+    "Name and birthday",
+    "Name",
+    "Asha Rose",
+    "Birthday",
+    "October 4, 2026",
+    "Sign my letters to Asha Rose as",
+    "Mama",
+    "Sign my letters to Asha Rose as",
+    "Add what Asha Rose calls you to save.",
+    "Cancel",
+    "Save",
+    "Include Asha Rose in my reminders",
+    "Your reminder time is shared across your children. Messages about Asha Rose's months and birthday follow this switch.",
+    "Write this book together",
+    "Coming soon",
+    "Sharing a book with a co-parent is coming in a later update.",
+    "Family can read Asha Rose's book",
+    "Family see the letters you add to Asha Rose's book. This starts once family can join."
+  ]
+}

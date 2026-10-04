@@ -1,10 +1,11 @@
 {
-  "id": "J00-open",
+  "id": "J01-02",
   "journey": "first-run",
   "kind": "happy",
-  "title": "The first thing anyone sees: one plain question",
-  "note": "The same question for everyone (A-REQ-030).",
-  "shot": "screens/J00-open.png",
+  "title": "Yes is chosen",
+  "note": "The person taps Yes. Continue turns on. Only a yes/no flag is stored on the phone, never an age.",
+  "from": "J01-01",
+  "shot": "screens/J01-02.png",
   "route": "/",
   "viewport": {
     "width": 390,

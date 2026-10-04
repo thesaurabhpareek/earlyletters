@@ -1,0 +1,48 @@
+{
+  "id": "J03-32",
+  "journey": "children-and-books",
+  "kind": "unhappy",
+  "title": "A birthday that has not come yet",
+  "note": "Refused in words; the button stays off. Letters written before the birthday stay in Before You.",
+  "from": "J03-31",
+  "shot": "screens/J03-32.png",
+  "full": "screens/J03-32-full.png",
+  "route": "/settings/children/:id",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Asha's book Asha's birthday A birthday is a day that has already come. Choose today or earlier. Cancel Set the birthday Name and birthday Name Asha Due date October 14, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha's book Family see the letters you add to Asha's book. This starts once family can join.",
+  "lines": [
+    "Asha's book",
+    "Asha's birthday",
+    "A birthday is a day that has already come. Choose today or earlier.",
+    "Cancel",
+    "Set the birthday",
+    "Name and birthday",
+    "Name",
+    "Asha",
+    "Due date",
+    "October 14, 2026",
+    "Sign my letters to Asha as",
+    "Mama",
+    "Include Asha in my reminders",
+    "Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch.",
+    "Write this book together",
+    "Coming soon",
+    "Sharing a book with a co-parent is coming in a later update.",
+    "Family can read Asha's book",
+    "Family see the letters you add to Asha's book. This starts once family can join."
+  ]
+}

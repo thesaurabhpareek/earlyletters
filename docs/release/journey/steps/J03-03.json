@@ -1,0 +1,32 @@
+{
+  "id": "J03-03",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "The book is open, for two",
+  "note": "The closing screen names both children.",
+  "from": "J03-02",
+  "shot": "screens/J03-03.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back The book is open. Say one thing about Asha and Nila today. That is a letter. Write the first one",
+  "lines": [
+    "Back",
+    "The book is open.",
+    "Say one thing about Asha and Nila today. That is a letter.",
+    "Write the first one"
+  ]
+}
