@@ -5,6 +5,34 @@ Location: `apps/ios/src/components/ui/<kebab-name>.tsx` (primitives), `apps/ios/
 Every spec ends with an **Android later** line: what changes when Android ships. "Same code" means no Android file is needed; only device QA (TalkBack, font size, animator scale 0).
 Tokens are referenced by contract name only. Values belong to the designer in `packages/design-tokens/src/tokens.ts`.
 
+**Paths (Oct 3 2026):** the app is `apps/mobile` (not `apps/ios`). Everything below marked "built" is exported from `@/components/ui` (`apps/mobile/src/components/ui/index.ts`); `components/content-blocks` and screens import from there only.
+
+## Built on Oct 3 2026 (API summary)
+
+| Component | Import | Key props | Accessibility built in |
+|---|---|---|---|
+| `Text` | `@/components/ui` | `variant` (ramp: display, hero, title1, title2, headline, body, callout, subhead, footnote, caption, label, labelSmall, letterBody, letterDateline, signature, prompt; old shadcn names still work), `tone` (default, muted, accent, destructive, success, caution, inverse...), `caps`, `asHeading`, `scale` | caps from tokens only (body and letter text uncapped to AX5); `caps` keeps the spoken name in sentence case; bundled face, no synthesis |
+| `Button` | same | `variant` primary, secondary, outline, quiet, destructive (old: default, ghost, link); `size` sm, md, lg, capture, icon; `label`, `icon` (Phosphor component), `loading`, `fullWidth`, `haptic` | min heights not fixed heights (grows at AX); label is the accessible name; busy and disabled states; press scale 0.97 |
+| `IconButton` | same | `icon`, `label` (required), `variant` plain, tinted, filled; `size` sm (hitSlop to 44), md, lg; `selected`, `color` | Large Content Viewer on iOS |
+| `ButtonRow` | same | children | side by side, stacks from xxxLarge text |
+| `Card` | same | `variant` raised, flat, outlined, tinted; `padding`; `radius` md, lg, xl; `onPress` + `accessibilityLabel` | pressable card is one element; press scale 0.98 |
+| `TextField` | same | `label` (always the name), `labelHidden`, `helper`, `error`, `variant` field or letter, `trailing`, `scale` | 3:1 edge, 2 pt focus ring outside the edge, error = icon + words + announce |
+| `ChoiceGroup` | same | `label`, `options` ({value, label, description, render}), `value`, `onChange`, `layout` segmented or list | radiogroup + radio with `checked`; selected = fill + edge + check; stacks at large text; `tap` haptic |
+| `Chip`, `ChipGroup` | same | `label`, `variant` suggestion, filter, tag; `selected`, `icon`, `onPress` | 36 pt visual, 44 pt with hitSlop; selected state |
+| `Sheet` | same | `open`, `onClose`, `title`, `description`, `footer`, `hideClose`, `dismissible` | heading focus on open, modal for VoiceOver, escape gesture, visible Close; `dismissible={false}` for permission priming |
+| `ListSection`, `ListRow`, `ToggleRow` | same | `title`, `subtitle`, `leading`, `trailing` (chevron, value, node), `variant` destructive, `onPress` | one element per row; value stacks under title at AX |
+| `Toast`, `ToastHost`, `useToast()` | same | `show({ message, action, durationMs, onDismiss })` | announced; with an action it never times out; swipe or Close |
+| `EmptyState` | same | `art` (envelope, envelopeOpen, moon, page), `title`, `body`, `action`, `align` | heading; drawing decorative; breath off under Reduce Motion |
+| `LineArt` | same | `name`, `width`, `wash`, `animate` | decorative |
+| `UIProvider` | same | `toastBottomOffset` | wraps GestureHandlerRootView, BottomSheetModalProvider, Increase Contrast variables, ToastHost, font loading |
+| `Toggle` | `@/components/platform/toggle` | `label`, `description`, `value`, `onValueChange` | SwiftUI Toggle on iOS, RN Switch with a 3:1 off track elsewhere |
+| `BlurSurface` | `@/components/platform/blur-surface` | `material` chrome or thin, `edge` | solid under Reduce Transparency |
+| `announce`, `useFocusOnMount`, `isAccessibilitySize`, `useIsAccessibilitySize`, `useIsLargeText`, `useContrastPreference`, `useTheme` | `@/lib/a11y` | | |
+| `useMotion`, `useReducedMotion`, `layoutSpring` | `@/lib/motion` | | |
+| `haptic` | `@/lib/haptics` | `tap`, `press`, `soft`, `success`, `warning` | |
+
+**Changed from the specs below (Oct 3):** Button plays no haptic by default (MOTION 6 policy: outcomes only); the Sheet is @gorhom/bottom-sheet, not an Expo Router form sheet (COMPONENT_LIBRARY 0.1); SegmentedControl is served by `ChoiceGroup layout="segmented"` until a native segmented control is needed; AudioPlayer is owned by the player agent (`components/player/audio-player.tsx`).
+
 ---
 
 ## 0. Shared rules (apply to every component)
@@ -13,7 +41,7 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 - **Targets:** every tappable thing is at least 44×44pt. If the visual is smaller, use `hitSlop` to reach 44.
 - **Roles:** use RN `role` (or `accessibilityRole`): `button`, `link`, `header`, `switch`, `adjustable`, `tab`, `image`, `text`, `alert`.
 - **Labels** describe the thing ("Speak a note"); **hints** describe the result ("Starts recording"). Hints are optional and never repeat the label.
-- **Dynamic Type:** never set `allowFontScaling={false}`. Each type style has a `maxFontSizeMultiplier` (chrome 1.5, reading text 2.0). Layouts must reflow at AX5: rows stack, nothing truncates silently, and buttons grow taller instead of clipping. Android: the same props apply to the system font size; check at maximum size on device.
+- **Dynamic Type:** never set `allowFontScaling={false}`. Caps come only from `tokens.type[*].maxScale` through `Text` (display 1.6, title1 1.8, title2 2.0, letterDateline 2.4); body, label and letter text are uncapped (TDD 09 C1, decided in favour of DESIGN_LANGUAGE 3). Layouts must reflow at AX5: rows stack, nothing truncates silently, and buttons grow taller instead of clipping. Android: the same props apply to the system font size; check at maximum size on device.
 - **Reduce Motion:** never read the setting directly. Use `useMotion()` → `{ reduced, spring(token), fade() }` (MOTION section 4). Movement keeps `ReduceMotion.System`; the fallback is a paired 200ms opacity fade (`motion.fadeMs`), not a jump. Android: animator scale 0 reports reduced.
 - **Reduce Transparency / Increase Contrast:** `BlurSurface` falls back to `surfaceRaised`; `line` gets thicker. Android never blurs.
 - **Focus:** `focus` colour ring (2pt) for keyboard and Switch Control on iOS, keyboard / switch access on Android, and `focus-visible` on web.

@@ -5,9 +5,17 @@
  * use the permanent codename "scribe" and never change.
  *
  * WARNING: `bundleId` cannot be changed after the first build is uploaded to
- * App Store Connect. Set `publisher.domain` to the real domain before the
- * first EAS build (BL-100).
+ * App Store Connect. It is derived from `publisher.domain` (earlyletters.com,
+ * owned by the founder, docs/DECISIONS.md D-063), so the production bundle id
+ * is `com.earlyletters.scribe`. Do not change the domain after that upload.
  */
+
+/** The public website. Founder, 3 Oct 2026 (D-063): earlyletters.com is primary; earlyletters.app redirects to it (both at Porkbun). */
+const domain = 'earlyletters.com';
+const origin = `https://${domain}` as const;
+
+/** Brand name. Decided Oct 1 2026. Not yet trademark-cleared. */
+const name = 'Early Letters';
 
 /**
  * Who publishes the app. Founder decision, Oct 3 2026 (docs/DECISIONS.md D-004):
@@ -21,29 +29,66 @@ const publisher = {
   kind: 'individual',
   /** TODO(founder): never put a real name here; legal documents carry it. */
   legalName: 'TODO: individual publisher (name set in legal documents, not in code)',
-  /** Reverse of this domain prefixes every app's bundle ID. TODO(founder, BL-100): real domain. */
-  domain: 'example.com',
-  /** TODO(founder, BL-100): mailbox on the real domain. */
-  supportEmail: 'support@example.com',
-  /** TODO(founder, BL-100): published, versioned Privacy Policy URL. */
-  privacyUrl: 'https://example.com/privacy',
+  /** Reverse of this domain prefixes every app's bundle ID (D-063). */
+  domain,
+  /** Live support mailbox (D-063; mail runs through Resend). Shown in Help, emails and the store listing. */
+  supportEmail: `hello@${domain}`,
+  /** Published, versioned Privacy Policy URL (D-063). */
+  privacyUrl: `${origin}/privacy`,
+} as const;
+
+/**
+ * Public web addresses (founder, 3 Oct 2026, D-063). The one-page website and
+ * the legal pages are built in a separate thread; these paths are the contract.
+ */
+const web = {
+  origin,
+  /** Universal links (invites, email sign-in) live under this origin; the AASA file is served here. */
+  universalLinkBase: origin,
+  /** Other owned domains. They redirect to `origin` and never serve app links. */
+  redirectDomains: ['earlyletters.app'],
+  terms: `${origin}/terms`,
+  privacy: `${origin}/privacy`,
+  /** Consumer Health Data Privacy Policy (Washington MHMDA and similar laws). */
+  healthPrivacy: `${origin}/health-privacy`,
+  subprocessors: `${origin}/subprocessors`,
+  /** Static page explaining in-app deletion plus an email route (D-042). */
+  deleteAccount: `${origin}/delete-account`,
+} as const;
+
+const support = {
+  email: publisher.supportEmail,
+  mailto: `mailto:${publisher.supportEmail}`,
+} as const;
+
+/**
+ * Transactional email identity (packages/emails). Sent through Resend from the verified domain.
+ * Replies go to the support mailbox, so "write to us" and "reply" reach the same place.
+ */
+const email = {
+  fromName: name,
+  fromAddress: publisher.supportEmail,
+  replyTo: publisher.supportEmail,
 } as const;
 
 export const brand = {
   /** Brand name. Decided Oct 1 2026. Not yet trademark-cleared. */
-  name: 'Early Letters',
+  name,
   /** The category word people search for and understand. Always paired with the name. */
   category: 'memory book',
   /** App Store name, max 30 characters. */
-  storeName: 'Early Letters: Memory Book',
-  /** App Store subtitle, max 30 characters. */
-  subtitle: 'Baby memory book in your voice',
+  storeName: `${name}: Memory Book`,
+  /** App Store subtitle, max 30 characters. Adds search words the name lacks ("baby", "journal"). */
+  subtitle: 'Baby journal in your own voice',
   tagline: 'Exactly as you said it.',
   /** Printed product naming pattern. */
-  printTitle: (year: number) => `Early Letters: Year ${year === 1 ? 'One' : year === 2 ? 'Two' : year === 3 ? 'Three' : year}`,
+  printTitle: (year: number) => `${name}: Year ${year === 1 ? 'One' : year === 2 ? 'Two' : year === 3 ? 'Three' : year}`,
   publisher,
   /** Deprecated alias of `publisher`, kept so existing imports (`brand.company.privacyUrl`) keep working. */
   company: publisher,
+  web,
+  support,
+  email,
   /** URL scheme for deep links. Lowercase, no spaces. */
   scheme: 'scribe',
   /** Permanent codename. Do not change. */
@@ -73,4 +118,9 @@ export const brand = {
 export function bundleId(): string {
   const reversed = brand.publisher.domain.split('.').reverse().join('.');
   return `${reversed}.${brand.codename}`;
+}
+
+/** A support email link with an optional subject. Never put letter text, names or ids in it (LEGAL-REQ-014). */
+export function supportMailto(subject?: string): string {
+  return subject ? `${brand.support.mailto}?subject=${encodeURIComponent(subject)}` : brand.support.mailto;
 }
