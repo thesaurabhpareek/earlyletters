@@ -28,6 +28,16 @@ export const MAX_READ_TOGETHER_FREE_SESSIONS = 50;
 export const INTRO_VARIANTS = ['four', 'three', 'none'] as const;
 export type IntroVariant = (typeof INTRO_VARIANTS)[number];
 
+/**
+ * The Family tab while co-parent sharing is not in the build (v1.0): the full
+ * "coming soon" teaser, or a quiet version without the teaser copy. Both are in
+ * the reviewed build. This key can only quiet copy: whether sign-in, sync or
+ * sharing exist is a build-time switch the server cannot reach
+ * (apps/mobile/src/lib/capabilities.ts).
+ */
+export const FAMILY_TEASER_VARIANTS = ['coming_soon', 'quiet'] as const;
+export type FamilyTeaserVariant = (typeof FAMILY_TEASER_VARIANTS)[number];
+
 /** Kill switches: `true` means the feature is stopped. Each one only stops a server-dependent feature. */
 export const KILL_SWITCH_KEYS = [
   /** Upload and download of letters. Local writing and reading continue. */
@@ -62,8 +72,10 @@ const FlagsSchema = v.fallback(
     introVariant: v.fallback(v.picklist(INTRO_VARIANTS), 'four'),
     /** C-REQ-009 vs DATA_CLASSIFICATION open issue 4: off until product and counsel decide (TDD 01 X-6). */
     lockScreenNamesDefault: bool(false),
+    /** Family tab teaser while co-parent sharing is coming (founder, 3 Oct 2026). */
+    familyTeaser: v.fallback(v.picklist(FAMILY_TEASER_VARIANTS), 'coming_soon'),
   }),
-  { introVariant: 'four', lockScreenNamesDefault: false },
+  { introVariant: 'four', lockScreenNamesDefault: false, familyTeaser: 'coming_soon' },
 );
 
 export const RemoteConfigSchema = v.object({
@@ -92,7 +104,7 @@ export const DEFAULT_REMOTE_CONFIG: RemoteConfig = {
   minSupportedVersion: '0.0.0',
   readTogetherFreeSessions: BUNDLED_READ_TOGETHER_FREE_SESSIONS,
   forceReauthEpoch: 0,
-  flags: { introVariant: 'four', lockScreenNamesDefault: false },
+  flags: { introVariant: 'four', lockScreenNamesDefault: false, familyTeaser: 'coming_soon' },
   killSwitches: { sync: false, invites: false, photos: false, packDownloads: false, serverContent: false },
 };
 

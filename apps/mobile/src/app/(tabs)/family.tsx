@@ -8,6 +8,10 @@
  * invite stops the link). Members and invites come from the server once the
  * account can sync; before that the tab shows you alone and the invite card
  * starts sign-in (PRD A F3.3a).
+ *
+ * v1.0 (founder, 3 Oct 2026): server features are off (lib/capabilities.ts), so the
+ * tab keeps its place and shows the co-parent "coming soon" presentation instead
+ * (components/family/coparent-soon.tsx). The shared view below returns with v1.1.
  */
 import { router, useFocusEffect, Redirect } from 'expo-router';
 import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
@@ -18,11 +22,13 @@ import { Alert, Pressable, ScrollView, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChildren } from '@/components/child/use-children';
+import { CoParentSoon } from '@/components/family/coparent-soon';
 import { MemberRow } from '@/components/family/member-row';
 import { Button } from '@/components/ui/button';
 import { ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { currentAuthUserId } from '@/lib/auth/auth-store';
+import { capabilities } from '@/lib/capabilities';
 import { useAuth } from '@/lib/auth/session-provider';
 import { ErrorLine, useColors } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
@@ -48,7 +54,18 @@ function RowAction({ label, icon, onPress, disabled }: { label: string; icon: Re
   );
 }
 
-export default function Family() {
+/** Fixed per build (lib/capabilities.ts), so the choice never changes the hook order. */
+export default function FamilyTab() {
+  return capabilities.coParent ? <FamilyShared /> : <FamilySoon />;
+}
+
+function FamilySoon() {
+  const { active } = useChildren();
+  if (!active) return <Redirect href="/onboarding" />;
+  return <CoParentSoon presentation="screen" childName={active.name} />;
+}
+
+function FamilyShared() {
   const c = useColors();
   const { enter } = useMotion();
   const { active } = useChildren();

@@ -13,7 +13,10 @@ import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { useAuth } from '@/lib/auth/session-provider';
+import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { inviteDestination } from '@/lib/family/entry.logic';
 import { AccountGate, Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet, useColors } from '@/lib/auth/ui';
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
@@ -24,7 +27,12 @@ import { shareInviteLink } from '@/lib/family/share';
 import { haptic } from '@/lib/haptics';
 import { getChild } from '@/lib/store';
 
-export default function InviteCoParent() {
+/** v1.0: server features are off, so this entry shows co-parent sharing as coming soon (lib/family/entry.logic.ts). */
+export default function InviteCoParentRoute() {
+  return inviteDestination('invite_new', serverFeaturesEnabled()) === 'flow' ? <InviteCoParent /> : <InviteComingSoon />;
+}
+
+function InviteCoParent() {
   const auth = useAuth();
   const c = useColors();
   const close = useCloseSheet();
