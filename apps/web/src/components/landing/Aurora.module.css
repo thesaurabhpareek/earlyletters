@@ -42,11 +42,3 @@
   margin: -65vmax 0 0 -65vmax;
   background: radial-gradient(closest-side, rgba(128, 118, 226, 0.34), rgba(80, 78, 170, 0.16) 42%, rgba(30, 30, 80, 0.06) 66%, transparent);
 }
-.sweep {
-  top: 52%;
-  width: 150vmax;
-  height: 150vmax;
-  margin: -75vmax 0 0 -75vmax;
-  background: conic-gradient(from 0deg, transparent, rgba(243, 201, 139, 0.1), transparent 30%, rgba(240, 140, 124, 0.1), transparent 62%, rgba(128, 118, 226, 0.1), transparent);
-  mask-image: radial-gradient(closest-side, transparent 10%, #000 42%, transparent 100%);
-}
