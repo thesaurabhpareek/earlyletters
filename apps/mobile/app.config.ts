@@ -155,6 +155,13 @@ function reversedGoogleClientId(clientId: string | undefined): string | null {
 }
 const googleIosUrlScheme = reversedGoogleClientId(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 
+/**
+ * Server features (sign-in, sync, co-parent sharing): the same rule as
+ * src/lib/capabilities.ts, `on` only. Every eas.json profile sets `off` for v1.0
+ * (founder, 3 Oct 2026). Recorded in `extra` so a build's config shows which it is.
+ */
+const serverFeatures = (process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').trim().toLowerCase() === 'on';
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const APP_ENV = appEnvFromProcess();
   const appId = `${bundleId()}${ID_SUFFIX[APP_ENV]}`;
@@ -255,6 +262,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   },
   extra: {
     appEnv: APP_ENV,
+    serverFeatures,
   },
   };
 };

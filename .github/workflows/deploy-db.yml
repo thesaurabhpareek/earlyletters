@@ -1,0 +1,173 @@
+# Applies migrations to the hosted databases (D-041). The only way a
+# migration reaches scribe-staging or scribe-prod. See docs/ops/DEPLOY.md.
+#
+#   staging     push to main that changes supabase/migrations/**
+#   production  push of a tag db-v*, pointing at a commit on main, through the
+#               GitHub Environment "production" (required reviewers)
+#
+# Each environment: dry run, then push. Credentials are one project-scoped
+# Postgres URL per environment (SUPABASE_DB_URL_STAGING, SUPABASE_DB_URL_PROD),
+# stored as Environment secrets. No account access token (POPS-04).
+#
+# After a push the workflow prints which files are not yet listed in
+# .github/migrations-applied.txt. It never edits that file: a pull request
+# records them (DEPLOY.md, "After a deploy").
+# Actions are pinned to commit SHAs (CI-06); the comment names the tag.
+name: Deploy database
+
+on:
+  push:
+    branches: [main]
+    tags: ['db-v*']
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_CLI_VERSION: 2.119.0
+
+jobs:
+  # Path filters are not used in `on:` so that tag pushes are never filtered
+  # out; this job decides whether a main push changed any migration.
+  changes:
+    name: migrations changed
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      migrations: ${{ steps.diff.outputs.migrations }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -z "$BEFORE" ] || [ -z "${BEFORE//0/}" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "No usable previous commit; treating migrations as changed."
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed="$(git diff --name-only "$BEFORE" "$GITHUB_SHA" -- supabase/migrations/)"
+          if [ -n "$changed" ]; then
+            printf 'Changed:\n%s\n' "$changed"
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No migration changes in this push."
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  staging:
+    name: deploy to staging
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: staging
+    concurrency:
+      group: deploy-db-staging
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Check the secret exists
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL_STAGING }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL_STAGING is not set on the staging environment (docs/ops/DEPLOY.md)."
+            exit 1
+          fi
+      - name: Dry run
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL_STAGING }}
+        run: supabase db push --dry-run --db-url "$DB_URL"
+      - name: Push
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL_STAGING }}
+        run: supabase db push --yes --db-url "$DB_URL"
+      - name: Files to record in migrations-applied.txt
+        run: |
+          {
+            echo "### staging: migrations not yet in .github/migrations-applied.txt"
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          listed="$(sed -e 's/#.*//' -e 's/[[:space:]]//g' .github/migrations-applied.txt | grep -v '^$' || true)"
+          for f in supabase/migrations/*.sql; do
+            name="$(basename "$f")"
+            if ! printf '%s\n' "$listed" | grep -qxF "$name"; then
+              echo "$name" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          {
+            echo '```'
+            echo
+            echo "Open a pull request that adds these lines (docs/ops/DEPLOY.md). This workflow never edits the file."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  production:
+    name: deploy to production
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'db-v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: deploy-db-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Tag must point at a commit on main
+        # fetch-depth: 0 above brings every branch, so origin/main is present.
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME ($GITHUB_SHA) is not on main. Tag a commit that reached main and staging first."
+            exit 1
+          fi
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Check the secret exists
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL_PROD }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL_PROD is not set on the production environment (docs/ops/DEPLOY.md)."
+            exit 1
+          fi
+      - name: Dry run
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL_PROD }}
+        run: supabase db push --dry-run --db-url "$DB_URL"
+      - name: Push
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL_PROD }}
+        run: supabase db push --yes --db-url "$DB_URL"
+      - name: Files to record in migrations-applied.txt
+        run: |
+          {
+            echo "### production ($GITHUB_REF_NAME): migrations not yet in .github/migrations-applied.txt"
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          listed="$(sed -e 's/#.*//' -e 's/[[:space:]]//g' .github/migrations-applied.txt | grep -v '^$' || true)"
+          for f in supabase/migrations/*.sql; do
+            name="$(basename "$f")"
+            if ! printf '%s\n' "$listed" | grep -qxF "$name"; then
+              echo "$name" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          {
+            echo '```'
+            echo
+            echo "If staging already recorded them, nothing is left to add. This workflow never edits the file."
+          } >> "$GITHUB_STEP_SUMMARY"
