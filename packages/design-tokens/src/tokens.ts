@@ -291,6 +291,14 @@ const motion = {
   emptyBreathMs: 8000,
   /** Line drawings draw once (MOTION 5h). */
   drawMs: 1200,
+  /**
+   * Lamp light (MOTION 5k). The pool arrives once, slowly, then drifts by a breath of
+   * opacity and scale on a very slow loop. Decorative; off under Reduce Motion; never
+   * on a screen that records or plays a voice (principle 1). 9 s per full cycle, like
+   * the website's 8.6 s lamp swell; the swing is small enough never to read as flicker.
+   * Opacity only: scaling a full-screen layer cost dropped frames in measurement (MOTION 5k).
+   */
+  lamp: { arriveMs: 1200, breathMs: 9000, breathOpacityMin: 0.88 },
   /** Listening glow (MOTION 5b). */
   breath: { dbFloor: -55, dbCeil: -10, gamma: 0.6, attackMs: 80, releaseMs: 400, scaleMax: 0.18, opacityMin: 0.18, opacityMax: 0.4, idleAfterMs: 600, idleScale: 0.05 },
   /** Read together word highlight (MOTION 5g). */
@@ -310,10 +318,23 @@ const stroke = { hairline: 0.5, control: 1, selected: 1.5, focus: 2, editMark: 1
 /** Focus ring for Full Keyboard Access, Switch Control and web (WCAG 2.4.7 / 2.4.13). */
 const focusRing = { width: 2, offset: 2 } as const;
 
+/**
+ * Atmosphere: the website's lamp light on the app's paper (BRAND_SYSTEM, DESIGN_LANGUAGE 11).
+ * Decorative only: never text, never the only signal. `peak` is the opacity of the lamp pool at
+ * its core, by scheme. It is capped so every text pair that can sit on the lit paper keeps 4.5:1
+ * (checked in test/atmosphere.test.ts): light is a whisper, dark gives the near-black paper its
+ * warm cast (the same amber as the site, `--lamp`).
+ */
+const atmosphere = {
+  lamp: '#F3C98B',
+  peak: { light: 0.1, dark: 0.16 },
+} as const;
+
 export const tokens = {
   light,
   dark,
   highContrast,
+  atmosphere,
   icon,
   space,
   radius,
@@ -334,6 +355,7 @@ export type SpaceToken = keyof typeof space;
 export type RadiusToken = keyof typeof radius;
 export type TypeToken = keyof typeof type;
 export type ElevationToken = keyof typeof elevation;
+export type AtmosphereToken = keyof typeof atmosphere;
 export type MotionToken = 'snappy' | 'standard' | 'gentle';
 export type Colors = { readonly [K in ColorToken]: string };
 export type TypeStyleSpec = TypeStyle;

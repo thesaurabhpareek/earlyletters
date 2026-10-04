@@ -37,6 +37,8 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip, ChipGroup, ChoiceGroup } from '@/components/ui/choice-group';
 import { LineArt } from '@/components/ui/line-art';
+import { Lamp } from '@/components/ui/lamp';
+import { QuotePair } from '@/components/ui/quote-pair';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
@@ -142,6 +144,8 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      {/* Lamp light on the welcome step only; the form steps stay plain paper. */}
+      {step === 'welcome' && <Lamp anchor="center" />}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerClassName="flex-grow px-6 pb-6" keyboardShouldPersistTaps="handled">
           <View className="min-h-12 justify-center">
@@ -151,7 +155,8 @@ export default function Onboarding() {
           <Animated.View key={step} entering={motion.enter()} className={centred ? 'flex-1 justify-center gap-6 py-6' : 'flex-1 gap-6 pb-8 pt-4'}>
             {step === 'welcome' && (
               <>
-                <LineArt name="envelopeOpen" width={176} style={{ marginLeft: -12 }} />
+                {/* The opening quotation pair is the brand device (registry: app.brand-device). */}
+                <QuotePair height={56} />
                 <View className="gap-3">
                   <Text ref={heading} variant="hero" asHeading={1}>
                     {o.welcome.title}

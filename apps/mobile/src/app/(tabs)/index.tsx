@@ -23,6 +23,7 @@ import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { announce, useTheme } from '@/lib/a11y';
@@ -126,6 +127,7 @@ export default function Tonight() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
+      <Lamp anchor="top" />
       <ScrollView contentContainerClassName="flex-grow px-5 pb-6 pt-5">
         <View className="gap-3">
           <Animated.View entering={motion.enter(0)}>

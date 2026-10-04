@@ -1716,6 +1716,14 @@
       ],
       "rule": "Small cut, 20 to 26 pt tall. Navigation bars use the system title, not the logo."
     },
+    "app.brand-device": {
+      "title": "Opening quotation pair as the in-app brand device (welcome, empty states)",
+      "assets": [
+        "logo.symbol.accent",
+        "logo.symbol.reversed"
+      ],
+      "rule": "The symbol alone, 40 to 64 pt tall, above the heading: accent on paper, reversed on dark. One per screen, decorative (hidden from screen readers), never rotated, never closed. It only fades in (tokens.motion.fadeMs); it never moves, and it never sits on a screen that records or plays a voice."
+    },
     "app.paywall": {
       "title": "Plus paywall header (above Apple SubscriptionStoreView)",
       "assets": [

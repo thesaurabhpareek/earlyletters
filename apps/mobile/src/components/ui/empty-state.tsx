@@ -15,10 +15,13 @@ import { View } from 'react-native';
 import { Breathe } from '@/components/motion/breathe';
 import { Button } from '@/components/ui/button';
 import { LineArt, type LineArtName } from '@/components/ui/line-art';
+import { QuotePair } from '@/components/ui/quote-pair';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
 export type EmptyStateProps = {
+  /** The opening quotation pair (brand device) leads instead of the drawing. One mark per screen. */
+  device?: boolean;
   art?: LineArtName;
   title: string;
   body?: string;
@@ -27,12 +30,14 @@ export type EmptyStateProps = {
   className?: string;
 };
 
-export function EmptyState({ art, title, body, action, align = 'start', className }: EmptyStateProps) {
+export function EmptyState({ device, art, title, body, action, align = 'start', className }: EmptyStateProps) {
   const focused = useIsFocused();
   const center = align === 'center';
   return (
     <View className={cn('gap-4', center && 'items-center', className)}>
-      {art ? (
+      {device ? (
+        <QuotePair height={48} style={center ? { alignSelf: 'center' } : undefined} aligned={!center} />
+      ) : art ? (
         <Breathe paused={!focused} style={{ alignSelf: center ? 'center' : 'flex-start', marginLeft: center ? 0 : -16 }}>
           <LineArt name={art} width={168} />
         </Breathe>
