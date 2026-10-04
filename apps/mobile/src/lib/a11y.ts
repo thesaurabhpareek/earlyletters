@@ -15,24 +15,9 @@ import { AccessibilityInfo, Platform, useColorScheme, useWindowDimensions } from
 import { tokens, type ColorScheme, type Colors } from '@scribe/design-tokens';
 import { getAudioMode } from '@/lib/audio-mode';
 
-/** React Native's iOS font-scale multipliers (RCTAccessibilityManager.mm, RN 0.86). */
-export const FONT_SCALE = {
-  large: 1, // default
-  xxxLarge: 1.353,
-  ax1: 1.786,
-  ax3: 2.643,
-  ax5: 3.571,
-} as const;
+import { isAccessibilitySize, isLargeText } from './a11y.logic';
 
-/** True at AX1 and above, Apple's definition of an accessibility text size. */
-export function isAccessibilitySize(fontScale: number): boolean {
-  return fontScale >= FONT_SCALE.ax1 - 0.001;
-}
-
-/** True at xxxLarge and above: where two labelled buttons no longer fit side by side on an SE. */
-export function isLargeText(fontScale: number): boolean {
-  return fontScale >= FONT_SCALE.xxxLarge - 0.001;
-}
+export { FONT_SCALE, isAccessibilitySize, isLargeText } from './a11y.logic';
 
 export function useFontScale(): number {
   return useWindowDimensions().fontScale || 1;

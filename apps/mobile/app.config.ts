@@ -107,7 +107,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   web: {
     output: 'single',
-    favicon: './assets/images/favicon.png',
+    // Generated with the other brand icons by scripts/brand/icons.mjs.
+    favicon: './assets/brand/favicon.png',
   },
   plugins: [
     'expo-router',

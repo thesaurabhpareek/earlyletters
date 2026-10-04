@@ -1,11 +1,14 @@
 ---
 title: Data classification
 product: "{brand.name} (codename scribe)"
-version: 1.3.0
+version: 1.4.0
 status: draft-for-counsel
 owner: founder (data governance lead role)
 companion: data-policy.md (retention, ownership), DELETION_AND_EXPORT_SPEC.md (DATA-REQ), ENGINEERING_REQUIREMENTS.md (LEGAL-REQ), PRD.md section 7.10
 changelog:
+  - version: 1.4.0
+    date: 2026-10-03
+    summary: Legal alignment (legal-alignment agent). Section 4.8 processors updated for v1.0 (sync on Supabase only, D-023; no crash SDK; Resend named; download host Cloudflare R2 candidate and Hugging Face, D-065, Q-001). Open issue 9 answered by app-store-privacy-labels.md 1.3.0. Note that the 1.3.0 summary below describes the alignment edits; the analytics owner's same-day regeneration (4.1 from migrations, 4.5 and 4.6 device keys, sync tables, packs, ops schema, ops-ledger, store_* removed, 4.9 insights) is also part of 1.3.0. Minor.
   - version: 1.3.0
     date: 2026-10-03
     summary: Alignment with PRD.md 1.3 and docs/DECISIONS.md. RevenueCat removed (ADR 0013); the App Store account token (`app_account_tokens`) and original transaction id are L3, storefront L2. Device settings use `ageGate.passed` and `ageGate.stoppedAt` only; `ageAttested` and `ageAttestedAt` retired (D-026). Open issue 3 has a recommended answer (D-039: contributors never see the due date or birth year) and issue 4 a recommended default (D-025: lock-screen names off, and server pushes never carry the child's name). Minor.
@@ -716,21 +719,21 @@ Changes on 3 Oct 2026 (catalogue `SCHEMA_VERSION` 2):
 - `machine_edit_rejected` carries the verifier reason (including `not_vetted_for_language`), edit type, source and a count; never text or offsets.
 - SDK fields kept: `$app_version`, `$app_build`, `$os_name`, `$os_version`, `$device_type`, `$lib`, `$lib_version`, `$session_id`; dropped at the source and again in `before_send`: device name and model, locale, timezone, screen size, person properties.
 
-Sentry crash events: L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` strips bodies, query strings and fields named like `text|transcript|name|note|letter`, ADR 0008); same consent switch as analytics.
+Sentry crash events (not in the v1.0 app): L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` strips bodies, query strings and fields named like `text|transcript|name|note|letter`, ADR 0008); same consent switch as analytics.
 
 ### 4.8 Logs and processors
 
 | System | Level of what it may hold | Control |
 |---|---|---|
 | Supabase API, Postgres and Edge Function logs | L2 | No `log_statement=all`; functions log ids of operational records and counts only (typed logger, `supabase/functions/_shared/log`) |
-| Sync (Supabase RPCs; PowerSync only if used, D-023) | L4 (replicated rows) | Pulls mirror RLS; co-members read letters through `book_entries` columns only (no raw transcript) |
+| Sync (Supabase outbox upload and cursor pull RPCs, D-023) | L4 (replicated rows) | Pulls mirror RLS through `book_access`; co-members read letters through `book_entries` columns only (no raw transcript) |
 | PostHog | L2 | Section 4.7; opt-in; no tracking in Apple's sense (TRACKING_PLAN 10) |
-| Sentry | L2 | Scrubbed; same consent |
+| Sentry | L2 | Not in the v1.0 app; when added: scrubbed, same consent |
 | Insights job (`scripts/insights/run.ts`) | L2 | Reads `insights_aggregates()` (k-anonymised counts) and PostHog counts with read-only keys; writes `docs/insights/*.md`, refused if it contains anything shaped like an email, URL, UUID or token (4.9) |
 | Apple (StoreKit on the device; App Store Connect reports) | n/a on our servers | Purchases stay between the person and Apple; no App Store Server Notifications endpoint, no purchase ledger (ADR 0013) |
 | AI providers (only with consent; v1.1) | L4 in transit | Zero retention, no training (LEGAL-REQ-020) |
-| Pack and model host (D-046) | L1 | Sees an IP address and a file request, nothing else |
-| Email provider | L3 | Transactional only; no content in subjects or bodies |
+| Pack and model host (D-046, D-065; Cloudflare R2 candidate pending Q-001; Hugging Face for pinned upstream models) | L1 files; L3 request logs | Sees an IP address and a file request, nothing else. The file name reveals the language picked, so the request log is handled as L3 (IP plus a language) and disclosed in the Privacy Policy section 8 |
+| Email provider (Resend) | L3 | Transactional only; no content in subjects or bodies; sent-message data kept 30 days |
 | Support mailbox | L4 | People may paste letters; handled as L4 |
 
 ### 4.9 Insights aggregates (schema `insights`, migration 20261004300000)
@@ -757,4 +760,4 @@ Six views and `public.insights_aggregates(p_weeks)`: weekly keeping families, le
 6. **`policy_acceptances.locale`** is classified L3 as a language proxy; counsel may decide it is L2.
 7. **`data-map.yaml`** (PRD 7.10 item 1) is not built. The database part of the gate exists via column comments; device stores, SDKs and analytics need the same machine check.
 8. **Installed packs reveal languages.** The pack files are public (L1), but the set installed on a phone shows which languages the author picked. Handled as L4 on the device (4.6); a backup or diagnostics feature must not include the list.
-9. **`plus.cache`** holds the person's plan state on the device (L3). It is not purchase history on our servers, so the privacy label's Purchases entry needs a fresh look now that the server ledger is gone (owner: legal, `app-store-privacy-labels.md`).
+9. **`plus.cache`** holds the person's plan state on the device (L3). It is not purchase history on our servers. **Answered 3 Oct 2026** (`app-store-privacy-labels.md` 1.3.0): Purchases is declared only for opt-in analytics plan-state events, not for App Functionality.

@@ -1,0 +1,85 @@
+# E2E-12  Sign in with the email code (and, optionally, the link).
+# Proves: A-REQ-018 (one email with a link and a 6-digit code; the code signs
+# in), PRD-REQ-002 and LEGAL-REQ-001 (Terms with the 18+ line, then the
+# sensitive-data sheet; nothing syncs before both), D-054.
+# The code comes from the e2e project (scripts/fetch-otp.js: OTP_SOURCE admin,
+# or mailpit for a local stack). Real mail clients, Apple and Google sign-in are
+# device checks (DEVICE_TEST_PLAN S1-06 to S1-09).
+# Link variant: set LINK=1 to open the universal link with the token hash
+# instead of typing the code. It works only when the AASA file is live on
+# earlyletters.com (Apple's CDN serves it to the simulator too).
+appId: ${APP_ID}
+name: E2E-12 Sign in with email
+tags:
+  - e2e
+  - E2E-12
+  - A-REQ-018
+  - PRD-REQ-002
+  - LEGAL-REQ-001
+  - D-054
+  - needs-backend
+env:
+  E2E_EMAIL: ${E2E_EMAIL || "delivered+e2e12@resend.dev"}
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+- runFlow: ../subflows/pass-age-gate.yaml
+# Welcome, "I already have a book": the sign-in sheet.
+- assertVisible:
+    id: "onboarding.step.welcome"
+- tapOn:
+    id: "onboarding.welcome.signIn"
+- runFlow:
+    file: ../subflows/sign-in-email.yaml
+    env:
+      E2E_EMAIL: ${E2E_EMAIL}
+# Signed in with no book on the server: first run continues, and Settings,
+# Account shows the email sign-in.
+- runFlow: ../subflows/first-run-one-child.yaml
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.account"
+- assertVisible:
+    id: "account.signedIn"
+- assertNotVisible:
+    id: "account.finishSetup"
+# Optional: the universal link path on a fresh install.
+- runFlow:
+    when:
+      true: ${LINK == "1"}
+    commands:
+      - runFlow:
+          file: ../subflows/launch-fresh.yaml
+      - runFlow: ../subflows/pass-age-gate.yaml
+      - tapOn:
+          id: "onboarding.welcome.signIn"
+      - tapOn:
+          id: "signIn.email"
+      - tapOn:
+          id: "signInEmail.input"
+      - inputText: ${E2E_EMAIL}
+      - tapOn:
+          id: "signInEmail.send"
+      - extendedWaitUntil:
+          visible:
+            id: "signInCode.screen"
+          timeout: 15000
+      - runScript:
+          file: ../scripts/lib-guard.js
+      - runScript:
+          file: ../scripts/fetch-otp.js
+          env:
+            E2E_EMAIL: ${E2E_EMAIL}
+            OTP_SOURCE: ${OTP_SOURCE || "admin"}
+      - openLink: ${"https://earlyletters.com/auth/callback#token_hash=" + output.tokenHash + "&type=email"}
+      - runFlow:
+          when:
+            visible:
+              text: "Open"
+          commands:
+            - tapOn: "Open"
+      - extendedWaitUntil:
+          visible:
+            id: "consent.(terms|age|sensitive).*"
+          timeout: 20000
+- stopApp

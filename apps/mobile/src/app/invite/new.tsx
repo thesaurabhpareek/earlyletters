@@ -20,6 +20,7 @@ import { inviteDestination } from '@/lib/family/entry.logic';
 import { AccountGate, Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet, useColors } from '@/lib/auth/ui';
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
+import { childIndexOf, track, trackInviteCreated } from '@/lib/analytics/track';
 import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import { createCoParentInvite } from '@/lib/family/invites';
 import { shareInviteLink } from '@/lib/family/share';
@@ -59,11 +60,14 @@ function InviteCoParent() {
     setError(null);
     try {
       const invite = await createCoParentInvite(auth.client, book.id, signsAs);
-      await shareInviteLink(invite.url, child, signsAs.trim() || null);
+      const shared = await shareInviteLink(invite.url, child, signsAs.trim() || null);
+      trackInviteCreated({ role: 'parent', channel: 'share_sheet', shared: shared === 'shared', childIndex: childIndexOf(book.id) });
       haptic('success');
       setDone(true);
     } catch (e) {
-      setError(inviteErrorKind(e));
+      const kind = inviteErrorKind(e);
+      track('invite_failed', { stage: 'create', reason: kind });
+      setError(kind);
     } finally {
       setBusy(false);
     }

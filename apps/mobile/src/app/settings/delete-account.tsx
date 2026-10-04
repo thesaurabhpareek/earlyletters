@@ -16,8 +16,8 @@ import { Redirect, Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, TextInput, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
-import { Row, Section } from '@/components/settings/settings-ui';
 import { capabilities } from '@/lib/capabilities';
+import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { accountDeletionCopy as c, confirmationMatches, expectedDeletionDate, localDay, stepFor, useAccountDeletion } from '@/lib/account-deletion';
@@ -88,9 +88,9 @@ function DeleteAccount() {
           <Text className="text-base leading-6 text-foreground">{fill(c.scheduled.body, { date })}</Text>
           <Text className="text-sm leading-5 text-muted-foreground">{c.scheduled.emailNote}</Text>
         </View>
-        <Section footer={c.scheduled.exportNote}>
-          <Row first title={c.exportFirst.button} onPress={() => router.push('/settings/export')} />
-        </Section>
+        <ListSection footer={c.scheduled.exportNote}>
+          <ListRow title={c.exportFirst.button} trailing="chevron" onPress={() => router.push('/settings/export')} />
+        </ListSection>
         {errorLine}
         <Button
           variant="outline"
@@ -166,13 +166,13 @@ function DeleteAccount() {
           <Text key={line} className="text-base leading-6 text-foreground">{line}</Text>
         ))}
       </View>
-      <Section title={c.exportFirst.heading} footer={c.exportFirst.body}>
-        <Row first title={c.exportFirst.button} onPress={() => (d.trackStage('export_offered'), router.push('/settings/export'))} />
-      </Section>
+      <ListSection title={c.exportFirst.heading} footer={c.exportFirst.body}>
+        <ListRow title={c.exportFirst.button} trailing="chevron" onPress={() => (d.trackStage('export_offered'), router.push('/settings/export'))} />
+      </ListSection>
       {d.subscriptionNotice && (
-        <Section title={c.subscription.heading} footer={c.subscription.body}>
-          <Row first title={c.subscription.button} onPress={() => void manageSubscription()} />
-        </Section>
+        <ListSection title={c.subscription.heading} footer={c.subscription.body}>
+          <ListRow title={c.subscription.button} trailing="chevron" onPress={() => void manageSubscription()} />
+        </ListSection>
       )}
       {errorLine}
       <Button variant="outline" onPress={() => (haptic('tap'), setWanted('confirm'))}>

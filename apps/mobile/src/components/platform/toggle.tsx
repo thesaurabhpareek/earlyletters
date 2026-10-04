@@ -5,6 +5,7 @@
  * track found in TDD 09 A11Y-F04.
  */
 import { Switch } from 'react-native';
+import { tokens } from '@scribe/design-tokens';
 import { useTheme } from '@/lib/a11y';
 import type { ToggleProps } from './toggle.types';
 
@@ -21,7 +22,8 @@ export function Toggle({ label, description, value, onValueChange, disabled, tes
       accessibilityLabel={label}
       accessibilityHint={description}
       trackColor={{ false: c.controlBorder, true: c.accent }}
-      thumbColor={c.surfaceRaised}
+      // Paper-white thumb in both themes, as iOS draws it: a dark-mode surface thumb vanished on the track.
+      thumbColor={tokens.light.surfaceRaised}
       ios_backgroundColor={c.controlBorder}
     />
   );

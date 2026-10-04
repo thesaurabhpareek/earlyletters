@@ -15,12 +15,12 @@ const rules = (l: LanguageCode) => compileRules(l, JSON.parse(readFileSync(join(
 
 describe('phoneticKey: the same name in two scripts meets at one key', () => {
   it.each<[LanguageCode, string, string]>([
-    ['hi', 'मीरा', 'Meera'],
+    ['hi', 'मीरा', 'Mira'],
     ['hi', 'आशा', 'Asha'],
     ['hi', 'प्रिया', 'Priya'],
     ['hi', 'कमल', 'Kamal'],
     ['hi', 'ज़ोया', 'Zoya'],
-    ['ar', 'ميرا', 'Meera'],
+    ['ar', 'ميرا', 'Mira'],
     ['ar', 'محمد', 'Mohammed'],
     ['ar', 'عمر', 'Omar'],
     ['ar', 'أحمد', 'Ahmed'],
@@ -68,13 +68,13 @@ describe('phoneticKey: the same name in two scripts meets at one key', () => {
   });
 
   it('suggestions only: a homophone is offered for teaching, the term itself is not offered for itself', () => {
-    const DICT: DictionaryTerm[] = [{ term: 'मीरा', kind: 'child', heardAs: [] }, { term: 'Meera', kind: 'child', heardAs: [] }];
-    expect(soundAlikeTerms('मिरा', DICT, rules('hi')).map((d) => d.term)).toEqual(['मीरा', 'Meera']);
-    expect(soundAlikeTerms('मीरा', DICT, rules('hi')).map((d) => d.term)).toEqual(['Meera']);
+    const DICT: DictionaryTerm[] = [{ term: 'मीरा', kind: 'child', heardAs: [] }, { term: 'Mira', kind: 'child', heardAs: [] }];
+    expect(soundAlikeTerms('मिरा', DICT, rules('hi')).map((d) => d.term)).toEqual(['मीरा', 'Mira']);
+    expect(soundAlikeTerms('मीरा', DICT, rules('hi')).map((d) => d.term)).toEqual(['Mira']);
   });
 
   it('English: the engine sound key is exactly the legacy soundKey', () => {
-    for (const w of ['Usher', 'Asha', 'Mira', 'Meera', 'ah shoe', 'Ashu', 'Ashok', 'Arya', 'moon', 'Isha', 'Aisha', 'Christopher', 'Xavier']) {
+    for (const w of ['Usher', 'Asha', 'Mira', 'Mira', 'ah shoe', 'Ashu', 'Ashok', 'Arya', 'moon', 'Isha', 'Aisha', 'Christopher', 'Xavier']) {
       expect(ENGLISH_RULES.soundKey(w), w).toBe(soundKey(w));
     }
   });

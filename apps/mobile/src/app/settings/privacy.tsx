@@ -5,8 +5,8 @@ import { ScrollView } from 'react-native';
 import { brand } from '@scribe/brand';
 import { NeverList } from '@/components/consent/never-list';
 import { consentCopy } from '@/components/consent/copy';
-import { Row, Section, ToggleRow } from '@/components/settings/settings-ui';
 import { capabilities } from '@/lib/capabilities';
+import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
 import { copy, fill } from '@/lib/copy';
 import { getActiveChild } from '@/lib/store';
 import { grantAnalytics, withdrawAnalytics } from '@/lib/analytics';
@@ -45,28 +45,35 @@ export default function PrivacySettings() {
   const sensitiveValue = sensitive.status === 'on' ? p.sensitiveOn : sensitive.status === 'off' ? p.sensitiveOff : p.sensitiveSignedOut;
   const open = (url: string) => () => void WebBrowser.openBrowserAsync(url);
 
+
   return (
     <>
       <Stack.Screen options={{ title: p.title }} />
       <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-        <Section title={consentCopy.analyticsSection} footer={p.analyticsOffNote}>
-          <ToggleRow first title={p.analyticsLabel} subtitle={p.analyticsHelp} value={analytics === 'granted'} onChange={setAnalytics} disabled={busy} />
-        </Section>
+        <ListSection title={consentCopy.analyticsSection} footer={p.analyticsOffNote}>
+          <ToggleRow title={p.analyticsLabel} description={p.analyticsHelp} value={analytics === 'granted'} onValueChange={setAnalytics} disabled={busy} />
+        </ListSection>
 
         {capabilities.sync ? (
-          <Section title={consentCopy.sensitiveSection} footer={fill(p.sensitiveHelp, { child })}>
-            <Row first title={p.sensitiveLabel} value={sensitiveValue} onPress={sensitive.open} disabled={!sensitive.open && sensitive.status === 'signed_out'} />
-          </Section>
+          <ListSection title={consentCopy.sensitiveSection} footer={fill(p.sensitiveHelp, { child })}>
+            <ListRow
+              title={p.sensitiveLabel}
+              value={sensitiveValue}
+              trailing={sensitive.open ? 'chevron' : 'none'}
+              onPress={sensitive.open}
+              disabled={!sensitive.open && sensitive.status === 'signed_out'}
+            />
+          </ListSection>
         ) : null}
 
         <NeverList />
 
-        <Section title={p.documentsTitle}>
-          <Row first role="link" title={p.privacyPolicyLink} onPress={open(brand.web.privacy)} />
-          <Row role="link" title={p.healthPrivacyLink} onPress={open(brand.web.healthPrivacy)} />
-          <Row role="link" title={p.subprocessorsLink} onPress={open(brand.web.subprocessors)} />
-          <Row role="link" title={p.termsLink} onPress={open(brand.web.terms)} />
-        </Section>
+        <ListSection title={p.documentsTitle}>
+          <ListRow accessibilityRole="link" title={p.privacyPolicyLink} trailing="chevron" onPress={open(brand.web.privacy)} />
+          <ListRow accessibilityRole="link" title={p.healthPrivacyLink} trailing="chevron" onPress={open(brand.web.healthPrivacy)} />
+          <ListRow accessibilityRole="link" title={p.subprocessorsLink} trailing="chevron" onPress={open(brand.web.subprocessors)} />
+          <ListRow accessibilityRole="link" title={p.termsLink} trailing="chevron" onPress={open(brand.web.terms)} />
+        </ListSection>
       </ScrollView>
     </>
   );

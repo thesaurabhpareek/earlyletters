@@ -38,14 +38,17 @@ import {
   type Edit,
   type EditKind,
   type EditLevel,
+  type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { Transcript } from '@/components/capture/transcript';
+import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
+import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
 import { ensureAudioHash } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
@@ -145,9 +148,14 @@ export default function Review() {
   const labelOf = (e: Edit) => r.edits[EDIT_COPY[describeEdit(e, rules)]];
 
   // Clean once per raw transcript, in the recording's language: the engine proposes, the verifier decides.
+  // What the verifier refused is counted once at save (machine_edit_rejected: type, source, reason only).
+  const rejected = useRef<RejectedEdit[]>([]);
+  const reverted = useRef(0);
   useEffect(() => {
     if (!raw || typed) return;
-    setApplied(cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage)).applied);
+    const result = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage));
+    rejected.current = result.rejected;
+    setApplied(result.applied);
   }, [raw, typed, dictionary, language, letterLanguage]);
 
   // Ask the queue for words (idempotent: a reopened Review joins the same job).
@@ -168,6 +176,11 @@ export default function Review() {
     setPhase('ready');
   }, [phase, draft, job?.phase, job?.outcome]);
 
+  // The calm "could not write it down" card counts as a shown error (error_shown, once per failure).
+  useEffect(() => {
+    if (job?.phase === 'failed') track('error_shown', { code: 'transcription_failed' });
+  }, [job?.phase]);
+
   const packWait = job?.phase === 'waiting_for_pack';
   const canKeepVoice = packWait || job?.phase === 'failed' || (job?.phase === 'done' && job.outcome === 'no_speech');
 
@@ -179,13 +192,16 @@ export default function Review() {
   };
 
   // Mini player for the recording ("Hear it").
-  const player = useAudioPlayer(draft?.audioUri ?? null);
+  // The web design preview's seeded recordings cannot load in a browser (always false on a phone).
+  const player = useAudioPlayer(draft?.audioUri && !isPreviewAudioPresent(draft.audioUri) ? draft.audioUri : null);
   const playStatus = useAudioPlayerStatus(player);
   const togglePlay = async () => {
     if (playStatus.playing) {
       player.pause();
       await setAudioMode('idle');
     } else {
+      track('review_action', { action: 'play_back' });
+      track('playback_started', { surface: 'review', author_relation: 'self', version: 'original' });
       await setAudioMode('playback');
       if (playStatus.didJustFinish || playStatus.currentTime >= playStatus.duration) player.seekTo(0);
       player.play();
@@ -210,6 +226,8 @@ export default function Review() {
     const edit = applied[index];
     const next = withoutEdit(raw, applied, index, rules);
     haptic('tap');
+    reverted.current++;
+    track('machine_edit_reverted', { edit_type: edit.type, source: edit.source });
     setApplied(next.applied);
     setRestored({ edit, index });
     setOpenEdit(null);
@@ -220,6 +238,7 @@ export default function Review() {
   const undoPutBack = () => {
     if (!restored) return;
     haptic('tap');
+    reverted.current = Math.max(0, reverted.current - 1);
     const next = [...applied];
     next.splice(restored.index, 0, restored.edit);
     setApplied(next);
@@ -228,6 +247,8 @@ export default function Review() {
 
   const wordForWord = () => {
     haptic('tap');
+    track('review_action', { action: 'undo_all_edits' });
+    reverted.current += applied.length;
     setApplied([]);
     setRestored(null);
     setOpenEdit(null);
@@ -241,6 +262,7 @@ export default function Review() {
   };
   const chooseChild = (id: string) => {
     if (!draft) return;
+    track('review_action', { action: 'change_child' });
     setDraftChild(draft.id, id);
     setChildId(id);
   };
@@ -302,9 +324,25 @@ export default function Review() {
         },
         audio.exists,
       );
+      trackLetterSaved({
+        mode: typed ? 'typed' : 'spoken',
+        inBook,
+        childIndex: childIndexOf(child.id),
+        role: 'parent',
+        promptKind: promptKindOf(draft.promptKey),
+        audioMs: draft.audioDurationMs,
+        wordCount: wordCountOf(finalText),
+        machineEdits: applied.length,
+        editsReverted: reverted.current,
+        editsRejected: typed ? undefined : rejected.current.length,
+        engine: typed ? 'none' : 'on_device',
+        fromNotificationWithin2h: fromReminderWithin2h(),
+      });
+      if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
+      track('error_shown', { code: 'save_failed' });
       setSaveFailed(true); // the draft is intact; nothing was half-saved
     }
   };
@@ -323,6 +361,19 @@ export default function Review() {
         { ...fresh, audioSha256: audio.sha256, audioBytes: audio.bytes },
         { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
       );
+      trackLetterSaved({
+        mode: 'spoken',
+        inBook: false,
+        childIndex: childIndexOf(child.id),
+        role: 'parent',
+        promptKind: promptKindOf(fresh.promptKey),
+        audioMs: fresh.audioDurationMs,
+        wordCount: 0,
+        machineEdits: 0,
+        editsReverted: 0,
+        engine: 'pending',
+        fromNotificationWithin2h: fromReminderWithin2h(),
+      });
       setDraft(fresh);
       setKeptForWords(phase === 'transcribing' && job?.outcome !== 'no_speech');
       setVoiceOnly(true);
@@ -403,7 +454,9 @@ export default function Review() {
             accessibilityRole={many ? 'button' : 'text'}
             accessibilityLabel={many ? fill(pendingCopy.review.toChildA11y, { child: child.name }) : undefined}
             className="min-h-11 justify-center">
-            <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline.toUpperCase()}</Text>
+            <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
+              {dateline}
+            </Text>
           </Pressable>
           <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">{r.title}</Text>
           {!typed && phase === 'ready' && <Text className="text-base text-muted-foreground">{r.trustLine}</Text>}
@@ -478,7 +531,9 @@ export default function Review() {
                   />
                 ) : showOriginal ? (
                   <View className="gap-2">
-                    <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{r.originalLabel.toUpperCase()}</Text>
+                    <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
+                      {r.originalLabel}
+                    </Text>
                     <Text className="font-serif text-xl leading-8 text-foreground" selectable>
                       {raw}
                     </Text>
@@ -561,7 +616,14 @@ export default function Review() {
                     </Pressable>
                   ))}
                 <View className="flex-row flex-wrap gap-x-4">
-                  <Button variant="ghost" size="sm" className="px-0" onPress={() => setShowOriginal((v) => !v)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="px-0"
+                    onPress={() => {
+                      if (!showOriginal) track('review_action', { action: 'show_exactly_said' });
+                      setShowOriginal((v) => !v);
+                    }}>
                     <Text className="text-primary">{showOriginal ? r.showTidiedButton : r.showOriginalLink}</Text>
                   </Button>
                   {applied.length > 0 && (
@@ -574,7 +636,14 @@ export default function Review() {
             )}
 
             {!isSample && (
-              <Button variant="ghost" size="sm" className="self-start px-0" onPress={() => setEditing((v) => !v)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start px-0"
+                onPress={() => {
+                  if (!editing) track('review_action', { action: 'edit_text' });
+                  setEditing((v) => !v);
+                }}>
                 <Text className="text-primary">{editing ? copy.common.doneButton : pendingCopy.review.editTextButton}</Text>
               </Button>
             )}
