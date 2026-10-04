@@ -1,11 +1,12 @@
 // web: apps/web/components/book/letter-card.tsx (not yet) | android: same
 import { LockSimpleIcon, PlayIcon } from 'phosphor-react-native';
 import { Pressable, View, useColorScheme } from 'react-native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
+import Animated, { LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
-import type { useMotion } from '@/lib/motion';
+import { haptic } from '@/lib/haptics';
+import { useMotion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 import { datelineA11y, shortDateline } from './chapters';
@@ -19,12 +20,21 @@ interface Props {
   onPress: (id: string) => void;
 }
 
+/** Tactile press: a hair of depth, never a bounce (MOTION: nothing bouncy). */
+const PRESS_SCALE = 0.985;
 const S = tokens.motion.standard;
 const LAYOUT = LinearTransition.springify().stiffness(S.stiffness).damping(S.damping).mass(S.mass);
 
 /** COMPONENTS.md 2.5: dateline, two-line serif excerpt, signature, private label, play placeholder. */
 export function LetterCard({ entry, child, entering, reduced, onPress }: Props) {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const motion = useMotion();
+  const pressed = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: pressed.value }] }));
+  const press = (to: number) => {
+    if (reduced) return; // no scale under Reduce Motion
+    pressed.value = motion.spring(to, 'snappy');
+  };
   const signsAs = authorOf(entry, child);
   const signature = fill(copy.book.signature, { signsAs });
   const date = shortDateline(child, entry.occurredOn);
@@ -37,8 +47,14 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
 
   return (
     <Animated.View entering={entering} layout={reduced ? undefined : LAYOUT} className="px-5 pb-3">
+      <Animated.View style={pressStyle}>
       <Pressable
-        onPress={() => onPress(entry.id)}
+        onPress={() => {
+          haptic('tap');
+          onPress(entry.id);
+        }}
+        onPressIn={() => press(PRESS_SCALE)}
+        onPressOut={() => press(1)}
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityHint={copy.reader.openHint}
@@ -69,6 +85,7 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
           )}
         </View>
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }
