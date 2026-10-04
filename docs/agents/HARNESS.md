@@ -6,7 +6,7 @@ Last updated: 3 Oct 2026.
 
 ## 1. What it is
 
-A team of 19 role agents (engineering, product, design, data, decision science, applied science, quality, support, brand, marketing, legal drafting, operations) that works on this repository around the clock. A dispatcher written in plain code decides what each agent does next; GitHub Actions runs the agents; GitHub itself holds everything: the plan (`docs/BACKLOG.md`), the work (pull requests), the memory (files and journal issues) and the status (the Agent board issue). Agents never merge: every change waits for the founder.
+A team of 24 role agents (five engineering standards stewards, engineering, product, design, data, decision science, applied science, quality, support, brand, marketing, legal drafting, operations) that works on this repository around the clock. A dispatcher written in plain code decides what each agent does next; GitHub Actions runs the agents; GitHub itself holds everything: the plan (`docs/BACKLOG.md`), the work (pull requests), the memory (files and journal issues) and the status (the Agent board issue). Agents never merge: every change waits for the founder.
 
 ```mermaid
 flowchart LR
