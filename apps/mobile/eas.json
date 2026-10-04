@@ -31,9 +31,20 @@
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_SERVER_FEATURES": "off"
       }
+    },
+    "testflight": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "channel": "preview",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_SERVER_FEATURES": "off"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {},
+    "testflight": {}
   }
 }
