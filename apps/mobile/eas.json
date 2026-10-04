@@ -22,9 +22,17 @@
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production"
       }
+    },
+    "testflight": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "preview"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {},
+    "testflight": {}
   }
 }

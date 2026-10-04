@@ -5,8 +5,8 @@
  * use the permanent codename "scribe" and never change.
  *
  * WARNING: `bundleId` cannot be changed after the first build is uploaded to
- * App Store Connect. Set `publisher.domain` to the real domain before the
- * first EAS build (BL-100).
+ * App Store Connect. `publisher.domain` is the real domain (BL-100); do not change it once the production
+ * App Store Connect record exists.
  */
 
 /**
@@ -21,12 +21,17 @@ const publisher = {
   kind: 'individual',
   /** TODO(founder): never put a real name here; legal documents carry it. */
   legalName: 'TODO: individual publisher (name set in legal documents, not in code)',
-  /** Reverse of this domain prefixes every app's bundle ID. TODO(founder, BL-100): real domain. */
-  domain: 'example.com',
-  /** TODO(founder, BL-100): mailbox on the real domain. */
-  supportEmail: 'support@example.com',
-  /** TODO(founder, BL-100): published, versioned Privacy Policy URL. */
-  privacyUrl: 'https://example.com/privacy',
+  /**
+   * Reverse of this domain prefixes every app's bundle ID: com.earlyletters.scribe. The domain is the founder's
+   * (earlyletters.com, live since 3 Oct 2026). The production bundle ID becomes permanent when its App Store
+   * Connect record is first created; TestFlight builds use the `.preview` suffix (apps/mobile/app.config.ts) so
+   * that id is not spent while testing.
+   */
+  domain: 'earlyletters.com',
+  /** Mailbox on the real domain (receives replies to the welcome email). */
+  supportEmail: 'hello@earlyletters.com',
+  /** Published Privacy Policy page (draft-for-counsel until the founder marks it final). */
+  privacyUrl: 'https://earlyletters.com/privacy',
 } as const;
 
 export const brand = {

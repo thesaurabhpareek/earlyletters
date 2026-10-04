@@ -67,6 +67,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // TODO(design): scaffold Icon Composer file; replace with the brand icon.
     icon: './assets/expo.icon',
     supportsTablet: false,
+    config: {
+      // Export compliance: answers the encryption question once, in the build, instead of at every upload.
+      // True today: the app uses only the operating system's standard encryption. UNVERIFIED for the audio
+      // upload planned in D-032 (our own AES-256-GCM): re-assess with counsel before that ships, then revisit.
+      usesNonExemptEncryption: false,
+    },
     infoPlist: {
       CADisableMinimumFrameDurationOnPhone: true,
     },
