@@ -392,6 +392,9 @@ async function importTs(file) {
         if (spec.startsWith('.') && ctx.parentURL?.endsWith('.ts') && !/\.[cm]?[jt]sx?$/.test(spec)) {
           const url = new URL(`${spec}.ts`, ctx.parentURL);
           if (existsSync(fileURLToPath(url))) return next(url.href, ctx);
+          // A folder import ("./lang") resolves to its index.ts.
+          const index = new URL(`${spec.replace(/\/$/, '')}/index.ts`, ctx.parentURL);
+          if (existsSync(fileURLToPath(index))) return next(index.href, ctx);
         }
         return next(spec, ctx);
       },
@@ -508,7 +511,7 @@ async function checkPostgres(map, opts) {
       }
       if (isStr(t.created_in)) {
         const src = sources.get(t.created_in);
-        const creates = new RegExp(`create\\s+(or\\s+replace\\s+)?(table|view)\\s+(if\\s+not\\s+exists\\s+)?(public\\.)?${rel}\\b`, 'i');
+        const creates = new RegExp(`create\\s+(or\\s+replace\\s+)?(unlogged\\s+)?(table|view)\\s+(if\\s+not\\s+exists\\s+)?(public\\.)?${rel}\\b`, 'i');
         if (!src) err(`postgres.${rel}: created_in ${t.created_in} is not in ${set.label}`);
         else if (!creates.test(src)) err(`postgres.${rel}: ${t.created_in} does not create ${rel}`);
       }

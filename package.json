@@ -12,6 +12,7 @@
     "mobile": "npm run start -w @scribe/mobile",
     "test:db": "node supabase/tests/run.mjs",
     "test:db:perf": "node supabase/tests/run.mjs perf",
+    "test:functions": "npx -y deno@2.9.6 test --no-prompt --allow-read supabase/functions/purge-worker supabase/functions/analytics-forget supabase/functions/_shared/log scripts/ops",
     "experiment": "npm run experiment -w @scribe/experiments --",
     "experiment:edits": "npm run experiment:edits -w @scribe/experiments --",
     "check:data-map": "node scripts/check-data-map.mjs"

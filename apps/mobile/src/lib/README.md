@@ -46,13 +46,13 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 
 ### Device settings
 `getSetting(key): string | null`, `setSetting(key, value)`. Keys in use:
-`activeChildId`, `appearance` (`system|light|dark`, applied in `app/_layout.tsx`), `readingSize`, `reminders.cadence`, `reminders.paused`, `review.firstNoteSeen`, `ageGate.passed` (`1` after Yes, a boolean, never an age), `ageGate.stoppedAt` (only after No: the time of the No, for the 24-hour stop; DECISIONS D-026), `readTogether.sessions` (a count, see read-together.ts). `deleteSetting(key)` removes one.
+`activeChildId`, `appearance` (`system|light|dark`, applied in `app/_layout.tsx`), `readingSize`, `reminders.cadence`, `reminders.paused`, `review.firstNoteSeen`, `ageGate.passed` (`1` after Yes, a boolean, never an age), `ageGate.stoppedAt` (only after No: the time of the No, for the 24-hour stop; DECISIONS D-026), `readTogether.sessions.<childId>` (free sessions used in that book, a count; see read-together.ts). Other modules keep their own keys (language, speech, packs, sync, reminders, analytics; DATA_CLASSIFICATION 4.5). `deleteSetting(key)` removes one.
 
-### Plus gates
-`newChildNeedsPlus()`: books made in first run are all free (twins or more); after that a new book needs Plus once you have started any book of your own (hidden ones count). `isJoinedBook(child)` (false until co-parent joining exists) keeps joined books out of the count.
+### Plus gates (in `billing/`, not here)
+Plus is StoreKit 2 on this phone through the plan engine (ADR 0013, founder decision 3); this file stays free of it. From `@/lib/billing`: `hasPlus()` (Plus on right now), `newChildNeedsPlus()` / `startBookGate()` (books made in first run are all free, twins or more; after that a new book needs Plus once you have started any book of your own, hidden ones count), `isJoinedBook(child)` (a book joined as co-parent never uses up the free book), `usePlan()` for screens. `startPlus()` runs at boot.
 
-### Not built yet (stubs with stable signatures)
-`currentUserId(): null`, `hasPlus(): false`, `listMembers(childId): []`. They become real with sign-in (PRD A), purchases (PRD C) and sync.
+### Account and members
+`currentUserId()`: the account that owns this phone's synced data (sync owner setting), or `null` before sign-in. `listMembers(childId)`: the book's other members as the server last listed them (sync), `[]` for a book only on this phone.
 
 ### Change events
 `subscribe(listener): unsubscribe` fires on any write (child switch, save, delete, setting).
@@ -72,6 +72,7 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 
 ## Other modules
 - `age-gate.logic.ts` (pure, tested) and `age-gate.ts`: `useAgeGate()` for the root layout, `answerAgeGate`, `reopenAgeGate`.
+- `capabilities.ts`: the one build-time switch for server features (`EXPO_PUBLIC_SERVER_FEATURES=on`; off in every v1.0 eas.json profile). `serverFeaturesEnabled()`, `capabilities.{signIn,sync,coParent}`. Off: no Supabase client is constructed, `startSync()` returns at once, remote documents never fall back to the Supabase URL, sign-in, Account and Delete account are not offered, and every co-parent entry point shows coming soon (`family/entry.logic.ts`, `components/family/coparent-soon.tsx`; local flag `family.coParentNotify` via `family/coming-soon.logic.ts`). Remote config cannot change it.
 - `build-env.ts`: `APP_ENV` from `EXPO_PUBLIC_APP_ENV` (eas.json profile; `.env.development` locally) and `devShortcutsAllowed` (development profile AND `__DEV__`). Every dev bypass checks this, never `__DEV__` alone.
 - `model-files.ts`: Whisper models in Application Support, excluded from backup (ADR 0001) through `modules/scribe-files`; falls back to Documents/models without the native module.
 - `permission-copy.ts`: OS purpose strings (part of `pendingCopy`), read by `app.config.ts` at build time.
@@ -79,7 +80,12 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 - `transcribe.ts`: `Transcriber` interface and `getTranscriber()`. Adapters: `transcribe-whisper.ts` (dev build + model + decoder), `transcribe-sample.ts` (development profile only; Review never saves its words).
 - `dates.ts`: the one date format, via `Intl` in the device's English locale (en-US "Tuesday, September 29, 2026"; other English locales their own order; non-English falls back to en-GB): `dayDate(iso)`, `longDate(iso)`, `letterDateline(child, iso)` (age sentence from core), `ageText(child, iso)`, `isoOf(date)`. Never call `toLocaleDateString` in screens.
 - `copy.ts`: also `plural(count, one, other)` until content has plural forms.
-- `read-together.ts`: `FREE_READ_TOGETHER_SESSIONS` (3), `canStartReadTogether()`, `recordReadTogetherSession()`, `readTogetherSessions()`.
-- `haptics.ts`: `haptic('tap' | 'press' | 'soft' | 'success' | 'warning')`.
+- `read-together.ts`: free Read together sessions are counted per book on this phone, only when a session ran on a free try (never under Plus; D-037). `readTogetherGate(childId?)` (the plan engine's decision), `canStartReadTogether(childId?)`, `recordReadTogetherSession(childId?)`, `readTogetherSessions(childId)`, `freeReadTogetherSessions()` (default 3; remote config may only raise it). The root layout calls `setReadTogetherFreeSessionsSource(() => effectiveFreeSessions(getRemoteConfig()))`.
+- `haptics.ts`: `haptic('tap' | 'press' | 'soft' | 'success' | 'warning')`; vocabulary and throttle in `haptics.shared.ts` (tested).
+- `a11y.ts`: `announce`, `useFocusOnMount`, `useTheme`, `useIsAccessibilitySize`, `useIsLargeText`; the pure thresholds (`isAccessibilitySize`, `isLargeText`, `FONT_SCALE`) live in `a11y.logic.ts` (tested).
+- `analytics/`: `track.ts` is what screens call (plus `childIndexOf`, `ordinalOf`, `promptKindOf`, `wordCountOf`, `fromReminderWithin2h`); `ask.ts` + `ask-sequencer.logic.ts` (tested) decide when the consent sheet appears, and `components/consent/consent-ask.tsx` (mounted in the root layout) shows it.
 - `motion.ts`: `useMotion()`, `useReducedMotion()`; never read Reduce Motion elsewhere.
 - `audio-mode.ts`: `setAudioMode('idle' | 'recording' | 'playback')`; always restore `idle`.
+
+## Boot (`app/_layout.tsx`)
+After the 18+ gate passes and after the first frame, once per process, each in its own try: `runLaunchSweep()`, then `startRemote()`, `startPacks()`, `startTranscriptionQueue()` (registers the speech plan as a pack language resolver), `startListeningCopies()`, `startSync()` (waits for a signed-in, consented session), `startPlus()`, `startReminders()`, `cleanupExports()`, `startAnalytics()` and `startAnalyticsObservers()` (nothing is sent before a yes). `UIProvider` wraps the gate and the app; `SessionProvider` wraps only the app, inside the gate.

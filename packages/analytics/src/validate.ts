@@ -6,7 +6,11 @@
  * Fail-closed policy:
  * - unknown event                     -> whole event dropped
  * - unknown property                  -> property stripped
- * - known property, wrong type/range  -> property stripped
+ * - required property missing         -> whole event dropped (PDATA-03)
+ * - required property, wrong
+ *   type/range/value                  -> whole event dropped (PDATA-03)
+ * - optional property, wrong
+ *   type/range/value                  -> property stripped
  * - any string that looks like PII,
  *   or any string over 40 characters  -> whole event dropped (it means a
  *                                        caller is passing something it
@@ -23,6 +27,7 @@ export const MAX_STRING_LENGTH = 40;
 export type ViolationKind =
   | 'unknown_event'
   | 'unknown_property'
+  | 'missing_property'
   | 'invalid_value'
   | 'string_too_long'
   | 'pii_like_value'
@@ -128,6 +133,7 @@ export function sanitizeEvent(name: string, input: unknown): SanitizeResult {
   const specs: Record<string, PropSpec> = { ...EVENTS[name].props, ...GLOBAL_PROPS };
   const out: Props = {};
   const record = input && typeof input === 'object' ? (input as Record<string, unknown>) : {};
+  let invalidRequired = false;
 
   for (const [key, value] of Object.entries(record)) {
     if (value === undefined) continue;
@@ -146,11 +152,22 @@ export function sanitizeEvent(name: string, input: unknown): SanitizeResult {
     if (!check.ok) {
       violations.push({ kind: check.kind, event: name, property: key });
       if (check.dropEvent) return { props: null, violations };
+      if (!spec.optional) invalidRequired = true;
       continue;
     }
     out[key] = value as string | number | boolean;
   }
-  return { props: out, violations };
+  // A required property that is absent (or was invalid) means the event no
+  // longer says what the catalogue promises: drop it rather than send a
+  // half-event that would skew every metric built on it.
+  for (const [key, spec] of Object.entries(specs)) {
+    if (spec.optional || Object.prototype.hasOwnProperty.call(out, key)) continue;
+    if (!violations.some((v) => v.property === key)) {
+      violations.push({ kind: 'missing_property', event: name, property: key });
+    }
+    invalidRequired = true;
+  }
+  return { props: invalidRequired ? null : out, violations };
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +202,10 @@ export const ALLOWED_SDK_PROPERTIES: readonly string[] = [
 /** SDK-internal events we let through (no properties beyond the above). */
 export const ALLOWED_SDK_EVENTS: readonly string[] = ['$identify'];
 
+/**
+ * Shape of the event PostHog's `before_send` receives (@posthog/core 1.55.3
+ * `CaptureEvent`: uuid, event, properties, $set, $set_once, timestamp).
+ */
 export interface OutgoingEvent {
   event: string;
   properties?: Record<string, unknown>;
@@ -194,17 +215,20 @@ export interface OutgoingEvent {
 /**
  * Last line of defence, run by the SDK right before upload. Returns null to
  * drop. Splits SDK `$` properties (allowlisted above) from catalogue
- * properties (validated by `sanitizeEvent`).
+ * properties (validated by `sanitizeEvent`). Top-level `$set` and `$set_once`
+ * (person properties) are always removed: PostHog copies a top-level `$set`
+ * back into the payload unless the hook omits it.
  */
-export function sanitizeOutgoing(
-  evt: OutgoingEvent,
-  onViolation?: (v: Violation) => void,
-): OutgoingEvent | null {
+export function sanitizeOutgoing<E extends OutgoingEvent>(evt: E, onViolation?: (v: Violation) => void): E | null {
   const sdkEvent = ALLOWED_SDK_EVENTS.includes(evt.event);
   if (!sdkEvent && !isKnownEvent(evt.event)) {
     onViolation?.({ kind: 'unknown_event', event: safeEvent(evt.event) });
     return null;
   }
+  // Keep only the envelope fields PostHog needs; never person properties.
+  const envelope: Record<string, unknown> = { event: evt.event };
+  if (evt.uuid !== undefined) envelope.uuid = evt.uuid;
+  if (evt.timestamp !== undefined) envelope.timestamp = evt.timestamp;
   const sdkProps: Record<string, unknown> = {};
   const ours: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(evt.properties ?? {})) {
@@ -218,9 +242,9 @@ export function sanitizeOutgoing(
       ours[k] = v;
     }
   }
-  if (sdkEvent) return { ...evt, properties: sdkProps };
+  if (sdkEvent) return { ...envelope, properties: sdkProps } as E;
   const { props, violations } = sanitizeEvent(evt.event, ours);
   violations.forEach((v) => onViolation?.(v));
   if (!props) return null;
-  return { ...evt, properties: { ...sdkProps, ...props } };
+  return { ...envelope, properties: { ...sdkProps, ...props } } as E;
 }

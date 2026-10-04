@@ -11,6 +11,8 @@ companion: data-map.yaml (where each kind of data lives), DATA_CLASSIFICATION.md
 
 > **AI-drafted engineering register for counsel review. Not legal advice.** It records what the product says about privacy and trust, where it says it, and what in the repo makes it true on the date above. It draws no legal conclusions and does not change any published or draft wording; wording changes go to the copy owner (`packages/content`) and to counsel.
 
+> **Freshness warning (4 Oct 2026).** Every row describes the repo as it stood on 3 Oct 2026. Develop has since gained the Supabase client, the sync engine, export, account deletion, the purge worker and `analytics-forget`, and it removed the server purchase tables (`20261004000000_plus_on_device_only.sql`). Statuses for CL-12 to CL-19, CL-22, CL-23 and CL-26, and the sentence below that the app has no Supabase client, are out of date and probably understate what is built; the other rows were not re-verified. Re-check them against the code and re-date the file before it goes to counsel or is cited as evidence of status.
+
 Founder decision 11 (docs/agents/BRIEF-2026-10-03.md): parents must never doubt that their letters are private, never sold, never used for ads and never used to train models, and every such promise is backed by real controls. This register is how we check that.
 
 ## How to read it

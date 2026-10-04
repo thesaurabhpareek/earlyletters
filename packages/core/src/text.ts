@@ -1,9 +1,37 @@
 /**
  * Text helpers: tokenizing, the function-word list, and character
  * normalization. All deterministic.
+ *
+ * Unicode (CORE-01): a word is letters, combining marks and digits. Marks
+ * (\p{M}) carry meaning in Indic scripts (है vs हो, नहीं vs नह) and in
+ * decomposed (NFD) Latin (cafe + U+0301 is "café"), so they are never
+ * treated as punctuation. Comparisons run on NFC; offsets always index the
+ * text as given, which is never rewritten.
  */
+import { FILLERS, FUNCTION_WORDS } from './lang/english-tables';
 
-const WORD_RE = /[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu;
+export { FILLERS, FUNCTION_WORDS };
+export { frozenSet } from './frozen';
+
+/** One word character: a letter, a combining mark or a digit. */
+export const WORD_CHAR_CLASS = '\\p{L}\\p{M}\\p{N}';
+/** Zero-width joiner and non-joiner: shape a conjunct inside a word, never split it. */
+const JOINERS = '\\u200C\\u200D';
+
+// A word starts with a letter or digit, so a stray mark (an emoji variation
+// selector, an orphan vowel sign) is never a word of its own.
+const WORD_RE = new RegExp(
+  `[\\p{L}\\p{N}][${WORD_CHAR_CLASS}]*(?:[${JOINERS}]+[${WORD_CHAR_CLASS}]+|['’][${WORD_CHAR_CLASS}]+)*`,
+  'gu',
+);
+
+/** NFC, so a precomposed and a decomposed spelling of the same word compare equal. */
+export function nfc(text: string): string {
+  // ASCII is already NFC; skip the normaliser on the hot path.
+  return /^[\x00-\x7f]*$/.test(text) ? text : text.normalize('NFC');
+}
+
+const NOT_LETTER_MARK_DIGIT = new RegExp(`[^${WORD_CHAR_CLASS}]+`, 'gu');
 
 export interface Token {
   word: string;
@@ -20,39 +48,45 @@ export function tokens(text: string): Token[] {
 }
 
 export function words(text: string): string[] {
-  return tokens(text).map((t) => t.word.toLowerCase());
+  return tokens(text).map((t) => nfc(t.word).toLowerCase());
 }
 
-/** Letters and digits only, lowercased. Used to prove punctuation edits change no words. */
+/**
+ * Letters, marks and digits only, NFC, lowercased. Used to prove punctuation
+ * edits change no words: a vowel sign, virama, nukta or accent is part of the
+ * word, so adding, dropping or swapping one is a letter change.
+ */
 export function lettersOnly(text: string): string {
-  return (text.match(/[\p{L}\p{N}]/gu) ?? []).join('').toLowerCase();
+  return nfc(text).replace(NOT_LETTER_MARK_DIGIT, '').toLowerCase();
 }
 
-/**
- * Words a grammar repair may insert without adding meaning.
- * Deliberately short. Anything not here (or in the dictionary) that a
- * replacement introduces is treated as a new content word and rejected.
- */
-export const FUNCTION_WORDS = new Set([
-  'a', 'an', 'the',
-  'is', 'are', 'was', 'were', 'be', 'been', 'being', 'am',
-  'has', 'have', 'had', 'having',
-  'do', 'does', 'did',
-  'will', 'would', 'can', 'could', 'shall', 'should', 'may', 'might', 'must',
-  'to', 'of', 'in', 'on', 'at', 'for', 'with', 'by', 'from', 'into', 'onto', 'up',
-  'and', 'or', 'but', 'so', 'if', 'that', 'than', 'then', 'as',
-  'i', 'me', 'my', 'we', 'us', 'our', 'you', 'your',
-  'he', 'him', 'his', 'she', 'her', 'it', 'its', 'they', 'them', 'their',
-  'this', 'these', 'those',
-  "it's", "i'm", "she's", "he's", "we're", "they're", "you're",
-  "don't", "doesn't", "didn't", "isn't", "wasn't", "aren't", "weren't",
-]);
+/** Viramas of the Indic scripts: the letter after one belongs to the same cluster (a conjunct). */
+const VIRAMA = /[\u094D\u09CD\u0A4D\u0ACD\u0B4D\u0BCD\u0C4D\u0CCD\u0D4D]/u;
+const CLUSTER_CONTINUES = /^[\p{M}\u200C\u200D]/u;
+
+const LETTER_AT = /^\p{L}/u;
 
 /**
- * Removed only as standalone disfluencies. "like" and "you know" are
- * excluded on purpose: they are often meaningful, and part of how people talk.
+ * True when offset `pos` falls inside one user-perceived character of
+ * `text`: before a combining mark or joiner, between a virama (or joiner)
+ * and the letter it binds, or between the two halves of a surrogate pair.
+ * An edit boundary there would cut a letter from its marks.
+ *
+ * Hand-rolled on purpose instead of Intl.Segmenter, which the app's JS
+ * engine may not provide; this package must run unchanged on the device.
  */
-export const FILLERS = new Set(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 'er', 'hmm', 'hmmm', 'mm']);
+export function splitsCluster(text: string, pos: number): boolean {
+  if (pos <= 0 || pos >= text.length) return false;
+  const before = text[pos - 1];
+  const after = text.slice(pos);
+  if (CLUSTER_CONTINUES.test(after)) return true;
+  if ((VIRAMA.test(before) || before === '\u200D' || before === '\u200C') && LETTER_AT.test(after)) return true;
+  const hi = before.charCodeAt(0);
+  const lo = text.charCodeAt(pos);
+  return hi >= 0xd800 && hi <= 0xdbff && lo >= 0xdc00 && lo <= 0xdfff;
+}
+
+/* FUNCTION_WORDS and FILLERS live in lang/english-tables.ts (re-exported above). */
 
 /* Which repeats are collapsed, suggested or kept lives in repeats.ts. */
 

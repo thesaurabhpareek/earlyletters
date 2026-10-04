@@ -1,0 +1,25 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "<TEAMID>.com.earlyletters.scribe",
+          "<TEAMID>.com.earlyletters.scribe.preview",
+          "<TEAMID>.com.earlyletters.scribe.dev"
+        ],
+        "components": [
+          { "/": "/auth/callback", "comment": "Email sign-in link. The token hash is in the fragment." },
+          { "/": "/auth/callback/", "comment": "Same, with a trailing slash." },
+          { "/": "/i/*", "comment": "Co-parent invite links." }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "<TEAMID>.com.earlyletters.scribe",
+      "<TEAMID>.com.earlyletters.scribe.preview",
+      "<TEAMID>.com.earlyletters.scribe.dev"
+    ]
+  }
+}

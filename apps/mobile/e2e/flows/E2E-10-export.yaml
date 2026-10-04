@@ -1,0 +1,41 @@
+# E2E-10  Export everything, offline, free.
+# Proves: C-REQ-017, LEGAL-REQ-034 and DATA-REQ-050 (export works offline with
+# no Plus UI; the ZIP holds the letters, data files, the PDF book and a
+# manifest whose hashes verify). After this flow the runner calls
+# `bin/inspect-export.sh`, which unzips the archive from the app's Caches/exports
+# and checks the manifest. The 2-minute budget for a year of letters is
+# measured on device (DEVICE_TEST_PLAN S1-21), not here.
+appId: ${APP_ID}
+name: E2E-10 Export
+tags:
+  - e2e
+  - E2E-10
+  - C-REQ-017
+  - LEGAL-REQ-034
+  - DATA-REQ-050
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+      E2E_OFFLINE: "1"
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.export"
+- assertVisible:
+    id: "export.screen"
+- assertNotVisible:
+    id: "plusGate.screen"
+- tapOn:
+    id: "export.start"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "export.ready"
+    timeout: 120000
+- assertNotVisible:
+    id: "export.error"
+- assertVisible:
+    id: "export.share"
+# Leave the ZIP in place for bin/inspect-export.sh (the share sheet is a device check).
+- stopApp

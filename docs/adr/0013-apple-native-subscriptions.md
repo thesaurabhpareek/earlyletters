@@ -1,84 +1,91 @@
-# ADR 0013: Plus through Apple only, StoreKit 2 direct (expo-iap) with App Store Server Notifications V2 and the App Store Server API
+# ADR 0013: Plus through Apple only, checked on the device (StoreKit 2 and Apple's SubscriptionStoreView, no server)
 
-Status: Accepted (founder direction, 3 Oct 2026; implementation choice recommended here, founder may override). Date: 2026-10-03.
-Supersedes: the digital-purchase half of ADR 0007 (RevenueCat). ADR 0007's printed-book half stays as future roadmap (PRD K-32).
-Related: PRD.md 1.3 K-34, `docs/DECISIONS.md` D-001, TDD 08 (payments), TDD 02 section 2.5 (entitlement tables), TDD 05 section 5.11 (notice engine).
+Status: **Accepted, decided by the founder** (brief decision 3, `docs/agents/BRIEF-2026-10-03.md`, 3 Oct 2026). This version records the decision as made and the implementation chosen for it.
+Date: 2026-10-03.
+Supersedes: the earlier draft of this ADR (StoreKit 2 with App Store Server Notifications V2, the App Store Server API and a server entitlement ledger), and the digital-purchase half of ADR 0007 (RevenueCat). ADR 0007's printed-book half stays as future roadmap (PRD K-32).
+Related: TDD 08 (payments; its server, notice and RevenueCat sections are superseded by this ADR, see "What changes elsewhere"), `packages/core/src/plan.ts` (the rules engine, unchanged), `supabase/migrations/20261004000000_plus_on_device_only.sql`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
 
-Evidence labels: **V** verified on a page or package opened on 3 Oct 2026; **U** unverified; **E** our estimate.
-
-## Context
-
-The founder decided on 3 Oct 2026 that Plus ships in v1.0 "via Apple subscription management to keep it Apple focused". Read as: auto-renewable subscriptions sold, managed, cancelled and refunded only through the App Store. Pricing is unchanged: `el_plus_monthly_399` ($3.99 a month, 1-month free trial) and `el_plus_annual_2999` ($29.99 a year, 2-month free trial), both Apple introductory offers in one subscription group, US storefront only (LEGAL-REQ-058).
-
-What has to work, whichever tool we use (TDD 08, unchanged): a Plus entitlement per account (K-28) that books inherit from any parent; server enforcement of the additional-book rule (PRD-REQ-015); the California and multi-state auto-renewal notice engine (PRD-REQ-003, LEGAL-REQ-047, K-38); purchase consent records (LEGAL-REQ-049); restore (C-REQ-020); refunds through Apple (C-REQ-029); Billing Grace Period (C-REQ-027); one-tap Manage or cancel (LEGAL-REQ-048); and the keep-and-leave rule that core features never ask the entitlement service (LEGAL-REQ-050).
-
-TDD 08 designed this on RevenueCat with "the webhook is only a doorbell, re-read the subscriber, write a snapshot". This ADR keeps that shape and swaps the source of truth from RevenueCat to Apple's own server APIs.
-
-## Options
-
-### A. StoreKit 2 direct (recommended)
-- **Client:** `expo-iap` (MIT), an Expo module with a config plugin, now maintained in the `hyodotdev/openiap` monorepo; npm `expo-iap` 5.8.2 published 30 Sep 2026 (**V**, npm registry). The package exposes `requestPurchase` (with `appAccountToken`), `getActiveSubscriptions`, `currentEntitlementIOS`, `subscriptionStatusIOS`, `isEligibleForIntroOfferIOS`, `showManageSubscriptionsIOS`, `beginRefundRequestIOS`, `getAppTransactionIOS`, `syncIOS` and `finishTransaction` (**V**, read in the published 5.8.2 build). Compatibility with Expo SDK 57 / RN 0.86 is **U** and is the first spike (BL-210). ADR 0007's note that "expo-iap was archived in Aug 2026" referred to the old standalone repository; the package itself is active in the monorepo (**V**). Fallback if the spike fails: `react-native-iap` 16.x from the same monorepo (MIT, Nitro modules; **V** on npm), or a small Expo module over StoreKit 2.
-- **Server:** one Edge Function receives **App Store Server Notifications V2** (signed JWS `signedPayload`), verifies the certificate chain to Apple's root, deduplicates on `notificationUUID`, then re-reads the authoritative state with the **App Store Server API** (Get All Subscription Statuses by `originalTransactionId`) and writes the same snapshot rows TDD 08 defined. A nightly and an hourly reconcile use Get Notification History and Get All Subscription Statuses. Apple publishes an official Node library, `@apple/app-store-server-library` 3.1.0 (MIT; **V**, npm), which does JWS verification and API calls; whether it runs unchanged in Supabase's Deno runtime through an `npm:` import is **U** (spike BL-211; fallback is `jose` for JWS verification against Apple Root CA G3 plus plain `fetch` with an ES256 JWT signed by our In-App Purchase key).
-- **Account binding:** every purchase passes `appAccountToken` = a random UUID minted server-side per account (`app_account_tokens`), never the profile id, email or analytics id. Apple returns it on every transaction and notification, so the server maps transactions to accounts without any third party.
-
-### B. RevenueCat (ADR 0007, TDD 08 as written)
-RevenueCat SDK on the device, RevenueCat receives the App Store notifications and keeps the subscriber record, and calls our webhook; we re-read RevenueCat's REST API.
-
-### C. Hybrid (StoreKit on device, RevenueCat server-only)
-Rejected: keeps the vendor and its DPA, saves little code.
-
-## Comparison
-
-| Criterion | A. StoreKit 2 direct | B. RevenueCat |
-|---|---|---|
-| Vendor cost | $0. Apple's commission applies either way (15% under the Small Business Program, which individuals can join; ARCH [S19]) | Free to $2,500 monthly tracked revenue, then 1% of tracked revenue (**V**, revenuecat.com/pricing, 3 Oct 2026). At launch scale this is $0; at $10k MTR about $100 a month (**E**) |
-| Privacy | No new processor. Apple is already a party to every purchase as merchant of record. Only the random `appAccountToken` and Apple's own transaction ids exist; nothing new leaves our systems | One more processor holding purchase history keyed by a random id. Its DPA allows internal service improvement (subprocessors.md item 6). Needs a deletion API call at account deletion (LEGAL-REQ-029) and a privacy-label SDK review |
-| Vendor count and admin burden | One fewer vendor: no DPA to sign, no console to secure with 2FA and log (LEGAL-REQ-037), no subprocessor notice duty, no SDK in the privacy manifest | Adds all of those |
-| Privacy labels | "Purchases: Purchase History, linked, App Functionality" stays (entitlements are mapped to books on our server, K-28). One fewer SDK to audit for device identifiers | Same label, plus RevenueCat SDK checks |
-| Engineering effort | TDD 08 estimate (4 to 5 engineer-weeks) plus about 1.5 to 2.5 engineer-weeks (**E**) for: JWS verification, App Store Server API client, notification-type mapping (SUBSCRIBED, DID_RENEW, DID_CHANGE_RENEWAL_STATUS, DID_FAIL_TO_RENEW, GRACE_PERIOD_EXPIRED, EXPIRED, REFUND, REFUND_REVERSED, REVOKE, PRICE_INCREASE, OFFER_REDEEMED, TEST), reconcile, and sandbox versus production environments. The snapshot re-read design means event ordering bugs cannot corrupt state | TDD 08 estimate as written |
-| Operational risk | We own correctness. Mitigated by re-reading Apple's state on every notification, `sync_plan()` after purchase, and reconcile jobs | Vendor outage or mapping bug; mitigated the same way |
-| Lock-in | None beyond Apple | Medium (entitlement history exportable) |
-| Business reporting | App Store Connect Sales and Trends and subscription reports, plus our server aggregates from the entitlement ledger (PRD-REQ-017) | RevenueCat charts as well |
-| Android later | Must add Google Play Billing: `expo-iap` already supports Play Billing on the device (**V**, same package), but the server side (Real-time Developer Notifications through Pub/Sub plus the Play Developer API) is new work, about 2 to 3 engineer-weeks (**E**). Alternative at that point: move both stores to RevenueCat | Mostly configuration |
-| Fit with the founder's direction | "Apple focused": cancel, refund and manage all live in Apple's own screens; no third-party billing brand anywhere | Neutral |
+Evidence labels: **V** verified on a page, package or file opened on 3 Oct 2026; **U** unverified; **E** our estimate.
 
 ## Decision
 
-**A. StoreKit 2 direct**, as directed by the founder. The founder can override to B until the server billing tasks start (BL-213, roadmap week 6) at almost no cost; after that a switch costs about one engineer-week of rework (**E**).
+1. **Apple only, out of the box.** Plus is two auto-renewable subscriptions in one App Store subscription group. Apple sells, renews, cancels and refunds them. There is no RevenueCat, no web purchase and no third-party billing brand anywhere.
+2. **Apple's own paywall.** The app presents Apple's `SubscriptionStoreView` (StoreKit, iOS 17+; **V**, developer.apple.com/documentation/storekit/subscriptionstoreview) as a sheet, from a small local Expo module, `apps/mobile/modules/scribe-store`. Apple renders the plans, the localized prices and periods, the free trial for people who are eligible, the subscribe buttons, Restore, Terms and Privacy, and Close. We add only the marketing content above the plans (what Plus adds, the free-forever promise, renewal and how to cancel, Family Sharing) and the brand tint.
+3. **Checked on the device, no server.** The entitlement is `Transaction.currentEntitlements` on the phone (**V**: "the latest transaction for each auto-renewable subscription that has a RenewalState of subscribed or inGracePeriod"; refunded and revoked ones do not appear). The module also listens to `Transaction.updates` from launch and finishes verified transactions (**V**: Apple asks apps to listen from launch or miss Ask to Buy, renewals and purchases made elsewhere). Restore is `AppStore.sync()`, manage or cancel is `AppStore.showManageSubscriptions(in:)`, and a refund request is `Transaction.beginRefundRequest(for:in:)` (all iOS 15+, **V**). No server of ours sees a purchase: no App Store Server Notifications endpoint, no App Store Server API call, no In-App Purchase key, no `appAccountToken`. The entitlement tables and functions added on 3 Oct are dropped (migration `20261004000000_plus_on_device_only.sql`), and the server never refuses a book for Plus (`SCPLS` retired).
+4. **Co-parent through Family Sharing.** Family Sharing is on for both products, so a co-parent in the same Apple family gets Plus as their own (`ownershipType == familyShared`) entitlement. Once on, Family Sharing cannot be turned off (**V**, App Store Connect Help, "Turn on Family Sharing for In-App Purchases").
+5. **Products** (founder prices, US storefront at launch):
 
-### Design (deltas from TDD 08; everything not listed stays as TDD 08 wrote it)
+| Product id | Duration | Price | Introductory offer | Family Sharing |
+|---|---|---|---|---|
+| `plus.monthly` | 1 month | US $3.99 | Free, 1 month, new subscribers | On |
+| `plus.annual` | 1 year | US $29.99 | Free, 2 months, new subscribers | On |
 
-1. **Products** (TDD 08 3.1 unchanged): one group "Plus"; `el_plus_monthly_399` with a 1-month free introductory offer; `el_plus_annual_2999` with a 2-month free introductory offer. Experiment arms created but not offered. Family Sharing off. Billing Grace Period on (16 days, D-048). US storefront only.
-2. **Tables** (TDD 02 M9 with renames, as written in the pending migration `20261003010000_children_and_entitlements.sql`):
-   - `app_account_tokens(profile_id pk, app_account_token uuid unique)`: replaces `rc_app_user_id`. L3. Returned by RPC `my_app_account_token()` the first time a signed-in parent opens the Plus sheet.
-   - `store_subscriptions` (one row per `original_transaction_id`; replaces TDD 08's `entitlements`): status (`trial`, `active`, `grace`, `billing_retry`, `expired`, `revoked`, `refunded`), `expires_at`, `grace_expires_at`, `will_renew`, `environment`, `storefront`, `original_purchase_at`, `last_signed_at` (newer Apple state wins). `profile_id` is set null at account deletion, which pseudonymises the purchase ledger (7 years). Written only by `apply_store_transaction()` (service role), called by `appstore-notifications`, `plan-reconcile` and `sync_plan()`.
-   - `store_notifications`: one row per `notification_uuid` (replaces `rc_event_id` and TDD 08's `entitlement_events`) with type, subtype, environment, original transaction id, signed time and outcome. Never the raw JWS, price or receipt.
-   - `book_has_plus(child)` is computed from `store_subscriptions` of the book's parents (no `book_entitlements` table in the 3 Oct migration); `notice_windows`, `notice_schedule`, `plan_cards`: as TDD 08, still to be built (BL-212, BL-218).
-3. **Purchase flow** (TDD 08 4.1 with the source swapped): consent row `started` (LEGAL-REQ-049) then `requestPurchase({sku, appAccountToken})` then, on success, the client sends the signed transaction JWS to `sync_plan()`; the server verifies the JWS, re-reads Get All Subscription Statuses, writes the snapshot and returns plan state; the client calls `finishTransaction` only after the server confirms (so a crash re-delivers the transaction through StoreKit's update listener). The ack email is sent by the notification path, not the client.
-4. **Notifications endpoint** `appstore-notifications` (Edge Function): verify JWS chain to the pinned Apple root; reject on bundle id or environment mismatch; record the `notificationUUID` in `store_notifications` (a duplicate returns 200 and changes nothing); map `appAccountToken` (or `originalTransactionId` already known) to the profile; re-read state from the App Store Server API; call `apply_store_transaction()` (newest signed state wins); recompute `notice_schedule`; reconcile the consent row; log request id, notification type and outcome only. Unknown account: store and retry for 24 h (TDD 02 behaviour). Production and Sandbox URLs are both configured in App Store Connect; sandbox entitlements count only for `profiles.is_tester` (TDD 08 F-8).
-5. **Reconcile** `plan-reconcile` (pg_cron): hourly for rows with an expiry within 48 h or `updated_at` older than 24 h; nightly for every non-expired row; plus Get Notification History for the last 48 h to catch lost notifications. Alert on more than 1% mismatches.
-6. **Restore** (C-REQ-020): `syncIOS()` then `sync_plan()` with the current entitlements. Transfer rule (D-047): if the `originalTransactionId` is already bound to another account with an active plan, do not move it; show the existing "linked to another account" message. Otherwise bind it to the current account.
-7. **Manage, cancel, refund**: `showManageSubscriptionsIOS()` in one tap with the `https://apps.apple.com/account/subscriptions` fallback (LEGAL-REQ-048); `beginRefundRequestIOS()` under Settings > Plan (C-REQ-029). Apple decides refunds; REFUND and REVOKE notifications end the entitlement only.
-8. **Intro-offer eligibility** from `isEligibleForIntroOfferIOS()` per group; no "free" wording unless eligible (C-REQ-022).
-9. **Account deletion** (LEGAL-REQ-029): no third-party deletion call exists any more. We delete the `app_account_tokens` row, set `store_subscriptions.profile_id` to null (pseudonymised ledger), pseudonymise `auto-renewal-terms` acceptances (retention per LEGAL-REQ-033), and show "Deleting your account does not cancel Plus. Billing continues through Apple until you cancel" with the Manage link. Apple keeps its own purchase records as merchant of record; the Privacy Policy says so.
-10. **Secrets** (LEGAL-REQ-026): In-App Purchase key (.p8), key id, issuer id, bundle id and the Apple root certificate fingerprint live in Supabase Edge Function secrets; key rotation is a runbook item. The key is created in the publisher's App Store Connect account (individual account, D-004).
-11. **Testing** (TDD 08 9.1 with the W suite re-pointed): StoreKit Configuration file for local UI tests; Deno tests replay recorded and synthetic signed notifications (test keys, never Apple's); App Store Server API "Request a Test Notification" against sandbox; the sandbox checklist S-1 to S-10 on device before every build that changes purchase code; the year-long notice clock test is unchanged.
-12. **Analytics**: device events unchanged (TDD 08 section 12, after consent only). Lifecycle numbers (trials, conversions, refunds) come from `store_subscriptions`, `store_notifications` and App Store Connect reports, never from device events.
+Group reference name and display name: "Plus". Both products at the same level of service (a crossgrade). One introductory offer per person per group (**V**, App Store Connect Help, introductory offers), so nobody gets a second trial by switching plans. Product ids are permanent once created; ids carry no price so a price change never needs a new product. The ids live in `apps/mobile/src/lib/billing/config.ts` and `apps/mobile/storekit/EarlyLetters.storekit`, and a unit test keeps the two equal.
 
-### What changes elsewhere
-- PRD-REQ-003 and PRD-REQ-017 cite App Store Server Notifications and the entitlement ledger instead of RevenueCat (PRD 1.3).
-- LEGAL-REQ-029, -031, -037, -047, -049, -058 lose their RevenueCat wording (ENGINEERING_REQUIREMENTS 1.1.0).
-- `subprocessors.md`, `privacy-policy.md`, `app-store-privacy-labels.md`, `data-policy.md`, `DATA_CLASSIFICATION.md` and `DELETION_AND_EXPORT_SPEC.md` drop RevenueCat as a processor (versions bumped on 3 Oct 2026).
-- `docs/analytics/TRACKING_PLAN.md` still names RevenueCat for lifecycle totals; owner action for the analytics engineer.
+## Options considered (client side)
 
-## Consequences
-- One fewer processor and one fewer SDK; no billing brand other than Apple's anywhere in the product.
-- About 1.5 to 2.5 extra engineer-weeks of agent-written server code, all of it behind pure, table-driven tests (TDD 08's engine, windows and webhook replay suites carry over).
-- We own entitlement correctness. The re-read-on-every-notification design and two reconcile jobs are the controls; the sandbox checklist gates every purchase-code release.
-- Android needs its own server integration later (or RevenueCat for both stores at that point). That decision is made at Android planning, not now.
-- App transfer to a future organisation account (D-004) needs the In-App Purchase key and notification URLs re-created under the new team; Apple's transfer steps for auto-renewable subscriptions apply (`docs/ROADMAP.md` section 7).
+| Option | What it is | Why not chosen, or why chosen |
+|---|---|---|
+| **A. Local Expo module + SubscriptionStoreView (chosen)** | About 530 lines of Swift (comments included) in `modules/scribe-store/ios`, Apple frameworks only (StoreKit, SwiftUI). A 50-line Android stub in Kotlin | Apple renders the paywall and its disclosures, so guideline 3.1.2 rests on Apple's component instead of ours. No third-party code, nothing extra in the binary beyond our Swift. Every API it calls was checked in Apple's documentation (section "Evidence") |
+| B. `expo-iap` 5.8.2 (MIT; npm, published 30 Sep 2026, **V**) | General StoreKit 2 and Play Billing wrapper (openiap) | Does not expose SubscriptionStoreView (**V**, searched the installed package). We would build and maintain our own paywall and its 3.1.2 disclosures, and ship the `openiap` pod and Play Billing code we do not use. Already in `apps/mobile/package.json` (uncommitted); recommended for removal |
+| C. `react-native-iap` 16.7.2 (MIT; npm, 30 Sep 2026, **V**) | Same family, Nitro modules | No SubscriptionStoreView (**V**, searched the published tarball); adds `react-native-nitro-modules` |
+| D. `@expo/ui` 57.0.21 SwiftUI | Expo's SwiftUI bridge | No StoreKit views (**V**, searched the installed package). Its extending API (**V**, docs.expo.dev v57 "Registering custom SwiftUI views") could host the store view inline inside a React Native screen; a modal sheet is what the gates need, and it would add the ExpoUI pod as a dependency of this module. Kept as the route if we ever want the store inline |
+| E. RevenueCat | Hosted subscriptions | Excluded by the decision |
 
-## Alternatives rejected
-- **RevenueCat** (option B): lower effort, but adds a processor, a DPA, an SDK and a console, against the founder's "Apple focused" direction. Kept as the documented fallback and as the likely Android-time option.
-- **Hybrid** (option C): keeps the vendor without removing much code.
-- **Web or external purchase links** (US storefront allows them): out of scope; adds payments, refunds and tax we would own, and review risk.
+## How it works
+
+**Module surface** (`modules/scribe-store/index.ts`): `storeViewSupport()`, `presentSubscriptionStore(options)` (resolves `purchased`, `dismissed`, `busy` or `unavailable` when the sheet closes), `currentEntitlements(productIds)`, the `onEntitlementsChanged` event (no payload beyond a reason), `showManageSubscriptions()`, `sync()`, `beginRefundRequest(productIds)`, `startTransactionListener()`. What crosses into JavaScript is product ids, dates and flags only: no transaction id, receipt or account id (DATA_CLASSIFICATION L2). The refund request looks up its own transaction inside Swift.
+
+**Sheet.** A clear full-screen hosting controller carries a real SwiftUI `.sheet`, so the store view's own Close button and swipe-to-dismiss work and report back once. Style `.buttons` (one subscribe button per plan, so no plan is preselected, PRD C-REQ-022), `.subscriptionStoreButtonLabel(.multiline)`, Restore, policies and Close visible, Terms and Privacy pointed at `brand.web.terms` and `brand.web.privacy`. Purchases from the store view arrive through `Transaction.updates` (**V**, "By default, transactions from successful in-app store view purchases will be emitted from Transaction.updates"), so we keep Apple's default error alerts and the listener closes the sheet with `purchased`.
+
+**Plan on the phone** (`apps/mobile/src/lib/billing`): `planFromSnapshot` maps entitlements and subscription statuses to the engine's `PlanView` (trial, active, grace, billing retry, expired, revoked) and to Plan screen details; the last snapshot is cached in device settings (`plus.cache`) so Plus shows at once and offline. `usePlan()` exposes it; `startBookGate()` and `readTogetherGate()` call `decide()` unchanged. Engine inputs that change with this decision: `signedIn` is always true (Plus belongs to the Apple Account, so buying needs no sign-in with us; TDD 08 R-1 no longer applies), `coveredByOtherParent` is always false (a co-parent's Plus arrives through Family Sharing as their own), and sandbox and Xcode transactions count (on the device a verified sandbox transaction exists only in TestFlight, development builds and App Review, which purchases in the sandbox; refusing it would show the reviewer a paid Plus that does nothing). Read together's free sessions come from remote config, which may only raise the reviewed default of 3.
+
+**iOS versions.** Expo SDK 57's minimum is iOS 16.4 (**V**, `ExpoModulesCore.podspec`). The store view needs iOS 17, so on 16.x the gate says Plus can be added on iOS 17 or later; Restore, Manage and the entitlement check still work there. Recommendation (coordinator): set the iOS deployment target to 17.0 through `expo-build-properties`, which removes that branch (it drops iPhone 8, 8 Plus and X, which stop at iOS 16).
+
+## Requirements check
+
+| Requirement | How it is met now | Status |
+|---|---|---|
+| Apple 3.1.2, DPLA Schedule 2 3.8(b): title, length, price, Terms and Privacy links before purchase | Apple's store view shows each plan's name, period and price and the trial for eligible people; our marketing content says what Plus adds; policy buttons open our Terms and Privacy | Met by Apple's component; on-device review needed |
+| C-REQ-022 neither plan preselected | `.buttons` style | Met (verify on device) |
+| C-REQ-020 Restore | Restore button in the store view; Settings, Plan, Restore purchases calls `AppStore.sync()` | Met |
+| LEGAL-REQ-048 manage or cancel in one tap | Settings, Plan, Manage subscription opens Apple's sheet; web fallback `apps.apple.com/account/subscriptions` | Met |
+| C-REQ-029 refunds through Apple | Settings, Plan, Request a refund opens Apple's sheet (own purchases only); web fallback `reportaproblem.apple.com` | Met |
+| C-REQ-027 billing grace | Grace entitlements are in `currentEntitlements`; turn on Billing Grace Period in App Store Connect | Met with the founder's setup step |
+| LEGAL-REQ-050 keep and leave | `FreeForever` features cannot be gated; nothing that exists is ever locked | Met (unchanged) |
+| K-28 co-parent | Apple Family Sharing | Met for co-parents in the same Apple family only |
+| C-NFR-004 offline and stale | Cached snapshot; a paid period stays on while offline | Met |
+| PRD-REQ-015 extra books, server half | Device only | **Changed**: no server enforcement (trade-off below) |
+| PRD-REQ-003, LEGAL-REQ-047 auto-renewal notices by email and in-app (trial and renewal windows), acknowledgment email | No server sees purchases, so we cannot email | **Gap** for founder and counsel (below) |
+| LEGAL-REQ-049 proof of consent at purchase | No server record | **Gap** for counsel (below) |
+| PRD-REQ-017 lifecycle numbers | App Store Connect Sales and Trends and subscription reports only | **Changed** |
+
+## Consequences and trade-offs
+
+- **Plus is enforced on the device only.** A modified app, or a phone clock set back while offline, can reach more books or Read together sessions than the free allowance until StoreKit is read again. Every Plus feature in v1.0 (Read together after the free sessions, books for more children) runs on the phone and costs nothing on the server, and there is no audio upload in v1.0 (brief decision 9). Accepted.
+- **Plus belongs to the Apple Account on the phone, not to our account.** Signing in to Early Letters does not carry Plus to a phone with a different Apple Account. A co-parent outside the purchaser's Apple family needs their own subscription. Two parents in one Apple family share one.
+- **No subscriber view for us.** Support cannot look a purchase up; the answer is always Apple's (Settings, Plan, Restore and Manage). App Store Connect reports are the only lifecycle numbers.
+- **Auto-renewal law duties that assumed our server.** Subscription Terms 1.3.0 promise emails we cannot send without seeing purchases: the acknowledgment with a copy of the terms, trial reminders, renewal reminders and the yearly reminder, and a kept record of consent. Apple sends its own purchase and subscription emails as merchant of record, but what they contain and when is **U** and must not be assumed to satisfy California 17602 or the other state windows. Options, for the founder and counsel: (a) counsel confirms Apple's own emails plus the in-app disclosure are sufficient; (b) the app schedules local notifications and an in-app card from the entitlement's period end (device only, needs notification permission, no email); (c) a small server path later. Until decided, the Subscription Terms "Reminders from us" section and the consent-record sentence are inaccurate.
+- **What Plus adds.** The store view lists only what v1.0 ships. Subscription Terms 1.3.0 and in-app strings still list encrypted backup (not in v1.0, D-059) and extra themes and covers (not built). They must match the live sheet before submission (Apple 3.1.2(c); Subscription Terms counsel note).
+- **Binary size.** One Swift module and one Kotlin stub; no third-party SDK. `expo-iap` should be removed from `apps/mobile/package.json` so its native code is not linked.
+- **Android.** The Kotlin stub answers "unavailable" so JavaScript has one path. Google Play Billing is v1.1 and needs its own decision then.
+
+## Revisit when
+
+- A Plus feature with a server cost ships (backup upload). That endpoint then needs its own proof of Plus, for example the app sending StoreKit's signed transaction (JWS) with the request and the endpoint verifying it against Apple's root certificate, statelessly. That is a new ADR.
+- Counsel decides auto-renewal notices or the consent record must come from us.
+- Android ships.
+
+## What changes elsewhere (owner actions)
+
+- **TDD 08**: sections 2.4 (device state), 2.5 (server rules), 3 (RevenueCat), 4.1 to 4.3 (purchase flow, consent, notice engine), 4.8 and 4.9 (restore transfer rule, deletion) and 7 (I-3, I-8 to I-15) describe server pieces that no longer exist. The engine contract (2.1 to 2.3) and the lapse table (5) stand.
+- **Legal**: Subscription Terms (reminders, consent record, what Plus adds), `in-app-disclosures.md` section 3 (`plus.ack.body` email, consent log rule), `ENGINEERING_REQUIREMENTS` LEGAL-REQ-047 and -049, `DATA_CLASSIFICATION`, `DELETION_AND_EXPORT_SPEC` and `data-policy` (no purchase ledger, no `app_account_tokens`), privacy labels (Purchases: no longer linked to the person through our server; counsel to confirm the label).
+- **PRD**: PRD-REQ-003, -015 (server half), -017; C-REQ-021 per-account wording becomes per Apple Account with Family Sharing.
+- **Analytics**: `TRACKING_PLAN.md` lifecycle totals come from App Store Connect only.
+- **App wiring** (coordinator): call `startPlus()` from `app/_layout.tsx`; add a Settings row "Plan" that opens `/settings/plus`; pass the remote config reader to `setReadTogetherFreeSessionsSource`.
+
+## Evidence (all opened 3 Oct 2026)
+
+- Apple developer documentation (JSON of the docs pages): `SubscriptionStoreView` and `init(productIDs:marketingContent:)` iOS 17; `storeButton(_:for:)`, `StoreButtonKind` (`cancellation`, `restorePurchases`, `policies`, `redeemCode`, `signIn`); `subscriptionStorePolicyDestination(url:for:)`; `subscriptionStoreControlStyle(_:)` with `.buttons` (iOS 17); `subscriptionStoreButtonLabel(.multiline)`; `containerBackground(_:for:)` with `.subscriptionStoreFullHeight` (iOS 17); `onInAppPurchaseCompletion` (default behaviour emits to `Transaction.updates`); `Transaction.currentEntitlements`, `Transaction.updates`, `Transaction.latest(for:)`, `ownershipType`, `environment` (iOS 16), `offer` (iOS 17.2) and `offerType` (before 17.2), `revocationDate`, `isUpgraded`, `beginRefundRequest(for:in:)`; `Product.SubscriptionInfo.status(for:)`, `RenewalState`, `RenewalInfo.willAutoRenew` and `gracePeriodExpirationDate`; `AppStore.sync()` (shows a sign-in prompt, call only from a tap), `AppStore.showManageSubscriptions(in:)`.
+- App Store Connect Help: subscriptions, introductory offers (free trial durations, one per group), Family Sharing (irreversible), Billing Grace Period (3, 16 or 28 days), sandbox Apple Accounts, Paid Apps agreement, first subscription submitted with a new app version; Small Business Program page (15%, individuals eligible, up to US $1 million proceeds).
+- Packages: `expo-iap` 5.8.2 and `@expo/ui` 57.0.21 in `node_modules`; `react-native-iap` 16.7.2 tarball from npm; `ExpoModulesCore.podspec` (iOS 16.4) and the Expo modules Swift and Kotlin APIs in `node_modules/expo-modules-core`.

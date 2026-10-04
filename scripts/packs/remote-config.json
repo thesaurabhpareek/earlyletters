@@ -1,0 +1,17 @@
+{
+  "minSupportedVersion": "1.0.0",
+  "readTogetherFreeSessions": 3,
+  "forceReauthEpoch": 0,
+  "flags": {
+    "introVariant": "four",
+    "lockScreenNamesDefault": false,
+    "familyTeaser": "coming_soon"
+  },
+  "killSwitches": {
+    "sync": false,
+    "invites": false,
+    "photos": false,
+    "packDownloads": false,
+    "serverContent": false
+  }
+}

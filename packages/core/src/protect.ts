@@ -7,14 +7,19 @@
  *  - phrases the parent locked in review
  */
 import type { DictionaryTerm, Edit, Span } from './types';
+import { nfc, WORD_CHAR_CLASS } from './text';
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Word-boundary matcher that works for non-ASCII terms (Unicode-aware). */
+/**
+ * Word-boundary matcher that works for non-ASCII terms (Unicode-aware).
+ * Combining marks count as word characters (CORE-01): the term "आश" must
+ * not match the start of "आशा", whose next character is a vowel sign.
+ */
 function termRegex(term: string): RegExp {
-  return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(term)}(?![\\p{L}\\p{N}])`, 'giu');
+  return new RegExp(`(?<![${WORD_CHAR_CLASS}\\u200C\\u200D])${escapeRe(term)}(?![${WORD_CHAR_CLASS}\\u200C\\u200D])`, 'giu');
 }
 
 export function quotedSpans(text: string): Span[] {
@@ -30,7 +35,7 @@ export function termSpans(text: string, terms: string[]): Span[] {
     if (!t.trim()) continue;
     for (const m of text.matchAll(termRegex(t))) {
       // Only exact-case matches are protected; a lowercase mishearing of a
-      // name (e.g. "meera") is still correctable to "Meera".
+      // name (e.g. "meera") is still correctable to "Mira".
       if (m[0] === t) spans.push({ start: m.index!, end: m.index! + m[0].length });
     }
   }
@@ -58,7 +63,7 @@ export function dictionaryEdits(raw: string, dictionary: DictionaryTerm[]): Edit
   const quotes = quotedSpans(raw);
   const edits: Edit[] = [];
   const taken: Span[] = [];
-  // Longer variants first so "Meera ji" wins over "Meera".
+  // Longer variants first so "Mira ji" wins over "Mira".
   const variants = dictionary
     .flatMap((d) => [d.term, ...d.heardAs].map((v) => ({ v, term: d.term })))
     .filter((x) => x.v.trim())
@@ -78,6 +83,9 @@ export function dictionaryEdits(raw: string, dictionary: DictionaryTerm[]): Edit
 
 /** True if `word` is a dictionary term (case-insensitive). */
 export function isDictionaryTerm(word: string, dictionary: DictionaryTerm[]): boolean {
-  const w = word.toLowerCase();
-  return dictionary.some((d) => d.term.toLowerCase() === w || d.term.toLowerCase().split(/\s+/).includes(w));
+  const w = nfc(word).toLowerCase();
+  return dictionary.some((d) => {
+    const t = nfc(d.term).toLowerCase();
+    return t === w || t.split(/\s+/).includes(w);
+  });
 }

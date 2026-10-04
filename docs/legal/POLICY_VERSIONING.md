@@ -1,5 +1,7 @@
 # Policy Versioning and Consent Records
 
+Version 1.1.0, 3 Oct 2026 (changelog at the end). Status: draft for counsel.
+
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. This file defines process and data structures; counsel decides whether any particular change is material. Statements marked **Unverified** were not checked against an opened source.
 
 Owner: founder. Approver for every published legal text: counsel. Implements register rows CR-011, CR-019, CR-050, CR-004 and engineering requirements LEGAL-REQ-001, -006, -009, -049 (see `compliance-register.md`, `ENGINEERING_REQUIREMENTS.md`).
@@ -16,11 +18,11 @@ Every text a user is asked to accept, or is told about as a binding statement, i
 | `privacy` | Privacy Policy | Notice | Everyone | Acknowledged with `terms` |
 | `health-privacy` | Consumer Health Data Privacy Policy (Washington MHMDA; separate document by law, register CR-031) | Notice | Everyone | Linked from website homepage and app |
 | `sensitive-data` | Sensitive data consent text ("Letters may include health and other sensitive details about you and your child...") | Consent | Account holders | Yes, separate button (register CR-020, CR-031) |
-| `ai-processing` | Third-party AI consent (server transcription, edit pass) naming providers and purposes | Consent | Account holders; web contributors if ever offered | Yes, explicit (Apple 5.1.2(i)) |
+| `ai-processing` | Third-party AI consent (server transcription, edit pass) naming providers and purposes. **Not used in v1.0** (no third-party AI, D-059) | Consent | Account holders; web contributors if ever offered | Yes, explicit (Apple 5.1.2(i)) |
 | `analytics` | Usage analytics and crash reporting consent | Consent | Everyone on the app | Yes (Apple 5.1.1(ii)) |
-| `auto-renewal-terms` | Plus subscription and automatic-renewal terms shown on the paywall | Agreement | Purchasers | Yes, purchase is the act (California ARL) |
-| `contributor-notice` | Web contribution page notice and terms for invitees without accounts | Agreement + notice | Web contributors | Yes, "Send" with notice adjacent |
-| `backup-recovery` | Standard (escrow) versus Vault mode disclosure | Acknowledgment | Users turning on backup | Yes, acknowledge (ADR 0006) |
+| `auto-renewal-terms` | Plus Subscription Terms (published at a URL, linked from the Plus marketing content). From 1.1.0 the purchase act happens in Apple's store view and is **not recorded by us** (D-053, ADR 0013; Q-003 memo): proof is Apple's transaction plus the per-release evidence pack (section 8) | Agreement | Purchasers | Yes, purchase is the act (California ARL), recorded by Apple |
+| `contributor-notice` | Web contribution page notice and terms for invitees without accounts. **Later than v1.0** (D-055) | Agreement + notice | Web contributors | Yes, "Send" with notice adjacent |
+| `backup-recovery` | Standard (escrow) versus Vault mode disclosure. **Later than v1.0** (no backup, D-059) | Acknowledgment | Users turning on backup | Yes, acknowledge (ADR 0006) |
 | `subprocessors` | List of service providers and processors | Notice | Public | No |
 | `pledge` | Shutdown and portability pledge (PRD C s.7 item; COMPETITIVE_RESEARCH s.7 item 6) | Commitment | Public | No |
 | `accessibility` | Accessibility statement | Notice | Public | No |
@@ -64,6 +66,7 @@ Typos, formatting, broken links, contact details formatting, translation fixes t
 
 - **When in doubt, it is major.** The classification and its one-paragraph rationale are written in the changelog and approved by counsel.
 - A version number is never reused, even for an unpublished draft that leaked.
+- The `version` in the frontmatter of a draft in `docs/legal/` is an internal revision number, not a published version. The published sequence for each document lives in `packages/content/legal/<key>/` and starts at `0.9.0` for the TestFlight beta text (DEBATES Q-009) and `1.0.0` for the first counsel-approved text, which is published as `major` with `requires_reconsent = true` and counsel-approved short notice for beta testers.
 - Translations (en-US, en-IN, Hindi later) share the version of the English source. A translation-only fix is a patch on that locale file; the English file is unchanged and the manifest records per-locale hashes.
 - Consent texts (`sensitive-data`, `ai-processing`, `analytics`) are versioned like any other document. Changing a consent's scope is major and needs fresh consent; the old consent does not cover the new scope.
 
@@ -85,7 +88,7 @@ During the gap between `published_at` and `effective_at`, existing users remain 
 
 ## 4. Where documents are published
 
-Domain comes from `packages/brand` (`brand.company.domain`; currently a placeholder, PRD A Q3).
+Domain comes from `packages/brand` (`brand.web`): **earlyletters.com** (D-063). The founder fixed the floating URLs as https://earlyletters.com/terms, /privacy, /health-privacy and /subprocessors, plus /delete-account (D-042, D-063). The versioned and archive paths in the table below are a proposal for the website thread; agree them on the board before the first publish, and keep the four floating URLs exactly as decided.
 
 | URL | Content | Rules |
 |---|---|---|
@@ -148,7 +151,7 @@ At or after `effective_at`, for a document that needs an affirmative act (`terms
 File name suggestion: `supabase/migrations/2026100XXXXXXX_policy_versioning.sql`. Written in the style of the existing migrations (security-definer functions, `(select auth.uid())`, revoke from `anon`). Smoke-tested on 2 Oct 2026 in PGlite on top of the two applied migrations, with the same auth stubs as `supabase/tests/rls.test.mjs`: applies cleanly; a new user needs `terms`; users cannot read others' rows; direct inserts and updates are refused; a major version with under 30 days' notice is refused; a later major version voids an older consent; accepting a superseded version is refused; deleting a profile pseudonymises its rows; `anon` cannot record and `authenticated` cannot call `has_active_consent`. Port these checks into `supabase/tests/rls.test.mjs` when the migration is added. Not tested on hosted Supabase.
 
 ```sql
--- ─── Legal documents and versions ───────────────────────────────────────
+-- --- Legal documents and versions ---
 create table public.policy_documents (
   key text primary key check (key ~ '^[a-z][a-z0-9-]{1,40}$'),
   title text not null check (char_length(title) <= 120),
@@ -201,7 +204,7 @@ create trigger policy_versions_guard before insert or update on public.policy_ve
 ```
 
 ```sql
--- ─── Acceptances (append-only) ──────────────────────────────────────────
+-- --- Acceptances (append-only) ---
 create table public.policy_acceptances (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid references public.profiles(id) on delete set null,
@@ -281,7 +284,7 @@ $$;
 create trigger profiles_pseudonymise_acceptances before delete on public.profiles
   for each row execute function public.policy_acceptances_pseudonymise();
 
--- ─── Recording an act (the only write path for clients) ─────────────────
+-- --- Recording an act (the only write path for clients) ---
 -- Implementation note (2026-10-03): the shipped function, defined in
 -- supabase/migrations/20261003000000_security_and_family.sql, takes a leading
 -- p_id uuid (a client UUIDv7 idempotency key) and returns uuid. A retry with the
@@ -328,7 +331,7 @@ begin
 end;
 $$;
 
--- ─── Current state for the signed-in user ───────────────────────────────
+-- --- Current state for the signed-in user ---
 create or replace view public.my_policy_state with (security_invoker = true) as
 select distinct on (a.document)
        a.document, a.version, a.action, a.accepted_at
@@ -374,7 +377,7 @@ returns boolean language sql stable security definer set search_path = public, p
      limit 1), false);
 $$;
 
--- ─── Access rules ───────────────────────────────────────────────────────
+-- --- Access rules ---
 alter table public.policy_documents enable row level security;
 alter table public.policy_versions enable row level security;
 alter table public.policy_acceptances enable row level security;
@@ -399,7 +402,7 @@ grant execute on function public.policy_actions_needed() to authenticated;
 Notes for the technical design agents:
 - Web contributors use an anonymous Supabase session (PRD B F6); `auth.uid()` exists, so `record_policy_act` works for them with `method = 'web_contributor_page'`. Whether anonymous users get `authenticated` role claims is **Unverified**; confirm when building B-REQ-008.
 - Acts made before an account exists (only `analytics` can be, because Terms are accepted at sign-in) are stored locally with `client_recorded_at` and uploaded by `record_policy_act` right after sign-in, in the same transaction as data re-ownership (PRD A-REQ-015).
-- PowerSync: sync `my_policy_state` rows to the device so consent checks work offline; the server-side check (`has_active_consent`) is still authoritative for anything leaving the device.
+- Sync (D-023, outbox and cursor on Supabase): the device keeps its own `my_policy_state` so consent checks work offline; the server-side gate (`can_write_content()`, `has_active_consent`) is authoritative for anything leaving the device.
 - Retention purge: a scheduled service-role job with `set local app.retention_purge = 'on'` deletes pseudonymised rows older than the retention period (proposed 3 years after `subject_hash` was set; requires a `pseudonymised_at` column if counsel confirms; add it in the same migration).
 - `entries`, `child_members` and other tables are unchanged by this migration.
 
@@ -412,9 +415,9 @@ Notes for the technical design agents:
 | Sensitive-data consent | `sensitive-data` | accept / decline | `consent_sheet` | `{}` |
 | AI consent sheet (ARCH s.8) | `ai-processing` | accept / decline / withdraw | `consent_sheet` / `settings_toggle` | `{"scope":["transcribe","edit_pass"]}` |
 | Analytics consent | `analytics` | accept / decline / withdraw | `consent_sheet` / `settings_toggle` | `{"crash":true,"usage":true}` |
-| Plus paywall | `auto-renewal-terms` | accept | `paywall_purchase` | `{"product":"el_plus_annual_2999","intro_offer":"trial_2m","storefront":"USA"}` |
-| Backup on | `backup-recovery` | acknowledge | `consent_sheet` | `{"mode":"standard|vault"}` |
-| Web contribution "Send" | `contributor-notice` | accept | `web_contributor_page` | `{"age_attested":true}` |
+| Plus purchase (Apple's store view) | `auto-renewal-terms` | not recorded by us in v1.0 (D-053; Q-003 memo C-5) | n/a | n/a |
+| Backup on (later than v1.0) | `backup-recovery` | acknowledge | `consent_sheet` | `{"mode":"standard|vault"}` |
+| Web contribution "Send" (later than v1.0) | `contributor-notice` | accept | `web_contributor_page` | `{"age_attested":true}` |
 | Re-consent sheet | changed document | accept / decline | `reconsent_sheet` | `{}` |
 
 ---
@@ -474,3 +477,10 @@ Roles: **Owner** (founder) keeps the register and calendar; **Approver** (counse
 - `compliance-register.md` sources [L7] (California ARL record retention and notice windows), [L13] (Apple 5.1.1, 5.1.2(i)), [L14]/[L15] (Texas significant change), [L16] (Google Play deletion web link), [L19] (Connecticut). Opened 2 Oct 2026; see that file for URLs.
 - Repo: PRD A (A-REQ-015, A-REQ-034), PRD B (F6, F9), PRD C (s.4.1, s.7), ARCHITECTURE s.8, ADR 0006, core migration conventions.
 - Unverified: CCPA annual privacy-policy update duty; Supabase Vault usage for the pepper; anonymous-session role claims in Supabase; behaviour on hosted Supabase (PGlite smoke test only).
+
+## Changelog
+
+| Version | Date | Change |
+|---|---|---|
+| 1.1.0 | 2026-10-03 | Draft frontmatter versions declared internal; published sequence 0.9.0 (beta) then 1.0.0 (DEBATES Q-009). Alignment with the founder decisions of 3 Oct 2026, second round. `ai-processing`, `contributor-notice` and `backup-recovery` marked not used in v1.0 (D-055, D-059). `auto-renewal-terms`: the purchase act is Apple's and not recorded by us (D-053, ADR 0013); the Plus row of 7.3 changed to match; proof is Apple's transaction plus the per-release evidence pack (Q-003 memo). Section 4 uses earlyletters.com and the four floating URLs decided in D-063. Sync note updated for D-023. SQL comment rules made ASCII. Version line added (the 2 Oct text is 1.0.0). |
+| 1.0.0 | 2026-10-02 | First version. |

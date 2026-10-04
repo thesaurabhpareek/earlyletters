@@ -10,21 +10,48 @@
  * Age (PRD-REQ-019): the 18+ entry gate runs at the app root before any
  * route, this one included (components/gate/age-gate-screen.tsx), so first
  * run is only ever reached by someone who answered Yes.
+ *
+ * Design (docs/design/BENCHMARK.md, "Screens"):
+ * - Headspace / Calm first run: one drawing, one large serif line, one action per screen.
+ * - CREATIVE 6: an open envelope at the start, a page with one line at the end.
+ * - Apple Settings segmented choice for Birthday / Not here yet (stacks at large text).
+ * - VoiceOver focus moves to each step's heading (TDD 09 A11Y-F09).
+ * Haptics: only the choices (selection) and the finished book (success). Continue and
+ * Back are navigation and stay silent (MOTION 6).
  */
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { router } from 'expo-router';
-import { PlusIcon, XIcon } from 'phosphor-react-native';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
-import Animated, { FadeOut } from 'react-native-reanimated';
-import { tokens } from '@scribe/design-tokens';
-import { Button } from '@/components/ui/button';
+import { router, type Href } from 'expo-router';
+import { CaretLeftIcon } from 'phosphor-react-native/src/icons/CaretLeft';
+import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
+import { PlusIcon } from 'phosphor-react-native/src/icons/Plus';
+import { SealCheckIcon } from 'phosphor-react-native/src/icons/SealCheck';
+import { XIcon } from 'phosphor-react-native/src/icons/X';
+import { useEffect, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, View, type Text as RNText } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { languageInfo, type LanguageCode } from '@scribe/core';
+import { languageCopy } from '@/components/language/copy';
+import { LanguagePicker } from '@/components/language/language-picker';
+import { Button, IconButton } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Chip, ChipGroup, ChoiceGroup } from '@/components/ui/choice-group';
+import { LineArt } from '@/components/ui/line-art';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
+import { TextField } from '@/components/ui/text-field';
+import { ListRow, ListSection } from '@/components/ui/list-row';
+import { useFocusOnMount, useTheme } from '@/lib/a11y';
+import { capabilities } from '@/lib/capabilities';
 import { copy, fill, pendingCopy } from '@/lib/copy';
+import { dayDate } from '@/lib/dates';
+import { inviteHref } from '@/lib/family/entry.logic';
+import { ordinalOf, track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
-import { addChild, getActiveChildId, setActiveChildId, todayISO } from '@/lib/store';
+import { ensureTextRules } from '@/lib/language/packs';
+import { useSpokenLanguage } from '@/lib/language/spoken-language';
+import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, todayISO } from '@/lib/store';
 
 type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
@@ -41,10 +68,11 @@ function joinNames(names: string[], fallback: string): string {
 }
 
 export default function Onboarding() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const { c } = useTheme();
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
+  const heading = useRef<RNText>(null);
   const [step, setStep] = useState<Step>('welcome');
   const [names, setNames] = useState<string[]>(['']);
   const [expecting, setExpecting] = useState(false);
@@ -53,26 +81,39 @@ export default function Onboarding() {
   const [signsAs, setSignsAs] = useState('');
   const child = joinNames(names, 'your child');
   const namedCount = names.filter((n) => n.trim()).length;
+  const spoken = useSpokenLanguage();
+  const [languageOpen, setLanguageOpen] = useState(false);
 
-  const next = () => {
-    haptic('tap');
-    setStep(ORDER[ORDER.indexOf(step) + 1]);
+  // "I already have a book" or "I was invited": once sign-in or joining brings a book to this
+  // phone, first run is over (no second book is made by mistake).
+  useEffect(() => {
+    if (step !== 'welcome') return;
+    const done = () => {
+      if (listChildren().length > 0) router.replace('/');
+    };
+    done();
+    return subscribe(done);
+  }, [step]);
+
+  // The language letters are spoken in (founder decisions 6 and 15): choosing it starts only
+  // that language's downloads (its text rules here; its speech model through the speech engine).
+  const chooseLanguage = (code: LanguageCode) => {
+    spoken.setPrimary(code);
+    setLanguageOpen(false);
+    // Never blocks or breaks first run: a download that cannot start now starts from Settings later.
+    void Promise.resolve()
+      .then(() => ensureTextRules(code))
+      .catch(() => undefined);
   };
 
-  const back = () => {
-    haptic('tap');
-    setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
-  };
+  useFocusOnMount(heading, step !== 'welcome', step);
+
+  const next = () => setStep(ORDER[ORDER.indexOf(step) + 1]);
+  const back = () => setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
 
   const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? v.slice(0, 60) : x)));
-  const addName = () => {
-    haptic('tap');
-    setNames((all) => (all.length < MAX_FIRST_RUN_CHILDREN ? [...all, ''] : all));
-  };
-  const removeName = (i: number) => {
-    haptic('tap');
-    setNames((all) => all.filter((_, j) => j !== i));
-  };
+  const addName = () => setNames((all) => (all.length < MAX_FIRST_RUN_CHILDREN ? [...all, ''] : all));
+  const removeName = (i: number) => setNames((all) => all.filter((_, j) => j !== i));
 
   const finish = () => {
     // Every book made in first run is free (twins or more share the date).
@@ -88,204 +129,226 @@ export default function Onboarding() {
         }),
       );
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
+    // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
+    for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
     haptic('success');
     router.replace('/');
   };
 
-  const input = 'h-14 rounded-2xl border border-muted-foreground/60 bg-card px-4 text-lg text-foreground';
   const disabled = (step === 'child' && names.some((n) => !n.trim())) || (step === 'signsAs' && !signsAs.trim());
-
-  const cta = {
-    welcome: o.welcome.startButton,
-    promise: o.promise.cta,
-    child: o.child.cta,
-    signsAs: o.signsAs.cta,
-    finish: o.finish.cta,
-  }[step];
+  const cta = { welcome: o.welcome.startButton, promise: o.promise.cta, child: o.child.cta, signsAs: o.signsAs.cta, finish: o.finish.cta }[step];
   const centred = step === 'welcome' || step === 'finish';
-
-  const segment = (selected: boolean, label: string, onPress: () => void) => (
-    <Pressable
-      onPress={() => {
-        haptic('tap');
-        onPress();
-      }}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      className={`min-h-11 flex-1 items-center justify-center rounded-full border px-4 py-2 ${selected ? 'border-primary bg-secondary' : 'border-muted-foreground/60 bg-card'}`}>
-      <Text className="text-center text-base text-foreground">{label}</Text>
-    </Pressable>
-  );
+  const signsAsTitle = fill(namedCount > 1 ? pc.signsAsTitleMany : o.signsAs.title, { child });
 
   return (
     <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView contentContainerClassName="flex-grow px-5 pb-6" keyboardShouldPersistTaps="handled">
-          {step !== 'welcome' && (
-            <Button variant="ghost" size="sm" className="-ml-4 mt-2 self-start" onPress={back}>
-              <Text className="text-primary">{copy.common.backButton}</Text>
-            </Button>
-          )}
-          <Animated.View
-            key={step}
-            entering={motion.enter()}
-            exiting={FadeOut.duration(120)}
-            className={centred ? 'flex-1 justify-center gap-5 py-10' : 'flex-1 gap-5 pb-8 pt-6'}>
+        <ScrollView contentContainerClassName="flex-grow px-6 pb-6" keyboardShouldPersistTaps="handled">
+          <View className="min-h-12 justify-center">
+            {step !== 'welcome' && <Button variant="quiet" size="sm" icon={CaretLeftIcon} label={copy.common.backButton} className="-ml-4 self-start" onPress={back} />}
+          </View>
+
+          <Animated.View key={step} entering={motion.enter()} className={centred ? 'flex-1 justify-center gap-6 py-6' : 'flex-1 gap-6 pb-8 pt-4'}>
             {step === 'welcome' && (
               <>
-                <Text role="heading" className="font-serif text-5xl leading-[56px] text-foreground">{o.welcome.title}</Text>
-                <Text className="text-xl text-muted-foreground">{o.welcome.subtitle}</Text>
-                <Text className="text-lg leading-7 text-foreground">{fill(o.welcome.body, { child: 'your child' })}</Text>
+                <LineArt name="envelopeOpen" width={176} style={{ marginLeft: -12 }} />
+                <View className="gap-3">
+                  <Text ref={heading} variant="hero" asHeading={1}>
+                    {o.welcome.title}
+                  </Text>
+                  <Text variant="prompt" tone="muted" scale={0.85}>
+                    {o.welcome.subtitle}
+                  </Text>
+                </View>
+                <Text variant="body">{fill(o.welcome.body, { child: 'your child' })}</Text>
               </>
             )}
 
             {step === 'promise' && (
               <>
-                <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">{o.promise.title}</Text>
-                <Text className="text-lg leading-7 text-foreground">{o.promise.body}</Text>
-                <Text className="text-lg leading-7 text-foreground">{o.promise.body2}</Text>
-                <View className="gap-1 rounded-3xl bg-secondary p-5">
-                  <Text className="text-lg font-semibold text-foreground">{o.promise.recordingTitle}</Text>
-                  <Text className="text-base leading-6 text-foreground">{fill(o.promise.recordingBody, { child: 'your child' })}</Text>
+                <Text ref={heading} variant="title1" asHeading={1}>
+                  {o.promise.title}
+                </Text>
+                <View className="gap-3">
+                  <Text variant="body">{o.promise.body}</Text>
+                  <Text variant="body">{o.promise.body2}</Text>
                 </View>
-                <View className="gap-1 rounded-3xl bg-muted p-5">
-                  <Text className="text-lg font-semibold text-foreground">{pc.mishearTitle}</Text>
-                  <Text className="text-base leading-6 text-foreground">{copy.settings.help.mistakes}</Text>
+                <Card variant="tinted" padding={5} className="flex-row gap-3">
+                  <MicrophoneIcon size={22} color={c.accent} weight="fill" style={{ marginTop: 2 }} />
+                  <View className="flex-1 gap-1">
+                    <Text variant="headline">{o.promise.recordingTitle}</Text>
+                    <Text variant="callout">{fill(o.promise.recordingBody, { child: 'your child' })}</Text>
+                  </View>
+                </Card>
+                <Card variant="flat" padding={5} className="flex-row gap-3">
+                  <SealCheckIcon size={22} color={c.textMuted} style={{ marginTop: 2 }} />
+                  <View className="flex-1 gap-1">
+                    <Text variant="headline">{pc.mishearTitle}</Text>
+                    <Text variant="callout">{copy.settings.help.mistakes}</Text>
+                  </View>
+                </Card>
+                <View className="flex-row items-center gap-2">
+                  <LockSimpleIcon size={16} color={c.textMuted} />
+                  <Text variant="footnote" className="flex-1">
+                    {o.promise.privateNote}
+                  </Text>
                 </View>
-                <Text className="text-base text-muted-foreground">{o.promise.privateNote}</Text>
               </>
             )}
 
             {step === 'child' && (
               <>
-                <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">{o.child.title}</Text>
-                <View className="gap-2">
-                  <Text className="text-base font-medium text-muted-foreground">{o.child.nameLabel}</Text>
+                <Text ref={heading} variant="title1" asHeading={1}>
+                  {o.child.title}
+                </Text>
+                <View className="gap-3">
                   {names.map((n, i) => (
-                    <View key={i} className="flex-row items-center gap-2">
-                      <TextInput
-                        className={`${input} flex-1`}
-                        value={n}
-                        onChangeText={(v) => setNameAt(i, v)}
-                        placeholder={i === 0 ? o.child.namePlaceholder : undefined}
-                        placeholderTextColor={c.textMuted}
-                        autoCapitalize="words"
-                        autoCorrect={false}
-                        autoFocus={i > 0}
-                        textContentType="givenName"
-                        returnKeyType="done"
-                        accessibilityLabel={names.length > 1 ? `${o.child.nameLabel} ${i + 1}` : o.child.nameLabel}
-                        accessibilityHint={o.child.nameHelp}
-                      />
-                      {i > 0 && (
-                        <Pressable
-                          onPress={() => removeName(i)}
-                          accessibilityRole="button"
-                          accessibilityLabel={fill(pc.removeChild, { child: n.trim() || `${o.child.nameLabel} ${i + 1}` })}
-                          className="h-11 w-11 items-center justify-center rounded-full active:bg-secondary">
-                          <XIcon size={20} color={c.textMuted} />
-                        </Pressable>
-                      )}
-                    </View>
+                    <TextField
+                      key={i}
+                      label={names.length > 1 ? `${o.child.nameLabel} ${i + 1}` : o.child.nameLabel}
+                      value={n}
+                      onChangeText={(v) => setNameAt(i, v)}
+                      placeholder={i === 0 ? o.child.namePlaceholder : undefined}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      autoFocus={i > 0}
+                      textContentType="givenName"
+                      autoComplete="given-name"
+                      returnKeyType="done"
+                      helper={i === names.length - 1 ? (names.length > 1 ? o.child.addAnotherHelp : o.child.nameHelp) : undefined}
+                      trailing={
+                        i > 0 ? (
+                          <IconButton icon={XIcon} label={fill(pc.removeChild, { child: n.trim() || `${o.child.nameLabel} ${i + 1}` })} size="sm" onPress={() => removeName(i)} className="mr-2" />
+                        ) : undefined
+                      }
+                    />
                   ))}
-                  <Text className="text-sm text-muted-foreground">{names.length > 1 ? o.child.addAnotherHelp : o.child.nameHelp}</Text>
                   {names.length < MAX_FIRST_RUN_CHILDREN && (
-                    <Button variant="ghost" size="sm" className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp}>
-                      <PlusIcon size={18} color={c.accent} />
-                      <Text className="text-primary">{o.child.addAnotherButton}</Text>
-                    </Button>
+                    <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
                   )}
                 </View>
-                <View className="flex-row gap-3" accessibilityRole="radiogroup">
-                  {segment(!expecting, o.child.birthdayLabel, () => setExpecting(false))}
-                  {segment(expecting, o.child.expectingLabel, () => setExpecting(true))}
-                </View>
+                <ChoiceGroup
+                  label={o.child.birthdayLabel}
+                  value={expecting ? 'expecting' : 'born'}
+                  onChange={(v) => setExpecting(v === 'expecting')}
+                  options={[
+                    { value: 'born', label: o.child.birthdayLabel },
+                    { value: 'expecting', label: o.child.expectingLabel },
+                  ]}
+                />
                 <View className="gap-2">
-                  <Text className="text-base font-medium text-muted-foreground">{expecting ? pc.dueDateLabel : o.child.birthdayLabel}</Text>
-                  {expecting ? (
-                    <DateTimePicker
-                      value={dueDate}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'compact' : 'default'}
-                      minimumDate={new Date()}
-                      maximumDate={new Date(Date.now() + 305 * DAY)}
-                      accentColor={c.accent}
-                      accessibilityLabel={pc.dueDateLabel}
-                      onChange={(_, d) => d && setDueDate(d)}
-                    />
-                  ) : (
-                    <DateTimePicker
-                      value={birthday}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'compact' : 'default'}
-                      maximumDate={new Date()}
-                      accentColor={c.accent}
-                      accessibilityLabel={o.child.birthdayLabel}
-                      onChange={(_, d) => d && setBirthday(d)}
-                    />
-                  )}
-                  <Text className="text-sm text-muted-foreground">
-                    {expecting ? o.child.expectingHelp : fill(o.child.birthdayHelp, { child })}
-                  </Text>
+                  <View className="min-h-12 flex-row flex-wrap items-center justify-between gap-2">
+                    <Text variant="labelSmall" tone="muted">
+                      {expecting ? pc.dueDateLabel : o.child.birthdayLabel}
+                    </Text>
+                    {Platform.OS === 'web' ? (
+                      // Web preview only: the community picker renders nothing on web, so show
+                      // the value the way iOS's compact picker does (a quiet date pill).
+                      <View className="rounded-md bg-muted px-3 py-2">
+                        <Text variant="body">{dayDate(todayISO(expecting ? dueDate : birthday))}</Text>
+                      </View>
+                    ) : expecting ? (
+                      <DateTimePicker
+                        value={dueDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                        minimumDate={new Date()}
+                        maximumDate={new Date(Date.now() + 305 * DAY)}
+                        accentColor={c.accent}
+                        accessibilityLabel={pc.dueDateLabel}
+                        onChange={(_, d) => d && setDueDate(d)}
+                      />
+                    ) : (
+                      <DateTimePicker
+                        value={birthday}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                        maximumDate={new Date()}
+                        accentColor={c.accent}
+                        accessibilityLabel={o.child.birthdayLabel}
+                        onChange={(_, d) => d && setBirthday(d)}
+                      />
+                    )}
+                  </View>
+                  <Text variant="footnote">{expecting ? o.child.expectingHelp : fill(o.child.birthdayHelp, { child })}</Text>
                 </View>
               </>
             )}
 
             {step === 'signsAs' && (
               <>
-                <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">{fill(namedCount > 1 ? pc.signsAsTitleMany : o.signsAs.title, { child })}</Text>
-                <Text className="text-lg text-foreground">{o.signsAs.body}</Text>
-                <TextInput
-                  className={input}
+                <View className="gap-2">
+                  <Text ref={heading} variant="title1" asHeading={1}>
+                    {signsAsTitle}
+                  </Text>
+                  <Text variant="body" tone="muted">
+                    {o.signsAs.body}
+                  </Text>
+                </View>
+                <TextField
+                  label={signsAsTitle}
+                  labelHidden
                   value={signsAs}
                   onChangeText={(v) => setSignsAs(v.slice(0, 30))}
                   placeholder={o.signsAs.placeholder}
-                  placeholderTextColor={c.textMuted}
                   autoCapitalize="words"
                   autoCorrect={false}
-                  accessibilityLabel={fill(namedCount > 1 ? pc.signsAsTitleMany : o.signsAs.title, { child })}
                 />
-                <Text className="text-sm text-muted-foreground">{o.signsAs.examplesLabel}</Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {o.signsAs.examples.map((ex) => (
-                    <Pressable
-                      key={ex}
-                      onPress={() => {
-                        haptic('tap');
-                        setSignsAs(ex);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: signsAs === ex }}
-                      className={`h-11 justify-center rounded-full border px-4 ${signsAs === ex ? 'border-primary bg-secondary' : 'border-muted-foreground/60 bg-card'}`}>
-                      <Text className="text-base text-foreground">{ex}</Text>
-                    </Pressable>
-                  ))}
+                <View className="gap-2">
+                  <Text variant="labelSmall" tone="muted">
+                    {o.signsAs.examplesLabel}
+                  </Text>
+                  <ChipGroup label={o.signsAs.examplesLabel}>
+                    {o.signsAs.examples.map((ex) => (
+                      <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => setSignsAs(ex)} />
+                    ))}
+                  </ChipGroup>
                 </View>
-                {signsAs.trim() ? (
-                  <Text className="font-serif text-2xl italic text-primary">{fill(o.signsAs.preview, { signsAs: signsAs.trim() })}</Text>
-                ) : (
-                  <Text className="text-sm text-muted-foreground">{o.signsAs.notYetHelp}</Text>
-                )}
+                <View className="min-h-16 justify-center">
+                  {signsAs.trim() ? (
+                    <Text variant="signature" tone="accent" scale={1.3}>
+                      {fill(o.signsAs.preview, { signsAs: signsAs.trim() })}
+                    </Text>
+                  ) : (
+                    <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
+                  )}
+                </View>
+                <ListSection footer={o.dictionary.languagesBody}>
+                  <ListRow
+                    title={copy.settingsHome.languageLabel}
+                    trailing={languageInfo(spoken.primary.code).native}
+                    onPress={() => setLanguageOpen(true)}
+                    accessibilityHint={languageCopy.picker.rowHint}
+                  />
+                </ListSection>
               </>
             )}
 
             {step === 'finish' && (
               <>
-                <Text role="heading" className="font-serif text-5xl leading-[56px] text-foreground">{o.finish.title}</Text>
-                <Text className="text-xl leading-8 text-foreground">{fill(o.finish.body, { child })}</Text>
+                <LineArt name="page" width={168} style={{ marginLeft: -12 }} />
+                <Text ref={heading} variant="hero" asHeading={1}>
+                  {o.finish.title}
+                </Text>
+                <Text variant="body">{fill(o.finish.body, { child })}</Text>
               </>
             )}
           </Animated.View>
 
           {/* Controls never animate in (MOTION principle 2). */}
-          <Button
-            size="lg"
-            disabled={disabled}
-            onPress={step === 'finish' ? finish : next}>
-            <Text>{cta}</Text>
-          </Button>
+          <Button size="lg" fullWidth disabled={disabled} label={cta} onPress={step === 'finish' ? finish : next} />
+          {step === 'welcome' && (
+            <View className="mt-2 gap-1">
+              {/* v1.0 has no accounts (lib/capabilities.ts): no sign-in here; "I was invited" opens co-parent coming soon. */}
+              {capabilities.signIn ? (
+                <Button variant="quiet" fullWidth label={o.welcome.signInButton} onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'sign_in' } })} />
+              ) : null}
+              <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)} />
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
+      <LanguagePicker visible={languageOpen} onClose={() => setLanguageOpen(false)} onSelect={chooseLanguage} selected={spoken.primary.code} />
     </SafeAreaView>
   );
 }

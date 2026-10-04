@@ -4,7 +4,8 @@
  * wasm. Warm the worker with one async open before the first sync read.
  * In development, or in a preview export built with EXPO_PUBLIC_WEB_PREVIEW=1,
  * `?seed=asha` fills the store with the fictional family; `?seed=asha-waiting`
- * does the same with a recording waiting for its words.
+ * does the same with a recording waiting for its words, and `?seed=asha-quiet`
+ * with a kept recording in which nobody spoke.
  */
 import * as SQLite from 'expo-sqlite';
 import { useEffect, useState } from 'react';
@@ -21,8 +22,8 @@ export function useStoreReady(): boolean {
       await warm.closeAsync();
       const preview = __DEV__ || process.env.EXPO_PUBLIC_WEB_PREVIEW === '1';
       const seed = new URLSearchParams(window.location.search).get('seed');
-      if (preview && (seed === 'asha' || seed === 'asha-waiting')) {
-        (await import('./asha-seed')).seedAsha({ waiting: seed === 'asha-waiting' });
+      if (preview && (seed === 'asha' || seed === 'asha-waiting' || seed === 'asha-quiet')) {
+        (await import('./asha-seed')).seedAsha({ waiting: seed === 'asha-waiting', quiet: seed === 'asha-quiet' });
       }
       ready = true;
       if (live) setOk(true);

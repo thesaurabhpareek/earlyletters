@@ -18,66 +18,19 @@
  * the verifier's "duplicates the words immediately before" check proves it.
  */
 import type { Edit } from './types';
-import { FUNCTION_WORDS, tokens, type Token } from './text';
+import { nfc, type Token } from './text';
+import { ENGLISH_RULES, type LanguageRules } from './lang/engine';
+import { REPEAT_ALWAYS, REPEAT_SUGGEST_ONLY } from './lang/english-tables';
 
-/** Doubles of these are never grammatical side by side: always removed. */
-export const REPEAT_ALWAYS = new Set([
-  'the', 'a', 'an', 'i', 'and', 'to', 'it', 'she', 'he', 'we', 'they', 'of', 'but',
-]);
-
-/**
- * Doubles that are sometimes grammatical or emphatic ("so so happy", "my my",
- * "come in in the morning"). Offered to the parent, never removed by default.
- * "had had", "that that" and "her her" are deliberately absent: they are
- * usually grammatical, so even a suggestion would be noise.
+/*
+ * The English tables (REPEAT_ALWAYS, REPEAT_SUGGEST_ONLY, SUBJECT_LEAD,
+ * OBJECT_VERBS, DISCOURSE_AFTER_YOU, CLEFT_OPENERS, DANGLING) live in
+ * lang/english-tables.ts and reach this file through the language rules
+ * (rules.repeat), so every language uses the same decision logic with its
+ * own vetted tables. A language whose repeat table is not signed off has
+ * empty tables here: nothing is removed or suggested.
  */
-export const REPEAT_SUGGEST_ONLY = new Set([
-  'you', 'so', 'is', 'in', 'on', 'at', 'for', 'with', 'from',
-  'my', 'your', 'our', 'their', 'his', 'me', 'them', 'us', 'this',
-]);
-
-/** Before a doubled "you", these mark the start of a clause (subject position). */
-const SUBJECT_LEAD = new Set([
-  'and', 'but', 'so', 'then', 'because', 'cause', 'when', 'while', 'if', 'now', 'today', 'tonight', 'yesterday',
-  'also', 'oh', 'okay', 'ok',
-]);
-
-/**
- * Verbs that take "you" as an object and then often a clause starting with
- * "you": "I told you you were brave". Not even suggested after these.
- */
-const OBJECT_VERBS = new Set([
-  'tell', 'tells', 'told', 'telling', 'promise', 'promised', 'show', 'showed', 'remind', 'reminded', 'ask', 'asked',
-  'bet', 'assure', 'assured', 'warn', 'warned', 'teach', 'taught', 'wish', 'let', 'make', 'made', 'thank', 'thanked',
-  'give', 'gave', 'love', 'loved', 'see', 'saw', 'hear', 'heard', 'want', 'wanted', 'help', 'helped', 'watch',
-  'watched', 'know', 'knew', 'miss', 'missed', 'call', 'called', 'mean', 'meant',
-]);
-
-/** "you know", "you see", "you mean" after a doubled "you" are discourse markers. */
-const DISCOURSE_AFTER_YOU = new Set(['know', 'see', 'mean']);
-
-/** Words that open a pseudo-cleft: "What it was was magic", "All I know is is". */
-const CLEFT_OPENERS = new Set([
-  'what', 'all', 'thing', 'things', 'problem', 'point', 'truth', 'reason', 'question', 'why', 'how', 'where', 'who',
-]);
-
-/**
- * A phrase that ends with one of these cannot be complete, so an immediate
- * repeat of it is a restart: "like a like a little hiccup", "and the and the
- * dog", "I went to I went to the park". Particles that can end a phrase
- * ("come on", "pick up", "her") are deliberately absent.
- */
-const DANGLING = new Set([
-  'a', 'an', 'the', 'my', 'your', 'our', 'their', 'his', 'its', 'to', 'of', 'with', 'for', 'from', 'at', 'and', 'but',
-  'or', 'because', 'into', 'onto',
-]);
-
-const MAX_PHRASE = 4;
-/** Between two copies: spaces and commas only. A sentence break means it was said on purpose. */
-const SOFT_GAP = /^[\s,]*$/;
-/** Inside a phrase: spaces only. */
-const TIGHT_GAP = /^\s+$/;
-const CLAUSE_BREAK = /[.!?;:,।]/;
+export { REPEAT_ALWAYS, REPEAT_SUGGEST_ONLY };
 
 export type RepeatDecision = 'auto' | 'suggest';
 
@@ -86,9 +39,14 @@ export interface RepeatFinding {
   decision: RepeatDecision;
 }
 
-export function findRepeats(raw: string): RepeatFinding[] {
-  const toks = tokens(raw);
-  const lw = toks.map((t) => t.word.toLowerCase());
+export function findRepeats(raw: string, rules: LanguageRules = ENGLISH_RULES): RepeatFinding[] {
+  const R = rules;
+  if (!R.can.removals) return [];
+  const SOFT_GAP = R.softGap;
+  const TIGHT_GAP = R.tightGap;
+  const toks = R.tokens(raw);
+  // NFC, so a precomposed and a decomposed copy of the same word are one word.
+  const lw = toks.map((t) => nfc(t.word).toLowerCase());
   const out: RepeatFinding[] = [];
   const gap = (a: Token, b: Token) => raw.slice(a.end, b.start);
   const taken = (start: number, end: number) => out.some((f) => f.edit.start < end && start < f.edit.end);
@@ -101,7 +59,7 @@ export function findRepeats(raw: string): RepeatFinding[] {
   };
 
   // Phrases first (longest wins), so "like a like a" is one edit, not two.
-  for (let n = MAX_PHRASE; n >= 2; n--) {
+  for (let n = R.repeat.maxPhrase; n >= 2; n--) {
     for (let i = 0; i + 2 * n <= toks.length; i++) {
       const a = lw.slice(i, i + n);
       const b = lw.slice(i + n, i + 2 * n);
@@ -118,7 +76,7 @@ export function findRepeats(raw: string): RepeatFinding[] {
       const next = toks[i + 2 * n];
       const continues = next !== undefined && SOFT_GAP.test(gap(toks[i + 2 * n - 1], next));
       const decision: RepeatDecision | null =
-        continues && DANGLING.has(a[n - 1]) ? 'auto' : a.every((w) => FUNCTION_WORDS.has(w)) ? 'suggest' : null;
+        continues && R.repeat.dangling.has(a[n - 1]) ? 'auto' : a.every((w) => R.isFunctionWord(w)) ? 'suggest' : null;
       if (decision) push(toks[i + n - 1], toks[i + 2 * n - 1], decision);
     }
   }
@@ -128,42 +86,43 @@ export function findRepeats(raw: string): RepeatFinding[] {
     if (w !== lw[i - 1]) continue;
     const between = gap(toks[i - 1], toks[i]);
     if (!SOFT_GAP.test(between)) continue;
-    const decision = singleDecision(raw, toks, lw, i, between);
+    const decision = singleDecision(raw, toks, lw, i, between, R);
     if (decision) push(toks[i - 1], toks[i], decision);
   }
   return out.sort((x, y) => x.edit.start - y.edit.start);
 }
 
 /** Decide for a doubled single word at toks[i-1], toks[i]. */
-function singleDecision(raw: string, toks: Token[], lw: string[], i: number, between: string): RepeatDecision | null {
+function singleDecision(raw: string, toks: Token[], lw: string[], i: number, between: string, R: LanguageRules): RepeatDecision | null {
   const w = lw[i];
-  if (REPEAT_ALWAYS.has(w)) return 'auto';
+  const T = R.repeat;
+  if (T.always.has(w)) return 'auto';
 
-  if (w === 'was') {
+  if (T.cleftWords.has(w)) {
     // "she was was walking" is a stumble; "what it was was magic" is grammar.
-    const sentence = sentenceWordsBefore(raw, toks, lw, i - 1);
-    return sentence.some((x) => CLEFT_OPENERS.has(x)) ? null : 'auto';
+    const sentence = sentenceWordsBefore(raw, toks, lw, i - 1, R);
+    return sentence.some((x) => T.cleftOpeners.has(x)) ? null : 'auto';
   }
 
-  if (w === 'you') {
+  if (T.subjectWords.has(w)) {
     const prev = i >= 2 ? lw[i - 2] : null;
-    if (prev && OBJECT_VERBS.has(prev)) return null; // "I told you you were brave"
-    const atClauseStart = i < 2 || CLAUSE_BREAK.test(raw.slice(toks[i - 2].end, toks[i - 1].start)) || SUBJECT_LEAD.has(prev!);
+    if (prev && T.objectVerbs.has(prev)) return null; // "I told you you were brave"
+    const atClauseStart = i < 2 || R.clauseBreak.test(raw.slice(toks[i - 2].end, toks[i - 1].start)) || T.clauseLeads.has(prev!);
     const next = lw[i + 1];
-    const discourse = next !== undefined && DISCOURSE_AFTER_YOU.has(next);
+    const discourse = next !== undefined && T.discourseAfter.has(next);
     // A stumble leads on to a verb in the same sentence; "You you!" alone may be pointing and laughing.
-    const continues = next !== undefined && SOFT_GAP.test(raw.slice(toks[i].end, toks[i + 1].start));
+    const continues = next !== undefined && R.softGap.test(raw.slice(toks[i].end, toks[i + 1].start));
     // "today you you held the spoon": both copies would be the subject.
-    if (atClauseStart && continues && !discourse && /^\s+$/.test(between)) return 'auto';
+    if (atClauseStart && continues && !discourse && R.tightGap.test(between)) return 'auto';
     return 'suggest';
   }
 
-  return REPEAT_SUGGEST_ONLY.has(w) ? 'suggest' : null;
+  return T.suggest.has(w) ? 'suggest' : null;
 }
 
 /** Lowercased words from the start of the sentence up to (not including) toks[upto]. */
-function sentenceWordsBefore(raw: string, toks: Token[], lw: string[], upto: number): string[] {
+function sentenceWordsBefore(raw: string, toks: Token[], lw: string[], upto: number, R: LanguageRules): string[] {
   let s = upto;
-  while (s > 0 && !/[.!?।]/.test(raw.slice(toks[s - 1].end, toks[s].start))) s--;
+  while (s > 0 && !R.sentenceEndRe.test(raw.slice(toks[s - 1].end, toks[s].start))) s--;
   return lw.slice(s, upto);
 }

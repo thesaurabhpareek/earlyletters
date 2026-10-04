@@ -40,9 +40,9 @@
 # any value that contains ": " or " #".
 
 schema_version: 1
-as_of: "2026-10-03"
+as_of: "2026-10-04"
 classification: docs/legal/DATA_CLASSIFICATION.md
-schema_basis: "supabase/migrations as changed by PR #32 (fix/db-pending-hardening): server entitlement tables removed (founder decision 3)"
+schema_basis: "supabase/migrations on develop at 8896000 (12 files), plus the differences open PR #32 (fix/db-pending-hardening) would make (book_children view, children.client_created_at, child_invites.code_hash); server entitlement tables are gone on develop (20261004000000_plus_on_device_only.sql, founder decision 3)"
 release_scope: "v1.0 (iOS, TestFlight first). Decision 9: no audio upload in v1.0; decision 3: purchases only on the device with Apple; decision 12: analytics opt-in"
 
 # Changes in open pull requests that this map already reflects. The checker
@@ -51,14 +51,9 @@ release_scope: "v1.0 (iOS, TestFlight first). Decision 9: no audio upload in v1.
 pending_changes:
   - pr: 32
     branch: fix/db-pending-hardening
-    note: "Removes server entitlements (founder decision 3) and adds the book_children view (D-039)"
+    note: "Adds the book_children view (D-039), children.client_created_at and child_invites.code_hash, and drops profiles.first_run_closed_at. Its entitlement-table removal is already on develop through 20261004000000_plus_on_device_only.sql"
     adds: [book_children, children.client_created_at, child_invites.code_hash]
     removes: [app_account_tokens, store_subscriptions, store_notifications, profiles.first_run_closed_at]
-  - pr: 31
-    branch: fix/analytics-enums-core
-    note: "Renames ordinal to child_ordinal and replaces child_added.mode with has_date (PDATA-10, PPRIV-02); levels stay L2"
-    adds: [analytics.events.child_added.has_date, analytics.events.child_added.child_ordinal, analytics.events.child_switched.child_ordinal, analytics.events.child_setting_changed.child_ordinal]
-    removes: [analytics.events.child_added.mode, analytics.events.child_added.ordinal, analytics.events.child_switched.ordinal, analytics.events.child_setting_changed.ordinal]
 
 hosts:
   - id: supabase
@@ -77,7 +72,7 @@ hosts:
     role: processor
     level: L3
     purpose: "Transactional email: sign-in links, notices, and the hello@ mailbox"
-    retention: "Provider message logs; period not recorded in this repo"
+    retention: "Sent-message data kept 30 days (DATA_CLASSIFICATION 4.8)"
     deletion_path: "Provider log deletion; route not documented yet"
     leaves_device: true
     status: in_code
@@ -105,7 +100,7 @@ hosts:
     status: in_code
     verified: decision
   - id: pack_cdn
-    name: "Language pack and speech model host (Apple-hosted assets or a low-egress CDN; not chosen)"
+    name: "Language pack and speech model host (Cloudflare R2 candidate pending Q-001; Hugging Face for pinned upstream models; D-046, D-065)"
     role: vendor
     level: L3
     purpose: "Downloads speech models and non-English language packs on demand (decision 15)"
@@ -136,7 +131,7 @@ hosts:
     leaves_device: true
     status: planned
     verified: code
-    notes: "Listed in subprocessors.md and ADR 0008. Not installed anywhere in this repo on as_of"
+    notes: "Listed in subprocessors.md and ADR 0008. Not in the v1.0 app and not installed anywhere in this repo on as_of; when added: scrubbed, same consent switch as analytics"
   - id: powersync
     name: "PowerSync Cloud"
     role: processor
@@ -147,7 +142,7 @@ hosts:
     leaves_device: true
     status: not_used
     verified: doc
-    notes: "D-023 recommends an outbox sync on expo-sqlite instead; if the founder confirms, PowerSync is not used. Not installed"
+    notes: "D-023: sync is an outbox upload and cursor pull through Supabase RPCs (migration 20261004100000_sync_engine.sql); PowerSync is not used. Not installed"
   - id: apple
     name: "Apple (Sign in with Apple, App Store and StoreKit, APNs)"
     role: independent
@@ -241,7 +236,7 @@ storage_buckets:
     verified: doc
 
 postgres:
-  notes: "Columns and levels must match the COMMENT ON COLUMN labels in the migrations; the checker compares them. purge_due exists in the migrations but no schedule is created (the cron line is commented out), and the deletion worker Edge Function is not built, so deletion paths that rely on them are planned work"
+  notes: "Columns and levels must match the COMMENT ON COLUMN labels in the migrations; the checker compares them. Only schema public is compared: the ops schema (deletion worker, migration 20261004200000) and the insights schema (k-anonymised aggregates, migration 20261004300000) are described in DATA_CLASSIFICATION 4.1.2 and 4.9 and are not yet in this map. purge_due exists in the migrations but no schedule is created (the cron line is commented out), and the deletion worker Edge Function is not built, so deletion paths that rely on them are planned work"
   auth:
     - name: auth.users and auth.identities
       level: L3
@@ -279,6 +274,9 @@ postgres:
       leaves_device: true
       verified: code
       columns:
+        language: L4
+        sync_xid: L2
+        sync_restored_from: L2
         id: L3
         child_id: L3
         author_id: L3
@@ -692,6 +690,67 @@ postgres:
         done_at: L2
         next_attempt_at: L2
         last_error_code: L2
+    - name: sync_epochs
+      kind: table
+      created_in: 20261004100000_sync_engine.sql
+      status: pending_apply
+      level: L2
+      purpose: "Restore epochs: a phone that sees a newer epoch re-uploads and never deletes"
+      retention: "Kept; a handful of rows for the life of the database"
+      deletion_path: "None needed: holds no person or child data"
+      leaves_device: true
+      verified: code
+      columns:
+        epoch: L2
+        started_at: L2
+        restore_point: L2
+        reason: L2
+    - name: sync_op_receipts
+      kind: table
+      created_in: 20261004100000_sync_engine.sql
+      status: pending_apply
+      level: L3
+      purpose: "Ids of applied sync ops, so a retried op is applied once"
+      retention: "30 days (sync_push trims the caller's own rows; sync_housekeeping trims the rest)"
+      deletion_path: "Removed with the person (cascade) and by the 30-day trim"
+      leaves_device: true
+      verified: code
+      columns:
+        op_id: L2
+        profile_id: L3
+        applied_at: L2
+    - name: sync_rate_windows
+      kind: table
+      created_in: 20261004100000_sync_engine.sql
+      status: pending_apply
+      level: L3
+      purpose: "Per-person request counters for server-side rate limits; written only by rate_hit(); unlogged"
+      retention: "1 day (sync_housekeeping)"
+      deletion_path: "Removed with the person and by the 1-day trim"
+      leaves_device: true
+      verified: code
+      columns:
+        profile_id: L3
+        bucket: L2
+        window_start: L2
+        hits: L2
+    - name: idempotency_keys
+      kind: table
+      created_in: 20261005000000_family_cap_language_idempotency.sql
+      status: pending_apply
+      level: L3
+      purpose: "Idempotency keys of write RPCs (ADR 0017): one row per person and key; results hold ids only, never tokens or text"
+      retention: "24 hours (sync_housekeeping)"
+      deletion_path: "Removed with the person (cascade) and by the 24-hour trim"
+      leaves_device: true
+      verified: code
+      columns:
+        profile_id: L3
+        idem_key: L2
+        fn: L2
+        request_sha256: L2
+        result: L3
+        created_at: L2
 
 device_sqlite:
   file: "scribe.db in the app sandbox (apps/mobile/src/lib/store.ts, migrator apps/mobile/src/lib/db/migrations.ts)"
@@ -731,6 +790,11 @@ device_sqlite:
         audio_sha256: L4
         audio_bytes: L2
         transcript_status: L2
+        server_version: L2
+        server_updated_at: L2
+        server_epoch: L2
+        sync_state: L2
+        approval: L2
     - name: children
       level: L4
       purpose: "Each child's book on this phone"
@@ -751,6 +815,10 @@ device_sqlite:
         created_at: L2
         updated_at: L2
         hidden_at: L2
+        role: L3
+        created_by_me: L2
+        nickname: L4
+        server_state: L2
     - name: drafts
       level: L4
       purpose: "Capture in progress, so a crash never loses a recording or typed words"
@@ -799,6 +867,60 @@ device_sqlite:
         key: L2
         value: L4
 
+    - name: sync_outbox
+      level: L4
+      purpose: "Ordered upload queue of ops waiting to reach the server; the payload is the op exactly as sent and can hold letter text"
+      retention: "Until the server accepts the op, then removed"
+      deletion_path: "Removed on acknowledgement, at sign-out and with the app"
+      leaves_device: false
+      status: in_code
+      verified: code
+      notes: "The queue is the path by which letters leave the phone once sign-in and sync consent exist. Never logged"
+      columns:
+        seq: L2
+        op_id: L2
+        lane: L2
+        type: L2
+        entity_id: L3
+        book_id: L3
+        payload: L4
+        created_at: L2
+        attempts: L2
+        next_attempt_at: L2
+        sent_at: L2
+    - name: rejected_writes
+      level: L4
+      purpose: "Ops the server refused for good, kept so nothing is silently lost (DATA-REQ-043)"
+      retention: "Until the person has seen them and chosen what to do, and in export"
+      deletion_path: "Removed after the person resolves them; deleting the app"
+      leaves_device: false
+      status: in_code
+      verified: code
+      columns:
+        op_id: L2
+        type: L2
+        entity_id: L3
+        payload: L4
+        code: L2
+        rejected_at: L2
+        seen_at: L2
+    - name: sync_books
+      level: L4
+      purpose: "One row per book this phone pulls: sync position, access signature, member list and the birthday month and day shown to contributors"
+      retention: "While the person is a member of the book"
+      deletion_path: "Removed when the person leaves or is removed, at sign-out and with the app"
+      leaves_device: false
+      status: in_code
+      verified: code
+      columns:
+        child_id: L3
+        cursor: L2
+        access: L3
+        meta_hash: L4
+        members: L3
+        birthday_md: L4
+        state: L2
+        want_ids: L2
 device_kv:
   - key: activeChildId
     store: settings
@@ -874,8 +996,71 @@ device_kv:
     verified: code
   - key: readTogether.sessions
     store: settings
+    level: L3
+    purpose: "Count of free Read together sessions used; stored per book as readTogether.sessions.<book id>, so the key holds a book id (L3)"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: content.dismissed
+    store: settings
     level: L2
-    purpose: "Count of free Read together sessions used"
+    purpose: "Dismissed content-block ids (server content keys)"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: auth.lastMethod
+    store: settings
+    level: L2
+    purpose: "Last sign-in method (apple, google, email, passkey)"
+    retention: "Until sign-out or the app is deleted"
+    deletion_path: "Cleared at sign-out; deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: family.coParentNotify
+    store: settings
+    level: L2
+    purpose: "Day the person tapped the Tell me when it is here button on co-parent coming soon; stays on the phone and is never sent"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: speech.language
+    store: settings
+    level: L4
+    purpose: "The author's primary speech language (a person's language, PRD 7.10)"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: speech.memoryFailures
+    store: settings
+    level: L2
+    purpose: "Model tier fallback count"
+    retention: "Until the app is deleted"
+    deletion_path: "Deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: speech.jobRunning
+    store: settings
+    level: L2
+    purpose: "Transcription job marker"
+    retention: "While a job runs"
+    deletion_path: "Cleared when the job ends; deleting the app"
+    leaves_device: false
+    status: in_code
+    verified: code
+  - key: player.original
+    store: settings
+    level: L2
+    purpose: "Play the original recording instead of the listening copy"
     retention: "Until the app is deleted"
     deletion_path: "Deleting the app"
     leaves_device: false
@@ -1117,51 +1302,38 @@ analytics:
       first_letter_mode: L2
       time_to_first_letter: L2
       came_from_invite: L2
-    intro_story_view:
-      index: L2
-      via: L2
-      variant: L2
-    intro_paused:
-      index: L2
-    intro_skipped:
-      index: L2
-    intro_action:
-      action: L2
-      stories_seen: L2
     auth_sheet_shown:
       trigger: L2
     auth_method_selected:
       method: L2
     auth_succeeded:
       method: L2
-      new_user: L2
       had_local_data: L2
-      linked_existing: L2
     auth_failed:
       method: L2
       reason: L2
     auth_email_sent:
       attempt: L2
-    auth_email_verified:
-      via: L2
     auth_deferred:
       trigger: L2
+    signed_out:
+      reason: L2
     invite_opened:
       via: L2
       signed_in: L2
     local_merge_choice:
       choice: L2
     child_added:
-      mode: L2
-      ordinal: L2
+      has_date: L2
+      child_ordinal: L2
       in_first_run: L2
       added_together: L2
     child_switched:
-      ordinal: L2
+      child_ordinal: L2
       surface: L2
     child_setting_changed:
       key: L2
-      ordinal: L2
+      child_ordinal: L2
     make_it_yours_card:
       card: L2
       action: L2
@@ -1186,10 +1358,6 @@ analytics:
       audio_bucket: L2
       latency_bucket: L2
       outcome: L2
-    model_download:
-      stage: L2
-      model: L2
-      network: L2
     letter_saved:
       mode: L2
       destination: L2
@@ -1200,6 +1368,7 @@ analytics:
       words_bucket: L2
       machine_edit_count: L2
       edits_reverted_count: L2
+      edits_rejected_count: L2
       engine: L2
       from_notification_2h: L2
     review_action:
@@ -1207,9 +1376,24 @@ analytics:
     machine_edit_reverted:
       edit_type: L2
       source: L2
+    machine_edit_rejected:
+      edit_type: L2
+      source: L2
+      reason: L2
+      count: L2
     letter_deleted:
       action: L2
       destination: L2
+    language_set:
+      lang: L2
+      action: L2
+    pack_download:
+      pack: L2
+      lang: L2
+      pack_version: L2
+      stage: L2
+      failure: L2
+      network: L2
     book_opened:
       child_ordinal: L2
       letters_bucket: L2
@@ -1220,6 +1404,7 @@ analytics:
     playback_started:
       surface: L2
       author_relation: L2
+      version: L2
     read_together_started:
       child_ordinal: L2
       access: L2
@@ -1233,11 +1418,14 @@ analytics:
     invite_created:
       role: L2
       channel: L2
-      large_print: L2
+      shared: L2
       child_ordinal: L2
     invite_accepted:
       role: L2
       surface: L2
+    invite_failed:
+      stage: L2
+      reason: L2
     family_letter_reviewed:
       decision: L2
     member_removed:
@@ -1255,6 +1443,7 @@ analytics:
     reminder_schedule_set:
       cadence: L2
       hour_bucket: L2
+      paused: L2
     reminder_sent:
       type: L2
       variant_id: L2
@@ -1271,33 +1460,32 @@ analytics:
       kind: L2
     settings_changed:
       key: L2
-    backup_mode_set:
-      mode: L2
     export_started:
       format: L2
+      letters_bucket: L2
     export_completed:
       format: L2
       size_bucket: L2
       duration_bucket: L2
+    export_failed:
+      format: L2
+      reason: L2
+    export_shared:
+      result: L2
     account_deletion:
       stage: L2
     plus_offer_viewed:
       trigger: L2
-      arm: L2
-    plus_offer_dismissed:
+    plus_offer_closed:
       trigger: L2
-    purchase_started:
-      product: L2
-      trigger: L2
-    trial_started:
-      product: L2
-    purchase_succeeded:
-      product: L2
-    purchase_failed:
-      error_class: L2
+      outcome: L2
+    plan_changed:
+      from_state: L2
+      to_state: L2
+      period: L2
+      ownership: L2
     restore_result:
       outcome: L2
-    gift_purchased: {}
     error_shown:
       code: L2
     sync_failed:
