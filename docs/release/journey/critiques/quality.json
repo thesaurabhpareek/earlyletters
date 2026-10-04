@@ -1,0 +1,961 @@
+{
+ "J00-open": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-04": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The promise says \"read each letter and fix anything we got wrong\", but after Save there is no way to edit a letter (letter/[id].tsx has no edit action; only Review has \"Change words\"). From code reading, not observed on a phone. The promise is only half keepable.",
+    "fix": "Either add \"Change words\" on the letter page (stored as a person edit, raw untouched) or soften the line. Test: [A-REQ] letter edit keeps raw_transcript and records an edit row.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J01-05": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Continue is disabled with no reason given (onboarding.tsx:~199 `disabled`; TextField supports an `error` prop but none is passed). A VoiceOver user hears \"dimmed\" and nothing else. If a second child field is added and left blank, Continue stays off with no explanation until the blank field is removed.",
+    "fix": "Pass a visible, announced helper (\"Add a name to continue\") when the person taps the disabled area or leaves a blank field. Test: component test on the child step with blank first and second names; VoiceOver script step.",
+    "owner": "design-systems"
+   }
+  ]
+ },
+ "J01-06": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The 60 limit is `v.slice(0, 60)` on UTF-16 code units (onboarding.tsx:114). A paste that ends in an emoji or a multi-code-point name can be cut mid-character and store a lone surrogate. Silent: no counter, no message. The 30-character signature has the same slice. Long names in the Book title, Review dateline and printed book at AX5 not observed.",
+    "fix": "Truncate by code point/grapheme (Array.from) and NFC-normalise. Unit tests with emoji, ZWJ sequences, Devanagari conjuncts and 90 letters; check the Book title at AX5 on device.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J01-07": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The birthday silently defaults to today (onboarding.tsx:79). A parent of a 7-month-old who does not touch the picker saves birthday = today: every letter is placed in \"Asha, 0 days / first weeks\", prompts are chosen for a newborn, and exports carry the wrong age. There is no confirmation and, see J03-07, no screen to correct it afterwards.",
+    "fix": "Start with no date selected and require an explicit choice, or show \"Born today?\" confirmation when the date equals today. Test: onboarding cannot finish with the untouched default; E2E-02 variant.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J01-08": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Expecting parents: due date is stored with birthday = null. There is no UI that ever converts a due date to a birthday (updateChild is only called for the reminders switch: children/[id].tsx:~61; rows at :51-53 have no onPress). monthFor() returns null without a birthday, so after the baby arrives every letter stays under \"Before you\" and the Book never gets month chapters. The picker also blocks past due dates, so an overdue baby forces \"Birthday\". The 305-day limit and future-birthday block could not be observed on web (native picker).",
+    "fix": "Add an edit screen for name, birthday/due date, signature, and prompt \"Has the baby arrived?\" after the due date. Tests: due date passed then set birthday re-chapters existing letters; picker max/min on device.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J01-09": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Identical names (\"Asha\", \"asha\") are accepted for twins and later add-child; the switcher and Review header then cannot tell the books apart. Up to 6 fields; a blank extra field disables Continue (see J01-05).",
+    "fix": "Warn on case-insensitive duplicates within a first run and on add-child. Unit test on the name list.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J01-10": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Signature capped silently at 30 characters (onboarding.tsx slice(0,30)); it is stamped onto every letter at save time (authorSignsAs) and cannot be changed later (no edit UI, J03-07), so a typo is permanent on all future letters.",
+    "fix": "Edit screen for signature (affects new letters only, old letters keep theirs by design); show the cap. Test: rename does not rewrite old letters.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J01-11": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-12": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Choosing a language in the sheet starts only the text-rules pack (onboarding.tsx chooseLanguage). The 575 MB speech model is not announced or prefetched here, and with the default language no event fires, so the person first learns of the download in Review (J05-03). Which host serves the model matters: the English/multilingual model URL is huggingface.co with no mirror (catalog.ts:115 `mirrors: []`). Hindi and Chinese use the shared multilingual model until the self-hosted files exist; their accuracy is unmeasured here.",
+    "fix": "Offer \"Get speech ready on Wi-Fi\" after first run (one tap, resumable) and add a mirror. Test: pack engine resume and mirror failover (exists in packs tests; add a catalog host-reachability check in nightly CI).",
+    "owner": "speech"
+   }
+  ]
+ },
+ "J01-13": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "finish() (onboarding.tsx:118) has no in-flight guard. A double tap before router.replace completes calls addChild twice per name: duplicate books with the same name, and no way to delete a book (only \"Hide\"). Any throw from the synchronous SQLite call (disk full, I/O error) is uncaught in an event handler, which is fatal in a release build (no error boundary).",
+    "fix": "Guard with a ref, wrap in try/catch with a calm retry card, make creation idempotent per first run. Tests: double-invoke finish creates one book per name; failing addChild shows the card.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J01-14": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Tonight reads the whole book (`listEntries()` = SELECT * plus JSON parse of every row) on every focus and store change (index.tsx:~58) just to get recent prompt keys and days since the last letter. Fine with 1 letter, unmeasured at 1,800 letters (5 years); no perf test.",
+    "fix": "Query only prompt_key (last N) and max(occurred_on). Add a 2,000-letter fixture to the perf harness with a focus-to-render budget.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J02-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J02-02": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The under-18 stop is stored only in the local settings table. Deleting and reinstalling the app clears it and the person can answer Yes at once. Inherent to a no-account app, but the \"cannot be retried by restarting\" claim in the journey note only holds for restarts.",
+    "fix": "State the limitation in the compliance register; optionally store the stop in the Keychain (survives reinstall). Test: Keychain stop survives app data reset on device.",
+    "owner": "security"
+   }
+  ]
+ },
+ "J02-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J02-04": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The 24-hour block uses the device clock (age-gate.logic.ts). Moving the clock forward re-opens the question (this is how the step was captured); moving it back is handled and tested. Accepted risk for a self-declared gate.",
+    "fix": "Document as accepted in the compliance register; keep test [LEGAL-REQ-002] for backward clock.",
+    "owner": "security"
+   }
+  ]
+ },
+ "J02-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Twins can be given the same name (see J01-09).",
+    "fix": "See J01-09.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J03-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-05": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Switch child has a gate budget of p95 300 ms offline (PRD 7.1, PRD-REQ-012). Every store change re-queries the whole book in each mounted tab and there is no automated timing of this path.",
+    "fix": "Add a timed switch-child test in the device run and a perf assertion on the 2,000-letter fixture.",
+    "owner": "qa"
+   }
+  ]
+ },
+ "J03-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-07": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Name, birthday/due date and signature rows are read-only: `<ListRow title=... trailing={name} />` with no onPress (settings/children/[id].tsx:51-53). Nothing else in the app calls updateChild for them. A misspelt name, the wrong date (see J01-07) or a wrong signature can never be corrected, and the child name drives the dictionary that \"fixes\" misheard names. \"Hide this book\" is the only removal, so a duplicate or mistaken book stays forever. The Alert for Hide is native and was not observed on web.",
+    "fix": "Ship an edit form for name, date and signature (validation as in first run) and a delete-empty-book action with confirm. Tests: edit updates dictionary and chapters; hide/unhide round trip; [PRD-REQ-012].",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J03-08": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Plus purchase states (cancelled, pending/ask to buy, offline, failed, already owned) are not observable on web. Automated coverage is the plan logic only (test/billing-plan.test.ts); StoreKit paths rely on the manual device plan (D-1 to D-12) which has not been run.",
+    "fix": "Run StoreKit config tests (E2E-14) and record evidence in docs/qa/evidence. Add a store failure state to the sheet copy review.",
+    "owner": "qa"
+   }
+  ]
+ },
+ "J03-09": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J04-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Only the first draft is shown (`listDrafts(childId)[0]`, index.tsx:52). Kill-recovered takes, re-attached stray recordings and abandoned drafts queue up behind it with no count, no list, and (J06-12) no way to discard.",
+    "fix": "Show a Drafts list or count with open/discard. Test: three drafts all reachable.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J04-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J04-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J04-04": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The consent sheet and the Settings switch promise \"usage and crash reports... when something crashes\" (strings.en.ts:676, :713) but v1.0 has no crash reporter: PostHog errorTracking autocapture is off (packages/analytics/src/posthog.ts:190) and Sentry is not installed. Saying yes sends no crash data. Claim accuracy (LEGAL-REQ-044) and founder visibility of crashes both fail.",
+    "fix": "Either wire a scrubbed crash reporter that only starts on consent, or change the copy to \"usage only\". Add a claims-registry test that every claim has an implementation. Use App Store Connect/Xcode Organizer for crash-free rate meanwhile.",
+    "owner": "privacy"
+   }
+  ]
+ },
+ "J04-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Recording start failures are all shown as \"We can't hear you yet / microphone is off\": start().catch sets phase denied (listen.tsx:118-120). Real causes (audio session busy during a phone call, prepareToRecord failing on low storage, media services reset) are mislabeled, and the card sends the person to Settings. From code reading, not observed.",
+    "fix": "Distinguish permission denied from recorder error; show \"could not start, try again / check free space\" with Type instead. Test: injected prepareToRecordAsync failure shows the error card, not the permission card.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "major",
+    "text": "No keep-awake during recording (expo-keep-awake is used only by export). With Auto-Lock at 30 s, the screen locks mid-letter, AppState goes to background and the take is stopped and kept (listen.tsx:129). Durable, but a parent talking for 2 minutes is cut off silently and Review opens when they next unlock. Not observable on web; verify on iPhone.",
+    "fix": "Activate keep-awake while phase is recording/paused; announce in the DEVICE_TEST_PLAN. Test: manual lock test at 30 s auto-lock.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "major",
+    "text": "Killed or crashed takes: AVAudioRecorder M4A has its index written on stop, so a file from a killed take may not play. The sweep marks any non-empty file \"ready\" (sweep.logic.ts) without checking it decodes, TDD 03 risk R-4 (\"Unknown / High\"), and the PRD 7.4 kill-during-save gate (500 iterations) has not been run (no evidence in docs/qa/evidence). Interruptions (call, Siri) and low storage were not observed.",
+    "fix": "Run the 500-kill gate; on sweep, open the file with AVAudioFile and mark unreadable files \"unrecoverable\" while keeping them; fall back to ADTS+remux if the gate fails. Test: sweep fixture with truncated M4A.",
+    "owner": "speech"
+   },
+   {
+    "sev": "minor",
+    "text": "No free-space preflight before recording; Paths.availableDiskSpace is checked only for export and pack downloads. A full phone fails inside the recorder or SQLite, with no designed message. Metering is polled at 20 Hz into React state (listen.tsx useAudioRecorderState(...,50)): battery and re-render cost over a 10-minute take unmeasured.",
+    "fix": "Check free space (e.g. under 100 MB) before beginTake and show a calm card; measure CPU/energy of a 10-minute take with Instruments.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J05-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-03": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The first spoken letter has no words until a 575 MB model downloads (J14-01); the download starts at the first Review (requestWords -> requestSpeechFor), waits for Wi-Fi by default, and \"Writing down what you said\" has no timeout or time estimate. Recovery exists (Keep voice, Type instead, Close) and nothing is lost, but the first-run \"magic\" moment depends on a large download with no prefetch. Review without the model on web is a web artifact; the real transcription time (PRD: 2-minute letter 30 s on iPhone SE 3) is unmeasured.",
+    "fix": "Prefetch speech after first run on Wi-Fi, show \"Getting ready, about N minutes\" and a retry hold state; measure transcription time on SE 3 (BL-043). Test: queue machine tests for pack wait exist; add device timing evidence.",
+    "owner": "speech"
+   }
+  ]
+ },
+ "J05-04": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "After enabling the microphone in iOS Settings and returning, the card stays until Close and re-tap: the denied state has no AppState re-check (listen.tsx only registers the background handler for recording). The OS prompt appears on entering Listen without an in-app priming sheet (LEGAL-REQ-007 asks for an explanation first; the promise screen carries it).",
+    "fix": "Re-check permission on foreground and continue automatically; confirm priming copy with counsel. Test: DEVICE_TEST_PLAN denied -> allow -> return.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "major",
+    "text": "Deep link can start a recording: `scribe://listen` (and /review, /write, /read-together) passes through redirectSystemPath unchanged (+native-intent.tsx:72 `route: opts.path`; entry.logic.ts), and Listen starts the recorder on mount without a tap (listen.tsx useEffect start()). A link in Safari or another app can therefore open the app on the microphone permission prompt and begin recording once permission exists. LEGAL-REQ-011 says the app never auto-starts recording. From code reading, not tried.",
+    "fix": "Allowlist routes in redirectSystemPath (everything except invite/auth goes to \"/\"), and require an in-app navigation token for /listen. Test: classifyIncomingUrl/planIncomingLink returns \"/\" for /listen, /review, /write.",
+    "owner": "security"
+   }
+  ]
+ },
+ "J05-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-08": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "A Finish tapped at once (or a 0-byte take) opens Review in the \"waiting\" state showing the transcription-failed heading (review.tsx phase waiting uses copy.errors.transcriptionFailed) when the real cause is an empty recording. The only actions are Type instead, Close, or \"keep the recording\" (which saves an empty recording as a letter). Review has no discard, so accidental takes pile up as drafts (J04-01, J06-12).",
+    "fix": "Detect empty/under-1-second takes and offer \"Let it go\" plus a correct message. Test: finalizeTake with 0 bytes shows discard, and discard deletes the file only after confirm.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J05-09": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "No maximum length (0.48 MB/min, so a 3-hour take is about 86 MB) and transcription memory for very long takes is unmeasured (Part n of m chunks exist). The \"still here\" line and the once-a-minute VoiceOver announcement could not be observed (web fake mic, no meter).",
+    "fix": "Soft cap or warning at 30 minutes; run a 60-minute take through the queue on SE 3 for memory (resident estimate 1 GB for the turbo model). Test: device run.",
+    "owner": "speech"
+   }
+  ]
+ },
+ "J06-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The sticky two-button footer plus the scroll content at AX5 Dynamic Type may leave little scroll area (screenshot shows the links row clipped under the footer at default size). Not observable on web.",
+    "fix": "Check Review at AX5 on device; collapse footer to one row at large sizes. Test: E2E-15 AX5 screenshots.",
+    "owner": "design-systems"
+   }
+  ]
+ },
+ "J06-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-08": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Changed words live only in component state (review.tsx:135 userText). Tapping Close, or the app being killed, drops the person's corrections with no warning; the draft remains but the edits do not. There is no maxLength on the edit field, and the saved machine_edits no longer replay to the hand-edited final_text, with no marker that a person edited it.",
+    "fix": "Persist edits to the draft (autosave like Write), warn on Close, record a user-edit marker in the edit log, cap length. Tests: kill during edit restores text; export shows user_edited.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J06-09": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-10": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The saved card auto-closes after 900 ms (review.tsx:290), a time limit for screen reader users (WCAG 2.2.1). A failed save shows only the generic \"something went wrong\" line with no retry button (save stays on Review; draft intact).",
+    "fix": "Do not auto-dismiss when VoiceOver is on; add a Try again button to the failure line. Test: save with injected DB error leaves draft and shows retry.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J06-11": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-12": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Close keeps the draft (good for durability) but there is no way to discard a draft after Finish: \"Let it go\" exists only on the Listening screen. A mistaken or private recording sits on Tonight as \"waiting to be read back\" forever and its audio stays on the phone and in the iCloud backup.",
+    "fix": "Add \"Let it go\" (confirmed) on Review and Tonight. Test: discard deletes row and file, only after confirm; kill during discard is safe.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J06-13": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "No maxLength on the typed letter. A multi-hundred-thousand character paste is accepted and stored; the server limit (20,000 chars, per TDD 06) would later reject it when sync turns on.",
+    "fix": "Cap at a generous limit with a calm message. Test: 100k paste handled without jank.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J07-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Autosave is a 500 ms trailing debounce with no max wait and no AppState flush (write.tsx:73). If the app is suspended or killed mid-typing, up to the last unsaved burst is lost. persist() runs inside setTimeout with no try/catch: a SQLite error (disk full) throws uncaught, which is fatal in release, and the typed letter in memory is lost entirely.",
+    "fix": "Flush on AppState background, add a 3 s max wait, catch errors and show \"could not save, copy your text\". Tests: unit test for debounce flush; failing setDraftTyped does not crash.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J07-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J08-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J08-02": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The \"Not much today\" line is a system template stored as an entry with raw_transcript and final_text set to machine text (index.tsx:95 keepNotMuch), which exports as a typed note. Tapping again after returning to Tonight adds another note the same day. It is not the person's words but the schema presents it as such.",
+    "fix": "Store notes with an explicit system_generated flag or no raw text, de-duplicate per day. Test: export marks it and one per day.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J08-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J09-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J09-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J09-03": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The Book loads every entry of the child (SELECT *, JSON.parse of machine_edits) on mount, on every store change, and again on focus to count letters (book.tsx useFocusEffect), and renders them in one SectionList with no paging. Budget \"chapter of 60 letters p95 500 ms\" has no test and 1,800 letters has no fixture.",
+    "fix": "Count with SQL, page by chapter, and add a perf test with a 5-year Asha fixture. Measure scroll on SE 3.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J09-04": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "See J10-09: when words arrive in the background they are set without review.",
+    "fix": "See J10-09.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J09-05": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "\"Nobody spoke\" is final: there is no Try again on the letter page, although a quiet voice or a baby sound may have been judged silence by VAD. The recording is kept.",
+    "fix": "Offer \"Try writing it down again\" on no-speech letters. Test: retry re-enqueues and sets words once.",
+    "owner": "speech"
+   }
+  ]
+ },
+ "J10-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The letter page reads the entry once (useState(getEntry)) and does not subscribe to the store, so a waiting letter does not update when words arrive until reopened. \"Recording on this phone\" is shown for every spoken letter even when the file is missing (the capture shows both that line and \"not on this phone\").",
+    "fix": "Subscribe to the store; show the recording line from availabilityOf. Test: letter page updates on setWordsForWaitingEntry; missing file hides the line.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J10-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-04": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Large print and every other reading size could only be seen at 402 px with the text-size setting inside the app; iOS Dynamic Type up to AX5 (LEGAL-REQ-051, A-NFR-005) was not observed, and no automated AX5 check exists in CI.",
+    "fix": "Add AX5 screenshots to E2E-15 and a manual VoiceOver pass per DEVICE_TEST_PLAN.",
+    "owner": "qa"
+   }
+  ]
+ },
+ "J10-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-06": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "Delete is immediate and Undo exists only while the person stays on this screen (letter/[id].tsx:143, store.ts:641 tombstone). Back, a swipe, a kill or the call ending removes the only way back: there is no \"Recently deleted\" screen (undeleteEntry is called only from this toast). The letter and its recording are still on the phone, but hidden from the Book, Read together and export (build.logic.ts:9). So an accidental delete is permanent to the person, and a deliberate delete is not honoured either: audio and text stay on disk and in the iCloud backup forever (no local purge).",
+    "fix": "Add a confirm or a Recently deleted list with 30-day restore and a real local purge (file plus row). Tests: delete, relaunch, restore from list; purge removes the file; E2E-08 extended; export includes or states deleted items.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J10-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-08": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-09": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Voice-only letters get their words in the background (setWordsForWaitingEntry) cleaned by the engine with no person reading them, and the letter page has no edit and no per-edit put-back (only \"show exactly what I said\"). That conflicts with the promise \"read each letter and fix anything we got wrong\" (J01-04) and with transcription mistakes on names. Transcription also only runs in the foreground (aborts on background, index.ts:145), so words may take a while to appear.",
+    "fix": "Mark such letters \"words arrived, please read\" and open them in Review; add edit on the letter page. Tests: words set once; review flag clears after read.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J10-10": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-11": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "A free try is counted when the screen opens (read-together.tsx:56), not when anything is read or heard. An accidental open, or one cut short by a crash, burns one of 3 tries per book.",
+    "fix": "Count after the first page is read for 10 seconds or the first play. Test: open and close does not count.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J11-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-03": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Autoplay \"play the next one on its own\" stops when the phone auto-locks or the app is backgrounded: background audio is off by design (app.config enableBackgroundPlayback false, player.logic stops on background) and there is no keep-awake on this screen. Reading a book to a child with the phone set down ends after the lock timeout. Not observable on web.",
+    "fix": "Keep the screen awake while Read together is open and playing, or allow playback-only background audio (recording stays off). Test: device lock-screen test in the plan.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J11-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-05": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The gate offers Plus only through StoreKit, which the web capture cannot run. Offline, cancelled, pending, failed and restored paths are unverified, and App Review tests the paywall flow.",
+    "fix": "Run E2E-14 and the StoreKit D-series on a device; record evidence. ",
+    "owner": "qa"
+   }
+  ]
+ },
+ "J11-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J12-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J12-02": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Restore purchases is an App Review requirement; only the \"store unreachable\" branch was seen. No-purchase-found and success branches are unverified (E2E-14 not run).",
+    "fix": "Verify restore with sandbox on device before submission and keep the evidence file.",
+    "owner": "qa"
+   }
+  ]
+ },
+ "J13-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J13-02": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Reminders are one-off notifications planned 21 days ahead (planner horizon 21 days, month 92) and re-planned only when the app opens or the store changes. A person who does not open the app for three weeks silently stops getting them; iOS caps pending notifications at 64 (planner keeps 60).",
+    "fix": "State the behaviour in the help text or use repeating triggers for the evening pattern. Tests: planner horizon unit test exists; add a long-absence case.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J13-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J14-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Recordings that have no letter (orphans, unrecoverable takes) appear only as a count here: they cannot be played, exported or deleted from the UI, and drafts are excluded from export. The Spoken language and Storage screens could not be captured (expo-file-system throws on web), so they are not critiqued beyond code reading. The 575 MB row shows no cellular-data choice in the captured state.",
+    "fix": "List orphans with play/attach/export, include drafts and orphans in the export ZIP, and capture the Language and Storage screens on device.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J15-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Export completeness gaps: tombstoned letters, drafts (typed and recorded) and orphan recordings are not exported (build.logic.ts:9; device.ts snapshot reads listEntriesForChild only), although the screen says \"every letter and recording\". The ZIP writer has no ZIP64 (verify.ts \"zip64_not_expected\"), so very large books fail; the PDF is rendered from one HTML for the whole book in a web view, memory unmeasured at 1,800 letters; the 2-minute budget for 230 MB (PRD 7.1) has no timing.",
+    "fix": "Include drafts/orphans/deleted in a \"not in the book\" folder, add ZIP64 or split by year, run a 5-year export on SE 3. Tests: export-golden with draft + orphan; size 4 GB boundary.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J15-02": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The failure card is correct on web only by accident. On a phone, the Share sheet being cancelled deletes the ZIP and still shows the after-share line (device.ts:279 finally delete, export.tsx share()); to retry, the whole export is rebuilt. If Sharing is unavailable the file is deleted and success is implied.",
+    "fix": "Keep the ZIP until the person leaves the screen; detect cancel versus share. Test: share cancelled keeps the file; unavailable shows an error.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J15-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J16-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Settings has no Accessibility statement link (LEGAL-REQ-052, listed under Settings > Legal in LEGAL-REQ-008) and Consumer Health Data/Subprocessors sit under Privacy only. Help is a mailto: that fails silently when no mail account is set (Linking.openURL promise ignored). The \"early version\" note at the top: a beta label in a store build can attract App Review questions. Settings-open budget (<300 ms) has no test.",
+    "fix": "Add the statement row, a fallback that copies the support address, remove the early-version note before submission or confirm with counsel. Test: row present; mailto failure shows a toast.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J16-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Same inaccurate crash-report claim as J04-04: the switch label \"Share usage and crash reports\" does nothing for crashes in v1.0.",
+    "fix": "As J04-04.",
+    "owner": "privacy"
+   }
+  ]
+ },
+ "J16-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J16-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J16-05": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Helpline numbers are `tel:` links (silent failure on devices without telephony). The list and wording are from the content package, not reviewed here for the seven launch languages or non-US locales.",
+    "fix": "Review lines per locale with a clinician/counsel; handle openURL failure by showing the number to copy.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J16-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J17-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "A whole tab labelled coming soon, plus a co-parent row and \"I was invited\" that lead to a placeholder, is a known App Review risk (completeness and placeholder content, guideline 2.1 as I recall it; not verified against current guidelines). Dormant code is also linked into the binary: Supabase, Google Sign-In, passkeys, Apple auth, and the Sign in with Apple and associated-domains entitlements (app.config.ts:193), while the privacy manifest declares no collected data. Routes are guarded by Redirect when features are off (verified for (auth), account, delete-account).",
+    "fix": "Decide with counsel: hide the Family tab in v1.0 or word it as a plan; drop the Apple Sign In entitlement and unused SDKs from the v1.0 build, or document them in the review notes. Test: CI config assertion on entitlements and Info.plist keys (LEGAL-REQ-007).",
+    "owner": "ops"
+   }
+  ]
+ },
+ "J17-02": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "\"Tell me when it's here\" stores a local flag only (no email or push is collected), so the person cannot actually be told. Expectation gap, not a data risk.",
+    "fix": "Reword to \"We will mention it in an update\" or collect nothing and remove the button. Test: content rule.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J17-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J17-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J19-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "No not-found screen: Expo Router default \"Unmatched Route\" with a developer Sitemap link (captured). Reachable by a malformed link; unknown paths pass through the native intent unchanged (+native-intent.tsx:72). It also exposes route names to anyone who triggers it.",
+    "fix": "Add app/+not-found.tsx with a calm card that goes home, and map unknown paths to \"/\" in redirectSystemPath. Test: unit test for unknown path and a web e2e for the card.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J20-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "No error boundary anywhere (grep for ErrorBoundary, setJSExceptionHandler and ErrorUtils in apps/mobile/src returns nothing). A render error leaves a blank page in the web capture, and a thrown error in an event handler or timer is fatal in a native release build. What Expo Router shows by default in a native release build was not observed. Errors outside a route (root layout, SessionProvider, UIProvider) are not covered by any boundary. Combined with synchronous SQLite calls that throw (disk full, migration failure `local_db_migration_failed`, store.ts open()), the app can crash at launch every time with no way to reach Export or the recordings.",
+    "fix": "Export an ErrorBoundary from the root layout (calm card: \"Your letters are safe\", Try again, Export), catch migration failure at open() with a recovery screen, install a global handler that never logs content. Tests: render-throw e2e (J20), failing migration test, handler unit test.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "_journey": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "No error boundary, no crash handler and no recovery screen (see J20-01). Native behaviour unobserved; web is blank. Every synchronous SQLite call in an event handler or timer is a potential fatal crash.",
+    "fix": "Root ErrorBoundary + open() failure screen + global handler; tests per J20-01.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "blocker",
+    "text": "Data durability gates not run: the kill-during-save test (500 iterations, PRD 7.4), the iCloud backup/restore drill (BL-284) and the first native build and device session have no evidence (docs/qa/evidence holds only a README; Maestro flows E2E-01 to 15 \"have not been run\", e2e/README.md). The durability claims are code-reviewed (WAL + synchronous=FULL, draft before mic, atomic save, sweep: all verified by reading and by unit tests such as test/sweep.test.ts) but not shown on an iPhone.",
+    "fix": "Run S1 of docs/qa/DEVICE_TEST_PLAN.md on SE 3 and iPhone 15, 500-kill harness, backup/restore; file evidence before submission.",
+    "owner": "qa"
+   },
+   {
+    "sev": "blocker",
+    "text": "Delete is effectively permanent and not honoured (J10-06): no Recently deleted, no purge, tombstoned audio and text remain on disk and in backup.",
+    "fix": "Recently deleted + purge; test delete/restore/purge.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "major",
+    "text": "Local immutability of raw_transcript is by convention only: CLAUDE.md says a database trigger enforces it, but that is the server schema. The local SQLite migrations contain no trigger (grep TRIGGER in db/migrations.ts is empty); store.ts guards raw with WHERE clauses (setDraftTranscript, setWordsForWaitingEntry, ON CONFLICT list) so any new UPDATE path could overwrite it, and v1.0 has no server copy.",
+    "fix": "Add a local migration with BEFORE UPDATE OF raw_transcript triggers on entries and drafts (allow only the one-time set), plus a test that every store function leaves raw untouched. [DATA-REQ-040] local variant.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "major",
+    "text": "Child profile cannot be edited or a book deleted (J03-07), birthday defaults to today (J01-07) and a due date never becomes a birthday (J01-08). Together these make a first-run mistake permanent.",
+    "fix": "Profile edit screen and due-date-to-birthday flow.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "major",
+    "text": "No 404 screen (J19-01) and unrestricted deep-link routing, including /listen which starts recording on mount (J05-04).",
+    "fix": "Route allowlist in redirectSystemPath; +not-found.tsx; tests.",
+    "owner": "security"
+   },
+   {
+    "sev": "major",
+    "text": "Performance budgets (PRD 7.1: cold start p50 1.2 s/p90 2.0 s on SE 3, record start p95 500 ms, local save p95 200 ms, switch child p95 300 ms, chapter of 60 letters p95 500 ms, Settings under 300 ms, export 230 MB in 2 min) have no harness: TDD 06 lists \"no harness (BL-044 human)\", CI (ci.yml) has no perf, size or device job. Book/Tonight read the whole table synchronously on every store change; no 2,000-letter fixture.",
+    "fix": "Build a perf harness (Maestro timing + Instruments run per release candidate, 200 samples) and a SQL-level perf test with a 5-year fixture in CI.",
+    "owner": "qa"
+   },
+   {
+    "sev": "major",
+    "text": "Size budget D-065 (download under 40 MB): the JS side is measured (Hermes bytecode 11.6 MB against a 12 MB sub-budget, docs/ops/APP_SIZE.md) but the native binary and App Thinning figure are \"not measured yet\", and CI has no size gate. whisper.rn, Google Sign-In, Supabase, PostHog, passkeys and the dev client are linked although v1.0 does not use several of them.",
+    "fix": "Add scripts/size/measure.ts to CI (JS) and the thinning report to the release checklist; remove unused SDKs from the v1.0 build.",
+    "owner": "ops"
+   },
+   {
+    "sev": "major",
+    "text": "Accessibility programme is design-strong but unproven: token contrast pairs are tested (packages/design-tokens/test/tokens.test.ts, AA and 1.4.11, Increase Contrast), Reduce Motion is honoured (useMotion), type scales uncapped, VoiceOver rows exist for Review edits and the player is adjustable. But LEGAL-REQ-051 requires axe/RN lint and AX5 snapshots in CI (none in ci.yml), no VoiceOver evidence exists, touch targets are only asserted by min-h classes, and a few time limits remain (900 ms save card, J06-10). No accessibility statement in Settings (J16-01).",
+    "fix": "Add AX5 snapshot tests, an RN accessibility lint, the VoiceOver script run with evidence, and the statement link.",
+    "owner": "design-systems"
+   },
+   {
+    "sev": "major",
+    "text": "Crash reporting does not exist while the UI says it does (J04-04, J16-02). Founder has no crash visibility except App Store Connect/Xcode Organizer (aggregate, only for users who share diagnostics), and no OTA channel (expo-updates is not installed), so any crash fix needs an App Review cycle.",
+    "fix": "Decide: scrubbed crash reporter under the consent switch (LEGAL-REQ-017 scrubber) or fix the copy; consider expo-updates for JS hotfixes with counsel sign-off.",
+    "owner": "ops"
+   },
+   {
+    "sev": "major",
+    "text": "Network and privacy: from code reading, v1.0 native makes these calls only: model/pack downloads (huggingface.co, planned models.earlyletters.com), StoreKit (Apple), PostHog after consent. Remote config/manifests do not fetch (docsBase is null with server features off, remote/index.ts). The google.com requests seen in the web build are not from app code: the exported web bundle contains no fetch to google.com (only a developers.google.com link in a library console warning), no Google Fonts (fonts are embedded) and GoogleSignin loads lazily only for sign-in, which is off. They most likely come from Chromium itself or the test harness; this was not captured, so it must be confirmed on a real iPhone with the iOS App Privacy Report or a proxy. A model download reveals IP and chosen language to a third-party host (disclosed in the subprocessor list per D-065); hosting is a single point of failure with `mirrors: []`.",
+    "fix": "Run a proxy/App Privacy Report session on device, add a mirror host, and add a CI test that app code only contains an allowlist of hosts.",
+    "owner": "privacy"
+   },
+   {
+    "sev": "major",
+    "text": "Security at rest: Data Protection is set to complete-until-first-auth (app.config.ts), but the SQLite database and recordings are not separately encrypted (LEGAL-REQ-022(d), accepted) and are included in iCloud backups; deleted letters stay on disk (J10-06). Logs: no content found in the code paths read; the log canary exists for the server and not for the app.",
+    "fix": "Add a client-side log canary test (Asha fixtures through the e2e run) and state the backup behaviour in the policy.",
+    "owner": "security"
+   },
+   {
+    "sev": "major",
+    "text": "Store-review risks: (1) Family tab and \"coming soon\" rows (J17-01); (2) Sign in with Apple entitlement and associated domains with no sign-in in the build, Google Sign-In/passkey SDKs linked; (3) privacy manifest lists no collected data while PostHog is linked (lazy and consent-gated, so likely fine, verify with Apple upload warnings); (4) the manifest comment says \"App code does not query free space today\" but export/device.ts:209 and packs/expo-adapter.ts:167 do (the DiskSpace reason is declared, so only the comment is stale); (5) microphone string comes from permission-copy.ts and is marked counsel review pending; (6) no CI lint of Info.plist/entitlements (LEGAL-REQ-007 test).",
+    "fix": "Add an entitlement/Info.plist lint to CI, resolve each item in the review notes, run the first TestFlight upload early.",
+    "owner": "ops"
+   },
+   {
+    "sev": "major",
+    "text": "Localisation: seven spoken languages exist, but the app UI is English only (strings.en.ts is the single catalogue; no other string file). Text expansion, RTL for Arabic spoken letters and non-Latin names in the layout (Book title, dateline, printed PDF) are untested. The PDF locale/paper handling exists (paperFor) but no fixture for ar/hi/zh.",
+    "fix": "Decide the v1.0 position (English UI, seven spoken languages) in store copy; add Arabic/Hindi/Chinese letter fixtures to export-golden and a layout check at AX5.",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "Traceability: only about 30 distinct requirement ids appear in test titles (grep of apps/mobile test and src); no TRACE.md exists; screens (React components) have no component tests at all, only pure-logic tests, the Playwright web flows (not in ci.yml) and Maestro flows that have never run. Screens with no automated coverage beyond the web flow: Listening, Review editing, Letter delete/restore on device, Read together audio, Export on device, Reminders delivery.",
+    "fix": "Add scripts/trace.mjs coverage for P0 ids, run e2e-web in CI, and tag tests with ids.",
+    "owner": "qa"
+   },
+   {
+    "sev": "minor",
+    "text": "Time and clock: dates use the device clock and local time zone (todayISO, occurredOn from the draft createdAt). A wrong device date puts letters in the wrong chapter and \"Before you\"; there is no warning and no edit of a letter date. Reminder scheduling handles zone and DST (tz.ts, tests). The age gate handles a backward clock.",
+    "fix": "Allow editing a letter date and warn on dates before birth. Test: letter date edit moves chapters.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "minor",
+    "text": "Not observable on web and still unverified on any device: mic permission alert, phone call/Siri interruption, backgrounding during recording, low storage, jetsam during transcription on a 4 GB phone (turbo model about 1 GB resident, estimated), airplane mode during model download, iCloud restore on a new phone, VoiceOver, Dynamic Type, haptics, Alert dialogs (Let it go, Hide book), pickers and the future-date limits.",
+    "fix": "Cover each in the S1 device session with an evidence row.",
+    "owner": "qa"
+   }
+  ]
+ }
+}
