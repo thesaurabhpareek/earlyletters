@@ -4,7 +4,8 @@
   "forceReauthEpoch": 0,
   "flags": {
     "introVariant": "four",
-    "lockScreenNamesDefault": false
+    "lockScreenNamesDefault": false,
+    "familyTeaser": "coming_soon"
   },
   "killSwitches": {
     "sync": false,
