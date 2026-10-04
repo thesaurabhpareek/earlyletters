@@ -1,0 +1,127 @@
+/*
+ * Owner: E1 (web platform). Night-tone footer, phone first.
+ * One column on a phone (name, contact, links); on a wide screen the name sits left and
+ * contact and links sit right. Every link is at least 44px tall.
+ */
+.footer {
+  position: relative;
+  background: var(--night);
+  color: var(--night-ink-muted);
+  border-top: 1px solid var(--night-line);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  /* Room for the home-indicator, and for a fixed call to action sitting at the bottom of a phone. */
+  padding: 3.25rem var(--gutter) calc(3rem + env(safe-area-inset-bottom));
+}
+
+.inner {
+  display: grid;
+  gap: 2.25rem;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+.mark {
+  margin: 0;
+  color: var(--night-ink);
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.tagline {
+  margin: 0.4rem 0 0;
+  font-size: 0.95rem;
+}
+
+.contactLead {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.email {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--night-accent);
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: color-mix(in srgb, var(--night-accent) 45%, transparent);
+  transition: text-decoration-color var(--fade-ms) var(--ease-standard);
+}
+
+.email:hover {
+  text-decoration-color: currentColor;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--night-ink-muted);
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: color var(--fade-ms) var(--ease-standard);
+}
+
+.link:hover {
+  color: var(--night-ink);
+}
+
+.footer a:focus-visible {
+  outline-color: var(--night-accent);
+  border-radius: 4px;
+}
+
+@media (min-width: 48em) {
+  .inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'identity contact'
+      'nav nav';
+    align-items: start;
+    gap: 2.5rem 3rem;
+  }
+
+  .identity {
+    grid-area: identity;
+  }
+
+  .contact {
+    grid-area: contact;
+  }
+
+  .nav {
+    grid-area: nav;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--night-line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .email,
+  .link {
+    transition: none;
+  }
+}
+
+@media print {
+  .footer {
+    display: none;
+  }
+}

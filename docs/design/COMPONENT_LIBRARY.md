@@ -292,3 +292,22 @@ Uniwind requires `@source` for files outside the CSS file's folder ([monorepos](
 | Reanimated / gesture-handler past SDK pin | Med / high | `npx expo install --check` in CI. |
 | RN and web copies drift | Med / med | Shared prop types; parity header in each file. |
 | expo-audio metering differs on Android | Med / low | MOTION 5b fallback (idle breath); confirm in Step 0b. |
+
+## 10. LampWash and SheetScrim (lamp-light softness in the app)
+
+`components/ui/lamp-wash.tsx`: one static SVG radial glow, the website's lamp light. Decorative (not accessible, pointer-events none). Fades in once with `useMotion().fade`; under Reduce Motion it just appears. No blur, no loop.
+
+```tsx
+import { LampWash } from '@/components/ui/lamp-wash';
+// first child of the screen's root View, behind content:
+<LampWash anchor="top" intensity={0.8} tone="amber" />
+```
+
+- `intensity` 0..1, `anchor` `top | center`, `tone` `amber | rose | dusk`, optional `colors` override.
+- Light mode peaks at 0.08 opacity so text, textMuted and accent stay at 4.5:1 on every surface (`test/lamp-wash.test.ts`). Dark mode peaks at 0.42.
+- Colours default to the website hexes in `lamp-wash.logic.ts` (the only literals). When the `lamp`, `lampRose`, `lampDusk` colour tokens land, pass them via `colors` or replace the defaults.
+- One wash per screen. Never behind the capture surface (ListeningAura owns that glow).
+
+`components/ui/sheet-scrim.tsx`: the ink-tinted scrim for bottom sheets (ink in light, page colour in dark; never pure black). Sheets keep native swipe-to-dismiss.
+
+`Card` carries a 1px `line` border in dark mode and a warm (ink) shadow in light, none in dark (DESIGN_LANGUAGE elevation).

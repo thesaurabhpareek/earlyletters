@@ -1,5 +1,7 @@
 # TDD 10: Red-team critique and minimal launch path
 
+> **Note, 4 Oct 2026 (D-080, `docs/DECISIONS.md`):** the founder changed the business model. Plus is now the membership that unlocks the product: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book. Anywhere this file treats writing as free or Plus as optional, that is superseded; open edges are listed in D-080 and not decided here. Context: Q1 (ship v1.0 free) was rejected by the founder on 3 Oct (D-001); on 4 Oct the founder made Plus the membership (D-080). Risks about paywall and review exposure are new and unassessed here (unverified).
+
 Persona: skeptical principal engineer, red team and simplifier. Date: 3 Oct 2026. Branch `develop` at `2ab1de9`.
 Scope: cross-cutting issues that can sink a v1 iOS launch. Details belong to TDD 01 to 09; this document ranks their findings, adds what nobody owns, and proposes the smallest launch that still honours the constitution (CLAUDE.md) and the P0 LEGAL-REQ and DATA-REQ set.
 

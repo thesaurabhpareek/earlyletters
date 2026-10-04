@@ -1,5 +1,7 @@
 # ADR 0007: Payments — RevenueCat over StoreKit for digital; card payments for printed books via Lulu Print API
 
+> **Note, 4 Oct 2026 (D-080):** the digital half is superseded by ADR 0013. Plus is now the membership that unlocks new letters (2 free per account); this ADR's print half stays a future launch.
+
 Status: Accepted. Date: 2026-10-01.
 
 > **Status note, 3 Oct 2026: digital-purchase half superseded by ADR 0013.** The founder decided Plus ships in v1.0 "via Apple subscription management to keep it Apple focused" (`docs/DECISIONS.md` D-001). ADR 0013 replaces RevenueCat with StoreKit 2 direct (`expo-iap`), App Store Server Notifications V2 and the App Store Server API. The expo-iap note below ("repo archived Aug 2026") refers to the old standalone repository; the package is maintained in the openiap monorepo (npm 5.8.2, 30 Sep 2026). The printed-book half of this ADR stays valid as future roadmap; v1 is digital only (PRD.md K-32).

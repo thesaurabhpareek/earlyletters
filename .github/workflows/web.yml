@@ -1,0 +1,87 @@
+# earlyletters.com checks (apps/web). Owner: E3 (release). Budget: under 5 minutes, about 1.5 typical.
+#
+# Installs only @scribe/web and the two workspace packages it uses (the same command as apps/web/vercel.json),
+# so the Expo app's dependencies are never fetched. Runs only when something the site is built from changes.
+#
+# This is deliberately NOT a required check in branch protection: a workflow filtered by paths never reports on
+# pull requests that do not touch them, and a required check that never reports blocks the merge. The Vercel
+# preview build is the gate for the site. The main CI workflow (ci.yml) is unchanged and still runs for everything.
+name: Web
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/brand/**'
+      - 'packages/design-tokens/**'
+      - 'packages/content/**'
+      - 'docs/legal/**' # the legal pages are rendered from these files at build time
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web.yml'
+  push:
+    branches: [develop, main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/brand/**'
+      - 'packages/design-tokens/**'
+      - 'packages/content/**'
+      - 'docs/legal/**' # the legal pages are rendered from these files at build time
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: web-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  web:
+    name: web (typecheck, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Own cache key on purpose. ci.yml caches a full node_modules under another key; this one only holds
+      # npm's download cache for the narrow install, so the two can never overwrite each other.
+      - name: Cache npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: web-npm-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            web-npm-${{ runner.os }}-node22-
+
+      - name: Install @scribe/web only
+        run: npm ci --workspace=@scribe/web --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck -w @scribe/web
+
+      - name: Test
+        run: npm test -w @scribe/web
+
+      - name: Build (prelaunch, as it ships first)
+        run: npm run build -w @scribe/web
+
+      # The launch is a build-time switch (NEXT_PUBLIC_APP_STORE_URL). Build the live variant too, so a
+      # crash in the App Store branch shows up here and not on launch day. The URL below is a placeholder.
+      - name: Build (live, launch-day rehearsal)
+        env:
+          NEXT_PUBLIC_APP_STORE_URL: https://apps.apple.com/us/app/example/id1000000000
+        run: |
+          rm -rf apps/web/.next
+          npm run build -w @scribe/web

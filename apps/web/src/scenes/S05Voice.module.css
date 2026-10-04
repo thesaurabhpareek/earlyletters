@@ -1,0 +1,37 @@
+/* S05: the letter, its voice, and the card it becomes. */
+.cardStage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 var(--gutter);
+  z-index: 2;
+}
+.copy {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: calc(env(safe-area-inset-top, 0px) + 9svh);
+  text-align: center;
+  color: var(--ink);
+  z-index: 3;
+}
+.copy p {
+  margin-left: auto;
+  margin-right: auto;
+}
+.copy h2 {
+  font-size: clamp(36px, 5.2vw, 80px);
+}
+@media (min-width: 900px) {
+  .copy {
+    top: 7svh;
+  }
+}
+[data-resting] .copy {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  padding: 10svh var(--gutter) 0;
+}

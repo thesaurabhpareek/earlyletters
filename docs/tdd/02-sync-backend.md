@@ -1,5 +1,7 @@
 # TDD 02: Sync and backend (Supabase, Postgres, PowerSync, Edge Functions)
 
+> **Note, 4 Oct 2026 (D-080, `docs/DECISIONS.md`):** the founder changed the business model. Plus is now the membership that unlocks the product: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book. Anywhere this file treats writing as free or Plus as optional, that is superseded; open edges are listed in D-080 and not decided here. Backend impact: a server rule for letter creation beside `create_child`, an allowance read from `app_config`, and offline-letter handling (D-080 edges 4 and 7). `create_child` rules in 2.5 are under review (edges 2 and 6). Task list: TDD 08 section 14; `supabase/**` is owned by other agents and was not changed.
+
 Status: Proposed, 3 Oct 2026. Persona: staff backend and sync engineer. Audience: founder, Claude Code sessions, future engineers.
 Inputs read: `CLAUDE.md`, `docs/prd/PRD.md` 1.2 and A, B, C, `docs/ARCHITECTURE.md`, `docs/adr/0002`, `0004` to `0007`, `0010`, `docs/legal/ENGINEERING_REQUIREMENTS.md`, `DATA_CLASSIFICATION.md`, `data-policy.md`, `DELETION_AND_EXPORT_SPEC.md`, `POLICY_VERSIONING.md` (grep), `docs/analytics/TRACKING_PLAN.md` (grep), `docs/BACKLOG.md`, `supabase/APPLY.md`, all four migrations, all `supabase/tests/*`, `apps/mobile/src/lib/store.ts`.
 

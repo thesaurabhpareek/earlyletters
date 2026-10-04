@@ -110,8 +110,23 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 
 ## Mechanics
 
-- Straight quotes only. No em or en dashes. Use commas, full stops or "to".
-- Three full stops, never the single ellipsis character, and rarely at all.
+- Straight quotes only. No em or en dashes. Use commas, periods or "to".
+- Three periods, never the single ellipsis character, and rarely at all.
 - No emoji.
 - Use {child} in templates. Never "he", "she", "him" or "her" for the child.
 - No claims we cannot prove. No rankings, no ratings, no invented reviews.
+
+## Voice and motion pairing
+
+Words, haptics and motion should say the same quiet thing. Haptic names are the five intents in `apps/mobile/src/lib/haptics.ts`: `tap`, `press`, `soft`, `success`, `warning`. Motion stays slow and soft; never a bounce, never a celebration. When in doubt, use less.
+
+| Moment | Wording style | Haptic and motion feel |
+| --- | --- | --- |
+| Empty | An invitation, never a blank to fill. "Tell {child} about today." | No haptic. Content settles in gently; nothing pulses or nags. |
+| Saving | Present tense, plain, short. "Listening back to what you said." | `soft` when the take ends. A slow, steady fade, no spinner theatrics. |
+| Success | Say what is now true, then stop. "Kept in {child}'s book." | `success` once. A short, warm settle; no confetti, no counters. |
+| Error | Own it, then reassure. Say the words are safe before anything else. "That did not work this time." | `warning` only if the person must act, otherwise none. No shake, no red flash. |
+| Permission ask | Say why in one sentence, and that no is fine. | `tap` on the choice. No motion that rushes the decision. |
+| Quiet day | "Not much today" is a complete answer. No tally, no apology. | `tap`. The screen simply closes softly. |
+| First letter | Warm and small. Make it feel like the beginning, not an achievement. | `press` on the record button, `success` on keeping it. One calm moment, no fanfare. |
+| Long silence | Say nothing about the gap. If we speak at all, invite: "Anything to tell {child} today?" | No haptic, no badge, no change to the screen. The book looks the same as before. |

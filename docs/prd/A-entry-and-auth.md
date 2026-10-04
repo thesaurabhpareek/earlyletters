@@ -3,6 +3,9 @@
 Owner: Lead A. Draft v1, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict log** (K-01, K-07, K-08, K-11, K-15, K-16, K-24); [PRD.md](PRD.md) wins where they differ. iOS at launch, Android later; every requirement must work on both.
 Siblings: **B** (first-run profile, children, goals, co-parent and privacy, templates and themes), **C** (reminders, celebrations, preferences, settings, pricing, trial and paywall).
 > **PRD.md 1.3 (3 Oct 2026) overrides here:** v1.0 opens on one welcome screen, then the 18+ gate; the 4-story intro (A-REQ-003 to A-REQ-011) moves to v1.1 (D-043). Sign-in at v1.0 is Sign in with Apple and email link plus code; Google sign-in (A-REQ-017) and linking move to v1.1 (D-044). The "I was invited" path now serves Family contributors in the app (K-35). See PRD.md section 3.0.
+
+> **PRD.md 1.4 (4 Oct 2026, D-080) amends the pricing statements here.** Plus is now the membership that unlocks new letters: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book and family authors need none. Any line below that says free, free forever, always free or never paywalled for writing, family authors or first-run children is amended in place or read through D-080 and PRD-REQ-024 to -026. Open edges (family letters and the allowance, a second child's book, first-run children, offline counting) are in D-080 and are not decided here.
+
 Evidence keys: **UR** `docs/research/USER_RESEARCH.md`, **CR** `COMPETITIVE_RESEARCH.md`, **ARCH** `docs/ARCHITECTURE.md`, **DL** `docs/design/DESIGN_LANGUAGE.md`, **MO** `MOTION.md`, **CRE** `CREATIVE.md`, **CMP** `COMPONENTS.md`, **VOICE**/**BRAND** `packages/content/`. External sources [A#] at the end.
 
 ## 0. Key decisions
@@ -137,7 +140,7 @@ P0 = launch blocker, P1 = launch target, P2 = later.
 **Account timing**
 - **A-REQ-012 (P0) Letter first.** Given Start a book, when the user completes B's profile and saves a letter, then no sign-in was required. *Revised Oct 2 2026 per PRD.md K-07:* the 18+ entry gate (PRD-REQ-019) comes before B's profile; it is a question, not a sign-in.
 - **A-REQ-013 (P0) Keep the book sheet.** Given the first letter committed, when the save animation ends, then the F3 sheet opens with Apple, Google, Email and Later.
-- **A-REQ-014 (P0) Later works.** Given Later, then record, review, save, book, Read together (within the free tries; revised Oct 2 2026 per PRD.md conflict log K-11) and PDF export work; the sheet returns only at F3.3 moments, max once a day.
+- **A-REQ-014 (P0) Later works.** Given Later, then record, review, save, book, Read together (within the free tries; revised Oct 2 2026 per PRD.md conflict log K-11) and PDF export work; the sheet returns only at F3.3 moments, max once a day. *Amended 4 Oct 2026 (D-080): "record, review, save" beyond the first 2 letters per account needs Plus; the in-progress letter is never discarded (PRD-REQ-024, -025). Reading, playing and export of existing letters stay open.*
 - **A-REQ-015 (P0) Re-ownership.** Given local data and a successful sign-in, then all local rows move to the user id in one transaction before sync; on failure nothing changes and Retry shows.
 
 **Methods**
@@ -265,7 +268,7 @@ Funnel by method (UR §2.3: no public benchmark).
 
 **Lead B:** first-run profile after Start a book (name, birth or due date, UR §6 R2), offline and pre-account; invitee welcome after F7.6 with Large Print offer; invite creation and `/i/<token>` format; Q5; notice placement consistent with §7.
 
-**Lead C:** settings account row, "Ways to sign in" host (A-REQ-019), sign-out guard (F6.4), account deletion with Apple token revocation (A-NFR-011), web deletion page for Play. Paywall never before the first letter or inside the sign-in sheet. Notification primer only after the first letter (UR §6 R7) and never stacked on the Keep the book sheet.
+**Lead C:** settings account row, "Ways to sign in" host (A-REQ-019), sign-out guard (F6.4), account deletion with Apple token revocation (A-NFR-011), web deletion page for Play. Paywall never before the first letter or inside the sign-in sheet. Notification primer only after the first letter (UR §6 R7) and never stacked on the Keep the book sheet. *Amended 4 Oct 2026 (D-080): "Paywall never before the first letter" still holds; the paywall may now appear at the third new letter (PRD-REQ-024).*
 
 **Engineering:** custom SMTP; AASA and `assetlinks.json` on apps/web (ADR 0010); Supabase manual linking on, OTP expiry 3600 s, redirect allowlist; Apple key rotation owner.
 

@@ -7,6 +7,8 @@ Status values:
 - **Recommended (needs founder OK)**: the PM and architects recommend it. "Proceed?" says whether engineering may build on the recommendation before the founder answers (only for cheap, reversible choices) or must wait.
 - **Open**: nobody has decided; the entry says who decides and by when.
 
+Amendments: when a later decision changes part of an earlier one, the earlier entry keeps its text and gains an "Amended by D-0xx" line in place; history is never deleted.
+
 Rules: one decision per ID; never reuse an ID; superseding entries name the ID they replace. Requirements that change because of a decision are edited in PRD.md (conflict log K-##) in the same change.
 
 Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/), ADR (docs/adr/), LEGAL-REQ (docs/legal/ENGINEERING_REQUIREMENTS.md), Lawyer 1 and 2 (docs/legal/memos/).
@@ -17,12 +19,12 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 
 | ID | Decision | Status | Proceed? | Date |
 |---|---|---|---|---|
-| D-001 | Plus ships in v1.0, sold and managed only through the App Store (StoreKit 2 direct, ADR 0013) | Decided (founder); tooling recommended | Yes | 2026-10-03 |
+| D-001 | Plus ships in v1.0, sold and managed only through the App Store (StoreKit 2 direct, ADR 0013); amended by D-080 (Plus is now the membership that unlocks new letters) | Decided (founder); tooling recommended | Yes | 2026-10-03 |
 | D-002 | Family at v1.0 = co-parent and family contributors in the app; web contribution page in v1.1 | Decided (founder) | Yes | 2026-10-03 |
 | D-003 | Full opt-in product analytics (PostHog) and opt-in crash reports (Sentry) at launch | Decided (founder) | Yes | 2026-10-03 |
 | D-004 | Publish as an individual Apple Developer account; no LLC for now | Decided (founder) | Yes | 2026-10-03 |
 | D-005 | D-U-N-S and LLC off the critical path; domain and support email stay on it | Decided (founder) | Yes | 2026-10-03 |
-| D-006 to D-014 | Earlier founder decisions carried forward (18+ only, first-run children free, joined books, Read together, print, beta, pricing, US-only, multi-child) | Decided (founder) | Yes | 2026-10-01/02 |
+| D-006 to D-014 | Earlier founder decisions carried forward (18+ only, first-run children free, joined books, Read together, print, beta, pricing, US-only, multi-child); D-007, D-008, D-009, D-012 and D-014 amended by D-080 | Decided (founder) | Yes | 2026-10-01/02 |
 | D-020 | Invite and return-link hashes deleted 90 days after use, revocation or expiry | Recommended | Yes | 2026-10-03 |
 | D-021 | Two log clocks: `audit_events` 24 months; ops, security and escrow logs 12 months | Recommended | Yes | 2026-10-03 |
 | D-022 | Auto-renewal notice windows: strictest-state table (TDD 05 X-06, TDD 08 4.3) | Recommended (counsel confirms) | Yes | 2026-10-03 |
@@ -40,7 +42,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-034 | Safety classifier ships only with a clinician's written sign-off by 20 Nov; otherwise a static resources row | Recommended (needs founder OK) | Yes | 2026-10-03 |
 | D-035 | Remote config and kill switches in a Supabase table with an audit trigger (answers BL-022) | Recommended | Yes | 2026-10-03 |
 | D-036 | A purchase needs an account; contributors never see the Plus sheet; no offer where Plus is already on | Recommended | Yes | 2026-10-03 |
-| D-037 | Read together free sessions counted per book on the device in v1.0; server counter in v1.1 | Recommended | Yes | 2026-10-03 |
+| D-037 | Read together free sessions counted per book on the device in v1.0; server counter in v1.1 (interplay with D-080 open) | Recommended | Yes | 2026-10-03 |
 | D-038 | `create_child` accepts client ids, a first-run batch (cap 6) and books made offline under Plus; never deletes a refused book | Recommended | Yes | 2026-10-03 |
 | D-039 | Contributors see the child's name, nickname and birthday month and day; never the due date or birth year | Recommended (counsel confirms) | Yes | 2026-10-03 |
 | D-040 | Minimum iOS 17 | Recommended | Yes | 2026-10-03 |
@@ -54,6 +56,8 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | D-048 | Apple Billing Grace Period on, 16 days | Recommended | Yes | 2026-10-03 |
 | D-049 | LEGAL-REQ-049 means exactly one `completed` consent row per original transaction (plus a `started` row) | Recommended (counsel confirms) | Yes | 2026-10-03 |
 | D-050 | Second consent at first family share (Washington) | Open (counsel) | n/a | 2026-10-03 |
+| D-080 | Plus is membership: 2 free letters per account, then Plus (amends D-001, D-007, D-008, D-009, D-012, D-014, D-037; eight open edges) | Decided (founder), 4 Oct 2026 | Yes for the model; the open edges wait | 2026-10-04 |
+| D-081 | Early-tester offers use Apple offer codes, not our own code system | Decided (founder) for the intent; Recommended for the mechanism | Yes for planning; build with BL-213 | 2026-10-04 |
 
 ---
 
@@ -64,6 +68,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 - **Decision:** Auto-renewable subscriptions in one App Store group, sold, managed, cancelled and refunded only through Apple. Client: `expo-iap` (StoreKit 2). Server: App Store Server Notifications V2 to a Supabase Edge Function, App Store Server API for verification and reconcile. Random `appAccountToken` per account; no third-party billing processor. Prices unchanged: $3.99 a month with a 1-month free trial; $29.99 a year with a 2-month free trial (Apple introductory offers). Lifetime later (P2).
 - **Rationale:** the founder's direction; one fewer processor, DPA, SDK and console; $0 vendor cost; every cancel and refund path is Apple's own screen. Cost: about 1.5 to 2.5 extra engineer-weeks over RevenueCat (ADR 0013).
 - **Alternatives:** ship 1.0 free and add Plus in 1.1 (TDD 10 Q1; rejected by the founder); annual only with no trial (TDD 10 fallback, kept as a schedule cut, ROADMAP section 4); RevenueCat (ADR 0007; kept as fallback and as the likely Android-time option).
+- **Amended by D-080 (4 Oct 2026):** Plus is no longer an optional extra on top of a free product. It is the membership that unlocks the product: the free version is the first 2 letters per account, and adding new letters then needs Plus. Store mechanics, Apple-only sale, prices and trials above are unchanged.
 - **Owner:** founder (store setup), payments engineer (build). **Date:** 2026-10-03.
 - **Effects:** ADR 0013 added; ADR 0007 digital half superseded; PRD K-34, PRD-REQ-003, -017; LEGAL-REQ-029, -031, -037, -047, -049, -058; subprocessors 1.2.0, privacy-policy 1.3.0, privacy labels 1.2.0, data-policy 1.1.0, DATA_CLASSIFICATION 1.2.0, DELETION_AND_EXPORT_SPEC 1.1.0; BACKLOG M8 tasks; `plus.legal.cancel` names Apple only (App Review 2.3.10 bars other platforms' names in iOS metadata).
 
@@ -111,14 +116,14 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 | ID | Decision | Source |
 |---|---|---|
 | D-006 | Adults only. 18+ entry gate before first run, invites and sign-in; No shows a stop screen for 24 hours; no local-only mode; only a boolean is stored | PRD-REQ-019, K-07 |
-| D-007 | Every child added together in first run is free (twins or any children added then; reading of PRD 9 Q9 still to be confirmed, see D-038) | PRD-REQ-015 |
-| D-008 | A book joined as co-parent does not count as your free book | PRD-REQ-015 |
-| D-009 | Read together: 3 free sessions per Free book, then Plus; the number is remote config | PRD-REQ-020 |
+| D-007 | Every child added together in first run is free (twins or any children added then; reading of PRD 9 Q9 still to be confirmed, see D-038). **Amended by D-080 (4 Oct 2026):** whether a first-run child's book gets any free letters, and how many, is an open edge; "free" here no longer means unlimited letters. Text kept as history. | PRD-REQ-015 |
+| D-008 | A book joined as co-parent does not count as your free book. **Amended by D-080 (4 Oct 2026):** the free allowance is now 2 letters per account; how a joined book and family letters count toward it is an open edge. Text kept as history. | PRD-REQ-015 |
+| D-009 | Read together: 3 free sessions per Free book, then Plus; the number is remote config. **Amended by D-080 (4 Oct 2026):** how these sessions interact with the 2-letter free allowance is an open edge; until decided, the rule stands as written. | PRD-REQ-020 |
 | D-010 | Digital only in v1; printed books are a future launch | K-32 |
 | D-011 | Beta ends only when the founder says so (placement amended by D-030, pending) | K-13 |
-| D-012 | Plus $3.99 a month (1-month trial) or $29.99 a year (2-month trial); lifetime about $99.99 later; Plus per account, books inherit it from any parent | K-28, C-REQ-021 |
+| D-012 | Plus $3.99 a month (1-month trial) or $29.99 a year (2-month trial); lifetime about $99.99 later; Plus per account, books inherit it from any parent. **Amended by D-080 (4 Oct 2026):** prices, trials and per-account scope are unchanged; Plus is now the membership that unlocks new letters, and one membership covers the book including family authors. | K-28, C-REQ-021 |
 | D-013 | US App Store first, iOS only at launch, every pattern Android-portable | PRD 1 |
-| D-014 | Multiple children, one book each; additional books are Plus; L1 to L4 data classification; analytics volume accepted | K-12, 7.10, K-01 |
+| D-014 | Multiple children, one book each; additional books are Plus; L1 to L4 data classification; analytics volume accepted. **Amended by D-080 (4 Oct 2026):** what a second child's book gets without Plus is an open edge (the "first book free" part of this row is under review); classification and analytics parts stand. | K-12, 7.10, K-01 |
 
 ---
 
@@ -220,7 +225,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 ### D-032 Shared voice in v1.0
 - **Status:** Recommended (needs founder OK). Proceed: **no** for upload code; design and the key scheme spike may start.
 - **Problem:** with family in the app (D-002), a grandparent's letter text syncs, but their recording stays on their own phone. Today family hear a recording only once it is backed up (K-33), and backup is Plus (C 4.1). So in a Free family the parents could never hear Nani's voice, and "Read together, in their voices" fails for most families (TDD 10 contradiction 9).
-- **Decision (recommended):** v1.0 includes one audio upload pipeline using the simple scheme from TDD 10 (per-file AES-256-GCM key generated on the phone; the file key is wrapped by a server-held key in an Edge Function; members get playback through an Edge Function that checks `book_access` and returns a short-lived URL plus the unwrapped file key over TLS). Policy for what uploads: **Free** = recordings of letters that are in a shared book (a book with two or more members); **Plus** = every recording (private letters included) plus restore on a new phone. Vault mode, per-child keys, X25519 member grants and the synchronizable Keychain module (ADR 0006) move to later.
+- **Decision (recommended):** v1.0 includes one audio upload pipeline using the simple scheme from TDD 10 (per-file AES-256-GCM key generated on the phone; the file key is wrapped by a server-held key in an Edge Function; members get playback through an Edge Function that checks `book_access` and returns a short-lived URL plus the unwrapped file key over TLS). Policy for what uploads (amended by D-080: "Free" now means an account with 2 letters or fewer, or a lapsed account; the upload rule itself is unchanged): **Free** = recordings of letters that are in a shared book (a book with two or more members); **Plus** = every recording (private letters included) plus restore on a new phone. Vault mode, per-child keys, X25519 member grants and the synchronizable Keychain module (ADR 0006) move to later.
 - **Rationale:** keeps the core promise for every family; one pipeline for both tiers; Storage cost is small at launch (about 19 MB per family per month, ARCH 7); removes the custom native module from v1.0.
 - **Costs and changes:** about 3 engineer-weeks (M7); the Privacy Policy short version, section 4 and Terms 12.1 must say recordings of letters in a shared book are uploaded, encrypted, so family can hear them (pre-publication drafts, so a minor change if made before publication); the privacy label already declares audio as User Content; LEGAL-REQ-022(a) reading for a server-wrapped key needs counsel (TDD 10 section 2).
 - **Alternatives:** (a) text-only family letters in v1.0, voices in v1.1 (cheapest; the schedule cut in ROADMAP section 4); (b) make backup free for everyone (removes a Plus feature); (c) full ADR 0006 in v1.0 (highest risk; TDD 10 risk 9).
@@ -242,7 +247,7 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 
 ### D-035 Remote config and kill switches
 - **Status:** Recommended. Proceed: yes (unblocks BL-022).
-- **Decision:** one Supabase table (`app_config`, public read of non-secret keys, service-role write, audit trigger into `ops_audit_log`), bundled defaults, cached last-known values, never awaited at launch. Keys at v1.0 include `read_together_free_sessions`, `lock_screen_names_default`, `child_input_enabled` (false), `safety_card_enabled`, `sync_enabled`, `invites_enabled`, `min_supported_build`, `plus_offer_triggers`. Edge Functions read kill switches with a 60 s cache (LEGAL-REQ-040).
+- **Decision:** one Supabase table (`app_config`, public read of non-secret keys, service-role write, audit trigger into `ops_audit_log`), bundled defaults, cached last-known values, never awaited at launch. Keys at v1.0 include `read_together_free_sessions`, `lock_screen_names_default`, `child_input_enabled` (false), `safety_card_enabled`, `sync_enabled`, `invites_enabled`, `min_supported_build`, `plus_offer_triggers`. **Amended by D-080:** add `free_letters_allowance` (default 2). Edge Functions read kill switches with a 60 s cache (LEGAL-REQ-040).
 - **Rationale:** TDD 01 3.9, TDD 02 2.7 and TDD 10 agree; PostHog flags would depend on analytics consent, which decliners never give.
 - **Owner:** data architect, mobile. **Date:** 2026-10-03.
 
@@ -250,17 +255,19 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 - **Status:** Recommended. Proceed: yes.
 - **Decision:** a purchase requires a signed-in account (Keep the book sheet first, then the Plus sheet); contributors never see the Plus sheet (a quiet line instead); nobody is offered Plus in a book already covered by the other parent (TDD 08 R-1 to R-3).
 - **Rationale:** Plus is account-scoped (K-28); ARL notices need an email; a contributor's Plus would cover no book.
+- **Amended by D-080 (4 Oct 2026):** family authors add letters under the book's membership without their own, so "contributors never see the Plus sheet" stands. Whether a family author's letter counts toward the 2 free letters is an open edge.
 - **Owner:** payments engineer, PRD C. **Date:** 2026-10-03.
 
 ### D-037 Read together counter
 - **Status:** Recommended. Proceed: yes.
 - **Decision:** count per book, on the device, only when highlighted playback starts in try mode, limit from remote config (PRD-REQ-020). A reinstall resets it (accepted: costs us nothing). Server-side counter in v1.1.
 - **Rationale:** TDD 08 2.4 versus TDD 01 OQ-12; the local count is enough for a no-cost feature at launch.
+- **Amended by D-080 (4 Oct 2026):** the new free-letter allowance must also be counted somewhere, and where (device or server) is an open edge that should be decided together with this counter. The reasoning above (a local count is acceptable when the thing counted costs us nothing) does not obviously carry over to a count that gates a paid product. Unverified.
 - **Owner:** mobile. **Date:** 2026-10-03.
 
 ### D-038 `create_child` rules
 - **Status:** Recommended. Proceed: yes.
-- **Decision:** `create_child(p_id, p_name, p_date_of_birth, p_due_date)` is idempotent on the client id; `create_first_run_children` accepts at most 6 first-run children once per account (`profiles.first_run_closed_at`); a book created offline while Plus was active is accepted at sync if Plus covered that moment (rule d); a refused book is never deleted or hidden, it stays "On this phone only" until Plus returns. First-run siblings with different dates stay free unless the founder narrows D-007 (PRD 9 Q9).
+- **Decision:** `create_child(p_id, p_name, p_date_of_birth, p_due_date)` is idempotent on the client id; `create_first_run_children` accepts at most 6 first-run children once per account (`profiles.first_run_closed_at`); a book created offline while Plus was active is accepted at sync if Plus covered that moment (rule d); a refused book is never deleted or hidden, it stays "On this phone only" until Plus returns. First-run siblings with different dates stay free unless the founder narrows D-007 (PRD 9 Q9). **Amended by D-080 (4 Oct 2026):** the books-per-account part of this rule is under review (open edge: a second child's book without Plus). The rule that a refused book is never deleted or hidden stands and is the model for D-080's never-discard rule.
 - **Rationale:** TDD 01 X-7, TDD 02 finding 4 and 2.5, TDD 08 2.5 and OQ-1.
 - **Owner:** data architect, payments engineer. **Date:** 2026-10-03.
 
@@ -330,6 +337,43 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 ### D-050 Second consent at first family share
 - **Status:** Open. Decides: counsel (Lawyer 2 HN-4; PRD 9 Q10; TDD 02 OQ-B12). Needed by the end of week 6 so M6 can include it.
 - **Default if unanswered:** no second consent; the sensitive-data consent text already names family sharing. The product supports adding one tap the first time a parent invites family.
+
+### D-080 Plus is membership: 2 free letters, then Plus
+- **Status:** Decided (founder), 4 Oct 2026. Proceed: yes for the model and for drafting; the open edges below wait for the founder (or counsel where marked). Amends D-001, D-007, D-008, D-009, D-012, D-014 and D-037 (marked in place above); changes the "free, always" promise (K-11) and PRD-REQ-015.
+- **Decision:**
+  1. Writing, reading, playing recordings and export are **no longer "free, always"**, and Plus is **no longer "optional"**. Membership (the plan is still named "Plus") unlocks the product.
+  2. **Free version:** the first **2 letters per account**. A letter is a saved entry, spoken or typed. After those 2, adding a new letter needs Plus.
+  3. **Letters already made always stay readable, playable and exportable** if someone never subscribes or Plus ends. Only new letters need Plus.
+  4. **Family:** one membership covers the book. Family authors add letters without their own membership.
+  5. **Price and trials unchanged:** $3.99 a month with a 1-month free trial; $29.99 a year with a 2-month free trial. Apple subscriptions only (ADR 0013). US only.
+- **Rationale:** the founder said membership is what unlocks the features, and the free version can have 1 to 2 letters to try, then a subscription. The founder chose, from options offered: the number two, existing letters staying open, family covered by one membership, and prices and trials staying as they are.
+- **Alternatives rejected (all offered, none chosen):** a free allowance of 1 letter; 2 free letters per book instead of per account; locking existing letters after the limit; requiring membership to export; each family author paying their own membership; removing the free trials.
+- **Consequences:**
+  - **Engineering:** an entitlement gate on letter creation (client sheet plus server enforcement, same pattern as `create_child`, TDD 08); the in-progress letter is never discarded when the limit is hit (it stays on the phone and Plus is offered, which follows the constitution that the machine never removes a person's words; recommended, see open edge 3); the allowance is a remote config key such as `free_letters_allowance` (default 2, audit-logged, D-035); a counting rule (open edge 4); Supabase entitlement tables, functions and the free-tier tests change (supabase code is owned by the data and payments engineers; the TODO list is in TDD 08 section 14); new content-free analytics events (for example free allowance reached, paywall shown at the limit, letter held on phone, Plus started from the limit; the analytics engineer names them in `docs/analytics`, never any entry text); reads, playback and export checks must never consult entitlement for letters that already exist.
+  - **Copy and legal (other owners):** paywall and store copy, the "free, always" promise line everywhere it appears (K-11 wording is superseded), Subscription terms "What stays free", in-app-disclosures and Apple subscription disclosures; counsel review before release (ROADMAP section 9).
+  - **App Store:** review notes must describe a freemium model with 2 free letters, a paywall at the third, and that existing letters stay accessible. Apple's subscription disclosure rules (Guideline 3.1.2) apply; the current wording was not re-read for this entry and is unverified.
+  - **Free-version promises elsewhere:** D-032 (shared voice upload) and D-033 (free audio durability) now apply to accounts with 2 letters or fewer and to lapsed accounts; wording changes only.
+- **Open edges (listed, not decided):**
+  1. Do **family letters** count toward the 2 free letters (an author's letter, or only the account owner's)?
+  2. What does a **second child's book** get without Plus (today D-014 and PRD-REQ-015 say Plus; the free letters might be per account or per book)?
+  3. **In-progress letter at the limit.** Recommended, not decided: never lose or discard it; keep it on the phone, offer Plus, and let it be saved when Plus starts.
+  4. **How entitlement is counted offline:** on the device or on the server (compare D-037 for Read together: device in v1.0, server in v1.1). Covers reinstall, a second device, and offline letters made past the limit.
+  5. **Read together:** how its 3 free sessions (D-009, D-037) interact with the new free allowance.
+  6. **First-run children free (D-007, D-008, PRD-REQ-015):** whether first-run children and joined books still get a free book, and how the 2 letters apply to them.
+  7. **Letters made offline past the limit** (sync of letters that the server would refuse): the D-038 rule (never delete or hide a refused item) is the model, but not yet decided for letters.
+  8. **Lapsed users:** a lapsed member already has more than 2 letters; decision item 3 says only new letters need Plus, and the open part is what the sheet says and whether trial-ineligible users see "free" wording.
+- **Owner:** founder; payments engineer, mobile and data architect build; content and counsel for copy. **Date:** 2026-10-04.
+- **Effects:** PRD 1.4 (new K-44, PRD-REQ-024 to -026, amended PRD-REQ-015, -020, -022, C-REQ-017 and C 4.1); TDD 08 (section 14 TODO), TDD 01, 02, 05, 07, 10 banners; ROADMAP section 9; ADR 0013 and ADR 0007 notes; website runbook, web and research notes. Not touched by this entry (owned elsewhere): `docs/legal/**`, `packages/content`, website, app code, `supabase/**`.
+
+### D-081 Early-tester offers use Apple offer codes, not our own code system
+- **Status:** Decided (founder, 4 Oct 2026) for the intent; **Recommended (needs founder OK)** for the mechanism. Proceed: yes for planning and for the `OFFER_REDEEMED` mapping; nothing is live.
+- **Decision (intent, founder):** early testers, neighbours and friends can get free months, for example 6 months, through a simple "enter an offer code" feature.
+- **Decision (mechanism, recommended):** use **Apple offer codes** created in App Store Connect. Apple redeems them; our server learns of a redemption from the App Store Server Notification `OFFER_REDEEMED` (already in the ADR 0013 list) and maps it to the entitlement with its real end date. The app has a "Redeem a code" row in Settings > Plan that opens StoreKit's redemption sheet and then refreshes the entitlement (PRD-REQ-027). We keep **no code table, redemption RPC or secret of ours**.
+- **Rationale:** App Review Guideline 3.1.1 says apps may not use their own mechanisms to unlock content or functionality, such as license keys or QR codes (as quoted in `docs/ops/OFFER_CODES.md`; the guideline text was not re-read for this entry). Plus is sold only through the App Store (D-001), so a code system of ours risks rejection.
+- **Alternatives:** our own code table, or a web-redeemed code (rejected for the 3.1.1 risk unless counsel and Apple say otherwise; TDD 08 3.5 keeps web codes at P2); server-granted free months for named accounts without codes (unverified, needs counsel and an Apple read; not chosen); TestFlight only for friends before launch (works only before launch, and whether testers need a code is unverified).
+- **Consequences and unverified points:** an offer-code free period converts to a paid subscription at the normal price unless the person cancels (whether Apple allows turning conversion off is unverified); testers must be told in plain words; whether exactly 6 months is available, whether the renewal-notice windows (D-022) cover an offer-code free period, and whether `expo-iap` exposes the redemption sheet are all unverified. Counsel adds offer-code wording to the Subscription terms. Interplay with D-080: an offer-code member is a member, so the 2-letter limit does not apply while the free period is active (follows from "membership unlocks the product"; confirm).
+- **Owner:** founder (offers in App Store Connect), payments engineer (build), counsel (wording). **Date:** 2026-10-04.
+- **Effects:** TDD 08 3.1 line "Offer codes [P5]" amended; PRD-REQ-027 and C F4 note; ROADMAP section 9 next to the BL-213 work; `docs/ops/OFFER_CODES.md` (branch `docs/offer-codes-runbook`, commit b8c2830, not yet merged into this branch).
 
 ---
 
@@ -414,5 +458,7 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 6. **D-045** C1 friendly-family beta only before submission (public link after). Needed by 4 Dec.
 7. **D-034** Safety classifier only with a clinician's sign-off by 20 Nov, else a static resources row.
 8. **D-033** Free durability through the user's own device backup, and the copy fix.
+9. **D-081** Offer codes: confirm the mechanism (Apple offer codes), the length and who gets them, and that testers are told about conversion.
+10. **D-080 open edges** (4 Oct): family letters and the 2 free letters; a second child's book without Plus; in-progress letter at the limit; offline counting; Read together interplay; first-run children (D-007, D-008, PRD-REQ-015). Needed before the paywall is built (date not set).
 
 Also open but not founder-only: D-031 Hindi script (founder, from data, 30 Oct), D-050 second consent (counsel).

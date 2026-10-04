@@ -2,6 +2,8 @@
 
 Owner: staff engineer, payments and entitlements. Draft 1, 3 Oct 2026. Branch `develop`. Status: for founder, data architect (TDD 02), privacy (TDD 05) and counsel review.
 
+> **Banner, 4 Oct 2026 (D-080, PRD 1.4).** Two things in this draft are out of date. (1) ADR 0013 (D-001) replaced RevenueCat with StoreKit 2 direct and App Store Server Notifications V2; read every RevenueCat mention as the App Store equivalent until this TDD is revised (not done here). (2) The model changed: Plus is the membership that unlocks the product, not an optional extra. The free version is the first 2 letters per account; adding new letters then needs Plus; letters already made stay readable, playable and exportable forever; one membership covers the book and family authors need none. Everything below that calls writing "free forever" or "never gated" predates this and is amended in place or by section 14, which holds the engineering TODO list. Open edges are listed in D-080 and section 14.3; none is decided here.
+
 Reads: CLAUDE.md; PRD.md 1.2 (K-04, K-11, K-12, K-28, K-32, PRD-REQ-003, -015, -017, -020); PRD C (C-REQ-020 to -034, C-NFR-001 to -009); ADR 0007; subscription-terms.md 1.2.0; terms-of-service.md section 14; in-app-disclosures.md 1.2.0; memos/lawyer-1.md; ENGINEERING_REQUIREMENTS.md (LEGAL-REQ-029, -033, -046 to -050, -053, -054, -058); DATA_CLASSIFICATION.md; TRACKING_PLAN.md; `apps/mobile/src/lib/store.ts`, `read-together.ts`, `components/child/plus-gate.tsx`, `add-child-form.tsx`; TDD 01, 02, 05.
 
 Labels used throughout: **Fact** (read in a repo file or a cited source), **Assumption** (believed, not verified; says what would verify it), **Rec** (my recommendation), **Risk**, **OQ** (open question with an owner). Vendor behaviour I could not verify in a source opened for this TDD is marked **Unverified** and has a sandbox test that settles it before launch.
@@ -10,11 +12,11 @@ Labels used throughout: **Fact** (read in a repo file or a cited source), **Assu
 
 ## 0. Summary
 
-1. **One pure rules engine decides every Plus gate.** `packages/core/src/plan.ts` exports `decide(input): Decision`, no I/O, under 1 ms. The things that are free forever (write, read, play a recording, export, family authors, download backed-up audio) are not members of the gated-feature type at all, so they cannot be gated by accident (LEGAL-REQ-050). The server repeats the two rules that cost us money or count books: `create_child` and backup upload.
+1. **One pure rules engine decides every Plus gate.** `packages/core/src/plan.ts` exports `decide(input): Decision`, no I/O, under 1 ms. The things that are free forever (write, read, play a recording, export, family authors, download backed-up audio) are not members of the gated-feature type at all, so they cannot be gated by accident (LEGAL-REQ-050). The server repeats the two rules that cost us money or count books: `create_child` and backup upload. *Amended 4 Oct 2026 (D-080): "write" leaves the free-forever list for new letters only. Reading, playing a recording, export, download of backed-up audio and family authors' access to existing letters stay out of the gated type. See 14.1.*
 2. **Plus is per account; books inherit it from any parent (K-28).** Schema follows TDD 02 section 2.5 (`billing_customers`, `entitlements`, `entitlement_events`, `book_entitlements`, `has_plus()`, `book_has_plus()`). I add three things: a purchase needs an account, contributors are never shown the Plus sheet (a contributor's Plus would cover no book), and books created offline while Plus was active are honoured at sync.
 3. **RevenueCat is the source of truth; the webhook is only a doorbell.** Every webhook is deduplicated by event id, then the function re-reads the subscriber from the RevenueCat REST API and writes a snapshot. That makes it order-independent, so a late or duplicated event cannot do harm. A nightly reconcile catches any webhook that never arrived.
 4. **The notice engine follows the strictest state window, not PRD C's day counts.** Annual renewal notices go at renewal minus 30 days 12 hours, and only inside the window from D-31 to D-30. The final trial notice goes at trial end minus 4 days 12 hours, not D-3. These are the same windows TDD 05 X-06 adopted. They conflict with LEGAL-REQ-047 and K-04 (sections 4.3 and 10).
-5. **Nothing becomes unreadable when Plus ends.** A lapse, refund, grace expiry or a RevenueCat outage turns off extras only. Section 5 lists what happens to each feature.
+5. **Nothing becomes unreadable when Plus ends.** A lapse, refund, grace expiry or a RevenueCat outage turns off extras only. Section 5 lists what happens to each feature. *Amended 4 Oct 2026 (D-080): unchanged for reading, playing and exporting existing letters; adding new letters now needs Plus after a lapse (section 5).*
 6. **Premature for v1:** the trial-length experiment (needs about 3,300 trial starters), gifts (P1), lifetime (P2), Google Play (specified, not shipped), web codes, print (K-32), and any retention offer. The products and offerings are designed so each can be switched on without a schema change.
 7. **Launch blockers I found in today's code:** a hard-coded, per-phone Read together count (`read-together.ts`); a dev bypass on the Plus gate that must be removed from release builds at compile time; `hasPlus()` and `isJoinedBook()` stubs; no server Plus rule; no webhook, notices or consent log.
 
@@ -63,6 +65,8 @@ Status: **Met**, **Gap** (exists but wrong), **New** (not built), **Conflict** (
 | Account Plus | The signed-in person holds the RevenueCat entitlement `plus`: active, in a trial, or in billing grace | K-28, C-REQ-021 |
 | Book Plus | A book has Plus when any **parent** member holds Account Plus, or (P1) a gift is active on it | K-28 |
 | Plus features in a book | Every member of a Plus book gets its Plus features there, contributors included | K-28 |
+| Letter | A saved entry, spoken or typed (D-080). The unit of the free allowance. In-progress drafts are not letters until saved | D-080 |
+| Free letter allowance | The first 2 letters per account (remote config `free_letters_allowance`, default 2, proposed key). What counts toward it (family letters, a second child's book, offline letters) is open, see 14.3 | D-080 |
 | Started book | `children.created_by = me` and not deleted. Hidden books count. Books joined as co-parent never count | PRD-REQ-015 |
 | First-run batch | Every child added together in the account's first create call or batch. All free, whatever their dates. They count as started books afterwards | PRD-REQ-015 |
 | Try | One free Read together session in a Free book. The count comes from remote config (default 3) | PRD-REQ-020 |
@@ -225,7 +229,7 @@ Facts and rules:
 - All annual arms live in the same group. Apple allows one introductory offer per person per group [P1], so the arms cannot hand anyone a second trial.
 - Product ids can never be reused. Create the arm products now, in Ready to Submit, so the experiment needs no new review. Remove them from sale if the experiment is dropped (Rec).
 - Family Sharing stays **off** for every product. Once it is on it cannot be turned off [P3], and K-28 already covers the co-parent (C 4.2).
-- Offer codes [P5]: not in v1.
+- Offer codes [P5]: *amended 4 Oct 2026 (founder; D-081).* Apple offer codes are wanted for early testers, neighbours and friends (free months, for example 6 months; whether Apple offers exactly 6 months is **unverified**, check in App Store Connect). They are handled by the existing `OFFER_REDEEMED` App Store Server Notification mapping (ADR 0013 list), with the entitlement coming from Apple's own transaction data. **There is no code table, redemption RPC or secret of ours**, because App Review Guideline 3.1.1 bars our own code mechanisms for unlocking functionality. Detail and unverified points: `docs/ops/OFFER_CODES.md` (branch `docs/offer-codes-runbook`, commit b8c2830, not yet merged here). Web codes stay P2 and need counsel and Apple (3.5).
 - Win-back and promotional offers: none in v1. Minnesota bans unsolicited retention offers (lawyer-1 M2), and "nothing between you and cancelling" is in Terms 14.10.
 - No print, Stripe or Lulu code in v1 (K-32). ADR 0007's print decision stays valid for later.
 
@@ -390,7 +394,8 @@ Nothing becomes unreadable. "Ends" covers every state where `planActive` is fals
 
 | Area | After Plus ends | Source |
 |---|---|---|
-| Writing, reading, playing any recording, export (PDF and ZIP), family authors and invites | Unchanged in **every** book, including extra children's books | C 4.3, LEGAL-REQ-050 |
+| Reading, playing any recording, export (PDF and ZIP) of letters already made, family authors' and members' access to them | Unchanged in **every** book, including extra children's books. *Amended 4 Oct 2026 (D-080): this is now the whole of the keep-and-leave promise.* | C 4.3, LEGAL-REQ-050 |
+| Adding new letters | *New (D-080):* needs Plus again once the account is past its 2 free letters. An in-progress letter is never discarded; it stays on the phone and the Plus sheet is offered (PRD-REQ-025) | PRD-REQ-024 |
 | Extra books started under Plus | Stay fully writable, readable and shared; only starting another needs Plus | C-REQ-028 |
 | Backed-up audio | Stays stored, playable, restorable on a new phone and included in export, forever (until the user deletes it) | C-NFR-008 |
 | New recordings | Saved on the phone; upload stops. Settings: "New recordings are kept on this phone." | C 4.3 |
@@ -410,7 +415,7 @@ The Plus sheet is one component, `apps/mobile/src/components/plus/plus-sheet.tsx
 
 **Content (before the button)**
 1. What Plus adds, matching the Subscription Terms list exactly. The list is one string set in `packages/content`, and a test asserts equality with `subscription-terms.md` (Apple 3.1.2(c); counsel note in Subscription Terms).
-2. The promise line `plus.promise`: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras." (K-11)
+2. The promise line `plus.promise`: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras." (K-11) *Amended 4 Oct 2026 (D-080): this line is superseded and must not ship; the replacement wording is owned by content and counsel (unverified).*
 3. Two plan options. **Neither is preselected** (C-REQ-022). Each leads with the billed amount ("$29.99 a year") from `StoreProduct.priceString`; any free period is secondary text. A per-month equivalent of the annual price is not shown in v1 (Rec: it only adds review risk).
 4. Under the chosen plan: `plus.legal.renewTrial` when the store reports intro eligibility (`checkTrialOrIntroductoryPriceEligibility`), otherwise `plus.legal.renewNoTrial`. `{trialLength}` comes from the product's intro offer and `{cancelByDate}` is computed from it. No "free" word appears unless eligible (C-REQ-022, H2).
 5. `plus.legal.cancel`, then `plus.legal.agree` directly above the button (H3). The links `plus.legal.links` (Terms, Privacy, Subscription terms, Restore) open in-app.
@@ -594,6 +599,46 @@ Critical path: 1 -> 5 -> 6 -> 7 -> 8 -> 9 -> 11. Estimate: about 4 to 5 engineer
 | OQ-9 | Sandbox testers on the production backend: a `profiles.is_tester` flag set by runbook only? | Data architect | Yes, audited |
 | OQ-10 | Start the trial experiment at launch? | Founder | No: after 40 trial starts a day |
 | OQ-11 | `notice_schedule` naming and timestamps (C-5) | Data architect (TDD 02), privacy (TDD 05) | Section 3.3 |
+| OQ-12 | The D-080 open edges (14.3): family letters, second child's book, offline counting, Read together interplay, first-run children, offline letters past the limit, lapsed wording | Founder; counsel for wording | Not decided here; in-progress letter never discarded is recommended |
+
+---
+
+## 14. Membership model change (D-080, 4 Oct 2026): what changes and the engineering TODO
+
+Written at the level of detail of sections 2 to 5. Nothing in `supabase/**` or app code was changed by this edit; this section is the list for the owners.
+
+### 14.1 The entitlement check and the counting (design level)
+
+- **Gate.** Add `add_letter` to `GatedFeature` in `packages/core/src/plan.ts`. `FreeForever` keeps `read`, `play_recording`, `export`, `download_backed_up_audio`, `restore_backup`, `delete`, `invite`; `write` and `family_authors` are removed from it for **new** letters and replaced by the gate. Starting to compose is never blocked: the check runs when a letter is about to be saved as a new entry, and an in-progress letter is never discarded (PRD-REQ-025). Reading, playing and exporting never consult entitlement, so the type system still makes a gate on them impossible (LEGAL-REQ-050).
+- **Decision input.** `DecideInput` gains `lettersUsed` (letters counted toward the allowance) and `freeLettersAllowance` (remote config, default 2). `decide({feature:'add_letter'})`: book or own Plus active (family authors ride the book's membership) -> allow; `lettersUsed < allowance` -> allow `free_letter`; otherwise offer `letter_limit` (new `OfferTrigger`) with `needsSignIn = !signedIn` (R-1). `decide` stays pure.
+- **Offer rules.** C-REQ-023's rules (never in first run, during recording or on a birthday, never to contributors) conflict with a paywall at the limit. Which suppressions still apply at the limit is not decided; the in-progress letter must in all cases stay safe on the phone (14.3 edge 3). Unverified until decided.
+- **Counting.** The counter is "letters saved by this account" (what counts is open edge 1 and 2 in 14.3). Where it lives, device or server, is open edge 4; compare 2.4 and D-037, where a device count was accepted because the thing counted cost nothing. A device-only count can be reset by reinstalling and gives a second device a fresh allowance, so a server-side check on entry creation is the recommended direction (Rec, unverified against founder intent).
+- **Lapse.** After Plus ends, `lettersUsed` is above the allowance, so `add_letter` returns an offer; every existing letter stays readable, playable and exportable.
+
+### 14.2 Engineering TODO (for owners; not started)
+
+1. **Core (`packages/core`):** `add_letter` gate, `letter_limit` trigger, new truth-table rows (below), property test "going over the allowance never changes a read, play or export decision".
+2. **DB tables (data architect):** a place to count letters per account (a column or a view over `entries`), and an allowance read from `app_config`; keep `entitlements` as is. Whether `create_child` rules (a) to (d) in 2.5 change is open edge 2 and 6.
+3. **Server enforcement (edge function or RPC):** a letter-creation rule beside `create_child`, raising a `plus_required`-style error (SQLSTATE style as in 2.5) when the account is over the allowance and has no Plus now (with an offline rule like (d) if edge 7 is decided). `raw_transcript` immutability and all edit triggers are untouched.
+4. **App gate (mobile):** check at save; on refusal keep the letter as an unsynced local entry, show the Plus sheet once, and sync it when Plus starts; never delete or hide it (same pattern as 2.5, D-038). Remove or reword the lapse sheet strings that say "you can keep writing".
+5. **Remote config (D-035):** add `free_letters_allowance` (default 2, audit-logged).
+6. **Tests:** engine fixtures; DB free-tier tests (account with 2 letters can save a 3rd only with Plus; refused letter is not deleted; export and read paths pass for a lapsed account with many letters); E2E-L extended to a lapsed account adding a letter; Apple sandbox run of paywall at the limit. The existing free-tier DB tests assume unlimited free writing (unverified which files; the data and payments engineers find them).
+7. **Analytics (analytics engineer):** content-free events for allowance reached, paywall shown at the limit, letter held on phone, Plus started from the limit; no entry text or counts per child that identify content.
+8. **Paywall copy, disclosures and App Store review notes** (content, legal; counsel review before release): see ROADMAP section 9.
+9. **Offer codes (D-081):** map `OFFER_REDEEMED` and following `SUBSCRIBED` or `DID_RENEW` notices to `entitlements` with the real end date; a "Redeem a code" row (PRD-REQ-027); confirm the notice windows cover an offer-code free period (unverified); confirm `expo-iap` exposes the redemption sheet (unverified).
+
+New truth-table rows to add to 2.3 (fixtures; `A` = allowance 2, `L` = letters used): add_letter Free L=0 or 1 -> allow free_letter; Free L=2 -> offer letter_limit; own Plus any L -> allow; contributor in a Plus book -> allow plus_book; lapsed L=40 -> offer letter_limit and read, play, export still allowed; remote config A=3, L=2 -> allow. Rows 1 to 12 (`start_book`) stand until open edges 2 and 6 are decided.
+
+### 14.3 Open edges (from D-080; not decided here)
+
+1. Do family letters count toward the 2 free letters?
+2. What does a second child's book get without Plus?
+3. In-progress letter at the limit: recommended never lost or discarded, kept on the phone, Plus offered.
+4. Entitlement counted offline: device or server (compare D-037).
+5. Read together's 3 free sessions versus the new free allowance.
+6. First-run children free (D-007, D-008, PRD-REQ-015) and joined books.
+7. Letters made offline past the limit.
+8. Lapsed and trial-ineligible users: what the sheet says.
 
 ---
 
@@ -602,3 +647,4 @@ Critical path: 1 -> 5 -> 6 -> 7 -> 8 -> 9 -> 11. Estimate: about 4 to 5 engineer
 | Version | Date | Change |
 |---|---|---|
 | Draft 1 | 2026-10-03 | First TDD for payments and entitlements |
+| Draft 1 + D-080 | 2026-10-04 | Banner, membership model change, section 14 TODO list, offer-code line (D-081). RevenueCat text not yet revised to ADR 0013. |

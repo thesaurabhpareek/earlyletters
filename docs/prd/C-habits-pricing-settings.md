@@ -4,6 +4,8 @@ Lead C. Draft v2, 2 Oct 2026. This version applies the founder pricing decision 
 
 > **PRD.md 1.3 (3 Oct 2026) overrides here:** Plus ships in v1.0 through the App Store only, with StoreKit 2 direct and App Store Server Notifications V2; every mention of RevenueCat below is superseded by ADR 0013 (K-34): the random `appUserID` becomes the App Store `appAccountToken`, and refunds and cancellation run only through Apple at v1.0 (Google Play rows apply when Android ships). Notice days in C-REQ-024 to C-REQ-026 and section 4.3 are superseded by the K-38 windows (final trial notice at E-4d12h; annual renewal inside [E-31d, E-30d]). A purchase requires an account and contributors never see the Plus sheet (PRD-REQ-022). Lock-screen names default off and C-REQ-009 is v1.0 (D-025).
 
+> **PRD.md 1.4 (4 Oct 2026, D-080) overrides the free-versus-Plus model in this file.** Plus is no longer optional and "free, always" is no longer the promise. Membership (the plan is still named Plus) unlocks the product: the free version is the **first 2 letters per account** (a letter is a saved entry, spoken or typed); after those, adding new letters needs Plus. Letters already made always stay readable, playable and exportable if someone never subscribes or Plus ends. One membership covers the book, and family authors add letters without their own. Prices, trials, Apple-only sale and US-only are unchanged. Wherever this file below says a capability is "free", "free forever", "always" or "unlimited" for writing, or calls Plus "extras" or "optional", read it through D-080; lines marked "Amended 4 Oct 2026" show the change and the older text is kept as history. Eight open edges (family letters and the allowance, a second child's book, offline counting, Read together interplay, first-run children and others) are listed in D-080 and not decided here. New requirements: PRD-REQ-024 to PRD-REQ-026 in PRD.md section 3.4.
+
 Scope: reminders, celebrations, settings, Plus pricing, funnel analytics. **A** owns launch, intro and sign-in; **B** owns first-run, children, family, privacy, themes.
 
 Sources: **U** USER_RESEARCH, **C** COMPETITIVE_RESEARCH, **ARCH** ARCHITECTURE, **ADR6/7/8** backup, payments, analytics; **DL/MO/CR** design docs; **V** VOICE; **S** strings.en.ts; **[P#]** platform rules (list at end); **A:** our assumption.
@@ -12,20 +14,20 @@ Sources: **U** USER_RESEARCH, **C** COMPETITIVE_RESEARCH, **ARCH** ARCHITECTURE,
 
 **Goals**
 1. **Build a calm rhythm.** Move parents from their first letter to 1 to 3 letters a week that lasts past month 6. Evidence: U §1.2 shows drop-off at weeks 2 to 8 and again when parental leave ends.
-2. **Earn revenue from Plus without making the free book feel smaller.** Evidence: U §0 finding 4 shows that paywalls on past memories and billing after inactivity drive the anger in this category.
+2. **Earn revenue from Plus without making the free book feel smaller.** Evidence: U §0 finding 4 shows that paywalls on past memories and billing after inactivity drive the anger in this category. *Amended 4 Oct 2026 (D-080):* the free version is now 2 letters; the goal becomes earning membership without ever holding a family's existing letters hostage.
 3. **Make every control easy to reach.** Every control, including export and delete, is at most 2 taps from Settings.
 4. **Measure the funnel without content.** Analytics never collect any letter content (CLAUDE.md, ADR8).
 
 **Non-goals (v1)**
 - No streaks, points, badges, gap counts or leaderboards, ever (CLAUDE.md; V "no-guilt rule"; DL principle 4).
-- No paywall on writing, reading, playback, export or family authors.
+- ~~No paywall on writing, reading, playback, export or family authors.~~ *Amended 4 Oct 2026 (D-080):* the only paywall is on adding new letters after the first 2 per account. Never a paywall on reading, playing or exporting letters that already exist, on keeping what a family has made, or on family authors having their own membership (one membership covers the book). Never during recording: an in-progress letter is never discarded (PRD-REQ-025).
 - No promotions in reminder channels ([P2] 4.5.4; C §7 item 14).
 - No lifetime purchase or print checkout at launch. Both are P2.
 - No Android at launch. Android rules are specified here so the model ports unchanged.
 
 ## 2. User stories
 
-Parents want: a nudge at a chosen time, never late and never right after writing (U R7, §3); quiet notes as the book grows (U R20); "on this day" letters (U §5 delight 3); writing, reading, hearing and export free forever (U R15); a clear notice before any charge (U R16); everything they made, backups included, to stay theirs after a lapse (C §4 complaint 1); one-tap restore (C §7 item 21); a way to pause celebrations in a hard season (U §1.1). Grandparents want to give Plus as a gift (U §4.4).
+Parents want: a nudge at a chosen time, never late and never right after writing (U R7, §3); quiet notes as the book grows (U R20); "on this day" letters (U §5 delight 3); writing, reading, hearing and export free forever (U R15); a clear notice before any charge (U R16); everything they made, backups included, to stay theirs after a lapse (C §4 complaint 1); one-tap restore (C §7 item 21); a way to pause celebrations in a hard season (U §1.1). Grandparents want to give Plus as a gift (U §4.4). *Amended 4 Oct 2026 (D-080):* this is the research finding (U R15), not the current promise. Existing letters staying readable, playable and exportable still holds; unlimited free new letters does not.
 
 ## 3. Flows
 
@@ -57,7 +59,8 @@ A slot sends only if: local time is 07:00 to 21:30; no save by this user in 20 h
 ### F4. Plus: trial, renewal, lapse
 
 ```
-Free tier forever (write, read, play, export, family authors)
+Free version (amended 4 Oct 2026, D-080: the first 2 letters per account; previously "Free tier forever: write, read, play, export, family authors")
+  Limit moment: the 3rd new letter is tapped to save or start -> Plus sheet; the in-progress letter stays on the phone, never discarded (PRD-REQ-025)
   Value-moment offer (never at launch): first month chapter complete | 2nd child added | "Turn on backup" | after 3rd Read together taste
     -> Plus sheet: Annual $29.99 (2 months free) | Monthly $3.99 (1 month free) | Not now
        Intro-offer eligibility checked per store; ineligible users see the price without trial copy
@@ -79,11 +82,13 @@ Edge cases:
 
 ### 4.1 Free forever versus Plus
 
+> **Amended 4 Oct 2026 (D-080).** The table below is the 1 to 2 Oct model, kept as history. Current model: Free = first 2 letters per account; Plus (membership) = adding new letters beyond 2, plus the rows marked Plus below. Rows 1 to 3 (write, read and play, family authors) now read: "Free for the first 2 letters, then Plus to add new letters; existing letters always stay readable, playable and exportable; one membership covers the book and family authors need no membership of their own." Rows for second child, Read together and themes are under review (open edges 2, 5, 6 in D-080) and stand as written until decided.
+
 | Capability | Free, forever | Plus | Why |
 |---|---|---|---|
-| Write notes and letters, spoken or typed, unlimited | Yes | Yes | Writing is the habit. Gating it caps the book (U R15; C §5 item 6). |
-| Read, play original audio, export PDF and ZIP | Yes | Yes | "Never held hostage" (C §7 item 5; U R15). |
-| Family authors, invites, approvals | Yes | Yes | Gating co-parents gets criticised (C §2 takeaway c; C §7 item 8). |
+| Write notes and letters, spoken or typed, unlimited *(amended 4 Oct 2026: free for the first 2 letters per account; adding new letters then needs Plus)* | First 2 only | Yes | Writing is the habit. Gating it caps the book (U R15; C §5 item 6). |
+| Read, play original audio, export PDF and ZIP *(amended 4 Oct 2026: stays available for every letter already made, with or without Plus)* | Yes, for letters already made | Yes | "Never held hostage" (C §7 item 5; U R15). |
+| Family authors, invites, approvals *(amended 4 Oct 2026: one membership covers the book; family authors add letters without their own; whether their letters count toward the 2 is open edge 1)* | Covered by the book's membership | Yes | Gating co-parents gets criticised (C §2 takeaway c; C §7 item 8). |
 | Encrypted backup of letters and recordings (ADR6) | Letter text syncs (ARCH §4 step 7). Audio stays on the phone. | **Plus** | The real ongoing cost is cumulative audio storage, about 19 MB per family per month (ARCH §7). Cloud support is a named valid subscription use [P2 3.1.2(a)]. |
 | Read together (playback with word highlight) | 3 sessions to try (A); *confirmed Oct 2 2026 (founder), count in remote config, default 3 (PRD-REQ-020)* | **Plus** | The most emotional moment in the category is hearing a voice (C §4 praise 4). C §5 item 2 says it is unclaimed in baby books. It is the natural value moment (U R20). |
 | More than one child's book | First book | **Plus** covers every additional child's book (no per-child price) | Second children get far less (U §1.4). Families with 2 or more children are deeper users (A). *Revised Oct 2 2026 per PRD.md conflict log K-12, K-28:* founder decision 2 Oct 2026. Twins and multiples added together are free (provisional, PRD.md section 9). *Confirmed Oct 2 2026 (founder):* all children added together in first run are free; a book joined as a co-parent does not count as the free book (PRD-REQ-015). |
@@ -91,7 +96,7 @@ Edge cases:
 | Printed-book credit (annual) | None | P2, once confirmed with App Review. *Oct 2 2026 (founder): v1 is digital only; printed books are a future launch (PRD.md K-32).* | Print is the category's profit engine (C §3). See OQ2 for the risk. |
 | Lifetime ~$99.99 | None | P2 non-consumable | U §4.3 verdict; C §6 recommendation. |
 
-**The keep-and-leave rule (P0).** Nothing in Plus may be needed to keep or take away what a family has made.
+**The keep-and-leave rule (P0).** Nothing in Plus may be needed to keep or take away what a family has made. *Amended 4 Oct 2026 (D-080): this rule is now the heart of the promise. Letters already made stay readable, playable and exportable forever, with or without Plus; only new letters need Plus. The lines below describe audio durability and are unchanged.*
 - A free family's text syncs, and their audio lives on the phone.
 - Export is free and works offline.
 - After a lapse, anything already backed up stays stored, restorable and downloadable forever (§4.3).
@@ -122,7 +127,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 | Renewal | *Revised Oct 2 2026 per PRD.md conflict log K-04:* annual: email and in-app card **30 and 7 days** before. Monthly: next date shown in Settings, no push. Every subscription: an annual reminder email on its anniversary. |
 | Dormant payer (P1) | Plus with no saves in 60 days: one email on how to pause or cancel, at most every 6 months (U §5 fear 2). |
 | Price change | Email and in-app notice **25 days** ahead (window 7 to 30, Subscription terms), plus the store consent flow (*Revised Oct 2 2026 per PRD.md conflict log K-04*). |
-| Lapse to Free | Writing, reading, playback, export and family stay unchanged in **every existing book, including extra children's books**. Only creating a further book needs Plus. Backed-up audio stays stored, restorable and downloadable forever, but new recordings stop uploading. Settings says plainly: "New recordings are kept on this phone." Read together returns to the try state. Themes fall back to default, and no content changes. |
+| Lapse to Free | *Amended 4 Oct 2026 (D-080):* every letter already made stays readable, playable and exportable, in every existing book. **Adding new letters needs Plus again** (the lapsed account is past its 2 free letters); an in-progress letter is kept on the phone and never discarded. The older text follows: writing, reading, playback, export and family stay unchanged in **every existing book, including extra children's books**. Only creating a further book needs Plus. Backed-up audio stays stored, restorable and downloadable forever, but new recordings stop uploading. Settings says plainly: "New recordings are kept on this phone." Read together returns to the try state. Themes fall back to default, and no content changes. |
 
 ## 5. Requirements
 
@@ -198,7 +203,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 
 - Given VoiceOver, then each row reads its label and value, for example "Reminders, a few times a week, 8:30 PM".
 
-**C-REQ-017 (P0) Export, free forever.** Export works offline in every plan state (ARCH §8).
+**C-REQ-017 (P0) Export of existing letters works in every plan state.** *Amended 4 Oct 2026 (D-080; ID and rule stay, the title no longer says "free forever"):* export works offline for every letter already made, never needs Plus and never consults entitlement (ARCH §8).
 - Given a lapsed user with 400 letters, when they tap Export everything, then the ZIP holds all entries, audio, PDF and README, and no Plus UI appears.
 
 **C-REQ-018 (P0) Keep-safe nudge for audio that is not backed up.** For Free users with recordings that are only on the phone, a Settings line shows: "Recordings live on this phone. Export or turn on backup to keep a copy." At each Year One or chapter milestone, show one soft card. This is not a sales screen. Export comes first; backup is second.
@@ -233,6 +238,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 - Evidence: U R17 (offer at a value moment); C §4 complaint 1.
 
 - Given a Free user opens a letter, then Play and the text work with no Plus UI.
+- *Amended 4 Oct 2026 (D-080):* the offer also appears at the limit moment (the third new letter), by PRD-REQ-024, and never discards the in-progress letter (PRD-REQ-025).
 
 **C-REQ-024 (P0) Trial start notice.**
 - Given a trial starts, then the in-app sheet and an email state the end date, the price after, and how to cancel (manage link), and `trial_started` is logged.
@@ -251,7 +257,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 - Given a failed renewal, then Plus continues through grace and lapses only after it ends.
 
 **C-REQ-028 (P0) Lapse behaviour** (§4.3).
-- Given a lapsed user with 2 child books, then both stay fully writable and readable, and adding a third book shows the Plus sheet.
+- *Amended 4 Oct 2026 (D-080):* given a lapsed user with 2 child books and 40 letters, then every letter stays readable, playable and exportable, and adding a new letter shows the Plus sheet (older wording: "both stay fully writable and readable, and adding a third book shows the Plus sheet").
 - Given a lapsed user with 3 GB of backed-up audio, then all of it stays playable, restorable on a new phone, and included in Export.
 
 **C-REQ-029 (P0) Refunds.** `beginRefundRequest` sits under Plan on iOS 15 and later [P4]. Google refunds go through RevenueCat [P12]. A refund removes only the entitlement. Print refunds, later, are ours (ADR7).
@@ -303,7 +309,7 @@ Net after 15% (ADR7): about $3.39 a month, $25.49 a year. We send our own trial 
 
 - **Notifications.** One idea, under 60 characters if possible. Invite, never remind. No counts, no days-since, no urgency. At most one exclamation mark a month.
 - **Plan copy.** It may state prices and dates. Never write "unlock", "premium", "expire", "lose" or "locked" (V: not "Unlock bedtime mode"). The word "trial" may appear only in store-required disclosure text. Elsewhere, say "free month" or "free months".
-- **Promise line.** Every Plus surface includes: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras." (*Revised Oct 2 2026 per PRD.md conflict log K-11; string `plus.promise`.*)
+- **Promise line.** Every Plus surface includes: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras." (*Revised Oct 2 2026 per PRD.md conflict log K-11; string `plus.promise`.*) *Amended 4 Oct 2026 (D-080): this line is no longer true and must not ship. It is replaced by a promise that existing letters always stay readable, playable and exportable and that only new letters need Plus; wording is owned by content and counsel, not drafted here (unverified).* 
 - **Names and prices.** Use `{child}` and never gender the child. Use localized `{monthlyPrice}` and `{annualPrice}` from the store. Never hardcode prices (BRAND "Proof discipline").
 
 Draft new strings:
@@ -311,14 +317,16 @@ Draft new strings:
 | Key | Copy |
 |---|---|
 | `reminder.prime` | "A gentle nudge, now and then?" / "A couple of evenings a week, at a time you pick. Never late at night." |
-| `plus.sheet` | "Plus, for {child}'s book" / "Backup for every recording, Read together, books for more children, and new covers. Writing, reading, playing your recordings, export and family letters are free, always." |
+| `plus.sheet` | "Plus, for {child}'s book" / "Backup for every recording, Read together, books for more children, and new covers. Writing, reading, playing your recordings, export and family letters are free, always." | *(Amended 4 Oct 2026, D-080: the "free, always" sentence in this draft is superseded; content owns the new string.)*
 | `plus.trialStart` | "Your free month starts today. Plus renews at {monthlyPrice} on {date} unless you cancel." |
 | `plus.trialEnding` | "Plus renews on {date}" / "{price} from then. Change or cancel any time in Settings." |
-| `plus.lapsed` | "Plus has ended. Everything you made is still here, and you can keep writing." |
+| `plus.lapsed` | "Plus has ended. Everything you made is still here, and you can keep writing." *(Amended 4 Oct 2026, D-080: "you can keep writing" is no longer true; content owns the new string.)* |
 | `backup.keepSafe` | "Recordings live on this phone. Export or turn on backup to keep a copy." |
 
 ## 8. Decided Oct 1 2026, and the trial experiment
 
+> **Amended 4 Oct 2026 (D-080): the "free forever" sentence below is superseded; prices, trials and lifetime lines stand.**
+>
 > **Decided Oct 1 2026 (founder).** Writing, reading, playback, export and family authors are free forever. Plus costs $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Lifetime at about $99.99 is P2. Printed books are paid outside IAP. This replaces the earlier 6-months-free, $1.99, $49.99 baseline. Both research reports supported the change: trials under 6 months, a $3.99 to $29.99 price band, and a higher lifetime price (C §6; U §4.2, §4.3).
 >
 > **Experiment: tune the trial**
@@ -363,13 +371,14 @@ These targets are assumptions (A) until the first cohorts.
 6. **OQ6. Second child behind Plus.** ~~Acceptable?~~ Resolved Oct 2 2026 by the founder (PRD.md K-12): yes. The add flow stays 3 taps and ends at the Plus sheet; twins added together are free (provisional; confirmed Oct 2 2026 as every child added together in first run, PRD-REQ-015).
 7. **OQ7. Copy and pricing for diaspora families.** Hindi or code-switched notification copy (U §1.4), and India storefront pricing for gifts.
 8. **OQ8. Invited family reminders.** Weekly by default, or none until they opt in?
+9. **OQ9 (4 Oct 2026, D-080). Free allowance edges, open.** (a) Do family letters count toward the 2 free letters? (b) What does a second child's book get without Plus? (c) The in-progress letter at the limit: recommended never discarded, kept on the phone, Plus offered. (d) How is entitlement counted offline, on the device or the server (compare D-037)? (e) How do Read together's 3 free sessions interact with the 2 letters? (f) What happens to first-run children free and joined books (D-007, D-008, PRD-REQ-015)? (g) Letters made offline past the limit. (h) Lapsed-user and trial-ineligible sheet wording. Founder decides; not decided here.
 
 ## 11. Dependencies on A and B
 
 **A (sign-in)**
 - The account identity drives RevenueCat `appUserID`, restore and deletion.
 - Trial and renewal emails need an address. Apple private relay is fine.
-- The intro and the App Store may say "free to write, read and export, always". No price is shown before value (U R1).
+- The intro and the App Store may say "free to write, read and export, always". No price is shown before value (U R1). *Amended 4 Oct 2026 (D-080): superseded; "free to write, read and export, always" must not appear. The first 2 letters are free; wording owned by content and counsel.*
 
 **B (first-run, children, family, privacy, themes)**
 - B does **not** ask for notification permission. `onboarding.reminder` moves to C's card after the first letter and gets rewritten.

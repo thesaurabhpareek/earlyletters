@@ -4,6 +4,9 @@ Owner: PM Lead B. Draft, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict lo
 
 > **PRD.md 1.3 (3 Oct 2026) overrides here:** the web contribution page (F6, B-REQ-008, B-REQ-022, the browser part of B-NFR-005) moves to **v1.1**; Family contributors join and write **in the iOS app** at v1.0 (K-35, D-002). Visibility lives in one `book_access` table (D-024); contributors see the child's name, nickname and birthday month and day, never the due date (D-039). Shared voice (recordings of shared-book letters uploaded so family can hear them) is recommended for v1.0, pending the founder (K-40, PRD-REQ-021).
 
+> **PRD.md 1.4 (4 Oct 2026, D-080) amends the pricing statements here.** Plus is now the membership that unlocks new letters: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book and family authors need none. Any line below that says free, free forever, always free or never paywalled for writing, family authors or first-run children is amended in place or read through D-080 and PRD-REQ-024 to -026. Open edges (family letters and the allowance, a second child's book, first-run children, offline counting) are in D-080 and are not decided here.
+
+
 ---
 
 ## 1. Goals and non-goals
@@ -17,7 +20,7 @@ Owner: PM Lead B. Draft, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict lo
 6. Every personalization question changes something the user can see. No question without a use.
 
 **Non-goals (launch)**
-- Any paywall on co-parents, family, invites or approvals (COMPETITIVE_RESEARCH 2 takeaway (c), 7.8).
+- Any paywall on co-parents, family, invites or approvals (COMPETITIVE_RESEARCH 2 takeaway (c), 7.8). *Amended 4 Oct 2026 (D-080): still no separate paywall on co-parents, invites or approvals; one membership covers the book and family authors need none. Whether family letters count toward the 2 free letters is open (D-080 edge 1).*
 - Child gender, surname, birth weight, birth place, location, contacts access. Never collected.
 - Copy for pregnancy or infant loss. We ship a graceful, quiet path (B-REQ-014), not words about it.
 - Hindi app UI (P2); printed-book themes (print is later, ARCHITECTURE 10); child accounts.
@@ -54,7 +57,7 @@ Target: R1, first saved letter at ≤ 90 s median (USER_RESEARCH 6).
 Edge cases
 - No account yet (if A defers sign-up): stored locally, created via `create_child` at sign-up. Invites need an account; tapping Invite starts A's sign-up.
 - Adoption: birthday picker allows "I only know the month" (stores month precision; chapters still work). Optional "The day {child} came home" date is P2.
-- Twins or more: "Add another child" repeats steps 1 to 2 with the date prefilled; one book each. *Revised Oct 2 2026 per PRD.md conflict log K-12:* children added together in first run are free (provisional, founder to confirm) and no Plus sheet ever appears in first run. *Confirmed Oct 2 2026 (founder):* every child added together in first run stays free; no same-date condition (PRD-REQ-015).
+- Twins or more: "Add another child" repeats steps 1 to 2 with the date prefilled; one book each. *Revised Oct 2 2026 per PRD.md conflict log K-12:* children added together in first run are free (provisional, founder to confirm) and no Plus sheet ever appears in first run. *Confirmed Oct 2 2026 (founder):* every child added together in first run stays free; no same-date condition (PRD-REQ-015). *Amended 4 Oct 2026 (D-080): under review, open edge 6.*
 - Name in Devanagari or with diacritics: accepted as typed; never transliterated.
 
 ### F2. Children: add, switch, expecting to born, remove
@@ -132,7 +135,7 @@ Leave (anyone): "Leave my letters in the book" (default) or "Take my letters out
 ### F8. Relationship breakdown
 **Decision:** two parents are equals. In v1 neither can remove the other, delete the other's letters, or delete the shared book.
 1. Each can make their own letters private (singly, or all at once P1) and default new letters to private.
-2. Each can leave (F7), keeping their letters; export stays free (USER_RESEARCH 6 R15).
+2. Each can leave (F7), keeping their letters; export stays free (USER_RESEARCH 6 R15). *(Amended 4 Oct 2026, D-080: export of letters already made stays open to everyone without Plus; "free" is not a standing promise on new letters.)*
 3. Safety cases (e.g. court order): support verifies and removes a member via a service-role runbook (Ops; Help entry in C).
 4. Contributors belong to the child, not to the inviting parent.
 
@@ -352,7 +355,7 @@ P0 launch blocker, P1 launch quarter, P2 later.
 - Sign-up timing and local-to-server handoff via `create_child`; account linking for web contributors who install later.
 
 **On Section C**
-- Never paywall invites, family authors, approvals, or own-letter read and export, even after leaving (USER_RESEARCH 6 R15).
+- Never paywall invites, family authors, approvals, or own-letter read and export, even after leaving (USER_RESEARCH 6 R15). *(Amended 4 Oct 2026, D-080: stands for invites, approvals and for reading and exporting existing letters; "family authors" is read as: they need no membership of their own, the book's membership covers them.)*
 - Reminders and celebrations read `hidden_at`, expecting mode and goals; no due-date reminders. C delivers `familyLetter` and `familyAdded`.
 - Settings hosts Children, Family, Languages, Names and words, Appearance, Reading Size, What matters, Hidden books, Delete.
 - Contributors never start or consume a trial; grandparent gifts (USER_RESEARCH 4.4) attach to the child's book.

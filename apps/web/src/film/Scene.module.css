@@ -1,0 +1,63 @@
+/* Owner: coordinator. */
+.scene {
+  position: relative;
+  height: calc(var(--scene-length, 2) * 100svh);
+}
+
+/*
+ * Scenes overlap by one screen, so a scene is pinned at the exact moment the scene before it ends.
+ * Its stage stays hidden until then (Scene.tsx sets data-live), and each scene's first frame equals
+ * the previous scene's last frame (STORYBOARD handoffs): the cut is invisible and no scroll is dead.
+ * Backgrounds live on the stage, never on the section, so an arriving section paints nothing.
+ */
+.scene + .scene {
+  margin-top: -100svh;
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  width: 100%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.stage[data-live='false'] {
+  visibility: hidden;
+}
+
+.scene[data-tone='paper'] > .stage {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.scene[data-tone='dusk'] > .stage {
+  background: var(--dusk);
+  color: var(--night-ink);
+}
+
+.scene[data-tone='night'] > .stage {
+  background: var(--night);
+  color: var(--night-ink);
+}
+
+/* Reduced motion: scenes do not pin or overlap; content flows like a normal page. */
+@media (prefers-reduced-motion: reduce) {
+  .scene {
+    height: auto;
+    min-height: 100svh;
+  }
+  .scene + .scene {
+    margin-top: 0;
+  }
+  .stage {
+    position: relative;
+    min-height: 100svh;
+    height: auto;
+    padding-block: 12svh;
+  }
+  .stage[data-live='false'] {
+    visibility: visible;
+  }
+}

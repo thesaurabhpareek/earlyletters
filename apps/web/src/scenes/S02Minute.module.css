@@ -1,0 +1,22 @@
+/* S02: the lamp stays where S01 left it; the phone wakes in its light. */
+.lamp {
+  position: absolute;
+  left: 6vw;
+  bottom: 8svh;
+  width: min(28vw, 150px);
+  color: color-mix(in srgb, var(--night-ink) 70%, transparent);
+}
+.phoneStage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+@media (min-width: 900px) {
+  .lamp {
+    left: max(10vw, calc(50vw - 560px));
+    bottom: 6svh;
+    width: min(13vw, 190px);
+  }
+}
