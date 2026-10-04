@@ -6,7 +6,7 @@
  */
 export const consentCopy = {
   // settings.privacy.analyticsSection
-  analyticsSection: 'Usage and crash reports',
+  analyticsSection: 'Usage reports',
   // settings.privacy.sensitiveSection
   sensitiveSection: 'Your letters',
   // settings.privacy.neverTitle
@@ -15,7 +15,7 @@ export const consentCopy = {
   never: [
     'We never show ads, and your letters are never used for advertising.',
     'We never sell your data.',
-    'We never use your words, recordings or photos to train machine learning models.',
+    'We never use your words or recordings to train machine learning models.',
   ],
   // settings.privacy.childFallback: fills {child} in sensitiveHelp when no book exists yet.
   childFallback: 'your child',

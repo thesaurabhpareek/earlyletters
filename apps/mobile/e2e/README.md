@@ -28,7 +28,7 @@ TDD 07 planned 15 flows on 3 Oct morning; the founder's decisions that day chang
 | E2E-08 | `E2E-08-delete-and-undo.yaml` | Delete, Undo, delete again: gone from the book, also after relaunch | offline |
 | E2E-09 | `E2E-09-account-deletion.yaml` | Account deletion: Export offered first, typed confirm, scheduled; cancel; server row scheduled then cancelled | backend |
 | E2E-10 | `E2E-10-export.yaml` + `bin/inspect-export.sh` | Export offline with no Plus UI; ZIP contents and manifest hashes | offline |
-| E2E-11 | `E2E-11-analytics-consent.yaml` | Usage and crash reports off by default, on, off, each surviving a relaunch; the consent sheet block is pending (not mounted in the app yet) | none |
+| E2E-11 | `E2E-11-analytics-consent.yaml` | Usage reports off by default, on, off, each surviving a relaunch; the consent sheet block is pending (not mounted in the app yet) | none |
 | E2E-12 | `E2E-12-sign-in-email.yaml` | Email code sign-in, Terms with the 18+ line, sensitive-data consent; optional universal-link variant | backend |
 | E2E-13 | `E2E-13a/b/c-*.yaml` + `bin/run-coparent.sh` | Co-parent invite round trip on two simulators: Mama invites, Papa joins through the 18+ gate and sign-in, Mama sees Papa | backend, 2 simulators |
 | E2E-14 | `E2E-14-restore-purchases.yaml` | Apple's store view with the StoreKit file, a test purchase, Restore purchases | app run from Xcode |

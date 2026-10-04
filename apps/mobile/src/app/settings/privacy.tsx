@@ -17,7 +17,7 @@ import { useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
  * Settings > Privacy (PRD.md K-01, K-17; C-REQ-016; LEGAL-REQ-003, -006).
  * Each consent is visible and changeable here, within two taps of Settings.
  *
- * - Usage and crash reports: the same switch as the consent sheet. Off stops
+ * - Usage reports: the same switch as the consent sheet. Off stops
  *   sending within the session (PRD-REQ-018); on starts a new random id.
  * - Sync and family sharing (sensitive-data consent): shown here; its owner
  *   registers the status and the change flow (lib/analytics/privacy-sources).
