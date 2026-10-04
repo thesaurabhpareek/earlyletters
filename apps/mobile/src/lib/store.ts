@@ -449,6 +449,24 @@ export function setWordsForWaitingEntry(
   return done;
 }
 
+/**
+ * "Write the words" on a letter still waiting for its words (D-086): the parent's typing becomes the words,
+ * once. False when the letter already had words, was deleted or the text is empty.
+ */
+export function setTypedWordsForWaitingEntry(id: string, text: string): boolean {
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.setTypedWordsOnce(c, id, text);
+    if (done) enqueueEntryUpsert(c.db, id, ALL_GROUPS, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
+  return done;
+}
+
 /** Entries for the active child (unchanged signature). */
 export function listEntries(): Entry[] {
   const id = getActiveChildId();

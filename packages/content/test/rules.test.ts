@@ -730,6 +730,21 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
   });
 
+  it('says "small fix", never edit, correct, clean or improve, where the app talks about its fixes (D-086)', () => {
+    const where = (l: Leaf) => /^(en\.review|en\.onboarding\.promise|en\.book\.provenance|features\.words|features\.speech)\b/.test(l.path);
+    const BANNED = /\bedit(s|ed|ing)?\b|\bcorrect(s|ed|ing|ion|ions)?\b|\bclean(s|ed|ing)?\b|\bimprov\w*/i;
+    expect(offenders(ALL.filter(where), BANNED)).toEqual([]);
+  });
+
+  it('uses "Word for word" only where the feature is named, never to caption fixed text (D-086)', () => {
+    const named = /^(en\.onboarding\.promise\b|en\.settings\.tidyLabel$|site\.|store\.|pages\.|email\.)/;
+    const bad = [...ALL, ...EMAIL].filter((l) => /word for word/i.test(l.text) && !named.test(l.path));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    expect(en.review.view.exact).toBe('Exactly as said');
+    expect(en.review.view.fixes).toBe('With small fixes');
+    expect(en.book.provenance.spokenFixed).toBe('Spoken, with small fixes');
+  });
+
   it('names the subscription Plus only', () => {
     expect(offenders(COPY, /Early Letters Plus|Book Plus|\b(Premium|Pro)\b|Plus Yearly/)).toEqual([]);
     expect(offenders(COPY, new RegExp(`${brand.name} Plus`))).toEqual([]);

@@ -190,6 +190,24 @@ export function setWordsOnce(
   return changes(ctx.db) === 1;
 }
 
+/**
+ * The parent typed the words for a recording that never got any (D-086 "Write the words"). Only a letter that
+ * is still waiting, with its raw still '': it was held and never uploaded, so the first raw is still free to
+ * set. The typed words are the raw, nothing is fixed, and the letter becomes mixed (a recording with typed
+ * words), so it is never called spoken. False when it already has words, was deleted or is missing.
+ */
+export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): boolean {
+  const words = text.trim();
+  if (!words) return false;
+  ctx.db.run(
+    `UPDATE entries SET raw_transcript = ?, machine_edits = '[]', final_text = ?, edit_level = 'verbatim', capture_mode = 'mixed',
+       transcript_status = NULL, updated_at = ?
+     WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = '' AND deleted_at IS NULL`,
+    words, words, ctx.now(), id,
+  );
+  return changes(ctx.db) === 1;
+}
+
 /** Tombstone, never a hard delete. Keeps the first deleted_at. False when missing or already tombstoned. */
 export function tombstone(ctx: RepoContext, id: string): boolean {
   const now = ctx.now();

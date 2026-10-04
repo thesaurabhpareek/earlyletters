@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Alert, ScrollView } from 'react-native';
-import { ListRow, ListSection } from '@/components/ui/list-row';
+import { DEFAULT_VIEW_SETTING, viewFromSetting } from '@/components/capture/review-view.logic';
+import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
-import { listOrphanAudio } from '@/lib/store';
+import { getSetting, listOrphanAudio, setSetting } from '@/lib/store';
 import { authorSpeechLanguage } from '@/lib/models/author-language';
 import { SPEECH_MODELS, VAD_MODEL_ID, type SpeechLanguage } from '@/lib/models/catalog';
 import { speechSettingsCopy } from '@/lib/models/copy';
@@ -47,10 +49,29 @@ export default function Recordings() {
         ))}
       </ListSection>
 
-      <ListSection title={copy.settings.help.mistakesTitle} footer={copy.settings.help.mistakes}>
-        <ListRow title={copy.settings.tidyLabel} subtitle={copy.settings.tidyHelp} />
+      <ListSection title={copy.settings.help.mistakesTitle} footer={`${copy.settings.tidyHelp} ${copy.settings.help.mistakes}`}>
+        <WordForWordSwitch />
       </ListSection>
     </ScrollView>
+  );
+}
+
+/**
+ * "Word for word" (D-086): the default for new letters. On: small fixes, marked, each one tappable and
+ * reversible. Off: new letters open as "Exactly as said". Review's own control still changes any single letter.
+ */
+function WordForWordSwitch() {
+  const [fixes, setFixes] = useState(() => viewFromSetting(getSetting(DEFAULT_VIEW_SETTING)) === 'fixes');
+  return (
+    <ToggleRow
+      title={copy.settings.tidyLabel}
+      description={fixes ? copy.settings.tidyOn : copy.settings.tidyOff}
+      value={fixes}
+      onValueChange={(on) => {
+        setFixes(on);
+        setSetting(DEFAULT_VIEW_SETTING, on ? 'fixes' : 'exact');
+      }}
+    />
   );
 }
 

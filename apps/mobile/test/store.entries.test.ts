@@ -176,6 +176,36 @@ describe('words for a waiting letter are set once', () => {
   });
 });
 
+describe('typed words for a waiting letter (D-086, "Write the words")', () => {
+  beforeEach(() => entries.upsert(f.ctx, letter({ id: 'w1', rawTranscript: '', finalText: '', transcriptStatus: 'waiting' }), defaults));
+
+  it('become the words once, untouched, and the letter is a recording with typed words', () => {
+    expect(entries.setTypedWordsOnce(f.ctx, 'w1', '  Asha clapped at the dog  ')).toBe(true);
+    expect(entries.get(f.ctx, 'w1')).toMatchObject({
+      rawTranscript: 'Asha clapped at the dog',
+      finalText: 'Asha clapped at the dog',
+      machineEdits: [],
+      captureMode: 'mixed',
+      editLevel: 'verbatim',
+      transcriptStatus: null,
+    });
+  });
+
+  it('are refused when empty, and a letter that already has words keeps them', () => {
+    expect(entries.setTypedWordsOnce(f.ctx, 'w1', '   ')).toBe(false);
+    entries.setTypedWordsOnce(f.ctx, 'w1', 'first words');
+    expect(entries.setTypedWordsOnce(f.ctx, 'w1', 'second words')).toBe(false);
+    expect(rawRow(f.db, 'w1')!.raw_transcript).toBe('first words');
+    entries.upsert(f.ctx, letter({ id: 'l2' }), defaults);
+    expect(entries.setTypedWordsOnce(f.ctx, 'l2', 'new words')).toBe(false);
+  });
+
+  it('never write into a deleted letter', () => {
+    entries.tombstone(f.ctx, 'w1');
+    expect(entries.setTypedWordsOnce(f.ctx, 'w1', 'words')).toBe(false);
+  });
+});
+
 describe('draft to letter (DATA-REQ-048)', () => {
   function draft() {
     const id = f.ctx.newId();

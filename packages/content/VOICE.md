@@ -21,7 +21,7 @@ Early Letters is the memory book you fill by talking: letters to your child, in 
 | Do | Don't |
 | --- | --- |
 | "Tell {child} about today." | "Capture every precious moment." |
-| "Kept exactly as you said it." | "We tidy your words into a story." |
+| "Kept exactly as you said it." | "We shape your words into a story." |
 | "On a quiet day, tap Not much today." | "It has been 5 days since your last letter." |
 | "Read together at bedtime." | "Unlock bedtime mode." |
 | "From Nani" | "Contributor: Grandmother" |
@@ -34,14 +34,18 @@ We speak about time, not endings. The promise is that {child} will read and hear
 
 ## The no-machine-writing rule
 
-We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, tidied or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." Transcription only fixes microphone and grammar slips.
+We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, polished or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." Transcription only fixes microphone and grammar slips.
 
 ## Word for word
 
-The edit feature is called **Word for word** (founder decision, Oct 3 2026, D-074). It removes an "um" or a stumble, fixes a misheard name, spelling, script and punctuation, and nothing else. Each of these is a **small fix**, shown in the letter as a mark the person can tap and undo. The setting that keeps every um and false start is **Exactly as said**; the untouched words are "exactly what you said".
+The edit feature is called **Word for word** (founder decision, Oct 3 2026, D-074; words settled in D-086). It removes an "um" or a stumble, fixes a misheard name, spelling, script and punctuation, and nothing else. Each of these is a **small fix**, shown in the letter as a mark the person can tap and put back. The view that keeps every um and false start is **Exactly as said**; the other is **With small fixes**.
 
-- Say: "Word for word", "small fixes", "every small fix is marked, and you can undo it".
-- Never say: tidy, tidied, tidying, lightly tidied, cleaned up, polished, improved, corrected, edited (for what the machine does).
+- "Word for word" is the feature's name. It appears only where the feature is named: the promise, Settings, the store and the website. Never as a caption on fixed text (the idiom means verbatim, and fixed text is not).
+- Name each fix by what happened, not by category: "Took out a sound", "Took out a restart", "Took out a repeat", "Spelled your way", "One word fixed", "New paragraph", "Punctuation", "Your script".
+- Say "Exactly as said" or "exactly what you said" only when the words really are untouched (the final words equal the raw words).
+- Words that arrive later arrive exactly as said and are never fixed unread.
+- Say: "Word for word", "small fixes", "every small fix is marked, and you can put it back".
+- Never say: tidy (in any form), cleaned up, polished, improved, corrected, edited (for what the machine does).
 
 ## The no-guilt rule
 
