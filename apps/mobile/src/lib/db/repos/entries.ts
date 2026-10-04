@@ -21,6 +21,7 @@
  */
 import type { Edit, EditLevel } from '@scribe/core';
 import { changes, type RepoContext } from './context';
+import type { EntrySyncState } from '../../sync/types';
 import type { CaptureMode, Entry, EntryKind } from './types';
 
 interface EntryRow {
@@ -45,11 +46,13 @@ interface EntryRow {
   audio_sha256: string | null;
   audio_bytes: number | null;
   transcript_status: string | null;
+  sync_state: string | null;
+  approval: string | null;
 }
 
 const COLS = `id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version, raw_transcript,
   machine_edits, final_text, in_book, sounds_like_me, child_id, author_id, author_signs_as, audio_uri, audio_duration_ms,
-  audio_sha256, audio_bytes, transcript_status`;
+  audio_sha256, audio_bytes, transcript_status, sync_state, approval`;
 
 /** The row exists but is tombstoned; edits are refused until it is restored. Code only, no row content. */
 export class EntryTombstonedError extends Error {
@@ -89,6 +92,8 @@ const fromRow = (r: EntryRow): Entry => ({
   audioSha256: r.audio_sha256,
   audioBytes: r.audio_bytes,
   transcriptStatus: r.transcript_status === 'waiting' ? 'waiting' : null,
+  syncState: (r.sync_state ?? 'local') as EntrySyncState,
+  approval: r.approval,
 });
 
 /** Values the caller resolved for a first insert. Ignored when the row already exists. */

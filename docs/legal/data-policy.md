@@ -1,13 +1,16 @@
 ---
 title: Data governance and retention policy
 product: "{brand.name} (codename scribe)"
-version: 1.1.0
+version: 1.2.0
 status: draft-for-counsel
 effective_date: TBD
 owner: founder (data governance lead role)
 approver: outside counsel
 companion: DELETION_AND_EXPORT_SPEC.md (flows, export, integrity controls, DATA-REQ acceptance criteria)
 changelog:
+  - version: 1.2.0
+    date: 2026-10-03
+    summary: Alignment with the founder decisions of 3 Oct 2026, second round (D-051 to D-070). No audio leaves the phone in v1.0 (D-059), so backup audio, key grants, escrow wraps, the inbox bucket and return links are marked later than v1.0. No purchase records on our servers (D-053, ADR 0013); the purchase-ledger rows and Apple mapping are removed. PowerSync removed (D-023; outbox and cursor sync on Supabase). Resend named as the email provider, with its 30-day message retention stated as the one exception to the 45-day processor clock. Download host (Cloudflare R2 candidate, Q-001) and Hugging Face added. Sentry not in v1.0. Device inventory updated (expo-sqlite, packs and models, analytics ids per consent period, plus.cache, D-033 device backup). Minor.
   - version: 1.1.0
     date: 2026-10-03
     summary: Alignment with PRD.md 1.3 and docs/DECISIONS.md. RevenueCat removed (ADR 0013); purchases come from Apple's App Store Server API under a random appAccountToken (never the profile uuid; fixes the 4.6 conflict in TDD 02 OQ-B1, TDD 05 X-17). Invite hashes keyed on use, revocation or expiry (D-020). Ops and security logs 12 months beside 24-month audit events (D-021). Minor.
@@ -72,25 +75,26 @@ Region: Supabase project in **us-west-1** (AWS, California). Status column: **Li
 | Element | Columns / content | Class | Owner | Retention | Reason | Status |
 |---|---|---|---|---|---|---|
 | `profiles` | `display_name`, `signs_as`, timestamps; planned `avatar_path` | A | Account holder | Life of account; deleted at execution of account deletion | Signature "From Papa" on letters | Live |
-| `profile_settings` | languages, Hindi script, goals, entry defaults | S (languages), A | Account holder | Life of account | Transcription settings, prompt mix (PRD B F1, F3) | Planned (B) |
+| `profile_settings` | languages, Hindi script, goals, entry defaults | S (languages), A | Account holder | Life of account | Transcription settings, prompt mix (PRD B F1, F3) | Planned; in v1.0 these settings stay on the device (DATA_CLASSIFICATION 4.5) |
 | `children` | `name`, `date_of_birth`, `created_by`; planned nickname, due date, photo, theme, `family_can_read`, `hidden_at`; `deleted_at`, `deletion_request_id` | S | Parents jointly | Until book purge (30 days after book deletion) | Book identity, month-of-age chapters | Live; deletion columns Draft |
 | `child_members` | child, profile, role, joined | A | Parents jointly | Until leave, removal, book purge or account deletion | Access control | Live |
 | `child_invites` | `token_hash` (SHA-256), role, expiry, accepted by/at, inviter | A | Parents | 90 days after use, revocation or expiry, keyed on `coalesce(revoked_at, accepted_at, expires_at)` (D-020; Privacy Policy section 10) | Invite security and support | Live; purge Draft |
-| `member_return_links` | hashed bearer token for web contributors | A | Contributor | Until revoked or rotated, then 90 days (proposed) | Return access without a password (PRD B F6) | Planned (B) |
+| `member_return_links` | hashed bearer token for web contributors | A | Contributor | Until revoked or rotated, then 90 days (proposed) | Return access without a password (PRD B F6) | Planned, later than v1.0 (web page, D-055) |
 | `entries` metadata | ids, kind, dates, capture mode, edit level, prompt key, engine version, `in_book`, `audio_kept_on_device`, `sounds_like_me`, `deleted_at`, `deleted_reason` | A/C | Author | Life of entry; tombstone 30 days; then purged | Book assembly, sync, reproducibility | Live; reason Draft |
 | `entries.raw_transcript` | exact ASR or typed text, immutable | C (may contain S) | Author | Life of entry | Fidelity: the original is never lost (CLAUDE.md) | Live |
+| `entries.language` | spoken-letter language, one of the seven v1.0 codes, nullable | S | Author | Life of entry | Transcription and the k-anonymised `insights.language_mix` count | Migration `20261005000000` (author-only reads; not in `book_entries`) |
 | `entries.raw_sha256` | SHA-256 of raw transcript | A | Author | Life of entry | Corruption detection (spec DATA-REQ-046) | Draft |
 | `entries.stt_meta` | engine, model, version, prompt hash, per-token timestamps, avg log-prob | C | Author | Life of entry | Re-derivation, alignment | Live |
 | `entries.machine_edits` | accepted and rejected typed edits with offsets and source | C | Author | Life of entry | Every edit reversible (CLAUDE.md) | Live |
 | `entries.final_text`, `search` | text the book renders; generated FTS vector | C | Author | Life of entry | Book, search | Live |
-| `entries.photo_path` | pointer into `entry-photos` | C | Author | Life of entry | Photo with a letter | Live; scoping check Draft |
+| `entries.photo_path` | pointer into `entry-photos` | C | Author | Life of entry | Photo with a letter | Column live; unused in v1.0 (no photo feature) |
 | `entries` planned columns | approval, reviewer, occasion, `sealed_until`, group ids, source | A/C | Author (approval: parents) | Life of entry | PRD B section 6 | Planned (B) |
 | `entry_versions` | previous `final_text`, `in_book`; Draft adds `machine_edits`, `superseded_by` | C | Author | Life of the entry; purged with it | Server-side version history | Live; columns Draft |
 | `dictionary_terms` | names and words, `heard_as` | C (names) | Author; child-level terms shared with members (B) | Life of account or book | Name accuracy | Live |
 | `safety_events` | none: dropped (PRD K-06); tiers stay on the device | n/a | n/a | n/a | n/a | Dropped in `20261002020000_data_governance.sql` |
-| `audio_blobs` | entry, object path, size, `sha256`, wrapped file key | C pointer + S (key) | Author | Life of entry; key row deleted at purge (crypto-shred) | Encrypted backup (ADR 0006) | Planned |
-| `child_key_grants` | CCK wrapped to member public keys | S | Parents | Until member removal rotates the key, or book purge | Family playback (ADR 0006) | Planned |
-| Escrow wrap of CCK | CCK wrapped by server secret (Standard mode) | S | Parents | Until Vault mode is chosen or book purge | Recovery (ADR 0006) | Planned |
+| `audio_blobs` | entry, object path, size, `sha256`, wrapped file key | C pointer + S (key) | Author | Life of entry; key row deleted at purge (crypto-shred) | Encrypted backup (ADR 0006) | Planned, later than v1.0 (no audio upload, D-059) |
+| `child_key_grants` | CCK wrapped to member public keys | S | Parents | Until member removal rotates the key, or book purge | Family playback (ADR 0006) | Planned, later than v1.0 (D-059) |
+| Escrow wrap of CCK | CCK wrapped by server secret (Standard mode) | S | Parents | Until Vault mode is chosen or book purge | Recovery (ADR 0006) | Planned, later than v1.0 (D-059) |
 | `policy_documents`, `policy_versions`, `policy_acceptances` | versioned legal texts; acts without IP or free text | A | Company / account holder | Acceptances: life of account plus 3 years, pseudonymised at deletion | Proof of consent (ARL, POLICY_VERSIONING.md) | Draft (compliance) |
 | `deletion_requests`, `deletion_request_steps` | kind, status, dates, source, counts; profile id nulled at completion | A | Company | 3 years after completion or cancellation | Proof that deletion happened | Draft |
 | `legal_holds` | scope id, reason code, ticket ref, placed by, review date | A | Company | Until released plus 3 years (proposed) | Preservation duties | Draft |
@@ -99,7 +103,9 @@ Region: Supabase project in **us-west-1** (AWS, California). Status column: **Li
 | `storage_purge_queue` | bucket, path, attempts | A | Company | 7 days after done | Storage deletion through the API | Draft |
 | `waitlist` (web) | email | A | Subscriber | Until launch invite plus 12 months, or unsubscribe (proposed) | Launch notice (ADR 0010) | Planned |
 | Print orders (P2) | shipping address, order, payment reference | A | Buyer | 7 years for transaction records (proposed) | Tax and accounting; refunds | Planned |
-| Purchase ledger (if kept) | product, store, transaction id, dates; no card data | A | Account holder | Life of account, then 7 years transaction fields only (proposed) | ARL proof of consent, tax | Planned (C) |
+| Purchase ledger | none: not kept. No server of ours sees purchases (D-053, ADR 0013); `store_subscriptions`, `store_notifications` and `app_account_tokens` were dropped by `20261004000000_plus_on_device_only.sql`. Apple keeps its own records as merchant of record | n/a | n/a | n/a | n/a | Removed |
+| `ops.apple_tokens` | Sign in with Apple refresh token, AES-256-GCM under `TOKEN_KEK_V<n>`, bound to the profile id | S | Account holder | Until revoked at account deletion | Revoke Sign in with Apple at deletion (Apple 5.1.1(v)) | Live schema; capture not built (security review H3) |
+| `ops.audit_log` | operator, runbook, target ids, reason, time; no content | A | Company | 12 months (D-021) | Logged staff and service-role access (LEGAL-REQ-025) | Live schema (`20261004200000`) |
 
 ### 4.2 Postgres, `auth` schema (Supabase managed)
 
@@ -108,15 +114,15 @@ Region: Supabase project in **us-west-1** (AWS, California). Status column: **Li
 | `auth.users`, `auth.identities` | email, provider subject ids, timestamps | A | Life of account; deleted by `auth.admin.deleteUser` at execution | Supabase blocks deleting a user who still owns Storage objects [D6]; the worker deletes objects first |
 | `auth.sessions`, refresh tokens | session state | A | Rolling; removed with user | |
 | Auth audit log | sign-in events, may include IP address | A | **Unverified** where and how long Supabase keeps it; target 90 days | Open question OQ-5 |
-| Apple refresh token (new) | needed to revoke Sign in with Apple [D2] | S | Until revoked at deletion | Stored encrypted by an Edge Function at sign-in; see spec DATA-REQ-033 |
+| Apple refresh token | needed to revoke Sign in with Apple [D2] | S | Until revoked at deletion | Stored wrapped in `ops.apple_tokens` (4.1) by an `apple-token` Edge Function at sign-in; that function is not built yet (SECURITY.md 5; security review H3) |
 
 ### 4.3 Supabase Storage (private buckets)
 
 | Bucket | Path | Content | Class | Retention | Status |
 |---|---|---|---|---|---|
-| `entry-photos` | `{child_id}/{author_id}/{entry_id}.jpg` | photos | C | Life of entry | Live |
-| backup audio (name TBD) | per ADR 0006 | AES-256-GCM ciphertext of M4A | C | Life of entry; kept after Plus lapse (PRD C-NFR-008) | Planned |
-| `inbox` | `{child_id}/{entry_id}` | web contributor audio encrypted in the browser (B-NFR-005) | C | Until moved into the entry by the parent's phone, then the entry's life | Planned (B) |
+| `entry-photos` | `{child_id}/{author_id}/{entry_id}.jpg` | photos | C | Life of entry | Bucket live; unused in v1.0 (no photo feature) |
+| backup audio (name TBD) | per ADR 0006 | AES-256-GCM ciphertext of M4A | C | Life of entry; kept after Plus lapse (PRD C-NFR-008) | Planned, later than v1.0 (D-059) |
+| `inbox` | `{child_id}/{entry_id}` | web contributor audio encrypted in the browser (B-NFR-005) | C | Until moved into the entry by the parent's phone, then the entry's life | Planned, later than v1.0 (D-055, D-059) |
 | `child-photos`, `avatars` | per B section 6 | photos | S / A | Life of book / account | Planned (B) |
 | `exports` (new) | `{profile_id}/{export_id}.zip` | server-built exports (spec DATA-REQ-054) | C | 7 days, then deleted | Draft spec |
 | `ops-ledger` (new) | `purges/YYYY-MM-DD.jsonl` | purged ids only | A | 60 days | Draft spec |
@@ -127,14 +133,15 @@ Storage objects are **not** in database backups, and a deleted object cannot be 
 
 | Element | Where | Class | Retention | Note |
 |---|---|---|---|---|
-| Local database (op-sqlite, ADR 0004) | app sandbox | C, A | Mirrors what the user may see; pre-account letters live only here | Wiped when account deletion executes (spec DATA-REQ-023) |
-| Audio `audio/<entry_id>.m4a` | app sandbox | C | Until the author deletes the letter (purged with it) or deletes the app | Free plan: the only copy (PRD C section 4.3) |
-| Photos, cached book audio of others | app sandbox | C | Until purge sync or member removal | Copies on other members' phones are outside our reach (Terms 7.2) |
-| Whisper model files | app sandbox | none | Until app deleted | Not personal data |
-| Keychain / Keystore | CCK (synchronizable), X25519 private key, session, invite token | S | CCK until book purge or key rotation; tokens until sign-out or acceptance | ADR 0006; A-NFR-008 |
-| Analytics id | device storage | T | Until reset at sign-out or account deletion | ADR 0008 |
+| Local database (expo-sqlite, D-023) | app sandbox | C, A | Mirrors what the user may see; pre-account letters live only here | Wiped when account deletion executes (spec DATA-REQ-023) |
+| Audio `audio/<entry_id>.m4a` and any listening copy | app sandbox, backed-up directory (D-033) | C | Until the author deletes the letter (purged with it) or deletes the app | The only copy in v1.0 for every plan (no upload, D-059), plus the user's own device backup |
+| Spoken languages, script, reminder and appearance settings | device settings | S (languages), A | Until changed or the app is deleted | Never synced in v1.0 (DATA_CLASSIFICATION 4.5) |
+| `plus.cache` | device settings | A | Last StoreKit snapshot, refreshed on launch | Plus state from Apple; never sent to us (ADR 0013) |
+| Speech models and language packs | Application Support, excluded from backup | none (the list of installed packs reveals languages: handled as S on the device) | Until removed in Settings, Storage, or the app is deleted | Public files checked against the signed manifest (D-065) |
+| Keychain | session tokens | S | Until sign-out | A-NFR-008. Key material for backup and family playback is later (ADR 0006) |
+| Analytics ids | device settings | T | A fresh random id per consent period; retired ids (at most 20) kept only to request deletion | TRACKING_PLAN 7 |
 | Export ZIPs | app temp, then wherever the user saves them | C | Temp copy deleted after share sheet closes | |
-| iOS device backup / iCloud Backup of the sandbox | user's Apple account | C | User controlled | Whether our audio directory is included is **Unverified** (PRD C OQ5) |
+| iOS device backup / iCloud Backup of the sandbox | user's Apple account | C | User controlled | Decided (D-033): recordings and the local database are included; models and packs excluded |
 | Android Auto Backup | user's Google account | C | User controlled | **Unverified**; Android build must set explicit backup rules (OQ-9) |
 
 ### 4.5 Logs, analytics, crash reports
@@ -142,10 +149,11 @@ Storage objects are **not** in database backups, and a deleted object cannot be 
 | System | Content | Class | Retention | Control |
 |---|---|---|---|---|
 | Supabase API, Postgres, Edge Function logs | request metadata; never bodies with content | T | Provider rolling window (**Unverified** per plan) | No `log_statement=all`; Edge Functions log ids and token counts only (ARCH section 8) |
-| PowerSync Cloud | replicated rows in bucket storage; service logs | C, T | Rows: removed by REMOVE ops after purge and daily compaction [D8]; logs **Unverified** | Sync Streams mirror RLS (ADR 0004) |
-| Vercel (web) | request logs | T | Provider window (**Unverified**) | Tokens only in URL fragments (B-NFR-002) |
+| Vercel (web) | request logs | T | Provider window (**Unverified**) | Invite tokens are in the URL path today (security review M2): no logging for `/i/*` until the link moves to a fragment |
+| Download host (Cloudflare R2 candidate; Hugging Face for upstream models) | request logs: IP, user agent, file requested | T | Provider window (**Unverified**) | No account id or content; file names reveal the language picked |
+| Resend | sent-message data (address, our email text) | A | 30 days after sending | No letter content in any email (LEGAL-REQ-014, -053) |
 | PostHog | allowlisted events, random analytics id | T | 12 months (proposed; set in project settings) | `delete_events=true` on account deletion [D4] |
-| Sentry | scrubbed crash events, no user identity | T | 90 days (proposed; set in project settings). Sentry deletes backups 90 days after creation [D5] | `sendDefaultPii: false`; not linkable to a person |
+| Sentry | not in the v1.0 app | T | 90 days (proposed) when added | `sendDefaultPii: false`; not linkable to a person |
 | Support mailbox | what the user writes to us | A (may contain C) | 2 years after last message (proposed) | Support prefill carries no content (C-NFR-005) |
 
 ### 4.6 Processors and independent parties
@@ -153,12 +161,11 @@ Storage objects are **not** in database backups, and a deleted object cannot be 
 | Party | Data | Role | Deletion route | Source |
 |---|---|---|---|---|
 | Supabase | everything server-side | Processor | Our purge and `deleteUser`; backups roll off | [D1][D6] |
-| PowerSync Cloud | synced rows | Processor | Follows Postgres; daily compaction | [D8] |
-| Apple (App Store, independent party; not a processor) | random `appAccountToken` per account (`app_account_tokens.app_account_token`, never the profile uuid), transaction and renewal status | Independent controller as the store | We delete our `app_account_tokens` mapping and pseudonymise the purchase ledger (`store_subscriptions.profile_id` set null); Apple keeps its own records (ADR 0013). RevenueCat is not used | ADR 0013 |
-| PostHog | events under analytics id | Processor | `DELETE` person with `delete_events=true`; events deleted asynchronously off-peak (weekends on Cloud) | [D4] |
-| Sentry | scrubbed crash events | Processor | Retention expiry; per-event deletion via API if ever identifiable | [D5] |
-| Email provider (custom SMTP, not chosen; A-REQ-026) | address, message log | Processor | Provider contact and log deletion API (**Unverified** until chosen) | |
-| Groq, DeepInfra, Cloudflare | audio or text in transit, only with AI consent | Processor | Nothing stored when ZDR/no-retention settings are on (ARCH section 8) | ARCH [S26][S12][S28] |
+| Apple (App Store, independent party; not a processor) | nothing from us: Plus is sold and checked between the person's phone and Apple (ADR 0013) | Independent controller as the store | Nothing to delete on our side; Apple keeps its own records | ADR 0013 |
+| PostHog | events under analytics ids | Processor | Bulk delete of the ids the phone kept, through the stateless `analytics-forget` at request time; events deleted asynchronously off-peak [D4] | [D4]; TRACKING_PLAN 7 |
+| Resend | email address, sent messages | Processor | Sent-message data ages out after 30 days; no contacts kept in v1.0. The completion email is sent at execution, so it remains until about day 60 after the request (section 5) | `purge-worker/account.ts` |
+| Download host (Cloudflare R2 candidate) | request logs | Processor | Log window; no account-linked data to delete | subprocessors.md |
+| Groq, DeepInfra, Cloudflare Workers AI | none in v1.0 | Processor when cloud transcription or the edit pass ships | Nothing stored when ZDR or no-retention settings are on | subprocessors.md section 3 |
 | Apple, Google | sign-in identity, store purchases | Independent | Revoke Sign in with Apple tokens [D2]; store subscriptions are cancelled only by the user | [D2] |
 | Lulu, Stripe (P2) | shipping address, order | Processor / independent | Order records kept 7 years (proposed) | ADR 0007 |
 | Vercel | web hosting logs | Processor | Provider window | |
@@ -177,7 +184,7 @@ Every letter, book and account moves through the same states. The spec gives the
 | **Rolled off backups** | nobody | No | Within 7 days after purge (Supabase Pro daily backups [D1]) |
 | **Held** | nobody new | n/a | Until a legal hold is released |
 
-**Published promise (all deletions):** erased from the live database and storage within **31 days** of the request, from database backups within **38 days**, and from processors within **45 days**. These numbers bind the spec (DATA-REQ-036).
+**Published promise (all deletions):** erased from the live database and storage within **31 days** of the request, from database backups within **38 days**, and from processors within **45 days**. These numbers bind the spec (DATA-REQ-036). **One stated exception:** Resend keeps each sent email for 30 days. The account-deletion completion email is sent at execution (about day 30), so Resend holds that email, and the address it went to, until about day 60. The Privacy Policy section 10 and the CHD policy section 6 say so in plain words (Privacy Policy CN-12).
 
 ---
 
@@ -186,18 +193,18 @@ Every letter, book and account moves through the same states. The spec gives the
 | Record | Kept for | Then | Basis |
 |---|---|---|---|
 | Letters, audio, photos, versions, edits, profiles, books | Until the author (or, for a book, its sole parent) deletes them, or the account is deleted | 30-day tombstone, then purge | Service; PRD C: never deleted because a plan lapsed (C-NFR-008; Terms 13.2) |
-| Backed-up audio after Plus lapses | As long as the account exists | Same as letters | PRD C section 4.3. PRD wording "forever" should read "as long as your account exists" (section 9) |
+| Backed-up audio after Plus lapses | Not applicable in v1.0 (no backup, D-059). When backup ships: as long as the account exists | Same as letters | PRD C section 4.3 |
 | Inactive accounts | No automatic deletion in v1 (a keepsake is opened years later) | n/a | Counsel to confirm against storage-limitation duties (OQ-11) |
 | Invites and return-link hashes | 90 days after expiry, use or revocation (proposed) | Hard delete | Privacy Policy section 10 |
 | `safety_events` | Not applicable: no server table (PRD K-06) | n/a | CN-10 |
 | Analytics events | 12 months (proposed) | Provider deletion | |
-| Crash events | 90 days (proposed) | Provider deletion | |
+| Crash events | 90 days (proposed), when a crash SDK is added | Provider deletion | |
+| Emails we send (Resend) | 30 days after sending | Provider roll-off | Resend retention; Privacy Policy section 10 |
 | Audit events | 24 months | Hard delete; actor id nulled at account deletion | Security evidence |
 | Ops audit log, security events, key-unwrap log | 12 months | Hard delete | LEGAL-REQ-033, -037; D-021 |
-| Purchase ledger (`store_subscriptions`, no price or receipt) | 7 years | Pseudonymised at account deletion (`profile_id` set null) | Tax and dispute records (TDD 08 3.3) |
 | Deletion requests and receipts | 3 years after completion | Hard delete | Proof of deletion |
-| Policy acceptances | Life of account plus 3 years, pseudonymised at deletion | Hard delete | ARL proof-of-consent (POLICY_VERSIONING.md) |
-| Purchase and print transaction records | 7 years (proposed) | Hard delete | Tax and accounting (counsel) |
+| Policy acceptances | Life of account plus 3 years, pseudonymised at deletion | Hard delete | Proof of consent to Terms, privacy and sensitive-data (POLICY_VERSIONING.md). Plus purchase consent is not recorded by us (Q-003) |
+| Print transaction records (later) | 7 years (proposed) | Hard delete | Tax and accounting (counsel). No purchase records for Plus: Apple keeps them |
 | Support email | 2 years after last message (proposed) | Delete | |
 | Server exports | 7 days | Delete | Convenience copy only |
 | Purge ledger | 60 days | Delete | Restore replay |
@@ -248,12 +255,12 @@ Review: this policy is versioned under `POLICY_VERSIONING.md` rules for internal
 
 - [D1] Supabase, Database backups (Pro 7 days, Team 14, Enterprise up to 30; Storage objects not included; deleted objects not restored): https://supabase.com/docs/guides/platform/backups
 - [D2] Apple, Offering account deletion in your app: https://developer.apple.com/support/offering-account-deletion-in-your-app/ ; Sign in with Apple REST API, Token revocation: https://developer.apple.com/documentation/signinwithapplerestapi/revoke-tokens
-- [D3] RevenueCat API v1, Customers (delete customer): https://www.revenuecat.com/docs/api-v1/customers
+- [D3] (no longer used, D-053) RevenueCat API v1, Customers (delete customer): https://www.revenuecat.com/docs/api-v1/customers
 - [D4] PostHog, Data deletion: https://posthog.com/docs/privacy/data-deletion
 - [D5] Sentry, Security (retention by plan; backups deleted after 90 days; deletion via API and UI): https://sentry.io/security/
 - [D6] Supabase, Managing user data (cannot delete a user who owns Storage objects): https://supabase.com/docs/guides/auth/managing-user-data
 - [D7] Supabase, Delete objects (SQL delete orphans the object): https://supabase.com/docs/guides/storage/management/delete-objects
-- [D8] PowerSync, Compacting buckets (REMOVE ops; Cloud compacts daily): https://docs.powersync.com/usage/lifecycle-maintenance/compacting-buckets
+- [D8] (no longer used, D-023) PowerSync, Compacting buckets (REMOVE ops; Cloud compacts daily): https://docs.powersync.com/usage/lifecycle-maintenance/compacting-buckets
 - [D9] Supabase, Point-in-time recovery usage (7, 14, 28 days): https://supabase.com/docs/guides/platform/manage-your-usage/point-in-time-recovery
 - [D10] Google Play, Understanding account deletion requirements: https://support.google.com/googleplay/android-developer/answer/13327111
 - [D11] Supabase Cron (jobs can call Edge Functions; at most 8 concurrent, 10 minutes each recommended): https://supabase.com/docs/guides/cron

@@ -7,6 +7,7 @@
  * these unions become re-exports of the core ones.
  */
 import type { Edit, EditLevel } from '@scribe/core';
+import type { EntrySyncState } from '../../sync/types';
 
 export type EntryKind = 'note' | 'letter' | 'not_much';
 export type CaptureMode = 'spoken' | 'typed' | 'mixed';
@@ -44,6 +45,10 @@ export interface Entry {
    * (setWordsForWaitingEntry). null: the letter has its words.
    */
   transcriptStatus?: TranscriptStatus;
+  /** Upload state on this phone (sync/types.ts): local, pending ("Not sent yet"), synced, rejected, held, gone. */
+  syncState?: EntrySyncState;
+  /** Family review state from the server (not_needed, pending, added, set_aside); null before sync. */
+  approval?: string | null;
 }
 
 /** Single-child view of the active child (kept for existing callers). */
@@ -62,6 +67,10 @@ export interface Child {
   signsAs: string; // what this child calls the current user
   remindersOn: boolean;
   familyCanRead: boolean;
+  /** From sync: true when this account started the book, false when it joined it. Absent for a book only on this phone. */
+  createdByMe?: boolean;
+  /** From sync: this account's role in the book. Absent for a book only on this phone. */
+  role?: 'parent' | 'contributor';
 }
 
 export interface NewChild {

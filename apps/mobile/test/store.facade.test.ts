@@ -141,6 +141,47 @@ describe('facade behaviour', () => {
   });
 });
 
+describe('sync hooks through the facade (D-023)', () => {
+  const outbox = () => store.localSqlDb().all<{ type: string; entity_id: string }>('SELECT type, entity_id FROM sync_outbox ORDER BY seq');
+
+  it('queues nothing before the first sign-in', () => {
+    openMemory();
+    const asha = store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
+    store.saveEntry(letter({ childId: asha.id }));
+    store.setEntryInBook(letter().id, true);
+    expect(outbox()).toEqual([]);
+  });
+
+  it('queues a letter write in the same transaction once an account owns the phone', () => {
+    openMemory();
+    const asha = store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
+    store.setSetting('sync.ownerId', 'user-asha-1');
+    store.saveEntry(letter({ childId: asha.id }));
+    expect(outbox().map((o) => o.type)).toEqual(['entry.upsert']);
+    expect(store.getEntry(letter().id)?.syncState).toBe('pending');
+  });
+
+  it('a refused write on a tombstoned letter leaves the queue as it was', () => {
+    openMemory();
+    const asha = store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
+    store.setSetting('sync.ownerId', 'user-asha-1');
+    store.saveEntry(letter({ childId: asha.id }));
+    store.deleteEntry(letter().id); // never reached the server: its queued upload is dropped
+    const before = outbox();
+    expect(() => store.saveEntry(letter({ childId: asha.id, finalText: 'x' }))).toThrow(store.EntryTombstonedError);
+    expect(outbox()).toEqual(before);
+  });
+
+  it('books the person left are not listed, and sync columns reach the Child', () => {
+    openMemory();
+    const asha = store.addChild({ name: 'Asha', birthday: null, dueDate: null, signsAs: 'Mama' });
+    store.localSqlDb().run("UPDATE children SET role = 'contributor', created_by_me = 0 WHERE id = ?", asha.id);
+    expect(store.getChild(asha.id)).toMatchObject({ role: 'contributor', createdByMe: false });
+    store.localSqlDb().run("UPDATE children SET server_state = 'left' WHERE id = ?", asha.id);
+    expect(store.listChildren()).toEqual([]);
+  });
+});
+
 describe('boundaries (MOB-04)', () => {
   const src = (p: string) => readFileSync(join(__dirname, '..', 'src', 'lib', p), 'utf8');
 
@@ -158,12 +199,12 @@ describe('boundaries (MOB-04)', () => {
     const names = [
       'addChild', 'createDraft', 'currentUserId', 'deleteDraft', 'deleteEntry', 'dictionaryFor', 'getActiveChild', 'getActiveChildId',
       'getChild', 'getDraft', 'getEntry', 'getFamily', 'getSetting', 'hideChild', 'listChildren', 'listDrafts', 'listEntries',
-      'listEntriesForChild', 'listMembers', 'listOrphanAudio', 'newChildNeedsPlus', 'saveEntry', 'setActiveChildId', 'setDraftTranscript',
+      'listEntriesForChild', 'listMembers', 'listOrphanAudio', 'saveEntry', 'setActiveChildId', 'setDraftTranscript',
       'setDraftTyped', 'setEntryInBook', 'setRecordingProgress', 'setSetting', 'subscribe', 'todayISO', 'undeleteEntry', 'updateChild', 'uuidv7',
-      'deleteSetting', 'unhideChild', 'listHiddenChildren', 'saveFamily', 'hasPlus', 'isJoinedBook', 'saveLetterFromDraft',
+      'deleteSetting', 'unhideChild', 'listHiddenChildren', 'saveFamily', 'saveLetterFromDraft',
       'saveVoiceOnlyFromDraft', 'listWaitingForWords', 'setWordsForWaitingEntry', 'createRecordingDraft', 'finalizeDraftAudio',
       'setDraftAudioHash', 'setDraftChild', 'audioRows', 'rebaseAudioUri', 'reportOrphanAudio', 'reattachOrphanAudio', 'localSchemaVersion',
-      'AudioMissingError',
+      'AudioMissingError', 'localSqlDb', 'notifyStoreChanged', 'subscribeTo', 'openStore', 'closeStore',
     ];
     for (const n of names) expect(typeof (store as Record<string, unknown>)[n], n).toBe('function');
   });

@@ -1,0 +1,15 @@
+Early Letters
+
+Sign in to Early Letters
+
+Tap the button to sign in. The link works once, for a short time.
+
+Sign in: {{ .ConfirmationURL }}
+
+If you did not ask to sign in, you can ignore this email. Nothing changes unless the link is used.
+
+--
+You are getting this email because of your Early Letters account.
+Questions? Write to us at hello@earlyletters.com.
+Privacy Policy: https://earlyletters.com/privacy
+Terms of Service: https://earlyletters.com/terms

@@ -19,11 +19,20 @@ export class AudioMissingError extends Error {
  * gone is refused rather than saved pointing at nothing (`audioExists` is
  * checked by the caller just before). The entry id becomes the draft id.
  */
-export function saveFromDraft(ctx: RepoContext, draftId: string, e: Entry, defaults: entries.InsertDefaults, audioExists = true): void {
+export function saveFromDraft(
+  ctx: RepoContext,
+  draftId: string,
+  e: Entry,
+  defaults: entries.InsertDefaults,
+  audioExists = true,
+  /** Runs inside the same transaction, after the letter is written (the facade queues the upload here). */
+  inTransaction?: () => void,
+): void {
   if (e.audioUri && !audioExists) throw new AudioMissingError();
   ctx.db.transaction(() => {
     entries.upsert(ctx, { ...e, id: draftId }, defaults);
     drafts.remove(ctx, draftId);
+    inTransaction?.();
   });
 }
 

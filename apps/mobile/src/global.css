@@ -5,8 +5,7 @@
 /* Scan shared packages for class names (docs.uniwind.dev/monorepos). */
 @source '../../../packages';
 
-/* Fonts. v1 slice: system fonts. Backlog: bundle Literata (letters) and
-   Mukta (UI) per DESIGN_LANGUAGE.md so iOS and Android render the same. */
-@theme {
-  --font-serif: Georgia;
-}
+/* Fonts: Mukta (UI), Literata (letters) and Tiro Devanagari Hindi are embedded by the
+   expo-font config plugin (app.config.ts) and applied by the Text component
+   (components/ui/text.tsx, fonts.ts), which maps `font-serif` to Literata once the
+   faces are registered (the web preview registers them with loadAsync). */

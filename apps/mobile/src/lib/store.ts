@@ -2,8 +2,10 @@
  * Local-first store (PRD P0: nothing is ever lost). The facade screens use.
  *
  * Every entry is written to SQLite on the phone before anything else
- * happens. The sync engine is not chosen yet (DECISIONS D-023); it will
- * read from these same rows through the repositories.
+ * happens. After the first sign-in, every write here also queues its upload
+ * in the same transaction (src/lib/sync: outbox push and cursor pull, D-023).
+ * Sign-in and sync are off in v1.0 (lib/capabilities.ts), so the queue stays
+ * empty there.
  *
  * Layout (MOB-04): this file owns the one connection, resolves defaults
  * (active child, the signature at save time) and emits change events. The
@@ -22,6 +24,7 @@ import * as Crypto from 'expo-crypto';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { migrate, userVersion, type MigrationResult } from './db/migrations';
+import type { SqlDb } from './db/sql';
 import {
   children,
   createChangeBus,
@@ -44,6 +47,18 @@ import {
 } from './db/repos';
 import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
+import {
+  SYNC_SETTING,
+  enqueueBookCreate,
+  enqueueBookUpdate,
+  enqueueEntryDelete,
+  enqueueEntryRestore,
+  enqueueEntryUpsert,
+  enqueuePrefs,
+  type EnqueueContext,
+} from './sync/outbox';
+import { signalOutbox } from './sync/signal';
+import { ALL_GROUPS, type FieldGroup } from './sync/types';
 
 export type {
   CaptureMode,
@@ -153,6 +168,21 @@ function ctx(): RepoContext {
   return c.ctx;
 }
 
+/** What the outbox needs to queue an upload in the same transaction as the write. */
+function enqueueContext(c: RepoContext): EnqueueContext {
+  return { now: c.now(), newId: () => c.newId() };
+}
+
+/** The local database for the sync engine (same connection as the store). */
+export function localSqlDb(): SqlDb {
+  return ctx().db;
+}
+
+/** Lets the sync engine re-render screens after it merged server changes. */
+export function notifyStoreChanged(): void {
+  bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
+}
+
 // ── Change events (MOB-05) ───────────────────────────────────────────────
 /** Subscribe to any store change (child switch, save, delete). Returns an unsubscribe. */
 export function subscribe(listener: () => void): () => void {
@@ -232,13 +262,35 @@ export function addChild(input: NewChild): Child {
       settings.setSetting(c, 'activeChildId', id);
       tables.push('settings');
     }
+    // After the first sign-in a new book is queued for the server (before it, ownership.ts sends every book at once).
+    enqueueBookCreate(c.db, id, enqueueContext(c));
   });
   bus.emit(...tables);
+  signalOutbox();
   return children.get(c, id)!;
 }
 
 export function updateChild(id: string, patch: Partial<Omit<Child, 'id'>>): void {
-  if (children.update(ctx(), id, patch)) bus.emit('children');
+  const c = ctx();
+  const before = children.get(c, id);
+  if (!before) return;
+  const n = { ...before, ...patch };
+  c.db.transaction(() => {
+    children.update(c, id, patch);
+    // Book settings (parents, per field) and my per-book preferences travel separately.
+    const book: Record<string, unknown> = {};
+    if (n.name !== before.name) book.name = n.name;
+    if (n.birthday !== before.birthday) book.date_of_birth = n.birthday;
+    if (n.dueDate !== before.dueDate) book.due_date = n.dueDate;
+    if (n.familyCanRead !== before.familyCanRead) book.family_can_read = n.familyCanRead;
+    const prefs: Record<string, unknown> = {};
+    if (n.signsAs !== before.signsAs) prefs.signs_as = n.signsAs;
+    if (n.remindersOn !== before.remindersOn) prefs.include_in_reminders = n.remindersOn;
+    enqueueBookUpdate(c.db, id, book, enqueueContext(c));
+    enqueuePrefs(c.db, id, prefs, enqueueContext(c));
+  });
+  bus.emit('children');
+  signalOutbox();
 }
 
 /** "Hide this book" (PRD B F2.4): stops prompts for this child; restorable. */
@@ -278,40 +330,31 @@ export function dictionaryFor(f: Family): DictionaryTerm[] {
   ].filter((d) => d.term.trim().length > 0) as DictionaryTerm[];
 }
 
-// ── Accounts and family members (not built yet: sign-in is PRD A) ────────
-/** Null until sign-in exists. Every local entry belongs to this phone's user. */
+// ── Accounts and family members (sync/ownership.ts, sync_books) ──────────
+/**
+ * The account that owns this phone's letters: set once, at the first sign-in,
+ * when sync claims the local data (sync/ownership.ts). Null before that, when
+ * every local entry is this phone's user's.
+ */
 export function currentUserId(): string | null {
-  return null;
+  return getSetting(SYNC_SETTING.owner);
 }
 
-/** Plus entitlement (PRD C). False until purchases ship. */
-export function hasPlus(): boolean {
-  return false;
-}
+// Plus (hasPlus, isJoinedBook, newChildNeedsPlus) lives in lib/billing: StoreKit 2
+// on this phone through the plan engine (ADR 0013). This file stays free of it.
 
-/**
- * A book this user joined as a co-parent rather than started. Joining needs
- * sign-in and sync, so nothing is joined yet. Joined books never use up the
- * free book.
- */
-export function isJoinedBook(_child: Child): boolean {
-  return false;
-}
-
-/**
- * Whether starting another book needs Plus (PRD C 4.1). Every book made during
- * first run is free (twins or more, PRD K-12). After that, a new book needs
- * Plus once this user has started any book of their own; hidden books count,
- * joined books never do.
- */
-export function newChildNeedsPlus(): boolean {
-  if (hasPlus()) return false;
-  return [...listChildren(), ...listHiddenChildren()].some((c) => !isJoinedBook(c));
-}
-
-/** Invited family (needs accounts and sync). Empty until then. */
-export function listMembers(_childId: string): Member[] {
-  return [];
+/** The other members of a book, as the server last listed them (sync_books.members). Empty for a book only on this phone. */
+export function listMembers(childId: string): Member[] {
+  const r = ctx().db.get<{ members: string | null }>('SELECT members FROM sync_books WHERE child_id = ?', childId);
+  if (!r?.members) return [];
+  try {
+    const list = JSON.parse(r.members) as { profile_id: string; role: string; is_me: boolean; signs_as: string | null }[];
+    return list
+      .filter((m) => !m.is_me)
+      .map((m): Member => ({ id: m.profile_id, signsAs: m.signs_as ?? '', role: m.role === 'contributor' ? 'contributor' : 'parent', status: 'active' }));
+  } catch {
+    return [];
+  }
 }
 
 // ── Entries ──────────────────────────────────────────────────────────────
@@ -335,8 +378,13 @@ function insertDefaults(e: Entry): entries.InsertDefaults {
  * saveLetterFromDraft instead.
  */
 export function saveEntry(e: Entry): void {
-  entries.upsert(ctx(), e, insertDefaults(e));
+  const c = ctx();
+  c.db.transaction(() => {
+    entries.upsert(c, e, insertDefaults(e));
+    enqueueEntryUpsert(c.db, e.id, ALL_GROUPS, enqueueContext(c));
+  });
   bus.emit('entries');
+  signalOutbox();
 }
 
 /**
@@ -349,8 +397,12 @@ export function saveEntry(e: Entry): void {
  */
 export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
   const c = ctx();
-  letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists);
+  // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
+  letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () =>
+    enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c)),
+  );
   bus.emit('entries', 'drafts');
+  signalOutbox();
 }
 
 /**
@@ -383,8 +435,17 @@ export function setWordsForWaitingEntry(
   id: string,
   w: { rawTranscript: string; machineEdits: Edit[]; finalText: string; editLevel: EditLevel; engineVersion: number },
 ): boolean {
-  const done = entries.setWordsOnce(ctx(), id, w);
-  if (done) bus.emit('entries');
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.setWordsOnce(c, id, w);
+    // The words exist now: the letter's first upload (it was held while waiting).
+    if (done) enqueueEntryUpsert(c.db, id, ALL_GROUPS, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
   return done;
 }
 
@@ -402,21 +463,52 @@ export function getEntry(id: string): Entry | null {
   return entries.get(ctx(), id);
 }
 
+const IN_BOOK: FieldGroup[] = ['in_book'];
+
 /** Add to book / make private. Never touches text. Returns false for a missing or deleted letter. */
 export function setEntryInBook(id: string, inBook: boolean): boolean {
-  const done = entries.setInBook(ctx(), id, inBook);
-  if (done) bus.emit('entries');
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.setInBook(c, id, inBook);
+    if (done) enqueueEntryUpsert(c.db, id, IN_BOOK, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
   return done;
 }
 
-/** Tombstone, never a hard delete (matches the server schema). */
+/** Tombstone, never a hard delete (matches the server schema). The server clock sets the real deleted_at. */
 export function deleteEntry(id: string): void {
-  if (entries.tombstone(ctx(), id)) bus.emit('entries');
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.tombstone(c, id);
+    if (done) enqueueEntryDelete(c.db, id, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
 }
 
-/** Local Undo of deleteEntry. Becomes a restore intent with sync (MOB-03, WS-09). */
+/**
+ * Restore from Recently deleted: live here at once; on the server through
+ * restore_entry() (never by clearing deleted_at, which the server refuses).
+ */
 export function undeleteEntry(id: string): void {
-  if (entries.undelete(ctx(), id)) bus.emit('entries');
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.undelete(c, id);
+    if (done) enqueueEntryRestore(c.db, id, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
 }
 
 // ── Drafts (capture in progress) ─────────────────────────────────────────
