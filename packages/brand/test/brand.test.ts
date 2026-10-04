@@ -21,6 +21,7 @@ const PARITY: Record<keyof typeof brand.colors, string> = {
   paper: tokens.light.bg,
   paperRaised: tokens.light.surfaceRaised,
   accent: tokens.light.accent,
+  accentDeep: tokens.light.accentDeep,
   accentSoft: tokens.light.accentSoft,
   line: tokens.light.line,
   inkDark: tokens.dark.text,

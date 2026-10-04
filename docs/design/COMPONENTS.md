@@ -79,7 +79,7 @@ type Author = { id: string; displayName: string; relation: string; signature: st
 ```
 
 ### 0.5 Web parity rule
-Each component file starts with a header comment: `// web: apps/web/components/ui/<name>.tsx — props parity: yes|partial (<diff>)` and `// android: same | platform/<name>.android.tsx`. Variant names never differ between platforms.
+Each component file starts with a header comment: `// web: apps/web/components/ui/<name>.tsx, props parity: yes|partial (<diff>)` and `// android: same | platform/<name>.android.tsx`. Variant names never differ between platforms.
 
 ---
 
@@ -204,7 +204,7 @@ type LetterCardProps = {
 };
 ```
 - **States:** default, pressed, syncing (small progress glyph, no layout shift), draft, pendingApproval, loading skeleton.
-- **A11y:** one element, `role="button"`, label composed as "Letter from Papa, 4 months 2 weeks. ‘Today you laughed at…’. Has voice recording, 1 minute 12." Hint: "Opens the letter." Long-press exposed as `accessibilityActions` [`share`, `edit`, `delete`] so VoiceOver users can reach them without a long-press.
+- **A11y:** one element, `role="button"`, label composed as "Letter from Papa, 4 months 2 weeks. 'Today you laughed at...'. Has voice recording, 1 minute 12." Hint: "Opens the letter." Long-press exposed as `accessibilityActions` [`share`, `edit`, `delete`] so VoiceOver users can reach them without a long-press.
 - **Haptics:** `soft` on long-press menu open.
 - **Motion:** press scale 0.98 (`snappy`). Open: **measured-rect transition** (MOTION 5f): measure the card on the UI thread, push a `transparentModal` with `animation: 'none'`, animate translate + scale and radius `md`→0 on `standard`, content fades in from 60%; dismiss reverses or fades 200ms. No shared-element API in v1. New letter after save: already in place with an `accentSoft` wash fading over `newMarkMs` (MOTION 5e). Chapter interior: first 6 cards `enter` with 30ms stagger. RM: 200ms cross-fade.
 - **Builds on:** our Card + PhotoFrame + Signature + Text; long-press through `platform/action-menu` (never Expo UI directly). Web: same composition with shadcn `Card` + `ContextMenu`.
@@ -266,7 +266,7 @@ type TextAreaProps = Omit<TextInputProps, 'style' | 'multiline'> & {
 - **Purpose:** switching views on one screen (Read / Listen; All / Notes / Letters).
 ```ts
 type SegmentedControlProps<T extends string> = {
-  segments: { value: T; label: string }[];     // 2–4 segments
+  segments: { value: T; label: string }[];     // 2 to 4 segments
   value: T; onChange: (v: T) => void;
   label: string;                               // group label for VoiceOver
 };
@@ -404,8 +404,8 @@ type ListeningAuraProps = {
   children?: React.ReactNode;                  // centre content: mic glyph or timer
 };
 ```
-- **States:** idle (static soft disc), listening (scale 1.0–1.18 and opacity 0.18–0.40 with level; after 600ms of silence an idle breath ramps in, speech always wins), paused (frozen at 1.0, dimmed), processing (static disc; caption "Preparing…"; no decorative loop, MOTION principle 1).
-- **A11y:** decorative (`accessible={false}`). The state is conveyed by the CaptureBar button label and a live caption ("Listening… 0:42"). Reduce Motion: static 2pt ring; opacity steps 0.2/0.3/0.4 with 200ms fades, at most one change per 400ms (MOTION 5b).
+- **States:** idle (static soft disc), listening (scale 1.0 to 1.18 and opacity 0.18 to 0.40 with level; after 600ms of silence an idle breath ramps in, speech always wins), paused (frozen at 1.0, dimmed), processing (static disc; caption "Preparing..."; no decorative loop, MOTION principle 1).
+- **A11y:** decorative (`accessible={false}`). The state is conveyed by the CaptureBar button label and a live caption ("Listening... 0:42"). Reduce Motion: static 2pt ring; opacity steps 0.2/0.3/0.4 with 200ms fades, at most one change per 400ms (MOTION 5b).
 - **Haptics:** none from the aura. `press` on record start fires before the audio session activates and on stop after it ends (owned by CaptureBar).
 - **Motion:** MOTION 5b exactly: dB → `a` (floor −55, ceiling −10, gamma 0.6), asymmetric smoothing (attack 80ms, release 400ms) in `useFrameCallback` using `dt`. Colour is the `recording` terracotta (which means "listening", DESIGN_LANGUAGE section 2), never an error colour.
 - **Builds on:** Reanimated 4 + one pre-rendered 240pt radial PNG behind the 120pt mic disc (no per-frame gradient, no Skia, no `expo-linear-gradient`). Metering from the `expo-audio` recorder (`isMeteringEnabled` → `metering` dBFS, normalised in `lib/audio-level.ts`). Web: CSS radial gradient + Web Audio `AnalyserNode` (later).
@@ -446,7 +446,7 @@ type EditUnderlineProps = {
 ```
 - **Visual:** 1pt dotted underline in `textMuted` at 60% opacity, 3pt offset. No colour fill, no icon; it must be readable as plain text.
 - **States:** default, pressed (`accentSoft` background on the span), reverted (the mark is gone; the original text is shown), accepted (mark gone).
-- **A11y:** the span gets `accessibilityHint="Edited. Double tap to see what you said."` and `accessibilityActions` [`showOriginal`, `revert`]. A screen-level rotor alternative: "Review 3 edits" ListRow at the end of the letter. Inline card content: "You said: ‘…’ / We wrote: ‘…’" with `Keep` / `Use what I said`.
+- **A11y:** the span gets `accessibilityHint="Edited. Double tap to see what you said."` and `accessibilityActions` [`showOriginal`, `revert`]. A screen-level rotor alternative: "Review 3 edits" ListRow at the end of the letter. Inline card content: "You said: '...' / We wrote: '...'" with `Keep` / `Use what I said`.
 - **Haptics:** `tap` on open and on Put it back (MOTION 5d; `success` is reserved for save).
 - **Motion:** underlines render at final opacity on the first frame. Tap: an inline card expands under the line (height via `LinearTransition` on `standard`, content fades in after 80ms) showing original vs current and **Put it back**. Put it back: original cross-fades in (out 120, in 160ms), paragraph reflows on `standard`, restored span gets an `accentSoft` wash fading over 1.6s; "Put back. Undo" persists. RM: instant height, 200ms fades.
 - **Builds on:** nested RN `Text` with `onPress` + an inline expansion card (no Sheet, no Expo UI `Popover`). Web: `<span>` with `text-decoration: underline dotted` + an inline disclosure.
@@ -458,7 +458,7 @@ type EditUnderlineProps = {
 type MonthChapterHeaderProps = {
   monthIndex: number;                           // 0 = birth month
   label: string;                                // "Month 4"
-  dateRange: string;                            // "March 12 – April 11"
+  dateRange: string;                            // "March 12 to April 11"
   count: { notes: number; letters: number };
   coverPhoto?: { uri: string; blurhash?: string };
   sticky?: boolean;                             // compact sticky version in the list
@@ -512,7 +512,7 @@ type ReadTogetherPlayerProps = {
 
 ### 2.23 PhotoFrame
 - **Purpose:** photos within letters and cards. It should feel like a printed photo in a book, not a gallery tile.
-- **Variants:** `card` (top of LetterCard, 4:3), `inline` (inside a letter, natural aspect clamped 3:4–16:9), `cover` (MonthChapterHeader), `polaroid` (white mat + caption, for the book/PDF look). Multi-photo uses paging with dots.
+- **Variants:** `card` (top of LetterCard, 4:3), `inline` (inside a letter, natural aspect clamped 3:4 to 16:9), `cover` (MonthChapterHeader), `polaroid` (white mat + caption, for the book/PDF look). Multi-photo uses paging with dots.
 ```ts
 type PhotoFrameProps = {
   photos: { uri: string; blurhash?: string; alt?: string; width?: number; height?: number }[];

@@ -416,3 +416,99 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 8. **D-033** Free durability through the user's own device backup, and the copy fix.
 
 Also open but not founder-only: D-031 Hindi script (founder, from data, 30 Oct), D-050 second consent (counsel).
+
+## Decisions of 3 Oct 2026, third round (email and brand lane)
+
+The email and brand lane first drafted these as D-051 to D-064 on its own branch, before the second-round entries above were merged. They are renumbered here. Old to new: D-051 to D-071, D-052 to D-072, D-053 to D-073, D-054 to D-074, D-055 to D-075, D-056 to D-076, D-058 to D-077, D-059 to D-078, D-060 to D-079, D-061 to D-080, D-064 to D-081. Three drafts duplicated second-round entries and are folded into them: draft D-057 (co-parent only) is D-055; draft D-062 (Google sign-in at v1.0) is D-054; draft D-063 (Plus on the device) is D-053 as amended by D-080.
+
+Two founder answers given on 3 Oct (evening) change second-round entries. Where they conflict, these newer answers win:
+- **D-073** (recordings): encrypted backup of the owner's recordings ships in v1.0. This supersedes the "no audio upload in v1.0" part of D-059 and the copy consequence in D-033. Family members hearing each other's recordings stays in v1.1, as D-059 says.
+- **D-080** (subscription status): the app reports subscription status only (plan, trial end, renewal date, cancelled flag). The server can then send the reminder emails that California's auto-renewal law requires. This amends D-053's "no server sees purchases". Apple still processes every payment, and the server never enforces Plus.
+
+| ID | Decision | Status | Proceed? | Date |
+|---|---|---|---|---|
+| D-071 | Primary mark: logo round 3 `final-a` | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-072 | The brand asset registry is the single source | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-073 | Recordings backup in v1.0; sharing in v1.1 | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-074 | Edit feature name: "Word for word" | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-075 | The website shows the price | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-076 | Brand name only from `packages/brand` | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-077 | Plan display names: Plus Monthly and Plus Annual | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-078 | Website footer line | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-079 | Old logo directions archived | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-080 | The app reports subscription status only, so we can send the auto-renewal reminders | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-081 | Purchase consent records (supersedes D-049) | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+
+### D-071 Primary mark: logo round 3 `final-a`
+- **Status:** Decided (founder, 3 Oct 2026).
+- **Decision:** the brand mark is r3 `final-a`: two opening quotation marks, one large and one small (0.62 of its size, leaning 14 degrees toward it), with an outlined EB Garamond wordmark; sepia "Leather" app icon tile `#9A613C` to `#7F4F30` with a paper mark, dark tile `#2C2926` to `#1F1B18` with an `#D9A47E` mark. `packages/brand/assets/logo/primary/` is its byte-identical packaged rebuild. It retires round 1 directions a ("envelope e") and b (script mark), round 2, the rest of round 3, the interim Literata email lockup, the serif "E" monogram favicon and avatar, and the "envelope line" brand motif (CREATIVE.md 3).
+- **Rationale:** quotation marks say "these are your exact words", the product's promise (CLAUDE.md constitution); the pair reads as parent and child (BRAND_SYSTEM.md 1). The neutral reviews of round 2 finalists shaped the round 3 brief; final-a was then chosen by the founder from the r3 presentation.
+- **Evidence:** presentation `docs/brand/logo-r3/early-letters-mark.html`; brief `docs/brand/logo-r3/BRIEF.md`; neutral reviews `docs/brand/logo-r2/neutral-review/` (`final-strategy.md`, `final-parents.md`, `final-culture-production.md`, plus `cold-read.md`, `strategy.md`, `parents.md`, `culture-production.md`); colour and type study `packages/brand/assets/logo/r3/color-type/RECOMMENDATION.md` and `PROPOSED_TOKENS.md`.
+- **Alternatives:** r3 `final-b`; round 1 directions a and b; the interim Literata lockup.
+- **Owner:** founder; design systems. **Date:** 2026-10-03.
+- **Effects:** `docs/brand/BRAND_SYSTEM.md` v1.0; DESIGN_LANGUAGE 2a; CREATIVE 3; EMAIL_IDENTITY v0.2; `accentDeep` and `icon` tokens in `packages/brand` and `@scribe/design-tokens` (parity test); splash spec in PRD A and TDD 01 (CA-042); CONSISTENCY_AUDIT CA-001 to CA-013, CA-040 to CA-044. Trademark clearance of the mark is still open.
+
+### D-072 The brand asset registry is the single source
+- **Status:** Decided (founder, 3 Oct 2026).
+- **Decision:** every brand asset has one permanent id in `packages/brand/registry.ts` (generated `registry.json` for plain Node), and every touchpoint (app icon, splash, headers, paywall, website, favicon, OG image, email, App Store, book, cards, press kit) is a context that lists the ids it uses. Code resolves files through `assetFor(context)` (or `asset(id)` when no context fits) and never hardcodes a brand file path. Contexts reference only `primary` assets; retired files are `deprecated` with `supersededBy`.
+- **Rationale:** the audit found rejected directions wired into the website and email because files were picked by path (CA-001, CA-008, CA-010).
+- **Owner:** design systems. **Date:** 2026-10-03.
+- **Effects:** `packages/brand/test/registry.test.ts`; BRAND_SYSTEM.md 2; `packages/emails` header and layout sizes; `apps/web` asset sync.
+
+### D-073 Recordings backup in v1.0; sharing in v1.1
+- **Status:** Decided (founder, evening of 3 Oct 2026). Supersedes D-032; answers CONSISTENCY_AUDIT F-2.
+- **Decision:** encrypted backup of recordings ships in v1.0. Family members hearing each other's recordings (sharing) is v1.1, consistent with Brief decision 9.
+- **Consequences:** copy must not promise family listening in v1.0 (CA-026: website and microphone purpose string). Plus scope, privacy pages and the mic string follow from this; the content and legal lanes own those edits.
+- **Owner:** founder; backend, content, legal. **Date:** 2026-10-03.
+
+### D-074 Edit feature name: "Word for word"
+- **Status:** Decided (founder, evening of 3 Oct 2026). Answers CONSISTENCY_AUDIT F-3.
+- **Decision:** the feature is named "Word for word". "Lightly tidied", "Tidying" and other words that suggest software tidied a letter leave the product (VOICE.md).
+- **Effects:** content lane renames the strings listed in CA-027 and updates the glossary row "What the machine changes".
+- **Owner:** founder; content. **Date:** 2026-10-03.
+
+### D-075 The website shows the price
+- **Status:** Decided (founder, evening of 3 Oct 2026). Answers CONSISTENCY_AUDIT F-4.
+- **Decision:** the website shows the Plus price from Brief decision 3 ($3.99 a month with a 1-month free trial; $29.99 a year with a 2-month free trial) instead of stripping `{price}`.
+- **Effects:** CA-029: `apps/web/src/lib/fill.ts` and `packages/content/BRAND.md` (web and content lanes).
+- **Owner:** founder; web, content. **Date:** 2026-10-03.
+
+### D-076 Brand name only from `packages/brand`
+- **Status:** Decided (founder, evening of 3 Oct 2026). Answers CONSISTENCY_AUDIT F-6.
+- **Decision:** CLAUDE.md stands: the public name lives only in `packages/brand/index.ts`. `packages/content` imports `brand` and builds strings with template literals (for example `` `${brand.name}, the baby memory book you fill by talking.` ``); no copy file types the name.
+- **Effects:** CA-035 (about 79 literals in `packages/content/src`).
+- **Owner:** founder; content. **Date:** 2026-10-03.
+
+### D-077 Plan display names: Plus Monthly and Plus Annual
+- **Status:** Recommended (coordinator default; answers CONSISTENCY_AUDIT F-5). Proceed: yes.
+- **Decision:** App Store Connect display names are exactly "Plus Monthly" and "Plus Annual", matching the subscription terms; copy says "Plus" (CA-030).
+- **Owner:** founder (App Store Connect); content. **Date:** 2026-10-03.
+
+### D-078 Website footer line
+- **Status:** Recommended (coordinator default; answers CONSISTENCY_AUDIT F-7). Proceed: yes.
+- **Decision:** the website footer reads "(c) 2026 Early Letters", with the name from `brand.name`. ASCII "(c)", not the copyright sign: the content rules test (`packages/content/test/rules.test.ts`) rejects any `\p{Extended_Pictographic}` character, and U+00A9 is one. The individual publisher's legal name appears only inside the legal pages (D-004). Email footers keep no copyright line (EMAIL_IDENTITY 5.2).
+- **Owner:** web; content. **Date:** 2026-10-03.
+
+### D-079 Old logo directions archived
+- **Status:** Recommended (coordinator default; answers CONSISTENCY_AUDIT F-8). Proceed: yes.
+- **Decision:** round 1 directions a and b, round 2, round 3 (except what `primary/` rebuilds), the interim email lockup and the E monogram stay in the repo as history, registered `deprecated.*` in the registry, and are not deleted. Nothing may use, copy or link them (D-072).
+- **Owner:** design systems. **Date:** 2026-10-03.
+
+### D-080 The app reports subscription status only, so we can send the auto-renewal reminders
+- **Status:** Decided (founder, 3 Oct 2026, 19:30 UTC). Narrows Brief decision 3 (`docs/agents/BRIEF-2026-10-03.md`); amends D-001 (server side), D-022 (data source), D-049 (consent source) and D-012 (co-parent coverage).
+- **Decision:** the app reports subscription **status only** to our server: the plan, the trial end date, the renewal date and a cancelled (renewal off) flag. It reports when a purchase or trial completes in the app and on each launch, read on the device from StoreKit 2. It never reports payment or card data and never sends receipts. Purpose: to send the reminder emails California's auto-renewal law (Bus. & Prof. Code 17602) requires and Terms 14.6 promises. Everything else in Brief decision 3 stands: Apple still processes payments, Apple's own subscription UI, restore and manage sheets; no RevenueCat; no App Store Server Notifications endpoint; server code does not enforce Plus. A co-parent gets Plus only through Apple Family Sharing (same Apple family); otherwise each co-parent's Plus is their own (Terms 14.12).
+- **Rules that follow (content and legal lanes, 3 Oct 2026):** only a device whose transaction is the person's own purchase reports, so Family Sharing members get no billing email; a cancellation made in iOS Settings is seen on the next app open, so every reminder says "If you have already cancelled, there is nothing to do."; the status is deleted with the account; no purchase records are kept; `{price}` in emails is the published price of the reported plan (US only); a price increase cannot be seen from the status, so the `price-increase` email stays later and Apple's opt-in consent mode is the only one used (LGL-19).
+- **Rationale:** without any server signal the D-022 emails had no trigger, and Terms 14.6 and the Subscription Terms promised reminders the system could not send (LGL-01). Status only is the smallest data flow that keeps that promise.
+- **Alternatives:** Option B, in-app local notifications only and no billing email (counsel unsure it meets 17602 and other states); App Store Server Notifications (rejected by Brief 3); RevenueCat (rejected by Brief 3).
+- **Owner:** founder; payments engineer (status report and scheduler), content and legal (copy). **Date:** 2026-10-03.
+- **Effects:** `docs/emails/CATALOG.md` section 7 un-parked with this trigger; `docs/emails/COMPLIANCE.md` 5.2 and 5.5; `packages/content/src/emails/billing.en.ts` header and reminders; Privacy Policy 1.5.0 (sections 3, 5, 10, 15), Terms 1.6.0 (14.3, 14.4, 14.6, 14.12), Subscription Terms 1.4.0, subprocessor page 1.4.0 (Apple row); `packages/content/legal/REVIEW_NOTES.md` 3.2 item 16 (counsel questions, including 17602(a)(6) proof of consent). Engineering, outside these lanes: a small status table and an authenticated, idempotent report endpoint in `packages/api`; the D-022 scheduler reads it; D-001 and D-049 text still describe ASSN and need a superseding edit by the PM lane.
+
+### D-081 Purchase consent records (supersedes D-049)
+- **Status:** Recommended; counsel confirms (REVIEW_NOTES 3.2 item 16). Proceed: yes.
+- **Decision:** when a purchase or trial completes in the app, the first D-080 status report also carries the consent facts: product, offer type, the Subscription Terms version shown, and the time. One record per original purchase, kept for the life of the account plus 3 years (Privacy Policy section 10), pseudonymised at account deletion. No receipt, payment data or transaction id in clear.
+- **Rationale:** D-049 reconciled consent rows from App Store notifications, which D-053 removes; Cal. Bus. & Prof. Code 17602(a)(6) still asks for proof of consent (legal review LGL-04).
+- **Owner:** payments engineer; counsel. **Date:** 2026-10-03.
+- **Effects:** Terms 14.3 currently says only "the date your plan started"; if this entry is confirmed, the content lane widens it to "what you agreed to and when".
+
+---
+
