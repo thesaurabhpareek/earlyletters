@@ -445,3 +445,25 @@ describe('client helper', () => {
     expect(await submitNotify(EMAIL)).toEqual({ ok: false, error: 'server' });
   });
 });
+
+describe('API key repair and format check', () => {
+  it('repairs a key pasted with spaces, quotes or a line break inside', async () => {
+    vi.stubEnv('RESEND_API_KEY', ' "re_abc\n_def" ');
+    vi.stubEnv('RESEND_SEGMENT_ID', ` ${SEGMENT}\n`);
+    const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
+    expect(response.status).toBe(200);
+    expect(resend.constructed).toHaveBeenCalledWith('re_abc_def');
+    expect(resend.create).toHaveBeenCalledWith({ email: NORMALISED, segments: [{ id: SEGMENT }] }, expect.anything());
+  });
+
+  it('names a key with a character that cannot be repaired, without printing it', async () => {
+    vi.stubEnv('RESEND_API_KEY', 're_abc\u2026def');
+    const spies = consoleSpies();
+    const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
+    expect(response.status).toBe(500);
+    expect(resend.create).not.toHaveBeenCalled();
+    const text = loggedText(spies);
+    expect(text).toContain('not in the expected format');
+    expect(text).not.toContain('re_abc');
+  });
+});
