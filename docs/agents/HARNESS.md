@@ -1,6 +1,6 @@
 # The Early Letters agent harness
 
-One document for the whole system: what it is, how agents are created and run, how they keep context, and how token spend stays low without lowering the quality of the work. The rules agents follow during a run are in `OPERATING_MODEL.md`; the decisions are ADR 0014 (the harness) and ADR 0015 (open-weight models by default).
+One document for the whole system: what it is, how agents are created and run, how they keep context, and how token spend stays low without lowering the quality of the work. The rules agents follow during a run are in `OPERATING_MODEL.md`; the decisions are ADR 0018 (the harness) and ADR 0019 (open-weight models by default).
 
 Last updated: 3 Oct 2026.
 
@@ -200,5 +200,5 @@ Do it before the first external TestFlight families join (backlog milestone M12)
 
 ## 15. Change log
 
-- 3 Oct 2026: harness created (ADR 0014); open-weight engine by default, Claude optional (ADR 0015); per-run dollar caps; skip unchanged standing runs; this document.
+- 3 Oct 2026: harness created (ADR 0018); open-weight engine by default, Claude optional (ADR 0019); per-run dollar caps; skip unchanged standing runs; this document.
 - 3 Oct 2026: nothing is lost to limits: agents push as they go, the workflow salvages unfinished runs to a branch, and `CLAUDE.md` asks every session to push work in progress at least every 30 minutes.
