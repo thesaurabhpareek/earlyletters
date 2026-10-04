@@ -60,7 +60,7 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
 
 test('[J01b] the whole first run in one helper still lands on Tonight', async ({ app }) => {
   await firstRun(app);
-  await expect(app.getByText('Good', { exact: false }).first()).toBeVisible();
+  await expect(app.getByRole('heading', { level: 1 })).toBeVisible(); // the greeting changes with the hour
 });
 
 test('[J01c] the age gate answer survives a restart', async ({ app }) => {

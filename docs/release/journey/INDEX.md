@@ -5,7 +5,7 @@ Generated from the web end-to-end flows (`apps/mobile/e2e-web/*.flow.ts`), run a
 (402 x 874 CSS px at 3x). Nothing here is a mock-up: every screen is a screenshot of the running app, and `text` in each step JSON is the
 visible text read from the page.
 
-- Journeys: **20**, steps: **116** (happy 88, unhappy 28), screenshots: **116**, plus **29** full-length captures of scrolling screens (`<id>-full.png`).
+- Journeys: **20**, steps: **116** (happy 87, unhappy 29), screenshots: **116**, plus **29** full-length captures of scrolling screens (`<id>-full.png`).
 - Files: `steps/<id>.json` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines), `screens/<id>.png`, `screens/<id>-full.png`.
 - Regenerate: `npm run e2e:web:journey -w @scribe/mobile` then `node apps/mobile/e2e-web/support/build-index.mjs`.
 - Seeded steps use the fictional family Asha (the web preview switch `EXPO_PUBLIC_WEB_PREVIEW=1`, `?seed=asha`), because the web build has no speech model and cannot produce words from a recording. They are the real screens with data filled in; each such step says so.
@@ -105,7 +105,7 @@ visible text read from the page.
 | J07-02 | happy | **Typing, autosaved.** After a pause "Saved on this phone" appears. Every pause saves a local draft, so a closed sheet or a crash loses nothing. | J07-01 | [png](screens/J07-02.png) |
 | J07-03 | happy | **Review a typed letter.** Typed words are kept exactly as typed: no tidying, no list of changes, no "does this sound like you". The person chooses where it goes. | J07-02 | [png](screens/J07-03.png) |
 | J07-04 | happy | **Saved to the book.** The letter settles into a card with a confirmation, then Review closes on its own after a moment (or on tap). | J07-03 | [png](screens/J07-04.png) |
-| J07-05 | happy | **Back on Tonight.** The person lands back on Tonight. | J07-04 | [png](screens/J07-05.png) |
+| J07-05 | unhappy | **Closed before finishing.** Closing keeps the words as a draft. Tonight now shows a quiet card to pick the letter back up. | J07-01 | [png](screens/J07-05.png) |
 | J07-06 | happy | **Picking the draft back up.** Tapping the card reopens the page with the words exactly as left. | J07-05 | [png](screens/J07-06.png) |
 | J07-07 | happy | **Kept private.** Keep private saves the letter outside the book. It stays on the phone and can be added later. | J07-03 | [png](screens/J07-07.png) |
 
