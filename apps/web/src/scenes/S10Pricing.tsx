@@ -1,7 +1,7 @@
 'use client';
 /**
  * S10 "pricing": one quiet frame, a breath before the end. Storyboard row S10; tone night; length 1.5.
- *   0.10-0.30  "Free to write, read and keep." and the line about Plus.   0.86-0.98  They leave.
+ *   0.10-0.30  "Two letters free. Then Plus." and the line about Plus.   0.86-0.98  They leave.
  */
 import { motion, useTransform } from 'motion/react';
 import { Scene } from '@/film/Scene';
