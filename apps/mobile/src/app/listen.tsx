@@ -19,9 +19,9 @@ import { AccessibilityInfo, Alert, AppState, Linking, View } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated';
 import { ListeningAura, type AuraState } from '@/components/capture/listening-aura';
 import { Button, ButtonRow } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { LineArt } from '@/components/ui/line-art';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
+import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
@@ -215,22 +215,15 @@ export default function Listen() {
     const e = copy.errors.micDenied;
     // A choice, not an error: calm card, Type offered first (DESIGN_LANGUAGE 12, Listening).
     return (
-      <SafeAreaView className="flex-1 justify-center bg-background px-5">
-        <Card padding={6} radius="xl" className="gap-5">
-          <LineArt name="envelope" width={128} wash={false} style={{ marginLeft: -8 }} />
-          <View className="gap-2">
-            <Text variant="title1" asHeading>
-              {e.title}
-            </Text>
-            <Text variant="body">{e.body}</Text>
-          </View>
-          <View className="gap-1">
-            <Button size="lg" icon={PencilSimpleIcon} label={e.typeButton} onPress={typeInstead} />
-            <Button variant="quiet" label={e.settingsButton} onPress={() => Linking.openSettings()} />
-            <Button variant="quiet" label={copy.common.closeButton} onPress={() => router.back()} />
-          </View>
-        </Card>
-      </SafeAreaView>
+      <StateScreen
+        kind="empty"
+        art="envelope"
+        title={e.title}
+        body={e.body}
+        header={<ModalHeader onClose={() => router.back()} />}
+        primary={{ label: e.typeButton, icon: PencilSimpleIcon, onPress: typeInstead }}
+        quiet={[{ label: e.settingsButton, onPress: () => Linking.openSettings() }]}
+      />
     );
   }
 

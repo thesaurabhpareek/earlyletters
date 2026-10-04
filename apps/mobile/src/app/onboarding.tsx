@@ -21,7 +21,6 @@
  */
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, type Href } from 'expo-router';
-import { CaretLeftIcon } from 'phosphor-react-native/src/icons/CaretLeft';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PlusIcon } from 'phosphor-react-native/src/icons/Plus';
@@ -38,6 +37,7 @@ import { Card } from '@/components/ui/card';
 import { Chip, ChipGroup, ChoiceGroup } from '@/components/ui/choice-group';
 import { LineArt } from '@/components/ui/line-art';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { BackButton } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
@@ -145,7 +145,7 @@ export default function Onboarding() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerClassName="flex-grow px-6 pb-6" keyboardShouldPersistTaps="handled">
           <View className="min-h-12 justify-center">
-            {step !== 'welcome' && <Button variant="quiet" size="sm" icon={CaretLeftIcon} label={copy.common.backButton} className="-ml-4 self-start" onPress={back} />}
+            {step !== 'welcome' && <BackButton onPress={back} />}
           </View>
 
           <Animated.View key={step} entering={motion.enter()} className={centred ? 'flex-1 justify-center gap-6 py-6' : 'flex-1 gap-6 pb-8 pt-4'}>

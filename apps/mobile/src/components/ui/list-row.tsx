@@ -3,7 +3,8 @@
  * ListSection, ListRow, ToggleRow (COMPONENTS 2.10, 2.11): the iOS inset-grouped list
  * (Settings, Apple Journal settings, Day One settings), drawn in paper tones.
  *
- * ListRow variants by trailing: 'chevron' (navigation), a value string, a node, or none.
+ * A pressable row always shows what it does (list-row.logic.ts showsChevron): chevron, value then
+ * chevron, or its own control (a node: switch, check). Destructive rows never get a chevron.
  * Destructive rows use the destructive role and say the action in words.
  *
  * Accessibility contract
@@ -20,7 +21,7 @@ import { Toggle } from '@/components/platform/toggle';
 import { Text } from '@/components/ui/text';
 import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
-import { DIVIDER_INSET, withDividers } from './list-row.logic';
+import { DIVIDER_INSET, showsChevron, withDividers } from './list-row.logic';
 
 export function ListSection({ title, footer, children, className }: { title?: string; footer?: string; children: React.ReactNode; className?: string }) {
   // Fragments count as one row; pass rows directly (arrays and conditionals are fine).
@@ -77,6 +78,7 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
   const value = typeof trailing === 'string' && trailing !== 'chevron' && trailing !== 'none' ? trailing : (valueProp ?? null);
   const node = trailing !== 'chevron' && trailing !== 'none' && typeof trailing !== 'string' ? trailing : null;
   const label = [title, subtitle, value].filter(Boolean).join(', ');
+  const chevron = showsChevron({ pressable: !!onPress, disabled, destructive: variant === 'destructive', hasTrailingNode: node !== null, android: Platform.OS === 'android' });
 
   const body = (
     <>
@@ -95,7 +97,7 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
         ) : null}
       </View>
       {node}
-      {trailing === 'chevron' && !disabled && Platform.OS !== 'android' ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
+      {chevron ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
     </>
   );
 

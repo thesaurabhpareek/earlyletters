@@ -3,8 +3,7 @@ import { Stack } from 'expo-router';
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, ScrollView, View, useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
+import { AccessibilityInfo, ScrollView, View } from 'react-native';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -23,6 +22,7 @@ import {
   type ExportResult,
 } from '@/lib/export';
 import { haptic } from '@/lib/haptics';
+import { useTheme } from '@/lib/a11y';
 
 type State =
   | { kind: 'idle' }
@@ -40,7 +40,7 @@ const KEEP_AWAKE = 'export';
  * Progress has no animation (Reduce Motion), and nothing is timed.
  */
 export default function ExportScreen() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const e = copy.settings.export;
   const s = exportCopy.screen;
   const [state, setState] = useState<State>({ kind: 'idle' });

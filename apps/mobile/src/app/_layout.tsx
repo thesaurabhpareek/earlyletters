@@ -1,16 +1,17 @@
 import '@/global.css';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeSessions } from '@scribe/api';
-import { tokens } from '@scribe/design-tokens';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { UIProvider } from '@/components/ui/provider';
+import { StateScreenView } from '@/components/ui/state-screen';
+import { copy } from '@/lib/copy';
+import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
 import { startAnalytics } from '@/lib/analytics';
 import { startAnalyticsObservers } from '@/lib/analytics/observers';
@@ -31,6 +32,23 @@ import { startTranscriptionQueue } from '@/lib/transcription-queue';
 import { useStoreReady } from '@/dev/store-ready';
 
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * A crash anywhere below the root shows the one state pattern instead of a blank screen. It
+ * renders outside the navigator (which is what crashed), so it reads nothing from navigation and
+ * the error itself is never shown or logged here (no content in crash text; PRIVACY). Nothing
+ * the person wrote is lost: every letter is saved on the phone before anything can fail.
+ */
+export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+  return (
+    <StateScreenView
+      kind="error"
+      title={copy.errors.generic.title}
+      body={copy.errors.generic.body}
+      primary={{ label: copy.common.tryAgainButton, onPress: () => void retry() }}
+    />
+  );
+}
 
 /** Deep links (invites, sign-in) open as sheets over the tabs, never as the only screen. */
 export const unstable_settings = { initialRouteName: '(tabs)' };
@@ -94,8 +112,8 @@ export default function RootLayout() {
 
 function Root() {
   useAppearance();
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const c = tokens[scheme];
+  // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
+  const { c, scheme } = useTheme();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
