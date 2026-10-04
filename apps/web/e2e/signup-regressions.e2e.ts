@@ -1,14 +1,14 @@
 /**
- * Tests of the CORRECT behaviour for bugs that are still open. They fail today, so they are not part of the default
- * run (`npm run e2e`); run them with `npm run e2e:known-bugs -w @scribe/web`. Each one is written up, with file and
- * line, in docs/release/qa/web-e2e-findings.md. When a bug is fixed, move its test into the main suite.
+ * Regression tests for the two sign-up defects the end-to-end audit found (A-U2 and A-U8), now fixed:
+ * a native form post (script off or not loaded yet) saves the address and lands on a page; a repeat or
+ * unsubscribed address gets no second email. Written up in docs/release/qa/web-e2e-findings.md.
  */
-import { site } from '../../src/content/site';
-import { expect, notifyApi, signUp, test } from '../support/fixtures';
+import { site } from '../src/content/site';
+import { expect, notifyApi, signUp, test } from './support/fixtures';
 
 const n = site.notify;
 
-test.describe('KB-1 (audit A-U2): sign-up without JavaScript', () => {
+test.describe('A-U2: sign-up without JavaScript', () => {
   test.use({ javaScriptEnabled: false, strictConsole: false });
 
   test('a native submit saves the address, sends the welcome and lands the person on a readable page, not raw JSON', async ({ page, mock, email }) => {
@@ -17,8 +17,11 @@ test.describe('KB-1 (audit A-U2): sign-up without JavaScript', () => {
     const [response] = await Promise.all([page.waitForResponse((r) => r.url().endsWith('/api/notify')), page.getByRole('button', { name: n.button }).click()]);
     await page.waitForLoadState('load');
 
-    // The person sees a page of the site (HTML), never the machine's JSON answer.
-    expect(response.headers()['content-type']).toMatch(/text\/html/);
+    // The post is answered with a redirect, and the person ends on a page of the site, never the machine's JSON.
+    expect(response.status()).toBe(303);
+    await expect(page).toHaveURL(/\/signup\/thanks$/);
+    await expect(page.getByRole('heading', { level: 1, name: n.thanksTitle })).toBeVisible();
+    await expect(page.getByText(n.success)).toBeVisible();
     expect(await page.content()).not.toContain('"ok"');
     // And it worked: the address is saved and the welcome went out.
     expect(await mock.contact(email)).toBeDefined();
@@ -26,7 +29,7 @@ test.describe('KB-1 (audit A-U2): sign-up without JavaScript', () => {
   });
 });
 
-test.describe('KB-2 (audit A-U8): repeat and unsubscribed addresses', () => {
+test.describe('A-U8: repeat and unsubscribed addresses', () => {
   const post = (request: import('@playwright/test').APIRequestContext, clientIp: string, email: string) =>
     notifyApi(request, clientIp, email);
 

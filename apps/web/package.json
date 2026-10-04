@@ -11,7 +11,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "e2e": "playwright test -c e2e/playwright.config.ts",
-    "e2e:known-bugs": "playwright test -c e2e/known-bugs/playwright.config.ts",
     "e2e:report": "playwright show-report e2e/.results/report"
   },
   "dependencies": {

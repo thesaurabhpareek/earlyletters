@@ -1,7 +1,7 @@
 # Website end-to-end suite: findings
 
 Written 2026-10-04 by QA engineer 3. Suite: `apps/web/e2e/` (Playwright, Chromium). Run: `npm run e2e -w @scribe/web`.
-Open-bug tests: `npm run e2e:known-bugs -w @scribe/web` (excluded from the default run, they fail until the bug is fixed).
+All three bugs found by the first run are fixed; their tests are in the main suite (`e2e/signup-regressions.e2e.ts` and the unsubscribe group).
 CI: `.github/workflows/web-e2e.yml` (pull requests that touch the site; uploads traces and the HTML report on failure).
 
 ## How the suite works
@@ -28,20 +28,19 @@ CI: `.github/workflows/web-e2e.yml` (pull requests that touch the site; uploads 
 - Fix (8 lines, not payments, auth or Supabase): treat the request as the page form only when the body has a `t` field.
 - Tests: `apps/web/test/unsubscribe.test.ts` (new unit test with the real request) and the e2e "unsubscribe API" group.
 
-### F-2 Sign-up with JavaScript off ends on raw JSON (audit A-U2). OPEN. Test: `known-bugs/known-bugs.e2e.ts` KB-1.
+### F-2 Sign-up with JavaScript off ends on raw JSON (audit A-U2). FIXED. Test: `signup-regressions.e2e.ts` A-U2 and `test/notify.test.ts` (native form post).
 - Where: `apps/web/src/lib/notify/handler.ts:77` (`readJsonObject` refuses anything but `application/json`) against
   `apps/web/src/components/cta/NotifyForm.tsx:46` and `:51` (the comment and `method="post" action="/api/notify"` promise a working native submit).
 - A native submit posts form-encoded data, gets `400 {"ok":false,"error":"invalid"}` and the visitor sees that JSON on a blank page. The address is not saved.
-- Not fixed here: a correct fix needs form parsing in the handler, a redirect, and a success state on the landing page (more than 20 lines, and a copy decision).
+- Fix: the handler reads a form-encoded body, does the same work, and answers `303` to `/signup/thanks` or `/signup/sorry?e=...` (two small static pages, copy in `site.notify`) instead of JSON. Cross-site posts are still refused by the Origin check.
 - Passing tests that cover what does work without JavaScript: the page renders in full, the form is a plain POST, and the address never appears in the page URL.
 
-### F-3 A repeat sign-up sends another welcome email, and an unsubscribed address gets one too (audit A-U8). OPEN. Test: KB-2 (three tests).
+### F-3 A repeat sign-up sends another welcome email, and an unsubscribed address gets one too (audit A-U8). FIXED (PR 77). Tests: `signup-regressions.e2e.ts` A-U8 (three tests).
 - Where: `apps/web/src/lib/notify/handler.ts:126` (`if (outcome === 'ok') await sendWelcome(...)`) and the "already exists" branch of `subscribe` in
   `apps/web/src/lib/notify/provider.ts` (returns `ok` for an existing contact, so it is treated like a new one).
 - Effect: the same address entered again (by the person or by someone else typing it) receives another email, up to 5 per 10 minutes per client;
   an address that unsubscribed stays unsubscribed in Resend but is still told it is on the list and still emailed once.
-- Not fixed here: the existing unit tests in `test/notify.test.ts` assert the current "as designed" behaviour, so a fix means rewriting owned tests, and what Resend
-  returns for a duplicate contact is unverified (a silent upsert would make "newly created" unknowable). It is a product decision. Suggested fix is in audit A-U8.
+- Fix: sign-up looks the address up first; an existing address gets no second email and an unsubscribed address is left alone, with the same answer for everyone. Resend returned 201 for a duplicate create, so a create cannot tell new from existing.
 - Passing tests that cover the rest: same answer for new and existing addresses, one contact only, segment ensured, and an unsubscribed contact is never switched back on.
 
 ## Observations (not bugs, not tested as failures)

@@ -565,3 +565,48 @@ describe('welcome email unsubscribe link', () => {
     expect(payload.headers['List-Unsubscribe-Post']).toBeUndefined();
   });
 });
+
+describe('native form post (script off or not loaded yet)', () => {
+  const nativePost = (fields: Record<string, string>, headers: Record<string, string> = {}) =>
+    new Request('http://localhost:3112/api/notify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-forwarded-for': IP, host: 'localhost:3112', ...headers },
+      body: new URLSearchParams(fields).toString(),
+    });
+
+  it('saves the address, sends the welcome and redirects to the thanks page, never JSON', async () => {
+    const response = await call(nativePost({ email: EMAIL, company: '' }));
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe('/signup/thanks');
+    expect(response.headers.get('content-type') ?? '').not.toMatch(/json/);
+    expect(resend.create).toHaveBeenCalledWith({ email: NORMALISED, segments: [{ id: SEGMENT }] }, expect.anything());
+    expect(resend.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('a bad address lands on the sorry page with the reason, and saves nothing', async () => {
+    const response = await call(nativePost({ email: 'not-an-address', company: '' }));
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe('/signup/sorry?e=invalid');
+    expect(resend.create).not.toHaveBeenCalled();
+  });
+
+  it('a bot (honeypot filled) gets the thanks page and nothing is saved or sent', async () => {
+    const response = await call(nativePost({ email: EMAIL, company: 'Acme' }));
+    expect(response.headers.get('location')).toBe('/signup/thanks');
+    expect(resend.create).not.toHaveBeenCalled();
+    expect(resend.send).not.toHaveBeenCalled();
+  });
+
+  it('a foreign Origin is refused like any other cross-site post', async () => {
+    const response = await call(nativePost({ email: EMAIL, company: '' }, { origin: 'https://evil.example' }));
+    expect(response.headers.get('location')).toBe('/signup/sorry?e=invalid');
+    expect(resend.create).not.toHaveBeenCalled();
+  });
+
+  it('the server failing lands on the sorry page, and the address is not reported saved', async () => {
+    resend.create.mockResolvedValue({ data: null, error: { name: 'application_error', statusCode: 500, message: 'x' }, headers: null });
+    consoleSpies();
+    const response = await call(nativePost({ email: EMAIL, company: '' }));
+    expect(response.headers.get('location')).toBe('/signup/sorry?e=server');
+  });
+});

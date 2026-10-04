@@ -90,7 +90,9 @@ test.describe('repeat and unsubscribed addresses', () => {
     const { contacts } = await mock.state();
     expect(contacts.filter((c) => c.email === email)).toHaveLength(1);
     const calls = await mock.callsFor(email);
-    expect(calls.filter((c) => c.method === 'POST' && c.path === '/contacts')).toHaveLength(2); // the second one is answered 409 by the mock
+    // The second sign-up looks the address up first, so it creates nothing and sends no second email.
+    expect(calls.filter((c) => c.method === 'POST' && c.path === '/contacts')).toHaveLength(1);
+    expect(calls.some((c) => c.method === 'GET' && c.path === `/contacts/${email}`)).toBe(true);
     expect(calls.some((c) => c.method === 'POST' && c.path === `/contacts/${email}/segments/${TEST_ENV.RESEND_SEGMENT_ID}`)).toBe(true);
   });
 

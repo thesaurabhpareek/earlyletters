@@ -74,12 +74,22 @@ function readConfig(): { apiKey: string; segmentId: string } | null | 'bad_key' 
   return KEY_SHAPE.test(apiKey) ? { apiKey, segmentId } : 'bad_key';
 }
 
-async function readJsonObject(request: Request): Promise<Record<string, unknown> | null> {
-  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return null;
+/** A browser submitting the form natively (script off, or not loaded yet) sends it form-encoded, not as JSON. */
+function isNativeForm(request: Request): boolean {
+  return (request.headers.get('content-type') ?? '').toLowerCase().startsWith('application/x-www-form-urlencoded');
+}
+
+async function readBody(request: Request): Promise<Record<string, unknown> | null> {
+  const native = isNativeForm(request);
+  if (!native && !request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return null;
   const declared = Number(request.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > MAX_BODY_CHARS * 4) return null;
   const text = await request.text();
   if (text.length > MAX_BODY_CHARS) return null;
+  if (native) {
+    const form = new URLSearchParams(text);
+    return { email: form.get('email') ?? undefined, company: form.get('company') ?? '' };
+  }
   try {
     const value: unknown = JSON.parse(text);
     return value !== null && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -88,13 +98,25 @@ async function readJsonObject(request: Request): Promise<Record<string, unknown>
   }
 }
 
+/**
+ * The JSON endpoint behind the form. A native form post gets the same work done and then a redirect to a page of the
+ * site (thanks, or sorry with a short reason), never the machine's JSON.
+ */
 export async function handleNotify(request: Request): Promise<Response> {
+  const native = isNativeForm(request);
+  const response = await handleNotifyJson(request);
+  if (!native) return response;
+  const where = response.status === 200 ? '/signup/thanks' : `/signup/sorry?e=${response.status === 400 ? 'invalid' : response.status === 429 ? 'slow' : 'server'}`;
+  return new Response(null, { status: 303, headers: { 'Cache-Control': 'no-store', Location: where } });
+}
+
+async function handleNotifyJson(request: Request): Promise<Response> {
   try {
     const limited = perClient.hit(clientKey(request.headers));
     if (!limited.allowed) return fail('rate_limited', limited.retryAfterSeconds);
 
     if (!isSameOrigin(request)) return fail('invalid');
-    const body = await readJsonObject(request);
+    const body = await readBody(request);
     if (!body) return fail('invalid');
 
     // Honeypot: anything other than an empty value means a bot filled the hidden field.

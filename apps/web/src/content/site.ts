@@ -222,6 +222,10 @@ export const site = {
     rateLimited: 'Please give it a minute, then try once more.',
     server: 'That did not go through on our side. Please try again in a moment.',
     honeypotLabel: 'Company',
+    /** The pages a native form post lands on (app/signup). */
+    thanksTitle: 'Thank you.',
+    sorryTitle: 'That did not go through.',
+    home: `Back to ${NAME}`,
   },
 
   /** The one short hello sent when someone leaves their address (lib/notify/welcome-email.ts). */
