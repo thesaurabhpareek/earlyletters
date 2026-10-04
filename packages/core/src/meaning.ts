@@ -8,17 +8,23 @@
  * edit puts words in their mouth.
  */
 import { FUNCTION_WORDS, tokens } from './text';
+import {
+  AGREEMENT_GROUPS as AGREEMENT_LISTS,
+  KINSHIP,
+  MODALS,
+  NEGATIONS,
+  NUMBER_WORDS,
+  PRONOUNS,
+  TENSE_GROUPS as TENSE_LISTS,
+} from './lang/english-tables';
+
+/* The English tables live in lang/english-tables.ts; the English text-rules pack is built from the same sets. */
+export { KINSHIP, MODALS, NEGATIONS, NUMBER_WORDS };
 
 /** Normalise a word for comparison: lowercase, straight apostrophe. */
 export function norm(word: string): string {
   return word.toLowerCase().replace(/[’‘′]/g, "'");
 }
-
-/** Words that negate on their own. Hindi/Hinglish forms included; "na" is excluded (also a tag particle). */
-export const NEGATIONS: ReadonlySet<string> = new Set([
-  'not', 'no', 'never', 'cannot', 'nobody', 'nothing', 'none', 'nowhere', 'neither', 'nor', 'nope', 'nah',
-  'nahi', 'nahin',
-]);
 
 export function isNegation(word: string): boolean {
   const w = norm(word);
@@ -29,20 +35,6 @@ export function negationCount(text: string): number {
   return tokens(text).filter((t) => isNegation(t.word)).length;
 }
 
-/** Modal verbs and their contracted forms. Swapping one for another changes meaning. */
-export const MODALS: ReadonlySet<string> = new Set([
-  'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must', 'ought',
-  "can't", "couldn't", "won't", "wouldn't", "shan't", "shouldn't", "mightn't", "mustn't",
-]);
-
-/** Number words. Digits are handled by `numbersOf` directly. */
-export const NUMBER_WORDS: ReadonlySet<string> = new Set([
-  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
-  'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'thirty', 'forty',
-  'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'hundred', 'thousand', 'million', 'half', 'once', 'twice',
-  'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'dozen',
-]);
-
 /**
  * Every number in a text, in order: digit groups keep their separators
  * ("1,000" and "1.000" differ; "3:30" and "3.30" differ), number words are
@@ -50,42 +42,37 @@ export const NUMBER_WORDS: ReadonlySet<string> = new Set([
  */
 export function numbersOf(text: string): string[] {
   const out: string[] = [];
-  for (const m of text.matchAll(/\p{N}+(?:[.,:/]\p{N}+)*/gu)) out.push(m[0]);
+  // ٫ and ٬ are the Arabic decimal and thousands separators.
+  for (const m of text.matchAll(/\p{N}+(?:[.,:/٫٬]\p{N}+)*/gu)) out.push(m[0]);
   for (const t of tokens(text)) if (NUMBER_WORDS.has(norm(t.word))) out.push(norm(t.word));
   return out;
 }
 
-/** Marks that set a sentence's type: question or exclamation. */
-export function moodMarks(text: string): string {
-  return (text.match(/[?!¿¡]/g) ?? []).join('');
-}
-
-/** Quotation marks of any style. Adding or moving one changes who said what. */
-export function quoteMarkCount(text: string): number {
-  return (text.match(/["“”«»]/g) ?? []).length;
-}
-
 /**
- * Kinship and relationship words. A model may never turn one of these into a
- * dictionary name by similarity ("Daddy" -> "Asha"); a parent can still teach
- * the mapping explicitly through `heardAs` ("mama" -> "Mumma").
+ * Every mark that sets a sentence's type, in any script, mapped to one
+ * canonical form: a full-width ？ (Chinese) and an Arabic ؟ are questions
+ * exactly like "?", so turning 。 into ？ is caught, and turning "?" into ？
+ * is not a change. Inverted ¿ and ¡ stay distinct (see LanguageRules for
+ * the Spanish pairing rule).
  */
-export const KINSHIP: ReadonlySet<string> = new Set([
-  'mom', 'mommy', 'mum', 'mummy', 'mumma', 'mama', 'mamma', 'ma', 'mother', 'amma', 'ammi', 'maa',
-  'dad', 'daddy', 'papa', 'pappa', 'pa', 'father', 'baba', 'abba', 'appa',
-  'nani', 'nana', 'dadi', 'dada', 'nanu', 'grandma', 'grandpa', 'granny', 'gran', 'grandad', 'granddad', 'grandmother',
-  'grandfather', 'nanima', 'dadima', 'ajji', 'ajja', 'thatha', 'paati',
-  'bua', 'chacha', 'chachi', 'mausi', 'masi', 'mausa', 'mami', 'mamu', 'tau', 'tai', 'taiji', 'fufa', 'phupho',
-  'bhaiya', 'bhai', 'didi', 'dida', 'behen', 'aunty', 'auntie', 'aunt', 'uncle', 'sister', 'brother', 'sis', 'bro',
-  'baby', 'son', 'daughter', 'husband', 'wife', 'cousin', 'nanny', 'teacher',
-]);
+export const MOOD_CANON: Readonly<Record<string, string>> = {
+  '?': '?', '？': '?', '؟': '?', '⸮': '?', '¿': '¿',
+  '!': '!', '！': '!', '¡': '¡',
+  '‽': '?!', '⁇': '??', '⁈': '?!', '⁉': '!?', '‼': '!!',
+};
+const MOOD_RE = /[?？؟⸮¿!！¡‽⁇⁈⁉‼]/g;
 
-/** Pronouns beyond the function-word list. */
-const PRONOUNS: ReadonlySet<string> = new Set([
-  'hers', 'mine', 'yours', 'theirs', 'ours', 'myself', 'yourself', 'himself', 'herself', 'itself', 'ourselves',
-  'themselves', 'yourselves', "i'll", "i've", "i'd", "you'll", "she'll", "he'll", "we'll", "they'll",
-  'who', 'whom', 'whose', 'someone', 'somebody', 'everyone', 'everybody', 'anyone', 'anybody',
-]);
+/** Marks that set a sentence's type: question or exclamation, canonicalised. */
+export function moodMarks(text: string): string {
+  return (text.match(MOOD_RE) ?? []).map((c) => MOOD_CANON[c]).join('');
+}
+
+/** Quotation marks of any style, including CJK corner brackets. Adding or moving one changes who said what. */
+const QUOTE_RE = /["“”«»„‟‹›「」『』]/g;
+
+export function quoteMarkCount(text: string): number {
+  return (text.match(QUOTE_RE) ?? []).length;
+}
 
 /** Words a similarity-based stt_fix may never replace. */
 export function isProtectedWord(word: string): boolean {
@@ -104,29 +91,10 @@ export function isPronounI(word: string): boolean {
 /* ---------- agreement: number and person only ---------- */
 
 /** Same verb (or article), different number or person. Tense never changes inside a group. */
-const AGREEMENT_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
-  new Set(['is', 'are', 'am']),
-  new Set(['was', 'were']),
-  new Set(['has', 'have']),
-  new Set(['do', 'does']),
-  new Set(['go', 'goes']),
-  new Set(["isn't", "aren't"]),
-  new Set(["wasn't", "weren't"]),
-  new Set(["hasn't", "haven't"]),
-  new Set(["doesn't", "don't"]),
-  new Set(['a', 'an']),
-];
+const AGREEMENT_GROUPS: ReadonlyArray<ReadonlySet<string>> = AGREEMENT_LISTS.map((g) => new Set(g));
 
 /** Groups that span tenses. A move inside one of these is a tense change. */
-const TENSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = [
-  new Set(['is', 'are', 'am', 'was', 'were', 'be', 'been', 'being']),
-  new Set(['has', 'have', 'had', 'having']),
-  new Set(['do', 'does', 'did', 'done', 'doing']),
-  new Set(['go', 'goes', 'went', 'gone', 'going']),
-  new Set(["isn't", "aren't", "wasn't", "weren't"]),
-  new Set(["hasn't", "haven't", "hadn't"]),
-  new Set(["doesn't", "don't", "didn't"]),
-];
+const TENSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = TENSE_LISTS.map((g) => new Set(g));
 
 /** walk/walks, watch/watches, carry/carries: the same word with a number or person ending. */
 function sameWordWithS(a: string, b: string): boolean {
@@ -192,7 +160,7 @@ export function soundKey(text: string): string {
 /**
  * True when `original` plausibly is the term misheard: exactly the same
  * consonant sounds in the same order, and at most one vowel group more or
- * fewer. "Usher" ~ "Asha", "Mira" ~ "Meera", "ah shoe" ~ "Ashu"; "Ashok",
+ * fewer. "Usher" ~ "Asha", "Mila" ~ "Mira", "ah shoe" ~ "Ashu"; "Ashok",
  * "Arya" and "moon" are not. Limitation: a real, different name with the
  * same sounds ("Aisha", "Isha") passes; the verifier only takes this path
  * for words the recogniser itself capitalised mid-sentence, and the review

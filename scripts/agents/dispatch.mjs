@@ -8,6 +8,8 @@
 //   node scripts/agents/dispatch.mjs --board-only     # refresh the board, assign nothing
 //   node scripts/agents/dispatch.mjs --local --top 1 --claim
 //        local mode: no Actions API (running jobs are inferred from claims)
+//   node scripts/agents/dispatch.mjs --local --board-only --release qa,ops
+//        release the claims of local runs that have finished
 //
 // Env: GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_OUTPUT, AGENTS_PAUSED,
 //      ONLY_AGENT, FORCE_TASK, FORCE_MODE, and which engines can run:
@@ -93,6 +95,11 @@ for (const [handle, c] of Object.entries(state.claims)) {
   const finished = !LOCAL && c.source === "actions" && !running.has(handle) && ageMs > 10 * 60_000;
   if (expired || finished) delete state.claims[handle];
 }
+// Local runs have no job to watch: the session that ran them releases their
+// claims when they finish (`--release product,ops`).
+for (const h of (opt("--release") ?? "").split(",").map((x) => x.trim()).filter(Boolean)) {
+  delete state.claims[h];
+}
 const claimedTasks = new Set(Object.values(state.claims).map((c) => c.task).filter(Boolean));
 
 // ---------- per-PR facts (lazy, cached) ----------
@@ -150,9 +157,11 @@ function stewardTargets(agent) {
 }
 
 function attentionReasons(pr) {
-  if (labelNames(pr).includes("needs:founder")) return [];
+  // needs:founder does not pause fixes the agent can make on its own
+  // (failing checks, a red-team "fix first"); a founder comment unblocks it.
   const f = prFacts(pr);
   const reasons = [];
+  if (gh(`/repos/${repo}/pulls/${pr.number}`, { allowFail: true })?.mergeable === false) reasons.push(`conflicts with ${pr.base.ref}: merge it into the branch`);
   if (f.failing.length) reasons.push(`failing checks: ${f.failing.join(", ")}`);
   if (f.changesRequested) reasons.push("founder requested changes");
   else if (f.founderNew.length) reasons.push("founder commented after the last commit");
@@ -309,11 +318,16 @@ function spendToday() {
   const comments = ghAll(`/repos/${repo}/issues/comments?since=${today}T00:00:00Z&sort=created`, { allowFail: true });
   let cost = 0;
   let n = 0;
+  let unknown = 0;
   for (const c of comments) {
-    const m = (c.body ?? "").match(/<!-- receipt run:\S+ agent:\S+ cost:([0-9.]+) -->/);
-    if (m) { cost += Number(m[1]); n++; }
+    const m = (c.body ?? "").match(/<!-- receipt run:\S+ agent:\S+ cost:([0-9.]+|unknown) -->/);
+    if (!m) continue;
+    // Receipts that report no cost (and older ones that wrote 0.0000 with
+    // "cost not reported") are counted apart, never as $0.
+    if (m[1] === "unknown" || /cost not reported/.test(c.body)) unknown++;
+    else { cost += Number(m[1]); n++; }
   }
-  return { cost, n };
+  return { cost, n, unknown };
 }
 
 // ---------- running jobs (Actions API) ----------
@@ -337,7 +351,7 @@ function runningAgents() {
 // ---------- board ----------
 
 function renderBoard() {
-  const spend = DRY ? { cost: 0, n: 0 } : spendToday();
+  const spend = DRY ? { cost: 0, n: 0, unknown: 0 } : spendToday();
   const runUrl = env.GITHUB_RUN_ID
     ? `https://github.com/${repo}/actions/runs/${env.GITHUB_RUN_ID}`
     : "a local dispatcher run";
@@ -345,7 +359,7 @@ function renderBoard() {
     "# Agent board",
     "",
     `Updated ${now.toISOString().slice(0, 16).replace("T", " ")} UTC by ${env.GITHUB_RUN_ID ? `[the dispatcher](${runUrl})` : runUrl}. Status: **${status}**.`,
-    `Runs today: **${usedToday()} of ${totalCap}**. Estimated spend today: **$${spend.cost.toFixed(2)}** from ${spend.n} run receipts.`,
+    `Runs today: **${usedToday()} of ${totalCap}**. Estimated spend today: **$${spend.cost.toFixed(2)}** from ${spend.n} run receipts${spend.unknown ? `, plus ${spend.unknown} run${spend.unknown === 1 ? "" : "s"} with no cost reported (interactive or failed)` : ""}.`,
     "",
     "| Agent | Engine and model | Now | Runs today | Open PRs | Ready tasks | Handoffs waiting |",
     "|---|---|---|---|---|---|---|",

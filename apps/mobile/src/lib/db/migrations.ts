@@ -167,6 +167,76 @@ export const MIGRATIONS: Migration[] = [
       db.run("DELETE FROM settings WHERE key IN ('ageAttested', 'ageAttestedAt')");
     },
   },
+  {
+    version: 4,
+    name: 'sync: outbox, rejected writes, per-book cursors, server versions on letters and books',
+    up(db) {
+      // Letters (own and, after sync, other people's). entries.synced_at (v1) is the
+      // time this phone last confirmed the row with the server.
+      //   server_version     L2  sync_xid of the server state this phone knows; null = never on the server
+      //   server_updated_at  L2  the server's updated_at of that state (re-upload known_at after a restore)
+      //   server_epoch       L2  restore epoch in which that state was seen
+      //   sync_state         L2  local | pending | synced | rejected | held | gone
+      //   approval           L2  family review state from the server (not_needed, pending, added, set_aside)
+      addColumns(db, 'entries', [
+        ['server_version', 'TEXT'],
+        ['server_updated_at', 'TEXT'],
+        ['server_epoch', 'INTEGER'],
+        ['sync_state', "TEXT NOT NULL DEFAULT 'local'"],
+        ['approval', 'TEXT'],
+      ]);
+      db.exec('CREATE INDEX IF NOT EXISTS entries_sync ON entries (child_id, sync_state)');
+      // Books. role and created_by_me come from the server (L2); nickname is book-level (L4).
+      //   server_state  L2  local | pending | synced | refused | left | deleted
+      addColumns(db, 'children', [
+        ['role', 'TEXT'],
+        ['created_by_me', 'INTEGER'],
+        ['nickname', 'TEXT'],
+        ['server_state', "TEXT NOT NULL DEFAULT 'local'"],
+      ]);
+      db.exec(`
+        -- Ordered upload queue (lane 0: restore re-uploads first). payload is the op
+        -- exactly as sent (L4: it can hold letter text); never logged.
+        CREATE TABLE IF NOT EXISTS sync_outbox (
+          seq INTEGER PRIMARY KEY AUTOINCREMENT,
+          op_id TEXT NOT NULL UNIQUE,
+          lane INTEGER NOT NULL DEFAULT 1,
+          type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          book_id TEXT,
+          payload TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0,
+          next_attempt_at TEXT,
+          sent_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS sync_outbox_entity ON sync_outbox (entity_id);
+        -- Ops the server refused for good (DATA-REQ-043): kept with their SQLSTATE,
+        -- content stays on the phone and in export; the person is told once.
+        CREATE TABLE IF NOT EXISTS rejected_writes (
+          op_id TEXT PRIMARY KEY NOT NULL,
+          type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          payload TEXT NOT NULL,
+          code TEXT NOT NULL,
+          rejected_at TEXT NOT NULL,
+          seen_at TEXT
+        );
+        -- One row per book this phone pulls: cursor, access signature, settings hash
+        -- and the members list from the server (L3: person ids and signatures).
+        CREATE TABLE IF NOT EXISTS sync_books (
+          child_id TEXT PRIMARY KEY NOT NULL,
+          cursor TEXT,
+          access TEXT,
+          meta_hash TEXT,
+          members TEXT,
+          birthday_md TEXT,
+          state TEXT NOT NULL DEFAULT 'live',
+          want_ids INTEGER NOT NULL DEFAULT 0
+        );
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

@@ -106,7 +106,7 @@ To retire an agent, remove it from the roster and close its journal; its memory 
 - **Force work:** Actions, then Agents, then Run workflow, with an agent handle and a backlog id.
 - **Ask anything in GitHub:** `@claude` in an issue or PR (needs `ANTHROPIC_API_KEY` or your own `CLAUDE_CODE_OAUTH_TOKEN`; only your mentions run it).
 - **Pause:** repository variable `AGENTS_PAUSED` set to `true`.
-- **Fallback lane:** the 4-hourly scheduled Claude task in your claude.ai account runs on your subscription. It can run one dispatcher assignment per run (`dispatch.mjs --local --top 1 --claim`) once you choose to switch it over.
+- **Fallback lane:** the 4-hourly scheduled Claude task in your claude.ai account runs on your subscription. It can run one dispatcher assignment per run (`dispatch.mjs --local --top 1 --claim`) once you choose to switch it over. A local run has no Actions job the dispatcher can watch, so the session releases its claim when the run ends (`dispatch.mjs --local --board-only --release <handle>`); otherwise the claim lapses after the agent's timeout plus the grace period.
 
 ## 8. How context is held
 
