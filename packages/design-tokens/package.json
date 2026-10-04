@@ -2,7 +2,7 @@
   "name": "@scribe/design-tokens",
   "version": "0.1.0",
   "private": true,
-  "description": "Design tokens for Early Letters (colors, spacing, radii, type, elevation, motion). Zero dependencies; consumable by React Native and web.",
+  "description": "Design tokens for Early Letters (colors, type, spacing, radii, elevation, motion, targets) and the bundled OFL fonts. Zero runtime dependencies; consumable by React Native and web.",
   "main": "src/tokens.ts",
   "types": "src/tokens.ts",
   "sideEffects": false,
@@ -20,6 +20,9 @@
   },
   "exports": {
     ".": "./src/tokens.ts",
-    "./tokens.native.css": "./dist/tokens.native.css"
+    "./tokens.native.css": "./dist/tokens.native.css",
+    "./tokens.web.css": "./dist/tokens.web.css",
+    "./fonts": "./fonts/index.ts",
+    "./fonts/*": "./fonts/*"
   }
 }
