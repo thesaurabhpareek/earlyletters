@@ -33,7 +33,7 @@ Love from everyone, pressure from no one.
 - Grandparents and close family can add letters, each one signed, like "From Nani".
 - Private by default. Authors choose what to share; parents approve family letters.
 - "Not much today" in one tap. No counters or badges, ever.
-- Organised by month of age.
+- Organized by month of age.
 
 ## Contrast lines
 

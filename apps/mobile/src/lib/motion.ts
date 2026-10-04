@@ -6,10 +6,11 @@
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { Easing, FadeIn, FadeInDown, ReduceMotion, withSpring, withTiming } from 'react-native-reanimated';
-import { tokens, type MotionToken } from '@scribe/design-tokens';
+import type { MotionToken } from '@scribe/design-tokens';
+import { EASING_POINTS, ENTER, FADE_MS, enterDelayMs, springParams } from './motion.values';
 
-export const FADE_MS = tokens.motion.reduceMotion.durationMs;
-export const STANDARD_EASING = Easing.bezier(0.2, 0, 0, 1);
+export { FADE_MS };
+export const STANDARD_EASING = Easing.bezier(...EASING_POINTS);
 
 export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -26,14 +27,15 @@ export function useReducedMotion(): boolean {
 }
 
 export function springConfig(token: MotionToken) {
-  const s = tokens.motion[token];
-  return { stiffness: s.stiffness, damping: s.damping, mass: s.mass, reduceMotion: ReduceMotion.System };
+  return { ...springParams(token), reduceMotion: ReduceMotion.System };
 }
 
 export function useMotion() {
   const reduced = useReducedMotion();
   return {
     reduced,
+    /** Token name of the website's SMOOTH spring, for scrubs and glow follow: spring(v, soft). */
+    soft: 'soft' as MotionToken,
     /** Spring to a value on a motion token; under Reduce Motion, a 200 ms fade-like timing. */
     spring: (to: number, token: MotionToken = 'standard') => {
       'worklet';
@@ -41,7 +43,7 @@ export function useMotion() {
         ? withTiming(to, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
         : withSpring(to, springConfig(token));
     },
-    fade: (to: number, duration = FADE_MS) => {
+    fade: (to: number, duration: number = FADE_MS) => {
       'worklet';
       return withTiming(to, { duration, reduceMotion: ReduceMotion.Never });
     },
@@ -49,6 +51,6 @@ export function useMotion() {
     enter: (index = 0) =>
       reduced
         ? FadeIn.duration(FADE_MS).reduceMotion(ReduceMotion.Never)
-        : FadeInDown.duration(280).delay(Math.min(index, 6) * 30).easing(STANDARD_EASING),
+        : FadeInDown.duration(ENTER.durationMs).delay(enterDelayMs(index)).easing(STANDARD_EASING),
   };
 }

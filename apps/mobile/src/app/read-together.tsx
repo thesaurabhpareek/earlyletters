@@ -8,9 +8,11 @@
  * sessions on this phone, then the Plus gate (lib/read-together.ts).
  */
 import { router, useLocalSearchParams } from 'expo-router';
+import { LampWash } from '@/components/ui/lamp-wash';
 import { BookOpenTextIcon } from 'phosphor-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View, useColorScheme } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { tokens } from '@scribe/design-tokens';
 import { PlusGate } from '@/components/child/plus-gate';
 import { authorOf } from '@/components/child/child-store';
@@ -21,10 +23,13 @@ import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
+import { useMotion } from '@/lib/motion';
 import { canStartReadTogether, FREE_READ_TOGETHER_SESSIONS, recordReadTogetherSession } from '@/lib/read-together';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
 
 const BODY = tokens.type.letterBody;
+/** Each half of the letter-to-letter cross-fade (out, then in): the standard 200 ms fade, also the Reduce Motion fallback. */
+const CROSSFADE_MS = tokens.motion.reduceMotion.durationMs;
 
 export default function ReadTogether() {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
@@ -34,6 +39,12 @@ export default function ReadTogether() {
   const [allowed, setAllowed] = useState(canStartReadTogether);
   const counted = useRef(false);
   const [index, setIndex] = useState(0);
+  const motion = useMotion();
+  const fade = useSharedValue(1);
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
+  const target = useRef(0); // where the reader is heading; rapid taps build on it
+  const swap = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => void (swap.current && clearTimeout(swap.current)), []);
 
   const letters = useMemo(() => (child ? listEntriesForChild(child.id).filter((e) => e.inBook && e.transcriptStatus !== 'waiting').reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -85,11 +96,21 @@ export default function ReadTogether() {
   const scale = tokens.readingScale.largePrint;
   const go = (to: number) => {
     haptic('tap');
-    setIndex(Math.max(0, Math.min(letters.length, to)));
+    const next = Math.max(0, Math.min(letters.length, to));
+    target.current = next;
+    // Cross-fade: current letter out, swap while hidden, new letter in. Interruptible.
+    fade.value = motion.fade(0);
+    if (swap.current) clearTimeout(swap.current);
+    swap.current = setTimeout(() => {
+      swap.current = null;
+      setIndex(target.current);
+      fade.value = motion.fade(1);
+    }, CROSSFADE_MS);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      <LampWash anchor="top" intensity={0.6} />
       <View className="flex-row items-center justify-between px-5 pt-2">
         <Button variant="ghost" size="sm" className="-ml-4" onPress={close}>
           <Text className="text-primary">{copy.common.closeButton}</Text>
@@ -97,6 +118,7 @@ export default function ReadTogether() {
         <Text className="text-sm text-muted-foreground">{`${Math.min(index + 1, letters.length)} / ${letters.length}`}</Text>
       </View>
 
+      <Animated.View style={fadeStyle} className="flex-1">
       {done ? (
         <View className="flex-1 justify-center gap-6 px-5" accessibilityLiveRegion="polite">
           <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">
@@ -130,13 +152,14 @@ export default function ReadTogether() {
           <Text className="text-base text-muted-foreground">{spoken ? copy.book.recordingOnPhone : rt.noRecording}</Text>
         </ScrollView>
       )}
+      </Animated.View>
 
       {!done && (
         <View className="flex-row gap-3 border-t border-border px-5 pb-2 pt-3">
-          <Button variant="secondary" size="lg" className="flex-1 px-4" disabled={index === 0} onPress={() => go(index - 1)}>
+          <Button variant="secondary" size="lg" className="flex-1 px-4" disabled={index === 0} onPress={() => go(target.current - 1)}>
             <Text>{rt.previousButton}</Text>
           </Button>
-          <Button size="lg" className="flex-1 px-4" onPress={() => go(index + 1)}>
+          <Button size="lg" className="flex-1 px-4" onPress={() => go(target.current + 1)}>
             <Text>{rt.nextButton}</Text>
           </Button>
         </View>

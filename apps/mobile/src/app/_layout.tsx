@@ -11,6 +11,7 @@ import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { useAgeGate } from '@/lib/age-gate';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { getSetting, subscribe } from '@/lib/store';
+import { useProductFonts } from '@/lib/fonts';
 import { useStoreReady } from '@/dev/store-ready';
 
 SplashScreen.preventAutoHideAsync();
@@ -47,15 +48,19 @@ function Root() {
   // run, Tonight, invites and every deep link sit behind it.
   const gate = useAgeGate();
 
+  // Hold the splash until the product fonts are ready, so no text reflows.
+  const fontsReady = useProductFonts();
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+    if (fontsReady) SplashScreen.hideAsync();
+  }, [fontsReady]);
 
   // After the first frame, never awaited: finish takes cut off by a kill,
   // rebase moved paths, keep stray recordings (lib/capture/sweep.ts).
   useEffect(() => {
     if (gate.decision === 'pass') void runLaunchSweep();
   }, [gate.decision]);
+
+  if (!fontsReady) return null;
 
   if (gate.decision !== 'pass') {
     return (

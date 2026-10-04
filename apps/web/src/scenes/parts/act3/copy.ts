@@ -11,7 +11,7 @@ export const act3Copy = {
     /** site.notify.honeypotLabel: label of the hidden anti-bot field. People and screen readers never meet it. */
     honeypotLabel: 'Company',
     /** site.notify.errors: site.notify.error stays the message for an invalid address. */
-    rateLimited: 'Too many tries just now. Please wait a minute and try again.',
+    rateLimited: 'Please give it a minute, then try once more.',
     server: 'That did not go through on our side. Please try again in a moment.',
   },
   /** Shown only while the official App Store badge artwork is missing from public/brand/. */

@@ -16,7 +16,7 @@ v0.1, 2026-10-01. Tokens: `@scribe/design-tokens`. Sources S1 to S10, H1 to H6 a
 
 ## 2. Color
 
-Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSoft`, `onAccent`, `focus`, `recording`, `success`, `caution`. Ratios computed by script with the WCAG 2.x luminance formula. AA: 4.5:1 text, 3:1 large text/UI.
+Brand colours unchanged (no WCAG failure found). Light `recording`, `success` and `caution` were darkened slightly so status text reaches 4.5:1 on `surface` / `accentSoft` (success/surface 4.46 to 4.51, caution/surface 4.40 to 4.53, recording/accentSoft 4.35 to 4.55). Added `surface`, dark `accentSoft`, `onAccent`, `focus`, `recording`, `success`, `caution`. Ratios computed by script with the WCAG 2.x luminance formula. AA: 4.5:1 text, 3:1 large text/UI.
 
 ### Light
 
@@ -32,9 +32,9 @@ Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSo
 | `onAccent` | #FFFFFF | on `accent` | 5.82 |
 | `line` | #E6DED3 | on `bg` | 1.26 (decorative only) |
 | `focus` | #2F6F8F | on `bg` / `surfaceRaised` | 5.23 / 5.54 |
-| `recording` | #B5473A | on `bg` / `surfaceRaised` | 5.05 / 5.35 |
-| `success` | #3F7A55 | on `bg` / `surfaceRaised` | 4.80 / 5.09 |
-| `caution` | #94661A | on `bg` / `surfaceRaised` | 4.75 / 5.03 |
+| `recording` | #B04539 | on `bg` / `surface` / `surfaceRaised` / `accentSoft` | 5.28 / 4.89 / 5.59 / 4.55 |
+| `success` | #3F7955 | on `bg` / `surface` / `surfaceRaised` | 4.86 / 4.51 / 5.15 |
+| `caution` | #92641A | on `bg` / `surface` / `surfaceRaised` | 4.88 / 4.53 / 5.17 |
 
 ### Dark
 
@@ -53,6 +53,10 @@ Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSo
 | `recording` | #F08C7C | on `bg` / `surfaceRaised` | 7.65 / 6.99 |
 | `success` | #8CC9A0 | on `bg` / `surfaceRaised` | 9.60 / 8.77 |
 | `caution` | #E3B866 | on `bg` / `surfaceRaised` | 9.90 / 9.04 |
+
+### Lamp atmosphere (dark mode only)
+
+`lamp` #F3C98B, `lampGold` #FFE2A8, `lampRose` #F08C7C, `lampDusk` #8076E2, `duskSurface` #3B302A (`tokens.atmosphere`, the website's palette). Glows, gradients and night/dusk backgrounds only: never body text and never the only signal. Text on `duskSurface` uses dark `text`. Available as `bg-lamp`, `bg-lamp-gold`, `bg-lamp-rose`, `bg-lamp-dusk`, `bg-dusk-surface` in uniwind, and as `--lamp*` / `--dusk` in `dist/tokens.web.css`.
 
 **Rules**
 - `line` fails 3:1 by design: never the only boundary of an interactive control. Inputs use `textMuted` 1pt borders or a filled `surface`.

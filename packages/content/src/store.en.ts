@@ -17,7 +17,7 @@ export const storeListing = {
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for a lifetime.
 
 EXACTLY AS YOU SAID IT
-Transcription happens on your phone by default. It only fixes the mistakes a microphone makes, like a misheard word or a missing full stop. We never rewrite your words. Every sentence in your book is one you actually said.
+Transcription happens on your phone by default. It only fixes the mistakes a microphone makes, like a misheard word or a missing period. We never rewrite your words. Every sentence in your book is one you actually said.
 
 YOUR VOICE, KEPT
 The original recording stays with each letter, on your phone by default. With the optional backup, recordings are encrypted on your phone before upload, and we keep a recovery key so we can help you restore them, unless you choose Vault mode. Years from now, your child can hear how you sounded when you said it.

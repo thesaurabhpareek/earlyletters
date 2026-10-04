@@ -17,7 +17,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { PauseIcon, PlayIcon } from 'phosphor-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
-import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { LinearTransition, useAnimatedStyle, useSharedValue, withDelay } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
   applyEdits,
@@ -67,6 +67,16 @@ const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
   agreement: 'grammarSlip',
   paragraph: 'paragraph',
 };
+
+/** Save sequence ceiling (MOTION 5e sequenceMaxMs); a tap skips it. */
+const SEQUENCE_MAX_MS = 900;
+/** How long the accentSoft wash stays on a restored span (MOTION 5d newMarkMs). */
+const NEW_MARK_MS = 1600;
+/** Destination chip fades in this long after the card starts settling (MOTION 5e). */
+const CHIP_DELAY_MS = 250;
+const STANDARD = tokens.motion.standard;
+/** Reflow spring on the motion token (never the library default). Skipped under Reduce Motion: instant height. */
+const REFLOW = LinearTransition.springify().stiffness(STANDARD.stiffness).damping(STANDARD.damping).mass(STANDARD.mass);
 
 /** waiting: no words for this recording right now (no transcriber, model not ready, or it failed). */
 type Phase = 'transcribing' | 'ready' | 'waiting' | 'saved';
@@ -178,7 +188,7 @@ export default function Review() {
     setRestored({ edit, index });
     setOpenEdit(null);
     setWash(true);
-    setTimeout(() => setWash(false), 1600);
+    setTimeout(() => setWash(false), NEW_MARK_MS);
   };
 
   const undoPutBack = () => {
@@ -212,12 +222,15 @@ export default function Review() {
   // Save: commit, haptic, then animate (MOTION principle 3).
   const settle = useSharedValue(1);
   const settleStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.9 + 0.1 * settle.value }], opacity: settle.value }));
+  const chipOpacity = useSharedValue(0);
+  const chipStyle = useAnimatedStyle(() => ({ opacity: chipOpacity.value }));
   const finishSave = (inBook: boolean) => {
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');
     settle.value = motion.spring(0, 'gentle');
-    setTimeout(() => router.back(), 900); // sequenceMaxMs; a tap skips it
+    chipOpacity.value = motion.reduced ? motion.fade(1) : withDelay(CHIP_DELAY_MS, motion.fade(1));
+    setTimeout(() => router.back(), SEQUENCE_MAX_MS);
   };
 
   const saving = useRef(false);
@@ -314,7 +327,7 @@ export default function Review() {
               </Text>
             </Card>
           </Animated.View>
-          <Animated.View entering={FadeIn.delay(250).duration(200)} className="mt-6 items-center" accessibilityLiveRegion="polite">
+          <Animated.View style={chipStyle} className="mt-6 items-center" accessibilityLiveRegion="polite">
             <Text className="text-lg text-success">
               {voiceOnly
                 ? pendingCopy.review.voiceOnlyToast
@@ -364,7 +377,7 @@ export default function Review() {
         )}
 
         {firstNote && phase === 'ready' && (
-          <Animated.View entering={motion.enter()} layout={LinearTransition.springify().damping(30)}>
+          <Animated.View entering={motion.enter()} layout={motion.reduced ? undefined : REFLOW}>
             {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
             <View className="gap-1 rounded-2xl bg-secondary py-3 pl-4 pr-2">
               <View className="flex-row items-center justify-between gap-2">
@@ -413,7 +426,7 @@ export default function Review() {
 
         {phase === 'ready' && (
           <>
-            <Animated.View layout={LinearTransition.springify().damping(30)}>
+            <Animated.View layout={motion.reduced ? undefined : REFLOW}>
               <Card className="gap-4 rounded-3xl border-0 bg-card p-5">
                 {editing ? (
                   <TextInput
@@ -450,7 +463,7 @@ export default function Review() {
                 )}
 
                 {openE && !showOriginal && userText === null && (
-                  <Animated.View entering={FadeIn.delay(80).duration(160)} className="gap-2 rounded-2xl bg-muted p-4">
+                  <Animated.View entering={motion.enter()} className="gap-2 rounded-2xl bg-muted p-4">
                     <Text className="text-sm font-semibold text-foreground">{r.edits[EDIT_COPY[openE.type]].label}</Text>
                     <Text className="text-base leading-6 text-foreground">{r.edits[EDIT_COPY[openE.type]].explain}</Text>
                     <Text className="text-sm text-muted-foreground">{r.originalLabel}</Text>

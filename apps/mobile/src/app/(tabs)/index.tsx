@@ -1,8 +1,9 @@
 import { Redirect, router, useFocusEffect } from 'expo-router';
+import { LampWash } from '@/components/ui/lamp-wash';
 import { MicrophoneIcon, PencilSimpleIcon } from 'phosphor-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp, LinearTransition } from 'react-native-reanimated';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { ageOn, ENGINE_VERSION, renderTemplate, selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
@@ -13,13 +14,19 @@ import { Text } from '@/components/ui/text';
 import { copy, fill, greetingKey, pendingCopy } from '@/lib/copy';
 import { ageText, dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { useMotion } from '@/lib/motion';
 import { getActiveChildId, getFamily, listDrafts, listEntries, saveEntry, subscribe, todayISO, uuidv7, type Draft, type Family } from '@/lib/store';
+
+const STANDARD = tokens.motion.standard;
+/** Layout spring on the motion token; skipped under Reduce Motion (the entering fade carries the change). */
+const REFLOW = LinearTransition.springify().stiffness(STANDARD.stiffness).damping(STANDARD.damping).mass(STANDARD.mass);
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function Tonight() {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const t = copy.tonight;
+  const motion = useMotion();
   const [family, setFamily] = useState<Family | null | undefined>(undefined);
   const [recent, setRecent] = useState<string[]>([]);
   const [daysSince, setDaysSince] = useState<number | null>(null);
@@ -103,8 +110,9 @@ export default function Tonight() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
+      <LampWash anchor="top" intensity={0.8} />
       <ScrollView contentContainerClassName="flex-grow gap-6 px-5 pb-8 pt-4">
-        <Animated.View entering={FadeIn.duration(400)} className="gap-2">
+        <Animated.View entering={motion.enter(0)} className="gap-2">
           <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline}</Text>
           <Text className="font-serif text-4xl leading-[44px] text-foreground">
             {fill(t.greeting[greetingKey()], { name: family.signsAs })}
@@ -112,8 +120,8 @@ export default function Tonight() {
           <Text className="text-lg leading-7 text-muted-foreground">{fill(t.subtitle, { child })}</Text>
         </Animated.View>
 
-        <Animated.View key={prompt.key} entering={FadeInDown.springify().damping(20)} layout={LinearTransition.springify()}>
-          <Card className="gap-4 rounded-3xl border-0 bg-card p-6 shadow-sm shadow-black/5">
+        <Animated.View key={prompt.key} entering={motion.enter(1)} layout={motion.reduced ? undefined : REFLOW}>
+          <Card className="gap-4 rounded-3xl border-0 bg-card p-6 shadow-sm shadow-foreground/5 dark:border dark:border-border dark:shadow-none">
             <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{t.promptLabel.toUpperCase()}</Text>
             <Text className="font-serif text-2xl leading-9 text-foreground">{renderTemplate(prompt.text, { child })}</Text>
             <Pressable
@@ -140,7 +148,8 @@ export default function Tonight() {
 
         <View className="flex-1" />
 
-        <Animated.View entering={FadeInUp.delay(120).springify().damping(20)} className="gap-3">
+        {/* Controls never animate in (MOTION principle 2): opaque and hittable from frame 1. */}
+        <View className="gap-3">
           <View className="flex-row gap-3">
             <Button size="capture" onPress={() => start('spoken')} accessibilityLabel={t.speakButton}>
               <MicrophoneIcon color={c.onAccent} size={24} weight="fill" />
@@ -152,7 +161,7 @@ export default function Tonight() {
             </Button>
           </View>
           {keptLine ? (
-            <Animated.View entering={FadeIn} className="h-11 items-center justify-center">
+            <Animated.View entering={motion.enter()} className="h-11 items-center justify-center">
               <Text className="text-base text-success">{copy.notMuch.savedToast}</Text>
             </Animated.View>
           ) : (
@@ -160,7 +169,7 @@ export default function Tonight() {
               <Text className="text-muted-foreground">{t.notMuchButton}</Text>
             </Button>
           )}
-        </Animated.View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

@@ -50,17 +50,17 @@ export const pendingCopy = {
     discardButton: 'Let it go', // listen.discardButton
     discardTitle: 'Let this recording go?', // listen.discardTitle
     discardBody: 'It will be removed from this phone.', // listen.discardBody
-    discardConfirm: 'Remove it', // listen.discardConfirm
+    discardConfirm: 'Take it off this phone', // listen.discardConfirm
     keepButton: 'Keep it', // listen.keepButton
   },
   review: {
     putBack: 'Put back.', // review.putBackToast (MOTION 5d)
     editA11yHint: 'Edited. Double tap to see what you said.', // review.editA11yHint (COMPONENTS 2.19)
-    removedA11y: 'Words taken out here', // review.removedA11y
+    removedA11y: 'Words left out here', // review.removedA11y
     editTextButton: 'Change words', // review.editTextButton
     sampleBanner: 'Sample words for testing, not your recording.', // dev builds only; may stay out of content
     sampleNotSaved: 'Sample words are never saved. Keep the recording only, or type it.', // dev builds only; may stay out of content
-    voiceOnlyButton: 'Keep the recording only', // review.voiceOnlyButton (ADR 0001: audio-only until the model is ready)
+    voiceOnlyButton: 'Keep recording only', // review.voiceOnlyButton (ADR 0001: audio-only until the model is ready)
     waitingTitle: 'Your voice is kept', // review.waiting.title (TDD 03 FM-9: no transcriber yet)
     waitingBody: 'Words are not ready on this phone yet. Keep the recording now and the words can come later. You can also type it.', // review.waiting.body
     voiceOnlyToast: 'Recording kept on this phone.', // review.destination.voiceOnlyToast

@@ -2,6 +2,7 @@ import { CheckIcon } from 'phosphor-react-native';
 import { Modal, Pressable, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
+import { SheetScrim } from '@/components/ui/sheet-scrim';
 import { Text } from '@/components/ui/text';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
@@ -22,7 +23,7 @@ export function ReadingSizeSheet({ visible, value, onChange, onClose }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable className="flex-1 bg-black/30" onPress={onClose} accessibilityRole="button" accessibilityLabel={copy.common.closeButton} />
+      <SheetScrim onPress={onClose} label={copy.common.closeButton} />
       <View className="rounded-t-[28px] bg-card px-5 pt-3" style={{ paddingBottom: insets.bottom + 16 }}>
         <View className="mb-3 h-1 w-10 self-center rounded-full bg-border" />
         <Text role="heading" className="mb-2 text-lg font-semibold text-foreground">
