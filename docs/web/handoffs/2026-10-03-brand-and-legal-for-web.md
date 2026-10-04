@@ -21,7 +21,7 @@ The founder wants one standardised brand across every touchpoint. earlyletters.c
    - Emails use Georgia and the system UI font; nothing depends on `/fonts/` being live.
 
 3. **Legal pages.**
-   - Web-ready drafts are in `packages/content/legal/`: `terms.md`, `privacy.md`, `subscription-terms.md`, `health-privacy.md` and `subprocessors.md`. `REVIEW_NOTES.md` is not a page.
+   - Legal text comes from `docs/legal/` (cleaned up in PR #81). This PR does not carry web copies of the legal documents; the site builds its legal pages from `docs/legal/`.
    - Routes, per Brief decision 13: `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, plus `/subscription-terms`.
    - While frontmatter says `status: draft`, the page shows a visible "Draft, pending legal review" banner and carries `noindex`. That stays until counsel signs off.
    - Also needed: `/delete-account` (D-042), and `/about`, `/why` and `/contact`, whose copy is in `packages/content/src/pages.en.ts`.
