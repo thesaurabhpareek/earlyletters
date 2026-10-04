@@ -371,7 +371,7 @@ Targets marked A are assumptions to revisit after the first cohorts; those copie
 **To `legal`:** the claims list (section 1.2 and the listing) for the counsel package by week 5; CN-7 before any "never used to train models" line; the launch email as a commercial email (CAN-SPAM, postal address per D-004); whether a post-launch thank-you offer code for C1 families is acceptable; FTC review-rule disclosure if reviews are ever mentioned to people we know; the C1 screening form before week 6 (its five questions, the optional settings question, the form tool and where answers are kept, and the deletion dates in 5.3); what contact information the support page must show (Apple names "legal address, email address, telephone number" as examples, "as may be required by local law" [M19]; any postal address follows D-004, not the family home).
 
 **To `product`:**
-1. Reconcile `docs/ROADMAP.md`, `docs/DECISIONS.md` (D-002, D-032, D-036, D-044, D-051) and the PRD with the Oct 3 brief and the v1.0 on-device-only decision (family scope, sign-in, sync, shared voice, word highlighting, Family Sharing on or off: BL-103 says off, brief decision 3 says on).
+1. Reconcile `docs/ROADMAP.md`, `docs/DECISIONS.md` (D-023, D-032, D-036, D-054, D-055) and the PRD with the Oct 3 brief and the v1.0 on-device-only decision (family scope, sign-in, sync, shared voice, word highlighting, Family Sharing on or off: BL-103 says off, brief decision 3 says on).
 2. Update BL-109's coverage list (the grandparent slot and the co-parent pair slot cannot be tested in v1.0).
 3. Add a task for trademark clearance before submission (CR-122).
 4. Decide whether v1.0 has a review-prompt moment (section 6.4).
