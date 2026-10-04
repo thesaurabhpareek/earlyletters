@@ -69,8 +69,8 @@ export function usePin(vh: number) {
   const b = vh / (1 + vh);
   const raw = useTransform(scrollYProgress, (p) => (pinnedRef.current ? clamp((p - a) / (b - a)) : clamp((p - 0.12) / 0.4)));
   const progress = useSpring(raw, SMOOTH);
-  const handoffOpacity = useTransform(progress, [0, 0.07, 0.93, 1], [0, 1, 1, 0]);
-  const handoffY = useTransform(progress, [0, 0.07, 0.93, 1], [22, 0, 0, -22]);
+  const handoffOpacity = useTransform(progress, [0, 0.1, 0.9, 1], [0, 1, 1, 0]);
+  const handoffY = useTransform(progress, [0, 0.1, 0.9, 1], [14, 0, 0, -14]);
   return { outer, content, enabled, pinned: enabled && pinned, progress, handoff: { opacity: handoffOpacity, y: handoffY } };
 }
 

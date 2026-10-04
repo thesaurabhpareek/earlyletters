@@ -13,9 +13,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px var(--gutter);
-  background: color-mix(in srgb, var(--night) 62%, transparent);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid color-mix(in srgb, var(--night-ink) 8%, transparent);
+  /* A fade into the page rather than a frosted bar, so headlines do not smear as they pass under it. */
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--night) 82%, transparent), color-mix(in srgb, var(--night) 0%, transparent));
 }
 .brand {
   font-family: var(--font-serif);
@@ -32,6 +31,7 @@
   z-index: 1;
 }
 .section {
+  scroll-margin-top: 72px;
   max-width: 68rem;
   margin: 0 auto;
   padding: clamp(72px, 12vw, 148px) var(--gutter);
@@ -208,7 +208,7 @@
 }
 .closing {
   text-align: center;
-  padding-bottom: clamp(96px, 14vw, 180px);
+  padding-bottom: clamp(72px, 10vw, 140px);
 }
 .closing .sub {
   margin-left: auto;
@@ -425,4 +425,14 @@
 }
 .sub {
   text-wrap: pretty;
+}
+
+/* On a phone the big lines take the width they have: two lines of drama rather than one small one. */
+@media (max-width: 600px) {
+  .title {
+    font-size: clamp(64px, 17vw, 176px);
+  }
+  .big {
+    font-size: clamp(72px, 19vw, 176px);
+  }
 }
