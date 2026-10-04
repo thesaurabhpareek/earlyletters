@@ -7,14 +7,19 @@
  *  - phrases the parent locked in review
  */
 import type { DictionaryTerm, Edit, Span } from './types';
+import { nfc, WORD_CHAR_CLASS } from './text';
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Word-boundary matcher that works for non-ASCII terms (Unicode-aware). */
+/**
+ * Word-boundary matcher that works for non-ASCII terms (Unicode-aware).
+ * Combining marks count as word characters (CORE-01): the term "आश" must
+ * not match the start of "आशा", whose next character is a vowel sign.
+ */
 function termRegex(term: string): RegExp {
-  return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(term)}(?![\\p{L}\\p{N}])`, 'giu');
+  return new RegExp(`(?<![${WORD_CHAR_CLASS}\\u200C\\u200D])${escapeRe(term)}(?![${WORD_CHAR_CLASS}\\u200C\\u200D])`, 'giu');
 }
 
 export function quotedSpans(text: string): Span[] {
@@ -78,6 +83,9 @@ export function dictionaryEdits(raw: string, dictionary: DictionaryTerm[]): Edit
 
 /** True if `word` is a dictionary term (case-insensitive). */
 export function isDictionaryTerm(word: string, dictionary: DictionaryTerm[]): boolean {
-  const w = word.toLowerCase();
-  return dictionary.some((d) => d.term.toLowerCase() === w || d.term.toLowerCase().split(/\s+/).includes(w));
+  const w = nfc(word).toLowerCase();
+  return dictionary.some((d) => {
+    const t = nfc(d.term).toLowerCase();
+    return t === w || t.split(/\s+/).includes(w);
+  });
 }

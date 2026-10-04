@@ -118,7 +118,7 @@ startPacks(): () => void                           // once, after the first fram
 
 Text is plain; the only placeholders are `{child}`, `{app}`, `{signsAs}`; the cheap content rules (no em or en dashes, curly quotes, ellipsis characters, control characters) are enforced by the schema as well as by the publishing script. Unknown block types and invalid blocks are skipped.
 
-Remote config (`packages/api/src/remote-config.ts`): `minSupportedVersion` (a gentle update card, never a block), `readTogetherFreeSessions` (can only raise the reviewed default of 3, never lower it, so the paywall App Review saw is the strictest it gets), `forceReauthEpoch`, `flags` (`introVariant`, `lockScreenNamesDefault`) and `killSwitches` (`sync`, `invites`, `photos`, `packDownloads`, `serverContent`). Every key falls back to its bundled default on a bad value; unknown keys are ignored.
+Remote config (`packages/api/src/remote-config.ts`): `minSupportedVersion` (a gentle update card, never a block), `readTogetherFreeSessions` (can only raise the reviewed default of 3, never lower it, so the paywall App Review saw is the strictest it gets), `forceReauthEpoch`, `flags` (`introVariant`, `lockScreenNamesDefault`, `familyTeaser`: `coming_soon` or `quiet`, which can only quiet the Family tab teaser; sign-in, sync and sharing are a build-time switch the server cannot reach, `apps/mobile/src/lib/capabilities.ts`) and `killSwitches` (`sync`, `invites`, `photos`, `packDownloads`, `serverContent`). Every key falls back to its bundled default on a bad value; unknown keys are ignored.
 
 ### 5.2 Fallback
 

@@ -8,6 +8,8 @@
  *   envelopeOpen   a letter with its page out: first run, first letter
  *   moon           night: Tonight empty, Read together end
  *   page           one written line and a signature: empty Book, empty month
+ *   together       one open book, two pens, each writing on its own page: co-parent
+ *                  sharing (Family tab, invite entry points)
  */
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -35,6 +37,11 @@ export const LINE_ART = {
     d: 'M52 14 H108 Q114 14 114 20 V100 Q114 106 108 106 H52 Q46 106 46 100 V20 Q46 14 52 14 Z M58 38 Q65 34 72 38 T86 38 T100 38 M84 86 Q89 82 94 86 T104 86',
     length: 378,
     wash: { cx: 80, cy: 60, r: 46 },
+  },
+  together: {
+    d: 'M80 52 C70 46 54 44 34 48 V96 C54 92 70 94 80 100 C90 94 106 92 126 96 V48 C106 44 90 46 80 52 V100 M42 62 Q45.0 59.8 48 62 T54 62 T60 62 M42 72 Q45.5 69.8 49 72 T56 72 M42 85 Q45.0 82.8 48 85 T54 85 M60.0 86.0 L64.1 79.7 L70.5 50.6 Q68.7 46.9 65.5 49.4 L59.0 78.6 Z M59.0 78.6 L64.1 79.7 M96 62 Q99.0 59.8 102 62 T108 62 T114 62 M96 72 Q98.75 69.8 101.5 72 T107.0 72 M96 85 Q99.0 82.8 102 85 T108 85 M114.0 86.0 L118.1 79.7 L124.5 50.6 Q122.7 46.9 119.5 49.4 L113.0 78.6 Z M113.0 78.6 L118.1 79.7',
+    length: 597,
+    wash: { cx: 80, cy: 70, r: 46 },
   },
 } as const;
 
