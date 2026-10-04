@@ -1,6 +1,13 @@
 # ADR 0101: UI component library and styling model
 
-- **Status:** Accepted, 2026-10-01. **Revised Oct 1 2026** (see below). Conditional on the Day-1 spike in `docs/design/COMPONENT_LIBRARY.md` section 8.
+- **Status:** Accepted, 2026-10-01. **Revised Oct 1 2026** (see below). **Amended Oct 3 2026** (sheets, see below). Conditional on the Day-1 spike in `docs/design/COMPONENT_LIBRARY.md` section 8.
+
+> **Amended Oct 3 2026: `@gorhom/bottom-sheet` is adopted for sheets** (founder decision 2 of 3 Oct 2026, `docs/agents/BRIEF-2026-10-03.md`: motion and components come from high-quality libraries, naming Reanimated, Gesture Handler and @gorhom/bottom-sheet). This supersedes Decision item 4 below ("No `@gorhom/bottom-sheet`").
+> - In-app sheets are `components/ui/sheet.tsx` (first user: Reading size; the other small sheets move to it as they are touched), built on `@gorhom/bottom-sheet` 5.2.14 (MIT, no native code, about 18.6 KB gzip) `BottomSheetModal` with Gesture Handler and Reanimated. `UIProvider` (`components/ui/provider.tsx`) mounts `GestureHandlerRootView` and `BottomSheetModalProvider` once at the root (`src/app/_layout.tsx`).
+> - Route-level sheets (sign-in, invites) stay Expo Router modals or `formSheet` screens; a screen-sized task is a route, a small choice over the current screen is a Sheet.
+> - The library's accessibility defaults are overridden in `ui/sheet.tsx` (no "adjustable" container, no English placeholder labels, `accessibilityViewIsModal`, escape gesture, visible Close, focus to the title) and Reduce Motion uses a 200 ms timing instead of the spring.
+> - Native alternative kept on record: `@expo/ui/community/bottom-sheet` is API-compatible (SwiftUI sheet on iOS); swapping is one import in `ui/sheet.tsx` if a device test prefers the system sheet. Evidence and size: `docs/design/COMPONENT_LIBRARY.md` section 0.1.
+> - Icons: Phosphor is imported per icon (`phosphor-react-native/src/icons/<Name>`), never from the package root, which pulls every icon into the bundle (about 5.5 MB of JS; measured with `scripts/size/measure.ts` on 3 Oct 2026).
 
 > **Revised Oct 1 2026: Apple first now, Android later; every component and pattern must work on both.**
 > Re-scored with Android parity as the heaviest criterion (20/100). **The base decision stands:** RNR + Uniwind still ranks first (91), ahead of RNR + NativeWind 4 (87) and gluestack v5 (84). RNR's component files branch only on web vs native, and Uniwind documents iOS, Android and web with `ios:`/`android:` selectors.
@@ -29,7 +36,7 @@ The founder named MUI, Mantine, Ant Design and shadcn/ui. Their docs show all fo
 1. **Mobile components:** React Native Reusables (RNR). Components are copied into `apps/ios/src/components/ui` by its CLI, built on `@rn-primitives`, and then owned and edited by us.
 2. **Mobile styling:** Uniwind (Tailwind CSS v4 for React Native). NativeWind 4.2.7 is the named fallback if the spike fails.
 3. **Native controls:** `@expo/ui` for Toggle, SegmentedControl and the letter long-press menu: SwiftUI on iOS now, Jetpack Compose (or our Sheet) on Android later, each behind our own component name with `.ios.tsx` / `.android.tsx` files. Confirms use RN `Alert.alert`.
-4. **Sheets:** Expo Router `presentation: 'formSheet'` (native iOS sheet; platform bottom sheet on Android, max 3 detents) behind `sheetScreenOptions()`. No `@gorhom/bottom-sheet`.
+4. **Sheets:** Expo Router `presentation: 'formSheet'` (native iOS sheet; platform bottom sheet on Android, max 3 detents) behind `sheetScreenOptions()`. No `@gorhom/bottom-sheet`. *(Superseded Oct 3 2026 for in-app sheets: `@gorhom/bottom-sheet` behind `ui/sheet.tsx`; see the amendment at the top.)*
 5. **Companions:** Reanimated 4 and Gesture Handler at SDK pins (motion per `MOTION.md`), FlashList, haptics (five named intents, iOS and Android mappings), expo-audio, Phosphor icons (`phosphor-react-native` / `@phosphor-icons/react`). No SF Symbols, Lottie or Rive in v1.
 6. **Web (later):** Next.js + Tailwind v4 + shadcn/ui, with component and variant names identical to mobile.
 7. **Tokens:** `packages/design-tokens/src/tokens.ts` is the single source. A build script emits `tokens.native.css` (Uniwind `@theme` + `@variant light/dark`) and `tokens.web.css` (shadcn `:root`/`.dark`). Motion and elevation are also exported as TypeScript for Reanimated and iOS shadows.

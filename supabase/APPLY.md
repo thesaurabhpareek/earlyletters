@@ -1,6 +1,6 @@
 # Applying pending migrations to the live project
 
-For the founder. Project: `early-letters` (Supabase, us-west-1). Written 2 Oct 2026; steps 8 to 13 added 3 Oct 2026.
+For the founder. Project: `early-letters` (Supabase, us-west-1). Written 2 Oct 2026; steps 8 to 13 added 3 Oct 2026; files 8 to 11 and steps 14 to 18 added 3 Oct 2026 (evening wave).
 Nothing here has been run against the live project yet. Do the steps in order; each has a check and a rollback.
 
 ## What is applied and what is pending
@@ -14,12 +14,18 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 5 | `20261003000000_security_and_family.sql` | **Pending** | Anonymous-session guard, server consent gate (Terms + age + sensitive-data), policy notice-window fix (X-01), parent-only invites with explicit role and limits, family approval and visibility (B F9) |
 | 6 | `20261003010000_children_and_entitlements.sql` | **Pending** | `create_child` with device UUIDv7 ids and the Plus rule, first-run batch, Apple StoreKit 2 entitlement tables |
 | 7 | `20261003020000_purge_batching.sql` | **Pending** | `purge_due` per-run limit, retry backoff columns for the purge worker, invite retention clock |
+| 8 | `20261004000000_plus_on_device_only.sql` | **Pending** | Plus checked on the device only: drops the server entitlement tables and the server Plus rule (section "File 20261004000000" below) |
+| 9 | `20261004100000_sync_engine.sql` | **Pending** | Sync engine: `sync_pull`, `sync_push`, `sync_books`, op receipts, rate windows, restore epochs, `sync_housekeeping` (step 14) |
+| 10 | `20261004200000_ops_deletion_worker.sql` | **Pending** | Schema `ops` (never exposed) and service-only functions for the purge worker, analytics-forget and the ops runbooks (step 15) |
+| 11 | `20261004300000_insights_aggregates.sql` | **Pending** | Schema `insights` (never exposed): k-anonymised weekly counts, `insights_reader` role, `public.insights_aggregates(p_weeks)` for the service role and that role only (step 16) |
+
+The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
 Step 4 drops whatever entries SELECT policies exist, so it is correct whether or not step 3 ran. Apply 3 first anyway, so the live history matches the repo. Files 5 to 7 depend on 4 and on each other; apply them in order.
 
 ## Before you start (10 minutes)
 
-1. On your Mac, in the repo: `npm install` then `npm run test:db`. All eight test files must pass (`access_matrix`, `children_entitlements`, `classification`, `data_governance`, `perf`, `purge_batching`, `rls`, `security_family`). Do not continue if anything fails.
+1. On your Mac, in the repo: `npm install` then `npm run test:db`. All twelve test files must pass (`access_matrix`, `children_entitlements`, `classification`, `data_governance`, `insights_aggregates`, `ops_deletion_worker`, `perf`, `purge_batching`, `rls`, `security_family`, `sync_engine`, `sync_perf`). Do not continue if anything fails.
 2. In the Supabase dashboard, Database > Backups: confirm a daily backup from the last 24 hours exists. If you want an exact restore point, run `supabase db dump --linked -f backup-2026-10-02.sql` (needs the Supabase CLI linked to the project). Storage files are not in database backups; nothing here touches Storage objects.
 3. Pick a quiet time. Today only founder data exists, so there is no user impact, but the app build that reads co-parent letters must switch to `book_entries` (section "App changes") before any co-parent uses it.
 
@@ -282,3 +288,225 @@ Everything else in the migration is additive (new tables, columns, functions, tr
 File 5's `book_entries` keeps the same plan shape (bitmap scan of `entries_book_page_idx`, membership resolved once from `child_members_profile_idx`). A first draft that OR-ed two membership subqueries measured 21 ms p95 on `book_page`; the shipped predicate uses one membership subquery plus a parents-only clause for pending letters. On a busy machine all six numbers move together by up to about 1.5x.
 
 Plans: book and search queries use the new partial index `entries_book_page_idx (child_id, occurred_on desc, captured_at desc) where in_book and deleted_at is null`; membership is resolved once per query from `child_members_profile_idx`, so cost follows the reader's own books, not the number of families. Synthetic letters are about 24 words; real letters are longer, which mainly affects search recheck time. Scale knobs: `PERF_FAMILIES`, `PERF_ENTRIES`, `PERF_SAMPLES`; `npm run test:db:perf` runs only this test.
+
+## File 20261004000000_plus_on_device_only.sql (Plus checked on the device, 3 Oct 2026)
+
+Founder decision 3 (Apple only, out of the box, checked on the device, no server) and ADR 0013 as decided. This is file 8: apply it after file 7 (`20261003020000_purge_batching.sql`). It can go in the same session as files 5 to 7; if file 6 (`20261003010000_children_and_entitlements.sql`) was never applied, apply file 6 first and then this file, because this file replaces functions file 6 and file 7 create.
+
+What it does:
+- Drops `store_notifications`, `store_subscriptions` and `app_account_tokens`, and the functions `apply_store_transaction`, `my_app_account_token`, `get_plan_state`, `has_plus`, `book_has_plus` and `store_environment_allowed`. Nothing of ours sees purchases: do not create an App Store Server Notifications URL or an In-App Purchase key for this project.
+- Redefines `create_child` and `create_first_run_children` without the Plus rule. `create_child_row` loses its `p_free` argument (5 arguments now). `SCPLS` is retired: the server never refuses a book for Plus. The first-run batch still closes `profiles.first_run_closed_at`.
+- Redefines `purge_due(timestamptz, int)` without the `store_notifications` retention line. Any later migration that redefines `purge_due` must start from this version.
+
+Before applying in an environment where file 6 already ran, check that the ledger holds nothing worth keeping (it only ever held test purchases, because no notification endpoint was built):
+```sql
+select (select count(*) from public.store_subscriptions) subs,
+       (select count(*) from public.store_notifications) notes,
+       (select count(*) from public.app_account_tokens) tokens;
+```
+
+Check the result:
+```sql
+select to_regclass('public.store_subscriptions'), to_regclass('public.store_notifications'), to_regclass('public.app_account_tokens');
+-- all three null
+select proname from pg_proc where pronamespace = 'public'::regnamespace
+   and (proname in ('has_plus', 'book_has_plus', 'get_plan_state', 'my_app_account_token', 'apply_store_transaction', 'store_environment_allowed')
+        or prosrc ~ 'SCPLS|store_notifications');
+-- no rows
+select pg_get_function_identity_arguments('public.create_child_row'::regproc);
+-- p_uid uuid, p_id uuid, p_name text, p_date_of_birth date, p_due_date date
+select public.purge_due(now(), 1);  -- runs (service role)
+```
+
+Settings: `app.store_environment` (Step 11) is no longer read by anything; it can stay set or be reset.
+
+Rollback: re-running file 6's entitlement section restores the empty tables and functions; there is no data to restore. Prefer fixing forward.
+
+App changes that ship with this file:
+- The app never calls `my_app_account_token`, `get_plan_state` or `book_has_plus`; Plus comes from StoreKit 2 on the device (`apps/mobile/src/lib/billing`).
+- `SCPLS` can still arrive from a server that does not have this file yet. Keep the book on the phone and retry sync later (TDD 08 2.5); never delete or hide it.
+- The "Plus" line under "App changes for files 5 to 7" above is replaced by this section.
+
+Trade-off (follows from founder decision 3; recorded in ADR 0013): Plus is enforced on the device only. A modified app could start more books or more Read together sessions than the free allowance. Every Plus feature in v1.0 runs on the phone and costs nothing on the server, so nothing server-side is exposed. A future server-cost Plus feature (backup upload) needs its own check at its own endpoint; see ADR 0013.
+
+## Step 14. Apply files 8 to 11, in filename order
+
+The order is the filename order, the same order `npm run test:db` applies them in:
+
+1. `20261004000000_plus_on_device_only.sql` (file 8, section above)
+2. `20261004100000_sync_engine.sql` (file 9)
+3. `20261004200000_ops_deletion_worker.sql` (file 10)
+4. `20261004300000_insights_aggregates.sql` (file 11)
+
+Same method as step 9 (`begin;` first line, whole file, `commit;` last line; any error rolls the file back: copy it and stop). Record each one:
+```sql
+insert into supabase_migrations.schema_migrations (version, name) values
+  ('20261004000000', 'plus_on_device_only'), ('20261004100000', 'sync_engine'),
+  ('20261004200000', 'ops_deletion_worker'), ('20261004300000', 'insights_aggregates')
+on conflict do nothing;   -- after all four succeeded; or one row after each
+```
+Then add the four file names to `.github/migrations-applied.txt` in the same pull request that records the apply.
+
+Check the result:
+```sql
+-- File 9: the sync RPCs exist and only signed-in people can call them (expect 3 rows, all true / false).
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in, has_function_privilege('anon', p.oid, 'execute') anon
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('sync_pull', 'sync_push', 'sync_books');
+-- File 9: the service-only sync functions (expect 2 rows, all false).
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('sync_begin_epoch', 'sync_housekeeping');
+-- File 9: the first epoch (expect 1, 'initial').
+select epoch, reason from public.sync_epochs;
+-- Files 10 and 11: the two private schemas exist and nothing public reaches them (expect false, false).
+select has_schema_privilege('authenticated', 'ops', 'usage'), has_schema_privilege('authenticated', 'insights', 'usage');
+-- File 11 (service role): counts only, small cells null.
+select * from public.insights_aggregates(4) limit 5;
+```
+Advisors, expected and accepted: **0029** for the security-definer RPCs `sync_pull` and `sync_books` (each starts with `require_user()` and answers only for the caller). `sync_rate_windows` is an unlogged table by design (counters need no crash safety or backup).
+
+Rollback: prefer fixing forward. File 9 adds tables and functions only (plus two columns on `entries` with defaults); file 10 and 11 add their own schemas, which `drop schema ops cascade` / `drop schema insights cascade` remove before any real use.
+
+## Step 15. Settings for files 8 to 11
+
+- **Exposed schemas: `public` only.** Dashboard > Project Settings > Data API > Exposed schemas. Never add `ops` or `insights` (or `graphql_public` unless GraphQL is wanted; the app does not use it). The private schemas are reached only through service-role functions.
+- **Sync housekeeping, hourly** (pg_cron, enabled in step 7). It trims op receipts older than 30 days and rate windows older than a day:
+  ```sql
+  select cron.schedule('scribe-sync-housekeeping', '43 * * * *', $$ select public.sync_housekeeping(); $$);
+  ```
+  Check after an hour: `select status, start_time from cron.job_run_details where jobid = (select jobid from cron.job where jobname = 'scribe-sync-housekeeping') order by start_time desc limit 3;`
+  Rollback: `select cron.unschedule('scribe-sync-housekeeping');`
+- **Restore epoch.** After any database restore, before clients reconnect and after the purge-ledger replay, run `select public.sync_begin_epoch('database_restore', '<restore point ISO>');` with the service role (docs/ops/runbooks/restore-drill.md step 4). Phones then re-upload what the restore lost; they never delete anything because of it. The old `app.sync_epoch` database setting from the deleted draft is not read by anything.
+- **Purge worker** (file 10): deploy and schedule as in docs/ops/README.md ("Deploy", steps 4 and 5; `supabase/cron/purge-worker.sql`). Keep the hourly `scribe-purge-due` job from step 7 as a backstop.
+- **Insights reader** (file 11): the file creates the `insights_reader` role (no login) and grants it to `authenticator` when that role exists. Nothing else to set; the weekly insights run reads with the service role (docs/analytics/INSIGHTS_LOOP.md).
+- `app.store_environment` (step 11) is no longer read by anything after file 8.
+
+## Step 16. App changes for files 8 to 11
+
+- Sync (`apps/mobile/src/lib/sync`) calls `sync_pull` and `sync_push` only. It starts after the 18+ gate and only with a signed-in, consented session (`syncAllowed()`), so nothing calls these before step 14.
+- Account deletion's "What happens" lines call `sync_books()` (file 9 section 8b).
+- The app never calls anything in `ops` or `insights`.
+
+
+## File 20261005000000_family_cap_language_idempotency.sql (3 Oct 2026, db-followup)
+
+File 12. Apply after file 11 (`20261004300000_insights_aggregates.sql`), in the same way as step 9. It adds and replaces; it drops nothing that holds data. Tests: `db_followup_family_cap`, `db_followup_language`, `db_followup_idempotency_rates` (108 checks), plus new rows in `access_matrix`; `npm run test:db` now runs 15 files.
+
+What it does:
+- **Two parents per book (D-069, recommended).** `create_child_invite(p_child, 'parent', ...)` and `accept_child_invite` refuse with `SCCAP` when the book already has `app.max_parents_per_book` parents (default 2). Both lock the book row first, so two people accepting at once cannot make a third parent. A further parent is added only by support (below). Security review H2: an invite whose maker is no longer a parent of the book is refused, and a parent who leaves (any path) has their open invites revoked.
+- **Leaving and removing.** `leave_child(p_child, p_keep_in_book default true)` for any member ("take my letters out" takes them out of the book, never deletes them; the last parent gets `SCLPG` as before). `remove_child_member(p_child, p_member, p_set_aside default false)`: either parent removes a family member alone, no veto; their letters stay unless `p_set_aside`, which sets them aside. A parent is never removed by the other parent (`42501`); only their own `leave_child` ends it. Listing members needs nothing new (`child_members` under RLS, `sync_books()`, `sync_pull()` meta).
+- **`entries.language`**: one of `en hi es zh fr ar pt` or null, L4, written and read by the author only (decision below). `sync_push` field group `language`; `sync_pull` returns it on the caller's own letters only; `insights.language_mix` now reads it with static SQL (k = 10 unchanged).
+- **Idempotency keys** for `create_child_invite` and `record_policy_act`, read from the `idempotency-key` request header (ADR 0017 rule 3). Table `idempotency_keys` (functions only; no client access), 24 hours, trimmed by the hourly `scribe-sync-housekeeping` job (step 15). A repeat with the same key and arguments replays the first result; other arguments with the same key are `22023`. An invite repeat issues a fresh token for the same invite, because tokens are never stored.
+- **Server rate limits** (`SCRAT`): `request_account_deletion` 5 new requests and `cancel_account_deletion` 5 cancellations per person per rolling 24 h (a repeat that returns the open request, or a cancel with nothing to cancel, is free); `record_policy_act` 60 per hour and 200 per 24 h; `policy_actions_needed` 60 per hour (it is now VOLATILE because it counts); `accept_child_invite`, `leave_child`, `remove_child_member` 120 per hour together. Sync limits keep their numbers, but the counters (`sync_rate_windows`) are no longer writable by their owner (security review M3: a client could reset its own limit); they change only through `rate_hit()`.
+- **Photos** (security review L2): renaming an object can no longer move it into a book the author does not belong to, or into a deleted book.
+
+### Step 17. Before file 12
+
+Read only:
+```sql
+-- a) Books with more than two parents today (expect none). Nothing changes for them, but they cannot add another parent.
+select child_id, count(*) from public.child_members where role = 'parent' group by 1 having count(*) > 2;
+-- b) Open invites whose maker is no longer a parent of the book (file 12 refuses them at accept; expect none).
+select count(*) from public.child_invites i
+ where i.accepted_at is null and i.revoked_at is null and i.expires_at > now()
+   and not exists (select 1 from public.child_members m where m.child_id = i.child_id and m.profile_id = i.invited_by and m.role = 'parent');
+-- c) The new names are free (expect five nulls).
+select to_regclass('public.idempotency_keys'), to_regprocedure('public.leave_child(uuid, boolean)'),
+       to_regprocedure('public.remove_child_member(uuid, uuid, boolean)'), to_regprocedure('public.rate_hit(text)'),
+       (select attname from pg_attribute where attrelid = 'public.entries'::regclass and attname = 'language' and not attisdropped);
+```
+App compatibility: no signature changes, so today's build keeps working. `SCCAP` is reachable only through a second co-parent invite, which the app already hides. `sync_pull` rows gain a `language` key that today's build ignores.
+
+### Step 18. Apply file 12
+
+SQL Editor > New query, `begin;` on the first line, the whole file, `commit;` on the last line, Run. Any error rolls the file back; copy it and stop. Then:
+```sql
+insert into supabase_migrations.schema_migrations (version, name) values ('20261005000000', 'family_cap_language_idempotency')
+on conflict do nothing;
+```
+Add `20261005000000_family_cap_language_idempotency.sql` to `.github/migrations-applied.txt` in the pull request that records the apply.
+
+Check the result:
+```sql
+select public.max_parents_per_book();                                           -- 2
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in, has_function_privilege('anon', p.oid, 'execute') anon
+  from pg_proc p where p.pronamespace = 'public'::regnamespace
+   and p.proname in ('leave_child', 'remove_child_member', 'rate_hit', 'max_parents_per_book', 'request_idempotency_key',
+                     'idempotency_claim', 'idempotency_store') order by 1;
+-- leave_child, rate_hit, remove_child_member: true / false; the other four: false / false
+select has_table_privilege('authenticated', 'public.sync_rate_windows', 'select') reads,
+       has_table_privilege('authenticated', 'public.sync_rate_windows', 'delete') resets,
+       has_table_privilege('authenticated', 'public.idempotency_keys', 'select') keys;   -- true, false, false
+select provolatile from pg_proc where proname = 'policy_actions_needed';         -- v
+select insights.language_mix_available();                                       -- true
+```
+Then repeat the classification and RLS queries from step 4 (expect 0 and 0). Advisors, expected and accepted: **0029** for `leave_child`, `remove_child_member` and `rate_hit` (each starts with `require_user()`); `idempotency_keys` has RLS on and no policy (intentional: functions only).
+
+### Step 19. Settings for file 12
+
+- **Parents per book.** Nothing to set for D-069. If you decide against it, raise the limit (1 to 10; anything else reads as 2):
+  ```sql
+  alter database postgres set app.max_parents_per_book = '10';
+  ```
+  Back to the default: `alter database postgres reset app.max_parents_per_book;`. A database setting reaches new connections only; the API's pooled connections pick it up as they are recycled (Assumption: within about 30 minutes; a project restart from the dashboard applies it at once).
+- **A further parent through support** (FAM-11, D-069), service role, after verifying the request:
+  ```sql
+  insert into public.child_members (child_id, profile_id, role) values ('<book id>', '<profile id>', 'parent');
+  select public.ops_audit_write('<operator>', 'safety_removal', 'third_parent_added', '<ticket>', '<profile id>', '<book id>');
+  ```
+  Removing a parent for safety (Terms 9.4) is the same with `delete from public.child_members where child_id = '<book id>' and profile_id = '<profile id>';` and reason `parent_removed`; the last-parent guard still applies, and their open invites are revoked automatically. Service deletes write no `member_removed` row, so the ops audit line is the record.
+- **Cron:** nothing new. The hourly `scribe-sync-housekeeping` job now also trims idempotency keys older than 24 hours (its result gains `idempotency_keys`).
+
+### Error codes added or widened by file 12
+
+| SQLSTATE | Where | App |
+|---|---|---|
+| `SCCAP` (new) | `create_child_invite` with role parent, `accept_child_invite` of a parent invite: the book already has the most parents allowed (detail: the limit) | Tell the person ("This book already has two parents"); never retry |
+| `SCRAT` | now also `request_account_deletion`, `cancel_account_deletion`, `record_policy_act`, `policy_actions_needed`, `accept_child_invite`, `leave_child`, `remove_child_member` | Tell the person or skip quietly (`policy_actions_needed` already falls back to `policy_versions`) |
+| `22023` | malformed `idempotency-key`, or a key reused with other arguments; `remove_child_member` on yourself | Permanent; a client bug |
+| `42501` | `remove_child_member` on a parent | Permanent; the app never offers it |
+| `SCINV` | also: a repeat of an invite request whose invite is closed; an invite whose maker left | As today (message says "not found" or "closed") |
+
+### Decision: a letter's language is the author's only
+
+`book_entries` does not carry `entries.language`, so co-parents and family never receive it, even for letters in the book. Why: no v1.0 reader feature needs it (script and direction come from the text itself, `packages/core/src/lang/script.ts`); it is L4 personal data (DATA_CLASSIFICATION, a person's language); and adding it later is one appended view column when a feature needs it (for example a per-letter voice in Read together or print typesetting), whereas taking it back from phones is not possible. The k-anonymised `insights.language_mix` is the only other reader.
+
+### App changes for file 12 (mobile and platform owners)
+
+- **Idempotency keys must survive retries.** `createCoParentInvite` (`lib/family/invites.ts`) and `recordConsentStep` (`lib/auth/consent.ts`) call `idempotencyKey()` inside the request, so every retry carries a new key and the server cannot recognise it. Make the key once per user action and pass the same one to every retry of that action (supabase-js never retries a POST itself).
+- **Invites:** map `SCCAP` in `invite-errors.logic.ts` to its own kind and line; packages/api `SQLSTATE_RULES` needs `SCCAP` as `tell_user` with a new code (for example `parents_full`), otherwise it falls to "reject".
+- **Family screen:** leaving calls `leave_child(p_child, p_keep_in_book)` (not a direct `child_members` delete, which still works but cannot take letters out); removing a family member calls `remove_child_member(p_child, p_member, p_set_aside)`, offered only for family members.
+- **Letter language:** local migration v5 adds `entries.language TEXT` (the app keeps it today only as the device setting `speech.letterLanguage.<id>`); the outbox snapshot sends `language` in `entry.upsert` data and lists `language` in `changed` when it changes; `FieldGroup`/`ALL_GROUPS` in `lib/sync/types.ts` gain `'language'`; the merge stores `language` from own rows only and never expects it on others' rows.
+- **packages/api `standards.ts`:** `policyActionsNeeded.rateLimit.enforcedBy` becomes `'rpc'`; add `leaveChild` and `removeChildMember` (`write_rpc`, `natural_id`, 120 per hour per user, `rpc`); ADR 0017 section 6 can close the idempotency and sync-limit gaps.
+
+### Rolling back file 12
+
+Prefer fixing forward. Partial switches, each on its own:
+- Parent cap: raise `app.max_parents_per_book` (step 19). No code change.
+- Idempotency: `create or replace function public.request_idempotency_key() returns uuid language sql stable set search_path = public, pg_catalog as $$ select null::uuid $$;` makes every call behave as before the file.
+- Leaving and removing: `revoke execute on function public.leave_child(uuid, boolean), public.remove_child_member(uuid, uuid, boolean) from authenticated;`
+
+Full rollback (tested in PGlite: afterwards the original sync, security, governance, RLS and classification suites pass, including a third parent): in one transaction,
+1. Re-run these `create or replace function` blocks from the earlier files, unchanged: `sync_pull`, `sync_push`, `sync_housekeeping` (file 9, `20261004100000`); `insights._language_counts` (file 11); `create_child_invite`, `accept_child_invite`, `request_account_deletion`, `cancel_account_deletion`, `record_policy_act`, `policy_actions_needed` (file 5, `20261003000000`), and file 5's `alter policy entry_photos_author_update` statement.
+2. Then:
+```sql
+drop trigger entries_language_guard on public.entries;
+drop trigger child_members_revoke_invites on public.child_members;
+drop function public.entries_language_guard();
+drop function public.child_members_revoke_invites();
+drop function public.leave_child(uuid, boolean);
+drop function public.remove_child_member(uuid, uuid, boolean);
+drop function public.rate_hit(text);
+drop function public.idempotency_claim(uuid, text, jsonb);
+drop function public.idempotency_store(uuid, text, jsonb);
+drop function public.request_idempotency_key();
+drop function public.max_parents_per_book();
+drop table public.idempotency_keys;
+drop index if exists public.deletion_requests_profile_idx;
+alter table public.entries drop constraint entries_language_code;
+alter table public.entries drop column language;          -- erases recorded languages
+delete from public.sync_rate_windows where bucket not in ('pull', 'push');
+alter table public.sync_rate_windows drop constraint sync_rate_windows_bucket_check;
+alter table public.sync_rate_windows add constraint sync_rate_windows_bucket_check check (bucket in ('pull', 'push'));
+grant insert, update, delete on public.sync_rate_windows to authenticated;   -- file 9's sync functions write it directly
+```
+Step 1 must come first: the replaced functions call the objects step 2 drops. The rollback re-opens the client-resettable sync counter and the stale-invite path (security review H2, M3).

@@ -1,0 +1,77 @@
+# E2E-13b  Co-parent invite round trip, simulator B (Papa): a fresh install
+# joins with the link from simulator A (INVITE_URL, passed by bin/run-coparent.sh).
+# The link is pasted on "I was invited" (the app never reads the clipboard on
+# its own, A-REQ-029); set OPEN_LINK=1 to open it as a universal link instead
+# (needs the AASA file live on earlyletters.com).
+appId: ${APP_ID}
+name: E2E-13b Co-parent invite, accept (simulator B)
+tags:
+  - e2e-coparent
+  - E2E-13
+  - B-REQ-007
+  - A-REQ-028
+  - A-REQ-029
+  - PRD-REQ-019
+  - needs-backend
+env:
+  E2E_EMAIL: ${PAPA_EMAIL || "delivered+e2e13-papa@resend.dev"}
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+- runFlow:
+    when:
+      true: ${OPEN_LINK == "1"}
+    commands:
+      - openLink: ${INVITE_URL}
+      - runFlow:
+          when:
+            visible:
+              text: "Open"
+          commands:
+            - tapOn: "Open"
+# The 18+ gate always comes first, even from a link (PRD-REQ-019).
+- runFlow: ../subflows/pass-age-gate.yaml
+- runFlow:
+    when:
+      true: ${OPEN_LINK != "1"}
+    commands:
+      - assertVisible:
+          id: "onboarding.step.welcome"
+      - tapOn:
+          id: "onboarding.welcome.invited"
+      - assertVisible:
+          id: "invite.screen"
+      - tapOn:
+          id: "invite.paste.input"
+      - inputText: ${INVITE_URL}
+      - tapOn:
+          id: "invite.paste.continue"
+          enabled: true
+# Not signed in: the invite asks for sign-in, then consent, then joins.
+- extendedWaitUntil:
+    visible:
+      id: "signIn.sheet"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/sign-in-email.yaml
+    env:
+      E2E_EMAIL: ${E2E_EMAIL}
+- extendedWaitUntil:
+    visible:
+      id: "invite.joined"
+    timeout: 60000
+- tapOn:
+    id: "invite.open"
+# Papa sees Asha's book (fixture name) and is a member on the Family tab.
+- tapOn:
+    id: "tab.book"
+- extendedWaitUntil:
+    visible:
+      text: ".*Asha.*"
+    timeout: 30000
+- tapOn:
+    id: "tab.family"
+- assertVisible:
+    id: "family.member"
+    index: 1
+- stopApp
