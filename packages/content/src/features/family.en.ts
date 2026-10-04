@@ -67,6 +67,46 @@ export const familyCopy = {
     tryAgain: 'Try again',
   },
 
+  /**
+   * Co-parent sharing is coming in a later update (founder, 3 Oct 2026): v1.0 keeps every
+   * letter on this phone. One presentation for the Family tab and every invite entry point
+   * (apps/mobile/src/components/family/coparent-soon.tsx). Never a date; never "beta".
+   * {child} is the open book's name, or `childFallback` before there is a book.
+   */
+  soon: {
+    status: 'Coming soon',
+    title: 'Write to {child}, together',
+    lead: "Soon {child}'s other parent can write in this same book, from their own phone.",
+    points: [
+      {
+        title: 'One book, two voices',
+        body: 'Your letters and theirs sit side by side, each signed with the name {child} calls you.',
+      },
+      {
+        title: 'Each from your own phone',
+        body: 'Write whenever it suits you, and read every shared letter wherever you are.',
+      },
+      {
+        title: 'Private to your family',
+        body: "Only the people you invite can read {child}'s book. A letter you keep private stays yours.",
+      },
+    ],
+    building: "We're building it now. Until then, every letter you write stays on this phone.",
+    notify: {
+      button: "Tell me when it's here",
+      hint: 'Saves a note on this phone. Nothing is sent.',
+      done: "Thank you. We'll let you know here when it's ready.",
+    },
+    quiet: {
+      title: 'Just you, for now.',
+      body: "{child}'s book and every letter in it stay on this phone.",
+    },
+    childFallback: 'your child',
+    close: 'Close',
+    settingsRow: 'Write this book together',
+    settingsRowHelp: 'Sharing a book with a co-parent is coming in a later update.',
+  },
+
   errors: {
     expired: 'This invite has expired. Ask for a new one.',
     used: "This invite has already been used. Ask for a new one if that wasn't you.",

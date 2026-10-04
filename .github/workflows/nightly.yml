@@ -1,0 +1,66 @@
+# Nightly checks (TDD 07 section 10). Not required for merging.
+#   fuzz  the verifier property test with a random seed and 10x the PR run
+#         count (TDD 03 7.2). packages/core/test/verify.fuzz.test.ts reads
+#         SCRIBE_FUZZ_SEED and SCRIBE_FUZZ_RUNS; PR CI pins the seed.
+#   db    the same real-stack checks as db-cli.yml (start, reset, lint, test:db).
+# Actions are pinned to commit SHAs (CI-06); the comment names the tag.
+name: Nightly
+
+on:
+  schedule:
+    - cron: '23 10 * * *' # 10:23 UTC daily (03:23 in California during daylight time)
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: Fuzz seed to replay (blank for a random one)
+        required: false
+        default: ''
+      runs:
+        description: Fuzz runs
+        required: false
+        default: '100000'
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+
+jobs:
+  fuzz:
+    name: verifier fuzz (random seed)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Pick the seed
+        env:
+          INPUT_SEED: ${{ inputs.seed }}
+          INPUT_RUNS: ${{ inputs.runs }}
+        run: |
+          seed="${INPUT_SEED:-$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')}"
+          runs="${INPUT_RUNS:-100000}"
+          case "$seed$runs" in *[!0-9]*) echo "::error::seed and runs must be whole numbers"; exit 1 ;; esac
+          echo "SCRIBE_FUZZ_SEED=$seed" >> "$GITHUB_ENV"
+          echo "SCRIBE_FUZZ_RUNS=$runs" >> "$GITHUB_ENV"
+          {
+            echo "### Verifier fuzz"
+            echo "Seed \`$seed\`, runs \`$runs\`. Replay locally:"
+            echo
+            echo "\`SCRIBE_FUZZ_SEED=$seed SCRIBE_FUZZ_RUNS=$runs npm test -w @scribe/core -- verify.fuzz --testTimeout=900000\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      # The long timeout is needed because vitest's default (5 s) is per test
+      # and the property test is one test; 100000 runs took about 20 s locally.
+      - name: Property test
+        run: npm test -w @scribe/core -- verify.fuzz --testTimeout=900000
+
+  db:
+    name: database (real stack)
+    uses: ./.github/workflows/db-cli.yml

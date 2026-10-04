@@ -30,7 +30,9 @@ import {
   type PackManifest,
   type RemoteConfig,
 } from '@scribe/api';
+import { serverFeaturesEnabled } from '../capabilities';
 import { readSupabaseEnv } from '../supabase/env';
+import { docsBaseFor } from './base.logic';
 import { SignedDocumentClient, type ParsedPayload, type RefreshOutcome } from './documents';
 import { expoDocStorage, fetchDocHttp } from './expo-adapter';
 
@@ -42,13 +44,13 @@ export const APP_VERSION: string = (() => {
 
 /**
  * Where documents come from: `EXPO_PUBLIC_DOCS_BASE_URL` when a CDN fronts
- * the functions (ADR 0016), else the Supabase project URL. Null in a build
- * without either: the app uses its bundled defaults and packaged copy.
+ * the functions (ADR 0016), else the Supabase project URL, but only in a build
+ * with server features on (lib/capabilities.ts; v1.0 makes no Supabase call).
+ * Null otherwise: the app uses its bundled defaults and packaged copy.
  */
 function docsBase(): string | null {
-  const cdn = (process.env.EXPO_PUBLIC_DOCS_BASE_URL ?? '').trim().replace(/\/+$/, '');
-  if (/^https:\/\/[^\s/]+$/.test(cdn)) return cdn;
-  return readSupabaseEnv()?.url ?? null;
+  const on = serverFeaturesEnabled();
+  return docsBaseFor(process.env.EXPO_PUBLIC_DOCS_BASE_URL, on, on ? (readSupabaseEnv()?.url ?? null) : null);
 }
 
 const base = docsBase();
