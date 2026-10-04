@@ -2,6 +2,8 @@
 
 Owner: founder. Written 3 Oct 2026. Companion docs: [ENVIRONMENTS.md](ENVIRONMENTS.md), [RUNBOOKS.md](RUNBOOKS.md) (RB-4 rotates a leaked secret), [INCIDENT.md](INCIDENT.md), `docs/tdd/04-security-identity.md` section 3.9 (the design this inventory implements).
 
+Server-side secrets for the deletion pipeline (Edge Function secrets, Vault, Supabase settings checklist) are also listed in `docs/ops/SECURITY.md`; keep the two in step, and treat the deploy workflow and that file as the source for exact names. v1.0 is on-device only, so the server rows below take effect with v1.1.
+
 This file lists secret **names**, where each one lives, who owns it and how to rotate it. It never holds a value. If you are about to paste a value into this file, a commit, an issue, a pull request, a chat with an agent or a log, stop.
 
 ## Rules

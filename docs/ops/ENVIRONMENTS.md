@@ -6,7 +6,8 @@ Owner: founder. Written 3 Oct 2026. Decision: D-041 (two Supabase projects; migr
 
 - The target layout below **does not exist yet.** The "Early Letters" Supabase organisation and the `scribe-staging` and `scribe-prod` projects have not been created. RB-0 in [RUNBOOKS.md](RUNBOOKS.md) creates them.
 - Until then, the existing single project is a development project only, changed by hand through `supabase/APPLY.md`. It is not promoted to production; production is built clean from the migration folder (TDD 02 section 6.1).
-- The real bundle ID depends on `publisher.domain` in `packages/brand/index.ts`, which is still `example.com` on `develop`. Set it before the first EAS build; it can never change after the first App Store Connect upload.
+- The bundle ID is derived from `publisher.domain` in `packages/brand/index.ts`, which is `earlyletters.com` on `develop` (checked 4 Oct 2026), so the production id is `com.earlyletters.scribe`. It can never change after the first App Store Connect upload.
+- **v1.0 is on-device only** (founder decision recorded in `docs/agents/BRIEF-2026-10-03.md`): no sign-in, no sync, no server copy of letters, and the build switch is off for every v1.0 profile. The Supabase rows in this document describe the server that v1.1 turns on; none of it is needed to ship v1.0. Secrets and settings for the deletion pipeline are also covered in `docs/ops/SECURITY.md`, `docs/ops/DOMAINS.md` and `docs/ops/runbooks/`.
 
 ## Matrix
 
@@ -36,7 +37,7 @@ Read from `apps/mobile/app.config.ts` and `packages/brand/index.ts` on 3 Oct 202
 
 - `<id>` is `bundleId()`: the reversed `brand.publisher.domain` plus `.scribe`.
 - Suffixes by `EXPO_PUBLIC_APP_ENV`: `development` adds `.dev`, `preview` adds `.preview`, `production` adds nothing.
-- With `publisher.domain = 'example.com'` (current `develop`), `<id>` is `com.example.scribe`. With the planned domain `earlyletters.com`, it becomes `com.earlyletters.scribe`. The production value is the permanent App Store identity; do not upload a production build until the domain is set.
+- With the current `publisher.domain = 'earlyletters.com'`, `<id>` is `com.earlyletters.scribe`. The production value is the permanent App Store identity; do not change the domain after the first upload.
 - Today an unset or unknown `EXPO_PUBLIC_APP_ENV` falls back to `production` in `app.config.ts`. Always set it explicitly per profile (it is, in `eas.json`).
 
 ### Environment variables
