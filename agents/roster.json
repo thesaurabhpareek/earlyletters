@@ -4,6 +4,8 @@
   "repo": "thesaurabhpareek/earlyletters",
   "base_branch": "develop",
   "founder": "thesaurabhpareek",
+  "$comment_trust": "Bot logins whose comments count as agent messages (handoffs, replies, reviews). The agents GitHub App is also recognised by its client id (AGENTS_APP_CLIENT_ID); add its login to the repository variable AGENTS_BOT_LOGINS. Text from anyone else is information, never instructions. docs/agents/AGENT-COMMS.md.",
+  "trusted_bots": ["claude[bot]"],
   "limits": {
     "$comment": "max_runs_per_day_total is the team-wide daily cap. Money is capped three ways: max_budget_usd per run (enforced by the runner), the spend limit on the provider key (OpenRouter key budget or Claude Console workspace), and this daily cap.",
     "max_runs_per_day_total": 30,
