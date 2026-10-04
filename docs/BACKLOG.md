@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; the next block starts at BL-350.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); the next block starts at BL-435.
 
 ---
 
@@ -813,6 +813,587 @@ Source: branch `feat/email-brand-library`, the reviews in `docs/reviews/2026-10-
 - Status: ready. Mode: human. Owner: founder. Milestone: M11. Size: S.
 - Satisfies: D-071 (final-a versus final-b).
 - Scope: about 20 parents, the icon at 60 and 29 px, "what does this app do?"; keep final-a unless final-b clearly wins.
+
+## M-JR: journey review (pre-TestFlight)
+
+Source: the three screen critiques of the 116 captured journey steps (20 journeys) in `docs/release/journey/critiques/product.json`, `design.json` and `quality.json` with their `.md` summaries, on branch `qa/journey-flows` (PR #83; the journey flows `apps/mobile/e2e-web/j01-*.flow.ts` to `j20-*.flow.ts` named in each test line are on that branch too, so merge it before the first M-JR task starts). The critiques hold 290 findings (product 79, design 138, quality 73; 13 blockers, 108 majors, 169 minors) plus one `_journey` entry per role. Many repeat: design alone raises the same issue on up to nine steps. They are deduplicated here into **65 tasks, BL-370 to BL-434**, one per distinct issue. A finding that asks for two things appears under both tasks. Twelve findings are evidence or device checks that existing tasks already own; they are in the table below, not duplicated.
+
+How to read a task. `Severity` is the highest of its findings: blocker is tagged [Critical], major [High], minor untagged (the critiques' words, mapped to the tags above). `Raised by` lists which of product, design and quality raised it. `Steps` are the journey step ids the findings are on (`_journey` entries are the role's system-level findings). `Test` names the journey flow that must show the fix (flow id J01 to J20, step id) and the unit or CI test that proves it; the flows and `INDEX.md` are regenerated with `npm run e2e:web:journey -w @scribe/mobile` then `node apps/mobile/e2e-web/support/build-index.mjs`. Owner names are the owner mapping used elsewhere in this file (the first name takes the task). Founder questions are `FT-52` to `FT-57` in `docs/FOUNDER_TASKS.md`; a task that waits on one is `needs-founder` and nothing in it is decided. Constitution, content rules and the Definition of Done apply to every task. No task edits `supabase/**` or an applied migration.
+
+| Severity | Tasks | ready | needs-founder | blocked |
+|---|---|---|---|---|
+| blocker | 5 | 2 | 3 | 0 |
+| major | 45 | 39 | 5 | 1 |
+| minor | 15 | 15 | 0 | 0 |
+| total | 65 | 56 | 8 | 1 |
+
+| Owner | First owner (takes the task) | Named on |
+|---|---|---|
+| mobile engineer | 24 | 43 |
+| content | 12 | 19 |
+| design systems | 12 | 19 |
+| payments engineer | 4 | 5 |
+| speech engineer | 4 | 5 |
+| QA engineer | 3 | 5 |
+| privacy engineer | 2 | 5 |
+| security engineer | 1 | 3 |
+| platform | 1 | 2 |
+| export owner | 1 | 1 |
+| reminders owner | 1 | 1 |
+| legal | 0 | 2 |
+| data architect | 0 | 1 |
+
+Founder questions raised by this review (answers unblock the tasks named):
+
+| FT | Question | Blocks |
+|---|---|---|
+| FT-52 | Notes the app writes ("Not much today", "nobody spoke") are signed as the parent: write nothing, or label honestly | BL-372 |
+| FT-53 | Membership model D-051 is only on `main`: build the allowance engine and the Plan, Settings and gate copy for v1.0, and answer the open edges | BL-373, BL-374, BL-407 |
+| FT-54 | Exact words for the edit feature after D-074 ("Lightly tidied" and "Tidying" are still on about fifteen screens) | BL-393 |
+| FT-55 | Backup promise: D-073 (backup in v1.0) against an on-device-only app and the website claim | BL-390 |
+| FT-56 | First-run birthday default | BL-385 |
+| FT-57 | Deep link `scribe://listen` starts recording with no tap | BL-384 |
+
+Findings already owned by an existing task (no new task; ids and status as in this file):
+
+| Finding (role, step) | Owned by | Status |
+|---|---|---|
+| Durability gates have never run on a phone: kill-during-save 500x, backup and restore drill, first native build and device session (quality, `_journey` blocker; also J05-01) | BL-135, BL-284, BL-279, FT-21, FT-22 | needs-founder and in-progress; **this is a blocker with no new task: it cannot start until the device session happens** |
+| Device-only behaviour the web render cannot show: teal switch thumbs (design J03-07, J11-03), native time picker (J13-03), keyboard avoidance (J07-01), scrim, haptics, Dynamic Island, edit-field outline (design `_journey`), mic alert, call and Siri interruption, low storage, jetsam (quality `_journey`), unverified claims (product `_journey`) | BL-279, BL-030, BL-044 | needs-founder, in-progress |
+| StoreKit paths cannot run on web: cancelled, pending, offline, failed, already owned, restore with nothing found (quality J03-08, J11-05, J12-02) | BL-222, BL-277 (E2E-14), BL-416 | needs-founder, in-progress, blocked |
+| Few requirement ids in test titles and no component tests (quality `_journey`) | BL-002, BL-110, BL-278 | ready |
+| "Redeem a code" row for offer codes (product decision list) | BL-344 | ready |
+| Crash visibility and a hotfix path without App Review (quality `_journey`, ops) | BL-021 (scrubber, in progress); adding a crash or OTA SDK is a `pair` task by rule 8 and is not decided here; the false claim is BL-389 | in progress |
+
+Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom" and D-052 "Quality bar", while `main` has D-051 "Plus is membership" and D-052 "Early-tester offers". The same ids mean different decisions on the two branches. Tasks here say "D-051 (on `main`)" for the membership model. FT-53 asks the founder to settle the numbering.
+
+#### BL-370 A crash is never a blank page: root error screen, launch recovery, global handler [Critical]
+- Status: ready. Mode: agent. Owner: mobile engineer, design systems. Milestone: M-JR. Size: M.
+- Severity: blocker. Raised by: product, design, quality (4 findings). Steps: J20-01; system-wide (`_journey` entries).
+- Satisfies: CLAUDE.md constitution (a person's words are never lost); PRD 7.5 crash handling; LEGAL-REQ-044 (copy says "Your letters are safe" only where it is true).
+- Scope: Export an `ErrorBoundary` from the root layout (an EmptyState card: "Your letters are safe", Try again, Export). Catch `local_db_migration_failed` and any `open()` failure in `store.ts` with a recovery screen that still reaches Export and Recordings. Install a global handler (`ErrorUtils`) that never logs content. Set the native root background to the theme `bg` so there is no white flash in dark.
+- Done when: A thrown render error in any route shows the recovery card with Try again and Export, not an empty page; Try again re-renders the route. A failing migration shows the recovery screen and Export still runs. Log capture during the crash contains no Asha fixture text, transcript or child name. In dark mode the first paint after a crash is the theme background.
+- Test: Journey J20 (`apps/mobile/e2e-web/j20-crash.flow.ts`, step J20-01 asserts the recovery card text instead of an empty page); `apps/mobile/test/error-boundary.test.ts` (new); failing-migration case in `apps/mobile/test/migrations.test.ts`.
+
+#### BL-371 Delete asks first, is undoable for 30 days, and purges for real [Critical]
+- Status: ready. Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M-JR. Size: L.
+- Severity: blocker. Raised by: product, design, quality (5 findings). Steps: J10-01, J10-06; system-wide (`_journey` entries).
+- Satisfies: `docs/legal/DELETION_AND_EXPORT_SPEC.md` (Recently deleted, 30 days; `settings.delete.entryTitle`); D-061; CLAUDE.md constitution (every edit stored and reversible).
+- Scope: A confirm sheet before a saved letter is deleted ("Delete this letter? The recording goes with it.", Keep it is the default, copy in `packages/content`). After deleting, Undo is a full-width button on the page, not only a toast. A Recently deleted list under Settings > Your data with Restore and an erase date. A launch sweep removes tombstoned text, versions and audio older than 30 days (device clock, injected in tests). Deleted letters never show in Tonight, Book, Read together or search. If this is too big for one PR, split confirm and Undo (PR 1) from Recently deleted and purge (PR 2) using free ids in the Numbering note.
+- Done when: Delete needs a confirm whose default is Keep it. After Back, swipe-back or a kill, the letter is listed in Recently deleted and Restore returns it with its recording. With the clock moved 31 days, the launch sweep removes the row, its versions and the audio file. Undo is a button on the page for as long as the page is open. No deleted letter appears in Book, Tonight or Read together.
+- Test: Journey J10 (`j10-letter.flow.ts`: steps J10-01, J10-05, J10-06 extended with the confirm, the Undo button and a new Recently deleted step); delete, restore and purge cases in `apps/mobile/test/store.entries.test.ts`; 30-day purge case in `apps/mobile/test/sweep.test.ts`.
+
+#### BL-372 Notes the app writes are not signed as the parent: "Not much today", "nobody spoke", "Dear Asha," [Critical]
+- Status: needs-founder (FT-52). Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: M.
+- Severity: blocker. Raised by: product, design, quality (8 findings). Steps: J07-01, J08-02, J08-03, J10-10; system-wide (`_journey` entries).
+- Founder question: FT-52 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
+- Satisfies: CLAUDE.md constitution ("the machine may remove and repair, never add meaning"; no feature may write a person's words); `packages/content/VOICE.md` (never imply AI writes anything).
+- Scope: After the founder answers FT-52 (write nothing, or label honestly), no sentence the app generated is stored as a letter, shown with a signature, or exported as the parent's words. `notMuch.template` and `keepNotMuch` (`index.tsx`) follow the answer. A second tap on the same day does not add a second note. The note is flagged `system_generated` or has no raw text, and export marks it. The "A quiet recording. Nobody spoke" note and the "Dear Asha," ghost in Write follow the same answer. Whether a marker counts toward the free letters is part of FT-53.
+- Done when: No entry in Tonight, Book, letter page, Read together or export carries machine text signed "From <name>". Tapping the quiet-day action twice in one day creates one entry. Export marks the entry as system generated (or has no text). The content rule test passes.
+- Test: Journey J08 (`j08-quiet-day.flow.ts`: J08-02 and J08-03 assert no generated first-person sentence), J10 (J10-10), J07 (J07-01 placeholder); `packages/content/test/rules.test.ts`; quiet-day de-duplication in `apps/mobile/test/store.entries.test.ts`; marker in `apps/mobile/test/export-golden.test.ts`.
+
+#### BL-373 Free-letters allowance in the app: counter, gate at the third letter, held letter, lapsed state (D-051) [Critical]
+- Status: needs-founder (FT-53). Mode: agent. Owner: payments engineer, mobile engineer. Milestone: M-JR. Size: L.
+- Severity: blocker. Raised by: product, design (4 findings). Steps: J01-03, J03-05, J06-10; system-wide (`_journey` entries).
+- Founder question: FT-53 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
+- Satisfies: D-051 (on `main`, not on `develop`; see FT-53); PRD-REQ-015; `packages/core/src/plan.ts` `decide()`.
+- Scope: After the answers in FT-53: a quiet free-letters counter, a gate on letter creation that uses `decide()` (reads, playback and export never consult entitlement for letters that already exist), the paywall at the third letter that never discards the in-progress letter (held on the phone, Plus offered, saved when Plus starts), a lapsed-member state, and the allowance as one config constant (default 2). A quiet one-time line after the second letter (wording from FT-53). "Plus" tag on Add a child in the Whose book sheet. New events are content-free and pass the analytics allowlist.
+- Done when: With 2 saved letters, saving the 3rd shows the Plus sheet and keeps the typed or recorded letter on the phone; once Plus starts the held letter saves. A lapsed member can read, play and export every letter and cannot add one. The allowance is read from one constant. A unit test proves `decide()` never gates read, play or export. New analytics events pass the allowlist test.
+- Test: Journeys J12 (`j12-plus.flow.ts`: J12-01 plus a new "third letter" step) and J03 (J03-08); `apps/mobile/test/billing-plan.test.ts`; `decide()` cases in `packages/core` plan tests.
+
+#### BL-374 Plan, Settings, gate and store-facing strings follow the membership model: no "free, always" (D-051) [Critical]
+- Status: needs-founder (FT-53). Mode: agent. Owner: content, payments engineer. Milestone: M-JR. Size: M.
+- Severity: blocker. Raised by: product, design (7 findings). Steps: J03-06, J03-08, J12-01, J12-02, J16-01.
+- Founder question: FT-53 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
+- Satisfies: D-051 (on `main`); LEGAL-REQ-044 (claims registry: a published statement may not be false); Apple 3.1.2 disclosure.
+- Scope: Replace every retired promise: "free, always", "writing stays open", "Plus is optional", "The first book you start is free, always" (Plan J12-01, restore error J12-02, Settings Plan row J03-06 and J16-01, book gate J03-08). "Plus is off" becomes plain status wording. The Plan screen gets structure (what stays yours, what Plus adds) with room for the StoreKit price. Exact wording comes from FT-53. The website and store listing already say "Your first two letters are free"; keep the three identical.
+- Done when: No string in `packages/content/src` or `apps/mobile/src` contains the retired promise (a banned-phrase case is added to the content rules test). The Plan, gate and Settings steps show the new copy and it matches the store listing and website line.
+- Test: `packages/content/test/rules.test.ts` banned-phrase case; claims registry (BL-118); journeys J03 (J03-06, J03-08), J12 (J12-01, J12-02), J16 (J16-01) re-recorded.
+
+#### BL-375 Speech model download is explained and visible: size, Wi-Fi, progress, failure, full storage [High]
+- Status: ready. Mode: agent. Owner: speech engineer, mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design, quality (7 findings). Steps: J01-12, J05-03, J14-01; system-wide (`_journey` entries).
+- Satisfies: D-065 (models download on demand); LEGAL-REQ-007 (accurate purpose strings); `docs/ops/APP_SIZE.md`.
+- Scope: The language sheet and the Recordings English row show the size and "Downloads on Wi-Fi" for each language that is not installed. A Download button with progress, cancel and resume. Failure and full-storage states with Try again. After first run, one tap "Get speech ready on Wi-Fi". The Review waiting card says "Getting ready, about N minutes" while the pack waits. Say in the PR whether English ships in the app (D-065) and make the row match.
+- Done when: On a fresh install, no 575 MB download starts before the size is shown; mobile data holds the download until the person chooses. A kill mid-download resumes. Full storage shows a calm state with Try again. The Recordings row for a missing model has a Download button and a Ready state.
+- Test: Journeys J01 (J01-12 shows the size line), J14 (J14-01 shows Download and the Wi-Fi note), J05 (J05-03); resume case in `apps/mobile/src/lib/packs/__tests__/engine.test.ts`; `apps/mobile/test/models-catalog.test.ts`.
+
+#### BL-376 A letter waiting for its words has a way forward: write the words, try again, a reason [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, speech engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design, quality (10 findings). Steps: J09-04, J09-05, J10-01, J10-09, J10-10.
+- Satisfies: CLAUDE.md constitution (typed words are the person's own; raw stays immutable); D-056.
+- Scope: The waiting card in Book (J09-04) and the letter page (J10-09) get "Write the words yourself" (typed under the recording, stored as the person's words), "Try again" or "Download English", and a one-line reason. A "Nobody spoke" letter gets "Try writing it down again" (re-enqueue) and "Record again"; Delete is the lower-emphasis action on a silent recording. The letter page subscribes to the store so words appear without reopening.
+- Done when: From a waiting letter the person can type the words and it becomes a normal letter. Try again re-enqueues and sets words once. A letter open on screen updates when words arrive. A no-speech letter offers Record again.
+- Test: Journeys J09 (J09-04, J09-05) and J10 (J10-09, J10-10, J10-01); retry-sets-words-once case in `apps/mobile/test/transcription-queue.test.ts`; `apps/mobile/test/store.entries.test.ts`.
+
+#### BL-377 Review keeps what the person changed: autosave edits, warn on Close, mark person edits [High]
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-148.
+- Severity: major. Raised by: quality (2 findings). Steps: J06-08, J06-10.
+- Satisfies: CLAUDE.md constitution (edits stored, raw immutable); WCAG 2.2.1 (LEGAL-REQ-051); extends BL-148.
+- Scope: Persist `userText` to the draft (autosave like Write). Warn before Close when edits are unsaved. Record a user-edit marker in the edit log so replay does not present a person's edit as machine output. Cap the length. The 900 ms saved card stays until dismissed when VoiceOver is on, and a failed save shows a Try again button.
+- Done when: Kill during an edit, relaunch, and the edited text is restored. Close with unsaved edits asks first. Export shows `user_edited`. A failed save shows Try again. With VoiceOver on, the saved card does not auto-close.
+- Test: Journey J06 (J06-08, J06-10); edit persistence in `apps/mobile/test/store.entries.test.ts`; `user_edited` in `apps/mobile/test/export-golden.test.ts`.
+
+#### BL-378 Typing, Finish and Save cannot lose or double a letter: autosave flush, in-flight guards, caught errors [High]
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: quality (3 findings). Steps: J01-13, J07-01, J07-02.
+- Satisfies: CLAUDE.md constitution (a person's words are never lost); PRD 7.4 durability.
+- Scope: Write autosave flushes on AppState background and has a 3 s maximum wait. `persist()` is wrapped in try/catch and shows "could not save, copy your text". First-run `finish()` is guarded by a ref and idempotent per first run; a failing `addChild` shows a calm retry card. The typed letter has a generous maxLength with a calm message.
+- Done when: Backgrounding mid-typing keeps the last burst. A failing `setDraftTyped` does not crash. Double-invoking `finish` creates one book per name. A 100k-character paste is handled without jank.
+- Test: Journeys J07 (J07-02) and J01 (J01-13); `apps/mobile/test/write-autosave.test.ts` and `apps/mobile/test/onboarding-finish.test.ts` (new).
+
+#### BL-379 Drafts are visible and can be let go; short or empty takes are not kept silently [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, design systems. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design, quality (5 findings). Steps: J04-01, J05-08, J06-12.
+- Satisfies: CLAUDE.md constitution (the machine never removes a person's words: confirm before discarding); DELETION_AND_EXPORT_SPEC.
+- Scope: Tonight shows the waiting-draft card above the prompt card as one pressable card, with a count or list when there is more than one. Review and Tonight offer "Let it go" with a confirm. A take under about 1 second or 0 bytes says so ("That was very short. Keep it, or let it go?", Let it go first) instead of the transcription-failed heading. Discard removes the row and the audio file only after the confirm.
+- Done when: Three drafts are all reachable from Tonight. Discarding from Review removes row and audio after the confirm. Finish tapped at once shows the short-take message, not the transcription-failed heading.
+- Test: Journeys J04 (J04-01), J05 (J05-08), J06 (J06-12); discard cases in `apps/mobile/test/store.entries.test.ts` and `apps/mobile/test/sweep.test.ts`.
+
+#### BL-380 Recording stays awake and Read together autoplay survives auto-lock [High]
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: quality (2 findings). Steps: J05-01, J11-03.
+- Satisfies: LEGAL-REQ-011 (recording still stops when the app leaves the foreground); D-027.
+- Scope: Keep the screen awake during recording and during Read together autoplay, and release it on stop or leave. A take is still saved and stopped if the app is backgrounded. Verify on a device (auto-lock 30 s).
+- Done when: With Auto-Lock at 30 s, a 2-minute take is not cut. Autoplay continues with the screen on. The wake lock is released on stop and on leaving the screen.
+- Test: Journeys J05 (J05-01) and J11 (J11-03) assert the wake lock is requested and released (mocked on web); `apps/mobile/test/player-logic.test.ts`; device row in BL-279.
+
+#### BL-381 Recording start failures say the real cause; the permission card is a proper sheet [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, design systems. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design, quality (6 findings). Steps: J05-01, J05-04; system-wide (`_journey` entries).
+- Satisfies: LEGAL-REQ-007 (permission priming); PRD 7.4; the words so far are kept.
+- Scope: Tell apart permission denied, audio session busy (a call), prepareToRecord failure, media services reset and low storage, each with its own calm card that says the words so far are kept. Free-space preflight (under 100 MB) before a take. After the person enables the microphone in iOS Settings and returns, re-check on foreground and continue. The permission card uses the shared Sheet (scrim, grabber), a microphone-off drawing aligned to the gutter, and Open Settings as a secondary button.
+- Done when: A busy audio session does not show "microphone is off". Low storage shows its own card before recording starts. Returning from iOS Settings with the microphone enabled continues without a second tap.
+- Test: Journey J05 (J05-01, J05-04); `apps/mobile/test/capture-errors.test.ts` (new); device rows in `docs/qa/DEVICE_TEST_PLAN.md` S1.
+
+#### BL-382 A killed take is checked before it is called ready [High]
+- Status: ready. Mode: agent. Owner: speech engineer, mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: quality (1 findings). Steps: J05-01.
+- Satisfies: PRD 7.4 durability; TDD 03 risk R-4; extends BL-134, proves part of BL-135.
+- Scope: At launch the sweep opens each non-empty M4A with `AVAudioFile` and marks unreadable files `unrecoverable` while keeping them. If the 500-kill gate (BL-135) fails, fall back to ADTS plus remux.
+- Done when: A sweep fixture with a truncated M4A is marked unrecoverable and the file is kept and counted in Recordings. Readable files stay ready.
+- Test: Truncated-M4A fixture in `apps/mobile/test/sweep.test.ts`; device run BL-135.
+
+#### BL-383 Unknown links open a calm not-found screen, never the developer page [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, security engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: product, design, quality (4 findings). Steps: J19-01; system-wide (`_journey` entries).
+- Satisfies: LEGAL-REQ-044; BL-170 (deep links).
+- Scope: Add `+not-found.tsx` with an EmptyState card ("We could not find that page", full-width Back to Asha's book). `redirectSystemPath` sends every unknown path to "/" (allowlist: invite, auth, tabs). No raw URL, route name or Sitemap link is shown. The recorder routes are handled in BL-384.
+- Done when: A malformed deep link and an unknown universal link land on the card. `planIncomingLink` returns "/" for an unknown path. The text "Sitemap" never renders.
+- Test: Journey J19 (`j19-errors.flow.ts`, step J19-01 asserts the card); unknown-path case in `apps/mobile/test/auth-links.test.ts` and `apps/mobile/test/invite-link.test.ts`.
+
+#### BL-384 External links open a screen and never start the recorder: scribe://listen [High]
+- Status: needs-founder (FT-57). Mode: agent. Owner: security engineer, mobile engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: quality (2 findings). Steps: J05-04; system-wide (`_journey` entries).
+- Founder question: FT-57 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
+- Satisfies: LEGAL-REQ-011 ("never auto-starts recording"); BL-170.
+- Scope: After FT-57: `redirectSystemPath` allowlists routes so /listen, /review, /write and /read-together are not reachable from outside the app (or are reachable only as the founder decides), and Listen no longer starts the recorder on mount: a tap starts it.
+- Done when: `planIncomingLink` returns "/" for /listen, /review, /write and /read-together (or the founder's variant). Opening scribe://listen from Safari with microphone permission granted never starts a recording; Listen needs a tap.
+- Test: `[LEGAL-REQ-011] an external link never auto-starts recording` in `apps/mobile/test/auth-links.test.ts`; journey J05 (J05-04) re-run; device check from Safari.
+
+#### BL-385 First-run birthday has no silent default; siblings can have their own dates [High]
+- Status: needs-founder (FT-56). Mode: agent. Owner: mobile engineer, content. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design, quality (4 findings). Steps: J01-05, J01-07, J01-09, J01-14.
+- Founder question: FT-56 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
+- Satisfies: D-038 (siblings with different dates); CLAUDE.md "never gender the child".
+- Scope: After FT-56: the first-run date follows the founder's answer (no default; a confirm; or an explicit "I'll add it later"). Siblings in first run get per-child dates or an explicit "Same birthday" switch. The dateline for a newborn (0 to 6 days) reads "newborn" if FT-56 approves it.
+- Done when: A 7-month-old can no longer become "0 days" by tapping Continue. Twins can be set to different dates. Month chapters and prompts match the date entered.
+- Test: Journeys J01 (J01-05, J01-07, J01-09, J01-14) and J03 (J03-01); `apps/mobile/test/dates.test.ts`.
+
+#### BL-386 A first-run mistake can be corrected: edit name, birthday and signature; a due date becomes the birthday [High]
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: design, quality (5 findings). Steps: J01-08, J01-10, J03-07; system-wide (`_journey` entries).
+- Satisfies: BL-035 (per-child settings); PRD first-run profile.
+- Scope: Name, birthday or due date, and "Sign my letters as" rows in child settings become editable (chevron, `updateChild`; rename the "Child" row to "Name"). When a due-date child's baby arrives (a "Asha has arrived" action, or the date passes), the due date becomes the birthday so month chapters start. A signature change affects new letters only.
+- Done when: Editing the birthday moves letters to the right month chapters. A due-date child can get a birthday and `monthFor()` is no longer null. A signature edit leaves existing letters unchanged.
+- Test: Journeys J03 (J03-07), J01 (J01-08, J01-10); `apps/mobile/test/dates.test.ts`; `updateChild` cases in `apps/mobile/test/store.repos.test.ts`.
+
+#### BL-387 Delete a book and erase everything on this phone, each with a calm confirm [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, quality (5 findings). Steps: J03-07, J16-01; system-wide (`_journey` entries).
+- Satisfies: `docs/legal/DELETION_AND_EXPORT_SPEC.md` (delete book); D-053 (on-device, no accounts in v1.0); BL-233.
+- Scope: Per-book "Delete this book" in child settings and "Erase everything on this phone" under Your data. Export is offered first. Erase wipes the database, audio, settings and Keychain items. Retention for a deleted book follows the deletion spec; where the spec is silent the PR says so for counsel and uses an export offer plus a typed confirm.
+- Done when: After Delete this book, the child, its letters and recordings are gone from the phone and from Export. After Erase everything, the database, audio folder and settings are empty and the app starts at first run.
+- Test: Journeys J03 (J03-07) and J16 (J16-01) with new steps; `apps/mobile/test/store.repos.test.ts`; `apps/mobile/test/erase-all.test.ts` (new).
+
+#### BL-388 Export is complete and safe: drafts, orphans and deleted letters included; ZIP64; share-cancel keeps the file [High]
+- Status: ready. Mode: agent. Owner: export owner, mobile engineer. Milestone: M-JR. Size: L.
+- Severity: major. Raised by: product, quality (4 findings). Steps: J14-01, J15-01, J15-02.
+- Satisfies: LEGAL-REQ-034; BL-150, BL-323; the screen promises "every letter and recording".
+- Scope: Include tombstoned letters, drafts (typed and recorded) and orphan recordings in a "not in the book" folder and the manifest. ZIP64 or split by year so a very large book does not fail. Keep the ZIP until the person leaves the export screen (Share cancelled must not delete it). The failure line names a cause only when known ("That did not work this time. Your letters are safe on this phone.").
+- Done when: An export-golden fixture with a draft, an orphan and a deleted letter lists all three in the manifest. A test across the 4 GB boundary passes. Cancelling the Share sheet keeps the ZIP and Export again needs no rebuild. The "needs a little more free space" line shows only for a real space error.
+- Test: Journey J15 (J15-01, J15-02); `apps/mobile/test/export-golden.test.ts` and `apps/mobile/test/export-schema.test.ts`.
+
+#### BL-389 The consent sheet and Settings switch say only what v1.0 does: no crash-report claim [High]
+- Status: ready. Mode: agent. Owner: content, privacy engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: product, quality (4 findings). Steps: J04-04, J16-02; system-wide (`_journey` entries).
+- Satisfies: LEGAL-REQ-044 (claims registry); D-061; BACKLOG rule 8 (adding a crash SDK is a `pair` task).
+- Scope: Reword the consent sheet and the "Share usage and crash reports" switch to what is actually sent (usage; no crash data) until a scrubbed crash reporter exists (BL-021 is in progress; adding any crash or OTA SDK is a separate `pair` task and not part of this one). Drop "photos". Show the sheet after a letter is saved, not 1.2 s after Tonight opens. The unlabeled X gets the label "Not now". Add the claim to the registry.
+- Done when: A claims test fails if consent copy says "crash" while no reporter is configured. The sheet appears after the first save. The X has an accessible label.
+- Test: Journeys J04 (J04-04) and J16 (J16-02); `packages/content/test/rules.test.ts`; claims registry test (BL-118).
+
+#### BL-390 The backup promise matches what v1.0 does: D-073 versus on-device only [High]
+- Status: needs-founder (FT-55). Mode: agent. Owner: content, legal. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product (3 findings). Steps: J01-04, J10-01; system-wide (`_journey` entries).
+- Founder question: FT-55 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
+- Satisfies: D-073 (backup in v1.0), D-033 (agreed storage sentence), D-053 and D-059 (no audio upload in v1.0); LEGAL-REQ-044.
+- Scope: After FT-55: one sentence says where recordings live and it is identical on the promise screen, Recordings, the letter page and the store listing. Plan, Settings, Subscription Terms and the website line "Plus backs up every recording" (in `apps/web` on `main`, so a web handoff) match. If v1.0 is on-device only, add a new-phone and reinstall note and a gentle Export nudge.
+- Done when: No string says "backs up" unless backup ships. The three in-app locations carry the same sentence. The claims registry has one row per claim and the website, store listing and Subscription Terms agree.
+- Test: `packages/content/test/rules.test.ts` claims cases; journeys J01 (J01-04), J10 (J10-01), J14 (J14-01), J12 (J12-01).
+
+#### BL-391 Doors to nowhere are hidden in v1.0: "I was invited", the Family tab, "Family can read", coming-soon rows [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design, quality (15 findings). Steps: J01-03, J03-07, J17-01, J17-02, J17-03, J17-04; system-wide (`_journey` entries).
+- Satisfies: D-055 (co-parent only at launch); D-059; App Store review completeness (BL-341 review notes).
+- Scope: Hide "I was invited" on Welcome, the Family tab, the "Family can read" switch, the "Write this book together: Coming soon" rows and the "We'll let you know here" sheet, behind the existing coming-soon flag so v1.1 flips them back. Drop "for everyone in the family" from the Hide-book copy. An invite link opened in v1.0 keeps the existing neutral page; a dedicated invited-person page is not part of this task.
+- Done when: The app has two tabs and Settings. The words "Coming soon" appear nowhere in app UI. The coming-soon tests are updated. Review notes (BL-341) say so.
+- Test: Journeys J01 (J01-03), J03 (J03-07), J17 (J17-01 to J17-04: `j17-family.flow.ts` now asserts the tab is absent); `apps/mobile/test/coparent-soon.test.ts`.
+
+#### BL-392 The v1.0 binary carries only what v1.0 uses; size, entitlements and Info.plist are checked in CI [High]
+- Status: ready. Mode: agent. Owner: platform, mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: quality (3 findings). Steps: J17-01; system-wide (`_journey` entries).
+- Satisfies: D-065 (download under 40 MB); LEGAL-REQ-007; extends BL-117 and BL-349; BL-283 release checklist.
+- Scope: With server features off, drop or exclude the dormant SDKs and entitlements (Google Sign-In, passkeys, Sign in with Apple entitlement and associated domains if no sign-in ships, Supabase if unused). CI lint of Info.plist and entitlements against a v1.0 allowlist. Fix the stale free-space comment in the privacy manifest. A JS bundle size gate in CI against the 12 MB sub-budget; the App Thinning figure is added to the release checklist after the first native build.
+- Done when: CI fails when Info.plist or the entitlements contain a key that is not on the v1.0 allowlist, or when the JS bundle exceeds 12 MB. The privacy manifest comment matches the code. `docs/ops/APP_SIZE.md` records the thinning figure after the first build.
+- Test: New size and plist steps in `.github/workflows/ci.yml`; entitlement allowlist case in `apps/mobile/test/config.test.ts`.
+
+#### BL-393 "Word for word" vocabulary replaces "tidy", "lightly tidied" and "Tidying" on every screen (D-074) [High]
+- Status: needs-founder (FT-54). Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-356.
+- Severity: major. Raised by: product (9 findings). Steps: J01-04, J03-06, J10-01, J14-01, J15-01, J16-01, J18-04; system-wide (`_journey` entries).
+- Founder question: FT-54 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
+- Satisfies: D-074; `packages/content/VOICE.md` section "Word for word"; CONSISTENCY_AUDIT CA-027; extends BL-356.
+- Scope: After FT-54: apply the confirmed words to the promise screen (J01-04), the letter provenance line (J10-01, J18-04), the Recordings setting and its label (J14-01), the Settings footer (J03-06, J16-01), the export file line (J15-01), and the "Writing down your words" and "How transcription works" headings (J14-01). BL-356 renames the `tidy*` keys; this task owns the visible strings. Re-run the journey capture afterwards.
+- Done when: The banned list in the rules test includes tidy, tidied, tidying and "lightly tidied" (and "transcription" in user-facing copy) and finds zero hits in `packages/content/src` and `apps/mobile/src`. The re-captured journey text lists contain none of them.
+- Test: `packages/content/test/rules.test.ts`; journeys J01, J03, J06, J10, J14, J15, J16, J18 (text assertion that no step text contains "tidy").
+
+#### BL-394 Dark mode uses dark values on every screen: tab bar, icons, scrubber, recording disc, Appearance screen [High]
+- Status: ready. Mode: agent. Owner: design systems, mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: design (6 findings). Steps: J18-01, J18-02, J18-03, J18-04, J18-06; system-wide (`_journey` entries).
+- Satisfies: LEGAL-REQ-051 (AA contrast and 1.4.11); `packages/design-tokens` dark tokens; D-052 quality bar.
+- Scope: Bind the navigation container, tab bar, headers and every icon colour through `useTheme` (dark surface, line, accent, textMuted, recording tokens). The scrubber track uses `line` or controlBorder. A lint rule bans hex values and `tokens.light` outside the theme provider. Extend journey J18 to every route.
+- Done when: J18 assertions hold on every captured route in dark: icons and controls at least 3:1, text at least 4.5:1, tab bar is the dark surface, the Appearance screen background follows the selection. The lint rule fails on a hex value outside the provider.
+- Test: Journey J18 (`j18-dark-mode.flow.ts`, extended to Settings, Plan, Review, Letter); `packages/design-tokens/test/tokens.test.ts`; lint rule test.
+
+#### BL-395 Review, the trust screen, has a clear hierarchy: readable fix marks, tappable fix rows, one primary, a safe permanent choice [High]
+- Status: ready. Mode: agent. Owner: design systems, mobile engineer. Milestone: M-JR. Size: L.
+- Severity: major. Raised by: product, design, quality (15 findings). Steps: J06-01, J06-02, J06-03, J06-04, J06-06, J06-08, J06-09.
+- Satisfies: CLAUDE.md constitution (every edit visible and reversible); LEGAL-REQ-051; DESIGN_LANGUAGE (Review).
+- Scope: Fix marks at least subhead size with a 44 pt hit area. The first-time note at 16 pt, "Got it" at 44 pt, and it says "Tap a dotted mark to see what we fixed, and put it back if you like." Fix rows are list rows with a chevron and 48 pt height. Viewing "what you said" is a segmented toggle; the permanent "Keep my exact words" is a distinct outlined button with a confirm. Primary full width, Keep private a quiet 44 pt button; the footer collapses at AX sizes. The edit field uses Literata 20/32 with the focus ring. Panel Close and Undo reach 44 pt, and a restored word keeps its space. "Does this sound like you?" states its purpose or is dropped, and is never sent when analytics are off. If one PR is too large, split by section.
+- Done when: Review passes the bounding-box check (every button and link at least 44 pt) at default and AX5. The permanent action cannot be hit by a view toggle mis-tap. The edit field shows Literata and the focus ring. The feedback answer is absent from any analytics payload when consent is off.
+- Test: Journey J06 (`j06-review.flow.ts`, J06-01 to J06-09) with the bounding-box assertion and AX5 screenshot (E2E-15); analytics allowlist test in `packages/analytics`.
+
+#### BL-396 One ScreenHeader and one Sheet pattern replace five navigation idioms [High]
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M-JR. Size: L.
+- Severity: major. Raised by: design (7 findings). Steps: J01-04, J01-12, J07-01, J16-01, J17-01, J17-03; system-wide (`_journey` entries).
+- Satisfies: DESIGN_LANGUAGE; `docs/design/COMPONENT_LIBRARY.md`; HIG push, modal and sheet conventions.
+- Scope: One ScreenHeader with three variants (root large title; pushed with chevron back and a collapsing large title; modal with title and Close) and one Sheet (grabber, labelled X, serif 22 pt title). Retire `< Back` text, the arrow-only header, top-left Close text on pushed screens and the bottom Close. The language sheet and Whose book sheet match. Root titles sit at one height. Header and body share one gutter in Write.
+- Done when: Only the three header variants and one Sheet remain in the code. Every sheet has grabber, labelled close and the same title style. Root titles share one y position across tabs.
+- Test: Journeys J01, J03, J07, J16, J17 header assertions; component test via BL-278.
+
+#### BL-397 One selection pattern, and value rows that look tappable [High]
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: design (8 findings). Steps: J01-02, J01-10, J03-06, J06-09, J12-01, J13-03, J14-01; system-wide (`_journey` entries).
+- Satisfies: LEGAL-REQ-051 (1.4.11 control edges 3:1); `docs/design/COMPONENTS.md` ChoiceGroup and Chip.
+- Scope: ChoiceGroup and Chip are the only selection components: selected is accentSoft fill, accent edge and a check; unselected edge at least 3:1 (controlBorder); solid accent only for the single primary. ListRow always shows a chevron, a value or a switch (Spoken language, child fields, Restore purchases, model state, Add a child with a plus icon and accent text). The Plan status card is a tinted variant that does not look tappable.
+- Done when: Yes/No, birthday chips, day pills and "Sounds like me / Not quite" share one selected style with a check. Unselected controls pass 3:1 against their background. Value rows are never chevron-less.
+- Test: Journeys J01 (J01-02, J01-10), J03 (J03-06), J06 (J06-09), J12 (J12-01), J13 (J13-03); `packages/design-tokens/test/tokens.test.ts` control edge pair.
+
+#### BL-398 One StateScreen for empty, error and loading states, and one inline caution card [High]
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: design (6 findings). Steps: J05-03, J06-13, J10-11, J12-02, J15-02; system-wide (`_journey` entries).
+- Satisfies: DESIGN_LANGUAGE; MOTION (loading rhythm).
+- Scope: A StateScreen on EmptyState (art, title, body, full-width bottom action) with a Breathe loading variant, used for J06-13, J10-11 and J11-07. An inline Card with caution icon, 3 pt caution edge and `role=alert` for J12-02 and J15-02 so an error is not the same tint as info.
+- Done when: The captured error and empty screens share one layout and one action position. Inline errors carry a caution icon and are announced on appear.
+- Test: Journeys J06 (J06-13), J10 (J10-11), J11 (J11-07), J12 (J12-02), J15 (J15-02).
+
+#### BL-399 "Writing down what you said" shows it is working and that the recording is safe [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: product, design (2 findings). Steps: J05-03.
+- Satisfies: D-065; DESIGN_LANGUAGE (calm, honest waiting); MOTION.
+- Scope: The waiting card uses Breathe (static with text under Reduce Motion), left-aligned on a flat `surface` (not a raised white card), and says "Listening back to what you said. You can close this, it will be waiting on Tonight." and that the recording is safe. After a threshold with no progress it says it is taking longer than usual and offers Keep voice or Type instead. A time estimate is added once transcription time is measured on iPhone SE 3 (BL-043).
+- Done when: The card animates (or is static with text under Reduce Motion), states the recording is safe and can be closed, and shows the longer-than-usual state after the threshold.
+- Test: Journey J05 (J05-03); timeout case in `apps/mobile/test/transcription-queue.test.ts`.
+
+#### BL-400 Every control reaches 44 pt: text links, quiet buttons, close X, gear, Aa [High]
+- Status: ready. Mode: agent. Owner: design systems, mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: design (9 findings). Steps: J01-03, J01-09, J01-14, J03-04, J03-05, J04-02, J04-04, J05-01; system-wide (`_journey` entries).
+- Satisfies: LEGAL-REQ-051; BACKLOG Definition of Done 9 (44 pt targets).
+- Scope: Quiet and link Buttons get min-height 44 and hitSlop; IconButton sizes reach 44 pt (gear, X, Aa, remove name, switcher). Add a bounding-box assertion for role=button and role=link to the web journey run, and an Accessibility Inspector pass on device. Review marks are in BL-395.
+- Done when: The journey run fails when any role=button or role=link in J01 to J20 has a hit area under 44 by 44 pt. The listed controls pass on the captured screens.
+- Test: Bounding-box assertion in `apps/mobile/e2e-web/support/journey.ts`; journeys J01 to J20; Accessibility Inspector row in BL-279.
+
+#### BL-401 Letter page and Read together scale with Large print and keep the dateline legible; one Dateline and type ramp [High]
+- Status: ready. Mode: agent. Owner: design systems, mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design, quality (9 findings). Steps: J10-01, J10-04, J10-05, J11-01; system-wide (`_journey` entries).
+- Satisfies: D-027 (letter text never capped); LEGAL-REQ-051 (AX5); DESIGN_LANGUAGE type ramp.
+- Scope: One Dateline component (`letterDateline` times `readingScale`), used on cards, Review, Letter and Read together, formatted "From Mama - The first weeks". Large print scales the dateline, player times, provenance and links, not only the body. Trust copy is never below subhead 16. Read together scrolls and keeps the player and footer clear of the text at Large print and AX5. The scrubber track is at least 3:1 with an elapsed fill. The Private toast sits on surfaceRaised with a border and the chip reserves its space.
+- Done when: At Large print and AX5, dateline, times and links grow with the letter and nothing overlaps the player or footer. There is one dateline style across the app. The scrubber shows position by fill.
+- Test: Journeys J10 (J10-01, J10-04, J10-05) and J11 (J11-01); AX5 screenshots (E2E-15); `apps/mobile/src/lib/a11y.logic.test.ts`.
+
+#### BL-402 The app carries the brand: mark on the first screens, one Atmosphere wrapper, one QuotePair [High]
+- Status: ready. Mode: agent. Owner: design systems, mobile engineer. Milestone: M-JR. Size: L.
+- Severity: major. Raised by: product, design (14 findings). Steps: J00-open, J01-01, J01-03, J01-14, J02-05, J06-10, J10-01, J11-04, J18-02; system-wide (`_journey` entries).
+- Satisfies: D-071 and D-072 (primary mark, asset registry); `docs/brand/BRAND_SYSTEM.md`; MOTION principle 1.
+- Scope: Use the registry mark (BL-351, merged in #48) above the age question and on Welcome in place of the retired envelope drawing. One Atmosphere wrapper (static grain, radial lamp pool from `atmosphere.lamp`, paper or night tone, off under Reduce Motion and Reduce Transparency) and one QuotePair from the brand registry, used on Welcome, Tonight, Listening, Letter and End of book only. A plain crescent tab icon. No continuous loops except the voice-driven glow.
+- Done when: The mark shows on the first two screens and Welcome. Atmosphere and QuotePair appear on the five named screens and nowhere else, and are off under Reduce Motion and Reduce Transparency. Contrast tests still pass with the wash.
+- Test: Journeys J00 (J00-open), J01 (J01-01, J01-03, J01-14), J05, J10, J11 (J11-04); `packages/brand` registry test; `packages/design-tokens/test/tokens.test.ts`.
+
+#### BL-403 Tonight reaches Settings and the child switcher, and settles after a letter [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, design systems. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design (4 findings). Steps: J01-14, J03-04, J07-05.
+- Satisfies: DESIGN_LANGUAGE (celebrate what exists, no streaks); BL-034.
+- Scope: Gear and child switcher as 44 pt theme-aware IconButtons on Tonight. On Book the title is the switcher (serif title with a chevron), replacing the 12 pt caps "FOR ASHA". After a letter is saved, Tonight shows "Tonight's letter is in Asha's book." with a quiet "Add another" link: no streak and no count.
+- Done when: Settings and the switcher are reachable from Tonight. The Book title opens the switcher. After a saved letter Tonight shows the settled state.
+- Test: Journeys J01 (J01-14), J03 (J03-04), J07 (J07-05).
+
+#### BL-404 Settings leads with the person's book, not an apology or money; Recordings and Storage merged; accessibility statement [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, content, legal. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design, quality (8 findings). Steps: J03-06, J16-01, J16-02, J16-06; system-wide (`_journey` entries).
+- Satisfies: D-060 (the early-version note stays); LEGAL-REQ-008, LEGAL-REQ-052; BL-159.
+- Scope: Plan moves to its own section below children, language and privacy. The "early version" note shrinks and the export line loses any loss language. The privacy line shows once. Recordings and Storage merge into one row. "What we never do" is a check card, not navigation rows. Licences push to their own screen. Add the Accessibility statement row (LEGAL-REQ-052) and place Consumer Health Data and Subprocessors under Privacy (LEGAL-REQ-008). Help mailto falls back to copying the support address when no mail account exists.
+- Done when: Settings order is children, language, privacy and data, plan, about. Licences open a separate screen. The Accessibility statement row exists. Help with no mail account copies the address.
+- Test: Journeys J16 (J16-01, J16-02, J16-06) and J03 (J03-06); Settings layout case in the component harness (BL-278).
+
+#### BL-405 Helplines follow the device region, with an international fallback and a Call row [High]
+- Status: ready. Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: design, quality (3 findings). Steps: J16-05.
+- Satisfies: D-059 (the static row ships in v1.0); BL-158; FT-36 (founder checks the resources before submission).
+- Scope: The helpline list comes from the device region; every other region gets the international fallback (findahelpline.com). Each helpline is a 44 pt row with a Call label; when `tel:` cannot open, the number is shown to copy. The US list is unchanged. Non-US numbers are added only after the FT-36 check.
+- Done when: A US device shows the existing list. A non-US region shows the international fallback only. A failed `tel:` shows the number to copy.
+- Test: Journey J16 (J16-05); table-shape test in `packages/content/test`.
+
+#### BL-406 Write and Review buttons say what they do: "Save" opens a read-back [High]
+- Status: ready. Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: product, design (4 findings). Steps: J07-01, J07-02, J07-03.
+- Satisfies: CLAUDE.md content rules; VOICE.md.
+- Scope: Rename the Write primary to "Read it back" (disabled until there is text, with a visible reason). Keep the autosave line. Move the "Private letters stay with you" explainer next to the Keep private button. Whether typed letters skip the read-back is a product choice and is not made here.
+- Done when: The Write primary is "Read it back" and matches the next screen's title. The explainer sits within one screen height of the button it explains.
+- Test: Journey J07 (J07-01, J07-02, J07-03); `packages/content/test/rules.test.ts`.
+
+#### BL-407 Read together under the membership model: does the fourth opening still hit a paywall (D-051 edge 5) [High]
+- Status: needs-founder (FT-53). Mode: agent. Owner: payments engineer, content. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: product (1 findings). Steps: J11-05.
+- Founder question: FT-53 in `docs/FOUNDER_TASKS.md`. Nothing here is decided; the task starts when the question is answered.
+- Satisfies: D-051 edge 5 (on `main`); D-009 and D-037 (3 free sessions); BL-154.
+- Scope: After FT-53: either Read together keeps its 3 free sessions, or it follows the free-letters allowance, so a free family never meets two stacked paywalls. Update the gate copy ("You have read together 3 times for free") to the answer.
+- Done when: No flow shows two paywalls to a free family. The gate copy matches the model.
+- Test: Journey J11 (J11-05); `apps/mobile/test/billing-plan.test.ts`.
+
+#### BL-408 Performance budgets have a harness: SQL perf test with a 5-year fixture in CI, Maestro timing for device runs [High]
+- Status: ready. Mode: agent. Owner: QA engineer, mobile engineer. Milestone: M-JR. Size: L.
+- Severity: major. Raised by: quality (2 findings). Steps: J03-05; system-wide (`_journey` entries).
+- Satisfies: BACKLOG Definition of Done 8 (budgets); PRD 7.1; extends BL-289 (done) and feeds BL-044.
+- Scope: A CI SQL-level perf test with a 5-year fixture of 2,000 Asha letters: chapter of 60 letters p95 500 ms, local save p95 200 ms, switch child p95 300 ms. Maestro timing scripts for cold start and record start for the device run per release candidate (200 samples), feeding BL-044.
+- Done when: The CI job fails when a budget is exceeded on the fixture. A documented Maestro script produces cold start and record start timings for BL-044.
+- Test: `apps/mobile/test/perf.sql.test.ts` (new) and a job in `.github/workflows/ci.yml`.
+
+#### BL-409 Accessibility evidence in CI: AX5 snapshots, RN accessibility lint, VoiceOver names for icon-only controls [High]
+- Status: ready. Mode: agent. Owner: QA engineer, design systems. Milestone: M-JR. Size: L.
+- Severity: major. Raised by: design, quality (5 findings). Steps: J06-01, J10-01, J10-04; system-wide (`_journey` entries).
+- Satisfies: LEGAL-REQ-051; BL-279 (manual scripts and evidence).
+- Scope: AX5 screenshot tests in the web journey run (E2E-15). An RN accessibility lint rule in CI. Step JSON exports role, name and order from the accessibility tree. Explicit labels for Aa, gear, X, back, play, Hear it, remove name and the scrubber. The VoiceOver script run is filed in `docs/qa/evidence`.
+- Done when: CI fails on an unlabeled icon-only control. Step JSON includes roles and names. AX5 screenshots exist for Review, Letter, Settings and the Plus gate.
+- Test: a11y assertion in `apps/mobile/e2e-web/support/journey.ts`; accessibility lint job in `.github/workflows/ci.yml`.
+
+#### BL-410 Extend the journey capture: locales, AX5, interruption states, missing screens [High]
+- Status: ready. Mode: agent. Owner: QA engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: product, design (4 findings). Steps: J01-12, J05-08; system-wide (`_journey` entries).
+- Satisfies: BACKLOG Definition of Done 9; LEGAL-REQ-051; D-056 (seven spoken languages).
+- Scope: Capture hi, es, zh, fr, ar (forced RTL) and pt at default and AX3 and AX5 on the two-up controls (Birthday | Not here yet, Add to Asha's book, Keep it word for word, Sounds like me | Not quite, tab labels). Add the missing screens: Storage, Spoken language, Help, Write to us, in-app Terms and Privacy, About, a lock-screen notification example, Tonight for a not-yet-born child, a second waiting draft, a long Book. Add the interruption states and the short, silent and model-missing end states (device captures paired with BL-279).
+- Done when: `INDEX.md` lists the new steps and the critiques can be re-run on them. Each listed screen has a captured step.
+- Test: `npm run e2e:web:journey -w @scribe/mobile` then `node apps/mobile/e2e-web/support/build-index.mjs`.
+
+#### BL-411 Localisation position for v1.0 is stated; letter fixtures and layout checks for ar, hi, zh; per-language suggestion sets [High]
+- Status: ready. Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: design, quality (3 findings). Steps: J01-05, J01-10; system-wide (`_journey` entries).
+- Satisfies: D-056 (UI in English, seven spoken languages, ready for localisation); BL-156.
+- Scope: Store copy and Settings state "English app, seven spoken languages". Export-golden fixtures with Arabic, Hindi and Chinese letters plus a layout check at AX5. Signature chip suggestions per spoken language in `packages/content`. The date pill shows a short date and wraps. The language list aligns rows to start under RTL.
+- Done when: Fixtures for ar, hi and zh pass export and layout checks. The suggestion set follows the spoken language. A long date does not truncate in es, fr or pt.
+- Test: `apps/mobile/test/export-golden.test.ts` ar, hi, zh fixtures; journeys J01 (J01-05, J01-10, J01-12).
+
+#### BL-412 raw_transcript is immutable on the phone too: local triggers [High]
+- Status: ready. Mode: agent. Owner: mobile engineer, data architect. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: quality (1 findings). Steps: system-wide (`_journey` entries).
+- Satisfies: DATA-REQ-040 (local variant); CLAUDE.md constitution ("raw_transcript is immutable").
+- Scope: A new local migration adds BEFORE UPDATE OF raw_transcript triggers on entries and drafts that allow only the one-time set from empty. Every store function is tested to leave raw untouched.
+- Done when: An UPDATE of `raw_transcript` on a set row aborts. `setWordsForWaitingEntry` still sets raw once.
+- Test: `[DATA-REQ-040] local raw_transcript cannot change` in `apps/mobile/test/migrations.test.ts` and `apps/mobile/test/store.entries.test.ts`.
+
+#### BL-413 The words of a saved letter can be changed by the person, and background words are read first [High]
+- Status: ready. Mode: agent. Owner: speech engineer, mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-148.
+- Severity: major. Raised by: quality (2 findings). Steps: J01-04, J10-09.
+- Satisfies: CLAUDE.md constitution (edits stored and reversible); the promise line "read each letter and fix anything we got wrong"; BL-148.
+- Scope: "Change words" on the letter page, stored as a person edit with raw untouched and a per-edit put-back. A letter whose words arrived in the background is marked "words arrived, please read" and opens in Review. If this is not built, the promise line must change (BL-393 owns wording).
+- Done when: A saved letter can be edited and every edit can be put back. A background-words letter opens in Review and the flag clears after it is read.
+- Test: Journeys J10 (J10-09) and J01 (J01-04); `apps/mobile/test/store.entries.test.ts`; words-set-once in `apps/mobile/test/transcription-queue.test.ts`.
+
+#### BL-414 App code only contacts allowlisted hosts (CI test), and the speech model has a mirror [High]
+- Status: ready. Mode: agent. Owner: privacy engineer, platform. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: quality (2 findings). Steps: J01-12; system-wide (`_journey` entries).
+- Satisfies: D-065; LEGAL-REQ-017; extends BL-239 (device capture stays there).
+- Scope: A CI test that app source contains only allowlisted hosts (the models host, Apple, PostHog after consent). A mirror host for the model (`mirrors: []` in `catalog.ts`) and a nightly host-reachability check. The device network capture (App Privacy Report or proxy) stays with BL-239 and the S1 session.
+- Done when: Adding a hard-coded host that is not on the allowlist fails CI. The catalog has a mirror and failover is tested.
+- Test: `apps/mobile/test/network-allowlist.test.ts` (new); mirror failover in `apps/mobile/test/models-catalog.test.ts`; nightly workflow.
+
+#### BL-415 Client log canary: no entry text, transcript or child name reaches an app log [High]
+- Status: ready. Mode: agent. Owner: privacy engineer, QA engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: quality (1 findings). Steps: system-wide (`_journey` entries).
+- Satisfies: CLAUDE.md privacy rules; LEGAL-REQ-017; extends BL-239.
+- Scope: Run the Asha fixtures through the web journey run with console and log capture, and fail on any fixture string. The backup wording from the same finding is in BL-390.
+- Done when: The journey run fails if any Asha entry text, transcript or child name appears in captured logs.
+- Test: Console capture assertion in `apps/mobile/e2e-web/support/journey.ts`; all journeys.
+
+#### BL-416 Capture the real StoreKit screens on an iPhone: offer, trial, terms, redeem, restore, failed, lapsed [High]
+- Status: blocked (BL-103, BL-339). Mode: pair. Owner: payments engineer, QA engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: product (1 findings). Steps: system-wide (`_journey` entries).
+- Satisfies: Apple 3.1.2 (price and terms beside the buy button, via D-053); D-052 offer codes (on `main`, BL-344).
+- Scope: On a development build with the sandbox products, record the offer with price and auto-renewal terms, the trial, purchased, restored (success and none found), a failed load with Try again, a lapsed state and the Redeem a code row. File the captures in `docs/qa/evidence` and add them to the journey index as device-captured steps.
+- Done when: Each state has a capture showing price and terms next to the buy button. The BL-222 sandbox checklist references them.
+- Test: BL-222 checklist rows; E2E-14.
+
+#### BL-417 Listening screen: the disc is the Pause control, the timer does not jitter, pause does not shift the layout [High]
+- Status: ready. Mode: agent. Owner: design systems, mobile engineer. Milestone: M-JR. Size: S.
+- Severity: major. Raised by: design (3 findings). Steps: J05-01, J05-02.
+- Satisfies: DESIGN_LANGUAGE (Listening); MOTION.
+- Scope: The 120 pt disc becomes the Pause target (or stops looking like a button). Tabular figures on the timer. Pausing keeps the line (swapping to "Take your time") and crossfades the disc over the motion token. Let it go at 44 pt.
+- Done when: Tapping the disc pauses. The timer does not change width each second. Pausing moves nothing.
+- Test: Journey J05 (J05-01, J05-02).
+
+#### BL-418 One primary action pinned at the bottom on every screen that has one [High]
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: design (5 findings). Steps: J03-08, J09-01, J11-05, J15-01; system-wide (`_journey` entries).
+- Satisfies: DESIGN_LANGUAGE (bottom action rule).
+- Scope: Apply the bottom-action rule (one 56 pt primary above the tab bar or home indicator) to Book empty, Export, the Plus gates and End of book. Left-align and balance their headings.
+- Done when: The listed screens have one pinned primary at 56 pt and no mid-screen content-width primary.
+- Test: Journeys J03 (J03-08), J09 (J09-01), J11 (J11-05), J15 (J15-01).
+
+#### BL-419 First-run and stop screens: balanced headings, art on the gutter, cards with one fill, stable layout [High]
+- Status: ready. Mode: agent. Owner: design systems, content. Milestone: M-JR. Size: M.
+- Severity: major. Raised by: design (10 findings). Steps: J01-03, J01-04, J01-05, J01-10, J01-13, J02-02, J02-03, J02-04, J03-03.
+- Satisfies: DESIGN_LANGUAGE type ramp (display 34/41).
+- Scope: "The book is open" uses the display token with balanced wrap. Line art offsets so its edge sits on the gutter. The two promise cards share one fill and a neutral icon. "Add another child" moves below the date block. The signature helper sits under its field at subhead. The stop screen anchors where the age gate does and the 24-hour way back does not move the heading.
+- Done when: No orphaned word in the finale or stop headings, including two long names. The stop-screen heading does not jump when the way back appears.
+- Test: Journeys J01 (J01-03, J01-04, J01-13), J02 (J02-02, J02-04), J03 (J03-03).
+
+#### BL-420 Layout shifts are reserved or animated: prompt swap, Private chip, first-time note, stop-screen button
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: design (1 findings). Steps: system-wide (`_journey` entries).
+- Satisfies: MOTION (standard 200 ms, Reduce Motion fade).
+- Scope: Reserve space or animate with the standard motion token for the prompt swap (about 32 pt), Private chip insertion (20 pt), first-time note dismissal (135 pt) and the stop-screen button (37 pt).
+- Done when: Those four moves shift nothing, or animate; under Reduce Motion they fade.
+- Test: Journeys J04 (J04-02), J06, J10 (J10-05), J02 (J02-04) with a layout-shift measurement in the web run.
+
+#### BL-421 Book list: the month placeholder is one quiet line, voice letters show a play glyph, author only when there is more than one
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: design (2 findings). Steps: J09-03.
+- Satisfies: DESIGN_LANGUAGE ("celebrate what exists, never count gaps").
+- Scope: "This month: Month 7 is open" becomes one quiet row that opens Write. Voice letters get a 44 pt play glyph. "From Mama" shows only when more than one person writes.
+- Done when: The placeholder is one line. Voice cards have a play affordance. A single-writer book repeats no author name.
+- Test: Journey J09 (J09-03).
+
+#### BL-422 "Private" versus "in the book" is explained once, with what Export and Read together include
+- Status: ready. Mode: agent. Owner: content. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: product (1 findings). Steps: system-wide (`_journey` entries).
+- Satisfies: VOICE.md; D-061.
+- Scope: One plain explanation of Private versus in the book (nobody else can see either in v1.0), and a line saying whether Export and Read together include private letters (check the code first). Remove the warning on the listening screen if it has no consequence in v1.0.
+- Done when: One explanation exists and Export and Read together behaviour matches its words.
+- Test: Journeys J05, J07 (J07-03), J15; content rules test.
+
+#### BL-423 First run ends ready to speak
+- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: product (2 findings). Steps: J01-13; system-wide (`_journey` entries).
+- Satisfies: D-043 (fewer first-run screens).
+- Scope: Fold "The book is open" into Tonight, or open Tonight with Speak ready, and label the button for what it does ("Tell Asha something").
+- Done when: From the last first-run screen the person reaches a ready recorder in one tap.
+- Test: Journey J01 (J01-13, J01-14).
+
+#### BL-424 Promise screen: plain button label, equal weight for the three promises, shorter first paragraph
+- Status: ready. Mode: agent. Owner: content. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: product, design (2 findings). Steps: J01-04.
+- Satisfies: VOICE.md; D-061.
+- Scope: "That sounds right" becomes "Continue". The privacy line becomes a third card or subhead 16. The first paragraph is trimmed to one sentence. Vocabulary words are in BL-393.
+- Done when: The button reads Continue. The three promises have equal weight.
+- Test: Journey J01 (J01-04); content rules test.
+
+#### BL-425 Disabled buttons say why: Continue, Export everything, Sign my letters
+- Status: ready. Mode: agent. Owner: mobile engineer, design systems. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: product, design, quality (5 findings). Steps: J01-01, J01-05, J15-03.
+- Satisfies: LEGAL-REQ-051 (accessible state).
+- Scope: Disabled primary buttons show a visible helper ("Add a name to continue", "Write a letter first") and expose it as an accessibility hint; the disabled style is visibly disabled, not nearly invisible.
+- Done when: Each listed disabled button has helper text and an accessibility hint.
+- Test: Journeys J01 (J01-01, J01-05), J15 (J15-03).
+
+#### BL-426 Under-18 stop: the way back is mentioned, layout stays put, device limits are recorded
+- Status: ready. Mode: agent. Owner: content, security engineer. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: product, design, quality (4 findings). Steps: J02-02, J02-04.
+- Satisfies: LEGAL-REQ-002; D-006.
+- Scope: Add "If you answered by mistake, come back tomorrow." Record in the compliance register that the stop lives in local settings and uses the device clock; evaluate the Keychain for the stop.
+- Done when: The stop screen mentions the way back. The register states both limits.
+- Test: Journeys J02 (J02-02, J02-04); `[LEGAL-REQ-002]` cases in `apps/mobile/test/age-gate.test.ts`.
+
+#### BL-427 Names and signature: duplicate warning, cut at a character not a code unit, cap shown
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: design, quality (5 findings). Steps: J01-06, J01-09, J01-10, J03-01.
+- Satisfies: CLAUDE.md "never gender the child"; BL-136.
+- Scope: Warn on case-insensitive duplicate names in first run and add-child. Truncate by code point and NFC-normalise, with a quiet counter near the limit.
+- Done when: "Asha" and "asha" warn. A paste ending in an emoji or ZWJ sequence is never cut mid-character.
+- Test: Journeys J01 (J01-06, J01-09), J03 (J03-01); unit tests with emoji, ZWJ and Devanagari names.
+
+#### BL-428 The reminders switch shows the true state, and absence behaviour is stated
+- Status: ready. Mode: agent. Owner: reminders owner, design systems. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: design, quality (2 findings). Steps: J13-02.
+- Satisfies: BL-151; BL-157.
+- Scope: Show the switch off until the OS permission exists (or a status row "Waiting for permission"). State that reminders are planned about 3 weeks ahead and refresh when the app opens, or use repeating triggers for the evening pattern.
+- Done when: With permission denied the switch is not ON. A long-absence case exists in the planner test.
+- Test: Journey J13 (J13-02); `apps/mobile/test/reminders-planner.test.ts`.
+
+#### BL-429 Read together counts a free session only after a page is read for 10 seconds or the first play
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: quality (1 findings). Steps: J11-01.
+- Satisfies: BL-154; D-037.
+- Scope: Move the count from the screen opening to the first 10 seconds of reading or the first play.
+- Done when: Opening and closing the screen does not use one of the 3 free sessions.
+- Test: Journey J11 (J11-01); `apps/mobile/test/player-logic.test.ts`.
+
+#### BL-430 Failed store load and restore show their own calm states with a retry
+- Status: ready. Mode: agent. Owner: payments engineer. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: product (1 findings). Steps: J03-08.
+- Satisfies: Apple 3.1.2; BL-216, BL-219.
+- Scope: A failed StoreKit product load shows "We could not reach the App Store. Try again in a moment." with a retry, distinct from "not available on this device".
+- Done when: A failed load has its own state and a retry. Device evidence is in BL-222.
+- Test: Journeys J03 (J03-08), J12 (J12-02); `apps/mobile/test/billing-plan.test.ts`.
+
+#### BL-431 A letter's date can be corrected and warns before the child's birth
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: quality (1 findings). Steps: system-wide (`_journey` entries).
+- Satisfies: BL-035.
+- Scope: Allow editing a letter's date and warn on dates before the birth. A wrong device date should not silently misplace chapters.
+- Done when: Editing a letter date moves it between chapters. A date before birth shows a calm warning.
+- Test: Journeys J09, J10; `apps/mobile/test/dates.test.ts`.
+
+#### BL-432 Very long takes: soft warning at 30 minutes and a memory run on iPhone SE 3
+- Status: ready. Mode: agent. Owner: speech engineer. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: quality (1 findings). Steps: J05-09.
+- Satisfies: PRD 7.1 transcription budget; BL-043.
+- Scope: A soft warning at 30 minutes and a 60-minute take through the queue on iPhone SE 3 for memory.
+- Done when: The warning shows at 30 minutes. The memory run is recorded in `docs/qa/evidence`.
+- Test: Journey J05 (J05-09); device run with BL-043.
+
+#### BL-433 Review says "Nothing was changed" only when that is true
+- Status: ready. Mode: agent. Owner: content. Milestone: M-JR. Size: S.
+- Severity: minor. Raised by: product, design (3 findings). Steps: J06-07, J06-09.
+- Satisfies: CLAUDE.md constitution (honest labels); VOICE.md.
+- Scope: After "Keep my exact words" the line reads "Word for word. Nothing was changed." and the now-redundant "Show exactly what I said" link is hidden.
+- Done when: The line never says nothing needed fixing after fixes were reverted.
+- Test: Journey J06 (J06-07, J06-09); content rules test.
+
+#### BL-434 Tonight and Book read only what they show
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: M. Depends on: BL-408.
+- Severity: minor. Raised by: quality (2 findings). Steps: J01-14, J09-03.
+- Satisfies: PRD 7.1 (chapter of 60 letters p95 500 ms, switch child p95 300 ms); BL-111.
+- Scope: Tonight queries only the last N prompt keys and the latest `occurred_on`. Book counts with SQL, pages by chapter and does not parse `machine_edits` for every row on focus. The switch-child path is timed.
+- Done when: On the 2,000-letter fixture Tonight focus does not read `machine_edits` and Book renders its first chapter within p95 500 ms.
+- Test: `apps/mobile/test/perf.sql.test.ts` (from BL-408); journeys J01 (J01-14) and J09 (J09-03).
 
 ## Appendix: TDD proposal to BL mapping
 
