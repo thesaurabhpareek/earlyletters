@@ -223,8 +223,8 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
 
   it('[A-REQ-015] first sign-in: local books and letters become the account\'s in one transaction, uploaded in order', async () => {
     // Before any account: twins started in first run, three letters, one waiting for its words, one deleted.
-    ASHA = addBook(A1, 'Asha', '2025-05-20');
-    NINA = addBook(A1, 'Nina', '2025-05-20');
+    ASHA = addBook(A1, 'Asha', '2025-04-12');
+    NINA = addBook(A1, 'Nina', '2025-04-12');
     ids.first = saveLetter(A1, ASHA, 'She walked to me.');
     ids.twin = saveLetter(A1, NINA, 'Nina laughed.');
     ids.waiting = saveLetter(A1, ASHA, '', { waiting: true });

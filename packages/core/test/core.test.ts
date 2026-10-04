@@ -257,16 +257,16 @@ describe('reversibility', () => {
 
 describe('age and dateline', () => {
   it('computes calendar-month age the way parents count', () => {
-    expect(ageOn('2025-05-20', '2026-09-29')).toMatchObject({ months: 16, weeks: 1 });
+    expect(ageOn('2025-04-12', '2026-09-29')).toMatchObject({ months: 17, weeks: 2 });
     expect(ageOn('2025-01-31', '2025-02-28').months).toBe(1);
     expect(ageOn('2026-09-01', '2026-09-08')).toMatchObject({ months: 0, days: 7 });
   });
 
   it('writes a dateline without time-zone drift', () => {
-    expect(dateline('2026-09-29', 'Asha', '2025-05-20')).toBe(
-      'Tuesday, 29 September 2026. Asha is 16 months and 1 week old.',
+    expect(dateline('2026-09-29', 'Asha', '2025-04-12')).toBe(
+      'Tuesday, 29 September 2026. Asha is 17 months and 2 weeks old.',
     );
-    expect(chapterOf('2025-05-20', '2026-09-29')).toBe(16);
+    expect(chapterOf('2025-04-12', '2026-09-29')).toBe(17);
   });
 });
 

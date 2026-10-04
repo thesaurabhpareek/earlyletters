@@ -4,7 +4,7 @@
  * Same behaviour as protect.ts for English, with three differences that
  * matter in other scripts:
  *  - a word boundary counts combining marks as part of the word, so the
- *    term "मीर" never matches inside "मीरा" (the ा is a mark, not a letter);
+ *    term "आश" never matches inside "आशा" (the ा is a mark, not a letter);
  *  - between Chinese characters there are no spaces, so a Han term may sit
  *    right next to other Han characters;
  *  - quotation in « », 「 」 and 『 』 is protected like "...".
@@ -80,7 +80,7 @@ export function quotedSpansFor(text: string): Span[] {
   return spans.sort((a, b) => a.start - b.start);
 }
 
-/** Exact-case occurrences of each term: protected. A mis-cased name ("meera") stays correctable. */
+/** Exact-case occurrences of each term: protected. A mis-cased name ("asha") stays correctable. */
 export function termSpansFor(text: string, terms: string[], R: LanguageRules): Span[] {
   const spans: Span[] = [];
   for (const term of terms) {
@@ -97,7 +97,7 @@ export function protectedSpansFor(text: string, dictionary: DictionaryTerm[], lo
 /**
  * Dictionary corrections: every learned mishearing, and case-only variants
  * of a term, become the canonical term. Quoted spans are skipped. Longer
- * variants first, so "Mira ji" wins over "Mira".
+ * variants first, so "Asha ji" wins over "Asha".
  */
 export function dictionaryEditsFor(raw: string, dictionary: DictionaryTerm[], R: LanguageRules): Edit[] {
   const quotes = quotedSpansFor(raw);

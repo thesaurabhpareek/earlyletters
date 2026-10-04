@@ -60,7 +60,7 @@ export function ageLabel(age: Age): string {
   return age.weeks > 0 ? `${m} and ${plural(age.weeks, 'week')}` : m;
 }
 
-/** "Tuesday, 29 September 2026. Mira is 16 months and 1 week old." */
+/** "Tuesday, 29 September 2026. Asha is 17 months and 2 weeks old." */
 export function dateline(onISO: string, childName: string, birthISO: string): string {
   const { y, m, d } = parse(onISO);
   const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];

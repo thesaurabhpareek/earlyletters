@@ -35,7 +35,7 @@ export function termSpans(text: string, terms: string[]): Span[] {
     if (!t.trim()) continue;
     for (const m of text.matchAll(termRegex(t))) {
       // Only exact-case matches are protected; a lowercase mishearing of a
-      // name (e.g. "meera") is still correctable to "Mira".
+      // name (e.g. "asha") is still correctable to "Asha".
       if (m[0] === t) spans.push({ start: m.index!, end: m.index! + m[0].length });
     }
   }
@@ -63,7 +63,7 @@ export function dictionaryEdits(raw: string, dictionary: DictionaryTerm[]): Edit
   const quotes = quotedSpans(raw);
   const edits: Edit[] = [];
   const taken: Span[] = [];
-  // Longer variants first so "Mira ji" wins over "Mira".
+  // Longer variants first so "Asha ji" wins over "Asha".
   const variants = dictionary
     .flatMap((d) => [d.term, ...d.heardAs].map((v) => ({ v, term: d.term })))
     .filter((x) => x.v.trim())

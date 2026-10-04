@@ -9,7 +9,7 @@ v0.2, 2026-10-03 (v0.1 2026-10-01; v0.2 adds section 2a Brand mark, `accentDeep`
 | 1 | **The voice is the treasure.** The recording is the artefact; text is its caption. | Show a play affordance on every letter; keep the original audio untouched. | Add music, effects or "enhanced" audio to a recording. |
 | 2 | **Written for 2 a.m.** One hand, one thumb, low light. | Primary actions in the bottom third, at least 56pt tall; dark mode tuned first. | Put the only save action top-right; use pure white surfaces at night. |
 | 3 | **Quiet UI, loud letters.** UI is sans and neutral; the child's book is serif and generous (S1, S4). | Medium-weight UI headings; serif only for letters, chapter titles, display. | Use serif for buttons or settings; use heavy weights for emphasis. |
-| 4 | **Joy without scorekeeping.** Warmth comes from the content, not rewards. | "12 letters for Mira in Month 4" as a fact in a dateline. | Streaks, badges, confetti, progress rings, "you missed a day". |
+| 4 | **Joy without scorekeeping.** Warmth comes from the content, not rewards. | "12 letters for Asha in Month 4" as a fact in a dateline. | Streaks, badges, confetti, progress rings, "you missed a day". |
 | 5 | **Equal doors.** Speaking and typing are equally valid. | Speak and Type as identical twin buttons. | Make voice the hero and type a text link (or vice versa). |
 | 6 | **Big enough for Nani.** Grandparents are first-class readers and writers. | Respect Dynamic Type to AX5; offer Large Print reading. | Truncate letter text; hide controls behind gestures only (H2). |
 | 7 | **Honest about privacy.** Say plainly who can hear a letter. | An audience line ("Only family you invite") on capture and share. | Ambient location or data suggestions (see Journal, S5). |
@@ -220,11 +220,11 @@ Navigation: three tabs, **Tonight · Book · Family**, single-word labels, alway
 - **Purpose**: write tonight's letter in under 10 seconds.
 - **Layout**: `letterDateline` "Month 4 · Week 2 · Tuesday"; `title1` serif greeting "Good evening"; prompt card (`surfaceRaised`, `radius.lg`, `callout`), swipe or "Another prompt"; spacer; **Speak and Type** twin pill buttons, side by side, identical width, 64pt height, same `accent` fill, same weight, icon above label; below them a "One month ago" resurfaced letter card when available.
 - **Primary action**: Speak or Type (equal).
-- **Empty state**: no history yet; the prompt card reads "Tell Mira about today. It can be one sentence."
+- **Empty state**: no history yet; the prompt card reads "Tell Asha about today. It can be one sentence."
 
 ### Listening (recording)
 - **Purpose**: capture voice calmly; give confidence it's working.
-- **Layout**: full-screen modal. Top: "To Mira" + audience line (`footnote`). Center: breathing glow. Below: elapsed time (tabular `headline`), last two transcript lines in `letterBody` `textMuted`. Bottom: Pause (secondary) and **Done** (primary); "Discard" confirms.
+- **Layout**: full-screen modal. Top: "To Asha" + audience line (`footnote`). Center: breathing glow. Below: elapsed time (tabular `headline`), last two transcript lines in `letterBody` `textMuted`. Bottom: Pause (secondary) and **Done** (primary); "Discard" confirms.
 - **Primary action**: Done.
 - **Empty state**: "Listening... take your time." Mic denied: calm card offering Type.
 
@@ -236,7 +236,7 @@ Navigation: three tabs, **Tonight · Book · Family**, single-word labels, alway
 
 ### Book (month chapters)
 - **Purpose**: browse the child's life by month of age.
-- **Layout**: `display` "Mira's Book"; chapter covers newest first (`radius.lg`, "Month 4" `title2`, "12 letters · from Mama, Papa, Nani" `footnote`). Inside: month heading as typographic divider (S8); letter cards (`radius.md`, `elevation.1`): dateline, two-line serif excerpt, author, play + duration.
+- **Layout**: `display` "Asha's Book"; chapter covers newest first (`radius.lg`, "Month 4" `title2`, "12 letters · from Mama, Papa, Nani" `footnote`). Inside: month heading as typographic divider (S8); letter cards (`radius.md`, `elevation.1`): dateline, two-line serif excerpt, author, play + duration.
 - **Primary action**: open a letter.
 - **Empty state**: current month cover in paper tone: "Month 1 is waiting for its first letter." with a link to Tonight. Never a count of missed days.
 
@@ -254,7 +254,7 @@ Navigation: three tabs, **Tonight · Book · Family**, single-word labels, alway
 
 ### Family invite
 - **Purpose**: bring in a partner and grandparents as writers or readers.
-- **Layout**: `title1` "Who writes to Mira?"; members (initials, name, "Can write"/"Can read"). Invite sheet: name, relationship chips (Nani, Dadi, Nana, Dada, Grandma, Grandpa, Other), role, "Larger letters for them" (default on for grandparents **(opinion)**), share via Messages/WhatsApp. Invitee lands on the child's name and photo at Large Print.
+- **Layout**: `title1` "Who writes to Asha?"; members (initials, name, "Can write"/"Can read"). Invite sheet: name, relationship chips (Nani, Dadi, Nana, Dada, Grandma, Grandpa, Other), role, "Larger letters for them" (default on for grandparents **(opinion)**), share via Messages/WhatsApp. Invitee lands on the child's name and photo at Large Print.
 - **Primary action**: Invite someone.
 - **Empty state**: "Just you, for now. Letters are lovelier with more voices." plus Invite.
 

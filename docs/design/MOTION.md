@@ -109,7 +109,7 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 - Haptic none. RM: wash jumps (DESIGN_LANGUAGE spec); scroll pages: line past 75% height jumps to 25%.
 
 ### (h) Milestones: first letter, 100 letters, first grandparent letter
-- An inline note card in the Book at that letter's place, never a modal. Line drawing (envelope, moon; `react-native-svg`) draws once via `strokeDashoffset` over 1.2 s, then text fades in: "Mira's first letter. From Papa, Month 2." / "One hundred letters for Mira." / "Nani wrote to Mira."
+- An inline note card in the Book at that letter's place, never a modal. Line drawing (envelope, moon; `react-native-svg`) draws once via `strokeDashoffset` over 1.2 s, then text fades in: "Asha's first letter. From Papa, Month 2." / "One hundred letters for Asha." / "Nani wrote to Asha."
 - Once per reader, no sound, no extra haptic (save already gave `success`), no push.
 - RM: drawing shown complete, 200 ms text fade.
 
