@@ -1,0 +1,63 @@
+{
+  "id": "J16-01",
+  "journey": "settings-and-help",
+  "kind": "happy",
+  "title": "Settings",
+  "note": "Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, recordings, storage, help, legal, licences and version. No Account or Delete account rows in v1.0, since there are no accounts. An \"early version\" note stays at the top.",
+  "from": "J15-02",
+  "shot": "screens/J16-01.png",
+  "full": "screens/J16-01-full.png",
+  "route": "/settings",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Settings Early version Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then. Plan Plus: Read together whenever you like, and books for more children. Children Asha Add a child Writing Spoken language The language you speak your letters in. Reminders Off Appearance Match this phone Your data Privacy Export your book Every letter and recording, free, any time. Recordings Storage Language packs and space on this phone. Private by default. Never sold, never used for ads. Help and legal Help Write to us If you are struggling Terms of Service Privacy Policy Licences About Version 1.0.0 We never rewrite your words. We only tidy what the microphone got wrong. Private by default. Never sold, never used for ads.",
+  "lines": [
+    "Settings",
+    "Early version",
+    "Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.",
+    "Plan",
+    "Plus: Read together whenever you like, and books for more children.",
+    "Children",
+    "Asha",
+    "Add a child",
+    "Writing",
+    "Spoken language",
+    "The language you speak your letters in.",
+    "Reminders",
+    "Off",
+    "Appearance",
+    "Match this phone",
+    "Your data",
+    "Privacy",
+    "Export your book",
+    "Every letter and recording, free, any time.",
+    "Recordings",
+    "Storage",
+    "Language packs and space on this phone.",
+    "Private by default. Never sold, never used for ads.",
+    "Help and legal",
+    "Help",
+    "Write to us",
+    "If you are struggling",
+    "Terms of Service",
+    "Privacy Policy",
+    "Licences",
+    "About",
+    "Version",
+    "1.0.0",
+    "We never rewrite your words. We only tidy what the microphone got wrong. Private by default. Never sold, never used for ads."
+  ]
+}

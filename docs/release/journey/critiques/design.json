@@ -1,0 +1,1378 @@
+{
+  "J00-open": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The age gate is the first screen anyone sees and it is bare paper: no mark, no opening-quote pair, no lamp warmth. The website opens with atmosphere; the app opens with a form. Yes/No pills also sit in the top third (y 176-224), the hardest zone for one thumb, while Continue is at the bottom.",
+        "fix": "Add the primary mark from the brand registry above the heading (logo.mark at its registry minSize, space[8] above). Stack Yes/No as a full-width ChoiceGroup layout=list (56 pt rows, space[2] gap) placed in the lower half, or keep side by side but start the block at ~40% height.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J01-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Same screen as J00-open: top-third Yes/No and no brand presence on the first screen.",
+        "fix": "See J00-open: registry mark plus thumb-zone ChoiceGroup.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J01-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Selected Yes is shown only by an accentSoft fill (1.1:1 against white) and a bolder label, with no check icon. Birthday/Not here yet chips on the next screen do show a check, so selection reads differently within the same flow, and colour is the main cue.",
+        "fix": "Use one selection pattern: ChoiceGroup selected = accentSoft fill + 1.5 pt accent edge + leading check icon (as the Chip spec). Enabled Continue (accent, 56 pt) is clear and good.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J01-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The welcome screen is the brand's one chance to feel like the website (warm paper, lamp-light, literary), but it is flat: the name is plain Literata text instead of the outlined wordmark/primary mark, the opening-quote pair is absent, and there is no light or grain. The envelope line art is a different metaphor from the quote-pair mark.",
+        "fix": "Use the registry lockup (assetFor welcome context) instead of text; add a static paper grain + a LampLight-style pool (atmosphere.lamp #F3C98B at <=12% opacity on paper, aspect 0.7) behind the art; keep motion to tokens.motion.gentle and off under Reduce Motion. Replace or pair the envelope with the quote pair.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Line art starts about 16 pt right of the text edge (art x=50 vs text x=30 in the capture), so the illustration looks mis-aligned with the heading and body.",
+        "fix": "Offset LineArt by its internal padding (negative marginStart) so the drawing's visible edge sits on the gutter, or centre the art.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "'I was invited' is a plain accent text link (about 16 pt text) under a 56 pt primary; the visual height looks under 44 pt.",
+        "fix": "Give quiet buttons min-height 44 pt plus hitSlop; keep accent #8A5A3B (5.5:1).",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "J01-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Two promise cards use two different fills (accentSoft vs surface) with no meaning, and the 'We can mishear' card uses a seal-with-check icon, which reads as 'verified' on a caution message.",
+        "fix": "Same fill for both (surface + 1 pt line) and a neutral icon (ear or pencil) for the mishear card; reserve accentSoft for selection and the highlighted state.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The strongest trust line ('Private by default. You choose what goes in the book.') is demoted to a 13 pt footnote with a lock, while the two weaker points get cards.",
+        "fix": "Make it the third card, or raise it to subhead 16 pt; all three points are equal promises.",
+        "owner": "content"
+      },
+      {
+        "sev": "minor",
+        "text": "Back here is a '< Back' text button; Settings and Letter use a bare arrow; Review uses 'Close'. Four navigation idioms.",
+        "fix": "One ScreenHeader (see _journey).",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J01-05": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'Add another child' sits between the name field and the birthday control, interrupting the main path (name, date) for the minority case (twins).",
+        "fix": "Move it below the date block, or to a quiet row above Continue; keep a 44 pt target.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The date pill reads 'Sunday, October 4, 2026'. In es/fr/pt the long weekday + month form ('domingo, 4 de octubre de 2026') will wrap or truncate inside a pill, and 'Birthday' is repeated three times (chip, row label, helper).",
+        "fix": "Show date only (d MMM y), let the pill wrap with min-height 44, drop the duplicate row label.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Disabled Continue is the only signal that a name is required (no message, by design). Visually fine, but confirm accessibilityState.disabled and a hint ('Enter a name') for VoiceOver. Native keyboard avoidance cannot be judged from the web render.",
+        "fix": "Add hint text via accessibilityHint; QA on device with keyboard open.",
+        "owner": "qa"
+      }
+    ]
+  },
+  "J01-06": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "A 90-character paste is silently cut at 60 with no counter or cue, and the helper line renders the whole 60-character unbroken string ('We sort letters by AAAA...'s month of age.') over three lines, pushing the layout.",
+        "fix": "Show a quiet counter at 50+ characters, and in the helper use numberOfLines=1 with ellipsizeMode=tail (a render truncation, not copy) or fall back to 'your child' beyond 24 characters.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J01-07": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J01-08": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J01-09": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The remove X sits inside the second field at roughly 16 pt glyph size; the DOM cannot prove a 44 pt hit area. Continue stays disabled with an empty second field and no reason shown.",
+        "fix": "IconButton size=sm with hitSlop to 44 and label 'Remove second name'; add helper 'Fill in or remove this name' when blocked.",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "J01-10": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The 'Spoken language' row is a white card on paper (1.06:1, no border) with a value and no chevron: it does not read as a control, yet it is the choice that triggers a 575 MB model download. Settings rows elsewhere do carry chevrons.",
+        "fix": "Render with ListRow trailing chevron + `line` hairline; add 'Download starts on Wi-Fi' as the row subtitle.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "'Not talking yet? Pick the name you hope to hear.' floats about 60 pt under the chips, detached from the field it explains, at 13 pt.",
+        "fix": "Place it directly under the field as helper (subhead 16 pt).",
+        "owner": "content"
+      },
+      {
+        "sev": "minor",
+        "text": "The chip suggestions (Mama, Papa, Amma, Appa, Mummy, Daddy, Ma, Baba) and the placeholder are English/Hindi-centred; nothing here shows what es/fr/pt/zh/ar users get.",
+        "fix": "Localise suggestion sets per UI language (Mama/Papa, Maman, Mamae, 妈妈/爸爸, ماما/بابا) in packages/content.",
+        "owner": "content"
+      }
+    ]
+  },
+  "J01-11": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J01-12": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "This language picker uses a different sheet pattern from every other sheet: Mukta semibold 17 pt title and a text 'Close', no grabber, no circular X, while Whose book, Reading size and Help us make it better use a serif 22 pt title, grabber and X. Search field radius (about 24) also differs from the name field (14).",
+        "fix": "Build it on the shared Sheet component (title, description, hideClose=false) and use radius.md for all fields.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "major",
+        "text": "Choosing a language silently starts a download (575 MB per Recordings) with no size, Wi-Fi or consent cue in the sheet.",
+        "fix": "Add the size and 'Downloads on Wi-Fi' under each non-installed language; show progress on the row afterwards.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "The Arabic row is right-aligned (and its English sublabel too) inside an LTR list, so the row alignment is inconsistent; not verifiable under a real RTL locale.",
+        "fix": "Align all rows to start; set writingDirection per text node only; QA the whole app under ar with forced RTL.",
+        "owner": "qa"
+      }
+    ]
+  },
+  "J01-13": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "'The book is open.' is set far larger than anything else (about 40+ pt by measurement against Tonight's 34 pt greeting; verify in code) and wraps with an orphaned 'open.'; the type ramp (display 34/41) is broken on the one celebratory screen, and with two long names or es/pt text it will wrap to three lines.",
+        "fix": "Use tokens.type.display (34/41) with balanced wrapping; keep the body at body 18/24.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "About 270 pt of empty space above the art, and the art sits 16 pt inside the text edge. This is the first-run finale and carries no brand moment.",
+        "fix": "Centre the group optically, use the opening-quote pair or a lamp pool as the one moment of warmth, honour Reduce Motion.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J01-14": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Tonight has no way to reach Settings or switch child: the gear and the child switcher exist only on the Book tab (J03-04). For a daily-use home screen, and for twins whose dateline shows only one name, this hides core controls.",
+        "fix": "Add the same header cluster (switcher + gear as 44 pt IconButtons) on Tonight, or make the dateline a tappable switcher with a chevron.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "'Not much today' is a bare accent text link about 30 pt tall under two 72 pt pills; the quiet-day path is easy to mis-tap and hard to see as tappable.",
+        "fix": "Button variant=quiet, min-height 44, keep accent; do not add a count or colour.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The Tonight tab icon is a crescent with a small star, which reads as a sparkle; the brand system bans sparkles near the mark.",
+        "fix": "Swap for a plain crescent (Phosphor Moon) in the tab bar.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The home screen is flat paper. 'Good evening' is the natural place for the website's lamp-light, and no atmosphere tokens (lamp, lampGold) are used anywhere in the app.",
+        "fix": "A static LampLight pool at <=10% behind the prompt card in light, <=16% in dark (atmosphere.lamp); no continuous loop (MOTION principle 1).",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Dateline 'Asha - 0 days' reads like a counter on day zero.",
+        "fix": "Use 'Asha - newborn' for 0 to 6 days (content decision; keep numbers from week 1).",
+        "owner": "content"
+      }
+    ]
+  },
+  "J02-01": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J02-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The stop screen is vertically centred while the question it follows is top-anchored, so the page jumps; the heading orphans 'us.' and the body leading is about 32 pt on 18 pt text (loose against body 18/24). There is no mark or art, so a courteous screen looks like an error.",
+        "fix": "Anchor at the same top position as the age gate, balanced heading, body lineHeight 24, add the mark above the heading.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J02-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Same layout and orphaned 'us.' as J02-02 after relaunch.",
+        "fix": "See J02-02.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J02-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "When the way back appears after 24 hours the heading jumps up about 37 pt (layout shift), and the button sits under the text instead of in the bottom action slot.",
+        "fix": "Reserve the button slot, or fade it in place; anchor to the bottom like Continue.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Nothing tells a person earlier that a way back appears after a day, so they may feel stuck.",
+        "fix": "Add a quiet line 'If you answered by mistake, come back tomorrow.' (no countdown).",
+        "owner": "content"
+      }
+    ]
+  },
+  "J02-05": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Same gate as J00-open: top-third choices, no brand presence.",
+        "fix": "See J00-open.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J03-01": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J03-02": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J03-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Same oversized, orphaned heading as J01-13; with two long names it grows to three lines.",
+        "fix": "See J01-13 (display token, balanced wrap).",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J03-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The child switcher is a 12 pt caps label 'FOR ASHA' with a tiny chevron in the top-left corner (hit height about 20 pt) directly above the 34 pt title 'Asha's book', which says the same thing. The real control is the least visible element.",
+        "fix": "Make the title the switcher (serif title + chevron, 44 pt tall) and drop the caps label, or render the switcher as a 44 pt chip.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The Settings gear is an ink (#2B2722) icon of about 24 pt, while every other control is accent; it needs a 44 pt hit area and a theme-aware colour (it vanishes in dark, see J18-03).",
+        "fix": "IconButton variant=plain, color accent via useTheme, hitSlop to 44.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J03-05": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'Add a child' sits in the Whose book sheet with no 'Plus' cue; with two books the next tap lands on a paywall (J03-08), a surprise at the worst moment.",
+        "fix": "Add a quiet 'Plus' tag on the row once a free book exists.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "The close X is a 36 pt tinted circle (visual); the target must reach 44 pt.",
+        "fix": "IconButton size=md hitSlop; label 'Close'.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J03-06": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'Add a child' is styled exactly like a child row (same weight, chevron), an action posing as a destination; in the sheet the same item has a plus icon.",
+        "fix": "ListRow with leading plus icon and accent text.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J03-07": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Child, Birthday and 'Sign my letters to Asha as' show values right-aligned with no chevron or edit affordance, so it is unclear they can be changed. 'Child' is ambiguous for the name.",
+        "fix": "ListRow with trailing chevron (or an inline TextField on tap) and rename the row 'Name'.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Two future features are shown in two different ways: 'Write this book together: Coming soon' (row with chevron) and 'Family can read' (a dimmed, disabled switch).",
+        "fix": "Use the same 'Soon' value row for both, or hide both in v1.0.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "The switch thumb renders teal on the web build (RN-web default). On iOS the SwiftUI Toggle should take the accent tint; confirm it is not the RN Switch fallback.",
+        "fix": "QA on device; set trackColor/thumbColor from tokens in components/platform/toggle.",
+        "owner": "qa"
+      }
+    ]
+  },
+  "J03-08": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Mixed alignment: heading and body are left-aligned, the 'not available' note and 'Not now' are centred; the heading orphans 'Plus'. The device state (a Buy control from StoreKit) cannot be judged from this web render.",
+        "fix": "Left-align all, balanced heading, bottom-anchored button group; QA the purchase CTA on device.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J03-09": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J04-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The 'A letter is waiting to be read back' card is the resumable, unfinished work yet it is the quietest element (accentSoft, 14 pt link, chevron) and sits below a brand-new suggestion.",
+        "fix": "Place it above the prompt card, use headline weight for the first line, and make the whole card one pressable target (Card onPress) with a single accessible name.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J04-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'Another thought' changes the prompt card height (2 to 3 lines), shifting the card below by about 32 pt; 'Another thought' is a text link around 30 pt tall.",
+        "fix": "Reserve min-height for three lines or animate layout with tokens.motion.standard (Reduce Motion: fade 200 ms); give the link a 44 pt target.",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "J04-03": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J04-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The sheet has an unlabeled X in addition to two equal buttons; the note says closing asks at most once more, so the X is a third choice nobody can read.",
+        "fix": "Label it 'Not now' for VoiceOver, or remove the X and keep the equal pair.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J04-05": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J05-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The 120 pt solid terracotta disc with a flat pink halo reads as a record button and is not interactive (Pause and Finish are below): people will tap it. It is also not the website's lamp-lit 'recording warmth'; it is flat on bare paper with no grain or falloff.",
+        "fix": "Make the disc the Pause target (>=44, labelled) or turn it into a ring with a small recording dot; render the glow as LampLight warmth='recording' (tokens.motion.breath: opacity 0.18-0.40, scale up to 1.18) with grain. Keep it tied to the voice level.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The clock '0:00' is semibold 28 pt; without tabular figures it will jitter each second.",
+        "fix": "fontVariant: ['tabular-nums'] on the timer.",
+        "owner": "mobile"
+      },
+      {
+        "sev": "minor",
+        "text": "'Let it go' is muted text with no visible destructive cue and about 36 pt height; the real confirm is a native Alert (not seen on web).",
+        "fix": "Min-height 44; keep muted; keep the native confirm.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J05-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Pausing removes the 'Say it however it comes' line and the whole stack shifts 13 pt, and the disc changes from filled to outlined white while the glow disappears; the change reads as two events.",
+        "fix": "Keep the line (swap text to 'Take your time'), crossfade the disc over tokens.motion.fadeMs.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J05-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "'Writing down what you said.' is a static white card with centred muted text: no breathing, progress or elapsed cue, no 'your recording is safe', and Close and 'Hear it' sit live. On a real device the on-device model may take several seconds; a still card looks stuck.",
+        "fix": "Reuse Breathe (tokens.motion.breathIdleMs 4000) on a quiet pool; add 'Your recording is safe. This can take a moment.' after 6 s; static under Reduce Motion.",
+        "owner": "mobile"
+      },
+      {
+        "sev": "minor",
+        "text": "Centred text in a left-aligned screen; the loading card has the same raised-white treatment as a finished letter card.",
+        "fix": "Left-align; use a flat `surface` placeholder so a loading card is not mistaken for content.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J05-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The permission card is a floating white sheet (radius 28) with no scrim or grabber and an empty-envelope drawing, which says 'mail', not 'microphone'; the art also starts 16 pt inside the text edge.",
+        "fix": "Use the shared Sheet (scrim + grabber), mic-off line art, align art to the gutter.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "'Open Settings' (the actual fix) is a 16 pt text link below 'Type instead' and 'Close' is a second link; two stacked links of equal weight.",
+        "fix": "Open Settings as a secondary Button (outline, 56 pt); Close as quiet.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J05-05": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J05-06": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J05-07": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J05-08": {
+    "verdict": "gap",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The end state for a very short or empty take (nobody spoke, transcription failed, model missing) is not shown on a real device: the web build sits on 'Writing down...' forever, so the real empty/failed designs are only inferred from seeded Book cards.",
+        "fix": "QA to capture on device: short take, silent take, model not downloaded, transcription failure; design to confirm each has title, body and an action.",
+        "owner": "qa"
+      }
+    ]
+  },
+  "J05-09": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J06-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Tidy-up marks render as tiny dotted '......' tokens (about 9 pt, 28 x 10 pt) in place of removed words, with extra gaps either side. They look like ellipsis typos, are well under 44 pt, and they are the one interaction that carries the product's promise (every edit visible and reversible).",
+        "fix": "Render a visible mark with accentSoft wash + editMark underline (as the put-back state already does), min width 24 pt, hitSlop 16 pt vertical; keep the removed word out of the text flow.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "major",
+        "text": "Hierarchy below the card is flat: a 'fixes' list, three accent text links ('Show exactly what I said', 'Keep it word for word', 'Change words'), a feedback question and two outlined pills, all beneath a 130 pt pinned footer. Roughly nine interactive things across two screens, the question is hidden behind the footer.",
+        "fix": "Replace the two view links with one ChoiceGroup segmented 'Tidied | Exactly as said' above the card; fold the fixes list into a single disclosure inside the card; move 'Does this sound like you?' after save or into a sheet.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The first-time note (the trust message) is set at about 13 pt, the smallest text on screen, with a 'Got it' of about 20 pt height.",
+        "fix": "subhead 16/21, Got it as a 44 pt quiet button.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Two stacked 56 pt buttons make a 130 pt footer (about 164 pt with the 34 pt inset, 19 percent of the screen); at large text it will crowd the letter.",
+        "fix": "Primary full width, Keep private as a quiet 44 pt button; verify at AX3.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J06-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The rows Filler (um) and Repeat (you) are tappable per the journey note but show no chevron or press state, about 20 pt of visible text spaced 48 pt apart, so they read as a caption list.",
+        "fix": "ListRow with trailing chevron and min-height 48; one disclosure group.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J06-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Inline explanation panel is good (in place, plain words). 'Close' is a bare 15 pt text link next to a 44 pt 'Put it back' pill; three text levels inside a card inside a card.",
+        "fix": "Close as quiet Button 44 pt; flatten the panel to one `surface` card.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J06-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The restored word is highlighted but loses its space: 'Asha, um,today' reads as one run. The 'Put back. Undo Close' row is three text items with irregular spacing; Undo (the safety control) is bold text about 20 pt tall.",
+        "fix": "Add a hair space after the mark; make Undo a quiet Button sm (44 pt).",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "J06-05": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J06-06": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The subtitle still says 'We only fixed what got in the way of your words. Nothing added.' above a card labelled 'Exactly what you said', which contradicts the view.",
+        "fix": "Swap the subtitle to 'This is exactly what you said.' while raw is shown.",
+        "owner": "content"
+      },
+      {
+        "sev": "minor",
+        "text": "'Show tidied version' (a view toggle) and 'Keep it word for word' (a permanent action) are adjacent same-style links, so a mis-tap commits a change.",
+        "fix": "Segmented toggle for view; a distinct outlined button with confirm for the permanent choice.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J06-07": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'Word for word. Nothing needed fixing.' is inaccurate after the person reverted two fixes, and the 'Show exactly what I said' link is still offered although the text is already the raw text.",
+        "fix": "'Word for word. Nothing was changed.'; hide the redundant link.",
+        "owner": "content"
+      }
+    ]
+  },
+  "J06-08": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The edit field renders in a browser default serif with a square amber outline; it is not Literata 20/32, has no radius, and does not use the `focus` ring (#2F6F8F, 2 pt, outside). Both footer buttons are disabled, and the only way out ('Done') is a 14 pt text link below the card, the smallest control during the most committing task.",
+        "fix": "TextInput with fontFamily letterBody, selectionColor accent, outline none, focus ring token; change the footer to a primary 'Done' while editing. The outline may be a web artifact; verify on device.",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "J06-09": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Choosing 'Not quite' fills it solid accent, identical to the primary 'Add to Asha's book' below, so the screen has two solid brown pills and a selection looks like the main action. No check icon (chips elsewhere have one).",
+        "fix": "Selected = accentSoft fill + accent edge + check (ChoiceGroup spec); solid accent only for the one primary.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The kind follow-up line ('Tap any word to change it...') promises tap-to-edit but nothing in the text looks tappable.",
+        "fix": "Underline-on-hover is not available; add an 'Edit' affordance on the card or reword.",
+        "owner": "content"
+      }
+    ]
+  },
+  "J06-10": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The receipt is a faded ghost of the letter and a green 16 pt line. Calm and consistent with 'saves are receipts', but the moment a first letter lands has no brand warmth (no quote pair, no wash). Captured mid-fade.",
+        "fix": "Use tokens.motion.newMarkMs (1600 ms) accentSoft wash and the quote pair settling; Reduce Motion: cross-fade 200 ms.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J06-11": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J06-12": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J06-13": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Error state is two lines of centred 16 pt text and a small content-width Close on an empty page: no heading, no art, and it says 'Please try again' with no retry action. It is a third pattern for the same job as J10-11 and J11-07.",
+        "fix": "Use EmptyState (title, body 'Your words are safe.', full-width bottom Close).",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J07-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The primary button is labelled 'Save' but it does not save to the book: it opens Review (J07-03), where 'Add to Asha's book' is the actual save, while autosave already says 'Saved on this phone'. Label and outcome disagree.",
+        "fix": "Label it 'Read it back' (the Review title), keep it disabled until text exists.",
+        "owner": "content"
+      },
+      {
+        "sev": "minor",
+        "text": "The ghost 'Dear Asha,' in muted serif at letter size is hard to tell from typed text, and it is a machine-suggested opening. Confirm it is placeholder only (not a value) and acceptable under the no-machine-words rule.",
+        "fix": "Placeholder with textMuted at 70 percent weight and an italic style, or drop it; product to confirm.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "Header 'Close' at x=20 and body/dateline at x=24: a 4 pt misalignment between header and reading gutter; the page has no title.",
+        "fix": "Use space[5] for both header and body in the Write view.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Keyboard avoidance for the pinned Save cannot be seen on web.",
+        "fix": "QA on device with keyboard, hardware keyboard and Dynamic Type AX3.",
+        "owner": "qa"
+      }
+    ]
+  },
+  "J07-02": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J07-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The explanation 'Private letters stay with you...' sits about 300 pt above the Keep private button it explains.",
+        "fix": "Move it under the footer buttons as caption, or into the button subtitle.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J07-04": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J07-05": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "After a first letter is saved the person returns to a Tonight screen that looks identical to before (same prompt, same Speak/Type); nothing says today's letter exists. 'Celebrate what exists' and closure are missing at the highest-emotion moment, with no streak allowed.",
+        "fix": "Swap the prompt card for a quiet card 'Today's letter is in Asha's book' with a 'Read it' link (and Speak/Type kept); no count.",
+        "owner": "product"
+      }
+    ]
+  },
+  "J07-06": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J07-07": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J08-01": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J08-02": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J08-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The quiet-day note shows in the Book as a letter-style card: 'Sunday. Not much today. Just Asha, and us, and an ordinary day.' signed 'From Mama' with a Private chip, counted as '1 note - From Mama'. The app wrote those words and presents them as the parent's, in the same card as a real letter. This conflicts with the constitution ('no feature may write a person's words').",
+        "fix": "Show it as app voice: no signature, different treatment (muted Mukta italic on `surface`, label 'A quiet day'), or keep it out of the Book. Product and content to decide; if kept, never first person.",
+        "owner": "product"
+      }
+    ]
+  },
+  "J09-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "'Write a letter' is a content-width button left-aligned at y about 550 of 874, out of the bottom-third thumb zone and unlike every other primary (full width, pinned). The art sits 16 pt inside the text edge.",
+        "fix": "Pin it to the bottom above the tab bar at 56 pt full width (or make it the EmptyState action with align=start and size=lg).",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J09-02": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J09-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'This month: Month 7 is open.' takes about 120 pt of the first screen for a placeholder with no action; it edges toward marking a gap.",
+        "fix": "Make it the entry to Write (one tap) or reduce to a one-line row.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "Voice letters show only a 13 pt mic glyph and duration at the far right; DESIGN_LANGUAGE principle 1 asks for a play affordance on every letter. 'From Mama' repeats on every card and chapter.",
+        "fix": "44 pt play glyph on voice cards; show the author only when more than one writer exists.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J09-04": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J09-05": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J10-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The dateline 'Tuesday, August 4, 2026. Asha is 5 months old.' is 13 pt sentence-case muted, only about 6 pt under the header row, and unrelated to the letterDateline style (12-14 pt caps, +0.6 tracking) used on Book cards and Review. The key context of a keepsake is the smallest, least consistent text on the page.",
+        "fix": "tokens.type.letterDateline with space[4] under the header; same component everywhere.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The 'Aa' control is an unlabelled serif glyph about 20 pt; the back control is a Material-style arrow. Cannot confirm accessibility labels from the captures.",
+        "fix": "IconButton label 'Reading size' with 44 pt target; QA VoiceOver names for Aa, back, Hear Mama and the scrubber (role adjustable).",
+        "owner": "qa"
+      },
+      {
+        "sev": "minor",
+        "text": "The scrubber track (accentSoft on paper, 1.16:1) carries no position cue other than the thumb.",
+        "fix": "Track in `line`/controlBorder at 3:1 or add the elapsed fill in accent.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "No brand device on the most important page in the app. The opening-quote pair above the first line would match 'these are your exact words'.",
+        "fix": "Small quote pair (registry mark) above the body, 24 pt, accent, static.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J10-02": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J10-03": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J10-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Large print scales the letter only: dateline, 'Private' chip, time labels, provenance and 'Show exactly what I said' stay 13-14 pt, so the grandparent audience still meets tiny metadata. Ragged lines also leave 'You' alone at a line end.",
+        "fix": "Scale dateline, player times and links by tokens.readingScale; add text-wrap balance for body.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J10-05": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The confirmation toast is a near-black ink pill with a white X; against warm paper it is the loudest object on the page, and it covers the 'Add to book' and 'Delete' rows. Inserting the Private chip pushes the body down 20 pt.",
+        "fix": "Toast on surfaceRaised with elevation 2 and `line` border; reserve the chip row; verify toastBottomOffset clears the 34 pt home indicator.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J10-06": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Delete is immediate and the page that remains says 'Letter deleted.' with no Undo on the page; Undo lives only in a toast pill at the bottom edge, and Back or swipe-back silently makes it permanent (voice recording included).",
+        "fix": "Put an outline 'Undo' Button full width under the message; make leaving by swipe explicit ('This is kept until you close'); consider a one-line confirm for letters with a recording.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J10-07": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J10-08": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J10-09": {
+    "verdict": "gap",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "A letter waiting for its words shows an italic note and Hear / Add to book / Delete, but no visible action to get the words (retry, wait, or type them). The person can be stuck with a note that never changes.",
+        "fix": "Add 'Write the words yourself' and 'Try again' rows (typed words are allowed), plus a status line.",
+        "owner": "product"
+      }
+    ]
+  },
+  "J10-10": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The system sentence 'A quiet recording. Nobody spoke...' is signed 'From Mama', so app voice is presented as the parent's; 'Add to book' for an empty recording is offered at the same weight as Delete.",
+        "fix": "Remove the signature on system notes; make Delete the lower-emphasis action.",
+        "owner": "product"
+      }
+    ]
+  },
+  "J10-11": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Plain heading and a content-width button, left-aligned, with only a back arrow: a fourth empty/error pattern.",
+        "fix": "EmptyState with title, body, full-width action.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J11-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The 'chrome-free' reading view stacks, under the text: signature, player pill, scrubber with 13 pt times, an autoplay switch and a pinned two-button footer. This capture has no scroll (scrolls=false); a 6-8 line letter at Large Print will collide with the player or footer.",
+        "fix": "Allow scroll with a pinned footer; drop the scrubber in this view (Play only); move autoplay to the sheet or into the footer row.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "'Mama, The first weeks' is 12 pt bold muted at the top: tiny in a view that defaults to Large Print, and it reads like a salutation (comma, capital T).",
+        "fix": "'The first weeks - Mama' using letterDateline, scaled by readingScale.",
+        "owner": "content"
+      }
+    ]
+  },
+  "J11-02": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J11-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Switch thumb renders teal on web; confirm the iOS Toggle uses the accent tint.",
+        "fix": "QA on device.",
+        "owner": "qa"
+      }
+    ]
+  },
+  "J11-04": {
+    "verdict": "gap",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The best sentence in the app ('That is every letter so far. More are still being written.') sits on a bare screen. 'Opening quotes, never closing ones' is exactly this idea, but the brand device is absent; buttons are mid-screen.",
+        "fix": "Add the opening-quote pair above the line, a static lamp wash, bottom-anchor the buttons.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J11-05": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Same mixed alignment as J03-08, with a 13 pt centred 'not available' line; the device purchase CTA cannot be judged here.",
+        "fix": "Left-align, bottom-anchored button group; QA the CTA on device.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J11-06": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J11-07": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J12-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Plan explains Plus in one 14 pt muted paragraph under a white status card, with no structure for free vs Plus and no space for a price or buy control (device only). Nothing to scan.",
+        "fix": "Two ListSections: 'Free, always' (five rows, check icons) and 'Plus adds' (two rows), then a bottom action region sized for StoreKit.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "The status card 'Plus is off...' looks like a tappable row. 'Manage subscription' has a chevron, 'Restore purchases' (also an action) has none.",
+        "fix": "Card variant=tinted for status; same trailing pattern on both rows.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J12-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The error is a darker 14 pt line between two footnotes: no icon, no caution colour, not distinct. J15-02 handles the same job properly with a card.",
+        "fix": "Inline Card with caution icon and role=alert.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J13-01": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J13-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The switch shows ON while the OS permission is off, so the control states something that is not true; the card explains it, but the choices below still look live.",
+        "fix": "Show the switch as off until permission exists, or add a status row ('Waiting for permission'); verify the thumb is not the teal RN fallback.",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "J13-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Unselected day pills are #FBF8F3 on a white card (1.06:1) with no border, and the selected ones are solid accent with no check. Control edges must reach 3:1 (controlBorder) and selection should not rely on fill.",
+        "fix": "ChipGroup filter variant: controlBorder edge, selected = accentSoft + check, 44 pt hitSlop.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Four switches on the screen; the native time picker value '8:30 PM' is accent text and cannot be verified on web.",
+        "fix": "QA the picker on device.",
+        "owner": "qa"
+      }
+    ]
+  },
+  "J14-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The speech model state, the most consequential state in the app (no model, no words), is a muted line 'Not on this phone, 575 MB' in a chevron-less row. No download control, progress or 'Ready' state is visible.",
+        "fix": "ListRow with a trailing Button sm 'Download', Wi-Fi note, a progress bar, and a success check when ready.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "'Tidying' reads as a heading, not as the selected option of a two-way setting; 'Recordings' is repeated as screen title, section label and card title.",
+        "fix": "ChoiceGroup list (Tidying / Word for word) with check; merge headings.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J15-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "No title block: body copy starts straight under the header, and 'Export everything' sits mid-screen instead of bottom-anchored; the 'what is inside' rows look like tappable rows.",
+        "fix": "Pin the action at 56 pt; use bullet rows with check icons.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J15-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The failure card uses the same accentSoft tint as the 'Early version' banner and 'Notifications are off', so an error is indistinguishable from info. Message is clear and calm.",
+        "fix": "Add caution icon and 3 pt `caution` edge; announce on appear.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J15-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'Export everything' is disabled with no reason beside it.",
+        "fix": "Helper under the button: 'Write a letter first.'",
+        "owner": "content"
+      }
+    ]
+  },
+  "J16-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Settings opens with an 'Early version... can make mistakes' banner, then Plan: the two loudest items are an apology and monetisation, while children, language and privacy come after. Hierarchy is inverted for a trust-first product.",
+        "fix": "Move Plan to its own section above About, shrink 'Early version' to a footnote row, keep Children first.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "Header is a 17 pt inline title with an arrow, not a large title; 'If you are struggling' and 'Licences' expand in place while other rows push, mixing chevron-down and chevron-right.",
+        "fix": "Large title (display) on the root settings list; push Licences to its own screen.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J16-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'What we never do' lines are rendered as list rows with dividers, like navigation rows, but are not tappable.",
+        "fix": "Card with check bullets, no dividers.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J16-03": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J16-04": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J16-05": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The three helplines (1-833-852-6262, 988, +1 800 numbers, 911) are all US numbers inside an app offered in seven languages; a Hindi, Arabic or Portuguese reader elsewhere gets numbers that may not connect.",
+        "fix": "Region-aware list from device region with an international fallback (findahelpline.com); keep 'always available'.",
+        "owner": "content"
+      },
+      {
+        "sev": "minor",
+        "text": "Names are accent links but the numbers are plain text; there is no 44 pt call row.",
+        "fix": "Rows with tel: action and a Call label.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J16-06": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "Licences expand in place to about 2,700 pt of 12-13 pt text inside a Settings list: a scroll trap in the middle of navigation.",
+        "fix": "Push to its own screen with section headers.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J17-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The only action ('Tell me when it's here') is below the fold at 402 x 874 even before iOS insets (full capture: it sits under the tab bar; the last sentence is cut by it). With 62/34 pt insets and large text it is further away, and nothing signals scrolling.",
+        "fix": "Pin the button above the tab bar, shrink the art to about 120 pt, use space[6] rhythm.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "major",
+        "text": "A third of the primary navigation is a 'coming soon' page for something v1.0 cannot do. It costs a tab slot and teaches the person that a tab may be empty.",
+        "fix": "Ship v1.0 with two tabs, keep 'Write together' as a row in child settings; or hold for product decision.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "Titles sit at three heights (Tonight about 72, Book about 82, Family about 38) and Family is centred while all others are start-aligned.",
+        "fix": "One root large-title component.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J17-02": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J17-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "This modal closes with a bottom text 'Close', a third close idiom (Review: top-left text; sheets: X). It also ends without the Tell me action that the same copy has on the tab.",
+        "fix": "Use the sheet pattern; show the same action.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J17-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "'Write to your child, together' addresses an invited person as a parent; an invited grandparent or aunt is not 'your child's other parent'.",
+        "fix": "Neutral copy for the invited path ('Write to {child}', 'Soon you can add your letters to the same book').",
+        "owner": "content"
+      }
+    ]
+  },
+  "J18-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "On the screen where Dark is chosen the page background stays light (#FBF8F3) while the list cards flip dark and the header title 'Appearance' is near-invisible light-on-light. It may be a transition frame, but if it persists the Dark selector itself is unreadable.",
+        "fix": "Bind the navigation container background and header colours to the theme (not only components); capture a settled frame to confirm.",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "J18-02": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "The bottom tab bar stays light cream (about 17:1 against the page, a bright strip at night) in dark mode, with light-mode label colours. This breaks 'written for 2 a.m.'.",
+        "fix": "Tab bar bg dark.surface (#1B1917), hairline dark.line, selected dark.accent, unselected dark.textMuted; confirm whether the native tab bar picks this up on iOS.",
+        "owner": "mobile"
+      },
+      {
+        "sev": "minor",
+        "text": "Dark mode has no lamp atmosphere: lamp, lampGold and duskSurface tokens exist 'to match the website' and none appears.",
+        "fix": "Static LampLight pool at <=16% behind the prompt card, plus grain; none under Reduce Transparency.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J18-03": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Tab bar is light again, the Settings gear (ink #2B2722 on #161412) is 1.24:1 and effectively invisible, and the Read together icon (#8A5A3B on #3A2E25) is 2.26:1.",
+        "fix": "Resolve all icon colours via useTheme (dark.accent / dark.textMuted); lint for hex or tokens.light outside the theme provider.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J18-04": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Light-mode values leak into the dark letter page: the lock icon in 'Make private' (ink on dark raised, 1.13:1) is invisible, the back arrow (#8A5A3B on #161412) is 3.16:1, and the scrubber track is a bright cream bar, the loudest thing on a dark page.",
+        "fix": "Theme-resolve icon colours; scrubber track dark.line with accent fill.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J18-05": {
+    "verdict": "ok",
+    "findings": []
+  },
+  "J18-06": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "minor",
+        "text": "The disc uses the light-mode `recording` (#B04539, 3.29:1 against the dark page) instead of dark.recording (#F08C7C, 7.65:1), and the halo is nearly invisible. The listening screen is the natural showpiece for the website's night scene and is flat.",
+        "fix": "Use dark.recording for the disc, LampLight warmth='recording' with vignette at night tone; static under Reduce Motion.",
+        "owner": "design-systems"
+      }
+    ]
+  },
+  "J19-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Unknown routes fall to Expo's default 'Unmatched Route': black background, bold system font, the raw URL (with the seed query) and a 'Sitemap' link, in a warm paper app. A malformed deep link or universal link lands here.",
+        "fix": "app/+not-found.tsx using EmptyState: 'We couldn't find that page.' + full-width 'Back to Tonight'; theme-aware; hide URL.",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "J20-01": {
+    "verdict": "fix",
+    "findings": [
+      {
+        "sev": "blocker",
+        "text": "A render crash leaves a blank white page: no message, no way back, white flash in a warm or dark app. Any real crash (not only the injected fault) ends here, the opposite of 'your words are safe'.",
+        "fix": "Export an ErrorBoundary from app/_layout (expo-router) using EmptyState: 'Something went wrong. Your letters are safe on this phone.' + 'Back to Tonight' and 'Try again'; set the native root background to bg so there is no white flash.",
+        "owner": "mobile"
+      }
+    ]
+  },
+  "_journey": {
+    "verdict": "gap",
+    "findings": [
+      {
+        "sev": "major",
+        "text": "Dark mode leaks light-mode values: tab bar, Settings gear, lock icon, back arrow, scrubber track and the recording disc use light tokens or hard-coded ink on dark (ratios 1.13 to 3.29, see J18-02 to J18-06). Only 6 of 116 captures cover dark and they already expose six defects, so the unseen screens (Settings, Plan, Review sheets, Family) are probably affected.",
+        "fix": "Bind the navigation container and tab bar to useTheme; ban hex and tokens.light outside the theme provider with a lint rule; extend J18 to every route.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "major",
+        "text": "The website's design principles are not in the app. The site ships LampLight, Grain, PaperTexture, Vignette and Motes (apps/web/src/components/atmosphere); the app ships none, and atmosphere tokens (lamp, lampGold, lampRose, lampDusk, duskSurface) are unused. The opening-quotation pair appears on none of the 116 screens (Welcome, Letter, End of book, Save are the obvious homes). The result is competent but flat: warm paper without light.",
+        "fix": "Build one Atmosphere wrapper (static grain png + radial gradient, tone paper|night, Reduce Motion/Transparency aware) and one QuotePair from the brand registry; use them on Welcome, Tonight, Listening, Letter, End of book only.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "major",
+        "text": "Navigation chrome has five idioms: '< Back' text (onboarding), arrow plus 17 pt inline title (Settings, Letter), 'Close' text top-left (Review, Write, Read together), circular X (sheets), bottom text 'Close' (invite). Large titles exist on tab roots (serif 34 pt) but not on Settings, Plan, Export; root titles sit at three heights. Not HIG-conformant for push screens.",
+        "fix": "One ScreenHeader with three variants (root large title, pushed with chevron back and large title that collapses, modal with title + Close) and one Sheet pattern.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "major",
+        "text": "Selection and affordance are inconsistent: Yes/No (fill only), Birthday chips (accentSoft + check), day pills (solid accent, no edge), 'Not quite' (solid accent, competes with the primary), list checks. Rows with values but no chevron (language onboarding, child fields, Restore purchases, Tidying, English model, Family can read).",
+        "fix": "ChoiceGroup and Chip are the only selection components: accentSoft + controlBorder-accent edge + check. Solid accent only for the one primary button per screen. ListRow always shows chevron, value or switch.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "major",
+        "text": "Empty, error and loading states have at least six different treatments: EmptyState with start-aligned art (Book), centred text + small button (J06-13), floating card (J05-04), heading + button (J10-11, J11-07), static loading card (J05-03), Expo default 404, blank crash. None has a loading rhythm that says 'working'.",
+        "fix": "One StateScreen built on EmptyState (art, title, body, full-width bottom action), a Breathe loading variant, a root ErrorBoundary and +not-found.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "major",
+        "text": "Tap targets: several controls visibly under 44 pt: tidy-up marks (about 10 pt), 'Got it', panel 'Close', 'Not much today', 'Another thought', 36 pt sheet X, 12 pt caps child switcher, Aa, gear. hitSlop is declared for Chip and IconButton but text links and quiet buttons need min-height 44.",
+        "fix": "Quiet/link Button min-height 44 with hitSlop; add an on-device Accessibility Inspector pass; add web bounding-box assertions to the journey run for role=button/link.",
+        "owner": "mobile"
+      },
+      {
+        "sev": "major",
+        "text": "Machine-written sentences appear as the parent's words: the quiet-day note (signed 'From Mama' in the Book), the 'nobody spoke' note signed 'From Mama', and a 'Dear Asha,' ghost in the Write view. Nothing visually separates app voice from the parent's.",
+        "fix": "Define an 'app voice' style (no signature, muted Mukta italic, tinted `surface`, never first person) and use it for every system note; confirm 'Dear Asha,' with product.",
+        "owner": "product"
+      },
+      {
+        "sev": "minor",
+        "text": "Type ramp drift: three dateline styles (caps 12 pt tracking on cards and Review; sentence 13 pt on the Letter; bold 12 pt on Read together), 13 pt used for trust copy (Review note, helper lines, provenance), below footnote 14, and the finale heading about 40+ pt vs display 34. Large print scales body only.",
+        "fix": "One Dateline component (letterDateline token x readingScale); trust copy never below subhead 16; restrict caption 13 to captions.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Layout shifts break calm: prompt swap (about 32 pt), Listening to Paused (13 pt), Private chip insertion (20 pt), first-time note dismissal (about 135 pt), stop-screen button (37 pt). Motion cannot be judged from stills.",
+        "fix": "Reserve space or animate with tokens.motion.standard (Reduce Motion: fade 200 ms); record screen captures on device to verify.",
+        "owner": "mobile"
+      },
+      {
+        "sev": "minor",
+        "text": "Primary action placement varies: pinned and full width on onboarding, Review, Write, Read together (good) versus mid-screen content-width on Book empty, Export, Plus gates, end of book and Family (below the fold). Top-corner controls (gear, switcher, Hear it, Aa, Close) sit in the hardest reach zone on a 6.3 inch phone.",
+        "fix": "Bottom-action rule: one primary at 56 pt pinned above the tab bar or home indicator on every screen that has one.",
+        "owner": "design-systems"
+      },
+      {
+        "sev": "minor",
+        "text": "Web artifacts and device-only behaviour: teal switch thumbs (RN-web default), square amber edit outline and Times fallback in the edit field, scrim colour, native pickers, keyboard avoidance, Dynamic Island insets, haptics. None can be confirmed as app defects or fine from these captures.",
+        "fix": "QA a device pass with these items listed; record the toggle in components/platform/toggle.",
+        "owner": "qa"
+      },
+      {
+        "sev": "major",
+        "text": "Coverage gap: all 116 captures are English at default text size. Nothing shows hi (Devanagari in Tiro/Mukta), es, zh, fr, ar (RTL) or pt, or Dynamic Type up to AX5. Likely stress points: two-up 'Birthday | Not here yet', 'Add to Asha's book', 'Keep it word for word', 'Sounds like me | Not quite', tab labels, 56 pt footers at AX3. Spoken language, Storage and the add-child form were not captured at all (they crash on web).",
+        "fix": "Capture each locale plus AX3 and forced RTL on a device; add them to the journey harness; fix to the spec (stack at xxxLarge, never truncate letter text, D-027).",
+        "owner": "qa"
+      },
+      {
+        "sev": "minor",
+        "text": "Accessibility cues cannot be verified: step JSON holds visible text only, not roles or labels. Icon-only controls (Aa, gear, X, back, play, Hear it, remove name) need explicit names; focus order and the 'adjustable' scrubber were not seen.",
+        "fix": "Export role/name/order into step JSON (accessibility tree dump) and review on device with VoiceOver and Voice Control.",
+        "owner": "qa"
+      },
+      {
+        "sev": "minor",
+        "text": "Monetisation and apology sit before core settings and on both gates; the first Settings screen leads with 'Early version' and Plan.",
+        "fix": "See J16-01; keep Plus out of the first scroll of Settings.",
+        "owner": "product"
+      }
+    ]
+  }
+}

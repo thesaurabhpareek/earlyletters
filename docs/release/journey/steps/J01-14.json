@@ -1,0 +1,40 @@
+{
+  "id": "J01-14",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Tonight, for the first time",
+  "note": "The home tab: a greeting with the signature name, one gentle prompt, Speak and Type side by side, and \"Not much today\" for quiet days.",
+  "from": "J01-13",
+  "shot": "screens/J01-14.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 0 days Good evening, Mama. What do you want Asha to know about today? A thought to start with Tell Asha how the name was chosen. Another thought Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 0 days",
+    "Good evening, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "Tell Asha how the name was chosen.",
+    "Another thought",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

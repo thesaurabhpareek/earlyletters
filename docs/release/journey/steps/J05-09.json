@@ -1,0 +1,36 @@
+{
+  "id": "J05-09",
+  "journey": "voice-capture",
+  "kind": "happy",
+  "title": "Over a minute in",
+  "note": "The clock keeps counting with no limit (here past a minute). If the level stays below speaking level for 8 seconds the line under the clock becomes a gentle \"still here\" (on web the fake microphone and the missing level meter make that unreliable, so it is not asserted). On a phone the elapsed time is announced to VoiceOver once a minute.",
+  "from": "J05-01",
+  "shot": "screens/J05-09.png",
+  "route": "/listen",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "To Asha Only you, until you add it to the book. 1:05 Still here. Take your time. Say it however it comes. Pause Finish Let it go",
+  "lines": [
+    "To Asha",
+    "Only you, until you add it to the book.",
+    "1:05",
+    "Still here. Take your time.",
+    "Say it however it comes.",
+    "Pause",
+    "Finish",
+    "Let it go"
+  ]
+}

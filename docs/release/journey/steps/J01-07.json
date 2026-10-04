@@ -1,0 +1,39 @@
+{
+  "id": "J01-07",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Name entered, birthday is today",
+  "note": "The name is in. The birthday defaults to today; on a phone the date is a compact picker (the web build shows it as a plain date pill and cannot open the iOS picker).",
+  "from": "J01-05",
+  "shot": "screens/J01-07.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Birthday Sunday, October 4, 2026 We sort letters by Asha's month of age. Continue",
+  "lines": [
+    "Back",
+    "Who is this book for?",
+    "Their name",
+    "You can add a nickname later.",
+    "Add another child",
+    "Birthday",
+    "Not here yet",
+    "Birthday",
+    "Sunday, October 4, 2026",
+    "We sort letters by Asha's month of age.",
+    "Continue"
+  ]
+}

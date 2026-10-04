@@ -1,0 +1,39 @@
+{
+  "id": "J15-02",
+  "journey": "export",
+  "kind": "unhappy",
+  "title": "The export did not finish",
+  "note": "On a phone Export builds a ZIP in the cache and opens the iOS share sheet. The web build has no file system, so it lands on the honest failure card with \"Export again\". The card says the phone needs more free space (the web has none to give).",
+  "from": "J15-01",
+  "shot": "screens/J15-02.png",
+  "route": "/settings/export",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Export Download every letter and recording, any time, free. Plain text and audio files. Works without a connection. Nothing is sent anywhere. What is inside Every letter and note, as text Every recording on this phone, exactly as it was made A printable book for each child, by month A data file with your words as heard, every tidy-up, and the final text The export did not finish This phone needs a little more free space to make the export. Free some space and try again. Export again",
+  "lines": [
+    "Export",
+    "Download every letter and recording, any time, free. Plain text and audio files.",
+    "Works without a connection. Nothing is sent anywhere.",
+    "What is inside",
+    "Every letter and note, as text",
+    "Every recording on this phone, exactly as it was made",
+    "A printable book for each child, by month",
+    "A data file with your words as heard, every tidy-up, and the final text",
+    "The export did not finish",
+    "This phone needs a little more free space to make the export. Free some space and try again.",
+    "Export again"
+  ]
+}

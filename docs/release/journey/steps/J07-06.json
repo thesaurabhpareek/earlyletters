@@ -1,0 +1,33 @@
+{
+  "id": "J07-06",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Picking the draft back up",
+  "note": "Tapping the card reopens the page with the words exactly as left.",
+  "from": "J07-05",
+  "shot": "screens/J07-06.png",
+  "route": "/write",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Asha · 0 days Tell Asha how the name was chosen. You were so sleepy and then Save",
+  "lines": [
+    "Close",
+    "Asha · 0 days",
+    "Tell Asha how the name was chosen.",
+    "You were so sleepy and then",
+    "Save"
+  ]
+}
