@@ -57,6 +57,9 @@
 .scene {
   position: relative;
 }
+.anchor {
+  scroll-margin-top: 72px;
+}
 .stage {
   width: 100%;
 }
@@ -65,6 +68,13 @@
   max-width: 68rem;
   margin: 0 auto;
   padding: clamp(72px, 12vw, 148px) var(--gutter);
+}
+/*
+ * Two pinned scenes in a row overlap by one screen: the next one is pinned at the moment the one before has faded
+ * out, so there is no empty screen of scroll between them. Each stage is transparent until its content arrives.
+ */
+.pinOn + .pinOn {
+  margin-top: -100svh;
 }
 .pinOn .stage {
   position: sticky;
