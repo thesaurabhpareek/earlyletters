@@ -58,10 +58,20 @@ function isSameOrigin(request: Request): boolean {
   }
 }
 
-function readConfig(): { apiKey: string; segmentId: string } | null {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const segmentId = process.env.RESEND_SEGMENT_ID?.trim();
-  return apiKey && segmentId ? { apiKey, segmentId } : null;
+/** A Resend key is `re_` plus letters, digits and underscores. */
+const KEY_SHAPE = /^re_[A-Za-z0-9_]+$/;
+
+/** Pasted values often carry quotes, spaces or line breaks (also inside the value). Remove them; they are never part of a key or an id. */
+function cleanEnv(value: string | undefined): string {
+  return (value ?? '').replace(/["'\s]/g, '');
+}
+
+function readConfig(): { apiKey: string; segmentId: string } | null | 'bad_key' {
+  const apiKey = cleanEnv(process.env.RESEND_API_KEY);
+  const segmentId = cleanEnv(process.env.RESEND_SEGMENT_ID);
+  if (!apiKey || !segmentId) return null;
+  // A key with a stray character makes the HTTP layer throw a bare TypeError. Say so plainly instead.
+  return KEY_SHAPE.test(apiKey) ? { apiKey, segmentId } : 'bad_key';
 }
 
 async function readJsonObject(request: Request): Promise<Record<string, unknown> | null> {
@@ -96,6 +106,10 @@ export async function handleNotify(request: Request): Promise<Response> {
     if (!email) return fail('invalid');
 
     const config = readConfig();
+    if (config === 'bad_key') {
+      logNotify('config_key_format');
+      return fail('server');
+    }
     if (!config) {
       if (process.env.NODE_ENV === 'production') {
         logNotify('config_error');

@@ -6,7 +6,7 @@
  * or a provider error message (which could echo the address back) cannot reach the log stream.
  * Email is L3 in docs/legal/DATA_CLASSIFICATION.md and must not appear in Vercel logs.
  */
-type NotifyEvent = 'config_error' | 'config_missing_dev' | 'provider_error' | 'unexpected_error';
+type NotifyEvent = 'config_error' | 'config_key_format' | 'config_missing_dev' | 'provider_error' | 'unexpected_error';
 
 const SAFE_NAME = /^[A-Za-z0-9_]{1,48}$/;
 
@@ -25,6 +25,9 @@ export function logNotify(event: NotifyEvent, detail?: { name?: unknown; status?
       return;
     case 'config_error':
       console.error('[notify] config error: RESEND_API_KEY and RESEND_SEGMENT_ID must be set in production');
+      return;
+    case 'config_key_format':
+      console.error('[notify] config error: RESEND_API_KEY is not in the expected format (re_ followed by letters, digits and underscores). Create the key again and paste it with nothing around it.');
       return;
     case 'provider_error':
       console.error(`[notify] provider error name=${safeName(detail?.name)} status=${safeStatus(detail?.status)}`);
