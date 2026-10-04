@@ -1,0 +1,9 @@
+# Security contact for Early Letters (RFC 9116).
+# Served at https://earlyletters.com/.well-known/security.txt as text/plain; charset=utf-8.
+# Renew Expires before it passes (docs/ops/SECURITY.md 2.6). Remove the Policy line
+# until https://earlyletters.com/security exists (docs/ops/DOMAINS.md 8).
+Contact: mailto:security@earlyletters.com
+Expires: 2027-09-30T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://earlyletters.com/.well-known/security.txt
+Policy: https://earlyletters.com/security

@@ -1,24 +1,43 @@
+/**
+ * Tonight (DESIGN_LANGUAGE 12): write tonight's letter in under ten seconds.
+ * Benchmarks (docs/design/BENCHMARK.md, "Screens"):
+ * - Things 3 "This Evening": time-of-day framing in the greeting.
+ * - Apple Journal: one gentle prompt in a card instead of a blank page.
+ * - Airbnb sticky CTA: Speak and Type as equal twins in the thumb zone.
+ * Motion: dateline, greeting and prompt enter once (280 ms, 30 ms stagger); Speak and
+ * Type never animate in (MOTION principle 2). A new prompt cross-fades in place.
+ * Haptics: Speak / Type `press` (a capture starts), Another thought `tap`,
+ * Not much today `soft`. Nothing else.
+ */
 import { Redirect, router, useFocusEffect } from 'expo-router';
-import { MicrophoneIcon, PencilSimpleIcon } from 'phosphor-react-native';
+import { ArrowsClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowsClockwise';
+import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
+import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
+import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp, LinearTransition } from 'react-native-reanimated';
+import { ScrollView, View } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { ageOn, ENGINE_VERSION, renderTemplate, selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { Button } from '@/components/ui/button';
+import { Button, ButtonRow } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
+import { announce, useTheme } from '@/lib/a11y';
+import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
 import { copy, fill, greetingKey, pendingCopy } from '@/lib/copy';
 import { ageText, dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { useMotion } from '@/lib/motion';
 import { getActiveChildId, getFamily, listDrafts, listEntries, saveEntry, subscribe, todayISO, uuidv7, type Draft, type Family } from '@/lib/store';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function Tonight() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const { c } = useTheme();
+  const motion = useMotion();
   const t = copy.tonight;
   const [family, setFamily] = useState<Family | null | undefined>(undefined);
   const [recent, setRecent] = useState<string[]>([]);
@@ -71,7 +90,7 @@ export default function Tonight() {
 
   const child = family.childName;
   const ageNow = ageText({ birthday: family.childBirthday }, today);
-  const dateline = (ageNow ? `${child} · ${ageNow}` : dayDate(today)).toUpperCase();
+  const dateline = ageNow ? `${child} · ${ageNow}` : dayDate(today);
 
   const keepNotMuch = () => {
     const weekday = WEEKDAYS[new Date().getDay()];
@@ -92,75 +111,99 @@ export default function Tonight() {
       soundsLikeMe: null,
     });
     haptic('soft');
+    announce(copy.notMuch.savedToast);
     setKeptLine(true);
   };
 
   const start = (mode: 'spoken' | 'typed') => {
-    haptic('press');
     const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
+    const active = getActiveChildId();
+    trackCaptureStarted({ mode, source: 'tonight', promptKind: promptKindOf(prompt.key), childIndex: childIndexOf(active), role: 'parent' });
     router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
   };
 
+  const swap = FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never);
+
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="flex-grow gap-6 px-5 pb-8 pt-4">
-        <Animated.View entering={FadeIn.duration(400)} className="gap-2">
-          <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline}</Text>
-          <Text className="font-serif text-4xl leading-[44px] text-foreground">
-            {fill(t.greeting[greetingKey()], { name: family.signsAs })}
-          </Text>
-          <Text className="text-lg leading-7 text-muted-foreground">{fill(t.subtitle, { child })}</Text>
-        </Animated.View>
+      <ScrollView contentContainerClassName="flex-grow px-5 pb-6 pt-5">
+        <View className="gap-3">
+          <Animated.View entering={motion.enter(0)}>
+            <Text variant="letterDateline" caps>
+              {dateline}
+            </Text>
+          </Animated.View>
+          <Animated.View entering={motion.enter(1)} className="gap-2">
+            <Text variant="display" asHeading={1}>
+              {fill(t.greeting[greetingKey()], { name: family.signsAs })}
+            </Text>
+            <Text variant="body" tone="muted">
+              {fill(t.subtitle, { child })}
+            </Text>
+          </Animated.View>
+        </View>
 
-        <Animated.View key={prompt.key} entering={FadeInDown.springify().damping(20)} layout={LinearTransition.springify()}>
-          <Card className="gap-4 rounded-3xl border-0 bg-card p-6 shadow-sm shadow-black/5">
-            <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{t.promptLabel.toUpperCase()}</Text>
-            <Text className="font-serif text-2xl leading-9 text-foreground">{renderTemplate(prompt.text, { child })}</Text>
-            <Pressable
+        <Animated.View entering={motion.enter(2)} className="mt-8">
+          <Card padding={6} radius="lg" className="gap-4">
+            <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
+              {t.promptLabel}
+            </Text>
+            <Animated.View key={prompt.key} entering={shuffle === 0 ? undefined : swap}>
+              <Text variant="prompt">{renderTemplate(prompt.text, { child })}</Text>
+            </Animated.View>
+            <Button
+              variant="quiet"
+              size="sm"
+              icon={ArrowsClockwiseIcon}
+              label={t.newPromptButton}
+              className="-ml-4 self-start"
               onPress={() => {
                 haptic('tap');
                 setShuffle((s) => s + 1);
               }}
-              accessibilityRole="button"
-              className="h-11 justify-center self-start">
-              <Text className="text-base font-medium text-primary">{t.newPromptButton}</Text>
-            </Pressable>
+            />
           </Card>
         </Animated.View>
 
         {waiting && (
-          <Pressable
-            onPress={() => router.push({ pathname: waiting.audioUri ? '/review' : '/write', params: { draftId: waiting.id } })}
-            accessibilityRole="button"
-            className="min-h-11 flex-row items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3">
-            <Text className="flex-1 text-base text-foreground">{pendingCopy.tonight.waitingTitle}</Text>
-            <Text className="text-base font-medium text-primary">{copy.review.title}</Text>
-          </Pressable>
+          <Animated.View entering={motion.enter(3)} className="mt-4">
+            <Card
+              variant="tinted"
+              padding={4}
+              radius="lg"
+              className="flex-row items-center gap-3"
+              onPress={() => router.push({ pathname: waiting.audioUri ? '/review' : '/write', params: { draftId: waiting.id } })}
+              accessibilityLabel={`${pendingCopy.tonight.waitingTitle} ${copy.review.title}`}>
+              <View className="flex-1 gap-0.5">
+                <Text variant="callout">{pendingCopy.tonight.waitingTitle}</Text>
+                <Text variant="labelSmall" tone="accent">
+                  {copy.review.title}
+                </Text>
+              </View>
+              <CaretRightIcon size={18} color={c.accent} weight="bold" />
+            </Card>
+          </Animated.View>
         )}
 
-        <View className="flex-1" />
+        <View className="min-h-8 flex-1" />
 
-        <Animated.View entering={FadeInUp.delay(120).springify().damping(20)} className="gap-3">
-          <View className="flex-row gap-3">
-            <Button size="capture" onPress={() => start('spoken')} accessibilityLabel={t.speakButton}>
-              <MicrophoneIcon color={c.onAccent} size={24} weight="fill" />
-              <Text>{t.speakButton}</Text>
-            </Button>
-            <Button size="capture" onPress={() => start('typed')} accessibilityLabel={t.typeButton}>
-              <PencilSimpleIcon color={c.onAccent} size={24} weight="fill" />
-              <Text>{t.typeButton}</Text>
-            </Button>
-          </View>
+        {/* Controls are opaque and hittable from the first frame (MOTION principle 2). */}
+        <View className="gap-2 pt-6">
+          <ButtonRow>
+            <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
+            <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
+          </ButtonRow>
           {keptLine ? (
-            <Animated.View entering={FadeIn} className="h-11 items-center justify-center">
-              <Text className="text-base text-success">{copy.notMuch.savedToast}</Text>
+            <Animated.View entering={swap} className="min-h-12 flex-row items-center justify-center gap-2" accessibilityLiveRegion="polite">
+              <CheckCircleIcon size={20} color={c.success} weight="fill" />
+              <Text variant="callout" tone="success">
+                {copy.notMuch.savedToast}
+              </Text>
             </Animated.View>
           ) : (
-            <Button variant="ghost" onPress={keepNotMuch}>
-              <Text className="text-muted-foreground">{t.notMuchButton}</Text>
-            </Button>
+            <Button variant="quiet" label={t.notMuchButton} className="self-center" onPress={keepNotMuch} accessibilityHint={copy.notMuch.confirmBody} />
           )}
-        </Animated.View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

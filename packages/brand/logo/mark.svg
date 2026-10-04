@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Early Letters mark</title>
+  <defs>
+    <mask id="fold" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect width="1024" height="1024" fill="#fff"/>
+      <path d="M176 360 L232 400 C330 470 430 560 512 620 C594 560 694 470 792 400 L848 360" transform="translate(-25.60 -19.30) scale(1.05)" fill="none" stroke="#000" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  
+  <path d="M512 330 C470 262 404 236 344 236 C254 236 200 300 200 380 L200 712 Q200 776 264 776 L760 776 Q824 776 824 712 L824 380 C824 300 770 236 680 236 C620 236 554 262 512 330 Z" transform="translate(-25.60 -19.30) scale(1.05)" fill="#8A5A3B" mask="url(#fold)"/>
+</svg>
