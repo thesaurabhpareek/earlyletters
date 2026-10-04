@@ -1,0 +1,71 @@
+# E2E-08  Delete a letter, Undo; delete again and it leaves the book.
+# Proves: DATA-REQ-010 (delete is a tombstone, restorable), the Apple Mail style
+# immediate Delete with a persistent Undo (no timed navigation, TDD 09
+# A11Y-F03). Fixture letter: the seeded "Bath time" letter (src/dev/asha-seed.ts).
+# Not covered here (gaps or other layers): a Recently deleted screen with the
+# 30-day restore does not exist in the app yet (TESTID_REQUESTS.md "Not mounted
+# yet"); another author's letter has no Delete (DATA-REQ-015) needs a synced
+# co-parent letter and is covered by supabase/tests; purge after 30 days is
+# covered by the database suite.
+appId: ${APP_ID}
+name: E2E-08 Delete and undo
+tags:
+  - e2e
+  - E2E-08
+  - DATA-REQ-010
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    text: ".*Bath time.*"
+- tapOn:
+    text: ".*Bath time.*"
+- assertVisible:
+    id: "letter.screen"
+# 1. Delete, then Undo: the letter is back on the page and in the book.
+- scrollUntilVisible:
+    element:
+      id: "letter.delete"
+    direction: DOWN
+- tapOn:
+    id: "letter.delete"
+- assertVisible:
+    id: "letter.undo"
+- tapOn:
+    id: "letter.undo"
+- assertNotVisible:
+    id: "letter.deleted"
+- assertVisible:
+    id: "letter.text"
+    text: ".*Bath time.*"
+- runFlow: ../subflows/go-back.yaml
+- assertVisible:
+    text: ".*Bath time.*"
+# 2. Delete and leave without Undo: it is gone from the book, also after a relaunch.
+- tapOn:
+    text: ".*Bath time.*"
+- scrollUntilVisible:
+    element:
+      id: "letter.delete"
+    direction: DOWN
+- tapOn:
+    id: "letter.delete"
+- assertVisible:
+    id: "letter.undo"
+- runFlow: ../subflows/go-back.yaml
+- assertNotVisible:
+    text: ".*Bath time.*"
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- assertNotVisible:
+    text: ".*Bath time.*"
+- stopApp

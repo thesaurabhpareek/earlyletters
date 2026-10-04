@@ -86,7 +86,7 @@ function parseStatusLine(task, line) {
   const mode = body.match(/Mode:\s*([a-z]+)/i);
   task.mode = mode ? mode[1].toLowerCase() : undefined;
   const owner = body.match(/Owner:\s*([^.]+)\./);
-  task.owners = owner ? owner[1].split(",").map((s) => s.trim().toLowerCase()).filter(Boolean) : [];
+  task.owners = owner ? owner[1].split(",").map((s) => s.replace(/\s*\([^)]*\)/g, "").trim().toLowerCase()).filter(Boolean) : [];
   const dep = body.match(/Depends on:\s*([^.]+)\./);
   task.dependsOn = dep ? [...dep[1].matchAll(BL_RE)].map((m) => m[0]) : [];
   const paren = task.statusText.match(/\(([^)]*)\)/);
@@ -224,6 +224,9 @@ export function todayUTC(now = new Date()) {
 }
 
 export function isFounderComment(c, roster) {
+  // Machine posts (receipts, journal entries, reviews, board state) made from
+  // the founder's account in interactive sessions are not instructions.
+  if (/^\s*<!-- (receipt|journal|red-team|steward|agents-state|handoff|handoff-reply|agent)[\s:]/.test(c?.body ?? "")) return false;
   return c?.user?.login === roster.founder || c?.author_association === "OWNER";
 }
 

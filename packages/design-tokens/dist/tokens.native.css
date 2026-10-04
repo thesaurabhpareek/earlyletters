@@ -17,14 +17,19 @@
       --color-accent: #F1E6DC;
       --color-accent-foreground: #2B2722;
       --color-destructive: #B5473A;
+      --color-destructive-foreground: #FFFFFF;
       --color-border: #E6DED3;
-      --color-input: #E6DED3;
+      --color-input: #8A8175;
       --color-ring: #2F6F8F;
       --color-surface: #F5EFE7;
       --color-surface-raised: #FFFFFF;
       --color-recording: #B5473A;
       --color-success: #3F7A55;
       --color-caution: #94661A;
+      --color-control-border: #8A8175;
+      --color-edit-mark: #8A5A3B;
+      --color-on-destructive: #FFFFFF;
+      --color-scrim: #2B272252;
     }
 
     @variant dark {
@@ -43,14 +48,19 @@
       --color-accent: #3A2E25;
       --color-accent-foreground: #F2ECE4;
       --color-destructive: #F08C7C;
+      --color-destructive-foreground: #1E1612;
       --color-border: #33302C;
-      --color-input: #33302C;
+      --color-input: #857C70;
       --color-ring: #8CC4DE;
       --color-surface: #1B1917;
       --color-surface-raised: #201D1A;
       --color-recording: #F08C7C;
       --color-success: #8CC9A0;
       --color-caution: #E3B866;
+      --color-control-border: #857C70;
+      --color-edit-mark: #D9A47E;
+      --color-on-destructive: #1E1612;
+      --color-scrim: #0000008C;
     }
   }
 }
@@ -61,4 +71,52 @@
   --radius-lg: 20px;
   --radius-xl: 28px;
   --radius-pill: 9999px;
+  --text-hero: 44px;
+  --text-hero--line-height: 50px;
+  --text-hero--letter-spacing: -0.4px;
+  --text-display: 34px;
+  --text-display--line-height: 41px;
+  --text-display--letter-spacing: -0.2px;
+  --text-title1: 28px;
+  --text-title1--line-height: 34px;
+  --text-title1--letter-spacing: -0.1px;
+  --text-title2: 22px;
+  --text-title2--line-height: 28px;
+  --text-title2--letter-spacing: 0px;
+  --text-headline: 18px;
+  --text-headline--line-height: 23px;
+  --text-headline--letter-spacing: 0px;
+  --text-body: 18px;
+  --text-body--line-height: 24px;
+  --text-body--letter-spacing: 0px;
+  --text-callout: 17px;
+  --text-callout--line-height: 22px;
+  --text-callout--letter-spacing: 0px;
+  --text-subhead: 16px;
+  --text-subhead--line-height: 21px;
+  --text-subhead--letter-spacing: 0px;
+  --text-footnote: 14px;
+  --text-footnote--line-height: 19px;
+  --text-footnote--letter-spacing: 0.1px;
+  --text-caption: 13px;
+  --text-caption--line-height: 17px;
+  --text-caption--letter-spacing: 0.2px;
+  --text-label: 18px;
+  --text-label--line-height: 22px;
+  --text-label--letter-spacing: 0px;
+  --text-label-small: 16px;
+  --text-label-small--line-height: 20px;
+  --text-label-small--letter-spacing: 0px;
+  --text-letter-body: 20px;
+  --text-letter-body--line-height: 32px;
+  --text-letter-body--letter-spacing: 0px;
+  --text-letter-dateline: 14px;
+  --text-letter-dateline--line-height: 18px;
+  --text-letter-dateline--letter-spacing: 0.6px;
+  --text-signature: 20px;
+  --text-signature--line-height: 32px;
+  --text-signature--letter-spacing: 0px;
+  --text-prompt: 24px;
+  --text-prompt--line-height: 32px;
+  --text-prompt--letter-spacing: 0px;
 }

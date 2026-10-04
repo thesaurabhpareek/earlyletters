@@ -16,7 +16,7 @@ A dispatcher (`scripts/agents/dispatch.mjs`, run by `.github/workflows/agents.ym
 
 | Mode | When | What you do |
 |---|---|---|
-| `maintain` | One of your open PRs has failing checks, requested changes, or a founder comment newer than its last commit | Fix that PR on its own branch. Nothing else. |
+| `maintain` | One of your open PRs has failing checks, conflicts with `develop`, requested changes, a red-team "fix first", or a founder comment newer than its last commit | Fix that PR on its own branch. Nothing else. For a conflict, `git merge origin/develop` into your branch and resolve by hand; never rebase or force-push. |
 | `task` | A backlog task is ready for your role | Do that one task, per the rules in `docs/BACKLOG.md` ("How a scheduled run uses this file") and its Definition of Done. |
 | `handoff` | Another agent (or the founder) sent you a handoff and you have not replied since its latest message | Answer it per `docs/agents/AGENT-COMMS.md` section 3. Nothing else. |
 | `review` | Red team only: an agent PR has no review for its latest commit | Review it (section 6). |
@@ -24,7 +24,7 @@ A dispatcher (`scripts/agents/dispatch.mjs`, run by `.github/workflows/agents.ym
 | `standing` | Your queue is empty | Do the highest-priority standing duty in your charter that has no open PR yet; if one has an open PR of yours, continue that PR instead. |
 | `digest` | Chief of staff only, once a day | Write the founder digest (section 7). |
 
-**Before you start, check for overlap.** Other people and sessions also open PRs here. List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
+**Before you start, check for overlap.** Other people and sessions also work here: the founder's build thread merges straight into `develop` and claims files in `docs/agents/BOARD.md` (your brief lists its live claims; never edit a file under one). List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
 
 Priority order the dispatcher uses: fix your open PRs first, then answer handoffs, then reviews, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting on the founder's review. The board issue shows which.
 
@@ -50,6 +50,7 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 - Branch: backlog work keeps the backlog rule, `<type>/<area>-bl-###-<slug>`. Other work uses `agent/<handle>/<slug>`.
 - Commit messages end with a trailer line `Agent: <handle>`.
 - PR title: `BL-###: <title>` for backlog work, `[<handle>] <title>` otherwise. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` when a decision or account step only the founder can do blocks the PR, and `approve-migration` is never yours to add.
+- Any PR or issue comment you post starts with the line `<!-- agent:<handle> -->`, so it is never mistaken for the founder's words when a session posts from his account.
 - PR body: `Agent: <handle>`, `Mode:`, `Satisfies:` (requirement ids or `none`), `Data classes touched:`, how it was checked, and what the founder should look at first.
 - One concern per PR. Keep PRs small enough to review in ten minutes. If the work is bigger, split it (backlog rule 5).
 - Run `npm test`, `npm run typecheck` and, if you touched `supabase/`, `npm run test:db` before every push. Never weaken, skip or delete a test to make it pass.
