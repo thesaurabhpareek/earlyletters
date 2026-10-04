@@ -8,12 +8,12 @@ These articles answer the questions parents ask most. They speak in the product'
 
 | Article | What it answers |
 |---|---|
-| [Signing in](help/signing-in.md) | Apple, Google and email sign-in, the email link and code, passkeys, a new phone, signing out |
+| [Signing in](help/signing-in.md) (version 1.1) | Apple, Google and email sign-in, the email link and code, passkeys, a new phone, signing out |
 | [Recording and transcription](help/recording-and-transcription.md) | How speaking a letter works, languages and downloads, the small slips we fix, and what we never change |
-| [Your privacy](help/privacy.md) | Who can read your letters, where recordings live, what we never do |
-| [Deleting and exporting](help/deleting-and-exporting.md) | Export everything, Recently deleted, deleting a letter, a book or your account |
-| [Plus and your Apple subscription](help/subscriptions.md) | What Plus adds, what stays free, free trials, cancelling, refunds through Apple, Family Sharing |
-| [Writing with your co-parent](help/co-parent.md) | Inviting a co-parent, what each of you sees, leaving a shared book |
+| [Your privacy](help/privacy.md) (parts are version 1.1) | Who can read your letters, where recordings live, what we never do |
+| [Deleting and exporting](help/deleting-and-exporting.md) (parts are version 1.1) | Export everything, Recently deleted, deleting a letter, a book or your account |
+| [Plus and your Apple subscription](help/subscriptions.md) (parts are version 1.1; hold, see its notes) | What Plus adds, what stays free, free trials, cancelling, refunds through Apple, Family Sharing |
+| [Writing with your co-parent](help/co-parent.md) (version 1.1) | Inviting a co-parent, what each of you sees, leaving a shared book |
 
 ## When you write to us
 
@@ -25,6 +25,7 @@ If things feel heavy, open Settings and tap **If you are struggling**, under Hel
 
 - Text without a mark describes the first version of the app (v1.0) as the founder has decided it.
 - "Not in this version yet" in an article means the founder has decided it is not in v1.0. Articles do not promise when it comes.
+- "Coming in version 1.1" or "(version 1.1)" marks something that needs sign-in, sync, backup to our servers or family sharing. The founder decided that v1.0 is on-device only, so those parts are not in v1.0 (brief decisions 4 and 5, as amended in PR #33). Hold marked articles and passages back when the v1.0 help centre is published.
 - Each article ends with **Reviewer notes**, which are for the team and are removed before publishing. They say what is built on develop, what is still to build, where the article comes from, and anything that needs a decision.
 
 ## Placeholders to fill before publishing
@@ -38,6 +39,8 @@ If things feel heavy, open Settings and tap **If you are struggling**, under Hel
 The articles keep placeholders rather than typing these values, so `packages/brand` stays the one source. Legal pages use the addresses in D-063 and `packages/brand`: https://earlyletters.com/terms, /privacy, /health-privacy and /subprocessors.
 
 ## Reviewer notes (remove before publishing)
+
+**v1.0 is on-device only (4 Oct 2026).** The articles were written when sign-in and co-parent sharing were planned for v1.0 (D-054, D-055). The table below still describes those decisions; the on-device-only decision supersedes them for v1.0 and is not yet in `docs/DECISIONS.md` on origin/develop. Per article: Signing in and Writing with your co-parent are entirely version 1.1; Your privacy, Deleting and exporting and Plus have marked version 1.1 passages (Plus also carries a hold, see its notes); Recording and transcription needs no change. No account means v1.0 support will not get sign-in questions, and the "account mismatch" and email-link hand-offs move to v1.1.
 
 **Changed in this review.** "Settings, Help, Support adds the app version and your plan" was wrong: the Help row opens an email with the subject "Help with the app" and nothing else (`apps/mobile/src/app/settings/index.tsx` line 123; `supportMailto` in `packages/brand/index.ts` lines 123 to 126; LEGAL-REQ-014). "If you are struggling" is a row on Settings home in the Help and legal section, not under a Help screen, and it never hides behind a flag (index.tsx lines 24 and 124 to 135). Its 911 line is `struggling.emergency` (`strings.en.ts` line 951).
 

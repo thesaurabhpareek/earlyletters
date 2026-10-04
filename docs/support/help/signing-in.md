@@ -1,5 +1,7 @@
 # Signing in
 
+> **Coming in version 1.1.** Signing in is not in this version yet. In this version your book stays on your phone, and you do not need an account.
+
 You can start a book without an account. Your first letters are kept on your phone. When you want your co-parent to write too, or you want your letters on a new phone, sign in.
 
 ## Three ways to sign in
@@ -67,6 +69,8 @@ Write to us at {SUPPORT_EMAIL}. Tell us which way you sign in and what you see o
 ---
 
 ## Reviewer notes (remove before publishing)
+
+**Version 1.1 (founder decision, v1.0 is on-device only).** This whole article describes sign-in, sync and accounts, which move to v1.1 with co-parent sharing (brief decisions 4 and 5, as amended in PR #33). Do not publish it with the v1.0 help centre. The notes below describe what is built on develop, which stays behind the build switch in PR #54 for v1.0.
 
 **Built on develop (7cc43b1).** Sign-in with Apple, Google and the email link and code, the consent sheets, Settings, Account, and passkeys behind a flag (`docs/agents/BOARD.md`, "Done this wave": auth). Labels are from `packages/content/src/features/auth.en.ts`: "Continue with Google" and "Continue with email" (lines 26 and 27), "Use a passkey" (line 28), "Send link" (line 48), "Send a new email" and the one-minute wait (lines 59 and 60), the expired, wrong-code, 15-minute pause and too-many-emails messages (lines 73 to 76), "No book here yet" and "Try another way" (lines 106 to 111), Account rows (lines 134 to 149). The Apple button uses Apple's own "Continue" type (`apps/mobile/src/lib/auth/ui.tsx` line 99). "I already have a book" is `onboarding.welcome.signInButton` (`strings.en.ts` line 50).
 - 1 hour and 6 digits: `docs/ops/AUTH_SETUP.md` lines 127 and 128. The length is a setting, and line 128 says 6 versus 8 is still a product call. If it changes, change "6-digit" here.

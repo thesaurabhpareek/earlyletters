@@ -13,7 +13,9 @@ Your letters are yours. Here is what happens to them, plainly.
 
 ## Who can read your letters
 
-**You.** Every letter you write, private or in the book.
+**You.** Every letter you write, private or in the book. In this version your letters stay on your phone, so only you can read them.
+
+> **Version 1.1.** This part describes signing in, syncing and sharing with a co-parent. It is not in this version yet.
 
 **Your co-parent.** The letters that are in {child}'s book. A letter you keep private stays with you, and you can add it to the book later.
 
@@ -22,6 +24,10 @@ Your letters are yours. Here is what happens to them, plainly.
 Each child's book has its own list of people. Inviting someone to one book does not open the others.
 
 ## Where your letters live
+
+In this version, everything you write stays on your phone. Nothing you write is sent to our servers.
+
+> **Version 1.1.** This part describes signing in, syncing and sharing with a co-parent. It is not in this version yet.
 
 On your phone first. When you sign in, we ask before anything you write is first stored on our servers, because letters can hold private things, like health details about you or {child}.
 
@@ -61,8 +67,8 @@ Early Letters is for adults. A book is about a child, and the child does not use
 | You want to | Where |
 |---|---|
 | Export your book | Settings, Export your book |
-| Delete a letter, a book or your account | See [Deleting and exporting](deleting-and-exporting.md). Your account: Settings, Delete account. |
-| Stop syncing | Settings, Privacy, Sync and family sharing |
+| Delete a letter, a book or your account | See [Deleting and exporting](deleting-and-exporting.md). Your account (version 1.1): Settings, Delete account. |
+| Stop syncing (version 1.1) | Settings, Privacy, Sync and family sharing |
 | Turn usage and crash reports on or off | Settings, Privacy, Share usage and crash reports |
 | Show or hide names in notifications | Settings, Reminders, Names in notifications |
 | Ask a privacy question, or ask for a copy, a correction or deletion | Email {PRIVACY_EMAIL} |
@@ -80,6 +86,8 @@ You never need to send your letters, recordings or {child}'s name to get help. W
 ---
 
 ## Reviewer notes (remove before publishing)
+
+**Version 1.1 marks (founder decision, v1.0 is on-device only).** Marked above: the co-parent paragraph, the whole sync and servers passage under "Where your letters live", and the Stop syncing and Delete account rows. At v1.0 publish, drop the marked passages. Unmarked text was checked against on-device only: letters and recordings stay on the phone, transcription is on the phone, and the "backup" mention is Apple's own iPhone backup (D-033), not ours. The short-version bullets still hold. Open for `legal`: the Privacy Policy sections that describe servers and sharing need the same v1.0 reading.
 
 **Built on develop (7cc43b1):**
 - Settings, Privacy: `apps/mobile/src/app/settings/privacy.tsx` lines 50 to 64 ("Share usage and crash reports"; "Sync and family sharing", whose help text says turning it off stops syncing and offers to delete what already synced, `strings.en.ts` line 681; links to the Privacy Policy, Consumer Health Data Privacy Policy, subprocessors and Terms).

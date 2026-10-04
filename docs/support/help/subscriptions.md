@@ -1,15 +1,15 @@
 # Plus and your Apple subscription
 
-Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds a few extras. You buy it, change it, cancel it and ask for refunds through Apple, using your Apple Account.
+Writing, reading, playing your recordings, export and writing with your co-parent (version 1.1) are free, always. Plus adds a few extras. You buy it, change it, cancel it and ask for refunds through Apple, using your Apple Account.
 
 ## What Plus adds
 
 - **Read together** whenever you like, after the first 3 times in each book.
-- **Books for more children.** Your first book is always free. So are twins or more you add together when you first set up, and a book you joined as a co-parent does not count as your free book.
+- **Books for more children.** Your first book is always free. So are twins or more you add together when you first set up, and (from version 1.1) a book you joined as a co-parent does not count as your free book.
 
 ## What stays free, with or without Plus
 
-Every letter you write, every recording you play, export, and writing with your co-parent. If you never subscribe, or stop later, everything you made stays yours to read, play and export. Every book you already have stays open for writing.
+Every letter you write, every recording you play, export, and (from version 1.1) writing with your co-parent. If you never subscribe, or stop later, everything you made stays yours to read, play and export. Every book you already have stays open for writing.
 
 ## Plans and free trials
 
@@ -67,6 +67,8 @@ A refund never changes your letters or recordings. If Apple gives a refund, Plus
 
 ## Sharing Plus with your co-parent
 
+> **Version 1.1.** Co-parent sharing is not in this version yet. Plus can still be shared through Apple Family Sharing, which is Apple's feature. Whether it needs anything from Early Letters at v1.0 is for `payments` to confirm before this section is published.
+
 Plus can be shared through Apple Family Sharing. When you and your co-parent are in the same Family Sharing group, your co-parent gets Plus too, at no extra cost.
 
 **If you have not set up Family Sharing:** open the Settings app, tap your name, tap Family, then follow the steps to invite your co-parent.
@@ -106,6 +108,8 @@ Our Subscription terms are part of our Terms of Service. Open them from Settings
 ---
 
 ## Reviewer notes (remove before publishing)
+
+**Version 1.1 marks (founder decision, v1.0 is on-device only).** Marked above: co-parent writing and joined-book wording, and the Sharing Plus with your co-parent section. Apple purchase, restore, cancel and refund steps do not need an Early Letters account (D-053) and stay as written. **Hold before publishing:** the Plus scope in this article (Read together after 3 free times, books for more children, writing free always) follows D-053 on origin/develop. The 4 Oct membership decision (D-051 in the coordinator's local decision log, not yet on origin/develop) makes Plus the membership that unlocks new letters after 2 free per account, which would change "What Plus adds", "What stays free" and "If Plus ends". It also counts "per account", which needs a way to count on the device when there is no sign-in. Do not publish this article until `product` and `legal` settle that.
 
 **What Plus includes: from D-053 and the shipped code only (develop at 7cc43b1).**
 - `docs/DECISIONS.md` line 345, D-053 (Decided, founder): "Plus gates only Read together after 3 free sessions per book, and books for more children". Lines 366 to 369: Plus copy lists only what v1.0 gates.

@@ -1,5 +1,7 @@
 # Writing with your co-parent
 
+> **Coming in version 1.1.** Writing together with a co-parent is not in this version yet. In this version every letter stays on your phone.
+
 Invite your co-parent, and you can both write to {child}, in one book.
 
 ## What a co-parent can do
@@ -71,6 +73,8 @@ Inviting grandparents, aunts, uncles and friends to write is not in this version
 ---
 
 ## Reviewer notes (remove before publishing)
+
+**Version 1.1 (founder decision, v1.0 is on-device only).** This whole article describes co-parent sharing, invites, accounts and sync, which move to v1.1 (brief decisions 4 and 5, as amended in PR #33; the v1.0 build shows a "coming soon" screen in PR #54). Do not publish it with the v1.0 help centre. The notes below describe what is built on develop.
 
 **Built on develop (7cc43b1):** co-parent invites end to end.
 - Family tab: `apps/mobile/src/app/(tabs)/family.tsx`. Signed out, "Invite a co-parent" opens sign-in first (lines 93 and 94). Pending invites show "Invited" with "Share again" and "Cancel invite" (lines 160 to 168).

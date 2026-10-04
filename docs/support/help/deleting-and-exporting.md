@@ -10,7 +10,7 @@ You get one ZIP file with:
 
 - every letter and note, as text;
 - for the letters you wrote, a data file with your words exactly as you said them, every small fix, and the letter as you kept it;
-- the letters your co-parent added to the book, as they kept them;
+- the letters your co-parent added to the book, as they kept them (version 1.1);
 - every recording on this phone, exactly as it was made;
 - a printable book for each child, by month (letters you kept private are not in it, but they are in the other files);
 - a page you can open in any web browser to read every letter and hear every recording, with no connection;
@@ -36,14 +36,16 @@ You can delete only letters you wrote. Nobody can delete or change another perso
 
 Settings, {child}'s book, **Delete this book**.
 
-- **If you keep the book on your own,** every letter and recording in it is removed, from this phone and from our servers.
-- **If you share the book with a co-parent,** the book stays with your co-parent. Only your own letters and recordings leave it, and you leave the book.
+- **In this version,** every letter and recording in the book is removed from this phone.
+- **From version 1.1, if you keep the book on your own,** they are also removed from our servers. **If you share the book with a co-parent,** the book stays with your co-parent, and only your own letters and recordings leave it.
 
 Either way you have 30 days to change your mind. You can export first, free.
 
 Want a rest instead? **Hide this book** quiets every reminder and note about {child}. Nothing is deleted, and you can show it again any time.
 
 ## Delete your account
+
+> **Version 1.1.** There are no accounts in this version, so there is no account to delete. To remove everything Early Letters keeps on your phone, delete the app (see below), and export first if you want a copy.
 
 Settings, **Delete account**. You can do it all in the app. There is nothing to email and no one to call.
 
@@ -62,11 +64,13 @@ Settings, **Delete account**. You can do it all in the app. There is nothing to 
 
 ## Deleting the app
 
-Deleting the app removes everything it keeps on this phone, including recordings. If you are signed in and synced, your letters are still in your account. Your recordings live on this phone, so export them first to keep a copy.
+Deleting the app removes everything it keeps on this phone, including recordings. (From version 1.1, if you are signed in and synced, your letters are still in your account.) Your recordings live on this phone, so export them first to keep a copy.
 
 Deleting the app does not cancel Plus. Cancel with Apple: see [Plus and your Apple subscription](subscriptions.md).
 
 ## Without the app
+
+> **Version 1.1.** This is about accounts, which are not in this version yet.
 
 If you cannot use the app, write to us at {PRIVACY_EMAIL} and ask us to delete your account. The page at {WEB_DELETION_URL} explains the same steps.
 
@@ -77,6 +81,8 @@ Write to us at {SUPPORT_EMAIL}. Please do not send the letters themselves. Tell 
 ---
 
 ## Reviewer notes (remove before publishing)
+
+**Version 1.1 marks (founder decision, v1.0 is on-device only).** Marked above: co-parent letters in the export, server deletion, Delete account, the synced-account line under Deleting the app, and Without the app. Open question for the founder (PR #54, decision 2): v1.0 has no "Delete everything on this phone" path; if one is added, this article names it where Delete account sits now. Until then, "delete the app" is the only way to remove local data. The `/delete-account` page and email route (D-042) cover accounts, so they are v1.1 too. Export itself is unchanged and runs on the phone.
 
 **Built on develop (7cc43b1):**
 - **Export:** `apps/mobile/src/app/settings/export.tsx` and `apps/mobile/src/lib/export/`. Contents from `packages/content/src/features/export.en.ts` lines 10 to 14 (the "What is inside" list) and the README lines 64 to 87 (printable book leaves out private letters; `index.html` works with no connection; recordings byte for byte). "Works without a connection. Nothing is sent anywhere." (line 15), "Save or share" (line 21), the unlocked-file notice (line 23), the too-big message (line 28). The words exactly as heard and the fixes are exported for your own letters only (`apps/mobile/src/lib/export/schema.ts` line 67). The path is the Settings row "Export your book" (`settingsHome.exportLabel`) and the button "Export everything" (`settings.export.button`, `strings.en.ts` line 627).

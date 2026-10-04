@@ -82,6 +82,8 @@ Write to us at {SUPPORT_EMAIL}. Tell us the language, and whether the trouble is
 
 ## Reviewer notes (remove before publishing)
 
+**Checked against v1.0 on-device only (4 Oct 2026).** This article describes no sign-in, sync, backup or family feature, so it needs no version 1.1 mark. Transcription, language downloads, fixes and names are all on the phone. Not changed.
+
 **Built on develop (7cc43b1):**
 - Speak and Type on Tonight; the Review screen with the fix list, Put it back, Keep it word for word, Show exactly what I said and "Tap any word to change it" (`strings.en.ts` lines 168 to 170, 250 to 255, 318); the microphone and transcription failed messages (lines 799 to 809); the one-time "Please have a read" card (line 334).
 - On-device speech and language downloads: `docs/agents/BOARD.md` "Done this wave" (speech, language, platform); ADR 0015 (one shared model, Hindi its own). Settings, Spoken language (`apps/mobile/src/app/settings/language.tsx`; `packages/content/src/features/language.en.ts` lines 12 to 17: one language plus "up to two more"). Settings, Storage removes downloads and has "Use mobile data" (`apps/mobile/src/app/settings/storage.tsx` line 132; `packages/content/src/features/packs.en.ts` lines 8, 9, 39 and 40). Settings, Recordings lists speech per language (`packages/content/src/features/speech.en.ts` lines 9 and 10).
