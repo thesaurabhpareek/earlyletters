@@ -101,3 +101,47 @@
     width: 100%;
   }
 }
+
+/* Quiet variant: one underlined field, a text button, no pill or fill. */
+.quiet .label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.quiet .row {
+  gap: 14px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--night-ink) 30%, transparent);
+  flex-direction: row;
+}
+.quiet .row:focus-within {
+  box-shadow: none;
+  border-bottom-color: var(--night-accent);
+}
+.quiet .input {
+  height: 48px;
+  padding: 0;
+  font-size: 19px;
+}
+.quiet .button {
+  width: auto;
+  padding: 0 2px;
+  background: transparent;
+  color: var(--night-accent);
+  font-size: 17px;
+  white-space: nowrap;
+}
+.quiet .button:hover {
+  filter: none;
+  color: var(--night-ink);
+}
+.quiet .note {
+  padding: 0;
+}

@@ -15,7 +15,8 @@ type State = 'idle' | 'sending' | 'done' | 'invalid' | 'rate_limited' | 'server'
 
 export const NOTIFY_INPUT_ID = 'notify-email';
 
-export function NotifyForm() {
+/** `quiet` is the understated variant: a single underlined field with a text button, for pages where this is the only ask. */
+export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
   const hintId = useId();
   const statusId = useId();
   const [state, setState] = useState<State>('idle');
@@ -43,7 +44,7 @@ export function NotifyForm() {
   const message = state === 'invalid' ? c.error : state === 'rate_limited' ? c.rateLimited : state === 'server' ? c.server : '';
 
   return (
-    <form className={styles.form} onSubmit={onSubmit} noValidate>
+    <form className={`${styles.form} ${quiet ? styles.quiet : ''}`} onSubmit={onSubmit} noValidate>
       <label htmlFor={NOTIFY_INPUT_ID} className={styles.label}>
         {c.label}
       </label>
@@ -63,7 +64,7 @@ export function NotifyForm() {
           className={styles.input}
         />
         <button type="submit" className={styles.button} disabled={state === 'sending'}>
-          {state === 'sending' ? c.sending : c.button}
+          {state === 'sending' ? c.sending : quiet ? c.quietButton : c.button}
         </button>
       </div>
       <div className={styles.honeypot} aria-hidden="true">
