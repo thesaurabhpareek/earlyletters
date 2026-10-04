@@ -23,13 +23,18 @@ The machine may remove and repair. It may never add meaning.
 | `experiments` | Mac kit to test speech models on real recordings |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | System design and decision records |
 | `docs/design/` | Design language, benchmark, component library, component specs |
+| `packages/api` | Typed API contracts, signed manifests, latency budgets |
+| `packages/analytics`, `packages/emails` | Opt-in analytics allowlist and insights loop; React Email templates |
+| `packs/` | Language rule packs (data, downloaded on demand) |
+| `docs/agents/` | Agent brief, coordination rules, board, debates. Read `COORDINATION.md` before working |
 
 ## Commands
 ```bash
 npm install            # once, at the repo root
-npm test               # engine (237) + mobile (31) + content rules (16) + analytics (39) + tokens (4) + experiments (11); Node 22+
+npm test               # every workspace (~1,150 tests: core, mobile, api, analytics, content, emails, tokens, experiments); Node 22+
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
-npm run test:db        # access matrix, security, governance, classification, entitlements, purge, performance (8 files)
+npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (15 files)
+npm run test:functions # Edge Functions and ops scripts (Deno via npx)
 npm run typecheck
 npm run mobile         # start the iOS app
 ```
