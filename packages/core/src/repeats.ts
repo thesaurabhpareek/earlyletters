@@ -18,7 +18,7 @@
  * the verifier's "duplicates the words immediately before" check proves it.
  */
 import type { Edit } from './types';
-import { type Token } from './text';
+import { nfc, type Token } from './text';
 import { ENGLISH_RULES, type LanguageRules } from './lang/engine';
 import { REPEAT_ALWAYS, REPEAT_SUGGEST_ONLY } from './lang/english-tables';
 
@@ -45,7 +45,8 @@ export function findRepeats(raw: string, rules: LanguageRules = ENGLISH_RULES): 
   const SOFT_GAP = R.softGap;
   const TIGHT_GAP = R.tightGap;
   const toks = R.tokens(raw);
-  const lw = toks.map((t) => t.word.toLowerCase());
+  // NFC, so a precomposed and a decomposed copy of the same word are one word.
+  const lw = toks.map((t) => nfc(t.word).toLowerCase());
   const out: RepeatFinding[] = [];
   const gap = (a: Token, b: Token) => raw.slice(a.end, b.start);
   const taken = (start: number, end: number) => out.some((f) => f.edit.start < end && start < f.edit.end);

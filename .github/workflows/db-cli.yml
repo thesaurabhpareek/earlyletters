@@ -1,0 +1,56 @@
+# Real Supabase stack checks for database changes (CI-03). On pull requests
+# that touch supabase/**: start the local stack, rebuild it from every
+# migration with `supabase db reset`, lint the schema (fail on error level),
+# then run the PGlite access-rule suite. The nightly workflow calls this file
+# too (workflow_call). Not part of the `required` aggregator, because it only
+# runs when supabase/** changes.
+# Actions are pinned to commit SHAs (CI-06); the comment names the tag.
+name: DB CLI
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db-cli.yml'
+  workflow_call:
+
+concurrency:
+  group: db-cli-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  # Pinned so CI and DEPLOY.md agree. Bump deliberately, after reading the
+  # CLI changelog.
+  SUPABASE_CLI_VERSION: 2.119.0
+
+jobs:
+  db-cli:
+    name: supabase start, reset, lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Start the local stack (services the checks do not need are skipped)
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - name: Rebuild from every migration
+        run: supabase db reset --local
+      # Advisory until DB-17 is fixed: plpgsql_check reports 42P01 for a pg_temp table that a purge function creates at run time
+      # (migration already applied, so it cannot be edited). `db reset` above is the blocking check.
+      - name: Lint the schema (advisory)
+        continue-on-error: true
+        run: supabase db lint --local --level error --fail-on error
+      - name: Access rules, governance, classification, performance (PGlite)
+        run: npm run test:db
+      - name: Stop the stack
+        if: always()
+        run: supabase stop --no-backup || true

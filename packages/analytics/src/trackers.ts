@@ -36,7 +36,7 @@ export type MemberRole = 'parent' | 'contributor';
 /** A member's role in a book: co-parents are `parent` (B section 6). */
 export type InviteRoleInput = 'parent' | 'contributor';
 
-const inviteRole = (r: InviteRoleInput) => (r === 'parent' ? 'co_parent' : 'contributor') as V<'invite_created', 'role'>;
+const inviteRole = (r: InviteRoleInput) => r as V<'invite_created', 'role'>;
 
 export interface LetterSavedInput {
   mode: 'spoken' | 'typed';
