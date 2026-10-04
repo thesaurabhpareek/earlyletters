@@ -791,7 +791,7 @@ Source: branch `feat/email-brand-library`, the reviews in `docs/reviews/2026-10-
 
 #### BL-365 Counsel review of the legal drafts
 - Status: ready. Mode: human. Owner: founder. Milestone: M9. Size: M.
-- Satisfies: `packages/content/legal/REVIEW_NOTES.md` (open questions, including `coparent-left` and D-081).
+- Satisfies: `docs/legal/COUNSEL_PACKET.md` (open questions, including `coparent-left` and D-081).
 - Scope: counsel sign-off, effective dates, versions; written no-training confirmation from Resend.
 
 #### BL-366 Trademark clearance for the name and the mark
