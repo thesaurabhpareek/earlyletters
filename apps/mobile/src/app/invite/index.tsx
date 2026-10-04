@@ -27,6 +27,7 @@ import { familyCopy } from '@/lib/family/copy';
 import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import { parseInviteInput } from '@/lib/family/invite-link.logic';
 import { acceptInvite, bookName } from '@/lib/family/invites';
+import { track } from '@/lib/analytics/track';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '@/lib/family/pending-invite';
 import { haptic } from '@/lib/haptics';
 import { getChild, setActiveChildId, subscribe } from '@/lib/store';
@@ -51,6 +52,7 @@ export default function JoinBook() {
   useEffect(() => {
     void readPendingInvite().then((p) => {
       token.current = p?.token ?? null;
+      if (p) track('invite_opened', { via: 'link', signed_in: auth.signedIn });
       setPhase(p ? 'ready' : 'paste');
     });
   }, []);
@@ -69,6 +71,7 @@ export default function JoinBook() {
       setPhase('joined');
     } catch (e) {
       const kind = inviteErrorKind(e);
+      track('invite_failed', { stage: 'accept', reason: kind });
       if (FINAL.includes(kind)) await clearPendingInvite();
       setError(kind);
       setPhase('failed');
@@ -106,6 +109,7 @@ export default function JoinBook() {
       return;
     }
     await savePendingInvite(t);
+    track('invite_opened', { via: 'paste', signed_in: auth.signedIn });
     token.current = t;
     attempted.current = false;
     setPasteError(false);

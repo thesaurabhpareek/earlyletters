@@ -59,6 +59,7 @@ import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, ty
 import { createSampleTranscriber } from '../transcribe-sample';
 import { createWhisperTranscriber } from '../transcribe-whisper';
 import { copyForLetter } from '../audio-enhance';
+import { trackTranscriptionCompleted } from '../analytics/track';
 import { getSpokenLanguages, languageCleanOptions } from '../language';
 import { cleanSpoken, spokenEditLevel } from './clean';
 import { initialQueue, languagesWaiting, nextJob, nextRetryAt, reduce, type Job, type JobFailure, type QueueEvent, type QueueState } from './machine';
@@ -393,6 +394,15 @@ async function runJob(id: string): Promise<void> {
   }
   dispatch({ type: 'start', id });
   if (state.running !== id) return;
+  // transcription_completed (TRACKING_PLAN 9): model family, buckets and the outcome only; dropped until a yes.
+  const startedAt = Date.now();
+  const modelId = transcriber.isSample ? null : (planFor([job.language]).asr[job.language] ?? null);
+  const report = (outcome: 'ok' | 'no_speech' | 'failed') => {
+    if (transcriber.isSample) return;
+    try {
+      trackTranscriptionCompleted({ engine: 'on_device', modelId, audioMs: source.durationMs ?? 0, latencyMs: Date.now() - startedAt, outcome });
+    } catch {}
+  };
   const ctrl = new AbortController();
   controller = ctrl;
   if (transcriber === whisper) setSetting(RUNNING_MARKER, '1');
@@ -406,6 +416,7 @@ async function runJob(id: string): Promise<void> {
     if (ctrl.signal.aborted) throw new TranscriptionAborted();
     deliver(id, res, dictionary, job.language, transcriber.isSample);
     if (!transcriber.isSample) copiesDue.add(id);
+    report(res.outcome);
     dispatch({ type: 'finish', id, outcome: res.outcome });
   } catch (e) {
     if (e instanceof TranscriptionAborted || ctrl.signal.aborted) {
@@ -416,6 +427,7 @@ async function runJob(id: string): Promise<void> {
     } else {
       const failure = failureOf(e);
       if (failure === 'model_load_failed') recordMemoryFailure();
+      report('failed');
       dispatch({ type: 'fail', id, failure, now: Date.now() });
     }
   } finally {

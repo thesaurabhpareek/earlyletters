@@ -386,3 +386,127 @@ Rollback: prefer fixing forward. File 9 adds tables and functions only (plus two
 - Account deletion's "What happens" lines call `sync_books()` (file 9 section 8b).
 - The app never calls anything in `ops` or `insights`.
 
+
+## File 20261005000000_family_cap_language_idempotency.sql (3 Oct 2026, db-followup)
+
+File 12. Apply after file 11 (`20261004300000_insights_aggregates.sql`), in the same way as step 9. It adds and replaces; it drops nothing that holds data. Tests: `db_followup_family_cap`, `db_followup_language`, `db_followup_idempotency_rates` (108 checks), plus new rows in `access_matrix`; `npm run test:db` now runs 15 files.
+
+What it does:
+- **Two parents per book (D-069, recommended).** `create_child_invite(p_child, 'parent', ...)` and `accept_child_invite` refuse with `SCCAP` when the book already has `app.max_parents_per_book` parents (default 2). Both lock the book row first, so two people accepting at once cannot make a third parent. A further parent is added only by support (below). Security review H2: an invite whose maker is no longer a parent of the book is refused, and a parent who leaves (any path) has their open invites revoked.
+- **Leaving and removing.** `leave_child(p_child, p_keep_in_book default true)` for any member ("take my letters out" takes them out of the book, never deletes them; the last parent gets `SCLPG` as before). `remove_child_member(p_child, p_member, p_set_aside default false)`: either parent removes a family member alone, no veto; their letters stay unless `p_set_aside`, which sets them aside. A parent is never removed by the other parent (`42501`); only their own `leave_child` ends it. Listing members needs nothing new (`child_members` under RLS, `sync_books()`, `sync_pull()` meta).
+- **`entries.language`**: one of `en hi es zh fr ar pt` or null, L4, written and read by the author only (decision below). `sync_push` field group `language`; `sync_pull` returns it on the caller's own letters only; `insights.language_mix` now reads it with static SQL (k = 10 unchanged).
+- **Idempotency keys** for `create_child_invite` and `record_policy_act`, read from the `idempotency-key` request header (ADR 0017 rule 3). Table `idempotency_keys` (functions only; no client access), 24 hours, trimmed by the hourly `scribe-sync-housekeeping` job (step 15). A repeat with the same key and arguments replays the first result; other arguments with the same key are `22023`. An invite repeat issues a fresh token for the same invite, because tokens are never stored.
+- **Server rate limits** (`SCRAT`): `request_account_deletion` 5 new requests and `cancel_account_deletion` 5 cancellations per person per rolling 24 h (a repeat that returns the open request, or a cancel with nothing to cancel, is free); `record_policy_act` 60 per hour and 200 per 24 h; `policy_actions_needed` 60 per hour (it is now VOLATILE because it counts); `accept_child_invite`, `leave_child`, `remove_child_member` 120 per hour together. Sync limits keep their numbers, but the counters (`sync_rate_windows`) are no longer writable by their owner (security review M3: a client could reset its own limit); they change only through `rate_hit()`.
+- **Photos** (security review L2): renaming an object can no longer move it into a book the author does not belong to, or into a deleted book.
+
+### Step 17. Before file 12
+
+Read only:
+```sql
+-- a) Books with more than two parents today (expect none). Nothing changes for them, but they cannot add another parent.
+select child_id, count(*) from public.child_members where role = 'parent' group by 1 having count(*) > 2;
+-- b) Open invites whose maker is no longer a parent of the book (file 12 refuses them at accept; expect none).
+select count(*) from public.child_invites i
+ where i.accepted_at is null and i.revoked_at is null and i.expires_at > now()
+   and not exists (select 1 from public.child_members m where m.child_id = i.child_id and m.profile_id = i.invited_by and m.role = 'parent');
+-- c) The new names are free (expect five nulls).
+select to_regclass('public.idempotency_keys'), to_regprocedure('public.leave_child(uuid, boolean)'),
+       to_regprocedure('public.remove_child_member(uuid, uuid, boolean)'), to_regprocedure('public.rate_hit(text)'),
+       (select attname from pg_attribute where attrelid = 'public.entries'::regclass and attname = 'language' and not attisdropped);
+```
+App compatibility: no signature changes, so today's build keeps working. `SCCAP` is reachable only through a second co-parent invite, which the app already hides. `sync_pull` rows gain a `language` key that today's build ignores.
+
+### Step 18. Apply file 12
+
+SQL Editor > New query, `begin;` on the first line, the whole file, `commit;` on the last line, Run. Any error rolls the file back; copy it and stop. Then:
+```sql
+insert into supabase_migrations.schema_migrations (version, name) values ('20261005000000', 'family_cap_language_idempotency')
+on conflict do nothing;
+```
+Add `20261005000000_family_cap_language_idempotency.sql` to `.github/migrations-applied.txt` in the pull request that records the apply.
+
+Check the result:
+```sql
+select public.max_parents_per_book();                                           -- 2
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in, has_function_privilege('anon', p.oid, 'execute') anon
+  from pg_proc p where p.pronamespace = 'public'::regnamespace
+   and p.proname in ('leave_child', 'remove_child_member', 'rate_hit', 'max_parents_per_book', 'request_idempotency_key',
+                     'idempotency_claim', 'idempotency_store') order by 1;
+-- leave_child, rate_hit, remove_child_member: true / false; the other four: false / false
+select has_table_privilege('authenticated', 'public.sync_rate_windows', 'select') reads,
+       has_table_privilege('authenticated', 'public.sync_rate_windows', 'delete') resets,
+       has_table_privilege('authenticated', 'public.idempotency_keys', 'select') keys;   -- true, false, false
+select provolatile from pg_proc where proname = 'policy_actions_needed';         -- v
+select insights.language_mix_available();                                       -- true
+```
+Then repeat the classification and RLS queries from step 4 (expect 0 and 0). Advisors, expected and accepted: **0029** for `leave_child`, `remove_child_member` and `rate_hit` (each starts with `require_user()`); `idempotency_keys` has RLS on and no policy (intentional: functions only).
+
+### Step 19. Settings for file 12
+
+- **Parents per book.** Nothing to set for D-069. If you decide against it, raise the limit (1 to 10; anything else reads as 2):
+  ```sql
+  alter database postgres set app.max_parents_per_book = '10';
+  ```
+  Back to the default: `alter database postgres reset app.max_parents_per_book;`. A database setting reaches new connections only; the API's pooled connections pick it up as they are recycled (Assumption: within about 30 minutes; a project restart from the dashboard applies it at once).
+- **A further parent through support** (FAM-11, D-069), service role, after verifying the request:
+  ```sql
+  insert into public.child_members (child_id, profile_id, role) values ('<book id>', '<profile id>', 'parent');
+  select public.ops_audit_write('<operator>', 'safety_removal', 'third_parent_added', '<ticket>', '<profile id>', '<book id>');
+  ```
+  Removing a parent for safety (Terms 9.4) is the same with `delete from public.child_members where child_id = '<book id>' and profile_id = '<profile id>';` and reason `parent_removed`; the last-parent guard still applies, and their open invites are revoked automatically. Service deletes write no `member_removed` row, so the ops audit line is the record.
+- **Cron:** nothing new. The hourly `scribe-sync-housekeeping` job now also trims idempotency keys older than 24 hours (its result gains `idempotency_keys`).
+
+### Error codes added or widened by file 12
+
+| SQLSTATE | Where | App |
+|---|---|---|
+| `SCCAP` (new) | `create_child_invite` with role parent, `accept_child_invite` of a parent invite: the book already has the most parents allowed (detail: the limit) | Tell the person ("This book already has two parents"); never retry |
+| `SCRAT` | now also `request_account_deletion`, `cancel_account_deletion`, `record_policy_act`, `policy_actions_needed`, `accept_child_invite`, `leave_child`, `remove_child_member` | Tell the person or skip quietly (`policy_actions_needed` already falls back to `policy_versions`) |
+| `22023` | malformed `idempotency-key`, or a key reused with other arguments; `remove_child_member` on yourself | Permanent; a client bug |
+| `42501` | `remove_child_member` on a parent | Permanent; the app never offers it |
+| `SCINV` | also: a repeat of an invite request whose invite is closed; an invite whose maker left | As today (message says "not found" or "closed") |
+
+### Decision: a letter's language is the author's only
+
+`book_entries` does not carry `entries.language`, so co-parents and family never receive it, even for letters in the book. Why: no v1.0 reader feature needs it (script and direction come from the text itself, `packages/core/src/lang/script.ts`); it is L4 personal data (DATA_CLASSIFICATION, a person's language); and adding it later is one appended view column when a feature needs it (for example a per-letter voice in Read together or print typesetting), whereas taking it back from phones is not possible. The k-anonymised `insights.language_mix` is the only other reader.
+
+### App changes for file 12 (mobile and platform owners)
+
+- **Idempotency keys must survive retries.** `createCoParentInvite` (`lib/family/invites.ts`) and `recordConsentStep` (`lib/auth/consent.ts`) call `idempotencyKey()` inside the request, so every retry carries a new key and the server cannot recognise it. Make the key once per user action and pass the same one to every retry of that action (supabase-js never retries a POST itself).
+- **Invites:** map `SCCAP` in `invite-errors.logic.ts` to its own kind and line; packages/api `SQLSTATE_RULES` needs `SCCAP` as `tell_user` with a new code (for example `parents_full`), otherwise it falls to "reject".
+- **Family screen:** leaving calls `leave_child(p_child, p_keep_in_book)` (not a direct `child_members` delete, which still works but cannot take letters out); removing a family member calls `remove_child_member(p_child, p_member, p_set_aside)`, offered only for family members.
+- **Letter language:** local migration v5 adds `entries.language TEXT` (the app keeps it today only as the device setting `speech.letterLanguage.<id>`); the outbox snapshot sends `language` in `entry.upsert` data and lists `language` in `changed` when it changes; `FieldGroup`/`ALL_GROUPS` in `lib/sync/types.ts` gain `'language'`; the merge stores `language` from own rows only and never expects it on others' rows.
+- **packages/api `standards.ts`:** `policyActionsNeeded.rateLimit.enforcedBy` becomes `'rpc'`; add `leaveChild` and `removeChildMember` (`write_rpc`, `natural_id`, 120 per hour per user, `rpc`); ADR 0017 section 6 can close the idempotency and sync-limit gaps.
+
+### Rolling back file 12
+
+Prefer fixing forward. Partial switches, each on its own:
+- Parent cap: raise `app.max_parents_per_book` (step 19). No code change.
+- Idempotency: `create or replace function public.request_idempotency_key() returns uuid language sql stable set search_path = public, pg_catalog as $$ select null::uuid $$;` makes every call behave as before the file.
+- Leaving and removing: `revoke execute on function public.leave_child(uuid, boolean), public.remove_child_member(uuid, uuid, boolean) from authenticated;`
+
+Full rollback (tested in PGlite: afterwards the original sync, security, governance, RLS and classification suites pass, including a third parent): in one transaction,
+1. Re-run these `create or replace function` blocks from the earlier files, unchanged: `sync_pull`, `sync_push`, `sync_housekeeping` (file 9, `20261004100000`); `insights._language_counts` (file 11); `create_child_invite`, `accept_child_invite`, `request_account_deletion`, `cancel_account_deletion`, `record_policy_act`, `policy_actions_needed` (file 5, `20261003000000`), and file 5's `alter policy entry_photos_author_update` statement.
+2. Then:
+```sql
+drop trigger entries_language_guard on public.entries;
+drop trigger child_members_revoke_invites on public.child_members;
+drop function public.entries_language_guard();
+drop function public.child_members_revoke_invites();
+drop function public.leave_child(uuid, boolean);
+drop function public.remove_child_member(uuid, uuid, boolean);
+drop function public.rate_hit(text);
+drop function public.idempotency_claim(uuid, text, jsonb);
+drop function public.idempotency_store(uuid, text, jsonb);
+drop function public.request_idempotency_key();
+drop function public.max_parents_per_book();
+drop table public.idempotency_keys;
+drop index if exists public.deletion_requests_profile_idx;
+alter table public.entries drop constraint entries_language_code;
+alter table public.entries drop column language;          -- erases recorded languages
+delete from public.sync_rate_windows where bucket not in ('pull', 'push');
+alter table public.sync_rate_windows drop constraint sync_rate_windows_bucket_check;
+alter table public.sync_rate_windows add constraint sync_rate_windows_bucket_check check (bucket in ('pull', 'push'));
+grant insert, update, delete on public.sync_rate_windows to authenticated;   -- file 9's sync functions write it directly
+```
+Step 1 must come first: the replaced functions call the objects step 2 drops. The rollback re-opens the client-resettable sync counter and the stale-invite path (security review H2, M3).

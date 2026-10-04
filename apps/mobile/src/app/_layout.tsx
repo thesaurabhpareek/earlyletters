@@ -8,6 +8,7 @@ import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeSessions } from '@scribe/api';
 import { tokens } from '@scribe/design-tokens';
+import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { UIProvider } from '@/components/ui/provider';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
@@ -152,6 +153,8 @@ function Root() {
               <Stack.Screen name="invite" options={{ presentation: 'modal' }} />
             </Stack>
             <PendingInviteWatcher />
+            {/* The analytics ask: a later session after the first letter, on a tab root only (TRACKING_PLAN 9). */}
+            <AnalyticsConsentAsk />
           </SessionProvider>
         )}
       </UIProvider>

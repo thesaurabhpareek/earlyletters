@@ -5,6 +5,7 @@ import { ScrollView, View, useColorScheme } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { track } from '@/lib/analytics/track';
 import { billingCopy, presentPlusStore, usePlan } from '@/lib/billing';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { copy } from '@/lib/copy';
@@ -34,6 +35,8 @@ interface Props {
    * explains without selling. Defaults to an offer.
    */
   decision?: Decision;
+  /** What asked for Plus, for `plus_offer_viewed` (analytics only). */
+  trigger?: 'second_child' | 'read_together';
 }
 
 /**
@@ -41,7 +44,7 @@ interface Props {
  * subscription store view (ADR 0013), which shows the plans, prices, any free
  * trial, Restore and the legal links. Content sits near the top (no floating block).
  */
-export function PlusGate({ onNotNow, onPlus, onContinueDev, title, body, keepNote, icon, decision }: Props) {
+export function PlusGate({ onNotNow, onPlus, onContinueDev, title, body, keepNote, icon, decision, trigger = 'second_child' }: Props) {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const x = copy.childrenExtra;
   const g = billingCopy.gate;
@@ -78,7 +81,10 @@ export function PlusGate({ onNotNow, onPlus, onContinueDev, title, body, keepNot
     haptic('tap');
     setOpening(true);
     try {
-      if ((await presentPlusStore()) === 'purchased') carryOn();
+      track('plus_offer_viewed', { trigger });
+      const outcome = await presentPlusStore();
+      if (outcome !== 'busy') track('plus_offer_closed', { trigger, outcome });
+      if (outcome === 'purchased') carryOn();
     } finally {
       setOpening(false);
     }

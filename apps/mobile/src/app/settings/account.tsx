@@ -11,7 +11,7 @@
 import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
-import { Row, Section } from '@/components/settings/settings-ui';
+import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { authCopy } from '@/lib/auth/copy';
@@ -57,9 +57,9 @@ export default function AccountSettings() {
     return (
       <ScrollView contentContainerClassName="gap-6 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
         <Stack.Screen options={{ title: a.title }} />
-        <Section title={a.title}>
-          <Row first title={a.signedOutTitle} />
-        </Section>
+        <ListSection title={a.title}>
+          <ListRow title={a.signedOutTitle} />
+        </ListSection>
         <Text className="text-base leading-6 text-muted-foreground">{a.signedOutBody}</Text>
         {s.status === 'signedOut' && s.error === 'session_expired' ? <ErrorLine message={authCopy.errors.session_expired} /> : null}
         {auth.configured ? (
@@ -148,15 +148,15 @@ export default function AccountSettings() {
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: a.title }} />
 
-      <Section title={a.title}>
-        <Row first title={a.signedInWith[provider]} subtitle={auth.account.email ?? undefined} />
-      </Section>
+      <ListSection title={a.title}>
+        <ListRow title={a.signedInWith[provider]} subtitle={auth.account.email ?? undefined} />
+      </ListSection>
 
-      <Section title={a.syncTitle}>
-        <Row first title={a.syncLabel} value={syncLabel} />
-        {s.status === 'needsConsent' && <Row title={a.finishSetup} onPress={() => router.push('/sign-in/consent')} />}
+      <ListSection title={a.syncTitle}>
+        <ListRow title={a.syncLabel} trailing={syncLabel} />
+        {s.status === 'needsConsent' && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
         {s.status === 'ready' && s.sync === 'off' && (
-          <Row
+          <ListRow
             title={copy.sensitiveConsent.agreeButton}
             onPress={async () => {
               const r = await auth.turnOnSync();
@@ -164,35 +164,35 @@ export default function AccountSettings() {
             }}
           />
         )}
-      </Section>
+      </ListSection>
 
       {showPasskeys && (
-        <Section title={a.passkeysTitle} footer={a.passkeysHelp}>
-          {passkeys.map((p, i) => (
-            <Row
+        <ListSection title={a.passkeysTitle} footer={a.passkeysHelp}>
+          {passkeys.map((p) => (
+            <ListRow
               key={p.id}
-              first={i === 0}
               title={p.name ?? a.passkeyFallbackName}
               subtitle={longDate(p.createdAt.slice(0, 10))}
               value={a.removePasskey}
+              trailing="chevron"
               onPress={() => removePasskey(p)}
             />
           ))}
-          <Row first={passkeys.length === 0} title={a.addPasskey} onPress={() => void addPasskey()} disabled={busy} />
-        </Section>
+          <ListRow title={a.addPasskey} trailing="chevron" onPress={() => void addPasskey()} disabled={busy} />
+        </ListSection>
       )}
 
-      <Section title={a.devicesTitle} footer={a.signOutOthersHelp}>
-        <Row first title={a.signOutOthers} onPress={() => void signOutOthers()} disabled={busy} />
-      </Section>
+      <ListSection title={a.devicesTitle} footer={a.signOutOthersHelp}>
+        <ListRow title={a.signOutOthers} onPress={() => void signOutOthers()} disabled={busy} />
+      </ListSection>
 
       <View className="gap-3">
         <ErrorLine message={error} />
         {note ? <Text className="text-base leading-6 text-muted-foreground">{note}</Text> : null}
         {waitingToSignOut ? <Text className="text-base leading-6 text-muted-foreground">{a.signOutWaiting}</Text> : null}
-        <Section>
-          <Row first title={a.signOut} destructive onPress={signOut} disabled={waitingToSignOut} />
-        </Section>
+        <ListSection>
+          <ListRow title={a.signOut} variant="destructive" onPress={signOut} disabled={waitingToSignOut} />
+        </ListSection>
       </View>
     </ScrollView>
   );

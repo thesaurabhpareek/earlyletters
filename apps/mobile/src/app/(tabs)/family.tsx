@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChildren } from '@/components/child/use-children';
 import { MemberRow } from '@/components/family/member-row';
 import { Button } from '@/components/ui/button';
+import { ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { currentAuthUserId } from '@/lib/auth/auth-store';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -145,18 +146,17 @@ export default function Family() {
         </Animated.View>
 
         <View className="gap-2">
-          <Text role="heading" className="text-xs font-medium tracking-[1.2px] text-muted-foreground">
-            {fill(copy.familyTab.membersTitle, { child }).toUpperCase()}
-          </Text>
-          <View className="rounded-[20px] border border-border bg-card px-4">
-            <MemberRow signsAs={active.signsAs || f.members.you} role={f.members.you} />
+          <ListSection title={fill(copy.familyTab.membersTitle, { child })}>
+            <View className="px-4">
+              <MemberRow signsAs={active.signsAs || f.members.you} role={f.members.you} />
+            </View>
             {coParents.map((m) => (
-              <View key={m.profileId} className="border-t border-border">
+              <View key={m.profileId} className="px-4">
                 <MemberRow signsAs={m.label ?? f.members.coParent} role={f.members.coParent} />
               </View>
             ))}
             {pending.map((p) => (
-              <View key={p.id} className="border-t border-border pb-2">
+              <View key={p.id} className="px-4 pb-2">
                 <MemberRow signsAs={p.signsAs ?? f.members.invitedName} role={f.members.coParent} status={f.members.invited} />
                 <View className="flex-row flex-wrap gap-1 pl-12">
                   <RowAction
@@ -169,7 +169,7 @@ export default function Family() {
                 </View>
               </View>
             ))}
-          </View>
+          </ListSection>
           {coParents.length === 0 && pending.length === 0 && (
             <View className="gap-1 pt-2">
               <Text className="font-serif text-xl text-foreground">{copy.familyTab.emptyTitle}</Text>
