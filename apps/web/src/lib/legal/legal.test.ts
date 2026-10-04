@@ -44,6 +44,15 @@ describe('renderMarkdown', () => {
     expect(html).toContain('rel="noopener noreferrer"');
   });
 
+  it('gives every table its own landmark name when a page has several', async () => {
+    const table = '| A | B |\n|---|---|\n| 1 | 2 |\n';
+    const many = await renderMarkdown(`# T\n\n${table}\nText.\n\n${table}\nMore.\n\n${table}`, labels);
+    const names = [...many.html.matchAll(/aria-label="([^"]+)"/g)].map((m) => m[1]).filter((n) => n.startsWith('Table'));
+    expect(names).toEqual(['Table, 1 of 3', 'Table, 2 of 3', 'Table, 3 of 3']);
+    const one = await renderMarkdown(`# T\n\n${table}`, labels);
+    expect(one.html).toContain('aria-label="Table"');
+  });
+
   it('puts the contents before the first section when the body has no title', async () => {
     const { html, hasTitle } = await renderMarkdown('Notice.\n\n## 1. One\n\nA.\n\n## 2. Two\n\nB.\n', labels);
     expect(hasTitle).toBe(false);

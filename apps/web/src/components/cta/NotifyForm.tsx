@@ -43,8 +43,16 @@ export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
 
   const message = state === 'invalid' ? c.error : state === 'rate_limited' ? c.rateLimited : state === 'server' ? c.server : '';
 
+  // method and action only matter before the script loads or with it off: a native submit then POSTs to the
+  // endpoint instead of putting the address in the page URL (history, logs, Referer).
   return (
-    <form className={`${styles.form} ${quiet ? styles.quiet : ''}`} onSubmit={onSubmit} noValidate>
+    <form
+      className={`${styles.form} ${quiet ? styles.quiet : ''}`}
+      method="post"
+      action="/api/notify"
+      onSubmit={onSubmit}
+      noValidate
+    >
       <label htmlFor={NOTIFY_INPUT_ID} className={styles.label}>
         {c.label}
       </label>

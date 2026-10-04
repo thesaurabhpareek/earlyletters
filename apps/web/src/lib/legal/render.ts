@@ -96,6 +96,13 @@ const enhance: Plugin<[RenderLabels, TocEntry[], { hasTitle: boolean }], Root> =
   let firstH1: { parent: Parent; index: number } | undefined;
   let firstH2: { parent: Parent; index: number } | undefined;
 
+  // Several tables on one page must not share one landmark name, so a screen reader can tell them apart.
+  let tableTotal = 0;
+  walk(tree, (node) => {
+    if (node.tagName === 'table') tableTotal += 1;
+  });
+  let tableNumber = 0;
+
   walk(tree, (node, parent, index) => {
     switch (node.tagName) {
       case 'h1':
@@ -139,11 +146,9 @@ const enhance: Plugin<[RenderLabels, TocEntry[], { hasTitle: boolean }], Root> =
             });
           }
         });
-        const wrap = el(
-          'div',
-          { dataTableWrap: '', role: 'region', tabIndex: 0, ariaLabel: labels.table },
-          [node],
-        );
+        tableNumber += 1;
+        const tableLabel = tableTotal > 1 ? `${labels.table}, ${tableNumber} of ${tableTotal}` : labels.table;
+        const wrap = el('div', { dataTableWrap: '', role: 'region', tabIndex: 0, ariaLabel: tableLabel }, [node]);
         parent.children[index] = wrap;
         break;
       }
@@ -176,7 +181,7 @@ const schema: SanitizeOptions = {
   clobber: [],
   attributes: {
     ...defaultSchema.attributes,
-    '*': [...(defaultSchema.attributes?.['*'] ?? []), 'role', 'tabIndex', 'dataLabel', 'dataTableWrap', 'dataToc'],
+    '*': [...(defaultSchema.attributes?.['*'] ?? []), 'role', 'ariaLabel', 'tabIndex', 'dataLabel', 'dataTableWrap', 'dataToc'],
     a: [...(defaultSchema.attributes?.a ?? []), 'rel'],
   },
 };
