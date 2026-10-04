@@ -51,9 +51,25 @@ function outcomeFor(error: ProviderError): SubscribeOutcome {
 export async function subscribe(
   email: string,
   config: { apiKey: string; segmentId: string },
-): Promise<{ outcome: SubscribeOutcome; contactId?: string }> {
+): Promise<{ outcome: SubscribeOutcome; contactId?: string; existing?: boolean }> {
   const resend = clientFor(config.apiKey);
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+
+  // Look first. An address already on the list gets no second welcome email (nobody can use the form to mail
+  // someone repeatedly), and an address that has unsubscribed is left alone: it asked to stop, and the visitor
+  // still sees the same answer as for anyone else, so the form reveals nothing about who is on the list.
+  try {
+    const found = await resend.contacts.get(email, { signal });
+    if (!found.error && found.data?.id) {
+      if (!found.data.unsubscribed) {
+        const added = await resend.contacts.segments.add({ email, segmentId: config.segmentId }, { signal });
+        if (added.error && !isAlreadyExists(added.error)) return { outcome: outcomeFor(added.error) };
+      }
+      return { outcome: 'ok', contactId: found.data.id, existing: true };
+    }
+  } catch {
+    // A failed lookup falls through to create, which is idempotent for the list.
+  }
 
   const created = await resend.contacts.create({ email, segments: [{ id: config.segmentId }] }, { signal });
   if (!created.error) return { outcome: 'ok', contactId: created.data?.id };
