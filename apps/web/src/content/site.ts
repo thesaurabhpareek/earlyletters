@@ -80,7 +80,7 @@ export const site = {
       pill: "Keep me informed",
     },
     live: {
-      eyebrow: 'Free on iPhone',
+      eyebrow: 'On iPhone',
       /** Accessible name for the official badge link. The badge artwork carries its own words. */
       badgeLabel: `Download ${NAME} on the App Store`,
     },
@@ -190,21 +190,21 @@ export const site = {
         'Your letters are shared only with the people you invite.',
         'No ads. We never sell your data.',
         'Your letters are never used to train models.',
-        'Export your whole book, free, any time.',
+        'Every letter you have made stays yours to export, any time.',
         'Delete a letter or a recording whenever you like.',
       ],
     },
     s10: {
       label: 'Pricing',
-      headline: 'Free to write, read and keep.',
+      headline: 'Two letters free. Then Plus.',
       support:
-        'Writing, reading, playing your recordings and export are free, always. Plus is optional, at $3.99 a month or $29.99 a year.',
+        'Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters, backs up every recording, opens Read together after the free sessions and covers every child\'s book, with the whole family adding letters. $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.',
     },
     s11: {
       label: 'Start tonight',
       headline: 'Tell Meera about today.',
       supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will write once, when it is ready.`,
-      supportLive: 'Free on iPhone in the US. Your first letter takes a minute.',
+      supportLive: 'On iPhone in the US. Your first two letters are free, and a letter takes a minute.',
     },
   },
 

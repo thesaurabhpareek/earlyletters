@@ -59,7 +59,7 @@ export const site = {
       "Your recordings stay on your phone unless you back them up or choose cloud transcription. Family can hear a recording once it is backed up.",
       "Backups are encrypted on your phone first. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
       "No ads. We never sell your data or share it with advertisers.",
-      "You can export your book, free, at any time.",
+      "Every letter you have made stays yours to export, at any time.",
       "You can delete your own letters and recordings whenever you like.",
       "Each child has their own book and their own family list. Inviting someone to one book does not open the others.",
     ],
@@ -79,7 +79,7 @@ export const site = {
     },
     {
       q: "Can grandparents add letters?",
-      a: "Yes. Invite them and they can talk or type letters of their own in the free app on their phone, signed with their name, like From Nani. Parents approve family letters before they go into the book.",
+      a: "Yes. Invite them and they can talk or type letters of their own in the app on their phone, signed with their name, like From Nani. They do not need a membership of their own, and parents approve family letters before they go into the book.",
     },
     {
       q: "Which languages can I use?",
@@ -87,11 +87,11 @@ export const site = {
     },
     {
       q: "Can I get my memory book out?",
-      a: "Yes. Export it any time, for free: your letters, your recordings and a PDF of the book.",
+      a: "Yes. Export it any time: your letters, your recordings and a PDF of the book. Every letter you have made stays yours to export, with or without Plus.",
     },
     {
       q: "How much does it cost?",
-      a: "Writing, reading, playing your recordings, export and family letters are free, always. Plus is optional, from {price}, and adds backup for every recording, books for more children, Read together after your first 3 sessions, and a few extras. Your first child's book is free, and so are twins or more you add together when you set up.",
+      a: "Your first two letters are free, so you can try it. After that, adding new letters needs Plus membership: $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial, through the App Store in the US. One membership covers the whole family book, so grandparents add letters without one of their own. Plus also backs up every recording, opens Read together after the free sessions and covers every child's book. Every letter you have made stays yours to read, play and export, even if you stop.",
     },
     {
       q: "What happens to my recordings?",

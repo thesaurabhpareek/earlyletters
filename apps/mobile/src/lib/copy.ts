@@ -82,7 +82,7 @@ export const pendingCopy = {
   readTogether: {
     plusTitle: 'Read together is part of Plus', // readTogether.plusGate.title
     plusBody: 'You have read together {count} times for free. Plus keeps it open whenever you like.', // readTogether.plusGate.body
-    keepNote: 'Every letter stays open to read and hear, with or without Plus.', // readTogether.plusGate.keepNote
+    keepNote: 'Every letter you have made stays open to read, play and export, with or without Plus.', // readTogether.plusGate.keepNote
     emptyBody: 'Letters you add to the book will be here to read together.', // readTogether.empty
   },
   reader: {

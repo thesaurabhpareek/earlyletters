@@ -384,8 +384,8 @@ export const en = {
       removeButton: "Remove",
     },
     shareMessage: {
-      imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the free app on your iPhone, or helps you get it:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Get the free app and join here:",
+      imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the app on your iPhone, or helps you get it:",
+      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Get the app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
@@ -537,7 +537,7 @@ export const en = {
     },
     export: {
       title: "Export",
-      body: "Download every letter and recording, any time, free. Plain text and audio files.",
+      body: "Download every letter and recording, any time, with or without Plus. Plain text and audio files.",
       button: "Export everything",
       preparing: "Gathering every letter. This can take a minute.",
       ready: "Your export is ready.",
@@ -553,7 +553,7 @@ export const en = {
       bookBody: "Every letter and recording in {child}'s book will be removed from this phone and from our servers. Family members can save a copy of their own letters first.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
       bookUndo: "You have 30 days to change your mind. After that, it cannot be restored.",
-      bookExportFirst: "You can export everything first, free.",
+      bookExportFirst: "You can export everything first.",
       bookConfirm: "Delete the book",
       bookTypeToConfirmLabel: "Type {child}'s name to confirm",
       accountTitle: "Delete your account",
@@ -632,11 +632,10 @@ export const en = {
     add: {
       title: "Add a child",
       body: "Each child gets their own book, with their own months, family and settings.",
-      // PRD-REQ-015 (founder, 2 Oct 2026): one free book you start; books you joined as a co-parent do not count;
-      // children added together in first run are all free, so this sheet's twins line makes no price promise.
-      plusNote: "The first book you start is free, always. Books you start for more children are part of Plus.",
-      joinedNote: "A book you joined as a co-parent does not count as your free book.",
-      keepNote: "Every book you already have stays open for writing, reading and export, with or without Plus.",
+      // Founder decision, 4 Oct 2026: free is the first 2 letters; Plus membership covers every child's book.
+      // How family letters count toward the 2, and any second-child allowance, are open: no copy states them.
+      plusNote: "Plus membership covers every child's book.",
+      keepNote: "Every letter you have made stays open to read, play and export, with or without Plus.",
       twinsHelp: "Twins or more? Each child gets their own book.",
       cta: "Add {child}'s book",
     },
@@ -688,7 +687,7 @@ export const en = {
       restoreLink: "Restore",
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
-    promise: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras.",
+    promise: "Your first two letters are free. Plus membership lets you keep adding letters, and one membership covers the whole family book. Every letter you have made stays yours to read, play and export, even if you stop.",
   },
 
   errors: {
@@ -753,7 +752,7 @@ export const en = {
     nameRequired: "Add a name to continue.",
     notSet: "Not set",
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
-    plusGateTitle: "Another book is part of Plus",
+    plusGateTitle: "Plus covers every child's book",
     plusCta: "See what Plus adds",
     plusNotYet: "Plus is not open yet in the beta.",
   },
