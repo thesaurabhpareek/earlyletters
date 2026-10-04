@@ -16,15 +16,15 @@
       --color-muted-foreground: #6B645B;
       --color-accent: #F1E6DC;
       --color-accent-foreground: #2B2722;
-      --color-destructive: #B5473A;
+      --color-destructive: #B04539;
       --color-border: #E6DED3;
       --color-input: #E6DED3;
       --color-ring: #2F6F8F;
       --color-surface: #F5EFE7;
       --color-surface-raised: #FFFFFF;
-      --color-recording: #B5473A;
-      --color-success: #3F7A55;
-      --color-caution: #94661A;
+      --color-recording: #B04539;
+      --color-success: #3F7955;
+      --color-caution: #92641A;
     }
 
     @variant dark {
@@ -61,4 +61,10 @@
   --radius-lg: 20px;
   --radius-xl: 28px;
   --radius-pill: 9999px;
+  /* lamp atmosphere (dark-mode glows and gradients only; never text) */
+  --color-lamp: #F3C98B;
+  --color-lamp-gold: #FFE2A8;
+  --color-lamp-rose: #F08C7C;
+  --color-lamp-dusk: #8076E2;
+  --color-dusk-surface: #3B302A;
 }

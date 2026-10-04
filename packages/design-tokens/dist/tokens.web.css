@@ -1,0 +1,44 @@
+/* GENERATED from packages/design-tokens/src/tokens.ts. Do not edit by hand. */
+:root {
+  --paper: #fbf8f3;
+  --surface: #f5efe7;
+  --surface-raised: #ffffff;
+  --ink: #2b2722;
+  --ink-muted: #6b645b;
+  --accent: #8a5a3b;
+  --accent-soft: #f1e6dc;
+  --on-accent: #ffffff;
+  --line: #e6ded3;
+  --focus: #2f6f8f;
+  --recording: #b04539;
+  --success: #3f7955;
+  --caution: #92641a;
+  --night: #161412;
+  --night-surface: #1b1917;
+  --night-raised: #201d1a;
+  --night-ink: #f2ece4;
+  --night-ink-muted: #b3aa9e;
+  --night-accent: #d9a47e;
+  --night-accent-soft: #3a2e25;
+  --night-on-accent: #1e1612;
+  --night-line: #33302c;
+  --night-focus: #8cc4de;
+  --night-recording: #f08c7c;
+  --night-success: #8cc9a0;
+  --night-caution: #e3b866;
+  --dusk: #3b302a;
+  --lamp: #f3c98b;
+  --lamp-gold: #ffe2a8;
+  --lamp-rose: #f08c7c;
+  --lamp-dusk: #8076e2;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --fade-ms: 200ms;
+  --enter-ms: 280ms;
+  --enter-dy: 8px;
+  --stagger-ms: 30ms;
+}

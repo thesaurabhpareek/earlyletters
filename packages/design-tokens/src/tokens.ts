@@ -22,9 +22,9 @@ const light = {
   onAccent: '#FFFFFF', // text/icons on accent  5.82:1
   line: '#E6DED3', // hairlines, dividers (decorative, never sole affordance)
   focus: '#2F6F8F', // focus ring             5.23:1 on bg
-  recording: '#B5473A', // live mic state       5.05:1 on bg
-  success: '#3F7A55', // saved / delivered      4.80:1 on bg
-  caution: '#94661A', // needs attention        4.75:1 on bg
+  recording: '#B04539', // live mic state       5.28:1 on bg, 4.89 surface, 4.55 accentSoft
+  success: '#3F7955', // saved / delivered      4.86:1 on bg, 4.51 surface
+  caution: '#92641A', // needs attention        4.88:1 on bg, 4.53 surface
 } as const;
 
 const dark = {
@@ -41,6 +41,19 @@ const dark = {
   recording: '#F08C7C', // 7.65:1 on bg
   success: '#8CC9A0', // 9.60:1 on bg
   caution: '#E3B866', // 9.90:1 on bg
+} as const;
+
+/**
+ * Lamp palette: dark-mode atmosphere only (glows, gradients, night/dusk
+ * backgrounds, matching the website). Never used for text or as the only
+ * signal; text stays on the `dark` tokens above. Not part of light/dark parity.
+ */
+const atmosphere = {
+  lamp: '#F3C98B',
+  lampGold: '#FFE2A8',
+  lampRose: '#F08C7C',
+  lampDusk: '#8076E2',
+  duskSurface: '#3B302A',
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -193,7 +206,13 @@ const motion = {
   standard: { stiffness: 260, damping: 30, mass: 1, response: 0.4, dampingFraction: 0.92 },
   /** Breathing glow, page settle, chapter reveal. ~0.7s, soft. */
   gentle: { stiffness: 90, damping: 18, mass: 1, response: 0.66, dampingFraction: 0.95 },
+  /** Scrubs, parallax, glow follow. The website's SMOOTH spring: heavy damping, light mass, no overshoot. */
+  soft: { stiffness: 260, damping: 40, mass: 0.3 },
   reduceMotion: { type: 'fade', durationMs: 200 },
+  /** Shared easing, cubic-bezier(x1, y1, x2, y2); M3 standard. */
+  easing: [0.2, 0, 0, 1] as readonly [number, number, number, number],
+  /** Content entrance (MOTION.md section 3): rise `dy` pt over `durationMs`, staggered. */
+  enter: { dy: 8, durationMs: 280, staggerMs: 30, staggerMax: 6 },
   /** Breathing glow when idle (no voice): one inhale+exhale cycle. */
   breathIdleMs: 4000,
 } as const;
@@ -201,6 +220,7 @@ const motion = {
 export const tokens = {
   light,
   dark,
+  atmosphere,
   space,
   radius,
   type,
@@ -216,6 +236,7 @@ export type SpaceToken = keyof typeof space;
 export type RadiusToken = keyof typeof radius;
 export type TypeToken = keyof typeof type;
 export type ElevationToken = keyof typeof elevation;
-export type MotionToken = 'snappy' | 'standard' | 'gentle';
+export type MotionToken = 'snappy' | 'standard' | 'gentle' | 'soft';
+export type AtmosphereToken = keyof typeof atmosphere;
 
 export default tokens;

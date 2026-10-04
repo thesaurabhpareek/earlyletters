@@ -20,6 +20,7 @@
   },
   "exports": {
     ".": "./src/tokens.ts",
-    "./tokens.native.css": "./dist/tokens.native.css"
+    "./tokens.native.css": "./dist/tokens.native.css",
+    "./tokens.web.css": "./dist/tokens.web.css"
   }
 }
