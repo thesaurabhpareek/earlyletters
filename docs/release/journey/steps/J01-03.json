@@ -1,0 +1,33 @@
+{
+  "id": "J01-03",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Welcome",
+  "note": "The envelope, the name, one line of what the book is. Two buttons: begin, or \"I was invited\".",
+  "from": "J01-02",
+  "shot": "screens/J01-03.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Early Letters The baby memory book you fill by talking. A few words at a time, in your own voice. Kept for your child to read and hear for years. Begin the book I was invited",
+  "lines": [
+    "Early Letters",
+    "The baby memory book you fill by talking.",
+    "A few words at a time, in your own voice. Kept for your child to read and hear for years.",
+    "Begin the book",
+    "I was invited"
+  ]
+}

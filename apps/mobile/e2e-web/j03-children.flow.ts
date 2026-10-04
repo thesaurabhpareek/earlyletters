@@ -7,6 +7,7 @@ test('[J03] more than one child: twins in first run, the switcher, settings, and
   await startOnboarding(app);
   await toChildStep(app);
   await app.getByRole('textbox').first().fill('Asha');
+  await btn(app, 'Born today').click();
   await app.getByRole('button', { name: /Add another child/ }).click();
   await app.getByRole('textbox').nth(1).fill('Nina');
   await step('happy', 'Two names in first run', 'Twins or more: each name gets a field and a remove button. All books made here are free; they share the date.');

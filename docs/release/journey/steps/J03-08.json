@@ -1,0 +1,34 @@
+{
+  "id": "J03-08",
+  "journey": "children-and-books",
+  "kind": "unhappy",
+  "title": "A third book needs Plus",
+  "note": "Starting another book after first run is a Plus feature. The screen says every existing book stays open, and offers Not now. Buying needs StoreKit, which does not exist on web, so the page says Plus is not available on this device.",
+  "from": "J03-07",
+  "shot": "screens/J03-08.png",
+  "route": "/settings/children/new",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Add a child Another book is part of Plus The first book you start is free, always. Books you start for more children are part of Plus. Every book you already have stays open for writing, reading and export, with or without Plus. Plus is not available on this device yet. Not now",
+  "lines": [
+    "Add a child",
+    "Another book is part of Plus",
+    "The first book you start is free, always. Books you start for more children are part of Plus.",
+    "Every book you already have stays open for writing, reading and export, with or without Plus.",
+    "Plus is not available on this device yet.",
+    "Not now"
+  ]
+}

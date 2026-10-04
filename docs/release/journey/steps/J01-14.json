@@ -1,0 +1,45 @@
+{
+  "id": "J01-14",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Signature chosen",
+  "note": "Tapping a suggestion fills the field and previews the signature in script.",
+  "from": "J01-13",
+  "shot": "screens/J01-14.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back What does Asha call you? This is how your letters will be signed. A few ideas Mama Papa Amma Appa Mummy Daddy Ma Baba From Mama Spoken language English Your words stay in the language you speak. We never translate them. Sign my letters",
+  "lines": [
+    "Back",
+    "What does Asha call you?",
+    "This is how your letters will be signed.",
+    "A few ideas",
+    "Mama",
+    "Papa",
+    "Amma",
+    "Appa",
+    "Mummy",
+    "Daddy",
+    "Ma",
+    "Baba",
+    "From Mama",
+    "Spoken language",
+    "English",
+    "Your words stay in the language you speak. We never translate them.",
+    "Sign my letters"
+  ]
+}
