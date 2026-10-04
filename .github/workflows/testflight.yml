@@ -1,0 +1,71 @@
+# Builds the iOS app in the cloud and (optionally) uploads it to TestFlight. Manual only: run it from the
+# Actions tab, on `develop` or an `ios-v*` tag. NOTHING here has been run: it needs the founder's Expo and
+# Apple accounts, so every assumption below is UNVERIFIED until the first real run. The same thing from a
+# Mac or any computer is the two eas commands in docs/release/TESTFLIGHT.md.
+#
+# One-time setup the founder does first (docs/release/TESTFLIGHT.md):
+#   1. EXPO_TOKEN repository secret (Expo account, Access tokens). It is read only by the last step.
+#   2. Link the Expo project (`eas init`) and commit extra.eas.projectId in apps/mobile/app.config.ts.
+#   3. Sign the first build on a computer (`eas build --platform ios --profile testflight`, say yes to
+#      credentials), or add an App Store Connect API key to EAS, so this workflow can sign without a prompt.
+#      It uses --non-interactive and fails without that.
+#   4. Create the App Store Connect app record for the bundle id the preflight prints.
+name: testflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: Upload to TestFlight after the build finishes
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+env:
+  CI: true
+  # The input goes through the environment, never into the script text.
+  SUBMIT: ${{ inputs.submit }}
+
+jobs:
+  build:
+    name: testflight build
+    # App builds come from `develop` (TestFlight) or an ios-v tag (docs/DEVELOPMENT.md).
+    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/ios-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+
+      # Nothing is built unless the tree is green.
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+
+      # Configuration only; needs no secrets. Fails the run on any FAIL, passes on WARN (read the log).
+      - name: Preflight
+        run: npm run preflight:testflight -w @scribe/mobile
+
+      - name: Build on EAS
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          # Fail without printing the token, a command line that contains it, or the environment.
+          if [ -z "$EXPO_TOKEN" ]; then echo "EXPO_TOKEN repository secret is not set"; exit 1; fi
+          args=(build --platform ios --profile testflight --non-interactive --wait)
+          if [ "$SUBMIT" = "true" ]; then args+=(--auto-submit); fi
+          # UNVERIFIED: eas-cli's current flags (--auto-submit uses the submit profile with the same name).
+          npx --yes eas-cli@latest "${args[@]}"
