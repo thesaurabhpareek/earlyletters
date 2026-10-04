@@ -22,9 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Help us make it better? Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names. Nothing is shared unless you say yes. Saying no changes nothing else. Don't share Share usage You can change this any time in Settings, Privacy.",
+  "text": "Help us make it better? Close Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names. Nothing is shared unless you say yes. Saying no changes nothing else. Don't share Share usage You can change this any time in Settings, Privacy.",
   "lines": [
     "Help us make it better?",
+    "Close",
     "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
     "Nothing is shared unless you say yes. Saying no changes nothing else.",
     "Don't share",

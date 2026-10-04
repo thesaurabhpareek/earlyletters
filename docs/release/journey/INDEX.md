@@ -5,7 +5,7 @@ Generated from the web end-to-end flows (`apps/mobile/e2e-web/*.flow.ts`), run a
 (402 x 874 CSS px at 3x). Nothing here is a mock-up: every screen is a screenshot of the running app, and `text` in each step JSON is the
 visible text read from the page.
 
-- Journeys: **20**, steps: **118** (happy 87, unhappy 31), screenshots: **118**, plus **29** full-length captures of scrolling screens (`<id>-full.png`).
+- Journeys: **20**, steps: **118** (happy 87, unhappy 31), screenshots: **118**, plus **28** full-length captures of scrolling screens (`<id>-full.png`).
 - Files: `steps/<id>.json` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines), `screens/<id>.png`, `screens/<id>-full.png`.
 - Regenerate: `npm run e2e:web:journey -w @scribe/mobile` then `node apps/mobile/e2e-web/support/build-index.mjs`.
 - Seeded steps use the fictional family Asha (the web preview switch `EXPO_PUBLIC_WEB_PREVIEW=1`, `?seed=asha`), because the web build has no speech model and cannot produce words from a recording. They are the real screens with data filled in; each such step says so.
@@ -89,7 +89,7 @@ visible text read from the page.
 | J06-04 | happy | **Put back.** The original words return, marked for a moment, with Undo beside them. | J06-03 | [png](screens/J06-04.png) [full](screens/J06-04-full.png) |
 | J06-05 | happy | **Undo the put-back.** Undo re-applies the tidy-up. Every edit is reversible both ways. | J06-04 | [png](screens/J06-05.png) [full](screens/J06-05-full.png) |
 | J06-06 | happy | **Exactly what was said.** The raw words, untouched, with their "um" and repeats, labelled as the original. | J06-05 | [png](screens/J06-06.png) [full](screens/J06-06-full.png) |
-| J06-07 | happy | **Word for word.** One tap undoes every tidy-up at once; the screen says nothing was changed. | J06-06 | [png](screens/J06-07.png) [full](screens/J06-07-full.png) |
+| J06-07 | happy | **Word for word.** One tap undoes every tidy-up at once; the screen says nothing was changed. | J06-06 | [png](screens/J06-07.png) |
 | J06-08 | happy | **Change words.** The person may edit any word themselves. Save is off while editing; Done returns. | J06-07 | [png](screens/J06-08.png) |
 | J06-09 | happy | **Does this sound like you? Not quite.** A private two-button check on how faithful the words sound. "Not quite" shows a kind follow-up line; nothing is stored about the words. | J06-08 | [png](screens/J06-09.png) [full](screens/J06-09-full.png) |
 | J06-10 | happy | **Saved to the book.** The letter settles into a card with "Added to Asha's book". Review closes by itself or on tap. | J06-09 | [png](screens/J06-10.png) |

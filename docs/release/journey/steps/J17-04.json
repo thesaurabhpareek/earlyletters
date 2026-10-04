@@ -23,8 +23,9 @@
     }
   },
   "scrolls": true,
-  "text": "Coming soon Write to your child, together Soon your child's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name your child calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Only the people you invite can read your child's book. A letter you keep private stays yours. Tell me when it's here Close",
+  "text": "Close Coming soon Write to your child, together Soon your child's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name your child calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Only the people you invite can read your child's book. A letter you keep private stays yours. We're building it now. Until then, every letter you write stays on this phone. Tell me when it's here",
   "lines": [
+    "Close",
     "Coming soon",
     "Write to your child, together",
     "Soon your child's other parent can write in this same book, from their own phone.",
@@ -34,7 +35,7 @@
     "Write whenever it suits you, and read every shared letter wherever you are.",
     "Private to your family",
     "Only the people you invite can read your child's book. A letter you keep private stays yours.",
-    "Tell me when it's here",
-    "Close"
+    "We're building it now. Until then, every letter you write stays on this phone.",
+    "Tell me when it's here"
   ]
 }

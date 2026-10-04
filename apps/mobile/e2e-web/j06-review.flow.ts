@@ -37,7 +37,7 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await step('happy', 'Change words', 'The person may edit any word themselves. Save is off while editing; Done returns.');
   await app.getByText('Done', { exact: true }).click();
 
-  await app.getByRole('button', { name: /Not quite/ }).click();
+  await app.getByRole('radio', { name: /Not quite/ }).click();
   await step('happy', 'Does this sound like you? Not quite', 'A private two-button check on how faithful the words sound. "Not quite" shows a kind follow-up line; nothing is stored about the words.');
 
   await btn(app, /^Add to .*book/).click();

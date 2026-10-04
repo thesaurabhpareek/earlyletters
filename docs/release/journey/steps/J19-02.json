@@ -22,11 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "Ready when you are Nothing is recording yet. Tap Start when you want to speak. Start Close",
+  "text": "Close Ready when you are Nothing is recording yet. Tap Start when you want to speak. Start",
   "lines": [
+    "Close",
     "Ready when you are",
     "Nothing is recording yet. Tap Start when you want to speak.",
-    "Start",
-    "Close"
+    "Start"
   ]
 }

@@ -22,10 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Close 5 / 5 That is every letter so far. More are still being written. Close the book Read it again",
+  "text": "5 / 5 Close That is every letter so far. More are still being written. Close the book Read it again",
   "lines": [
-    "Close",
     "5 / 5",
+    "Close",
     "That is every letter so far. More are still being written.",
     "Close the book",
     "Read it again"

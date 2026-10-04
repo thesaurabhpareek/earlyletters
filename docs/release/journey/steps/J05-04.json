@@ -22,12 +22,12 @@
     }
   },
   "scrolls": false,
-  "text": "We can't hear you yet Allow the microphone in Settings to speak your letters. Or type instead. Type instead Open Settings Close",
+  "text": "Close We can't hear you yet Allow the microphone in Settings to speak your letters. Or type instead. Type instead Open Settings",
   "lines": [
+    "Close",
     "We can't hear you yet",
     "Allow the microphone in Settings to speak your letters. Or type instead.",
     "Type instead",
-    "Open Settings",
-    "Close"
+    "Open Settings"
   ]
 }
