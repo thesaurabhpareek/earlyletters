@@ -198,7 +198,7 @@ export const site = {
       label: 'Pricing',
       headline: 'Two letters free. Then Plus.',
       support:
-        'Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters, backs up every recording, opens Read together after the free sessions and covers every child\'s book, with the whole family adding letters. $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.',
+        'Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters. $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.',
     },
     s11: {
       label: 'Start tonight',
@@ -276,7 +276,7 @@ export const site = {
       { href: '/terms', label: 'Terms' },
       { href: '/health-privacy', label: 'Consumer health data' },
       { href: '/subprocessors', label: 'Subprocessors' },
-      { href: '/delete-account', label: 'Delete your account' },
+      { href: '/delete-account', label: 'Delete your data' },
     ],
   },
 } as const;
