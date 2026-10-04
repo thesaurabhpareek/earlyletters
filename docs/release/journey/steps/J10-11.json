@@ -1,0 +1,30 @@
+{
+  "id": "J10-11",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "Letter not found",
+  "note": "A letter that is not on this phone (a stale link) shows a plain title and one button back.",
+  "from": "J10-01",
+  "shot": "screens/J10-11.png",
+  "route": "/letter/does-not-exist",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "This letter is not here anymore. Back to the book",
+  "lines": [
+    "This letter is not here anymore.",
+    "Back to the book"
+  ]
+}

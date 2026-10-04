@@ -1,0 +1,45 @@
+{
+  "id": "J06-06",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Exactly what was said",
+  "note": "The raw words, untouched, with their \"um\" and repeats, labelled as the original.",
+  "from": "J06-05",
+  "shot": "screens/J06-06.png",
+  "full": "screens/J06-06-full.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Close Hear it Asha · 7 months Read it back We only fixed what got in the way of your words. Nothing added. Exactly what you said Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. 2 small fixes Show tidied version Keep it word for word Change words Does this sound like you? Sounds like me Not quite Add to Asha's book Keep private",
+  "lines": [
+    "Close",
+    "Hear it",
+    "Asha · 7 months",
+    "Read it back",
+    "We only fixed what got in the way of your words. Nothing added.",
+    "Exactly what you said",
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "2 small fixes",
+    "Show tidied version",
+    "Keep it word for word",
+    "Change words",
+    "Does this sound like you?",
+    "Sounds like me",
+    "Not quite",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

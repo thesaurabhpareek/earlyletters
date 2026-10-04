@@ -1,0 +1,57 @@
+{
+  "id": "J06-03",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Why was this changed?",
+  "note": "Tapping a tidy-up (the underline or its row) says what kind of fix it was, shows the exact words said and the tidied version, and offers to put it back.",
+  "from": "J06-02",
+  "shot": "screens/J06-03.png",
+  "full": "screens/J06-03-full.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Close Hear it Asha · 7 months Read it back We only fixed what got in the way of your words. Nothing added. Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Filler We took out an \"um\" or \"uh\" so it reads smoothly. Exactly what you said \" um, \" Put it back Close 2 small fixes Filler \" um, \" Change words Does this sound like you? Sounds like me Not quite Private letters stay with you. You can add them to the book later. Add to Asha's book Keep private",
+  "lines": [
+    "Close",
+    "Hear it",
+    "Asha · 7 months",
+    "Read it back",
+    "We only fixed what got in the way of your words. Nothing added.",
+    "Asha,",
+    "today you",
+    "held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Filler",
+    "We took out an \"um\" or \"uh\" so it reads smoothly.",
+    "Exactly what you said",
+    "\"",
+    "um,",
+    "\"",
+    "Put it back",
+    "Close",
+    "2 small fixes",
+    "Filler",
+    "\"",
+    "um,",
+    "\"",
+    "Change words",
+    "Does this sound like you?",
+    "Sounds like me",
+    "Not quite",
+    "Private letters stay with you. You can add them to the book later.",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

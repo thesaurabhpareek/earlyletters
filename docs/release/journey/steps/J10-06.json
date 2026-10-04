@@ -1,0 +1,32 @@
+{
+  "id": "J10-06",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "Deleted, with Undo",
+  "note": "Delete is immediate, with no confirm dialog. The screen says so and Undo stays until the person taps Undo, Close or Back (no timer).",
+  "from": "J10-05",
+  "shot": "screens/J10-06.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Letter deleted. You can still undo this, or close to go back to the book. Letter deleted. Undo",
+  "lines": [
+    "Letter deleted.",
+    "You can still undo this, or close to go back to the book.",
+    "Letter deleted.",
+    "Undo"
+  ]
+}

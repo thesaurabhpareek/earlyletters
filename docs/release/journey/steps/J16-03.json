@@ -1,0 +1,38 @@
+{
+  "id": "J16-03",
+  "journey": "settings-and-help",
+  "kind": "happy",
+  "title": "Appearance",
+  "note": "Theme (Match this phone, Light, Dark) and reading size with a live sample line.",
+  "from": "J16-02",
+  "shot": "screens/J16-03.png",
+  "route": "/settings/appearance",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Appearance Theme Match this phone Light Dark Reading size Standard Large Large print Dear Asha, today you laughed at the rain.",
+  "lines": [
+    "Appearance",
+    "Theme",
+    "Match this phone",
+    "Light",
+    "Dark",
+    "Reading size",
+    "Standard",
+    "Large",
+    "Large print",
+    "Dear Asha, today you laughed at the rain."
+  ]
+}

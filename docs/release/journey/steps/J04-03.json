@@ -1,0 +1,40 @@
+{
+  "id": "J04-03",
+  "journey": "tonight-and-prompts",
+  "kind": "happy",
+  "title": "Tonight on day 0",
+  "note": "A new book: the dateline reads \"Asha, 0 days\", no waiting card, one prompt chosen for a newborn.",
+  "from": "J04-02",
+  "shot": "screens/J04-03.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 0 days Good evening, Mama. What do you want Asha to know about today? A thought to start with Tell Asha how the name was chosen. Another thought Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 0 days",
+    "Good evening, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "Tell Asha how the name was chosen.",
+    "Another thought",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

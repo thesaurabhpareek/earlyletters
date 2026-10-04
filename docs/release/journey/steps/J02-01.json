@@ -1,0 +1,33 @@
+{
+  "id": "J02-01",
+  "journey": "under-18",
+  "kind": "unhappy",
+  "title": "No is chosen",
+  "note": "The person says they are under 18. Nothing else is asked.",
+  "from": "J01-01",
+  "shot": "screens/J02-01.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Are you 18 or older? We ask everyone the same question. Yes No Continue",
+  "lines": [
+    "Are you 18 or older?",
+    "We ask everyone the same question.",
+    "Yes",
+    "No",
+    "Continue"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "id": "J06-09",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Does this sound like you? Not quite",
+  "note": "A private two-button check on how faithful the words sound. \"Not quite\" shows a kind follow-up line; nothing is stored about the words.",
+  "from": "J06-08",
+  "shot": "screens/J06-09.png",
+  "full": "screens/J06-09-full.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Close Hear it Asha · 7 months Read it back We only fixed what got in the way of your words. Nothing added. Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Word for word. Nothing needed fixing. Show exactly what I said Change words Does this sound like you? Sounds like me Not quite Tap any word to change it, or show exactly what you said. Add to Asha's book Keep private",
+  "lines": [
+    "Close",
+    "Hear it",
+    "Asha · 7 months",
+    "Read it back",
+    "We only fixed what got in the way of your words. Nothing added.",
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Word for word. Nothing needed fixing.",
+    "Show exactly what I said",
+    "Change words",
+    "Does this sound like you?",
+    "Sounds like me",
+    "Not quite",
+    "Tap any word to change it, or show exactly what you said.",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

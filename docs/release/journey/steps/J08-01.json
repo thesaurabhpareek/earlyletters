@@ -1,0 +1,42 @@
+{
+  "id": "J08-01",
+  "journey": "quiet-day",
+  "kind": "happy",
+  "title": "A day with little to say",
+  "note": "Under Speak and Type sits a quiet link: \"Not much today\".",
+  "from": "J04-01",
+  "shot": "screens/J08-01.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months Good evening, Mama. What do you want Asha to know about today? A thought to start with What is Asha's favorite thing in the house this week? Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "Good evening, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "What is Asha's favorite thing in the house this week?",
+    "Another thought",
+    "A letter is waiting to be read back.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

@@ -1,0 +1,991 @@
+{
+ "J00-open": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The very first screen is a bare legal question on an empty cream page: no name, no mark, no reason. A parent opening a warm baby book app meets a gate before any warmth. 'We ask everyone the same question' explains nothing. (D-043 recommends welcome screen first, then gate; D-006 requires the gate before first run. The order here is gate first.)",
+    "fix": "Keep the gate first if D-006 requires it, but add the brand mark above the question and one warm line of why: 'Early Letters is for adults. Are you 18 or older?' Founder to confirm order vs D-043.",
+    "owner": "design-systems"
+   }
+  ]
+ },
+ "J01-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Same as J00-open: cold first impression, no brand mark, large empty page below the two buttons; Continue is disabled with no hint that a choice is needed (the greyed button is low contrast).",
+    "fix": "Add the mark and the one-line reason; make the disabled Continue visibly disabled rather than nearly invisible.",
+    "owner": "design-systems"
+   }
+  ]
+ },
+ "J01-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-03": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "'I was invited' leads to a coming-soon page in v1.0 (J17-04). A person who taps it, probably a grandparent or co-parent who was sent a link, hits a dead end on the second screen. Offering a door that cannot open is a broken promise.",
+    "fix": "Hide 'I was invited' until invites work. If invite links can arrive in v1.0, show a dedicated, correct page: 'Your invitation is saved. Sharing opens in a later update. You can start your own book now.'",
+    "owner": "product"
+   },
+   {
+    "sev": "minor",
+    "text": "The illustration is the line-drawn envelope. D-071 retires the 'envelope line' brand motif and the wordmark/mark is not shown, so the first branded screen does not carry the chosen mark. I did not check the code to confirm the asset is the retired one; it looks like it.",
+    "fix": "Replace with the primary mark per the brand registry (D-072), or confirm this drawing is an approved illustration.",
+    "owner": "design-systems"
+   },
+   {
+    "sev": "minor",
+    "text": "The welcome sets no expectation about membership. Under D-051 only the first 2 letters are free, so a parent who loves night one meets a paywall at letter three with no earlier hint.",
+    "fix": "Add a quiet line on Welcome or the promise screen: 'Your first two letters are free.' Wording needs founder and legal sign-off.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J01-04": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The promise screen ('We tidy what the microphone got wrong') uses 'tidy' / 'lightly tidied' language. D-074 (founder) says 'Lightly tidied' and 'Tidying' leave the product, and VOICE.md bans words that suggest software tidied a letter. It also undercuts the promise that the words are exactly as said.",
+    "fix": "Replace with the plain facts. Edited letter: 'Spoken, small slips fixed'. Unedited: 'Spoken, word for word'. Promise: 'We fix what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.' Footer: 'We never rewrite your words. We only fix what the microphone got wrong.' Rename the 'Tidying' setting to 'Fix small slips'.",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "'The recording is kept on this phone' is incomplete against D-033, whose agreed copy is 'on this phone and in your iPhone's own backup, if you use one'. The Recordings screen (J14-01) says it correctly, so the two screens disagree.",
+    "fix": "Use the same sentence as Recordings: 'The recording is kept on this phone, and in your iPhone's own backup if you use one, so one day your child can hear you say it.'",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "The button 'That sounds right' asks the parent to agree with a claim rather than move on, and a tired person may not know what they are agreeing to. Three blocks of reading precede the first real task.",
+    "fix": "Use 'Continue' or 'Next'. Keep the three blocks but trim the first paragraph to one sentence.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J01-05": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The birthday silently defaults to today. A parent of a 7-month-old who types a name and taps Continue gets a baby aged '0 days': the Tonight prompts, month chapters and every dateline are then wrong. The date pill looks like a label, not a field to check.",
+    "fix": "Do not default. Show 'Choose a date' until picked, or default and ask 'Is Asha newborn today?' Keep Continue disabled until a date is chosen.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "minor",
+    "text": "Continue is disabled with no explanation. For one field this is tolerable, but a person with a screen reader or in poor light does not learn what is missing.",
+    "fix": "Keep the disabled state and add helper text on focus loss: 'Add a name to continue.'",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J01-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-08": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-09": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "'Twins or more?' with one shared birthday is wrong for siblings of different ages (D-038 allows first-run siblings with different dates). A parent with a toddler and a newborn would set one child's date wrong. Also D-051 open edge 2 and 6 leave undecided what extra books get for free, so the free promise in this screen's note ('Every book made in first run is free') cannot be shown yet.",
+    "fix": "Per-child birthday rows, or 'Same birthday' as an explicit switch. Do not state any free promise for extra books until the founder closes D-051 open edges 2 and 6.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J01-10": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-11": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J01-12": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Choosing a language 'starts that language's downloads' with no size, Wi-Fi or storage disclosure. The Recordings screen (J14-01) shows the English model as 'Not on this phone, 575 MB'. A parent on mobile data at night may start a very large download without knowing, or may never find out that speaking needs it. I could not verify on a device whether English ships inside the app (D-065 says the English pack ships; J14-01 says it is not on the phone).",
+    "fix": "Show a size line and a Wi-Fi note in the sheet ('English is about 575 MB. We will download it on Wi-Fi.'), and a download state on Tonight. Confirm with mobile whether English is bundled.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J01-13": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The only action is 'Write the first one', but the product is 'fill by talking', and the button lands on Tonight (J01-14), not on the recorder. The first letter needs a further tap on Speak.",
+    "fix": "Label 'Tell Asha something' (or 'Begin the first letter') and open Tonight with Speak ready, or go straight to the recorder.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J01-14": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J02-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J02-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "A mis-tap on 'No' (easy with one hand) locks the person out for 24 hours with no hint that a way back exists. Calm tone is good ('Nothing you entered has been kept').",
+    "fix": "Add: 'If you tapped No by mistake, you can answer again tomorrow.' (D-006 requires the 24h stop; the copy can still say so.)",
+    "owner": "content"
+   }
+  ]
+ },
+ "J02-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J02-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J02-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J03-06": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The 'Plan' row reads 'Plus: Read together whenever you like, and books for more children.' That describes the pre-D-051 optional-extras model. Under D-051 Plus is the membership that lets you keep adding letters.",
+    "fix": "Plan row subtitle: 'Your first two letters are free. Plus lets you keep adding letters.' (Align exact words with the final paywall copy.)",
+    "owner": "content"
+   },
+   {
+    "sev": "major",
+    "text": "The Settings footer ('We only tidy what the microphone got wrong') uses 'tidy' / 'lightly tidied' language. D-074 (founder) says 'Lightly tidied' and 'Tidying' leave the product, and VOICE.md bans words that suggest software tidied a letter. It also undercuts the promise that the words are exactly as said.",
+    "fix": "Replace with the plain facts. Edited letter: 'Spoken, small slips fixed'. Unedited: 'Spoken, word for word'. Promise: 'We fix what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.' Footer: 'We never rewrite your words. We only fix what the microphone got wrong.' Rename the 'Tidying' setting to 'Fix small slips'.",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "The top banner says 'Export a copy of your letters now and then.' This is the right instinct for an on-device-only product, but it reads as a standing warning about loss, against the no-fear rule, and sits above everything else (D-060 keeps the note).",
+    "fix": "Keep the note, soften: 'Early Letters is new and we are still improving it. Export keeps a copy of your letters any time.'",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "'Private by default. Never sold, never used for ads.' appears twice on one screen, and 'Recordings' and 'Storage' are two near-identical rows. There is also no way to delete a child's book or erase everything (see _journey).",
+    "fix": "Keep the privacy line once (D-061 'set places'). Merge Recordings and Storage into one row.",
+    "owner": "design-systems"
+   }
+  ]
+ },
+ "J03-07": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "'Family can read Asha's book' is a switch the person can flip, but it 'stays off in v1.0' and 'starts once family can join'. A control that does nothing is a trap for a parent who wants to share with grandparents; D-055 limits launch to co-parent only and grandparent claims are barred.",
+    "fix": "Remove the switch in v1.0. Show it, with the co-parent row, only when sharing exists.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "minor",
+    "text": "'Hiding Asha's book quiets every reminder and note about Asha, for everyone in the family' refers to a family that cannot exist yet in v1.0.",
+    "fix": "'Hiding Asha's book quiets every reminder and note about Asha. Nothing is deleted.'",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "The page offers Hide but no way to delete a book and its letters, and the 'Write this book together: Coming soon' row repeats the dead Family tab.",
+    "fix": "See _journey for the erase gap; drop the coming-soon row until it works.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J03-08": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "'Every book you already have stays open for writing, reading and export, with or without Plus.' Under D-051 new letters need Plus after 2, so 'writing' stays open only for the free allowance. 'The first book you start is free, always' is also pre-D-051. This is a false claim on a paywall, the worst place for one.",
+    "fix": "'Another book is part of Plus. Every letter you have made stays yours to read, play and export, with or without Plus.' Drop 'free, always' and 'writing'. Founder must close D-051 open edge 2 (what a second book gets) before final copy.",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "'Plus is not available on this device yet.' is shown on web; confirm on device that a failed StoreKit product load gets its own calm state and a Try again, not this sentence.",
+    "fix": "Add a distinct 'We could not reach the App Store. Try again in a moment.' state with a retry.",
+    "owner": "payments"
+   }
+  ]
+ },
+ "J03-09": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J04-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J04-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J04-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J04-04": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The sheet says 'Never your letters, recordings, photos or anyone's names.' v1.0 has no photos, so the word hints at a feature that is not there. The sheet also appears over Tonight 1.2 seconds after it opens, which interrupts the nightly moment.",
+    "fix": "Drop 'photos'. Show it after a letter is saved (a calm moment) rather than on arrival. Equal buttons and the 'asks at most once more' rule are good and should stay.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J04-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-03": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "'Writing down what you said.' gives no sense of how long it takes and offers no instruction. On the real app, transcription of a long take on an older phone could take a while; I could not verify timing. Also VOICE.md's own example for this moment is 'Listening back to what you said', and 'writing' hints at the app writing.",
+    "fix": "'Listening back to what you said. You can close this, it will be waiting on Tonight.' Add a gentle progress shape for long takes.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J05-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J05-08": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Tapping Finish at once keeps an empty take and opens Review, which leaves a junk draft or an empty 'Nobody spoke' letter in the Book (J09-05). One-handed, accidental double taps are likely.",
+    "fix": "If under about 2 seconds, say 'That was very short. Keep it, or let it go?' with Let it go first, or discard silently-empty takes under 1 second.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J05-09": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Review carries a lot at once for a tired parent: a first-time note, a 'small fixes' list, two near-identical links ('Show exactly what I said' and 'Keep it word for word', one views and one applies), 'Change words', a 'Does this sound like you?' check, a privacy line, then two actions. The primary action is pinned, which helps.",
+    "fix": "Group the two links under the fixes list with distinct labels: 'See what you said' and 'Keep my exact words'. Hide the 'sound like you' check until 'Not quite' is relevant, or move it below the buttons.",
+    "owner": "design-systems"
+   },
+   {
+    "sev": "minor",
+    "text": "The dotted marks where words were removed are not explained. The first-time note does not say 'tap a dotted mark to see what changed', so a person may think they are typos.",
+    "fix": "Add to the first-time note: 'Tap a dotted mark to see what we fixed, and put it back if you like.'",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "'Does this sound like you?' has no stated purpose: the step note says nothing is stored about the words. I could not verify whether the answer is counted. If it feeds analytics it must be opt-in (D-003).",
+    "fix": "Say what it is for, or drop it. Confirm it is not sent when analytics are off.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J06-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-07": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "After the person taps 'Keep it word for word' the screen says 'Word for word. Nothing needed fixing.' That is not true: two fixes were just undone. It makes a parent doubt what happened.",
+    "fix": "'Word for word. Nothing was changed.'",
+    "owner": "content"
+   }
+  ]
+ },
+ "J06-08": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-09": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Same line as J06-07: 'Word for word. Nothing needed fixing.' under a letter that still has an 'um' and a repeat.",
+    "fix": "'Word for word. Nothing was changed.'",
+    "owner": "content"
+   }
+  ]
+ },
+ "J06-10": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Saving settles with 'Added to Asha's book.' and nothing else. Under D-051 the person should learn, calmly and once, that the free letters are being used (e.g. after letter 2), or the paywall at letter 3 is a surprise. No such state exists.",
+    "fix": "After the second letter: 'Added to Asha's book. This was your second free letter.' Wording for founder and legal.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J06-11": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-12": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J06-13": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "'Saved on this phone' (autosave) and a 'Save' button mean two different things on the same page. A parent may think 'Save' is redundant, or fear their words are not saved until they tap it.",
+    "fix": "Rename the button 'Next' or 'Read it back', since the next screen is the read-back, and keep the autosave line.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J07-03": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "For a typed letter, the person has just read their own words, then lands on a Read it back page to choose Add or Keep private. It is an extra screen at the end of a one-handed evening.",
+    "fix": "Offer the choice on the Write page itself (Add to book, Keep private) and skip the read-back for typed letters.",
+    "owner": "design-systems"
+   }
+  ]
+ },
+ "J07-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-05": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "After a letter is kept, Tonight looks exactly as before: same prompt, same Speak and Type, as if nothing happened. That reads as another invitation to write, which is mild nagging, and gives no calm sense of 'done for tonight'.",
+    "fix": "Show a settled state: 'Tonight's letter is in Asha's book.' with a quiet 'Add another' link.",
+    "owner": "design-systems"
+   }
+  ]
+ },
+ "J07-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J07-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J08-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J08-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "'Not much today' makes the app write a sentence in the parent's voice and keep it as their letter ('Sunday. Not much today. Just Asha, and us, and an ordinary day.', from `notMuch.template` in packages/content/src/strings.en.ts, with alternates such as 'Tired tonight. Loved {child} all day anyway.'). The constitution says no feature may write words for a person, and VOICE.md says never imply AI writes anything. The line is stored and then displayed as 'From Mama' in the Book (J08-03). The step note says the line 'never appears in the book', which the screenshots contradict.",
+    "fix": "Do not generate words. Store a bare marker ('a quiet day') that shows only a date and a small dot in the Book, with no sentence and no signature, or offer 'Add a few words' as the only way text exists. Keep 'Kept. Rest well.' as the confirmation.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J08-03": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "The Book shows a card in 'Month 7, 1 note' with machine-written first-person text and a Private chip (I looked at the screenshot). This puts words the person never said into the book that is exported and read to the child. It also contradicts the step note ('not in the Book'), and 'Celebrate what exists' is fine but a 'notes' count introduces a second thing to count.",
+    "fix": "As J08-02: no generated sentence. Show a quiet marker or nothing. Decide whether markers count toward the free letters (D-051, a 'letter' is a saved spoken or typed entry; a marker is not).",
+    "owner": "product"
+   }
+  ]
+ },
+ "J09-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J09-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J09-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J09-04": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "A kept recording with no words shows 'A recording, waiting for its words.' with no action. The parent cannot type the words, retry, or learn why (the model may not be on the phone, J14-01). Voice-only letters can pile up with no way forward.",
+    "fix": "Make the card tappable to a 'Write the words yourself' option and a 'Try again' (or 'Download English') action; say why in one line.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J09-05": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "'A quiet recording. Nobody spoke' could equally be a microphone fault, and the card offers no quick way to remove a mistaken take from the Book.",
+    "fix": "Add a swipe or sheet action 'Let it go' with a confirm, and keep the calm note.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J10-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The letter page ('Spoken, lightly tidied') uses 'tidy' / 'lightly tidied' language. D-074 (founder) says 'Lightly tidied' and 'Tidying' leave the product, and VOICE.md bans words that suggest software tidied a letter. It also undercuts the promise that the words are exactly as said.",
+    "fix": "Replace with the plain facts. Edited letter: 'Spoken, small slips fixed'. Unedited: 'Spoken, word for word'. Promise: 'We fix what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.' Footer: 'We never rewrite your words. We only fix what the microphone got wrong.' Rename the 'Tidying' setting to 'Fix small slips'.",
+    "owner": "content"
+   },
+   {
+    "sev": "major",
+    "text": "Delete sits one row under 'Make private', is red, and is immediate with no confirm (J10-06). Saved letters and voices are the thing this product exists to keep; the unsaved take has a confirm ('Let it go') but the saved letter does not. One-handed at night this is a real mis-tap risk. Undo disappears when the person leaves the page.",
+    "fix": "Confirm sheet: 'Delete this letter? The recording goes with it.' with 'Keep it' as the default, plus a 'Recently deleted' holding area for 30 days.",
+    "owner": "design-systems"
+   },
+   {
+    "sev": "minor",
+    "text": "'Recording kept on this phone' omits the iPhone backup half of the D-033 sentence.",
+    "fix": "'Recording kept on this phone and in your iPhone's backup, if you use one.'",
+    "owner": "content"
+   }
+  ]
+ },
+ "J10-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-06": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Delete is immediate; Undo lasts only while the person stays on this page. A voice the family may not get again is gone once they tap Back or Close. The 'You can still undo this' copy is kind but the safety net is thin.",
+    "fix": "Add the confirm and a 30 day Recently deleted list (see J10-01).",
+    "owner": "design-systems"
+   }
+  ]
+ },
+ "J10-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-08": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J10-09": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "A letter 'waiting for its words' is a dead end: the page offers only 'Add to book' and 'Delete'. The parent cannot add the words, retry, or see what to do. Adding it to the book also counts as a letter under D-051 with no words in it (see _journey).",
+    "fix": "Add 'Write the words' (typing under the recording) and 'Try again' actions; show a one-line reason.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J10-10": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "A silent recording can be 'added to the book'; there is no 'Record again' and it would count as one of the 2 free letters under D-051.",
+    "fix": "Offer 'Record again'; decide whether a no-speech take counts as a letter (founder, D-051 open edge).",
+    "owner": "product"
+   }
+  ]
+ },
+ "J10-11": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "The header 'Mama, The first weeks' reads as a stray comma and capital. One screen per letter, large print and Next at thumb height are right for bedtime.",
+    "fix": "'From Mama · The first weeks'.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J11-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-05": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The fourth opening of Read together is a paywall, in the middle of the product's most emotional ritual. D-051 left open (edge 5) how these 3 free sessions interact with the 2-free-letters model; shipping both gates could stack two paywalls on a free family, and the page copy ('You have read together 3 times for free') is the old model. Reassurance that every letter stays open is good and correct.",
+    "fix": "Founder to decide whether Read together stays gated under D-051. If it stays, keep the copy but have payments confirm the count rule (D-037, on device).",
+    "owner": "product"
+   }
+  ]
+ },
+ "J11-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J11-07": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J12-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "Plan screen says writing, reading, playing recordings and export are 'free, always' and that Plus is optional (Read together and extra books only). D-051 (founder, 4 Oct, on origin/main) replaced this: free is the first 2 letters per account, then adding letters needs Plus; existing letters stay readable, playable and exportable. As shown the screen makes a false promise and would contradict the store listing and website, and is a review risk (Guideline 3.1.2).",
+    "fix": "Proposed copy: title 'Your first two letters are free.' Body: 'Plus lets you keep adding letters, opens Read together, and covers every child's book. Every letter you have made stays yours to read, play and export, even if you stop.' Add the price and trial line: '$3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial.' (D-053, D-075) and Apple's renewal disclosure. Add a 'Redeem a code' row if D-052 is approved.",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "'Plus is off.' reads like a switch in a developer tool, not a person's status.",
+    "fix": "'You are on the free version.'",
+    "owner": "content"
+   }
+  ]
+ },
+ "J12-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Same false 'free, always' claim as J12-01 under the restore error. The error itself is calm and honest.",
+    "fix": "Fix with the J12-01 copy.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J13-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J13-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J13-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J14-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The Recordings screen ('Tidying', 'Lightly tidied') uses 'tidy' / 'lightly tidied' language. D-074 (founder) says 'Lightly tidied' and 'Tidying' leave the product, and VOICE.md bans words that suggest software tidied a letter. It also undercuts the promise that the words are exactly as said.",
+    "fix": "Replace with the plain facts. Edited letter: 'Spoken, small slips fixed'. Unedited: 'Spoken, word for word'. Promise: 'We fix what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.' Footer: 'We never rewrite your words. We only fix what the microphone got wrong.' Rename the 'Tidying' setting to 'Fix small slips'.",
+    "owner": "content"
+   },
+   {
+    "sev": "major",
+    "text": "English is shown as 'Not on this phone, 575 MB' with no visible way to download it in the captured text and no Wi-Fi guidance. If the model is not present, new recordings 'wait for their words' (J09-04). I could not verify whether this is a web artifact.",
+    "fix": "If a real iOS install can reach this state, add a 'Download' button, a Wi-Fi note and progress, and the failure state.",
+    "owner": "mobile"
+   },
+   {
+    "sev": "minor",
+    "text": "'Writing down your words' and 'How transcription works' name the technology and imply the app writes. VOICE.md asks us not to name it.",
+    "fix": "'Hearing your words' and 'How your words are kept'.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J15-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "'every tidy-up' in the data file line repeats the retired word (D-074).",
+    "fix": "'every small fix'.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J15-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Every export failure is shown as 'needs a little more free space', which would be untrue for other causes. The step note says this is the web's missing filesystem; I could not verify what the app shows for other errors. VOICE.md's error pattern also puts 'your words are safe' first.",
+    "fix": "'That did not work this time. Your letters are safe on this phone.' then a cause only when known.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J15-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J16-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "Plan row subtitle describes the pre-D-051 model (see J03-06).",
+    "fix": "'Your first two letters are free. Plus lets you keep adding letters.'",
+    "owner": "content"
+   },
+   {
+    "sev": "major",
+    "text": "The Settings footer uses 'tidy' / 'lightly tidied' language. D-074 (founder) says 'Lightly tidied' and 'Tidying' leave the product, and VOICE.md bans words that suggest software tidied a letter. It also undercuts the promise that the words are exactly as said.",
+    "fix": "Replace with the plain facts. Edited letter: 'Spoken, small slips fixed'. Unedited: 'Spoken, word for word'. Promise: 'We fix what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.' Footer: 'We never rewrite your words. We only fix what the microphone got wrong.' Rename the 'Tidying' setting to 'Fix small slips'.",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "No row to delete a book or erase all data on the phone (see _journey).",
+    "fix": "Add 'Delete this book' per child and 'Erase everything on this phone' under Your data, each with a calm confirm.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J16-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "'Consumer Health Data Privacy Policy' is a heavy name for a tired parent and the section 'Who helps us run the app' shows only 'Terms of Service' under it in the text I read, so the subprocessors page (/subprocessors, D-063) may not be linked. I could not verify the link from the text alone.",
+    "fix": "Link the subprocessors page under that heading and move Terms to the legal list. Keep the legal title but add a one-line plain description.",
+    "owner": "legal"
+   }
+  ]
+ },
+ "J16-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J16-04": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J16-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J16-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J17-01": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "A whole bottom tab, a third of the navigation, is given to a feature that does not exist in v1.0. It promises 'Write to Asha, together' with no date, and takes the place of something useful. D-055 allows co-parent only at launch, and on-device v1.0 has no accounts to share through.",
+    "fix": "Remove the Family tab in v1.0 (or replace it with a Settings row). Put sharing back when it works.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J17-02": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "'Thank you. We'll let you know here when it's ready.' The flag is stored locally and nothing is sent, so we have no way to tell the person. 'Here' only works if they open the tab, and with no accounts or email we cannot notify. This promises something the product cannot do.",
+    "fix": "If the tab stays: 'Noted. Look for Family in the app after an update.' Better, drop the button and use the website's notify list for people who want email.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J17-03": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "minor",
+    "text": "Same coming-soon sheet reached from child settings; a dead-end row.",
+    "fix": "Remove the row until sharing exists.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J17-04": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "An invited person sees copy written for the inviter ('Soon your child's other parent can write in this same book'), when they are the invited parent. It names 'your child' and 'Tell me when it's here', and does not say whether the invitation link will still work later.",
+    "fix": "Dedicated invited page: 'You were invited to write in a book. Sharing is opening in a later update. Until then you can start your own.' Say whether the link is kept.",
+    "owner": "product"
+   }
+  ]
+ },
+ "J18-01": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-02": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-03": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-04": {
+  "verdict": "fix",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "The letter page ('Spoken, lightly tidied', dark theme) uses 'tidy' / 'lightly tidied' language. D-074 (founder) says 'Lightly tidied' and 'Tidying' leave the product, and VOICE.md bans words that suggest software tidied a letter. It also undercuts the promise that the words are exactly as said.",
+    "fix": "Replace with the plain facts. Edited letter: 'Spoken, small slips fixed'. Unedited: 'Spoken, word for word'. Promise: 'We fix what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.' Footer: 'We never rewrite your words. We only fix what the microphone got wrong.' Rename the 'Tidying' setting to 'Fix small slips'.",
+    "owner": "content"
+   }
+  ]
+ },
+ "J18-05": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J18-06": {
+  "verdict": "ok",
+  "findings": []
+ },
+ "J19-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "major",
+    "text": "A malformed link or a mis-tapped universal link (earlyletters.com paths, D-063) opens Expo Router's developer 'Unmatched Route' page with a Sitemap link and a raw URL. It is not a customer screen.",
+    "fix": "Design a calm not-found screen: 'We could not find that page. Back to Asha's book.' with one button. Route unknown links to Tonight.",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "J20-01": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "A crash leaves a blank page with no message and no way back. An app that holds a parent's voice recordings must say 'Your letters are safe' and offer a way forward. A blank screen is the most trust-damaging launch failure.",
+    "fix": "Add an error boundary with calm copy: 'Something went wrong on our side. Your letters and recordings are safe on this phone.' and 'Back to Tonight'. Report content-free crash data only if opted in (D-003).",
+    "owner": "mobile"
+   }
+  ]
+ },
+ "_journey": {
+  "verdict": "gap",
+  "findings": [
+   {
+    "sev": "blocker",
+    "text": "D-051 (founder, 4 Oct, origin/main) is not in the app. There is no letter counter, no paywall at the third letter, no 'in-progress letter held on the phone' state, no lapsed-member state, and the Plan, Settings and gate screens still say 'free, always'. I found no free-letters code in apps/mobile/src or packages/core/src. The website (apps/web site.ts) already says 'Your first two letters are free'.",
+    "fix": "Build and capture: free-letters counter (quiet), the paywall at letter three (never discards the in-progress letter), the held-on-phone state, lapsed state. Rewrite Plan and gate copy. Close D-051 open edges 1 to 8 first.",
+    "owner": "product"
+   },
+   {
+    "sev": "blocker",
+    "text": "The quiet-day line writes a sentence in the parent's voice and stores it as their letter (J08-02, J08-03). This breaks the constitution and VOICE.md's no-machine-writing rule.",
+    "fix": "Remove generated text; marker only.",
+    "owner": "product"
+   },
+   {
+    "sev": "major",
+    "text": "No on-device purchase screen is captured, so price, trial, auto-renewal terms and 'Redeem a code' (D-052) cannot be reviewed. Web shows only 'not available on this device'. Apple 3.1.2 needs price and terms next to the buy button.",
+    "fix": "Capture the real StoreKit offer screens on an iPhone: offer, trial, purchased, restored, failed, lapsed.",
+    "owner": "payments"
+   },
+   {
+    "sev": "major",
+    "text": "Speech model download is invisible. Speaking needs a speech model (575 MB for English per J14-01), and no screen shows consent, size, Wi-Fi, progress, failure or full-storage. The first night could end in 'a recording waiting for its words' with no explanation.",
+    "fix": "Add model-download screens to first run and Recordings. Confirm whether English is bundled (D-065).",
+    "owner": "mobile"
+   },
+   {
+    "sev": "major",
+    "text": "Interruptions during recording are not shown: phone call, app to background, screen lock, low storage, microphone taken by another app. These are the normal conditions for a parent with a baby.",
+    "fix": "Capture and design these states, each saying the words so far are kept.",
+    "owner": "qa"
+   },
+   {
+    "sev": "major",
+    "text": "Durability: v1.0 is on-device only and the only safety net is Export. There is no new-phone, reinstall or lost-phone story, and no gentle nudge to export. D-073 (founder) says encrypted backup of recordings ships in v1.0, which conflicts with 'on-device only'. Copy and the website (which says Plus 'backs up every recording', apps/web/src/content/site.ts on origin/main) promise more than the app does.",
+    "fix": "Founder to confirm whether backup is in or out of v1.0, then align the app, the website and the store listing. Add a restore-from-iPhone-backup note.",
+    "owner": "product"
+   },
+   {
+    "sev": "major",
+    "text": "No way to delete a child's book or erase all data on the phone; delete exists only per letter. There are no accounts, so no Apple deletion route, but customers still expect a clean exit.",
+    "fix": "Add per-book delete and 'Erase everything' with calm confirms.",
+    "owner": "product"
+   },
+   {
+    "sev": "major",
+    "text": "Two doors to nowhere in v1.0: 'I was invited' on Welcome and the Family tab (plus the 'Family can read' switch). D-055 limits launch to co-parent only, and there are no accounts to share through.",
+    "fix": "Hide all of them until sharing works, or define a minimal invited-person page. Decision for founder.",
+    "owner": "product"
+   },
+   {
+    "sev": "major",
+    "text": "Vocabulary drift from D-074: 'lightly tidied', 'Tidying' and 'tidy' appear on about fifteen screens (promise, letter page, Recordings, Settings footer, export). A founder decision is not applied.",
+    "fix": "One content pass, then rerun the journey capture.",
+    "owner": "content"
+   },
+   {
+    "sev": "minor",
+    "text": "'Private' versus 'in the book' has no consequence in v1.0 (nobody else can see anything), yet it is offered at every save and warned about on the listening screen. A parent may think book letters are visible to others. It is unclear from the screens whether Read together and Export include private letters; I did not check the code.",
+    "fix": "Explain it once, or hide until sharing exists. State clearly what Export and Read together include.",
+    "owner": "product"
+   },
+   {
+    "sev": "minor",
+    "text": "Missing screens in the capture: Storage, Help, Write to us, in-app Terms and Privacy pages, About, a lock-screen notification example (VOICE.md notification rules), Tonight for a not-yet-born child, a second waiting draft, search or jump in a long Book, VoiceOver and Dynamic Type states.",
+    "fix": "Add to the next capture run.",
+    "owner": "qa"
+   },
+   {
+    "sev": "minor",
+    "text": "First run is six screens (age, welcome, promise, child, signature, 'book is open') before the first letter; 'The book is open' is an interstitial. D-043 intended fewer.",
+    "fix": "Fold 'The book is open' into Tonight, or open Tonight with Speak ready.",
+    "owner": "product"
+   },
+   {
+    "sev": "minor",
+    "text": "Not verified: I did not fetch earlyletters.com (read apps/web/src/content/site.ts on origin/main instead), and I looked at about 25 of the 116 PNGs directly; the rest were judged from their step JSON text and notes. Dark-mode screens were not judged for contrast. The 0-inset web render hides real safe-area problems (the tab labels look clipped at the bottom).",
+    "fix": "Re-check on a device.",
+    "owner": "qa"
+   }
+  ]
+ }
+}

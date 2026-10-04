@@ -1,0 +1,35 @@
+{
+  "id": "J05-02",
+  "journey": "voice-capture",
+  "kind": "happy",
+  "title": "Paused",
+  "note": "Pause stops the clock and the glow. Keep talking continues the same recording.",
+  "from": "J05-01",
+  "shot": "screens/J05-02.png",
+  "route": "/listen",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "To Asha Only you, until you add it to the book. 0:03 Paused. Keep talking Finish Let it go",
+  "lines": [
+    "To Asha",
+    "Only you, until you add it to the book.",
+    "0:03",
+    "Paused.",
+    "Keep talking",
+    "Finish",
+    "Let it go"
+  ]
+}

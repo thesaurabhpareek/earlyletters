@@ -1,0 +1,38 @@
+{
+  "id": "J12-01",
+  "journey": "plus",
+  "kind": "happy",
+  "title": "Plan: Plus is off",
+  "note": "The Plan screen says plainly what is free forever (writing, reading, playing recordings, export, writing with a co-parent) and what Plus adds (Read together after 3 free tries per book, books for more children). Apple handles payment; no card details are seen. There is no Buy button on web: the page says Plus is not available on this device (StoreKit exists only in the iOS app).",
+  "from": "J11-05",
+  "shot": "screens/J12-01.png",
+  "route": "/settings/plus",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Plan Plus Plus is off. Every book and letter stays yours. Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds Read together whenever you like, after the first 3 times in each book, and books for more children. Manage subscription Change or cancel in Apple's subscriptions screen. Restore purchases Finds Plus bought with this Apple Account. Apple handles payment for Plus. We never see your card details. Plus is not available on this device yet.",
+  "lines": [
+    "Plan",
+    "Plus",
+    "Plus is off. Every book and letter stays yours.",
+    "Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds Read together whenever you like, after the first 3 times in each book, and books for more children.",
+    "Manage subscription",
+    "Change or cancel in Apple's subscriptions screen.",
+    "Restore purchases",
+    "Finds Plus bought with this Apple Account.",
+    "Apple handles payment for Plus. We never see your card details.",
+    "Plus is not available on this device yet."
+  ]
+}
