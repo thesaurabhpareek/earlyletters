@@ -217,11 +217,28 @@ export const site = {
     /** The single, quiet sign-up on the home page (components/landing). */
     quietButton: 'Keep me informed',
     sending: 'Sending',
-    success: `Thank you. We will write once, when ${NAME} is ready.`,
+    success: `Thank you, you are on the list. Look out for a short hello from us, and we will write once more, when ${NAME} is ready.`,
     error: 'That did not go through. Please check your email and try again.',
     rateLimited: 'Please give it a minute, then try once more.',
     server: 'That did not go through on our side. Please try again in a moment.',
     honeypotLabel: 'Company',
+  },
+
+  /** The one short hello sent when someone leaves their address (lib/notify/welcome-email.ts). */
+  welcomeEmail: {
+    subject: `You are on the list for ${NAME}`,
+    preheader: 'One short hello now. One email when it is ready.',
+    headline: 'You are on the list.',
+    intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US, and we will write once more, when it is ready.`,
+    promisesTitle: 'What we are building',
+    promises: [
+      'Every word kept exactly as you said it.',
+      'Your voice kept with each letter.',
+      'Private by design. No ads, and we never sell your data.',
+    ],
+    closing: 'Until then, there is nothing you need to do.',
+    signoff: `The ${NAME} team`,
+    why: 'This note went to the address entered at earlyletters.com. If that was not you, reply to this email and we will remove it.',
   },
 
   footer: {

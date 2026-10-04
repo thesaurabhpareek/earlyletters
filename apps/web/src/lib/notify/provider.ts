@@ -14,7 +14,10 @@
  * Provider error messages are never logged: they may echo the address back.
  */
 import { Resend } from 'resend';
+import { site } from '../../content/site';
+import { resolveSiteUrl } from '../site-url';
 import { logNotify } from './log';
+import { renderWelcomeEmail } from './welcome-email';
 
 export type SubscribeOutcome = 'ok' | 'rate_limited' | 'server';
 
@@ -57,4 +60,22 @@ export async function subscribe(email: string, config: { apiKey: string; segment
   const added = await resend.contacts.segments.add({ email, segmentId: config.segmentId }, { signal });
   if (!added.error || isAlreadyExists(added.error)) return 'ok';
   return outcomeFor(added.error);
+}
+
+/**
+ * The one short hello after a sign-up. Never throws and never changes the answer the visitor gets: a failed
+ * send is logged (error name and status only) and the address stays saved. Sent from the verified domain,
+ * replies go to the contact address.
+ */
+export async function sendWelcome(email: string, config: { apiKey: string }): Promise<void> {
+  try {
+    const { subject, html, text } = renderWelcomeEmail(resolveSiteUrl(process.env).origin);
+    const { data, error } = await clientFor(config.apiKey).emails.send(
+      { from: `${site.brand.name} <${site.footer.contact}>`, to: [email], replyTo: site.footer.contact, subject, html, text },
+      { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    );
+    if (error || !data) logNotify('welcome_error', { name: error?.name, status: error?.statusCode });
+  } catch (caught) {
+    logNotify('welcome_error', { name: caught instanceof Error ? caught.name : undefined });
+  }
 }
