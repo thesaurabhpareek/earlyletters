@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const resend = vi.hoisted(() => ({
   create: vi.fn(),
   send: vi.fn(),
+  get: vi.fn(),
+  update: vi.fn(),
   segmentsAdd: vi.fn(),
   constructed: vi.fn(),
 }));
@@ -17,7 +19,7 @@ vi.mock('resend', () => ({
     constructor(key: string) {
       resend.constructed(key);
     }
-    contacts = { create: resend.create, segments: { add: resend.segmentsAdd } };
+    contacts = { create: resend.create, get: resend.get, update: resend.update, segments: { add: resend.segmentsAdd } };
     emails = { send: resend.send };
   },
 }));
@@ -60,12 +62,15 @@ function loggedText(spies: ReturnType<typeof consoleSpies>): string {
 }
 
 beforeEach(() => {
-  resend.create.mockReset().mockResolvedValue({ data: { id: 'c_1', object: 'contact' }, error: null, headers: null });
+  resend.create.mockReset().mockResolvedValue({ data: { id: 'contact-0001-created', object: 'contact' }, error: null, headers: null });
   resend.send.mockReset().mockResolvedValue({ data: { id: 'e_1' }, error: null, headers: null });
+  resend.get.mockReset().mockResolvedValue({ data: { id: 'contact-0001-existing' }, error: null, headers: null });
+  resend.update.mockReset().mockResolvedValue({ data: { id: 'c_1' }, error: null, headers: null });
   resend.segmentsAdd.mockReset().mockResolvedValue({ data: { id: 'c_1' }, error: null, headers: null });
   resend.constructed.mockReset();
   vi.stubEnv('RESEND_API_KEY', 're_test_key');
   vi.stubEnv('RESEND_SEGMENT_ID', SEGMENT);
+  vi.stubEnv('UNSUBSCRIBE_SECRET', 'test-secret-for-unsubscribe-links');
 });
 
 afterEach(() => {
@@ -507,5 +512,36 @@ describe('welcome email', () => {
     consoleSpies();
     const response = await call(post({ email: EMAIL, company: '', t: 5000 }));
     expect(response.status).toBe(200);
+  });
+});
+
+describe('welcome email unsubscribe link', () => {
+  it('carries a personal link and the one-click headers, with no address in the link', async () => {
+    await call(post({ email: EMAIL, company: '', t: 5000 }));
+    const [payload] = resend.send.mock.calls[0] as [{ html: string; text: string; headers: Record<string, string> }];
+    const link = /https:\/\/earlyletters\.com\/unsubscribe\?t=([A-Za-z0-9._-]+)/.exec(payload.html);
+    expect(link).not.toBeNull();
+    expect(link?.[1]).toMatch(/^contact-0001-created\./);
+    expect(payload.html + payload.text).not.toContain(NORMALISED);
+    expect(payload.headers['List-Unsubscribe']).toContain('https://earlyletters.com/api/unsubscribe?t=');
+    expect(payload.headers['List-Unsubscribe']).toContain('mailto:hello@earlyletters.com');
+    expect(payload.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+    expect(payload.text).toContain('Unsubscribe: https://earlyletters.com/unsubscribe?t=');
+  });
+
+  it('uses the stored contact for an address that was already on the list', async () => {
+    resend.create.mockResolvedValue({ data: null, error: { name: 'validation_error', statusCode: 409, message: 'exists' }, headers: null });
+    await call(post({ email: EMAIL, company: '', t: 5000 }));
+    const [payload] = resend.send.mock.calls[0] as [{ html: string }];
+    expect(payload.html).toContain('unsubscribe?t=contact-0001-existing.');
+  });
+
+  it('falls back to a mailto link when no secret is set, and still sends', async () => {
+    vi.stubEnv('UNSUBSCRIBE_SECRET', '');
+    await call(post({ email: EMAIL, company: '', t: 5000 }));
+    const [payload] = resend.send.mock.calls[0] as [{ html: string; headers: Record<string, string> }];
+    expect(payload.html).toContain('href="mailto:hello@earlyletters.com?subject=Unsubscribe"');
+    expect(payload.headers['List-Unsubscribe']).toBe('<mailto:hello@earlyletters.com?subject=Unsubscribe>');
+    expect(payload.headers['List-Unsubscribe-Post']).toBeUndefined();
   });
 });

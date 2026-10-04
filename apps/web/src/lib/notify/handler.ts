@@ -47,7 +47,7 @@ function fail(error: ErrorCode, retryAfterSeconds?: number): Response {
   return Response.json({ ok: false, error } satisfies NotifyResult, { status: STATUS[error], headers });
 }
 
-function isSameOrigin(request: Request): boolean {
+export function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   if (!origin) return true; // not a browser cross-site request (curl, server to server); the other checks still apply
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
@@ -122,8 +122,8 @@ export async function handleNotify(request: Request): Promise<Response> {
     const ceiling = providerCeiling.hit('provider');
     if (!ceiling.allowed) return fail('rate_limited', ceiling.retryAfterSeconds);
 
-    const outcome = await subscribe(email, config);
-    if (outcome === 'ok') await sendWelcome(email, config);
+    const { outcome, contactId } = await subscribe(email, config);
+    if (outcome === 'ok') await sendWelcome(email, config, contactId);
     return outcome === 'ok' ? ok() : fail(outcome, outcome === 'rate_limited' ? 30 : undefined);
   } catch (error) {
     // The error code of the underlying cause (for example ERR_INVALID_CHAR): a fixed vocabulary, never message text.

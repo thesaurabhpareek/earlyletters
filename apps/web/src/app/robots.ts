@@ -4,7 +4,7 @@ import { siteOrigin } from '@/lib/legal/origin';
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: '*', allow: '/', disallow: ['/lab', '/api'] }],
+    rules: [{ userAgent: '*', allow: '/', disallow: ['/lab', '/api', '/unsubscribe'] }],
     sitemap: `${siteOrigin}/sitemap.xml`,
   };
 }
