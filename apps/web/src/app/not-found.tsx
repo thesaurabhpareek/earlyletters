@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: siteCopy.notFound.title };
 export default function NotFound() {
   return (
     <main className={styles.page}>
-      <p className={styles.line}>{siteCopy.notFound.line}</p>
+      <h1 className={styles.line}>{siteCopy.notFound.line}</h1>
       <Link className={styles.home} href="/">
         {siteCopy.notFound.home}
       </Link>
