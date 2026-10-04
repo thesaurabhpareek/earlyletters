@@ -47,6 +47,8 @@ import {
 } from './db/repos';
 import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
+import { capabilities } from './capabilities';
+import { SHELF_DAYS } from './shelf-days';
 import {
   SYNC_SETTING,
   enqueueBookCreate,
@@ -76,6 +78,7 @@ export type {
 export type { Table as StoreTable } from './db/repos';
 export { AudioMissingError } from './db/repos/letters';
 export { EntryTombstonedError } from './db/repos/entries';
+export type { DeletedEntry } from './db/repos/entries';
 
 // ── Connection ───────────────────────────────────────────────────────────
 export const DB_FILE_NAME = 'scribe.db';
@@ -511,6 +514,81 @@ export function undeleteEntry(id: string): void {
   }
 }
 
+// ── Recently deleted (D-085) ─────────────────────────────────────────────
+const SHELF_MS = SHELF_DAYS * 24 * 60 * 60 * 1000;
+/** Settings key: the latest launch time seen, so a phone clock moved back never purges early. */
+export { SHELF_DAYS };
+export const LAST_LAUNCH_SETTING = 'lastLaunchAt';
+
+/**
+ * Removes a letter's recording from the phone. Must return normally when the
+ * file is already gone (erase is idempotent) and throw when the file exists
+ * and could not be removed, so the row is kept and the erase can be retried.
+ * The native one (lib/capture/erase.ts) also removes the listening copy and
+ * its sidecar.
+ */
+export type AudioEraser = (uri: string | null, entryId: string) => void;
+
+/** The shelf: deleted letters of every book, newest deletion first. Each has `deletedAt`. */
+export function listDeleted(): entries.DeletedEntry[] {
+  return entries.listDeleted(ctx());
+}
+
+/** The ISO time after which a letter deleted at `deletedAt` is erased by the launch purge. */
+export function erasesAt(deletedAt: string): string {
+  return new Date(Date.parse(deletedAt) + SHELF_MS).toISOString();
+}
+
+/**
+ * Erase a deleted letter for good, from the shelf ("Erase now") or by the
+ * launch purge. Order matters: the recording file first, then the row. If
+ * the app is killed in between, the row stays on the shelf pointing at a file
+ * that is gone, and the next erase or purge finishes the job; the other order
+ * would leave a file with no row, which the sweep re-attaches as a draft.
+ * Only a deleted letter can be erased (a live letter is refused). Returns true
+ * when the letter is gone, false when it was not on the shelf, the build syncs
+ * (the server owns deletion then), or the file could not be removed.
+ */
+export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
+  if (capabilities.sync) return false;
+  const c = ctx();
+  const uri = entries.deletedAudioUri(c, id);
+  if (uri === undefined) return false;
+  try {
+    eraseAudio(uri, id);
+  } catch {
+    return false; // keep the row; the file may still be there
+  }
+  const done = entries.eraseRow(c, id);
+  if (done) bus.emit('entries');
+  return done;
+}
+
+/**
+ * Launch purge: erases letters that have waited SHELF_DAYS or more. Does
+ * nothing when the build syncs (the server owns the clock, spec 2.2 step 7)
+ * or when `nowMs` is earlier than the latest recorded launch (a phone clock
+ * moved back). Returns how many letters were erased.
+ */
+export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
+  if (capabilities.sync) return 0;
+  const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
+  if (Number.isFinite(last) && nowMs < last) return 0;
+  const c = ctx();
+  let erased = 0;
+  for (const id of entries.expiredIds(c, new Date(nowMs - SHELF_MS).toISOString())) {
+    if (eraseEntry(id, eraseAudio)) erased += 1;
+  }
+  return erased;
+}
+
+/** Writes the launch time for the purge's clock guard. Never moves backwards. */
+export function recordLaunch(nowMs: number): void {
+  const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
+  if (Number.isFinite(last) && last >= nowMs) return;
+  setSetting(LAST_LAUNCH_SETTING, new Date(nowMs).toISOString());
+}
+
 // ── Drafts (capture in progress) ─────────────────────────────────────────
 export function createDraft(input: NewDraft): Draft {
   const c = ctx();
@@ -585,6 +663,11 @@ export function deleteDraft(id: string): void {
 export function audioRows(): { drafts: SweepDraft[]; entries: SweepEntry[] } {
   const c = ctx();
   return { drafts: drafts.audioRows(c), entries: entries.audioRows(c) };
+}
+
+/** Takes the sweep kept but could not finish (empty, or would not play). Settings > Recordings lists them. */
+export function countUnrecoverableTakes(): number {
+  return drafts.countUnrecoverable(ctx());
 }
 
 /** The app container moved (iOS update): point the row at the same file's current path. */

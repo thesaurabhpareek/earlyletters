@@ -2,10 +2,11 @@
   "id": "J10-06",
   "journey": "letter-detail",
   "kind": "unhappy",
-  "title": "Deleted, with Undo",
-  "note": "Delete is immediate, with no confirm dialog. The screen says so and Undo stays until the person taps Undo, Close or Back (no timer).",
+  "title": "Delete asks first",
+  "note": "Delete opens a small sheet: \"Delete this letter?\", \"You can undo this for 30 days from Recently deleted.\" The safe choice, \"Keep it\", is the large primary button and the default; \"Delete letter\" is the quiet red one. (D-085.)",
   "from": "J10-05",
   "shot": "screens/J10-06.png",
+  "full": "screens/J10-06-full.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -21,12 +22,12 @@
       "bottom": 34
     }
   },
-  "scrolls": false,
-  "text": "Letter deleted. You can still undo this, or close to go back to the book. Letter deleted. Undo",
+  "scrolls": true,
+  "text": "Delete this letter? You can undo this for 30 days from Recently deleted. Keep it Delete letter",
   "lines": [
-    "Letter deleted.",
-    "You can still undo this, or close to go back to the book.",
-    "Letter deleted.",
-    "Undo"
+    "Delete this letter?",
+    "You can undo this for 30 days from Recently deleted.",
+    "Keep it",
+    "Delete letter"
   ]
 }

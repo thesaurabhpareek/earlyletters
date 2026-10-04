@@ -204,6 +204,7 @@ describe('boundaries (MOB-04)', () => {
       'deleteSetting', 'unhideChild', 'listHiddenChildren', 'saveFamily', 'saveLetterFromDraft',
       'saveVoiceOnlyFromDraft', 'listWaitingForWords', 'setWordsForWaitingEntry', 'createRecordingDraft', 'finalizeDraftAudio',
       'setDraftAudioHash', 'setDraftChild', 'audioRows', 'rebaseAudioUri', 'reportOrphanAudio', 'reattachOrphanAudio', 'localSchemaVersion',
+      'listDeleted', 'eraseEntry', 'purgeExpired', 'recordLaunch', 'countUnrecoverableTakes', 'erasesAt',
       'AudioMissingError', 'localSqlDb', 'notifyStoreChanged', 'subscribeTo', 'openStore', 'closeStore',
     ];
     for (const n of names) expect(typeof (store as Record<string, unknown>)[n], n).toBe('function');

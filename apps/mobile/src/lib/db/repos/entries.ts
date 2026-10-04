@@ -206,11 +206,50 @@ export function undelete(ctx: RepoContext, id: string): boolean {
   return changes(ctx.db) === 1;
 }
 
-/** Every entry that points at audio, tombstoned ones included (the sweep must never treat their files as orphans). */
-export function audioRows({ db }: RepoContext): { id: string; audioUri: string }[] {
+/** A letter on the Recently deleted shelf: the letter plus when it was deleted (ISO). */
+export type DeletedEntry = Entry & { deletedAt: string };
+
+/** Tombstoned letters, newest deletion first. Every book; the shelf is one list. */
+export function listDeleted({ db }: RepoContext): DeletedEntry[] {
   return db
-    .all<{ id: string; audio_uri: string }>('SELECT id, audio_uri FROM entries WHERE audio_uri IS NOT NULL ORDER BY id')
-    .map((r) => ({ id: r.id, audioUri: r.audio_uri }));
+    .all<EntryRow & { deleted_at: string }>(
+      `SELECT ${COLS}, deleted_at FROM entries WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC, id DESC`,
+    )
+    .map((r) => ({ ...fromRow(r), deletedAt: r.deleted_at }));
+}
+
+/** Tombstoned letters deleted at or before `cutoffIso` (same ISO format the clock writes), oldest first. */
+export function expiredIds({ db }: RepoContext, cutoffIso: string): string[] {
+  return db
+    .all<{ id: string }>('SELECT id FROM entries WHERE deleted_at IS NOT NULL AND deleted_at <= ? ORDER BY deleted_at, id', cutoffIso)
+    .map((r) => r.id);
+}
+
+/** The audio path of a tombstoned letter (null for typed ones). `undefined` when no such tombstone exists. */
+export function deletedAudioUri({ db }: RepoContext, id: string): string | null | undefined {
+  const r = db.get<{ audio_uri: string | null }>('SELECT audio_uri FROM entries WHERE id = ? AND deleted_at IS NOT NULL', id);
+  return r ? r.audio_uri : undefined;
+}
+
+/**
+ * Removes a tombstoned letter's row for good (the second half of an erase:
+ * the audio file is already gone). Refuses a live letter. Queued uploads for
+ * it go with it. False when there is no such tombstone (idempotent).
+ */
+export function eraseRow({ db }: RepoContext, id: string): boolean {
+  db.run('DELETE FROM entries WHERE id = ? AND deleted_at IS NOT NULL', id);
+  const done = changes(db) === 1;
+  if (done) db.run('DELETE FROM sync_outbox WHERE entity_id = ?', id);
+  return done;
+}
+
+/** Every entry that points at audio, tombstoned ones included (the sweep must never treat their files as orphans). */
+export function audioRows({ db }: RepoContext): { id: string; audioUri: string; deleted: boolean }[] {
+  return db
+    .all<{ id: string; audio_uri: string; deleted: number }>(
+      'SELECT id, audio_uri, deleted_at IS NOT NULL AS deleted FROM entries WHERE audio_uri IS NOT NULL ORDER BY id',
+    )
+    .map((r) => ({ id: r.id, audioUri: r.audio_uri, deleted: r.deleted === 1 }));
 }
 
 /** The app container moved (iOS update): point the row at the same file's current path. Allowed on tombstones. */

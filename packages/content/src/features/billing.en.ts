@@ -5,9 +5,10 @@
  * section 3); Apple's store view itself shows each price, period and any free
  * trial, so no price or trial length is typed here.
  *
- * What Plus adds lists only what v1.0 ships: encrypted backup of the owner's
- * recordings (D-073, which supersedes D-059's "no audio upload"), Read together
- * after the free sessions, and books for more children. Extra themes are not in
+ * What Plus adds lists only what v1.0 ships: Read together after the free
+ * sessions, and books for more children. Backup is not listed: D-085 amends D-073,
+ * so v1.0 relies on the person's own iPhone backup plus Export and claims none of
+ * our own until sign-in and a server ship. Extra themes are not in
  * v1.0, so they are not promised here (App Review 3.1.2, Subscription Terms
  * must match; see the payments report).
  *
@@ -19,8 +20,6 @@ export const billingCopy = {
     title: 'Plus',
     subtitle: 'A few extras for the books you keep.',
     features: [
-      // D-073: owner-only encrypted backup ships in v1.0, as part of Plus (Subscription Terms).
-      'Encrypted backup of every recording, for you alone.',
       'Read together whenever you like, after the first 3 times in each book.',
       'Books for more children. Your first book is always free.',
     ],

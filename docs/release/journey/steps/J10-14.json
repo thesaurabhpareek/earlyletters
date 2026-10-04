@@ -1,0 +1,32 @@
+{
+  "id": "J10-14",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "Erase now asks first",
+  "note": "Erase now ends the wait, after one question: \"The letter and its recording will be erased from this phone, at once.\" \"Keep it\" is the default.",
+  "from": "J10-13",
+  "shot": "screens/J10-14.png",
+  "route": "/settings/recently-deleted",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Erase this letter now? The letter and its recording will be erased from this phone, at once. Keep it Erase now",
+  "lines": [
+    "Erase this letter now?",
+    "The letter and its recording will be erased from this phone, at once.",
+    "Keep it",
+    "Erase now"
+  ]
+}

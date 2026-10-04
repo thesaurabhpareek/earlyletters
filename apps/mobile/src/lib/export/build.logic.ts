@@ -6,8 +6,10 @@
  *
  * Rules:
  * - Every letter on this phone, in book or private, in every book including
- *   hidden ones. Recently deleted letters are not included (the store has no
- *   read API for them yet).
+ *   hidden ones. Recently deleted letters are left out by design (D-085): a
+ *   letter the person deleted is not part of their book, and they can Restore
+ *   it from Recently deleted for 30 days. (`listDeleted` exists; export does
+ *   not read it.)
  * - Own letters carry raw transcript, its SHA-256, machine edits and engine
  *   version. Other people's letters carry only what the book shows (4.1).
  * - Original recordings, byte for byte. A recording that is not on this

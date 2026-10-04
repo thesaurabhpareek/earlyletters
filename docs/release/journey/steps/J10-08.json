@@ -1,10 +1,10 @@
 {
   "id": "J10-08",
   "journey": "letter-detail",
-  "kind": "happy",
-  "title": "A typed letter",
-  "note": "Typed letters have the words and the signature, with \"typed\" provenance, and no player or recording line.",
-  "from": "J10-01",
+  "kind": "unhappy",
+  "title": "Deleted, with Undo",
+  "note": "After the confirm, the letter moves to Recently deleted for 30 days. The screen says so and Undo stays until the person taps Undo, Close or Back (no timer).",
+  "from": "J10-07",
   "shot": "screens/J10-08.png",
   "route": "/letter/:id",
   "viewport": {
@@ -22,14 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "Aa Wednesday, September 30, 2026. Asha is 6 months and 3 weeks old. Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw. From Mama Typed Make private Delete",
+  "text": "Letter deleted. It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book. Letter deleted. Undo",
   "lines": [
-    "Aa",
-    "Wednesday, September 30, 2026. Asha is 6 months and 3 weeks old.",
-    "Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw.",
-    "From Mama",
-    "Typed",
-    "Make private",
-    "Delete"
+    "Letter deleted.",
+    "It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book.",
+    "Letter deleted.",
+    "Undo"
   ]
 }

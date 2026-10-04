@@ -512,12 +512,13 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(leaves(features, 'features'), new RegExp(brand.name, 'i'))).toEqual([]);
   });
 
-  // D-073 (founder, 3 Oct 2026, evening) puts the owner's encrypted backup in v1.0 and in Plus, so backup is
-  // no longer an overclaim here. Themes, covers and vault mode still are.
-  it('promises only what Plus gates in v1.0 (D-053, D-073): backup, Read together after 3 per book, more books', () => {
+  // D-085 amends D-073 for v1.0: our own encrypted backup needs sign-in and a server, so no Plus or store copy
+  // may claim backup until it ships. Themes, covers and vault mode are overclaims too.
+  it('promises only what Plus gates in v1.0 (D-053, D-085): Read together after 3 per book, more books, no backup', () => {
     const plus = [...leaves(features.billing, 'billing'), ...leaves(en.plus, 'plus'), ...leaves(storeListing, 'store')];
     expect(offenders(plus, /\b(themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\btheme/i.test(o))).toEqual([]);
-    expect(en.plus.promise).toMatch(/backup/);
+    expect(en.plus.promise).not.toMatch(/backup/);
+    expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
     expect(en.plus.promise).toMatch(/Read together/);
     expect(en.plus.promise).toMatch(/more children/);
   });

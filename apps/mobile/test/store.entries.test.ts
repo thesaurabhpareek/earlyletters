@@ -131,7 +131,24 @@ describe('tombstones (PMOB-02)', () => {
     entries.tombstone(f.ctx, letter().id);
     expect(entries.get(f.ctx, letter().id)).toBeNull();
     expect(entries.listForChild(f.ctx, 'child-asha')).toEqual([]);
-    expect(entries.audioRows(f.ctx)).toEqual([{ id: letter().id, audioUri: 'file:///Documents/recording-1.m4a' }]);
+    expect(entries.audioRows(f.ctx)).toEqual([{ id: letter().id, audioUri: 'file:///Documents/recording-1.m4a', deleted: true }]);
+  });
+
+  it('[D-085] the shelf: listDeleted is newest first, expiredIds respects the cutoff, eraseRow refuses a live letter', () => {
+    entries.tombstone(f.ctx, letter().id);
+    const deletedAt = rawRow(f.db, letter().id)!.deleted_at as string;
+    expect(entries.listDeleted(f.ctx).map((e) => [e.id, e.deletedAt])).toEqual([[letter().id, deletedAt]]);
+    expect(entries.expiredIds(f.ctx, new Date(Date.parse(deletedAt) - 1).toISOString())).toEqual([]);
+    expect(entries.expiredIds(f.ctx, deletedAt)).toEqual([letter().id]);
+    expect(entries.deletedAudioUri(f.ctx, letter().id)).toBe('file:///Documents/recording-1.m4a');
+    entries.undelete(f.ctx, letter().id);
+    expect(entries.deletedAudioUri(f.ctx, letter().id)).toBeUndefined();
+    expect(entries.eraseRow(f.ctx, letter().id)).toBe(false);
+    expect(entries.get(f.ctx, letter().id)).not.toBeNull();
+    entries.tombstone(f.ctx, letter().id);
+    expect(entries.eraseRow(f.ctx, letter().id)).toBe(true);
+    expect(rawRow(f.db, letter().id)).toBeNull();
+    expect(entries.eraseRow(f.ctx, letter().id)).toBe(false);
   });
 
   it('undelete restores a tombstone and reports false when there was none', () => {

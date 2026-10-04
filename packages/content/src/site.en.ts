@@ -4,8 +4,8 @@
 // v1.0 claims only (docs/DECISIONS.md, 3 Oct 2026): Read together plays recordings on this phone with no
 // word highlight; no Hindi-English mixing in one sentence yet (D-059); 7 spoken languages (D-056); family
 // at launch is the co-parent only (D-055), so grandparents and the gift are "coming", never "now".
-// Recordings: encrypted backup for their owner only ships in v1.0 (D-073, superseding D-059's "no audio
-// upload"); family members hearing each other's recordings is v1.1 (D-059).
+// Recordings: no backup of our own in v1.0 (D-085 amends D-073); the person's own iPhone backup plus Export;
+// family members hearing each other's recordings is v1.1 (D-059).
 // The privacy promise is `en.trust.promise` word for word (D-061). Legal pages: packages/brand
 // `web.*` (D-063).
 import { brand } from '@scribe/brand';
@@ -82,9 +82,8 @@ export const site = {
     points: [
       "Your letters are private by default. Only the people you invite can read what you add to the book.",
       "We never rewrite your words. Transcription happens on your phone.",
-      // D-073: owner-only encrypted backup ships in v1.0.
-      "Your recordings stay on your phone unless you back them up. A backup is for you alone.",
-      "Backups are encrypted on your phone first. We keep a recovery key so we can help you restore them on a new phone.",
+      // D-085 (amends D-073): no backup of our own in v1.0.
+      "Your recordings stay on your phone, and in your iPhone's own backup if you use one.",
       "No ads. We never sell your data or share it with advertisers.",
       "You can export your book, free, at any time.",
       "You can delete your own letters and recordings whenever you like.",
@@ -126,16 +125,16 @@ export const site = {
     },
     {
       q: "How much does it cost?",
-      // D-075: the website shows the price. D-073: backup is part of Plus in v1.0.
-      a: `Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is optional: ${price.monthly}, or ${price.annual}. It adds encrypted backup of every recording, books for more children, Read together after your first 3 sessions, and a few extras. Your first child's book is free, and so are twins or more you add together when you set up.`,
+      // D-075: the website shows the price. D-085: no backup is claimed in v1.0.
+      a: `Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is optional: ${price.monthly}, or ${price.annual}. It adds books for more children, Read together after your first 3 sessions, and a few extras. Your first child's book is free, and so are twins or more you add together when you set up.`,
     },
     {
       q: "What happens to my recordings?",
-      a: "Each recording stays on your phone by default, attached to its letter, and is part of your iPhone's own backup if you use one. It leaves your phone only if you turn on encrypted backup, which is for you alone. Backups are encrypted on your phone first, and we keep a recovery key so we can help you restore them on a new phone. Export them any time, and delete your recordings and letters whenever you like.",
+      a: "Each recording stays on your phone by default, attached to its letter, and is part of your iPhone's own backup if you use one. Export them any time to keep a copy of your own, and delete your recordings and letters whenever you like.",
     },
     {
       q: "What happens to my recordings if I change phones?",
-      a: "Your letters come with you when you sign in. Recordings come with you if backup is on (part of Plus), or if you move to the new phone with an iPhone backup or Quick Start. Without either, export them first.",
+      a: "Your letters come with you when you sign in. Recordings come with you if you move to the new phone with an iPhone backup or Quick Start. Without either, export them first.",
     },
   ],
   waitlist: {

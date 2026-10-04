@@ -1,0 +1,36 @@
+{
+  "id": "J10-12",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Recently deleted",
+  "note": "Settings, Recently deleted lists the letter with its first words, its date, the day it was deleted and \"Erased on\" the day the purge removes it (30 days on), with Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)",
+  "from": "J10-01",
+  "shot": "screens/J10-12.png",
+  "route": "/settings/recently-deleted",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Recently deleted Letters you delete wait here for 30 days. So it rained all morning so we sat by the window and you tried to catch the drops on the August 4, 2026 Deleted October 4, 2026 Erased on November 3, 2026 Restore Erase now",
+  "lines": [
+    "Recently deleted",
+    "Letters you delete wait here for 30 days.",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the",
+    "August 4, 2026",
+    "Deleted October 4, 2026",
+    "Erased on November 3, 2026",
+    "Restore",
+    "Erase now"
+  ]
+}

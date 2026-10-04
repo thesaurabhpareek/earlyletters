@@ -1,11 +1,12 @@
 {
   "id": "J10-09",
   "journey": "letter-detail",
-  "kind": "unhappy",
-  "title": "A letter waiting for its words",
-  "note": "The page shows a calm italic note instead of an empty page; the recording is there.",
-  "from": "J10-01",
+  "kind": "happy",
+  "title": "Undo restores the letter",
+  "note": "The letter is back exactly as it was.",
+  "from": "J10-08",
   "shot": "screens/J10-09.png",
+  "full": "screens/J10-09-full.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -21,19 +22,20 @@
       "bottom": 34
     }
   },
-  "scrolls": false,
-  "text": "Aa Thursday, October 1, 2026. Asha is 6 months and 3 weeks old. Private A recording, waiting for its words. From Mama Hear Mama 0:00 0:54 Spoken, word for word Recording kept on this phone Add to book Delete",
+  "scrolls": true,
+  "text": "Aa Tuesday, August 4, 2026. Asha is 5 months old. Private So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, word for word Recording kept on this phone Show exactly what I said Add to book Delete",
   "lines": [
     "Aa",
-    "Thursday, October 1, 2026. Asha is 6 months and 3 weeks old.",
+    "Tuesday, August 4, 2026. Asha is 5 months old.",
     "Private",
-    "A recording, waiting for its words.",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
     "From Mama",
     "Hear Mama",
     "0:00",
-    "0:54",
+    "0:42",
     "Spoken, word for word",
     "Recording kept on this phone",
+    "Show exactly what I said",
     "Add to book",
     "Delete"
   ]

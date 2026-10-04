@@ -61,7 +61,7 @@ HOW IT WORKS
 
 Early Letters is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.
 
-Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is an optional subscription with a free trial: encrypted backup of your recordings, books for more children, and Read together whenever you like after the first 3 times in each book. It renews automatically until you cancel, and works with Family Sharing.
+Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is an optional subscription with a free trial: books for more children, and Read together whenever you like after the first 3 times in each book. It renews automatically until you cancel, and works with Family Sharing.
 
 Terms of Use: https://earlyletters.com/terms
 Privacy Policy: https://earlyletters.com/privacy
