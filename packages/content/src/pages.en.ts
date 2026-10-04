@@ -99,7 +99,7 @@ export const pages = {
       {
         heading: "Said once",
         paragraphs: [
-          "Most of what a family says to a small child is said once. A joke at breakfast. A song made up in the car, with the words changed every time. A grandmother telling the story of the night {child} was born, in her own languages, with her own pauses. It is said, it is heard, and the day moves on.",
+          "Most of what a family says to a small child is said once. A joke at breakfast. A song made up in the car, with the words changed every time. Nani or Dadi telling the story of the night {child} was born, in the languages the family speaks, with every pause left in. It is said, it is heard, and the day moves on.",
           "Photos keep what a day looked like, and they are wonderful at it. But a photo cannot tell {child} what you were thinking at the window that morning, or how you laughed before you finished the sentence. That part lives in words, and in a voice.",
         ],
       },
