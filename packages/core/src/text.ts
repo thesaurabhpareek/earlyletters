@@ -8,6 +8,10 @@
  * treated as punctuation. Comparisons run on NFC; offsets always index the
  * text as given, which is never rewritten.
  */
+import { FILLERS, FUNCTION_WORDS } from './lang/english-tables';
+
+export { FILLERS, FUNCTION_WORDS };
+export { frozenSet } from './frozen';
 
 /** One word character: a letter, a combining mark or a digit. */
 export const WORD_CHAR_CLASS = '\\p{L}\\p{M}\\p{N}';
@@ -20,34 +24,6 @@ const WORD_RE = new RegExp(
   `[\\p{L}\\p{N}][${WORD_CHAR_CLASS}]*(?:[${JOINERS}]+[${WORD_CHAR_CLASS}]+|['’][${WORD_CHAR_CLASS}]+)*`,
   'gu',
 );
-
-/**
- * A set that cannot change after it is built (CORE-10). `add`, `delete` and
- * `clear` throw, and the object is frozen, so a caller cannot widen an
- * allowlist the verifier depends on.
- */
-const SEALED = new WeakSet<object>();
-class FrozenSet<T> extends Set<T> {
-  constructor(items: Iterable<T>) {
-    super(items);
-    SEALED.add(this);
-    Object.freeze(this);
-  }
-  override add(value: T): this {
-    if (SEALED.has(this)) throw new TypeError('This set is read-only.');
-    return super.add(value);
-  }
-  override delete(): boolean {
-    throw new TypeError('This set is read-only.');
-  }
-  override clear(): void {
-    throw new TypeError('This set is read-only.');
-  }
-}
-
-export function frozenSet<T>(items: Iterable<T>): ReadonlySet<T> {
-  return new FrozenSet(items);
-}
 
 /** NFC, so a precomposed and a decomposed spelling of the same word compare equal. */
 export function nfc(text: string): string {
@@ -110,31 +86,7 @@ export function splitsCluster(text: string, pos: number): boolean {
   return hi >= 0xd800 && hi <= 0xdbff && lo >= 0xdc00 && lo <= 0xdfff;
 }
 
-/**
- * Words a grammar repair may insert without adding meaning.
- * Deliberately short. Anything not here (or in the dictionary) that a
- * replacement introduces is treated as a new content word and rejected.
- */
-export const FUNCTION_WORDS: ReadonlySet<string> = frozenSet([
-  'a', 'an', 'the',
-  'is', 'are', 'was', 'were', 'be', 'been', 'being', 'am',
-  'has', 'have', 'had', 'having',
-  'do', 'does', 'did',
-  'will', 'would', 'can', 'could', 'shall', 'should', 'may', 'might', 'must',
-  'to', 'of', 'in', 'on', 'at', 'for', 'with', 'by', 'from', 'into', 'onto', 'up',
-  'and', 'or', 'but', 'so', 'if', 'that', 'than', 'then', 'as',
-  'i', 'me', 'my', 'we', 'us', 'our', 'you', 'your',
-  'he', 'him', 'his', 'she', 'her', 'it', 'its', 'they', 'them', 'their',
-  'this', 'these', 'those',
-  "it's", "i'm", "she's", "he's", "we're", "they're", "you're",
-  "don't", "doesn't", "didn't", "isn't", "wasn't", "aren't", "weren't",
-]);
-
-/**
- * Removed only as standalone disfluencies. "like" and "you know" are
- * excluded on purpose: they are often meaningful, and part of how people talk.
- */
-export const FILLERS: ReadonlySet<string> = frozenSet(['um', 'umm', 'ummm', 'uh', 'uhh', 'uhm', 'erm', 'er', 'hmm', 'hmmm', 'mm']);
+/* FUNCTION_WORDS and FILLERS live in lang/english-tables.ts (re-exported above). */
 
 /* Which repeats are collapsed, suggested or kept lives in repeats.ts. */
 
