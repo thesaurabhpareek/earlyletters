@@ -1,4 +1,4 @@
-import { btn, journey } from './support/app';
+import { btn, expectMinTargets, journey } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 const NOTE_SEED = 'Words come from the seeded fictional family Asha (the web build has no speech model, so a real recording never gets words).';
@@ -9,9 +9,22 @@ async function openReview(app: import('@playwright/test').Page) {
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();
 }
 
+/** The tidy-up marks reach 44 pt through hitSlop, which the web box does not show; the device pass checks them. */
+const HITSLOP_ONLY = [/Words taken out here/];
+
 test('[J06] review: what the machine tidied, put back, word for word, save to the book', async ({ app, record }) => {
   const step = journey(record, 'J06', 'review-and-edits', 1, 'J05-03');
   await openReview(app);
+  // The design-system pass: Close is top right, every control is 44 pt, the trust note is at least 16 pt.
+  const close = btn(app, 'Close');
+  const box = await close.boundingBox();
+  expect(box!.x + box!.width, 'Close is in the top right').toBeGreaterThan(app.viewportSize()!.width * 0.7);
+  await expectMinTargets(app, 44, HITSLOP_ONLY);
+  // The two trust lines (patterns follow the copy; if debate Q-013 rewords them, update these two patterns, not the size).
+  for (const re of [/Nothing added/, /Please read it before you save/]) {
+    const px = await app.getByText(re).first().evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+    expect(px, `${re} at least 16 pt`).toBeGreaterThanOrEqual(16);
+  }
   await step('happy', 'Review, with a first-time note', 'The words as spoken, with each tidy-up quietly underlined, a count of small fixes, and a one-time note saying what was and was not done. ' + NOTE_SEED);
   await btn(app, 'Got it').click();
   await step('happy', 'First note dismissed', '"Got it" collapses the note for good.');
@@ -37,7 +50,11 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await step('happy', 'Change words', 'The person may edit any word themselves. Save is off while editing; Done returns.');
   await app.getByText('Done', { exact: true }).click();
 
-  await app.getByRole('button', { name: /Not quite/ }).click();
+  // One selection pattern: accentSoft + accent edge + check (ChoiceGroup), not a second solid accent button.
+  const notQuite = app.getByRole('radio', { name: /Not quite/ });
+  await notQuite.click();
+  await expect(notQuite).toHaveAttribute('aria-checked', 'true');
+  await expect(btn(app, /^Add to .*book/)).toBeVisible();
   await step('happy', 'Does this sound like you? Not quite', 'A private two-button check on how faithful the words sound. "Not quite" shows a kind follow-up line; nothing is stored about the words.');
 
   await btn(app, /^Add to .*book/).click();
@@ -66,6 +83,10 @@ test('[J06c] close Review without saving: the recording is kept as a draft', asy
 test('[J06d] a Review link with no draft', async ({ app, record }) => {
   const step = journey(record, 'J06', 'review-and-edits', 13, 'J06-01');
   await seeded(app, 'asha', '/review');
+  // The shared state pattern: a heading, the sentence, and Close in the modal header (top right).
+  await expect(app.getByRole('heading', { name: 'Something went wrong' })).toBeVisible();
   await expect(app.getByText(/Please try again/)).toBeVisible();
-  await step('unhappy', 'Review with no draft', 'If Review is opened with a draft that no longer exists (only reachable by a stale link) the app says the words are safe and offers Close. It is not reachable by tapping.');
+  await expect(btn(app, 'Close')).toBeVisible();
+  await expectMinTargets(app, 44);
+  await step('unhappy', 'Review with no draft', 'If Review is opened with a draft that no longer exists (only reachable by a stale link) the app shows the shared state screen: a heading, "Your words are safe.", and Close in the top right. It is not reachable by tapping.');
 });

@@ -63,3 +63,52 @@ export async function typeLetter(page: Page, text: string, to: 'book' | 'private
   await expect(page.getByText('Add to ')).toBeVisible();
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();
 }
+
+/**
+ * Every visible button, link, radio and checkbox is at least `min` pt tall (HIG 44). Controls whose touch area is
+ * widened with hitSlop (the tidy-up marks in Review) are listed in `except` by accessible name: hitSlop does not
+ * grow the box on web, so the web run cannot see it; the device pass covers those (Accessibility Inspector).
+ */
+export async function expectMinTargets(page: Page, min = 44, except: RegExp[] = []) {
+  const small = await page.locator('[role=button],[role=link],[role=radio],[role=checkbox]').evaluateAll((els, m) => {
+    return els
+      .filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden' && r.height < m - 0.5;
+      })
+      .map((e) => `${e.getAttribute('aria-label') ?? e.textContent?.trim() ?? '?'} (${Math.round(e.getBoundingClientRect().height)})`);
+  }, min);
+  expect(small.filter((n) => !except.some((re) => re.test(n))), `controls under ${min} pt`).toEqual([]);
+}
+
+/** WCAG contrast of two CSS colours, e.g. 'rgb(43, 39, 34)'. */
+export function contrastRatio(a: string, b: string): number {
+  const lum = (css: string) => {
+    const [r, g, b2] = (css.match(/[\d.]+/g) ?? ['0', '0', '0']).slice(0, 3).map((v) => Number(v) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b2;
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** The glyph colour of an icon control (the first painted fill or stroke inside it) and the first opaque background behind it. */
+export async function glyphColours(locator: ReturnType<Page['locator']>): Promise<{ glyph: string; behind: string }> {
+  return locator.first().evaluate((el) => {
+    const paint = (n: Element) => {
+      const cs = getComputedStyle(n);
+      for (const v of [cs.fill, cs.stroke, cs.color]) if (v && v !== 'none' && !/rgba\(.*, 0\)$/.test(v)) return v;
+      return '';
+    };
+    const nodes = [el, ...Array.from(el.querySelectorAll('*'))];
+    const glyph = nodes.map(paint).find((v) => v && /^rgb/.test(v)) ?? 'rgb(0, 0, 0)';
+    let behind = 'rgb(255, 255, 255)';
+    for (let n: Element | null = el; n; n = n.parentElement) {
+      const bg = getComputedStyle(n).backgroundColor;
+      if (bg && !/rgba\(.*, 0\)$/.test(bg) && bg !== 'transparent') {
+        behind = bg;
+        break;
+      }
+    }
+    return { glyph, behind };
+  });
+}
