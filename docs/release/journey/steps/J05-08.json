@@ -1,0 +1,33 @@
+{
+  "id": "J05-08",
+  "journey": "voice-capture",
+  "kind": "unhappy",
+  "title": "Finished at once",
+  "note": "Finish tapped straight after starting. The app keeps whatever was captured and opens Review; it does not refuse a short or empty take. The web build records with the browser's fake microphone (a steady tone) and has no speech model, so the words never arrive; the real app writes them down on the phone.",
+  "from": "J05-01",
+  "shot": "screens/J05-08.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Hear it Asha · 0 days Read it back Writing down what you said.",
+  "lines": [
+    "Close",
+    "Hear it",
+    "Asha · 0 days",
+    "Read it back",
+    "Writing down what you said."
+  ]
+}

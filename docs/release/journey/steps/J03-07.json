@@ -1,0 +1,45 @@
+{
+  "id": "J03-07",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "One child's settings",
+  "note": "Name, date, signature, a reminders switch, the co-parent row (\"Soon\") and a \"Family can read\" switch that stays off in v1.0. Hide this book is offered because there is more than one (its confirm dialog is native and does not appear on web).",
+  "from": "J03-06",
+  "shot": "screens/J03-07.png",
+  "route": "/settings/children/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha's book Name and birthday Child Asha Birthday October 4, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha's book Family see the letters you add to Asha's book. This starts once family can join. Hide this book Hiding Asha's book quiets every reminder and message about Asha, for everyone in the family. Nothing is deleted.",
+  "lines": [
+    "Asha's book",
+    "Name and birthday",
+    "Child",
+    "Asha",
+    "Birthday",
+    "October 4, 2026",
+    "Sign my letters to Asha as",
+    "Mama",
+    "Include Asha in my reminders",
+    "Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch.",
+    "Write this book together",
+    "Coming soon",
+    "Sharing a book with a co-parent is coming in a later update.",
+    "Family can read Asha's book",
+    "Family see the letters you add to Asha's book. This starts once family can join.",
+    "Hide this book",
+    "Hiding Asha's book quiets every reminder and message about Asha, for everyone in the family. Nothing is deleted."
+  ]
+}

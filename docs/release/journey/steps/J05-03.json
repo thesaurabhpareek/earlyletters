@@ -1,0 +1,33 @@
+{
+  "id": "J05-03",
+  "journey": "voice-capture",
+  "kind": "happy",
+  "title": "Finished: Review opens at once",
+  "note": "The take is kept first, then Review opens. It says it is writing down what was said. The web build records with the browser's fake microphone (a steady tone) and has no speech model, so the words never arrive; the real app writes them down on the phone.",
+  "from": "J05-02",
+  "shot": "screens/J05-03.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Hear it Asha · 0 days Read it back Writing down what you said.",
+  "lines": [
+    "Close",
+    "Hear it",
+    "Asha · 0 days",
+    "Read it back",
+    "Writing down what you said."
+  ]
+}

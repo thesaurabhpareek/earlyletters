@@ -1,0 +1,31 @@
+{
+  "id": "J02-03",
+  "journey": "under-18",
+  "kind": "unhappy",
+  "title": "Reopening the app: still stopped",
+  "note": "Relaunching shows the same stop screen. The answer cannot be retried by restarting.",
+  "from": "J02-02",
+  "shot": "screens/J02-03.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Thank you for telling us. Early Letters is currently for adults 18 and over. Nothing you entered has been kept.",
+  "lines": [
+    "Thank you for telling us.",
+    "Early Letters is currently for adults 18 and over.",
+    "Nothing you entered has been kept."
+  ]
+}

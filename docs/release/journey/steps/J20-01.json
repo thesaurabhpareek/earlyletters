@@ -1,0 +1,27 @@
+{
+  "id": "J20-01",
+  "journey": "crash",
+  "kind": "unhappy",
+  "title": "A screen crashes (fault injected)",
+  "note": "The app registers no error boundary of its own, and the page is left blank: no message, no way back (the text list is empty on purpose). Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here. Worth a calm, designed fallback screen before launch.",
+  "from": "J19-01",
+  "shot": "screens/J20-01.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "",
+  "lines": []
+}

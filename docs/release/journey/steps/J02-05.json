@@ -1,0 +1,33 @@
+{
+  "id": "J02-05",
+  "journey": "under-18",
+  "kind": "happy",
+  "title": "The question again, nothing preselected",
+  "note": "The age question returns, empty, and the person can answer again.",
+  "from": "J02-04",
+  "shot": "screens/J02-05.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Are you 18 or older? We ask everyone the same question. Yes No Continue",
+  "lines": [
+    "Are you 18 or older?",
+    "We ask everyone the same question.",
+    "Yes",
+    "No",
+    "Continue"
+  ]
+}

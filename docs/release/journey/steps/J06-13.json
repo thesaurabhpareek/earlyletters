@@ -1,0 +1,30 @@
+{
+  "id": "J06-13",
+  "journey": "review-and-edits",
+  "kind": "unhappy",
+  "title": "Review with no draft",
+  "note": "If Review is opened with a draft that no longer exists (only reachable by a stale link) the app says the words are safe and offers Close. It is not reachable by tapping.",
+  "from": "J06-01",
+  "shot": "screens/J06-13.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Your words are safe. Please try again. Close",
+  "lines": [
+    "Your words are safe. Please try again.",
+    "Close"
+  ]
+}

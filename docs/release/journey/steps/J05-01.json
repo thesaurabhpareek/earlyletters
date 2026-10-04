@@ -1,0 +1,36 @@
+{
+  "id": "J05-01",
+  "journey": "voice-capture",
+  "kind": "happy",
+  "title": "Listening",
+  "note": "Full-screen and calm: who it is to, \"Only you, until you add it to the book\", a running clock and a glow that moves with the voice. Microphone permission was granted (on a phone iOS asks once, in its own alert, which a browser cannot show).",
+  "from": "J04-03",
+  "shot": "screens/J05-01.png",
+  "route": "/listen",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "To Asha Only you, until you add it to the book. 0:00 Listening. Say it however it comes. Pause Finish Let it go",
+  "lines": [
+    "To Asha",
+    "Only you, until you add it to the book.",
+    "0:00",
+    "Listening.",
+    "Say it however it comes.",
+    "Pause",
+    "Finish",
+    "Let it go"
+  ]
+}
