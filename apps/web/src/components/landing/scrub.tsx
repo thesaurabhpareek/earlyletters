@@ -11,7 +11,7 @@
  * only if motion is welcome. A scene that is pinned must fit on the screen; if it does not (a short phone or
  * laptop), it is not pinned and scrubs as it scrolls past instead.
  */
-import { motion, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
@@ -34,7 +34,7 @@ export function useScrubEnabled(): boolean {
  * stage is pinned (or while the scene scrolls past, when it cannot be pinned). `handoff` fades the scene in at
  * the start and out at the end, so one scene gives way to the next instead of sliding off.
  */
-export function usePin(vh: number) {
+export function usePin(vh: number, exit = true) {
   const outer = useRef<HTMLElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const enabled = useScrubEnabled();
@@ -69,8 +69,9 @@ export function usePin(vh: number) {
   const b = vh / (1 + vh);
   const raw = useTransform(scrollYProgress, (p) => (pinnedRef.current ? clamp((p - a) / (b - a)) : clamp((p - 0.12) / 0.4)));
   const progress = useSpring(raw, SMOOTH);
-  const handoffOpacity = useTransform(progress, [0, 0.1, 0.9, 1], [0, 1, 1, 0]);
-  const handoffY = useTransform(progress, [0, 0.1, 0.9, 1], [14, 0, 0, -14]);
+  // The last scene of the page (`exit` false) fades in and then stays: nothing follows it to hand off to.
+  const handoffOpacity = useTransform(progress, exit ? [0, 0.1, 0.9, 1] : [0, 0.1], exit ? [0, 1, 1, 0] : [0, 1]);
+  const handoffY = useTransform(progress, exit ? [0, 0.1, 0.9, 1] : [0, 0.1], exit ? [14, 0, 0, -14] : [14, 0]);
   return { outer, content, enabled, pinned: enabled && pinned, progress, handoff: { opacity: handoffOpacity, y: handoffY } };
 }
 
@@ -101,15 +102,25 @@ export function ScrubIn({
   return as === 'div' ? <motion.div style={style}>{children}</motion.div> : <motion.span style={style}>{children}</motion.span>;
 }
 
+/** A block that is read by the progress of a pinned scene instead of by its own place on the screen. */
+export type SceneWindow = { progress: MotionValue<number>; from: number; to: number; active: boolean };
+
 /**
- * The same entrance for every block that is not pinned: it lifts a short way and fades in as it enters the lower
- * part of the screen, over a long, even stretch of scroll. Reverses if you scroll back.
+ * The same entrance for every block: it lifts a short way and fades in as it enters the lower part of the screen,
+ * over a long, even stretch of scroll. Reverses if you scroll back. Inside a pinned scene (`scene` with `active`
+ * true) the block does not move, so the same lift and fade are tied to the scene's progress between `from` and
+ * `to` instead. `still` shows the finished block. It is one element in every state, so it is never remounted.
  */
-export function Rise({ children, className, y = 34 }: { children: ReactNode; className?: string; y?: number }) {
+export function Rise({ children, className, y = 34, scene, still = false }: { children: ReactNode; className?: string; y?: number; scene?: SceneWindow; still?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  const enabled = useScrubEnabled();
+  const enabled = useScrubEnabled() && !still;
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.98', 'start 0.66'] });
-  const p = useSpring(scrollYProgress, SMOOTH);
+  const own = useSpring(scrollYProgress, SMOOTH);
+  const idle = useMotionValue(0);
+  const inScene = useTransform(scene?.progress ?? idle, (v) => (scene ? clamp((v - scene.from) / (scene.to - scene.from)) : 0));
+  const active = useMotionValue(0);
+  useEffect(() => active.set(scene?.active ? 1 : 0), [active, scene?.active]);
+  const p = useTransform([inScene, own, active], ([a, b, on]: number[]) => (on ? a : b));
   const opacity = useTransform(p, [0, 1], [0, 1]);
   const yy = useTransform(p, [0, 1], [y, 0]);
   return (
@@ -134,11 +145,17 @@ function FillWord({ progress, index, count, enabled, children }: { progress: Mot
  * A paragraph that is read by scrolling: each word goes from dim to bright in turn as the paragraph crosses the
  * middle of the screen. The text is the finished, fully bright paragraph everywhere else.
  */
-export function FillText({ text, className }: { text: string; className?: string }) {
+export function FillText({ text, className, scene }: { text: string; className?: string; scene?: SceneWindow }) {
   const ref = useRef<HTMLParagraphElement>(null);
   const enabled = useScrubEnabled();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.9', 'end 0.45'] });
-  const progress = useSpring(scrollYProgress, SMOOTH);
+  const own = useSpring(scrollYProgress, SMOOTH);
+  // Inside a pinned scene the paragraph does not move, so it is read by the scene's own progress instead.
+  const idle = useMotionValue(0);
+  const inScene = useTransform(scene?.progress ?? idle, (v) => (scene ? clamp((v - scene.from) / (scene.to - scene.from)) : 0));
+  const active = useMotionValue(0);
+  useEffect(() => active.set(scene?.active ? 1 : 0), [active, scene?.active]);
+  const progress = useTransform([inScene, own, active], ([a, b, on]: number[]) => (on ? a : b));
   const words = text.split(' ');
   return (
     <p ref={ref} className={className}>
