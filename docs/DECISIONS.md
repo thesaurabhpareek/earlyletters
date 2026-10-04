@@ -333,6 +333,77 @@ Sources cited by short name: PRD (docs/prd/PRD.md 1.3), TDD 01 to 10 (docs/tdd/)
 
 ---
 
+## Decisions of 3 Oct 2026, second round (these supersede the first-round entries above where they conflict)
+
+## Index rows (add after D-050)
+
+| ID | Decision | Status | Proceed? | Date |
+|---|---|---|---|---|
+| D-023 | Sync engine v1.0: outbox push plus cursor pull on expo-sqlite and Supabase | **Decided (founder)**; supersedes the "needs founder OK" status | Yes | 2026-10-03 |
+| D-051 | Standard over custom: Apple and well-known open-source first; our finishing touches on top | Decided (founder) | Yes | 2026-10-03 |
+| D-052 | Quality bar: premium and calm, benchmarked on Airbnb, Calm, Headspace, Day One and Apple; motion and components from proven libraries | Decided (founder) | Yes | 2026-10-03 |
+| D-053 | Payments: Apple only, on device (StoreKit 2, Apple's subscription screen, restore and manage sheets, `currentEntitlements`); no server sees purchases; Family Sharing on; $3.99/month with 1 month free, $29.99/year with 2 months free. Plus gates only Read together after 3 free sessions per book, and books for more children | Decided (founder); supersedes D-001's server half | Yes | 2026-10-03 |
+| D-054 | Sign-in: Apple, Google and email magic link; passkeys can be added after sign-in; no passwords | Decided (founder); supersedes D-044 | Yes | 2026-10-03 |
+| D-055 | Family at launch: co-parent only; contributors and the web page later (database keeps contributors) | Decided (founder); supersedes D-002 | Yes | 2026-10-03 |
+| D-056 | Spoken languages at v1.0: English, Hindi, Spanish, Mandarin Chinese, French, Arabic, Portuguese; correct script and punctuation per language; phonetics for taught names; UI in English, ready for localisation | Decided (founder) | Yes | 2026-10-03 |
+| D-057 | What the machine may do to words: unchanged constitution; typed text keeps the keyboard's own autocorrect and is never rewritten | Decided (founder) | Yes | 2026-10-03 |
+| D-058 | Audio: the original recording is never altered; Apple voice processing at record time and/or open-source noise suppression for a separate listening copy; the original is always playable | Decided (founder) | Yes | 2026-10-03 |
+| D-059 | Deferred to v1.1: Hindi-English mode, safety classifier (static "If you are struggling" row ships), word highlight in Read together, family hearing each other's recordings (no audio upload in v1.0), Google Play and Android, web contribution page | Decided (founder); answers D-032 (no shared voice in v1.0) and D-034 (static row) | Yes | 2026-10-03 |
+| D-060 | Beta on TestFlight; the store listing never says beta; the in-app "early version, can make mistakes" note stays | Decided (founder); answers D-030 | Yes | 2026-10-03 |
+| D-061 | Privacy and trust: letters never doubted as private, never sold, never used for ads or to train models, never used to imitate a voice; said calmly in a few set places and backed by real controls (VOICE.md "How we talk about privacy") | Decided (founder) | Yes | 2026-10-03 |
+| D-062 | Analytics: opt-in PostHog plus server aggregates, feeding a self-learning loop (agents read data, write findings, propose backlog items) | Decided (founder); extends D-003 | Yes | 2026-10-03 |
+| D-063 | Domains: earlyletters.com primary, earlyletters.app redirects (Porkbun); email through Resend, hello@earlyletters.com live; legal pages /terms, /privacy, /health-privacy, /subprocessors; universal links on https://earlyletters.com; website built in a separate thread on Vercel | Decided (founder); closes D-005 | Yes | 2026-10-03 |
+| D-064 | Publisher: individual Apple Developer account | Decided (founder); restates D-004 | Yes | 2026-10-03 |
+| D-065 | Lean app: download under 40 MB, measured every release; English pack and font subsets ship; speech models and other language packs download on demand as signed data (guideline 2.5.2); packs deletable in Settings | Decided (founder) | Yes | 2026-10-03 |
+| D-066 | Server-driven content inside native screens: prompts, tips, story cards, announcements, remote config, flags and pack manifests as signed, schema-validated blocks with an offline last-good copy; never anything that changes data collection or the paywall | Recommended (founder may override) | Yes | 2026-10-03 |
+| D-067 | API quality: p95 latency budget, auth check, idempotency keys and rate limits on every endpoint; content-free logs with request ids; user JWTs only; CDN plus ETag for public config; Supabase RLS and RPCs in one US region; typed contracts in `packages/api` | Decided (founder) | Yes | 2026-10-03 |
+
+## Entry bodies (short form; each cites the brief)
+
+### D-023 (update)
+- **Status:** Decided (founder, 3 Oct 2026, brief "D-023 decided as outbox+cursor on Supabase"). ADR 0004 status note: "Superseded for v1.0 by D-023 (founder, 3 Oct 2026). Revisit PowerSync at 10k families or when attachment sync outgrows the simple queue."
+
+### D-053 Payments: Apple only
+- **Decision:** brief decision 3. Server entitlement tables from 3 Oct removed (migration 20261004000000); server code never enforces Plus. A co-parent gets Plus through Family Sharing.
+- **Copy consequence:** Plus copy lists only what v1.0 gates (rules test `promises only what Plus gates in v1.0`). Terms 14.1 and Subscription Terms must drop "encrypted backup" and "extra themes" before publication (legal owner).
+- **Effects:** ADR 0007 status note: "Digital half superseded by ADR 0013 and D-053 (no RevenueCat, no App Store Server Notifications endpoint, no server entitlements)." D-022 notice windows and D-049 consent rows no longer apply to a server we do not have; see DEBATES Q-003.
+
+### D-055 Co-parent only
+- **Effects:** store listing, website and story cards promise co-parent writing only; grandparents are "coming in a later update" (rules test blocks grandparent claims in the listing and story cards).
+
+### D-056 Seven languages
+- **Effects:** store description names all seven; the listing checklist says to remove any language that slips before submission.
+
+### D-059 Deferrals
+- **Effects:** D-032 answered: no audio upload in v1.0. D-034 answered: static support row (Settings home, "If you are struggling"). Copy says recordings stay on the phone and in the person's own iPhone backup (D-033 copy fix done).
+
+### D-060 Beta
+- **Effects:** no beta wording in the listing (rules test); `promotionalTextBeta` and the beta paragraph removed.
+
+### D-061 Privacy said calmly
+- **Effects:** `en.trust` (promise, short form, voice line, sign-in, first recording, Settings) used word for word across app, listing, website and welcome email (rules test). The microphone purpose string no longer mentions backup or cloud transcription (counsel to confirm privacy labels section 4).
+
+### D-063 Domains
+- **Effects:** `packages/brand` `web`, `support`, `email`; bundle id `com.earlyletters.scribe`.
+
+### D-066 Server-driven content
+- **Effects:** `packages/content/src/stories.en.ts` is the packaged fallback for `story` blocks (`packages/api/src/content.ts`); the rules test checks it against the block limits.
+
+## Founder decisions list, items now closed
+Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034, D-033 (copy), D-001 tooling. Still open: D-004 hedge, D-045 cohorts (roadmap assumes C1 only), D-031 Hindi script, DEBATES Q-001 to Q-003.
+
+### D-068 Remote config has one source (coordinator, 3 Oct 2026)
+- **Decision:** remote config comes from ADR 0016's signed config document only. D-035's database table is superseded and not built.
+- **Status:** Decided (coordinator), per pm-5's finding of two mechanisms on paper.
+
+### D-069 At most two parents per book (recommended, 3 Oct 2026)
+- **Decision:** the server refuses a third parent, and either parent can see and remove family members.
+- **Status:** Recommended. It ships as a server check before any non-founder data exists (pm-2 finding). Founder OK needed.
+
+### D-070 Insights loop agents never push (coordinator, 3 Oct 2026)
+- **Decision:** the weekly insights agent writes its report and its proposals into the repo working tree only. The coordinator commits them. This resolves DEBATES Q-007 in favour of COORDINATION.md.
+- **Status:** Decided (coordinator).
+
 ## Decisions that still need the founder (in priority order)
 
 1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). Needed by 16 Oct.

@@ -1,0 +1,80 @@
+# E2E-14  Plus through Apple's store view, then Restore purchases, with the
+# StoreKit configuration file (apps/mobile/storekit/EarlyLetters.storekit).
+#
+# Semi-automated. StoreKit Testing in Xcode is active only for an app run from
+# Xcode with the configuration selected in the scheme's Run options (Apple,
+# "Setting up StoreKit Testing in Xcode"). So, before this flow:
+#   1. Prebuild once and open the workspace (README section 5), select the
+#      StoreKit configuration in Scheme > Run > Options, and add the launch
+#      argument `-e2eSeed asha` in Scheme > Run > Arguments.
+#   2. Run from Xcode on a booted simulator, then start this flow. It never
+#      relaunches the app (launchApp with stopApp: false brings it forward), so
+#      the Xcode StoreKit session stays attached (Assumption: check on the
+#      first run that Maestro does not restart the process).
+# Apple's sheets are system UI, so their words are selected by text; override
+# with -e if Apple's wording differs (PLAN_BUTTON, CONFIRM_BUTTON).
+#
+# Proves: D-053 and ADR 0013 (Apple's own subscription screen; Plus is read from
+# Transaction.currentEntitlements on the device), C-REQ-020 (Restore purchases
+# reports Plus), LEGAL-REQ-050 (expiry keeps everything: step 4 is manual in
+# Xcode's transaction manager). Real sandbox purchase, restore on a second
+# iPhone and Family Sharing are DEVICE_TEST_PLAN S1-17 and ASC doc step 11.
+appId: ${APP_ID}
+name: E2E-14 Plus and Restore purchases (StoreKit file)
+tags:
+  - storekit-xcode
+  - E2E-14
+  - D-053
+  - C-REQ-020
+  - LEGAL-REQ-050
+env:
+  PLAN_BUTTON: ${PLAN_BUTTON || ".*Plus Monthly.*"}
+  CONFIRM_BUTTON: ${CONFIRM_BUTTON || "Subscribe|Confirm|Try It Free"}
+---
+- launchApp:
+    stopApp: false
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.plan"
+- assertVisible:
+    id: "plan.screen"
+# 1. Free before any purchase.
+- assertVisible:
+    id: "plan.status.free"
+# 2. See plans: Apple's subscription store view; buy the monthly trial.
+- tapOn:
+    id: "plan.seePlans"
+- extendedWaitUntil:
+    visible:
+      text: ${PLAN_BUTTON}
+    timeout: 15000
+- tapOn:
+    text: ${PLAN_BUTTON}
+- extendedWaitUntil:
+    visible:
+      text: ${CONFIRM_BUTTON}
+    timeout: 15000
+- tapOn:
+    text: ${CONFIRM_BUTTON}
+- runFlow:
+    when:
+      visible:
+        text: "OK"
+    commands:
+      - tapOn: "OK"
+- extendedWaitUntil:
+    visible:
+      id: "plan.status.plus"
+    timeout: 20000
+# 3. Restore purchases: Apple's sync, then Plus is still reported.
+- tapOn:
+    id: "plan.restore"
+- extendedWaitUntil:
+    visible:
+      id: "plan.message"
+    timeout: 20000
+- assertVisible:
+    id: "plan.status.plus"
+# 4. Manual, in Xcode: Debug > StoreKit > Manage Transactions > expire the
+#    subscription; then Plan shows Free again and the Book, letters and Export
+#    still work (re-run E2E-10 against this app). Not automated.
