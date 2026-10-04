@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
+import { SheetScrim } from '@/components/ui/sheet-scrim';
 import { Text } from '@/components/ui/text';
 import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
@@ -37,7 +38,7 @@ export function ChildSwitcher() {
       </Pressable>
 
       <Modal visible={open} transparent animationType="slide" onRequestClose={close} accessibilityViewIsModal>
-        <Pressable className="flex-1 bg-black/30" onPress={close} accessibilityLabel={copy.common.closeButton} accessibilityRole="button" />
+        <SheetScrim onPress={close} label={copy.common.closeButton} />
         <View className="max-h-[70%] rounded-t-[28px] bg-card px-5 pt-3" style={{ paddingBottom: insets.bottom + 16 }}>
           <View className="mb-3 h-1 w-10 self-center rounded-full bg-border" />
           <Text role="heading" className="mb-2 font-serif text-2xl text-foreground">
