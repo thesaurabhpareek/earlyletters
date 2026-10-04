@@ -1,6 +1,6 @@
 # Early Letters: Design Language
 
-v0.1, 2026-10-01. Tokens: `@scribe/design-tokens`. Sources S1 to S10, H1 to H6 are listed in `BENCHMARK.md`. **(opinion)** marks judgement.
+v0.2, 2026-10-03 (v0.1 2026-10-01; v0.2 adds section 2a Brand mark, `accentDeep`, the icon tile colours and `destructive`). Tokens: `@scribe/design-tokens`; brand values: `packages/brand/index.ts`; brand assets: `docs/brand/BRAND_SYSTEM.md` and `packages/brand/registry.ts`. Sources S1 to S10, H1 to H6 are listed in `BENCHMARK.md`. **(opinion)** marks judgement.
 
 ## 1. Principles
 
@@ -16,7 +16,7 @@ v0.1, 2026-10-01. Tokens: `@scribe/design-tokens`. Sources S1 to S10, H1 to H6 a
 
 ## 2. Color
 
-Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSoft`, `onAccent`, `focus`, `recording`, `success`, `caution`. Ratios computed by script with the WCAG 2.x luminance formula. AA: 4.5:1 text, 3:1 large text/UI.
+Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSoft`, `onAccent`, `focus`, `recording`, `success`, `caution`; on 2026-10-03 `accentDeep` (approved with the primary mark) and `destructive` (D-029). Every brand value in `packages/brand/index.ts` (`brand.colors`, `brand.icon`) equals its token; `packages/design-tokens/test/brand-parity.test.ts` fails on drift. Ratios computed by script with the WCAG 2.x luminance formula. AA: 4.5:1 text, 3:1 large text/UI.
 
 ### Light
 
@@ -28,11 +28,13 @@ Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSo
 | `text` | #2B2722 | on `bg` | 14.00 |
 | `textMuted` | #6B645B | on `bg` / `surface` / `surfaceRaised` | 5.51 / 5.11 / 5.83 |
 | `accent` | #8A5A3B | on `bg` / `surfaceRaised` / `accentSoft` | 5.50 / 5.82 / 4.74 |
+| `accentDeep` | #7F4F30 | on `bg` / `surfaceRaised` / `accentSoft` | 6.47 / 6.85 / 5.58 |
 | `accentSoft` | #F1E6DC | `text` on it | 12.07 |
 | `onAccent` | #FFFFFF | on `accent` | 5.82 |
 | `line` | #E6DED3 | on `bg` | 1.26 (decorative only) |
 | `focus` | #2F6F8F | on `bg` / `surfaceRaised` | 5.23 / 5.54 |
 | `recording` | #B5473A | on `bg` / `surfaceRaised` | 5.05 / 5.35 |
+| `destructive` | #B5473A | on `bg` / `surfaceRaised` | 5.05 / 5.35 |
 | `success` | #3F7A55 | on `bg` / `surfaceRaised` | 4.80 / 5.09 |
 | `caution` | #94661A | on `bg` / `surfaceRaised` | 4.75 / 5.03 |
 | `controlBorder` | #8A8175 | on `bg` / `surface` / `surfaceRaised` / `accentSoft` | 3.62 / 3.36 / 3.83 / 3.12 (non-text, 3:1) |
@@ -51,11 +53,13 @@ Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSo
 | `text` | #F2ECE4 | on `bg` | 15.66 |
 | `textMuted` | #B3AA9E | on `bg` / `surfaceRaised` | 8.01 / 7.32 |
 | `accent` | #D9A47E | on `bg` / `surfaceRaised` / `accentSoft` | 8.37 / 7.64 / 5.99 |
+| `accentDeep` | #D9A47E | on `bg` / `surfaceRaised` | 8.37 / 7.64 (same as dark `accent`: on dark, single-colour brand fills use accentDark) |
 | `accentSoft` | #3A2E25 | `text` on it | 11.20 |
 | `onAccent` | #1E1612 | on `accent` | 8.11 |
 | `line` | #33302C | on `bg` | 1.40 (decorative only) |
 | `focus` | #8CC4DE | on `bg` / `surfaceRaised` | 9.68 / 8.84 |
 | `recording` | #F08C7C | on `bg` / `surfaceRaised` | 7.65 / 6.99 |
+| `destructive` | #F08C7C | on `bg` / `surfaceRaised` | 7.65 / 6.99 |
 | `success` | #8CC9A0 | on `bg` / `surfaceRaised` | 9.60 / 8.77 |
 | `caution` | #E3B866 | on `bg` / `surfaceRaised` | 9.90 / 9.04 |
 | `controlBorder` | #857C70 | on `bg` / `surface` / `surfaceRaised` / `accentSoft` | 4.47 / 4.27 / 4.08 / 3.20 |
@@ -76,10 +80,27 @@ Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSo
 **Rules**
 - `line` fails 3:1 by design: never the only boundary of an interactive control. Control edges use `controlBorder` (the shadcn `input` colour maps to it, so every `border-input` passes 1.4.11). Never draw a control edge at reduced alpha: `textMuted` at 60% is 2.54:1 (the test keeps that failure documented).
 - Dark `onAccent` is dark ink, not white: white on #D9A47E would be ~2.1:1 (fails).
-- `recording` is a terracotta, not alarm red; it means "listening", never "error". Errors use `caution` plus an icon plus words.
+- `recording` is a terracotta, not alarm red; it means "listening". `destructive` (D-029) is a separate token with the same value today, used only for destructive actions (delete a letter, remove a family member, delete the account); it can change without touching the recording state. Destructive actions always carry an icon plus words, never colour alone. Warnings and recoverable errors use `caution` plus an icon plus words. In CSS, shadcn's `--color-destructive` maps to `destructive`.
+- `accentDeep` is for single-colour brand fills (favicon on light, foil, the icon tile base), never body text or UI chrome.
+- Icon tile colours (`tokens.icon`: `tileTop` #9A613C, `tileBottom` #7F4F30, `mark` #FBF8F3, `darkTileTop` #2C2926, `darkTileBottom` #1F1B18, `darkMark` #D9A47E) are for the app icon only, never UI.
 - Colour is never the only signal (H2).
 - Increase Contrast: the table above (darker muted text and accent, visible hairlines, ink control edges).
 - No Liquid Glass in the content layer (H5); system tab bar and toolbars may use it.
+
+## 2a. Brand mark
+
+Full rules: [docs/brand/BRAND_SYSTEM.md](../brand/BRAND_SYSTEM.md). Assets: `packages/brand/assets/logo/primary/`, resolved only through the registry (`packages/brand/registry.ts`, `assetFor(context)`). This section is the summary designers need in the app; if the two disagree, BRAND_SYSTEM.md wins.
+
+- **The mark** is two opening quotation marks, one large and one small (0.62 of its size, leaning 14 degrees toward it), approved 2026-10-03 as r3 `final-a` (D-071). It replaces every earlier device: the envelope line, the Literata "e" (direction a), the script mark (direction b), round 2 concepts, the interim Literata email lockup and the serif "E" monogram. Opening quotes only; never closing quotes, a speech bubble, or the mark rotated.
+- **Resolve, never pick a file.** Code asks for a context (`app.splash`, `app.header`, `app.paywall`, `app.settings.about`, `web.header`, `email.header.light` and the rest); a new touchpoint adds a context to the registry. Never import a path under `logo/r3`, `logo/a`, `logo/b` or `logo/r2` (D-072).
+- **Clear space:** one cap height of the wordmark's E (x) on every side of a lockup; half the symbol's height around the symbol alone. The SVGs' built-in margin (0.25x horizontal, 0.3x stacked) is the floor for tight places such as the email header, never the target.
+- **Minimum sizes** (height of the SVG as shipped): horizontal lockup 27 px, below that the small cut (17 to 26 px); stacked lockup 66 px; symbol 24 px, below that the small-cut symbol (12 to 23 px); 16 px favicon is the floor. Each registry asset carries its `minSize` and the id to use below it.
+- **The wordmark is artwork.** It is outlined EB Garamond with its `tt` ligature and an opened word space. Never retype the name in a font to stand in for the logo, not even as a fallback; where an image cannot load, the alt text or accessibility label is the brand name.
+- **EB Garamond is for the wordmark only** (and brand display set as artwork: book covers, gift cards, OG image). Never UI, buttons, letters or body text; the app's type stays Mukta, Literata and Tiro (section 3).
+- **Colour:** the logo is one colour, `ink` on light and `inkDark` on dark. `logo.symbol.accent` is the one warm brand moment allowed on paper. Never two-colour lockups, an accent wordmark, accentDark on paper, or a gradient anywhere except the app icon tile.
+- **Icon colours:** default tile gradient `tileTop` #9A613C to `tileBottom` #7F4F30 (`accentDeep`) with a `mark` #FBF8F3 (paper, never pure white); dark tile #2C2926 to #1F1B18 with an #D9A47E mark; tinted is the mark shape only. Values in `brand.icon` and `tokens.icon`; icon only, never UI.
+- **One logo per screen.** In the app: splash (symbol alone), welcome or empty book header (small-cut lockup, 20 to 26 pt), paywall (stacked lockup, once), Settings > About. Navigation bars keep the system title.
+- **Illustration is not the mark.** Line drawings (section 9, CREATIVE.md 3) may show envelopes, lamps, moons and pages; none of them stands in for the logo or sits locked up with the wordmark.
 
 ## 3. Typography
 
@@ -94,7 +115,7 @@ Brand colours unchanged (no WCAG failure found). Added `surface`, dark `accentSo
 Fallbacks: Noto Sans Devanagari / Noto Serif Devanagari (OFL), then system.
 
 **Devanagari plan**
-- Split runs by script at render (U+0900–097F, U+A8E0–A8FF): Latin in Literata, Devanagari in Tiro, same paragraph. Web: `unicode-range` @font-face; React Native: nested `<Text>` per run.
+- Split runs by script at render (U+0900 to 097F, U+A8E0 to A8FF): Latin in Literata, Devanagari in Tiro, same paragraph. Web: `unicode-range` @font-face; React Native: nested `<Text>` per run.
 - Tiro runs at 1.08x Literata size so Devanagari sits level with Latin x-height **(opinion; tune on device)**.
 - `letterBody` line height 1.6 clears matras without clipping.
 - UI needs no splitting: Mukta covers both scripts. Romanised Hindi is just Latin.
@@ -136,7 +157,7 @@ Nothing is smaller than 13pt (HIG minimum is 11pt, H2; we hold a higher floor fo
 ## 4. Spacing
 
 4pt scale, `space.0..12` = 0, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64.
-Gutter `space.4` (reading `space.5`); card padding `space.4`; between cards `space.3`; between sections `space.9`–`10`. Targets 44x44pt min (H2), primary 56pt; ≥12pt between bezelled controls (H2).
+Gutter `space.4` (reading `space.5`); card padding `space.4`; between cards `space.3`; between sections `space.9` to `10`. Targets 44x44pt min (H2), primary 56pt; at least 12pt between bezelled controls (H2).
 
 ## 5. Radii
 
@@ -144,7 +165,7 @@ Gutter `space.4` (reading `space.5`); card padding `space.4`; between cards `spa
 
 ## 6. Elevation
 
-Warm ink-tinted shadows. `0` flat (lists, reading); `1` resting cards (y2/6/6%); `2` lifted card, floating player (y6/16/10%); `3` sheets (y12/32/16%). Dark mode: levels 1–3 use `surfaceRaised` + 1px `line` border.
+Warm ink-tinted shadows. `0` flat (lists, reading); `1` resting cards (y2/6/6%); `2` lifted card, floating player (y6/16/10%); `3` sheets (y12/32/16%). Dark mode: levels 1 to 3 use `surfaceRaised` + 1px `line` border.
 
 ## 7. Iconography
 
@@ -155,20 +176,20 @@ Warm ink-tinted shadows. `0` flat (lists, reading); `1` resting cards (y2/6/6%);
 
 ## 8. Motion
 
-| Token | Stiffness / damping / mass | ≈ response / damping fraction | Use |
+| Token | Stiffness / damping / mass | approx. response / damping fraction | Use |
 |---|---|---|---|
 | `motion.snappy` | 520 / 46 / 1 | 0.28s / 1.0 | Press, toggles, chips, word-highlight advance |
 | `motion.standard` | 260 / 30 / 1 | 0.40s / 0.92 | Sheets, navigation, card-to-letter |
 | `motion.gentle` | 90 / 18 / 1 | 0.66s / 0.95 | Breathing glow, chapter reveal, save settle |
 
-- **Breathing glow**: radial `recording` gradient (18–40% opacity) behind a 120pt mic disc; scale 1.0–1.18 and opacity follow smoothed RMS (attack 80ms, release 400ms) via `motion.gentle`. Silence = slow 4s idle breath, so a pause never looks broken. No waveform.
+- **Breathing glow**: radial `recording` gradient (18 to 40% opacity) behind a 120pt mic disc; scale 1.0 to 1.18 and opacity follow smoothed RMS (attack 80ms, release 400ms) via `motion.gentle`. Silence = slow 4s idle breath, so a pause never looks broken. No waveform.
 - **Word highlight**: `accentSoft` wash (radius 4) slides word to word via `motion.snappy`. No bolding (reflows).
 - **Reduce Motion** (H2): 200ms cross-fades; glow becomes a static ring stepping in opacity; highlight jumps.
 
 ## 9. Imagery
 
 - **No stock baby photos, anywhere.** Typography, paper tone and the family's own photos only.
-- Sparse single-weight line drawings in `textMuted` (envelope, moon). No faces, no mascot.
+- Sparse single-weight line drawings in `textMuted` (envelope, moon, lamp, page). No faces, no mascot. Drawings are illustration only; the brand mark is the quotation pair (section 2a) and a drawing never replaces it.
 - User photos: 4:5 crop, full-bleed in a `radius.md`/`lg` card, text below, never overlaid; no app filters; 92% brightness in dark mode.
 - Chapter cover: chosen photo, or paper tone with the month numeral in `display`.
 
@@ -191,7 +212,7 @@ Navigation: three tabs, **Tonight · Book · Family**, single-word labels, alway
 
 ### Onboarding
 - **Purpose**: name the child, set birth date (powers month-of-age chapters), choose who can hear letters, write the first letter.
-- **Layout**: line-drawn envelope; `display` "Letters for someone small"; then one step per screen: child's name, birth date (wheel), privacy line ("Only people you invite can read or hear these"); ends in Tonight with the first prompt.
+- **Layout**: small-cut lockup (registry context `app.header`, section 2a) above an optional line drawing (illustration, never the mark); `display` "Letters for someone small"; then one step per screen: child's name, birth date (wheel), privacy line ("Only people you invite can read or hear these"); ends in Tonight with the first prompt.
 - **Primary action**: pill button "Continue", full width, bottom, 56pt.
 - **Empty state**: n/a. Account creation after the first saved letter **(opinion)**.
 
@@ -205,7 +226,7 @@ Navigation: three tabs, **Tonight · Book · Family**, single-word labels, alway
 - **Purpose**: capture voice calmly; give confidence it's working.
 - **Layout**: full-screen modal. Top: "To Mira" + audience line (`footnote`). Center: breathing glow. Below: elapsed time (tabular `headline`), last two transcript lines in `letterBody` `textMuted`. Bottom: Pause (secondary) and **Done** (primary); "Discard" confirms.
 - **Primary action**: Done.
-- **Empty state**: "Listening… take your time." Mic denied: calm card offering Type.
+- **Empty state**: "Listening... take your time." Mic denied: calm card offering Type.
 
 ### Review
 - **Purpose**: confirm the transcript, fix a few words, save.
@@ -223,7 +244,7 @@ Navigation: three tabs, **Tonight · Book · Family**, single-word labels, alway
 - **Purpose**: read one letter as a page.
 - **Layout**: 20pt gutter, chrome fades on scroll. Dateline; "From Papa"; optional photo; `letterBody`; italic sign-off. Floating pill player (`elevation.2`): play, scrubber, "Read together". "Aa" opens Reading Size sheet (medium detent, grabber, H3).
 - **Primary action**: Play.
-- **Empty state**: typed letter hides the player; processing shows "Preparing voice…".
+- **Empty state**: typed letter hides the player; processing shows "Preparing voice...".
 
 ### Read together
 - **Purpose**: parent and child (or a grandparent) listen to the author's voice while words highlight.

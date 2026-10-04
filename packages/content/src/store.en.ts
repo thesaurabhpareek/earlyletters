@@ -1,4 +1,4 @@
-// App Store listing copy for Early Letters. Plain text only. docs/store/app-store.md mirrors these
+// App Store listing copy. Plain text only. docs/store/app-store.md mirrors these
 // fields for App Store Connect, and the content rules test fails if the two drift.
 // Limits: appName <= 30, subtitle <= 30, promotionalText <= 170, keywords <= 100 (comma-separated,
 // no spaces, no words already in the name or subtitle), whatsNew <= 4000, captions <= 40.
@@ -10,12 +10,12 @@
 // - adults only: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8);
 // - 7 spoken languages, one per letter, no mixing in one sentence (D-056, D-059);
 // - family = the co-parent only (D-055); no grandparent or web-page promise;
-// - recordings are never uploaded (D-059); Read together has no word highlight (D-059);
+// - recordings: owner-only encrypted backup ships in v1.0 (D-073, superseding D-059's "no audio upload");
+//   no family listening and no word highlight in Read together (D-059);
 // - digital only, no printed-book promise (K-32); no health or development-tracking words (D-004);
 // - the privacy promise is `en.trust.promise`, word for word (D-061).
-// Legal URLs come from packages/brand (D-063).
-// Relative import on purpose: packages/content has no package dependency on brand (keeps the lockfile unchanged).
-import { brand } from '../../brand/index';
+// Legal URLs come from packages/brand (D-063). The brand name too, never typed here (D-076).
+import { brand } from '@scribe/brand';
 import { en } from './strings.en';
 
 /** The six App Store screenshots, in order. Frames are rendered by scripts/brand/screenshots.mts. */
@@ -34,9 +34,9 @@ export const storeListing = {
   promotionalText:
     "Talk to your child for a minute. Every word is kept exactly as you said it, with your voice. Private by default: never sold, never used for ads.",
   keywords: "diary,keepsake,newborn,toddler,parents,mom,dad,family,audio,scrapbook,bilingual,hindi,spanish,arabic",
-  description: `Early Letters is a baby memory book you fill by talking.
+  description: `${brand.name} is a baby memory book you fill by talking.
 
-Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.
+Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. ${brand.name} keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.
 
 EXACTLY AS YOU SAID IT
 Your words are written down on your phone. We only fix what a microphone gets wrong: a stray "um", a repeated word, a missing full stop. We never rewrite your words. Read each letter back, and put any fix back with one tap.
@@ -70,9 +70,9 @@ HOW IT WORKS
 2. Read it back. Fix a word if the microphone slipped.
 3. It is saved to this month in your child's memory book.
 
-Early Letters is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.
+${brand.name} is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.
 
-Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is an optional subscription with a free trial: books for more children, and Read together whenever you like after the first 3 times in each book. It renews automatically until you cancel, and works with Family Sharing.
+Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is an optional subscription with a free trial: encrypted backup of your recordings, books for more children, and Read together whenever you like after the first 3 times in each book. It renews automatically until you cancel, and works with Family Sharing.
 
 Terms of Use: ${brand.web.terms}
 Privacy Policy: ${brand.web.privacy}`,
@@ -84,7 +84,7 @@ Privacy Policy: ${brand.web.privacy}`,
   /** Listed in Lifestyle, never Health and Fitness or Medical (D-004, guideline 5.1.1(ix) mitigation). */
   primaryCategory: 'Lifestyle',
   whatsNewV1:
-    "Hello. This is the first version of Early Letters. Talk or type a letter to your child, keep your voice with it, write together with your co-parent, read together at bedtime, and export your book any time.",
+    `Hello. This is the first version of ${brand.name}. Talk or type a letter to your child, keep your voice with it, write together with your co-parent, read together at bedtime, and export your book any time.`,
   screenshots,
   screenshotCaptions: screenshots.map((s) => s.caption),
 } as const;

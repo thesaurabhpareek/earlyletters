@@ -108,8 +108,11 @@ Deno.test('every worker email follows the content rules and carries no content',
     assert.doesNotMatch(s, /\b(AI|smart|magic(al)?|generat(e|es|ed|ing)|perfect(ed|s)?|enhanc(e|ed|es|ing))\b/, s);
   }
   for (const m of mails) assert.doesNotMatch(m.subject + m.text, /\{\w+\}/, 'no unfilled placeholder');
-  assert.ok(!/Apple Account subscriptions/.test(mails[2].text), 'no billing line when there was no subscription');
-  assert.ok(/Apple Account subscriptions/.test(mails[3].text), 'billing line when unknown');
+  // Copy moved to packages/content src/emails/account.en.ts (one email library); the Plus line now names the
+  // iPhone path ("Settings, tap your name, then Subscriptions") and the deletion date is in the body.
+  assert.ok(!/If you have Plus/.test(mails[2].text), 'no billing line when there was no subscription');
+  assert.ok(/If you have Plus[^\n]*Subscriptions/.test(mails[3].text), 'billing line when unknown');
+  assert.ok(/If you have Plus/.test(mails[0].text), 'billing line on the scheduled receipt');
   assert.ok(mails.slice(0, 4).every((m) => m.text.includes(ref)));
-  assert.match(mails[0].subject, /December 5, 2026/);
+  assert.match(mails[0].text, /December 5, 2026/);
 });

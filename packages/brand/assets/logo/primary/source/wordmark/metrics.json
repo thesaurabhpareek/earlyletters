@@ -1,0 +1,18 @@
+{
+  "w4r-master": {
+    "width": 4872,
+    "height": 989,
+    "aspect": 4.926,
+    "letterGap": 146.9,
+    "wordWhite": 306.9,
+    "ratioWordToLetter": 2.09
+  },
+  "w4r-small": {
+    "width": 5421,
+    "height": 989,
+    "aspect": 5.481,
+    "letterGap": 189.3,
+    "wordWhite": 375.3,
+    "ratioWordToLetter": 1.98
+  }
+}

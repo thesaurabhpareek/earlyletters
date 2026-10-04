@@ -11,8 +11,26 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { brand } from '../../brand/index';
-import { book, emails, en, features, onboardingStories, permissions, PROMPTS, site, STORY_VISUALS, storeListing } from '../src';
+import { brand } from '@scribe/brand';
+import {
+  accountEmails,
+  authEmails,
+  billingEmails,
+  book,
+  emailChrome,
+  emailLegal,
+  en,
+  familyEmails,
+  features,
+  lifecycleEmails,
+  onboardingStories,
+  pages,
+  permissions,
+  PROMPTS,
+  site,
+  STORY_VISUALS,
+  storeListing,
+} from '../src';
 
 type Leaf = { path: string; text: string };
 
@@ -80,7 +98,7 @@ const APP_COPY: Leaf[] = APP_COPY_FILES.flatMap(stringsIn);
 const STORE = leaves(storeListing, 'store');
 const SITE = leaves(site, 'site');
 const BOOK = leaves(book, 'book');
-const EMAILS = leaves(emails, 'emails');
+const PAGES = leaves(pages, 'pages');
 const STORIES: Leaf[] = onboardingStories.flatMap((c) => [
   { path: `story.${c.id}.headline`, text: c.headline },
   { path: `story.${c.id}.line`, text: c.line },
@@ -94,13 +112,20 @@ const ALL: Leaf[] = [
   ...SITE,
   ...BOOK,
   ...leaves(permissions, 'permissions'),
-  ...EMAILS,
   ...leaves(features, 'features'),
+  ...PAGES,
   ...STORIES,
   ...PROMPT_LEAVES,
 ];
-/** Everything the rules below apply to: content plus feature-local app copy. */
-const EVERY: Leaf[] = [...ALL, ...APP_COPY];
+/** Every email word (packages/content/src/emails): the catalog groups, the chrome and the legal lines. */
+const EMAIL: Leaf[] = leaves(
+  { authEmails, accountEmails, billingEmails, familyEmails, lifecycleEmails, emailChrome, emailLegal },
+  'email',
+);
+/** Everything the rules below apply to: content, email copy and feature-local app copy. */
+const EVERY: Leaf[] = [...ALL, ...EMAIL, ...APP_COPY];
+/** What the public reads before installing: the store listing and the website. */
+const PUBLIC: Leaf[] = [...leaves(storeListing, 'store'), ...leaves(site, 'site'), ...leaves(pages, 'pages')];
 const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(join(__dirname, '..', f), 'utf8') }));
 
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
@@ -124,9 +149,9 @@ describe('characters', () => {
       notifications: IN_APP.filter(isNotification),
       inApp: IN_APP.filter((l) => !isNotification(l)),
       store: STORE,
-      site: SITE,
+      site: [...SITE, ...PAGES],
       book: BOOK,
-      emails: EMAILS,
+      emails: EMAIL,
       prompts: PROMPT_LEAVES,
     };
     const budget = { notifications: 0, inApp: 2, store: 0, site: 1, book: 0, emails: 0, prompts: 0 };
@@ -482,13 +507,17 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(leaves(en, 'en'), new RegExp(brand.name, 'i'))).toEqual([]);
     expect(offenders(leaves(permissions, 'permissions'), new RegExp(brand.name, 'i'))).toEqual([]);
     expect(offenders(APP_COPY, new RegExp(brand.name, 'i'))).toEqual([]);
-    expect(offenders(leaves(emails, 'emails'), new RegExp(brand.name, 'i'))).toEqual([]);
+    // Emails are rendered by packages/emails, not the app, so they build the name from `brand` in template
+    // literals (D-076); 'never types the brand name in packages/content/src' below checks their source.
     expect(offenders(leaves(features, 'features'), new RegExp(brand.name, 'i'))).toEqual([]);
   });
 
-  it('promises only what Plus gates in v1.0 (D-053): Read together after 3 per book, more books', () => {
+  // D-073 (founder, 3 Oct 2026, evening) puts the owner's encrypted backup in v1.0 and in Plus, so backup is
+  // no longer an overclaim here. Themes, covers and vault mode still are.
+  it('promises only what Plus gates in v1.0 (D-053, D-073): backup, Read together after 3 per book, more books', () => {
     const plus = [...leaves(features.billing, 'billing'), ...leaves(en.plus, 'plus'), ...leaves(storeListing, 'store')];
-    expect(offenders(plus, /\b(backup|backed up|themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\b(backup|theme)/i.test(o))).toEqual([]);
+    expect(offenders(plus, /\b(themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\btheme/i.test(o))).toEqual([]);
+    expect(en.plus.promise).toMatch(/backup/);
     expect(en.plus.promise).toMatch(/Read together/);
     expect(en.plus.promise).toMatch(/more children/);
   });
@@ -500,9 +529,10 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(STORE, BETA_LIKE)).toEqual([]);
   });
 
-  it('makes no claim the v1.0 build cannot keep (D-055, D-056, D-059)', () => {
-    // No recording upload or backup, no mixing languages in one sentence, no word highlight.
-    const V1_OVERCLAIM = /\b(vault mode|recovery key|backed up|back (them|it) up|one sentence|mid-sentence|any mix|words appear|highlight|20 languages|any language|encrypted backup)/i;
+  it('makes no claim the v1.0 build cannot keep (D-055, D-056, D-059, D-073)', () => {
+    // No mixing languages in one sentence, no word highlight, no family listening. Owner-only encrypted backup
+    // ships in v1.0 (D-073 supersedes D-059's "no audio upload"), so backup wording is no longer blocked here.
+    const V1_OVERCLAIM = /\b(vault mode|one sentence|mid-sentence|any mix|words appear|highlight|20 languages|any language|hear each other|family can (hear|listen))/i;
     expect(offenders([...leaves(storeListing, 'store'), ...leaves(site, 'site')], V1_OVERCLAIM)).toEqual([]);
     // Family at launch is the co-parent only: the listing never promises grandparents or a web page.
     const FAMILY = /\b(grandparents?|nani|dadi|aunts?|uncles?|no app needed|from the web|web page)\b/i;
@@ -525,7 +555,11 @@ describe('privacy reassurance (D-061)', () => {
   it('says the promise word for word wherever it appears', () => {
     const promise = en.trust.promise;
     expect(en.trust.settings.body).toBe(promise);
-    expect(emails.welcome.promise).toBe(promise);
+    expect(authEmails.welcome.body).toContain(promise);
+    // Any email line that states the promise states it word for word.
+    const stated = EMAIL.filter((l) => /never sell|never use them for ads|train machine learning/i.test(l.text));
+    expect(stated.length).toBeGreaterThan(0);
+    for (const l of stated) expect(l.text, l.path).toBe(promise);
     expect(site.privacy.lead).toBe(promise);
     expect(storeListing.description).toContain(promise);
     expect(en.trust.settings.voice).toBe(en.trust.voice);
@@ -575,19 +609,20 @@ describe('onboarding story cards (server fallback, D-066)', () => {
 });
 
 describe('emails', () => {
+  const MAILS = [authEmails, accountEmails, billingEmails, familyEmails, lifecycleEmails].flatMap((g) => Object.values(g));
+
   it('has a subject, preview and heading for every email, and short subjects', () => {
-    for (const [key, mail] of Object.entries(emails)) {
-      if (key === 'common') continue;
-      const m = mail as { subject: string; preview: string; heading: string; body: readonly string[] };
-      expect(m.subject.length, key).toBeLessThanOrEqual(60);
-      expect(m.preview.length, key).toBeLessThanOrEqual(90);
-      expect(m.heading.length, key).toBeGreaterThan(0);
-      expect(m.body.length, key).toBeGreaterThan(0);
+    expect(MAILS.length).toBeGreaterThan(0);
+    for (const m of MAILS) {
+      expect(m.subject.length, m.id).toBeLessThanOrEqual(60);
+      expect(m.preheader.length, m.id).toBeLessThanOrEqual(90);
+      expect(m.heading.length, m.id).toBeGreaterThan(0);
+      expect(m.body.length, m.id).toBeGreaterThan(0);
     }
   });
 
   it('never carries a child or letter placeholder', () => {
-    expect(offenders(leaves(emails, 'emails'), /\{(child|signsAs|name|letters|notes)\}/)).toEqual([]);
+    expect(offenders(EMAIL, /\{(child|signsAs|name|letters|notes)\}/)).toEqual([]);
   });
 });
 
@@ -630,5 +665,110 @@ describe('support resources (D-034)', () => {
       expect(r.name.length).toBeGreaterThan(0);
       expect(r.how).toContain(r.tel.length === 3 ? r.tel : r.tel.slice(-4));
     }
+  });
+});
+
+describe('brand name comes from packages/brand', () => {
+  // CLAUDE.md: the public name lives only in packages/brand. Copy uses `${brand.name}` (and friends), so a
+  // rename is one edit. Comments may name the product; string literals and template text may not.
+  const SRC = join(__dirname, '..', 'src');
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
+      d.isDirectory() ? files(join(dir, d.name)) : /\.tsx?$/.test(d.name) ? [join(dir, d.name)] : [],
+    );
+
+  /** Text of every string literal and template chunk in a file (comments are not tokens, so they are skipped). */
+  function literalText(file: string): Leaf[] {
+    const text = readFileSync(file, 'utf8');
+    const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest);
+    const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, text);
+    const out: Leaf[] = [];
+    const STRINGY = new Set([
+      ts.SyntaxKind.StringLiteral,
+      ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+      ts.SyntaxKind.TemplateHead,
+      ts.SyntaxKind.TemplateMiddle,
+      ts.SyntaxKind.TemplateTail,
+    ]);
+    let depth = 0; // brace depth inside template substitutions
+    const stack: number[] = [];
+    for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan()) {
+      if (kind === ts.SyntaxKind.OpenBraceToken) depth++;
+      if (kind === ts.SyntaxKind.CloseBraceToken) {
+        if (stack.length && stack[stack.length - 1] === depth) {
+          kind = scanner.reScanTemplateToken(false);
+          if (kind === ts.SyntaxKind.TemplateTail) stack.pop();
+        } else depth--;
+      }
+      if (kind === ts.SyntaxKind.TemplateHead) stack.push(depth);
+      if (STRINGY.has(kind)) {
+        const line = ts.getLineAndCharacterOfPosition(source, scanner.getTokenStart()).line;
+        out.push({ path: `${relative(SRC, file)}:${line + 1}`, text: scanner.getTokenValue() });
+      }
+    }
+    return out;
+  }
+
+  it('never types the brand name in packages/content/src', () => {
+    const name = new RegExp(brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const bad = files(SRC).flatMap(literalText).filter((l) => name.test(l.text));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('still renders the brand name where copy names the product', () => {
+    // In-app copy carries {app}, filled from packages/brand when the app loads it (apps/mobile/src/lib/copy.ts).
+    expect(en.app.name.replaceAll('{app}', brand.name)).toBe(brand.name);
+    expect(storeListing.appName).toBe(brand.storeName);
+    expect(emailChrome.signature).toBe(`Warmly,\n${brand.name}`);
+  });
+});
+
+describe('glossary (BRAND.md)', () => {
+  const COPY = [...ALL, ...EMAIL];
+
+  it('calls the edit feature Word for word, never tidying', () => {
+    expect(offenders(COPY, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
+  });
+
+  it('names the subscription Plus only', () => {
+    expect(offenders(COPY, /Early Letters Plus|Book Plus|\b(Premium|Pro)\b|Plus Yearly/)).toEqual([]);
+    expect(offenders(COPY, new RegExp(`${brand.name} Plus`))).toEqual([]);
+  });
+
+  it('says Apple Account, never Apple ID or store account', () => {
+    expect(offenders(COPY, /\bApple ID\b|\bstore account\b|\biCloud account\b/i)).toEqual([]);
+  });
+
+  it('never calls a release a beta in store or website copy', () => {
+    expect(offenders(PUBLIC, /\bbeta\b/i)).toEqual([]);
+    expect(Object.keys(storeListing)).not.toContain('promotionalTextBeta');
+  });
+
+  it('keeps v1.0 public copy to the co-parent, with no gift or approval promises', () => {
+    expect(offenders(PUBLIC, /\bgifts?\b|\bapprov(e|es|ed|al)\b|\bcontributors?\b/i)).toEqual([]);
+    // D-055: other family may be named on the website only as "coming in a later update" (or asked about in an
+    // FAQ question whose answer says so), never as a v1.0 feature.
+    const later = /\b(later update|not yet|coming)\b/i;
+    const family = PUBLIC.filter((l) => /\bgrandparents?\b|\baunts?\b|\buncles?\b/i.test(l.text) && !(l.path.startsWith('site.') && (later.test(l.text) || l.text.trim().endsWith('?'))));
+    expect(family.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('makes no Hindi-English mixing or word highlighting claims (v1.1)', () => {
+    const COMMS = [...PUBLIC, ...EMAIL];
+    expect(offenders(COMMS, /\bboth in (one|the same) sentence\b|\bmid-sentence\b|\bhighlight/i)).toEqual([]);
+    expect(offenders(COMMS, /while the words appear/i)).toEqual([]);
+  });
+
+  it('uses "note" only for something people make, never for what we send', () => {
+    expect(offenders(EMAIL, /\bnotes?\b/i)).toEqual([]);
+  });
+
+  it('names the sign-in buttons as the providers do', () => {
+    expect(offenders(COPY, /\b(Google|Apple) sign-in\b|\b(Google|Apple) login\b|\bmagic link\b/i)).toEqual([]);
+  });
+
+  it('uses one descriptor', () => {
+    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}, the baby memory book you fill by talking.`);
+    expect(offenders(COPY, /\bthe memory book you fill by talking\b/i)).toEqual([]);
   });
 });

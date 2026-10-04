@@ -3,23 +3,30 @@
 // {a} and {b} (two names joined), {minutes} and {seconds}, {letters} and {notes} (counted phrases).
 // {app} is the public name. It is filled from packages/brand when the app loads this copy
 // (apps/mobile/src/lib/copy.ts), so the name is never typed in in-app copy (CLAUDE.md).
+// v1.0 family scope is co-parent only (Brief decision 5). Keys marked "v1.1" are for other family members
+// (grandparents, contributors, approvals); the app hides those paths in v1.0 and no public copy uses them.
 // Keys ending in "button", "cta" or "action" are button labels (22 characters or fewer).
 // Keys ending in "link" are text links and may run longer. Keys ending in "A11y" are
 // VoiceOver labels or hints, never shown on screen.
 //
 // v1.0 scope (docs/DECISIONS.md, founder decisions of 3 Oct 2026): letters are spoken in one of 7
 // languages (D-056), one per letter, with no Hindi-English mixing in one sentence until v1.1 (D-059);
-// family at launch is the co-parent only (D-055); recordings are never uploaded, so they stay on the
-// phone that made them and in that person's own iPhone backup (D-059, D-033); Read together plays
-// recordings on this phone with no word highlight (D-059). Copy must not promise any of those early.
+// family at launch is the co-parent only (D-055); recordings stay on the phone that made them and in
+// that person's own iPhone backup, plus an optional encrypted backup that only the owner can restore or
+// play (D-073 supersedes D-059's "no audio upload"); family members hear each other's recordings only
+// from v1.1 (D-059); Read together plays recordings on this phone with no word highlight (D-059).
+// Copy must not promise any of those early.
 // Privacy is said calmly and the same way everywhere: see `trust` and VOICE.md (D-061).
+
+import { brand } from '@scribe/brand';
 
 export const en = {
   app: {
     name: "{app}",
-    category: "memory book",
-    tagline: "Exactly as you said it.",
-    oneLine: "{app}, the memory book you fill by talking.",
+    category: brand.category,
+    tagline: brand.tagline,
+    // One descriptor everywhere (BRAND.md glossary).
+    oneLine: "{app}, the baby memory book you fill by talking.",
   },
 
   common: {
@@ -44,7 +51,7 @@ export const en = {
   onboarding: {
     welcome: {
       title: "{app}",
-      subtitle: "The memory book you fill by talking.",
+      subtitle: "The baby memory book you fill by talking.",
       body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
@@ -53,7 +60,7 @@ export const en = {
 
     promise: {
       title: "Exactly as you said it.",
-      body: "We tidy what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.",
+      body: "Word for word: we fix only what the microphone got wrong. A stray \"um\", a misheard name, a missing comma. Every small fix is marked, and you can undo it.",
       body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
       recordingTitle: "Your voice stays too",
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
@@ -72,7 +79,7 @@ export const en = {
       birthdayLabel: "Birthday",
       birthdayHelp: "We sort letters by {child}'s month of age.",
       expectingLabel: "Not here yet",
-      expectingHelp: "Letters written before birth go into a chapter called Before You.",
+      expectingHelp: "Letters written before birth go into a part of the book called Before You.",
       dueDateLabel: "Due date",
       // Twins: removes an extra name row.
       removeA11y: "Remove {child}",
@@ -136,11 +143,12 @@ export const en = {
       cta: "Set reminder",
     },
 
+    // v1.0: the co-parent only (Brief decision 5).
     invite: {
-      title: "Who else loves {child}?",
-      body: "Grandparents, aunts, uncles. Their letters can go in the book too, when you say yes.",
-      privacyNote: "They only see what you choose to share with them.",
-      addButton: "Invite family",
+      title: "Writing this with someone?",
+      body: "Invite {child}'s other parent to add letters of their own, each one signed.",
+      privacyNote: "Your private letters stay yours until you add them to the book.",
+      addButton: "Invite co-parent",
       laterButton: "Maybe later",
     },
 
@@ -242,17 +250,20 @@ export const en = {
 
   review: {
     title: "Read it back",
-    subtitle: "Here is what you said, lightly tidied.",
+    // The edit feature is called "Word for word" (founder decision, Oct 3 2026). Small fixes are shown as marks
+    // the person can undo. Never "tidy", "tidied" or "tidying" in copy.
+    subtitle: "Here is what you said, word for word. Small fixes are marked.",
     trustLine: "We only fixed what got in the way of your words. Nothing added.",
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
     noChanges: "Word for word. Nothing needed fixing.",
     showOriginalLink: "Show exactly what I said",
-    showTidiedButton: "Show tidied version",
+    showTidiedButton: "Show small fixes",
     originalLabel: "Exactly what you said",
-    tidiedLabel: "Lightly tidied",
+    tidiedLabel: "Word for word, small fixes marked",
     undoEditButton: "Put it back",
-    undoAllButton: "Keep it word for word",
+    // D-074: "Word for word" names the fixing feature, so this button says what it does.
+    undoAllButton: "Undo every fix",
     putBackToast: "Put back.",
     editTextButton: "Change words",
     editA11yHint: "Edited. Double tap to see what you said.",
@@ -369,8 +380,8 @@ export const en = {
     signature: "From {signsAs}",
     together: "From {signsAs} and {child}",
     provenance: {
-      spokenTidied: "Spoken, lightly tidied",
-      spokenExact: "Spoken, word for word",
+      spokenTidied: "Spoken, word for word",
+      spokenExact: "Spoken, exactly as said",
       typed: "Typed",
     },
     hearLink: "Hear it in {signsAs}'s voice",
@@ -379,7 +390,7 @@ export const en = {
     // v1.0: recordings stay on the phone that made them (D-059), so a co-parent's voice is on their own phone.
     recordingElsewhere: "Recording kept on {signsAs}'s phone",
     privateLabel: "Private",
-    familyLabel: "From family",
+    familyLabel: "From family", // v1.1
     filters: {
       all: "All",
       letters: "Letters",
@@ -393,6 +404,7 @@ export const en = {
       bookCta: "Write a letter",
       chapterTitle: "Month {month} is open.",
       chapterBody: "Whatever you add this month lands here.",
+      // v1.1: family members beyond the co-parent.
       familyTitle: "Family letters will gather here.",
       familyBody: "Invite a grandparent, aunt or uncle to add their words.",
       familyCta: "Invite family",
@@ -447,6 +459,8 @@ export const en = {
     },
   },
 
+  // v1.1 except `title`: invites for family beyond the co-parent, contributor welcome, approvals and the
+  // contributor's own view. The app hides these paths in v1.0 (Brief decision 5).
   family: {
     title: "Family",
     subtitle: "The people who love {child}, adding their words.",
@@ -473,8 +487,8 @@ export const en = {
       title: "Welcome, {signsAs}.",
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
-      howStep1: "Tap the microphone and talk.",
-      howStep2: "We write down your words exactly as you said them.",
+      howStep1: "Tap the red circle and talk, in the language you speak.",
+      howStep2: "Your words are kept exactly as you said them.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your recording is kept on your phone too, so one day {child} can hear you tell it.",
       privacyNote: "Only {child}'s parents see your letters until they go in the book.",
@@ -518,6 +532,7 @@ export const en = {
       title: "{child}'s book is right here",
       body: "Whenever you like, there is a page for today. Just talk.",
     },
+    // v1.1: familyLetter and familyAdded.
     familyLetter: {
       title: "A letter from {signsAs}",
       body: "{signsAs} wrote something for {child}. Have a read.",
@@ -528,7 +543,7 @@ export const en = {
     },
     monthOpen: {
       title: "Month {month} begins",
-      body: "A new chapter in {child}'s book is open.",
+      body: "A new month in {child}'s book is open.",
     },
     birthday: {
       title: "Happy birthday, {child}",
@@ -558,10 +573,11 @@ export const en = {
       body: "A year's worth of your words for {child}. All the work, all the love, kept.",
     },
     firstMonthComplete: {
-      title: "Month {month} is a chapter now.",
+      title: "Month {month} is in the book now.",
       body: "{count} letters and notes, ready for {child} to read one day.",
-      cta: "Read the chapter",
+      cta: "Read this month",
     },
+    // v1.1.
     firstGrandparentLetter: {
       title: "{signsAs} wrote to {child}.",
       body: "Another voice joins the book.",
@@ -571,7 +587,7 @@ export const en = {
       body: "The first of many times {child} will hear these letters.",
     },
     monthSummary: "{count} letters this month",
-    monthSummaryFamily: "{count} letters from family this month",
+    monthSummaryFamily: "{count} letters from family this month", // v1.1
     dismissButton: "Lovely",
   },
 
@@ -584,18 +600,37 @@ export const en = {
       family: "Family",
       reminders: "Reminders",
       data: "Your data",
+      // Labels the emails point to (customer review CUS-03): "Settings, Plan, Manage subscription" and friends.
+      plan: "Plan",
+      account: "Account",
+    },
+    // Settings > Plan. Every billing email and the Subscription terms name these exact labels.
+    plan: {
+      manageLabel: "Manage subscription",
+      refundLabel: "Request a refund",
+      // Plus reaches a co-parent only through Apple Family Sharing (Terms 14.12, D-080).
+      includedByFamilySharing: "Included through Family Sharing",
+      familySharingHelp: "Plus is shared through Apple Family Sharing. {child}'s other parent gets it too if you are in the same Apple family. Otherwise each of you has your own plan, and everything free stays free for both of you.",
+    },
+    // Settings > Account. The sign-in emails name these exact labels.
+    account: {
+      emailLabel: "Sign-in email",
+      methodsLabel: "Sign-in methods",
+      signOutButton: "Sign out",
+      signOutOthersButton: "Sign out other devices",
     },
     signsAsLabel: "Sign my letters as",
     childLabel: "Child",
     birthdayLabel: "Birthday",
     dictionaryLabel: "Names and words",
     dictionaryHelp: "Spelled your way, every time.",
-    tidyLabel: "Tidying",
-    tidyOn: "Lightly tidied",
-    tidyOff: "Word for word",
-    tidyHelp: "Word for word keeps every um and false start. Either way, we never rewrite.",
-    // v1.0 has no recording upload (D-059). Recordings live in a backed-up app folder, so the
-    // person's own iPhone backup includes them (D-033, lawyer-2 L1). Never say "only on this phone".
+    // D-074: the edit feature is "Word for word"; its changes are small fixes, marked and undoable.
+    tidyLabel: "Word for word",
+    tidyOn: "Small fixes, marked",
+    tidyOff: "Exactly as said",
+    tidyHelp: "Small fixes are marked in each letter, and you can undo any of them. Exactly as said keeps every um and false start. Either way, we never rewrite.",
+    // D-073: owner-only encrypted backup ships in v1.0 (supersedes D-059's "no audio upload").
+    // Show onPhone* only while backup is off; show backedUp* while it is on (lawyer-2 H4, register s.3 row 16).
     recordings: {
       title: "Recordings",
       keepLabel: "Keep recordings",
@@ -612,10 +647,10 @@ export const en = {
       title: "Encrypted backup",
       offLabel: "Backup is off",
       onLabel: "Backup is on",
-      // v1.0 uploads no recordings (D-059). This says where they are today, not what is coming.
-      body: "We do not copy your recordings to our servers. They are kept on this phone and in your iPhone's own backup, if you use one.",
-      // D-033: the person's own iPhone backup includes recordings.
-      honestNote: "Your letters sync when you are signed in, so your co-parent and your next phone can read them. Export any time to keep a copy of your own.",
+      // D-073 (supersedes D-059 here): encrypted backup of the owner's recordings ships in v1.0.
+      body: "Copies your recordings to our servers, encrypted on this phone first, so a new phone can bring them back. We keep a recovery key so we can help you restore them.",
+      // Backup is for the owner only in v1.0: no one else can play a backed-up recording (founder decision, Oct 3 2026).
+      honestNote: "Without backup, your recordings stay only on this phone. Your letters sync when you are signed in, so your co-parent and your next phone can read them.",
       turnOnButton: "Turn on backup",
       turnOffButton: "Turn off backup",
       lastBackup: "Last backed up {weekday}",
@@ -623,10 +658,11 @@ export const en = {
     },
     export: {
       title: "Export",
-      body: "Download every letter and recording, any time, free. Plain text and audio files.",
+      body: "Download every letter and recording, any time, free. A PDF of the book, plus plain text and audio files.",
       button: "Export everything",
       preparing: "Gathering every letter. This can take a minute.",
       ready: "Your export is ready.",
+      whereItGoes: "You choose where to keep it, for example in the Files app.",
     },
     delete: {
       entryTitle: "Delete this letter?",
@@ -644,6 +680,11 @@ export const en = {
       bookTypeToConfirmLabel: "Type {child}'s name to confirm",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
+      // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
+      accountScheduledTitle: "Your account is set to be deleted",
+      accountScheduledBody: "Until then you can export everything, or cancel and keep your account just as it is.",
+      accountScheduledDateLabel: "Deletion date",
+      cancelDeletionButton: "Cancel deletion",
     },
     reminders: {
       cadenceLabel: "Reminders",
@@ -666,6 +707,7 @@ export const en = {
     },
     about: {
       title: "About",
+      // In-app only (Brief decision 10). The store listing and website never say "beta".
       beta: {
         label: "Early version",
         // D-030: no beta line in the store listing; this small in-app note stays until the founder ends it.
@@ -673,7 +715,7 @@ export const en = {
         exportCta: "Export a copy",
       },
     },
-    neverRewrite: "We never rewrite your words. We only tidy what the microphone got wrong.",
+    neverRewrite: "We never rewrite your words. We only fix what the microphone got wrong, and mark every fix.",
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
@@ -749,14 +791,15 @@ export const en = {
       detailsLabel: "Name and birthday",
       signsAsLabel: "Sign my letters to {child} as",
       remindersLabel: "Include {child} in my reminders",
-      remindersHelp: "Your reminder time is shared across your children. Notes about {child}'s months and birthday follow this switch.",
+      // "Note" only ever means a short letter someone makes; never anything we send (BRAND.md glossary).
+      remindersHelp: "Your reminder time is shared across your children. Messages about {child}'s months and birthday follow this switch.",
       celebrationsLabel: "Pause celebrations for {child}",
-      celebrationsHelp: "Only for you. Month notes, birthdays and milestones for {child} rest until you turn them back on.",
+      celebrationsHelp: "Only for you. Month and birthday messages and milestones for {child} rest until you turn them back on.",
       familyLabel: "Who writes to {child}",
-      familyCanReadLabel: "Family can read {child}'s book",
+      familyCanReadLabel: "Family can read {child}'s book", // v1.1
       themeLabel: "How the book looks",
       hideLabel: "Hide this book",
-      hideBody: "Hiding {child}'s book quiets every reminder and note about {child}, for everyone in the family. Nothing is deleted.",
+      hideBody: "Hiding {child}'s book quiets every reminder and message about {child}, for everyone in the family. Nothing is deleted.",
       showButton: "Show this book again",
       hiddenTitle: "Hidden books",
       hiddenEmpty: "No hidden books.",
@@ -791,7 +834,8 @@ export const en = {
       restoreLink: "Restore",
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
-    promise: "Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds Read together whenever you like, after the first 3 times in each book, and books for more children.",
+    // D-073: encrypted backup of the owner's recordings is part of Plus in v1.0.
+    promise: "Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds encrypted backup of your recordings, Read together whenever you like after the first 3 times in each book, and books for more children.",
   },
 
   errors: {
@@ -863,10 +907,11 @@ export const en = {
     youLabel: "You",
     emptyTitle: "Just you, for now.",
     emptyBody: "Letters are lovelier with more voices.",
-    inviteNeedsSignIn: "Inviting family needs an account, so they can write from their own phone. Sign in arrives in a coming update.",
-    rolesTitle: "Two ways to join",
+    inviteNeedsSignIn: "Inviting {child}'s other parent needs an account, so they can write from their own phone. Sign in arrives in a coming update.",
+    rolesTitle: "Two ways to join", // v1.1 (one way in v1.0: co-parent)
     coParentLabel: "Co-parent",
-    coParentBody: "Writes, reads the whole book, and chooses which family letters go in.",
+    coParentBody: "Writes to {child} and reads the whole book, as an equal.",
+    // v1.1: familyLabel and familyBody.
     familyLabel: "Family",
     familyBody: "Writes to {child}. You choose which letters go in the book.",
   },
@@ -881,7 +926,7 @@ export const en = {
       light: "Light",
       dark: "Dark",
     },
-    // Recording backup is not in v1.0 (D-059).
+    // Recording backup ships in v1.0 (D-073); this shows only on builds made before it lands.
     backupNotYet: "Backup arrives in a later update.",
     // No "beta" in app copy: the only release-stage note is About's "early version" (D-060, K-13).
     remindersNotYet: "Your choice is saved. Reminders start in a coming update.",
@@ -908,7 +953,7 @@ export const en = {
     languageHelp: "The language you speak your letters in.",
     // "Settings, Plan" is the path the Plus legal text and Subscription Terms name.
     planLabel: "Plan",
-    planHelp: "Plus: Read together whenever you like, and books for more children.",
+    planHelp: "Plus: backup, Read together whenever you like, and more books.", // D-073
     remindersLabel: "Reminders",
     exportLabel: "Export your book",
     exportHelp: "Every letter and recording, free, any time.",
@@ -983,6 +1028,22 @@ export const en = {
       body: "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.",
       voice: "We never imitate your voice. Your original recording is always kept exactly as you made it.",
     },
+  },
+
+  // Sign-in help the emails point to (customer review CUS-03, CUS-06, CUS-07). The code screen itself is
+  // features.auth.code. Copy only; the mobile lane wires them.
+  auth: {
+    troubleButton: "Trouble signing in?",
+    noEmailHelp: `Nothing yet? Wait a minute, then check Spam, Junk or Promotions for an email from ${brand.email.fromAddress}. Still nothing? Use Sign in with Apple or Google, or write to us.`,
+    emptyBookHelp: "See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email.",
+  },
+
+  // In-app card for the remaining parent when a co-parent deletes their account (CNT-08, CUS-04).
+  // The coparent-left email says the same; the card stays until dismissed.
+  coParentLeft: {
+    title: "Some letters are no longer in the book",
+    body: "The person who wrote them is closing their account. Letters you wrote are not affected.",
+    dismissButton: "Okay",
   },
 
   // 18+ only (founder decision, Oct 2 2026). Asked before any child details; only "yes" is stored, never an age.

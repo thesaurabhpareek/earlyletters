@@ -2,20 +2,21 @@
   "name": "@scribe/emails",
   "version": "0.1.0",
   "private": true,
-  "description": "Transactional emails (React Email, MIT). Words come from @scribe/content; no images, no tracking pixels, plain-text twin for every email.",
+  "description": "Email template library. React Email components, light and dark, mobile first, plain-text twin for every email. Nothing loads from a server: the logo is an inline attachment, no web fonts, no tracking. Copy lives in @scribe/content.",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
+    "build": "tsx scripts/render.ts",
+    "export:supabase": "tsx scripts/export-supabase.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "build": "tsx scripts/build.tsx",
-    "preview": "tsx scripts/build.tsx --out"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@react-email/render": "^2.1.0",
     "@scribe/brand": "*",
     "@scribe/content": "*",
+    "@scribe/design-tokens": "*",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-email": "^6.11.0"
