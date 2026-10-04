@@ -1,0 +1,30 @@
+{
+  "name": "@scribe/emails",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Transactional emails (React Email, MIT). Words come from @scribe/content; no images, no tracking pixels, plain-text twin for every email.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsx scripts/build.tsx",
+    "preview": "tsx scripts/build.tsx --out"
+  },
+  "dependencies": {
+    "@react-email/render": "^2.1.0",
+    "@scribe/brand": "*",
+    "@scribe/content": "*",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-email": "^6.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "~19.2.2",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7"
+  }
+}

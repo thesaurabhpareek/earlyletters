@@ -62,9 +62,13 @@ export function countLine(entries: BookEntry[]): string {
   return notes ? n : l;
 }
 
-/** Card dateline: "TUESDAY, 29 SEPTEMBER 2026" (one format everywhere, lib/dates). The chapter already names the month of age. */
+/**
+ * Card dateline: "Tuesday, September 29, 2026" (one format everywhere, lib/dates). Shown in
+ * caps through the Text `caps` style, never .toUpperCase(), so VoiceOver reads words
+ * (TDD 09 A11Y-F13). The chapter already names the month of age.
+ */
 export function shortDateline(_child: Child, onISO: string): string {
-  return dayDate(onISO).toUpperCase();
+  return dayDate(onISO);
 }
 
 /** Spoken form for VoiceOver: "Tuesday, 29 September 2026, 7 months and 1 week". */

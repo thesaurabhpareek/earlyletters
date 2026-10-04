@@ -1,5 +1,7 @@
-// Children with device ids, the server Plus rule, and Apple entitlements
-// (20261003010000_children_and_entitlements.sql). Fictional family "Asha" only.
+// Children with device ids and the first-run batch (20261003010000_children_and_entitlements.sql),
+// and Plus as decided on 3 Oct 2026 (20261004000000_plus_on_device_only.sql, ADR 0013): Plus is
+// Apple only and checked on the device, so the server keeps no entitlement state and never
+// refuses a book for Plus. Fictional family "Asha" only.
 import { createDb, users, uuid7 } from './harness.mjs';
 
 const { check, as, sys, one, codeOf, done, publishPolicies, consent, join } = await createDb(process.argv.slice(2));
@@ -29,83 +31,55 @@ check('[B-REQ-005] a book can start from a due date', (await sys(`select due_dat
 check('[LEGAL-REQ-001] no book before consent (SCCON)', (await codeOf(() => create(U, uuid7()))) === 'SCCON');
 check('children without a date are refused at the table too', (await codeOf(() => sys(`insert into children (id, name, created_by) values ($1, 'Asha', $2)`, [uuid7(), A]))) === '23514');
 
-// ── Plus rule (PRD-REQ-015, K-28) ─────────────────────────────────────────
-check('[PRD-REQ-015] a second book needs Plus (SCPLS)', (await codeOf(() => create(A, uuid7()))) === 'SCPLS');
+// ── Plus is checked on the device only (ADR 0013, founder decision 3) ─────
+check('[ADR 0013] a second book is never refused by the server (Plus is decided on the device)', (await codeOf(() => create(A, uuid7()))) === 'ok' && (await started(A)) === 2);
 await join(B, 'parent', first, A);
-check('[PRD-REQ-015] a book joined as co-parent does not count: B starts one free', (await codeOf(() => create(B, uuid7()))) === 'ok');
-check('[PRD-REQ-015] B\'s next book needs Plus', (await codeOf(() => create(B, uuid7()))) === 'SCPLS');
+check('[PRD-REQ-015] a book joined as co-parent is not created_by the co-parent', (await sys(`select count(*)::int n from children where created_by=$1`, [B])).rows[0].n === 0);
+check('the co-parent starts books of their own', (await codeOf(() => create(B, uuid7()))) === 'ok' && (await codeOf(() => create(B, uuid7()))) === 'ok');
 check('the first-run batch is closed by the first book', (await sys(`select first_run_closed_at is not null c from profiles where id=$1`, [A])).rows[0].c);
 check('a person cannot reopen their first-run batch', (await codeOf(() => as(A, `update profiles set first_run_closed_at=null where id=$1`, [A]))) === 'SCIMM');
 check('a person can still edit their own profile', (await codeOf(() => as(A, `update profiles set signs_as='Papa' where id=$1`, [A]))) === 'ok');
 
-// First-run batch: twins and siblings added together are all free.
+// First-run batch: twins and siblings added together, in one call.
 const twins = [uuid7(), uuid7(), uuid7()];
 const batch = JSON.stringify(twins.map((id, i) => ({ id, name: `Asha ${i + 1}`, date_of_birth: '2025-05-20', due_date: null })));
 const made = (await one(N, `select public.create_first_run_children($1::jsonb) ids`, [batch])).ids;
-check('[PRD-REQ-015] every child in the first-run batch is free', made.length === 3 && (await started(N)) === 3);
+check('[PRD-REQ-015] every child in the first-run batch is created', made.length === 3 && (await started(N)) === 3);
 check('[DATA-REQ-044] replaying the batch returns the same ids', (await one(N, `select public.create_first_run_children($1::jsonb) ids`, [batch])).ids.join() === made.join() && (await started(N)) === 3);
+check('the batch closes first run (sync_books reports first_run_open = false)',
+  (await one(N, `select (public.sync_books() ->> 'first_run_open')::boolean o`)).o === false);
 const later = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-05-20' }]);
-check('[PRD-REQ-015] the batch is one-time: a later batch follows the Plus rule', (await codeOf(() => as(N, `select public.create_first_run_children($1::jsonb)`, [later]))) === 'SCPLS');
+check('[ADR 0013] a later batch is not refused by the server either', (await codeOf(() => as(N, `select public.create_first_run_children($1::jsonb)`, [later]))) === 'ok' && (await started(N)) === 4);
 check('the batch is capped at 6', (await codeOf(() => as(S, `select public.create_first_run_children($1::jsonb)`,
   [JSON.stringify(Array.from({ length: 7 }, () => ({ id: uuid7(), name: 'Asha', date_of_birth: '2025-05-20' })))]))) === '22023');
 const bad = JSON.stringify([{ id: uuid7(), name: 'Asha', date_of_birth: '2025-05-20' }, { id: uuid7(), name: '', date_of_birth: '2025-05-20' }]);
 check('a batch is all or nothing', (await codeOf(() => as(S, `select public.create_first_run_children($1::jsonb)`, [bad]))) === '22023' && (await started(S)) === 0
   && (await sys(`select first_run_closed_at is null o from profiles where id=$1`, [S])).rows[0].o);
+check('first run is open before any book', (await one(S, `select (public.sync_books() ->> 'first_run_open')::boolean o`)).o === true);
 
-// ── Entitlements: StoreKit 2 + App Store Server Notifications V2 ─────────
-const token = (await one(A, `select public.my_app_account_token() t`)).t;
-check('[TDD 08 3.2] the appAccountToken is random and stable, never the profile id',
-  token !== A && (await one(A, `select public.my_app_account_token() t`)).t === token);
-const apply = (o) => sys(`select public.apply_store_transaction($1, $2, $3, $4::timestamptz, $5, $6, $7, $8, $9, $10::timestamptz, $11::timestamptz, $12, null, 'USA') r`,
-  [o.uuid ?? null, o.type ?? 'SUBSCRIBED', o.subtype ?? null, o.signed, o.env ?? 'production', o.otid ?? '2000000123456789', o.token ?? token,
-   o.product ?? 'el_plus_annual_2999', o.status, o.expires ?? null, o.grace ?? null, o.renew ?? true]).then((r) => r.rows[0].r);
-const iso = (days) => new Date(Date.now() + days * 86400e3).toISOString();
-const n1 = '00000000-0000-4000-8000-000000000001';
+// ── No server entitlement state remains ───────────────────────────────────
+const gone = (await sys(`select to_regclass('public.store_subscriptions') a, to_regclass('public.store_notifications') b,
+  to_regclass('public.app_account_tokens') c`)).rows[0];
+check('[ADR 0013] the App Store entitlement tables are gone', gone.a === null && gone.b === null && gone.c === null);
+const fns = (await sys(`select coalesce(string_agg(p.proname, ',' order by p.proname), '') f from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.proname in ('apply_store_transaction', 'my_app_account_token', 'get_plan_state', 'has_plus',
+    'book_has_plus', 'store_environment_allowed')`)).rows[0].f;
+check('[ADR 0013] no entitlement functions remain', fns === '' || console.log(`      still present: ${fns}`));
+const scpls = (await sys(`select coalesce(string_agg(p.proname, ','), '') f from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.prosrc ~ 'SCPLS|has_plus|store_subscriptions|store_notifications|app_account_tokens'`)).rows[0].f;
+check('[ADR 0013] no function enforces or reads Plus on the server', scpls === '' || console.log(`      still referencing Plus: ${scpls}`));
+check('only the 5-argument create_child_row exists', (await sys(`select count(*)::int n from pg_proc where proname = 'create_child_row'`)).rows[0].n === 1);
+check('users cannot call create_child_row', (await codeOf(() => as(A, `select public.create_child_row($1, $2, 'Asha', '2025-05-20', null)`, [A, uuid7()]))) === '42501');
 
-check('users cannot write entitlements directly', (await codeOf(() => as(A, `insert into store_subscriptions (original_transaction_id, profile_id, product_id, status, environment, last_signed_at) values ('1', $1, 'p', 'active', 'production', now())`, [A]))) !== 'ok');
-check('users cannot call apply_store_transaction', (await codeOf(() => as(A, `select public.apply_store_transaction(null, 'SUBSCRIBED', null, now(), 'production', '1', null, 'p', 'active', now())`))) === '42501');
-check('users cannot call has_plus for anyone', (await codeOf(() => as(A, `select public.has_plus($1)`, [B]))) === '42501');
-check('users cannot read the subscription or notification tables',
-  (await as(A, `select 1 from store_subscriptions union all select 1 from store_notifications union all select 1 from app_account_tokens`)).rows.length === 0);
+// The purge job ran over the notification ledger; it must still run without it.
+check('purge_due runs without the notification ledger', (await codeOf(() => sys(`select public.purge_due()`))) === 'ok');
 
-check('[K-28] no Plus before a purchase', (await one(A, `select has_plus from public.get_plan_state()`)).has_plus === false);
-const r1 = await apply({ uuid: n1, signed: iso(-1 / 24), status: 'trial', expires: iso(30) });
-check('a trial notification maps to the person through the appAccountToken', r1.outcome === 'applied' && (await one(A, `select has_plus, status from public.get_plan_state()`)).status === 'trial');
-check('[C-NFR-002] a duplicate notification is ignored', (await apply({ uuid: n1, signed: iso(-1 / 24), status: 'expired', expires: iso(-1) })).duplicate === true
-  && (await one(A, `select has_plus from public.get_plan_state()`)).has_plus === true);
-check('[K-28] the book has Plus for its members, including contributors and co-parents',
-  (await one(B, `select public.book_has_plus($1) p`, [first])).p === true);
-check('book_has_plus says nothing to non-members', (await one(C, `select public.book_has_plus($1) p`, [first])).p === false);
-check('[PRD-REQ-015] with Plus, a second book is allowed', (await codeOf(() => create(A, uuid7()))) === 'ok');
-check('a stale notification signed before the stored state changes nothing',
-  (await apply({ uuid: '00000000-0000-4000-8000-000000000002', signed: iso(-2), status: 'expired', expires: iso(-1) })).outcome === 'stale'
-  && (await one(A, `select status from public.get_plan_state()`)).status === 'trial');
-await apply({ uuid: '00000000-0000-4000-8000-000000000003', type: 'DID_FAIL_TO_RENEW', subtype: 'GRACE_PERIOD', signed: iso(0), status: 'grace', expires: iso(-1), grace: iso(10) });
-check('[C-REQ-027] billing grace keeps Plus', (await one(A, `select has_plus, status from public.get_plan_state()`)).has_plus === true);
-await apply({ uuid: '00000000-0000-4000-8000-000000000004', type: 'REFUND', signed: iso(1 / 24), status: 'refunded', expires: iso(-1) });
-check('[C-REQ-029] a refund ends Plus', (await one(A, `select has_plus, status from public.get_plan_state()`)).has_plus === false);
-check('[C-REQ-028] lapse never closes a book: existing books stay writable', (await codeOf(() => as(A, `update children set nickname='Ashu' where id=$1`, [first]))) === 'ok');
-check('[PRD-REQ-015] after the refund a further new book needs Plus again', (await codeOf(() => create(A, uuid7()))) === 'SCPLS');
+// A lapse is invisible to the server: existing books stay writable (C-REQ-028).
+check('[C-REQ-028] existing books stay writable', (await codeOf(() => as(A, `update children set nickname='Ashu' where id=$1`, [first]))) === 'ok');
 
-check('production ignores sandbox purchases', (await apply({ uuid: '00000000-0000-4000-8000-000000000005', env: 'sandbox', otid: '1000000000000001', signed: iso(0), status: 'active', expires: iso(30) })).outcome === 'environment_mismatch'
-  && (await one(A, `select has_plus from public.get_plan_state()`)).has_plus === false);
-check('an unknown appAccountToken is stored unmapped', (await apply({ uuid: '00000000-0000-4000-8000-000000000006', token: '00000000-0000-4000-8000-0000000000ff', otid: '3000000000000001', signed: iso(0), status: 'active', expires: iso(30) })).outcome === 'unmapped');
-check('the notification ledger keeps ids and outcomes, never payloads',
-  (await sys(`select count(*)::int n from store_notifications where outcome is not null`)).rows[0].n === 6
-  && (await sys(`select count(*)::int n from information_schema.columns where table_name='store_notifications' and column_name ~ 'payload|price|receipt|jws'`)).rows[0].n === 0);
-check('bad status values are refused', (await codeOf(() => apply({ signed: iso(0), status: 'gifted', expires: iso(1) }))) === '23514');
-
-check('dev and staging count sandbox purchases when app.store_environment = sandbox',
-  await (async () => { await sys(`set app.store_environment = 'sandbox'`);
-    const ok = (await apply({ uuid: '00000000-0000-4000-8000-000000000007', env: 'sandbox', otid: '1000000000000001', signed: iso(0), status: 'active', expires: iso(30) })).outcome === 'applied'
-      && (await one(A, `select has_plus from public.get_plan_state()`)).has_plus === true;
-    await sys(`reset app.store_environment`);
-    return ok && (await one(A, `select has_plus from public.get_plan_state()`)).has_plus === false; })());
-
-// Account deletion pseudonymises the purchase ledger (books were removed by prepare_account_purge first).
+// Account deletion no longer has a purchase ledger to pseudonymise.
 await sys(`update children set deleted_at = now() where created_by=$1`, [A]);
-await sys(`delete from auth.users where id=$1`, [A]);
-check('account deletion keeps the transaction but drops the person', (await sys(`select profile_id from store_subscriptions where original_transaction_id='2000000123456789'`)).rows[0].profile_id === null
-  && (await sys(`select 1 from app_account_tokens where profile_id=$1`, [A])).rows.length === 0);
+check('account deletion still removes the person', (await codeOf(() => sys(`delete from auth.users where id=$1`, [A]))) === 'ok'
+  && (await sys(`select 1 from profiles where id=$1`, [A])).rows.length === 0);
 
 done();
