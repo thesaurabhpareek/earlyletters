@@ -30,7 +30,7 @@ import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
+import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -62,6 +62,7 @@ import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { TextField } from '@/components/ui/text-field';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
@@ -154,6 +155,7 @@ export default function Review() {
   // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
   const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
+  const [fieldFocused, setFieldFocused] = useState(false);
   const [userText, setUserText] = useState<string | null>(null);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
@@ -574,15 +576,28 @@ export default function Review() {
             <Animated.View layout={LinearTransition.springify().damping(30)}>
               <Card className="gap-4 rounded-3xl border-0 bg-card p-5">
                 {editing ? (
-                  <TextInput
-                    className="min-h-40 font-serif text-xl leading-8 text-foreground"
-                    value={finalText}
-                    onChangeText={setUserText}
-                    multiline
-                    autoFocus
-                    textAlignVertical="top"
-                    accessibilityLabel={pendingCopy.write.label}
-                  />
+                  // The letter face inside the design system's focus ring (2 pt, offset 2, radius sm), never a bare TextInput (D-086 5.4).
+                  <View
+                    style={{
+                      borderRadius: tokens.radius.sm,
+                      borderWidth: tokens.focusRing.width,
+                      borderColor: fieldFocused ? c.focus : 'transparent',
+                      padding: tokens.focusRing.offset,
+                    }}>
+                    <TextField
+                      variant="letter"
+                      label={pendingCopy.write.label}
+                      labelHidden
+                      value={finalText}
+                      onChangeText={setUserText}
+                      onFocus={() => setFieldFocused(true)}
+                      onBlur={() => setFieldFocused(false)}
+                      multiline
+                      autoFocus
+                      inputClassName="min-h-40"
+                      testID="review.editField"
+                    />
+                  </View>
                 ) : userText !== null ? (
                   <Text className="font-serif text-xl leading-8 text-foreground" selectable>
                     {userText}
