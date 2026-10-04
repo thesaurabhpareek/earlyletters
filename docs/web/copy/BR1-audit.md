@@ -1,5 +1,7 @@
 # BR1 audit: brand rules, translations and claims for earlyletters.com
 
+> **Note, 4 Oct 2026 (D-051):** this audit is dated 3 Oct. Rows 13, 15, 16, 17 and section 3 B treat "Writing, reading, playing your recordings and export are free, always" as a supported claim. That claim is no longer the promise (free is now the first 2 letters per account; existing letters stay open). The audit is history; the site copy needs a new claims pass owned by the website and content agents. Unverified which other rows depend on it.
+
 Owner: BR1 (brand and claims QA). Date: 2026-10-03. Branch: `feat/web-scroll-film`. Scope: `apps/web/src/content/site.ts` (coordinator-owned, not edited), plus any copy file under `src/scenes/parts/**` and `src/lib/legal/**`.
 Tags follow `docs/web/TEAM.md`: **Verified** (I opened the source or ran the code), **Inferred**, **Opinion**.
 

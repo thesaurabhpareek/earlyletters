@@ -1,5 +1,7 @@
 # TDD 01: Mobile client (iOS first, Android later)
 
+> **Note, 4 Oct 2026 (D-051, `docs/DECISIONS.md`):** the founder changed the business model. Plus is now the membership that unlocks the product: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book. Anywhere this file treats writing as free or Plus as optional, that is superseded; open edges are listed in D-051 and not decided here. Mobile impact: the save path needs the letter gate and the never-discard rule (PRD-REQ-024, -025); Read together counting interplay is open (D-037, D-051 edge 5). Task list: TDD 08 section 14.
+
 Status: Proposed, 3 Oct 2026. Author: mobile client architect (Claude Code session). Branch read: `develop` at `2ab1de9`.
 Audience: founder, Claude Code sessions, future mobile engineers.
 Inputs read: `CLAUDE.md`, `docs/prd/PRD.md` 1.2 and appendices A, B, C, `docs/ARCHITECTURE.md`, `docs/adr/0001` to `0012` and `0101`, `docs/legal/ENGINEERING_REQUIREMENTS.md`, `DATA_CLASSIFICATION.md` 1.1.0, `data-policy.md`, `DELETION_AND_EXPORT_SPEC.md`, `docs/analytics/TRACKING_PLAN.md`, `supabase/APPLY.md`, `supabase/migrations/*`, `docs/BACKLOG.md`, and every file under `apps/mobile/src`, plus `packages/analytics`, `packages/core` (index, safety, prompts), `packages/brand`, `packages/content` (`ageGate`).

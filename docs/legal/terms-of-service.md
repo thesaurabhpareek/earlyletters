@@ -1,9 +1,9 @@
 ---
 title: Early Letters Terms of Service
-version: 1.4.0
+version: 2.0.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-03
+last_updated: 2026-10-04
 owner: founder
 applies_to: Early Letters iOS app, Android app (later), family contribution web page (from v1.1), apps/web
 ---
@@ -18,12 +18,15 @@ applies_to: Early Letters iOS app, Android app (later), family contribution web 
 
 This summary is here to help. The full terms below are what count.
 
+**[COUNSEL REVIEW, founder decision of 4 Oct 2026: the two summary lines above replace "Writing, reading, listening, export and family authors are free, always" and "Plus is optional". Please check that the summary is not misleading about what is free now, and that it does not promise more than Sections 13 and 14.]**
+
 - Early Letters is for adults 18 and over. Children are who the letters are written to, not users.
 - Early Letters is in beta. Features may change or break, so please export a copy from time to time.
 - Your words and recordings are yours. We only use them to run Early Letters for you and the family you invite.
 - We never rewrite your letters. Transcription only fixes microphone and grammar slips, and you can see and undo every fix. Speech recognition can still get things wrong, so please read your letters before you save them.
-- Writing, reading, listening, export and family authors are free, always. Past letters are never put behind a payment.
-- Plus is optional. It renews automatically through Apple or Google until you cancel. We tell you before free months end and before an annual plan renews, and we never raise your price without your agreement.
+- Your first 2 letters are free. After that, adding new letters needs Plus, our membership. One membership covers the book, and family authors add letters without their own membership.
+- Letters you already made always stay. If you never subscribe, or Plus ends, every letter and recording you already made stays readable, playable and exportable. Export and deletion never need Plus.
+- Plus renews automatically through Apple or Google until you cancel. We tell you before free months end and before an annual plan renews, and we never raise your price without your agreement.
 - Co-parents are equals. Neither can remove the other or delete the other's letters.
 - If we ever close Early Letters, we will give you at least 90 days' notice and a way to take everything with you.
 - If something goes wrong, contact us first. You can always use small claims court.
@@ -204,25 +207,32 @@ This summary is here to help. The full terms below are what count.
 
 12.3 **Export.** You can export everything at any time, free, as a file with your letters, recordings and a book PDF. Export works on your phone without a connection.
 
-12.4 **Please keep your own copy.** We work hard to keep your letters safe, but no service can promise nothing will ever go wrong. Phones are lost and broken. If you use the free plan without backup, recordings that live only on a lost phone cannot be recovered by us. We recommend exporting from time to time and keeping the file somewhere safe.
+12.4 **Please keep your own copy.** We work hard to keep your letters safe, but no service can promise nothing will ever go wrong. Phones are lost and broken. If you do not have Plus, and so have no backup, recordings that live only on a lost phone cannot be recovered by us. We recommend exporting from time to time and keeping the file somewhere safe.
 
-## 13. Free, always
+## 13. What is free, and what always stays
 
-13.1 These parts of Early Letters are free and will stay free for as long as we operate the Service:
-- writing and recording letters, spoken or typed, with no limit;
+13.1 **What is free.** These are free, with no Plus needed:
+- your first 2 letters (a letter is one saved entry, spoken or typed);
 - reading your letters and playing their recordings;
-- exporting everything, including after a Plus plan ends;
-- inviting co-parents and family, and family letters.
+- exporting everything, at any time, including after a Plus plan ends or if you never had one;
+- deleting your letters, your book or your account, and asking for a copy of your data (Sections 8 and 12.3 and the Privacy Policy);
+- family authors adding letters to a book that has a Plus membership, without their own membership.
 
-13.2 **Past letters are never put behind a payment.** If you stop paying for Plus, every letter and recording you already made stays readable, playable and exportable. Recordings already backed up stay stored, can be restored to a new phone, and can be downloaded.
+13.2 **Letters already made always stay.** If you never subscribe, or Plus ends, every letter and recording you already made stays readable, playable and exportable. Recordings already backed up stay stored, can be restored to a new phone, and can be downloaded. We never delete a letter or recording because you did not subscribe or because Plus ended. Only adding new letters needs Plus.
 
-13.3 We will not change Section 13 for people who already use the Service. If we ever close the Service, Section 17 applies.
+13.3 **Adding letters needs Plus.** After your first 2 letters, adding a new letter needs a Plus membership (Section 14). One membership covers the book (Section 14.12).
 
-**[COUNSEL: "Free forever" is a binding, advertised promise (C-REQ-017, C-NFR-008). 13.3 makes it non-amendable for existing users, which is deliberate but limits future options. Confirm the scope "for as long as we operate the Service" is the right outer limit, and how it binds a buyer of the business (Section 27.3).]**
+13.4 We will not change Section 13.2, or the export and deletion items in Section 13.1, for people who already use the Service. If we ever close the Service, Section 17 applies.
+
+**[COUNSEL REVIEW, founder decision of 4 Oct 2026. This section was "Free, always" and promised that writing and recording were free with no limit, "for as long as we operate the Service". That promise is withdrawn for new letters. It removes a promise, so it is a major change under POLICY_VERSIONING 2.1. No users are bound by this draft, because nothing has been published. Points for counsel, none of them settled here:
+(a) 13.2 is the old "past letters are never put behind a payment" promise, kept and widened (it now says we never delete because someone did not subscribe). 13.4 binds that promise and the export and deletion items. Whether the 2 free letters can be changed later for existing users is not decided.
+(b) FTC "free" claims (compliance-register CR-012, Unverified, 16 CFR 251 not opened) and whether calling the first 2 letters "free" next to a "free trial" in the Plus sheet could confuse. Wording says "free" only with a concrete limit.
+(c) Whether an account created under the old "free, always" wording, if any ever exists, can be moved to this one. None exists today; the text is unpublished.
+(d) Whether family letters count toward the 2, what a second child's book gets without Plus, and what happens to a letter in progress at the limit are open: see the Open questions in subscription-terms.md and the memo pricing-change-2026-10-04.md. Recommendation for the in-progress case: never discard what the person just said.]**
 
 ## 14. Plus subscriptions
 
-14.1 **What Plus is.** Plus is an optional subscription that adds extras, such as encrypted backup of recordings, Read together beyond the free tries, books for more than one child, and extra themes. What Plus includes is shown in the app before you subscribe. The Subscription Terms are part of these Terms.
+14.1 **What Plus is.** Plus is our membership. It lets you add new letters after your first 2 letters (Section 13.3), and it includes encrypted backup of recordings, Read together beyond the free tries, books for more than one child, and extra themes. What Plus includes is shown in the app before you subscribe. The Subscription Terms are part of these Terms.
 
 14.2 **Prices and trials.** At launch, Plus costs US $3.99 a month with a one-month free trial, or US $29.99 a year with a two-month free trial. The price, the length of any free trial and the date by which to cancel are shown in the app before you subscribe, and those are the terms that apply to you. Free trials are for new subscribers, one per person, as the store decides. If you are not eligible, the app shows the price without a trial. Early Letters is offered in the United States.
 
@@ -251,15 +261,17 @@ To avoid being charged, cancel at least 24 hours before a free trial or period e
 
 14.10 **No obstacles to cancelling.** We never put an offer or extra step between you and cancelling.
 
-14.11 **When Plus ends.** Section 13.2 applies. In addition, all your existing books stay fully usable, including extra children's books; creating another book needs Plus again. New recordings stay on your phone instead of being backed up.
+14.11 **When Plus ends.** Section 13.2 applies: everything you already made stays readable, playable, exportable and deletable. In addition, all your existing books stay readable, including extra children's books. Adding new letters, and creating another book, needs Plus again. Backup stops, and recordings already backed up stay stored and downloadable.
 
-14.12 **Who Plus covers.** Plus applies to the book or books described on the Plus screen when you subscribe, including for the other co-parent in that book. Family Sharing through the App Store is not available for Plus at launch.
+14.12 **Who Plus covers.** One Plus membership covers the book or books described on the Plus screen when you subscribe, including the other co-parent in that book and family authors who add letters to it. They do not need their own membership. Family Sharing through the App Store is not available for Plus at launch.
 
 14.13 **Gifts.** A family member may buy a year of Plus for a child's book. A gift does not renew and is never charged again. Any refund of a gift goes only to the person who bought it.
 
 14.14 **Lifetime.** We may later offer a one-time lifetime option. If we do, its terms will be shown before purchase. A lifetime purchase is a license to use Plus features for as long as we operate the Service, not ownership of software, and Section 17 applies to it.
 
-**[COUNSEL: Reminder windows in 14.6 are set to satisfy every state law checked at once (memo finding H1): annual renewal at about 30 days (California 15 to 45 before renewal; New York 15 to 45 before the cancellation deadline; Virginia and Utah 30 to 60 before renewal; Massachusetts 5 to 30 before the cancellation deadline), and the long-trial notice at 16 to 21 days (California 17602(b)(1) and (b)(2), New York 3 to 21 days before the cancellation deadline). PRD C (C-REQ-025, C-REQ-026, section 4.3) still sends 7 and 3 days; it must change before launch or these lines must be cut. Federal: ROSCA (15 U.S.C. 8403) applies; the FTC 2024 Negative Option Rule was vacated by the Eighth Circuit in July 2025, and the FTC issued an ANPRM in March 2026 with no later rule shown on 2 October 2026. 14.8 commits to opt-in consent for every price increase, which avoids New York's 14-day pro-rata refund route that we could not perform for Apple purchases. Confirm that the in-app Manage subscription link to the store's cancel screen meets California 17602(d), Colorado's one-step cancellation and the NYC rule. Plus scope (PRD C OQ3) must match 14.12. Lifetime: California AB 2426 license disclosure on the purchase screen.]**
+**[COUNSEL: Reminder windows in 14.6 are set to satisfy every state law checked at once (memo finding H1): annual renewal at about 30 days (California 15 to 45 before renewal; New York 15 to 45 before the cancellation deadline; Virginia and Utah 30 to 60 before renewal; Massachusetts 5 to 30 before the cancellation deadline), and the long-trial notice at 16 to 21 days (California 17602(b)(1) and (b)(2), New York 3 to 21 days before the cancellation deadline). PRD C (C-REQ-025, C-REQ-026, section 4.3) still sends 7 and 3 days; it must change before launch or these lines must be cut. Federal: ROSCA (15 U.S.C. 8403) applies; the FTC 2024 Negative Option Rule was vacated by the Eighth Circuit in July 2025, and the FTC issued an ANPRM in March 2026 with no later rule shown on 2 October 2026. 14.8 commits to opt-in consent for every price increase, which avoids New York's 14-day pro-rata refund route that we could not perform for Apple purchases. Confirm that the in-app Manage subscription link to the store's cancel screen meets California 17602(d), Colorado's one-step cancellation and the NYC rule. Plus scope (PRD C OQ3) must match 14.12.
+
+**[COUNSEL REVIEW, 4 Oct 2026: 14.1, 14.11 and 14.12 changed with the membership decision. Auto-renewal law and Apple 3.1.2(c) points that need confirming now that a subscription gates the core action of adding letters: whether the Plus sheet and the pre-purchase text must say clearly that new letters after the first 2 need Plus; whether Apple 3.1.1 and 3.1.2 allow this model (Unverified, not re-read for this draft); and whether a user who hits the limit mid-letter and then buys is treated as having given express consent under the renewal laws in L1, L10 to L14. Price, trial, renewal, cancellation and reminder terms in 14.2 to 14.10 are unchanged.]** Lifetime: California AB 2426 license disclosure on the purchase screen.]**
 
 ## 15. Printed books (not offered yet)
 
@@ -279,7 +291,7 @@ Printed books are not part of Early Letters today; the Service is digital only. 
 
 16.1 We keep improving Early Letters, so features will change. We may add, change or remove features.
 
-16.2 We will not use a change to take away anything in Section 13.
+16.2 We will not use a change to take away anything in Section 13.2, or the export and deletion rights in Section 13.1. **[COUNSEL REVIEW, 4 Oct 2026: narrowed from "anything in Section 13" because Section 13 no longer promises free writing. Confirm the narrower scope.]**
 
 16.3 If we remove or substantially reduce a Plus feature you are paying for, we will tell you in advance. You can cancel, and where the store allows we will help you get a pro-rated refund for an annual plan.
 
@@ -376,7 +388,7 @@ California law governs these Terms and any dispute about the Service, without re
 
 25.3 **Important changes** that affect your rights, prices or how we use Your Content take effect at least 30 days after we tell you, by email and in the app. For some important changes we will ask you to accept them in the app. If you do not agree, you can stop using the Service and export your letters. Changes do not apply to a dispute that started before the change took effect.
 
-25.4 Changes will never take away Section 13 or reduce Section 17 for people who already use the Service.
+25.4 Changes will never take away Section 13.2, the export and deletion rights in Section 13.1, or reduce Section 17 for people who already use the Service.
 
 ## 26. App Store and Google Play
 
@@ -491,7 +503,7 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 2. **Custom EULA or Apple Standard EULA** (Section 26.1). Need a real support phone number either way if custom.
 3. **Auto-renewal compliance with store billing** (Section 14). California ARL duties when Apple or Google is merchant of record; consent records; whether the store-cancel link meets 17602(d), Colorado and NYC; reminder windows set to the overlap of California, New York, Virginia, Utah and Massachusetts (14.6).
 4. **FTC status.** No negative option rule in force as of 2 October 2026; ROSCA applies. Recheck at launch.
-5. **Binding promises.** Sections 6.2 (no training, no ads, no sale), 11 (faithful transcription), 13 (free forever, non-amendable), 17 (90-day shutdown notice, successor obligations). Confirm the company can keep them, including in a sale or insolvency.
+5. **Binding promises.** Sections 6.2 (no training, no ads, no sale), 11 (faithful transcription), 13 (what is free and what always stays; 13.2 is the promise that existing letters stay, and it is non-amendable for existing users), 17 (90-day shutdown notice, successor obligations). Confirm the company can keep them, including in a sale or insolvency.
 6. **Account deletion and shared books** (Section 8.4; PRD B OQ6).
 7. **Children's and minors' data.** COPPA scope (adults writing about a child), Apple 5.1.4, India DPDP, GDPR Article 8, California AB 1043 and other age-assurance laws.
 8. **Court orders and safety removals** (Section 9.4), CSAM reporting (Section 10.3).
@@ -506,6 +518,7 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 2.0.0 | 2026-10-04 | draft-for-counsel | Founder decision of 4 Oct 2026 (membership model). Summary lines; Section 13 rewritten from "Free, always" to "What is free, and what always stays" (first 2 letters free; existing letters always stay; export and deletion never need Plus); 12.4, 14.1, 14.11, 14.12 aligned; Appendix B item 5 updated. Price, trials, auto-renewal, cancellation, reminders, refunds unchanged. **Major** under POLICY_VERSIONING 2.1 items 4, 6 and 9: it withdraws the promise that writing is free with no limit. Unpublished draft, so no users are bound and no notice or re-consent is owed yet; counsel to confirm the classification. |
 | 1.4.0 | 2026-10-03 | draft-for-counsel | Alignment with PRD.md 1.3 (founder decisions of 3 Oct). Provider is the founder as an individual (1.1, 26.1(a) and (h), 27.8, signature block; placeholders renamed to {PUBLISHER_LEGAL_NAME} and {CONTACT_ADDRESS}); founder note on liability rewritten for an individual; Appendix B items 11 (resolved by K-38) and 13 (entity no longer a launch condition) updated. Google sign-in where offered (3.2; v1.1). Family web page marked as later (12.1, applies_to). Plus remains billed by Apple only at launch; Section 14's Google Play lines apply when Android ships. Pre-publication draft, no users bound; if published, the provider change would be major. |
 | 1.3.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2 (founder decisions of 2 Oct). Adults only covers every use, including pre-account use on the phone; age asked at first open (1.5, 2.1; PRD K-07). Printed books marked not offered yet; print clauses apply only once print launches (1.3, 6.1, 7.1, 15; PRD K-32). Beta end note updated (16.4 counsel note; PRD K-13). Pre-publication draft, no users bound; 2.1 would be major if 1.2.0 had been published (POLICY_VERSIONING 2.1 item 9, counsel to classify). |
 | 1.2.0 | 2026-10-02 | draft-for-counsel | Consumer-law review (docs/legal/memos/lawyer-1.md). 18+ confirmation at acceptance and under-18 handling (1.5, 2.1); more-than-one-voice rule (5.4); family may keep copies already made (7.2); 11.5 and 11.6 merged into one light mistakes line; trial terms follow what the app shows (14.2); consent records (14.3); reminder windows set to the multi-state overlap (14.6); opt-in for every price increase (14.8); no obstacles to cancelling (14.10); CLRA named in 21.2; Apple license scope matched to Apple's minimum terms (26.1(b)); sources L10 to L14. Pre-publication draft, no users bound; if published over 1.1.0 this would be major under POLICY_VERSIONING 2.1 items 6 and 7. |

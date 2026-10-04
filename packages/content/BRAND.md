@@ -26,7 +26,7 @@ Your words, never ours.
 Read it, and hear it.
 - The original recording is kept with each letter, on your phone by default, with optional encrypted backup.
 - Read together plays each letter in the author's voice while the words appear.
-- Free PDF export any time. Printed books, starting with Early Letters: Year One, come later.
+- PDF export any time, and every letter already made stays exportable. Printed books, starting with Early Letters: Year One, come later.
 
 ### 3. Made by the whole family, at your pace
 Love from everyone, pressure from no one.

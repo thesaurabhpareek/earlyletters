@@ -10,6 +10,8 @@ Marks on every non-obvious fact, as TEAM.md asks:
 
 Nothing in this file was applied to Vercel, Porkbun or Apple. It is the plan, plus checks to run after each step.
 
+> **Note, 4 Oct 2026 (D-051):** this runbook is about hosting, DNS and the build, and states no price. Anywhere it, or the site it deploys, shows the old promise ("free to write, read and keep", "free, always", the Open Graph image promise line) predates the decision that Plus is the membership with 2 free letters per account. The site copy is owned by the website and content agents and was not changed here; re-check the Open Graph image text and the pricing scene before launch (unverified whether the image carries the old line).
+
 ## 1. At a glance
 
 | Item | Value |

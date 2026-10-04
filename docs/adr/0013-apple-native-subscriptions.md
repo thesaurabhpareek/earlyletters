@@ -4,6 +4,8 @@ Status: Accepted (founder direction, 3 Oct 2026; implementation choice recommend
 Supersedes: the digital-purchase half of ADR 0007 (RevenueCat). ADR 0007's printed-book half stays as future roadmap (PRD K-32).
 Related: PRD.md 1.3 K-34, `docs/DECISIONS.md` D-001, TDD 08 (payments), TDD 02 section 2.5 (entitlement tables), TDD 05 section 5.11 (notice engine).
 
+> **Note, 4 Oct 2026 (D-051, D-052):** this ADR's mechanics (Apple-only sale, StoreKit 2, notifications, prices and trials) are unchanged, but Plus is now the membership that unlocks new letters after 2 free per account, not an optional extra. The notification list here already includes `OFFER_REDEEMED`; D-052 relies on it for Apple offer codes (no code table of ours). Note also that `docs/agents/BRIEF-2026-10-03.md` item 3 says no notifications endpoint and no server Plus enforcement, which conflicts with this ADR; unresolved, see that file.
+
 Evidence labels: **V** verified on a page or package opened on 3 Oct 2026; **U** unverified; **E** our estimate.
 
 ## Context
