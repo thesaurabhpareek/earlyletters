@@ -109,6 +109,10 @@ Each step names what blocks it today. A "fix first" verdict clears only when a n
    - Then: green checks at the new head, a new red-team review that says `ship`, and the approve-migration review (D-041). Release PR #2's migration guard should pass after this merge.
 3. **Merge release PR #2** (develop into main), so that `main` has the workflows (F2).
    - Blocked by: step 2, because its guard fails until #30's exception is on develop.
+   - Also blocked by (red-team addendum, develop at 8896000):
+     - the High findings in `docs/reviews/2026-10-04-security-privacy.md` (0 Critical, 3 High: email-link login CSRF, book membership integrity, Apple token revocation) are fixed or accepted by the founder;
+     - the fifth pending migration, `20261005000000_family_cap_language_idempotency.sql`, has had its own independent review (it was finished after that review closed);
+     - the founder applies `approve-migration` to PR #2 by hand, because the fence cannot run on a PR into `main` (`main` has no `.github/`).
    - Note: PR #2 carries all of develop, including the 3 Oct wave. Develop's only workflows are `ci.yml` and `migration-guard.yml`, so no workflow applies a migration when it merges while PR #36 is unmerged. Whether a Supabase dashboard integration is connected is Unverified: ops never reads remote projects.
 4. **Turn on branch protection** on `develop` and `main` (F3).
    - Blocked by: nothing; it can be done at any time. Add `fence` to the required checks after step 2.
@@ -126,7 +130,8 @@ Each step names what blocks it today. A "fix first" verdict clears only when a n
      - PR #33's prerequisites: steps 4 and 6, and F5.
    - Apply the pin patch in this PR's body (CI_HEALTH fix 4) before or with the merge.
 8. **Apply the pack to staging by CI** (BL-015), through PR #36.
-   - Blocked by: BL-107 (the staging project), step 5, the two Vault secrets, and PR #36 itself.
+   - Blocked by: BL-107 (the staging project; founder task FT-10 in `docs/FOUNDER_TASKS.md`), step 5, the two Vault secrets, and PR #36 itself. Branch protection and labels are FT-20 (steps 4 and F3, F6).
+   - v1.0 scope: the founder decided v1.0 is on-device only (`docs/agents/BRIEF-2026-10-03.md`), so steps 5 and 8 and the server rows of F2 are v1.1 gates, not v1.0 submission blockers. Steps 1 to 4, 6 and 7 are unaffected.
    - Caution: once PR #36 is merged, any release PR that changes migrations deploys them to staging. So merge PR #36 only after step 5.
 
 Related ops docs:
