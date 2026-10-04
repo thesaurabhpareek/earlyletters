@@ -228,8 +228,16 @@ export const site = {
   welcomeEmail: {
     subject: `You are on the list for ${NAME}`,
     preheader: 'One short hello now. One email when it is ready.',
+    kicker: 'Welcome',
     headline: 'You are on the list.',
     intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US, and we will write once more, when it is ready.`,
+    letterLabel: 'What a letter looks like',
+    letterTo: 'To Meera',
+    letterMeta: 'Month 9, Tuesday night',
+    letterFrom: 'From Papa',
+    /** Must stay the opening of sampleLetter.text (checked in test/welcome-email.test.ts): the email shows only words the sample letter really holds. */
+    letterExcerpt: 'Meera, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
+    letterNote: 'A minute of talking. Every word kept exactly as it was said.',
     promisesTitle: 'What we are building',
     promises: [
       'Every word kept exactly as you said it.',
@@ -238,7 +246,23 @@ export const site = {
     ],
     closing: 'Until then, there is nothing you need to do.',
     signoff: `The ${NAME} team`,
-    why: 'This note went to the address entered at earlyletters.com. If that was not you, reply to this email and we will remove it.',
+    footerLine: `${NAME} is coming to iPhone in the US.`,
+    why: 'You are receiving this because this address was entered at earlyletters.com. If that was not you, reply to this email and we will remove it.',
+    unsubscribePrefix: 'Not for you?',
+    unsubscribeLabel: 'Unsubscribe',
+  },
+
+  /** The unsubscribe page (app/unsubscribe/page.tsx), reached from the link in every email. */
+  unsubscribe: {
+    title: 'Stop these emails?',
+    body: 'We will not write to this address again. If you change your mind, you can leave your email on the website any time.',
+    button: 'Unsubscribe',
+    doneTitle: 'You are unsubscribed.',
+    doneBody: 'We will not write to you again. Thank you for stopping by.',
+    invalidTitle: 'That link did not work.',
+    invalidBody: 'It may be old or incomplete. Write to hello@earlyletters.com and we will remove your address ourselves.',
+    error: 'That did not go through on our side. Please try again in a moment.',
+    home: `Back to ${NAME}`,
   },
 
   footer: {

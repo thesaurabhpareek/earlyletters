@@ -17,6 +17,7 @@ import { Resend } from 'resend';
 import { site } from '../../content/site';
 import { resolveSiteUrl } from '../site-url';
 import { logNotify } from './log';
+import { makeUnsubscribeToken } from './unsubscribe';
 import { renderWelcomeEmail } from './welcome-email';
 
 export type SubscribeOutcome = 'ok' | 'rate_limited' | 'server';
@@ -47,31 +48,52 @@ function outcomeFor(error: ProviderError): SubscribeOutcome {
   return 'server';
 }
 
-export async function subscribe(email: string, config: { apiKey: string; segmentId: string }): Promise<SubscribeOutcome> {
+export async function subscribe(
+  email: string,
+  config: { apiKey: string; segmentId: string },
+): Promise<{ outcome: SubscribeOutcome; contactId?: string }> {
   const resend = clientFor(config.apiKey);
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
   const created = await resend.contacts.create({ email, segments: [{ id: config.segmentId }] }, { signal });
-  if (!created.error) return 'ok';
-  if (!isAlreadyExists(created.error)) return outcomeFor(created.error);
+  if (!created.error) return { outcome: 'ok', contactId: created.data?.id };
+  if (!isAlreadyExists(created.error)) return { outcome: outcomeFor(created.error) };
 
   // The contact exists already (signed up before, or created by hand). Make sure it is in our segment.
   // An unsubscribed contact stays unsubscribed: broadcasts skip it, which is what the person asked for.
   const added = await resend.contacts.segments.add({ email, segmentId: config.segmentId }, { signal });
-  if (!added.error || isAlreadyExists(added.error)) return 'ok';
-  return outcomeFor(added.error);
+  if (added.error && !isAlreadyExists(added.error)) return { outcome: outcomeFor(added.error) };
+  // Needed for the personal unsubscribe link; a failed lookup only means the email gets the mailto fallback.
+  let contactId: string | undefined;
+  try {
+    contactId = (await resend.contacts.get(email, { signal })).data?.id;
+  } catch {
+    contactId = undefined;
+  }
+  return { outcome: 'ok', contactId };
 }
 
 /**
  * The one short hello after a sign-up. Never throws and never changes the answer the visitor gets: a failed
  * send is logged (error name and status only) and the address stays saved. Sent from the verified domain,
- * replies go to the contact address.
+ * replies go to the contact address. Every send carries an unsubscribe link (personal and one-click when
+ * UNSUBSCRIBE_SECRET and the contact id are known, otherwise a mailto address) and the matching headers.
  */
-export async function sendWelcome(email: string, config: { apiKey: string }): Promise<void> {
+export async function sendWelcome(email: string, config: { apiKey: string }, contactId?: string): Promise<void> {
   try {
-    const { subject, html, text } = renderWelcomeEmail(resolveSiteUrl(process.env).origin);
+    const origin = resolveSiteUrl(process.env).origin;
+    const contact = site.footer.contact;
+    const token = contactId ? makeUnsubscribeToken(contactId, process.env.UNSUBSCRIBE_SECRET) : null;
+    const mailto = `mailto:${contact}?subject=Unsubscribe`;
+    const headers: Record<string, string> = token
+      ? {
+          'List-Unsubscribe': `<${origin}/api/unsubscribe?t=${token}>, <${mailto}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        }
+      : { 'List-Unsubscribe': `<${mailto}>` };
+    const { subject, html, text } = renderWelcomeEmail(origin, token ? `${origin}/unsubscribe?t=${token}` : mailto);
     const { data, error } = await clientFor(config.apiKey).emails.send(
-      { from: `${site.brand.name} <${site.footer.contact}>`, to: [email], replyTo: site.footer.contact, subject, html, text },
+      { from: `${site.brand.name} <${contact}>`, to: [email], replyTo: contact, subject, html, text, headers },
       { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
     );
     if (error || !data) logNotify('welcome_error', { name: error?.name, status: error?.statusCode });
