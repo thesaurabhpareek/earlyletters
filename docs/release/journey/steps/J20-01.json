@@ -3,7 +3,7 @@
   "journey": "crash",
   "kind": "unhappy",
   "title": "A screen crashes (fault injected)",
-  "note": "The root error boundary shows a calm screen instead of a blank page: \"Something went wrong on our side. Your letters and recordings are safe on this phone.\" with Try again and Go to Tonight. No error text, code or stack is shown or logged. Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here.",
+  "note": "The app registers no error boundary of its own, and the page is left blank: no message, no way back (the text list is empty on purpose). Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here. Worth a calm, designed fallback screen before launch.",
   "from": "J19-01",
   "shot": "screens/J20-01.png",
   "route": "/",
@@ -22,11 +22,6 @@
     }
   },
   "scrolls": false,
-  "text": "Something went wrong on our side Your letters and recordings are safe on this phone. Nothing was removed. Try again Go to Tonight",
-  "lines": [
-    "Something went wrong on our side",
-    "Your letters and recordings are safe on this phone. Nothing was removed.",
-    "Try again",
-    "Go to Tonight"
-  ]
+  "text": "",
+  "lines": []
 }

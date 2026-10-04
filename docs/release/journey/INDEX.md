@@ -5,7 +5,7 @@ Generated from the web end-to-end flows (`apps/mobile/e2e-web/*.flow.ts`), run a
 (402 x 874 CSS px at 3x). Nothing here is a mock-up: every screen is a screenshot of the running app, and `text` in each step JSON is the
 visible text read from the page.
 
-- Journeys: **20**, steps: **118** (happy 87, unhappy 31), screenshots: **118**, plus **29** full-length captures of scrolling screens (`<id>-full.png`).
+- Journeys: **20**, steps: **116** (happy 87, unhappy 29), screenshots: **116**, plus **29** full-length captures of scrolling screens (`<id>-full.png`).
 - Files: `steps/<id>.json` (id, journey, kind, title, note, from, route, viewport, safeArea, scrolls, text, lines), `screens/<id>.png`, `screens/<id>-full.png`.
 - Regenerate: `npm run e2e:web:journey -w @scribe/mobile` then `node apps/mobile/e2e-web/support/build-index.mjs`.
 - Seeded steps use the fictional family Asha (the web preview switch `EXPO_PUBLIC_WEB_PREVIEW=1`, `?seed=asha`), because the web build has no speech model and cannot produce words from a recording. They are the real screens with data filled in; each such step says so.
@@ -219,15 +219,13 @@ visible text read from the page.
 
 | Step | Kind | What the person sees and does | From | Screen |
 |---|---|---|---|---|
-| J19-01 | unhappy | **Unknown route (404).** A designed not-found screen in the product voice replaces Expo Router's "Unmatched Route" page. It never shows the address, and has one way back: Back to Tonight. Reached by a malformed or old link. | J00-open | [png](screens/J19-01.png) |
-| J19-02 | unhappy | **Listen opened without a tap.** Opened by a link, a restored screen or a stale route (not by Speak), Listen waits: "Nothing is recording yet. Tap Start when you want to speak." The microphone is not touched. On a phone the scribe://listen link goes to Tonight instead. | J19-01 | [png](screens/J19-02.png) |
+| J19-01 | unhappy | **Unknown route (404).** The app has no designed not-found screen: this is Expo Router's default "Unmatched Route" page, with a developer-facing "Sitemap" link. Reached only by a malformed deep link. Worth a real screen before launch. | J00-open | [png](screens/J19-01.png) |
 
 ## J20 Crash (fault injected)
 
 | Step | Kind | What the person sees and does | From | Screen |
 |---|---|---|---|---|
-| J20-01 | unhappy | **A screen crashes (fault injected).** The root error boundary shows a calm screen instead of a blank page: "Something went wrong on our side. Your letters and recordings are safe on this phone." with Try again and Go to Tonight. No error text, code or stack is shown or logged. Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here. | J19-01 | [png](screens/J20-01.png) |
-| J20-02 | unhappy | **The book cannot be opened (fault injected).** If opening the database or updating it throws, a recovery screen replaces the app: the letters are safe on the phone, nothing is removed, and there are two actions: Try again and Export what's readable. No delete, reset or rebuild exists here. Reached only by a preview-only switch (?fault=launch-once); on a phone it follows a failed database open or update. | J20-01 | [png](screens/J20-02.png) |
+| J20-01 | unhappy | **A screen crashes (fault injected).** The app registers no error boundary of its own, and the page is left blank: no message, no way back (the text list is empty on purpose). Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here. Worth a calm, designed fallback screen before launch. | J19-01 | [png](screens/J20-01.png) |
 
 ## Not capturable on web
 
