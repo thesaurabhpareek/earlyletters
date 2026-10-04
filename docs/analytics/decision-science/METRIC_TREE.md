@@ -142,7 +142,7 @@ So, at v1.0:
 - **What exists at v1.0:** ASC Sales and App Analytics (new users, trials, conversions, crashes; section 1), and opt-in device analytics (PostHog) among people who consented. The only v1.0 reads of the input metrics are the device-side rows: IN-01 (a), IN-02 (b) is not meaningful with no sign-in, IN-05 device detail and IN-07 (a), (b), (d). IN-01 (b) cannot be computed without server counts of founding parents; use ASC App Units and device counts, labelled.
 - **No v1.0 North Star.** A device-only proxy (consenting devices with a kept letter in the week, from `letter_saved`) may be reported as "among people who opted in", with the four-part bias statement of 5.4. It is never a headline and never called WKF (the rule in section 1 stands: headlines come from server aggregates or ASC Sales only). Whether to accept a device proxy for v1.0, or to run v1.0 with ASC numbers and interviews alone, is a founder decision (Open-5 in section 8).
 - Section 6.1 reads accordingly: in the C0 and C1 columns and "After launch" for v1.0, every cell that depends on a server aggregate reads "v1.1". Plus (BZ) is unchanged, because it already comes from ASC only.
-- `docs/DECISIONS.md` (D-002, D-044), the PRD and the ROADMAP on `develop` still describe co-parent and sign-in at v1.0 and have not been reconciled; this document follows the brief.
+- `docs/DECISIONS.md` (D-023, D-054, D-055), the PRD and the ROADMAP on `develop` still describe co-parent and sign-in at v1.0 and have not been reconciled; this document follows the brief.
 
 ### 3.1 PRD goals to metrics
 
