@@ -19,6 +19,7 @@ import { BlurSurface } from '@/components/platform/blur-surface';
 import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Lamp } from '@/components/ui/lamp';
 import { Text } from '@/components/ui/text';
 import { childIndexOf, trackBookOpened } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
@@ -129,12 +130,13 @@ export default function Book() {
 
   return (
     <View className="flex-1 bg-background">
+      <Lamp anchor="top" />
       {chapters.length === 0 ? (
         <View className="flex-1">
           {header}
           <View className="flex-1 justify-center px-5 pb-16">
             <EmptyState
-              art="page"
+              device
               title={copy.book.empty.bookTitle}
               body={fill(copy.book.empty.bookBody, { child })}
               action={{ label: copy.book.empty.bookCta, onPress: () => router.navigate('/') }}

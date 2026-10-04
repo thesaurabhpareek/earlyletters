@@ -394,6 +394,11 @@ type SignatureProps = { author: Author; variant?: 'inline' | 'signoff'; showAvat
 - **Builds on:** RNR `avatar.tsx` (`@rn-primitives/avatar`) + expo-image. Web: shadcn `Avatar`.
 - **Android later:** same code.
 
+### 2.16a Lamp and QuotePair (calm brand)
+- **Lamp:** warm radial light behind a screen (`components/ui/lamp.tsx`, `<Lamp anchor="top" | "center" intensity? />`). First child of the screen root, outside any ScrollView. Welcome, Tonight and Book only. Colour and peak opacity from `tokens.atmosphere`, timing from `tokens.motion.lamp`. Decorative: no touches, hidden from VoiceOver and TalkBack. Off under Reduce Motion (still) and Increase Contrast (not drawn). Motion rules: MOTION 5k.
+- **QuotePair:** the opening quotation pair as the brand device (`components/ui/quote-pair.tsx`, `<QuotePair height? />`, registry context `app.brand-device`). Above the heading on welcome and, through `EmptyState device`, on the empty Book. 40 to 64 pt, accent on paper, reversed on dark, one per screen, a single `fadeMs` fade-in and then still. Decorative. The path is the registry file's path, checked by `apps/mobile/test/quote-pair.test.ts`.
+- **Android later:** same code (react-native-svg and Reanimated).
+
 ### 2.17 ListeningAura
 - **Purpose:** shows the app is listening, as a soft breathing glow driven by voice amplitude. Calm, not a VU meter.
 ```ts
