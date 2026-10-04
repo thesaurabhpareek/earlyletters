@@ -22,10 +22,9 @@
     }
   },
   "scrolls": false,
-  "text": "Close Something went wrong Your words are safe. Please try again.",
+  "text": "Your words are safe. Please try again. Close",
   "lines": [
-    "Close",
-    "Something went wrong",
-    "Your words are safe. Please try again."
+    "Your words are safe. Please try again.",
+    "Close"
   ]
 }

@@ -86,6 +86,14 @@ export const en = {
       addAnotherButton: "Add another child",
       // Twins or more, same birthday or due date, during first run (PRD.md K-12).
       addAnotherHelp: "Twins or more? Add them now. Each child gets their own book.",
+      // Why Continue is waiting (shown in words, never only a greyed button).
+      needNameMany: "Fill in or remove this name to continue.",
+      needBirthday: "Choose {child}'s birthday to continue.",
+      needDueDate: "Choose the due date to continue.",
+      chooseDate: "Choose a date",
+      bornToday: "Born today",
+      // A long name: said gently, once the field is close to its limit.
+      nameLimit: "A name can have up to {n} characters.",
       cta: "Continue",
     },
 
@@ -99,6 +107,7 @@ export const en = {
       examples: ["Mama", "Papa", "Amma", "Appa", "Mummy", "Daddy", "Ma", "Baba"],
       notYetHelp: "Not talking yet? Pick the name you hope to hear.",
       preview: "From {signsAs}",
+      needSignsAs: "Add what {child} calls you to continue.",
       cta: "Sign my letters",
     },
 
@@ -928,6 +937,30 @@ export const en = {
     dueDateLabel: "Due date",
     nameRequired: "Add a name to continue.",
     notSet: "Not set",
+    // Editing a child's details (Settings > the child's book). Letters are never changed by these.
+    edit: {
+      nameLabel: "Name",
+      rowHint: "Opens to change it.",
+      save: "Save",
+      nameEmpty: "Add a name to save.",
+      nameLimit: "A name can have up to {n} characters.",
+      nameTooLong: "That is longer than a name can be. The limit is {n} characters.",
+      signsAsEmpty: "Add what {child} calls you to save.",
+      signsAsLimit: "Up to {n} characters.",
+      signsAsTooLong: "That is longer than it can be. The limit is {n} characters.",
+      signsAsNewOnly: "Letters you have already written keep how they were signed. This applies to new ones.",
+      birthdayFuture: "A birthday is a day that has already come. Choose today or earlier.",
+      birthdayMissing: "Choose a date to save.",
+      dueDateRange: "Choose a due date from today up to ten months ahead.",
+      dateInvalid: "That date does not look right. Try again.",
+      born: {
+        offer: "{child} was born, set the birthday",
+        offerBody: "Your due date has come. Tell us the day and your letters find their place.",
+        pickerLabel: "{child}'s birthday",
+        confirm: "Set the birthday",
+        keepNote: "Letters written before this day stay in Before You.",
+      },
+    },
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
     plusGateTitle: "Another book is part of Plus",
     plusCta: "See what Plus adds",

@@ -23,9 +23,8 @@
     }
   },
   "scrolls": true,
-  "text": "Close Coming soon Write to Asha, together Soon Asha's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name Asha calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Only the people you invite can read Asha's book. A letter you keep private stays yours. We're building it now. Until then, every letter you write stays on this phone. Thank you. We'll let you know here when it's ready.",
+  "text": "Coming soon Write to Asha, together Soon Asha's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name Asha calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Only the people you invite can read Asha's book. A letter you keep private stays yours. We're building it now. Until then, every letter you write stays on this phone. Close",
   "lines": [
-    "Close",
     "Coming soon",
     "Write to Asha, together",
     "Soon Asha's other parent can write in this same book, from their own phone.",
@@ -36,6 +35,6 @@
     "Private to your family",
     "Only the people you invite can read Asha's book. A letter you keep private stays yours.",
     "We're building it now. Until then, every letter you write stays on this phone.",
-    "Thank you. We'll let you know here when it's ready."
+    "Close"
   ]
 }

@@ -22,10 +22,10 @@
     }
   },
   "scrolls": false,
-  "text": "Close Read together Letters you add to the book will be here to read together.",
+  "text": "Read together Letters you add to the book will be here to read together. Close",
   "lines": [
-    "Close",
     "Read together",
-    "Letters you add to the book will be here to read together."
+    "Letters you add to the book will be here to read together.",
+    "Close"
   ]
 }

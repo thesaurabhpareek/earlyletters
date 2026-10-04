@@ -7,8 +7,9 @@ test('[J03] more than one child: twins in first run, the switcher, settings, and
   await startOnboarding(app);
   await toChildStep(app);
   await app.getByRole('textbox').first().fill('Asha');
+  await btn(app, 'Born today').click();
   await app.getByRole('button', { name: /Add another child/ }).click();
-  await app.getByRole('textbox').nth(1).fill('Ashu');
+  await app.getByRole('textbox').nth(1).fill('Nila');
   await step('happy', 'Two names in first run', 'Twins or more: each name gets a field and a remove button. All books made here are free; they share the date.');
   await btn(app, 'Continue').click();
   await expect(app.getByText(/call you/)).toBeVisible();
@@ -24,7 +25,7 @@ test('[J03] more than one child: twins in first run, the switcher, settings, and
   await expect(app.getByText(/'s book/).first()).toBeVisible();
   await step('happy', 'The Book tab, empty, with a child switcher', 'The first book is open. A small switcher at the top left lets the person move between the two books.');
   await app.getByRole('button', { name: /Asha/ }).first().click();
-  await expect(app.getByText(/Ashu/).first()).toBeVisible();
+  await expect(app.getByText(/Nila/).first()).toBeVisible();
   await step('happy', 'Whose book? sheet', 'A sheet lists every book on this phone with the current one marked. Choosing one switches Tonight, Book and writing to that child.');
   await app.getByRole('button', { name: 'Close' }).first().click({ force: true });
   await expect(app.getByText('Whose book?')).toBeHidden();

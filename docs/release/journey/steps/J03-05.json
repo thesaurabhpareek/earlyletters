@@ -22,10 +22,9 @@
     }
   },
   "scrolls": false,
-  "text": "Whose book? Close Asha's book Ashu's book Add a child",
+  "text": "Whose book? Asha's book Ashu's book Add a child",
   "lines": [
     "Whose book?",
-    "Close",
     "Asha's book",
     "Ashu's book",
     "Add a child"
