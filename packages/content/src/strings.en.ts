@@ -60,7 +60,7 @@ export const en = {
 
     promise: {
       title: "Exactly as you said it.",
-      body: "Word for word: we fix only what the microphone got wrong. A stray \"um\", a misheard name, a missing comma. Every small fix is marked, and you can undo it.",
+      body: "This is Word for word. We take out a stray \"um\", fix a misheard name, add a missing comma, and mark every small fix so you can undo it.",
       body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
       recordingTitle: "Your voice stays too",
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
@@ -250,24 +250,36 @@ export const en = {
 
   review: {
     title: "Read it back",
-    // The edit feature is called "Word for word" (founder decision, Oct 3 2026). Small fixes are shown as marks
-    // the person can undo. Never "tidy", "tidied" or "tidying" in copy.
-    subtitle: "Here is what you said, word for word. Small fixes are marked.",
+    // The edit feature is called "Word for word" (D-074) and only where the feature is named (D-086: the promise,
+    // Settings, store, website). Here, plain words: a "small fix" is named by what happened, and "Exactly as said"
+    // is said only when it is true. Never "edit", "correct", "clean" or "tidy" in text a person reads.
+    subtitle: "Here is what you said. Small fixes are marked.",
     trustLine: "We only fixed what got in the way of your words. Nothing added.",
+    // The one view control, "With small fixes | Exactly as said": the view and the choice for this letter, until it is saved.
+    view: {
+      fixes: "With small fixes",
+      exact: "Exactly as said",
+      a11y: "How this letter reads",
+    },
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
-    noChanges: "Word for word. Nothing needed fixing.",
-    showOriginalLink: "Show exactly what I said",
-    showTidiedButton: "Show small fixes",
+    // Zero fixes, three honest wordings.
+    noChanges: "Nothing needed fixing. This is exactly what you said.",
+    noChangesAfterUndo: "You put every small fix back. This is exactly what you said.",
+    // A language with no fix rules yet: never a "nothing needed fixing" claim there.
+    noChangesNoRules: "Exactly as you said it.",
     originalLabel: "Exactly what you said",
-    tidiedLabel: "Word for word, small fixes marked",
+    cardYouSaid: "You said",
+    cardNowReads: "Now it reads",
+    cardTakenOut: "Taken out",
+    // A fix that changed a word: "Usher to Asha".
+    rowChange: "{a} to {b}",
     undoEditButton: "Put it back",
-    // D-074: "Word for word" names the fixing feature, so this button says what it does.
-    undoAllButton: "Undo every fix",
     putBackToast: "Put back.",
     editTextButton: "Change words",
-    editA11yHint: "Edited. Double tap to see what you said.",
+    editA11yHint: "Small fix. Double tap to see what you said.",
     removedA11y: "Words taken out here",
+    removedWordsA11y: "Taken out: {name}",
     toChildA11y: "To {child}. Change",
     // A recording kept before the words are ready on this phone (ADR 0001, TDD 03 FM-9).
     voiceOnlyButton: "Keep the recording",
@@ -280,21 +292,22 @@ export const en = {
       sampleBanner: "Sample words for testing, not your recording.",
       sampleNotSaved: "Sample words are never saved. Keep the recording only, or type it.",
     },
+    // Each fix is named by what happened, never by category (D-086).
     edits: {
       filler: {
-        label: "Filler",
-        explain: "We took out an \"um\" or \"uh\" so it reads smoothly.",
+        label: "Took out a sound",
+        explain: "You said um or uh. We took it out.",
       },
       falseStart: {
-        label: "False start",
-        explain: "You started a sentence, then began again. We kept the second try.",
+        label: "Took out a restart",
+        explain: "You began a sentence, then began again. We kept the second try.",
       },
       repeat: {
-        label: "Repeat",
+        label: "Took out a repeat",
         explain: "A word came out twice in a row. We kept one.",
       },
       misheardName: {
-        label: "Name",
+        label: "Spelled your way",
         explain: "The microphone misheard a name. We used the spelling from your words list.",
       },
       punctuation: {
@@ -302,17 +315,17 @@ export const en = {
         explain: "We added commas and full stops where you paused.",
       },
       grammarSlip: {
-        label: "Small slip",
+        label: "One word fixed",
         explain: "A tiny slip of the tongue, like \"a apple\". We fixed only that.",
       },
       paragraph: {
-        label: "Paragraph",
+        label: "New paragraph",
         explain: "You took a long pause, so we started a new paragraph.",
       },
       // A punctuation edit that only wrote a character in the author's chosen script (ADR 0014
       // section 4; packages/core describeEdit returns 'script'). Same word, same letters.
       script: {
-        label: "Characters",
+        label: "Your script",
         explain: "We wrote a character the way your chosen script writes it. It is the same word.",
       },
     },
@@ -321,13 +334,6 @@ export const en = {
       explain: "Locked phrases stay exactly as you said them, slips and all.",
       lockedLabel: "Kept as said",
       unlockButton: "Allow small fixes",
-    },
-    voiceCheck: {
-      question: "Does this sound like you?",
-      yesButton: "Sounds like me",
-      noButton: "Not quite",
-      noFollowUp: "Tap any word to change it, or show exactly what you said.",
-      thanks: "Thank you for telling us.",
     },
     destination: {
       title: "Where should this go?",
@@ -343,7 +349,7 @@ export const en = {
     // One-time card, the first time a spoken letter is transcribed on this install (in-app-disclosures.md section 2).
     firstNote: {
       title: "Please have a read",
-      body: "We fix small slips, like \"um\" and repeats. We can also mishear a word or a name. Please read it before you save.",
+      body: "We take out small slips, like an um or a repeat, and mark each one. Tap a mark to see it and put it back. We can mishear a name, so please read it before you save.",
       dismissButton: "Got it",
     },
   },
@@ -380,7 +386,7 @@ export const en = {
     signature: "From {signsAs}",
     together: "From {signsAs} and {child}",
     provenance: {
-      spokenTidied: "Spoken, word for word",
+      spokenFixed: "Spoken, with small fixes",
       spokenExact: "Spoken, exactly as said",
       typed: "Typed",
     },

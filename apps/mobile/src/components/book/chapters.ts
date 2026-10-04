@@ -1,6 +1,7 @@
 import { ageOn, chapterOf } from '@scribe/core';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText, dayDate } from '@/lib/dates';
+import { provenanceKey, type Provenance } from '@/lib/provenance';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 
@@ -77,10 +78,8 @@ export function datelineA11y(child: Child, onISO: string): string {
   return age ? `${dayDate(onISO)}, ${age}` : dayDate(onISO);
 }
 
-export type Provenance = 'spokenTidied' | 'spokenExact' | 'typed';
+export type { Provenance } from '@/lib/provenance';
 
 export function provenanceOf(e: Entry): Provenance {
-  if (e.captureMode === 'typed') return 'typed';
-  if (e.editLevel === 'verbatim' || e.machineEdits.length === 0 || e.finalText === e.rawTranscript) return 'spokenExact';
-  return 'spokenTidied';
+  return provenanceKey(e);
 }

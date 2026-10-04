@@ -60,8 +60,9 @@ import { createSampleTranscriber } from '../transcribe-sample';
 import { createWhisperTranscriber } from '../transcribe-whisper';
 import { copyForLetter } from '../audio-enhance';
 import { trackTranscriptionCompleted } from '../analytics/track';
-import { getSpokenLanguages, languageCleanOptions } from '../language';
-import { cleanSpoken, spokenEditLevel } from './clean';
+import { getSpokenLanguages } from '../language';
+import { flagReadItBack } from '../read-it-back';
+import { lateArrivingWords } from './clean';
 import { initialQueue, languagesWaiting, nextJob, nextRetryAt, reduce, type Job, type JobFailure, type QueueEvent, type QueueState } from './machine';
 
 export type { Job, JobPhase, QueueState } from './machine';
@@ -414,7 +415,7 @@ async function runJob(id: string): Promise<void> {
       { signal: ctrl.signal, onProgress: (p) => dispatch({ type: 'progress', id, done: p.done, total: p.total }) },
     );
     if (ctrl.signal.aborted) throw new TranscriptionAborted();
-    deliver(id, res, dictionary, job.language, transcriber.isSample);
+    deliver(id, res, transcriber.isSample);
     if (!transcriber.isSample) copiesDue.add(id);
     report(res.outcome);
     dispatch({ type: 'finish', id, outcome: res.outcome });
@@ -436,7 +437,7 @@ async function runJob(id: string): Promise<void> {
   }
 }
 
-function deliver(id: string, res: TranscribeResult, dictionary: ReturnType<typeof dictionaryFor>, language: SpeechLanguage, isSample: boolean): void {
+function deliver(id: string, res: TranscribeResult, isSample: boolean): void {
   if (isSample) {
     sampleWords.set(id, res);
     return;
@@ -449,14 +450,11 @@ function deliver(id: string, res: TranscribeResult, dictionary: ReturnType<typeo
   }
   const entry = getEntry(id);
   if (entry && entry.transcriptStatus === 'waiting') {
-    const clean = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(spokenFor(language)));
-    setWordsForWaitingEntry(id, {
-      rawTranscript: raw,
-      machineEdits: clean.applied,
-      finalText: clean.text.trim(),
-      editLevel: spokenEditLevel(language),
-      engineVersion: ENGINE_VERSION,
-    });
+    // Words that arrive later arrive exactly as said and are never fixed unread (D-086). The letter page asks the
+    // parent to read them back; the flag is set first so the card is there the moment the words are.
+    const late = lateArrivingWords(raw);
+    if (late.finalText) flagReadItBack(id);
+    setWordsForWaitingEntry(id, { ...late, engineVersion: ENGINE_VERSION });
     forgetLetterLanguage(id);
   }
 }

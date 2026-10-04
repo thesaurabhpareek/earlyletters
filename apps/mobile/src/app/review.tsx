@@ -1,8 +1,12 @@
 /**
  * Review (DESIGN_LANGUAGE 12, COMPONENTS 2.19, MOTION 5d and 5e).
  *
- * Shows what was said with every machine edit quietly underlined. Each edit
- * explains itself in plain words and can be put back (withoutEdit). The raw
+ * Shows what was said with every machine edit marked: removed words struck
+ * through, changed words dotted. Each fix explains itself in plain words and
+ * can be put back (withoutEdit). One control, "With small fixes | Exactly as
+ * said", is both the view and the choice for this letter until it is saved;
+ * choosing Exactly as said keeps the fixes in state, so it is reversible
+ * (D-086, review-view.logic.ts). The raw
  * transcript is set once on the draft and never changed. Saving writes the
  * entry locally first, then the success haptic, then the settle animation.
  *
@@ -21,10 +25,12 @@
  */
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
+import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
+import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
 import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -42,10 +48,21 @@ import {
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { Transcript } from '@/components/capture/transcript';
+import {
+  DEFAULT_VIEW_SETTING,
+  countLine,
+  fixesInForce,
+  rowShows,
+  setAsideAtSave,
+  showViewControl,
+  viewFromSetting,
+  type ReviewView,
+} from '@/components/capture/review-view.logic';
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { TextField } from '@/components/ui/text-field';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
@@ -56,6 +73,7 @@ import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
+import { useTheme } from '@/lib/a11y';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
@@ -72,9 +90,11 @@ import {
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, type Job } from '@/lib/transcription-queue';
+import { languageFor, requestSpeechFor, requestWords, retryWords, sampleWordsFor, spokenFor, type Job } from '@/lib/transcription-queue';
 import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
 import { languageNames, wordsCopy } from '@/lib/transcription-queue/copy';
+import type { SpeechLanguage } from '@/lib/models/catalog';
+import { planFor } from '@/lib/models/speech-packs';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 
 /** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
@@ -125,15 +145,18 @@ export default function Review() {
   const [keptForWords, setKeptForWords] = useState(false);
   const [raw, setRaw] = useState<string>(typed ? draft!.typedText! : (draft?.rawTranscript ?? ''));
   const [isSample, setIsSample] = useState(false);
-  const [level, setLevel] = useState<EditLevel>(typed ? 'verbatim' : spokenEditLevel(language));
+  const [level] = useState<EditLevel>(typed ? 'verbatim' : spokenEditLevel(language));
   const [applied, setApplied] = useState<Edit[]>([]);
   const [openEdit, setOpenEdit] = useState<number | null>(null);
   const [restored, setRestored] = useState<{ edit: Edit; index: number } | null>(null);
   const [wash, setWash] = useState(false);
-  const [showOriginal, setShowOriginal] = useState(false);
+  // How this letter reads: with the small fixes, or exactly as said. Starts from the Settings default (Word for word switch).
+  const [view, setView] = useState<ReviewView>(() => (typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING))));
+  // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
+  const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
+  const [fieldFocused, setFieldFocused] = useState(false);
   const [userText, setUserText] = useState<string | null>(null);
-  const [soundsLikeMe, setSoundsLikeMe] = useState<boolean | null>(null);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
 
@@ -156,6 +179,7 @@ export default function Review() {
     const result = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage));
     rejected.current = result.rejected;
     setApplied(result.applied);
+    setProposed(result.applied.length);
   }, [raw, typed, dictionary, language, letterLanguage]);
 
   // Ask the queue for words (idempotent: a reopened Review joins the same job).
@@ -187,8 +211,15 @@ export default function Review() {
   const tryAgain = () => {
     if (!draft) return;
     haptic('tap');
-    if (job?.phase === 'failed') retryWords(draft.id);
+    // retryWords also re-listens to a take where nobody spoke; requestWords joins a job that is already there.
+    if (job?.phase === 'failed' || (job?.phase === 'done' && job.outcome === 'no_speech')) retryWords(draft.id);
     else requestWords(draft.id);
+  };
+
+  // "Record again": the take stays as a draft, untouched (the only path that deletes audio is a confirmed Discard).
+  const recordAgain = () => {
+    haptic('tap');
+    router.replace({ pathname: '/listen', params: draft?.promptKey ? { promptKey: draft.promptKey } : {} });
   };
 
   // Mini player for the recording ("Hear it").
@@ -213,13 +244,15 @@ export default function Review() {
   useEffect(() => () => void setAudioMode('idle').catch(() => {}), []);
 
   // Display: the person's words plus edits; a just-restored span is marked as an identity edit.
-  const marker = restored ? applied.length : null;
+  // In "Exactly as said" no fix is in force; the fixes themselves stay in `applied`, so the choice is reversible.
+  const inForce = useMemo(() => fixesInForce(view, applied), [view, applied]);
+  const marker = restored && view === 'fixes' ? applied.length : null;
   const segs = useMemo(() => {
-    const all = restored ? [...applied, { ...restored.edit, replacement: restored.edit.original }] : applied;
+    const all = restored && view === 'fixes' ? [...applied, { ...restored.edit, replacement: restored.edit.original }] : inForce;
     return toSegments(raw, all, typed ? undefined : rules);
-  }, [raw, applied, restored, typed, rules]);
+  }, [raw, applied, inForce, restored, view, typed, rules]);
   // Typed text keeps the house character rule only (unchanged); spoken text uses its language's final-text rule.
-  const cleanedText = useMemo(() => (typed ? normalizeChars(applyEdits(raw, applied)).trim() : languageFinalText(raw, applied, rules)), [raw, applied, typed, rules]);
+  const cleanedText = useMemo(() => (typed ? normalizeChars(applyEdits(raw, inForce)).trim() : languageFinalText(raw, inForce, rules)), [raw, inForce, typed, rules]);
   const finalText = userText ?? cleanedText;
 
   const putBack = (index: number) => {
@@ -245,14 +278,15 @@ export default function Review() {
     setRestored(null);
   };
 
-  const wordForWord = () => {
+  /** The view control. Reversible: nothing is discarded by choosing Exactly as said. */
+  const chooseView = (next: ReviewView) => {
+    if (next === view) return;
     haptic('tap');
-    track('review_action', { action: 'undo_all_edits' });
-    reverted.current += applied.length;
-    setApplied([]);
+    if (next === 'exact') track('review_action', { action: 'show_exactly_said' });
+    setView(next);
     setRestored(null);
     setOpenEdit(null);
-    setLevel('verbatim');
+    setWash(false);
   };
 
   const pickChild = () => {
@@ -307,14 +341,14 @@ export default function Review() {
           occurredOn: draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO(),
           capturedAt: draft.createdAt,
           captureMode,
-          editLevel: level,
+          editLevel: view === 'exact' ? 'verbatim' : level,
           promptKey: draft.promptKey,
           engineVersion: ENGINE_VERSION,
           rawTranscript: raw,
-          machineEdits: applied,
+          machineEdits: inForce,
           finalText,
           inBook,
-          soundsLikeMe,
+          soundsLikeMe: null, // "Does this sound like you?" is not asked in v1.0 (D-086); the field stays null
           childId: child.id,
           authorSignsAs: child.signsAs,
           audioUri: draft.audioUri,
@@ -332,8 +366,8 @@ export default function Review() {
         promptKind: promptKindOf(draft.promptKey),
         audioMs: draft.audioDurationMs,
         wordCount: wordCountOf(finalText),
-        machineEdits: applied.length,
-        editsReverted: reverted.current,
+        machineEdits: inForce.length,
+        editsReverted: reverted.current + setAsideAtSave(view, applied),
         editsRejected: typed ? undefined : rejected.current.length,
         engine: typed ? 'none' : 'on_device',
         fromNotificationWithin2h: fromReminderWithin2h(),
@@ -400,6 +434,16 @@ export default function Review() {
     );
   }
 
+  const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
+  const countText =
+    line === 'count'
+      ? plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))
+      : line === 'afterUndo'
+        ? r.noChangesAfterUndo
+        : line === 'none'
+          ? r.noChanges
+          : r.noChangesNoRules; // 'noRules', and 'exact' (Exactly as said: the words are untouched)
+
   const age = ageText(child, todayISO());
   const dateline = age ? `${child.name} · ${age}` : child.name;
   const openE = openEdit !== null ? applied[openEdit] : null;
@@ -435,9 +479,14 @@ export default function Review() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <Button variant="ghost" size="sm" className="-ml-4" onPress={() => router.back()} accessibilityHint={pendingCopy.write.savedOnPhone}>
-          <Text className="text-primary">{copy.common.closeButton}</Text>
-        </Button>
+        {editing ? (
+          // Words are kept as they are typed, so Done only leaves the text box.
+          <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.done" />
+        ) : (
+          <Button variant="ghost" size="sm" className="-ml-4" onPress={() => router.back()} accessibilityHint={pendingCopy.write.savedOnPhone}>
+            <Text className="text-primary">{copy.common.closeButton}</Text>
+          </Button>
+        )}
         {spoken && (
           <Button variant="ghost" size="sm" className="-mr-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
             {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
@@ -459,7 +508,11 @@ export default function Review() {
             </Text>
           </Pressable>
           <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">{r.title}</Text>
-          {!typed && phase === 'ready' && <Text className="text-base text-muted-foreground">{r.trustLine}</Text>}
+          {!typed && phase === 'ready' && (
+            <Text variant="subhead" tone="default" testID="review.trustLine">
+              {r.trustLine}
+            </Text>
+          )}
         </View>
 
         {isSample && (
@@ -472,14 +525,14 @@ export default function Review() {
         {firstNote && phase === 'ready' && (
           <Animated.View entering={motion.enter()} layout={LinearTransition.springify().damping(30)}>
             {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
-            <View className="gap-1 rounded-2xl bg-secondary py-3 pl-4 pr-2">
+            <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
               <View className="flex-row items-center justify-between gap-2">
-                <Text className="flex-1 text-base font-semibold text-foreground">{r.firstNote.title}</Text>
-                <Button variant="ghost" size="sm" onPress={dismissFirstNote}>
+                <Text variant="headline" className="flex-1">{r.firstNote.title}</Text>
+                <Button variant="ghost" size="sm" onPress={dismissFirstNote} testID="review.firstNote.dismiss">
                   <Text className="text-primary">{r.firstNote.dismissButton}</Text>
                 </Button>
               </View>
-              <Text className="pr-2 text-sm leading-5 text-foreground">{r.firstNote.body}</Text>
+              <Text variant="subhead" className="pr-2">{r.firstNote.body}</Text>
             </View>
           </Animated.View>
         )}
@@ -488,8 +541,11 @@ export default function Review() {
           <WordsStatus
             job={job}
             download={download}
+            language={language}
             languageName={languageNames[language]}
             onRetry={tryAgain}
+            onRecordAgain={recordAgain}
+            onGetReady={() => void requestSpeechFor(language)}
             onType={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}
           />
         )}
@@ -520,23 +576,27 @@ export default function Review() {
             <Animated.View layout={LinearTransition.springify().damping(30)}>
               <Card className="gap-4 rounded-3xl border-0 bg-card p-5">
                 {editing ? (
-                  <TextInput
-                    className="min-h-40 font-serif text-xl leading-8 text-foreground"
-                    value={finalText}
-                    onChangeText={setUserText}
-                    multiline
-                    autoFocus
-                    textAlignVertical="top"
-                    accessibilityLabel={pendingCopy.write.label}
-                  />
-                ) : showOriginal ? (
-                  <View className="gap-2">
-                    <Text variant="caption" caps tone="muted" style={{ letterSpacing: 1 }}>
-                      {r.originalLabel}
-                    </Text>
-                    <Text className="font-serif text-xl leading-8 text-foreground" selectable>
-                      {raw}
-                    </Text>
+                  // The letter face inside the design system's focus ring (2 pt, offset 2, radius sm), never a bare TextInput (D-086 5.4).
+                  <View
+                    style={{
+                      borderRadius: tokens.radius.sm,
+                      borderWidth: tokens.focusRing.width,
+                      borderColor: fieldFocused ? c.focus : 'transparent',
+                      padding: tokens.focusRing.offset,
+                    }}>
+                    <TextField
+                      variant="letter"
+                      label={pendingCopy.write.label}
+                      labelHidden
+                      value={finalText}
+                      onChangeText={setUserText}
+                      onFocus={() => setFieldFocused(true)}
+                      onBlur={() => setFieldFocused(false)}
+                      multiline
+                      autoFocus
+                      inputClassName="min-h-40"
+                      testID="review.editField"
+                    />
                   </View>
                 ) : userText !== null ? (
                   <Text className="font-serif text-xl leading-8 text-foreground" selectable>
@@ -545,6 +605,7 @@ export default function Review() {
                 ) : (
                   <Transcript
                     segments={segs}
+                    edits={view === 'fixes' ? applied : undefined}
                     openEdit={openEdit}
                     restoredIndex={wash ? marker : null}
                     onPressEdit={(i) => {
@@ -555,20 +616,27 @@ export default function Review() {
                   />
                 )}
 
-                {openE && !showOriginal && userText === null && (
-                  <Animated.View entering={FadeIn.delay(80).duration(160)} className="gap-2 rounded-2xl bg-muted p-4">
-                    <Text className="text-sm font-semibold text-foreground">{labelOf(openE).label}</Text>
-                    <Text className="text-base leading-6 text-foreground">{labelOf(openE).explain}</Text>
-                    <Text className="text-sm text-muted-foreground">{r.originalLabel}</Text>
-                    <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
-                    {openE.replacement.trim() !== '' && (
+                {openE && view === 'fixes' && userText === null && (
+                  <Animated.View entering={FadeIn.delay(80).duration(160)} className="gap-2 rounded-2xl bg-muted p-4" testID="review.card">
+                    <Text variant="labelSmall">{labelOf(openE).label}</Text>
+                    <Text variant="subhead">{labelOf(openE).explain}</Text>
+                    {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
+                    {openE.original.trim() !== '' && (
                       <>
-                        <Text className="text-sm text-muted-foreground">{r.tidiedLabel}</Text>
-                        <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
+                        <Text variant="footnote">{r.cardYouSaid}</Text>
+                        <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
                       </>
                     )}
+                    {openE.replacement.trim() !== '' ? (
+                      <>
+                        <Text variant="footnote">{r.cardNowReads}</Text>
+                        <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
+                      </>
+                    ) : (
+                      <Text variant="footnote">{r.cardTakenOut}</Text>
+                    )}
                     <View className="flex-row gap-3">
-                      <Button size="sm" onPress={() => putBack(openEdit!)}>
+                      <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.card.putBack">
                         <Text>{r.undoEditButton}</Text>
                       </Button>
                       <Button size="sm" variant="ghost" onPress={() => setOpenEdit(null)}>
@@ -593,82 +661,44 @@ export default function Review() {
             </Animated.View>
 
             {!typed && userText === null && !editing && (
-              <View className="gap-1">
-                <Text className="text-base text-muted-foreground">
-                  {applied.length === 0 ? r.noChanges : plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))}
+              <View className="gap-3">
+                {/* One control, both the view and the choice for this letter. Reversible until save. */}
+                {showViewControl(proposed) && <ViewControl view={view} onChange={chooseView} />}
+                <Text variant="subhead" testID="review.count" accessibilityLiveRegion="polite">
+                  {countText}
                 </Text>
-                {/* Every edit as a row: the VoiceOver path to the underlines (COMPONENTS 2.19). */}
-                {!showOriginal &&
-                  applied.map((e, i) => (
-                    <Pressable
-                      key={`${e.start}-${e.type}`}
-                      onPress={() => {
-                        haptic('tap');
-                        setOpenEdit(openEdit === i ? null : i);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityHint={pendingCopy.review.editA11yHint}
-                      className="min-h-11 flex-row items-center gap-2">
-                      <Text className="text-sm font-medium text-foreground">{labelOf(e).label}</Text>
-                      <Text className="flex-1 text-sm text-muted-foreground" numberOfLines={1}>
-                        "{e.original.trim()}"
-                      </Text>
-                    </Pressable>
-                  ))}
-                <View className="flex-row flex-wrap gap-x-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="px-0"
-                    onPress={() => {
-                      if (!showOriginal) track('review_action', { action: 'show_exactly_said' });
-                      setShowOriginal((v) => !v);
-                    }}>
-                    <Text className="text-primary">{showOriginal ? r.showTidiedButton : r.showOriginalLink}</Text>
-                  </Button>
-                  {applied.length > 0 && (
-                    <Button variant="ghost" size="sm" className="px-0" onPress={wordForWord}>
-                      <Text className="text-primary">{r.undoAllButton}</Text>
-                    </Button>
-                  )}
-                </View>
+                {/* Every fix as a row: the VoiceOver path to the marks (COMPONENTS 2.19). */}
+                {view === 'fixes' && applied.length > 0 && (
+                  <View>
+                    {applied.map((e, i) => (
+                      <FixRow
+                        key={`${e.start}-${e.type}`}
+                        label={labelOf(e).label}
+                        shows={rowShows(e)}
+                        open={openEdit === i}
+                        onPress={() => {
+                          haptic('tap');
+                          setOpenEdit(openEdit === i ? null : i);
+                        }}
+                      />
+                    ))}
+                  </View>
+                )}
               </View>
             )}
 
-            {!isSample && (
+            {!isSample && !editing && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="self-start px-0"
+                testID="review.edit"
                 onPress={() => {
-                  if (!editing) track('review_action', { action: 'edit_text' });
-                  setEditing((v) => !v);
+                  track('review_action', { action: 'edit_text' });
+                  setEditing(true);
                 }}>
-                <Text className="text-primary">{editing ? copy.common.doneButton : pendingCopy.review.editTextButton}</Text>
+                <Text className="text-primary">{pendingCopy.review.editTextButton}</Text>
               </Button>
-            )}
-
-            {!typed && (
-              <View className="gap-3">
-                <Text className="text-lg text-foreground">{r.voiceCheck.question}</Text>
-                <View className="flex-row gap-3">
-                  {([true, false] as const).map((v) => (
-                    <Button
-                      key={String(v)}
-                      variant={soundsLikeMe === v ? 'default' : 'outline'}
-                      className="flex-1"
-                      accessibilityState={{ selected: soundsLikeMe === v }}
-                      onPress={() => {
-                        haptic('tap');
-                        setSoundsLikeMe(v);
-                      }}>
-                      <Text>{v ? r.voiceCheck.yesButton : r.voiceCheck.noButton}</Text>
-                    </Button>
-                  ))}
-                </View>
-                {soundsLikeMe === false && <Text className="text-base text-muted-foreground">{r.voiceCheck.noFollowUp}</Text>}
-                {soundsLikeMe === true && <Text className="text-base text-muted-foreground">{r.voiceCheck.thanks}</Text>}
-              </View>
             )}
 
             <Text className="text-sm text-muted-foreground">{r.destination.privateHelp}</Text>
@@ -679,10 +709,11 @@ export default function Review() {
       {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll. */}
       {phase === 'ready' && !isSample && (
         <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing} accessibilityHint={r.destination.title}>
+          <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing} accessibilityHint={r.destination.title} testID="review.save.book">
             <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
           </Button>
-          <Button variant="secondary" onPress={() => save(false)} disabled={!finalText.trim() || editing}>
+          {/* Keep private is the quieter choice: still a full 44 pt target. */}
+          <Button variant="quiet" size="sm" onPress={() => save(false)} disabled={!finalText.trim() || editing} testID="review.save.private">
             <Text>{r.destination.privateButton}</Text>
           </Button>
         </View>
@@ -690,7 +721,7 @@ export default function Review() {
       {/* No words to save yet (language still downloading, nobody spoke, a failure) or only sample words: keep the recording itself. */}
       {spoken && (phase === 'waiting' || (phase === 'ready' && isSample) || (phase === 'transcribing' && canKeepVoice)) && (
         <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp}>
+          <Button size="lg" onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp} testID="review.keepVoice">
             <Text>{packWait ? wordsCopy.pack.keepButton : pendingCopy.review.voiceOnlyButton}</Text>
           </Button>
         </View>
@@ -707,22 +738,96 @@ export default function Review() {
   );
 }
 
+/**
+ * "With small fixes | Exactly as said" (COMPONENTS 2.19, D-086 5.4). Full width under the card, 44 pt tall, pill
+ * shaped. Selected: accentSoft fill, accent edge (stroke.selected) and a check, so it never relies on colour alone.
+ */
+function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: ReviewView) => void }) {
+  const { c } = useTheme();
+  const r = copy.review;
+  const options: { value: ReviewView; label: string }[] = [
+    { value: 'fixes', label: r.view.fixes },
+    { value: 'exact', label: r.view.exact },
+  ];
+  return (
+    <View className="flex-row gap-2" accessibilityRole="radiogroup" accessibilityLabel={r.view.a11y} testID="review.view">
+      {options.map((o) => {
+        const selected = view === o.value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected, checked: selected }}
+            accessibilityLabel={o.label}
+            testID={`review.view.${o.value}`}
+            className="min-h-11 flex-1 flex-row items-center justify-center gap-1.5 px-3 py-2"
+            style={{
+              borderRadius: tokens.radius.pill,
+              backgroundColor: selected ? c.accentSoft : 'transparent',
+              borderWidth: selected ? tokens.stroke.selected : tokens.stroke.control,
+              borderColor: selected ? c.accent : c.controlBorder,
+            }}>
+            {selected && <CheckIcon size={16} color={c.accent} weight="bold" />}
+            <Text variant="labelSmall" numberOfLines={2} style={{ textAlign: 'center' }}>
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. */
+function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnType<typeof rowShows>; open: boolean; onPress: () => void }) {
+  const { c } = useTheme();
+  const detail =
+    shows.kind === 'change' ? fill(copy.review.rowChange, { a: shows.from, b: shows.to }) : shows.kind === 'mark' ? '' : shows.text;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={detail ? `${label}, ${detail}` : label}
+      accessibilityHint={pendingCopy.review.editA11yHint}
+      accessibilityState={{ expanded: open }}
+      testID="review.fixRow"
+      className="min-h-12 flex-row items-center gap-3 py-1">
+      <Text variant="labelSmall">{label}</Text>
+      <Text
+        variant="footnote"
+        className="flex-1"
+        numberOfLines={1}
+        style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
+        {detail}
+      </Text>
+      <CaretRightIcon size={16} color={c.textMuted} weight="bold" />
+    </Pressable>
+  );
+}
+
 /** Calm, honest status while words are on their way (no spinner, real numbers only). */
 function WordsStatus({
   job,
   download,
+  language,
   languageName,
   onRetry,
+  onRecordAgain,
+  onGetReady,
   onType,
 }: {
   job: Job | null;
   download: { progress: number | null; hold: 'waiting_for_wifi' | 'no_space' | 'offline' | null };
+  language: SpeechLanguage;
   languageName: string;
   onRetry: () => void;
+  onRecordAgain: () => void;
+  onGetReady: () => void;
   onType: () => void;
 }) {
   const typeButton = (
-    <Button variant="secondary" onPress={onType}>
+    <Button variant="secondary" onPress={onType} testID="review.type">
       <Text>{copy.errors.micDenied.typeButton}</Text>
     </Button>
   );
@@ -733,8 +838,9 @@ function WordsStatus({
         <Text role="heading" className="text-lg font-semibold text-foreground">{copy.errors.transcriptionFailed.title}</Text>
         <Text className="text-base leading-6 text-foreground">{copy.errors.transcriptionFailed.body}</Text>
         <View className="flex-row flex-wrap gap-3">
+          {/* One primary action, then the way out: try again, or type it. */}
           {job.failure !== 'file_missing' && job.failure !== 'unsupported' && (
-            <Button variant="secondary" onPress={onRetry}>
+            <Button onPress={onRetry} testID="review.retry">
               <Text>{copy.errors.transcriptionFailed.button}</Text>
             </Button>
           )}
@@ -749,7 +855,15 @@ function WordsStatus({
       <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
         <Text role="heading" className="text-lg font-semibold text-foreground">{wordsCopy.noSpeech.title}</Text>
         <Text className="text-base leading-6 text-foreground">{wordsCopy.noSpeech.body}</Text>
-        <View className="flex-row flex-wrap gap-3">{typeButton}</View>
+        <View className="flex-row flex-wrap gap-3">
+          <Button onPress={onRetry} testID="review.retry">
+            <Text>{wordsCopy.noSpeech.tryAgainButton}</Text>
+          </Button>
+          <Button variant="secondary" onPress={onRecordAgain} testID="review.recordAgain">
+            <Text>{wordsCopy.noSpeech.recordAgainButton}</Text>
+          </Button>
+          {typeButton}
+        </View>
       </Card>
     );
   }
@@ -770,10 +884,17 @@ function WordsStatus({
           {fill(wordsCopy.pack.title, { name: languageName })}
         </Text>
         <Text className="text-base leading-6 text-foreground">{fill(wordsCopy.pack.body, { name: languageName })}</Text>
-        {line && <Text className="text-sm text-muted-foreground">{line}</Text>}
+        {line && <Text variant="footnote">{line}</Text>}
+        {p === null && <Text variant="footnote">{fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })}</Text>}
         {p !== null && download.hold === null && <ProgressLine value={p} />}
         <View className="flex-row flex-wrap gap-3">
-          <Button variant="secondary" onPress={onType}>
+          {/* Not started yet (or waiting on Wi-Fi or space): one way to start it now. */}
+          {p === null && (
+            <Button onPress={onGetReady} testID="review.getReady">
+              <Text>{wordsCopy.waiting.readyButton}</Text>
+            </Button>
+          )}
+          <Button variant="secondary" onPress={onType} testID="review.type">
             <Text>{wordsCopy.pack.typeButton}</Text>
           </Button>
         </View>

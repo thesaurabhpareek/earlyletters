@@ -17,5 +17,11 @@ export function useWordsJob(id: string | null | undefined): Job | null {
 
 export function useSpeechDownload(language: SpeechLanguage | null): { progress: number | null; hold: ReturnType<typeof speechDownloadHold> } {
   useWordsTick();
-  return language ? { progress: speechDownloadProgress(language), hold: speechDownloadHold(language) } : { progress: null, hold: null };
+  if (!language) return { progress: null, hold: null };
+  try {
+    return { progress: speechDownloadProgress(language), hold: speechDownloadHold(language) };
+  } catch {
+    // Where speech files cannot be read at all (the web design preview), there is nothing to show; never a crash.
+    return { progress: null, hold: null };
+  }
 }

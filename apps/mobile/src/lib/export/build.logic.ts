@@ -18,6 +18,7 @@ import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
 import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
 import { copy } from '../copy';
+import { provenanceKey } from '../provenance';
 import { dayDate, letterDateline } from '../dates';
 import type { Child, Entry } from '../store';
 import { exportCopy } from './copy';
@@ -147,12 +148,9 @@ const signsAsOf = (e: Entry, child: Child) => e.authorSignsAs ?? child.signsAs;
 const spoken = (e: Entry) => e.captureMode !== 'typed';
 const waiting = (e: Entry) => e.transcriptStatus === 'waiting';
 
-/** Matches components/book/chapters.ts provenanceOf (not importable here: it uses the app alias). */
+/** The one rule for what a letter's words may be called (lib/provenance.ts, D-086). */
 function provenance(e: Entry): string {
-  const p = copy.book.provenance;
-  if (e.captureMode === 'typed') return p.typed;
-  if (e.editLevel === 'verbatim' || e.machineEdits.length === 0 || e.finalText === e.rawTranscript) return p.spokenExact;
-  return p.spokenTidied;
+  return copy.book.provenance[provenanceKey(e)];
 }
 
 /** Month of age (0 = the first weeks), or null before birth or with no birthday ("Before You"). */

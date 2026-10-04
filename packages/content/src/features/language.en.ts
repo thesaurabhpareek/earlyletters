@@ -43,7 +43,7 @@ export const languageCopy = {
     retry: 'Did not finish. Tap to try again.',
     downloadNow: 'Download now on mobile data',
   },
-  // D-074: "small fixes", never tidying.
+  // D-074: what the machine changes is a "small fix".
   safeModeNote: 'Until it arrives, letters in {name} keep your words exactly as heard, with only punctuation fixed.',
 
   picker: {
