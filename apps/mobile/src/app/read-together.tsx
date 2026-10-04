@@ -31,6 +31,7 @@ import { canStartReadTogether, freeReadTogetherSessions, readTogetherGate, readT
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
+import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 
 
 export default function ReadTogether() {
@@ -76,6 +77,9 @@ export default function ReadTogether() {
     },
     [], // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  // Letters are playing or being read aloud: keep the screen on while the reading pages are showing.
+  useKeepAwakeWhile(allowed && !!child && letters.length > 0, KEEP_AWAKE_TAGS.readTogether);
 
   const close = () => router.back();
 
