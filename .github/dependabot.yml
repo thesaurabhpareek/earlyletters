@@ -1,0 +1,49 @@
+# Dependency update PRs (CI-05). They target develop, like every other change.
+# Updates under .github/** need the approve-migration label (fence.yml).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # Expo SDK packages move together; a partial bump breaks the native build.
+      expo:
+        patterns: ['expo', 'expo-*', '@expo/*']
+      react-native:
+        patterns: ['react-native', 'react-native-*', '@react-native/*', '@react-native-community/*']
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # Expo pins React Native and React to the SDK; move them with an Expo upgrade only.
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-native
+        update-types: [version-update:semver-major, version-update:semver-minor]
+
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Los_Angeles
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']

@@ -4,16 +4,68 @@ CI, review rules and branch protection for `thesaurabhpareek/earlyletters`.
 
 | File | What it does |
 |---|---|
-| `workflows/ci.yml` | On every pull request and every push to `develop` and `main`: install (cached by `package-lock.json`), then in parallel: content rules plus `npm test`, `npm run test:db`, and typecheck for every workspace (`apps/mobile` with `npx tsc --noEmit`). A `required` job sums them up. Every job has a timeout; the longest path is 9 minutes. |
-| `workflows/migration-guard.yml` | Fails a change that edits, renames or deletes a migration listed in `migrations-applied.txt`, removes a line from that list, or adds a migration that sorts before the newest applied one. |
+| `workflows/ci.yml` | On every pull request and every push to `develop` and `main`: install (cached by `package-lock.json`), then in parallel: `npm test` (content rules included), `npm run test:db`, typecheck for every workspace (`apps/mobile` with `npx tsc --noEmit`), lint (skipped with a notice until a root `lint` script exists), `expo config --type public` for `apps/mobile`, and the tests for the scripts in this folder. A `required` job sums them up. Every job has a timeout; the longest path is 9 minutes. |
+| `workflows/migration-guard.yml` | Fails a change that edits, renames or deletes a migration listed in `migrations-applied.txt`, removes a line from that list, or adds a migration that sorts before the newest applied one. Runs the guard and reads its exception list from a trusted ref, never from the pull request (see below). |
+| `workflows/security.yml` | gitleaks over the full history (config `gitleaks.toml`), and `npm audit --omit=dev --audit-level=high` through `scripts/audit-gate.mjs` with the dated ignore list `audit-ignore.json`. Also weekly on Mondays. Not part of `required`. |
+| `workflows/fence.yml` | The agent fence (D-041): fails a pull request that touches `supabase/**`, `.github/**` or auth code unless it has the `approve-migration` label. Path rules in `scripts/fence-paths.mjs`, read from the base commit; fails closed on API errors. Advisory until branch protection makes `fence` and `applied migrations unchanged` required checks: a failing check does not block a merge until then (see below). |
+| `dependabot.yml` | Weekly update pull requests into `develop`: npm (Expo and React Native packages grouped) and GitHub Actions (SHA pins). |
 | `migrations-applied.txt` | The migrations applied to the live database. Add a line in the same PR that records applying one (see `supabase/APPLY.md`). |
-| `scripts/migration-guard.mjs` | The guard itself. Run it locally with `node .github/scripts/migration-guard.mjs origin/develop`. |
+| `migration-exceptions.txt` | Reviewed exceptions to the applied-migration rule, one `file@blob-sha` per line. Today: only `20261001000000_scribe_hardening.sql`, reconciled with what was applied in commit 3730551. |
+| `scripts/migration-guard.mjs` | The guard itself. Run it locally with `node .github/scripts/migration-guard.mjs origin/develop`. Tests: `node --test .github/scripts/migration-guard.test.mjs`. |
+| `scripts/audit-gate.mjs` | Applies the ignore list to `npm audit --json`, and fails closed when the audit did not produce a real report. Locally: `npm audit --omit=dev --json \| node .github/scripts/audit-gate.mjs`. Tests: `node --test .github/scripts/audit-gate.test.mjs`. |
+| `scripts/fence-paths.mjs` | Decides which changed paths the fence treats as fenced. Locally: `git diff --name-only origin/develop \| node .github/scripts/fence-paths.mjs`. Tests: `node --test .github/scripts/fence-paths.test.mjs`. |
 | `actions/setup` | Node 22 plus the cached `node_modules`, or `npm ci` on a cache miss. |
 | `CODEOWNERS` | Review routing. One placeholder owner today; comments name the reviewer each area needs later. |
 | `pull_request_template.md` | The checklist from `CLAUDE.md`. |
 
+Every third-party action is pinned to a full commit SHA with the tag in a comment (`actions/checkout` v7.0.1, `actions/setup-node` v7.0.0, `actions/cache` v6.1.0, all on the Node 24 runtime). Runners are pinned to `ubuntu-24.04`, so the `ubuntu-latest` move does not change CI without a pull request. Dependabot proposes SHA bumps.
+
 The verifier fuzz test runs with a fixed seed in CI (`SCRIBE_FUZZ_SEED`). To replay a failure, run
 `SCRIBE_FUZZ_SEED=<seed> SCRIBE_FUZZ_RUNS=<n> npm test -w @scribe/core` with the values the failure printed.
+
+## The migration guard: trusted ref and exceptions
+
+A pull request could otherwise weaken its own gate by editing the guard (CI-09). So the workflow:
+
+1. Picks the trusted ref: the pull request base when it has `scripts/migration-guard.mjs`, otherwise `origin/develop`. The only base without the guard today is `main`, for the release pull request from `develop`. If neither has it (only possible before this folder lands), it falls back to the change itself and prints a warning.
+2. Copies the guard out of the trusted ref with `git show` into `$RUNNER_TEMP` and runs that copy. The pull request's copy is never executed.
+3. The guard reads `migration-exceptions.txt` from the same trusted ref, so a pull request cannot add its own exception, and cannot remove one to break the gate for others.
+
+An exception entry is `<file>@<blob sha>`. It allows that one applied file to differ, only while its content is exactly that blob (`git rev-parse <ref>:supabase/migrations/<file>`). Deletes, renames and any later edit still fail. There is no general override. Adding an entry takes its own pull request with a reason in the file and the founder's approve-migration review; it only takes effect once merged into the base.
+
+Note for the release pull request (`develop` into `main`): the base, `main`, predates the guard, so the exception is read from `origin/develop`. Anyone who can push to `develop` can therefore change what the release pull request trusts. Branch protection on `develop` closes that gap.
+
+## The fence and its limitation
+
+`fence.yml` fails when a pull request touches `supabase/**`, `.github/**` or authentication code and has no `approve-migration` label. It runs on `pull_request_target`, so the base branch's copy of the workflow is used, and it never checks out pull request code: it lists the changed files through the API, and fetches the path rules (`scripts/fence-paths.mjs`) from the pull request's base commit through the API, so a pull request cannot loosen the rules that judge it. Until the base has that file (only the pull request that adds it), the workflow uses a built-in fallback pattern and prints a warning.
+
+### Where auth code must live
+
+The fence recognises authentication code by name, not by reading it. It splits every folder name and file stem into words (on camelCase, `-`, `_`, digits and other punctuation, case ignored) and fences the path when an auth word starts at any word, alone or run together with the next words (`Sign`+`In`, `log`+`in`). The auth words are:
+
+`auth` (also `authentication`, `authState`, `authorization`), `reauth`, `oauth`, `session`, `signin`/`sign-in`/`SignIn`, `signup`, `signout`, `login`, `logout`, `passkey`, `token`, `jwt`, `credential`, and `supabase` (the Supabase client carries auth and session config).
+
+Examples that are fenced: `apps/mobile/src/useAuth.ts`, `AppleSignIn.tsx`, `apple-sign-in.ts`, `accessToken.ts`, `refresh-token.ts`, `lib/jwt.ts`, `supabaseClient.ts`, `features/authentication/useLogin.ts`, `authState.ts`, `login.ts`, `packages/api/src/token.ts`, `auth/index.ts`, `services/auth/handler.ts`, `apps/mobile/app/(auth)/welcome.tsx`, and anything under `supabase/` or `.github/`.
+
+Deliberately not fenced: `docs/**` (prose and decision records, no code runs from it), `packages/design-tokens/**` (design tokens, not credentials), and words that start like auth words but are not (`author*`, as in `AuthorBadge.tsx`, and `tokenize*`/`tokenise*`).
+
+The convention: **auth code goes in a folder or file whose name contains one of these words as a word**. An all-lowercase name that buries the word mid-word (`useauth.ts`) or a name with none of them (`useAccount.ts` calling the auth client) is not fenced. Do not do that: rename it or put it under an `auth/` folder. Reviewers should reject auth logic outside a recognised path. To change the rules, edit `scripts/fence-paths.mjs` and its fixtures in `scripts/fence-paths.test.mjs` in the same pull request; the change takes effect once merged into the base.
+
+### The fence fails closed
+
+The fence step runs under `bash` with `pipefail`. It fails, rather than passing, when it cannot list the pull request's files, when the number of files listed differs from the pull request's `changed_files` (the API stops at 3000 files), or when fetching the rules from the base commit fails for any reason other than a 404. Only a 404 (a base that predates `scripts/fence-paths.mjs`) uses the built-in fallback pattern, which fences a superset of the rules. `scripts/fence-paths.test.mjs` runs the step's exact `run:` block against a stub `gh` to check each of these.
+
+### Advisory until branch protection
+
+The fence, like the migration guard, is advisory until the founder turns on branch protection (CI-01) and makes `fence` and `applied migrations unchanged` required checks. Failing closed (above) only means the check goes red; it does not stop a merge by itself.
+
+What it does not do until then:
+
+- A failing `fence` check does not block a merge. Anyone with write access can still merge, and direct pushes to `develop` or `main` skip pull requests and the fence entirely.
+- Anyone with write access can add the label. The label is a signal of the founder's review, not an access control.
+- The label must exist in the repository first (Issues, Labels, New label: `approve-migration`). It does not exist yet.
+
+To make it a real gate: create the label, add `fence` and `applied migrations unchanged` to the required checks below, and once a second reviewer exists, require code owner review for `/.github/` and `/supabase/`.
 
 ## Branch protection (to apply once the workflows are on GitHub)
 
@@ -25,6 +77,8 @@ Apply to both `main` and `develop`:
 2. Require status checks to pass, and require branches to be up to date before merging. Required checks:
    - `required` (from the CI workflow)
    - `applied migrations unchanged` (from the Migration guard workflow)
+   - `fence` (from the Fence workflow)
+   - Optional: `secrets (full history)` from the Security workflow. Leave `npm audit (production, high)` unrequired, so a newly published advisory does not block unrelated work; review its weekly run instead.
 3. Require conversation resolution before merging.
 4. Require linear history.
 5. Block force pushes and branch deletion.
@@ -38,7 +92,7 @@ gh api -X PUT repos/thesaurabhpareek/earlyletters/branches/BRANCH/protection --i
 {
   "required_status_checks": {
     "strict": true,
-    "checks": [{ "context": "required" }, { "context": "applied migrations unchanged" }]
+    "checks": [{ "context": "required" }, { "context": "applied migrations unchanged" }, { "context": "fence" }]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
@@ -62,3 +116,7 @@ Check it took: `gh api repos/thesaurabhpareek/earlyletters/branches/BRANCH/prote
 - Timings on 3 Oct 2026 (2-core container): `npm test` about 12 s, `npm run test:db` about 41 s, typecheck about 20 s. `npm ci` cold is 1 to 1.5 minutes; with the `node_modules` cache, seconds.
 - If a job nears its timeout, split it rather than raising the timeout. The `db` job can shard by file (`npm run test:db -- perf` alone).
 - Nightly and release workflows (Maestro, random-seed fuzz, integration stack) are separate and not required for merging (TDD 07 section 10).
+
+## The audit ignore list
+
+`audit-ignore.json` lists the four advisories reported on 3 Oct 2026, all in Expo build tooling: braces `GHSA-vfj7-8cjw-p6xm`, node-forge `GHSA-86w9-cpqp-85rv`, decode-uri-component `GHSA-vcc3-ghjq-m6fr` and uuid `GHSA-w5hq-g745-h8pq`. Each has a reason, the date added and an expiry (3 Jan 2027). An expired entry fails the gate, and an entry no longer reported is printed so it can be removed. Never run `npm audit fix --force`.
