@@ -1,0 +1,43 @@
+{
+  "id": "J17-01",
+  "journey": "family-coming-soon",
+  "kind": "happy",
+  "title": "Family tab: coming soon",
+  "note": "The tab keeps its place and describes what is coming (one book, two voices; each from their own phone; private to the family) with a promise that every letter stays on this phone until then. There is no invite flow in v1.0.",
+  "from": "J16-01",
+  "shot": "screens/J17-01.png",
+  "full": "screens/J17-01-full.png",
+  "route": "/family",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Family Coming soon Write to Asha, together Soon Asha's other parent can write in this same book, from their own phone. One book, two voices Your letters and theirs sit side by side, each signed with the name Asha calls you. Each from your own phone Write whenever it suits you, and read every shared letter wherever you are. Private to your family Only the people you invite can read Asha's book. A letter you keep private stays yours. We're building it now. Until then, every letter you write stays on this phone. Tonight Book Family",
+  "lines": [
+    "Family",
+    "Coming soon",
+    "Write to Asha, together",
+    "Soon Asha's other parent can write in this same book, from their own phone.",
+    "One book, two voices",
+    "Your letters and theirs sit side by side, each signed with the name Asha calls you.",
+    "Each from your own phone",
+    "Write whenever it suits you, and read every shared letter wherever you are.",
+    "Private to your family",
+    "Only the people you invite can read Asha's book. A letter you keep private stays yours.",
+    "We're building it now. Until then, every letter you write stays on this phone.",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

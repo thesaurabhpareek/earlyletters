@@ -44,18 +44,7 @@ export function classify(text: string): SafetyTier {
   return 0;
 }
 
-export interface CrisisResource {
-  name: string;
-  contact: string;
-  note: string;
-}
-
-/** US resources. Verified 2026-09-30 against mmhla.org/help. Re-verify before each release. */
-export const US_RESOURCES: CrisisResource[] = [
-  { name: '988 Suicide & Crisis Lifeline', contact: 'Call or text 988', note: '24/7' },
-  { name: 'National Maternal Mental Health Hotline', contact: '1-833-TLC-MAMA (1-833-852-6262)', note: 'Call or text, 24/7, English and Spanish' },
-  { name: 'Postpartum Support International HelpLine', contact: 'Call 1-800-944-4773 or text 503-894-9453', note: 'Peer support, not a crisis line' },
-];
+/** The helpline list lives in one place only: packages/content `copy.struggling` (D-087). */
 
 /** Fixed copy. Never generated. PENDING CLINICIAN REVIEW. */
 export const SAFETY_COPY = {

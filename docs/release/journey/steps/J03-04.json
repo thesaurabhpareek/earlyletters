@@ -1,0 +1,37 @@
+{
+  "id": "J03-04",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "The Book tab, empty, with a child switcher",
+  "note": "The first book is open. A small switcher at the top left lets the person move between the two books.",
+  "from": "J03-03",
+  "shot": "screens/J03-04.png",
+  "full": "screens/J03-04-full.png",
+  "route": "/book",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "For Asha Asha's book The first page is waiting. Say one true thing about Asha today. That is how every book begins. Write a letter Tonight Book Family",
+  "lines": [
+    "For Asha",
+    "Asha's book",
+    "The first page is waiting.",
+    "Say one true thing about Asha today. That is how every book begins.",
+    "Write a letter",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

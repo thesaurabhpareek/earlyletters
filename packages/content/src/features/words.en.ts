@@ -19,6 +19,14 @@ export const wordsCopy = {
     keepButton: 'Keep my voice',
     typeButton: 'Type it instead',
     keptToast: 'Your voice is kept. The words will follow.',
+    // Shown when the person has not yet said yes to the one-time download (D-087). {size} is this phone's plan.
+    askTitle: 'Get your {name} words ready',
+    askBody: 'Your voice is kept. To write down the words, this phone needs a one-time download of {size}.',
+    askButton: 'Download on Wi-Fi',
+    // The Wi-Fi wait card: one time, this download only.
+    mobileDataButton: 'Use mobile data {size}',
+    // Review, after leaving the app ended the take.
+    stoppedInBackground: 'The recording stopped when you left the app. Everything up to then is kept.',
   },
   noSpeech: {
     title: 'No talking in this one',

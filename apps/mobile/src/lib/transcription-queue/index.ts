@@ -39,6 +39,7 @@ import {
   setWordsForWaitingEntry,
   subscribe as subscribeStore,
 } from '../store';
+import { migrateSpeechConsent, setSpeechDownloadChoice, speechAutoStartAllowed } from '../models/speech-consent';
 import { forgetLetterLanguage, letterLanguage, onAuthorSpeechLanguage, rememberLetterLanguage } from '../models/author-language';
 import { SPEECH_LANGUAGES, SPEECH_MODELS, type SpeechLanguage, type SpeechModelId } from '../models/catalog';
 import {
@@ -133,6 +134,7 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   if (deps.packs) bindSpeechPacks(deps.packs);
   if (started) return stopTranscriptionQueue;
   started = true;
+  migrateSpeechConsent(); // once per phone: an existing choice or model counts as a yes (models/speech-consent.logic.ts)
 
   const onApp = (s: AppStateStatus) => {
     if (s === 'active') {
@@ -150,7 +152,8 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   stopFns.push(() => app.remove());
   stopFns.push(subscribeStore(() => queueMicrotask(syncLetters)));
   stopFns.push(onSpeechPacksBound(() => watchPacks()));
-  stopFns.push(onAuthorSpeechLanguage((lang) => void requestSpeechFor(lang)));
+  // A language picked after a yes downloads at once; before a yes, picking only stores it (D-087).
+  stopFns.push(onAuthorSpeechLanguage((lang) => { if (speechAutoStartAllowed()) void requestSpeechFor(lang); }));
   const unresolve = speechPackHost().addLanguageResolver?.(speechPacksForLanguage);
   if (unresolve) stopFns.push(unresolve);
   watchPacks();
@@ -194,7 +197,7 @@ export function requestWords(draftId: string): void {
   if (!d?.audioUri || d.rawTranscript != null) return;
   const language = rememberLetterLanguage(draftId);
   dispatch({ type: 'enqueue', id: draftId, kind: 'draft', language, capturedAt: d.createdAt });
-  void requestSpeechFor(language);
+  if (speechAutoStartAllowed()) void requestSpeechFor(language); // otherwise Review shows the ask
 }
 
 /** "Try again" after a failure. */
@@ -202,7 +205,16 @@ export function retryWords(id: string): void {
   dispatch({ type: 'retry', id });
 }
 
-/** Starts the downloads a language needs (Settings "Download", a language just chosen). */
+/**
+ * A person's own tap asks for the download (Download on Wi-Fi, Settings, Use mobile data): that is consent,
+ * so it also records a yes. Nothing else may call this on its own.
+ */
+export async function startSpeechDownload(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
+  setSpeechDownloadChoice('yes');
+  await requestSpeechFor(language, opts);
+}
+
+/** Starts the downloads a language needs. Internal: callers outside this file use startSpeechDownload (a tap) or wait for a yes. */
 export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
   askedDownload.add(language);
   await ensureSpeechFor(language, opts).catch(() => null);
@@ -289,7 +301,7 @@ function refreshReady(): void {
   else if (devShortcutsAllowed) ready = [...SPEECH_LANGUAGES]; // Expo Go: the sample transcriber stands in
   dispatch({ type: 'packs', ready });
   for (const lang of languagesWaiting(state)) {
-    if (!askedDownload.has(lang)) void requestSpeechFor(lang);
+    if (speechAutoStartAllowed() && !askedDownload.has(lang)) void requestSpeechFor(lang);
   }
   emit();
 }

@@ -21,3 +21,20 @@ export const speechSettingsCopy = {
   confirmButton: 'Remove',
   cancelButton: 'Keep it',
 };
+
+/**
+ * The ask for the one-time speech download (D-087, Q-015 3.3). Shown at the end of first run and, if the
+ * person said "Not now", in Review when words are waiting. Placeholder: {size} comes from this phone's
+ * model plan (never a typed number). Nothing downloads until the person taps.
+ */
+export const speechConsentCopy = {
+  title: 'Get your words ready',
+  body: 'Your words are written down on this phone, so they stay on it. This needs a one-time download of {size}.',
+  note: 'It waits for Wi-Fi, and carries on where it left off if it is interrupted.',
+  downloadButton: 'Download on Wi-Fi',
+  laterButton: 'Not now',
+  footnote: 'You can do this later in Settings, Recordings. Your voice is always kept.',
+  lowSpace: 'This phone needs {size} of free space first.',
+  chosenYes: 'Getting ready. It waits for Wi-Fi.',
+  chosenLater: 'Not now. Your voice is kept either way.',
+};

@@ -72,7 +72,12 @@ import {
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, type Job } from '@/lib/transcription-queue';
+import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload, type Job } from '@/lib/transcription-queue';
+import { speechConsentCopy } from '@scribe/content';
+import type { SpeechLanguage } from '@/lib/models/catalog';
+import { showReviewAsk } from '@/lib/models/speech-consent.logic';
+import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent';
+import { formatBytes } from '@/lib/packs/copy';
 import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
 import { languageNames, wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
@@ -104,7 +109,7 @@ export default function Review() {
   const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const r = copy.review;
   const motion = useMotion();
-  const { draftId } = useLocalSearchParams<{ draftId: string }>();
+  const { draftId, stopped } = useLocalSearchParams<{ draftId: string; stopped?: string }>();
   const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : null));
   const [childId, setChildId] = useState(draft?.childId ?? '');
   const child = childId ? getChild(childId) : null;
@@ -484,10 +489,18 @@ export default function Review() {
           </Animated.View>
         )}
 
+        {/* Leaving the app ended the take (it never records in the background). One honest line, nothing alarming. */}
+        {stopped === 'background' && spoken && (
+          <Text className="text-sm leading-5 text-muted-foreground" accessibilityLiveRegion="polite">
+            {wordsCopy.pack.stoppedInBackground}
+          </Text>
+        )}
+
         {phase === 'transcribing' && (
           <WordsStatus
             job={job}
             download={download}
+            language={language}
             languageName={languageNames[language]}
             onRetry={tryAgain}
             onType={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}
@@ -711,12 +724,14 @@ export default function Review() {
 function WordsStatus({
   job,
   download,
+  language,
   languageName,
   onRetry,
   onType,
 }: {
   job: Job | null;
   download: { progress: number | null; hold: 'waiting_for_wifi' | 'no_space' | 'offline' | null };
+  language: SpeechLanguage;
   languageName: string;
   onRetry: () => void;
   onType: () => void;
@@ -756,6 +771,32 @@ function WordsStatus({
 
   if (job?.phase === 'waiting_for_pack') {
     const p = download.progress;
+    const ask = speechAskFor(language);
+    // The person has not yet said yes to the one-time download: ask, with the size (D-087). Nothing started on its own.
+    if (showReviewAsk({ choice: speechDownloadChoice(), progress: p, hold: download.hold })) {
+      return (
+        <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
+          <Text role="heading" className="text-lg font-semibold text-foreground">
+            {fill(wordsCopy.pack.askTitle, { name: languageName })}
+          </Text>
+          <Text className="text-base leading-6 text-foreground">{fill(wordsCopy.pack.askBody, { size: formatBytes(ask.bytes) })}</Text>
+          {ask.kind === 'low_space' && (
+            <Text className="text-sm text-muted-foreground">{fill(speechConsentCopy.lowSpace, { size: formatBytes(ask.neededBytes) })}</Text>
+          )}
+          <View className="flex-row flex-wrap gap-3">
+            {ask.kind === 'ask' && (
+              <Button onPress={() => void startSpeechDownload(language)}>
+                <Text>{wordsCopy.pack.askButton}</Text>
+              </Button>
+            )}
+            <Button variant="secondary" onPress={onType}>
+              <Text>{wordsCopy.pack.typeButton}</Text>
+            </Button>
+          </View>
+          <Text className="text-sm text-muted-foreground">{speechConsentCopy.footnote}</Text>
+        </Card>
+      );
+    }
     const line =
       download.hold === 'waiting_for_wifi'
         ? wordsCopy.pack.waitingForWifi
@@ -773,6 +814,12 @@ function WordsStatus({
         {line && <Text className="text-sm text-muted-foreground">{line}</Text>}
         {p !== null && download.hold === null && <ProgressLine value={p} />}
         <View className="flex-row flex-wrap gap-3">
+          {download.hold === 'waiting_for_wifi' && (
+            // One time, this download only. The Wi-Fi-only default stays.
+            <Button onPress={() => void startSpeechDownload(language, { allowCellularOnce: true })}>
+              <Text>{fill(wordsCopy.pack.mobileDataButton, { size: formatBytes(ask.bytes) })}</Text>
+            </Button>
+          )}
           <Button variant="secondary" onPress={onType}>
             <Text>{wordsCopy.pack.typeButton}</Text>
           </Button>

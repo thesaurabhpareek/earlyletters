@@ -1,0 +1,48 @@
+{
+  "id": "J03-22",
+  "journey": "children-and-books",
+  "kind": "unhappy",
+  "title": "A very long name",
+  "note": "The field stops at 60 and says so softly; nothing is cut without a word.",
+  "from": "J03-21",
+  "shot": "screens/J03-22.png",
+  "full": "screens/J03-22-full.png",
+  "route": "/settings/children/:id",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Asha's book Name and birthday Name Asha Birthday October 4, 2026 Sign my letters to Asha as Mama Name A name can have up to 60 characters. Cancel Save Include Asha in my reminders Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha's book Family see the letters you add to Asha's book. This starts once family can join.",
+  "lines": [
+    "Asha's book",
+    "Name and birthday",
+    "Name",
+    "Asha",
+    "Birthday",
+    "October 4, 2026",
+    "Sign my letters to Asha as",
+    "Mama",
+    "Name",
+    "A name can have up to 60 characters.",
+    "Cancel",
+    "Save",
+    "Include Asha in my reminders",
+    "Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch.",
+    "Write this book together",
+    "Coming soon",
+    "Sharing a book with a co-parent is coming in a later update.",
+    "Family can read Asha's book",
+    "Family see the letters you add to Asha's book. This starts once family can join."
+  ]
+}

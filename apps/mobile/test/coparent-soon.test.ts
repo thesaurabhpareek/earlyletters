@@ -11,7 +11,7 @@ import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { classifyIncomingUrl } from '../src/lib/auth/links.logic';
 import { COPARENT_NOTIFY_KEY, coParentNotifyRequestedOn, hasRequestedCoParentNotify, requestCoParentNotify } from '../src/lib/family/coming-soon.logic';
-import { INVITE_ENTRIES, inviteDestination, inviteHref, planIncomingLink } from '../src/lib/family/entry.logic';
+import { allowedLinkRoute, INVITE_ENTRIES, inviteDestination, inviteHref, LINK_ROUTE_ALLOWLIST, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
 
 const APP = join(__dirname, '..');
 const src = (p: string) => readFileSync(join(APP, 'src', p), 'utf8');
@@ -90,9 +90,47 @@ describe('deep links with server features off', () => {
     expect(planIncomingLink(l2, { ...on, path: p2 }).route).toBe('/sign-in/code');
   });
 
-  it('other links are untouched', () => {
-    expect(planIncomingLink({ kind: 'other' }, { ...off, path: '/letter/abc' }).route).toBe('/letter/abc');
+  it('unclassified links are an allowlist: home and the invite landing, everything else goes home (D-087)', () => {
+    expect([...LINK_ROUTE_ALLOWLIST]).toEqual(['/', '/invite']);
+    const other = (path: string) => planIncomingLink({ kind: 'other' }, { ...off, path });
+    expect(other('/').route).toBe('/');
+    expect(other('/invite').route).toBe('/invite');
+    expect(other('scribe://invite').route).toBe('/invite');
+    // Nothing that starts a recording, opens a draft, plays audio, deletes or does not exist.
+    for (const p of [
+      'scribe://listen',
+      '/listen',
+      'https://earlyletters.com/listen',
+      '/review?draftId=x',
+      'scribe://review?draftId=x',
+      '/read-together',
+      '/settings/delete-account',
+      '/letter/abc',
+      '/write',
+      '/book',
+      '/settings',
+      '/not-a-screen',
+      '/_sitemap',
+      'https://earlyletters.com/privacy',
+      '//listen',
+      '/%6Cisten',
+      '',
+    ]) {
+      expect(other(p).route, p).toBe('/');
+    }
+    expect(other('/invite?childId=x').route).toBe('/invite'); // the query is dropped: only the path is allowed
+    expect(allowedLinkRoute('/Invite/')).toBe('/invite');
+    expect(other('/letter/abc').keepInviteToken).toBe(false);
+    expect(other('/letter/abc').keepAuthLink).toBe(false);
+  });
+
+  it('a provider redirect is still left alone', () => {
     expect(planIncomingLink({ kind: 'provider-redirect' }, { ...off, path: 'x' }).route).toBeNull();
+  });
+
+  it('with server features on the allowlist is the same (no screen is added by that switch)', () => {
+    expect(planIncomingLink({ kind: 'other' }, { ...on, path: '/review?draftId=x' }).route).toBe('/');
+    expect(planIncomingLink({ kind: 'other' }, { ...on, path: '/listen' }).route).toBe('/');
   });
 
   it('+native-intent follows the plan', () => {
@@ -126,13 +164,22 @@ describe('"Tell me when it\'s here": a local flag only', () => {
     expect(coParentNotifyRequestedOn(s)).toBeNull();
   });
 
-  it('touches no network, account or analytics (the logic and the component)', () => {
+  it('touches no network or account; counts only two content-free taps (the logic and the component)', () => {
     const logic = src('lib/family/coming-soon.logic.ts');
     expect(logic).not.toMatch(/^import /m);
     const ui = src('components/family/coparent-soon.tsx');
     const imports = ui.split('\n').filter((l) => l.startsWith('import ')).join('\n');
-    expect(imports).not.toMatch(/analytics|supabase|lib\/auth|lib\/sync/);
-    expect(ui).not.toMatch(/fetch\(|track\(|capture\(/);
+    expect(imports).not.toMatch(/supabase|lib\/auth|lib\/sync/);
+    expect(ui).not.toMatch(/fetch\(|capture\(/);
+    const tracked = [...ui.matchAll(/track\('([a-z_]+)'(.*)\)/g)];
+    expect(tracked.map((m) => m[1]).sort()).toEqual(['coparent_soon_notify', 'coparent_soon_opened']);
+    // No child name, book name, text or date in the properties.
+    expect(tracked.map((m) => m[2]).join(' ')).not.toMatch(/child|name|text|date|body/i);
+  });
+
+  it('the notify line says only what is true today', () => {
+    expect(familyCopy.soon.notify.done).toBe('Noted on this phone. When the update arrives, you will see it here.');
+    expect(familyCopy.soon.notify.done).not.toMatch(/let you know|email|notification|we will|we'll/i);
   });
 });
 
@@ -153,5 +200,28 @@ describe('coming-soon copy', () => {
   it('is true about today: letters stay on this phone; three points', () => {
     expect(s.building).toMatch(/stays on this phone/);
     expect(s.points).toHaveLength(3);
+  });
+});
+
+describe('doors that lead nowhere in v1.0 are hidden (D-087)', () => {
+  it('off: no "I was invited" and no disabled "Family can read" switch; on: both come back', () => {
+    expect(visibleCoParentDoors(false)).toEqual({ joinButton: false, familyCanReadSwitch: false });
+    expect(visibleCoParentDoors(true)).toEqual({ joinButton: true, familyCanReadSwitch: true });
+  });
+
+  it('first run and child settings render them only through that rule', () => {
+    const onboarding = src('app/onboarding.tsx');
+    expect(onboarding).toMatch(/visibleCoParentDoors\(capabilities\.coParent\)/);
+    expect(onboarding).toMatch(/doors\.joinButton \?/);
+    const child = src('app/settings/children/[id].tsx');
+    expect(child).toMatch(/doors\.familyCanReadSwitch &&/);
+  });
+
+  it('what stays: the Family tab, the Settings row and the invite landing still lead to coming soon', () => {
+    expect(inviteDestination('family_tab', false)).toBe('coming_soon');
+    expect(inviteDestination('settings_child', false)).toBe('coming_soon');
+    expect(inviteDestination('invite_link', false)).toBe('coming_soon');
+    expect(src('app/settings/children/[id].tsx')).toMatch(/familyCopy\.soon\.settingsRow\b/);
+    expect(src('app/(tabs)/_layout.tsx')).toMatch(/family/);
   });
 });

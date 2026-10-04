@@ -1,0 +1,37 @@
+{
+  "id": "J01-17",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Not now is a calm answer",
+  "note": "The card says it is fine and nothing else changes. The first Review will offer the same button if words are waiting.",
+  "from": "J01-16",
+  "shot": "screens/J01-17.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back The book is open. Say one thing about Asha today. That is a letter. Get your words ready Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB. It waits for Wi-Fi, and carries on where it left off if it is interrupted. Not now. Your voice is kept either way. You can do this later in Settings, Recordings. Your voice is always kept. Write the first one",
+  "lines": [
+    "Back",
+    "The book is open.",
+    "Say one thing about Asha today. That is a letter.",
+    "Get your words ready",
+    "Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB.",
+    "It waits for Wi-Fi, and carries on where it left off if it is interrupted.",
+    "Not now. Your voice is kept either way.",
+    "You can do this later in Settings, Recordings. Your voice is always kept.",
+    "Write the first one"
+  ]
+}

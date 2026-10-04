@@ -19,7 +19,6 @@
  * Haptics: only the choices (selection) and the finished book (success). Continue and
  * Back are navigation and stay silent (MOTION 6).
  */
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, type Href } from 'expo-router';
 import { CaretLeftIcon } from 'phosphor-react-native/src/icons/CaretLeft';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
@@ -30,9 +29,12 @@ import { XIcon } from 'phosphor-react-native/src/icons/X';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View, type Text as RNText } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { languageInfo, type LanguageCode } from '@scribe/core';
+import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDate, checkSignsAs, clampText, languageInfo, latestDueDate, nearLimit, textLength, type LanguageCode } from '@scribe/core';
+import { DateField } from '@/components/child/date-field';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
+import { SpeechConsentCard } from '@/components/speech/speech-consent-card';
+import { authorSpeechLanguage } from '@/lib/models/author-language';
 import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip, ChipGroup, ChoiceGroup } from '@/components/ui/choice-group';
@@ -44,8 +46,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill, pendingCopy } from '@/lib/copy';
-import { dayDate } from '@/lib/dates';
-import { inviteHref } from '@/lib/family/entry.logic';
+import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { ordinalOf, track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
@@ -55,7 +56,6 @@ import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, 
 
 type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
-const DAY = 864e5;
 /** Twins, triplets or more; a sane ceiling for one first run. */
 const MAX_FIRST_RUN_CHILDREN = 6;
 
@@ -76,12 +76,14 @@ export default function Onboarding() {
   const [step, setStep] = useState<Step>('welcome');
   const [names, setNames] = useState<string[]>(['']);
   const [expecting, setExpecting] = useState(false);
-  const [birthday, setBirthday] = useState<Date>(new Date());
-  const [dueDate, setDueDate] = useState<Date>(new Date(Date.now() + 60 * DAY));
+  // No date is chosen for the person: an untouched default would file a seven-month-old under "0 days".
+  const [birthday, setBirthday] = useState<string | null>(null);
+  const [dueDate, setDueDate] = useState<string | null>(null);
   const [signsAs, setSignsAs] = useState('');
   const child = joinNames(names, 'your child');
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
+  const doors = visibleCoParentDoors(capabilities.coParent);
   const [languageOpen, setLanguageOpen] = useState(false);
 
   // "I already have a book" or "I was invited": once sign-in or joining brings a book to this
@@ -95,8 +97,8 @@ export default function Onboarding() {
     return subscribe(done);
   }, [step]);
 
-  // The language letters are spoken in (founder decisions 6 and 15): choosing it starts only
-  // that language's downloads (its text rules here; its speech model through the speech engine).
+  // The language letters are spoken in (founder decisions 6 and 15): choosing it stores it and fetches its
+  // small text rules. The speech model (large) downloads only after the explicit ask on the last step (D-087).
   const chooseLanguage = (code: LanguageCode) => {
     spoken.setPrimary(code);
     setLanguageOpen(false);
@@ -111,20 +113,21 @@ export default function Onboarding() {
   const next = () => setStep(ORDER[ORDER.indexOf(step) + 1]);
   const back = () => setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
 
-  const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? v.slice(0, 60) : x)));
+  const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? clampText(v, CHILD_NAME_MAX) : x)));
   const addName = () => setNames((all) => (all.length < MAX_FIRST_RUN_CHILDREN ? [...all, ''] : all));
   const removeName = (i: number) => setNames((all) => all.filter((_, j) => j !== i));
 
   const finish = () => {
     // Every book made in first run is free (twins or more share the date).
+    if (childBlock) return;
     const created = names
-      .map((n) => n.trim())
-      .filter(Boolean)
+      .map((n) => checkChildName(n))
+      .flatMap((n) => (n.ok ? [n.value] : []))
       .map((n) =>
         addChild({
           name: n,
-          birthday: expecting ? null : todayISO(birthday),
-          dueDate: expecting ? todayISO(dueDate) : null,
+          birthday: expecting ? null : birthday,
+          dueDate: expecting ? dueDate : null,
           signsAs: signsAs.trim(),
         }),
       );
@@ -135,7 +138,20 @@ export default function Onboarding() {
     router.replace('/');
   };
 
-  const disabled = (step === 'child' && names.some((n) => !n.trim())) || (step === 'signsAs' && !signsAs.trim());
+  // Why Continue is waiting, in words (never only a greyed button).
+  const today = todayISO();
+  const childBlock = ((): string | null => {
+    if (names.some((n) => !checkChildName(n).ok)) return names.length > 1 ? o.child.needNameMany : copy.childrenExtra.nameRequired;
+    if (expecting) {
+      if (!dueDate) return o.child.needDueDate;
+      return checkDueDate(dueDate, today).ok ? null : copy.childrenExtra.edit.dueDateRange;
+    }
+    if (!birthday) return fill(o.child.needBirthday, { child: namedCount ? child : 'your child' });
+    return checkBirthday(birthday, today).ok ? null : copy.childrenExtra.edit.birthdayFuture;
+  })();
+  const signsAsBlock = checkSignsAs(signsAs).ok ? null : fill(o.signsAs.needSignsAs, { child });
+  const block = step === 'child' ? childBlock : step === 'signsAs' ? signsAsBlock : null;
+  const disabled = block !== null;
   const cta = { welcome: o.welcome.startButton, promise: o.promise.cta, child: o.child.cta, signsAs: o.signsAs.cta, finish: o.finish.cta }[step];
   const centred = step === 'welcome' || step === 'finish';
   const signsAsTitle = fill(namedCount > 1 ? pc.signsAsTitleMany : o.signsAs.title, { child });
@@ -215,7 +231,15 @@ export default function Onboarding() {
                       textContentType="givenName"
                       autoComplete="given-name"
                       returnKeyType="done"
-                      helper={i === names.length - 1 ? (names.length > 1 ? o.child.addAnotherHelp : o.child.nameHelp) : undefined}
+                      helper={
+                        nearLimit(textLength(n), CHILD_NAME_MAX)
+                          ? fill(o.child.nameLimit, { n: CHILD_NAME_MAX })
+                          : i === names.length - 1
+                            ? names.length > 1
+                              ? o.child.addAnotherHelp
+                              : o.child.nameHelp
+                            : undefined
+                      }
                       trailing={
                         i > 0 ? (
                           <IconButton icon={XIcon} label={fill(pc.removeChild, { child: n.trim() || `${o.child.nameLabel} ${i + 1}` })} size="sm" onPress={() => removeName(i)} className="mr-2" />
@@ -241,35 +265,18 @@ export default function Onboarding() {
                     <Text variant="labelSmall" tone="muted">
                       {expecting ? pc.dueDateLabel : o.child.birthdayLabel}
                     </Text>
-                    {Platform.OS === 'web' ? (
-                      // Web preview only: the community picker renders nothing on web, so show
-                      // the value the way iOS's compact picker does (a quiet date pill).
-                      <View className="rounded-md bg-muted px-3 py-2">
-                        <Text variant="body">{dayDate(todayISO(expecting ? dueDate : birthday))}</Text>
-                      </View>
-                    ) : expecting ? (
-                      <DateTimePicker
-                        value={dueDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'compact' : 'default'}
-                        minimumDate={new Date()}
-                        maximumDate={new Date(Date.now() + 305 * DAY)}
-                        accentColor={c.accent}
-                        accessibilityLabel={pc.dueDateLabel}
-                        onChange={(_, d) => d && setDueDate(d)}
-                      />
-                    ) : (
-                      <DateTimePicker
-                        value={birthday}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'compact' : 'default'}
-                        maximumDate={new Date()}
-                        accentColor={c.accent}
-                        accessibilityLabel={o.child.birthdayLabel}
-                        onChange={(_, d) => d && setBirthday(d)}
-                      />
-                    )}
+                    <DateField
+                      key={expecting ? 'due' : 'born'}
+                      label={expecting ? pc.dueDateLabel : o.child.birthdayLabel}
+                      chooseLabel={o.child.chooseDate}
+                      value={expecting ? dueDate : birthday}
+                      onChange={expecting ? setDueDate : setBirthday}
+                      startISO={today}
+                      min={expecting ? today : undefined}
+                      max={expecting ? latestDueDate(today) : today}
+                    />
                   </View>
+                  {!expecting && birthday !== today ? <Button variant="quiet" size="sm" label={o.child.bornToday} className="-ml-4 self-start" onPress={() => setBirthday(today)} /> : null}
                   <Text variant="footnote">{expecting ? o.child.expectingHelp : fill(o.child.birthdayHelp, { child })}</Text>
                 </View>
               </>
@@ -289,7 +296,8 @@ export default function Onboarding() {
                   label={signsAsTitle}
                   labelHidden
                   value={signsAs}
-                  onChangeText={(v) => setSignsAs(v.slice(0, 30))}
+                  onChangeText={(v) => setSignsAs(clampText(v, SIGNS_AS_MAX))}
+                  helper={nearLimit(textLength(signsAs), SIGNS_AS_MAX) ? fill(copy.childrenExtra.edit.signsAsLimit, { n: SIGNS_AS_MAX }) : undefined}
                   placeholder={o.signsAs.placeholder}
                   autoCapitalize="words"
                   autoCorrect={false}
@@ -331,19 +339,28 @@ export default function Onboarding() {
                   {o.finish.title}
                 </Text>
                 <Text variant="body">{fill(o.finish.body, { child })}</Text>
+                {/* One explicit ask for the speech download: nothing starts until the person taps (D-087). */}
+                <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
               </>
             )}
           </Animated.View>
 
           {/* Controls never animate in (MOTION principle 2). */}
-          <Button size="lg" fullWidth disabled={disabled} label={cta} onPress={step === 'finish' ? finish : next} />
-          {step === 'welcome' && (
+          {block ? (
+            <Text variant="footnote" accessibilityLiveRegion="polite" className="mb-3">
+              {block}
+            </Text>
+          ) : null}
+          <Button size="lg" fullWidth disabled={disabled} label={cta} accessibilityHint={block ?? undefined} onPress={step === 'finish' ? finish : next} />
+          {step === 'welcome' && (capabilities.signIn || doors.joinButton) && (
             <View className="mt-2 gap-1">
-              {/* v1.0 has no accounts (lib/capabilities.ts): no sign-in here; "I was invited" opens co-parent coming soon. */}
+              {/* v1.0 has no accounts (lib/capabilities.ts), so no sign-in and no "I was invited": no invite can exist without a server. Both come back with co-parent sharing. */}
               {capabilities.signIn ? (
                 <Button variant="quiet" fullWidth label={o.welcome.signInButton} onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'sign_in' } })} />
               ) : null}
-              <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)} />
+              {doors.joinButton ? (
+                <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)} />
+              ) : null}
             </View>
           )}
         </ScrollView>

@@ -348,7 +348,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-36 Check the "If you are struggling" resources**
   - Time: 15 minutes.
   - Cost: US $0.
-  - Steps: confirm the 988 Lifeline and Postpartum Support International entries in `packages/content/src/strings.en.ts` (`struggling`) are current on their own sites; counsel sees the wording in the package (D-059: the classifier waits for v1.1 and a clinician).
+  - Steps: confirm the 988 Lifeline and Postpartum Support International entries in `packages/content/src/strings.en.ts` (`struggling`) are current on their own sites (988lifeline.org, postpartum.net: primary sources, not search snippets); counsel sees the wording in the package (D-059: the classifier waits for v1.1 and a clinician). Also check the 988 language options (Spanish, interpreter in other languages). Only if the pages say so, change the 988 `how` line to: "Call or text 988, any time. Press 2 for Spanish, or say your language to reach an interpreter." (D-087). If a page does not say it, leave the line as it is. Before any second storefront opens, add a verified region list to the launch checklist.
   - By: Fri 23 Oct.
   - Blocks: submission (an inaccurate support line is a trust and legal problem).
 

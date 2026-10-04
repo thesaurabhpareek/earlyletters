@@ -8,6 +8,10 @@
  * the background, an audio interruption (call, Siri, alarm) and leaving the
  * screen all stop and keep the take, then Review opens. Only "Let it go",
  * confirmed, deletes audio. Never records in the background.
+ *
+ * Starts only from a tap: Tonight's Speak arms it (lib/resilience/start-intent.ts). Opened any other way
+ * (the scribe://listen link, a restored screen) it waits in the ready state until the person taps Start.
+ * The screen stays awake only while a take is recording (not paused), and is released when it ends.
  */
 import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import { File } from 'expo-file-system';
@@ -31,8 +35,10 @@ import { useReducedMotion } from '@/lib/motion';
 import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
 import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
 import { deleteDraft, getActiveChild, setRecordingProgress } from '@/lib/store';
+import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
+import { consumeListenStart } from '@/lib/resilience/start-intent';
 
-type Phase = 'asking' | 'denied' | 'recording' | 'paused' | 'finishing';
+type Phase = 'ready' | 'asking' | 'denied' | 'recording' | 'paused' | 'finishing';
 
 function clock(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -57,7 +63,10 @@ export default function Listen() {
   });
   const status = useAudioRecorderState(recorder, 50); // 20 Hz metering (MOTION 5b)
   const db = useSharedValue(-160);
-  const [phase, setPhase] = useState<Phase>('asking');
+  // Read once on mount: was this opened by a tap on Speak? (A ref, so a re-render never re-reads it.)
+  const tapped = useRef<boolean | null>(null);
+  if (tapped.current === null) tapped.current = consumeListenStart();
+  const [phase, setPhase] = useState<Phase>(tapped.current ? 'asking' : 'ready');
   const announcedMinute = useRef(0);
   useEffect(() => {
     if (phase === 'denied') track('error_shown', { code: 'mic_denied' });
@@ -94,7 +103,8 @@ export default function Listen() {
     setPhase('finishing');
     const draft = await finalizeTake(recorder, id, reason, lastDuration.current);
     haptic('press'); // after the session ends: iOS mutes haptics while recording
-    if (draft) router.replace({ pathname: '/review', params: { draftId: draft.id } });
+    // `stopped=background`: Review says so in one honest line when leaving the app ended the take.
+    if (draft) router.replace({ pathname: '/review', params: reason === 'background' ? { draftId: draft.id, stopped: 'background' } : { draftId: draft.id } });
     else router.back();
   };
 
@@ -114,13 +124,21 @@ export default function Listen() {
     AccessibilityInfo.announceForAccessibility(t.listening);
   };
 
-  useEffect(() => {
+  const begin = () => {
+    setPhase('asking');
     start().catch(() => {
       if (takeId.current) void endTake('interruption');
       else setPhase('denied');
     });
+  };
+
+  useEffect(() => {
+    if (tapped.current) begin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Only a live take keeps the screen on. Paused, finishing, and leaving all release it (auto-lock is a privacy control).
+  useKeepAwakeWhile(phase === 'recording', KEEP_AWAKE_TAGS.listen);
 
   // App leaves the foreground: stop and keep (LEGAL-REQ-011, PRD checklist 6.3).
   // `inactive` alone (Control Center, a notification) does nothing; a real
@@ -210,6 +228,27 @@ export default function Listen() {
   const typeInstead = () => router.replace({ pathname: '/write', params: promptKey ? { promptKey } : {} });
 
   if (!child) return null;
+
+  if (phase === 'ready') {
+    const r = p.ready;
+    // Nothing is recording. A tap starts it; Close leaves without touching the microphone.
+    return (
+      <SafeAreaView className="flex-1 justify-center bg-background px-5">
+        <Card padding={6} radius="xl" className="gap-5">
+          <View className="gap-2">
+            <Text variant="title1" asHeading>
+              {r.title}
+            </Text>
+            <Text variant="body">{r.body}</Text>
+          </View>
+          <View className="gap-1">
+            <Button size="lg" label={r.startButton} onPress={begin} />
+            <Button variant="quiet" label={copy.common.closeButton} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          </View>
+        </Card>
+      </SafeAreaView>
+    );
+  }
 
   if (phase === 'denied') {
     const e = copy.errors.micDenied;

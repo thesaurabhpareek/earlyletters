@@ -1,0 +1,64 @@
+{
+  "id": "J03-06",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "Settings, with both children listed",
+  "note": "Each child has a row; \"Add a child\" sits below them.",
+  "from": "J03-05",
+  "shot": "screens/J03-06.png",
+  "full": "screens/J03-06-full.png",
+  "route": "/settings",
+  "viewport": {
+    "width": 390,
+    "height": 664
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Settings Early version Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then. Plan Plus: backup, Read together whenever you like, and more books. Children Asha Nila Add a child Writing Spoken language The language you speak your letters in. Reminders Off Appearance Match this phone Your data Privacy Export your book Every letter and recording, free, any time. Recordings Storage Language packs and space on this phone. Private by default. Never sold, never used for ads. Help and legal Help Write to us If you are struggling Terms of Service Privacy Policy Licences About Version 1.0.0 We never rewrite your words. We only fix what the microphone got wrong, and mark every fix. Private by default. Never sold, never used for ads.",
+  "lines": [
+    "Settings",
+    "Early version",
+    "Early Letters is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.",
+    "Plan",
+    "Plus: backup, Read together whenever you like, and more books.",
+    "Children",
+    "Asha",
+    "Nila",
+    "Add a child",
+    "Writing",
+    "Spoken language",
+    "The language you speak your letters in.",
+    "Reminders",
+    "Off",
+    "Appearance",
+    "Match this phone",
+    "Your data",
+    "Privacy",
+    "Export your book",
+    "Every letter and recording, free, any time.",
+    "Recordings",
+    "Storage",
+    "Language packs and space on this phone.",
+    "Private by default. Never sold, never used for ads.",
+    "Help and legal",
+    "Help",
+    "Write to us",
+    "If you are struggling",
+    "Terms of Service",
+    "Privacy Policy",
+    "Licences",
+    "About",
+    "Version",
+    "1.0.0",
+    "We never rewrite your words. We only fix what the microphone got wrong, and mark every fix. Private by default. Never sold, never used for ads."
+  ]
+}

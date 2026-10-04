@@ -3,8 +3,9 @@
  * device settings (getSetting / setSetting, key `language.spoken`), and kept
  * in step with the speech engine's own primary (`speech.language`, owned by
  * lib/models/author-language.ts) so there is one primary language on the
- * phone. Choosing a primary here calls setAuthorSpeechLanguage, which starts
- * that language's speech download (founder decision 15).
+ * phone. Choosing a primary here calls setAuthorSpeechLanguage, which only
+ * stores it: the speech download starts after the person's yes (D-087,
+ * models/speech-consent.ts), then for that language alone (founder decision 15).
  */
 import { useSyncExternalStore } from 'react';
 import type { LanguageCode } from '@scribe/core';
