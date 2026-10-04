@@ -1,0 +1,197 @@
+# The agent team. Every 30 minutes the dispatcher (plain code, no model)
+# decides what each agent works on next and starts up to six agents in
+# parallel. Each agent runs on its roster engine:
+#   opencode    OpenCode (MIT) on an open-weight model through OpenRouter,
+#               acting as the agents GitHub App (the default, low cost);
+#   claude-code Claude Code acting as the Claude GitHub App (optional).
+# Either way its pull requests come from a bot, run CI, and wait for the founder.
+#
+# Needs for opencode: OPENROUTER_API_KEY secret (a key with a budget), the
+# AGENTS_APP_CLIENT_ID variable and AGENTS_APP_PRIVATE_KEY secret. For
+# claude-code: ANTHROPIC_API_KEY. Pause: repository variable AGENTS_PAUSED=true.
+# Structure and process: docs/agents/HARNESS.md. Decisions: ADR 0018, ADR 0019.
+name: Agents
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: "Run only this agent (handle from agents/roster.json); empty for all"
+        required: false
+        default: ""
+      task:
+        description: "Backlog id to force for that agent (for example BL-121); empty to let the dispatcher choose"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    concurrency:
+      group: agents-plan
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      checks: read
+      actions: read
+    outputs:
+      assignments: ${{ steps.dispatch.outputs.assignments }}
+      count: ${{ steps.dispatch.outputs.count }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Dispatch
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY != '' }}
+          HAS_AGENTS_APP: ${{ vars.AGENTS_APP_CLIENT_ID != '' && secrets.AGENTS_APP_PRIVATE_KEY != '' }}
+          HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+          AGENTS_PAUSED: ${{ vars.AGENTS_PAUSED }}
+          ONLY_AGENT: ${{ inputs.agent }}
+          FORCE_TASK: ${{ inputs.task }}
+        run: node scripts/agents/dispatch.mjs
+
+  run:
+    name: agent ${{ matrix.agent }}
+    needs: plan
+    if: needs.plan.outputs.count != '0' && needs.plan.outputs.count != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.assignments) }}
+    concurrency:
+      group: agent-${{ matrix.agent }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      checks: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install dependencies
+        uses: ./.github/actions/setup
+
+      # Values from the plan travel through env, never straight into the
+      # shell, so a PR title can never become a command.
+      - name: Write the run brief
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          AGENT: ${{ matrix.agent }}
+          MODE: ${{ matrix.mode }}
+          TASK: ${{ matrix.task }}
+          PR: ${{ matrix.pr }}
+          REASON: ${{ matrix.reason }}
+          JOURNAL: ${{ matrix.journal }}
+        run: >
+          node scripts/agents/brief.mjs --agent "$AGENT" --mode "$MODE" --task "$TASK" --pr "$PR"
+          --reason "$REASON" --journal "$JOURNAL" --run-url "$RUN_URL" --run-id "$GITHUB_RUN_ID"
+          --out .agent-run/brief.md
+
+      - name: Agent (Claude Code)
+        id: claude
+        if: matrix.engine == 'claude-code'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: github-actions,claude
+          base_branch: develop
+          prompt: |
+            You are the Early Letters agent "${{ matrix.agent }}". Read .agent-run/brief.md now and follow it exactly.
+            It holds your identity, memory, founder instructions, your one assignment for this run, and how to finish.
+          # Token controls: a hard dollar cap per run, a turn cap, cache-friendly
+          # system prompt, and an optional effort level per agent (roster).
+          claude_args: |
+            --model ${{ matrix.model }}
+            --max-turns ${{ matrix.max_turns }}
+            --max-budget-usd ${{ matrix.budget }}
+            --exclude-dynamic-system-prompt-sections
+            ${{ matrix.effort != '' && format('--effort {0}', matrix.effort) || '' }}
+            --allowedTools "Read,Write,Edit,MultiEdit,Glob,Grep,Bash,WebSearch,WebFetch,TodoWrite,Task"
+            --disallowedTools "Bash(git push --force:*),Bash(git push -f:*),Bash(gh pr merge:*),Bash(gh pr review --approve:*),Bash(gh repo delete:*),Bash(gh secret:*),Bash(gh variable:*)"
+
+      - name: Agent identity (GitHub App token)
+        id: app
+        if: matrix.engine == 'opencode'
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.AGENTS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.AGENTS_APP_PRIVATE_KEY }}
+
+      # OpenCode on an open-weight model. The runner enforces the per-run
+      # dollar cap and step cap; the OpenRouter key's own budget is the
+      # monthly hard stop.
+      - name: Agent (OpenCode)
+        id: opencode
+        if: matrix.engine == 'opencode'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          AGENT: ${{ matrix.agent }}
+          MODEL: ${{ matrix.model }}
+          BUDGET: ${{ matrix.budget }}
+          MAX_TURNS: ${{ matrix.max_turns }}
+          EFFORT: ${{ matrix.effort }}
+          OPENCODE_VERSION: ${{ matrix.engine_version }}
+        run: |
+          BOT_ID="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${BOT_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          gh auth setup-git
+          npm install -g --no-audit --no-fund "opencode-ai@${OPENCODE_VERSION}"
+          node scripts/agents/run-opencode.mjs --agent "$AGENT" --model "$MODEL" --budget "$BUDGET" \
+            --max-turns "$MAX_TURNS" --variant "$EFFORT" --out "$RUNNER_TEMP/agent-exec.json"
+
+      # Whatever stopped the run (cap, timeout, error, provider limit), push
+      # anything left unsaved to a branch and note it in the journal.
+      - name: Save unfinished work
+        if: always()
+        env:
+          GH_TOKEN: ${{ matrix.engine == 'claude-code' && steps.claude.outputs.github_token || steps.app.outputs.token }}
+          AGENT: ${{ matrix.agent }}
+          JOURNAL: ${{ matrix.journal }}
+          REASON: ${{ matrix.engine == 'claude-code' && steps.claude.outcome || steps.opencode.outcome }}
+        run: node scripts/agents/salvage.mjs --agent "$AGENT" --journal "$JOURNAL" --run-id "$GITHUB_RUN_ID" --reason "$REASON"
+
+      - name: Run receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          AGENT: ${{ matrix.agent }}
+          MODE: ${{ matrix.mode }}
+          TASK: ${{ matrix.task }}
+          PR: ${{ matrix.pr }}
+          JOURNAL: ${{ matrix.journal }}
+          OUTCOME: ${{ matrix.engine == 'claude-code' && steps.claude.outcome || steps.opencode.outcome }}
+          EXECUTION_FILE: ${{ matrix.engine == 'claude-code' && steps.claude.outputs.execution_file || format('{0}/agent-exec.json', runner.temp) }}
+        run: >
+          node scripts/agents/receipt.mjs --agent "$AGENT" --journal "$JOURNAL" --mode "$MODE"
+          --task "$TASK" --pr "$PR" --outcome "$OUTCOME" --execution-file "$EXECUTION_FILE"
+          --run-url "$RUN_URL" --run-id "$GITHUB_RUN_ID"

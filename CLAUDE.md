@@ -52,6 +52,15 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Safety tiers stay on the device; there is no server table for them.
 - Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha".
 
+## Agents
+- How the harness works, end to end: `docs/agents/HARNESS.md`. The team (19 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`.
+- Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
+- Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
+
+## Saving work (every session, human or AI)
+- A usage limit can stop any session at any moment, and anything not pushed exists only in that session's workspace.
+- Commit and push work in progress at least every 30 minutes, and always before launching parallel agents: to your branch, or to `wip/<topic>` if it is not ready for a PR.
+
 ## Branches and commits
 - `main` is always releasable. Work on short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `exp/<what>` (experiments), `docs/<what>`.
 - One concern per pull request. Database changes ship as a new migration file; never edit a migration that has been applied.
