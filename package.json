@@ -11,6 +11,9 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "mobile": "npm run start -w @scribe/mobile",
     "test:db": "node supabase/tests/run.mjs",
+    "plan": "node scripts/plan.mjs",
+    "plan:check": "node scripts/plan.mjs --check",
+    "plan:next": "node scripts/plan.mjs --next",
     "test:db:perf": "node supabase/tests/run.mjs perf",
     "experiment": "npm run experiment -w @scribe/experiments --",
     "experiment:edits": "npm run experiment:edits -w @scribe/experiments --"

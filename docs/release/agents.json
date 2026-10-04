@@ -1,0 +1,20 @@
+{
+  "note": "Maps the Owner roles used in docs/BACKLOG.md to the agent definitions in .claude/agents/. scripts/plan.mjs reads this file. paths = where the role may edit; fenced = needs the founder's approve-migration label or an independent review before merge (D-041).",
+  "reviewer": "independent-reviewer",
+  "orchestrator": "release-manager",
+  "roles": {
+    "mobile engineer":   { "agent": "mobile-engineer",     "paths": ["apps/mobile/**"], "fenced": false },
+    "speech engineer":   { "agent": "speech-engineer",     "paths": ["apps/mobile/src/lib/transcribe*", "apps/mobile/src/lib/model-files.ts", "apps/mobile/modules/**", "packages/core/**", "experiments/**"], "fenced": false },
+    "design systems":    { "agent": "design-systems-engineer", "paths": ["packages/design-tokens/**", "apps/mobile/src/components/ui/**", "apps/mobile/src/global.css", "docs/design/**"], "fenced": false },
+    "content":           { "agent": "content-designer",    "paths": ["packages/content/**", "apps/mobile/src/lib/copy.ts", "apps/mobile/src/lib/permission-copy.ts", "apps/web/src/content/**"], "fenced": false },
+    "data architect":    { "agent": "data-architect",      "paths": ["supabase/**", "docs/legal/data-*.md"], "fenced": true },
+    "sync owner":        { "agent": "sync-engineer",       "paths": ["supabase/**", "apps/mobile/src/lib/db/**", "apps/mobile/src/lib/sync*"], "fenced": true },
+    "security engineer": { "agent": "security-engineer",   "paths": ["supabase/**", ".github/**", "docs/tdd/04-security-identity.md"], "fenced": true },
+    "privacy engineer":  { "agent": "privacy-engineer",    "paths": ["docs/legal/**", "supabase/**", "apps/mobile/src/lib/**"], "fenced": true },
+    "payments engineer": { "agent": "payments-engineer",   "paths": ["packages/core/src/plan*", "apps/mobile/src/components/child/plus-gate.tsx", "supabase/**", "docs/tdd/08-payments-entitlements.md"], "fenced": true },
+    "analytics engineer":{ "agent": "analytics-engineer",  "paths": ["packages/analytics/**", "apps/mobile/src/lib/analytics*"], "fenced": false },
+    "QA engineer":       { "agent": "qa-engineer",         "paths": ["**/test/**", "**/*.test.ts", ".github/**", "apps/mobile/e2e/**"], "fenced": false },
+    "legal":             { "agent": "legal-drafter",       "paths": ["docs/legal/**", "apps/web/src/lib/legal/**"], "fenced": false },
+    "founder":           { "agent": null,                  "paths": [], "fenced": false }
+  }
+}
