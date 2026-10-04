@@ -32,7 +32,9 @@ v0.1, 2026-10-01. Extends `DESIGN_LANGUAGE.md` section 8 and `tokens.motion`; co
 | 5 | **Quiet joy.** | A soft wash and a sentence. | Confetti, counters, streaks, sound. |
 | 6 | **Same code, native chrome.** | Our motion in Reanimated; tabs, sheets, back stay native. | Re-create the iOS sheet spring on Android. |
 
-## 3. Proposed token additions (not yet in `tokens.ts`)
+## 3. Token additions
+
+Shipped in `tokens.motion`: `soft` spring `{ stiffness: 260, damping: 40, mass: 0.3 }` (the website's SMOOTH; scrubs, glow follow, no overshoot; use `useMotion().spring(v, 'soft')`), `easing` `[0.2, 0, 0, 1]`, `enter` `{ dy: 8, durationMs: 280, staggerMs: 30, staggerMax: 6 }`, and `reduceMotion.durationMs` 200. `apps/mobile/src/lib/motion.ts` reads these; do not hard-code them. Still proposed (not yet in `tokens.ts`):
 
 ```ts
 motion: { ...existing,
