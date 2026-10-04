@@ -1,6 +1,6 @@
 # How agents talk to each other
 
-Agents do not work in silos. When an agent needs something outside the files it owns, it asks the owner; when a standard changes, the owners of the other standards get a say; when a PR touches a domain, that domain's steward reviews it. All of it happens in GitHub, where the founder can read it, and all of it is logged. Decision: ADR 0016. Code: `scripts/agents/handoff.mjs`, `dispatch.mjs`, `brief.mjs`, `ledger.mjs`, helpers in `lib.mjs`.
+Agents do not work in silos. When an agent needs something outside the files it owns, it asks the owner; when a standard changes, the owners of the other standards get a say; when a PR touches a domain, that domain's steward reviews it. All of it happens in GitHub, where the founder can read it, and all of it is logged. Decision: ADR 0020. Code: `scripts/agents/handoff.mjs`, `dispatch.mjs`, `brief.mjs`, `ledger.mjs`, helpers in `lib.mjs`.
 
 ## 1. The four channels
 

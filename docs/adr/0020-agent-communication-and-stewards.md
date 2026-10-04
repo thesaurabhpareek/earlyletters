@@ -1,8 +1,8 @@
-# ADR 0016: Agents talk through handoff issues; standards stewards review by path; only trusted authors count
+# ADR 0020: Agents talk through handoff issues; standards stewards review by path; only trusted authors count
 
 - **Status:** Proposed, 2026-10-03 (founder asked for agents that do not work in silos, with every action logged).
 - **Deciders:** founder.
-- **Amends:** ADR 0014 (dispatcher priorities and modes). ADR 0015 is unchanged.
+- **Amends:** ADR 0018 (dispatcher priorities and modes). ADR 0019 is unchanged.
 - **Related:** `docs/agents/AGENT-COMMS.md`, `scripts/agents/{handoff,ledger,dispatch,brief,lib}.mjs`, `docs/engineering/` (the compendium the stewards own).
 
 ## Context
@@ -13,7 +13,7 @@ A review of the harness on the same day found that the dispatcher counted a `red
 
 ## Decision
 
-1. **Handoffs are GitHub issues** labelled `handoff`, `from:<sender>` and `to:<recipient>`, with a one-line machine marker. Recipients reply with a marked comment and a status. An RFC is a handoff of kind `rfc` sent to every other steward. No new store: GitHub stays the single system of record (ADR 0014).
+1. **Handoffs are GitHub issues** labelled `handoff`, `from:<sender>` and `to:<recipient>`, with a one-line machine marker. Recipients reply with a marked comment and a status. An RFC is a handoff of kind `rfc` sent to every other steward. No new store: GitHub stays the single system of record (ADR 0018).
 2. **The dispatcher schedules replies** ahead of reviews and backlog work, counts waiting handoffs per agent on the board, and closes a handoff 48 hours after every recipient has replied.
 3. **A new agent kind, `steward`,** with `review_paths` globs in the roster. The dispatcher assigns a `steward-review` when an open, non-draft PR touches those paths and has no verdict from that steward for its head commit. A steward's "fix first" sends the author agent into `maintain` mode, like the red team's.
 4. **Trust.** Markers count only from the founder, the agents GitHub App (by client id or bot login) or bots listed in `trusted_bots`. Untrusted comments are never shown in briefs as instructions and never change state. This also applies to red-team verdicts from now on.
