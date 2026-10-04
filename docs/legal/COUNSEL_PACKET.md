@@ -1,6 +1,6 @@
 ---
 title: Counsel packet, Early Letters v1.0 and after
-version: 1.0.0
+version: 1.1.0
 status: for counsel
 date: 2026-10-03
 owner: founder
@@ -8,6 +8,22 @@ prepared_by: AI (Claude), legal and privacy counsel support (legal-alignment age
 ---
 
 > **This packet was prepared by an AI. It is not legal advice.** No attorney-client relationship exists. It collects, in one prioritised list, every open legal question in `docs/legal/` (Terms 1.5.0, Subscription Terms 1.4.0, Privacy Policy 1.4.0, Consumer Health Data Privacy Policy 1.2.0, in-app disclosures 1.4.0, privacy labels 1.3.0, subprocessors 1.3.0, data-policy 1.2.0, deletion spec 1.2.0, LEGAL-REQ 1.2.0, compliance register 1.3.0, DATA_CLASSIFICATION 1.4.0, POLICY_VERSIONING 1.1.0, the memos), `docs/agents/DEBATES.md`, `docs/DECISIONS.md` and the future backlog (`docs/backlog/future/01` to `05`). Facts are tagged **V** (verified on an opened page or file), **S** (secondary source) or **U** (unverified). Every question has a default that the product follows if counsel does not answer by the deadline.
+
+## A0. Addendum of 4 Oct 2026: v1.0 is on the phone only
+
+The founder decided that v1.0 ships with `EXPO_PUBLIC_SERVER_FEATURES=off`: no account, sync, co-parent or server, and Plus is the membership with 2 free letters (the 4 Oct decision, recorded on `main`). The user-facing texts in `docs/legal/` were rewritten to match (Terms 3.0.0, Privacy Policy 2.0.0, Subscription Terms 3.0.0, Consumer Health Data Privacy Policy 2.0.0, subprocessors 2.0.0, in-app disclosures 3.0.0, privacy answers 2.0.0, data-policy 2.0.0). The sections below this addendum describe the server version (v1.1 and after). Where a question below depends on a server, it is deferred until the switch is turned on: Q2, Q11 (Supabase part), Q13, Q21, Q22, Q29. Questions still live for v1.0: Q1, Q3, Q4, Q5, Q7, Q8, Q9, Q10, Q14 to Q20, Q23 to Q28, Q31. Source checks are in `BENCHMARK.md`; most primary legal sources could not be opened, so the questions below are not conclusions. Each has a default the founder follows if counsel does not answer.
+
+| # | Question | Default if unanswered |
+|---|---|---|
+| Q32 | Washington My Health My Data and similar laws: does an app that processes letters only on the user's phone, and receives none, "collect" consumer health data? Is a separate Consumer Health Data policy needed for v1.0, and does the website email form change the answer? | Keep the short notice, linked from the website footer and the App Store description |
+| Q33 | Is "We do not receive your letters" an accurate and sufficient statement given an iPhone backup the user controls, exports the user shares, and speech model downloads that expose an IP address to a file host? | Keep the wording as drafted |
+| Q34 | Website email list: what must the welcome and "it is ready" emails carry (CAN-SPAM postal address, opt-out), is a consent checkbox or a record of consent needed, does CalOPPA apply, and could GDPR Article 3(2) apply to visitors from the EEA or UK although the app is US only? | Postal address in every email footer once the founder supplies one; unsubscribe link kept; no EEA targeting |
+| Q35 | Apple custom licence terms: do Terms section 11 and the support phone line meet Apple's minimum terms, or should the founder use Apple's Standard EULA and keep the Terms as the website terms of service? | Use Apple's Standard EULA and keep the Terms on the website |
+| Q36 | Individual publisher: the Terms name an individual; is "we" acceptable, and does a mailing address (not a home address) satisfy each notice? (Unchanged from Q1; listed because every text now carries the placeholder.) | Mailing address service |
+| Q37 | Subscription with Apple as merchant and no server of ours: what do California and other automatic renewal laws require of us beyond Apple's own renewal disclosures and emails? Texts now promise only Settings, Plan dates, Apple's receipts and Apple's price-change notices; the earlier in-app reminders, confirmation sheet and email are not built. Does the 2-letter limit need to be stated beside the price? Do offer-code free periods convert to paid, and must that be said? | Rely on Apple's disclosures plus Settings, Plan; state the 2-letter limit above Apple's plans |
+| Q38 | Usage reports: if the production build ships the PostHog key, is the label Linked or Not linked (Q7), and is the consent ask worth keeping? If it ships without the key, should the ask and toggle be hidden? | Do not ship the key for v1.0; hide the ask and toggle |
+| Q39 | Is a US $50 liability floor, courts rather than arbitration, and California law acceptable for an individual publisher holding children's keepsakes? (Unchanged from Q15 and Q18.) | As drafted |
+| Q40 | The Terms drop the earlier "Plus is optional" and "free, always" promises (4 Oct decision). Are the narrowed promises in Terms 3.2, 6.2 and 12.1 enough, and may the free allowance of 2 letters change later for existing users? | As drafted |
 
 ## 0. How to use this packet
 
@@ -361,3 +377,4 @@ Superseded and closed since the 2 Oct memos (no longer questions): PowerSync no-
 | Version | Date | Change |
 |---|---|---|
 | 1.0.0 | 2026-10-03 | First consolidated packet, prepared with the legal alignment to D-051 to D-070. |
+| 1.1.0 | 2026-10-04 | Addendum A0 for the on-device v1.0 scope: questions Q32 to Q40 and which earlier questions are deferred. |

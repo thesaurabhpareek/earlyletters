@@ -673,8 +673,8 @@ export const en = {
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
-      analyticsLabel: "Share usage and crash reports",
-      analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
+      analyticsLabel: "Share usage reports",
+      analyticsHelp: "Which screens you open. Never your letters, recordings or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing straight away. Nothing else changes.",
       sensitiveLabel: "Sync and family sharing",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
@@ -685,7 +685,7 @@ export const en = {
       lockScreenLabel: "Names in notifications",
       promiseTitle: "Our promise",
       // Shown above the switches. The promise itself is `trust.promise`.
-      controlsHelp: "These switches are yours. Export your book, stop sharing or delete everything, any time.",
+      controlsHelp: "These switches are yours. Export your book any time.",
       documentsTitle: "Our promises in full",
       privacyPolicyLink: "Privacy Policy",
       healthPrivacyLink: "Consumer Health Data Privacy Policy",
@@ -710,7 +710,7 @@ export const en = {
   // Product analytics consent. Third ask after the first letter, on a later session (PRD.md K-01, PRD-REQ-001).
   analyticsConsent: {
     title: "Help us make it better?",
-    body: "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
+    body: "Share how you use the app, like which screens you open. Never your letters, recordings or anyone's names.",
     detail: "Nothing is shared unless you say yes. Saying no changes nothing else.",
     changeLater: "You can change this any time in Settings, Privacy.",
     yesButton: "Share usage",
