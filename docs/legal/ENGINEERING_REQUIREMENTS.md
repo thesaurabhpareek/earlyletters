@@ -1,6 +1,6 @@
 # Legal Engineering Requirements (`LEGAL-REQ-###`)
 
-Version 1.1.0, 3 Oct 2026 (changelog at the end). Status: draft for counsel.
+Version 2.0.0, 4 Oct 2026 (changelog at the end). Status: draft for counsel.
 
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. These requirements translate `compliance-register.md` into testable rules for the technical design and code. Where a requirement rests on an unverified legal reading it says so; build it anyway unless counsel removes it, because each one is cheap now and expensive after launch.
 
@@ -273,7 +273,7 @@ Each data category in the data map has a retention rule and a job or trigger tha
 Source: CR-084 (5.1.1(i) retention disclosure), CR-091, CR-050 (ARL records [L7]), CR-031.
 
 ### LEGAL-REQ-034 (P0) Export is complete, free and works offline
-Export everything (ARCH s.8; PRD C-REQ-017) produces a ZIP with every entry the user authored (raw transcript, edits, final text, timestamps), their audio and photos, the PDF book, and an `account.json` with their profile fields, memberships, dictionary terms, consent history (`my_policy_state` and full acceptance rows) and plan status. Works offline from local data and in every plan state. A web-initiated access request produces the same ZIP by secure download link.
+Export everything (ARCH s.8; PRD C-REQ-017) produces a ZIP with every entry the user authored (raw transcript, edits, final text, timestamps), their audio and photos, the PDF book, and an `account.json` with their profile fields, memberships, dictionary terms, consent history (`my_policy_state` and full acceptance rows) and plan status. Works offline from local data and in every plan state, including when the user never subscribed or Plus has ended, and never needs Plus (4 Oct 2026: unchanged and restated for the membership model). A web-initiated access request produces the same ZIP by secure download link.
 - Given a lapsed Free user offline, When they export, Then the ZIP contains all categories above and no Plus UI appears.
 - Test: automated (ZIP schema check).
 Source: CR-014, CR-022 (access and portability rights), CR-010 (claim "export everything any time").
@@ -399,10 +399,12 @@ Every purchase start and completion writes a `policy_acceptances` row for `auto-
 Source: CR-050 (consent records 3 years or 1 year after termination [L7]); Policy s.7.3.
 
 ### LEGAL-REQ-050 (P0) Keep-and-leave promise enforced in code
-Writing, reading, playback of recordings, export, family authors and downloading already backed-up audio never call the entitlement service and never show a paywall (PRD C-NFR-004, C-REQ-017, C-REQ-028). A lapse, refund or billing failure removes only Plus extras.
-- Given entitlement service unreachable and a lapsed account, When the user writes, reads, plays and exports, Then all succeed with no Plus UI.
+**[COUNSEL REVIEW, founder decision of 4 Oct 2026: rewritten. The old text said writing was never gated. Now only adding a new letter after the free allowance is gated (LEGAL-REQ-061). PRD C-NFR-004, C-REQ-017 and C-REQ-028 may still carry the old wording and are owned elsewhere.]**
+Reading, playback of recordings, export, deleting, and downloading already backed-up audio never call the entitlement service and never show a paywall. Letters already made stay readable, playable and exportable in every plan state. A lapse, refund or billing failure removes the ability to add new letters after the free allowance and Plus extras, and nothing else. Nothing is deleted because a plan lapsed or was never bought.
+- Given entitlement service unreachable and a lapsed account, When the user reads, plays, exports and deletes, Then all succeed with no Plus UI.
+- Given a lapsed account with more letters than the free allowance, When the user opens any existing letter, Then it is readable and playable.
 - Test: automated.
-Source: CR-012 (honouring "free" promises), CR-010.
+Source: CR-012 (honouring "free" promises), CR-010, CR-132.
 
 ---
 
@@ -477,6 +479,23 @@ No integration with HealthKit, Health Connect, wearables, or structured health l
 - Test: automated.
 Source: CR-016, CR-030, CR-031.
 
+### LEGAL-REQ-061 (P0) Free allowance of 2 letters per account
+**[COUNSEL REVIEW, new 4 Oct 2026. Open edges not decided here: whether family letters count toward the 2; what a second child's book gets without Plus; how the count works before an account exists. See memos/pricing-change-2026-10-04.md.]**
+The first 2 letters per account are free. A letter is one saved entry, spoken or typed. After 2, saving a new letter requires an active Plus entitlement. Offering the Plus sheet at that point is the only effect; no existing letter is changed, hidden or locked. The count uses only a number, never content, and any server-side storage of it is added to the data map and Privacy Policy first. The Plus sheet says, near the purchase button, that new letters after the first 2 need Plus (with LEGAL-REQ-046).
+- Given an account with 1 saved letter, When the user saves a second, Then it saves with no paywall.
+- Given an account with 2 saved letters and no Plus, When the user tries to save a third, Then the Plus sheet is offered, and the first 2 letters stay readable, playable and exportable.
+- Given a Plus lapse, When the user views the book, Then every letter is readable and no letter is removed.
+- Test: automated (entitlement fixtures: new, 2 letters, trial, Plus, lapsed, refunded, billing retry, offline).
+Source: CR-132, CR-012, CR-050, Apple 3.1.1 and 3.1.2 (Unverified).
+
+### LEGAL-REQ-062 (P0) Never discard an in-progress letter at the limit
+**[COUNSEL REVIEW, new 4 Oct 2026: this is the recommendation in subscription-terms.md Open questions, not a decided rule. Founder to confirm.]**
+If the free limit is reached while a letter is being recorded or typed, what the person just said or wrote is never lost or discarded. The recording and text are kept on the phone as a draft, the Plus sheet is offered calmly, and after the person subscribes the letter can be saved as it was. Declining Plus leaves the draft on the phone and the person can export or delete it. No countdown or urgency language.
+- Given a spoken letter in progress when the limit applies, When the user dismisses the Plus sheet, Then the audio and transcript are still on the phone and can be exported or deleted.
+- Given the user then subscribes, When they return, Then the letter saves without being recorded again.
+- Test: automated plus a manual script with the app force-quit at the paywall.
+Source: CR-132; the constitution in CLAUDE.md that nothing a person said is discarded by the machine.
+
 ---
 
 ## Traceability summary
@@ -504,5 +523,6 @@ Citations [L#] are listed with URLs in `compliance-register.md` (all opened 2 Oc
 
 | Version | Date | Change |
 |---|---|---|
+| 2.0.0 | 2026-10-04 | Founder decision of 4 Oct 2026 (membership model): LEGAL-REQ-050 rewritten (only adding new letters after the free allowance is gated); LEGAL-REQ-034 restated; new LEGAL-REQ-061 (free allowance of 2) and 062 (never discard an in-progress letter; recommendation pending founder). No IDs removed. **Major** (a requirement that said writing is never gated is replaced). Unpublished draft, no users bound; counsel to confirm. |
 | 1.1.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct; `docs/DECISIONS.md`). Release-tier note: web-page requirements (010, 035 and web parts of 002, 005, 014) bind from v1.1; AI requirements (004, 005, 020) bind when the gateway ships; 030 reduced at v1.0 (D-042); counsel to confirm. RevenueCat removed (ADR 0013): 029 deletion steps, 031 processors, 037 consoles, 049 reconciliation, 058 storefront source. 033: invite hashes 90 days keyed on use, revocation or expiry (K-18, D-020); `audit_events` 24 months beside 12-month ops and security logs (D-021); purchase ledger 7 years. 047 rewritten to the K-38 hard windows (final trial notice at E-4d12h; annual renewal inside [E-31d, E-30d]; long trial inside [E-21d, E-16d]). Not a published document; no notice. |
 | 1.0.0 | 2026-10-02 | First version; 2 Oct revision of 002 for the 18+ entry gate. |

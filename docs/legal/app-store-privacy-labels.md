@@ -1,8 +1,8 @@
 ---
 title: Early Letters App Privacy labels, Data safety form, privacy manifest and permission strings
-version: 1.2.0
+version: 1.2.1
 status: draft-for-counsel
-last_updated: 2026-10-03
+last_updated: 2026-10-04
 effective_date: TBD
 owner: founder
 reviewers: outside privacy counsel (TBD), iOS engineer
@@ -59,7 +59,7 @@ From Google Play's Data safety guidance [R4]: collection is any transmission off
 | Search History | Search History | No | | | | In-app search runs on the local database. Revisit if server search is added. |
 | Identifiers | User ID | **Yes** | Yes | No | App Functionality | Supabase account ID, used for sync and access control. If the analytics ID is judged linked (1.3), add Analytics. |
 | Identifiers | Device ID | No | | | | No IDFA, no IDFV sent. Engineering check: confirm PostHog and Sentry send no IDFV or vendor device ID (and that `expo-iap` sends nothing off the device except to Apple); if any does, declare Device ID. |
-| Purchases | Purchase History | **Yes** | Yes | No | App Functionality, Analytics | App Store transaction and renewal status for a random `appAccountToken`, held per account on our server as entitlements (PRD K-28, ADR 0013), so linked to the account. Analytics purpose because business totals come from the entitlement ledger (PRD-REQ-017); drop it if counsel reads server aggregates as App Functionality only. |
+| Purchases | Purchase History | **Yes** | Yes | No | App Functionality, Analytics | App Store transaction and renewal status for a random `appAccountToken`, held per account on our server as entitlements (PRD K-28, ADR 0013), so linked to the account. **[COUNSEL REVIEW, 4 Oct 2026: membership decision. Entitlement status now also decides whether a person can add letters after the first 2. The row stays Linked and unchanged. Unverified and open: if a per-account letter count is stored on our server to apply the free allowance, check whether Apple's Other User Content or Product Interaction answers change; none is changed here.]** Analytics purpose because business totals come from the entitlement ledger (PRD-REQ-017); drop it if counsel reads server aggregates as App Functionality only. |
 | Usage Data | Product Interaction | **Yes** | **No** (conditional, 1.3) | No | Analytics | Allowlisted PostHog events (ADR 0008; PRD K-01, PRD-REQ-016; C-REQ-034), sent only after the user opts in (Apple 5.1.1(ii); compliance register CR-082). Children appear only as ordinals and a `child_count_bucket` property, never ids, names or birthdays. Apple's label has no "optional" flag, so the type is still declared. |
 | Usage Data | Advertising Data | No | | | | |
 | Usage Data | Other Usage Data | No | | | | |
@@ -244,6 +244,7 @@ Unverified: whether the Sentry or PostHog RN SDKs send IDFV by default; which re
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.1 | 2026-10-04 | Counsel note on the Purchases row for the 4 Oct membership decision. No label answer changed. Patch (note only); counsel to confirm. Unpublished draft, no users bound. |
 | 1.2.0 | 2026-10-03 | Alignment with PRD.md 1.3 (ADR 0013, D-001): RevenueCat removed from the SDK list, Purchases source and identifiers; App Store `appAccountToken` described; `expo-iap` added; PowerSync conditional on D-023; Google Sign-In from v1.1. Labels unchanged in substance (Purchases stay Linked). |
 | 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`): Sensitive Info and Play Health info declared for the due date (PRD K-25); Purchases per account (K-28); analytics child-count note; "not linked" condition for analytics deletion; microphone string adds cloud transcription; stale reminder-string note resolved; checklist adds `safety_events` drop, due-date, biometric and child-input checks. Pre-submission draft; nothing published. |
 | 1.0.0 | 2026-10-02 | First draft for counsel and engineering review. |

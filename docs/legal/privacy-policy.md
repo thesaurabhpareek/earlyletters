@@ -1,9 +1,9 @@
 ---
 title: Early Letters Privacy Policy
-version: 1.3.0
+version: 1.4.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-03
+last_updated: 2026-10-04
 owner: founder
 reviewers: outside privacy counsel (TBD)
 ---
@@ -307,6 +307,8 @@ Each version has a number and an effective date. Earlier versions are kept at {P
 
 **CN-1. Controller identity (updated 3 Oct 2026).** Founder decision (`docs/DECISIONS.md` D-004): the app is published under the founder's individual Apple Developer account, with no LLC for now. The controller is the founder as an individual; the App Store shows the founder's legal name as the seller. Fill {PUBLISHER_LEGAL_NAME} and a {CONTACT_ADDRESS} counsel accepts for an individual (a mailing address rather than a home address, if lawful for each notice). Confirm whether "we" is acceptable for an individual and whether any state law needs a named privacy contact. `packages/brand` holds only a TODO marker for the name (never in code). If an entity is formed later, the controller changes, which is a major change for published users (POLICY_VERSIONING 2.1 item 9, counsel to classify) and an app transfer (D-004 point 5).
 
+**CN-21. Membership model (4 Oct 2026, counsel review).** The founder decided that the first 2 letters per account are free and that adding new letters after that needs Plus, while letters already made always stay readable, playable and exportable. The promises in this policy to export and delete "for free", and to keep letters when Plus ends, are unchanged and not weakened. Unverified and open: whether the app or our server keeps a count of letters per account to apply the free allowance (a count only, never content). That would be a small new use of existing account data, to be described in section 3 (Purchases, or a new row) before launch; if counsel agrees it is new data, this change would be major under POLICY_VERSIONING 2.1 item 1. Whether the count must also be disclosed in the Apple privacy labels is flagged in app-store-privacy-labels.md. Nothing in section 3 was changed because the decision brief does not say how the allowance is counted.
+
 **CN-20. Features after the first version.** PRD.md 1.3 (3 Oct 2026) moved the web contribution page to v1.1 and has no cloud transcription in v1.0. The sentence in section 2 keeps the policy accurate at launch without rewriting every row; when each feature ships, remove its mention from that sentence (minor change). If the founder approves "shared voice" (D-032), recordings of letters in a shared book upload encrypted so family can hear them; the short version, section 4 and Terms 12.1 then change before publication.
 
 **CN-2. COPPA analysis.** Recommendation: COPPA should not apply to v1 as designed, but the margin is product-dependent. Full analysis in `memos/lawyer-2.md` finding H5.
@@ -380,6 +382,7 @@ Unverified in this pass: CalOPPA Do Not Track requirement; CTDPA 15-day revocati
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4.0 | 2026-10-04 | Founder decision of 4 Oct 2026 (membership model): counsel note CN-21 only. The export, deletion and keep-letters promises are unchanged. No data practice is changed in the text; whether a per-account letter count is needed is open. Classified minor (clarifies, adds no data use in the text); it becomes major if counsel finds a count is a new use. Unpublished draft, no users bound. |
 | 1.3.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct). Provider is the founder as an individual (section 1, CN-1; placeholders renamed). RevenueCat removed: purchases come from Apple's App Store under a random ID (section 3, processors table, section 10 deletion, CCPA table; ADR 0013). Section 2 notes that the family web page and cloud transcription arrive after the first version (CN-20). Section 10 lists the 12-month security and staff-access log clock beside 24-month activity records (D-021). Pre-publication draft, no users bound; if published, the controller change would be major and the rest minor. |
 | 1.2.0 | 2026-10-02 | Product alignment with PRD.md 1.2 (founder decision 2 Oct, K-07): no use of any kind under 18, including local use; age asked before first use (intro, section 12). CN-10 points at the promoted governance migration. Pre-publication draft, no users bound; minor (clarifies a narrower audience, adds protection). |
 | 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`). Short version: "by default" on transcription, recovery-key qualifier, no-voiceprint line, deletion line narrowed to "your book" and "your own letters" (PRD K-29). Sections 3 and 5: 18+ confirmation and age signal, per-child profiles, Plus per account, analytics child-count range. Section 7: author-only transcripts (K-09), per-child family lists, how family hear recordings, Standard-mode web playback unlock. Section 10: published deletion clock (31 / 38 / 45 days, K-23), decided invite expiry (K-18), activity records, account-deletion effects on shared and sole-parent books (K-22), analytics deletion limits. Section 11: web uploads no longer described as unreadable to us. Section 12: parent-control sentence corrected (K-10), child-input features unavailable, under-18 closure. Section 13: biometric statement, consent placement and withdrawal in Settings. Section 14: export scope, web deletion page, request extension, provider list on request. Section 15: retention per category, letters as communications, biometric sentence corrected. Section 16: biometric and CHD pointers. Health notice renamed Consumer Health Data Privacy Policy. Pre-publication draft, no users bound; if 1.0.0 had been published this would be major under POLICY_VERSIONING 2.1 item 4 (narrower deletion statement). |

@@ -1,8 +1,8 @@
 ---
 title: Early Letters service providers and subprocessors
-version: 1.2.0
+version: 1.2.1
 status: draft-for-counsel
-last_updated: 2026-10-03
+last_updated: 2026-10-04
 effective_date: TBD
 owner: founder
 reviewers: outside privacy counsel (TBD)
@@ -35,7 +35,7 @@ Processors that can see letter text, transcripts, recordings or photos handle co
 
 | Party | Role | Data | Note |
 |---|---|---|---|
-| Apple | App Store and StoreKit payments as merchant of record (Plus is sold, managed, cancelled and refunded only through Apple, ADR 0013); App Store Server API and Server Notifications, through which we receive transaction, renewal and refund status for a random `appAccountToken`; Sign in with Apple; APNs push; iCloud Keychain (later, ADR 0006) | Apple's own terms | No third-party billing service sits between us and Apple. Push payloads carry no letter text (C-REQ-009). |
+| Apple | **[COUNSEL REVIEW, 4 Oct 2026: Plus status from Apple now also decides whether a person can add letters after the first 2; no new vendor, data type or recipient. Offer codes (founder request of 4 Oct) are redeemed through Apple, not through a vendor of ours.]** App Store and StoreKit payments as merchant of record (Plus is sold, managed, cancelled and refunded only through Apple, ADR 0013); App Store Server API and Server Notifications, through which we receive transaction, renewal and refund status for a random `appAccountToken`; Sign in with Apple; APNs push; iCloud Keychain (later, ADR 0006) | Apple's own terms | No third-party billing service sits between us and Apple. Push payloads carry no letter text (C-REQ-009). |
 | Google | Sign in with Google (from v1.1); later Google Play Billing and FCM (Android) | Google's own terms | |
 | Model host for the first-run Whisper download | A zero-egress object store or a pinned Hugging Face revision (founder picks, D-046) | IP address and request metadata only | 3 Oct 2026: Supabase Storage is no longer recommended because model egress would cost about $11k to $12k at 220k installs (TDD 03 C-8, TDD 06 P-9). List the chosen host here and in the data map. |
 | Apple Declared Age Range (iOS) | Store age signal for the 18+ gate (PRD K-07) | Age range returned to the app | Used in memory and never stored or sent to our servers (register CR-004), so no data flows to us from it beyond `is_adult_attested`. |
@@ -102,6 +102,7 @@ Unverified: Groq DPA; DeepInfra DPA and region; Cloudflare DPA and region; Sentr
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.1 | 2026-10-04 | Counsel note on Apple's row for the 4 Oct membership decision and offer codes. No vendor change. Patch (note only); counsel to confirm. Unpublished draft, no users bound. |
 | 1.2.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct): RevenueCat removed from section 2 and listed in section 3 as not used (ADR 0013); Apple's role as merchant of record and App Store Server API described; Groq and DeepInfra marked from v1.1; Vercel hosts the contribution page from v1.1; Google sign-in from v1.1; PowerSync marked pending D-023; model host recommendation changed to a zero-egress host (D-046); gaps 6 and 12 closed, gap 13 added. Pre-publication draft; minor (removes a vendor, adds none). |
 | 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`): public list must carry vendor contact details (MHMDA access right) and is linked from the CHD policy; processor health-data terms; RevenueCat random id per PRD K-28; PostHog deletion dependency; Apple Declared Age Range and conditional CAPTCHA provider listed; gaps 10 to 12. |
 | 1.0.0 | 2026-10-02 | First draft for counsel review. |
