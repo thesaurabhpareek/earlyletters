@@ -512,3 +512,38 @@ Two founder answers given on 3 Oct (evening) change second-round entries. Where 
 
 ---
 
+
+## Decisions of 4 Oct 2026 (founder direction and delegated calls)
+
+Two kinds of entry. **Founder** entries record what the founder said in this session. **Delegated** entries were decided by the CTO on the founder's instruction of 4 Oct ("Decide right answer on my behalf that are standard for industry apps"), taking the recommendation of the debate document named in each entry. The founder can reverse any delegated entry; say so and it is reopened. Counsel and Apple sign-off are not delegated and are stated where they apply.
+
+### D-082 Plus membership: first 2 letters free, then Plus (founder)
+- **Status:** Decided by the founder, 4 Oct. (Drafted earlier as D-051 and D-052 on `main`; those ids mean other decisions on `develop`, so this is the id that stands.)
+- **Decision:** Plus is a membership. The first 2 letters per account are free; after that, adding letters needs Plus. Existing letters always stay readable, playable and exportable. One membership covers the book. $3.99 a month with a 1 month free trial, or $29.99 a year with a 2 month free trial. Apple in-app purchase only. Offer codes come from Apple (no code system of our own). Family Sharing on.
+- **Supersedes:** the "Read together after 3 free sessions" rule of D-053 and the "free, always" copy.
+- **Owner:** payments engineer. **Effects:** plan engine, Plan and gate screens, copy, legal (Terms, Subscription Terms), website.
+
+### D-083 Open edges of the membership model (delegated; debate Q-013 pricing-membership-engine)
+- **Decision:** a letter counts when it is kept (spoken or typed, in the Book or private, including a voice letter kept without words). Drafts, abandoned takes, quiet-day marks, edits, undo and restore do not count. A deleted letter still counts. One pool of 2 free letters across all books, so a second child needs no extra gate. Read together is free for letters that exist; membership gates adding. Erase everything resets the free count. After Plus starts, the person taps Keep on each held letter. A birthday letter is not free beyond the allowance. The count is held on the device (Keychain, mirrored in the database) so a reinstall does not reset it; counsel confirms this is acceptable.
+- **Equal display** of monthly and annual in Apple's subscription view, neither preselected. US storefront only at launch. No price, "free trial" or "we will email you" in app copy.
+- **Needs outside sign-off:** counsel (Keychain count, trial and renewal wording); App Review note for guideline 3.1.2(a).
+
+### D-084 Quiet-day marks carry no sentence (delegated; debate Q-013 quiet-day-machine-words)
+- **Decision:** "Not much today" stores a mark with no text. The Book shows "A quiet day" with the date, unsigned. The old sentence is removed and blanked in existing rows. Quiet days never count toward the free letters and never appear in the printed book or Read together. "Nobody spoke" keeps an app note that is small, muted and unsigned: "No words in this one. The recording is kept just as it is." A recording with no words counts as a letter when kept. The "Dear {child}," ghost placeholder is removed. "Add a few words" after the tap waits for v1.1.
+- **Why:** the constitution. Every word the Book shows was said by a person.
+
+### D-085 Delete, recovery and backup in v1.0 (delegated; debate Q-014 data-lifecycle-delete-backup)
+- **Decision:** deleting a letter asks first, then moves it to a Recently deleted shelf for 30 days, with Restore and Erase now; the purge removes the file, then the row. Recordings stay in the iPhone backup always. The launch sweep checks that a recovered take plays. Settings shows "Last export" and a plain nudge to save a copy in Files or iCloud Drive.
+- **Amends D-073 for v1.0:** backup through our own service needs sign-in and a server, which v1.0 does not have. v1.0 relies on the person's own iPhone or iCloud backup plus Export, and says so honestly. Backup claims come out of the store listing, website and Plus copy until it ships. An in-app scheduled export to Files stays an option for v1.0.x or v1.1.
+- **Needs outside sign-off:** counsel on the 30 day shelf wording; the kill and restore drills on a real iPhone (founder holds the phones).
+
+### D-086 Words for the app's edits (delegated; debate Q-013 edit-trust-and-words)
+- **Decision:** the feature is called "Word for word". The app takes out stray sounds, repeats and restarts, fixes a misheard name, adds punctuation, and marks every small fix; each can be tapped and put back. Show the count as a plain sentence. "Exactly as said" is one tap and reversible, with a Settings switch for the default. Typed text is never touched (D-057). Words that arrive later arrive "Exactly as said" and are never fixed unread. Remove "Lightly tidied" and "Tidying" everywhere. Remove "Does this sound like you?" from Review for v1.0.
+- Other languages: native-speaker translation, never machine rewriting.
+
+### D-087 First run, setup and permissions (delegated; debate Q-015 first-run-setup-defaults)
+- **Decision:** the birth date is required with no default, and the app reads the age back. Name, date and signature are editable in Settings; saved letters, their dates and their signatures never change. A due date becomes a birthday through a gentle card shown at most twice. The speech model downloads only after an explicit "Download on Wi-Fi" or "Not now", with the size shown. Deep links are an allowlist and nothing starts recording from a link. The screen stays awake only while recording and while Read together plays. Helplines keep the US list with a clear scope line; the 988 language line is added only after a primary-source check. Hide "I was invited" and the disabled "Family can read" switch in v1.0; keep the Family tab, its Settings row and the link landing. "Tell me when it's here" stays, and says only what is true.
+
+### D-088 In-app feedback (delegated; debate Q-016 in-app-feedback)
+- **Decision:** v1.0 submission keeps "Data Not Collected" and uses the Help email row, with a content-free block (version, build, screen) added to the email. The feedback form is built behind a build switch and ships only after counsel signs the text and the founder accepts the label change to Data Collected. Text and screenshots are read by people; agents triage on structure only (screen, category, version, severity, owner) and never contact the reporter. Screenshots are taken at the tap, attached only after a preview with Remove, allowed only on settings and error screens, and travel by email, never into GitHub. The person is identified by a resettable random install id plus an optional email; never IDFA, IDFV or the analytics id. Issues live in a private repo with a machine identity (founder task). Retention: text 90 days after closing, screenshots 30.
+- **Needs outside sign-off:** counsel; creation of the private repo and mailbox (founder).
