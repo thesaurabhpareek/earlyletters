@@ -1,11 +1,11 @@
 {
-  "id": "J06-12",
+  "id": "J06-15",
   "journey": "review-and-edits",
-  "kind": "unhappy",
-  "title": "Close without saving",
-  "note": "Closing leaves the draft where it was: the \"A letter is waiting to be read back\" card is still on Tonight. Nothing is deleted. (\"Let it go\", the only delete, is a native confirm dialog that does not appear on web.)",
-  "from": "J06-02",
-  "shot": "screens/J06-12.png",
+  "kind": "happy",
+  "title": "Kept here for now",
+  "note": "The letter stays a draft: Tonight still shows \"A letter is waiting to be read back\" with the words exactly as they were. It can be played, read and exported from there, and kept once Plus is on.",
+  "from": "J06-14",
+  "shot": "screens/J06-15.png",
   "route": "/",
   "viewport": {
     "width": 402,

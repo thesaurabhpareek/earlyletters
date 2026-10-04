@@ -1,0 +1,31 @@
+{
+  "id": "J07-08",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "The second free letter",
+  "note": "After the second letter is kept, the saved card carries one calm line, once: \"That was your second free letter.\" (D-082). No counter, no \"0 left\".",
+  "from": "J07-04",
+  "shot": "screens/J07-08.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "You laughed at the rain. Added to Asha's book. That was your second free letter.",
+  "lines": [
+    "You laughed at the rain.",
+    "Added to Asha's book.",
+    "That was your second free letter."
+  ]
+}

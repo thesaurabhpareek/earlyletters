@@ -22,7 +22,7 @@
     }
   },
   "scrolls": false,
-  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Due date Thursday, December 3, 2026 Letters written before birth go into a chapter called Before You. Continue",
+  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Due date Thursday, December 3, 2026 Letters written before birth go into a part of the book called Before You. Continue",
   "lines": [
     "Back",
     "Who is this book for?",
@@ -33,7 +33,7 @@
     "Not here yet",
     "Due date",
     "Thursday, December 3, 2026",
-    "Letters written before birth go into a chapter called Before You.",
+    "Letters written before birth go into a part of the book called Before You.",
     "Continue"
   ]
 }

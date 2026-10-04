@@ -1,0 +1,33 @@
+{
+  "id": "J06-14",
+  "journey": "review-and-edits",
+  "kind": "unhappy",
+  "title": "Keep needs Plus",
+  "note": "Pressing Keep after the first two letters opens one calm sheet: \"Keep adding to Asha's book\", that the first two letters are kept and always will be, that this letter is safe on the phone, and a way to start Plus. No price, no trial length and no countdown (Apple's own sheet shows those). Nothing was saved yet. On web there is no StoreKit, so the sheet says Plus is not available on this device and has no \"See Plus\" or \"Redeem a code\" button. NEEDS A REAL IPHONE: See Plus, Redeem a code, Ask to Buy, offline.",
+  "from": "J06-02",
+  "shot": "screens/J06-14.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Keep adding to Asha's book Your first two letters are kept, and always will be. To add more, join Plus. This letter is safe on your phone. Come back to it once Plus is on. Plus is not available on this device yet. Keep it here for now",
+  "lines": [
+    "Keep adding to Asha's book",
+    "Your first two letters are kept, and always will be. To add more, join Plus.",
+    "This letter is safe on your phone. Come back to it once Plus is on.",
+    "Plus is not available on this device yet.",
+    "Keep it here for now"
+  ]
+}
