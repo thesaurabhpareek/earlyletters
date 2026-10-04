@@ -149,6 +149,17 @@ Rules:
    Verified (the API allows 301, 302, 307, 308; the dashboard flow is Edit > "Redirect to"). Inferred (exact dashboard labels).
 7. Run section 9, parts C and D, and the email-record diff from section 5.
 
+**Link previews (what shows when the link is shared).** `apps/web/src/app/layout.tsx` declares Open Graph and Twitter card tags; the
+picture is drawn at build time by `opengraph-image.tsx` (1200x630: the brand mark from `icon.svg`, the name and the promise, in Mukta from
+`_fonts/`). The icon files are `icon.svg`, `apple-icon.tsx` (180 px) and a `/favicon.ico` redirect. Image URLs are absolute and come from
+`lib/site-url.ts`: `NEXT_PUBLIC_SITE_URL`, else Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`, which becomes `earlyletters.com`
+after that domain is attached and the site is redeployed), else `https://earlyletters.com`. Verified (production build: all tags present, PNG
+1200x630, 308 for favicon). Inferred (not run against the real domain). **Previews cannot appear for any `*.vercel.app` address while
+Vercel Authentication protects it**: the platform answers messaging apps' fetch with a sign-in page, so no title or image is read. They work
+on the custom domain, which the protection setting `all_except_custom_domains` leaves public. To test after the domain is live: share the
+link in Messages or WhatsApp, or paste it into a card validator (opengraph.xyz, LinkedIn Post Inspector); chat apps cache a preview for days,
+so test with a fresh link such as `https://earlyletters.com/?v=2`.
+
 **Scroll motion.** The home page uses scroll-linked ("scrubbed") motion built on `motion` (MIT), in `apps/web/src/components/landing/scrub.tsx`:
 the hero recedes, "Meera is asleep." and the proof letter are pinned scenes your scroll plays (and reverses) and that fade into one another,
 paragraphs fill from dim to bright as you read them, and the other blocks lift into place the same way (opacity and a short lift only: no
