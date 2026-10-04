@@ -9,7 +9,9 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
+    // test/ for the store, capture and sync engines; src/**/*.test.ts for tests kept next to their module
+    // (packs, remote, language, account deletion). All run in Node: nothing here loads React Native.
+    include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
     environment: 'node',
   },
 });

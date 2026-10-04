@@ -72,12 +72,15 @@ describe('core enums equal the migration CHECK constraints', () => {
     expect(sorted(checkValues(table, column))).toEqual(sorted(values));
   });
 
-  // Founder decision 3 (BRIEF 2026-10-03) removes server-side entitlements, and
-  // PR #32 drops store_subscriptions from the pending migrations. Until that
-  // merges the table exists and must match; after it, PLAN_STATES is device-only.
-  const definesStoreSubscriptions = STATEMENTS.some((s) =>
-    /^\s*create table\s+(if not exists\s+)?public\.store_subscriptions\b/i.test(s),
-  );
+  // Founder decision 3 removes server-side entitlements: migration
+  // 20261004000000_plus_on_device_only.sql drops store_subscriptions, so
+  // PLAN_STATES is device-only (StoreKit). The parity check below applies only
+  // while some migration set still ends with the table in place.
+  const tableStatement = (s: string, verb: string) =>
+    new RegExp(`^\\s*${verb}\\s+table\\s+(if (not )?exists\\s+)?public\\.store_subscriptions\\b`, 'i').test(s);
+  const created = STATEMENTS.some((s) => tableStatement(s, 'create'));
+  const dropped = STATEMENTS.some((s) => tableStatement(s, 'drop'));
+  const definesStoreSubscriptions = created && !dropped;
   it.runIf(definesStoreSubscriptions)('store_subscriptions.status is PLAN_STATES without the device-only `none`', () => {
     expect(sorted(checkValues('store_subscriptions', 'status'))).toEqual(sorted(PLAN_STATES.filter((s) => s !== 'none')));
   });

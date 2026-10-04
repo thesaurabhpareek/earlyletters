@@ -8,9 +8,8 @@
  * and fails if a server-backed set here drifts from the database.
  *
  * Server-backed (CHECK constraint in supabase/migrations):
- *   ENTRY_KINDS, CAPTURE_MODES, EDIT_LEVELS, MEMBER_ROLES, APPROVALS,
- *   PLAN_STATES (minus 'none', which means "no subscription row").
- * Device-only (no server column): TRANSCRIPT_STATUSES, DRAFT_STATES.
+ *   ENTRY_KINDS, CAPTURE_MODES, EDIT_LEVELS, MEMBER_ROLES, APPROVALS.
+ * Device-only (no server column): TRANSCRIPT_STATUSES, DRAFT_STATES, PLAN_STATES.
  * Product-only: OFFER_TRIGGERS.
  *
  * `EditLevel` (types.ts) and `OfferTrigger` (plan.ts) already exist as
@@ -55,9 +54,8 @@ export type DraftState = (typeof DRAFT_STATES)[number];
 
 /**
  * Plus state as the device sees it (`PlanView['state']`). Under founder
- * decision 3 the device decides Plus from StoreKit; while the pending
- * migrations still define store_subscriptions, every value but `none` is also
- * its status.
+ * decision 3 the device decides Plus from StoreKit and no server table holds
+ * it (store_subscriptions is dropped), so this set is device-only.
  */
 export const PLAN_STATES = Object.freeze([
   'none',
@@ -73,11 +71,11 @@ export type PlanState = (typeof PLAN_STATES)[number];
 
 /** Why a Plus offer was shown. Same values as `OfferTrigger` in plan.ts. */
 export const OFFER_TRIGGERS = Object.freeze([
-  'second_child',
-  'read_together',
-  'backup',
-  'themes',
   'chapter_complete',
+  'second_child',
+  'backup',
+  'read_together',
+  'themes',
   'settings',
 ] as const);
 

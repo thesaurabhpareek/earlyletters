@@ -202,6 +202,10 @@ export const ALLOWED_SDK_PROPERTIES: readonly string[] = [
 /** SDK-internal events we let through (no properties beyond the above). */
 export const ALLOWED_SDK_EVENTS: readonly string[] = ['$identify'];
 
+/**
+ * Shape of the event PostHog's `before_send` receives (@posthog/core 1.55.3
+ * `CaptureEvent`: uuid, event, properties, $set, $set_once, timestamp).
+ */
 export interface OutgoingEvent {
   event: string;
   properties?: Record<string, unknown>;
@@ -211,17 +215,20 @@ export interface OutgoingEvent {
 /**
  * Last line of defence, run by the SDK right before upload. Returns null to
  * drop. Splits SDK `$` properties (allowlisted above) from catalogue
- * properties (validated by `sanitizeEvent`).
+ * properties (validated by `sanitizeEvent`). Top-level `$set` and `$set_once`
+ * (person properties) are always removed: PostHog copies a top-level `$set`
+ * back into the payload unless the hook omits it.
  */
-export function sanitizeOutgoing(
-  evt: OutgoingEvent,
-  onViolation?: (v: Violation) => void,
-): OutgoingEvent | null {
+export function sanitizeOutgoing<E extends OutgoingEvent>(evt: E, onViolation?: (v: Violation) => void): E | null {
   const sdkEvent = ALLOWED_SDK_EVENTS.includes(evt.event);
   if (!sdkEvent && !isKnownEvent(evt.event)) {
     onViolation?.({ kind: 'unknown_event', event: safeEvent(evt.event) });
     return null;
   }
+  // Keep only the envelope fields PostHog needs; never person properties.
+  const envelope: Record<string, unknown> = { event: evt.event };
+  if (evt.uuid !== undefined) envelope.uuid = evt.uuid;
+  if (evt.timestamp !== undefined) envelope.timestamp = evt.timestamp;
   const sdkProps: Record<string, unknown> = {};
   const ours: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(evt.properties ?? {})) {
@@ -235,9 +242,9 @@ export function sanitizeOutgoing(
       ours[k] = v;
     }
   }
-  if (sdkEvent) return { ...evt, properties: sdkProps };
+  if (sdkEvent) return { ...envelope, properties: sdkProps } as E;
   const { props, violations } = sanitizeEvent(evt.event, ours);
   violations.forEach((v) => onViolation?.(v));
   if (!props) return null;
-  return { ...evt, properties: { ...sdkProps, ...props } };
+  return { ...envelope, properties: { ...sdkProps, ...props } } as E;
 }

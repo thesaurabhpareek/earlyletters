@@ -10,9 +10,10 @@ import {
   REQUIRED_POSTHOG_AUTOCAPTURE,
   REQUIRED_POSTHOG_OPTIONS,
   type PropSpec,
+  withRenderedCatalogue,
 } from '../src';
 
-const entries = Object.entries(EVENTS) as [string, { reqs: readonly string[]; level: string; props: Record<string, PropSpec> }][];
+const entries = Object.entries(EVENTS) as [string, { area: string; reqs: readonly string[]; level: string; props: Record<string, PropSpec> }][];
 
 /** Property keys that name content or L3/L4 data. B-NFR-001: language names too. */
 const FORBIDDEN_KEY = /(text|transcript|name|note|email|audio_url|birth|due_date|dob|token|query|phone|address|signs_as|language_code|locale|timezone|photo_url|word$|term$)/;
@@ -81,7 +82,7 @@ describe('catalogue rules', () => {
     }
   });
 
-  it('sends goals only as a count and nothing derived from languages (both L4, PRD 7.10)', () => {
+  it('sends goals only as a count and no multilingual flag (PRD 7.10, B-NFR-001)', () => {
     expect(Object.keys(EVENTS.goals_set.props)).toEqual(['count']);
     expect(Object.keys(EVENTS)).not.toContain('languages_set');
     for (const [name, spec] of entries) {
@@ -91,27 +92,27 @@ describe('catalogue rules', () => {
     }
   });
 
-  /**
-   * Properties added in code whose TRACKING_PLAN.md row is owned by the docs
-   * workstream (WS-17) and lands in a separate PR. Each entry must be removed
-   * once the plan documents it; the test below fails if it stays.
-   */
-  const PENDING_PLAN_DOCS: readonly string[] = ['child_added.has_date'];
-
-  it('every event and property is documented in docs/analytics/TRACKING_PLAN.md', () => {
-    const plan = readFileSync(resolve(__dirname, '../../../docs/analytics/TRACKING_PLAN.md'), 'utf8');
-    const documented = (key: string) => plan.includes(`\`${key}\``) || plan.includes(`${key}:`);
+  it('carries language only as `lang`, only on languages events, only from the seven v1.0 codes', () => {
+    const withLang = entries.filter(([, spec]) => 'lang' in spec.props).map(([name]) => name).sort();
+    expect(withLang).toEqual(['language_set', 'pack_download']);
+    for (const name of withLang) {
+      const spec = EVENTS[name as 'language_set'];
+      expect(spec.area).toBe('languages');
+      expect(spec.props.lang.type).toBe('enum');
+      expect([...spec.props.lang.values].sort()).toEqual(['ar', 'en', 'es', 'fr', 'hi', 'pt', 'zh']);
+    }
+    // Never next to letter, capture, book or family behaviour.
     for (const [name, spec] of entries) {
-      expect(plan, `event ${name}`).toContain(`\`${name}\``);
-      for (const key of Object.keys(spec.props)) {
-        if (PENDING_PLAN_DOCS.includes(`${name}.${key}`)) continue;
-        expect(documented(key), `${name}.${key}`).toBe(true);
+      if (['capture', 'book', 'family', 'children', 'celebrate'].includes(spec.area)) {
+        expect(Object.keys(spec.props), name).not.toContain('lang');
       }
     }
-    for (const pending of PENDING_PLAN_DOCS) {
-      const key = pending.split('.')[1];
-      expect(documented(key), `${pending} is documented now: remove it from PENDING_PLAN_DOCS`).toBe(false);
-    }
+  });
+
+  it('docs/analytics/TRACKING_PLAN.md section 3.1 is the generated catalogue (run `npm run plan -w @scribe/analytics`)', () => {
+    const plan = readFileSync(resolve(__dirname, '../../../docs/analytics/TRACKING_PLAN.md'), 'utf8');
+    expect(withRenderedCatalogue(plan) === plan, 'TRACKING_PLAN.md is out of date: run `npm run plan -w @scribe/analytics`').toBe(true);
+    for (const [name] of entries) expect(plan, `event ${name}`).toContain(`\`${name}\``);
   });
 });
 

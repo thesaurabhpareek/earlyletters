@@ -1,0 +1,23 @@
+# E2E-13c  Co-parent invite round trip, back on simulator A (Mama): the joined
+# co-parent appears as a member and the pending invite is gone (sync pull;
+# PRD 7.3 budget is p95 5 s, measured on device; here up to 60 s).
+appId: ${APP_ID}
+name: E2E-13c Co-parent invite, confirm (simulator A)
+tags:
+  - e2e-coparent
+  - E2E-13
+  - B-REQ-007
+  - needs-backend
+---
+- launchApp:
+    stopApp: true
+- tapOn:
+    id: "tab.family"
+- extendedWaitUntil:
+    visible:
+      id: "family.member"
+      index: 1
+    timeout: 60000
+- assertNotVisible:
+    id: "family.pending"
+- stopApp

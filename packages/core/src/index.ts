@@ -15,3 +15,4 @@ export * from './followups';
 export * from './safety';
 export * from './plan';
 export * from './domain';
+export * from './lang';
