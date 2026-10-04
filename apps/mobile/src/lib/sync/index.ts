@@ -23,6 +23,7 @@ import {
   subscribeAuth,
   syncAllowed,
 } from '../auth/auth-store';
+import { serverFeaturesEnabled } from '../capabilities';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { getSupabaseOrNull } from '../supabase/client';
 import { createSyncEngine, type SyncEngine } from './engine';
@@ -125,6 +126,8 @@ function ensureEngine(): void {
  * Returns a stop function (tests, hot reload).
  */
 export function startSync(): () => void {
+  // v1.0 is on this phone only (lib/capabilities.ts): nothing to wire, no listener, no network.
+  if (!serverFeaturesEnabled()) return () => {};
   const unsubs: (() => void)[] = [];
   unsubs.push(onSignedIn((userId) => {
     claim(userId);
