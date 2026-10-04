@@ -190,7 +190,7 @@ All database files below are **written and tested but not applied** to any remot
 - Status: deferred (v1.1, with T5-01 and T5-08 in FUTURE). v1.0 uses `docs/legal/DATA_CLASSIFICATION.md` 1.3.0, regenerated from the migrations by the analytics agent.
 
 #### BL-118 Content rule additions and claims registry [High]
-- Status: done in part (the rules test enforces the trust lines word for word, no beta wording, no grandparent claims, and only what Plus gates in v1.0: D-053, D-055, D-060, D-061 effects). The claims registry and the remaining rules are deferred (v1.1, merged into T5-08).
+- Status: in-review (PR #46, the remaining rules). Done before it: the rules test enforces the trust lines word for word, no beta wording, no grandparent claims, and only what Plus gates in v1.0 (D-053, D-055, D-060, D-061 effects). The claims registry is deferred (v1.1, merged into T5-08).
 
 #### BL-119 `child-input` flag in the prompt selector [High]
 - Status: ready. Mode: agent. Owner: speech engineer. Verified: Tonight passes `together: false` to `selectPrompt`, so `together` prompts never show today, but `packages/core` has no flag and no test that proves it.
@@ -392,7 +392,7 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 #### BL-347 Email sign-in link cannot sign a phone into someone else's account (review H1) [Critical]
 - Status: ready. Mode: agent (auth code: independent review run and `approve-migration` label once BL-005 is on). Owner: auth owner, sync owner. Size: M.
 - Satisfies: A-REQ-023, LEGAL-REQ-024, LEGAL-REQ-026; TDD 04 3.1.
-- Scope: accept an opened link only while this phone has a pending request from this session (`getPendingEmail()` or a persisted request nonce), otherwise route to "type the code"; refuse a link while a different account is signed in; never run `takeOwnership` on `SIGNED_IN`: run it only after consent, behind a screen that shows the masked account email and needs a tap; then move to Supabase PKCE for email links (`flowType: 'pkce'`, template change in `packages/emails/supabase/magic-link.html` and FT-12). Tests for the attack in H1's five steps.
+- Scope: accept an opened link only while this phone has a pending request from this session (`getPendingEmail()` or a persisted request nonce), otherwise route to "type the code"; refuse a link while a different account is signed in; never run `takeOwnership` on `SIGNED_IN`: run it only after consent, behind a screen that shows the masked account email and needs a tap; then move to Supabase PKCE for email links (`flowType: 'pkce'`, template change in `supabase/templates/magic_link.html` and FT-12). Tests for the attack in H1's five steps.
 - Needed before C1 (Mon 19 Oct): a phishing link would otherwise upload a family's letters to an attacker's account.
 
 #### BL-322 Invite asks before it joins, and never switches the open book by itself (review H2, app part) [High]
@@ -712,6 +712,107 @@ Everything else is ranked in `docs/backlog/FUTURE.md` (v1.1 about mid January 20
 Printed books stay a future launch (K-32; BK-13 and BK-14). The beta label leaves only when the founder ends the beta (D-011): one release removes the in-app "early version" note and Terms 16.4.
 
 ---
+
+## Brand, email and web handoffs (BL-351 to BL-369; from the email and brand lane, 3 Oct 2026)
+
+Source: branch `feat/email-brand-library`, the reviews in `docs/reviews/2026-10-03/`, the audit `docs/brand/CONSISTENCY_AUDIT.md`, decisions D-071 to D-081, and the activity record `docs/brand/activity/`. Ids BL-351 to BL-369 are reserved for this block. (They were drafted as BL-300 to BL-318, then BL-340 to BL-358, which the 4 Oct backlog consolidation took; the block moved to BL-351 to BL-369 on 4 Oct.)
+
+**Assignment rule for this block (proposed for all tasks).** When an agent picks up a task, the PR that takes it changes the status line to `in-review (PR #n). Assignee: agent:<handle>, run <run id>`, so every task names the agent identity and run that did it. Founder tasks say `Assignee: founder`.
+
+#### BL-351 Brand system: primary mark, asset registry, brand book
+- Status: in-review (PR #48). Assignee: agent:design-systems, runs a84743e25427a87b5, ae4698bb9d7faf53f. Mode: agent. Owner: design systems. Milestone: M11. Size: M.
+- Satisfies: D-071, D-072.
+- Scope: `packages/brand` primary mark, `registry.ts` with `assetFor(context)` and tests, email logos, favicons, OG image, fonts for email; `docs/brand/BRAND_SYSTEM.md`.
+
+#### BL-352 Email library and Supabase auth templates
+- Status: in-review (PR #49). Assignee: agent:design-systems and agent:content, runs listed in `docs/brand/activity/2026-10-03.jsonl`. Mode: agent. Owner: design systems. Milestone: M5. Size: L.
+- Satisfies: D-044, D-080, D-054; LEGAL-REQ on transactional email (see `docs/emails/COMPLIANCE.md`).
+- Scope: `packages/emails` (components, 39 templates, render and Supabase export), `packages/content/src/emails`, `supabase/templates`, `docs/emails`.
+
+#### BL-353 Copy and legal web drafts after the founder decisions of 3 Oct
+- Status: in-review (PR #49). Assignee: agent:content and agent:legal. Mode: agent. Owner: content. Milestone: M9. Size: M.
+- Satisfies: D-073 to D-081.
+- Scope: `packages/content/src` (site, store, pages, strings), `packages/content/legal/*.md` (drafts, counsel review pending), glossary in `BRAND.md`.
+
+#### BL-354 App icon and splash from the registry
+- Status: ready. Mode: pair (needs a Mac for the Icon Composer file). Owner: mobile engineer. Milestone: M11. Size: S.
+- Satisfies: D-071; audit CA-003, CA-004, CA-006.
+- Scope: build the iOS 26 Icon Composer file from `icon.app.default`, `icon.app.dark` and `icon.app.tinted`; splash from `app.splash`; remove Expo scaffold images (CA-005); confirm EAS accepts icon paths outside `apps/mobile`.
+
+#### BL-355 Brand fonts and type scale in the app
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M11. Size: M.
+- Satisfies: audit CA-017, CA-018; DESIGN_LANGUAGE type scale.
+- Scope: load Literata, Mukta and Tiro Devanagari Hindi with expo-font (subset); map headings to `tokens.type`; welcome screen uses the stacked lockup artwork (CA-007, D-079).
+
+#### BL-356 Move app strings into packages/content and wire new keys
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M4. Size: M.
+- Satisfies: CLAUDE.md content rules; audit CA-036; review CUS-03.
+- Scope: move `pendingCopy` and permission strings into content; wire `en.settings.plan`, `en.settings.account`, `en.auth`, `en.coParentLeft`; rename `tidy*` keys to "Word for word" (D-074); microphone purpose string without "share with family"; hide v1.1 family screens.
+
+#### BL-357 App reports subscription status to the server
+- Status: ready. Mode: pair. Owner: payments engineer. Milestone: M8. Size: M. Depends on: BL-358.
+- Satisfies: D-080 (narrows Brief decision 3), D-022.
+- Scope: after StoreKit 2 entitlement checks, send plan, trial end, renewal date and cancelled flag only (no payment data, no receipts) through `packages/api`.
+
+#### BL-358 Subscription status table and endpoint
+- Status: ready. Mode: pair (founder `approve-migration`). Owner: data architect. Milestone: M8. Size: M.
+- Satisfies: D-080; data map entry required (DATA-REQ-001).
+- Scope: new migration and RPC per the `packages/api` contract; RLS tests; retention; privacy data map row. Platform coordinator area.
+
+#### BL-359 Renewal and trial reminder scheduler
+- Status: blocked (BL-358). Mode: agent. Owner: sync owner. Milestone: M8. Size: M.
+- Satisfies: D-022, D-080; California B&P 17602 notices (`docs/emails/COMPLIANCE.md`).
+- Scope: schedule `trial-*`, `annual-renewal-*` and `price-increase` emails from reported status; payers only; idempotent sends; suppression-safe (never put transactional mail on Resend's account-wide suppression list).
+
+#### BL-360 Supabase Auth sends through Resend
+- Status: ready. Mode: pair. Owner: security engineer. Milestone: M5. Size: S.
+- Satisfies: D-044, D-054; `supabase/auth-email.md`.
+- Scope: custom SMTP or Send Email Hook per the runbook; apply `supabase/templates`; sending-only Resend key for earlyletters.com; redirect allowlist; OTP 6 digits, 15-minute expiry.
+
+#### BL-361 Send the new account emails
+- Status: blocked (BL-360). Mode: agent. Owner: sync owner. Milestone: M9. Size: S.
+- Satisfies: review CUS-04, CUS-14.
+- Scope: send `coparent-left`, `deletion-confirm`, `passkey-added` and `new-device-sign-in` through the email hook with the React Email templates.
+
+#### BL-362 Sign-in providers removed at account deletion
+- Status: ready. Mode: agent. Owner: security engineer. Milestone: M9. Size: S.
+- Satisfies: Apple 5.1.1(v); D-042; review LGL findings.
+- Scope: revoke Apple tokens and unlink Google at deletion; reauthentication within 10 minutes before deletion (`docs/emails/SECURITY.md`).
+
+#### BL-363 Website serves brand assets, email images and fonts
+- Status: ready. Mode: agent. Owner: web lane (E3, BR2 in `docs/web/TEAM.md`). Milestone: M12. Size: S.
+- Satisfies: D-072; handoff `docs/web/handoffs/2026-10-03-brand-and-legal-for-web.md` items 1, 2, 2a, 4.
+- Scope: `/email/*`, `/fonts/*` with CORS and cache headers, registry-driven logo and OG image, security headers adapted to Next.js.
+
+#### BL-364 Website legal and account routes
+- Status: ready. Mode: agent. Owner: web lane (E1). Milestone: M9. Size: M.
+- Satisfies: Brief decision 13; D-042; handoff items 3 and 5.
+- Scope: `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, `/subscription-terms` from `packages/content/legal` with draft banner, noindex and a build guard against unfilled placeholders; `/delete-account`, `/delete-account/confirm`, `/cancel`, `/auth/callback` (never verifies the token) and the AASA file; "iPhone only for now" on `/open` for Android.
+
+#### BL-365 Counsel review of the legal drafts
+- Status: ready. Mode: human. Owner: founder. Milestone: M9. Size: M.
+- Satisfies: `docs/legal/COUNSEL_PACKET.md` (open questions, including `coparent-left` and D-081).
+- Scope: counsel sign-off, effective dates, versions; written no-training confirmation from Resend.
+
+#### BL-366 Trademark clearance for the name and the mark
+- Status: ready. Mode: human. Owner: founder. Milestone: M0. Size: S.
+- Satisfies: D-071; `docs/brand/logo-r2/neutral-review/final-strategy.md`.
+- Scope: professional clearance search for "Early Letters" and the quotation-mark drawing (classes 9, 16, 41, 42); file the specific drawing, not "quotation marks".
+
+#### BL-367 Support inbox route and postal address
+- Status: needs-decision (founder). Mode: human. Owner: founder. Milestone: M0. Size: S.
+- Satisfies: review CUS-16, LGL findings; CAN-SPAM postal address before any commercial email.
+- Scope: one route for hello@ (Resend inbox or Porkbun forwarding, not both); PO box or private mailbox for `{postalAddress}`; name the mailbox provider in subprocessors.
+
+#### BL-368 Email DNS hardening for both domains
+- Status: ready. Mode: human. Owner: founder. Milestone: M0. Size: S.
+- Satisfies: `docs/emails/SECURITY.md` DNS section.
+- Scope: remove Porkbun forwarding MX and SPF include; add `earlyletters.app` sending records; DMARC from none to quarantine after launch; MTA-STS and TLS-RPT; register both domains with Apple's private email relay.
+
+#### BL-369 Five-second parent test of the mark
+- Status: ready. Mode: human. Owner: founder. Milestone: M11. Size: S.
+- Satisfies: D-071 (final-a versus final-b).
+- Scope: about 20 parents, the icon at 60 and 29 px, "what does this app do?"; keep final-a unless final-b clearly wins.
 
 ## Appendix: TDD proposal to BL mapping
 

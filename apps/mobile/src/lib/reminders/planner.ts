@@ -234,7 +234,7 @@ export function namedSlotIndex(ordinal: number): number {
   return cycle * NAMED_PER_CYCLE + before;
 }
 
-/** "Asha", "Asha and Dev", "Asha, Dev and Mira". */
+/** "Asha", "Asha and Dev", "Asha, Dev and Nina". */
 export function joinNames(names: string[]): string {
   if (names.length <= 1) return names[0] ?? '';
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;

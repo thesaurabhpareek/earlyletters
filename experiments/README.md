@@ -23,7 +23,7 @@ Each of you, in your normal voice, the way you'd talk at bedtime:
 
 | # | What to record | Why |
 |---|---|---|
-| 1 to 5 | Five short sentences with her name and nicknames, e.g. "Miru walked to Mumma today." | Name accuracy |
+| 1 to 5 | Five short sentences with her name and nicknames, e.g. "Ashu walked to Mumma today." | Name accuracy |
 | 6 to 10 | Five sentences mixing Hindi and English the way you really talk | Code-switching accuracy |
 | 11 to 13 | Three 30 to 60 second "letters" to your child about today, unscripted, then type what you said into the config | Real-life accuracy and the cleaning |
 | 14 | 30 seconds in her room with the white-noise machine on and **nobody talking** | Checks it never invents words |

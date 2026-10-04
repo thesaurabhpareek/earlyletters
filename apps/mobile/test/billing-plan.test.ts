@@ -200,7 +200,7 @@ const ACTIVE = planFromSnapshot(snap([tx()])).view;
 const SHARED = planFromSnapshot(snap([tx({ ownership: 'familyShared' })])).view;
 const LAPSED = planFromSnapshot(snap([], [status({ state: 'expired', expiresAt: at(-5) })])).view;
 const FREE = EMPTY_PLAN.view;
-const started: BookFacts = { birthday: '2025-05-20' };
+const started: BookFacts = { birthday: '2025-04-12' };
 const joinedBook: BookFacts = { birthday: '2025-02-01', createdByMe: false };
 const ctx = (over: Partial<GateContext> = {}): GateContext => ({ now: NOW, today: '2026-10-03', plan: FREE, books: [], ...over });
 
@@ -314,9 +314,13 @@ describe('products and the StoreKit configuration file', () => {
 });
 
 describe('what the store view promises', () => {
-  it('[App Review 3.1.2] lists only what v1.0 ships (no backup, no extra themes yet)', () => {
+  // D-073 (founder, 3 Oct 2026, evening): the owner's encrypted backup ships in v1.0, as part of Plus. It
+  // supersedes D-059's "no audio upload", so backup is now something the store view may list. Themes and
+  // covers still are not in v1.0.
+  it('[App Review 3.1.2] lists only what v1.0 ships (backup per D-073; no extra themes yet)', () => {
     const said = billingCopy.store.features.join(' ');
-    expect(said).not.toMatch(/backup|theme|cover/i);
+    expect(said).not.toMatch(/theme|cover/i);
+    expect(said).toMatch(/backup/i);
     expect(said).toMatch(/Read together/);
     expect(said).toMatch(/more children/);
   });

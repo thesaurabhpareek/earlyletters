@@ -3,7 +3,7 @@
 Owner: pm-4 (growth-monetisation). Status: draft for the coordinator to merge, 3 Oct 2026. Not committed.
 Scope: how families find Early Letters, start, keep going, pay, stay and come back, inside the founder's decisions of 3 Oct 2026. Other leads: 01 capture, voice, languages (pm-1); 02 family circle (pm-2); 03 book and keepsakes (pm-3); 05 trust, platform, insights (pm-5). Overlaps are settled in `docs/agents/DEBATES.md` Q-006 and Q-008 (section 8).
 
-Read for this file: `docs/agents/BRIEF-2026-10-03.md`, `CLAUDE.md`, `docs/agents/COORDINATION.md`, `docs/prd/PRD.md` 1.3, `docs/prd/C-habits-pricing-settings.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md` 2.0, `docs/BACKLOG.md` (v1.1 table), `docs/adr/0013-apple-native-subscriptions.md`, `docs/analytics/TRACKING_PLAN.md`, `docs/analytics/INSIGHTS_LOOP.md`, `docs/store/app-store.md`, `packages/content/VOICE.md` and `BRAND.md`, `packages/content/src/features/billing.en.ts`, `packages/content/src/emails.en.ts`, `docs/legal/compliance-register.md`, `docs/legal/subscription-terms.md`, `docs/research/USER_RESEARCH.md`, `docs/research/competitors/us.md`, `global.md`, `adjacent-and-ux-benchmarks.md`.
+Read for this file: `docs/agents/BRIEF-2026-10-03.md`, `CLAUDE.md`, `docs/agents/COORDINATION.md`, `docs/prd/PRD.md` 1.3, `docs/prd/C-habits-pricing-settings.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md` 2.0, `docs/BACKLOG.md` (v1.1 table), `docs/adr/0013-apple-native-subscriptions.md`, `docs/analytics/TRACKING_PLAN.md`, `docs/analytics/INSIGHTS_LOOP.md`, `docs/store/app-store.md`, `packages/content/VOICE.md` and `BRAND.md`, `packages/content/src/features/billing.en.ts`, `packages/content/src/emails/*.en.ts`, `docs/legal/compliance-register.md`, `docs/legal/subscription-terms.md`, `docs/research/USER_RESEARCH.md`, `docs/research/competitors/us.md`, `global.md`, `adjacent-and-ux-benchmarks.md`.
 
 **Labels on every claim**
 - **F** Fact: in a repo document or code (cited), or on a page opened on 3 Oct 2026 (sources in section 10).
@@ -39,7 +39,7 @@ This file is product planning, not legal advice. Every legal line names the rule
 | Analytics are opt-in, asked as the third ask after the first letter; first-run events are never sent | PRD K-01, PRD-REQ-001; TRACKING_PLAN 2 | Onboarding is measured through server aggregates and ASC, not device funnels |
 | No ad, attribution or tracking SDKs; no ATT prompt | TRACKING_PLAN 10; C-NFR-005 | No MMP, no ad pixels on our pages; campaign links and ASC analytics only |
 | No streaks, points, badges, counts of gaps; no fear, guilt or loss language | CLAUDE.md; VOICE.md | Every habit and lifecycle touch is invitational and skippable |
-| Email is transactional only, no images, pixels or tracked links | VOICE.md; emails.en.ts header; LEGAL-REQ-053 | No newsletters, drips or win-back emails in v1.x (G-13) |
+| Email is transactional only, no images, pixels or tracked links | VOICE.md; src/emails/*.en.ts headers; LEGAL-REQ-053 | No newsletters, drips or win-back emails in v1.x (G-13) |
 | No promotions in notifications | C non-goals; CR-061 (Apple 4.5.4) | Reminders never sell; plan notices are transactional |
 | US App Store only | LEGAL-REQ-058; CR-100 | International launches need counsel per market (G-20) |
 | Individual publisher; form an entity before paid marketing, 1,000 families, $2,000 a month proceeds, first hire, Android | D-004 point 3 | Paid acquisition and Android wait for the entity |
@@ -295,7 +295,7 @@ Grouped as: measurement (G-01); being found (G-02 to G-06); starting and keeping
 
 ### G-13 Lifecycle email, kept to "something happened"
 
-- **Problem and evidence.** F: email is transactional only, with no images, pixels or tracked links (VOICE.md; emails.en.ts); templates today: magic link, co-parent invite, welcome, deletion steps, export ready. F: classify every template, and prefer no commercial email in v1 (CR-060, LEGAL-REQ-053). F: Qeepsake reviewers got marketing texts "while postpartum"; Tinybeans "emails every day" (us.md 3.1, 9.10). F: the dormant-payer email (C-REQ-031) needs to know who pays, which we cannot (ADR 0013). F: Resend open and click tracking off (ROADMAP founder task). F: pm-2 owns the family digest content; pm-4 owns the sending platform and lifecycle rules (Q-006).
+- **Problem and evidence.** F: email is transactional only, with no images, pixels or tracked links (VOICE.md; src/emails/*.en.ts); templates today: magic link, co-parent invite, welcome, deletion steps, export ready. F: classify every template, and prefer no commercial email in v1 (CR-060, LEGAL-REQ-053). F: Qeepsake reviewers got marketing texts "while postpartum"; Tinybeans "emails every day" (us.md 3.1, 9.10). F: the dormant-payer email (C-REQ-031) needs to know who pays, which we cannot (ADR 0013). F: Resend open and click tracking off (ROADMAP founder task). F: pm-2 owns the family digest content; pm-4 owns the sending platform and lifecycle rules (Q-006).
 - **Job to be done.** "Email me only when something happened in our book, and never try to get me back."
 - **Solution.**
   1. Keep the current set; add "{co-parent} joined your book" (transactional, event-driven, no child name).
@@ -307,7 +307,7 @@ Grouped as: measurement (G-01); being found (G-02 to G-06); starting and keeping
 - **Our differentiator.** Fewer emails than anyone, each worth opening.
 - **RICE.** 1,800 x 0.25 x 50% / 2 = **113**.
 - **Dependencies.** pm-2 (digest content); content owner; server owner (Resend sends from Edge Functions); counsel (classification).
-- **Legal.** CAN-SPAM (classification; commercial mail needs an unsubscribe and a postal address, and the individual publisher should use a PO box or mail service, D-004 point 1); CASL in Canada and the UK's PECR when those markets open (G-20); no child name or letter content in any email (emails.en.ts rules). COPPA not engaged.
+- **Legal.** CAN-SPAM (classification; commercial mail needs an unsubscribe and a postal address, and the individual publisher should use a PO box or mail service, D-004 point 1); CASL in Canada and the UK's PECR when those markets open (G-20); no child name or letter content in any email (src/emails rules). COPPA not engaged.
 - **Metric.** Unsubscribe and complaint rates (A target under 0.1%); exports in the week after the anniversary note; co-parent's first letter within 7 days of joining.
 - **Size.** S to M. **Horizon.** Next.
 

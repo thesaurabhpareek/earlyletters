@@ -29,7 +29,7 @@ function phone(): SqlDb {
 }
 function book(db: SqlDb, name = 'Asha'): string {
   const id = id7();
-  db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at) VALUES (?, ?, '2025-05-20', 'Mama', ?, ?)", id, name, ctx.now, ctx.now);
+  db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at) VALUES (?, ?, '2025-04-12', 'Mama', ?, ?)", id, name, ctx.now, ctx.now);
   return id;
 }
 function letter(db: SqlDb, child: string, text = 'She walked to me.', author: string | null = null): string {
