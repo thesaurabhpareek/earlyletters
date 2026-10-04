@@ -23,7 +23,7 @@ describe('parseRemoteConfig', () => {
     if (!r.ok) return;
     expect(r.value.readTogetherFreeSessions).toBe(BUNDLED_READ_TOGETHER_FREE_SESSIONS);
     expect(r.value.minSupportedVersion).toBe('0.0.0');
-    expect(r.value.flags).toEqual({ introVariant: 'four', lockScreenNamesDefault: true });
+    expect(r.value.flags).toEqual({ introVariant: 'four', lockScreenNamesDefault: true, familyTeaser: 'coming_soon' });
     expect(r.value.killSwitches.sync).toBe(false);
     expect(r.value.killSwitches.invites).toBe(true);
   });
@@ -38,6 +38,19 @@ describe('parseRemoteConfig', () => {
     for (const forbidden of ['recording', 'record', 'typing', 'save', 'read', 'playback', 'export', 'analytics', 'paywall']) {
       expect(KILL_SWITCH_KEYS as readonly string[]).not.toContain(forbidden);
     }
+  });
+
+  it('[DECISION-16] the family teaser flag can only pick a reviewed variant, and no key turns server features on', () => {
+    const quiet = parseRemoteConfig({ ...base, flags: { familyTeaser: 'quiet' } });
+    expect(quiet.ok && quiet.value.flags.familyTeaser).toBe('quiet');
+    const bad = parseRemoteConfig({ ...base, flags: { familyTeaser: 'invite_now' } });
+    expect(bad.ok && bad.value.flags.familyTeaser).toBe('coming_soon');
+    // Sign-in, sync and sharing are a build-time switch (apps/mobile/src/lib/capabilities.ts):
+    // a served document that tries to turn them on is ignored key by key.
+    const sneaky = parseRemoteConfig({ ...base, serverFeatures: true, flags: { serverFeatures: true, signIn: true, coParent: true }, capabilities: { sync: true } });
+    expect(sneaky.ok).toBe(true);
+    if (!sneaky.ok) return;
+    expect(JSON.stringify(sneaky.value)).not.toMatch(/serverFeatures|signIn|coParent|capabilities/);
   });
 
   it('rejects a document without its identity fields', () => {

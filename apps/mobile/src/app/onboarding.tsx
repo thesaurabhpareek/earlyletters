@@ -20,7 +20,7 @@
  * Back are navigation and stay silent (MOTION 6).
  */
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { CaretLeftIcon } from 'phosphor-react-native/src/icons/CaretLeft';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
@@ -42,8 +42,10 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
+import { capabilities } from '@/lib/capabilities';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
+import { inviteHref } from '@/lib/family/entry.logic';
 import { ordinalOf, track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
@@ -128,7 +130,7 @@ export default function Onboarding() {
       );
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
     // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
-    for (const c of created) track('child_added', { mode: expecting ? 'due_date' : 'birthday', ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
+    for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
     haptic('success');
     router.replace('/');
   };
@@ -337,8 +339,11 @@ export default function Onboarding() {
           <Button size="lg" fullWidth disabled={disabled} label={cta} onPress={step === 'finish' ? finish : next} />
           {step === 'welcome' && (
             <View className="mt-2 gap-1">
-              <Button variant="quiet" fullWidth label={o.welcome.signInButton} onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'sign_in' } })} />
-              <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push('/invite')} />
+              {/* v1.0 has no accounts (lib/capabilities.ts): no sign-in here; "I was invited" opens co-parent coming soon. */}
+              {capabilities.signIn ? (
+                <Button variant="quiet" fullWidth label={o.welcome.signInButton} onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'sign_in' } })} />
+              ) : null}
+              <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)} />
             </View>
           )}
         </ScrollView>

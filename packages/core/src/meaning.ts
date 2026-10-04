@@ -7,7 +7,7 @@
  * refuses. A refused edit costs a parent one untidy word; an accepted wrong
  * edit puts words in their mouth.
  */
-import { FUNCTION_WORDS, tokens } from './text';
+import { frozenSet, FUNCTION_WORDS, nfc, tokens } from './text';
 import {
   AGREEMENT_GROUPS as AGREEMENT_LISTS,
   KINSHIP,
@@ -21,9 +21,9 @@ import {
 /* The English tables live in lang/english-tables.ts; the English text-rules pack is built from the same sets. */
 export { KINSHIP, MODALS, NEGATIONS, NUMBER_WORDS };
 
-/** Normalise a word for comparison: lowercase, straight apostrophe. */
+/** Normalise a word for comparison: NFC, lowercase, straight apostrophe. */
 export function norm(word: string): string {
-  return word.toLowerCase().replace(/[’‘′]/g, "'");
+  return nfc(word).toLowerCase().replace(/[’‘′]/g, "'");
 }
 
 export function isNegation(word: string): boolean {
@@ -91,10 +91,10 @@ export function isPronounI(word: string): boolean {
 /* ---------- agreement: number and person only ---------- */
 
 /** Same verb (or article), different number or person. Tense never changes inside a group. */
-const AGREEMENT_GROUPS: ReadonlyArray<ReadonlySet<string>> = AGREEMENT_LISTS.map((g) => new Set(g));
+const AGREEMENT_GROUPS: ReadonlyArray<ReadonlySet<string>> = Object.freeze(AGREEMENT_LISTS.map((g) => frozenSet(g)));
 
 /** Groups that span tenses. A move inside one of these is a tense change. */
-const TENSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = TENSE_LISTS.map((g) => new Set(g));
+const TENSE_GROUPS: ReadonlyArray<ReadonlySet<string>> = Object.freeze(TENSE_LISTS.map((g) => frozenSet(g)));
 
 /** walk/walks, watch/watches, carry/carries: the same word with a number or person ending. */
 function sameWordWithS(a: string, b: string): boolean {
@@ -138,7 +138,8 @@ export function classifyWordSwap(a: string, b: string): 'changes_negation' | 'ch
  * swaps, not a phonetic algorithm.
  */
 export function soundKey(text: string): string {
-  let s = norm(text).replace(/[^\p{L}]/gu, '');
+  // Marks stay (CORE-01): an accent or vowel sign is part of how a name sounds.
+  let s = norm(text).replace(/[^\p{L}\p{M}]/gu, '');
   s = s
     .replace(/sh/g, 'S')
     .replace(/ch/g, 'C')
