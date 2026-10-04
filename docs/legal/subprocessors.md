@@ -1,108 +1,38 @@
 ---
-title: Early Letters service providers and subprocessors
-version: 1.2.1
+title: Early Letters service providers
+version: 2.0.0
 status: draft-for-counsel
 last_updated: 2026-10-04
 effective_date: TBD
 owner: founder
-reviewers: outside privacy counsel (TBD)
+published_at_url: https://earlyletters.com/subprocessors
 ---
 
-> **Drafting notice.** Drafted by an AI (Claude) acting as privacy counsel and privacy engineer, for review by a licensed attorney. Not legal advice. Vendor terms were read on 2 October 2026 and change often; re-check each link before signing, and keep a dated PDF copy of every DPA we accept. "Unverified" means the page was not opened or did not answer the question.
+# Who helps us run Early Letters
 
-## 1. Summary
+The app keeps your letters, recordings and child details on your phone, so no company holds them for us. These are the companies that handle anything else. Each acts on our instructions, and none may sell the information or use it to train machine learning models.
 
-Every provider below processes personal data on our behalf (a "service provider" or "processor"). None may sell it, use it for their own purposes beyond running and securing their service, or train AI models on our users' content. Section 4 lists where a vendor's published terms do not yet support that promise, and what we must do before launch.
+## 1. Our service providers
 
-The public version of this list (section 2 only, without notes, plus each vendor's privacy contact address or web form) is published at {SUBPROCESSORS_URL} and linked from the Privacy Policy (section 8) and the Consumer Health Data Privacy Policy (section 5). Washington's My Health My Data Act gives consumers the right to a list of every third party and affiliate that received their consumer health data, with an active email address or online contact for each (RCW 19.373.040), so the contact column is required, not optional.
-
-Processors that can see letter text, transcripts, recordings or photos handle consumer health data (`consumer-health-data-notice.md`). Their contracts must limit processing to our instructions and require them to honor deletion requests we pass on (MHMDA processor duties as summarized in register CR-031; deletion flow-down per RCW 19.373.040; Nevada and Connecticut similar, Unverified). Section 4 item 10 tracks this.
-
-## 2. Providers in use at launch
-
-| Vendor | Purpose | Data | Region | DPA | Retention by vendor | No training on our content? |
-|---|---|---|---|---|---|---|
-| **Supabase** (DPA names Supabase Pte. Ltd. as processor) | Postgres database, auth (email link and code, Sign in with Apple; Google from v1.1), Storage (photos, encrypted audio; web contributions from v1.1), Edge Functions (App Store notifications and plan reconcile, plan notices, invites, purge worker, audio key unwrap; AI gateway from v1.1) | Account, profiles, child profiles, letter text and transcripts, dictionary, family membership, invite hashes, photos, audio ciphertext, wrapped keys (escrow secret held in an Edge Function secret) | us-west-1 (AWS, N. California; region code per our project setting). DPA: data stored and primarily processed in the region we choose | https://supabase.com/legal/dpa (accepted with the Agreement; SCCs incorporated). Subprocessors: https://supabase.com/legal/customer-resources/subprocessor-list | Until we delete. 30 days after termination, then deleted. Pro plan daily backups kept 7 days; Storage objects are not in database backups. | **Yes.** Terms: Supabase "will not use, nor allow any third-party to use, Customer Data ... to train, fine-tune, or otherwise improve any artificial intelligence or machine learning model, without Customer's prior written consent." [V1][V2][V3] |
-| **PowerSync** (Journey Mobile, Inc., JourneyApps). **Pending founder decision D-023:** if the recommended outbox sync on expo-sqlite is adopted, PowerSync is not used and this row moves to section 3 | Sync between op-sqlite on the phone and Postgres; attachment queue | Replicated copies of rows each user may see (includes letter text) held in PowerSync's bucket storage; sync metadata | Choose a **US** deployment. Core subprocessors AWS and MongoDB; region depends on deployment (US, EU, AU, JP, BR) | JourneyApps DPA (PDF, dated 2026-01-28): https://platform.journeyapps.com/public/documents/JourneyApps-GDPR-DPA-Data-Processing-Addendum-2026-01-28.pdf . Confirm it attaches to our PowerSync Cloud plan. Subprocessors: https://powersync.com/legal/subprocessors | On termination, return or delete at our instruction (no timeframe stated). Breach notice within 72 hours. | **Not stated.** DPA limits processing to performing the Agreement and "improvement of the Service"; no AI clause found. Action required (section 4). [V4][V5][V6] |
-| **Groq** (**from v1.1**; no server transcription in v1.0, PRD 1.3 section 3.0) | Server speech-to-text fallback (whisper-large-v3-turbo), only after consent | Audio of the entry being transcribed, dictionary prompt; returns text and word timestamps. Account ID stripped by our gateway. | US. Any retained data in GCP buckets in the United States | Services Agreement (effective 22 June 2026): https://console.groq.com/docs/legal/services-agreement . Separate DPA: Unverified | By default not retained; may keep up to 30 days for reliability or abuse review. **Zero Data Retention must be enabled** (available to all customers). Deleted within 30 days of termination. | **Yes.** "Groq is not permitted to use Inputs or Outputs for training or fine-tuning any AI Model Services or other models, unless explicitly granted permission or instructed by Customer." [V7][V8] |
-| **DeepInfra** (**from v1.1**, as Groq) | Backup server speech-to-text; future optional edit pass (Qwen, text only) | Same as Groq; text only for edit pass | US (Unverified) | DPA: Unverified (not found). Data privacy page: https://docs.deepinfra.com/account/data-privacy | Inputs held in memory only during inference, not written to disk; outputs not stored; request content not logged (metadata only) | **Yes, for the models we use.** "We do not use data you submit to our APIs for training models, except when using Google or Anthropic models." Engineering guard: our `AI_ROUTES` must never point at Google or Anthropic models on DeepInfra. [V9] |
-| **PostHog, Inc.** | Product analytics, allowlisted events only, no session replay, no autocapture | Random analytics ID, enum and count event properties, app version, device model and OS. IP capture off. | **US Cloud** (recommended for a US-only launch; ADR 0008 left US or EU open) | https://posthog.com/dpa (self-serve, signed via PandaDoc in app.posthog.com/legal). Subprocessors: https://posthog.com/subprocessors (14 days' notice of changes) | Until deleted by us; on termination, return or delete. Event retention: set to 12 months (plan default Unverified). Account deletion can delete events only if the app passes the analytics ID at deletion time (privacy policy CN-18). | **Yes.** PostHog "does not permit any third parties (including its Subprocessors) to use any Company Personal Data to fine tune, train or develop their AI functionality or models." [V12][V13] |
-| **Sentry** (Functional Software, Inc.) | Crash and error reporting, source maps | Stack traces, device and OS, breadcrumbs with content stripped (`beforeSend`, `beforeBreadcrumb`), no user ID, IP storage off | US | https://sentry.io/legal/dpa/ (accepted electronically). Subprocessors: https://sentry.io/legal/subprocessors/ (30 days' notice) | Destroyed when the term ends. Event retention per plan (Unverified; proposed 90 days). | **Partly.** Terms let Sentry use "Non-Identifying Data" (which excludes personal data, source code and content) for "Additional Uses" such as "developing new products and services"; other Service Data only if we authorize it in settings. Keep any AI or data-sharing toggles off. [V14][V15] |
-| **Vercel Inc.** | Hosts `apps/web`: landing page, waitlist, published legal pages, static `/delete-account` page, magic-link landing page, AASA and assetlinks files; family contribution page from v1.1 | Web request logs (IP, user agent, path; invite tokens travel in the URL fragment so they are not logged), encrypted audio uploads in transit, waitlist emails | Primary processing in the US; DPA allows transfer worldwide | https://vercel.com/legal/dpa (Pro and Enterprise). Subprocessors: https://security.vercel.com (5-day objection window) | Deleted within "a commercially reasonable timeframe" after termination | **Only on a paid plan with the opt-out confirmed.** March 2026 terms: Hobby and trial Pro are opted in to AI training by default (code, agent chats, build telemetry, aggregate traffic stats, with personal data stated as redacted); paid Pro is opted out by default; Enterprise excluded. Use paid Pro and confirm Team Settings, Data Preferences shows opted out. [V16][V17] |
-| **{EMAIL_PROVIDER}** (to choose) | Custom SMTP for magic links and codes (A-REQ-026), trial, renewal and price-change notices | Email address, message content we send (sign-in codes, dates, prices) | {REGION} | {DPA_URL} | {RETENTION} | Must be confirmed before signing. Selection criteria: DPA with purpose limitation and no-training clause, US region, link tracking and open tracking turned off for auth mail. |
-
-### Not processors (independent parties)
-
-| Party | Role | Data | Note |
+| Company | What it does for us | What it sees | Where |
 |---|---|---|---|
-| Apple | **[COUNSEL REVIEW, 4 Oct 2026: Plus status from Apple now also decides whether a person can add letters after the first 2; no new vendor, data type or recipient. Offer codes (founder request of 4 Oct) are redeemed through Apple, not through a vendor of ours.]** App Store and StoreKit payments as merchant of record (Plus is sold, managed, cancelled and refunded only through Apple, ADR 0013); App Store Server API and Server Notifications, through which we receive transaction, renewal and refund status for a random `appAccountToken`; Sign in with Apple; APNs push; iCloud Keychain (later, ADR 0006) | Apple's own terms | No third-party billing service sits between us and Apple. Push payloads carry no letter text (C-REQ-009). |
-| Google | Sign in with Google (from v1.1); later Google Play Billing and FCM (Android) | Google's own terms | |
-| Model host for the first-run Whisper download | A zero-egress object store or a pinned Hugging Face revision (founder picks, D-046) | IP address and request metadata only | 3 Oct 2026: Supabase Storage is no longer recommended because model egress would cost about $11k to $12k at 220k installs (TDD 03 C-8, TDD 06 P-9). List the chosen host here and in the data map. |
-| Apple Declared Age Range (iOS) | Store age signal for the 18+ gate (PRD K-07) | Age range returned to the app | Used in memory and never stored or sent to our servers (register CR-004), so no data flows to us from it beyond `is_adult_attested`. |
+| Resend | Sends our emails: the welcome email and the "it is ready" email | The email address of people who ask us to write to them, and the emails we send | United States |
+| Vercel | Hosts the website, earlyletters.com | The usual details of a visit: IP address, page, browser | United States |
+| PostHog | Counts how the app is used, only if you turn on usage reports in the app | A random ID and simple counts, never letters, recordings or names | United States |
 
-## 3. Planned, not yet in use (add before the feature ships)
+## 2. Other companies you deal with directly
 
-| Vendor | Purpose | Data | Trigger |
-|---|---|---|---|
-| RevenueCat, Inc. | **Not used** (ADR 0013, founder decision of 3 Oct 2026: Plus through Apple only, StoreKit direct). Documented fallback, and a candidate when Android ships | Would hold purchase history under a random id; DPA allows internal service improvement | Only if the founder overrides ADR 0013 or chooses it for Android; then re-add to section 2 with a minor version |
-| Cloudflare Workers AI | Fallback for the optional edit pass (text only) | Letter text for one request | If the edit pass is turned on (ADR 0003). Cloudflare: "does not use your Customer Content to (1) train any AI models made available on Workers AI or (2) improve any Cloudflare or third-party services"; content stored only if we use a Cloudflare storage product [V18]. Region: Cloudflare network (Unverified). DPA: Cloudflare customer DPA (Unverified, not opened). |
-| Lulu (Lulu Press, Inc.) | Print and ship physical books | Book PDF (letters, photos), name and shipping address | Printed books (ADR 0007, P2). Terms not reviewed. |
-| Stripe or Apple Pay | Card payment for printed books | Name, email, shipping address; card data held by the payment provider | Printed books (P2). Terms not reviewed. |
-| CAPTCHA provider for anonymous web sign-in (Supabase supports hCaptcha and Cloudflare Turnstile; Unverified) | Abuse protection on the family contribution page | IP address, browser signals; no letter content | Only if the per-IP limit or abuse requires it (PRD K-08). It sees web contributors, some outside the US; review its own data use (some CAPTCHA services use signals for their own purposes) before enabling. |
+- **Apple** runs the App Store, Plus purchases, Family Sharing and your iPhone backup. Apple's own privacy policy applies. We do not receive your purchase records.
+- **The speech model file host.** The app downloads speech model files from a public file host, currently Hugging Face. It sees your IP address and which file was asked for, like any website. It is not our provider and acts on its own terms.
 
-## 4. Gaps to close before launch
+## 3. Later
 
-1. **PowerSync: no AI-training clause, and it holds letter text.** PowerSync stores replicated rows (including `final_text` and `raw_transcript`) in its own bucket storage. Ask JourneyApps to (a) confirm the DPA covers PowerSync Cloud, (b) add a written no-training, no-own-use clause, (c) confirm a US-only deployment and deletion timeframe on termination. If refused, consider the self-hosted Open Edition (FSL) noted in ADR 0004, or excluding text columns from sync streams for users who opt out.
-2. **Groq: turn on Zero Data Retention** in Data Controls before any production audio is sent (ARCHITECTURE section 8). Record the date and a screenshot.
-3. **DeepInfra: find or request a DPA.** Its data page is strong, but we have no contract terms. Until signed, keep DeepInfra out of the production route or accept the risk explicitly.
-4. **Sentry: confirm settings.** "Prevent storing of IP addresses" on; data scrubbing on with our extra fields (`text`, `transcript`, `name`, `note`, `letter`); any AI or "Additional Uses" authorization off; no session replay.
-5. **Vercel: paid Pro plan** and Data Preferences opted out of training before the web app goes live.
-6. ~~**RevenueCat: accept** that its DPA allows internal service improvement.~~ Not applicable from 1.2.0: RevenueCat is not used (ADR 0013).
-7. **Email provider: choose and sign** before custom SMTP is configured.
-8. **Supabase DPA entity.** The DPA names Supabase Pte. Ltd. (Singapore). Confirm which Supabase entity contracts with a US customer and whether that affects our "data lives in the United States" statement (data location is set by region; the contracting entity is not where data is stored).
-9. **Keep evidence.** Save a dated PDF of each DPA and data-use page, and the Groq ZDR and Vercel opt-out screenshots, in the company records (not in this repository).
-10. **Health-data terms.** Confirm each DPA for Supabase, PowerSync, Groq, DeepInfra and Vercel covers consumer health data: processing only on our instructions, deletion when we pass on a request, and assistance with access requests. Supabase, PostHog and Sentry DPAs are GDPR-style and likely sufficient; PowerSync and DeepInfra are the gaps.
-11. **PowerSync is a launch gate for a public claim.** Privacy Policy section 6 says we do not let service providers train on content. Until item 1 closes, that sentence cannot be published (privacy policy CN-7).
-12. ~~**RevenueCat ID.**~~ Resolved in 1.2.0: no RevenueCat. The App Store `appAccountToken` is a random id per account, never the profile uuid; `data-policy.md` 1.1.0 corrected.
-13. **PowerSync decision (D-023).** If the founder adopts the outbox sync, items 1, 10 (PowerSync part) and 11 close because PowerSync is not used; if not, they stay launch gates.
+When sign-in, sync or writing with a co-parent arrives, we will add the companies involved here and tell you before they handle anything you wrote.
 
-## 5. How we add or change a provider
-
-1. Engineering proposes the vendor with purpose, data, region and links.
-2. Check: DPA available; purpose limitation; no sale; no training on our content; deletion on termination; US region; security attestation (SOC 2 or similar).
-3. Update this file (version bump), the public list, and the privacy policy table if the provider handles content.
-4. For providers that handle letters, recordings or photos, give users 30 days' notice in the app before the provider starts receiving data (privacy policy section 8).
-5. Re-run the App Privacy and Data safety answers (`app-store-privacy-labels.md`) if the provider has an SDK in the app.
-
-## Appendix. Sources (opened 2 October 2026)
-
-- [V1] Supabase Data Processing Addendum: https://supabase.com/legal/dpa
-- [V2] Supabase Terms of Service (AI training clause; aggregated data): https://supabase.com/terms
-- [V3] Supabase Backups docs: https://supabase.com/docs/guides/platform/backups
-- [V4] JourneyApps Data Processing Addendum, 2026-01-28: https://platform.journeyapps.com/public/documents/JourneyApps-GDPR-DPA-Data-Processing-Addendum-2026-01-28.pdf
-- [V5] PowerSync Sub-Processors: https://powersync.com/legal/subprocessors
-- [V6] PowerSync Privacy Policy (last updated 22 January 2025): https://powersync.com/legal/privacy-policy
-- [V7] Groq Services Agreement (effective 22 June 2026): https://console.groq.com/docs/legal/services-agreement
-- [V8] Groq, Your Data in GroqCloud: https://console.groq.com/docs/your-data
-- [V9] DeepInfra, Data privacy: https://docs.deepinfra.com/account/data-privacy
-- [V10] RevenueCat DPA: https://www.revenuecat.com/dpa/
-- [V11] RevenueCat, Apple App Privacy: https://www.revenuecat.com/docs/platform-resources/apple-platform-resources/apple-app-privacy
-- [V12] PostHog DPA: https://posthog.com/dpa
-- [V13] PostHog, Data collection and IP capture: https://posthog.com/docs/privacy/data-collection
-- [V14] Sentry DPA: https://sentry.io/legal/dpa/
-- [V15] Sentry Terms of Service, section 4.2 and definitions of Additional Uses and Non-Identifying Data: https://sentry.io/legal/terms/
-- [V16] Vercel DPA: https://vercel.com/legal/dpa
-- [V17] Vercel, Updates to Terms of Service, March 2026: https://vercel.com/changelog/updates-to-terms-of-service-march-2026
-- [V18] Cloudflare Workers AI, Data usage: https://developers.cloudflare.com/workers-ai/platform/data-usage/
-- Repository: `docs/ARCHITECTURE.md` sections 3, 7, 8; ADR 0001 to 0010; PRD A (A-REQ-026, A-NFR-012), B (B-NFR-002, B-NFR-005), C (C-NFR-005).
-
-Unverified: Groq DPA; DeepInfra DPA and region; Cloudflare DPA and region; Sentry and PostHog default retention; the Supabase entity that contracts with US customers; whether the JourneyApps DPA attaches to PowerSync Cloud.
+<!-- TODO(founder): add each provider's privacy contact (web form or email) and confirm that the DPAs are accepted on our accounts (Resend, Vercel, PostHog). Contacts are needed for the Washington consumer health data list, if that notice applies. Remove the PostHog row if usage reports do not ship in v1.0. -->
 
 ## Changelog
 
 | Version | Date | Change |
 |---|---|---|
-| 1.2.1 | 2026-10-04 | Counsel note on Apple's row for the 4 Oct membership decision and offer codes. No vendor change. Patch (note only); counsel to confirm. Unpublished draft, no users bound. |
-| 1.2.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct): RevenueCat removed from section 2 and listed in section 3 as not used (ADR 0013); Apple's role as merchant of record and App Store Server API described; Groq and DeepInfra marked from v1.1; Vercel hosts the contribution page from v1.1; Google sign-in from v1.1; PowerSync marked pending D-023; model host recommendation changed to a zero-egress host (D-046); gaps 6 and 12 closed, gap 13 added. Pre-publication draft; minor (removes a vendor, adds none). |
-| 1.1.0 | 2026-10-02 | Privacy review (`memos/lawyer-2.md`): public list must carry vendor contact details (MHMDA access right) and is linked from the CHD policy; processor health-data terms; RevenueCat random id per PRD K-28; PostHog deletion dependency; Apple Declared Age Range and conditional CAPTCHA provider listed; gaps 10 to 12. |
-| 1.0.0 | 2026-10-02 | First draft for counsel review. |
+| 2.0.0 | 2026-10-04 | Rewritten for the first version of the app. |
