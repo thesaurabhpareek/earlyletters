@@ -159,12 +159,14 @@ describe('eas.json (POPS-02, POPS-08)', () => {
 });
 
 describe('.env.development', () => {
-  it('sets development and nothing else', () => {
+  it('sets development and nothing else (the server-features switch may only be off)', () => {
     const lines = fs
       .readFileSync(path.join(ROOT, '.env.development'), 'utf8')
       .split('\n')
       .map((l) => l.trim())
-      .filter((l) => l && !l.startsWith('#'));
+      .filter((l) => l && !l.startsWith('#'))
+      // Co-parent coming soon (v1.0 on-device only) adds this one line, and only ever as off.
+      .filter((l) => l !== 'EXPO_PUBLIC_SERVER_FEATURES=off');
     expect(lines).toEqual([`${KEY}=development`]);
   });
 });
