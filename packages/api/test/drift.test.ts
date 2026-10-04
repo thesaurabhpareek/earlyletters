@@ -7,6 +7,14 @@
  * entitlement objects that #32 removes, the drift checks are skipped with an
  * "EXPECTS #32" message; see packages/api/README.md to run them against the
  * #32 tree.
+ *
+ * Re-baseline needed when #32 lands: develop's later migrations (sync engine,
+ * ops deletion worker, insights aggregates, 20261005 family cap and
+ * idempotency) add RPCs, columns and the SCCAP code, and give create_child,
+ * create_child_invite and record_policy_act their own retry-safe signatures.
+ * Run this file without the gate against the merged tree and bring src/rpc.ts,
+ * src/rows.ts, src/enums.ts and src/errors.ts in line; every failure names
+ * what to add.
  */
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

@@ -1,0 +1,639 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://earlyletters.com/export-format/v1.schema.json",
+  "title": "Early Letters export, format 1",
+  "description": "Schema for data/entries.json, data/children.json, data/account.json and manifest.json in an export.",
+  "$defs": {
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "bytes",
+        "duration_ms",
+        "codec",
+        "media_type",
+        "integrity",
+        "recorded_sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^audio/[^/]+\\.m4a$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "codec": {
+          "const": "aac-lc"
+        },
+        "media_type": {
+          "const": "audio/mp4"
+        },
+        "integrity": {
+          "enum": [
+            "ok",
+            "mismatch",
+            "unchecked"
+          ]
+        },
+        "recorded_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "edit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "start",
+        "end",
+        "original",
+        "replacement",
+        "source"
+      ],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "original": {
+          "type": "string"
+        },
+        "replacement": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "child_id",
+        "author",
+        "kind",
+        "occurred_on",
+        "captured_at",
+        "capture_mode",
+        "edit_level",
+        "language",
+        "words",
+        "final_text",
+        "in_book",
+        "text_file",
+        "photo",
+        "audio",
+        "audio_missing"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "child_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "author": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "signs_as",
+            "is_exporter"
+          ],
+          "properties": {
+            "signs_as": {
+              "type": "string"
+            },
+            "is_exporter": {
+              "type": "boolean"
+            }
+          }
+        },
+        "kind": {
+          "enum": [
+            "letter",
+            "note",
+            "not_much"
+          ]
+        },
+        "occurred_on": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "captured_at": {
+          "type": "string",
+          "minLength": 10
+        },
+        "capture_mode": {
+          "enum": [
+            "spoken",
+            "typed",
+            "mixed"
+          ]
+        },
+        "edit_level": {
+          "enum": [
+            "clean",
+            "verbatim"
+          ]
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "words": {
+          "enum": [
+            "ready",
+            "waiting_for_words"
+          ]
+        },
+        "final_text": {
+          "type": "string"
+        },
+        "in_book": {
+          "type": "boolean"
+        },
+        "text_file": {
+          "type": "string",
+          "pattern": "^letters/"
+        },
+        "photo": {
+          "type": "null"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/audio"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "audio_missing": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "reason"
+              ],
+              "properties": {
+                "reason": {
+                  "enum": [
+                    "not_on_this_device",
+                    "offline",
+                    "vault_mode"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw_transcript": {
+          "type": "string"
+        },
+        "raw_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "machine_edits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edit"
+          }
+        },
+        "engine_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "prompt_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sounds_like_me": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "stt_meta": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "engine"
+              ],
+              "properties": {
+                "engine": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alignment": {
+          "type": "null"
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "author": {
+            "type": "object",
+            "properties": {
+              "is_exporter": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "required": [
+          "raw_transcript",
+          "raw_sha256",
+          "machine_edits",
+          "engine_version",
+          "prompt_key"
+        ]
+      },
+      "else": {
+        "type": "object",
+        "not": {
+          "type": "object",
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "raw_transcript"
+              ]
+            },
+            {
+              "type": "object",
+              "required": [
+                "machine_edits"
+              ]
+            },
+            {
+              "type": "object",
+              "required": [
+                "raw_sha256"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "entriesFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "format",
+        "generated_at",
+        "entries"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^1\\.\\d+\\.\\d+$"
+        },
+        "format": {
+          "const": "early-letters-export"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        }
+      }
+    },
+    "childrenFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "format",
+        "children"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^1\\.\\d+\\.\\d+$"
+        },
+        "format": {
+          "const": "early-letters-export"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "birthday",
+              "due_date",
+              "signs_as",
+              "signatures",
+              "hidden",
+              "book_file"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "birthday": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "due_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "signs_as": {
+                "type": "string"
+              },
+              "signatures": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "hidden": {
+                "type": "boolean"
+              },
+              "book_file": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^book/.+\\.pdf$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "accountFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "format",
+        "signed_in",
+        "plan",
+        "exported_from",
+        "memberships"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^1\\.\\d+\\.\\d+$"
+        },
+        "format": {
+          "const": "early-letters-export"
+        },
+        "signed_in": {
+          "type": "boolean"
+        },
+        "plan": {
+          "enum": [
+            "free",
+            "plus"
+          ]
+        },
+        "exported_from": {
+          "const": "phone"
+        },
+        "memberships": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "child_id",
+              "role",
+              "signs_as"
+            ],
+            "properties": {
+              "child_id": {
+                "type": "string"
+              },
+              "role": {
+                "enum": [
+                  "parent",
+                  "contributor"
+                ]
+              },
+              "signs_as": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "format_version",
+        "generated_at",
+        "app_version",
+        "engine_version",
+        "scope",
+        "counts",
+        "files"
+      ],
+      "properties": {
+        "format": {
+          "const": "early-letters-export"
+        },
+        "format_version": {
+          "type": "string",
+          "pattern": "^1\\.\\d+\\.\\d+$"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "app_version": {
+          "type": "string"
+        },
+        "engine_version": {
+          "type": "integer"
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exporter_role",
+            "children",
+            "include_recently_deleted"
+          ],
+          "properties": {
+            "exporter_role": {
+              "enum": [
+                "parent",
+                "contributor"
+              ]
+            },
+            "children": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "include_recently_deleted": {
+              "type": "boolean"
+            }
+          }
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "entries",
+            "audio",
+            "audio_missing",
+            "audio_mismatch",
+            "photos",
+            "books"
+          ],
+          "properties": {
+            "entries": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "audio": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "audio_missing": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "audio_mismatch": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "photos": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "books": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "bytes",
+              "sha256",
+              "media_type"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "media_type": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/entriesFile"
+    },
+    {
+      "$ref": "#/$defs/childrenFile"
+    },
+    {
+      "$ref": "#/$defs/accountFile"
+    },
+    {
+      "$ref": "#/$defs/manifest"
+    }
+  ]
+}

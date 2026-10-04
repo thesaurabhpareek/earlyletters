@@ -1,0 +1,9 @@
+# Maestro has no sleep command. Wait WAIT_MS (default 3000) for an element that
+# never exists; optional, so the timeout is not a failure.
+appId: ${APP_ID}
+---
+- extendedWaitUntil:
+    visible:
+      id: "e2e.wait.never"
+    timeout: ${WAIT_MS || 3000}
+    optional: true

@@ -558,7 +558,7 @@ export interface RpcTransport {
   rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: RpcTransportError | null }>;
 }
 
-export interface ApiError {
+export interface RpcError {
   readonly code: string;
   /** undefined for a code this contract does not know: treat as unexpected. */
   readonly spec: ApiErrorSpec | undefined;
@@ -569,7 +569,7 @@ export interface ApiError {
 
 export type RpcResult<N extends RpcName> =
   | { readonly ok: true; readonly data: RpcResponse<N> }
-  | { readonly ok: false; readonly error: ApiError };
+  | { readonly ok: false; readonly error: RpcError };
 
 export type CallRpc = <N extends RpcName>(
   client: RpcTransport,

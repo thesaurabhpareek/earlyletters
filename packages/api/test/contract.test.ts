@@ -34,10 +34,21 @@ function files(d: string): string[] {
   });
 }
 
-describe('package rules', () => {
-  const src = files(join(pkg, 'src'));
+// The package also holds the pack, remote-config, content and envelope contracts (ADR 0016, 0017), which
+// legitimately use valibot and noble. These rules are about the app <-> database contract modules only.
+const CONTRACT_SRC = ['version', 'scalars', 'enums', 'errors', 'rows', 'rpc', 'invite'].map((n) => join(pkg, 'src', `${n}.ts`));
+const CONTRACT_FILES = [
+  ...CONTRACT_SRC,
+  join(pkg, 'README.md'),
+  join(pkg, 'test', 'contract.test.ts'),
+  join(pkg, 'test', 'drift.test.ts'),
+  join(pkg, 'test', 'sql.ts'),
+];
 
-  it('src is pure TypeScript: no node: imports, no react-native, no third-party imports', () => {
+describe('package rules', () => {
+  const src = CONTRACT_SRC;
+
+  it('the contract modules are pure TypeScript: no node: imports, no react-native, no third-party imports', () => {
     for (const f of src) {
       const text = readFileSync(f, 'utf8');
       const imports = [...text.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
@@ -47,7 +58,7 @@ describe('package rules', () => {
   });
 
   it('no em or en dashes, curly quotes or ellipsis characters in package files', () => {
-    for (const f of files(pkg)) {
+    for (const f of CONTRACT_FILES) {
       expect(readFileSync(f, 'utf8'), f).not.toMatch(FORBIDDEN);
     }
   });

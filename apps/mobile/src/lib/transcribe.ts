@@ -1,28 +1,40 @@
 /**
- * Transcription behind one interface (ADR 0001).
+ * Transcription behind one interface (ADR 0001, ADR 0015).
  *
- * The capture screens only ever see `Transcriber`. Today there are two:
- * - whisper (src/lib/transcribe-whisper.ts): on-device whisper.rn. Needs a
- *   development build (native module) and a downloaded model file.
+ * The transcription queue (src/lib/transcription-queue) is the only caller;
+ * screens subscribe to the queue and never run a transcriber themselves, so
+ * one recording is never transcribed twice at once. Two transcribers:
+ * - whisper (src/lib/transcribe-whisper.ts): on-device whisper.rn with the
+ *   author's language model. Needs a development or store build and the
+ *   language's speech packs.
  * - sample (src/lib/transcribe-sample.ts): DEVELOPMENT ONLY. Returns fixed
  *   words so Review can be exercised in Expo Go. Never selected in release.
  *
- * Output is the raw transcript only. Cleaning happens afterwards in
- * @scribe/core faithfulClean, so every machine edit is verified and reversible.
+ * Output is the raw transcript only: what the recogniser heard in speech,
+ * nothing else. Silence gives '' (never invented words). Cleaning happens
+ * afterwards in @scribe/core faithfulClean, so every machine edit is
+ * verified and reversible.
  */
 import type { DictionaryTerm } from '@scribe/core';
-import { devShortcutsAllowed } from './build-env';
-import { createSampleTranscriber } from './transcribe-sample';
-import { createWhisperTranscriber } from './transcribe-whisper';
+import type { SpeechLanguage, SpeechModelId } from './models/catalog';
 
 export interface TranscribeInput {
   /** file:// URI of the recording (AAC M4A, ADR 0005). Never leaves the device. */
   audioUri: string;
   durationMs: number | null;
-  /** Names and words spelled the family's way; rendered into the model prompt. */
+  /** Names and words spelled the family's way; rendered into the prompt of every chunk. */
   dictionary: DictionaryTerm[];
-  /** 'auto' unless the author set a language hint (PRD B F1.4). */
-  language?: 'auto' | 'en' | 'hi';
+  /** The author's spoken language (B-REQ-003). Never translated. */
+  language: SpeechLanguage;
+  /** Prompt text from the language pack, if it has one (transcribe-prompt.ts has defaults). */
+  promptSeed?: string;
+}
+
+/** Honest progress: which step, and how many of the recording's chunks are done. Never a fake spinner. */
+export interface TranscribeProgress {
+  stage: 'preparing' | 'listening';
+  done: number;
+  total: number;
 }
 
 export interface Word {
@@ -31,19 +43,38 @@ export interface Word {
   endMs: number;
 }
 
+/**
+ * How the raw transcript was made: content-free (times, counts, ids, hashes).
+ * For `stt_meta` (TDD 03 3.5.2) once the store keeps it.
+ */
+export interface SttMeta {
+  engine: 'whisper-rn' | 'sample';
+  model: SpeechModelId | null;
+  bindingVersion: string | null;
+  language: string;
+  chunks: Array<{ startMs: number; endMs: number; units: number }>;
+  dropped: Array<{ chunk: number; reason: 'non_speech_tag' | 'prompt_echo' | 'dictionary_echo' }>;
+  flags: Array<{ chunk: number; reason: 'repetition_loop' }>;
+}
+
+export type TranscribeOutcome = 'ok' | 'no_speech';
+
 export interface TranscribeResult {
+  /** '' when nobody spoke (outcome 'no_speech'). */
   raw: string;
+  /** Word times when the recogniser's tokens were sound; [] otherwise (v1.1 word highlight). */
   words: Word[];
   language: string | null;
   transcriber: TranscriberId;
+  outcome: TranscribeOutcome;
+  meta: SttMeta;
 }
 
 export type TranscriberId = 'whisper' | 'sample';
 
 export type UnavailableReason =
-  | 'native-module-missing' // Expo Go, or a build without whisper.rn
-  | 'model-missing' // model not downloaded yet (first-run download, ADR 0001)
-  | 'decoder-missing'; // M4A to 16 kHz PCM decoding not built yet (ADR 0005)
+  | 'native-module-missing' // Expo Go, or a build without whisper.rn or ScribeAudio
+  | 'model-missing'; // this language's speech packs are not installed yet
 
 export class TranscriberUnavailable extends Error {
   constructor(public reason: UnavailableReason) {
@@ -55,26 +86,13 @@ export interface Transcriber {
   id: TranscriberId;
   /** True when this transcriber returns made-up text (dev only). */
   isSample: boolean;
-  /** Resolves null when ready, or why it cannot run on this device now. */
-  availability(): Promise<UnavailableReason | null>;
-  transcribe(input: TranscribeInput, signal?: AbortSignal): Promise<TranscribeResult>;
+  /** Resolves null when it can run for this language now, or why not. */
+  availability(language: SpeechLanguage): Promise<UnavailableReason | null>;
+  transcribe(input: TranscribeInput, hooks?: { signal?: AbortSignal; onProgress?: (p: TranscribeProgress) => void }): Promise<TranscribeResult>;
 }
 
-/**
- * Picks the transcriber for this device: whisper when it can run, otherwise
- * the sample transcriber in the development profile only (build-env.ts). In
- * preview and store builds with no usable model this returns null, and
- * Review offers to keep the recording until its words can be made.
- */
-export async function getTranscriber(): Promise<Transcriber | null> {
-  const whisper = createWhisperTranscriber();
-  if ((await whisper.availability()) === null) return whisper;
-  if (devShortcutsAllowed) return createSampleTranscriber();
-  return null;
-}
-
-/** Initial prompt for Whisper: the family's spellings, nothing else. */
-export function dictionaryPrompt(dictionary: DictionaryTerm[]): string {
-  const terms = Array.from(new Set(dictionary.map((d) => d.term.trim()).filter(Boolean)));
-  return terms.length ? `${terms.join(', ')}.` : '';
+export class TranscriptionAborted extends Error {
+  constructor() {
+    super('transcription_aborted');
+  }
 }
