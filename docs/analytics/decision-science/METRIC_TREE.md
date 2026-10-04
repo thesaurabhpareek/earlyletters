@@ -1,6 +1,6 @@
 # Metric tree and North Star
 
-Owner: decision scientist (`decision-science`). Status: Draft 2, 3 Oct 2026, for founder, PM and analytics engineer review.
+Owner: decision scientist (`decision-science`). Status: Draft 3, 4 Oct 2026 (Draft 2 of 3 Oct plus the v1.0 on-device-only update in 3.0), for founder, PM and analytics engineer review.
 Inputs: `docs/prd/PRD.md` 1.3 (sections 1, 3.0, 7.8), PRD A, B and C section 1 goals, C sections 8 and 9, `docs/analytics/TRACKING_PLAN.md` Draft 1, `docs/research/USER_RESEARCH.md`, `docs/agents/BRIEF-2026-10-03.md` (decisions 3, 5, 9, 10, 11, 12), `docs/DECISIONS.md` (D-003, D-030, D-036, D-045), `docs/ROADMAP.md` (M12), `docs/tdd/06-performance-reliability.md` 2.1, migrations in `supabase/migrations/`.
 
 Labels: **Fact** (from a repo document, the schema or a cited Apple page), **A** (assumption, to be replaced by observed cohorts), **Decision** (proposed here, reviewable), **Open** (needs an owner), **R-n** (a request in section 7).
@@ -17,7 +17,8 @@ There is no user data yet. Every number in this file is a target, an assumption 
 4. **Guardrails** cover privacy, trust and fidelity, calm (no streaks, no gap counts), free-forever and paywall respect, and reliability (section 4).
 5. **Consent bias** is structural, not only statistical: the analytics sheet is the third ask, so device data never contains people who stopped after one or two sessions. Every device number carries a fixed bias statement (section 5).
 6. **Before launch nothing about people is measurable.** The C1 beta (15 to 25 families, A) supports counts with wide intervals and no rate targets. TestFlight purchases run in Apple's sandbox, so no price or conversion data exists until launch (section 6).
-7. **Founder decision 3 (3 Oct) removes every server purchase source.** The tracking plan and PRD-REQ-017 still name RevenueCat and a server purchase ledger. Plus totals must come from App Store Connect reports (R-3, R-9).
+7. **v1.0 is on-device only (founder decision, 3 Oct, brief decision 5 as amended).** There is no sign-in, no sync and no server copy of letters, and co-parent sharing is v1.1. So the server aggregates behind WKF and most inputs (section 1) have no data at v1.0. WKF and the server-read inputs are v1.1 metrics; at v1.0 only ASC and opt-in device numbers exist, always labelled as such (3.0, update of 4 Oct).
+8. **Founder decision 3 (3 Oct) removes every server purchase source.** The tracking plan and PRD-REQ-017 still name RevenueCat and a server purchase ledger. Plus totals must come from App Store Connect reports (R-3, R-9).
 
 ---
 
@@ -134,6 +135,14 @@ So, at v1.0:
 - IN-06 is co-parent invites and their acceptance only.
 - Metrics that need contributors, family letters, approvals or another person's audio would read zero by design. They are moved to section 3.5 under new ids (V11-01 to V11-06), and each row names the Draft 1 id it replaces.
 - Under decision 12, agents do not read a section 3.5 metric before its feature ships, and a zero there is never a finding (4.6).
+
+**Update, 4 Oct 2026: v1.0 is on-device only.** After Draft 2 the founder decided that v1.0 ships with no sign-in, no sync and no server copy of letters, and that co-parent sharing, sign-in and sync move together to v1.1 (brief decisions 4 and 5, as amended in PR #33). That is stronger than decision 5 as quoted above, which still allowed a co-parent at v1.0. Consequences for this document:
+
+- **Server aggregates (BL-024, PRD-REQ-017) have no data at v1.0**, because nothing leaves the phone. Every definition in sections 2 and 3 that reads `entries`, `children`, `child_members`, `child_invites` or `profiles` is a **v1.1 definition**, kept as the design for when sync ships. That includes the North Star (WKF, 2.1), its companions, IN-02 (a), IN-03, IN-04, IN-05 (server), IN-06 (a) to (c) and the cohort definitions in 3.2. FV28 and co-parent invites and acceptance (IN-06) need two phones sharing a book, so they are v1.1 as well.
+- **What exists at v1.0:** ASC Sales and App Analytics (new users, trials, conversions, crashes; section 1), and opt-in device analytics (PostHog) among people who consented. The only v1.0 reads of the input metrics are the device-side rows: IN-01 (a), IN-02 (b) is not meaningful with no sign-in, IN-05 device detail and IN-07 (a), (b), (d). IN-01 (b) cannot be computed without server counts of founding parents; use ASC App Units and device counts, labelled.
+- **No v1.0 North Star.** A device-only proxy (consenting devices with a kept letter in the week, from `letter_saved`) may be reported as "among people who opted in", with the four-part bias statement of 5.4. It is never a headline and never called WKF (the rule in section 1 stands: headlines come from server aggregates or ASC Sales only). Whether to accept a device proxy for v1.0, or to run v1.0 with ASC numbers and interviews alone, is a founder decision (Open-5 in section 8).
+- Section 6.1 reads accordingly: in the C0 and C1 columns and "After launch" for v1.0, every cell that depends on a server aggregate reads "v1.1". Plus (BZ) is unchanged, because it already comes from ASC only.
+- `docs/DECISIONS.md` (D-002, D-044), the PRD and the ROADMAP on `develop` still describe co-parent and sign-in at v1.0 and have not been reconciled; this document follows the brief.
 
 ### 3.1 PRD goals to metrics
 
@@ -424,6 +433,7 @@ To `analytics` unless another owner is named. Each request is content-free and L
 - Open-2, analytics: whether a declined analytics consent is written to `policy_acceptances`. Without it, "declined" and "never asked" cannot be told apart in 5.2.
 - Open-3, analytics: which ASC report carries refunds, and the report latency.
 - Open-4, privacy counsel: confirm that aggregate counts (no ids) may be kept after an account is deleted. This is assumed.
+- Open-5, founder: at v1.0 (on-device only) there is no server North Star. Accept a device-only proxy among opted-in people, or run v1.0 on ASC numbers and interviews alone (3.0).
 
 **Sources opened 3 Oct 2026**
 - [Apple: Subscription events](https://developer.apple.com/help/app-store-connect/reference/subscription-events/)
@@ -439,3 +449,4 @@ To `analytics` unless another owner is named. Each request is content-free and L
 |---|---|---|
 | Draft 1 | 2026-10-03 | First metric tree: WKF counting rules, seven inputs, Plus branch from ASC, eleven guardrails, consent-bias method and statement, measurability by phase, readability tables, ten requests. |
 | Draft 2 | 2026-10-03 | After red-team review: v1.0 scope note (3.0) citing brief decisions 5 and 9; contributor, family-letter and hearing-others metrics moved to a v1.1 section (3.5, V11-01 to V11-06); IN-06 is co-parent only at v1.0; 6.2 claim corrected to match its own intervals, with a 60% column and the non-random sample stated as a separate reason; device `letter_saved` rows marked "may include Not much today until R-1"; TestFlight "not charged" marked as following from the sandbox. |
+| Draft 3 | 2026-10-04 | Landing update: v1.0 on-device-only note in 3.0 and summary item 7 (server aggregates, WKF, IN-02 (a), IN-03, IN-04, IN-06 and FV28 are v1.1 definitions; v1.0 has ASC and opt-in device numbers only). No definition or target was changed. |
