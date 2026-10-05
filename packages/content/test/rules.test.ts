@@ -514,13 +514,21 @@ describe('brand name and v1.0 claims', () => {
 
   // D-085 amends D-073 for v1.0: our own encrypted backup needs sign-in and a server, so no Plus or store copy
   // may claim backup until it ships. Themes, covers and vault mode are overclaims too.
-  it('promises only what Plus gates in v1.0 (D-053, D-085): Read together after 3 per book, more books, no backup', () => {
+  // D-082 and D-083 (4 Oct 2026) replace D-053's rules: the first 2 letters are free, then Plus lets you keep adding;
+  // Read together has no limit and starting a book is free, so those are no longer claimed as Plus.
+  it('promises only what Plus gates in v1.0 (D-085, D-082): keeping more letters, no backup', () => {
     const plus = [...leaves(features.billing, 'billing'), ...leaves(en.plus, 'plus'), ...leaves(storeListing, 'store')];
     expect(offenders(plus, /\b(themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\btheme/i.test(o))).toEqual([]);
     expect(en.plus.promise).not.toMatch(/backup/);
     expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
-    expect(en.plus.promise).toMatch(/Read together/);
-    expect(en.plus.promise).toMatch(/more children/);
+    expect(en.plus.promise).toMatch(/first two letters are free/);
+    expect(en.plus.promise).toMatch(/keep adding letters/);
+    expect(en.plus.promise).not.toMatch(/Read together|more children|more books|free, always/);
+    // Nothing may still claim a limit that no longer exists (D-083), or an unconditional "free, always".
+    expect(offenders(plus, /free, always|first book|more children|books for more|first 3|after the first/i)).toEqual([]);
+    // D-083: app copy never types a price, "free trial", "free months" or "we will email you" in the Keep gate or Plan rows.
+    const keepAndPlan = [...leaves(features.billing.keepGate, 'keepGate'), ...leaves(features.billing.plan, 'plan')];
+    expect(offenders(keepAndPlan, /\$\d|free trial|free months?|we will email|we'll email|\bprice\b/i)).toEqual([]);
   });
 
   it('[K-13] has no beta wording in the store listing (D-060, App Review 2.2)', () => {

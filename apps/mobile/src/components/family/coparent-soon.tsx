@@ -35,6 +35,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Breathe } from '@/components/motion/breathe';
 import { Button } from '@/components/ui/button';
 import { LineArt } from '@/components/ui/line-art';
+import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { announce, useTheme } from '@/lib/a11y';
 import { copy, fill } from '@/lib/copy';
@@ -138,7 +139,7 @@ export function CoParentSoon({ presentation, childName, onClose }: CoParentSoonP
 
   const body = (
     <ScrollView
-      contentContainerClassName={sheet ? 'px-6 pb-8 pt-10' : 'px-5 pb-14 pt-4'}
+      contentContainerClassName={sheet ? 'px-6 pb-8 pt-4' : 'px-5 pb-14 pt-4'}
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}>
       {!sheet && (
@@ -187,13 +188,10 @@ export function CoParentSoon({ presentation, childName, onClose }: CoParentSoonP
     );
   }
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background">
+      {/* The modal idiom: Close, top right (lib/navigation.logic.ts). */}
+      {onClose ? <ModalHeader onClose={onClose} closeLabel={s.close} /> : null}
       {body}
-      {onClose ? (
-        <View className="border-t border-border px-6 pb-4 pt-2">
-          <Button variant="quiet" size="lg" fullWidth label={s.close} onPress={onClose} />
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 }

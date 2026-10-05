@@ -3,6 +3,7 @@ import { copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText, dayDate } from '@/lib/dates';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
+import { isQuietMark, visibleInBook } from './quiet-day.logic';
 
 type BookEntry = Entry;
 
@@ -29,10 +30,14 @@ export function chapterTitle(month: number | null): string {
   return fill(copy.book.chapterTitle, { month });
 }
 
-/** Chapters newest first; entries inside newest first (the store already orders them). */
+/**
+ * Chapters newest first; entries inside newest first (the store already orders them).
+ * A quiet-day mark is listed (as a small row) unless that day has a letter; it never enters a
+ * count or the "From" line (D-084).
+ */
 export function groupChapters(entries: BookEntry[], child: Child): Chapter[] {
   const byKey = new Map<string, Chapter>();
-  for (const e of entries) {
+  for (const e of visibleInBook(entries)) {
     const month = monthFor(child, e.occurredOn);
     const key = month === null ? 'before' : `m${month}`;
     let ch = byKey.get(key);
@@ -45,15 +50,18 @@ export function groupChapters(entries: BookEntry[], child: Child): Chapter[] {
   const chapters = [...byKey.values()].sort((a, b) => (b.month ?? -1) - (a.month ?? -1));
   for (const ch of chapters) {
     ch.countLine = countLine(ch.data);
-    const authors = [...new Set(ch.data.map((e) => authorOf(e, child)))];
-    ch.fromLine = fill(copy.book.signature, { signsAs: authors.join(', ') });
+    // A chapter of only quiet days says nothing about who wrote: there is nothing written.
+    const authors = [...new Set(ch.data.filter((e) => !isQuietMark(e)).map((e) => authorOf(e, child)))];
+    ch.fromLine = authors.length ? fill(copy.book.signature, { signsAs: authors.join(', ') }) : '';
   }
   return chapters;
 }
 
-/** "3 letters", "1 note", "2 letters and 1 note": only the kinds that exist. */
-export function countLine(entries: BookEntry[]): string {
+/** "3 letters", "1 note", "2 letters and 1 note": only the kinds that exist. Quiet days are never counted; none left gives ''. */
+export function countLine(all: BookEntry[]): string {
   const p = pendingCopy.book;
+  const entries = all.filter((e) => !isQuietMark(e));
+  if (entries.length === 0) return '';
   const letters = entries.filter((e) => e.kind === 'letter').length;
   const notes = entries.length - letters;
   const l = letters === 1 ? p.letterOne : fill(p.letters, { count: letters });

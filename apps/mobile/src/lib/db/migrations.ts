@@ -13,6 +13,7 @@
  * Pure: no React Native imports. Tested in Node (test/migrations.test.ts).
  * New columns need a row in docs/legal/DATA_CLASSIFICATION.md 4.5 (DATA-REQ-001).
  */
+import { enqueueEntryUpsert } from '../sync/outbox';
 import type { SqlDb } from './sql';
 
 export interface MigrationContext {
@@ -235,6 +236,25 @@ export const MIGRATIONS: Migration[] = [
           want_ids INTEGER NOT NULL DEFAULT 0
         );
       `);
+    },
+  },
+  {
+    version: 5,
+    name: 'quiet-day marks carry no sentence (D-084)',
+    up(db, ctx) {
+      // Older builds saved a template sentence as the words of "Not much today". The app never writes
+      // a person's words, so those rows are blanked. raw_transcript is not touched (it never changes,
+      // the server trigger enforces it too); every screen decides by `kind` and ignores the text.
+      // Same path as any edit: the change goes through the sync outbox (enqueueEntryUpsert, field
+      // group 'text'), in this transaction, so the server copy follows and the old text stays in the
+      // server's entry_versions. enqueueEntryUpsert does nothing before the first sign-in claimed
+      // this phone's data (the first upload then reads the blanked row), skips other people's
+      // letters and tombstoned rows (a restore sends the current words again).
+      const marks = db.all<{ id: string }>("SELECT id FROM entries WHERE kind = 'not_much' AND final_text <> ''");
+      for (const { id } of marks) {
+        db.run("UPDATE entries SET final_text = '', updated_at = ? WHERE id = ?", ctx.now, id);
+        enqueueEntryUpsert(db, id, ['text'], ctx);
+      }
     },
   },
 ];

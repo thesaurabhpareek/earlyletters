@@ -8,6 +8,7 @@
  * Type never animate in (MOTION principle 2). A new prompt cross-fades in place.
  * Haptics: Speak / Type `press` (a capture starts), Another thought `tap`,
  * Not much today `soft`. Nothing else.
+ * Not much today saves a mark with no words (D-084); the kept line carries an inline Undo.
  */
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { ArrowsClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowsClockwise';
@@ -18,7 +19,7 @@ import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { ageOn, ENGINE_VERSION, renderTemplate, selectPrompt } from '@scribe/core';
+import { ageOn, renderTemplate, selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button, ButtonRow } from '@/components/ui/button';
@@ -27,11 +28,13 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { announce, useTheme } from '@/lib/a11y';
 import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
+import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
 import { copy, fill, greetingKey, pendingCopy } from '@/lib/copy';
 import { ageText, dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
-import { getActiveChildId, getFamily, listDrafts, listEntries, saveEntry, subscribe, todayISO, uuidv7, type Draft, type Family } from '@/lib/store';
+import { armListenStart } from '@/lib/resilience/start-intent';
+import { deleteEntry, getActiveChildId, getFamily, listDrafts, listEntries, saveEntry, subscribe, todayISO, uuidv7, type Draft, type Family } from '@/lib/store';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -43,7 +46,8 @@ export default function Tonight() {
   const [recent, setRecent] = useState<string[]>([]);
   const [daysSince, setDaysSince] = useState<number | null>(null);
   const [shuffle, setShuffle] = useState(0);
-  const [keptLine, setKeptLine] = useState(false);
+  // The mark kept for today, when the line is showing (so Undo knows what to remove).
+  const [keptMark, setKeptMark] = useState<string | null>(null);
   const [waiting, setWaiting] = useState<Draft | null>(null);
 
   const load = useCallback(() => {
@@ -61,7 +65,7 @@ export default function Tonight() {
       const entries = listEntries();
       setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
       setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
-      setKeptLine(false);
+      setKeptMark(null);
     }, [load]),
   );
 
@@ -93,32 +97,25 @@ export default function Tonight() {
   const dateline = ageNow ? `${child} · ${ageNow}` : dayDate(today);
 
   const keepNotMuch = () => {
-    const weekday = WEEKDAYS[new Date().getDay()];
-    const text = renderTemplate(copy.notMuch.template, { weekday, child });
-    saveEntry({
-      id: uuidv7(),
-      kind: 'not_much',
-      occurredOn: today,
-      capturedAt: new Date().toISOString(),
-      captureMode: 'typed',
-      editLevel: 'verbatim',
-      promptKey: null,
-      engineVersion: ENGINE_VERSION,
-      rawTranscript: text,
-      machineEdits: [],
-      finalText: text,
-      inBook: false,
-      soundsLikeMe: null,
-    });
+    // One mark a day: a second tap adds nothing. The words are never written by the app (D-084).
+    const existing = markOn(listEntries(), today);
+    const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: today, capturedAt: new Date().toISOString() });
+    if (!existing) saveEntry(mark);
     haptic('soft');
     announce(copy.notMuch.savedToast);
-    setKeptLine(true);
+    setKeptMark(mark.id);
+  };
+
+  const undoNotMuch = () => {
+    if (keptMark) deleteEntry(keptMark);
+    setKeptMark(null);
   };
 
   const start = (mode: 'spoken' | 'typed') => {
     const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
     const active = getActiveChildId();
     trackCaptureStarted({ mode, source: 'tonight', promptKind: promptKindOf(prompt.key), childIndex: childIndexOf(active), role: 'parent' });
+    if (mode === 'spoken') armListenStart(); // the tap that lets Listen start the microphone
     router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
   };
 
@@ -193,12 +190,13 @@ export default function Tonight() {
             <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
             <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
           </ButtonRow>
-          {keptLine ? (
+          {keptMark ? (
             <Animated.View entering={swap} className="min-h-12 flex-row items-center justify-center gap-2" accessibilityLiveRegion="polite">
               <CheckCircleIcon size={20} color={c.success} weight="fill" />
               <Text variant="callout" tone="success">
                 {copy.notMuch.savedToast}
               </Text>
+              <Button variant="quiet" size="sm" label={copy.notMuch.undo} onPress={undoNotMuch} />
             </Animated.View>
           ) : (
             <Button variant="quiet" label={t.notMuchButton} className="self-center" onPress={keepNotMuch} accessibilityHint={copy.notMuch.confirmBody} />

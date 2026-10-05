@@ -30,6 +30,7 @@ export async function firstRun(page: Page, name = CHILD) {
   await startOnboarding(page);
   await toChildStep(page);
   await page.getByRole('textbox').first().fill(name);
+  await btn(page, 'Born today').click();
   await btn(page, 'Continue').click();
   await page.getByText(SIGNS_AS, { exact: true }).click();
   await btn(page, 'Sign my letters').click();
@@ -63,3 +64,12 @@ export async function typeLetter(page: Page, text: string, to: 'book' | 'private
   await expect(page.getByText('Add to ')).toBeVisible();
   await btn(page, to === 'book' ? /^Add to .*book/ : 'Keep private').click();
 }
+
+/** Local calendar day `days` from today (negative = earlier), YYYY-MM-DD, in the browser's time zone (the same machine). */
+export function dayOffset(days: number, from: Date = new Date()): string {
+  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** The web date input (the compact iOS picker cannot open on web). Pass its accessible label. */
+export const dateInput = (page: Page, label: string | RegExp) => page.getByLabel(label).and(page.locator('input[type="date"]'));

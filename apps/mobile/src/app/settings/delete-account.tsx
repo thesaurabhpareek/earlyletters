@@ -14,8 +14,7 @@
  */
 import { Redirect, Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, TextInput, View, useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
+import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
 import { capabilities } from '@/lib/capabilities';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
@@ -25,6 +24,7 @@ import { manageSubscription } from '@/lib/billing';
 import { fill } from '@/lib/copy';
 import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { useTheme } from '@/lib/a11y';
 
 /** v1.0 has no account (lib/capabilities.ts): Settings offers no row, and a stale route goes back to Settings. */
 export default function DeleteAccountRoute() {
@@ -32,7 +32,7 @@ export default function DeleteAccountRoute() {
 }
 
 function DeleteAccount() {
-  const colors = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const colors = useTheme().c;
   const d = useAccountDeletion();
   const [wanted, setWanted] = useState<'review' | 'confirm'>('review');
   const [typed, setTyped] = useState('');

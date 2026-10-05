@@ -34,7 +34,7 @@ export type StepMeta = {
  * sheet appears on a tab screen 1.2 s after it opens). Unless `keepConsent`, that ask is answered "Don't share" first,
  * so later steps are not covered by it; the answer is the app's own and persists, like on a phone.
  */
-export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-quiet' = 'asha', path = '/', opts: { keepConsent?: boolean } = {}) {
+export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-quiet' | 'asha-marks' | 'asha-plus' = 'asha', path = '/', opts: { keepConsent?: boolean } = {}) {
   const base = process.env.E2E_WEB_SEED_URL;
   await page.goto(`${base}/?seed=${kind}`);
   await expect(page.locator('body')).not.toBeEmpty();

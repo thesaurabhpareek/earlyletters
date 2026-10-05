@@ -18,11 +18,13 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 | `Card` | same | `variant` raised, flat, outlined, tinted; `padding`; `radius` md, lg, xl; `onPress` + `accessibilityLabel` | pressable card is one element; press scale 0.98 |
 | `TextField` | same | `label` (always the name), `labelHidden`, `helper`, `error`, `variant` field or letter, `trailing`, `scale` | 3:1 edge, 2 pt focus ring outside the edge, error = icon + words + announce |
 | `ChoiceGroup` | same | `label`, `options` ({value, label, description, render}), `value`, `onChange`, `layout` segmented or list | radiogroup + radio with `checked`; selected = fill + edge + check; stacks at large text; `tap` haptic |
-| `Chip`, `ChipGroup` | same | `label`, `variant` suggestion, filter, tag; `selected`, `icon`, `onPress` | 36 pt visual, 44 pt with hitSlop; selected state |
+| `Chip`, `ChipGroup` | same | `label`, `variant` suggestion, filter, tag; `selected`, `icon`, `onPress`, `role` button, radio, checkbox, `accessibilityLabel` | 36 pt visual, 44 pt with hitSlop; selected = fill + edge + check; radio and checkbox read as checked |
 | `Sheet` | same | `open`, `onClose`, `title`, `description`, `footer`, `hideClose`, `dismissible` | heading focus on open, modal for VoiceOver, escape gesture, visible Close; `dismissible={false}` for permission priming |
-| `ListSection`, `ListRow`, `ToggleRow` | same | `title`, `subtitle`, `leading`, `trailing` (chevron, value, node), `variant` destructive, `onPress` | one element per row; value stacks under title at AX |
+| `ListSection`, `ListRow`, `ToggleRow` | same | `title`, `subtitle`, `leading`, `trailing` (chevron, value, node), `variant` destructive, `onPress` | one element per row; value stacks under title at AX; a pressable row always shows a chevron, a value then chevron, or its own control (`showsChevron`) |
 | `Toast`, `ToastHost`, `useToast()` | same | `show({ message, action, durationMs, onDismiss })` | announced; with an action it never times out; swipe or Close |
 | `EmptyState` | same | `art` (envelope, envelopeOpen, moon, page), `title`, `body`, `action`, `align` | heading; drawing decorative; breath off under Reduce Motion |
+| `StateScreen`, `StateScreenView`, `InlineState` | same | `kind` empty, error, notFound, loading; `title`, `body`, `art`, `primary` ({label, onPress, icon}), `quiet` (list), `header` (StateScreen) | the one pattern for loading, empty, error and not-found (2.15a); heading first; live region polite; loading is `busy`; actions are buttons |
+| `ModalHeader`, `BackButton` | same | `ModalHeader`: `onClose`, `leading`, `title`, `closeHint`, `closeLabel`, `closeDisabled`; `BackButton`: `onPress`, `label` | the only two navigation controls a screen draws itself (2.1a); both 44 pt minimum |
 | `LineArt` | same | `name`, `width`, `wash`, `animate` | decorative |
 | `UIProvider` | same | `toastBottomOffset` | wraps GestureHandlerRootView, BottomSheetModalProvider, Increase Contrast variables, ToastHost, font loading |
 | `Toggle` | `@/components/platform/toggle` | `label`, `description`, `value`, `onValueChange` | SwiftUI Toggle on iOS, RN Switch with a 3:1 off track elsewhere |
@@ -210,6 +212,13 @@ type LetterCardProps = {
 - **Builds on:** our Card + PhotoFrame + Signature + Text; long-press through `platform/action-menu` (never Expo UI directly). Web: same composition with shadcn `Card` + `ContextMenu`.
 - **Android later:** same card and transition code (MOTION 5f is the v1 default on both). `action-menu.android.tsx` opens a `fitToContents` Sheet listing Share / Edit / Delete instead of a context menu; `accessibilityActions` unchanged. Android back and predictive back run the dismiss path.
 
+### 2.5b AppNote and QuietDayRow (the app's own words, D-084)
+The Book is a record of what people said. When the app must say something, it says it small and unsigned, and never in the letter's type.
+- **AppNote:** `components/book/app-note.tsx`. A small Info glyph and one line in the `footnote` style (sans, muted). Never serif, never italic, no "From ..." line under it. Used for a recording that is waiting for its words and for one with no words in it ("No words in this one. The recording is kept just as it is."), on the LetterCard, the letter page and Read together. Plain text for VoiceOver (the glyph is hidden). The Reading Size scale applies on the letter page and Read together.
+- **QuietDayRow:** `components/book/quiet-day-row.tsx`. "Not much today" stores a mark with no words, so the Book shows a small row, not a card: a Moon glyph, the date and "A quiet day", muted sans, unsigned, no Private chip. Minimum height 44 pt, Dynamic Type uncapped. It is not a button into a letter page. VoiceOver reads "{date}. A quiet day, kept." Long-press, or the VoiceOver action "Remove this mark", removes it with an Undo toast ("Removed.", 2.14).
+- **Rules:** a mark is hidden on a day that also has a letter. It never enters a count, a chapter line, a streak or an insight; a chapter of only marks shows no count line. It is never printed, read aloud in Read together, or moved into the book. In the export it is a row with `final_text: ''` and a small file holding the date and the label.
+- **Android later:** same components.
+
 ### 2.6 Chip
 - **Purpose:** filters (month, author), tags, and selection of one or many options.
 - **Variants:** `filter` (toggle, selected = `text` fill + `bg` label), `choice` (single-select group), `tag` (read-only, `accentSoft`), `input` (removable, trailing ×).
@@ -380,6 +389,18 @@ type EmptyStateProps = {
 - **Haptics:** none. **Motion:** the one illustration breathes opacity 0.85↔1 over 8s, only while the screen is focused and the app active (MOTION 5j). Text and action are static. Off under Reduce Motion, Low Power Mode, and Android animator scale 0.
 - **Builds on:** Text + Button + `react-native-svg` line drawing. Web: same.
 - **Android later:** same code. Low Power check uses `expo-battery` on iOS; on Android rely on animator scale and battery saver if exposed (**Unverified**).
+
+### 2.15a StateScreen and InlineState (loading, empty, error, not found)
+Added after the QA journey critique (J05-03, J05-04, J06-13, J10-11, J11-07 and the "_journey" entry found six treatments for one job). Built on `EmptyState`; the rules are data in `state-screen.logic.ts`.
+- **Shape:** a line drawing, a heading, one plain sentence, then the way forward as a full-width 56 pt button pinned at the bottom (thumb zone), with at most quiet 44 pt options beneath it. Never red, never a spinner, never a count of what is missing.
+- **`StateScreen`:** the whole screen is the state (a stale link, a missing draft, microphone off, a crash). Content scrolls, actions stay put, so nothing clips at AX5. A modal passes `header={<ModalHeader />}`: Close lives there, top right, not as a second button. A pushed screen has the native header and its action goes forward ("Back to the book").
+- **`InlineState`:** the same words as a calm card for one region of a screen that has other content (Review while words are on their way, a failed transcription). `children` hold a progress line.
+- **`loading`:** the drawing breathes (the slowest loop we own, off under Reduce Motion) and the region is announced as busy. It never carries a primary action; a way out (Type instead) is quiet.
+- **Root:** `app/+not-found.tsx` and the root `ErrorBoundary` use it (`StateScreenView`, which reads nothing from navigation because the navigator is what crashed). The error text is never shown or logged.
+- **Copy:** no new wording. Titles and bodies come from `errors.*`, `reader.*`, `wordsCopy`, `pendingCopy` as before.
+
+### 2.1a ModalHeader and BackButton (one back/close idiom per context)
+The rule is data in `lib/navigation.logic.ts`: tab root, no control; **push** (Settings, Letter), the native header's chevron back; **flow step** (onboarding), `BackButton`, drawn like the native one; **modal** (Write, Review, Listening, Read together, invite, sign-in) and **sheet**, the word "Close" in the top right, drawn by `ModalHeader` and the Sheet header. Anything that used to sit top right (Hear it, "saved on this phone", the page counter) moves to the left. Never a Close at the top left, a circled X, or a Close at the bottom of the page. Both are Button `quiet` `sm`: 44 pt minimum, silent (no haptic).
 
 ### 2.16 Avatar / Signature
 - **Purpose:** who wrote it. A signature line ("From Papa") is a brand element (BRAND.md: "each one signed").

@@ -22,6 +22,7 @@
  */
 import * as Crypto from 'expo-crypto';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
+import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
@@ -30,6 +31,7 @@ import {
   createChangeBus,
   drafts,
   entries,
+  ledger,
   letters,
   orphans,
   settings,
@@ -401,11 +403,29 @@ export function saveEntry(e: Entry): void {
 export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
   const c = ctx();
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
-  letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () =>
-    enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c)),
-  );
+  letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
+    // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
+    // count are written together or not at all. A quiet-day mark is not a letter and never counts.
+    if (e.kind === 'letter') ledger.recordKept(c, draftId, keychainFloor());
+    enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c));
+  });
   bus.emit('entries', 'drafts');
   signalOutbox();
+}
+
+/**
+ * The database side of the letter ledger for lib/billing/letter-ledger.ts
+ * (lettersKept, syncLedger, clearLedger). Opens the store on first use.
+ */
+export function ledgerDb(): LedgerDb {
+  return {
+    counts: () => {
+      const c = ctx();
+      return { recorded: ledger.readState(c).n, present: ledger.countPresent(c) };
+    },
+    raiseTo: (n) => ledger.raiseTo(ctx(), n),
+    clear: () => ledger.clear(ctx()),
+  };
 }
 
 /**

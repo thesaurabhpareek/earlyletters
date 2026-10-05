@@ -22,10 +22,11 @@ import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useTheme } from '@/lib/a11y';
-import { copy, fill, pendingCopy } from '@/lib/copy';
+import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { createDraft, deleteDraft, getActiveChild, getDraft, setDraftTyped, todayISO } from '@/lib/store';
 
@@ -102,15 +103,17 @@ export default function Write() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <View className="min-h-12 flex-row items-center justify-between px-5 pt-1">
-          <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.closeButton} onPress={close} />
-          {saved ? (
-            <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
-              <CheckIcon size={14} color={c.textMuted} weight="bold" />
-              <Text variant="footnote">{pendingCopy.write.savedOnPhone}</Text>
-            </Animated.View>
-          ) : null}
-        </View>
+        <ModalHeader
+          onClose={close}
+          leading={
+            saved ? (
+              <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
+                <CheckIcon size={14} color={c.textMuted} weight="bold" />
+                <Text variant="footnote">{pendingCopy.write.savedOnPhone}</Text>
+              </Animated.View>
+            ) : null
+          }
+        />
         <ScrollView contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4" keyboardShouldPersistTaps="handled">
           <Text variant="letterDateline" caps>
             {dateline}
@@ -127,9 +130,8 @@ export default function Write() {
             className="mt-3"
             value={text}
             onChangeText={onChange}
-            placeholder={fill(copy.tonight.typing.letterPlaceholder, { child: child.name })}
+            placeholder={copy.tonight.typing.placeholder}
             autoFocus
-            accessibilityHint={copy.tonight.typing.placeholder}
           />
         </ScrollView>
         <View className="border-t border-border bg-background px-5 pb-2 pt-3">

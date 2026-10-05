@@ -200,8 +200,11 @@ export const GLOBAL_PROPS = {
  * 2: Apple-only Plus events, cadence values, packs replace model_download (3 Oct 2026).
  * 3: shared core enums (`mixed` capture mode, roles `parent | contributor`), `child_ordinal`
  *    replaces `ordinal`, `child_added.has_date` replaces `mode`, required properties enforced.
+ * 4: membership engine (D-082, D-083): `keep_letter` offer trigger replaces `second_child` and
+ *    `read_together`; `read_together_try_used` removed; `read_together_started.access` is `plus | free`
+ *    (no limit, so no `try`); five numbers-only Plus events added.
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -209,6 +212,7 @@ export const SCHEMA_VERSION = 3;
  */
 export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.freeze({
   3: '971df5e782a0d91011fe559476313e6c40cc52babd65f779bb71422f61ed6a35',
+  4: '4d0cc81648b7d3d0cb334e0cd7c38d611f244009f1a5e578b2cb4ecf520750da',
 });
 
 // ---------------------------------------------------------------------------
@@ -579,7 +583,7 @@ export const EVENTS = {
     when: 'Read together session starts',
     reqs: ['C-REQ-034', 'PRD-REQ-016'],
     level: 'L2',
-    props: { child_ordinal: CHILD_ORDINAL, access: oneOf('plus', 'try'), letters_bucket: LETTERS_BUCKET },
+    props: { child_ordinal: CHILD_ORDINAL, access: oneOf('plus', 'free'), letters_bucket: LETTERS_BUCKET },
   },
   read_together_ended: {
     area: 'book',
@@ -591,13 +595,6 @@ export const EVENTS = {
       session_bucket: SESSION_BUCKET,
       letters_heard: int(0, 50),
     },
-  },
-  read_together_try_used: {
-    area: 'book',
-    when: 'A free Read together try is used (Free tier)',
-    reqs: ['C-REQ-034'],
-    level: 'L2',
-    props: { n: int(1, 10) },
   },
 
   // --- Family (co-parent only at v1.0, founder decision 5) -------------------
@@ -839,6 +836,42 @@ export const EVENTS = {
       period: oneOf('month', 'year', 'unknown'),
       ownership: oneOf('purchased', 'family_shared', 'unknown'),
     },
+  },
+  // Membership engine (D-082, D-083): numbers only. Never the letter, its words, the recording or the child.
+  free_allowance_reached: {
+    area: 'plus',
+    when: 'The last free letter was kept, so the next Keep will ask for Plus (once per phone)',
+    reqs: ['C-REQ-034', 'C-REQ-023'],
+    level: 'L2',
+    props: { allowance: int(2, 100) },
+  },
+  keep_gate_shown: {
+    area: 'plus',
+    when: 'The Keep sheet asked for Plus (the letter is held on the phone)',
+    reqs: ['C-REQ-034', 'C-REQ-023'],
+    level: 'L2',
+    props: { letters_kept: int(0, 1000), allowance: int(2, 100), lapsed: int(0, 1) },
+  },
+  letter_held: {
+    area: 'plus',
+    when: 'The person chose to keep the letter on the phone for now instead of starting Plus',
+    reqs: ['C-REQ-034', 'C-REQ-023'],
+    level: 'L2',
+    props: { letters_kept: int(0, 1000) },
+  },
+  plus_started_from_gate: {
+    area: 'plus',
+    when: 'Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code)',
+    reqs: ['C-REQ-034', 'C-REQ-023'],
+    level: 'L2',
+    props: { letters_kept: int(0, 1000) },
+  },
+  offer_code_redeemed: {
+    area: 'plus',
+    when: "Apple's offer code sheet closed and Plus was on afterwards",
+    reqs: ['C-REQ-034'],
+    level: 'L2',
+    props: {},
   },
   restore_result: {
     area: 'plus',

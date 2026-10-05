@@ -5,60 +5,58 @@
  * on this phone play in the voice that said them; word highlighting is v1.1.
  * Anyone else's letter, or a recording not on this phone, is read aloud.
  *
- * Allowance (founder decisions, Oct 2 and 3 2026): a few free sessions in each
- * Free book (remote config, default 3), then the Plus gate, which opens Apple's
- * store view (lib/read-together.ts, lib/billing).
+ * No limit (D-082, D-083, 4 Oct 2026): Read together is free for every letter
+ * that exists. Membership gates adding letters (the Keep step), never reading
+ * or playing them.
  */
 import { router, useLocalSearchParams } from 'expo-router';
-import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View, useColorScheme } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Toggle } from '@/components/platform/toggle';
 import { tokens } from '@scribe/design-tokens';
-import { PlusGate } from '@/components/child/plus-gate';
 import { AudioPlayer } from '@/components/player/audio-player';
 import { authorOf } from '@/components/child/child-store';
 import { chapterTitle, monthFor } from '@/components/book/chapters';
 import { Button } from '@/components/ui/button';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
+import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
-import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
-import { childIndexOf, track, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
+import { childIndexOf, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
-import { canStartReadTogether, freeReadTogetherSessions, readTogetherGate, readTogetherSessions, recordReadTogetherSession } from '@/lib/read-together';
+import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
+import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
+import { useTheme } from '@/lib/a11y';
+import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 
 
 export default function ReadTogether() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const rt = copy.readTogether;
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
-  const [allowed, setAllowed] = useState(() => canStartReadTogether(child?.id));
   const counted = useRef(false);
   const [index, setIndex] = useState(0);
   // "Play the next one on its own": after a recording ends, turn the page and start the next voice.
   const [autoNext, setAutoNext] = useState(false);
   const [startNext, setStartNext] = useState(false);
 
-  const letters = useMemo(() => (child ? listEntriesForChild(child.id).filter((e) => e.inBook && e.transcriptStatus !== 'waiting').reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const letters = useMemo(() => (child ? readableInBook(listEntriesForChild(child.id)).reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // One session per opening; counted once, only when allowed.
+  // One session per opening, counted once (analytics only; nothing limits sessions).
   const session = useRef<{ startedAt: number; furthest: number } | null>(null);
   useEffect(() => {
-    if (allowed && !counted.current && letters.length > 0) {
+    if (!counted.current && letters.length > 0) {
       counted.current = true;
-      const plus = hasPlus();
-      recordReadTogetherSession(child?.id);
       session.current = { startedAt: Date.now(), furthest: 0 };
-      trackReadTogetherStarted({ childIndex: childIndexOf(child?.id), access: plus ? 'plus' : 'try', letters: letters.length });
-      if (!plus && child) track('read_together_try_used', { n: Math.min(10, Math.max(1, readTogetherSessions(child.id))) });
+      trackReadTogetherStarted({ childIndex: childIndexOf(child?.id), access: hasPlus() ? 'plus' : 'free', letters: letters.length });
     }
-  }, [allowed, letters.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [letters.length]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (session.current) session.current.furthest = Math.max(session.current.furthest, index);
   }, [index]);
@@ -77,39 +75,14 @@ export default function ReadTogether() {
     [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  // Letters are playing or being read aloud: keep the screen on while the reading pages are showing.
+  useKeepAwakeWhile(!!child && letters.length > 0, KEEP_AWAKE_TAGS.readTogether);
+
   const close = () => router.back();
 
-  if (!allowed) {
-    const p = pendingCopy.readTogether;
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <PlusGate
-          title={p.plusTitle}
-          body={fill(p.plusBody, { count: freeReadTogetherSessions() })}
-          decision={readTogetherGate(child?.id)}
-          trigger="read_together"
-          onPlus={() => setAllowed(true)}
-          keepNote={p.keepNote}
-          icon={<BookOpenTextIcon size={28} color={c.accent} />}
-          onNotNow={close}
-          onContinueDev={devShortcutsAllowed ? () => setAllowed(true) : undefined}
-        />
-      </SafeAreaView>
-    );
-  }
-
   if (!child || letters.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 justify-center gap-4 bg-background px-5">
-        <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">
-          {rt.title}
-        </Text>
-        <Text className="text-lg leading-7 text-muted-foreground">{pendingCopy.readTogether.emptyBody}</Text>
-        <Button className="self-start" onPress={close}>
-          <Text>{copy.common.closeButton}</Text>
-        </Button>
-      </SafeAreaView>
-    );
+    // The one state pattern; a modal, so Close is the header's, top right.
+    return <StateScreen kind="empty" art="moon" title={rt.title} body={pendingCopy.readTogether.emptyBody} header={<ModalHeader onClose={close} />} />;
   }
 
   const done = index >= letters.length;
@@ -126,12 +99,10 @@ export default function ReadTogether() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between px-5 pt-2">
-        <Button variant="ghost" size="sm" className="-ml-4" onPress={close}>
-          <Text className="text-primary">{copy.common.closeButton}</Text>
-        </Button>
-        <Text className="text-sm text-muted-foreground">{`${Math.min(index + 1, letters.length)} / ${letters.length}`}</Text>
-      </View>
+      <ModalHeader
+        onClose={close}
+        leading={<Text variant="subhead" tone="muted">{`${Math.min(index + 1, letters.length)} / ${letters.length}`}</Text>}
+      />
 
       {done ? (
         <View className="flex-1 justify-center gap-6 px-5" accessibilityLiveRegion="polite">
@@ -153,17 +124,17 @@ export default function ReadTogether() {
             {month !== null && month > 0 ? fill(rt.nowReading, { signsAs, month }) : `${signsAs}, ${chapterTitle(month)}`}
           </Text>
           {letterWords(entry) === 'nobodySpoke' ? (
-            <Text variant="signature" scale={scale} tone="muted">
-              {bookCopy.nobodySpoke}
-            </Text>
+            <AppNote scale={scale}>{bookCopy.nobodySpoke}</AppNote>
           ) : (
             <Text variant="letterBody" scale={scale} selectable>
               {entry.finalText}
             </Text>
           )}
-          <Text variant="signature" scale={scale} className="self-end">
-            {fill(copy.book.signature, { signsAs })}
-          </Text>
+          {showsSignature(letterWords(entry)) ? (
+            <Text variant="signature" scale={scale} className="self-end">
+              {fill(copy.book.signature, { signsAs })}
+            </Text>
+          ) : null}
           {spoken ? (
             <AudioPlayer
               key={entry.id}

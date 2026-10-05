@@ -10,7 +10,7 @@
     "include_recently_deleted": false
   },
   "counts": {
-    "entries": 11,
+    "entries": 13,
     "audio": 5,
     "audio_missing": 2,
     "audio_mismatch": 1,
@@ -97,6 +97,18 @@
       "media_type": "text/plain; charset=utf-8"
     },
     {
+      "path": "letters/Asha/2026-10/2026-10-02_q1.txt",
+      "bytes": 78,
+      "sha256": "b643eab6c8c6e14fdf8dea75e9dbe492bde9035006de5ac8a35e636e40b26c3c",
+      "media_type": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "letters/Asha/2026-10/2026-10-03_q2.txt",
+      "bytes": 80,
+      "sha256": "da3faf8204a4907a776bcaf3533d165fcca749377f1ab80da7f4df2105dcf779",
+      "media_type": "text/plain; charset=utf-8"
+    },
+    {
       "path": "letters/Asha/2026-12/2026-12-24_e10.txt",
       "bytes": 200,
       "sha256": "ec1ada7099f2a838fd80d905813e399bbcd0e59ad591c5ceb7d059ba412c8fb9",
@@ -110,8 +122,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 5092,
-      "sha256": "a6c43aa87e547ccf8d5ee506c291f87e8b23d49eef75cceece7d90b9fa2901df",
+      "bytes": 5593,
+      "sha256": "97ae13f0a3257c222257366f19cd46d32838f4be4e66125357a69b92cc9dac17",
       "media_type": "text/html; charset=utf-8"
     },
     {
@@ -152,8 +164,8 @@
     },
     {
       "path": "data/entries.json",
-      "bytes": 11840,
-      "sha256": "01abfcd19b535be605083010e076e77b081e16ed1bef45bf75933a591bc5e6da",
+      "bytes": 13556,
+      "sha256": "ac376d9cfece27ff9b113ee3ce9e7903d428e9fb0c8ace149924630bf1a69ad4",
       "media_type": "application/json"
     },
     {
