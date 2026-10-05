@@ -129,6 +129,11 @@ export function audioRows({ db }: RepoContext): { id: string; audioUri: string |
     .map((r) => ({ id: r.id, audioUri: r.audio_uri, state: r.state }));
 }
 
+/** Takes kept but marked unrecoverable (empty, or would not play after a kill). Listed in Settings > Recordings. */
+export function countUnrecoverable({ db }: RepoContext): number {
+  return db.get<{ n: number }>("SELECT COUNT(*) AS n FROM drafts WHERE state = 'unrecoverable' AND audio_uri IS NOT NULL")?.n ?? 0;
+}
+
 export function rebaseAudioUri({ db }: RepoContext, id: string, uri: string): void {
   db.run('UPDATE drafts SET audio_uri = ? WHERE id = ?', uri, id);
 }

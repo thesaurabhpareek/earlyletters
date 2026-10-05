@@ -1,7 +1,7 @@
 import { Alert, ScrollView } from 'react-native';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
-import { listOrphanAudio } from '@/lib/store';
+import { countUnrecoverableTakes, listOrphanAudio } from '@/lib/store';
 import { authorSpeechLanguage } from '@/lib/models/author-language';
 import { SPEECH_MODELS, VAD_MODEL_ID, type SpeechLanguage } from '@/lib/models/catalog';
 import { speechSettingsCopy } from '@/lib/models/copy';
@@ -12,8 +12,9 @@ import { useWordsTick } from '@/lib/transcription-queue/use-words';
 
 /**
  * Recordings (PRD C C-REQ-018): honest about where audio lives. v1.0 has no
- * backup and uploads no recordings (D-059), so this screen offers none and
- * says nothing about one arriving. Recordings the launch sweep found with no
+ * backup of our own and uploads no recordings (D-059, D-085), so this screen offers none and
+ * says nothing about one arriving. A take a kill cut off that would not play is kept and listed
+ * here (D-085). Recordings the launch sweep found with no
  * letter (before any book existed) are listed here, never deleted (TDD 01
  * 3.2.4).
  *
@@ -25,6 +26,7 @@ import { useWordsTick } from '@/lib/transcription-queue/use-words';
 export default function Recordings() {
   const r = copy.settings.recordings;
   const orphans = listOrphanAudio().length;
+  const unplayable = countUnrecoverableTakes();
   const o = pendingCopy.recordings;
   useWordsTick();
   const languages = languagesInUse();
@@ -38,6 +40,12 @@ export default function Recordings() {
       {orphans > 0 && (
         <ListSection title={o.orphansTitle}>
           <ListRow title={plural(orphans, o.orphansOne, fill(o.orphansMany, { count: orphans }))} />
+        </ListSection>
+      )}
+
+      {unplayable > 0 && (
+        <ListSection title={r.unplayableTitle}>
+          <ListRow title={plural(unplayable, r.unplayableOne, fill(r.unplayableMany, { count: unplayable }))} />
         </ListSection>
       )}
 

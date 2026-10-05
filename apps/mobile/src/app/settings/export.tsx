@@ -8,7 +8,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { trackExportCompleted, trackExportFailed, trackExportStarted } from '@/lib/analytics/track';
-import { copy } from '@/lib/copy';
+import { copy, fill } from '@/lib/copy';
 import {
   cleanupExports,
   ExportCancelledError,
@@ -22,6 +22,19 @@ import {
   type ExportResult,
 } from '@/lib/export';
 import { haptic } from '@/lib/haptics';
+import { dayDate, isoOf } from '@/lib/dates';
+import { getSetting, setSetting } from '@/lib/store';
+
+/** Settings key: when a copy of the book was last prepared and handed to the share sheet (D-085). */
+const LAST_EXPORT_SETTING = 'lastExportedAt';
+
+function readLastExport(): string | null {
+  try {
+    return getSetting(LAST_EXPORT_SETTING);
+  } catch {
+    return null;
+  }
+}
 import { useTheme } from '@/lib/a11y';
 
 type State =
@@ -51,6 +64,7 @@ export default function ExportScreen() {
       return null;
     }
   });
+  const [lastExport, setLastExport] = useState(readLastExport);
   const signal = useRef({ aborted: false });
   const pending = useRef<ExportResult | null>(null);
 
@@ -101,6 +115,14 @@ export default function ExportScreen() {
 
   const share = async (result: ExportResult) => {
     try {
+      // "Prepared", not "saved": the share result does not say whether the person kept the file.
+      const at = new Date().toISOString();
+      try {
+        setSetting(LAST_EXPORT_SETTING, at);
+        setLastExport(at);
+      } catch {
+        // the date is a courtesy; the export goes ahead
+      }
       await shareExport(result, e.title);
     } finally {
       pending.current = null;
@@ -120,6 +142,10 @@ export default function ExportScreen() {
         <Text className="text-base leading-6 text-foreground">{e.body}</Text>
         <Text className="text-sm leading-5 text-muted-foreground">{s.offlineNote}</Text>
       </View>
+
+      <ListSection footer={e.exportNudge}>
+        <ListRow title={lastExport ? fill(e.lastExport, { date: dayDate(isoOf(new Date(lastExport))) }) : e.neverExported} />
+      </ListSection>
 
       <ListSection title={s.includesTitle}>
         {[s.includesLetters, s.includesRecordings, s.includesBook, s.includesData].map((line) => (

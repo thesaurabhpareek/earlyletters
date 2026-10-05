@@ -36,7 +36,10 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 | `listEntries()` | Same, for the active child (unchanged signature). |
 | `getEntry(id)` | |
 | `setEntryInBook(id, inBook)` | Add to book / make private. Never touches text. |
-| `deleteEntry(id)` / `undeleteEntry(id)` | Tombstone only. |
+| `deleteEntry(id)` / `undeleteEntry(id)` | Tombstone only (the letter waits on the Recently deleted shelf). |
+| `listDeleted()` | The shelf, newest deletion first (`deletedAt`). |
+| `eraseEntry(id, eraser)` | Erase a deleted letter for good: the recording file first, then the row, idempotent; false for a live letter, a sync build, or a file that would not go. Native eraser: `capture/erase.ts`. |
+| `purgeExpired(nowMs, eraser)` / `recordLaunch(nowMs)` | Launch purge of letters deleted 30 days ago or more (D-085). No purge when sync is on or when the clock is earlier than the last recorded launch. |
 | `saveEntry(entry)` | Entries without a draft (Not much today, dev seed). `raw_transcript`, `captured_at` and audio never change after insert; `child_id` never changes once synced. |
 | `saveLetterFromDraft(draftId, entry, audioExists)` | Review's save: insert the letter and delete the draft in **one transaction** (DATA-REQ-048). Hash the audio first (`capture/recorder.ts` `ensureAudioHash`). Throws `AudioMissingError` for a spoken letter whose file is gone. |
 | `saveVoiceOnlyFromDraft(draft, opts)` | Keep a recording as a letter **waiting for its words**: `raw_transcript = final_text = ''`, `transcriptStatus = 'waiting'`, private by default. |
@@ -68,7 +71,7 @@ Plus is StoreKit 2 on this phone through the plan engine (ADR 0013, founder deci
 
 ## Capture (`capture/`)
 - `recorder.ts`: `beginTake(recorder, {childId, promptKey})` (prepare, draft row, record), `finalizeTake(recorder, draftId, reason, ms)` (stop, hash, mark ready; idempotent, so Finish, background, interruption and dismiss can all call it), `abandonTake` (confirmed Discard only), `ensureAudioHash(draft)`, `hashAudioFile`, `activeTakeId()`.
-- `sweep.logic.ts` (pure, tested) and `sweep.ts`: `runLaunchSweep()` once per process after the first frame. Finishes takes cut off by a kill, rebases paths after an iOS container move (matches by file name), re-attaches stray recordings to the active book as drafts or reports them when no book exists. Never deletes audio.
+- `sweep.logic.ts` (pure, tested) and `sweep.ts`: `runLaunchSweep()` once per process after the first frame. Finishes takes cut off by a kill, rebases paths after an iOS container move (matches by file name), re-attaches stray recordings to the active book as drafts or reports them when no book exists. Never deletes audio. A killed take is probed first (`probe.ts`): one that will not open is kept, hashed, marked `unrecoverable` and listed in Settings > Recordings. After the sweep, `erase.ts` `purgeShelfAtLaunch()` runs the 30 day shelf purge, never during a recording; a deleted letter whose file is already gone is not reported as missing.
 
 ## Other modules
 - `age-gate.logic.ts` (pure, tested) and `age-gate.ts`: `useAgeGate()` for the root layout, `answerAgeGate`, `reopenAgeGate`.

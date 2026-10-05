@@ -512,14 +512,15 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(leaves(features, 'features'), new RegExp(brand.name, 'i'))).toEqual([]);
   });
 
-  // D-073 (founder, 3 Oct 2026, evening) puts the owner's encrypted backup in v1.0 and in Plus, so backup is
-  // no longer an overclaim here. Themes, covers and vault mode still are.
+  // D-085 amends D-073 for v1.0: our own encrypted backup needs sign-in and a server, so no Plus or store copy
+  // may claim backup until it ships. Themes, covers and vault mode are overclaims too.
   // D-082 and D-083 (4 Oct 2026) replace D-053's rules: the first 2 letters are free, then Plus lets you keep adding;
   // Read together has no limit and starting a book is free, so those are no longer claimed as Plus.
-  it('promises only what Plus gates in v1.0 (D-073, D-082): keeping more letters and backup', () => {
+  it('promises only what Plus gates in v1.0 (D-085, D-082): keeping more letters, no backup', () => {
     const plus = [...leaves(features.billing, 'billing'), ...leaves(en.plus, 'plus'), ...leaves(storeListing, 'store')];
     expect(offenders(plus, /\b(themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\btheme/i.test(o))).toEqual([]);
-    expect(en.plus.promise).toMatch(/backup/);
+    expect(en.plus.promise).not.toMatch(/backup/);
+    expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
     expect(en.plus.promise).toMatch(/first two letters are free/);
     expect(en.plus.promise).toMatch(/keep adding letters/);
     expect(en.plus.promise).not.toMatch(/Read together|more children|more books|free, always/);

@@ -1,12 +1,15 @@
-# E2E-08  Delete a letter, Undo; delete again and it leaves the book.
-# Proves: DATA-REQ-010 (delete is a tombstone, restorable), the Apple Mail style
-# immediate Delete with a persistent Undo (no timed navigation, TDD 09
-# A11Y-F03). Fixture letter: the seeded "Bath time" letter (src/dev/asha-seed.ts).
-# Not covered here (gaps or other layers): a Recently deleted screen with the
-# 30-day restore does not exist in the app yet (TESTID_REQUESTS.md "Not mounted
-# yet"); another author's letter has no Delete (DATA-REQ-015) needs a synced
-# co-parent letter and is covered by supabase/tests; purge after 30 days is
-# covered by the database suite.
+# E2E-08  Delete a letter (asks first), Undo; delete again, find it in Recently
+# deleted, Restore it; delete again and Erase now.
+# Proves: DATA-REQ-010 (delete is a tombstone, restorable for 30 days), D-085 (the
+# confirm with "Keep it" as the default, the Recently deleted shelf with Restore and
+# Erase now), the persistent Undo (no timed navigation, TDD 09 A11Y-F03). Fixture
+# letter: the seeded "Bath time" letter (src/dev/asha-seed.ts).
+# New steps select by visible text (the sheet and shelf have no test ids yet).
+# Not covered here (other layers): another author's letter has no Delete
+# (DATA-REQ-015) needs a synced co-parent letter and is covered by supabase/tests;
+# the day 29 / day 30 purge, the clock guard and the kill-between-file-and-row
+# case are in apps/mobile/test/store.shelf.test.ts; the 500-kill and restore
+# drills are device runs (docs/qa/DEVICE_TEST_PLAN.md, DL-01 to DL-04).
 appId: ${APP_ID}
 name: E2E-08 Delete and undo
 tags:
@@ -34,6 +37,16 @@ tags:
     direction: DOWN
 - tapOn:
     id: "letter.delete"
+# The confirm: "Keep it" first, and it changes nothing.
+- assertVisible: "Delete this letter?"
+- tapOn: "Keep it"
+- assertNotVisible: "Delete this letter?"
+- assertVisible:
+    id: "letter.text"
+    text: ".*Bath time.*"
+- tapOn:
+    id: "letter.delete"
+- tapOn: "Delete letter"
 - assertVisible:
     id: "letter.undo"
 - tapOn:
@@ -55,11 +68,63 @@ tags:
     direction: DOWN
 - tapOn:
     id: "letter.delete"
+- tapOn: "Delete letter"
 - assertVisible:
     id: "letter.undo"
 - runFlow: ../subflows/go-back.yaml
 - assertNotVisible:
     text: ".*Bath time.*"
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- assertNotVisible:
+    text: ".*Bath time.*"
+# 3. Recently deleted: present with "Erased on", Restore puts it back in the book.
+- runFlow: ../subflows/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "Recently deleted"
+    direction: DOWN
+- tapOn: "Recently deleted"
+- assertVisible: ".*Bath time.*"
+- assertVisible: "Erased on.*"
+- tapOn: "Restore"
+- assertVisible: "Letter restored."
+- runFlow: ../subflows/go-back.yaml
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    text: ".*Bath time.*"
+# 4. Delete again, Erase now (asks first): gone, and the shelf is empty, also after a relaunch.
+- tapOn:
+    text: ".*Bath time.*"
+- scrollUntilVisible:
+    element:
+      id: "letter.delete"
+    direction: DOWN
+- tapOn:
+    id: "letter.delete"
+- tapOn: "Delete letter"
+- runFlow: ../subflows/go-back.yaml
+- runFlow: ../subflows/open-settings.yaml
+- scrollUntilVisible:
+    element:
+      text: "Recently deleted"
+    direction: DOWN
+- tapOn: "Recently deleted"
+- tapOn: "Erase now"
+- assertVisible: "Erase this letter now?"
+- tapOn: "Keep it"
+- assertVisible: ".*Bath time.*"
+- tapOn: "Erase now"
+- tapOn:
+    text: "Erase now"
+    index: 1
+- assertNotVisible: ".*Bath time.*"
+- assertVisible: "Nothing here.*"
 - runFlow:
     file: ../subflows/relaunch.yaml
     env:

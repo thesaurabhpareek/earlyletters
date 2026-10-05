@@ -22,6 +22,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="index" options={{ title: copy.settings.title }} />
       <Stack.Screen name="appearance" options={{ title: copy.settingsMore.appearanceTitle }} />
       <Stack.Screen name="reminders" options={{ title: copy.settings.sections.reminders }} />
+      <Stack.Screen name="recently-deleted" options={{ title: copy.settings.delete.recentlyDeleted }} />
       <Stack.Screen name="recordings" options={{ title: copy.settings.recordings.title }} />
       <Stack.Screen name="children/new" options={{ title: copy.children.add.title }} />
       <Stack.Screen name="children/[id]" options={{ title: copy.children.settings.sectionTitle }} />

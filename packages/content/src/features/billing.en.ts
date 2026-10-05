@@ -9,9 +9,10 @@
  * are free, across every book; after that, keeping another letter needs Plus.
  * Reading, playing and export are never gated, and starting a book and Read
  * together are free. What Plus adds lists only what v1.0 ships: keeping more
- * letters, and encrypted backup of the owner's recordings (D-073). Extra themes
- * are not in v1.0, so they are not promised here (App Review 3.1.2, Subscription
- * Terms must match).
+ * letters. Backup is not listed: D-085 amends D-073, so v1.0 relies on the person's
+ * own iPhone backup plus Export and claims none of our own until sign-in and a
+ * server ship. Extra themes are not in v1.0, so they are not promised here (App
+ * Review 3.1.2, Subscription Terms must match).
  *
  * Never in app copy (D-083): a price, "free trial", "free months", or "we will
  * email you". Apple's own sheets show price and trial to people who are eligible.
@@ -26,8 +27,6 @@ export const billingCopy = {
     subtitle: 'A few extras for the books you keep.',
     features: [
       'Keep adding letters to every book, as many as you like.',
-      // D-073: owner-only encrypted backup ships in v1.0, as part of Plus (Subscription Terms).
-      'Encrypted backup of every recording, for you alone.',
     ],
     promise: 'Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus.',
     renewal:

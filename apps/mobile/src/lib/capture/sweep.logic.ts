@@ -11,16 +11,27 @@
  *   app container on updates, so a stored file:// path goes stale while the
  *   file itself is still in Documents. A stale path is rebased, not lost.
  * - A draft still marked `recording` means the app was killed mid-take. If
- *   its file has bytes, the take is finalized (hashed, marked ready) and
- *   shows on Tonight. If the file is empty it is kept and marked
- *   unrecoverable. Only a recording draft with no file at all (nothing was
+ *   its file has bytes and plays (or could not be probed), the take is
+ *   finalized (hashed, marked ready) and shows on Tonight. If the file is
+ *   empty, or an M4A that was not closed may not play (D-085), it is kept
+ *   and marked unrecoverable: Settings > Recordings lists it, and Export
+ *   keeps the file. Only a recording draft with no file at all (nothing was
  *   captured) is dropped.
- * - A row whose file is missing is reported, never changed or removed.
+ * - A row whose file is missing is reported, never changed or removed. The
+ *   one exception is a deleted letter on the shelf: its file goes first when
+ *   the person erases it (store.eraseEntry), so a kill between the two steps
+ *   leaves a deleted row with no file, which is expected and not reported.
  */
 
 export interface SweepFile {
   uri: string;
   bytes: number;
+  /**
+   * Whether a duration probe could open the file. null when it was not
+   * probed (web, or a file the sweep has no reason to probe). Only a
+   * killed take is probed; `false` keeps it out of "finalize".
+   */
+  playable?: boolean | null;
 }
 
 export interface SweepDraft {
@@ -32,6 +43,8 @@ export interface SweepDraft {
 export interface SweepEntry {
   id: string;
   audioUri: string | null;
+  /** On the Recently deleted shelf. Its file may already be gone (erase deletes the file first). */
+  deleted?: boolean;
 }
 
 export interface SweepSnapshot {
@@ -51,6 +64,8 @@ export interface SweepSnapshot {
 export type SweepAction =
   | { kind: 'finalize-recording'; draftId: string; uri: string; bytes: number }
   | { kind: 'unrecoverable-recording'; draftId: string; uri: string }
+  /** Has bytes but a duration probe could not open it: kept, hashed, marked unrecoverable, listed. */
+  | { kind: 'unplayable-recording'; draftId: string; uri: string; bytes: number }
   | { kind: 'drop-empty-recording'; draftId: string }
   | { kind: 'rebase-draft'; draftId: string; uri: string }
   | { kind: 'rebase-entry'; entryId: string; uri: string }
@@ -91,6 +106,7 @@ export function planLaunchSweep(s: SweepSnapshot): SweepAction[] {
     const file = files.get(name);
     if (d.state === 'recording') {
       if (!file) actions.push({ kind: 'drop-empty-recording', draftId: d.id });
+      else if (file.bytes > 0 && file.playable === false) actions.push({ kind: 'unplayable-recording', draftId: d.id, uri: file.uri, bytes: file.bytes });
       else if (file.bytes > 0) actions.push({ kind: 'finalize-recording', draftId: d.id, uri: file.uri, bytes: file.bytes });
       else actions.push({ kind: 'unrecoverable-recording', draftId: d.id, uri: file.uri });
       continue;
@@ -104,7 +120,9 @@ export function planLaunchSweep(s: SweepSnapshot): SweepAction[] {
     const name = fileNameOf(e.audioUri);
     claimed.add(name);
     const file = files.get(name);
-    if (!file) actions.push({ kind: 'missing-audio', ref: 'entry', id: e.id });
+    if (!file) {
+      if (!e.deleted) actions.push({ kind: 'missing-audio', ref: 'entry', id: e.id });
+    }
     else if (file.uri !== e.audioUri) actions.push({ kind: 'rebase-entry', entryId: e.id, uri: file.uri });
   }
 

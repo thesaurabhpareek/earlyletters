@@ -15,8 +15,8 @@
 // story material, so it states no biographical facts.
 //
 // The brand name comes from packages/brand, never typed here (CLAUDE.md).
-// v1.0 family scope is co-parent only (Brief decision 5); recordings back up for
-// their owner only and are not shared (founder decision, Oct 3 2026); seven spoken
+// v1.0 family scope is co-parent only (Brief decision 5); recordings stay on
+// the phone and are not uploaded or shared (D-059, D-085); seven spoken
 // languages, no Hindi-English mixing claim (Brief 6); no word highlighting (Brief 9).
 import { brand } from '@scribe/brand';
 import { plusPriceLine } from './pricing';
@@ -68,7 +68,7 @@ export const pages = {
         paragraphs: [
           "Letters are private by default. Only you, and {child}'s other parent if you invite them, can read what you add to the book. Each child has their own book.",
           "Transcription happens on your phone. No audio leaves your phone to turn speech into text.",
-          "Recordings stay on your phone unless you back them up. A backup is for you alone. A backed-up recording is encrypted on your phone with AES-256-GCM before it is uploaded. We hold a locked copy of the key so we can help you restore your recordings on a new phone, which means we could technically open them. We only would in the narrow cases below.",
+          "Recordings stay on your phone, and in your iPhone's own backup if you use one. We do not upload them.",
           "When you sign in, your letter text syncs to our servers in the United States so your co-parent and your next phone can read it. It is encrypted in transit and at rest, and we hold the keys. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. Each access is logged and reviewed.",
           "There are no ads. We never sell your data or share it with advertisers, and we never use your letters, recordings or photos to train models of any kind. Analytics stay off until you say yes, and they never include letter text, recordings, photos, names or birthdays.",
           "You can export your whole book, free, at any time, and delete your own letters, recordings or account whenever you like. The Privacy Policy has the full detail.",
@@ -171,7 +171,7 @@ export const pages = {
       {
         heading: "What to write about",
         paragraphs: [
-          "Help with the app: signing in, inviting a co-parent, export, backup or anything that is not working the way you expect. Tell us what kind of phone you use and what you tapped, and we will take it from there.",
+          "Help with the app: signing in, inviting a co-parent, export or anything that is not working the way you expect. Tell us what kind of phone you use and what you tapped, and we will take it from there.",
           "Someone else in your account? Put Not me in the subject. We answer those first, within 1 business day.",
           "You never need to send us a letter or a recording to get help.",
           "Ideas and kind words are welcome too. They are read, every one.",
@@ -190,7 +190,7 @@ export const pages = {
         paragraphs: [
           `Does my co-parent need an iPhone? Yes, for now. ${brand.name} is on iPhone first. Android is coming, and their place in the book will be waiting.`,
           "If one of us has Plus, does the other need it too? Not if you share an Apple family. Plus is shared through Apple Family Sharing, so a co-parent in the same Apple family gets it too. If you are in different Apple families, each of you has your own plan. Reading, playing your recordings and export stay free for both of you either way.",
-          "New phone, where are my recordings? Your letters come with you when you sign in. Recordings come with you if backup is on (part of Plus), or if you moved to the new phone with an iPhone backup or Quick Start. If you still have the old phone, open the app there and export your recordings, or turn on backup.",
+          "New phone, where are my recordings? Your letters come with you when you sign in. Recordings come with you if you moved to the new phone with an iPhone backup or Quick Start. If you still have the old phone, open the app there and export your recordings.",
         ],
       },
       {

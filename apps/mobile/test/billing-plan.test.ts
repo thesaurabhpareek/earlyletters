@@ -254,13 +254,12 @@ describe('products and the StoreKit configuration file', () => {
 });
 
 describe('what the store view promises', () => {
-  // D-073 (founder, 3 Oct 2026, evening): the owner's encrypted backup ships in v1.0, as part of Plus. It
-  // supersedes D-059's "no audio upload", so backup is now something the store view may list. Themes and
-  // covers still are not in v1.0.
-  it('[App Review 3.1.2] lists only what v1.0 ships (backup per D-073; no extra themes yet)', () => {
+  // D-085 amends D-073 for v1.0: our own encrypted backup needs sign-in and a server, which v1.0 does not
+  // have, so the store view claims no backup (App Review 3.1.2, 2.3.1). Themes and covers are not in v1.0 either.
+  it('[App Review 3.1.2] lists only what v1.0 ships (no backup per D-085; no extra themes yet)', () => {
     const said = billingCopy.store.features.join(' ');
     expect(said).not.toMatch(/theme|cover/i);
-    expect(said).toMatch(/backup/i);
+    expect(said).not.toMatch(/backup/i);
     // D-082, D-083: Plus lets you keep adding letters. Read together and more books are free now.
     expect(said).toMatch(/keep adding letters/i);
     expect(said).not.toMatch(/Read together|more children|first book/);

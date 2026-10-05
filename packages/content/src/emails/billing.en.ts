@@ -52,14 +52,14 @@ const STAYS_FREE =
 const REFUNDS_AND_TERMS =
   "Refunds are handled by Apple at reportaproblem.apple.com. The full Subscription terms are at {subscriptionTermsUrl}.";
 const PLUS_INCLUDES =
-  "Plus lets you keep adding letters to every book, and includes encrypted backup of every recording.";
+  "Plus lets you keep adding letters to every book.";
 /** Cancellation policy for the acknowledgments (COMPLIANCE 5.2 A9, legal review LGL-12). */
 const NO_PARTIAL_REFUNDS =
   "Unless the law or Apple's policy says otherwise, there are no partial refunds for unused time.";
 /** The app reports a cancellation made in iOS Settings only when it next opens (D-080). */
 const ALREADY_CANCELLED = "If you have already cancelled, there is nothing to do.";
 /** After Plus, recordings are kept only on the phone (customer review CUS-08). */
-const EXPORT_NOW_AND_THEN = "Without backup, recordings are only on this phone. Export a copy now and then.";
+const EXPORT_NOW_AND_THEN = "Recordings are kept on this phone, and in your iPhone's own backup if you use one. Export a copy now and then.";
 /** v1.0 family is the co-parent only (D-055; content review CNT-04). */
 const FREE_ALWAYS =
   "Every letter you kept stays yours to read, play and export, with or without Plus.";
@@ -312,7 +312,7 @@ export const billingEmails = {
     body: [
       "You turned off renewal for Plus, so there will be no further charges.",
       "Plus keeps working until {accessEndDate}.",
-      "After that, your books, letters and recordings all stay. Recordings already backed up stay stored and downloadable. New recordings are kept on your phone.",
+      "After that, your books, letters and recordings all stay.",
       EXPORT_NOW_AND_THEN,
       FREE_ALWAYS,
       "If you change your mind, you can turn renewal back on in Settings, Plan, any time.",
@@ -333,7 +333,6 @@ export const billingEmails = {
       "Your Plus plan ended on {accessEndDate}, and there will be no further charges.",
       FREE_ALWAYS,
       "Every book you already have stays open to read, play and export.",
-      "Recordings already backed up stay stored, and you can download them any time. New recordings are kept on your phone.",
       EXPORT_NOW_AND_THEN,
       "Thank you for being part of Plus.",
     ],

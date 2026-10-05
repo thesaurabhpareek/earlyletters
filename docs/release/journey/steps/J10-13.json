@@ -1,0 +1,32 @@
+{
+  "id": "J10-13",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Restored",
+  "note": "Restore puts the letter back in the book exactly as it was; a toast confirms and the shelf is empty again, with a calm note that deleted letters wait here for 30 days.",
+  "from": "J10-12",
+  "shot": "screens/J10-13.png",
+  "route": "/settings/recently-deleted",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Recently deleted Recently deleted Nothing here. Letters you delete wait here for 30 days. Letter restored.",
+  "lines": [
+    "Recently deleted",
+    "Recently deleted",
+    "Nothing here. Letters you delete wait here for 30 days.",
+    "Letter restored."
+  ]
+}

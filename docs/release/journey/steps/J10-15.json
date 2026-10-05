@@ -1,0 +1,36 @@
+{
+  "id": "J10-15",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "Erased",
+  "note": "The letter and its recording are gone from this phone at once, and the shelf is empty. (On a phone the recording file is removed first, then the row; the web preview has no recording files.)",
+  "from": "J10-14",
+  "shot": "screens/J10-15.png",
+  "route": "/settings/recently-deleted",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Recently deleted Recently deleted Nothing here. Letters you delete wait here for 30 days. Letter restored. Erase this letter now? The letter and its recording will be erased from this phone, at once. Keep it Erase now",
+  "lines": [
+    "Recently deleted",
+    "Recently deleted",
+    "Nothing here. Letters you delete wait here for 30 days.",
+    "Letter restored.",
+    "Erase this letter now?",
+    "The letter and its recording will be erased from this phone, at once.",
+    "Keep it",
+    "Erase now"
+  ]
+}
