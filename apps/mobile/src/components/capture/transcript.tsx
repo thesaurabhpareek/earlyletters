@@ -3,8 +3,9 @@
  * Transcript paragraph with quiet dotted underlines on machine edits
  * (COMPONENTS 2.19, MOTION 5d). Underlines render at final opacity on the
  * first frame. A pure deletion shows as a short dotted mark where the
- * words were: an inline 28pt mark whose hitSlop makes a 44x44pt target. Nested Text is not reliably
- * focusable by VoiceOver, so Review also lists every edit as a row.
+ * words were: an inline mark on an accentSoft wash with a solid editMark underline (it reads as a
+ * mark, not as an ellipsis typo), 32pt wide, whose hitSlop makes a 44x44pt target. Nested Text is not
+ * reliably focusable by VoiceOver, so Review also lists every edit as a row.
  */
 import type { Segment } from '@scribe/core';
 import { Pressable, View } from 'react-native';
@@ -22,8 +23,8 @@ interface Props {
   scale?: number;
 }
 
-/** Removed-words mark: 28pt wide; hitSlop brings the target to 44x44pt. */
-const MARK_W = 28;
+/** Removed-words mark: 32pt wide (never under 24); hitSlop brings the target to 44x44pt. */
+const MARK_W = 32;
 
 export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, scale = 1 }: Props) {
   // editMark: full-strength underline colour (5.82:1 light, 7.64:1 dark; darker again under Increase
@@ -54,8 +55,9 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, sca
                 accessibilityRole="button"
                 accessibilityLabel={pendingCopy.review.removedA11y}
                 accessibilityHint={pendingCopy.review.editA11yHint}
-                style={{ width: MARK_W, height: h, justifyContent: 'flex-end', borderRadius: 4, backgroundColor: open ? c.accentSoft : undefined }}>
-                <View style={{ marginHorizontal: 4, marginBottom: 2, borderBottomWidth: 2, borderStyle: 'dotted', borderColor: mark }} />
+                accessibilityState={{ expanded: open }}
+                style={{ width: MARK_W, height: h, justifyContent: 'flex-end', borderRadius: 6, backgroundColor: c.accentSoft, borderWidth: open ? 1.5 : 0, borderColor: mark }}>
+                <View style={{ marginHorizontal: 5, marginBottom: 3, height: 2, borderRadius: 1, backgroundColor: mark }} />
               </Pressable>
             </View>
           );

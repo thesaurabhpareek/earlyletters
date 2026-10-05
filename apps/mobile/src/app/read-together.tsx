@@ -11,7 +11,7 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View, useColorScheme } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Toggle } from '@/components/platform/toggle';
 import { tokens } from '@scribe/design-tokens';
 import { AudioPlayer } from '@/components/player/audio-player';
@@ -19,6 +19,8 @@ import { authorOf } from '@/components/child/child-store';
 import { chapterTitle, monthFor } from '@/components/book/chapters';
 import { Button } from '@/components/ui/button';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
+import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
@@ -27,10 +29,12 @@ import { hasPlus } from '@/lib/billing';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
+import { useTheme } from '@/lib/a11y';
+import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 
 
 export default function ReadTogether() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const rt = copy.readTogether;
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
@@ -69,20 +73,14 @@ export default function ReadTogether() {
     [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  // Letters are playing or being read aloud: keep the screen on while the reading pages are showing.
+  useKeepAwakeWhile(!!child && letters.length > 0, KEEP_AWAKE_TAGS.readTogether);
+
   const close = () => router.back();
 
   if (!child || letters.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 justify-center gap-4 bg-background px-5">
-        <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">
-          {rt.title}
-        </Text>
-        <Text className="text-lg leading-7 text-muted-foreground">{pendingCopy.readTogether.emptyBody}</Text>
-        <Button className="self-start" onPress={close}>
-          <Text>{copy.common.closeButton}</Text>
-        </Button>
-      </SafeAreaView>
-    );
+    // The one state pattern; a modal, so Close is the header's, top right.
+    return <StateScreen kind="empty" art="moon" title={rt.title} body={pendingCopy.readTogether.emptyBody} header={<ModalHeader onClose={close} />} />;
   }
 
   const done = index >= letters.length;
@@ -99,12 +97,10 @@ export default function ReadTogether() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between px-5 pt-2">
-        <Button variant="ghost" size="sm" className="-ml-4" onPress={close}>
-          <Text className="text-primary">{copy.common.closeButton}</Text>
-        </Button>
-        <Text className="text-sm text-muted-foreground">{`${Math.min(index + 1, letters.length)} / ${letters.length}`}</Text>
-      </View>
+      <ModalHeader
+        onClose={close}
+        leading={<Text variant="subhead" tone="muted">{`${Math.min(index + 1, letters.length)} / ${letters.length}`}</Text>}
+      />
 
       {done ? (
         <View className="flex-1 justify-center gap-6 px-5" accessibilityLiveRegion="polite">

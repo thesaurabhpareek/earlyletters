@@ -87,6 +87,14 @@ export const en = {
       addAnotherButton: "Add another child",
       // Twins or more, same birthday or due date, during first run (PRD.md K-12).
       addAnotherHelp: "Twins or more? Add them now. Each child gets their own book.",
+      // Why Continue is waiting (shown in words, never only a greyed button).
+      needNameMany: "Fill in or remove this name to continue.",
+      needBirthday: "Choose {child}'s birthday to continue.",
+      needDueDate: "Choose the due date to continue.",
+      chooseDate: "Choose a date",
+      bornToday: "Born today",
+      // A long name: said gently, once the field is close to its limit.
+      nameLimit: "A name can have up to {n} characters.",
       cta: "Continue",
     },
 
@@ -100,6 +108,7 @@ export const en = {
       examples: ["Mama", "Papa", "Amma", "Appa", "Mummy", "Daddy", "Ma", "Baba"],
       notYetHelp: "Not talking yet? Pick the name you hope to hear.",
       preview: "From {signsAs}",
+      needSignsAs: "Add what {child} calls you to continue.",
       cta: "Sign my letters",
     },
 
@@ -221,6 +230,12 @@ export const en = {
     toChild: "To {child}",
     audience: "Only you, until you add it to the book.",
     elapsedA11y: "{minutes} min {seconds} s recorded",
+    // Shown when Listen opens without a tap on Speak (a link, a restored screen): nothing records until the person taps.
+    ready: {
+      title: "Ready when you are",
+      body: "Nothing is recording yet. Tap Start when you want to speak.",
+      startButton: "Start",
+    },
     discardButton: "Let it go",
     discardTitle: "Let this recording go?",
     discardBody: "It will be removed from this phone.",
@@ -863,6 +878,32 @@ export const en = {
       title: "Something went wrong",
       body: "Your words are safe. Please try again.",
     },
+    // A screen could not draw (root error boundary). Calm, no codes, no stack.
+    crash: {
+      title: "Something went wrong on our side",
+      body: "Your letters and recordings are safe on this phone. Nothing was removed.",
+      tryAgainButton: "Try again",
+      tonightButton: "Go to Tonight",
+    },
+    // A link or route the app does not have (replaces the router's developer page).
+    notFoundPage: {
+      title: "We could not find that page",
+      body: "The link may be old or mistyped. Your book is right where you left it.",
+      button: "Back to Tonight",
+    },
+    // The book could not be opened at launch (database open or update step failed). Never deletes anything.
+    launch: {
+      title: "We could not open your book just now",
+      body: "Your letters and recordings are safe on this phone. Nothing has been removed, and nothing will be unless you choose it.",
+      hint: "Trying again often works. If it does not, restarting the phone can help.",
+      tryAgainButton: "Try again",
+      exportButton: "Export what's readable",
+      exportingTitle: "Gathering your files",
+      exportNothing: "We did not find any recordings or files to export on this phone.",
+      exportFailed: "We could not make the export, and nothing was changed. Your files are still on this phone. You can try again.",
+      readme:
+        "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
+    },
   },
 
   // Appended by Mobile B (Book, letter view, children, Family, Settings). PM to review.
@@ -888,6 +929,30 @@ export const en = {
     dueDateLabel: "Due date",
     nameRequired: "Add a name to continue.",
     notSet: "Not set",
+    // Editing a child's details (Settings > the child's book). Letters are never changed by these.
+    edit: {
+      nameLabel: "Name",
+      rowHint: "Opens to change it.",
+      save: "Save",
+      nameEmpty: "Add a name to save.",
+      nameLimit: "A name can have up to {n} characters.",
+      nameTooLong: "That is longer than a name can be. The limit is {n} characters.",
+      signsAsEmpty: "Add what {child} calls you to save.",
+      signsAsLimit: "Up to {n} characters.",
+      signsAsTooLong: "That is longer than it can be. The limit is {n} characters.",
+      signsAsNewOnly: "Letters you have already written keep how they were signed. This applies to new ones.",
+      birthdayFuture: "A birthday is a day that has already come. Choose today or earlier.",
+      birthdayMissing: "Choose a date to save.",
+      dueDateRange: "Choose a due date from today up to ten months ahead.",
+      dateInvalid: "That date does not look right. Try again.",
+      born: {
+        offer: "{child} was born, set the birthday",
+        offerBody: "Your due date has come. Tell us the day and your letters find their place.",
+        pickerLabel: "{child}'s birthday",
+        confirm: "Set the birthday",
+        keepNote: "Letters written before this day stay in Before You.",
+      },
+    },
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
     plusNotYet: "Plus is not available on this device yet.",
   },

@@ -17,7 +17,7 @@
  *
  * Placeholders (filled by the sender, payments engineer):
  *   {planName}             "Plus Monthly" or "Plus Annual"
- *   {price}                localized store price, e.g. "$3.99"
+ *   {price}                localized store price, e.g. "$4.99"
  *   {billingPeriod}        "a month" or "a year"
  *   {periodUnit}           "month" or "year"
  *   {agreedDate}           date of purchase or trial start (consent record, D-049)

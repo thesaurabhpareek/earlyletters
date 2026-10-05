@@ -1,16 +1,18 @@
 import '@/global.css';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeLetters } from '@scribe/api';
-import { tokens } from '@scribe/design-tokens';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
+import { RootErrorBoundary } from '@/components/resilience/error-boundary';
+import { LaunchRecovery } from '@/components/resilience/launch-recovery';
 import { UIProvider } from '@/components/ui/provider';
+import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
 import { startAnalytics } from '@/lib/analytics';
 import { startAnalyticsObservers } from '@/lib/analytics/observers';
@@ -24,6 +26,7 @@ import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
 import { startPacks } from '@/lib/packs';
 import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
+import { useLaunch } from '@/lib/resilience/use-launch';
 import { getSetting, subscribe } from '@/lib/store';
 import { startSync } from '@/lib/sync';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
@@ -87,15 +90,29 @@ function startServices(launchedAt: number): void {
 
 const launchedAt = Date.now();
 
-/** Native: always ready. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts). */
+/**
+ * A render error anywhere under the root layout lands here instead of a blank screen: calm words, Try again
+ * and Go to Tonight, no error text, nothing logged (components/resilience/error-boundary.tsx).
+ */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <RootErrorBoundary {...props} />;
+}
+
+/**
+ * Native: the store is always ready to open. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts).
+ * The database is opened once here; if opening or updating it throws, the recovery screen replaces the app
+ * (Try again, Export what is readable) and nothing is deleted.
+ */
 export default function RootLayout() {
-  return useStoreReady() ? <Root /> : null;
+  const launch = useLaunch(useStoreReady());
+  if (launch.status === 'recovery') return <LaunchRecovery onTryAgain={launch.retry} />;
+  return launch.status === 'ok' ? <Root /> : null;
 }
 
 function Root() {
   useAppearance();
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const c = tokens[scheme];
+  // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
+  const { c, scheme } = useTheme();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
@@ -109,6 +126,12 @@ function Root() {
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
+
+  // The native window behind everything is the page colour in both schemes, so a screen swap, a crash or an
+  // overscroll never shows white (iOS root view; on the web preview it is the body).
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(c.bg).catch(() => {});
+  }, [c.bg]);
 
   // After the first frame, never awaited: finish takes cut off by a kill,
   // rebase moved paths, keep stray recordings (lib/capture/sweep.ts); then

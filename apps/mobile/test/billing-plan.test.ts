@@ -242,11 +242,11 @@ describe('products and the StoreKit configuration file', () => {
     expect(subs.every((s) => s.familyShareable === true)).toBe(true);
   });
 
-  it('founder prices and free trials: $3.99 a month with 1 month free, $29.99 a year with 2 months free', () => {
+  it('founder prices and free trials: $4.99 a month with 1 month free, $49.99 a year with 2 months free', () => {
     const byId = Object.fromEntries(file.subscriptionGroups[0].subscriptions.map((s) => [s.productID as string, s]));
-    expect(byId['plus.monthly']).toMatchObject({ displayPrice: '3.99', recurringSubscriptionPeriod: 'P1M' });
+    expect(byId['plus.monthly']).toMatchObject({ displayPrice: '4.99', recurringSubscriptionPeriod: 'P1M' });
     expect(byId['plus.monthly'].introductoryOffer).toMatchObject({ paymentMode: 'free', subscriptionPeriod: 'P1M', numberOfPeriods: 1 });
-    expect(byId['plus.annual']).toMatchObject({ displayPrice: '29.99', recurringSubscriptionPeriod: 'P1Y' });
+    expect(byId['plus.annual']).toMatchObject({ displayPrice: '49.99', recurringSubscriptionPeriod: 'P1Y' });
     expect(byId['plus.annual'].introductoryOffer).toMatchObject({ paymentMode: 'free', subscriptionPeriod: 'P2M', numberOfPeriods: 1 });
     expect(periodOf('plus.monthly')).toBe('month');
     expect(periodOf('plus.annual')).toBe('year');

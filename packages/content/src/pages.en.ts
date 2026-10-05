@@ -19,6 +19,7 @@
 // their owner only and are not shared (founder decision, Oct 3 2026); seven spoken
 // languages, no Hindi-English mixing claim (Brief 6); no word highlighting (Brief 9).
 import { brand } from '@scribe/brand';
+import { plusPriceLine } from './pricing';
 
 export type PageSection = {
   heading: string;
@@ -76,7 +77,7 @@ export const pages = {
       {
         heading: "What it costs",
         paragraphs: [
-          "Your first two letters are free. After that, keeping another letter is part of Plus: $3.99 a month with the first month free, or $29.99 a year with the first 2 months free. Reading, playing your recordings and export are never locked away, with or without Plus.",
+          `Your first two letters are free. After that, keeping another letter is part of Plus: ${plusPriceLine.monthly}, or ${plusPriceLine.annual}. Reading, playing your recordings and export are never locked away, with or without Plus.`,
         ],
       },
       {

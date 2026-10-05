@@ -1,7 +1,6 @@
 import { BooksIcon } from 'phosphor-react-native/src/icons/Books';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, View, useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
+import { ScrollView, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
@@ -9,6 +8,7 @@ import { billingCopy, presentPlusStore, redeemOfferCode, usePlan } from '@/lib/b
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
+import { useTheme } from '@/lib/a11y';
 
 interface Props {
   /**
@@ -45,7 +45,7 @@ interface Props {
  * the legal links. This screen never types a price or a trial. Content sits near the top (no floating block).
  */
 export function PlusGate({ childName, lapsed = false, lettersKept, onHold, onPlus, onContinueDev }: Props) {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const k = billingCopy.keepGate;
   const g = billingCopy.gate;
   const plan = usePlan();

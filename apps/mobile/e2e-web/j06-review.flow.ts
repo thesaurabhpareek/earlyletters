@@ -23,14 +23,14 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await btn(app, /Put it back/i).click();
   await expect(app.getByText(/put back/i).first()).toBeVisible();
   await step('happy', 'Put back', 'The original words return, marked for a moment, with Undo beside them.');
-  await btn(app, 'Undo').click();
+  await app.getByRole('button', { name: 'Undo', exact: true }).click();
   await step('happy', 'Undo the put-back', 'Undo re-applies the tidy-up. Every edit is reversible both ways.');
 
   await app.getByText('Show exactly what I said', { exact: true }).click();
   await step('happy', 'Exactly what was said', 'The raw words, untouched, with their "um" and repeats, labelled as the original.');
-  await app.getByText(/Show the tidied|Show tidied/i).first().click().catch(() => undefined);
+  await app.getByText(/Show small fixes/i).first().click().catch(() => undefined);
 
-  await app.getByText('Keep it word for word', { exact: true }).click();
+  await app.getByText('Undo every fix', { exact: true }).click();
   await expect(app.getByText(/No changes|Nothing was changed|word for word/i).first()).toBeVisible();
   await step('happy', 'Word for word', 'One tap undoes every tidy-up at once; the screen says nothing was changed.');
 
@@ -38,7 +38,7 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await step('happy', 'Change words', 'The person may edit any word themselves. Save is off while editing; Done returns.');
   await app.getByText('Done', { exact: true }).click();
 
-  await app.getByRole('button', { name: /Not quite/ }).click();
+  await app.getByRole('radio', { name: /Not quite/ }).click();
   await step('happy', 'Does this sound like you? Not quite', 'A private two-button check on how faithful the words sound. "Not quite" shows a kind follow-up line; nothing is stored about the words.');
 
   await btn(app, /^Add to .*book/).click();

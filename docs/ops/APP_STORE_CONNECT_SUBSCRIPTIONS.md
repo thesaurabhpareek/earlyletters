@@ -10,8 +10,8 @@ Labels: **V** checked in Apple's help pages on 3 Oct 2026. **U** not checked; th
 | | Value | Where it must match |
 |---|---|---|
 | Subscription group | Reference name `Plus`, display name `Plus` | `storekit/EarlyLetters.storekit` |
-| Monthly product | Product ID `plus.monthly`, 1 month, US $3.99, free 1-month introductory offer | `apps/mobile/src/lib/billing/config.ts`, the StoreKit file, Subscription Terms |
-| Annual product | Product ID `plus.annual`, 1 year, US $29.99, free 2-month introductory offer | same |
+| Monthly product | Product ID `plus.monthly`, 1 month, US $4.99, free 1-month introductory offer | `apps/mobile/src/lib/billing/config.ts`, the StoreKit file, Subscription Terms |
+| Annual product | Product ID `plus.annual`, 1 year, US $49.99, free 2-month introductory offer | same |
 | Family Sharing | On for both (cannot be turned off later) | ADR 0013 |
 | Billing Grace Period | 16 days, all renewals, production and sandbox | TDD 08 OQ-7 |
 | Availability | United States only at launch (LEGAL-REQ-058) | Subscription Terms "Plus is offered in the United States" |
@@ -52,10 +52,12 @@ In the `Plus` group, click **Create** (or **+**). For each product: (**V** for t
 | Reference name | `Plus Monthly` | `Plus Annual` |
 | Product ID | `plus.monthly` | `plus.annual` |
 | Subscription Duration | 1 month | 1 year |
-| Subscription Prices | United States, US $3.99 | United States, US $29.99 |
+| Subscription Prices | United States, US $4.99 | United States, US $49.99 |
 | Availability | United States only | United States only |
 | Localization (English U.S.): display name | `Plus Monthly` | `Plus Yearly` |
 | Localization: description | `Keep adding letters, billed monthly` | `Keep adding letters, billed yearly` |
+
+Prices (founder, 4 Oct 2026, D-082): monthly US $4.99, yearly US $49.99. Yearly is priced at about ten months for twelve months of access (12 x 4.99 = 59.88; 59.88 - 49.99 = 9.89, about two months). The introductory offers are unchanged: a 1-month free trial on monthly and a 2-month free trial on yearly. **U**: whether $49.99 exists as an App Store price point for this storefront, and which introductory-offer durations Apple offers, have not been checked from here; confirm both in App Store Connect before submitting.
 
 Then:
 1. Set both subscriptions to the **same level** in the group, so switching between monthly and yearly is a crossgrade, not an upgrade. (**U**: App Store Connect shows levels on the group page; drag or edit so both are level 1.)

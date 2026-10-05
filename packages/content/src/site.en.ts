@@ -9,14 +9,11 @@
 // The privacy promise is `en.trust.promise` word for word (D-061). Legal pages: packages/brand
 // `web.*` (D-063).
 import { brand } from '@scribe/brand';
+import { plusPriceLine } from './pricing';
 import { en } from './strings.en';
 
 /** Plus prices as shown on the website (D-075, Brief decision 3). The App Store shows the localized price. */
-const price = {
-  line: "$3.99 a month or $29.99 a year",
-  monthly: "$3.99 a month, with the first month free",
-  annual: "$29.99 a year, with the first 2 months free",
-} as const;
+const price = plusPriceLine;
 
 export const site = {
   /** Open Graph and social card text: first contact, so it carries the descriptor (BRAND.md naming; brand review BRD-12). */

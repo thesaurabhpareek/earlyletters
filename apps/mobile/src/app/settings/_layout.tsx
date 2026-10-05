@@ -1,12 +1,12 @@
 import { Stack } from 'expo-router';
-import { Platform, useColorScheme } from 'react-native';
+import { Platform } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { tokens } from '@scribe/design-tokens';
 import { copy } from '@/lib/copy';
+import { useTheme } from '@/lib/a11y';
 
 /** Settings stack (PRD C, C-REQ-016): every row at most 2 taps from Settings. */
 export default function SettingsLayout() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   return (
     <Stack
       screenOptions={{

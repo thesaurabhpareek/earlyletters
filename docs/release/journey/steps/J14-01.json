@@ -22,7 +22,7 @@
     }
   },
   "scrolls": false,
-  "text": "Recordings Recordings Kept on this phone Recordings are kept on this phone and in your iPhone's own backup, if you use one. Export any time to keep a copy of your own. Your voice is saved with each letter, on this phone. Writing down your words English Not on this phone, 575 MB Your recordings are written down here on this phone. Removing a language frees space. Your recordings and letters stay, and new recordings wait for their words until you add it again. How transcription works Tidying Word for word keeps every um and false start. Either way, we never rewrite. Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
+  "text": "Recordings Recordings Kept on this phone Recordings are kept on this phone and in your iPhone's own backup, if you use one. Export any time to keep a copy of your own. Your voice is saved with each letter, on this phone. Writing down your words English Not on this phone, 575 MB Your recordings are written down here on this phone. Removing a language frees space. Your recordings and letters stay, and new recordings wait for their words until you add it again. How transcription works Word for word Small fixes are marked in each letter, and you can undo any of them. Exactly as said keeps every um and false start. Either way, we never rewrite. Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.",
   "lines": [
     "Recordings",
     "Recordings",
@@ -34,8 +34,8 @@
     "Not on this phone, 575 MB",
     "Your recordings are written down here on this phone. Removing a language frees space. Your recordings and letters stay, and new recordings wait for their words until you add it again.",
     "How transcription works",
-    "Tidying",
-    "Word for word keeps every um and false start. Either way, we never rewrite.",
+    "Word for word",
+    "Small fixes are marked in each letter, and you can undo any of them. Exactly as said keeps every um and false start. Either way, we never rewrite.",
     "Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong."
   ]
 }
