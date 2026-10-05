@@ -17,7 +17,7 @@
  *
  * Placeholders (filled by the sender, payments engineer):
  *   {planName}             "Plus Monthly" or "Plus Annual"
- *   {price}                localized store price, e.g. "$3.99"
+ *   {price}                localized store price, e.g. "$4.99"
  *   {billingPeriod}        "a month" or "a year"
  *   {periodUnit}           "month" or "year"
  *   {agreedDate}           date of purchase or trial start (consent record, D-049)
@@ -52,7 +52,7 @@ const STAYS_FREE =
 const REFUNDS_AND_TERMS =
   "Refunds are handled by Apple at reportaproblem.apple.com. The full Subscription terms are at {subscriptionTermsUrl}.";
 const PLUS_INCLUDES =
-  "Plus includes encrypted backup of every recording, Read together, and books for more children.";
+  "Plus lets you keep adding letters to every book, and includes encrypted backup of every recording.";
 /** Cancellation policy for the acknowledgments (COMPLIANCE 5.2 A9, legal review LGL-12). */
 const NO_PARTIAL_REFUNDS =
   "Unless the law or Apple's policy says otherwise, there are no partial refunds for unused time.";
@@ -62,7 +62,7 @@ const ALREADY_CANCELLED = "If you have already cancelled, there is nothing to do
 const EXPORT_NOW_AND_THEN = "Without backup, recordings are only on this phone. Export a copy now and then.";
 /** v1.0 family is the co-parent only (D-055; content review CNT-04). */
 const FREE_ALWAYS =
-  "Writing, reading, playing your recordings, export and writing together with your co-parent are free, always.";
+  "Every letter you kept stays yours to read, play and export, with or without Plus.";
 const MANAGE_CTA = { label: "Manage subscription", urlVar: "{manageUrl}" };
 
 export const billingEmails = {
@@ -332,7 +332,7 @@ export const billingEmails = {
     body: [
       "Your Plus plan ended on {accessEndDate}, and there will be no further charges.",
       FREE_ALWAYS,
-      "Every book you already have stays open for writing, reading and export.",
+      "Every book you already have stays open to read, play and export.",
       "Recordings already backed up stay stored, and you can download them any time. New recordings are kept on your phone.",
       EXPORT_NOW_AND_THEN,
       "Thank you for being part of Plus.",

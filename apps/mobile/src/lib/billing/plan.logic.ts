@@ -4,8 +4,8 @@
  *
  *  - planFromSnapshot: StoreKit 2 entitlements and statuses -> the engine's
  *    PlanView (packages/core/src/plan.ts) plus details for the Plan screen.
- *  - startBookDecision / readTogetherDecision: the inputs decide() needs, built
- *    from what this phone knows. decide() stays the only place rules live.
+ *  - Membership gate (D-082, D-083): decideKeepLetter in packages/core is the only
+ *    place the rule lives; lib/billing/gates.ts feeds it Plus and the letter ledger.
  *
  * What changed with "Apple only, checked on the device, no server":
  *  - Plus belongs to the Apple Account, not to our account. Buying needs no
@@ -17,19 +17,10 @@
  *    verified sandbox transaction exists only in TestFlight, a development
  *    build, or App Review, which buys in the sandbox; refusing it would show
  *    App Review a paid Plus that does not work.
- *  - Nothing here locks anything that exists: only starting another book and
- *    more Read together sessions are gated (FreeForever in packages/core).
+ *  - Nothing here locks anything that exists: only keeping another letter is
+ *    gated (FreeForever in packages/core).
  */
-import {
-  countStartedBooks,
-  decide,
-  DEFAULT_READ_TOGETHER_FREE_TRIES,
-  freeTriesFrom,
-  NO_PLAN,
-  planActive,
-  type Decision,
-  type PlanView,
-} from '@scribe/core';
+import { NO_PLAN, planActive, type PlanView } from '@scribe/core';
 import type {
   NativeEntitlementSnapshot,
   NativeStatus,
@@ -315,9 +306,14 @@ export function planLine(plan: PlanState, now: string): PlanLine {
   return { kind: 'renews', on: end };
 }
 
-// ── Gates: inputs for decide() ───────────────────────────────────────────
+// ── Gates ────────────────────────────────────────────────────────────────
+//
+// Membership (D-082, D-083): the Keep step is the one gate, decided by
+// decideKeepLetter in packages/core from Plus on this phone and the letter
+// ledger (letter-ledger.ts). Starting a book and Read together are no longer
+// gated, so the old start_book and read_together inputs are gone.
 
-/** What the phone knows about one book, for the Plus rules. */
+/** What the phone knows about one book. */
 export interface BookFacts {
   /**
    * false for a book joined as co-parent (sync_books `created_by_me`).
@@ -332,80 +328,7 @@ export interface BookFacts {
   role?: 'parent' | 'contributor';
 }
 
-/** A book joined as co-parent. It never uses up the free book (PRD-REQ-015). */
+/** A book joined as a co-parent. */
 export function isJoinedBook(book: Pick<BookFacts, 'createdByMe'>): boolean {
   return book.createdByMe === false;
-}
-
-export function startedBookCount(books: readonly BookFacts[]): number {
-  return countStartedBooks(books.map((b) => ({ createdByMe: !isJoinedBook(b), deleted: b.deleted === true })));
-}
-
-/** Any book's birthday today (not the day of birth itself): no offers that day (C-REQ-023). */
-export function isAnyBirthdayToday(books: readonly BookFacts[], today: string): boolean {
-  const year = Number(today.slice(0, 4));
-  const monthDay = today.slice(5, 10);
-  return books.some((b) => !b.deleted && !!b.birthday && b.birthday.slice(5, 10) === monthDay && Number(b.birthday.slice(0, 4)) < year);
-}
-
-export interface GateContext {
-  /** ISO instant. */
-  now: string;
-  /** YYYY-MM-DD, local. */
-  today: string;
-  plan: PlanView;
-  /** Every book on this phone, hidden ones included. */
-  books: readonly BookFacts[];
-}
-
-/** Starting another book (after first run; the onboarding batch never asks). */
-export function startBookDecision(ctx: GateContext): Decision {
-  return decide({
-    now: ctx.now,
-    feature: 'start_book',
-    surface: 'normal',
-    isBirthday: isAnyBirthdayToday(ctx.books, ctx.today),
-    signedIn: true,
-    online: true,
-    viewer: { roleInBook: null, own: ctx.plan },
-    book: null,
-    startedBooks: startedBookCount(ctx.books),
-    inFirstRunBatch: false,
-  });
-}
-
-/** Starting a Read together session in one book. */
-export function readTogetherDecision(ctx: GateContext & { book: BookFacts | null; sessionsUsed: number; freeSessions: number }): Decision {
-  return decide({
-    now: ctx.now,
-    feature: 'read_together',
-    surface: 'normal',
-    isBirthday: isAnyBirthdayToday(ctx.books, ctx.today),
-    signedIn: true,
-    online: true,
-    viewer: { roleInBook: ctx.book?.role ?? 'parent', own: ctx.plan },
-    book: { coveredByOtherParent: false },
-    startedBooks: startedBookCount(ctx.books),
-    inFirstRunBatch: false,
-    readTogether: { triesUsedInBook: ctx.sessionsUsed, freeTries: ctx.freeSessions },
-  });
-}
-
-/** A session is counted only when it ran on a free try, never under Plus (TDD 08 row 20). */
-export function countsAsFreeSession(d: Decision): boolean {
-  return d.kind === 'allow' && d.via === 'try';
-}
-
-/**
- * Free Read together sessions per book. Remote config may only raise the
- * reviewed allowance, never lower it (packages/api remote-config, decision 16).
- */
-export function freeSessionsFrom(remote: unknown): number {
-  return Math.max(DEFAULT_READ_TOGETHER_FREE_TRIES, freeTriesFrom(remote));
-}
-
-/** A stored session count, made safe. */
-export function sessionsFrom(raw: string | null): number {
-  const n = Number(raw ?? 0);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }

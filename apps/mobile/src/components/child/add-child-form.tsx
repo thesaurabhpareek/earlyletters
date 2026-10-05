@@ -9,41 +9,25 @@ import { copy, fill } from '@/lib/copy';
 import { ordinalOf, track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { isoOf, longDate } from '@/lib/dates';
-import { devShortcutsAllowed } from '@/lib/build-env';
 import { addChild, getActiveChild, setActiveChildId, todayISO } from '@/lib/store';
-import { newChildNeedsPlus, startBookGate } from '@/lib/billing';
-import { PlusGate } from './plus-gate';
 import { useTheme } from '@/lib/a11y';
 
 const DAY = 86_400_000;
 
 /**
- * Add a child (PRD B F2.1): name plus birthday or due date. Books made in
- * first run are free; another book after that is a Plus feature (PRD C 4.1),
- * and books joined as co-parent never count (billing.newChildNeedsPlus).
+ * Add a child (PRD B F2.1): name plus birthday or due date. Books are free to
+ * start (D-082, D-083): the free letters are one pool across every book, so
+ * there is no second-book gate.
  */
 export function AddChildForm() {
   const c = useTheme().c;
   const o = copy.onboarding.child;
   const x = copy.childrenExtra;
-  const [gated] = useState(newChildNeedsPlus);
-  const [passedGate, setPassedGate] = useState(false);
   const [name, setName] = useState('');
   const [expecting, setExpecting] = useState(false);
   const [date, setDate] = useState(new Date());
   const [pickerOpen, setPickerOpen] = useState(Platform.OS === 'ios');
   const [tried, setTried] = useState(false);
-
-  if (gated && !passedGate) {
-    return (
-      <PlusGate
-        decision={startBookGate()}
-        onPlus={() => setPassedGate(true)}
-        onNotNow={() => router.back()}
-        onContinueDev={devShortcutsAllowed ? () => setPassedGate(true) : undefined}
-      />
-    );
-  }
 
   const trimmed = name.trim();
   const dateLabel = expecting ? x.dueDateLabel : o.birthdayLabel;

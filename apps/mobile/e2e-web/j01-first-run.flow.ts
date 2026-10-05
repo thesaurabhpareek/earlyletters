@@ -12,7 +12,8 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await btn(app, 'Continue').click();
 
   await expect(app.getByText('Begin the book')).toBeVisible();
-  await step('happy', 'Welcome', 'The envelope, the name, one line of what the book is. Two buttons: begin, or "I was invited".');
+  await expect(app.getByText('Your first two letters are free.')).toBeVisible();
+  await step('happy', 'Welcome', 'The envelope, the name, one line of what the book is, and one quiet line: "Your first two letters are free." (D-082). Two buttons: begin, or "I was invited".');
   await startOnboarding(app);
   await step('happy', 'The promise', 'What the app does with words (tidies, never rewrites), that the voice is kept on the phone, that it can mishear, and that it is private by default.');
   await toChildStep(app);

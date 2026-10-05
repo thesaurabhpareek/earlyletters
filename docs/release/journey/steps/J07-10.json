@@ -1,0 +1,42 @@
+{
+  "id": "J07-10",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "The held letter waits on Tonight",
+  "note": "Tonight shows the waiting letter. Tapping it opens Review with the words as typed.",
+  "from": "J07-09",
+  "shot": "screens/J07-10.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 0 days The house is quiet, Mama. What do you want Asha to know about today? A thought to start with Tell Asha about the first day home. What do you remember? Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 0 days",
+    "The house is quiet, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "Tell Asha about the first day home. What do you remember?",
+    "Another thought",
+    "A letter is waiting to be read back.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

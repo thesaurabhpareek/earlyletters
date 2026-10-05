@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState } from 'react';
 import { Uniwind } from 'uniwind';
-import { effectiveFreeSessions } from '@scribe/api';
+import { effectiveFreeLetters } from '@scribe/api';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { RootErrorBoundary } from '@/components/resilience/error-boundary';
@@ -19,12 +19,11 @@ import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
-import { startPlus } from '@/lib/billing';
+import { setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
 import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
 import { startPacks } from '@/lib/packs';
-import { setReadTogetherFreeSessionsSource } from '@/lib/read-together';
 import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
 import { useLaunch } from '@/lib/resilience/use-launch';
@@ -71,8 +70,8 @@ let servicesStarted = false;
 function startServices(launchedAt: number): void {
   if (servicesStarted) return;
   servicesStarted = true;
-  // Read together allowance: remote config may only raise the reviewed default (packages/api).
-  setReadTogetherFreeSessionsSource(() => effectiveFreeSessions(getRemoteConfig()));
+  // Free letters (D-082): remote config may only raise the reviewed 2 (packages/api effectiveFreeLetters).
+  setFreeLettersAllowanceSource(() => effectiveFreeLetters(getRemoteConfig()));
   safely(startRemote); // signed config, pack manifest, content bundle
   safely(startPacks); // after remote: installs pack updates when a newer manifest arrives
   // After packs: the queue registers the speech plan as a language resolver on the
@@ -81,6 +80,7 @@ function startServices(launchedAt: number): void {
   safely(startListeningCopies); // the player's clearer listening copy lookup, stale copies swept
   safely(startSync); // waits for a signed-in, consented session itself (syncAllowed)
   safely(startPlus); // StoreKit 2 entitlements on this phone
+  safely(startLetterLedger); // heals the free-letter count after a reinstall or a backup restore (D-083)
   safely(startReminders);
   safely(cleanupExports); // ZIPs left in the cache by an export cut off by a kill
   // Opt-in analytics: nothing is sent before a yes (LEGAL-REQ-003).

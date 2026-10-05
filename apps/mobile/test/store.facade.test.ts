@@ -190,9 +190,16 @@ describe('boundaries (MOB-04)', () => {
   });
 
   it('repositories import no React Native or Expo module except the native opener', () => {
-    for (const f of ['children', 'context', 'drafts', 'entries', 'events', 'ids', 'index', 'letters', 'orphans', 'settings', 'types']) {
+    for (const f of ['children', 'context', 'drafts', 'entries', 'events', 'ids', 'index', 'ledger', 'letters', 'orphans', 'settings', 'types']) {
       expect(src(`db/repos/${f}.ts`), f).not.toMatch(/from ['"](react-native|expo[^'"]*)['"]/);
     }
+  });
+
+  it('[D-083] saveLetterFromDraft counts a kept letter in the same transaction, and only a letter', () => {
+    const source = src('store.ts');
+    expect(source).toMatch(/if \(e\.kind === 'letter'\) ledger\.recordKept\(c, draftId, keychainFloor\(\)\)/);
+    // The count is written inside the transaction callback, before the upload is queued.
+    expect(source.indexOf('ledger.recordKept')).toBeLessThan(source.indexOf('enqueueEntryUpsert(c.db, draftId'));
   });
 
   it('keeps every export screens use', () => {
@@ -204,7 +211,7 @@ describe('boundaries (MOB-04)', () => {
       'deleteSetting', 'unhideChild', 'listHiddenChildren', 'saveFamily', 'saveLetterFromDraft',
       'saveVoiceOnlyFromDraft', 'listWaitingForWords', 'setWordsForWaitingEntry', 'createRecordingDraft', 'finalizeDraftAudio',
       'setDraftAudioHash', 'setDraftChild', 'audioRows', 'rebaseAudioUri', 'reportOrphanAudio', 'reattachOrphanAudio', 'localSchemaVersion',
-      'AudioMissingError', 'localSqlDb', 'notifyStoreChanged', 'subscribeTo', 'openStore', 'closeStore',
+      'AudioMissingError', 'localSqlDb', 'ledgerDb', 'notifyStoreChanged', 'subscribeTo', 'openStore', 'closeStore',
     ];
     for (const n of names) expect(typeof (store as Record<string, unknown>)[n], n).toBe('function');
   });

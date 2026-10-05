@@ -174,6 +174,9 @@ export default function Onboarding() {
                   </Text>
                 </View>
                 <Text variant="body">{fill(o.welcome.body, { child: 'your child' })}</Text>
+                <Text variant="callout" tone="muted">
+                  {o.welcome.freeLine}
+                </Text>
               </>
             )}
 

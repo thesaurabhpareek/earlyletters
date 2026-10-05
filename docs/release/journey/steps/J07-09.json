@@ -1,0 +1,33 @@
+{
+  "id": "J07-09",
+  "journey": "typed-letter",
+  "kind": "unhappy",
+  "title": "The third letter is held",
+  "note": "The third Keep opens the Plus sheet instead of saving. The typed words are still on the phone as a draft; nothing was lost. (Plus itself needs a real iPhone: Apple's store view does not exist on web.)",
+  "from": "J07-08",
+  "shot": "screens/J07-09.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Keep adding to Asha's book Your first two letters are kept, and always will be. To add more, join Plus. This letter is safe on your phone. Come back to it once Plus is on. Plus is not available on this device yet. Keep it here for now",
+  "lines": [
+    "Keep adding to Asha's book",
+    "Your first two letters are kept, and always will be. To add more, join Plus.",
+    "This letter is safe on your phone. Come back to it once Plus is on.",
+    "Plus is not available on this device yet.",
+    "Keep it here for now"
+  ]
+}

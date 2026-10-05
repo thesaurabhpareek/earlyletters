@@ -38,9 +38,10 @@ test('[J03] more than one child: twins in first run, the switcher, settings, and
   await step('happy', 'One child\'s settings', 'Name, date, signature, a reminders switch, the co-parent row ("Soon") and a "Family can read" switch that stays off in v1.0. Hide this book is offered because there is more than one (its confirm dialog is native and does not appear on web).');
   await app.goBack();
   await app.getByText('Add a child', { exact: true }).last().click();
-  await expect(app.getByText('Another book is part of Plus')).toBeVisible();
-  await step('unhappy', 'A third book needs Plus', 'Starting another book after first run is a Plus feature. The screen says every existing book stays open, and offers Not now. Buying needs StoreKit, which does not exist on web, so the page says Plus is not available on this device.');
-  await btn(app, 'Not now').click();
+  await expect(app.getByText('Who is this book for?')).toBeVisible();
+  await expect(app.getByText('Another book is part of Plus')).toHaveCount(0);
+  await step('happy', 'Another book is free', 'Starting a book for another child opens the same page as the first, with no Plus gate (D-082, D-083): the first two letters are one pool across every book, and the gate is at Keep, not here.');
+  await app.goBack();
   await expect(app.getByText('Add a child').last()).toBeVisible();
-  await step('happy', 'Not now returns to Settings', 'Declining the gate changes nothing and goes back.');
+  await step('happy', 'Back to Settings', 'Leaving the page changes nothing and goes back.');
 });

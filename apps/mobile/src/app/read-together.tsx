@@ -5,17 +5,15 @@
  * on this phone play in the voice that said them; word highlighting is v1.1.
  * Anyone else's letter, or a recording not on this phone, is read aloud.
  *
- * Allowance (founder decisions, Oct 2 and 3 2026): a few free sessions in each
- * Free book (remote config, default 3), then the Plus gate, which opens Apple's
- * store view (lib/read-together.ts, lib/billing).
+ * No limit (D-082, D-083, 4 Oct 2026): Read together is free for every letter
+ * that exists. Membership gates adding letters (the Keep step), never reading
+ * or playing them.
  */
 import { router, useLocalSearchParams } from 'expo-router';
-import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Toggle } from '@/components/platform/toggle';
 import { tokens } from '@scribe/design-tokens';
-import { PlusGate } from '@/components/child/plus-gate';
 import { AudioPlayer } from '@/components/player/audio-player';
 import { authorOf } from '@/components/child/child-store';
 import { chapterTitle, monthFor } from '@/components/book/chapters';
@@ -25,11 +23,9 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { copy, fill, pendingCopy } from '@/lib/copy';
-import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
-import { childIndexOf, track, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
+import { childIndexOf, trackReadTogetherEnded, trackReadTogetherStarted } from '@/lib/analytics/track';
 import { hasPlus } from '@/lib/billing';
-import { canStartReadTogether, freeReadTogetherSessions, readTogetherGate, readTogetherSessions, recordReadTogetherSession } from '@/lib/read-together';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
@@ -42,7 +38,6 @@ export default function ReadTogether() {
   const rt = copy.readTogether;
   const { childId } = useLocalSearchParams<{ childId?: string }>();
   const child = (childId ? getChild(childId) : null) ?? getActiveChild();
-  const [allowed, setAllowed] = useState(() => canStartReadTogether(child?.id));
   const counted = useRef(false);
   const [index, setIndex] = useState(0);
   // "Play the next one on its own": after a recording ends, turn the page and start the next voice.
@@ -51,18 +46,15 @@ export default function ReadTogether() {
 
   const letters = useMemo(() => (child ? listEntriesForChild(child.id).filter((e) => e.inBook && e.transcriptStatus !== 'waiting').reverse() : []), [child?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // One session per opening; counted once, only when allowed.
+  // One session per opening, counted once (analytics only; nothing limits sessions).
   const session = useRef<{ startedAt: number; furthest: number } | null>(null);
   useEffect(() => {
-    if (allowed && !counted.current && letters.length > 0) {
+    if (!counted.current && letters.length > 0) {
       counted.current = true;
-      const plus = hasPlus();
-      recordReadTogetherSession(child?.id);
       session.current = { startedAt: Date.now(), furthest: 0 };
-      trackReadTogetherStarted({ childIndex: childIndexOf(child?.id), access: plus ? 'plus' : 'try', letters: letters.length });
-      if (!plus && child) track('read_together_try_used', { n: Math.min(10, Math.max(1, readTogetherSessions(child.id))) });
+      trackReadTogetherStarted({ childIndex: childIndexOf(child?.id), access: hasPlus() ? 'plus' : 'free', letters: letters.length });
     }
-  }, [allowed, letters.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [letters.length]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (session.current) session.current.furthest = Math.max(session.current.furthest, index);
   }, [index]);
@@ -82,28 +74,9 @@ export default function ReadTogether() {
   );
 
   // Letters are playing or being read aloud: keep the screen on while the reading pages are showing.
-  useKeepAwakeWhile(allowed && !!child && letters.length > 0, KEEP_AWAKE_TAGS.readTogether);
+  useKeepAwakeWhile(!!child && letters.length > 0, KEEP_AWAKE_TAGS.readTogether);
 
   const close = () => router.back();
-
-  if (!allowed) {
-    const p = pendingCopy.readTogether;
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <PlusGate
-          title={p.plusTitle}
-          body={fill(p.plusBody, { count: freeReadTogetherSessions() })}
-          decision={readTogetherGate(child?.id)}
-          trigger="read_together"
-          onPlus={() => setAllowed(true)}
-          keepNote={p.keepNote}
-          icon={<BookOpenTextIcon size={28} color={c.accent} />}
-          onNotNow={close}
-          onContinueDev={devShortcutsAllowed ? () => setAllowed(true) : undefined}
-        />
-      </SafeAreaView>
-    );
-  }
 
   if (!child || letters.length === 0) {
     // The one state pattern; a modal, so Close is the header's, top right.
