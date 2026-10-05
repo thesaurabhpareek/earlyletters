@@ -8,7 +8,7 @@
  * - Apple Mail / Airbnb: Delete is immediate with a persistent Undo, no confirm dialog.
  * Haptics: `tap` for private / book, `warning` for Delete. Nothing on open or scroll.
  */
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
@@ -32,8 +32,10 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { deleteEntry, getActiveChild, getChild, getEntry, setEntryInBook, undeleteEntry, type Entry } from '@/lib/store';
 import { provenanceOf } from '@/components/book/chapters';
+import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
+import { isQuietMark, showsSignature } from '@/components/book/quiet-day.logic';
 import { track } from '@/lib/analytics/track';
 import { PrivateChip } from '@/components/book/letter-card';
 import { letterDateline } from '@/lib/dates';
@@ -65,7 +67,7 @@ function Letter() {
   // letter_opened once per open (who wrote it, relative to you, and whether it has a recording; never which letter).
   useEffect(() => {
     const e = getEntry(id);
-    if (e) track('letter_opened', { author_relation: isOwnEntry(e) ? 'self' : 'other_parent', has_audio: !!e.audioUri });
+    if (e && !isQuietMark(e)) track('letter_opened', { author_relation: isOwnEntry(e) ? 'self' : 'other_parent', has_audio: !!e.audioUri });
   }, [id]);
 
   const headerRight = () => (
@@ -109,6 +111,9 @@ function Letter() {
       </View>
     );
   }
+
+  // A quiet-day mark is not a letter: there is no page for it (D-084). Back to the Book.
+  if (entry && isQuietMark(entry)) return <Redirect href="/book" />;
 
   if (!entry || !child) {
     // The one state pattern. A pushed screen: the native header has the back arrow; the action goes to the book.
@@ -164,19 +169,19 @@ function Letter() {
           )}
           <Animated.View key={`${size}:${showOriginal}`} entering={crossFade}>
             {words !== 'words' && !showOriginal ? (
-              // Waiting for words, or nobody spoke: a calm italic note, never an empty page.
-              <Text variant="signature" scale={scale} tone="muted">
-                {words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke}
-              </Text>
+              // Waiting for words, or no words in the recording: the app's note, never an empty page.
+              <AppNote scale={scale}>{words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke}</AppNote>
             ) : (
               <Text variant="letterBody" scale={scale} selectable>
                 {text}
               </Text>
             )}
           </Animated.View>
-          <Text variant="signature" scale={scale} className="self-end">
-            {signature}
-          </Text>
+          {showsSignature(words) || showOriginal ? (
+            <Text variant="signature" scale={scale} className="self-end">
+              {signature}
+            </Text>
+          ) : null}
         </Animated.View>
 
         {spoken && <AudioPlayer entryId={entry.id} />}

@@ -5,7 +5,8 @@
  * In development, or in a preview export built with EXPO_PUBLIC_WEB_PREVIEW=1,
  * `?seed=asha` fills the store with the fictional family; `?seed=asha-waiting`
  * does the same with a recording waiting for its words, and `?seed=asha-quiet`
- * with a kept recording in which nobody spoke, and `?seed=asha-plus` with Plus on
+ * with a kept recording in which nobody spoke, `?seed=asha-marks`
+ * with two quiet-day marks as older builds saved them, and `?seed=asha-plus` with Plus on
  * (the same family, so Keep is not gated).
  */
 import * as SQLite from 'expo-sqlite';
@@ -23,8 +24,8 @@ export function useStoreReady(): boolean {
       await warm.closeAsync();
       const preview = __DEV__ || process.env.EXPO_PUBLIC_WEB_PREVIEW === '1';
       const seed = new URLSearchParams(window.location.search).get('seed');
-      if (preview && (seed === 'asha' || seed === 'asha-waiting' || seed === 'asha-quiet' || seed === 'asha-plus')) {
-        (await import('./asha-seed')).seedAsha({ waiting: seed === 'asha-waiting', quiet: seed === 'asha-quiet', plus: seed === 'asha-plus' });
+      if (preview && (seed === 'asha' || seed === 'asha-waiting' || seed === 'asha-quiet' || seed === 'asha-marks' || seed === 'asha-plus')) {
+        (await import('./asha-seed')).seedAsha({ waiting: seed === 'asha-waiting', quiet: seed === 'asha-quiet', marks: seed === 'asha-marks', plus: seed === 'asha-plus' });
       }
       ready = true;
       if (live) setOk(true);

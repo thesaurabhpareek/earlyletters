@@ -19,7 +19,7 @@ export interface Prompt {
   retired?: boolean;
 }
 
-/** The text written by the one-tap "Not much today" entry lives in content (en.notMuch). */
+/** "Not much today" stores a mark with no text (D-084); its words live in content (en.notMuch, en.book.quietDay). */
 
 export function bandFor(ageMonths: number): Exclude<PromptBand, 'any'> | null {
   if (ageMonths < 4) return '0-3';

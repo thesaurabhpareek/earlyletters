@@ -52,15 +52,17 @@ test('[J10c] a letter waiting for words', async ({ app, record }) => {
   await app.getByText('Book', { exact: true }).last().click();
   await app.getByText(/waiting for its words/i).first().click();
   await expect(app.getByText(/waiting for its words/i).last()).toBeVisible();
-  await step('unhappy', 'A letter waiting for its words', 'The page shows a calm italic note instead of an empty page; the recording is there.');
+  await step('unhappy', 'A letter waiting for its words', 'The page shows the app\'s own small, muted note instead of an empty page, with no signature under it; the recording is there.');
 });
 
-test('[J10e] a recording in which nobody spoke', async ({ app, record }) => {
+test('[J10e] a recording with no words', async ({ app, record }) => {
   const step = journey(record, 'J10', 'letter-detail', 10, 'J10-01');
   await seeded(app, 'asha-quiet');
   await app.getByText('Book', { exact: true }).last().click();
-  await app.getByText(/nobody/i).first().click();
-  await step('unhappy', 'A recording in which nobody spoke', 'The page says nobody spoke; the recording is still there and can be kept.');
+  await app.getByText(/No words in this one/).first().click();
+  // The Book stays mounted behind the page, so look at the page's own (last) copy of the note.
+  await expect(app.getByText('No words in this one. The recording is kept just as it is.').last()).toBeVisible();
+  await step('unhappy', 'A recording with no words', 'The page shows the app\'s own small note instead of words, and no "From Mama" signature under it (the signature is only under words a person said); the recording is still there and can be kept.');
 });
 
 test('[J10d] a letter that does not exist', async ({ app, record }) => {

@@ -36,32 +36,16 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# output folder of the Expo template's reset-project script (script removed)
-/apps/mobile/example/
+example
 
-# generated native folders (prebuild output, at any depth: apps/mobile/ios).
-# Hand-written native module sources live under modules/<name>/ios and stay
-# tracked via the re-include below.
-**/ios/
-**/android/
-!apps/mobile/modules/*/ios/
-!apps/mobile/modules/*/android/
+# generated native folders
+/ios
+/android
 
 # env and secrets
 .env
-.env.*
-!.env.development
 .env*.local
 apps/*/.env
-credentials.json
-GoogleService-Info.plist
-google-services.json
-supabase/.temp/
-
-# store build artifacts
-*.ipa
-*.aab
-*.apk
 
 # experiments: never commit recordings or model files
 experiments/recordings/
@@ -73,17 +57,6 @@ experiments/results/
 
 # generated token CSS is committed (consumed by Uniwind and web)
 !packages/design-tokens/dist/
-
-# web end-to-end build and results (apps/mobile/e2e-web)
-apps/mobile/e2e-web/.web-dist/
-apps/mobile/e2e-web/.results/
-apps/mobile/e2e-web/.web-dist-seed/
-
-# Founder real-data experiment config: never commit
-experiments/config.local.json
-
-# rendered email previews
-packages/emails/out/
 
 # web end-to-end build and results (apps/mobile/e2e-web)
 apps/mobile/e2e-web/.web-dist/

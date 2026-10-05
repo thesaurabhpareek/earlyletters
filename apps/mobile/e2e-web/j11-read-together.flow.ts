@@ -44,3 +44,15 @@ test('[J11b] Read together with nothing in the book yet', async ({ app, record }
   await expect(app.getByText(/Letters you add to the book will be here/)).toBeVisible();
   await step('unhappy', 'Read together with no letters', 'With no letters in the book, Read together says so and offers Close. The Book hides the button until a letter is in the book, so this is reached only by a stale link.');
 });
+
+test('[J11c] quiet days are never read together', async ({ app, record }) => {
+  const step = journey(record, 'J11', 'read-together', 8, 'J11-01');
+  await seeded(app, 'asha-marks');
+  await app.getByText('Book', { exact: true }).last().click();
+  await expect(app.getByText('Month 6')).toBeVisible();
+  await openRT(app);
+  // The same five letters as without marks; the two older "Not much today" rows are not pages.
+  await expect(app.getByText('1 / 5')).toBeVisible();
+  await expect(app.getByText(/ordinary day|Just Asha, and us/i)).toHaveCount(0);
+  await step('happy', 'Read together skips quiet days', 'A quiet-day mark is not a letter: it is never a page, never played and never read aloud, even a row an older build moved into the book. The count is the letters only. (Seeded fictional family Asha, with older-build rows.)');
+});

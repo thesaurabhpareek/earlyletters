@@ -167,7 +167,8 @@ export function listWaiting({ db }: RepoContext, childId: string): Entry[] {
 
 /** Add to book / make private. Never touches text. False when missing or tombstoned. */
 export function setInBook(ctx: RepoContext, id: string, inBook: boolean): boolean {
-  ctx.db.run('UPDATE entries SET in_book = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL', inBook ? 1 : 0, ctx.now(), id);
+  // A quiet-day mark is never in the book (D-084), whatever a screen asks for.
+  ctx.db.run("UPDATE entries SET in_book = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL AND kind <> 'not_much'", inBook ? 1 : 0, ctx.now(), id);
   return changes(ctx.db) === 1;
 }
 
