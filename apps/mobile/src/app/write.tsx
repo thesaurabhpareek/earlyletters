@@ -22,6 +22,7 @@ import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useTheme } from '@/lib/a11y';
@@ -102,15 +103,17 @@ export default function Write() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <View className="min-h-12 flex-row items-center justify-between px-5 pt-1">
-          <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.closeButton} onPress={close} />
-          {saved ? (
-            <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
-              <CheckIcon size={14} color={c.textMuted} weight="bold" />
-              <Text variant="footnote">{pendingCopy.write.savedOnPhone}</Text>
-            </Animated.View>
-          ) : null}
-        </View>
+        <ModalHeader
+          onClose={close}
+          leading={
+            saved ? (
+              <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
+                <CheckIcon size={14} color={c.textMuted} weight="bold" />
+                <Text variant="footnote">{pendingCopy.write.savedOnPhone}</Text>
+              </Animated.View>
+            ) : null
+          }
+        />
         <ScrollView contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4" keyboardShouldPersistTaps="handled">
           <Text variant="letterDateline" caps>
             {dateline}

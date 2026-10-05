@@ -16,7 +16,7 @@ test('[J10] a letter: the page, the original words, reading size, make private, 
 
   await app.getByText('Show exactly what I said').click();
   await step('happy', 'Show exactly what I said', 'The raw words replace the tidied ones, under an "original" label.');
-  await app.getByText(/Show tidied/i).click();
+  await app.getByText(/Show small fixes/i).click();
 
   await app.getByRole('button', { name: /Reading size/i }).click();
   await expect(app.getByText('Large print')).toBeVisible();

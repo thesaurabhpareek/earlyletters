@@ -39,6 +39,8 @@ const DATE_HASHES = new Set(['6f443d4600db4cc104a04cb56ec4925ab68dc5d3a4b850db32
 
 const SKIP = new Set(['package-lock.json', 'packages/content/test/no-real-family-data.test.ts']);
 const MAX_BYTES = 5 * 1024 * 1024;
+/** Images, PDFs and fonts are binary: skip them without decoding (the journey record holds ~150 of them). */
+const BINARY_EXT = /\.(png|jpe?g|gif|webp|pdf|ttf|otf|woff2?|m4a|wav|mp3|mp4|mov|zip|ico)$/i;
 
 const sha = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
 const pad = (n: string | number) => String(n).padStart(2, '0');
@@ -86,7 +88,7 @@ const ROOT = join(__dirname, '../../..');
 function trackedFiles(): string[] {
   return execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
     .split('\0')
-    .filter((f) => f && !SKIP.has(f));
+    .filter((f) => f && !SKIP.has(f) && !BINARY_EXT.test(f));
 }
 
 describe('no real family details in tracked files', () => {
@@ -112,5 +114,5 @@ describe('no real family details in tracked files', () => {
     }
     // The message names the file and the kind of detail, never the value.
     expect(bad, 'Replace with the fictional family "Asha" / 2025-04-12 (CLAUDE.md)').toEqual([]);
-  });
+  }, 60_000);
 });

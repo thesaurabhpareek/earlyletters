@@ -1,0 +1,39 @@
+{
+  "id": "J01-08",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Not born yet: due date instead",
+  "note": "Choosing \"Not here yet\" turns the date into a due date. The picker only allows dates up to 305 days ahead; a future birthday is not selectable on a phone (not testable on web, where the picker does not open).",
+  "from": "J01-07",
+  "shot": "screens/J01-08.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Due date Thursday, December 3, 2026 Letters written before birth go into a part of the book called Before You. Continue",
+  "lines": [
+    "Back",
+    "Who is this book for?",
+    "Their name",
+    "You can add a nickname later.",
+    "Add another child",
+    "Birthday",
+    "Not here yet",
+    "Due date",
+    "Thursday, December 3, 2026",
+    "Letters written before birth go into a part of the book called Before You.",
+    "Continue"
+  ]
+}

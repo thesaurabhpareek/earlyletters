@@ -1,0 +1,42 @@
+{
+  "id": "J08-02",
+  "journey": "quiet-day",
+  "kind": "happy",
+  "title": "Kept, with no guilt",
+  "note": "One line of warmth replaces the link. A one-line note is stored for the day (it never appears in the book and is not counted as a letter).",
+  "from": "J08-01",
+  "shot": "screens/J08-02.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months The house is quiet, Mama. What do you want Asha to know about today? A thought to start with What is Asha's favorite thing in the house this week? Another thought A letter is waiting to be read back. Read it back Speak Type Kept. Rest well. Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "The house is quiet, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "What is Asha's favorite thing in the house this week?",
+    "Another thought",
+    "A letter is waiting to be read back.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Kept. Rest well.",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

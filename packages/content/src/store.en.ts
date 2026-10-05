@@ -60,7 +60,7 @@ PRIVATE BY DEFAULT
 ${en.trust.promise} Only you and the people you invite can read your book. You can export everything or delete everything, any time, from Settings.
 
 A BOOK FOR EACH CHILD
-Each child gets their own book, with their own months. Your first child's book is free, and so are twins or more you add together when you set up.
+Each child gets their own book, with their own months. Starting a book is free, and your first two letters are free across every book.
 
 TAKE IT WITH YOU
 Export your memory book any time, for free: your letters, your recordings and a PDF of the book.
@@ -72,7 +72,7 @@ HOW IT WORKS
 
 ${brand.name} is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.
 
-Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is an optional subscription with a free trial: encrypted backup of your recordings, books for more children, and Read together whenever you like after the first 3 times in each book. It renews automatically until you cancel, and works with Family Sharing.
+Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus is an optional subscription that lets you keep adding letters and adds encrypted backup of your recordings. It renews automatically until you cancel, and works with Family Sharing.
 
 Terms of Use: ${brand.web.terms}
 Privacy Policy: ${brand.web.privacy}`,

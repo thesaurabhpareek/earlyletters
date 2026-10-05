@@ -5,31 +5,23 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DEFAULT_READ_TOGETHER_FREE_TRIES, planActive } from '@scribe/core';
+import { decideKeepLetter, planActive, type PlanView } from '@scribe/core';
 import { describe, expect, it } from 'vitest';
 import type { NativeEntitlementSnapshot, NativeStatus, NativeTransaction } from '../modules/scribe-store/types';
 import { periodOf, PLUS_PRODUCT_IDS } from '../src/lib/billing/config';
 import { billingCopy } from '../src/lib/billing/copy';
 import {
-  countsAsFreeSession,
   EMPTY_PLAN,
-  freeSessionsFrom,
-  isAnyBirthdayToday,
   isJoinedBook,
   localDateOf,
   parsePlanCache,
   planFromSnapshot,
   planLine,
   plusOn,
-  readTogetherDecision,
   sameEntitlements,
   sanitizeSnapshot,
   serializePlanCache,
-  sessionsFrom,
-  startBookDecision,
-  startedBookCount,
   type BookFacts,
-  type GateContext,
 } from '../src/lib/billing/plan.logic';
 
 const NOW = '2026-10-03T12:00:00.000Z';
@@ -200,93 +192,41 @@ const ACTIVE = planFromSnapshot(snap([tx()])).view;
 const SHARED = planFromSnapshot(snap([tx({ ownership: 'familyShared' })])).view;
 const LAPSED = planFromSnapshot(snap([], [status({ state: 'expired', expiresAt: at(-5) })])).view;
 const FREE = EMPTY_PLAN.view;
-const started: BookFacts = { birthday: '2025-04-12' };
 const joinedBook: BookFacts = { birthday: '2025-02-01', createdByMe: false };
-const ctx = (over: Partial<GateContext> = {}): GateContext => ({ now: NOW, today: '2026-10-03', plan: FREE, books: [], ...over });
 
-describe('start_book through decide() (PRD-REQ-015)', () => {
-  it('the first book is free', () => {
-    expect(startBookDecision(ctx())).toEqual({ kind: 'allow', via: 'free_book' });
+describe('the Keep gate through decideKeepLetter (D-082, D-083)', () => {
+  const keep = (plan: PlanView, lettersKept: number, allowance?: unknown) => decideKeepLetter({ now: NOW, plan, lettersKept, allowance });
+
+  it('two letters are free, the third needs Plus, and it never asks to sign in first (Plus belongs to the Apple Account)', () => {
+    expect(keep(FREE, 0)).toEqual({ kind: 'allow', via: 'free_letters', lettersLeft: 2 });
+    expect(keep(FREE, 1)).toEqual({ kind: 'allow', via: 'free_letters', lettersLeft: 1 });
+    expect(keep(FREE, 2)).toEqual({ kind: 'offer', trigger: 'keep_letter', needsSignIn: false, lapsed: false });
   });
 
-  it('a second book offers Plus, and never asks to sign in first (Plus belongs to the Apple Account)', () => {
-    expect(startBookDecision(ctx({ books: [started] }))).toEqual({ kind: 'offer', trigger: 'second_child', needsSignIn: false });
+  it('own Plus or Family Sharing Plus keeps any number', () => {
+    expect(keep(ACTIVE, 40)).toEqual({ kind: 'allow', via: 'plus_own' });
+    expect(keep(SHARED, 40)).toEqual({ kind: 'allow', via: 'plus_own' });
   });
 
-  it('[PRD-REQ-015] co-parent books never count toward the free book', () => {
+  it('a lapsed member sees the lapsed wording at the limit, and still keeps letters under it', () => {
+    expect(keep(LAPSED, 2)).toEqual({ kind: 'offer', trigger: 'keep_letter', needsSignIn: false, lapsed: true });
+    expect(keep(LAPSED, 1).kind).toBe('allow');
+  });
+
+  it('a birthday does not silence the gate: the person tapped Keep, so it must answer', () => {
+    // Nothing in the engine reads a birthday for keep_letter; the old no-offers rule is for nudges only.
+    expect(keep(FREE, 2).kind).toBe('offer');
+  });
+
+  it('[PRD-REQ-015 superseded] starting a book is free: a joined book or ten books never change the answer', () => {
     expect(isJoinedBook(joinedBook)).toBe(true);
-    expect(isJoinedBook(started)).toBe(false);
-    expect(startedBookCount([joinedBook, joinedBook])).toBe(0);
-    expect(startBookDecision(ctx({ books: [joinedBook] }))).toEqual({ kind: 'allow', via: 'free_book' });
-    expect(startBookDecision(ctx({ books: [joinedBook, started] })).kind).toBe('offer');
+    expect(isJoinedBook({})).toBe(false);
+    expect(keep(FREE, 1).kind).toBe('allow');
   });
 
-  it('a book in the delete window does not count', () => {
-    expect(startBookDecision(ctx({ books: [{ ...started, deleted: true }] }))).toEqual({ kind: 'allow', via: 'free_book' });
-  });
-
-  it('own Plus or Family Sharing Plus starts any number of books', () => {
-    expect(startBookDecision(ctx({ plan: ACTIVE, books: [started, started, started] }))).toEqual({ kind: 'allow', via: 'plus_own' });
-    expect(startBookDecision(ctx({ plan: SHARED, books: [started] }))).toEqual({ kind: 'allow', via: 'plus_own' });
-  });
-
-  it('lapsed Plus: existing books untouched, the next one offers Plus', () => {
-    expect(startBookDecision(ctx({ plan: LAPSED, books: [started, started] }))).toEqual({ kind: 'offer', trigger: 'second_child', needsSignIn: false });
-  });
-
-  it('[C-REQ-023] on a birthday nothing is sold', () => {
-    expect(startBookDecision(ctx({ books: [{ birthday: '2025-10-03' }] }))).toEqual({ kind: 'quiet', reason: 'birthday' });
-  });
-});
-
-describe('read_together through decide() (PRD-REQ-020)', () => {
-  const rt = (over: Partial<GateContext> & { sessionsUsed?: number; freeSessions?: number; book?: BookFacts | null } = {}) =>
-    readTogetherDecision({ ...ctx(over), book: over.book === undefined ? started : over.book, sessionsUsed: over.sessionsUsed ?? 0, freeSessions: over.freeSessions ?? 3 });
-
-  it('three free sessions per Free book, then Plus', () => {
-    expect(rt({ sessionsUsed: 0 })).toEqual({ kind: 'allow', via: 'try', triesLeft: 3 });
-    expect(rt({ sessionsUsed: 2 })).toEqual({ kind: 'allow', via: 'try', triesLeft: 1 });
-    expect(rt({ sessionsUsed: 3 })).toEqual({ kind: 'offer', trigger: 'read_together', needsSignIn: false });
-  });
-
-  it('Plus, own or through Family Sharing, opens it in every book, joined ones included', () => {
-    expect(rt({ plan: ACTIVE, sessionsUsed: 9 })).toEqual({ kind: 'allow', via: 'plus_own' });
-    expect(rt({ plan: SHARED, sessionsUsed: 9, book: joinedBook })).toEqual({ kind: 'allow', via: 'plus_own' });
-  });
-
-  it('only a free try counts as a used session', () => {
-    expect(countsAsFreeSession(rt({ sessionsUsed: 1 }))).toBe(true);
-    expect(countsAsFreeSession(rt({ plan: ACTIVE }))).toBe(false);
-    expect(countsAsFreeSession(rt({ sessionsUsed: 3 }))).toBe(false);
-  });
-
-  it('a contributor is never sold Plus', () => {
-    expect(rt({ sessionsUsed: 3, book: { ...started, role: 'contributor' } })).toEqual({ kind: 'quiet', reason: 'contributor' });
-  });
-
-  it('free sessions: remote config may raise the reviewed default, never lower it', () => {
-    expect(freeSessionsFrom(undefined)).toBe(DEFAULT_READ_TOGETHER_FREE_TRIES);
-    expect(freeSessionsFrom(5)).toBe(5);
-    expect(freeSessionsFrom(0)).toBe(3);
-    expect(freeSessionsFrom(-1)).toBe(3);
-    expect(freeSessionsFrom('9')).toBe(3);
-    expect(rt({ sessionsUsed: 3, freeSessions: freeSessionsFrom(5) })).toEqual({ kind: 'allow', via: 'try', triesLeft: 2 });
-  });
-
-  it('stored counts are read safely', () => {
-    expect(sessionsFrom(null)).toBe(0);
-    expect(sessionsFrom('2')).toBe(2);
-    expect(sessionsFrom('-4')).toBe(0);
-    expect(sessionsFrom('abc')).toBe(0);
-  });
-});
-
-describe('birthdays', () => {
-  it('a birthday, not the day of birth, and never a due date', () => {
-    expect(isAnyBirthdayToday([{ birthday: '2025-10-03' }], '2026-10-03')).toBe(true);
-    expect(isAnyBirthdayToday([{ birthday: '2026-10-03' }], '2026-10-03')).toBe(false);
-    expect(isAnyBirthdayToday([{ birthday: null }], '2026-10-03')).toBe(false);
-    expect(isAnyBirthdayToday([{ birthday: '2025-10-03', deleted: true }], '2026-10-03')).toBe(false);
+  it('remote config may raise the allowance, never lower it', () => {
+    expect(keep(FREE, 2, 0).kind).toBe('offer');
+    expect(keep(FREE, 2, 5)).toEqual({ kind: 'allow', via: 'free_letters', lettersLeft: 3 });
   });
 });
 
@@ -302,11 +242,11 @@ describe('products and the StoreKit configuration file', () => {
     expect(subs.every((s) => s.familyShareable === true)).toBe(true);
   });
 
-  it('founder prices and free trials: $3.99 a month with 1 month free, $29.99 a year with 2 months free', () => {
+  it('founder prices and free trials: $4.99 a month with 1 month free, $49.99 a year with 2 months free', () => {
     const byId = Object.fromEntries(file.subscriptionGroups[0].subscriptions.map((s) => [s.productID as string, s]));
-    expect(byId['plus.monthly']).toMatchObject({ displayPrice: '3.99', recurringSubscriptionPeriod: 'P1M' });
+    expect(byId['plus.monthly']).toMatchObject({ displayPrice: '4.99', recurringSubscriptionPeriod: 'P1M' });
     expect(byId['plus.monthly'].introductoryOffer).toMatchObject({ paymentMode: 'free', subscriptionPeriod: 'P1M', numberOfPeriods: 1 });
-    expect(byId['plus.annual']).toMatchObject({ displayPrice: '29.99', recurringSubscriptionPeriod: 'P1Y' });
+    expect(byId['plus.annual']).toMatchObject({ displayPrice: '49.99', recurringSubscriptionPeriod: 'P1Y' });
     expect(byId['plus.annual'].introductoryOffer).toMatchObject({ paymentMode: 'free', subscriptionPeriod: 'P2M', numberOfPeriods: 1 });
     expect(periodOf('plus.monthly')).toBe('month');
     expect(periodOf('plus.annual')).toBe('year');
@@ -321,8 +261,10 @@ describe('what the store view promises', () => {
     const said = billingCopy.store.features.join(' ');
     expect(said).not.toMatch(/theme|cover/i);
     expect(said).toMatch(/backup/i);
-    expect(said).toMatch(/Read together/);
-    expect(said).toMatch(/more children/);
+    // D-082, D-083: Plus lets you keep adding letters. Read together and more books are free now.
+    expect(said).toMatch(/keep adding letters/i);
+    expect(said).not.toMatch(/Read together|more children|first book/);
+    expect(billingCopy.store.promise).not.toMatch(/free, always/i);
   });
 
   it('never states a price or trial length itself (Apple shows the storefront price and eligibility)', () => {

@@ -1,0 +1,39 @@
+{
+  "id": "J01-06",
+  "journey": "first-run",
+  "kind": "unhappy",
+  "title": "A very long name is cut at 60 characters",
+  "note": "The person pastes 90 letters. The field keeps the first 60 and stops, so a name can never break the layout of the book. No warning is shown.",
+  "from": "J01-05",
+  "shot": "screens/J01-06.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Who is this book for? Their name You can add a nickname later. Add another child Birthday Not here yet Birthday Sunday, October 4, 2026 We sort letters by AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's month of age. Continue",
+  "lines": [
+    "Back",
+    "Who is this book for?",
+    "Their name",
+    "You can add a nickname later.",
+    "Add another child",
+    "Birthday",
+    "Not here yet",
+    "Birthday",
+    "Sunday, October 4, 2026",
+    "We sort letters by AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA's month of age.",
+    "Continue"
+  ]
+}

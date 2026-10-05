@@ -1,0 +1,33 @@
+{
+  "id": "J05-04",
+  "journey": "voice-capture",
+  "kind": "unhappy",
+  "title": "Microphone is off",
+  "note": "A calm card, not an error: it offers to type the letter instead (first), open iOS Settings, or close. The browser denial is simulated by refusing getUserMedia; on a phone it is iOS's permission state, and \"Open Settings\" is native and does nothing on web.",
+  "from": "J05-01",
+  "shot": "screens/J05-04.png",
+  "route": "/listen",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "We can't hear you yet Allow the microphone in Settings to speak your letters. Or type instead. Type instead Open Settings Close",
+  "lines": [
+    "We can't hear you yet",
+    "Allow the microphone in Settings to speak your letters. Or type instead.",
+    "Type instead",
+    "Open Settings",
+    "Close"
+  ]
+}

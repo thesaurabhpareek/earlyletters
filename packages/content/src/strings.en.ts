@@ -53,6 +53,7 @@ export const en = {
       title: "{app}",
       subtitle: "The baby memory book you fill by talking.",
       body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
+      freeLine: "Your first two letters are free.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
       joinButton: "I was invited",
@@ -86,6 +87,14 @@ export const en = {
       addAnotherButton: "Add another child",
       // Twins or more, same birthday or due date, during first run (PRD.md K-12).
       addAnotherHelp: "Twins or more? Add them now. Each child gets their own book.",
+      // Why Continue is waiting (shown in words, never only a greyed button).
+      needNameMany: "Fill in or remove this name to continue.",
+      needBirthday: "Choose {child}'s birthday to continue.",
+      needDueDate: "Choose the due date to continue.",
+      chooseDate: "Choose a date",
+      bornToday: "Born today",
+      // A long name: said gently, once the field is close to its limit.
+      nameLimit: "A name can have up to {n} characters.",
       cta: "Continue",
     },
 
@@ -99,6 +108,7 @@ export const en = {
       examples: ["Mama", "Papa", "Amma", "Appa", "Mummy", "Daddy", "Ma", "Baba"],
       notYetHelp: "Not talking yet? Pick the name you hope to hear.",
       preview: "From {signsAs}",
+      needSignsAs: "Add what {child} calls you to continue.",
       cta: "Sign my letters",
     },
 
@@ -219,6 +229,12 @@ export const en = {
     toChild: "To {child}",
     audience: "Only you, until you add it to the book.",
     elapsedA11y: "{minutes} min {seconds} s recorded",
+    // Shown when Listen opens without a tap on Speak (a link, a restored screen): nothing records until the person taps.
+    ready: {
+      title: "Ready when you are",
+      body: "Nothing is recording yet. Tap Start when you want to speak.",
+      startButton: "Start",
+    },
     discardButton: "Let it go",
     discardTitle: "Let this recording go?",
     discardBody: "It will be removed from this phone.",
@@ -440,11 +456,6 @@ export const en = {
     noRecording: "This one was typed. Read it aloud together.",
     recordingElsewhere: "{signsAs}'s voice is on their phone. Read this one aloud together.",
     empty: "Letters you add to the book will be here to read together.",
-    plusGate: {
-      title: "Read together is part of Plus",
-      body: "You have read together {count} times for free. Plus keeps it open whenever you like.",
-      keepNote: "Every letter stays open to read and hear, with or without Plus.",
-    },
     endOfMonth: "That was Month {month}. You are so loved.",
     endOfMonthAlt: "That was Month {month}. Every word was for you.",
     endOfBook: "That is every letter so far. More are still being written.",
@@ -776,11 +787,7 @@ export const en = {
     add: {
       title: "Add a child",
       body: "Each child gets their own book, with their own months, family and settings.",
-      // PRD-REQ-015 (founder, 2 Oct 2026): one free book you start; books you joined as a co-parent do not count;
-      // children added together in first run are all free, so this sheet's twins line makes no price promise.
-      plusNote: "The first book you start is free, always. Books you start for more children are part of Plus.",
-      joinedNote: "A book you joined as a co-parent does not count as your free book.",
-      keepNote: "Every book you already have stays open for writing, reading and export, with or without Plus.",
+      // D-082, D-083: starting a book is free; the free letters are one pool across every book.
       twinsHelp: "Twins or more? Each child gets their own book.",
       cta: "Add {child}'s book",
     },
@@ -834,7 +841,7 @@ export const en = {
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
     // D-073: encrypted backup of the owner's recordings is part of Plus in v1.0.
-    promise: "Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds encrypted backup of your recordings, Read together whenever you like after the first 3 times in each book, and books for more children.",
+    promise: "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus lets you keep adding letters, and adds encrypted backup of your recordings.",
   },
 
   errors: {
@@ -870,6 +877,32 @@ export const en = {
       title: "Something went wrong",
       body: "Your words are safe. Please try again.",
     },
+    // A screen could not draw (root error boundary). Calm, no codes, no stack.
+    crash: {
+      title: "Something went wrong on our side",
+      body: "Your letters and recordings are safe on this phone. Nothing was removed.",
+      tryAgainButton: "Try again",
+      tonightButton: "Go to Tonight",
+    },
+    // A link or route the app does not have (replaces the router's developer page).
+    notFoundPage: {
+      title: "We could not find that page",
+      body: "The link may be old or mistyped. Your book is right where you left it.",
+      button: "Back to Tonight",
+    },
+    // The book could not be opened at launch (database open or update step failed). Never deletes anything.
+    launch: {
+      title: "We could not open your book just now",
+      body: "Your letters and recordings are safe on this phone. Nothing has been removed, and nothing will be unless you choose it.",
+      hint: "Trying again often works. If it does not, restarting the phone can help.",
+      tryAgainButton: "Try again",
+      exportButton: "Export what's readable",
+      exportingTitle: "Gathering your files",
+      exportNothing: "We did not find any recordings or files to export on this phone.",
+      exportFailed: "We could not make the export, and nothing was changed. Your files are still on this phone. You can try again.",
+      readme:
+        "These are the files found on this phone when the book could not be opened.\nThe recordings folder holds your voice recordings; they play in any audio app.\nThe database folder holds the book itself, exactly as it was. Nothing here was changed or removed.\nKeep this export somewhere safe, and write to us if you would like help getting it back into the book.",
+    },
   },
 
   // Appended by Mobile B (Book, letter view, children, Family, Settings). PM to review.
@@ -895,9 +928,31 @@ export const en = {
     dueDateLabel: "Due date",
     nameRequired: "Add a name to continue.",
     notSet: "Not set",
+    // Editing a child's details (Settings > the child's book). Letters are never changed by these.
+    edit: {
+      nameLabel: "Name",
+      rowHint: "Opens to change it.",
+      save: "Save",
+      nameEmpty: "Add a name to save.",
+      nameLimit: "A name can have up to {n} characters.",
+      nameTooLong: "That is longer than a name can be. The limit is {n} characters.",
+      signsAsEmpty: "Add what {child} calls you to save.",
+      signsAsLimit: "Up to {n} characters.",
+      signsAsTooLong: "That is longer than it can be. The limit is {n} characters.",
+      signsAsNewOnly: "Letters you have already written keep how they were signed. This applies to new ones.",
+      birthdayFuture: "A birthday is a day that has already come. Choose today or earlier.",
+      birthdayMissing: "Choose a date to save.",
+      dueDateRange: "Choose a due date from today up to ten months ahead.",
+      dateInvalid: "That date does not look right. Try again.",
+      born: {
+        offer: "{child} was born, set the birthday",
+        offerBody: "Your due date has come. Tell us the day and your letters find their place.",
+        pickerLabel: "{child}'s birthday",
+        confirm: "Set the birthday",
+        keepNote: "Letters written before this day stay in Before You.",
+      },
+    },
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
-    plusGateTitle: "Another book is part of Plus",
-    plusCta: "See what Plus adds",
     plusNotYet: "Plus is not available on this device yet.",
   },
 
@@ -952,7 +1007,7 @@ export const en = {
     languageHelp: "The language you speak your letters in.",
     // "Settings, Plan" is the path the Plus legal text and Subscription Terms name.
     planLabel: "Plan",
-    planHelp: "Plus: backup, Read together whenever you like, and more books.", // D-073
+    planHelp: "Your first two letters are free. Plus lets you keep adding.", // D-082
     remindersLabel: "Reminders",
     exportLabel: "Export your book",
     exportHelp: "Every letter and recording, free, any time.",

@@ -44,6 +44,10 @@ class ScribeStoreModule : Module() {
       "failed"
     }
 
+    AsyncFunction("presentOfferCodeRedeemSheet") {
+      "unavailable"
+    }
+
     AsyncFunction("beginRefundRequest") { _: List<String> ->
       "unavailable"
     }

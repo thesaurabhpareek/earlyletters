@@ -5,7 +5,7 @@ const openRT = async (app: import('@playwright/test').Page) => {
   await app.getByText('Read together', { exact: true }).first().click();
 };
 
-test('[J11] Read together: a few free tries, then the Plus gate', async ({ app, record }) => {
+test('[J11] Read together: no limit, every time it opens', async ({ app, record }) => {
   test.setTimeout(120_000);
   const step = journey(record, 'J11', 'read-together', 1, 'J09-03');
   await seeded(app);
@@ -13,7 +13,7 @@ test('[J11] Read together: a few free tries, then the Plus gate', async ({ app, 
   await expect(app.getByText('Month 6')).toBeVisible();
   await openRT(app);
   await expect(app.getByText('1 / 5')).toBeVisible();
-  await step('happy', 'Read together, first letter', 'Chrome-free, Large Print by default: one letter at a time, oldest first, with a "Hear Mama" player for the recording on the phone. This opening is free try 1 of 3 for this book. (Seeded family Asha. Playback itself is native audio and is not exercised on web.)');
+  await step('happy', 'Read together, first letter', 'Chrome-free, Large Print by default: one letter at a time, oldest first, with a "Hear Mama" player for the recording on the phone. Read together is free for every letter that exists, with no session limit (D-082, D-083). (Seeded family Asha. Playback itself is native audio and is not exercised on web.)');
   await btn(app, 'Next letter').click();
   await expect(app.getByText('2 / 5')).toBeVisible();
   await step('happy', 'Next letter', 'Next and Back one move through the book. The date line names who wrote it and the month of age.');
@@ -26,18 +26,15 @@ test('[J11] Read together: a few free tries, then the Plus gate', async ({ app, 
   await btn(app, /^Read again|again/i).first().click();
   await expect(app.getByText('1 / 5')).toBeVisible();
   await btn(app, 'Close').click();
-  // Second and third openings are still free.
-  for (let i = 0; i < 2; i++) {
+  // A fourth, fifth and sixth opening are still free: this phone is Free (no Plus) and past the free letters.
+  for (let i = 0; i < 4; i++) {
     await openRT(app);
     await expect(app.getByText('1 / 5')).toBeVisible();
+    await expect(app.getByText(/Plus/)).toHaveCount(0);
     await btn(app, 'Close').click();
   }
-  await openRT(app);
-  await expect(app.getByText(/Plus/).first()).toBeVisible();
-  await step('unhappy', 'The fourth opening: the Plus gate', 'After the free tries in this book, Read together shows the Plus gate with a plain note that every letter stays readable and playable in the Book. Buying needs StoreKit and Apple\'s store view, which do not exist on web, so the gate says Plus is not available on this device.');
-  await btn(app, 'Not now').click();
   await expect(app.getByText('Month 6')).toBeVisible();
-  await step('happy', 'Not now returns to the Book', 'Declining closes the gate; nothing is lost or locked.');
+  await step('happy', 'Opened again and again', 'The fourth opening and every one after it are the same as the first: no Plus gate, nothing counted. Letters that exist are always readable and playable; membership only decides whether a new letter can be kept.');
 });
 
 test('[J11b] Read together with nothing in the book yet', async ({ app, record }) => {

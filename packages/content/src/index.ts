@@ -3,6 +3,7 @@ export type { Strings } from './strings.en';
 export * from './prompts';
 export { storeListing } from './store.en';
 export { site } from './site.en';
+export { PLUS_PRICE, PLUS_TRIAL, plusPriceLine } from './pricing';
 export { book } from './book.en';
 export { permissions } from './permissions.en';
 export { pages } from './pages.en';

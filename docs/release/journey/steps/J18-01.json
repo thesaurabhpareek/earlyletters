@@ -1,0 +1,38 @@
+{
+  "id": "J18-01",
+  "journey": "dark-mode",
+  "kind": "happy",
+  "title": "Appearance: Dark",
+  "note": "Theme is per phone: Match this phone, Light or Dark. Choosing Dark re-themes every screen at once (the app supports dark mode).",
+  "from": "J16-03",
+  "shot": "screens/J18-01.png",
+  "route": "/settings/appearance",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Appearance Theme Match this phone Light Dark Reading size Standard Large Large print Dear Asha, today you laughed at the rain.",
+  "lines": [
+    "Appearance",
+    "Theme",
+    "Match this phone",
+    "Light",
+    "Dark",
+    "Reading size",
+    "Standard",
+    "Large",
+    "Large print",
+    "Dear Asha, today you laughed at the rain."
+  ]
+}

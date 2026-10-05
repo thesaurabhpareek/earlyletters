@@ -1,0 +1,36 @@
+{
+  "id": "J18-06",
+  "journey": "dark-mode",
+  "kind": "happy",
+  "title": "Listening, dark",
+  "note": "The listening screen in the dark theme. (Fake microphone tone on web.)",
+  "from": "J18-05",
+  "shot": "screens/J18-06.png",
+  "route": "/listen",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "To Asha Only you, until you add it to the book. 0:01 Listening. Say it however it comes. Pause Finish Let it go",
+  "lines": [
+    "To Asha",
+    "Only you, until you add it to the book.",
+    "0:01",
+    "Listening.",
+    "Say it however it comes.",
+    "Pause",
+    "Finish",
+    "Let it go"
+  ]
+}

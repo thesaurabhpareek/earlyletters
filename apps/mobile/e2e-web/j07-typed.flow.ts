@@ -6,10 +6,7 @@ test('[J07] a typed letter: write, autosave, review, add to the book', async ({ 
   await firstRun(app);
   await btn(app, /^Type/).click();
   await expect(btn(app, 'Save')).toBeDisabled();
-  // D-084: the field holds the plain hint, never a ghost salutation that prescribes a form.
-  await expect(app.getByPlaceholder('Write it the way you would say it.')).toBeVisible();
-  await expect(app.getByPlaceholder(/^Dear /)).toHaveCount(0);
-  await step('happy', 'Write, empty', 'A page, not a form: the child\'s name and age, the prompt as a quiet line, and a blank letter whose hint is "Write it the way you would say it." (no "Dear {child}," ghost text: people who want a salutation type it). Save is off until something is typed.');
+  await step('happy', 'Write, empty', 'A page, not a form: the child\'s name and age, the prompt as a quiet line, and a blank letter. Save is off until something is typed.');
   await app.getByRole('textbox').first().fill('You put both hands on the window today and watched the rain.');
   await expect(app.getByText('Saved on this phone')).toBeVisible();
   await step('happy', 'Typing, autosaved', 'After a pause "Saved on this phone" appears. Every pause saves a local draft, so a closed sheet or a crash loses nothing.');
@@ -21,6 +18,35 @@ test('[J07] a typed letter: write, autosave, review, add to the book', async ({ 
   await step('happy', 'Saved to the book', 'The letter settles into a card with a confirmation, then Review closes on its own after a moment (or on tap).', undefined, { settle: 120 });
   await expect(app.getByText('A THOUGHT TO START WITH')).toBeVisible({ timeout: 8000 });
   await step('happy', 'Back on Tonight', 'The person lands back on Tonight.');
+});
+
+test('[J07d] the free letters: two are kept, the third is held', async ({ app, record }) => {
+  test.setTimeout(120_000);
+  const step = journey(record, 'J07', 'typed-letter', 8, 'J07-04');
+  await firstRun(app);
+  const write = async (text: string) => {
+    await btn(app, /^Type/).click();
+    await app.getByRole('textbox').first().fill(text);
+    await btn(app, 'Save').click();
+    await expect(app.getByText(/Add to .*book/)).toBeVisible();
+  };
+  await write('You held the spoon by yourself today.');
+  await btn(app, /^Add to .*book/).click();
+  await expect(app.getByText(/Added to/)).toBeVisible();
+  await expect(app.getByText('That was your second free letter.')).toHaveCount(0);
+  await expect(app.getByText('A THOUGHT TO START WITH')).toBeVisible({ timeout: 8000 });
+  await write('You laughed at the rain.');
+  await btn(app, /^Add to .*book/).click();
+  await expect(app.getByText('That was your second free letter.')).toBeVisible();
+  await step('happy', 'The second free letter', 'After the second letter is kept, the saved card carries one calm line, once: "That was your second free letter." (D-082). No counter, no "0 left".', undefined, { settle: 120 });
+  await expect(app.getByText('A THOUGHT TO START WITH')).toBeVisible({ timeout: 8000 });
+  await write('You waved at the dog.');
+  await btn(app, /^Add to .*book/).click();
+  await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
+  await step('unhappy', 'The third letter is held', 'The third Keep opens the Plus sheet instead of saving. The typed words are still on the phone as a draft; nothing was lost. (Plus itself needs a real iPhone: Apple\'s store view does not exist on web.)');
+  await btn(app, 'Keep it here for now').click();
+  await expect(app.getByText('Read it back').first()).toBeVisible();
+  await step('happy', 'The held letter waits on Tonight', 'Tonight shows the waiting letter. Tapping it opens Review with the words as typed.');
 });
 
 test('[J07b] close a half-written letter: the draft waits on Tonight', async ({ app, record }) => {

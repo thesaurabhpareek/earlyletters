@@ -1,0 +1,41 @@
+{
+  "id": "J09-02",
+  "journey": "the-book",
+  "kind": "happy",
+  "title": "One letter",
+  "note": "The first letter sits under its month chapter. Read together appears once there is at least one letter in the book.",
+  "from": "J09-01",
+  "shot": "screens/J09-02.png",
+  "route": "/book",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "For Asha Asha's book Read together The first weeks 1 letter · From Mama Sunday, October 4, 2026 You laughed at the dog today, a whole belly laugh. From Mama Tonight Book Family",
+  "lines": [
+    "For Asha",
+    "Asha's book",
+    "Read together",
+    "The first weeks",
+    "1 letter",
+    "·",
+    "From Mama",
+    "Sunday, October 4, 2026",
+    "You laughed at the dog today, a whole belly laugh.",
+    "From Mama",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

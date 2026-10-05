@@ -1,0 +1,42 @@
+{
+  "id": "J16-02",
+  "journey": "settings-and-help",
+  "kind": "happy",
+  "title": "Privacy",
+  "note": "The usage-and-crash-report switch (off until the person says yes), what is never done (ads, selling data, training models), and links to the full policies.",
+  "from": "J16-01",
+  "shot": "screens/J16-02.png",
+  "route": "/settings/privacy",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Privacy Usage and crash reports Share usage and crash reports Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names. Turning this off stops sharing straight away. Nothing else changes. What we never do We never show ads, and your letters are never used for advertising. We never sell your data. We never use your words, recordings or photos to train machine learning models. Our promises in full Privacy Policy Consumer Health Data Privacy Policy Who helps us run the app Terms of Service",
+  "lines": [
+    "Privacy",
+    "Usage and crash reports",
+    "Share usage and crash reports",
+    "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
+    "Turning this off stops sharing straight away. Nothing else changes.",
+    "What we never do",
+    "We never show ads, and your letters are never used for advertising.",
+    "We never sell your data.",
+    "We never use your words, recordings or photos to train machine learning models.",
+    "Our promises in full",
+    "Privacy Policy",
+    "Consumer Health Data Privacy Policy",
+    "Who helps us run the app",
+    "Terms of Service"
+  ]
+}

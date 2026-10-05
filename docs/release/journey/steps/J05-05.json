@@ -1,0 +1,32 @@
+{
+  "id": "J05-05",
+  "journey": "voice-capture",
+  "kind": "happy",
+  "title": "Typing instead",
+  "note": "The person lands on the Write page for the same prompt.",
+  "from": "J05-04",
+  "shot": "screens/J05-05.png",
+  "route": "/write",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Asha · 0 days Tell Asha how the name was chosen. Save",
+  "lines": [
+    "Close",
+    "Asha · 0 days",
+    "Tell Asha how the name was chosen.",
+    "Save"
+  ]
+}

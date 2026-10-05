@@ -8,15 +8,14 @@
  * any route here (a stale link) goes home. The screens stay in code for v1.1.
  */
 import { Redirect, Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
 import { capabilities } from '@/lib/capabilities';
+import { useTheme } from '@/lib/a11y';
 
 export default function AuthLayout() {
   return capabilities.signIn ? <AuthStack /> : <Redirect href="/" />;
 }
 
 function AuthStack() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />;
 }

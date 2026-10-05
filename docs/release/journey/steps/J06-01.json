@@ -1,0 +1,56 @@
+{
+  "id": "J06-01",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Review, with a first-time note",
+  "note": "The words as spoken, with each tidy-up quietly underlined, a count of small fixes, and a one-time note saying what was and was not done. Words come from the seeded fictional family Asha (the web build has no speech model, so a real recording never gets words).",
+  "from": "J05-03",
+  "shot": "screens/J06-01.png",
+  "full": "screens/J06-01-full.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Close Hear it Asha · 7 months Read it back We only fixed what got in the way of your words. Nothing added. Please have a read Got it We fix small slips, like \"um\" and repeats. We can also mishear a word or a name. Please read it before you save. Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. 2 small fixes Filler \" um, \" Repeat \" you \" Show exactly what I said Undo every fix Sounds like me Not quite Private letters stay with you. You can add them to the book later. Add to Asha's book Keep private",
+  "lines": [
+    "Close",
+    "Hear it",
+    "Asha · 7 months",
+    "Read it back",
+    "We only fixed what got in the way of your words. Nothing added.",
+    "Please have a read",
+    "Got it",
+    "We fix small slips, like \"um\" and repeats. We can also mishear a word or a name. Please read it before you save.",
+    "Asha,",
+    "today you",
+    "held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "2 small fixes",
+    "Filler",
+    "\"",
+    "um,",
+    "\"",
+    "Repeat",
+    "\"",
+    "you",
+    "\"",
+    "Show exactly what I said",
+    "Undo every fix",
+    "Sounds like me",
+    "Not quite",
+    "Private letters stay with you. You can add them to the book later.",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}
