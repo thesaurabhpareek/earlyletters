@@ -52,7 +52,7 @@ export function AnalyticsConsentContent({
   };
 
   return (
-    <View className="gap-4">
+    <View className="gap-4" testID="consentSheet.screen">
       {showTitle ? (
         <Text variant="title2" asHeading>
           {t.title}
@@ -63,10 +63,10 @@ export function AnalyticsConsentContent({
         {t.detail}
       </Text>
       <View className={stacked ? 'gap-3' : 'flex-row gap-3'}>
-        <Button variant="outline" className={stacked ? undefined : 'flex-1'} disabled={busy} onPress={() => choose(false)} accessibilityLabel={t.noButton}>
+        <Button variant="outline" className={stacked ? undefined : 'flex-1'} disabled={busy} onPress={() => choose(false)} accessibilityLabel={t.noButton} testID="consentSheet.no">
           <Text>{t.noButton}</Text>
         </Button>
-        <Button variant="outline" className={stacked ? undefined : 'flex-1'} disabled={busy} onPress={() => choose(true)} accessibilityLabel={t.yesButton}>
+        <Button variant="outline" className={stacked ? undefined : 'flex-1'} disabled={busy} onPress={() => choose(true)} accessibilityLabel={t.yesButton} testID="consentSheet.yes">
           <Text>{t.yesButton}</Text>
         </Button>
       </View>

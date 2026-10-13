@@ -52,7 +52,7 @@ describe('local database migrator', () => {
     expect(r).toEqual({ from: 0, to: LATEST_VERSION, newer: false });
     expect(userVersion(db)).toBe(LATEST_VERSION);
     expect(cols(db, 'drafts')).toEqual(expect.arrayContaining(['state', 'audio_sha256', 'audio_bytes', 'recovered_at']));
-    expect(cols(db, 'entries')).toEqual(expect.arrayContaining(['child_id', 'audio_sha256', 'audio_bytes', 'transcript_status']));
+    expect(cols(db, 'entries')).toEqual(expect.arrayContaining(['child_id', 'audio_sha256', 'audio_bytes', 'transcript_status', 'language']));
     expect(cols(db, 'orphan_audio')).toEqual(['file_name', 'bytes', 'found_at']);
   });
 
@@ -136,6 +136,37 @@ describe('local database migrator', () => {
     db.exec('PRAGMA user_version = 99');
     expect(migrate(db, ctx)).toEqual({ from: 99, to: 99, newer: true });
     expect(db.all("SELECT name FROM sqlite_master WHERE type = 'table'")).toEqual([]);
+  });
+
+  it('[G-26] v5 adds entries.language and moves a waiting letter\'s recording language onto it; drafts keep theirs', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx, MIGRATIONS.slice(0, 4)); // an install from before v5
+    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);
+    const insert = (id: string, raw: string, status: string | null) =>
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits,
+           final_text, in_book, updated_at, child_id, audio_uri, transcript_status) VALUES (?, 'letter', '2026-09-30', ?, 'spoken', 'verbatim', 4, ?, '[]', ?, 0, ?, 'c1', 'file:///a.m4a', ?)`,
+        id, NOW, raw, raw, NOW, status,
+      );
+    insert('waiting-hi', '', 'waiting');
+    insert('waiting-bad', '', 'waiting');
+    insert('with-words', 'Asha, you clapped.', null);
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at, audio_uri) VALUES ('d-es', 'c1', 'spoken', ?, 'file:///b.m4a')", NOW);
+    db.run(
+      "INSERT INTO settings (key, value) VALUES ('speech.letterLanguage.waiting-hi', 'hi'), ('speech.letterLanguage.waiting-bad', 'xx'), ('speech.letterLanguage.d-es', 'es'), ('speech.language', 'hi')",
+    );
+
+    expect(migrate(db, ctx)).toEqual({ from: 4, to: LATEST_VERSION, newer: false });
+    expect(cols(db, 'entries')).toContain('language');
+    const lang = (id: string) => db.get<{ language: string | null }>('SELECT language FROM entries WHERE id = ?', id)?.language;
+    expect(lang('waiting-hi')).toBe('hi');
+    expect(setting(db, 'speech.letterLanguage.waiting-hi')).toBeNull(); // moved, not copied
+    expect(lang('waiting-bad')).toBeNull(); // only the seven codes; the odd value is left where it was
+    expect(setting(db, 'speech.letterLanguage.waiting-bad')).toBe('xx');
+    expect(lang('with-words')).toBeNull(); // never guessed from the author's current language
+    expect(setting(db, 'speech.letterLanguage.d-es')).toBe('es'); // drafts keep the setting until they are saved
+    expect(setting(db, 'speech.language')).toBe('hi');
+    expect(db.get<{ raw_transcript: string }>("SELECT raw_transcript FROM entries WHERE id = 'with-words'")?.raw_transcript).toBe('Asha, you clapped.');
   });
 
   it('migrations are numbered 1..n with no gaps (append-only)', () => {

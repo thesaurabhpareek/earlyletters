@@ -36,8 +36,19 @@ export interface SupabaseLike {
 
 // ── Push ───────────────────────────────────────────────────────────────────
 
-export type FieldGroup = 'text' | 'in_book' | 'sounds_like_me' | 'occurred_on';
-export const ALL_GROUPS: readonly FieldGroup[] = ['text', 'in_book', 'sounds_like_me', 'occurred_on'];
+/**
+ * Field groups of an entry.upsert (per-group last writer wins). 'language' needs
+ * the server at 20261005000000 or later: older servers refuse an unknown group (22023).
+ */
+export type FieldGroup = 'text' | 'in_book' | 'sounds_like_me' | 'occurred_on' | 'language';
+export const ALL_GROUPS: readonly FieldGroup[] = ['text', 'in_book', 'sounds_like_me', 'occurred_on', 'language'];
+
+/** The seven v1.0 letter languages (the server's entries_language_code check). */
+export const LETTER_LANGUAGES = ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'] as const;
+export type LetterLanguage = (typeof LETTER_LANGUAGES)[number];
+export function isLetterLanguage(v: unknown): v is LetterLanguage {
+  return typeof v === 'string' && (LETTER_LANGUAGES as readonly string[]).includes(v);
+}
 
 /** A letter as the server stores it (own letters only travel up). */
 export interface EntryData {
@@ -57,6 +68,8 @@ export interface EntryData {
   sounds_like_me: boolean | null;
   author_signs_as: string | null;
   audio_kept_on_device: boolean;
+  /** The language a spoken letter was recorded in (L4, author-only). Absent when this phone does not know it. */
+  language?: LetterLanguage;
   /** Re-upload only: the phone's copy is a tombstone. */
   deleted?: boolean;
 }
@@ -172,6 +185,8 @@ export interface PulledRow {
   sounds_like_me: boolean | null;
   approval: string;
   audio_kept_on_device: boolean;
+  /** Own rows only, from servers at 20261005000000 or later. Others' rows never carry it. */
+  language?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

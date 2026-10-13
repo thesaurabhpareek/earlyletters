@@ -14,7 +14,12 @@
  */
 import { brand } from '@scribe/brand';
 
-export const EXPORT_SCHEMA_VERSION = '1.0.0';
+/**
+ * 1.1.0 (5 Oct 2026, G-19, LEGAL-REQ-034): account.json gains
+ * `consent_history` and `dictionary`. Both are optional in the schema so a
+ * 1.0.0 export still validates; this version always writes them.
+ */
+export const EXPORT_SCHEMA_VERSION = '1.1.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -102,6 +107,67 @@ export interface ChildrenFile {
   children: ExportChild[];
 }
 
+export type PolicyAction = 'accept' | 'decline' | 'withdraw' | 'acknowledge';
+
+/** One row of the legal consent record (`policy_acceptances`), without the account id. */
+export interface ExportPolicyAct {
+  id: string;
+  /** `terms`, `sensitive-data`, ... (POLICY_VERSIONING.md). */
+  document: string;
+  version: string;
+  action: PolicyAction;
+  method: string;
+  surface: string;
+  /** Server time of the act. */
+  at: string;
+  client_recorded_at: string | null;
+  app_version: string;
+  platform: 'ios' | 'android' | 'web';
+  locale: string | null;
+  /** SHA-256 of the text shown, when the app sent one. */
+  rendered_sha256: string | null;
+  /** Enums only (sign-in method, age confirmed). */
+  context: Record<string, unknown>;
+}
+
+/**
+ * Consent history (LEGAL-REQ-034: `my_policy_state` and full acceptance
+ * rows). The legal record lives on our server; the phone keeps no copy of
+ * it. So `source` says which record this is:
+ *  - `server`: read from the server while making the export (signed in,
+ *    online, and the signed-in account owns this phone's letters);
+ *  - `phone`: only what this phone holds (`server_record` says why).
+ * `on_this_phone` is always the phone's own answers (the 18+ question and
+ * the usage-sharing choice), which never leave it.
+ */
+export interface ExportConsentHistory {
+  source: 'server' | 'phone';
+  server_record: 'included' | 'not_signed_in' | 'unavailable' | 'different_account';
+  /** When the server record was read; null for `phone`. */
+  read_at: string | null;
+  /** Latest act per document (`my_policy_state`). Empty for `phone`. */
+  current: { document: string; version: string; action: PolicyAction; at: string }[];
+  /** Every act, oldest first. Empty for `phone`. */
+  acts: ExportPolicyAct[];
+  on_this_phone: {
+    /** The "18 or older" question on this phone was answered yes. */
+    age_confirmed: boolean;
+    /** Sharing usage reports: the answer on this phone. */
+    usage_sharing: 'granted' | 'denied' | 'not_answered';
+  };
+}
+
+/** A name or word the transcriber spells your way (DictionaryTerm in packages/core). */
+export interface ExportDictionaryTerm {
+  /** The book it belongs to; null for a word kept for every book. */
+  child_id: string | null;
+  term: string;
+  kind: 'child' | 'nickname' | 'family' | 'word' | 'place' | 'self';
+  heard_as: string[];
+  /** `phone`: kept on this phone (in v1.0, each book's child name and your signature); `server`: held for your account on our server. */
+  source: 'phone' | 'server';
+}
+
 export interface AccountFile {
   schema_version: string;
   format: string;
@@ -110,6 +176,10 @@ export interface AccountFile {
   plan: 'free' | 'plus';
   exported_from: 'phone';
   memberships: { child_id: string; role: 'parent' | 'contributor'; signs_as: string }[];
+  /** Since 1.1.0. */
+  consent_history: ExportConsentHistory;
+  /** Since 1.1.0. */
+  dictionary: ExportDictionaryTerm[];
 }
 
 export interface ManifestFile {
@@ -133,6 +203,7 @@ export interface Manifest {
 // ── JSON Schema (draft 2020-12), published inside every export ───────────
 
 const isoDate = { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
+const policyAction = { enum: ['accept', 'decline', 'withdraw', 'acknowledge'] } as const;
 const isoDateOrNull = { type: ['string', 'null'], pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
 const sha256 = { type: 'string', pattern: '^[0-9a-f]{64}$' } as const;
 const header = {
@@ -292,6 +363,75 @@ export const exportJsonSchema = {
             properties: { child_id: { type: 'string' }, role: { enum: ['parent', 'contributor'] }, signs_as: { type: 'string' } },
           },
         },
+        // Since 1.1.0; optional so 1.0.0 exports still validate.
+        consent_history: { $ref: '#/$defs/consentHistory' },
+        dictionary: { type: 'array', items: { $ref: '#/$defs/dictionaryTerm' } },
+      },
+    },
+    consentHistory: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['source', 'server_record', 'read_at', 'current', 'acts', 'on_this_phone'],
+      properties: {
+        source: { enum: ['server', 'phone'] },
+        server_record: { enum: ['included', 'not_signed_in', 'unavailable', 'different_account'] },
+        read_at: { type: ['string', 'null'] },
+        current: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['document', 'version', 'action', 'at'],
+            properties: { document: { type: 'string' }, version: { type: 'string' }, action: policyAction, at: { type: 'string' } },
+          },
+        },
+        acts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: [
+              'id', 'document', 'version', 'action', 'method', 'surface', 'at', 'client_recorded_at', 'app_version', 'platform',
+              'locale', 'rendered_sha256', 'context',
+            ],
+            properties: {
+              id: { type: 'string' },
+              document: { type: 'string' },
+              version: { type: 'string' },
+              action: policyAction,
+              method: { type: 'string' },
+              surface: { type: 'string' },
+              at: { type: 'string' },
+              client_recorded_at: { type: ['string', 'null'] },
+              app_version: { type: 'string' },
+              platform: { enum: ['ios', 'android', 'web'] },
+              locale: { type: ['string', 'null'] },
+              rendered_sha256: { anyOf: [sha256, { type: 'null' }] },
+              context: { type: 'object' },
+            },
+          },
+        },
+        on_this_phone: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['age_confirmed', 'usage_sharing'],
+          properties: { age_confirmed: { type: 'boolean' }, usage_sharing: { enum: ['granted', 'denied', 'not_answered'] } },
+        },
+      },
+      // A phone-only history never claims server rows.
+      if: { type: 'object', properties: { source: { const: 'phone' } } },
+      then: { type: 'object', properties: { acts: { type: 'array', maxItems: 0 }, current: { type: 'array', maxItems: 0 }, read_at: { type: 'null' } } },
+    },
+    dictionaryTerm: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['child_id', 'term', 'kind', 'heard_as', 'source'],
+      properties: {
+        child_id: { type: ['string', 'null'] },
+        term: { type: 'string', minLength: 1 },
+        kind: { enum: ['child', 'nickname', 'family', 'word', 'place', 'self'] },
+        heard_as: { type: 'array', items: { type: 'string' } },
+        source: { enum: ['phone', 'server'] },
       },
     },
     manifest: {

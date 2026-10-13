@@ -9,11 +9,13 @@ import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { packExport } from '../src/lib/export/pack';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, exportJsonSchema, type EntriesFile } from '../src/lib/export/schema';
-import { ASHA_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { ASHA_AUDIO, ashaSignedInSnapshot, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
-async function ashaZip(): Promise<Record<string, Uint8Array>> {
+async function ashaZip(snapshot = ashaSnapshot()): Promise<Record<string, Uint8Array>> {
   const chunks: Uint8Array[] = [];
-  await packExport(ashaSnapshot(), {
+  await packExport(snapshot, {
     readFile: async (uri) => ASHA_AUDIO[uri] ?? Promise.reject(new Error('missing')),
     sha256: async (d) => sha256Hex(d),
     renderPdf: async () => new TextEncoder().encode('%PDF-1.4\n%%EOF\n'),
@@ -52,6 +54,37 @@ describe('export schema', () => {
     for (const [path, def] of cases) {
       const validate = validator(def);
       const ok = validate(json(files, path));
+      expect(validate.errors ?? [], path).toEqual([]);
+      expect(ok, path).toBe(true);
+    }
+  });
+
+  it('[G-19] a signed-in export with the server consent record matches it too', async () => {
+    const files = await ashaZip(ashaSignedInSnapshot());
+    const validate = validator('accountFile');
+    const ok = validate(json(files, 'data/account.json'));
+    expect(validate.errors ?? []).toEqual([]);
+    expect(ok).toBe(true);
+  });
+
+  it('[G-19] rejects a phone-only history that claims server rows', async () => {
+    const account = json(await ashaZip(ashaSignedInSnapshot()), 'data/account.json');
+    expect(validator('accountFile')({ ...account, consent_history: { ...account.consent_history, source: 'phone' } })).toBe(false);
+  });
+
+  it('[DATA-REQ-055] still reads every 1.0.0 file (kept in __golden__/export-asha/_v1.0.0)', () => {
+    const dir = join(__dirname, '__golden__', 'export-asha', '_v1.0.0');
+    const cases: [string, string][] = [
+      ['data/entries.json', 'entriesFile'],
+      ['data/children.json', 'childrenFile'],
+      ['data/account.json', 'accountFile'],
+      ['manifest.json', 'manifest'],
+    ];
+    for (const [path, def] of cases) {
+      const data = JSON.parse(readFileSync(join(dir, path), 'utf8'));
+      expect(data.schema_version ?? data.format_version, path).toBe('1.0.0');
+      const validate = validator(def);
+      const ok = validate(data);
       expect(validate.errors ?? [], path).toEqual([]);
       expect(ok, path).toBe(true);
     }

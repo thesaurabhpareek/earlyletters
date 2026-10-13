@@ -50,6 +50,8 @@ export const API_ERROR_CODES = [
   'deleted',
   'not_parent',
   'invite_unusable',
+  /** SCCAP: the book already has the most parents allowed (D-069, two). Never retried. */
+  'parents_full',
   'plus_required',
   'anonymous_refused',
 ] as const;
@@ -134,6 +136,8 @@ export const SQLSTATE_RULES: Readonly<Record<string, ErrorRule>> = {
   SCPLS: rule('plus_required', 'tell_user'),
   SCCID: rule('bad_request', 'reject'),
   SCINV: rule('invite_unusable', 'tell_user'),
+  // 20261005000000: create_child_invite (role parent) and accept_child_invite of a parent invite. The detail is the limit.
+  SCCAP: rule('parents_full', 'tell_user'),
   SCAPR: rule('forbidden', 'reject'),
   SCIMM: rule('immutable', 'reject'),
   SCTMB: rule('tombstoned', 'reject'),
@@ -204,6 +208,7 @@ export function httpStatusFor(code: ApiErrorCode): number {
     case 'tombstoned':
     case 'last_parent':
     case 'invite_unusable':
+    case 'parents_full':
       return 409;
     case 'gone':
     case 'deleted':

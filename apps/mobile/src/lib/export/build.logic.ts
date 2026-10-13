@@ -13,6 +13,10 @@
  * - Original recordings, byte for byte. A recording that is not on this
  *   phone is listed with `audio_missing`.
  * - The printable book holds the letters in the book that have words.
+ * - account.json carries the consent history and the spelling list
+ *   (LEGAL-REQ-034, schema 1.1.0). The legal consent record is on the
+ *   server; `device.ts` reads it when it can and otherwise says so
+ *   (`consent_history.source`).
  */
 import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
@@ -29,7 +33,11 @@ import {
   type ChildrenFile,
   type EntriesFile,
   type ExportAudio,
+  type ExportConsentHistory,
+  type ExportDictionaryTerm,
   type ExportEntry,
+  type ExportPolicyAct,
+  type PolicyAction,
 } from './schema';
 
 export interface SnapshotChild extends Child {
@@ -56,6 +64,111 @@ export interface ExportSnapshot {
   signedIn: boolean;
   children: SnapshotChild[];
   entries: SnapshotEntry[];
+  /** For account.json: the server's consent record when it was read, else the phone's answers only. */
+  consent: ExportConsentHistory;
+  /** For account.json: the spelling list (phone, plus the server's when it was read). */
+  dictionary: ExportDictionaryTerm[];
+}
+
+// ── Consent history and spelling list (account.json, schema 1.1.0) ──────
+
+export type OnThisPhone = ExportConsentHistory['on_this_phone'];
+
+/** History when no server record could be read: the phone's own answers only. */
+export function phoneConsentHistory(
+  onThisPhone: OnThisPhone,
+  reason: Exclude<ExportConsentHistory['server_record'], 'included'>,
+): ExportConsentHistory {
+  return { source: 'phone', server_record: reason, read_at: null, current: [], acts: [], on_this_phone: onThisPhone };
+}
+
+/** A `policy_acceptances` row as PostgREST returns it (own rows only, under RLS). */
+export interface PolicyActRow {
+  id: string;
+  document: string;
+  version: string;
+  action: string;
+  method: string;
+  surface: string;
+  accepted_at: string;
+  client_recorded_at: string | null;
+  app_version: string;
+  platform: string;
+  locale: string | null;
+  /** bytea arrives as `\x<hex>`. */
+  rendered_sha256: string | null;
+  context: unknown;
+}
+
+/** A `my_policy_state` row. */
+export interface PolicyStateRow {
+  document: string;
+  version: string;
+  action: string;
+  accepted_at: string;
+}
+
+const ACTIONS: readonly PolicyAction[] = ['accept', 'decline', 'withdraw', 'acknowledge'];
+const asAction = (a: string): PolicyAction | null => ((ACTIONS as readonly string[]).includes(a) ? (a as PolicyAction) : null);
+const asPlatform = (p: string): ExportPolicyAct['platform'] => (p === 'android' || p === 'web' ? p : 'ios');
+
+function byteaHex(v: string | null): string | null {
+  if (!v) return null;
+  const hex = v.replace(/^\\x/, '').toLowerCase();
+  return /^[0-9a-f]{64}$/.test(hex) ? hex : null;
+}
+
+/** The server's record, as exported: oldest act first, no account id. Rows with an unknown action are skipped. */
+export function serverConsentHistory(
+  acts: readonly PolicyActRow[],
+  state: readonly PolicyStateRow[],
+  readAt: string,
+  onThisPhone: OnThisPhone,
+): ExportConsentHistory {
+  const out: ExportPolicyAct[] = [];
+  for (const r of acts) {
+    const action = asAction(r.action);
+    if (!action) continue;
+    out.push({
+      id: r.id,
+      document: r.document,
+      version: r.version,
+      action,
+      method: r.method,
+      surface: r.surface,
+      at: r.accepted_at,
+      client_recorded_at: r.client_recorded_at ?? null,
+      app_version: r.app_version,
+      platform: asPlatform(r.platform),
+      locale: r.locale ?? null,
+      rendered_sha256: byteaHex(r.rendered_sha256),
+      context: r.context && typeof r.context === 'object' && !Array.isArray(r.context) ? (r.context as Record<string, unknown>) : {},
+    });
+  }
+  out.sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id));
+  const current = state
+    .map((r) => ({ document: r.document, version: r.version, action: asAction(r.action), at: r.accepted_at }))
+    .filter((r): r is { document: string; version: string; action: PolicyAction; at: string } => r.action !== null)
+    .sort((a, b) => a.document.localeCompare(b.document));
+  return { source: 'server', server_record: 'included', read_at: readAt, current, acts: out, on_this_phone: onThisPhone };
+}
+
+/** Phone terms first, then server terms the phone does not already have (same book and spelling, any case). */
+export function mergeDictionary(phone: readonly ExportDictionaryTerm[], server: readonly ExportDictionaryTerm[]): ExportDictionaryTerm[] {
+  const key = (t: ExportDictionaryTerm) => `${t.child_id ?? ''}\u0000${t.term.normalize('NFC').toLocaleLowerCase()}`;
+  const seen = new Set<string>();
+  const out: ExportDictionaryTerm[] = [];
+  for (const t of [...phone, ...server]) {
+    if (!t.term.trim() || seen.has(key(t))) continue;
+    seen.add(key(t));
+    out.push({ ...t, heard_as: [...t.heard_as] });
+  }
+  return out;
+}
+
+/** The exporter's role: parent when they are a parent of any book here (books only on this phone are theirs). */
+export function exporterRole(children: readonly Pick<Child, 'role'>[]): 'parent' | 'contributor' {
+  return children.length === 0 || children.some((c) => (c.role ?? 'parent') === 'parent') ? 'parent' : 'contributor';
 }
 
 export interface TextFile {
@@ -520,7 +633,9 @@ export async function dataFiles(
     signed_in: snapshot.signedIn,
     plan: snapshot.plan,
     exported_from: 'phone',
-    memberships: snapshot.children.map((c) => ({ child_id: c.id, role: 'parent', signs_as: c.signsAs })),
+    memberships: snapshot.children.map((c) => ({ child_id: c.id, role: c.role ?? 'parent', signs_as: c.signsAs })),
+    consent_history: snapshot.consent,
+    dictionary: snapshot.dictionary,
   };
   const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`;
   return {

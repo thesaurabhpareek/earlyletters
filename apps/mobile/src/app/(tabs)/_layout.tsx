@@ -6,6 +6,7 @@ import type { Icon } from 'phosphor-react-native';
 import { Platform, Pressable, type ColorValue, type PressableProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
+import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { LARGE_CONTENT } from '@/components/ui/button';
 import { useFontsReady } from '@/components/ui/fonts';
 import { UIProvider } from '@/components/ui/provider';
@@ -24,6 +25,9 @@ import { useTheme } from '@/lib/a11y';
  * - No haptics and no custom transition on tab change (MOTION 5i, 6).
  * - UIProvider here is a no-op once the root layout mounts it; the ToastHost lifts toasts
  *   above the bar on tab screens.
+ * - The analytics consent ask lives here (TRACKING_PLAN 9, G-24): it may appear only on a tab
+ *   root, never over capture, Review, sign-in or a sheet route (ask-sequencer.logic.ts).
+ * - testIDs `tab.tonight`, `tab.book`, `tab.family` (apps/mobile/e2e/TESTID_REQUESTS.md).
  */
 const BAR = 58;
 
@@ -63,10 +67,11 @@ export default function TabsLayout() {
               ...(fonts ? { fontFamily: tokens.fontFamily.sansMedium, fontWeight: 'normal' } : { fontWeight: '500' }),
             },
           }}>
-          <Tabs.Screen name="index" options={{ title: 'Tonight', tabBarIcon: icon(MoonStarsIcon), tabBarButton: button('Tonight') }} />
-          <Tabs.Screen name="book" options={{ title: 'Book', tabBarIcon: icon(BookOpenIcon), tabBarButton: button('Book') }} />
-          <Tabs.Screen name="family" options={{ title: 'Family', tabBarIcon: icon(UsersThreeIcon), tabBarButton: button('Family') }} />
+          <Tabs.Screen name="index" options={{ title: 'Tonight', tabBarIcon: icon(MoonStarsIcon), tabBarButton: button('Tonight'), tabBarButtonTestID: 'tab.tonight' }} />
+          <Tabs.Screen name="book" options={{ title: 'Book', tabBarIcon: icon(BookOpenIcon), tabBarButton: button('Book'), tabBarButtonTestID: 'tab.book' }} />
+          <Tabs.Screen name="family" options={{ title: 'Family', tabBarIcon: icon(UsersThreeIcon), tabBarButton: button('Family'), tabBarButtonTestID: 'tab.family' }} />
         </Tabs>
+        <AnalyticsConsentAsk />
       </ToastHost>
     </UIProvider>
   );

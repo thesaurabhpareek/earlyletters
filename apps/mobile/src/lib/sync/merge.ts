@@ -15,6 +15,7 @@
 import type { SqlDb } from '../db/sql';
 import {
   ALL_GROUPS,
+  isLetterLanguage,
   type BookMeta,
   type Digest,
   type EntryState,
@@ -179,6 +180,12 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
 
 const bool = (v: boolean | null | undefined) => (v === null || v === undefined ? null : v ? 1 : 0);
 
+/**
+ * A letter's language comes only from my own rows (the server sends it on the caller's own letters;
+ * book_entries never carries it). A row without a known code leaves what this phone has.
+ */
+const ownLanguage = (row: PulledRow): string | null => (isLetterLanguage(row.language) ? row.language : null);
+
 function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): void {
   const local = getEntryRow(db, row.id);
   const edits = JSON.stringify(row.machine_edits ?? []);
@@ -186,11 +193,11 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
     db.run(
       `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version,
          raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at, deleted_at, synced_at,
-         child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+         child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state, language)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
       row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
       row.raw_transcript ?? '', edits, row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, row.deleted_at, now,
-      row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
+      row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch, ownLanguage(row),
     );
     return;
   }
@@ -208,15 +215,16 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
     `UPDATE entries SET kind = ?, occurred_on = ?, edit_level = ?, prompt_key = ?, final_text = ?, machine_edits = ?,
        in_book = ?, sounds_like_me = ?, author_signs_as = ?, approval = ?, deleted_at = ?, updated_at = ?,
        raw_transcript = CASE WHEN raw_transcript = '' THEN ? ELSE raw_transcript END,
+       language = COALESCE(?, language),
        sync_state = 'synced'
      WHERE id = ?`,
     row.kind, row.occurred_on, row.edit_level, row.prompt_key, row.final_text, edits,
     row.in_book ? 1 : 0, bool(row.sounds_like_me), row.author_signs_as, row.approval, row.deleted_at, now,
-    row.raw_transcript ?? '', row.id,
+    row.raw_transcript ?? '', ownLanguage(row), row.id,
   );
 }
 
-/** Another person's letter: words and metadata only, never their raw transcript or edit list. */
+/** Another person's letter: words and metadata only, never their raw transcript, edit list or language. */
 function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: number, now: string): void {
   const local = getEntryRow(db, row.id);
   if (local && (local.author_id === null || local.author_id === owner)) return;

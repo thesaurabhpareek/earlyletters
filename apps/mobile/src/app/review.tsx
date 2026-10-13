@@ -321,6 +321,8 @@ export default function Review() {
           audioDurationMs: draft.audioDurationMs,
           audioSha256: audio.sha256,
           audioBytes: audio.bytes,
+          // The language the recording was spoken in (author-only, synced to my own phones); typed letters have none.
+          language: spoken ? language : null,
         },
         audio.exists,
       );
@@ -359,7 +361,7 @@ export default function Review() {
       const fresh = getDraft(draft.id) ?? draft;
       saveVoiceOnlyFromDraft(
         { ...fresh, audioSha256: audio.sha256, audioBytes: audio.bytes },
-        { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
+        { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists, language },
       );
       trackLetterSaved({
         mode: 'spoken',

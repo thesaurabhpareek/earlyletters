@@ -9,7 +9,14 @@
  */
 import { createHash } from 'node:crypto';
 import type { Edit } from '@scribe/core';
-import type { ExportSnapshot, SnapshotEntry } from '../../src/lib/export/build.logic';
+import {
+  phoneConsentHistory,
+  serverConsentHistory,
+  type ExportSnapshot,
+  type PolicyActRow,
+  type PolicyStateRow,
+  type SnapshotEntry,
+} from '../../src/lib/export/build.logic';
 
 /** Deterministic bytes standing in for an M4A. Includes ZIP signatures on purpose, as real audio can. */
 export function fakeAudio(seed: string, length: number): Uint8Array {
@@ -115,5 +122,41 @@ export function ashaSnapshot(): ExportSnapshot {
       entry({ id: 'e9', occurredOn: '2027-03-10', captureMode: 'typed', finalText: 'One year and two days. You walked to the door and waved.', editLevel: 'verbatim' }),
       entry({ id: 'd1', childId: DEV, occurredOn: '2025-01-05', captureMode: 'typed', finalText: 'First snow.', editLevel: 'verbatim' }),
     ],
+    // Never signed in on this phone: the consent record is the phone's own answers only.
+    consent: phoneConsentHistory({ age_confirmed: true, usage_sharing: 'not_answered' }, 'not_signed_in'),
+    dictionary: [
+      { child_id: ASHA, term: 'Asha', kind: 'child', heard_as: [], source: 'phone' },
+      { child_id: ASHA, term: 'Mama', kind: 'self', heard_as: [], source: 'phone' },
+      { child_id: DEV, term: 'Dev', kind: 'child', heard_as: [], source: 'phone' },
+      { child_id: DEV, term: 'Mama', kind: 'self', heard_as: [], source: 'phone' },
+    ],
+  };
+}
+
+/** The server's consent record for the Asha parent, as PostgREST returns it (fictional ids). */
+export const ASHA_POLICY_ACTS: PolicyActRow[] = [
+  {
+    id: '0192f000-0000-7000-8000-000000000002', document: 'sensitive-data', version: '1.2.0', action: 'accept', method: 'consent_sheet',
+    surface: 'auth.consent.sensitive', accepted_at: '2026-10-20T09:01:00.000Z', client_recorded_at: '2026-10-20T09:00:59.000Z',
+    app_version: '1.0.0', platform: 'ios', locale: 'en', rendered_sha256: null, context: {},
+  },
+  {
+    id: '0192f000-0000-7000-8000-000000000001', document: 'terms', version: '1.5.0', action: 'accept', method: 'signin_sheet',
+    surface: 'auth.consent.terms', accepted_at: '2026-10-20T09:00:00.000Z', client_recorded_at: null, app_version: '1.0.0',
+    platform: 'ios', locale: 'en', rendered_sha256: `\\x${'ab'.repeat(32)}`, context: { auth: 'apple', age_attested: true },
+  },
+];
+export const ASHA_POLICY_STATE: PolicyStateRow[] = [
+  { document: 'terms', version: '1.5.0', action: 'accept', accepted_at: '2026-10-20T09:00:00.000Z' },
+  { document: 'sensitive-data', version: '1.2.0', action: 'accept', accepted_at: '2026-10-20T09:01:00.000Z' },
+];
+
+/** The same phone, signed in and online when the export was made. */
+export function ashaSignedInSnapshot(): ExportSnapshot {
+  const base = ashaSnapshot();
+  return {
+    ...base,
+    signedIn: true,
+    consent: serverConsentHistory(ASHA_POLICY_ACTS, ASHA_POLICY_STATE, '2027-03-15T10:00:01.000Z', { age_confirmed: true, usage_sharing: 'granted' }),
   };
 }

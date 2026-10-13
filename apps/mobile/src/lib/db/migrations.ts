@@ -237,6 +237,29 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 5,
+    name: "a letter's spoken language (entries.language, author-only)",
+    up(db) {
+      // language  L4  the language a spoken letter was recorded in: one of the seven v1.0 codes,
+      //               or null (typed letters, letters saved before this version, others' letters).
+      //               Synced up in field group 'language'; stored from the server for own letters only
+      //               (supabase/migrations/20261005000000; book_entries never carries it).
+      addColumns(db, 'entries', [['language', 'TEXT']]);
+      // Until now a recording's language lived in a setting per letter (speech.letterLanguage.<id>),
+      // kept while the letter waited for its words. Move it onto the letter; drafts keep theirs.
+      db.run(
+        `UPDATE entries SET language = (SELECT s.value FROM settings s WHERE s.key = 'speech.letterLanguage.' || entries.id)
+         WHERE language IS NULL AND EXISTS (
+           SELECT 1 FROM settings s WHERE s.key = 'speech.letterLanguage.' || entries.id
+             AND s.value IN ('en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'))`,
+      );
+      db.run(
+        `DELETE FROM settings WHERE key LIKE 'speech.letterLanguage.%'
+           AND substr(key, length('speech.letterLanguage.') + 1) IN (SELECT id FROM entries WHERE language IS NOT NULL)`,
+      );
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

@@ -35,14 +35,24 @@ export type AuthRule =
   /** Server to server only (cron, store webhooks). Never callable from the app; no key for it ships in the app. */
   | 'server_only';
 
+/** Shared per-person counters inside `public.rate_hit(bucket)` (migration 20261005000000). */
+export type RateBucket = 'pull' | 'push' | 'policy_actions' | 'membership';
+
 export interface RateLimit {
   /** Requests allowed per window per subject. */
   limit: number;
   windowSeconds: number;
   /** Who the limit counts: a user id, a hashed IP (rotating salt), or the whole service. */
   per: 'user' | 'ip_hash' | 'global';
-  /** Where it is enforced. `cdn` means the response is cached and the origin sees little traffic. */
+  /**
+   * Where it is enforced. `cdn` means the response is cached and the origin
+   * sees little traffic. `client` means the server does not enforce it yet:
+   * every such endpoint must be listed in `RATE_LIMIT_GAPS` (and ADR 0017
+   * section 6), and `standards.test.ts` fails otherwise.
+   */
   enforcedBy: 'cdn' | 'rpc' | 'edge_function' | 'supabase_auth' | 'client';
+  /** For `rpc` limits counted by `rate_hit()`: the shared bucket. Endpoints in one bucket share one counter. */
+  bucket?: RateBucket;
 }
 
 export interface EndpointSpec {
@@ -83,11 +93,16 @@ export const ENDPOINTS = {
   },
   syncPush: {
     method: 'POST', path: '/rest/v1/rpc/sync_push', class: 'sync_batch', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 60, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 60, per: 'user', enforcedBy: 'rpc', bucket: 'push' }, status: 'live',
   },
   syncPull: {
     method: 'POST', path: '/rest/v1/rpc/sync_pull', class: 'read_rpc', auth: 'user_jwt',
-    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 60, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 60, per: 'user', enforcedBy: 'rpc', bucket: 'pull' }, status: 'live',
+  },
+  /** The books this account belongs to, with members (sync and account deletion). */
+  syncBooks: {
+    method: 'POST', path: '/rest/v1/rpc/sync_books', class: 'read_rpc', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 60, per: 'user', enforcedBy: 'client' }, status: 'live',
   },
   createChild: {
     method: 'POST', path: '/rest/v1/rpc/create_child', class: 'write_rpc', auth: 'user_jwt',
@@ -97,13 +112,56 @@ export const ENDPOINTS = {
     method: 'POST', path: '/rest/v1/rpc/create_child_invite', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'idempotency_key', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
   },
+  /**
+   * "Ask before joining" (security review H2, G-02, G-13): what the invite
+   * says before the person agrees. Returns only the inviter's sign-off name,
+   * never the child's, and never joins. Same counter as the other membership calls.
+   */
+  peekInvite: {
+    method: 'POST', path: '/rest/v1/rpc/peek_invite', class: 'read_rpc', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc', bucket: 'membership' }, status: 'this_change',
+  },
+  /** A repeat by the same person after a lost response returns the same book (natural id: the token). */
+  acceptInvite: {
+    method: 'POST', path: '/rest/v1/rpc/accept_child_invite', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc', bucket: 'membership' }, status: 'live',
+  },
+  revokeInvite: {
+    method: 'POST', path: '/rest/v1/rpc/revoke_invite', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'live',
+  },
+  /** Any member leaves; `p_keep_in_book` false takes their letters out of the book (never deletes them). Repeat: 'not_member'. */
+  leaveChild: {
+    method: 'POST', path: '/rest/v1/rpc/leave_child', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc', bucket: 'membership' }, status: 'this_change',
+  },
+  /** A parent removes a family member (never a parent). Repeat: 'not_member'. */
+  removeChildMember: {
+    method: 'POST', path: '/rest/v1/rpc/remove_child_member', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc', bucket: 'membership' }, status: 'this_change',
+  },
+  /** Consent gate after sign-in: whether Terms and sensitive-data consent are current. */
+  mySyncGate: {
+    method: 'POST', path: '/rest/v1/rpc/my_sync_gate', class: 'read_rpc', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 60, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'live',
+  },
   recordPolicyAct: {
     method: 'POST', path: '/rest/v1/rpc/record_policy_act', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'idempotency_key', rateLimit: { limit: 60, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'live',
   },
   policyActionsNeeded: {
     method: 'POST', path: '/rest/v1/rpc/policy_actions_needed', class: 'read_rpc', auth: 'user_jwt',
-    idempotency: 'safe_method', rateLimit: { limit: 60, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'live',
+    idempotency: 'safe_method', rateLimit: { limit: 60, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc', bucket: 'policy_actions' }, status: 'live',
+  },
+  /** A repeat while a request is open returns it (and is not counted). */
+  requestAccountDeletion: {
+    method: 'POST', path: '/rest/v1/rpc/request_account_deletion', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 5, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+  },
+  /** Nothing to cancel returns false (and is not counted). */
+  cancelAccountDeletion: {
+    method: 'POST', path: '/rest/v1/rpc/cancel_account_deletion', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 5, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
   },
   inviteRedeem: {
     method: 'POST', path: '/functions/v1/invite-redeem', class: 'edge_light', auth: 'user_jwt',
@@ -111,6 +169,15 @@ export const ENDPOINTS = {
   },
 } as const satisfies Record<string, EndpointSpec>;
 export type EndpointName = keyof typeof ENDPOINTS;
+
+/**
+ * Endpoints the app calls whose limit the server does not enforce yet (ADR
+ * 0017 section 6). Each is cheap, answers only for the caller and is called
+ * at most a few times per session; the numbers above are what the client
+ * keeps to. `standards.test.ts` fails if an endpoint says `client` without
+ * being listed here, or is listed here but enforced elsewhere.
+ */
+export const RATE_LIMIT_GAPS: readonly EndpointName[] = ['syncBooks', 'revokeInvite', 'mySyncGate'];
 
 /** Cache-Control for responses we serve. `stale-if-error` keeps the CDN answering through an origin outage. */
 export const CACHE_POLICY = {

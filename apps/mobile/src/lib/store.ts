@@ -32,7 +32,7 @@ import {
   type EnqueueContext,
 } from './sync/outbox';
 import { signalOutbox } from './sync/signal';
-import { ALL_GROUPS, type EntrySyncState, type FieldGroup } from './sync/types';
+import { ALL_GROUPS, isLetterLanguage, type EntrySyncState, type FieldGroup, type LetterLanguage } from './sync/types';
 
 export type EntryKind = 'note' | 'letter' | 'not_much';
 export type CaptureMode = 'spoken' | 'typed' | 'mixed';
@@ -73,6 +73,12 @@ export interface Entry {
   syncState?: EntrySyncState;
   /** Family review state from the server (not_needed, pending, added, set_aside); null before sync. */
   approval?: string | null;
+  /**
+   * The language a spoken letter was recorded in (L4, author-only; local v5, synced in field group
+   * 'language'). Set once when the letter is saved, from the recording's language; null for typed
+   * letters, letters saved before v5, and other people's letters (the server never sends theirs).
+   */
+  language?: LetterLanguage | null;
 }
 
 export type TranscriptStatus = 'waiting' | null;
@@ -418,6 +424,7 @@ interface Row {
   audio_sha256: string | null;
   audio_bytes: number | null;
   transcript_status: string | null;
+  language: string | null;
 }
 
 function parseEdits(json: string): Edit[] {
@@ -453,29 +460,43 @@ const fromRow = (r: Row): Entry => ({
   transcriptStatus: r.transcript_status === 'waiting' ? 'waiting' : null,
   syncState: (r.sync_state ?? 'local') as EntrySyncState,
   approval: r.approval,
+  language: isLetterLanguage(r.language) ? r.language : null,
 });
 
-/** The one INSERT for entries. Callers decide whether it runs alone or inside a transaction. */
+/**
+ * Before v5 a recording's language lived in one setting per recording (models/author-language.ts);
+ * drafts still use it. Once a letter row holds its language, that setting is removed.
+ */
+export const letterLanguageKey = (id: string): string => `speech.letterLanguage.${id}`;
+
+/**
+ * The one INSERT for entries. Callers decide whether it runs alone or inside a transaction.
+ * A letter's language is set once: a later save never changes a language already noted.
+ */
 function writeEntry(d: SQLite.SQLiteDatabase, e: Entry): void {
   const childId = e.childId ?? getActiveChildId();
   const signsAs = e.authorSignsAs ?? (childId ? (getChild(childId)?.signsAs ?? null) : null);
+  const language = isLetterLanguage(e.language) ? e.language : null;
   d.runSync(
     `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key,
        engine_version, raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at,
-       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms, audio_sha256, audio_bytes, transcript_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms, audio_sha256, audio_bytes, transcript_status, language)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        final_text = excluded.final_text, machine_edits = excluded.machine_edits,
        edit_level = excluded.edit_level, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me,
        child_id = CASE WHEN entries.synced_at IS NULL THEN excluded.child_id ELSE entries.child_id END,
+       language = COALESCE(entries.language, excluded.language),
        updated_at = excluded.updated_at`,
     e.id, e.kind, e.occurredOn, e.capturedAt, e.captureMode, e.editLevel, e.promptKey,
     e.engineVersion, e.rawTranscript, JSON.stringify(e.machineEdits), e.finalText,
     e.inBook ? 1 : 0, e.soundsLikeMe === null ? null : e.soundsLikeMe ? 1 : 0, new Date().toISOString(),
     childId, e.authorId ?? null, signsAs, e.audioUri ?? null, e.audioDurationMs ?? null,
-    e.audioSha256 ?? null, e.audioBytes ?? null, e.transcriptStatus ?? null,
+    e.audioSha256 ?? null, e.audioBytes ?? null, e.transcriptStatus ?? null, language,
   );
+  // The letter now holds its language; the per-recording setting has done its job.
+  if (language) d.runSync('DELETE FROM settings WHERE key = ?', letterLanguageKey(e.id));
 }
 
 /**
@@ -528,7 +549,15 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
  */
 export function saveVoiceOnlyFromDraft(
   draft: Draft,
-  opts: { childId: string; authorSignsAs: string; inBook: boolean; engineVersion: number; audioExists?: boolean },
+  opts: {
+    childId: string;
+    authorSignsAs: string;
+    inBook: boolean;
+    engineVersion: number;
+    audioExists?: boolean;
+    /** The language the recording was spoken in (the transcription queue reads it back for the words). */
+    language?: LetterLanguage | null;
+  },
 ): Entry {
   if (!draft.audioUri || opts.audioExists === false) throw new AudioMissingError();
   const entry: Entry = {
@@ -552,6 +581,7 @@ export function saveVoiceOnlyFromDraft(
     audioSha256: draft.audioSha256,
     audioBytes: draft.audioBytes,
     transcriptStatus: 'waiting',
+    language: opts.language ?? null,
   };
   saveLetterFromDraft(draft.id, entry);
   return entry;
