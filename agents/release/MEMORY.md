@@ -14,7 +14,7 @@ Seeded on 3 Oct 2026 and refreshed 13 Oct from ADR 0022 and the release fact che
 - `apps/mobile/eas.json`: `appVersionSource: "remote"`, `production.autoIncrement: true`; `submit.production` empty until the production App Store Connect record exists.
 - Builds only from tags: `ios-v<x.y.z>-rc.<n>` builds, `ios-v<x.y.z>` releases (`.github/workflows/release-ios.yml`).
 - Bundle id comes from `packages/brand` (`publisher.domain`); it is permanent after the first App Store Connect upload.
-- No `expo-updates` in v1.0 (D-091) and no crash SDK; v1.0 is on-device only (PR #54). Two lanes: preview (`testflight` profile, `.preview` record, `docs/release/TESTFLIGHT.md`) and store (`production`, RC tags).
+- No `expo-updates` in the code and no crash SDK (D-091 proposes no OTA in v1.0, pending the founder's OK); v1.0 is on-device only (PR #54). Two lanes: preview (`testflight` profile, `.preview` record, `docs/release/TESTFLIGHT.md`) and store (`production`, RC tags).
 
 ## Decisions and constraints I must respect
 - ADR 0022 (accepted): `release/<major>.<minor>` from `main`; build once, promote; Actions orchestrates, EAS builds; no EAS Workflows; private repo on GitHub Free, so no environments or required reviewers: tag pushes by the coordinator are the gate.
