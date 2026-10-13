@@ -664,6 +664,11 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 - Status: ready. Mode: agent drafts, founder enters. Owner: QA engineer, content.
 - Scope: review notes from `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 8 plus the D-004 positioning (a family memory journal in Lifestyle; a due date is optional); how to reach Plus; a demo account on production seeded with the fictional family "Asha" and how the reviewer passes the 18+ gate.
 
+#### BL-440 Store description matches the on-device v1.0 [Critical] (new, D-089)
+- Status: ready. Mode: agent. Owner: content.
+- Scope: `packages/content/src/store.en.ts`: the description says "Invite your co-parent to the same book. You each sign your own letters" and "Only you and the people you invite can read your book", and `whatsNewV1` says "write together with your co-parent". v1.0 shows co-parent sharing as coming soon (PR #54). Say what v1.0 does; regenerate `docs/store/app-store.md` and `apps/mobile/store.config.json`.
+- Done when: a content rules case rejects invite and write-together promises in `storeListing` while server features are off for v1.0; nothing is pushed to App Store Connect before this lands (guideline 2.3.1).
+
 #### BL-436 Version and store metadata as code (new, D-089)
 - Status: in-review (branch `feat/release-version-metadata`). Mode: agent. Owner: release engineer.
 - Scope: `apps/mobile/version.json` read by `app.config.ts`; `scripts/release/store-config.ts` writes `apps/mobile/store.config.json` (EAS Metadata) from `packages/content`; tests for both and for drift.

@@ -2,7 +2,7 @@
 
 - **Status:** Accepted, 2026-10-13 (founder accepted the release-engineering recommendations of 3 Oct and asked for them to be documented). Recorded as D-089 to D-092. Decision 9 changes one of those recommendations and waits for the founder's OK (D-091).
 - **Deciders:** founder.
-- **Builds on:** the TestFlight lane on branch `chore/testflight-v1` (`docs/release/TESTFLIGHT.md`, `.github/workflows/testflight.yml`), D-041, D-060, D-065, D-066, D-068, D-083 (US storefront only; on the unmerged branch `docs/decisions-4-oct`), the on-device v1.0 (PR #54).
+- **Builds on:** the TestFlight lane (PR #100: `docs/release/TESTFLIGHT.md`, `.github/workflows/testflight.yml`), D-041, D-060, D-065, D-066, D-068, D-083 (US storefront only), the on-device v1.0 (PR #54).
 - **Amends:** `docs/agents/COORDINATION.md` section 6 (what a release tag means); FT-44 in `docs/FOUNDER_TASKS.md` (tag the release candidate, not the final version, before submission); TDD 07 10.1 (`rc/*` branches become `release/*` branches plus RC tags).
 - **Runbook:** `docs/release/RELEASE.md`. **v1.0 record and readiness:** `docs/release/1.0.0.md`.
 
@@ -11,7 +11,7 @@
 Calendar (ROADMAP 2.1): C0 internal TestFlight Wed 14 Oct, Beta App Review Thu 15 Oct, C1 families 19 to 29 Oct, feature freeze Mon 26 Oct, submit Mon 2 Nov, release on approval (planned Mon 16 Nov). v1.0 is on this phone only: no accounts, sign-in or sync (PR #54).
 
 What exists:
-- A TestFlight lane on branch `chore/testflight-v1` (not merged on 13 Oct): a `testflight` EAS profile that builds the `.preview` bundle id so the permanent production id is not spent by test builds, `npm run preflight:testflight`, a manual `testflight.yml` workflow, `docs/release/TESTFLIGHT.md`.
+- A TestFlight lane (PR #100, merged 13 Oct): a `testflight` EAS profile that builds the `.preview` bundle id so the permanent production id is not spent by test builds, `npm run preflight:testflight`, a manual `testflight.yml` workflow, `docs/release/TESTFLIGHT.md`.
 - Store text in `packages/content/src/store.en.ts`, checked by the content rules test (App Store limits, no beta wording, D-060); `scripts/brand/screenshots.mts` makes the 6.9 and 6.5 inch frames; `scripts/size/measure.ts` checks the 40 MB budget (D-065).
 - `version: '1.0.0'` typed into `app.config.ts`; EAS remote build numbers (`appVersionSource: "remote"`, `autoIncrement`).
 
@@ -34,7 +34,7 @@ Constraints checked on 3 Oct 2026 against official pages (sources at the end):
 6. **Store metadata as code.** `scripts/release/store-config.ts` generates `apps/mobile/store.config.json` (EAS Metadata) from `packages/content`; the review contact and demo details are added from a secret at push time and never committed. Screenshots come from `scripts/brand/screenshots.mts` and are uploaded by hand.
 7. **What is in, what is on.** The release branch decides what code is in the binary; the signed config document (D-066, D-068) decides what is switched on. Unfinished work is reverted on the branch or ships with its bundled default off.
 8. **Gates without paid GitHub features.** The approval is the coordinator pushing a tag or the founder starting a workflow by hand; agents can do neither. `EXPO_TOKEN` and the review contact are repository secrets; the App Store Connect API key and signing credentials live in EAS credentials.
-9. **Over-the-air updates are not in v1.0** (changes the 3 Oct recommendation; founder OK needed, D-091). On 3 Oct OTA looked cheap insurance. Since then v1.0 became on-device only (PR #54), the store submission plans "Data Not Collected" (D-088, unmerged), and submission is three weeks away. `expo-updates` would add a network call on every launch (a new data-map destination whose privacy-label answer counsel would need to confirm) and a policy to review in that window. Fixes ship as PATCH builds, with expedited review for an S0. Revisit for v1.1 with sign-in.
+9. **Over-the-air updates are not in v1.0** (changes the 3 Oct recommendation; founder OK needed, D-091). On 3 Oct OTA looked cheap insurance. Since then v1.0 became on-device only (PR #54), the store submission plans "Data Not Collected" (D-088), and submission is three weeks away. `expo-updates` would add a network call on every launch (a new data-map destination whose privacy-label answer counsel would need to confirm) and a policy to review in that window. Fixes ship as PATCH builds, with expedited review for an S0. Revisit for v1.1 with sign-in.
 10. **After launch:** a two-week train, phased release on every update, release notes per version in `packages/content`.
 
 ## Alternatives considered
