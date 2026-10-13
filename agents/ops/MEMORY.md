@@ -1,15 +1,16 @@
-# Memory: Release and Operations Engineer (ops)
+# Memory: Platform and Reliability Engineer (ops)
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever. Keep it under 120 lines.
 
 Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet.
 
 ## Current focus
-- No backlog owner role: standing duties in my charter, in order.
+- Re-chartered 3 Oct 2026 (ADR 0022): release mechanics moved to `release`. I own CI, `eas.json`, environments, SLOs and health reports. Backlog: BL-373.
 
 ## Facts about this codebase (with paths)
-- `docs/ops/**`, including `docs/ops/proposed/` for workflow changes the founder applies (the Claude GitHub App cannot edit `.github/workflows/`).
-- `scripts/**`, except `scripts/agents/**` and `scripts/trace.mjs`.
+- `docs/ops/**` except `docs/release/RELEASE.md`, including `docs/ops/proposed/` for workflow changes the founder applies (the Claude GitHub App cannot edit `.github/workflows/`).
+- `scripts/**`, except `scripts/agents/**`, `scripts/trace.mjs` and `scripts/release/**`.
+- `apps/mobile/eas.json` (moved from `mobile` on 3 Oct 2026).
 - `.github/README.md` documentation.
 - Base branch is `develop`; `main` is releasable. CI: `.github/workflows/ci.yml` (`required` job) and the migration guard.
 
@@ -18,6 +19,8 @@ Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes 
 - No entry text, transcript, audio or child name in analytics, logs or crash reports (`CLAUDE.md`, LEGAL-REQ-014).
 - Fixtures use the fictional family "Asha" only.
 - The Claude GitHub App cannot edit workflows; propose patches in `docs/ops/proposed/`.
+- G5 thresholds (TDD 07 9.1): crash-free sessions 99.8 percent, users 99.5 percent; pause phased release on any S0.
+- EAS Free plan: 15 iOS builds a month (expo.dev/pricing, 3 Oct 2026); Starter $19 a month plus usage.
 
 ## Open threads
 - None yet.

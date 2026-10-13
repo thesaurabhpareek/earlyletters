@@ -4,9 +4,9 @@ Every MUST rule in the compendium and what enforces it today. Status words: **en
 
 Rules that stay `not yet` are the backlog for the stewards' standing duty 2: turn one into a real check per run, or file it as a backlog proposal for `product`. The owner of each chapter keeps its rows current in the same PR that changes a rule or adds a check.
 
-Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 38 pending in open PRs, 34 partly enforced, review-only or covered by the rule they cite, 78 not yet.
+Totals across 208 rules (2026-10-13, counted from the rows below): 43 enforced, 45 pending in open PRs or branches, 40 partly enforced, review-only or covered by the rule they cite, 80 not yet. Chapter 11 (16 MUST rules, plus REL-R11 and REL-R12 as SHOULD) came with ADR 0022 (D-089).
 
-## principal-architect (chapters 01, 02, 10)
+## principal-architect (chapters 01, 02, 10, 11)
 
 | Rule id | Level | Enforced by | Status | Gap id |
 |---|---|---|---|---|
@@ -59,6 +59,22 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | OBS-R11 | MUST | review; SLO measurement | not yet measured | PDATA-06 |
 | OBS-R12 | MUST | alerts with runbook ids | not yet | PDATA-06, WS-18 |
 | OBS-R14 | MUST | runbook wrapper; agents without prod credentials | not yet | PINF-01 |
+| REL-R01 | MUST | coordinator-only pushes; branch protection later | review | REL-G3 |
+| REL-R02 | MUST | `apps/mobile/test/release-config.test.ts` | pending (BL-370 branch) | none |
+| REL-R03 | MUST NOT | same test: no build number in config, remote versioning with `autoIncrement` | pending (BL-370 branch) | none |
+| REL-R04 | MUST NOT | EAS remote build numbers; tag protection | not yet (founder setup) | REL-G3 |
+| REL-R05 | MUST | `release-ios.yml` tag, version and branch checks | pending (BL-371 branch) | none |
+| REL-R06 | MUST | release record review | review | none |
+| REL-R07 | MUST | `release-ios.yml` checks (tests, metadata drift, placeholders); size, privacy manifest, E2E handlers by hand | pending (BL-371 branch), partly | REL-G4 |
+| REL-R08 | MUST | `scripts/release/store-config.ts` drift test | pending (BL-370 branch) | none |
+| REL-R09 | MUST | content rules test (limits, no beta wording) | enforced on develop | none |
+| REL-R10 | MUST | `store-config.ts` refuses a later version without notes; `reviewNotes` in content | pending (BL-370, BL-371 branches) | none |
+| REL-R13 | MUST | review; CODE-R19 | review | none |
+| REL-R14 | MUST | no OTA in v1.0 (D-091) | review | none |
+| REL-R15 | MUST | release record review; DB-R09 | review | none |
+| REL-R16 | MUST | founder; health report | review | BL-373 |
+| REL-R17 | MUST | repository secrets used only by `release-ios.yml`; gitleaks | pending PR #30 (gitleaks) | REL-G3 |
+| REL-R18 | MUST NOT | fence path `.eas/**` | not yet | REL-G2 |
 
 Gap ids defined here:
 - CODE-G1: CI check that fails or labels PRs over 400 lines or 20 files (excluding lockfile, generated, test data).
@@ -75,6 +91,9 @@ Gap ids defined here:
 - OBS-G2: typed `OpsLog` logger with Asha canary unit tests.
 - OBS-G3: `ops_health` views and the 5-minute job.
 - OBS-G4: end-to-end log canary over every log stream.
+- REL-G2: add `.eas/**` to `fence.yml` and CODEOWNERS (PR #30 owns the fence today).
+- REL-G3: when the plan allows it on a private repository: protect `release/*` like `main`, tag rulesets for `ios-v*` and `android-v*`, and move release secrets to a GitHub Environment.
+- REL-G4: add the size budget (`scripts/size/measure.ts --ipa`) and the privacy-manifest diff to the RC checks once an RC artifact is available to CI.
 
 ## data-steward (chapters 03, 04)
 

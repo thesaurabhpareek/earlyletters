@@ -197,7 +197,10 @@
         "packages/**",
         "apps/mobile/src/lib/**",
         "supabase/functions/**",
-        "scripts/*.mjs"
+        "scripts/*.mjs",
+        "scripts/release/**",
+        "apps/mobile/version.json",
+        "docs/release/RELEASE.md"
       ]
     },
     {
@@ -239,6 +242,7 @@
         ".github/**",
         "apps/mobile/app.config.ts",
         "apps/mobile/eas.json",
+        ".eas/**",
         "package-lock.json",
         "scripts/agents/**",
         ".claude/**",
@@ -268,6 +272,7 @@
         "packages/*/package.json",
         "apps/mobile/app.config.ts",
         "packages/content/src/**",
+        "apps/mobile/store.config.json",
         "supabase/functions/**"
       ]
     },
@@ -328,13 +333,24 @@
     },
     {
       "handle": "ops",
-      "title": "Release and Operations Engineer",
+      "title": "Platform and Reliability Engineer",
       "department": "operations",
       "backlog_owner_names": [
-        "platform"
+        "platform",
+        "platform engineer"
       ],
       "daily_runs": 1,
       "wip_limit": 1
+    },
+    {
+      "handle": "release",
+      "title": "Release Engineer",
+      "department": "operations",
+      "backlog_owner_names": [
+        "release engineer"
+      ],
+      "daily_runs": 1,
+      "wip_limit": 2
     },
     {
       "handle": "chief-of-staff",

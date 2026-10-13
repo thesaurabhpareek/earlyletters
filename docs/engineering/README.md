@@ -18,6 +18,7 @@ How we build Early Letters: the standards every engineer and every agent follows
 | 08 | [Data rights and legal requests](08-data-rights-and-legal-requests.md) | DSR | `compliance-engineer` | security-architect, data-steward | Runbook for delete, export, access, correction, consent withdrawal, analytics forget and legal process: intake, verification, scope, deadlines, proof |
 | 09 | [AI-assisted engineering](09-ai-assisted-engineering.md) | AIE | `ai-eng-lead` | principal-architect, security-architect | How agents are instructed, given context, shaped into tasks, verified, reviewed and evaluated; research in [research/ai-engineering-sources.md](research/ai-engineering-sources.md) |
 | 10 | [Logging and observability](10-logging-and-observability.md) | OBS | `principal-architect` | compliance-engineer, security-architect | Structured logs, request ids, what each layer logs, log clocks, Sentry scrubbing, SLOs and alerts |
+| 11 | [Release engineering](11-release-engineering.md) (ADR 0022) | REL | `principal-architect` | security-architect, compliance-engineer | Two lanes, release branches, versions and build numbers, build once and promote, store metadata as code, screenshots, phased release, release credentials |
 
 Also here: [ENFORCEMENT.md](ENFORCEMENT.md), every MUST rule with what enforces it today.
 
@@ -46,7 +47,7 @@ A chapter never restates a requirement; it cites the id (`DATA-REQ-0xx`, `LEGAL-
 | Red team and founder | Every PR still gets the red-team review and the founder's merge; `supabase/**` and auth changes also need `approve-migration` (D-041) | `docs/agents/OPERATING_MODEL.md` |
 | Consistency check | `check.mjs` fails if a chapter's `owner` is not on the roster | `scripts/agents/check.mjs` |
 
-Status on 2026-10-03, counted from `ENFORCEMENT.md`: of 192 rules, 42 are enforced on `develop`, 38 are pending in open PRs (mostly #26 to #32 and #39), 34 are partly enforced, review-only or covered by the rule they cite, and 78 have no check yet. The `not yet` rows are the stewards' work queue.
+Status on 2026-10-03, counted from `ENFORCEMENT.md`: of 208 rules, 43 are enforced on `develop`, 45 are pending in open PRs or branches (mostly #26 to #32 and #39), 40 are partly enforced, review-only or covered by the rule they cite, and 80 have no check yet (chapter 11 adds 16 MUST rules, ADR 0022). The `not yet` rows are the stewards' work queue.
 
 ## Changing a standard
 
