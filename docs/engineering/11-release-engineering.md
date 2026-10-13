@@ -46,7 +46,7 @@ A family trusts the app with words they cannot say again. A release must never l
 
 **REL-R08 (MUST)** All store text (name, subtitle, description, keywords, promotional text, What's New, review notes, URLs, category) lives in `packages/content` and is generated into `apps/mobile/store.config.json`. Nobody edits listing text only in App Store Connect. *Why:* voice rules and claims checks apply to store copy (PRIV-R17); the repo is the record. *Enforced by:* content rules test; not yet the generator (BL-436).
 
-**REL-R09 (MUST)** Store text is checked against Apple's limits (name and subtitle 30 characters, promotional text 170, description and What's New 4,000, keywords 100 bytes) and contains no beta wording (D-030, guideline 2.2, pending founder OK). *Why:* the upload fails or the review rejects. *Enforced by:* not yet (BL-436).
+**REL-R09 (MUST)** Store text is checked against Apple's limits (name and subtitle 30 characters, promotional text 170, description and What's New 4,000, keywords 100 bytes) and contains no beta wording (D-060, guideline 2.2). *Why:* the upload fails or the review rejects. *Enforced by:* the content rules test on develop.
 
 **REL-R10 (MUST)** Every version after the first (App Store Connect has no What's New for a first version) has customer release notes, keyed by version in `packages/content`, written for families (what changed for them, never internal ids), and the review notes carry a working demo account (guideline 2.1). *Why:* customers read What's New; reviewers cannot test sign-in without an account. *Enforced by:* not yet (BL-436).
 
