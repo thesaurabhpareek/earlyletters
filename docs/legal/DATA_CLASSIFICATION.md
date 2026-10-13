@@ -673,6 +673,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `speech.language` | L4 | The author's primary speech language |
 | `speech.letterLanguage.<letter id>` | L4 | Language a letter was spoken in; the key holds a letter id (L3) |
 | `speech.memoryFailures`, `speech.jobRunning` | L2 | Model tier fallback count; transcription job marker |
+| `speech.download`, `speech.download.migrated` | L2 | `yes`, `later` or unset: whether the person said yes to the one-time speech model download; whether the one-time migration for existing phones has run. Stays on the phone |
 | `packs.allowCellular` | L2 | Download packs on mobile data |
 | `plus.cache` | L3 | Last StoreKit plan snapshot (state, product, period, dates, environment) for offline launch; purchase state of a person |
 | `readTogether.sessions.<book id>` | L2 | Count of free Read together sessions used; the key holds a book id (L3), so the row is handled as L3 |

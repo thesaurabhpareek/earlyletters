@@ -12,7 +12,7 @@ export { licences } from './licences.en';
 export { packsCopy } from './packs.en';
 export { playerCopy } from './player.en';
 export { reminderCopy } from './reminders.en';
-export { speechSettingsCopy } from './speech.en';
+export { speechConsentCopy, speechSettingsCopy } from './speech.en';
 export { languageNames, wordsCopy } from './words.en';
 
 import { accountDeletionCopy } from './account-deletion.en';
@@ -26,7 +26,7 @@ import { licences } from './licences.en';
 import { packsCopy } from './packs.en';
 import { playerCopy } from './player.en';
 import { reminderCopy } from './reminders.en';
-import { speechSettingsCopy } from './speech.en';
+import { speechConsentCopy, speechSettingsCopy } from './speech.en';
 import { languageNames, wordsCopy } from './words.en';
 
 /** Every feature's copy in one object, for the rules test. */
@@ -43,6 +43,7 @@ export const features = {
   player: playerCopy,
   reminders: reminderCopy,
   speech: speechSettingsCopy,
+  speechConsent: speechConsentCopy,
   words: wordsCopy,
   languageNames,
 } as const;

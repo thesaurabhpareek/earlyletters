@@ -9,6 +9,7 @@
  * (test/coparent-soon.test.ts).
  */
 import type { IncomingLink } from '../auth/links.logic';
+import { routePathOf } from '../resilience/not-found.logic';
 
 /** Every place in the app that can start inviting or joining a co-parent. */
 export const INVITE_ENTRIES = [
@@ -41,6 +42,28 @@ export function inviteHref(entry: 'settings_child' | 'onboarding_join' | 'family
   return childId ? `/invite/new?childId=${encodeURIComponent(childId)}` : '/invite';
 }
 
+/**
+ * Doors that can lead nowhere for anyone in v1.0 (D-087): "I was invited" needs an invite that only a
+ * server can make, and "Family can read" is a switch that cannot be turned on. Both come back with
+ * co-parent sharing, with no new work. The Family tab, the Settings row and the invite-link landing stay.
+ */
+export function visibleCoParentDoors(coParent: boolean): { joinButton: boolean; familyCanReadSwitch: boolean } {
+  return { joinButton: coParent, familyCanReadSwitch: coParent };
+}
+
+/**
+ * The only paths an outside link may open (D-087, LEGAL-REQ-011). Anything else, including a screen that
+ * starts something (listen, review, read-together), a destructive one (delete account) or one that does not
+ * exist, opens Tonight. Auth and invite links are classified before this and have their own routes.
+ */
+export const LINK_ROUTE_ALLOWLIST = ['/', '/invite'] as const;
+
+/** The route an unclassified link may take: itself if allowed (path only, no query), otherwise Tonight. */
+export function allowedLinkRoute(path: string): string {
+  const p = routePathOf(path);
+  return (LINK_ROUTE_ALLOWLIST as readonly string[]).includes(p) ? p : '/';
+}
+
 export interface IncomingLinkPlan {
   /** Where Expo Router goes; null leaves the URL alone (Google's own redirect). */
   route: string | null;
@@ -51,7 +74,7 @@ export interface IncomingLinkPlan {
 }
 
 /**
- * Deep links (+native-intent). With server features off there is no sign-in and
+ * Deep links (+native-intent). Unclassified links open an allowlisted route or Tonight (allowedLinkRoute). With server features off there is no sign-in and
  * no join: auth links open the app at home and keep nothing; an invite link opens
  * the coming-soon presentation and its token is dropped (it could never be
  * redeemed by this build, and it expires on its own).
@@ -69,6 +92,6 @@ export function planIncomingLink(link: IncomingLink, opts: { serverFeatures: boo
     case 'provider-redirect':
       return { route: null, ...none };
     default:
-      return { route: opts.path, ...none };
+      return { route: allowedLinkRoute(opts.path), ...none };
   }
 }

@@ -10,8 +10,8 @@ Labels: **V** checked in Apple's help pages on 3 Oct 2026. **U** not checked; th
 | | Value | Where it must match |
 |---|---|---|
 | Subscription group | Reference name `Plus`, display name `Plus` | `storekit/EarlyLetters.storekit` |
-| Monthly product | Product ID `plus.monthly`, 1 month, US $3.99, free 1-month introductory offer | `apps/mobile/src/lib/billing/config.ts`, the StoreKit file, Subscription Terms |
-| Annual product | Product ID `plus.annual`, 1 year, US $29.99, free 2-month introductory offer | same |
+| Monthly product | Product ID `plus.monthly`, 1 month, US $4.99, free 1-month introductory offer | `apps/mobile/src/lib/billing/config.ts`, the StoreKit file, Subscription Terms |
+| Annual product | Product ID `plus.annual`, 1 year, US $49.99, free 2-month introductory offer | same |
 | Family Sharing | On for both (cannot be turned off later) | ADR 0013 |
 | Billing Grace Period | 16 days, all renewals, production and sandbox | TDD 08 OQ-7 |
 | Availability | United States only at launch (LEGAL-REQ-058) | Subscription Terms "Plus is offered in the United States" |
@@ -52,10 +52,12 @@ In the `Plus` group, click **Create** (or **+**). For each product: (**V** for t
 | Reference name | `Plus Monthly` | `Plus Annual` |
 | Product ID | `plus.monthly` | `plus.annual` |
 | Subscription Duration | 1 month | 1 year |
-| Subscription Prices | United States, US $3.99 | United States, US $29.99 |
+| Subscription Prices | United States, US $4.99 | United States, US $49.99 |
 | Availability | United States only | United States only |
 | Localization (English U.S.): display name | `Plus Monthly` | `Plus Yearly` |
-| Localization: description | `Read together and more books, billed monthly` | `Read together and more books, billed yearly` |
+| Localization: description | `Keep adding letters, billed monthly` | `Keep adding letters, billed yearly` |
+
+Prices (founder, 4 Oct 2026, D-082): monthly US $4.99, yearly US $49.99. Yearly is priced at about ten months for twelve months of access (12 x 4.99 = 59.88; 59.88 - 49.99 = 9.89, about two months). The introductory offers are unchanged: a 1-month free trial on monthly and a 2-month free trial on yearly. **U**: whether $49.99 exists as an App Store price point for this storefront, and which introductory-offer durations Apple offers, have not been checked from here; confirm both in App Store Connect before submitting.
 
 Then:
 1. Set both subscriptions to the **same level** in the group, so switching between monthly and yearly is a crossgrade, not an upgrade. (**U**: App Store Connect shows levels on the group page; drag or edit so both are level 1.)
@@ -124,11 +126,15 @@ Sign the list with the date and build number. Record failures in the payments re
 
 | # | Check | Expected |
 |---|---|---|
-| D-1 | Free account, add a second child | Gate, then Apple's sheet: two plans as two buttons, neither selected; "1 month free" or "2 months free" shown for a new sandbox account; Restore, Terms, Privacy and Close visible |
-| D-2 | Buy the monthly trial | Sheet closes, the new child form opens; Settings, Plan says "Plus is on, free until ..." with a cancel-by date |
-| D-3 | Read together 4 times in a Free book, then with Plus | Fourth time shows the gate; with Plus it opens |
+| D-1 | Free account with two letters kept, write a third and press Keep | The Keep sheet ("Keep adding to ...'s book", the letter is safe), then "See Plus" opens Apple's sheet: two plans as two buttons, neither selected; "1 month free" or "2 months free" shown for a new sandbox account; Restore, Terms, Privacy and Close visible. The letter is still a draft on Tonight until kept |
+| D-2 | Buy the monthly trial | Sheet closes, the same Review shows again (the person taps Keep; it is not kept for them); Settings, Plan says "Plus is on, free until ..." with a cancel-by date |
+| D-3 | Read together 5 times on a Free phone with 3 letters | Opens every time, no gate (no session limit, D-082). Starting a second book is free too |
 | D-4 | Settings, Plan, Manage subscription | Apple's sheet opens in one tap; cancel there; Plan says "It will not renew" |
 | D-5 | Second iPhone, same Apple Account, Restore purchases | "Plus is on." within 10 seconds |
+| D-7 | Delete the app and reinstall on the same phone (Free, two letters kept before) | The two free letters do not come back: the third Keep still asks for Plus (Keychain count). **U**: Apple does not guarantee Keychain survival; record what the device does |
+| D-8 | Restore an iCloud backup onto another phone | Letters come back; the free count is the larger of the letters present and the saved count, so the gate still asks at the third |
+| D-9 | Airplane mode at the Keep sheet | The sheet says Plus needs the internet and keeps the letter; nothing is lost |
+| D-10 | Settings, Plan, Redeem a code with a sandbox offer code | Apple's code sheet opens; after redeeming, Plus is on without a restart. **U**: `AppStore.presentOfferCodeRedeemSheet(in:)` was read in Apple's docs on 4 Oct 2026 but has not run on a device |
 | D-6 | Family Sharing: second sandbox account in the same family | Plus on; Plan says "Shared with you through Apple Family Sharing"; no refund row |
 | D-7 | Request a refund | Apple's refund sheet opens |
 | D-8 | Airplane mode, relaunch with Plus on | Plus still on; nothing locked |
