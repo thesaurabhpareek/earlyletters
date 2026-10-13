@@ -408,7 +408,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-44 Approve the release**
   - Time: 30 minutes.
   - Cost: US $0.
-  - Steps: approve the coordinator's release PR from `develop` to `main`; the coordinator cuts `release/1.0` and pushes `ios-v1.0.0-rc.<n>`, which builds the production binary into the production record's TestFlight (D-089, `docs/release/RELEASE.md`). `ios-v1.0.0` itself is pushed after Apple approves and you release.
+  - Steps: approve the coordinator's release PR from `develop` to `main`; the coordinator cuts `release/1.0` and pushes `ios-v1.0.0-rc.<n>`, which builds the production binary into the production record's TestFlight (D-089, `docs/ops/RELEASE.md`). `ios-v1.0.0` itself is pushed after Apple approves and you release.
   - By: Mon 26 Oct, the freeze day (D-089: the release branch and the first RC come from this approval, before FT-39).
   - Blocks: FT-45.
 

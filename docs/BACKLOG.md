@@ -633,7 +633,7 @@ Built in the design wave (9be06db) and the integration wave (a66376a); mobile-po
 
 #### BL-283 Release engineering and the founder checklist
 - Status: in-progress (qa-e2e, `docs/ops/RELEASE.md`).
-- Note (13 Oct, D-089): the release pipeline, runbook and v1.0 record are BL-436 to BL-439 (`docs/release/RELEASE.md`, `docs/release/1.0.0.md`). BL-283 keeps the device and gate checklist; link it from `docs/release/RELEASE.md` rather than a second runbook.
+- Note (13 Oct, D-089): the one runbook is qa-e2e's `docs/ops/RELEASE.md` (wave `auto/2026-10-13-integration`), amended for D-089 by branch `docs/release-train-d089`. The release tooling and the v1.0 record are BL-436 to BL-439 (`docs/release/1.0.0.md`).
 
 #### BL-288 Android CI build (parity watch)
 - Status: deferred (FUTURE T5-16 readiness).

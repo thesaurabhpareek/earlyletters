@@ -16,7 +16,6 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 | [runbooks/restore-drill.md](runbooks/restore-drill.md) | Quarterly restore drill, and what to do after a real restore (DATA-REQ-030, -031) |
 | [runbooks/suspected-data-leak.md](runbooks/suspected-data-leak.md) | First hour of a suspected exposure |
 | AUTH_SETUP.md, APP_STORE_CONNECT_SUBSCRIPTIONS.md, APP_SIZE.md | Other owners (sign-in, subscriptions, app size) |
-| [../release/RELEASE.md](../release/RELEASE.md) | Releasing the app: two lanes, release branches, versions, RC tags, store metadata, hotfix (ADR 0022) |
 
 ## The deletion pipeline in one picture
 

@@ -407,14 +407,14 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 ### D-089 Release engineering model
 - **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct). Ids chosen above D-088 (PR #91).
 - **Decision:** ADR 0022. Preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, per `docs/release/TESTFLIGHT.md`. Store lane: `release/1.0` cut from `main` at freeze (Mon 26 Oct), fixes cherry-picked from `develop`; `ios-v1.0.0-rc.<n>` tags build the production profile into the production record's internal TestFlight; the RC that passed FT-39 is submitted (FT-45); `ios-v1.0.0` is pushed after release. One version in `apps/mobile/version.json`; build numbers only from EAS. Store text generated from `packages/content` into `apps/mobile/store.config.json`.
-- **Effects:** COORDINATION section 6 and FT-44 (tag the RC before submission; the version tag follows release); runbook `docs/release/RELEASE.md`; record `docs/release/1.0.0.md`; BL-436 to BL-439.
+- **Effects:** COORDINATION section 6 and FT-44 (tag the RC before submission; the version tag follows release); runbook `docs/ops/RELEASE.md` (qa-e2e's release train, amended for D-089); record `docs/release/1.0.0.md`; BL-436 to BL-439.
 
 ### D-090 Release team
 - **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct).
 - **Decision:** a `release` agent (Release Engineer: versions, release records, store metadata as code, the runbook) and `ops` re-chartered as Platform and Reliability Engineer (DevOps and SRE). Defined on the harness branch; until the harness runs, used in interactive sessions by handle under COORDINATION.md. A separate SRE agent after launch, once there are real users and a first Sev 1 or 2 drill.
 
 ### D-091 No OTA updates in v1.0
-- **Status:** Recommended (needs founder OK). Changes the 3 Oct recommendation to ship `expo-updates` in v1.0.
+- **Status:** Decided (founder, 13 Oct 2026). Changes the 3 Oct recommendation to ship `expo-updates` in v1.0. Matches section 8 of qa-e2e's release train.
 - **Decision:** no `expo-updates` in v1.0. Fixes ship as PATCH builds from the release branch, with expedited review for an S0.
 - **Rationale:** v1.0 became on-device only (PR #54) and plans "Data Not Collected" (D-088). An update check on every launch is a new network destination for the data map and a privacy-label question for counsel, three weeks before submission. Revisit for v1.1, when sign-in brings a server anyway.
 
@@ -458,7 +458,7 @@ Two founder answers given on 3 Oct (evening) change second-round entries. Where 
 | D-081 | Purchase consent records (supersedes D-049) | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
 | D-089 | Release engineering model (ADR 0022): preview lane for C0 and C1; store lane from `release/<major>.<minor>` cut at freeze; one version in `apps/mobile/version.json`; EAS build numbers; `ios-v<x.y.z>-rc.<n>` tags build candidates; the tested RC is the binary submitted; `ios-v<x.y.z>` on release; store text generated from `packages/content` | Decided (founder) | Yes | 2026-10-13 |
 | D-090 | Release team: a `release` agent plus `ops` as Platform and Reliability Engineer (DevOps and SRE); SRE splits out after launch | Decided (founder) | Yes | 2026-10-13 |
-| D-091 | No over-the-air updates (`expo-updates`) in v1.0; fixes ship as PATCH builds; revisit for v1.1 | Recommended (needs founder OK; changes the 3 Oct recommendation) | Yes | 2026-10-13 |
+| D-091 | No over-the-air updates (`expo-updates`) in v1.0; fixes ship as PATCH builds; revisit for v1.1 | Decided (founder; changes the 3 Oct recommendation) | Yes | 2026-10-13 |
 | D-092 | EAS Free plan until builds would exceed 15 iOS a month, then Starter ($19 a month plus usage) | Decided (founder) | Yes | 2026-10-13 |
 
 ### D-071 Primary mark: logo round 3 `final-a`
