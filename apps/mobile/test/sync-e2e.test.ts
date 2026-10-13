@@ -24,7 +24,7 @@ import {
   readSetting,
 } from '../src/lib/sync/outbox';
 import { takeOwnership } from '../src/lib/sync/ownership';
-import { ALL_GROUPS, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
+import { ALL_GROUPS, type PushOp, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
 
 // ── Server (PGlite with every migration) ─────────────────────────────────
@@ -146,15 +146,15 @@ function addBook(db: SqlDb, name: string, birthday: string, signsAs = 'Mama'): s
   return id;
 }
 let seq = 0;
-function saveLetter(db: SqlDb, childId: string, text: string, opts: { inBook?: boolean; waiting?: boolean } = {}): string {
+function saveLetter(db: SqlDb, childId: string, text: string, opts: { inBook?: boolean; waiting?: boolean; language?: string } = {}): string {
   const id = uuid7(clock.t + ++seq);
   db.transaction(() => {
     db.run(
       `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version, raw_transcript,
-         machine_edits, final_text, in_book, sounds_like_me, updated_at, child_id, author_id, author_signs_as, audio_uri, transcript_status)
-       VALUES (?, 'letter', '2026-09-29', ?, 'spoken', 'clean', NULL, 2, ?, '[]', ?, ?, NULL, ?, ?, ?, 'Mama', 'file:///a.m4a', ?)`,
+         machine_edits, final_text, in_book, sounds_like_me, updated_at, child_id, author_id, author_signs_as, audio_uri, transcript_status, language)
+       VALUES (?, 'letter', '2026-09-29', ?, 'spoken', 'clean', NULL, 2, ?, '[]', ?, ?, NULL, ?, ?, ?, 'Mama', 'file:///a.m4a', ?, ?)`,
       id, iso(), opts.waiting ? '' : `um ${text}`, opts.waiting ? '' : text, opts.inBook === false ? 0 : 1, iso(), childId,
-      readSetting(db, 'sync.ownerId'), opts.waiting ? 'waiting' : null,
+      readSetting(db, 'sync.ownerId'), opts.waiting ? 'waiting' : null, opts.language ?? null,
     );
     enqueueEntryUpsert(db, id, ALL_GROUPS, ctx());
   });
@@ -445,4 +445,33 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     expect((await server(ids.paused))?.final_text).toBe('Written while paused, then edited.');
     expect(local(A2, ids.paused)?.final_text).toBe('Written while paused, then edited.');
   }, 120_000);
+
+  it('[G-26] a letter\'s language goes up with it and reaches my other phone, never the co-parent\'s', async () => {
+    const lang = (db: SqlDb, id: string) => db.get<{ language: string | null }>('SELECT language FROM entries WHERE id = ?', id)?.language ?? null;
+    const serverLang = async (id: string) => (await sys('select language from entries where id = $1', [id])).rows[0]?.language ?? null;
+    ids.hindi = saveLetter(A1, ASHA, 'Tum hanste ho.', { language: 'hi' });
+    ids.unknown = saveLetter(A1, ASHA, 'Saved before the phone knew languages.');
+    const s = serverFor(A);
+    await engineOn(A1, A, s).sync();
+    const sent = s.calls.filter((c) => c.fn === 'sync_push').flatMap((c) => c.args.p_ops as PushOp[]);
+    expect(sent.find((o) => o.id === ids.hindi)).toMatchObject({ data: { language: 'hi' }, changed: expect.arrayContaining(['language']) });
+    expect(await serverLang(ids.hindi)).toBe('hi');
+    expect(await serverLang(ids.unknown)).toBeNull();
+
+    await engineOn(A2, A, serverFor(A)).sync();
+    expect(lang(A2, ids.hindi)).toBe('hi'); // my own letter, on my other phone
+    await engineOn(B1, B, serverFor(B)).sync();
+    expect(local(B1, ids.hindi)?.final_text).toBe('Tum hanste ho.');
+    expect(lang(B1, ids.hindi)).toBeNull(); // the co-parent never receives it (book_entries has no language)
+
+    // An edit on my other phone sends only its text group; the language stays on the server.
+    editLetter(A2, ids.hindi, 'Tum hanste ho, zor se.');
+    await engineOn(A2, A, serverFor(A)).sync();
+    expect(await serverLang(ids.hindi)).toBe('hi');
+    // A whole-letter upload from a phone that does not know the language never clears it there.
+    A2.run('UPDATE entries SET language = NULL WHERE id = ?', ids.hindi);
+    A2.transaction(() => enqueueEntryUpsert(A2, ids.hindi, ALL_GROUPS, ctx()));
+    await engineOn(A2, A, serverFor(A)).sync();
+    expect(await serverLang(ids.hindi)).toBe('hi');
+  }, 60_000);
 });

@@ -62,7 +62,7 @@ export function AddChildForm() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-      <ScrollView contentContainerClassName="gap-6 px-5 pb-10 pt-4" keyboardShouldPersistTaps="handled">
+      <ScrollView testID="addChild.screen" contentContainerClassName="gap-6 px-5 pb-10 pt-4" keyboardShouldPersistTaps="handled">
         <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">
           {o.title}
         </Text>
@@ -71,6 +71,7 @@ export function AddChildForm() {
         <View className="gap-2">
           <Text className="text-base font-medium text-muted-foreground">{o.nameLabel}</Text>
           <TextInput
+            testID="addChild.name"
             className="min-h-14 rounded-2xl border border-border bg-card px-4 text-lg text-foreground"
             value={name}
             onChangeText={setName}
@@ -96,6 +97,7 @@ export function AddChildForm() {
             <Text className="text-sm text-muted-foreground">{o.expectingHelp}</Text>
           </View>
           <Toggle
+            testID="addChild.when"
             label={o.expectingLabel}
             description={o.expectingHelp}
             value={expecting}
@@ -132,7 +134,7 @@ export function AddChildForm() {
           <Text className="text-sm text-muted-foreground">{fill(o.birthdayHelp, { child: trimmed || o.nameLabel })}</Text>
         </View>
 
-        <Button size="lg" onPress={save} accessibilityLabel={copy.children.switcher.addButton}>
+        <Button size="lg" onPress={save} accessibilityLabel={copy.children.switcher.addButton} testID="addChild.save">
           <Text>{trimmed ? fill(copy.children.add.cta, { child: trimmed }) : copy.children.switcher.addButton}</Text>
         </Button>
       </ScrollView>

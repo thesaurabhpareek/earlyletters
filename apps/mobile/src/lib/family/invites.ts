@@ -10,6 +10,10 @@
  * - accept_child_invite(p_token) returns the child id; retries by the same
  *   person are idempotent (SCINV for every other reason).
  * - revoke_invite(p_invite) for the inviting book's parents.
+ * - peek_invite(p_token) (db-fix, G-13): what the invite says before the
+ *   person agrees, never the child's name. Ask before joining (G-02).
+ * - leave_child(p_child, p_keep_in_book) and remove_child_member(p_child,
+ *   p_member, p_set_aside) (migration 20261005000000).
  * - child_invites is readable by parents of the book only (no token in it).
  *
  * Typed by hand until packages/api carries these contracts.
@@ -18,7 +22,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { brand } from '@scribe/brand';
 import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 import { publishInviteAccepted } from '../auth/auth-store';
-import { idempotencyKey } from '../supabase/client';
+import { actionKeys, isRetryableWrite } from '../supabase/client';
+import { withActionKey } from '../supabase/idempotency.logic';
+import { isMissingFunction } from './invite-errors.logic';
+import { readInvitePreview, type InvitePreview } from './invite-preview.logic';
+
+export type { InvitePreview } from './invite-preview.logic';
 import { inviteUrl } from './invite-link.logic';
 
 export interface CreatedInvite {
@@ -41,14 +50,43 @@ export interface BookMember {
   isYou: boolean;
 }
 
+/**
+ * One idempotency key per invite the person asked for (book, role and
+ * signature), reused when they tap "Try again" after a lost answer (G-07).
+ * A replay gives a fresh token for the same invite (APPLY.md file 12).
+ */
+export function inviteActionScope(childId: string, signsAs: string | null): string {
+  return `create_child_invite:${childId}:parent:${signsAs ?? ''}`;
+}
+
 export async function createCoParentInvite(sb: SupabaseClient, childId: string, signsAs: string | null): Promise<CreatedInvite> {
   const s = signsAs?.trim().slice(0, 30) || null;
-  const { data, error } = await sb
-    .rpc('create_child_invite', { p_child: childId, p_role: 'parent', p_signs_as: s })
-    .setHeader(HEADER_IDEMPOTENCY_KEY, idempotencyKey());
-  if (error) throw error;
+  const data = await withActionKey(
+    actionKeys,
+    inviteActionScope(childId, s),
+    async (key) => {
+      const res = await sb.rpc('create_child_invite', { p_child: childId, p_role: 'parent', p_signs_as: s }).setHeader(HEADER_IDEMPOTENCY_KEY, key);
+      if (res.error) throw res.error;
+      return res.data as unknown;
+    },
+    isRetryableWrite,
+  );
   if (typeof data !== 'string') throw Object.assign(new Error('invite_no_token'), { code: 'P0002' });
   return { token: data, url: inviteUrl(data, brand.web.origin) };
+}
+
+/**
+ * Never joins. Errors are the same as accepting (SCINV expired, used, revoked,
+ * not found, already a member; SCCAP; SCRAT). A server without peek_invite
+ * yet answers with a generic preview, so asking first never depends on it.
+ */
+export async function peekInvite(sb: SupabaseClient, token: string): Promise<InvitePreview> {
+  const { data, error } = await sb.rpc('peek_invite', { p_token: token });
+  if (error) {
+    if (isMissingFunction(error)) return { inviter: null, role: 'parent', known: false };
+    throw error;
+  }
+  return readInvitePreview(data);
 }
 
 export async function acceptInvite(sb: SupabaseClient, token: string): Promise<string> {
@@ -105,4 +143,26 @@ export async function listBookMembers(sb: SupabaseClient, childId: string, myId:
 export async function bookName(sb: SupabaseClient, childId: string): Promise<string | null> {
   const { data } = await sb.from('children').select('name').eq('id', childId).maybeSingle();
   return (data as { name?: string } | null)?.name ?? null;
+}
+
+/**
+ * Leave a book (any member). `keepLettersInBook` false takes this person's
+ * letters out of the book (they stay theirs, never deleted). The only parent
+ * of a book gets SCLPG; the Family screen offers leaving only when a co-parent
+ * exists. 'not_member' when already gone (a retry).
+ */
+export async function leaveBook(sb: SupabaseClient, childId: string, keepLettersInBook: boolean): Promise<'left' | 'not_member'> {
+  const { data, error } = await sb.rpc('leave_child', { p_child: childId, p_keep_in_book: keepLettersInBook });
+  if (error) throw error;
+  return data === 'not_member' ? 'not_member' : 'left';
+}
+
+/**
+ * A parent removes a family member (never a parent: 42501). Their letters
+ * stay unless `setAside`. 'not_member' when already gone.
+ */
+export async function removeMember(sb: SupabaseClient, childId: string, memberId: string, setAside: boolean): Promise<'removed' | 'not_member'> {
+  const { data, error } = await sb.rpc('remove_child_member', { p_child: childId, p_member: memberId, p_set_aside: setAside });
+  if (error) throw error;
+  return data === 'not_member' ? 'not_member' : 'removed';
 }

@@ -4,7 +4,13 @@
  * field that can hold text a person wrote, an id or a name.
  */
 
-/** `public.insights_aggregates(p_weeks)` (migration 20261004300000), already k-anonymised (k = 10). */
+/**
+ * `public.insights_aggregates(p_weeks)` (migration 20261004300000), already k-anonymised (k = 10).
+ * Since 20261005200000 (G-20), nested counts (d1 <= d7 <= d30 <= new accounts; within 7 days <=
+ * accepted <= sent) are suppressed as a chain, and a week's language rows are dropped when
+ * subtracting them from the week's families would isolate fewer than 10. Expect more nulls;
+ * never subtract one published count from another to recover a suppressed one.
+ */
 export interface ServerAggregates {
   schema: number;
   generated_at?: string;

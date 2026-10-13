@@ -268,7 +268,7 @@ function syncLetters(): void {
     for (const entry of listWaitingForWords(child.id)) {
       if (!entry.audioUri) continue;
       waiting.add(entry.id);
-      step({ type: 'enqueue', id: entry.id, kind: 'entry', language: letterLanguage(entry.id), capturedAt: entry.capturedAt });
+      step({ type: 'enqueue', id: entry.id, kind: 'entry', language: entry.language ?? letterLanguage(entry.id), capturedAt: entry.capturedAt });
     }
   }
   for (const job of Object.values(state.jobs)) {

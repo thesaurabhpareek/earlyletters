@@ -60,7 +60,7 @@ export default function LanguageSettings() {
   return (
     <>
       <Stack.Screen options={{ title: t.title }} />
-      <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+      <ScrollView testID="language.screen" contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
         <ListSection title={t.primaryTitle} footer={primaryFooter}>
           <LanguageRow
             first
@@ -82,7 +82,7 @@ export default function LanguageSettings() {
               onRetry={() => void ensureTextRules(l.code, { allowCellularOnce: true })}
             />
           ))}
-          <ListRow title={full ? t.addLanguageFull : t.addLanguage} trailing={full ? 'none' : 'chevron'} disabled={full} onPress={full ? undefined : () => setPicker('add')} />
+          <ListRow title={full ? t.addLanguageFull : t.addLanguage} trailing={full ? 'none' : 'chevron'} disabled={full} onPress={full ? undefined : () => setPicker('add')} testID="language.add" />
         </ListSection>
 
         {spoken.languages.map((l) => (

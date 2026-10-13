@@ -11,7 +11,8 @@
 // - recordings are never uploaded (D-059); Read together has no word highlight (D-059);
 // - digital only, no printed-book promise (K-32); no health or development-tracking words (D-004);
 // - the privacy promise is `en.trust.promise`, word for word (D-061).
-// Legal URLs come from packages/brand (D-063).
+// Legal URLs come from packages/brand (D-063). The Consumer Health Data Privacy Policy line is there because
+// Washington treats an app's download page as a "homepage" (consumer-health-data-notice.md HN-6; G-21).
 // Relative import on purpose: packages/content has no package dependency on brand (keeps the lockfile unchanged).
 import { brand } from '../../brand/index';
 import { en } from './strings.en';
@@ -73,7 +74,8 @@ Early Letters is for parents of babies and young children, from the first weeks 
 Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is an optional subscription with a free trial: books for more children, and Read together whenever you like after the first 3 times in each book. It renews automatically until you cancel, and works with Family Sharing.
 
 Terms of Use: ${brand.web.terms}
-Privacy Policy: ${brand.web.privacy}`,
+Privacy Policy: ${brand.web.privacy}
+Consumer Health Data Privacy Policy: ${brand.web.healthPrivacy}`,
   // App Store Connect fields (D-063).
   supportUrl: brand.web.origin,
   marketingUrl: brand.web.origin,

@@ -124,6 +124,7 @@ function PlayableRecording({
   return (
     <View className={cn('gap-2', className)}>
       <Pressable
+        testID="player.play"
         onPress={toggle}
         accessibilityRole="button"
         accessibilityLabel={a11yLabel}

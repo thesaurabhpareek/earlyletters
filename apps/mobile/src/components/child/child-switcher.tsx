@@ -31,6 +31,7 @@ export function ChildSwitcher() {
   return (
     <>
       <Pressable
+        testID="book.childSwitcher"
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={fill(s.label, { child: active.name })}
@@ -43,8 +44,9 @@ export function ChildSwitcher() {
         <CaretDownIcon size={14} color={c.textMuted} weight="bold" />
       </Pressable>
 
-      <Sheet open={open} onClose={close} title={s.title}>
+      <Sheet open={open} onClose={close} title={s.title} testID="switcher.sheet" closeTestID="switcher.close">
         <ChoiceGroup
+          optionTestID="switcher.child"
           label={s.title}
           layout="list"
           className="-mx-4"
@@ -57,6 +59,7 @@ export function ChildSwitcher() {
           onSelect={close}
         />
         <Button
+          testID="switcher.addChild"
           variant="quiet"
           className="self-start px-0"
           onPress={() => {

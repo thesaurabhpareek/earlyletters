@@ -44,7 +44,7 @@ export const authCopy = {
     title: 'Continue with email',
     label: 'Email',
     placeholder: 'you@example.com',
-    help: 'We will send you a link and a code. There is no password to remember.',
+    help: 'We will send you a link and a code. Open the link on this phone, or type the code. There is no password to remember.',
     send: 'Send link',
   },
 
@@ -81,6 +81,19 @@ export const authCopy = {
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: "We couldn't finish setting up your account. Your letters are safe on this phone. Please try again.",
     unknown: 'Something went wrong. Your letters are safe on this phone. Please try again.',
+    other_phone: 'This link was asked for on another phone, so it cannot sign in here. Type the code from the same email instead.',
+    already_signed_in: "You're already signed in on this phone. To use another account, sign out first in Settings.",
+  },
+
+  /** Before this phone's letters join an account (security review H1). {email} is the account's address. */
+  confirm: {
+    title: 'Is this your account?',
+    signingInAs: 'Signing in as',
+    noEmail: 'An account without an email address',
+    body: 'Your letters on this phone will be kept in this account, and sync to it.',
+    help: "If you didn't ask to sign in, choose No. Nothing on this phone changes.",
+    yes: 'Yes, this is me',
+    no: 'No, sign out',
   },
 
   consent: {

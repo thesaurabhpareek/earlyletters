@@ -42,7 +42,7 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 | `saveVoiceOnlyFromDraft(draft, opts)` | Keep a recording as a letter **waiting for its words**: `raw_transcript = final_text = ''`, `transcriptStatus = 'waiting'`, private by default. |
 | `listWaitingForWords(childId)` / `setWordsForWaitingEntry(id, words)` | For the transcription queue (BL-063). Words are set once; the first transcript becomes the immutable raw. |
 
-`Entry` gained optional `childId, authorId, authorSignsAs, audioUri, audioDurationMs, audioSha256, audioBytes, transcriptStatus`. `authorSignsAs` is frozen at save time. A `transcriptStatus: 'waiting'` letter has no text: show `pendingCopy.book.waitingForWords`.
+`Entry` gained optional `childId, authorId, authorSignsAs, audioUri, audioDurationMs, audioSha256, audioBytes, transcriptStatus, language`. `language` (local v5, L4) is the language a spoken letter was recorded in: set once at save (Review passes the recording's language; typed letters `null`), never changed by a later save, synced in field group `language` to the author's own phones only (never stored from someone else's row). `letterLanguageKey(id)` is the draft-time setting that `writeEntry` removes once the letter holds it. `authorSignsAs` is frozen at save time. A `transcriptStatus: 'waiting'` letter has no text: show `pendingCopy.book.waitingForWords`.
 
 ### Device settings
 `getSetting(key): string | null`, `setSetting(key, value)`. Keys in use:
@@ -81,8 +81,10 @@ Plus is StoreKit 2 on this phone through the plan engine (ADR 0013, founder deci
 - `copy.ts`: also `plural(count, one, other)` until content has plural forms.
 - `read-together.ts`: free Read together sessions are counted per book on this phone, only when a session ran on a free try (never under Plus; D-037). `readTogetherGate(childId?)` (the plan engine's decision), `canStartReadTogether(childId?)`, `recordReadTogetherSession(childId?)`, `readTogetherSessions(childId)`, `freeReadTogetherSessions()` (default 3; remote config may only raise it). The root layout calls `setReadTogetherFreeSessionsSource(() => effectiveFreeSessions(getRemoteConfig()))`.
 - `haptics.ts`: `haptic('tap' | 'press' | 'soft' | 'success' | 'warning')`; vocabulary and throttle in `haptics.shared.ts` (tested).
+- `privacy-manifest.ts`: the iOS PrivacyInfo.xcprivacy (required-reason APIs and collected data types), read by `app.config.ts` as `ios.privacyManifests`. `test/privacy-manifest.test.ts` pins it to `docs/legal/app-store-privacy-labels.md` 3.3; change both together.
+- `reminders/`: `scheduler.ts` also logs `reminder_sent` on the next re-plan for evening notes whose time passed (device setting `reminders.eveningDue`, due times only; month-age and birthday notes never).
 - `a11y.ts`: `announce`, `useFocusOnMount`, `useTheme`, `useIsAccessibilitySize`, `useIsLargeText`; the pure thresholds (`isAccessibilitySize`, `isLargeText`, `FONT_SCALE`) live in `a11y.logic.ts` (tested).
-- `analytics/`: `track.ts` is what screens call (plus `childIndexOf`, `ordinalOf`, `promptKindOf`, `wordCountOf`, `fromReminderWithin2h`); `ask.ts` + `ask-sequencer.logic.ts` (tested) decide when the consent sheet appears, and `components/consent/consent-ask.tsx` (mounted in the root layout) shows it.
+- `analytics/`: `track.ts` is what screens call (plus `childIndexOf`, `ordinalOf`, `promptKindOf`, `wordCountOf`, `fromReminderWithin2h`); `ask.ts` + `ask-sequencer.logic.ts` (tested) decide when the consent sheet appears, and `components/consent/consent-ask.tsx` (mounted in `app/(tabs)/_layout.tsx`; a second mount stays inert) shows it.
 - `motion.ts`: `useMotion()`, `useReducedMotion()`; never read Reduce Motion elsewhere.
 - `audio-mode.ts`: `setAudioMode('idle' | 'recording' | 'playback')`; always restore `idle`.
 

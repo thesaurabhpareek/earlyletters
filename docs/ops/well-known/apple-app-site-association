@@ -8,9 +8,28 @@
           "<TEAMID>.com.earlyletters.scribe.dev"
         ],
         "components": [
-          { "/": "/auth/callback", "comment": "Email sign-in link. The token hash is in the fragment." },
-          { "/": "/auth/callback/", "comment": "Same, with a trailing slash." },
-          { "/": "/i/*", "comment": "Co-parent invite links." }
+          {
+            "/": "/auth/callback",
+            "comment": "Email sign-in link. The token hash is in the fragment."
+          },
+          {
+            "/": "/auth/callback/",
+            "comment": "Same, with a trailing slash."
+          },
+          {
+            "/": "/i",
+            "#": "t=*",
+            "comment": "Co-parent invite links. The token is in the fragment, which never reaches a server."
+          },
+          {
+            "/": "/i/",
+            "#": "t=*",
+            "comment": "Same, with a trailing slash."
+          },
+          {
+            "/": "/i/*",
+            "comment": "Invite links sent before the fix wave (token in the path). Remove after 1.0.1 ships."
+          }
         ]
       }
     ]

@@ -11,8 +11,9 @@ letters/    Every letter and note as a plain text file, one folder per child and
 audio/      Every recording on this phone, exactly as it was made (M4A, AAC).
             Open them in any music or video player.
 data/       entries.json: every letter, with your words exactly as heard, every small
-            tidy-up, and the final text. children.json and account.json: the books
-            and the plan on this phone.
+            tidy-up, and the final text. children.json: the books on this phone.
+            account.json: your plan, the names we always spell your way, and your
+            consent history (see below).
 schema/     A description of the data files, for anyone building a reader.
 index.html  Open in any web browser to read every letter and hear every recording.
             It works with no connection and no app.
@@ -21,6 +22,13 @@ RECORDINGS
 
 Each recording is the original file, byte for byte. Nothing was changed.
 A letter whose recording is on another phone, or was never made, says so in data/entries.json.
+
+YOUR CONSENT HISTORY
+
+account.json lists each time you agreed to, declined or withdrew from our terms and
+privacy choices. That record is kept on our server, so it is included when you make
+the export signed in and online. Otherwise the file says so ("source": "phone") and
+holds the answers kept on this phone.
 
 CHECKING THE FILES
 
@@ -35,4 +43,4 @@ KEEPING IT SAFE
 This export is not locked with a password. Keep it somewhere private,
 and keep a second copy somewhere else.
 
-Format early-letters-export, version 1.0.0. Questions: hello@earlyletters.com
+Format early-letters-export, version 1.1.0. Questions: hello@earlyletters.com

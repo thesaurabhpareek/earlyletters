@@ -1,0 +1,53 @@
+# Continue with email, then the code from the same email, up to the first screen
+# after the code: "Is this your account?" (first sign-in on this phone) or a
+# consent sheet. Starts on a screen that shows the sign-in sheet (signIn.sheet).
+# Used directly only by flows that test the confirm step itself (E2E-12 "No");
+# everything else uses sign-in-email.yaml.
+# Parameters: E2E_EMAIL (a Resend test address, delivered+<label>@resend.dev),
+# OTP_SOURCE (admin or mailpit), NEW_USER.
+# The code length follows MAESTRO_OTP_LENGTH (default 8, AUTH_SETUP 4.4, G-05).
+appId: ${APP_ID}
+---
+- runScript:
+    file: ../scripts/lib-guard.js
+- runScript:
+    file: ../scripts/ensure-user.js
+    env:
+      E2E_EMAIL: ${E2E_EMAIL}
+      OTP_SOURCE: ${OTP_SOURCE || "admin"}
+      NEW_USER: ${NEW_USER || "0"}
+- assertVisible:
+    id: "signIn.sheet"
+- tapOn:
+    id: "signIn.email"
+- tapOn:
+    id: "signInEmail.input"
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: "signInEmail.send"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "signInCode.screen"
+    timeout: 15000
+- runScript:
+    file: ../scripts/fetch-otp.js
+    env:
+      E2E_EMAIL: ${E2E_EMAIL}
+      OTP_SOURCE: ${OTP_SOURCE || "admin"}
+- tapOn:
+    id: "signInCode.input"
+- inputText: ${output.otp}
+# The field submits at full length; tap Verify only if the screen is still there.
+- runFlow:
+    when:
+      visible:
+        id: "signInCode.verify"
+    commands:
+      - tapOn:
+          id: "signInCode.verify"
+          optional: true
+- extendedWaitUntil:
+    visible:
+      id: "(accountConfirm\\.screen|consent\\.(terms|age|sensitive).*)"
+    timeout: 15000

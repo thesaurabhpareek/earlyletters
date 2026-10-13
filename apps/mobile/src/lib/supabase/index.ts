@@ -1,5 +1,7 @@
 export {
+  actionKeys,
   getSupabase,
+  isRetryableWrite,
   getSupabaseOrNull,
   isSupabaseConfigured,
   SESSION_STORAGE_KEY,
@@ -9,3 +11,5 @@ export {
 } from './client';
 export { errorCode, errorStatus, isNetworkError } from './errors.logic';
 export { secureStorage, type KeyValueStorage } from './secure-storage';
+export { ActionKeys, withActionKey } from './idempotency.logic';
+export { readSupabaseEnv } from './env';

@@ -495,6 +495,256 @@
               }
             }
           }
+        },
+        "consent_history": {
+          "$ref": "#/$defs/consentHistory"
+        },
+        "dictionary": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dictionaryTerm"
+          }
+        }
+      }
+    },
+    "consentHistory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "server_record",
+        "read_at",
+        "current",
+        "acts",
+        "on_this_phone"
+      ],
+      "properties": {
+        "source": {
+          "enum": [
+            "server",
+            "phone"
+          ]
+        },
+        "server_record": {
+          "enum": [
+            "included",
+            "not_signed_in",
+            "unavailable",
+            "different_account"
+          ]
+        },
+        "read_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "current": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "document",
+              "version",
+              "action",
+              "at"
+            ],
+            "properties": {
+              "document": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "accept",
+                  "decline",
+                  "withdraw",
+                  "acknowledge"
+                ]
+              },
+              "at": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "acts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "document",
+              "version",
+              "action",
+              "method",
+              "surface",
+              "at",
+              "client_recorded_at",
+              "app_version",
+              "platform",
+              "locale",
+              "rendered_sha256",
+              "context"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "document": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "accept",
+                  "decline",
+                  "withdraw",
+                  "acknowledge"
+                ]
+              },
+              "method": {
+                "type": "string"
+              },
+              "surface": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "client_recorded_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "app_version": {
+                "type": "string"
+              },
+              "platform": {
+                "enum": [
+                  "ios",
+                  "android",
+                  "web"
+                ]
+              },
+              "locale": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rendered_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "context": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "on_this_phone": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "age_confirmed",
+            "usage_sharing"
+          ],
+          "properties": {
+            "age_confirmed": {
+              "type": "boolean"
+            },
+            "usage_sharing": {
+              "enum": [
+                "granted",
+                "denied",
+                "not_answered"
+              ]
+            }
+          }
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "phone"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "acts": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "current": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "read_at": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    "dictionaryTerm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "child_id",
+        "term",
+        "kind",
+        "heard_as",
+        "source"
+      ],
+      "properties": {
+        "child_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "term": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "child",
+            "nickname",
+            "family",
+            "word",
+            "place",
+            "self"
+          ]
+        },
+        "heard_as": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source": {
+          "enum": [
+            "phone",
+            "server"
+          ]
         }
       }
     },

@@ -126,7 +126,7 @@ export default function Tonight() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="flex-grow px-5 pb-6 pt-5">
+      <ScrollView testID="tonight.screen" contentContainerClassName="flex-grow px-5 pb-6 pt-5">
         <View className="gap-3">
           <Animated.View entering={motion.enter(0)}>
             <Text variant="letterDateline" caps>
@@ -156,6 +156,7 @@ export default function Tonight() {
               size="sm"
               icon={ArrowsClockwiseIcon}
               label={t.newPromptButton}
+              testID="tonight.newPrompt"
               className="-ml-4 self-start"
               onPress={() => {
                 haptic('tap');
@@ -168,6 +169,7 @@ export default function Tonight() {
         {waiting && (
           <Animated.View entering={motion.enter(3)} className="mt-4">
             <Card
+              testID="tonight.waiting"
               variant="tinted"
               padding={4}
               radius="lg"
@@ -190,18 +192,18 @@ export default function Tonight() {
         {/* Controls are opaque and hittable from the first frame (MOTION principle 2). */}
         <View className="gap-2 pt-6">
           <ButtonRow>
-            <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
-            <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
+            <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} testID="tonight.speak" />
+            <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} testID="tonight.type" />
           </ButtonRow>
           {keptLine ? (
-            <Animated.View entering={swap} className="min-h-12 flex-row items-center justify-center gap-2" accessibilityLiveRegion="polite">
+            <Animated.View entering={swap} testID="tonight.notMuch.saved" className="min-h-12 flex-row items-center justify-center gap-2" accessibilityLiveRegion="polite">
               <CheckCircleIcon size={20} color={c.success} weight="fill" />
               <Text variant="callout" tone="success">
                 {copy.notMuch.savedToast}
               </Text>
             </Animated.View>
           ) : (
-            <Button variant="quiet" label={t.notMuchButton} className="self-center" onPress={keepNotMuch} accessibilityHint={copy.notMuch.confirmBody} />
+            <Button variant="quiet" label={t.notMuchButton} className="self-center" onPress={keepNotMuch} accessibilityHint={copy.notMuch.confirmBody} testID="tonight.notMuch" />
           )}
         </View>
       </ScrollView>

@@ -12,6 +12,7 @@ import { AppState } from 'react-native';
 import { ScribeStore, type NativeEntitlementSnapshot, type StoreViewSupport } from '../../../modules/scribe-store';
 import { getSetting, setSetting } from '../store';
 import { PLAN_CACHE_KEY, PLUS_PRODUCT_IDS } from './config';
+import { startPlanReminders } from './plan-reminders';
 import { EMPTY_PLAN, parsePlanCache, planFromSnapshot, sameEntitlements, sanitizeSnapshot, serializePlanCache, type PlanState } from './plan.logic';
 
 /** Rewrite the cache at least this often even when nothing changed, so its read time stays honest. */
@@ -95,6 +96,38 @@ export function refreshPlan(): Promise<void> {
   return inflight;
 }
 
+let prices: Record<string, string> = {};
+let pricesInflight: Promise<Record<string, string>> | null = null;
+
+/** Apple's display price per Plus product ("$29.99"), as last read; empty until read. */
+export function getDisplayPrices(): Readonly<Record<string, string>> {
+  return prices;
+}
+
+/** Reads Apple's display prices (for the confirmation and its saved copy). Never throws. */
+export function refreshDisplayPrices(): Promise<Record<string, string>> {
+  const store = ScribeStore;
+  if (!store || typeof store.displayPrices !== 'function') return Promise.resolve(prices);
+  if (pricesInflight) return pricesInflight;
+  pricesInflight = (async () => {
+    try {
+      const raw = await store.displayPrices([...PLUS_PRODUCT_IDS]);
+      const next: Record<string, string> = {};
+      for (const id of PLUS_PRODUCT_IDS) {
+        const v = raw?.[id];
+        if (typeof v === 'string' && v.length > 0 && v.length <= 32) next[id] = v;
+      }
+      if (Object.keys(next).length > 0) prices = next;
+    } catch {
+      // Keep what we had; the confirmation then points at Apple's screen for the price.
+    } finally {
+      pricesInflight = null;
+    }
+    return prices;
+  })();
+  return pricesInflight;
+}
+
 let started = false;
 
 /**
@@ -118,10 +151,18 @@ export function startPlus(): () => void {
   const foreground = AppState.addEventListener('change', (s) => {
     if (s === 'active') void refreshPlan();
   });
+  // Plan reminders (G-15): re-planned on every plan change, foreground and now.
+  let stopReminders: () => void = () => {};
+  try {
+    stopReminders = startPlanReminders({ getPlan, subscribePlan });
+  } catch {
+    // Notifications unavailable (web preview): the in-app note still works.
+  }
   void refreshPlan();
   return () => {
     changes?.remove();
     foreground.remove();
+    stopReminders();
     started = false;
   };
 }

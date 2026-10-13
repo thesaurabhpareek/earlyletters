@@ -16,7 +16,7 @@
  *   raw transcript is set once, later, and the server would refuse a change.
  */
 import type { SqlDb } from '../db/sql';
-import { ALL_GROUPS, type EntryData, type FieldGroup, type PushOp, type PushOpType } from './types';
+import { ALL_GROUPS, isLetterLanguage, type EntryData, type FieldGroup, type PushOp, type PushOpType } from './types';
 
 export const SYNC_SETTING = {
   owner: 'sync.ownerId',
@@ -77,6 +77,8 @@ export interface LocalEntryRow {
   server_epoch: number | null;
   sync_state: string;
   approval: string | null;
+  /** v5: the language a spoken letter was recorded in (L4); null when unknown or typed. */
+  language: string | null;
 }
 
 export interface LocalChildRow {
@@ -120,10 +122,14 @@ function parseEdits(json: string): unknown[] {
   }
 }
 
-/** The letter as the server stores it, or null when it cannot upload (no book, or waiting for words). */
+/**
+ * The letter as the server stores it, or null when it cannot upload (no book, or waiting for words).
+ * `language` travels only when this phone knows it: the server applies the group only when the key
+ * is present, so a phone that does not know a letter's language never clears it there.
+ */
 export function entrySnapshot(r: LocalEntryRow): EntryData | null {
   if (!r.child_id || r.transcript_status === 'waiting') return null;
-  return {
+  const snap: EntryData = {
     id: r.id,
     child_id: r.child_id,
     kind: r.kind,
@@ -141,6 +147,8 @@ export function entrySnapshot(r: LocalEntryRow): EntryData | null {
     author_signs_as: r.author_signs_as,
     audio_kept_on_device: r.audio_uri !== null,
   };
+  if (isLetterLanguage(r.language)) snap.language = r.language;
+  return snap;
 }
 
 export function getEntryRow(db: SqlDb, id: string): LocalEntryRow | null {

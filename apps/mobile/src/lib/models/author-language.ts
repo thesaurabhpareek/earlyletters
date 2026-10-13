@@ -9,15 +9,16 @@
  *
  * Each recording remembers the language it was spoken in
  * (`rememberLetterLanguage`), so changing the setting later never makes an
- * older recording be heard in the wrong language. Until drafts and letters
- * carry a `language` column (requested from the store owner), this lives in
- * settings under one key per recording and is cleared when its words are set.
+ * older recording be heard in the wrong language. A draft keeps it in a
+ * setting (one key per recording); when the letter is saved the language moves
+ * onto the letter (`entries.language`, local v5, synced to the author's own
+ * phones only) and the setting is removed (store.ts `writeEntry`).
  */
-import { deleteSetting, getSetting, setSetting } from '../store';
+import { deleteSetting, getEntry, getSetting, letterLanguageKey, setSetting } from '../store';
 import { isSpeechLanguage, type SpeechLanguage } from './catalog';
 
 export const AUTHOR_LANGUAGE_KEY = 'speech.language';
-const LETTER_KEY = (id: string) => `speech.letterLanguage.${id}`;
+const LETTER_KEY = letterLanguageKey;
 
 const listeners = new Set<(lang: SpeechLanguage) => void>();
 
@@ -42,16 +43,20 @@ export function onAuthorSpeechLanguage(listener: (lang: SpeechLanguage) => void)
   return () => listeners.delete(listener);
 }
 
-/** The language a recording was spoken in; the author's current language if it was never recorded. */
+/** The language a recording was spoken in (draft setting, then the saved letter); the author's current language if it was never noted. */
 export function letterLanguage(id: string): SpeechLanguage {
   const v = getSetting(LETTER_KEY(id));
-  return isSpeechLanguage(v) ? v : authorSpeechLanguage();
+  if (isSpeechLanguage(v)) return v;
+  const saved = getEntry(id)?.language;
+  return isSpeechLanguage(saved) ? saved : authorSpeechLanguage();
 }
 
-/** First call wins: a recording's language never changes after it is noted. */
+/** First call wins: a recording's language never changes after it is noted (on the draft or on the saved letter). */
 export function rememberLetterLanguage(id: string, lang: SpeechLanguage = authorSpeechLanguage()): SpeechLanguage {
   const v = getSetting(LETTER_KEY(id));
   if (isSpeechLanguage(v)) return v;
+  const saved = getEntry(id)?.language;
+  if (isSpeechLanguage(saved)) return saved;
   setSetting(LETTER_KEY(id), lang);
   return lang;
 }

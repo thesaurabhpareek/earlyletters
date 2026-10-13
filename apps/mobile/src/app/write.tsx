@@ -100,12 +100,12 @@ export default function Write() {
   const dateline = age ? `${child.name} · ${age}` : child.name;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView testID="write.screen" className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <View className="min-h-12 flex-row items-center justify-between px-5 pt-1">
-          <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.closeButton} onPress={close} />
+          <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.closeButton} onPress={close} testID="write.close" />
           {saved ? (
-            <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
+            <Animated.View entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite" testID="write.status">
               <CheckIcon size={14} color={c.textMuted} weight="bold" />
               <Text variant="footnote">{pendingCopy.write.savedOnPhone}</Text>
             </Animated.View>
@@ -121,6 +121,7 @@ export default function Write() {
             </Text>
           )}
           <TextField
+            testID="write.input"
             variant="letter"
             label={pendingCopy.write.label}
             labelHidden
@@ -133,7 +134,7 @@ export default function Write() {
           />
         </ScrollView>
         <View className="border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" fullWidth label={copy.tonight.typing.saveButton} onPress={done} disabled={!text.trim()} />
+          <Button size="lg" fullWidth label={copy.tonight.typing.saveButton} onPress={done} disabled={!text.trim()} testID="write.save" />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -1,49 +1,29 @@
-# Continue with email, then the code from the same email, then the consent
-# sheets (PRD A F4, A-REQ-018; PRD-REQ-002). Starts on a screen that shows the
-# sign-in sheet (signIn.sheet). Parameters: E2E_EMAIL (a Resend test address,
-# delivered+<label>@resend.dev), OTP_SOURCE (admin or mailpit), NEW_USER,
-# SENSITIVE (agree, the default, or decline).
+# Sign in with the email code, confirm the account, then the consent sheets
+# (PRD A F4, A-REQ-018; PRD-REQ-002; G-01 "Is this your account?", G-05 8-digit
+# code). Starts on a screen that shows the sign-in sheet (signIn.sheet).
+# Parameters: E2E_EMAIL, OTP_SOURCE (admin or mailpit), NEW_USER, SENSITIVE
+# (agree, the default, or decline).
 appId: ${APP_ID}
 ---
-- runScript:
-    file: ../scripts/lib-guard.js
-- runScript:
-    file: ../scripts/ensure-user.js
+- runFlow:
+    file: sign-in-code.yaml
     env:
       E2E_EMAIL: ${E2E_EMAIL}
       OTP_SOURCE: ${OTP_SOURCE || "admin"}
       NEW_USER: ${NEW_USER || "0"}
-- assertVisible:
-    id: "signIn.sheet"
-- tapOn:
-    id: "signIn.email"
-- tapOn:
-    id: "signInEmail.input"
-- inputText: ${E2E_EMAIL}
-- tapOn:
-    id: "signInEmail.send"
-    enabled: true
-- extendedWaitUntil:
-    visible:
-      id: "signInCode.screen"
-    timeout: 15000
-- runScript:
-    file: ../scripts/fetch-otp.js
-    env:
-      E2E_EMAIL: ${E2E_EMAIL}
-      OTP_SOURCE: ${OTP_SOURCE || "admin"}
-- tapOn:
-    id: "signInCode.input"
-- inputText: ${output.otp}
-# The field submits at full length; tap Verify only if the screen is still there.
+# G-01: the first sign-in on a phone whose letters belong to no account yet
+# shows the account email and claims nothing until "Yes, this is me".
 - runFlow:
     when:
       visible:
-        id: "signInCode.verify"
+        id: "accountConfirm.screen"
     commands:
+      - assertVisible:
+          id: "accountConfirm.email"
+      - assertVisible:
+          id: "accountConfirm.no"
       - tapOn:
-          id: "signInCode.verify"
-          optional: true
+          id: "accountConfirm.yes"
 # Consent sheets, whichever my_sync_gate() asks for (AUTH_SETUP section 9).
 - extendedWaitUntil:
     visible:

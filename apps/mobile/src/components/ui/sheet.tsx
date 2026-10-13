@@ -58,6 +58,10 @@ export type SheetProps = {
    * labelled button (for example "Allow" and "Not now"). Default true.
    */
   dismissible?: boolean;
+  /** E2E id on the sheet body. */
+  testID?: string;
+  /** E2E id on the Close button (for example `switcher.close`). */
+  closeTestID?: string;
 };
 
 const S = tokens.motion.standard;
@@ -72,7 +76,7 @@ function Grabber() {
   );
 }
 
-export function Sheet({ open, onClose, title, description, children, footer, hideClose, dismissible = true }: SheetProps) {
+export function Sheet({ open, onClose, title, description, children, footer, hideClose, dismissible = true, testID, closeTestID }: SheetProps) {
   const ref = React.useRef<BottomSheetModal>(null);
   const titleRef = React.useRef<RNText>(null);
   const { c, scheme } = useTheme();
@@ -151,6 +155,7 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
       <BottomSheetView>
         <View
           accessibilityViewIsModal
+          testID={testID}
           onAccessibilityEscape={dismissible ? close : undefined}
           style={{ paddingBottom: Math.max(insets.bottom, 16) + 8 }}
           className={dismissible ? 'gap-4 px-5' : 'gap-4 px-5 pt-5'}>
@@ -161,7 +166,7 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
               </Text>
               {description ? <Text variant="subhead" tone="muted">{description}</Text> : null}
             </View>
-            {dismissible && !hideClose && <IconButton icon={XIcon} label={copy.common.closeButton} variant="tinted" size="sm" onPress={close} />}
+            {dismissible && !hideClose && <IconButton icon={XIcon} label={copy.common.closeButton} variant="tinted" size="sm" onPress={close} testID={closeTestID} />}
           </View>
           {children}
           {footer ? <View className="pt-2">{footer}</View> : null}

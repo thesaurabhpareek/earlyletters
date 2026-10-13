@@ -9,6 +9,8 @@ import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 
+export const TEST_CONSENT_PEPPER = 'test-pepper-0123456789abcdef0123456789abcdef';
+
 export async function createDb(files, options = {}) {
   const db = new PGlite(options);
   await db.exec(`
@@ -29,6 +31,8 @@ export async function createDb(files, options = {}) {
     alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon;
   `);
   for (const f of files) await db.exec(readFileSync(f, 'utf8'));
+  // The consent pepper (APPLY.md step 6) fails closed since 20261005100000; tests run with a fixed test value.
+  await db.query(`select set_config('app.consent_pepper', $1, false)`, [TEST_CONSENT_PEPPER]);
 
   let failures = 0;
   let passes = 0;

@@ -1,16 +1,17 @@
 # End-to-end tests (Maestro, iOS simulator)
 
-Owner: qa-e2e. Written 3 Oct 2026 against Maestro CLI 2.11.0 (released 29 Sep 2026), Expo SDK 57, EAS CLI 24.10.0. Plan of record: `docs/tdd/07-quality-test-strategy.md` section 3, updated here to today's product (decisions D-051 to D-070).
+Owner: qa-e2e. Written 3 Oct 2026 against Maestro CLI 2.11.0 (released 29 Sep 2026; still the pin on 13 Oct, re-check the changelog before the first run), Expo SDK 57, EAS CLI 24.10.0. Updated 13 Oct 2026 for the fix wave: G-01 (PKCE email link, "Is this your account?"), G-02 (ask before joining), G-04 (`/i#t=` invite links), G-05 (8-digit code, 15 minutes), G-15 (purchase confirmation with Save a copy), G-29 (testIDs). Plan of record: `docs/tdd/07-quality-test-strategy.md` section 3, updated here to today's product (decisions D-051 to D-070).
 
 Labels: **V** verified on a vendor page or in installed source on 3 Oct 2026 (sources at the end). **A** assumption, to check on the first real run. Nothing here has been run yet: this machine is Linux, and the app has no testIDs (see section 1).
 
 ## 1. Status: what must happen before the first run
 
-1. **testIDs and e2e seams in the app.** `apps/mobile/src` has no `testID` on any screen today, and no way to seed data, shift the clock, override remote config or force offline. The full request list is `TESTID_REQUESTS.md` (sections 1 to 3; owner of `apps/mobile/src/**` is mobile-polish this wave). Every flow fails at its first selector until then.
-2. **An `e2e` EAS build profile** (simulator `.app`, release JavaScript, `EXPO_PUBLIC_E2E=1`): request B-1 in `TESTID_REQUESTS.md`.
-3. **An e2e backend** for the flows tagged `needs-backend` (E2E-09, 12, 13): a separate Supabase project, section 5 of `TESTID_REQUESTS.md`. Flows without that tag run fully offline on the simulator.
+1. **testIDs.** mobile-fix added the ids on every screen it owned (G-29). Still missing: sign-in and consent, Family, invites, Plan and the purchase confirmation (files that were auth-fix's and payments-fix's). The list is `TESTID_REQUESTS.md` and BOARD "testIDs for mobile-fix"; `node apps/mobile/e2e/bin/lint-flows.mjs --app` prints the ids flows use that the app does not set yet (report only; `onboarding.child.when.born` is a false positive, ChoiceGroup builds it at run time).
+2. **E2E seams** (`TESTID_REQUESTS.md` section 3: seed, offline, clock, config, transcriber, analytics ask). Not built. Every flow passes them at launch, so nothing runs until they exist.
+3. **An `e2e` EAS build profile** (simulator `.app`, release JavaScript, `EXPO_PUBLIC_E2E=1`): request B-1.
+4. **An e2e backend** for the flows tagged `needs-backend` (E2E-09, 12, 13): a separate Supabase project with every migration through `20261005200000` applied, section 5 of `TESTID_REQUESTS.md`. The email code length there must be 8 (AUTH_SETUP 4.4) or set `MAESTRO_OTP_LENGTH`. Flows without that tag run fully offline on the simulator.
 
-`node apps/mobile/e2e/bin/lint-flows.mjs` runs anywhere and checks the YAML, the file references and that every id a flow uses is on the request list.
+`node apps/mobile/e2e/bin/lint-flows.mjs` runs anywhere and checks the YAML, the file references and that every id a flow uses is on the request list. Last run 13 Oct 2026: 18 flows and 11 subflows OK.
 
 ## 2. The flows
 
@@ -28,15 +29,15 @@ TDD 07 planned 15 flows on 3 Oct morning; the founder's decisions that day chang
 | E2E-08 | `E2E-08-delete-and-undo.yaml` | Delete, Undo, delete again: gone from the book, also after relaunch | offline |
 | E2E-09 | `E2E-09-account-deletion.yaml` | Account deletion: Export offered first, typed confirm, scheduled; cancel; server row scheduled then cancelled | backend |
 | E2E-10 | `E2E-10-export.yaml` + `bin/inspect-export.sh` | Export offline with no Plus UI; ZIP contents and manifest hashes | offline |
-| E2E-11 | `E2E-11-analytics-consent.yaml` | Usage and crash reports off by default, on, off, each surviving a relaunch; the consent sheet block is pending (not mounted in the app yet) | none |
-| E2E-12 | `E2E-12-sign-in-email.yaml` | Email code sign-in, Terms with the 18+ line, sensitive-data consent; optional universal-link variant | backend |
-| E2E-13 | `E2E-13a/b/c-*.yaml` + `bin/run-coparent.sh` | Co-parent invite round trip on two simulators: Mama invites, Papa joins through the 18+ gate and sign-in, Mama sees Papa | backend, 2 simulators |
-| E2E-14 | `E2E-14-restore-purchases.yaml` | Apple's store view with the StoreKit file, a test purchase, Restore purchases | app run from Xcode |
+| E2E-11 | `E2E-11-analytics-consent.yaml` | The consent sheet never appears in the first-letter session, appears alone in the next one with nothing preselected, a No is final; the Settings switch is off by default, on, off, each surviving a relaunch | analytics-ask seam `on` |
+| E2E-12 | `E2E-12-sign-in-email.yaml` | Magic-link sign-in: the 8-digit code signs in; "Is this your account?" shows the email before anything is claimed (G-01); "No, sign out" leaves the letters on the phone and the server empty; with `LINK=1` a link this phone never asked for signs nothing in (the H1 regression), and with `LINK=1 OTP_SOURCE=mailpit` the real email's link signs in through PKCE | backend |
+| E2E-13 | `E2E-13a/b/c-*.yaml` + `bin/run-coparent.sh` | Co-parent invite round trip on two simulators: Mama shares a `/i#t=` link (the runner fails on the old path form), Papa passes the 18+ gate and sign-in, is asked "Join this family book?" with Mama's sign-off only, Not now joins nothing (server checked), the second time joins; Mama sees Papa | backend, 2 simulators |
+| E2E-14 | `E2E-14-restore-purchases.yaml` | Apple's store view with the StoreKit file, a test purchase, the purchase confirmation with Save a copy (G-15), Restore purchases | app run from Xcode |
 | E2E-15 | `E2E-15-voiceover-smoke.yaml` | AX5 in light and dark: every P0 control reachable and enabled, screenshots for a human look; the VoiceOver walk is manual (DEVICE_TEST_PLAN S1-23) | offline |
 
 Requirement and decision ids are in each flow's `tags`, so `maestro test --include-tags=PRD-REQ-019 ...` runs everything that proves one requirement, and a trace script can read them (TDD 07 2.1).
 
-Folder layout: `flows/` (one file per flow), `subflows/` (launch, gate, first run, sign-in, settings, wait, go back, dev client), `scripts/` (Maestro JavaScript: backend guard, test user, sign-in code, deletion status), `bin/` (host scripts), `ci/` (a GitHub Actions sketch, not enabled), `config.yaml` (Maestro workspace).
+Folder layout: `flows/` (one file per flow), `subflows/` (launch, gate, first run, sign-in code, sign-in with confirm and consent, settings, wait, go back, dev client), `scripts/` (Maestro JavaScript: backend guard, test user, sign-in code, deletion status, server row counts), `bin/` (host scripts), `ci/` (a GitHub Actions sketch, not enabled), `config.yaml` (Maestro workspace).
 
 ## 3. Builds
 
@@ -80,9 +81,10 @@ export MAESTRO_PROD_PROJECT_REF=<production ref>                    # scripts re
 ```
 Maestro passes shell variables that start with `MAESTRO_` into flows and scripts (V). `scripts/lib-guard.js` refuses any URL that is not the e2e project or `http://127.0.0.1`, any URL containing the production ref, and any email that is not a test address.
 
-Sign-in codes (`scripts/fetch-otp.js`):
-- `OTP_SOURCE=admin` (default): GoTrue's admin `generate_link` returns the 6-digit `email_otp` without sending mail (V-code: `@supabase/auth-js` 2.117.2). Proves the app's code path; mail delivery is a device check.
-- `OTP_SOURCE=mailpit`: a local Supabase stack (`npx supabase start`, Docker on the Mac) catches mail in Mailpit on port 54324 (V: Supabase local development uses Mailpit), and the script reads the real email, template included. It needs a build that may reach `http://127.0.0.1:54321` (request B-7; never in preview or production).
+Test inbox strategy. No real inbox is ever read, and no address belongs to a person. Sign-in codes (`scripts/fetch-otp.js`):
+- `OTP_SOURCE=admin` (default, CI): GoTrue's admin `generate_link` returns the `email_otp` (8 digits once AUTH_SETUP 4.4 is set) without sending mail (V-code: `@supabase/auth-js` 2.117.2). Proves the app's code path; mail delivery is a device check. Its `hashed_token` was made by the server, not for this phone's PKCE request, so E2E-12 uses it as the "link someone else asked for" (G-01).
+- `OTP_SOURCE=mailpit`: the only way to test the link happy path, because a PKCE link works only on the phone that asked for it. A local Supabase stack (`npx supabase start`, Docker on the Mac) catches mail in Mailpit on port 54324 (V: Supabase local development uses Mailpit), and the script reads the real email, template included. It needs a build that may reach `http://127.0.0.1:54321` (request B-7; never in preview or production).
+- `scripts/server-rows.js` counts the test user's letters and book memberships on the e2e project (ids only) to prove that "No, sign out", a foreign link and "Not now" on an invite leave the server untouched.
 - Test addresses: `delivered+<label>@resend.dev` (V: Resend test addresses accept `+label`; they count against the sending quota).
 
 ### 4.3 Commands

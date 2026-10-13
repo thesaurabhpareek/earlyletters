@@ -11,17 +11,21 @@
 //   raw email OTP"; endpoint POST /admin/generate_link). It replaces the token
 //   in the email the app just requested, so the code typed is the newest one.
 //   Proves the app's code path, not email delivery (delivery is device test
-//   S1-08 in docs/qa/DEVICE_TEST_PLAN.md).
+//   S1-08 in docs/qa/DEVICE_TEST_PLAN.md). Its hashed_token was made by the
+//   server, not for this phone's PKCE request (AUTH_SETUP 4.6), so a link built
+//   from it is exactly the "link someone else asked for" case: E2E-12 uses it
+//   to prove the phone refuses it. A typed code still signs in with PKCE on
+//   (Assumption from AUTH_SETUP 4.6; device test 11.3 checks it).
 // - "mailpit" (local Supabase stack, a Mac with Docker): reads the real email
 //   from Mailpit's API (default http://127.0.0.1:54324; GET /api/v1/messages and
 //   /api/v1/message/{ID}). Proves the template too. Field names ID, To,
 //   Address, Text, HTML: Assumption from the Mailpit API v1; check on first run.
 //
-// The code length follows MAESTRO_OTP_LENGTH (default 6, AUTH_SETUP 4.4).
+// The code length follows MAESTRO_OTP_LENGTH (default 8, AUTH_SETUP 4.4, G-05).
 
 var email = typeof E2E_EMAIL !== 'undefined' ? String(E2E_EMAIL) : '';
 var source = typeof OTP_SOURCE !== 'undefined' && OTP_SOURCE ? String(OTP_SOURCE) : 'admin';
-var otpLength = parseInt(output.e2e.readVar('MAESTRO_OTP_LENGTH') || '6', 10);
+var otpLength = parseInt(output.e2e.readVar('MAESTRO_OTP_LENGTH') || '8', 10);
 if (!email) throw new Error('E2E_EMAIL is not set');
 
 function codeFrom(text) {
@@ -44,6 +48,7 @@ if (source === 'admin') {
   output.otp = String(props.email_otp || '');
   output.tokenHash = String(props.hashed_token || '');
   output.userId = String((d.user && d.user.id) || d.id || '');
+  output.linkType = 'magiclink';
   if (output.otp.length !== otpLength) throw new Error('generate_link returned no ' + otpLength + '-digit code');
 } else if (source === 'mailpit') {
   var mp = (output.e2e.readVar('MAESTRO_MAILPIT_URL') || 'http://127.0.0.1:54324').replace(/\/+$/, '');
@@ -71,6 +76,8 @@ if (source === 'admin') {
   output.otp = codeFrom(body.Text) || codeFrom(body.HTML) || '';
   var link = /token_hash=([^&"'\s]+)/.exec(body.HTML || body.Text || '');
   output.tokenHash = link ? link[1] : '';
+  var kind = /[#&]type=([a-z]+)/.exec(body.HTML || body.Text || '');
+  output.linkType = kind ? kind[1] : 'magiclink';
   output.userId = '';
   if (!output.otp) throw new Error('no ' + otpLength + '-digit code in the email');
 } else {

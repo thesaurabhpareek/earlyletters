@@ -5,14 +5,14 @@
  * is exercised end to end in sync-e2e.test.ts. Fictional family "Asha" only.
  */
 import { describe, expect, it } from 'vitest';
-import { MIGRATIONS, migrate } from '../src/lib/db/migrations';
+import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
 import { createSyncEngine } from '../src/lib/sync/engine';
 import { classifyCallError } from '../src/lib/sync/errors';
-import { HELD_AFTER_RESTORE_MS, digestOf, dropStaleHeld, enterRestoreMode } from '../src/lib/sync/merge';
-import { enqueueEntryDelete, enqueueEntryRestore, enqueueEntryUpsert, pendingCount, takeBatch, writeSetting } from '../src/lib/sync/outbox';
+import { HELD_AFTER_RESTORE_MS, applyPullPage, digestOf, dropStaleHeld, enterRestoreMode } from '../src/lib/sync/merge';
+import { enqueueEntryDelete, enqueueEntryRestore, enqueueEntryUpsert, entrySnapshot, getEntryRow, pendingCount, takeBatch, writeSetting } from '../src/lib/sync/outbox';
 import { retryRefusedBook, takeOwnership } from '../src/lib/sync/ownership';
-import { ALL_GROUPS, type PushOp, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
+import { ALL_GROUPS, type PulledRow, type PushOp, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
 
 const ME = '11111111-1111-1111-1111-111111111111';
@@ -180,7 +180,7 @@ describe('sync: the local queue', () => {
     migrate(db, { now: ctx.now, newId: id7 }, MIGRATIONS.slice(0, 3)); // an install from before sync
     const c = book(db);
     const l = letter(db, c, 'Written before sync existed.');
-    expect(migrate(db, { now: ctx.now, newId: id7 })).toMatchObject({ from: 3, to: 4 });
+    expect(migrate(db, { now: ctx.now, newId: id7 })).toMatchObject({ from: 3, to: LATEST_VERSION });
     expect(db.get<{ final_text: string; sync_state: string }>('SELECT final_text, sync_state FROM entries WHERE id = ?', l))
       .toEqual({ final_text: 'Written before sync existed.', sync_state: 'local' });
     expect(db.get<{ server_state: string }>('SELECT server_state FROM children WHERE id = ?', c)?.server_state).toBe('local');
@@ -275,6 +275,96 @@ describe('sync: the local queue', () => {
     const ids = ['0199a000-0000-7000-8000-ffffffffffff', '0199a000-0000-7000-8000-000000000001'];
     expect(digestOf(ids)).toEqual({ n: 2, sum: 0 }); // (2^48 - 1 + 1) mod 2^48
     expect(digestOf([])).toEqual({ n: 0, sum: 0 });
+  });
+});
+
+describe('sync: a letter\'s language (G-26, file 20261005000000)', () => {
+  const lang = (db: SqlDb, id: string) => db.get<{ language: string | null }>('SELECT language FROM entries WHERE id = ?', id)?.language ?? null;
+  const pulled = (db: SqlDb, child: string, id: string, over: Partial<PulledRow>): PulledRow => ({
+    id, child_id: child, author_id: ME, author_signs_as: 'Mama', kind: 'letter', occurred_on: '2026-09-29', captured_at: ctx.now,
+    capture_mode: 'spoken', edit_level: 'clean', prompt_key: null, engine_version: 4, raw_transcript: 'um She sang.', machine_edits: [],
+    final_text: 'She sang.', in_book: true, sounds_like_me: null, approval: 'not_needed', audio_kept_on_device: true,
+    created_at: ctx.now, updated_at: ctx.now, deleted_at: null, own: true, v: '100', ...over,
+  });
+  const page = (child: string, rows: PulledRow[]) => ({
+    reset: false, epoch: 1, epoch_started_at: ctx.now,
+    books: [{ id: child, access: 'a', repull: false, meta_hash: 'h', rows, cursor: 'c1', more: false }], gone: [],
+  });
+
+  it('every field group, language included, goes with a new letter; the language travels only when the phone knows it', () => {
+    expect(ALL_GROUPS).toContain('language');
+    const db = phone();
+    const c = book(db);
+    takeOwnership(db, ME, ctx);
+    const hi = letter(db, c, 'Tum hanste ho.', ME);
+    db.run("UPDATE entries SET language = 'hi' WHERE id = ?", hi);
+    const typed = letter(db, c, 'Typed, no language.', ME);
+    db.transaction(() => enqueueEntryUpsert(db, hi, ALL_GROUPS, ctx));
+    db.transaction(() => enqueueEntryUpsert(db, typed, ALL_GROUPS, ctx));
+    const ops = takeBatch(db, { now: ctx.now }).ops.filter((o) => o.type === 'entry.upsert');
+    expect(ops[0]).toMatchObject({ id: hi, data: { language: 'hi' } });
+    expect(ops[0].changed).toEqual([...ALL_GROUPS]);
+    // The server applies the group only when the key is present: an unknown language never clears it there.
+    expect(ops[1].id).toBe(typed);
+    expect('language' in ops[1].data).toBe(false);
+    // A value outside the seven codes is never sent.
+    db.run("UPDATE entries SET language = 'xx' WHERE id = ?", typed);
+    expect(entrySnapshot(getEntryRow(db, typed)!)).not.toHaveProperty('language');
+  });
+
+  it('an edit coalesced into an unsent upload keeps the language and the union of groups', () => {
+    const db = phone();
+    const c = book(db);
+    takeOwnership(db, ME, ctx);
+    db.run("UPDATE children SET server_state = 'synced' WHERE id = ?", c);
+    const l = letter(db, c, 'First words.', ME);
+    db.run("UPDATE entries SET language = 'es', server_version = '5', sync_state = 'synced' WHERE id = ?", l);
+    db.transaction(() => enqueueEntryUpsert(db, l, ['in_book'], ctx));
+    db.run("UPDATE entries SET final_text = 'First words, edited.' WHERE id = ?", l);
+    db.transaction(() => enqueueEntryUpsert(db, l, ['text'], ctx));
+    const op = takeBatch(db, { now: ctx.now }).ops.find((o) => o.id === l)!;
+    expect(op.changed).toEqual(['text', 'in_book']);
+    expect(op.data).toMatchObject({ final_text: 'First words, edited.', language: 'es' });
+  });
+
+  it('a restore re-upload carries the language', () => {
+    const db = phone();
+    const c = book(db);
+    takeOwnership(db, ME, ctx);
+    const l = letter(db, c, 'Known to the server.', ME);
+    db.run("UPDATE entries SET language = 'ar', server_version = '7', server_updated_at = ?, server_epoch = 1, sync_state = 'synced' WHERE id = ?", ctx.now, l);
+    writeSetting(db, 'sync.epoch', '1');
+    db.transaction(() => enterRestoreMode(db, { reset: true, epoch: 2, epoch_started_at: ctx.now }, ctx));
+    const reup = takeBatch(db, { now: ctx.now }).ops.find((o) => o.type === 'entry.reupload')!;
+    expect(reup.data).toMatchObject({ id: l, language: 'ar' });
+  });
+
+  it('is stored from my own rows only: a new own row, an update, an older server without it, and never from someone else\'s row', () => {
+    const db = phone();
+    const c = book(db);
+    takeOwnership(db, ME, ctx);
+    db.run("UPDATE children SET server_state = 'synced' WHERE id = ?", c);
+    const fromOtherPhone = id7();
+    const known = letter(db, c, 'Already here.', ME);
+    const older = letter(db, c, 'Server has no language column yet.', ME);
+    db.run("UPDATE entries SET language = 'fr' WHERE id = ?", older);
+    const theirs = id7();
+    db.transaction(() => applyPullPage(db, page(c, [
+      pulled(db, c, fromOtherPhone, { language: 'zh' }),
+      pulled(db, c, known, { final_text: 'Already here.', language: 'pt' }),
+      pulled(db, c, older, { final_text: 'Server has no language column yet.' }), // no key: an older server
+      pulled(db, c, theirs, { author_id: PAPA, own: false, raw_transcript: undefined, machine_edits: undefined, language: 'hi' }),
+    ]), ctx.now));
+    expect(lang(db, fromOtherPhone)).toBe('zh');
+    expect(lang(db, known)).toBe('pt');
+    expect(lang(db, older)).toBe('fr'); // what this phone knows is kept
+    expect(lang(db, theirs)).toBeNull(); // never another person's
+    // A later pull of their letter (an update) still never stores it.
+    db.transaction(() => applyPullPage(db, page(c, [pulled(db, c, theirs, { author_id: PAPA, own: false, final_text: 'Edited.', language: 'hi', v: '101' })]), ctx.now));
+    expect(lang(db, theirs)).toBeNull();
+    // A pulled value outside the seven codes is ignored.
+    db.transaction(() => applyPullPage(db, page(c, [pulled(db, c, fromOtherPhone, { language: 'xx', v: '102' })]), ctx.now));
+    expect(lang(db, fromOtherPhone)).toBe('zh');
   });
 });
 

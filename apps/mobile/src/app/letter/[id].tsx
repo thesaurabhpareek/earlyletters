@@ -69,6 +69,7 @@ function Letter() {
 
   const headerRight = () => (
     <Pressable
+      testID="letter.size"
       onPress={() => setSizeOpen(true)}
       role="button"
       accessibilityLabel={copy.reader.readingSizeA11y}
@@ -85,7 +86,7 @@ function Letter() {
 
   if (deleted) {
     return (
-      <View className="flex-1 bg-background">
+      <View testID="letter.deleted" className="flex-1 bg-background">
         <Stack.Screen options={{ headerRight: undefined }} />
         <Animated.View entering={enter(0)} className="flex-1 justify-center gap-2 px-6">
           <Text variant="title1" asHeading>
@@ -149,7 +150,7 @@ function Letter() {
   };
 
   return (
-    <View className="flex-1 bg-background">
+    <View testID="letter.screen" className="flex-1 bg-background">
       <Stack.Screen options={{ headerRight }} />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: insets.bottom + 48 }} contentContainerClassName="gap-7 px-6">
         <Animated.View entering={enter(0)} className="gap-3">
@@ -170,16 +171,16 @@ function Letter() {
           <Animated.View key={`${size}:${showOriginal}`} entering={crossFade}>
             {words !== 'words' && !showOriginal ? (
               // Waiting for words, or nobody spoke: a calm italic note, never an empty page.
-              <Text variant="signature" scale={scale} tone="muted">
+              <Text testID={words === 'waiting' ? 'letter.waitingForWords' : 'letter.nobodySpoke'} variant="signature" scale={scale} tone="muted">
                 {words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke}
               </Text>
             ) : (
-              <Text variant="letterBody" scale={scale} selectable>
+              <Text testID="letter.text" variant="letterBody" scale={scale} selectable>
                 {text}
               </Text>
             )}
           </Animated.View>
-          <Text variant="signature" scale={scale} className="self-end">
+          <Text testID="letter.signature" variant="signature" scale={scale} className="self-end">
             {signature}
           </Text>
         </Animated.View>
@@ -211,11 +212,12 @@ function Letter() {
         {own && (
           <ListSection>
             <ListRow
+              testID="letter.togglePrivate"
               title={entry.inBook ? copy.book.entryMenu.makePrivate : copy.book.entryMenu.moveToBook}
               leading={entry.inBook ? <LockSimpleIcon size={20} color={c.text} /> : <BookOpenIcon size={20} color={c.text} />}
               onPress={toggleInBook}
             />
-            <ListRow title={copy.book.entryMenu.deleteButton} variant="destructive" leading={<TrashIcon size={20} color={c.destructive} />} onPress={remove} accessibilityHint={copy.settings.delete.entryConfirm} />
+            <ListRow title={copy.book.entryMenu.deleteButton} variant="destructive" leading={<TrashIcon size={20} color={c.destructive} />} onPress={remove} accessibilityHint={copy.settings.delete.entryConfirm} testID="letter.delete" />
           </ListSection>
         )}
       </ScrollView>

@@ -8,13 +8,22 @@
  * invite stops the link). Members and invites come from the server once the
  * account can sync; before that the tab shows you alone and the invite card
  * starts sign-in (PRD A F3.3a).
+ *
+ * Membership (gap G-02, migration 20261005000000):
+ *  - "Leave this book" (leave_child) when a co-parent exists: keep your
+ *    letters in the book, or take them out; either way they stay yours.
+ *  - A family member (a contributor, which v1.0 never invites but the
+ *    database allows) can be removed by either parent (remove_child_member),
+ *    after a confirmation. A co-parent is never removed by the other parent;
+ *    the screen points to support instead (FAM-11).
  */
 import { router, useFocusEffect, Redirect } from 'expo-router';
 import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
 import { UserPlusIcon } from 'phosphor-react-native/src/icons/UserPlus';
 import { XIcon } from 'phosphor-react-native/src/icons/X';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
+import { brand } from '@scribe/brand';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChildren } from '@/components/child/use-children';
@@ -28,10 +37,20 @@ import { ErrorLine, useColors } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
-import { createCoParentInvite, listBookMembers, listPendingInvites, revokeInvite, type BookMember, type PendingInviteRow } from '@/lib/family/invites';
+import {
+  createCoParentInvite,
+  leaveBook,
+  listBookMembers,
+  listPendingInvites,
+  removeMember,
+  revokeInvite,
+  type BookMember,
+  type PendingInviteRow,
+} from '@/lib/family/invites';
 import { shareInviteLink } from '@/lib/family/share';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
+import { syncNow } from '@/lib/sync';
 
 function RowAction({ label, icon, onPress, disabled }: { label: string; icon: React.ReactNode; onPress: () => void; disabled?: boolean }) {
   return (
@@ -57,6 +76,7 @@ export default function Family() {
   const [pending, setPending] = useState<PendingInviteRow[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<InviteErrorKind | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const f = familyCopy;
   const childId = active?.id ?? null;
   const client = auth.client;
@@ -87,7 +107,53 @@ export default function Family() {
   if (!active) return <Redirect href="/onboarding" />;
   const child = active.name;
   const coParents = members.filter((m) => m.role === 'parent' && !m.isYou);
+  const family = members.filter((m) => m.role === 'contributor' && !m.isYou);
+  const me = members.find((m) => m.isYou);
+  const iAmParent = me?.role === 'parent';
   const showCard = coParents.length === 0 && pending.length === 0;
+  // The only parent cannot leave (SCLPG); a family member can always leave.
+  const canLeave = !!me && (!iAmParent || coParents.length > 0);
+  const m = f.manage;
+
+  const runMembership = async (id: string, act: () => Promise<unknown>, done: string) => {
+    setBusyId(id);
+    setError(null);
+    setNote(null);
+    try {
+      await act();
+      haptic('soft');
+      setNote(done);
+      void syncNow().catch(() => null);
+    } catch (e) {
+      setError(inviteErrorKind(e));
+    } finally {
+      setBusyId(null);
+      void load();
+    }
+  };
+
+  const leave = () => {
+    if (!client) return;
+    const go = (keep: boolean) => void runMembership('leave', () => leaveBook(client, active.id, keep), fill(m.left, { child }));
+    Alert.alert(fill(m.leaveTitle, { child }), fill(m.leaveBody, { child }), [
+      { text: m.keepLetters, onPress: () => go(true) },
+      { text: m.takeLettersOut, onPress: () => go(false) },
+      { text: m.cancel, style: 'cancel' },
+    ]);
+  };
+
+  const remove = (member: BookMember) => {
+    if (!client) return;
+    const name = member.label ?? f.members.family;
+    Alert.alert(fill(m.removeTitle, { name }), fill(m.removeBody, { child }), [
+      { text: m.cancel, style: 'cancel' },
+      {
+        text: m.remove,
+        style: 'destructive',
+        onPress: () => void runMembership(member.profileId, () => removeMember(client, active.id, member.profileId, false), m.removed),
+      },
+    ]);
+  };
 
   const invite = () => {
     haptic('tap');
@@ -150,9 +216,19 @@ export default function Family() {
             <View className="px-4">
               <MemberRow signsAs={active.signsAs || f.members.you} role={f.members.you} />
             </View>
-            {coParents.map((m) => (
-              <View key={m.profileId} className="px-4">
-                <MemberRow signsAs={m.label ?? f.members.coParent} role={f.members.coParent} />
+            {coParents.map((p) => (
+              <View key={p.profileId} className="px-4">
+                <MemberRow signsAs={p.label ?? f.members.coParent} role={f.members.coParent} />
+              </View>
+            ))}
+            {family.map((p) => (
+              <View key={p.profileId} className="px-4 pb-2">
+                <MemberRow signsAs={p.label ?? f.members.family} role={f.members.family} />
+                {iAmParent ? (
+                  <View className="flex-row flex-wrap gap-1 pl-12">
+                    <RowAction label={m.remove} icon={<XIcon size={18} color={c.accent} />} disabled={busyId !== null} onPress={() => remove(p)} />
+                  </View>
+                ) : null}
               </View>
             ))}
             {pending.map((p) => (
@@ -177,6 +253,7 @@ export default function Family() {
             </View>
           )}
           <ErrorLine message={error ? fill(f.errors[error], { child }) : null} />
+          {note && !error ? <Text className="text-base leading-6 text-muted-foreground">{note}</Text> : null}
         </View>
 
         {showCard && (
@@ -192,6 +269,21 @@ export default function Family() {
             {!auth.signedIn && <Text className="text-sm leading-5 text-muted-foreground">{f.card.signedOutNote}</Text>}
           </View>
         )}
+
+        {coParents.length > 0 && iAmParent ? (
+          <View className="gap-1">
+            <Text className="text-sm leading-5 text-muted-foreground">{m.coParentNote}</Text>
+            <Pressable onPress={() => void Linking.openURL(brand.support.mailto).catch(() => {})} accessibilityRole="link" hitSlop={6}>
+              <Text className="text-sm font-medium text-primary underline">{m.writeToUs}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {canLeave ? (
+          <Button variant="outline" className="self-start" disabled={busyId !== null} onPress={leave}>
+            <Text>{m.leave}</Text>
+          </Button>
+        ) : null}
 
         <Text className="text-sm leading-5 text-muted-foreground">{fill(f.card.privacy, { child })}</Text>
       </ScrollView>

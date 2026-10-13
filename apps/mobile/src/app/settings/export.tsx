@@ -8,7 +8,7 @@ import { tokens } from '@scribe/design-tokens';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { trackExportCompleted, trackExportFailed, trackExportStarted } from '@/lib/analytics/track';
+import { track, trackExportCompleted, trackExportFailed, trackExportStarted } from '@/lib/analytics/track';
 import { copy } from '@/lib/copy';
 import {
   cleanupExports,
@@ -102,6 +102,10 @@ export default function ExportScreen() {
   const share = async (result: ExportResult) => {
     try {
       await shareExport(result, e.title);
+      // iOS does not say whether the person sent it anywhere: the sheet closing normally counts as shared.
+      track('export_shared', { result: 'shared' });
+    } catch {
+      track('export_shared', { result: 'dismissed' });
     } finally {
       pending.current = null;
       setState({ kind: 'shared' });
@@ -113,7 +117,7 @@ export default function ExportScreen() {
   const phaseText = running ? (state.progress.phase === 'checking' ? s.checking : state.progress.fraction < 0.02 ? e.preparing : s.packing) : '';
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView testID="export.screen" contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: e.title }} />
 
       <View className="gap-2">
@@ -140,7 +144,7 @@ export default function ExportScreen() {
             </Text>
           )}
           {state.kind === 'failed' && (
-            <View accessibilityLiveRegion="polite" className="gap-1 rounded-[14px] bg-secondary p-4">
+            <View testID="export.error" accessibilityLiveRegion="polite" className="gap-1 rounded-[14px] bg-secondary p-4">
               <Text role="heading" className="text-base font-medium text-foreground">
                 {s.failedTitle}
               </Text>
@@ -149,7 +153,7 @@ export default function ExportScreen() {
               </Text>
             </View>
           )}
-          <Button size="lg" onPress={() => void start()} disabled={summary !== null && summary.letters === 0}>
+          <Button size="lg" onPress={() => void start()} disabled={summary !== null && summary.letters === 0} testID="export.start">
             <Text>{state.kind === 'idle' ? e.button : s.againButton}</Text>
           </Button>
         </View>
@@ -161,6 +165,7 @@ export default function ExportScreen() {
             {phaseText}
           </Text>
           <View
+            testID="export.progress"
             accessible
             accessibilityRole="progressbar"
             accessibilityLabel={s.progressA11y}
@@ -170,14 +175,14 @@ export default function ExportScreen() {
             {/* No animation: the width steps with progress, so Reduce Motion needs nothing extra. */}
             <View className="h-full" style={{ width: `${percent}%`, backgroundColor: c.accent }} />
           </View>
-          <Button variant="secondary" onPress={stop} className="self-start">
+          <Button variant="secondary" onPress={stop} className="self-start" testID="export.cancel">
             <Text>{s.cancelButton}</Text>
           </Button>
         </View>
       )}
 
       {state.kind === 'ready' && (
-        <View className="gap-4">
+        <View className="gap-4" testID="export.ready">
           <View className="flex-row items-center gap-2">
             <CheckCircleIcon size={22} color={c.accent} weight="fill" />
             <Text role="heading" className="text-lg font-medium text-foreground">
@@ -189,7 +194,7 @@ export default function ExportScreen() {
             <LockSimpleIcon size={18} color={c.textMuted} />
             <Text className="flex-1 text-sm leading-5 text-muted-foreground">{s.privacyNotice}</Text>
           </View>
-          <Button size="lg" onPress={() => void share(state.result)}>
+          <Button size="lg" onPress={() => void share(state.result)} testID="export.share">
             <Text>{s.shareButton}</Text>
           </Button>
         </View>

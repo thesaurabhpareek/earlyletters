@@ -18,7 +18,7 @@ export function UndoToast({ message, onUndo, onDismiss, bottomOffset }: Props) {
   return (
     <Toast
       message={message}
-      action={{ label: copy.common.undoButton, onPress: onUndo }}
+      action={{ label: copy.common.undoButton, onPress: onUndo, testID: 'letter.undo' }}
       onDismiss={onDismiss}
       onHide={() => {}}
       bottomOffset={bottomOffset}

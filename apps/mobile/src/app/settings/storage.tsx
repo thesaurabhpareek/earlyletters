@@ -77,7 +77,7 @@ export default function Storage() {
   };
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView testID="storage.screen" contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: t.title }} />
       <Text variant="subhead" tone="muted">
         {t.intro}
@@ -86,7 +86,7 @@ export default function Storage() {
       {inFlight.length > 0 && (
         <ListSection title={t.inProgressTitle}>
           {inFlight.map((p) => (
-            <View key={p.id} className="gap-2 px-4 py-3">
+            <View key={p.id} testID={`storage.inProgress.${p.id}`} className="gap-2 px-4 py-3">
               <Text variant="body">{nameFor(p.id)}</Text>
               <Text variant="footnote" accessibilityLiveRegion="polite">
                 {progressLine(p)}
@@ -117,9 +117,9 @@ export default function Storage() {
             ...installed.map((p) => (
               <View key={p.id} className="flex-row items-center gap-3 pr-2">
                 <View className="flex-1">
-                  <ListRow title={packName(p)} subtitle={formatBytes(p.bytes)} />
+                  <ListRow title={packName(p)} subtitle={formatBytes(p.bytes)} testID={`storage.pack.${p.id}`} />
                 </View>
-                <Button variant="destructive" size="sm" accessibilityLabel={fill(t.removeA11y, { name: packName(p) })} onPress={() => confirmRemove(p)}>
+                <Button variant="destructive" size="sm" accessibilityLabel={fill(t.removeA11y, { name: packName(p) })} onPress={() => confirmRemove(p)} testID={`storage.pack.${p.id}.remove`}>
                   <Text>{t.removeButton}</Text>
                 </Button>
               </View>
@@ -130,6 +130,7 @@ export default function Storage() {
 
       <ListSection footer={t.cellularHelp}>
         <ToggleRow
+          testID="storage.cellular"
           title={t.cellularTitle}
           value={cellular}
           onValueChange={(v) => {

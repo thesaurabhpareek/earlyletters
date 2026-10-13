@@ -7,11 +7,11 @@
  */
 import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { planExport, safeSegment } from '../src/lib/export/build.logic';
+import { exporterRole, mergeDictionary, phoneConsentHistory, planExport, safeSegment } from '../src/lib/export/build.logic';
 import { ExportCancelledError, packExport, type PackDeps } from '../src/lib/export/pack';
-import { EXPORT_SCHEMA_VERSION, type EntriesFile, type Manifest } from '../src/lib/export/schema';
+import { EXPORT_SCHEMA_VERSION, type AccountFile, type EntriesFile, type ExportDictionaryTerm, type Manifest } from '../src/lib/export/schema';
 import { readCentralDirectory, verifyExport, type RandomAccess } from '../src/lib/export/verify';
-import { ASHA_AUDIO, ashaSnapshot, sha256Hex } from './helpers/asha-export';
+import { ASHA_AUDIO, ashaSignedInSnapshot, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
 const GOLDEN = './__golden__/export-asha';
 
@@ -54,11 +54,13 @@ function deps(sink: PackDeps['sink'], extra: Partial<PackDeps> = {}): PackDeps {
 
 const access = (zip: Uint8Array): RandomAccess => ({ size: zip.length, read: (o, l) => zip.subarray(o, o + l) });
 
-async function makeExport() {
+async function makeExport(snapshot = ashaSnapshot()) {
   const m = memorySink();
-  const result = await packExport(ashaSnapshot(), deps(m.sink));
+  const result = await packExport(snapshot, deps(m.sink));
   return { zip: m.bytes(), result };
 }
+
+const accountOf = (zip: Uint8Array) => JSON.parse(strFromU8(unzipSync(zip)['data/account.json'])) as AccountFile;
 
 describe('Asha export (golden)', () => {
   it('holds exactly the expected files', async () => {
@@ -137,6 +139,73 @@ describe('Asha export (golden)', () => {
     expect(e6.audio?.path).toBe('audio/e6.m4a');
     // The hidden book is exported too.
     expect(entries.entries.find((e) => e.id === 'd1')?.child_id).toBe('child-dev-0002');
+  });
+
+  it('[LEGAL-REQ-034, G-19] account.json carries the consent history and the spelling list (schema 1.1.0)', async () => {
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.1.0');
+    const account = accountOf((await makeExport()).zip);
+    expect(account.schema_version).toBe('1.1.0');
+    // Never signed in on this phone: no server record, said plainly, plus the phone's own answers.
+    expect(account.consent_history).toEqual({
+      source: 'phone',
+      server_record: 'not_signed_in',
+      read_at: null,
+      current: [],
+      acts: [],
+      on_this_phone: { age_confirmed: true, usage_sharing: 'not_answered' },
+    });
+    expect(account.dictionary.map((d) => [d.child_id, d.term, d.kind, d.source])).toEqual([
+      ['child-asha-0001', 'Asha', 'child', 'phone'],
+      ['child-asha-0001', 'Mama', 'self', 'phone'],
+      ['child-dev-0002', 'Dev', 'child', 'phone'],
+      ['child-dev-0002', 'Mama', 'self', 'phone'],
+    ]);
+  });
+
+  it('[G-19] signed in and online: every act from the server record, oldest first, with no account id', async () => {
+    const { zip } = await makeExport(ashaSignedInSnapshot());
+    const h = accountOf(zip).consent_history;
+    expect(h.source).toBe('server');
+    expect(h.server_record).toBe('included');
+    expect(h.read_at).toBe('2027-03-15T10:00:01.000Z');
+    expect(h.acts.map((a) => [a.document, a.version, a.action, a.at])).toEqual([
+      ['terms', '1.5.0', 'accept', '2026-10-20T09:00:00.000Z'],
+      ['sensitive-data', '1.2.0', 'accept', '2026-10-20T09:01:00.000Z'],
+    ]);
+    expect(h.acts[0].rendered_sha256).toBe('ab'.repeat(32));
+    expect(h.acts[0].context).toEqual({ auth: 'apple', age_attested: true });
+    expect(h.current.map((c) => c.document)).toEqual(['sensitive-data', 'terms']);
+    expect(h.on_this_phone.usage_sharing).toBe('granted');
+    const text = strFromU8(unzipSync(zip)['data/account.json']);
+    expect(text).not.toMatch(/profile_id|subject_hash|pseudonymised/);
+  });
+
+  it('[G-19] says why the server record is missing, and never mixes another account in', () => {
+    const phone = { age_confirmed: false, usage_sharing: 'denied' } as const;
+    for (const why of ['not_signed_in', 'unavailable', 'different_account'] as const) {
+      expect(phoneConsentHistory(phone, why)).toMatchObject({ source: 'phone', server_record: why, acts: [], current: [] });
+    }
+  });
+
+  it('[G-19] adds server spelling-list words the phone does not have, once', () => {
+    const phone: ExportDictionaryTerm[] = [{ child_id: 'c1', term: 'Asha', kind: 'child', heard_as: [], source: 'phone' }];
+    const server: ExportDictionaryTerm[] = [
+      { child_id: 'c1', term: 'asha', kind: 'child', heard_as: ['Asher'], source: 'server' },
+      { child_id: 'c1', term: 'Nani', kind: 'family', heard_as: ['Nanny'], source: 'server' },
+      { child_id: null, term: ' ', kind: 'word', heard_as: [], source: 'server' },
+    ];
+    expect(mergeDictionary(phone, server).map((d) => `${d.term}:${d.source}`)).toEqual(['Asha:phone', 'Nani:server']);
+  });
+
+  it('[review L4] records the real role, not always parent', async () => {
+    expect(exporterRole([{ role: 'contributor' }])).toBe('contributor');
+    expect(exporterRole([{ role: 'contributor' }, { role: 'parent' }])).toBe('parent');
+    expect(exporterRole([{}])).toBe('parent');
+    const snap = ashaSnapshot();
+    snap.children = snap.children.map((c) => ({ ...c, role: 'contributor' as const }));
+    const { zip, result } = await makeExport(snap);
+    expect(accountOf(zip).memberships.every((m) => m.role === 'contributor')).toBe(true);
+    expect(result.manifest.scope.exporter_role).toBe('contributor');
   });
 
   it('[DATA-REQ-051] lists every file in the manifest and checks clean', async () => {

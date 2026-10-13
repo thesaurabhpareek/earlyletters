@@ -22,8 +22,9 @@ interface Props {
 export function WhoseBookSheet({ visible, books, selectedId, onSelect, onClose }: Props) {
   const title = copy.children.switcher.title;
   return (
-    <Sheet open={visible} onClose={onClose} title={title}>
+    <Sheet open={visible} onClose={onClose} title={title} testID="whoseBook.sheet">
       <ChoiceGroup
+        optionTestID="whoseBook.option"
         label={title}
         layout="list"
         className="-mx-4"

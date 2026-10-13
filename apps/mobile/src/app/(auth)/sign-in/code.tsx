@@ -1,8 +1,11 @@
 // android: same (no "Open Mail" there)
 /**
  * "Check your email" (PRD A F4, A-REQ-018, -025, -027): the address, a code
- * field (one-time-code autofill, paste, auto-submit at full length), Open
- * Mail, "Send a new email" after a minute, "Use a different email".
+ * field (one-time-code autofill, paste, auto-submit at full length: 8 digits,
+ * security review M4), Open Mail, "Send a new email" after a minute, "Use a
+ * different email". A code of another length from 6 to 10 digits gets a
+ * Continue button instead of auto-submit, so a project setting that still
+ * says 6 keeps working (code-length.logic.ts).
  *
  * Also the custom-scheme fallback target: the website's "Open the app"
  * button lands here without any secret, and the person types the code from
@@ -15,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { authCopy } from '@/lib/auth/copy';
 import { EMAIL_CODE_LENGTH, RESEND_WAIT_MS } from '@/lib/auth/email';
+import { codeReadiness, MAX_EMAIL_CODE_LENGTH, MIN_EMAIL_CODE_LENGTH } from '@/lib/auth/code-length.logic';
 import { looksLikeEmail, normaliseCode } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail } from '@/lib/auth/pending';
@@ -49,7 +53,7 @@ export default function CodeStep() {
   const address = email.trim();
 
   const verify = async (value: string) => {
-    if (busy || value.length !== EMAIL_CODE_LENGTH || !looksLikeEmail(address)) return;
+    if (busy || value.length < MIN_EMAIL_CODE_LENGTH || value.length > MAX_EMAIL_CODE_LENGTH || !looksLikeEmail(address)) return;
     submitted.current = value;
     setBusy(true);
     setError(null);
@@ -66,10 +70,10 @@ export default function CodeStep() {
   };
 
   const onCode = (v: string) => {
-    const digits = normaliseCode(v).slice(0, EMAIL_CODE_LENGTH);
+    const digits = normaliseCode(v).slice(0, MAX_EMAIL_CODE_LENGTH);
     setCode(digits);
     if (error) setError(null);
-    if (digits.length === EMAIL_CODE_LENGTH && digits !== submitted.current) void verify(digits);
+    if (codeReadiness(digits, EMAIL_CODE_LENGTH) === 'auto' && digits !== submitted.current) void verify(digits);
   };
 
   const resend = async () => {
@@ -138,13 +142,13 @@ export default function CodeStep() {
       <View className="gap-2">
         <Text className="text-base font-medium text-muted-foreground">{k.label}</Text>
         <TextInput
-          className="min-h-16 rounded-2xl border border-border bg-card px-4 text-center text-3xl tracking-[8px] text-foreground"
+          className="min-h-16 rounded-2xl border border-border bg-card px-4 text-center text-3xl tracking-[6px] text-foreground"
           value={code}
           onChangeText={onCode}
           keyboardType="number-pad"
           textContentType="oneTimeCode"
           autoComplete="one-time-code"
-          maxLength={EMAIL_CODE_LENGTH + 4}
+          maxLength={MAX_EMAIL_CODE_LENGTH + 4}
           editable={!busy && error !== 'code_paused'}
           accessibilityLabel={k.label}
           autoFocus={!!known}
@@ -155,7 +159,7 @@ export default function CodeStep() {
       {note && !message ? <Text className="text-base text-muted-foreground">{note}</Text> : null}
       {busy ? <Busy label={authCopy.sheet.busy} /> : null}
 
-      {!busy && code.length === EMAIL_CODE_LENGTH && error ? (
+      {!busy && ((codeReadiness(code, EMAIL_CODE_LENGTH) === 'auto' && error) || codeReadiness(code, EMAIL_CODE_LENGTH) === 'manual') ? (
         <Button size="lg" onPress={() => void verify(code)}>
           <Text>{k.verify}</Text>
         </Button>

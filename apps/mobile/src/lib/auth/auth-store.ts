@@ -10,13 +10,26 @@
  *     create_first_run_children; A-REQ-015);
  *   - `onInviteAccepted()` fires with the joined book's id (fetch it into the
  *     local store so the invitee sees the book).
+ *
+ * Account confirmation (security review H1, account-confirm.logic.ts): a
+ * session whose account does not own this phone's letters yet is hidden from
+ * that contract until the person taps "Yes, this is me". Until then
+ * `currentAuthUserId()` is null, `syncAllowed()` is false and `onSignedIn` has
+ * not fired, so nothing claims or uploads a letter. `getAuthSnapshot()` and
+ * `subscribeAuth()` still show the raw state (screens, analytics).
  */
+import { needsAccountConfirm } from './account-confirm.logic';
 import { authUserId, canSync, initialAuthState, type AuthState } from './machine.logic';
 
 let snapshot: AuthState = initialAuthState;
 const listeners = new Set<(s: AuthState) => void>();
 const signedInListeners = new Set<(userId: string) => void>();
 const acceptedListeners = new Set<(childId: string) => void>();
+const confirmed = new Set<string>();
+/** The user the signed-in listeners last heard about (null after sign-out). */
+let announced: string | null = null;
+/** Who owns this phone's letters (sync.ownerId); registered by the session provider. Null: nobody yet. */
+let readOwner: () => string | null = () => null;
 
 export function getAuthSnapshot(): AuthState {
   return snapshot;
@@ -29,23 +42,55 @@ export function subscribeAuth(listener: (s: AuthState) => void): () => void {
   };
 }
 
-/** The signed-in user's id, or null (local-only). */
-export function currentAuthUserId(): string | null {
-  return authUserId(snapshot);
+function ownerNow(): string | null {
+  try {
+    return readOwner();
+  } catch {
+    return null;
+  }
 }
 
-/** True only when consent is complete on the server (or a sign-out waits for uploads). */
+/** The session's user still has to confirm the account before this phone's letters join it. */
+export function accountConfirmPending(): boolean {
+  return needsAccountConfirm(authUserId(snapshot), ownerNow(), confirmed);
+}
+
+/** The signed-in user's id once confirmed for this phone, or null (local-only, or waiting for "Yes, this is me"). */
+export function currentAuthUserId(): string | null {
+  return accountConfirmPending() ? null : authUserId(snapshot);
+}
+
+/** True only when consent is complete on the server and the account is confirmed (or a sign-out waits for uploads). */
 export function syncAllowed(): boolean {
-  return canSync(snapshot);
+  return canSync(snapshot) && !accountConfirmPending();
+}
+
+function announce(): void {
+  const user = currentAuthUserId();
+  if (user === announced) return;
+  announced = user;
+  if (user) signedInListeners.forEach((l) => l(user));
 }
 
 /** Provider only. */
 export function publishAuth(next: AuthState): void {
-  const prevUser = authUserId(snapshot);
   snapshot = next;
+  if (!authUserId(next)) confirmed.clear();
   listeners.forEach((l) => l(next));
-  const user = authUserId(next);
-  if (user && user !== prevUser) signedInListeners.forEach((l) => l(user));
+  announce();
+}
+
+/** Provider only: how to read the owner of this phone's letters. */
+export function setOwnerReader(read: () => string | null): void {
+  readOwner = read;
+}
+
+/** Provider only: the person tapped "Yes, this is me" for the signed-in account. */
+export function confirmAccount(userId: string): void {
+  if (authUserId(snapshot) !== userId) return;
+  confirmed.add(userId);
+  listeners.forEach((l) => l(snapshot));
+  announce();
 }
 
 /** Fires when a session for a (new) user appears on this phone, including at launch. */

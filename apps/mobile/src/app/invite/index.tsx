@@ -6,13 +6,17 @@
  * 1. The token is already in the Keychain when the link opened the app
  *    (+native-intent); without a link, the person pastes it (read only from
  *    what they paste; the clipboard is never read on its own).
- * 2. Not signed in: sign in. Consent missing: finish it (accept needs it,
- *    SCCON).
- * 3. accept_child_invite(token), once. Final errors (expired, used,
- *    cancelled, not found, already a member) clear the token; a network
- *    error keeps it for another try.
- * 4. Joined: the sync agent brings the book to this phone (onInviteAccepted);
- *    this screen waits for it and then opens it.
+ * 2. Not signed in: sign in. Account not confirmed or consent missing: finish
+ *    it (accepting needs consent, SCCON).
+ * 3. Ask before joining (security review H2, gap G-02): peek_invite shows who
+ *    invited them (the inviter's sign-off name only, never the child's name),
+ *    and nothing happens until they tap Join. "Not now" forgets the link.
+ * 4. accept_child_invite(token), once per tap. Final errors (expired, used,
+ *    cancelled, not found, already a member, two parents already) clear the
+ *    token; a network error keeps it for another try.
+ * 5. Joined: the sync agent brings the book to this phone (onInviteAccepted).
+ *    The open book never changes on its own: "Open the book" switches only
+ *    when tapped.
  */
 import { brand } from '@scribe/brand';
 import { router } from 'expo-router';
@@ -24,17 +28,15 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { AccountGate, Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet, useColors } from '@/lib/auth/ui';
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
-import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
+import { FINAL_INVITE_ERRORS, inviteErrorKind, trackedInviteReason, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import { parseInviteInput } from '@/lib/family/invite-link.logic';
-import { acceptInvite, bookName } from '@/lib/family/invites';
+import { acceptInvite, bookName, peekInvite, type InvitePreview } from '@/lib/family/invites';
 import { track } from '@/lib/analytics/track';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '@/lib/family/pending-invite';
 import { haptic } from '@/lib/haptics';
 import { getChild, setActiveChildId, subscribe } from '@/lib/store';
 
-const FINAL: readonly InviteErrorKind[] = ['expired', 'used', 'revoked', 'not_found', 'already_member', 'book_deleted'];
-
-type Phase = 'loading' | 'paste' | 'ready' | 'joining' | 'joined' | 'failed';
+type Phase = 'loading' | 'paste' | 'ready' | 'peeking' | 'ask' | 'joining' | 'joined' | 'failed';
 
 export default function JoinBook() {
   const auth = useAuth();
@@ -45,9 +47,10 @@ export default function JoinBook() {
   const [pasted, setPasted] = useState('');
   const [pasteError, setPasteError] = useState(false);
   const [error, setError] = useState<InviteErrorKind | null>(null);
+  const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [joined, setJoined] = useState<{ childId: string; name: string | null; local: boolean } | null>(null);
   const token = useRef<string | null>(null);
-  const attempted = useRef(false);
+  const peeked = useRef(false);
 
   useEffect(() => {
     void readPendingInvite().then((p) => {
@@ -55,11 +58,46 @@ export default function JoinBook() {
       if (p) track('invite_opened', { via: 'link', signed_in: auth.signedIn });
       setPhase(p ? 'ready' : 'paste');
     });
+    // Runs once: the token is read when the sheet opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const fail = async (e: unknown, stage: 'accept') => {
+    const kind = inviteErrorKind(e);
+    track('invite_failed', { stage, reason: trackedInviteReason(kind) });
+    if (FINAL_INVITE_ERRORS.includes(kind)) await clearPendingInvite();
+    setError(kind);
+    setPhase('failed');
+  };
+
+  // Once the account can use server features, read what the invite says. Never joins.
+  const peek = async () => {
+    const t = token.current;
+    if (!t || !auth.client) return;
+    setPhase('peeking');
+    setError(null);
+    try {
+      setPreview(await peekInvite(auth.client, t));
+      setPhase('ask');
+    } catch (e) {
+      await fail(e, 'accept');
+    }
+  };
+
+  useEffect(() => {
+    if (phase === 'ready' && auth.canSync && !peeked.current) {
+      peeked.current = true;
+      void peek();
+    }
+    // peek reads refs and the current client; re-running on its identity would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, auth.canSync]);
+
+  // Only after a tap on Join.
   const accept = async () => {
     const t = token.current;
     if (!t || !auth.client) return;
+    haptic('tap');
     setPhase('joining');
     setError(null);
     try {
@@ -70,37 +108,25 @@ export default function JoinBook() {
       setJoined({ childId, name, local: getChild(childId) !== null });
       setPhase('joined');
     } catch (e) {
-      const kind = inviteErrorKind(e);
-      track('invite_failed', { stage: 'accept', reason: kind });
-      if (FINAL.includes(kind)) await clearPendingInvite();
-      setError(kind);
-      setPhase('failed');
+      await fail(e, 'accept');
     }
   };
 
-  // Accept once, as soon as the account can (signed in, consent done).
-  useEffect(() => {
-    if (phase === 'ready' && auth.canSync && !attempted.current) {
-      attempted.current = true;
-      void accept();
-    }
-    // accept reads refs and the current client; re-running on its identity would retry in a loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, auth.canSync]);
-
-  // Joined: wait for the sync agent to bring the book onto this phone, then make it the open book.
+  // Joined: notice when sync has brought the book to this phone. The open book is not changed here.
   const joinedId = joined?.childId ?? null;
   useEffect(() => {
     if (!joinedId) return;
     const check = () => {
-      if (getChild(joinedId)) {
-        setActiveChildId(joinedId);
-        setJoined((j) => (j ? { ...j, local: true } : j));
-      }
+      if (getChild(joinedId)) setJoined((j) => (j && !j.local ? { ...j, local: true } : j));
     };
     check();
     return subscribe(check);
   }, [joinedId]);
+
+  const notNow = async () => {
+    await clearPendingInvite();
+    close();
+  };
 
   const submitPaste = async () => {
     const t = parseInviteInput(pasted, brand.web.origin);
@@ -111,7 +137,8 @@ export default function JoinBook() {
     await savePendingInvite(t);
     track('invite_opened', { via: 'paste', signed_in: auth.signedIn });
     token.current = t;
-    attempted.current = false;
+    peeked.current = false;
+    setPreview(null);
     setPasteError(false);
     setPhase('ready');
   };
@@ -156,15 +183,44 @@ export default function JoinBook() {
     );
   }
 
-  if (phase === 'joined' && joined) {
-    const child = joined.name ?? '';
+  if (phase === 'ask' && preview) {
     return (
       <SheetFrame
         footer={
-          <Button size="lg" onPress={() => (joined.local ? router.dismissTo('/') : close())}>
-            <Text>{joined.local ? a.open : a.close}</Text>
-          </Button>
+          <>
+            <Button size="lg" onPress={() => void accept()}>
+              <Text>{a.join}</Text>
+            </Button>
+            <QuietButton label={a.notNow} onPress={() => void notNow()} />
+          </>
         }>
+        <SheetTitle>{a.askTitle}</SheetTitle>
+        <SheetBody>{preview.inviter ? fill(a.invitedBy, { inviter: preview.inviter }) : a.invitedByUnknown}</SheetBody>
+        <SheetBody muted>{a.askBody}</SheetBody>
+      </SheetFrame>
+    );
+  }
+
+  if (phase === 'joined' && joined) {
+    const child = joined.name ?? '';
+    const open = () => {
+      // The one place the open book changes: the person tapped "Open the book".
+      setActiveChildId(joined.childId);
+      router.dismissTo('/');
+    };
+    return (
+      <SheetFrame footer={joined.local ? (
+        <>
+          <Button size="lg" onPress={open}>
+            <Text>{a.open}</Text>
+          </Button>
+          <QuietButton label={a.close} onPress={close} />
+        </>
+      ) : (
+        <Button size="lg" onPress={close}>
+          <Text>{a.close}</Text>
+        </Button>
+      )}>
         <SheetTitle>{child ? fill(a.joinedTitle, { child }) : a.title}</SheetTitle>
         <SheetBody>{a.joinedBody}</SheetBody>
         {!joined.local && child ? <SheetBody muted>{fill(a.joinedWaiting, { child })}</SheetBody> : null}
@@ -176,11 +232,12 @@ export default function JoinBook() {
     <SheetFrame footer={<QuietButton label={a.close} onPress={close} />}>
       <SheetTitle>{a.title}</SheetTitle>
       <AccountGate trigger="invite" signInBody={a.signInBody}>
+        {phase === 'peeking' || phase === 'ready' ? <Busy label={a.title} /> : null}
         {phase === 'joining' ? <Busy label={a.joining} /> : null}
         {phase === 'failed' && error ? (
           <View className="gap-3">
             <ErrorLine message={fill(familyCopy.errors[error], { child: '' })} />
-            {FINAL.includes(error) ? (
+            {FINAL_INVITE_ERRORS.includes(error) ? (
               <QuietButton
                 label={a.continue}
                 onPress={() => {
@@ -189,12 +246,7 @@ export default function JoinBook() {
                 }}
               />
             ) : (
-              <Button
-                size="lg"
-                onPress={() => {
-                  attempted.current = true;
-                  void accept();
-                }}>
+              <Button size="lg" onPress={() => void (preview ? accept() : peek())}>
                 <Text>{a.tryAgain}</Text>
               </Button>
             )}

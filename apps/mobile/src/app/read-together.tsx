@@ -100,7 +100,7 @@ export default function ReadTogether() {
 
   if (!child || letters.length === 0) {
     return (
-      <SafeAreaView className="flex-1 justify-center gap-4 bg-background px-5">
+      <SafeAreaView testID="readTogether.empty" className="flex-1 justify-center gap-4 bg-background px-5">
         <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">
           {rt.title}
         </Text>
@@ -125,9 +125,9 @@ export default function ReadTogether() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView testID="readTogether.screen" className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-5 pt-2">
-        <Button variant="ghost" size="sm" className="-ml-4" onPress={close}>
+        <Button variant="ghost" size="sm" className="-ml-4" onPress={close} testID="readTogether.close">
           <Text className="text-primary">{copy.common.closeButton}</Text>
         </Button>
         <Text className="text-sm text-muted-foreground">{`${Math.min(index + 1, letters.length)} / ${letters.length}`}</Text>
@@ -139,10 +139,10 @@ export default function ReadTogether() {
             {rt.endOfBook}
           </Text>
           <View className="gap-3">
-            <Button size="lg" onPress={close}>
+            <Button size="lg" onPress={close} testID="readTogether.finish">
               <Text>{rt.finishButton}</Text>
             </Button>
-            <Button variant="secondary" onPress={() => go(0)}>
+            <Button variant="secondary" onPress={() => go(0)} testID="readTogether.again">
               <Text>{rt.againButton}</Text>
             </Button>
           </View>
@@ -186,10 +186,10 @@ export default function ReadTogether() {
 
       {!done && (
         <View className="flex-row gap-3 border-t border-border px-5 pb-2 pt-3">
-          <Button variant="secondary" size="lg" className="flex-1 px-4" disabled={index === 0} onPress={() => go(index - 1)}>
+          <Button variant="secondary" size="lg" className="flex-1 px-4" disabled={index === 0} onPress={() => go(index - 1)} testID="readTogether.previous">
             <Text>{rt.previousButton}</Text>
           </Button>
-          <Button size="lg" className="flex-1 px-4" onPress={() => go(index + 1)}>
+          <Button size="lg" className="flex-1 px-4" onPress={() => go(index + 1)} testID="readTogether.next">
             <Text>{rt.nextButton}</Text>
           </Button>
         </View>

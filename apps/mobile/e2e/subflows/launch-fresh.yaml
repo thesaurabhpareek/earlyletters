@@ -1,6 +1,7 @@
 # A fresh install: app data, Keychain and permissions reset, then launch with
 # the e2e seams from TESTID_REQUESTS.md section 3. Parameters (runFlow env):
-# E2E_SEED, E2E_OFFLINE, E2E_TRANSCRIBER, E2E_CLOCK_OFFSET_HOURS, E2E_CONFIG.
+# E2E_SEED, E2E_OFFLINE, E2E_TRANSCRIBER, E2E_CLOCK_OFFSET_HOURS, E2E_CONFIG,
+# E2E_ANALYTICS_ASK (off by default: the consent ask would cover seeded flows).
 appId: ${APP_ID}
 ---
 - launchApp:
@@ -12,6 +13,7 @@ appId: ${APP_ID}
       e2eSeed: ${E2E_SEED || "none"}
       e2eOffline: ${E2E_OFFLINE || "0"}
       e2eTranscriber: ${E2E_TRANSCRIBER || "auto"}
+      e2eAnalyticsAsk: ${E2E_ANALYTICS_ASK || "off"}
       e2eClockOffsetHours: ${E2E_CLOCK_OFFSET_HOURS || "0"}
       e2eConfig: '${E2E_CONFIG || "{}"}'
 - runFlow:

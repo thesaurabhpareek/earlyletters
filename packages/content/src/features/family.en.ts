@@ -11,6 +11,24 @@ export const familyCopy = {
     coParent: 'Co-parent',
     invited: 'Invited',
     invitedName: 'Your co-parent',
+    family: 'Family',
+  },
+
+  /** Leaving and removing (migration 20261005000000; PRD B F7, F8). */
+  manage: {
+    leave: 'Leave this book',
+    leaveTitle: "Leave {child}'s book?",
+    leaveBody: "You won't see new letters in it. Your own letters stay yours and stay on this phone. You can leave them in the book for {child}, or take them out.",
+    keepLetters: 'Leave, keep my letters in it',
+    takeLettersOut: 'Leave, take my letters out',
+    cancel: 'Cancel',
+    left: "You left {child}'s book. Your letters are still on this phone.",
+    remove: 'Remove',
+    removeTitle: 'Remove {name} from the book?',
+    removeBody: "They won't see {child}'s book anymore. The letters they wrote stay in it.",
+    removed: 'Removed from the book.',
+    coParentNote: 'Parents are equals here: a co-parent leaves only by their own choice. If you need help keeping the book safe, write to us.',
+    writeToUs: 'Write to us',
   },
 
   card: {
@@ -38,7 +56,7 @@ export const familyCopy = {
     signsAsPlaceholder: 'Mama, Papa, Amma, Baba',
     signsAsHelp: 'Optional. It signs their letters.',
     oneBook: "This invite is for {child}'s book only.",
-    linkNote: 'The link works once, for 7 days. You can cancel it any time.',
+    linkNote: 'The link works once, for 7 days. You can cancel it any time. They will see your name and choose whether to join.',
     share: 'Share invite link',
     working: 'Getting the link ready',
     shareTitle: "Join {child}'s book",
@@ -49,6 +67,12 @@ export const familyCopy = {
 
   accept: {
     title: 'Join the family book',
+    askTitle: 'Join this family book?',
+    invitedBy: '{inviter} invited you to write to your child together.',
+    invitedByUnknown: "You were invited to write to a child's book together.",
+    askBody: 'You will both read every letter in the book. Join only if you know who sent you this link.',
+    join: 'Join the book',
+    notNow: 'Not now',
     pasteLabel: 'Invite link',
     pasteHelp: 'Open the message with the invite, copy the link and paste it here.',
     pastePlaceholder: 'Paste the link here',
@@ -80,5 +104,8 @@ export const familyCopy = {
     signed_out: 'Sign in again to continue.',
     network: "You're offline. Try again when you're back online.",
     unknown: 'Something went wrong. Please try again.',
+    parents_full: 'This book already has two parents, so this invite cannot add another. If something has changed, write to us.',
+    last_parent: "You're the only parent of this book, so it can't be left. You can delete the book in Settings instead.",
+    not_allowed: "That isn't possible from here. Write to us if you need help.",
   },
 } as const;

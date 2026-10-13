@@ -1,79 +1,132 @@
-# E2E-11  Analytics consent off by default, on, off again (Settings, Privacy).
-# Proves: PRD-REQ-016 and LEGAL-REQ-003 (off until the person says yes),
-# PRD-REQ-018 (withdrawing works in the session and survives a relaunch),
-# C-REQ-016 and LEGAL-REQ-008 (the switch is two taps from Settings).
-# The network half (zero PostHog or Sentry requests before consent and after
-# withdrawal) needs the optional proxy witness in README section 6.
-# PENDING (product gap): the consent sheet as the third ask (PRD-REQ-001) is not
-# mounted by any route yet; the block at the end is skipped until it is
-# (tag `pending-consent-sheet`; set CONSENT_SHEET=1 to run it).
-# Switch state is read with the `checked` selector on the iOS switch
-# (Assumption: Maestro reads UISwitch value as checked; check on the first run).
+# E2E-11  Analytics consent: the ask comes third and never in the first-letter
+# session; off by default; on and off again in Settings, Privacy.
+# Proves: PRD-REQ-001 and K-01 (the consent sheet is the third ask, never in the
+# same session as Keep the book, nothing preselected), PRD-REQ-016 and
+# LEGAL-REQ-003 (off until the person says yes), PRD-REQ-018 (withdrawing works
+# in the session and survives a relaunch), C-REQ-016 and LEGAL-REQ-008 (the
+# switch is two taps from Settings).
+# The real sequencer runs here (e2eAnalyticsAsk on); every other flow turns it
+# off because a seeded install would see the sheet on Tonight at once.
+# The network half (zero PostHog requests before consent and after withdrawal)
+# is DEVICE_TEST_PLAN S1-24 (App Privacy Report) or the optional proxy witness
+# in README section 6.
+# Switch state is read with the `checked` selector (Maestro state selectors,
+# V; Assumption: the platform Toggle reports its value as checked on iOS).
 appId: ${APP_ID}
-name: E2E-11 Analytics consent on and off
+name: E2E-11 Analytics consent ask and switch
 tags:
   - e2e
   - E2E-11
+  - PRD-REQ-001
   - PRD-REQ-016
   - PRD-REQ-018
   - LEGAL-REQ-003
   - LEGAL-REQ-008
   - C-REQ-016
 ---
+# 1. A brand-new phone: first letter, Keep the book Not now. No consent sheet in
+#    this session, even after resting on Tonight past the 1.2 s calm delay.
 - runFlow:
     file: ../subflows/launch-fresh.yaml
     env:
-      E2E_SEED: "asha"
+      E2E_OFFLINE: "1"
+      E2E_ANALYTICS_ASK: "on"
+- runFlow: ../subflows/pass-age-gate.yaml
+- runFlow: ../subflows/first-run-one-child.yaml
+- tapOn:
+    id: "tonight.type"
+- tapOn:
+    id: "write.input"
+- inputText: "Asha, a line for the consent test."
+- tapOn:
+    id: "write.save"
+    enabled: true
+- tapOn:
+    id: "review.save.book"
+- extendedWaitUntil:
+    visible:
+      id: "signIn.sheet"
+    timeout: 5000
+- tapOn:
+    id: "signIn.later"
+- assertVisible:
+    id: "tonight.screen"
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: "4000"
+- assertNotVisible:
+    id: "consentSheet.screen"
+# 2. Next session: the sheet appears on a calm tab root, alone, nothing preselected.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_ANALYTICS_ASK: "on"
+- extendedWaitUntil:
+    visible:
+      id: "consentSheet.screen"
+    timeout: 10000
+- assertNotVisible:
+    id: "signIn.sheet"
+- assertVisible:
+    id: "consentSheet.yes"
+- assertVisible:
+    id: "consentSheet.no"
+- tapOn:
+    id: "consentSheet.no"
+- assertNotVisible:
+    id: "consentSheet.screen"
+# A No is final: no sheet in the next session either.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_ANALYTICS_ASK: "on"
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: "4000"
+- assertNotVisible:
+    id: "consentSheet.screen"
+# 3. Settings, Privacy: off (the No), on, still on after a relaunch.
 - runFlow: ../subflows/open-settings.yaml
 - tapOn:
     id: "settings.privacy"
 - assertVisible:
     id: "privacy.screen"
-# 1. Off by default; nothing preselected.
 - assertVisible:
     id: "privacy.analytics"
     checked: false
-# 2. On, and still on after a relaunch.
 - tapOn:
     id: "privacy.analytics"
 - assertVisible:
     id: "privacy.analytics"
     checked: true
-- runFlow: ../subflows/relaunch.yaml
-- runFlow: ../subflows/open-settings.yaml
-- tapOn:
-    id: "settings.privacy"
-- assertVisible:
-    id: "privacy.analytics"
-    checked: true
-# 3. Off again (withdrawal), and still off after a relaunch.
-- tapOn:
-    id: "privacy.analytics"
-- assertVisible:
-    id: "privacy.analytics"
-    checked: false
-- runFlow: ../subflows/relaunch.yaml
-- runFlow: ../subflows/open-settings.yaml
-- tapOn:
-    id: "settings.privacy"
-- assertVisible:
-    id: "privacy.analytics"
-    checked: false
-# 4. PENDING: the consent sheet, never in the same session as another ask.
 - runFlow:
-    when:
-      true: ${CONSENT_SHEET == "1"}
-    commands:
-      - runFlow:
-          file: ../subflows/relaunch.yaml
-      - extendedWaitUntil:
-          visible:
-            id: "consentSheet.screen"
-          timeout: 10000
-      - assertNotVisible:
-          id: "signIn.sheet"
-      - tapOn:
-          id: "consentSheet.no"
-      - assertNotVisible:
-          id: "consentSheet.screen"
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.privacy"
+- assertVisible:
+    id: "privacy.analytics"
+    checked: true
+# 4. Off again (withdrawal), and still off after a relaunch.
+- tapOn:
+    id: "privacy.analytics"
+- assertVisible:
+    id: "privacy.analytics"
+    checked: false
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.privacy"
+- assertVisible:
+    id: "privacy.analytics"
+    checked: false
 - stopApp

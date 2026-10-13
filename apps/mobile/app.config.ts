@@ -19,6 +19,7 @@ import * as path from 'node:path';
 
 type BrandModule = typeof import('../../packages/brand/index');
 type PermissionCopyModule = typeof import('./src/lib/permission-copy');
+type PrivacyManifestModule = typeof import('./src/lib/privacy-manifest');
 
 const ROOT = typeof __dirname === 'string' ? __dirname : process.cwd();
 
@@ -42,6 +43,7 @@ function loadTs<T>(relative: string, req: (id: string) => unknown = require): T 
 
 const { brand, bundleId } = loadTs<BrandModule>('../../packages/brand/index.ts');
 const { permissionCopy } = loadTs<PermissionCopyModule>('./src/lib/permission-copy.ts');
+const { privacyManifests } = loadTs<PrivacyManifestModule>('./src/lib/privacy-manifest.ts');
 
 type AppEnv = 'development' | 'preview' | 'production';
 const raw = process.env.EXPO_PUBLIC_APP_ENV;
@@ -87,6 +89,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Universal links for email sign-in and invites (/auth/callback, /i/*); the website serves the AASA
     // file (docs/ops/AUTH_SETUP.md section 5). Domain from packages/brand, never typed here.
     associatedDomains: [`applinks:${brand.publisher.domain}`],
+    // PrivacyInfo.xcprivacy (G-23): required-reason APIs and collected data types, matching
+    // docs/legal/app-store-privacy-labels.md 3.3 (test/privacy-manifest.test.ts checks it).
+    privacyManifests,
   },
   android: {
     package: appId,

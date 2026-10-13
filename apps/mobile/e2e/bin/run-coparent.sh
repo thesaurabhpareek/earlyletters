@@ -5,7 +5,8 @@
 #
 # A is Mama (makes the invite), B is Papa (a fresh install that joins).
 # 1. E2E-13a on A: sign in, invite, share sheet "Copy" -> A's pasteboard.
-# 2. Host: `xcrun simctl pbpaste A`, take the https://earlyletters.com/i/<token> URL.
+# 2. Host: `xcrun simctl pbpaste A`, take the https://earlyletters.com/i#t=<token> URL
+#    (G-04; the old /i/<token> form in a new message is a failure).
 # 3. E2E-13b on B with INVITE_URL: gate, "I was invited", paste, sign in, join.
 # 4. E2E-13c on A: Papa is listed as a member, the pending invite is gone.
 # Needs the e2e backend env (TESTID_REQUESTS.md section 5). The invite token is a
@@ -38,8 +39,11 @@ maestro --udid "$A" test "$E2E/flows/E2E-13a-invite-create.yaml" \
   -e "APP_ID=$APP_ID" -e "MAMA_EMAIL=$MAMA_EMAIL" --test-output-dir "$OUT/13a"
 
 SHARED="$(xcrun simctl pbpaste "$A")"
-INVITE_URL="$(printf '%s' "$SHARED" | grep -Eo 'https://earlyletters\.com/i/[A-Za-z0-9_-]+' | head -n 1 || true)"
-[[ -n "$INVITE_URL" ]] || { echo "FAIL: no invite link on simulator A's pasteboard" >&2; exit 1; }
+if printf '%s' "$SHARED" | grep -Eq 'https://earlyletters\.com/i/[A-Za-z0-9_-]{8,}'; then
+  echo "FAIL: the invite message uses the old /i/<token> form; the token must be in the fragment (G-04)" >&2; exit 1
+fi
+INVITE_URL="$(printf '%s' "$SHARED" | grep -Eo 'https://earlyletters\.com/i/?#t=[A-Za-z0-9_-]+' | head -n 1 || true)"
+[[ -n "$INVITE_URL" ]] || { echo "FAIL: no invite link (/i#t=...) on simulator A's pasteboard" >&2; exit 1; }
 echo "invite link copied (ends ${INVITE_URL: -4})"
 
 maestro --udid "$B" test "$E2E/flows/E2E-13b-invite-accept.yaml" \

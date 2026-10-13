@@ -7,13 +7,17 @@
  *   hasPlus(), isJoinedBook(child)   replacements for the old store.ts stubs
  *   presentPlusStore()     Apple's SubscriptionStoreView
  *   restorePurchases(), manageSubscription(), requestRefund()   Apple's sheets
+ *   plan reminders (Q-003): started by startPlus(); confirmation at /plus/confirmed; PlanNoticeHost (mount once)
  *
  * Read together allowance: src/lib/read-together.ts.
  */
 export { PLUS_PRODUCT_IDS, periodOf } from './config';
 export { billingCopy } from './copy';
-export { getPlan, refreshPlan, startPlus, storeViewSupport, subscribePlan } from './plan-store';
+export { getDisplayPrices, getPlan, refreshDisplayPrices, refreshPlan, startPlus, storeViewSupport, subscribePlan } from './plan-store';
+export { askPlanReminderPermission, canAskForReminders, getPlanReminderPermission, reschedulePlanReminders } from './plan-reminders';
+export { activePlanNote, noteLines, trialDaysOf, purchaseConfirmation, priceWithPeriod, subjectOf, type PlanNote } from './plan-reminders.logic';
 export { usePlan, type UsePlan } from './use-plan';
+export { PlanNoteBody, PlanNoticeHost, usePlanNote } from './plan-notice';
 export { allBookFacts, bookFactsOf, gateContext, hasPlus, isJoinedBook, newChildNeedsPlus, startBookGate } from './gates';
 export { manageSubscription, presentPlusStore, requestRefund, restorePurchases, storeSheetOptions, type RestoreResult } from './actions';
 export { EMPTY_PLAN, localDateOf, planLine, plusOn, type PlanDetails, type PlanLine, type PlanState } from './plan.logic';

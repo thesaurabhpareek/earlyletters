@@ -9,9 +9,11 @@ What the app expects, in one table:
 | Thing | Value |
 |---|---|
 | Website (universal links) | `https://earlyletters.com` (from `packages/brand`) |
-| Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=email` |
+| Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=magiclink` (Magic Link template) or `&type=signup` (Confirm signup template). Opened only on the phone that asked for it, through PKCE (section 4.6) |
+| Email code | 8 digits, 15 minutes (section 4.4) |
 | Custom-scheme fallback | `scribe://auth/callback` (opens the code screen; never carries a token) |
-| Invite link | `https://earlyletters.com/i/<token>` |
+| Invite link | `https://earlyletters.com/i#t=<token>` (token in the fragment; links sent before the fix wave, `/i/<token>`, are still read) |
+| Apple token capture | Edge Function `apple-token` (section 2.7) |
 | Bundle ids | `com.earlyletters.scribe` (production), `.preview`, `.dev` (internal builds) |
 | Sender | `hello@earlyletters.com` through Resend SMTP |
 
@@ -57,7 +59,7 @@ Keys > **+**:
 - Name: `Early Letters Sign in with Apple`; tick **Sign in with Apple** > Configure > Primary App ID `com.earlyletters.scribe`.
 - Download `AuthKey_<KEYID>.p8` (Apple lets you download it **once**). Note the **Key ID**.
 - Store the `.p8`, Key ID and Team ID in your password manager. Never in the repo (`.gitignore` already ignores `*.p8`).
-- Uses: (a) the client secret for Supabase's web OAuth flow (step 2.6, only when 2.3 is used; Apple requires a new secret at least every 6 months, so set a calendar reminder); (b) the future `apple-token` Edge Function that exchanges the authorization code at sign-in and revokes Apple's token when someone deletes their account (TDD 04 3.1.1; not built yet, see the hand-off).
+- Uses: (a) the client secret for Supabase's web OAuth flow (step 2.6, only when 2.3 is used; Apple requires a new secret at least every 6 months, so set a calendar reminder); (b) the `apple-token` Edge Function (section 2.7), which exchanges the authorization code at sign-in, and the purge worker, which revokes Apple's token when someone deletes their account (TDD 04 3.1.1, App Store 5.1.1(v)). Both make a fresh 10-minute client secret from the `.p8` on every call, so no secret expires on you.
 
 ### 2.5 Email relay for "Hide My Email"
 Apple Developer > **Services** > Sign in with Apple for Email Communication > Configure:
@@ -70,6 +72,27 @@ Supabase > Authentication > Sign In / Providers > **Apple**: enable.
 - **Secret Key (for OAuth)**: leave empty for native-only. Fill it only with the web flow (generated from the `.p8`; Supabase's guide links a generator).
 
 The app sends Apple the SHA-256 of a random nonce and Supabase the raw value, so a replayed identity token fails (`src/lib/auth/apple.ts`). Apple shares the person's name only the first time; the app keeps it in the Keychain until Terms are accepted and then writes it to `profiles.display_name`.
+
+### 2.7 The `apple-token` Edge Function (security review H3, gap G-03)
+
+Why: when someone deletes their account, Apple must stop listing Early Letters under "Sign in with Apple" for their Apple ID. That needs Apple's refresh token, which only exists if the app's one-time authorization code is exchanged within five minutes of sign-in. The app sends the code to this function right after Sign in with Apple (`captureAppleToken` in `src/lib/auth/apple.ts`); sign-in never waits for it or fails because of it.
+
+What it does (`supabase/functions/apple-token/handler.ts`): checks the caller's session (a real account with an Apple identity), exchanges the code at `https://appleid.apple.com/auth/token`, checks that Apple's `id_token` is for the same Apple user and client id, wraps the refresh token with AES-256-GCM under the newest `TOKEN_KEK_V<n>` (the profile id is the additional data) and stores it with `ops_apple_token_put` (service role only). The purge worker's `apple_token_revoke` step unwraps and revokes it. Nothing it receives is logged; log lines carry statuses and closed error codes only. Limit: 10 calls per person per hour per function instance (Apple codes work once anyway).
+
+Secrets (Supabase > Edge Functions > Secrets; the purge worker reads the same names):
+
+| Secret | Value | Without it |
+|---|---|---|
+| `APPLE_TEAM_ID` | Team ID from 2.2 | 503, nothing stored; deletion receipts say `apple: no_token` and the worker alerts `apple_no_token` |
+| `APPLE_SIGNIN_KEY_ID` | Key ID from 2.4 | Same |
+| `APPLE_SIGNIN_PRIVATE_KEY` | The whole `.p8` file, including the BEGIN and END lines (a value with literal `\n` also works) | Same |
+| `TOKEN_KEK_V1` | 32 random bytes, base64: `openssl rand -base64 32`. Never reuse another secret. To rotate, add `TOKEN_KEK_V2` and keep V1 until every stored token is re-captured or revoked (the function always writes with the highest version present) | Same |
+| `APPLE_SERVICES_ID` | Optional, only with 2.3 | Codes from web or Android sign-in are refused |
+| `APPLE_EXTRA_CLIENT_IDS` | Optional, comma separated: `com.earlyletters.scribe.preview,com.earlyletters.scribe.dev` to capture tokens from internal builds. The purge worker must be able to revoke them too: it currently accepts the production bundle id and `APPLE_SERVICES_ID` only (requested in the fix-wave report) | Internal builds' codes are refused (403); harmless |
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by Supabase.
+
+Deploy: `npx supabase functions deploy apple-token --use-api` (keep "Verify JWT" on; the function checks the session again itself). Device check: section 11, item 9.
 
 ## 3. Google
 
@@ -119,13 +142,29 @@ Supabase > Authentication > **Emails** > SMTP Settings > Enable custom SMTP (Ver
 | Minimum interval between emails | `60` seconds (matches the app's "You can send another in a minute", A-REQ-025) |
 
 ### 4.3 Rate limits
-Supabase > Authentication > **Rate Limits**. After custom SMTP is on, Supabase starts the project at **30 emails per hour for the whole project** (Verified: Supabase SMTP guide). Raise it to about **100 per hour** for TestFlight, more at launch. Leave the token verification limit at its default (about 30 per 5 minutes per IP).
+Supabase > Authentication > **Rate Limits**. After custom SMTP is on, Supabase starts the project at **30 emails per hour for the whole project** (Verified: Supabase SMTP guide). Raise it to about **100 per hour** for TestFlight, more at launch.
+
+Token verifications (the code and the link): leave the default (about 30 per 5 minutes per IP) or lower it; do not raise it. With 8-digit codes that live 15 minutes, guessing one person's code needs about 50 million tries for a coin-flip chance, so an attacker would need tens of thousands of IP addresses inside those 15 minutes (security review M4; TDD 04 3.1.4 estimated about 1,400 IPs for the old 6 digits and 1 hour). The app also pauses code entry for 15 minutes after five wrong codes for one address; that only spares honest people the server limit and is not a control on its own.
 
 ### 4.4 Email provider
 Supabase > Authentication > Sign In / Providers > **Email**:
 - Enable Email provider: on. Confirm email: on. Secure email change: on.
-- **Email OTP expiration**: `3600` seconds (link and code live one hour, A-REQ-018).
-- **Email OTP length**: `6`. It must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (default 6). The length is configurable (6 to 10) and some projects default to 8 (Verified: dev.to write-up of GoTrue `MAILER_OTP_LENGTH`, 1 Jul 2026; check what yours shows). TDD 04 OQ-S1 recommends 8 for brute-force margin; PRD A says 6. Product call; change both together.
+- **Email OTP expiration**: `900` seconds (link and code live 15 minutes; security review M4). PRD A-REQ-018 said one hour; the shorter life is the recommendation because it cuts the guessing window fourfold. If you keep `3600`, change the template line in section 6 to "for one hour" too.
+- **Email OTP length**: `8` (security review M4, TDD 04 OQ-S1). Set `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` in every build profile (section 8); 8 is also the app's default. The code screen submits on its own at that length and offers Continue for any 6 to 10 digit code, so a build and a dashboard that disagree for a while never lock anyone out.
+
+### 4.5 CAPTCHA: decision (security review M4, gap G-05)
+
+**Decision: off for v1.0; a founder-side setting to revisit.** Supabase supports hCaptcha and Cloudflare Turnstile (Authentication > Attack Protection), but once it is on, the server asks for a CAPTCHA token on the auth calls themselves, and supabase-js carries a `captchaToken` on `signInWithOtp`, `verifyOtp` and `signInWithIdToken` (Verified in the installed `@supabase/auth-js` 2.117.2 source). So turning it on means a challenge in front of email, and very likely in front of Apple and Google sign-in too (Assumption: GoTrue checks the token for the ID-token grant as well; not verified against the server source).
+
+What exists for React Native (checked on npm, 13 Oct 2026): `@hcaptcha/react-native-hcaptcha` 4.1.0 (MIT, updated July 2026) and `react-native-turnstile` 1.1.0 (MIT, August 2026). Both render the vendor's web widget inside `react-native-webview`, which is not in the app today (a new native module, a new build, and a third-party script and its cookies in a sign-in screen for parents). That is maintained enough to work, but it costs calm (a puzzle can appear in a moment that should feel simple), adds a subprocessor (hCaptcha or Cloudflare would see IP addresses at sign-in; privacy policy, subprocessors page and privacy labels would change) and adds an App Review surface.
+
+Trade-off, in one line: 8-digit codes, 15-minute life and Supabase's per-IP verification limit already make guessing impractical (section 4.3); CAPTCHA mainly adds protection against bulk email sending, which the project-wide email limit (4.3) already caps. Revisit if Supabase logs show code-guessing or email floods, or before Android and the web page (both widen the surface). If you turn it on: choose Turnstile (no puzzle in most cases), add its keys in Supabase, and the app needs `react-native-webview` plus a `captchaToken` on every auth call in `src/lib/auth` (a small change; not built).
+
+### 4.6 PKCE for email links (security review H1, gap G-01)
+
+Nothing to set in the dashboard. The app runs Supabase Auth with `flowType: 'pkce'`: when this phone asks for an email it keeps a code verifier in its Keychain and a note that it asked (time only, no address, one hour at most). An opened link is checked with Supabase only if this phone asked, through `GET /auth/v1/verify` (redirects not followed), which returns an auth code that only this phone's verifier can exchange. A link someone else asked for, or a link opened while signed in, is never used; the person is offered the code instead. After any sign-in, the app asks "Is this your account?" with the account's email before this phone's letters join it.
+
+The redirect URL `https://earlyletters.com/auth/callback` must stay in the allow list (5.1): Supabase puts the auth code on it, and the app reads it from the redirect without ever loading the page. Assumptions, each checked by device test 11.3: Supabase answers `GET /verify` for a PKCE email with a redirect carrying `?code=`; a typed code still signs in with PKCE on; the app's challenge uses method `plain` (Hermes has no `crypto.subtle`; the challenge only travels from the phone to Supabase over TLS, which is all this defence needs).
 
 ## 5. Redirect URLs, universal links and the website
 
@@ -152,7 +191,9 @@ URL: `https://earlyletters.com/.well-known/apple-app-site-association`. No file 
         "components": [
           { "/": "/auth/callback", "comment": "Email sign-in link. The token hash is in the fragment." },
           { "/": "/auth/callback/", "comment": "Same, with a trailing slash." },
-          { "/": "/i/*", "comment": "Co-parent invite links." }
+          { "/": "/i", "#": "t=*", "comment": "Co-parent invite links. The token is in the fragment, which never reaches a server." },
+          { "/": "/i/", "#": "t=*", "comment": "Same, with a trailing slash." },
+          { "/": "/i/*", "comment": "Invite links sent before the fix wave (token in the path). Remove after 1.0.1 ships." }
         ]
       }
     ]
@@ -185,15 +226,18 @@ When a link opens in a browser instead of the app (desktop, a mail app's own bro
 - Show: "Open Early Letters" as a link to `scribe://auth/callback` (no token in it, ever; any app can claim a custom scheme, TDD 04 3.1.6), and the line "Or type the code from the same email in the app."
 - Same page for an expired link; the app explains expiry.
 
-**`/i/<token>`**
+**`/i`** (new links: `https://earlyletters.com/i#t=<token>`) and **`/i/<token>`** (links sent before the fix wave)
 - A generic page: no child name, no photo, generic link preview tags (B-NFR-002). "Get Early Letters on the App Store", then "Already have it? Open the app, tap I was invited, and paste the link."
-- **Known gap:** the token is in the path, so Vercel request logs see it. The founder chose `/i/<token>`; TDD 04 3.4.1 prefers a fragment (`/i#t=<token>`) that servers never receive. Mitigations today: the server stores only a hash, the invite works once and lasts 7 days, and the website must not log or forward paths under `/i/`. Moving to the fragment later is a small change (the app's parser and the AASA pattern), recorded in the hand-off.
+- The token now travels in the fragment, which browsers never send to a server, so Vercel and link-preview fetchers never see it (security review M2, TDD 04 3.4.1, LEGAL-REQ-026). The page must not read the fragment with script, and must not send it anywhere.
+- **For the website thread (both paths, `/i` and `/i/*`):** no request logging, no analytics or tag scripts, no third-party scripts at all, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `X-Robots-Tag: noindex`. Old-form links still carry the token in the path for up to 7 days after the app update, so `/i/*` stays log-free; after that, `/i/*` can redirect to `/i` (dropping the path).
+
+Even if a token leaks, the app now asks "Join this family book?" with the inviter's sign-off name before joining, never switches the open book on its own, and a book takes at most two parents (migration 20261005000000).
 
 ## 6. Email templates to paste
 
 Supabase > Authentication > **Emails** > Templates. Paste the same body into **Confirm signup** and **Magic Link**: a new address receives "Confirm signup", a known address receives "Magic Link", and the person should not see a difference (and nobody can tell whether an address has an account). The link uses `type=email`, which Supabase accepts for both (**Assumption**: GoTrue verifies a signup token and a magic-link token under `type=email`; test 11.3 checks both).
 
-If `packages/emails` produces branded versions of these, they replace the text below as long as they keep the contract: `{{ .Token }}`, and the link exactly `https://earlyletters.com/auth/callback#token_hash={{ .TokenHash }}&type=email`. No tracking, no images required.
+If `packages/emails` produces branded versions of these, they replace the text below as long as they keep the contract: `{{ .Token }}`, and the link exactly `https://earlyletters.com/auth/callback#token_hash={{ .TokenHash }}&type=magiclink` in **Magic Link** and `...&type=signup` in **Confirm signup** (the app opens links with `GET /verify`, which wants the template's own type; links with `type=email` from before the change are read as `magiclink`). No tracking, no images required.
 
 **Subject (both):** `Your sign-in link for Early Letters`
 
@@ -206,17 +250,19 @@ If `packages/emails` produces branded versions of these, they replace the text b
     <div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;color:#2B2722;">
       <p style="font-size:18px;line-height:1.5;margin:0 0 16px;">Here is your link to sign in to Early Letters.</p>
       <p style="margin:0 0 24px;">
-        <a href="https://earlyletters.com/auth/callback#token_hash={{ .TokenHash }}&type=email"
+        <a href="https://earlyletters.com/auth/callback#token_hash={{ .TokenHash }}&type=magiclink"
            style="display:inline-block;background:#8A5A3B;color:#FFFFFF;text-decoration:none;font-size:17px;font-weight:600;padding:14px 24px;border-radius:999px;">Sign in on this phone</a>
       </p>
       <p style="font-size:16px;line-height:1.5;margin:0 0 8px;">Or type this code in the app:</p>
-      <p style="font-size:32px;letter-spacing:6px;font-weight:600;margin:0 0 24px;">{{ .Token }}</p>
-      <p style="font-size:14px;line-height:1.5;color:#6B645B;margin:0 0 8px;">The link and the code work once, for one hour.</p>
+      <p style="font-size:32px;letter-spacing:4px;font-weight:600;margin:0 0 24px;">{{ .Token }}</p>
+      <p style="font-size:14px;line-height:1.5;color:#6B645B;margin:0 0 8px;">The link works only on the phone where you asked for it. The link and the code work once, for 15 minutes.</p>
       <p style="font-size:14px;line-height:1.5;color:#6B645B;margin:0;">If you did not ask to sign in, you can ignore this email. Nothing changes.</p>
     </div>
   </body>
 </html>
 ```
+
+In **Confirm signup**, change `type=magiclink` in the link to `type=signup`; everything else is the same.
 
 Supabase sends the HTML part only; most mail apps show it fine. The words follow VOICE.md (no dashes, no urgency).
 
@@ -251,24 +297,28 @@ All are public values, inlined at build time. Set them per profile as EAS enviro
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key from 1.1 (`EXPO_PUBLIC_SUPABASE_ANON_KEY` also accepted) | Same |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | 3.2 | Google button hidden |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | 3.3, the client for this profile's bundle id | Google button hidden, Google plugin not in the build |
-| `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | Same as 4.4 (default 6) | 6 |
+| `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | Same as 4.4: `8` | 8 |
 | `EXPO_PUBLIC_PASSKEYS` | `1` only after section 7 | Passkeys hidden |
 
 Changing a Google id needs a new build (it changes a native URL scheme); the others need only a new bundle.
 
 ## 9. What happens after sign-in (for support questions)
 
-1. The person signs in (Apple, Google, email link or code, or a passkey).
+1. The person signs in (Apple, Google, email link or code, or a passkey). An email link works only on the phone that asked for it; otherwise the app offers the code.
+1a. If this phone's letters do not belong to any account yet, the app asks "Is this your account?" with the account's email. "Yes, this is me" lets this phone's letters join it; "No, sign out" ends the session and nothing changes. Until then nothing is claimed or uploaded. (After an Apple sign-in, the app also sends Apple's one-time code to `apple-token` in the background.)
 2. The app reads `my_sync_gate()`. If Terms are not current, it shows the Terms sheet with "By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy" and records `record_policy_act('terms', ..., context {auth, age_attested: true})`. If Terms are current without the attestation, it asks "Are you 18 or older?" once; No ends the session and shows the 18+ stop screen.
 3. Then the sensitive-data sheet ("Before your book syncs"). "Agree and sync" records an accept and sync may start. "Keep on this phone" records a decline; the person stays signed in, letters stay on the phone, and Family or Account offers "Agree and sync" later.
 4. Nothing syncs before step 3 is accepted: the app checks, and the server refuses content writes with `SCCON` anyway.
 5. Sign-out waits until queued letters have uploaded, then ends the session on this phone only. Local letters are never deleted by signing out.
+6. **Signing everyone in again** (LEGAL-REQ-040, security review L3): set `forceReauthEpoch` in the signed remote config to the current Unix time in seconds (`date +%s`; a value in milliseconds is read as seconds) and publish it (`scripts/packs/publish.ts`, coordinator with your OK). Each phone whose session signed in before that time ends it once, within about 5 minutes of opening the app, keeps every letter and its upload queue, and shows "Sign in again to keep your book in sync". Sessions that sign in afterwards are left alone. For a compromise, pair it with revoking the JWT signing key (TDD 04 3.2.3, docs/ops/SECURITY.md), which stops old tokens on the server too.
+7. **Joining a book** asks first: "Join this family book?" with the inviter's sign-off name, then "Join the book" or "Not now". The open book changes only when the person taps "Open the book". Family offers "Leave this book" when a co-parent exists, and either parent can remove a family member. A co-parent is never removed by the other parent; support does that (APPLY.md step 19).
 
 ## 10. Keys and owners
 
 | Secret | Where it lives | Rotation |
 |---|---|---|
-| Apple `.p8`, Key ID, Team ID | Password manager; later the `apple-token` function's secrets | The OAuth client secret made from it expires within 6 months (Apple); calendar reminder |
+| Apple `.p8`, Key ID, Team ID | Password manager, and Edge Function secrets `APPLE_SIGNIN_PRIVATE_KEY`, `APPLE_SIGNIN_KEY_ID`, `APPLE_TEAM_ID` (`apple-token`, `purge-worker`) | The functions sign a fresh 10-minute secret per call. Only the web OAuth client secret (2.6, if used) expires within 6 months; calendar reminder |
+| `TOKEN_KEK_V<n>` | Edge Function secrets only (`apple-token`, `purge-worker`), password manager | Add a new version and keep the old one while tokens wrapped with it exist |
 | Resend SMTP API key | Supabase SMTP settings, password manager | When anyone with access leaves, or yearly |
 | Google web client secret | Supabase Google provider | Only on suspicion; rotating it does not affect native sign-in |
 | Supabase service role key | Supabase only | Never in the app, CI only through a protected environment |
@@ -285,6 +335,11 @@ Run on a real iPhone with a preview build that has every variable from section 8
 6. **Offline:** airplane mode, cold start: the app opens signed in, records and saves letters.
 7. **Passkeys (only for section 7):** Settings > Account > Add a passkey shows Face ID and succeeds; sign out; "Use a passkey" signs back in. Supabase shows the passkey under the user.
 8. **Revocation:** iOS Settings > Apple Account > Sign in with Apple > Early Letters > Stop using. Relaunch: the app signs out after letters upload.
+9. **Apple token capture (2.7):** sign in with Apple on a fresh account. Within a minute, SQL Editor: `select count(*), max(key_version) from ops.apple_tokens;` shows one more row. Then delete that account in the app and let the purge worker run: the receipt says `apple: revoked`, and the Apple ID no longer lists Early Letters.
+10. **Link from someone else (security review H1):** on phone A (signed out, with a letter), never tap "Send link". Ask for an email on phone B and open that link on phone A: phone A says the link was asked for on another phone and offers the code, and nothing signs in. Then on phone A ask for an email and open it there: it signs in, then asks "Is this your account?" with the address; "No, sign out" leaves the letter on the phone, unsynced; "Yes, this is me" syncs it. Also open a link on a phone already signed in: "You're already signed in".
+11. **8-digit code (4.4):** the code screen fills from the email (one-time-code autofill) and signs in at 8 digits.
+12. **Invite (fragment link):** share an invite, open `https://earlyletters.com/i#t=...` on the second phone: the app opens, signs in, asks "Join this family book?" with your sign-off name; "Not now" closes it and nothing joins; the link again, then "Join the book", joins, and the open book does not change until "Open the book". A third person opening a new link after two parents: "This book already has two parents". Check Vercel logs show `/i` with no token.
+13. **Forced sign-in (item 6 of section 9):** publish a config with `forceReauthEpoch` = now in a preview project; open the app: signed out once with the calm line, letters still there; sign in again: stays signed in.
 
 ## Sources (opened 3 Oct 2026)
 

@@ -56,12 +56,12 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
 
   return (
     <Animated.View entering={entering} layout={reduced ? undefined : LAYOUT} className="px-5 pb-3">
-      <Card radius="md" padding={4} onPress={() => onPress(entry.id)} accessibilityLabel={label} accessibilityHint={copy.reader.openHint} className="gap-2.5">
+      <Card testID="book.letter" radius="md" padding={4} onPress={() => onPress(entry.id)} accessibilityLabel={label} accessibilityHint={copy.reader.openHint} className="gap-2.5">
         <Text variant="letterDateline" caps>
           {date}
         </Text>
 
-        <Text numberOfLines={2} variant={waiting ? 'signature' : 'letterBody'} scale={0.9} tone={waiting ? 'muted' : 'default'}>
+        <Text testID={words === 'waiting' ? 'book.letter.waitingForWords' : undefined} numberOfLines={2} variant={waiting ? 'signature' : 'letterBody'} scale={0.9} tone={waiting ? 'muted' : 'default'}>
           {excerpt}
         </Text>
 
@@ -88,7 +88,7 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
 /** "Private" tag: accentSoft fill with full-strength text (12.07:1 light, 11.20:1 dark), lock + word. */
 export function PrivateChip({ color }: { color: string }) {
   return (
-    <View className="flex-row items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5">
+    <View testID="book.letter.private" className="flex-row items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5">
       <LockSimpleIcon size={12} color={color} weight="bold" />
       <Text variant="caption" tone="default">
         {copy.book.privateLabel}

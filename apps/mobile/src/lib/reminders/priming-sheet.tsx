@@ -51,7 +51,7 @@ export function ReminderPrimingSheet({ visible, onContinue }: Props) {
             <Text className="flex-1 text-sm leading-5 text-muted-foreground">{p.privacyLine}</Text>
           </View>
         </View>
-        <Button size="lg" onPress={onContinue}>
+        <Button size="lg" onPress={onContinue} testID="reminders.priming.continue">
           <Text>{copy.common.continueButton}</Text>
         </Button>
       </View>

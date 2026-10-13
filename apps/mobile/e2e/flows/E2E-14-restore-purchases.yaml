@@ -14,6 +14,9 @@
 # Apple's sheets are system UI, so their words are selected by text; override
 # with -e if Apple's wording differs (PLAN_BUTTON, CONFIRM_BUTTON).
 #
+# Also proves G-15 (purchase confirmation with Save a copy, LEGAL-REQ-046 as
+# amended by the Q-003 memo). The reminder notifications themselves need
+# real time and a locked phone: DEVICE_TEST_PLAN S2-17.
 # Proves: D-053 and ADR 0013 (Apple's own subscription screen; Plus is read from
 # Transaction.currentEntitlements on the device), C-REQ-020 (Restore purchases
 # reports Plus), LEGAL-REQ-050 (expiry keeps everything: step 4 is manual in
@@ -27,9 +30,11 @@ tags:
   - D-053
   - C-REQ-020
   - LEGAL-REQ-050
+  - LEGAL-REQ-046
 env:
   PLAN_BUTTON: ${PLAN_BUTTON || ".*Plus Monthly.*"}
   CONFIRM_BUTTON: ${CONFIRM_BUTTON || "Subscribe|Confirm|Try It Free"}
+  SHARE_TARGET: ${SHARE_TARGET || "Copy"}
 ---
 - launchApp:
     stopApp: false
@@ -62,11 +67,40 @@ env:
         text: "OK"
     commands:
       - tapOn: "OK"
+# 2b. G-15: the purchase confirmation (what was agreed, the cancel-by date, how
+#     to cancel) with "Save a copy" through the share sheet. Nothing leaves the
+#     phone; the person keeps the copy (Q-003 memo point 3, CA (a)(3)).
+- extendedWaitUntil:
+    visible:
+      id: "plusConfirmed.screen"
+    timeout: 20000
+- tapOn:
+    id: "plusConfirmed.saveCopy"
+# Apple's share sheet (system UI, selected by its words; override SHARE_TARGET if Apple renames it).
+- extendedWaitUntil:
+    visible:
+      text: ${SHARE_TARGET}
+    timeout: 10000
+- tapOn: ${SHARE_TARGET}
+- extendedWaitUntil:
+    visible:
+      id: "plusConfirmed.screen"
+    timeout: 10000
+# The one-time "Remind me before the free months end" ask appears only while iOS
+# has never been asked about notifications; leave it for the device plan (S2-17).
+- tapOn:
+    id: "plusConfirmed.done"
 - extendedWaitUntil:
     visible:
       id: "plan.status.plus"
     timeout: 20000
+- assertVisible:
+    id: "plan.saveCopy"
 # 3. Restore purchases: Apple's sync, then Plus is still reported.
+- scrollUntilVisible:
+    element:
+      id: "plan.restore"
+    direction: DOWN
 - tapOn:
     id: "plan.restore"
 - extendedWaitUntil:

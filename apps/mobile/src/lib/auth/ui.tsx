@@ -206,9 +206,9 @@ export function AccountGate({
     );
   }
 
-  if (s.status === 'checkingConsent' || s.status === 'signingOut') return <Busy label={authCopy.consent.settingUp} />;
+  if (s.status === 'signingOut' || (s.status === 'checkingConsent' && !auth.accountConfirmPending)) return <Busy label={authCopy.consent.settingUp} />;
 
-  if (s.status === 'needsConsent') {
+  if (s.status === 'needsConsent' || auth.accountConfirmPending) {
     return (
       <View className="gap-4">
         <SheetBody muted>{g.sync.waiting}</SheetBody>
@@ -220,6 +220,7 @@ export function AccountGate({
   }
 
   // ready, with sync off (declined) or unknown (offline at launch)
+  if (s.status !== 'ready') return <Busy label={authCopy.consent.settingUp} />;
   const offline = s.sync === 'unknown';
   const sc = copy.sensitiveConsent;
   return (

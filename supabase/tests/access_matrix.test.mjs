@@ -89,7 +89,12 @@ async function attempt(persona, sql, params) {
 //                                                               parent  coparent contrib outsider anonymous anon
 const READS = [
   ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, 0]],
-  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, 0]],
+  // 20261005100000 (G-08): column privileges; the anon role reads no column of children at all.
+  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, '42501']],
+  ['children: name and nickname', 'select 1, name, nickname from children where id=$1', [CHILD], [1, 1, 1, 0, 0, '42501']],
+  // D-039: nobody reads the birth date or due date from the table; sync_pull / sync_books serve them by role.
+  ['children: date of birth', 'select 1, date_of_birth from children where id=$1', [CHILD], ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['children: due date', 'select 1, due_date from children where id=$1', [CHILD],     ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, 0]],
   ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         [3, 3, 0, 0, 0, 0]],
   ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, 0]],
@@ -126,7 +131,12 @@ const WRITES = [
   ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
   ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
   ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
-  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', 'none']],
+  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', '42501']],
+  // G-08: parents still write the dates directly (no read of the old value needed).
+  ['children: set due date', `update children set due_date='2025-05-01' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', '42501']],
+  // G-10: receipts are written only by sync_op_claim(); clients cannot insert or delete them.
+  ['sync_op_receipts: insert own', `insert into sync_op_receipts (op_id, profile_id) values ('${uuid7()}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['sync_op_receipts: delete own', `delete from sync_op_receipts where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-05-20')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: add self', `insert into child_members (child_id, profile_id) values ('${CHILD}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
@@ -174,6 +184,12 @@ const RPCS = [
   ['leave_child', `select public.leave_child('${CHILD}')`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['remove_child_member', `select public.remove_child_member('${CHILD}', '${N}')`,      ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['rate_hit', `select public.rate_hit('membership')`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // 20261005100000 (behaviour in db_fix_*.test.mjs). book_update: sync_push's book.update (G-08).
+  ['book_update', `select public.book_update('${CHILD}', '{"nickname": "Ashu"}')`,      ['ok', 'ok', 'SCPAR', 'P0002', 'SCANO', '42501']],
+  // sync_op_claim: the caller's own op ids only (G-10).
+  ['sync_op_claim', `select public.sync_op_claim('${uuid7()}')`,                        ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // peek_invite: the same answers as accept_child_invite, before consent and without joining (G-13).
+  ['peek_invite', `select public.peek_invite('${token}')`,                              ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -200,6 +216,8 @@ const SERVICE_ONLY = [
   `select public.sync_begin_epoch('drill', null)`, `select public.sync_housekeeping(now(), 10)`,
   // Internal helpers (20261005000000): called only from security-definer functions.
   `select public.max_parents_per_book()`, `select public.request_idempotency_key()`,
+  // 20261005100000 (G-12): pepper readiness for APPLY.md and ops checks.
+  `select public.consent_pepper_ready()`,
   `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
 ];
 

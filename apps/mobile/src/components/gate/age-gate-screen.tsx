@@ -51,8 +51,9 @@ export function AgeGateScreen({ decision, refresh }: Props) {
     refresh();
   };
 
-  const segment = (selected: boolean, label: string, onPress: () => void) => (
+  const segment = (selected: boolean, label: string, onPress: () => void, testID: string) => (
     <Pressable
+      testID={testID}
       onPress={() => {
         haptic('tap');
         onPress();
@@ -69,7 +70,7 @@ export function AgeGateScreen({ decision, refresh }: Props) {
     const windowPassed = decision === 'ask';
     return (
       <SafeAreaView className="flex-1 bg-background">
-        <ScrollView contentContainerClassName="flex-grow justify-center gap-5 px-5 py-10">
+        <ScrollView testID="gate.stop" contentContainerClassName="flex-grow justify-center gap-5 px-5 py-10">
           <View accessibilityLiveRegion="polite" className="gap-4">
             <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">
               {g.stopTitle}
@@ -78,7 +79,7 @@ export function AgeGateScreen({ decision, refresh }: Props) {
             <Text className="text-base leading-6 text-muted-foreground">{g.stopNote}</Text>
           </View>
           {windowPassed && (
-            <Button size="lg" variant="secondary" onPress={answeredByMistake}>
+            <Button size="lg" variant="secondary" onPress={answeredByMistake} testID="gate.stop.mistake">
               <Text>{g.mistakeButton}</Text>
             </Button>
           )}
@@ -89,19 +90,19 @@ export function AgeGateScreen({ decision, refresh }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <ScrollView contentContainerClassName="flex-grow gap-5 px-5 pb-6 pt-16">
+      <ScrollView testID="gate.screen" contentContainerClassName="flex-grow gap-5 px-5 pb-6 pt-16">
         <View className="flex-1 gap-5">
           <Text role="heading" className="font-serif text-4xl leading-[44px] text-foreground">
             {g.title}
           </Text>
           <Text className="text-lg text-muted-foreground">{g.body}</Text>
           <View className="flex-row flex-wrap gap-3" accessibilityRole="radiogroup" accessibilityLabel={g.title}>
-            {segment(adult === true, g.yesButton, () => setAdult(true))}
-            {segment(adult === false, g.noButton, () => setAdult(false))}
+            {segment(adult === true, g.yesButton, () => setAdult(true), 'gate.yes')}
+            {segment(adult === false, g.noButton, () => setAdult(false), 'gate.no')}
           </View>
         </View>
         {/* Controls never animate in (MOTION principle 2). */}
-        <Button size="lg" disabled={adult === null} onPress={submit}>
+        <Button size="lg" disabled={adult === null} onPress={submit} testID="gate.continue">
           <Text>{copy.common.continueButton}</Text>
         </Button>
       </ScrollView>

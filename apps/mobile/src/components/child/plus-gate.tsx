@@ -91,7 +91,7 @@ export function PlusGate({ onNotNow, onPlus, onContinueDev, title, body, keepNot
   };
 
   return (
-    <ScrollView contentContainerClassName="gap-4 px-5 pb-10 pt-8">
+    <ScrollView testID="plusGate.screen" contentContainerClassName="gap-4 px-5 pb-10 pt-8">
       <View accessible={false} className="h-14 w-14 items-center justify-center rounded-full bg-secondary">
         {icon ?? <BooksIcon size={28} color={c.accent} />}
       </View>
@@ -102,12 +102,12 @@ export function PlusGate({ onNotNow, onPlus, onContinueDev, title, body, keepNot
       <Text className="text-base leading-6 text-muted-foreground">{keepNote ?? copy.children.add.keepNote}</Text>
       <View className="gap-3 pt-4">
         {canOpen && (
-          <Button size="lg" onPress={open} disabled={opening} accessibilityHint={opening ? g.opening : undefined}>
+          <Button size="lg" onPress={open} disabled={opening} accessibilityHint={opening ? g.opening : undefined} testID="plusGate.subscribe">
             <Text>{x.plusCta}</Text>
           </Button>
         )}
-        {note && <Text className="text-center text-sm leading-5 text-muted-foreground">{note}</Text>}
-        <Button variant="ghost" onPress={onNotNow}>
+        {note && <Text testID="plusGate.note" className="text-center text-sm leading-5 text-muted-foreground">{note}</Text>}
+        <Button variant="ghost" onPress={onNotNow} testID="plusGate.notNow">
           <Text className="text-primary">{copy.common.notNowButton}</Text>
         </Button>
         {devShortcutsAllowed && onContinueDev && (

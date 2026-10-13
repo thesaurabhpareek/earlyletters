@@ -55,15 +55,15 @@ export default function AccountSettings() {
 
   if (!auth.signedIn) {
     return (
-      <ScrollView contentContainerClassName="gap-6 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+      <ScrollView testID="account.screen" contentContainerClassName="gap-6 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
         <Stack.Screen options={{ title: a.title }} />
         <ListSection title={a.title}>
-          <ListRow title={a.signedOutTitle} />
+          <ListRow title={a.signedOutTitle} testID="account.signedOut" />
         </ListSection>
         <Text className="text-base leading-6 text-muted-foreground">{a.signedOutBody}</Text>
         {s.status === 'signedOut' && s.error === 'session_expired' ? <ErrorLine message={authCopy.errors.session_expired} /> : null}
         {auth.configured ? (
-          <Button size="lg" onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'settings' } })}>
+          <Button size="lg" onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'settings' } })} testID="account.signIn">
             <Text>{a.signIn}</Text>
           </Button>
         ) : (
@@ -145,16 +145,16 @@ export default function AccountSettings() {
   const waitingToSignOut = s.status === 'signingOut' && s.waitingForUploads;
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView testID="account.screen" contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: a.title }} />
 
       <ListSection title={a.title}>
-        <ListRow title={a.signedInWith[provider]} subtitle={auth.account.email ?? undefined} />
+        <ListRow title={a.signedInWith[provider]} subtitle={auth.account.email ?? undefined} testID="account.signedIn" />
       </ListSection>
 
       <ListSection title={a.syncTitle}>
-        <ListRow title={a.syncLabel} trailing={syncLabel} />
-        {s.status === 'needsConsent' && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
+        <ListRow title={a.syncLabel} trailing={syncLabel} testID="account.sync" />
+        {s.status === 'needsConsent' && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} testID="account.finishSetup" />}
         {s.status === 'ready' && s.sync === 'off' && (
           <ListRow
             title={copy.sensitiveConsent.agreeButton}
@@ -191,7 +191,7 @@ export default function AccountSettings() {
         {note ? <Text className="text-base leading-6 text-muted-foreground">{note}</Text> : null}
         {waitingToSignOut ? <Text className="text-base leading-6 text-muted-foreground">{a.signOutWaiting}</Text> : null}
         <ListSection>
-          <ListRow title={a.signOut} variant="destructive" onPress={signOut} disabled={waitingToSignOut} />
+          <ListRow title={a.signOut} variant="destructive" onPress={signOut} disabled={waitingToSignOut} testID="account.signOut" />
         </ListSection>
       </View>
     </ScrollView>

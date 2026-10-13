@@ -127,9 +127,9 @@ export default function Reminders() {
   const selectedDays = cadence === 'weekly' ? [prefs.weeklyDay] : cadence === 'everyEvening' ? [0, 1, 2, 3, 4, 5, 6] : prefs.days;
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView testID="reminders.screen" contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <ListSection footer={r.help}>
-        <ToggleRow title={s.enabledLabel} value={prefs.enabled} disabled={busy} onValueChange={(v) => void toggle(v)} />
+        <ToggleRow title={s.enabledLabel} value={prefs.enabled} disabled={busy} onValueChange={(v) => void toggle(v)} testID="reminders.toggle" />
       </ListSection>
 
       {prefs.enabled && permission === 'denied' && (

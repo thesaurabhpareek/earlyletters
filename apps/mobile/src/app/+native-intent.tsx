@@ -5,10 +5,12 @@
  * history entries or log lines (A-NFR-012, LEGAL-REQ-014).
  *
  * - https://earlyletters.com/auth/callback#token_hash=...  -> token hash kept
- *   in memory, route /sign-in/verify
+ *   in memory, route /sign-in/verify (which opens it only if this phone asked
+ *   for the email, through PKCE; security review H1)
  * - scribe://auth/callback (website fallback, no secret)    -> /sign-in/code
- * - https://earlyletters.com/i/<token>                      -> token to the
- *   Keychain first (A-REQ-028), route /invite
+ * - https://earlyletters.com/i#t=<token> (and, for links sent before the
+ *   change, /i/<token>)                                      -> token to the
+ *   Keychain first (A-REQ-028), route /invite, which asks before joining
  * - Google's own redirect scheme                            -> left alone
  *
  * The 18+ gate still comes first: the root layout renders no route until it

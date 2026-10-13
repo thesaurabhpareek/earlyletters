@@ -19,6 +19,8 @@ export interface NativeTransaction {
   /** ISO instant the current period or free trial ends (renews). */
   expiresAt?: string;
   purchasedAt?: string;
+  /** ISO instant of the first purchase of this subscription (its anniversary; Q-003 yearly reminder). */
+  originalPurchasedAt?: string;
   /** familyShared: Plus reached this person through Apple Family Sharing. */
   ownership: Ownership;
   environment: StoreEnvironment;
@@ -37,6 +39,8 @@ export interface NativeStatus extends NativeTransaction {
   state: RenewalStateName;
   willAutoRenew?: boolean;
   gracePeriodExpiresAt?: string;
+  /** The next renewal's price, formatted by Apple ("$29.99"). Existing subscribers keep their price. */
+  renewalPrice?: string;
 }
 
 /** What `currentEntitlements` returns. */
