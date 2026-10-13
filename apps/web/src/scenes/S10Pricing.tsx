@@ -34,7 +34,7 @@ function PricingStage() {
             <Headline style={{ fontSize: 'clamp(36px, 5vw, 80px)' }}>{copy.headline}</Headline>
           </motion.div>
           <motion.div style={{ opacity: supOpacity }}>
-            <Support>{copy.support}</Support>
+            <Support>{`${copy.support} ${copy.summary}`}</Support>
           </motion.div>
         </div>
       </div>

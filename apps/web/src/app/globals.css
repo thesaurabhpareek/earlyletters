@@ -51,6 +51,9 @@
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --fade-ms: 200ms;
 
+  /* Lifts the fixed scroll nudge (components/landing/ScrollNudge) if a banner is ever added at the bottom. */
+  --overlay-clearance: 0px;
+
   color-scheme: light dark;
 }
 
@@ -61,6 +64,8 @@
 }
 
 html {
+  /* A focused item never lands under the fixed scroll nudge (WCAG 2.2 focus not obscured). */
+  scroll-padding-bottom: 76px;
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

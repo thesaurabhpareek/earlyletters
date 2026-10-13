@@ -31,7 +31,14 @@ export function ProofScene() {
               </h2>
             </ScrubIn>
             <ScrubIn progress={progress} from={0.1} to={0.22} enabled={enabled} as="div" y={14}>
-              <p className={styles.sub}>{s04.support}</p>
+              <ul className={styles.shortList}>
+                {s04.lines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </ScrubIn>
+            <ScrubIn progress={progress} from={0.18} to={0.3} enabled={enabled} as="div" y={14}>
+              <p className={`${styles.pull} ${styles.pullLine}`}>{s04.promise}</p>
             </ScrubIn>
           </motion.div>
           <motion.div style={pinned ? handoff : undefined}>

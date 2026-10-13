@@ -247,12 +247,14 @@ describe('s08 language lines (translations need native-speaker confirmation, see
   };
   const STOP: Record<string, string> = { en: '.', es: '.', fr: '.', pt: '.', hi: '।', zh: '。', ar: '.' };
 
-  // RULE: exactly the seven v1.0 languages (BRIEF decision 6), in the order the support line names them.
-  it('lists the seven v1.0 languages, in order, and the support line names them', () => {
+  // RULE: exactly the seven v1.0 languages (BRIEF decision 6), in this order, and the support line says "Seven"
+  // (the home page no longer lists the names in a sentence: the seven cards below it are the list).
+  it('lists the seven v1.0 languages, in order, and the support line counts them', () => {
     // Primary subtag only: lang may carry a script or region (zh-Hans, pt-BR).
     expect(lines.map((l) => l.lang.split('-')[0])).toEqual(['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt']);
-    const names = lines.map((l) => l.name);
-    expect(siteModule.site.scenes.s08.support).toContain(`${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
+    expect(lines.map((l) => l.name)).toEqual(['English', 'Hindi', 'Spanish', 'Mandarin', 'French', 'Arabic', 'Portuguese']);
+    expect(lines).toHaveLength(7);
+    expect(siteModule.site.scenes.s08.support).toMatch(/^Seven languages\b/);
   });
 
   // RULE: each line is in its own script, ends with its language's full stop, and is right to left only for Arabic.

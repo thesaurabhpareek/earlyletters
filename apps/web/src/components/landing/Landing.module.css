@@ -107,14 +107,31 @@
   color: color-mix(in srgb, var(--night-ink) 84%, transparent);
   animation: rise 1.4s var(--ease-standard) 0.5s both;
 }
-.trust {
-  margin: 14px auto 0;
-  max-width: min(30em, 86vw);
-  text-wrap: balance;
-  font-size: clamp(17px, 1.6vw, 22px);
-  line-height: 1.5;
+.promises {
+  list-style: none;
+  margin: 18px auto 0;
+  padding: 0;
+  max-width: min(34em, 90vw);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 22px;
+  font: 500 clamp(16px, 1.5vw, 18px) / 1.4 var(--font-sans);
   color: var(--night-ink-muted);
   animation: rise 1.4s var(--ease-standard) 0.7s both;
+}
+.promises li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.promises li::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--night-accent);
 }
 .actions {
   display: flex;
@@ -162,13 +179,38 @@
 .sub a {
   color: var(--night-accent);
 }
+/* A one or two line lead: never longer than two lines on a tablet. */
+.subTight {
+  max-width: 26em;
+}
+/* The compact headline for sections that sit beside something (pricing, private): two or three lines in a half column. */
+.h2Compact {
+  font-size: clamp(40px, 4vw, 56px);
+  line-height: 1.08;
+}
 .langs {
   list-style: none;
   margin: clamp(28px, 4vw, 48px) 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+}
+/* Phone: English spans the row, the other six sit in pairs. */
+.langs li:first-child {
+  grid-column: 1 / -1;
+}
+/* Wide: three across, then four across, so no cell is left empty. */
+@media (min-width: 60rem) {
+  .langs {
+    grid-template-columns: repeat(12, 1fr);
+  }
+  .langs li:nth-child(-n + 3) {
+    grid-column: span 4;
+  }
+  .langs li:nth-child(n + 4) {
+    grid-column: span 3;
+  }
 }
 .lang {
   display: flex;
@@ -194,29 +236,35 @@
 }
 .points {
   list-style: none;
-  margin: clamp(28px, 4vw, 48px) 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
   max-width: 44rem;
 }
 .point {
   position: relative;
-  padding: 16px 0 16px 34px;
-  font-size: clamp(20px, 2.1vw, 29px);
-  line-height: 1.5;
+  padding: 12px 0 12px 28px;
+  font-size: 19px;
+  line-height: 1.45;
   border-bottom: 1px solid color-mix(in srgb, var(--night-ink) 12%, transparent);
+}
+@media (min-width: 48rem) {
+  .point {
+    padding-block: 16px;
+    font-size: clamp(18px, 1.7vw, 22px);
+    line-height: 1.5;
+  }
 }
 .point::before {
   content: '';
   position: absolute;
   left: 4px;
-  top: 1.35em;
-  width: 10px;
-  height: 10px;
+  top: 1.15em;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--night-accent);
-  box-shadow: 0 0 14px 2px rgba(217, 164, 126, 0.55);
+  box-shadow: 0 0 12px 2px rgba(217, 164, 126, 0.5);
 }
 .closing {
   text-align: center;
@@ -426,7 +474,7 @@
   .title.sheen,
   .sheen,
   .lead,
-  .trust,
+  .promises,
   .actions {
     animation: none;
   }
@@ -447,4 +495,157 @@
   .big {
     font-size: clamp(72px, 19vw, 176px);
   }
+}
+
+/* Short lines beside the proof letter: one idea each, then the promise set apart. */
+.shortList {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.shortList li {
+  font-size: clamp(19px, 1.7vw, 24px);
+  line-height: 1.42;
+  color: color-mix(in srgb, var(--night-ink) 80%, transparent);
+}
+.pullLine {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(21px, 2vw, 27px);
+  line-height: 1.32;
+}
+.shortLines .sub {
+  margin-top: 14px;
+}
+.shortLines .sub:first-child {
+  margin-top: 28px;
+}
+.example {
+  margin: clamp(24px, 3vw, 36px) 0 0;
+  font: 600 13px/1 var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--night-ink-muted);
+}
+.example + .timeline {
+  margin-top: 14px;
+}
+
+/* Pricing: two plan cards of equal weight, a short list, one reassurance line. */
+.priceGrid {
+  display: grid;
+  gap: clamp(28px, 4vw, 36px) clamp(32px, 5vw, 72px);
+  align-items: start;
+}
+.priceCopy,
+.priceCards {
+  min-width: 0;
+}
+.priceNote {
+  margin-top: 0;
+}
+@media (min-width: 60rem) {
+  .priceGrid {
+    grid-template-columns: 1.1fr 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'copy cards'
+      'note cards';
+  }
+  .priceCopy {
+    grid-area: copy;
+  }
+  .priceCards {
+    grid-area: cards;
+  }
+  .priceNote {
+    grid-area: note;
+  }
+}
+.plans {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 40rem) {
+  .plans {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.plans li {
+  display: flex;
+}
+.planCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(18px, 2vw, 24px);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--night-raised) 62%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 11%, transparent);
+  backdrop-filter: blur(10px);
+}
+.planName {
+  font: 600 13px/1 var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--night-accent);
+}
+.price {
+  margin: 14px 0 0;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 3.4vw, 48px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.per,
+.trial {
+  margin: 6px 0 0;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--night-ink-muted);
+}
+.trial {
+  margin-top: 4px;
+}
+.fine {
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--night-ink-muted);
+}
+.includesLabel {
+  margin: 28px 0 4px;
+  font: 600 13px/1 var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--night-ink-muted);
+}
+.includes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.includes li {
+  position: relative;
+  padding: 12px 0 12px 28px;
+  font-size: clamp(18px, 1.6vw, 21px);
+  line-height: 1.4;
+  border-bottom: 1px solid color-mix(in srgb, var(--night-ink) 12%, transparent);
+}
+.includes li::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 1.15em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--night-accent);
+  box-shadow: 0 0 10px 1px rgba(217, 164, 126, 0.5);
 }

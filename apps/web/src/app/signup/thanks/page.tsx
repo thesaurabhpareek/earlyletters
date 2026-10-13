@@ -4,6 +4,7 @@
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ShareButton } from '@/components/site/ShareButton';
 import styles from '@/components/site/Unsubscribe.module.css';
 import { site } from '@/content/site';
 
@@ -14,6 +15,7 @@ export default function ThanksPage() {
     <main className={styles.page}>
       <h1 className={styles.line}>{site.notify.thanksTitle}</h1>
       <p className={styles.body}>{site.notify.success}</p>
+      <ShareButton spaceAbove={28} />
       <Link className={styles.home} href="/">
         {site.notify.home}
       </Link>

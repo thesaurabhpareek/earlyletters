@@ -18,6 +18,18 @@ import { brand } from '@scribe/brand';
 const NAME = brand.name;
 
 /**
+ * Plus prices (founder, final, Oct 2026). Monthly $4.99 with a 1-month free trial; yearly $49.99 with a 2-month
+ * free trial. The trial creates the subscription and nothing is charged until it ends. Yearly is about ten
+ * months' price for twelve months of access (12 x 4.99 = 59.88; 59.88 - 49.99 = 9.89). The page shows both
+ * plans at equal weight and states no saving, so no derived figure is written anywhere (test/home-claims.test.ts
+ * recomputes the arithmetic). Apple bills and Apple is where a person cancels.
+ */
+const PLANS = [
+  { name: 'Monthly', price: '$4.99', period: 'a month', trial: '1-month free trial' },
+  { name: 'Yearly', price: '$49.99', period: 'a year', trial: '2-month free trial' },
+] as const;
+
+/**
  * The film's one letter. `heard` is what the microphone caught; joining every segment's
  * `becomes` (or its text when there is none) gives `text`. Each change is an edit the app's
  * constitution allows (packages/core/src/types.ts EditType): a misheard name from the family
@@ -62,14 +74,24 @@ export const site = {
   skip: 'Skip the film',
 
   comingSoon: {
-    line: 'A calm place to keep and treasure every milestone. The baby memory book you fill by talking, with every word kept exactly as you said it, in your voice.',
-    trust: 'Private by design. Your letters stay on your phone, and we never rewrite your words.',
-    shareButton: 'Share with friends and family',
+    line: 'The baby memory book you fill by talking.',
+    /** Three short promises under the hero line (a row, not a paragraph). Each is true for v1.0: on the phone, word for word, never rewritten. */
+    promises: ['Private on your phone', 'Word for word', 'Never rewritten'],
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
-    shareCopied: 'Link copied',
+    /** Share with a fellow parent (components/site/ShareButton.tsx): label, sheet title and text, and the states. The shared address is the plain site address, nothing else. */
+    shareButton: 'Share with a fellow parent',
+    shareCopied: 'Link copied.',
+    shareManual: 'That did not copy. Here is the link:',
+    shareFieldLabel: 'Link to share',
     shareTitle: `${NAME}, the baby memory book`,
-    shareText: 'The baby memory book you fill by talking. Every word kept exactly as you said it, private on your phone.',
+    shareText: 'Coming soon to iPhone: the baby memory book you fill by talking. Every word kept exactly as you said it.',
+  },
+
+  /** The quiet button at the bottom right that scrolls to the sign-up (components/landing/ScrollNudge.tsx). */
+  nudge: {
+    label: 'Early access',
+    aria: 'Go to the early access sign-up',
   },
 
   cta: {
@@ -129,8 +151,16 @@ export const site = {
     s04: {
       label: 'Exactly as you said it',
       headline: 'Exactly as you said it.',
+      /** Short lines, set one under another beside the letter (Landing, ProofScene). */
+      lines: [
+        'Runs on your phone by default.',
+        'Only ums and misheard names are fixed.',
+        'Every small fix is marked. Put any of them back.',
+      ],
+      /** The promise, set apart under the lines. */
+      promise: 'We never rewrite your words.',
       support:
-        'Transcription runs on your phone by default and only clears the ums and misheard names. We never rewrite your words.',
+        'Runs on your phone by default. Only ums and misheard names are fixed. Every small fix is marked. Put any of them back. We never rewrite your words.',
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -140,19 +170,23 @@ export const site = {
     s05: {
       label: 'Your voice',
       headline: 'Your voice stays with it.',
-      support: 'The recording is kept with every letter you speak. One day Meera can hear how you sounded tonight.',
+      support: 'The recording is kept with every letter you speak.',
       /** tonight.states.savedLetter */
       appKept: 'Signed and kept.',
     },
     s06: {
       label: 'The book',
       headline: 'A book that grows by month.',
-      support: "Each letter is filed under Meera's age that month and signed with your name. Both parents write in the same book.",
+      /** Two short lines (Landing renders each on its own). No claim about who else can write: v1.0 is on the device. */
+      lines: ["Filed by Meera's age.", 'Signed with your name.'],
+      support: "Filed by Meera's age. Signed with your name.",
       appTitle: "Meera's Book",
+      /** The month cards show the film's fictional family, so the page says so. */
+      exampleLabel: "An example of Meera's book",
       chapters: [
-        { month: 'Month 7', meta: '9 letters, from Papa and Mama' },
-        { month: 'Month 8', meta: '11 letters, from Papa and Mama' },
-        { month: 'Month 9', meta: '12 letters, from Papa and Mama' },
+        { month: 'Month 7', meta: '9 letters' },
+        { month: 'Month 8', meta: '11 letters' },
+        { month: 'Month 9', meta: '12 letters' },
       ],
       filedChip: 'Filed in Month 9',
     },
@@ -160,7 +194,7 @@ export const site = {
       label: 'Years later',
       dateline: 'Years from now',
       headline: 'Said once. Heard for years.',
-      support: 'Open a spoken letter and hear it in the voice that said it, with the words right there on the page.',
+      support: 'Open a letter and hear it in the voice that said it, words right there on the page.',
       appFrom: 'From Papa',
       /** Optional tap-to-hear. Hidden until a released recording exists (docs/web/STORYBOARD.md). */
       hear: 'Hear this letter',
@@ -168,7 +202,8 @@ export const site = {
     s08: {
       label: 'Your language',
       headline: 'Say it in your language.',
-      support: 'English, Hindi, Spanish, Mandarin, French, Arabic and Portuguese, each written in its own script.',
+      /** The seven names are the cards below, so the sentence does not repeat them (test/copy-rules.test.ts checks the count). */
+      support: 'Seven languages, each in its own script. Your words stay in the language you said them.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).
@@ -186,19 +221,27 @@ export const site = {
     s09: {
       label: 'Private',
       headline: 'Private by default.',
+      /** Who sees it, what we never do, what you control. v1.0 is on the device: no "shared with people you invite" (D-087 hides invite flows). */
       points: [
-        'Your letters are shared only with the people you invite.',
-        'No ads. We never sell your data.',
-        'Your letters are never used to train models.',
-        'Every letter you have made stays yours to export, any time.',
-        'Delete a letter or a recording whenever you like.',
+        'Your letters stay on your phone.',
+        'No ads. We never sell your data, and never use your letters to train models.',
+        'Yours to export or delete, any time.',
       ],
     },
     s10: {
       label: 'Pricing',
       headline: 'Two letters free. Then Plus.',
-      support:
-        'Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters, backs up every recording, opens Read together after the free sessions and covers every child\'s book, with the whole family adding letters. $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.',
+      support: 'Your first two letters are free, so you can try it.',
+      /** Leads the short list of what Plus does. Only what is true for v1.0: Plus gates adding letters (D-082, D-083). */
+      includesLabel: 'Plus lets you',
+      includes: ['Keep adding letters', "Cover every child's book with one membership"],
+      /** Two plan cards of equal weight: no badge, no saving shown, neither preselected (D-083). */
+      plans: PLANS,
+      reassurance: 'Every letter you have made stays yours to read, play and export, even if you stop.',
+      /** Near the price. Billed through Apple's in-app purchase (D-082). Legal signs the wording before launch. */
+      fine: 'Billed by Apple. Cancel any time in your Apple account settings.',
+      /** One sentence of the prices, for the film's single pricing frame (scenes/S10Pricing.tsx). */
+      summary: `Monthly ${PLANS[0].price} with a ${PLANS[0].trial}, or yearly ${PLANS[1].price} with a ${PLANS[1].trial}.`,
     },
     s11: {
       label: 'Start tonight',

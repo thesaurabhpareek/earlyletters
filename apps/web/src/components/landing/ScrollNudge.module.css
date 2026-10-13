@@ -1,0 +1,95 @@
+/* The scroll nudge: a calm pill at the bottom right, same family as the cards and the quiet form row. */
+.sentinel {
+  position: absolute;
+  top: 60svh;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.nudge {
+  position: fixed;
+  z-index: 18; /* below the header (20), above the page content */
+  right: calc(var(--gutter) + env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--overlay-clearance, 0px));
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px 0 18px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--night-ink);
+  font: 600 15px/1 var(--font-sans);
+  background: color-mix(in srgb, var(--night-raised) 80%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 22%, transparent),
+    0 6px 24px -8px rgba(0, 0, 0, 0.6);
+  /* Hidden is visibility:hidden (after the fade), so it is neither focusable nor read when it is not showing. */
+  opacity: 0;
+  transform: translateY(8px);
+  visibility: hidden;
+  transition:
+    opacity 240ms var(--ease-standard),
+    transform 240ms var(--ease-standard),
+    visibility 0s linear 240ms,
+    box-shadow 160ms;
+}
+.nudge[data-show] {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.nudge:hover {
+  box-shadow:
+    inset 0 0 0 1px var(--night-accent),
+    0 6px 24px -8px rgba(0, 0, 0, 0.6);
+}
+.nudge:active {
+  transform: scale(0.97);
+  transition-duration: 160ms;
+}
+.nudge:focus-visible {
+  outline: 2px solid var(--night-ink);
+  outline-offset: 3px;
+}
+.nudge svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--night-accent);
+}
+/* The chevron drifts three times after the pill appears, then rests. It never loops. */
+.nudge[data-show] svg {
+  animation: drift 2.6s ease-in-out 600ms 3;
+}
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nudge {
+    transform: none;
+    transition: opacity 200ms linear, visibility 0s linear 200ms;
+  }
+  .nudge:active {
+    transform: none;
+  }
+  .nudge[data-show] svg {
+    animation: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nudge {
+    background: var(--night-raised);
+    backdrop-filter: none;
+  }
+}
