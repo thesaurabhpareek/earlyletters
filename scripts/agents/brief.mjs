@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
-  repoSlug, ghAll, agentOfPR, readText, isFounderComment,
+  repoSlug, gh, ghAll, agentOfPR, readText, isFounderComment,
 } from "./lib.mjs";
 
 const argv = process.argv.slice(2);
@@ -117,8 +117,10 @@ function latestBrief() {
 // Other sessions (the founder's build thread and its agents) claim files in
 // docs/agents/BOARD.md on develop. Their live claims are off limits.
 function otherThreadsSection() {
-  let text;
-  try { text = readText(join(ROOT, "docs", "agents", "BOARD.md")); } catch { return []; }
+  // Read the board as it is on the base branch now (a local checkout may be stale).
+  const fromApi = gh(`/repos/${repo}/contents/docs/agents/BOARD.md?ref=${roster.base_branch}`, { allowFail: true });
+  let text = fromApi?.content ? Buffer.from(fromApi.content, "base64").toString("utf8") : undefined;
+  if (!text) { try { text = readText(join(ROOT, "docs", "agents", "BOARD.md")); } catch { text = ""; } }
   const rows = (text.split(/^## Active claims/m)[1] ?? "").split(/^## /m)[0]
     .split("\n").filter((l) => /^\|/.test(l) && !/^\|\s*-/.test(l) && !/\|\s*Agent\s*\|/.test(l))
     .map((l) => l.split("|").map((c) => c.trim()))
@@ -128,6 +130,18 @@ function otherThreadsSection() {
   lines.push("", rows.length
     ? rows.map((c) => `- ${c[1]}: ${c[3]} (since ${c[4]})`).join("\n")
     : "No live claims right now.", "");
+  // Work pushed in the last 24 hours that has no open PR yet (another session's branch).
+  const since = Date.now() - 24 * 3600_000;
+  const prRefs = new Set(openPRs.map((p) => p.head.ref));
+  const pushes = new Map();
+  for (const e of ghAll(`/repos/${repo}/events?per_page=100`, { allowFail: true }) ?? []) {
+    if (e.type !== "PushEvent" || new Date(e.created_at) < since) continue;
+    const ref = String(e.payload?.ref ?? "").replace(/^refs\/heads\//, "");
+    if (!ref || ref === roster.base_branch || ref === "main" || prRefs.has(ref) || pushes.has(ref)) continue;
+    pushes.set(ref, e.created_at.slice(0, 16).replace("T", " "));
+  }
+  lines.push("Branches pushed in the last 24 hours with no open PR (someone is working there; check `git diff origin/" + roster.base_branch + "...origin/<branch> --stat` before touching the same files):", "",
+    pushes.size ? [...pushes].map(([r, t]) => `- \`${r}\` (last push ${t} UTC)`).join("\n") : "None.", "");
   return lines;
 }
 
