@@ -148,7 +148,6 @@ const PRIVACY_MANIFESTS: NonNullable<NonNullable<ExpoConfig['ios']>['privacyMani
 
 const microphone = permissionCopy.microphone.replace('{app}', brand.name);
 
-/** "123-abc.apps.googleusercontent.com" -> "com.googleusercontent.apps.123-abc" (Google's iOS URL scheme). */
 /**
  * The marketing version (CFBundleShortVersionString, versionName) lives only in version.json, shared by
  * iOS and Android (ADR 0022, D-089). Build numbers are never set here: EAS remote versioning owns them
@@ -162,6 +161,7 @@ function readVersion(): string {
   return version;
 }
 
+/** "123-abc.apps.googleusercontent.com" -> "com.googleusercontent.apps.123-abc" (Google's iOS URL scheme). */
 function reversedGoogleClientId(clientId: string | undefined): string | null {
   const m = /^([A-Za-z0-9-]+)\.apps\.googleusercontent\.com$/.exec((clientId ?? '').trim());
   return m ? `com.googleusercontent.apps.${m[1]}` : null;
