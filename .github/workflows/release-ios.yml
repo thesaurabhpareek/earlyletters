@@ -1,4 +1,4 @@
-# iOS store-lane release pipeline (ADR 0022, D-089; runbook docs/release/RELEASE.md). Preview-lane TestFlight
+# iOS store-lane release pipeline (ADR 0022, D-089; runbook docs/ops/RELEASE.md). Preview-lane TestFlight
 # builds (C0, C1) are testflight.yml and docs/release/TESTFLIGHT.md, not this file.
 #
 #   tag ios-v<x.y.z>-rc.<n>   checks, then an EAS production build uploaded to internal TestFlight
@@ -107,7 +107,7 @@ jobs:
       - name: EXPO_TOKEN is set
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: '[ -n "$EXPO_TOKEN" ] || { echo "::error::Add the EXPO_TOKEN repository secret (docs/release/RELEASE.md)"; exit 1; }'
+        run: '[ -n "$EXPO_TOKEN" ] || { echo "::error::Add the EXPO_TOKEN repository secret (docs/ops/RELEASE.md section 3.5)"; exit 1; }'
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
