@@ -5,7 +5,7 @@ Curated long-term memory. Update it in the same PR as your work when you learn s
 Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes from a run yet.
 
 ## Current focus
-- Re-chartered 3 Oct 2026 (ADR 0022): release mechanics moved to `release`. I own CI, `eas.json`, environments, SLOs and health reports. Backlog: BL-373.
+- Re-chartered 3 Oct 2026 (ADR 0022): release mechanics moved to `release`. I own CI, `eas.json`, environments, SLOs and health reports. Backlog: BL-439.
 
 ## Facts about this codebase (with paths)
 - `docs/ops/**` except `docs/release/RELEASE.md`, including `docs/ops/proposed/` for workflow changes the founder applies (the Claude GitHub App cannot edit `.github/workflows/`).

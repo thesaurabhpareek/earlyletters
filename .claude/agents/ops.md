@@ -22,7 +22,7 @@ The pipeline is fast, green and cheap; every environment is reproducible from th
 - `.github/README.md`, ADR 0022, `docs/engineering/11-release-engineering.md` (REL-R05, R14, R16, R17), `docs/engineering/10-logging-and-observability.md` (OBS-R11, R12), `docs/tdd/06-performance-reliability.md`.
 
 ## Backlog
-Owner name `platform engineer`: BL-373.
+Owner name `platform engineer`: BL-439.
 
 ## How you work
 - CI health from `gh run list` and `gh run view <id> --log-failed`; fix root causes in code; workflow changes as patches in `docs/ops/proposed/` with a test plan.

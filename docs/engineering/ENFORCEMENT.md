@@ -60,19 +60,19 @@ Totals across 208 rules (2026-10-13, counted from the rows below): 43 enforced, 
 | OBS-R12 | MUST | alerts with runbook ids | not yet | PDATA-06, WS-18 |
 | OBS-R14 | MUST | runbook wrapper; agents without prod credentials | not yet | PINF-01 |
 | REL-R01 | MUST | coordinator-only pushes; branch protection later | review | REL-G3 |
-| REL-R02 | MUST | `apps/mobile/test/release-config.test.ts` | pending (BL-370 branch) | none |
-| REL-R03 | MUST NOT | same test: no build number in config, remote versioning with `autoIncrement` | pending (BL-370 branch) | none |
+| REL-R02 | MUST | `apps/mobile/test/release-config.test.ts` | pending (BL-436 branch) | none |
+| REL-R03 | MUST NOT | same test: no build number in config, remote versioning with `autoIncrement` | pending (BL-436 branch) | none |
 | REL-R04 | MUST NOT | EAS remote build numbers; tag protection | not yet (founder setup) | REL-G3 |
-| REL-R05 | MUST | `release-ios.yml` tag, version and branch checks | pending (BL-371 branch) | none |
+| REL-R05 | MUST | `release-ios.yml` tag, version and branch checks | pending (BL-437 branch) | none |
 | REL-R06 | MUST | release record review | review | none |
-| REL-R07 | MUST | `release-ios.yml` checks (tests, metadata drift, placeholders); size, privacy manifest, E2E handlers by hand | pending (BL-371 branch), partly | REL-G4 |
-| REL-R08 | MUST | `scripts/release/store-config.ts` drift test | pending (BL-370 branch) | none |
+| REL-R07 | MUST | `release-ios.yml` checks (tests, metadata drift, placeholders); size, privacy manifest, E2E handlers by hand | pending (BL-437 branch), partly | REL-G4 |
+| REL-R08 | MUST | `scripts/release/store-config.ts` drift test | pending (BL-436 branch) | none |
 | REL-R09 | MUST | content rules test (limits, no beta wording) | enforced on develop | none |
-| REL-R10 | MUST | `store-config.ts` refuses a later version without notes; `reviewNotes` in content | pending (BL-370, BL-371 branches) | none |
+| REL-R10 | MUST | `store-config.ts` refuses a later version without notes; `reviewNotes` in content | pending (BL-436, BL-437 branches) | none |
 | REL-R13 | MUST | review; CODE-R19 | review | none |
 | REL-R14 | MUST | review until `expo-updates` exists (D-091 pending) | review | none |
 | REL-R15 | MUST | release record review; DB-R09 | review | none |
-| REL-R16 | MUST | founder; health report | review | BL-373 |
+| REL-R16 | MUST | founder; health report | review | BL-439 |
 | REL-R17 | MUST | repository secrets used only by `release-ios.yml`; gitleaks | pending PR #30 (gitleaks) | REL-G3 |
 | REL-R18 | MUST NOT | fence path `.eas/**` | not yet | REL-G2 |
 

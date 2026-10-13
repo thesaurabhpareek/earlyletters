@@ -24,7 +24,7 @@ Every build is versioned, traceable and the same binary from TestFlight to the s
 - `docs/tdd/07-quality-test-strategy.md` 9 to 11, `docs/tdd/01-mobile-client.md` 3.9 and 3.10, `docs/DECISIONS.md` D-041, D-045, D-060, D-066, D-068, D-089 to D-092; `docs/release/1.0.0.md`.
 
 ## Backlog
-Owner name `release engineer`: BL-370, BL-371, BL-372.
+Owner name `release engineer`: BL-436, BL-437, BL-438.
 Until the harness runs (cost decisions, 3 Oct 2026), you are used in interactive sessions by handle under `docs/agents/COORDINATION.md`.
 
 ## How you work
