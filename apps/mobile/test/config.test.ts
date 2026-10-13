@@ -113,6 +113,10 @@ describe('app.config.ts per environment', () => {
         expect(seen.has('NSPrivacyAccessedAPICategoryActiveKeyboards')).toBe(false);
       });
 
+      it('answers the export-compliance question in the build (standard OS encryption only)', () => {
+        expect(configFor(env).ios?.config?.usesNonExemptEncryption).toBe(false);
+      });
+
       it('keeps the deep-link scheme from brand (DOC-17 is a founder decision)', () => {
         expect(configFor(env).scheme).toBe(brand.scheme);
       });
@@ -134,8 +138,8 @@ describe('eas.json (POPS-02, POPS-08)', () => {
     build: Record<string, { env?: Record<string, string>; channel?: string; environment?: string }>;
   };
 
-  it('has exactly the three known build profiles', () => {
-    expect(Object.keys(eas.build).sort()).toEqual([...APP_ENVS].sort());
+  it('has exactly the three environment profiles and the testflight profile', () => {
+    expect(Object.keys(eas.build).sort()).toEqual([...APP_ENVS, 'testflight'].sort());
   });
 
   for (const env of APP_ENVS) {
@@ -146,6 +150,46 @@ describe('eas.json (POPS-02, POPS-08)', () => {
       expect(p.environment).toBe(env);
     });
   }
+
+  it('every profile switches server features off (v1.0 is on this phone only)', () => {
+    for (const [name, p] of Object.entries(eas.build)) {
+      expect(p.env?.EXPO_PUBLIC_SERVER_FEATURES, name).toBe('off');
+    }
+  });
+
+  describe('testflight profile (first on-device v1.0 build)', () => {
+    const tf = eas.build.testflight as {
+      distribution?: string;
+      autoIncrement?: boolean;
+      channel?: string;
+      environment?: string;
+      env?: Record<string, string>;
+    };
+
+    it('is a store build that is a preview build in every other respect', () => {
+      expect(tf.distribution).toBe('store');
+      expect(tf.env?.[KEY]).toBe('preview');
+      expect(tf.channel).toBe('preview');
+      expect(tf.environment).toBe('preview');
+    });
+
+    it('lets EAS number the builds, so a second upload is not rejected as a duplicate', () => {
+      expect(tf.autoIncrement).toBe(true);
+      expect((JSON.parse(fs.readFileSync(path.join(ROOT, 'eas.json'), 'utf8')) as { cli: { appVersionSource: string } }).cli.appVersionSource).toBe('remote');
+    });
+
+    it('evaluates to the .preview ids, so the permanent production id is never spent by a test build', () => {
+      const exp = configFor(tf.env?.[KEY]);
+      expect(exp.ios?.bundleIdentifier).toBe(`${bundleId()}.preview`);
+      expect(exp.ios?.bundleIdentifier).not.toBe(bundleId());
+      expect(exp.extra?.serverFeatures).toBe(false);
+    });
+
+    it('has a submit profile', () => {
+      const all = JSON.parse(fs.readFileSync(path.join(ROOT, 'eas.json'), 'utf8')) as { submit: Record<string, unknown> };
+      expect(all.submit.testflight).toBeDefined();
+    });
+  });
 
   it('only the production profile names production', () => {
     const naming = Object.entries(eas.build).filter(([, p]) => p.env?.[KEY] === 'production').map(([n]) => n);
