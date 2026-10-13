@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   ROOT, loadRoster, ownerMap, parseBacklog, eligibility, primaryOwner, takenIds,
-  repoSlug, gh, ghAll, agentOfPR, readText, isFounderComment,
+  repoSlug, ghAll, agentOfPR, readText, isFounderComment,
 } from "./lib.mjs";
 
 const argv = process.argv.slice(2);
@@ -114,11 +114,13 @@ function latestBrief() {
   return briefs.length ? `docs/agents/${briefs.at(-1)}` : undefined;
 }
 
+import { gh as ghOne } from "./lib.mjs"; // separate import keeps stacked PR #39 mergeable
+
 // Other sessions (the founder's build thread and its agents) claim files in
 // docs/agents/BOARD.md on develop. Their live claims are off limits.
 function otherThreadsSection() {
   // Read the board as it is on the base branch now (a local checkout may be stale).
-  const fromApi = gh(`/repos/${repo}/contents/docs/agents/BOARD.md?ref=${roster.base_branch}`, { allowFail: true });
+  const fromApi = ghOne(`/repos/${repo}/contents/docs/agents/BOARD.md?ref=${roster.base_branch}`, { allowFail: true });
   let text = fromApi?.content ? Buffer.from(fromApi.content, "base64").toString("utf8") : undefined;
   if (!text) { try { text = readText(join(ROOT, "docs", "agents", "BOARD.md")); } catch { text = ""; } }
   const rows = (text.split(/^## Active claims/m)[1] ?? "").split(/^## /m)[0]
