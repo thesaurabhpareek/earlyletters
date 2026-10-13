@@ -135,7 +135,7 @@ function JoinBook() {
 
   if (phase === 'paste') {
     return (
-      <SheetFrame footer={<QuietButton label={a.close} onPress={close} />}>
+      <SheetFrame closeLabel={a.close}>
         <SheetTitle>{a.title}</SheetTitle>
         <SheetBody muted>{a.pasteHelp}</SheetBody>
         <View className="gap-2">
@@ -181,7 +181,7 @@ function JoinBook() {
   }
 
   return (
-    <SheetFrame footer={<QuietButton label={a.close} onPress={close} />}>
+    <SheetFrame closeLabel={a.close}>
       <SheetTitle>{a.title}</SheetTitle>
       <AccountGate trigger="invite" signInBody={a.signInBody}>
         {phase === 'joining' ? <Busy label={a.joining} /> : null}

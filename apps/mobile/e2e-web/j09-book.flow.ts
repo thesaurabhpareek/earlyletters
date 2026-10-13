@@ -32,10 +32,11 @@ test('[J09c] a recording waiting for its words', async ({ app, record }) => {
   await step('unhappy', 'A voice-only letter waiting for words', 'A kept recording whose words have not been written yet shows a calm note on its card instead of text. Nothing is lost; the recording is on the phone.');
 });
 
-test('[J09d] a recording in which nobody spoke', async ({ app, record }) => {
+test('[J09d] a recording with no words', async ({ app, record }) => {
   const step = journey(record, 'J09', 'the-book', 5, 'J09-03');
   await seeded(app, 'asha-quiet');
   await app.getByText('Book', { exact: true }).last().click();
-  await expect(app.getByText(/nobody/i).first()).toBeVisible();
-  await step('unhappy', 'A recording in which nobody spoke', 'A kept recording that came back with no words shows a gentle "nobody spoke" note instead of an empty card.');
+  await expect(app.getByText('No words in this one. The recording is kept just as it is.').first()).toBeVisible();
+  await expect(app.getByText(/Nobody spoke/i)).toHaveCount(0);
+  await step('unhappy', 'A recording with no words', 'A kept recording that came back with no words shows the app\'s own small note, "No words in this one. The recording is kept just as it is.", muted sans with a small icon: not in the letter\'s type and with no "From ..." signature under it. The recording may hold laughing or babble, so the note never says nobody spoke. It counts as a letter once kept.');
 });

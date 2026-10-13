@@ -5,7 +5,7 @@
  * is exercised end to end in sync-e2e.test.ts. Fictional family "Asha" only.
  */
 import { describe, expect, it } from 'vitest';
-import { MIGRATIONS, migrate } from '../src/lib/db/migrations';
+import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
 import { createSyncEngine } from '../src/lib/sync/engine';
 import { classifyCallError } from '../src/lib/sync/errors';
@@ -180,7 +180,7 @@ describe('sync: the local queue', () => {
     migrate(db, { now: ctx.now, newId: id7 }, MIGRATIONS.slice(0, 3)); // an install from before sync
     const c = book(db);
     const l = letter(db, c, 'Written before sync existed.');
-    expect(migrate(db, { now: ctx.now, newId: id7 })).toMatchObject({ from: 3, to: 4 });
+    expect(migrate(db, { now: ctx.now, newId: id7 })).toMatchObject({ from: 3, to: LATEST_VERSION });
     expect(db.get<{ final_text: string; sync_state: string }>('SELECT final_text, sync_state FROM entries WHERE id = ?', l))
       .toEqual({ final_text: 'Written before sync existed.', sync_state: 'local' });
     expect(db.get<{ server_state: string }>('SELECT server_state FROM children WHERE id = ?', c)?.server_state).toBe('local');

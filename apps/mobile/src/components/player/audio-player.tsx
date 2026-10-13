@@ -2,9 +2,8 @@
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useMemo, useState } from 'react';
-import { Pressable, View, useColorScheme } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Toggle } from '@/components/platform/toggle';
-import { tokens } from '@scribe/design-tokens';
 import { Text } from '@/components/ui/text';
 import { authorOf, isOwnEntry } from '@/components/child/child-store';
 import { copy, fill } from '@/lib/copy';
@@ -27,6 +26,7 @@ import { track } from '@/lib/analytics/track';
 import { getActiveChild, getChild, getEntry, type Entry } from '@/lib/store';
 import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/lib/a11y';
 
 export interface AudioPlayerProps {
   /** The letter whose recording plays. Typed letters render nothing. */
@@ -80,7 +80,7 @@ function PlayableRecording({
   context: 'letter' | 'readTogether';
   className?: string;
 }) {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const listening = useMemo(() => listeningCopyFor(entry), [entry.id, entry.audioUri, entry.audioSha256]); // eslint-disable-line react-hooks/exhaustive-deps
   const [preferOriginal, setPreferOriginal] = useState(prefersOriginal);
   const choice = chooseSource({ originalUri: entry.audioUri!, copy: listening, preferOriginal });

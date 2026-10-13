@@ -128,7 +128,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-09 The two Plus products**
   - Time: 1 hour (plus the review screenshot later, from a build).
   - Cost: US $0.
-  - Steps: `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` steps 3 to 7 and 9: group `Plus`; `plus.monthly` US $3.99 with a free 1-month introductory offer; `plus.annual` US $29.99 with a free 2-month offer; both at the same level; descriptions say only what v1.0 has; **Family Sharing on** for both (cannot be undone); Billing Grace Period 16 days, all renewals, production and sandbox; United States only; three sandbox testers. Do **not** create an App Store Server Notifications URL, an In-App Purchase key or a RevenueCat account (D-053). The old `el_plus_*` ids in earlier docs are superseded.
+  - Steps: `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` steps 3 to 7 and 9: group `Plus`; `plus.monthly` US $4.99 with a free 1-month introductory offer; `plus.annual` US $49.99 with a free 2-month offer; both at the same level; descriptions say only what v1.0 has; **Family Sharing on** for both (cannot be undone); Billing Grace Period 16 days, all renewals, production and sandbox; United States only; three sandbox testers. Do **not** create an App Store Server Notifications URL, an In-App Purchase key or a RevenueCat account (D-053). The old `el_plus_*` ids in earlier docs are superseded.
   - By: Thu 8 Oct (ROADMAP).
   - Blocks: the StoreKit sandbox spike in week 2, BL-222, submission (the first subscription goes in with the app version, step 8).
 

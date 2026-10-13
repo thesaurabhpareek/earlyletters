@@ -5,7 +5,6 @@
   "title": "A second name left empty",
   "note": "Twins or more: an empty second field keeps Continue off, and the line says to fill it in or remove it.",
   "from": "J01-07",
-  "shot": "screens/J01-12.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

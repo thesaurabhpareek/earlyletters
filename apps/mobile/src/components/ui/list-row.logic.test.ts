@@ -4,7 +4,7 @@
  * whole rows after the first").
  */
 import { describe, expect, it } from 'vitest';
-import { DIVIDER_INSET, LEADING_COLUMN, dividerInset, withDividers } from './list-row.logic';
+import { DIVIDER_INSET, LEADING_COLUMN, dividerInset, showsChevron, withDividers } from './list-row.logic';
 
 describe('withDividers', () => {
   it('no rows: nothing at all', () => {
@@ -58,5 +58,23 @@ describe('dividerInset', () => {
   it('is the 16 pt row padding without an icon and the text start with one', () => {
     expect(dividerInset(false)).toBe(16);
     expect(dividerInset(true)).toBe(16 + 28 + 12);
+  });
+});
+
+describe('showsChevron: every pressable row says it can be pressed', () => {
+  const base = { pressable: true, hasTrailingNode: false };
+  it('a pressable row, with or without a value, shows a chevron', () => {
+    expect(showsChevron(base)).toBe(true);
+  });
+  it('a caption-only row (no press) shows none', () => {
+    expect(showsChevron({ ...base, pressable: false })).toBe(false);
+  });
+  it('a row with its own control (switch, check) shows no chevron', () => {
+    expect(showsChevron({ ...base, hasTrailingNode: true })).toBe(false);
+  });
+  it('destructive and disabled rows show none; Android keeps its own convention', () => {
+    expect(showsChevron({ ...base, destructive: true })).toBe(false);
+    expect(showsChevron({ ...base, disabled: true })).toBe(false);
+    expect(showsChevron({ ...base, android: true })).toBe(false);
   });
 });

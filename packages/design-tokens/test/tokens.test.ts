@@ -45,6 +45,19 @@ const NON_TEXT_PAIRS: [keyof C, keyof C][] = [
   ['accent', 'bg'], ['recording', 'bg'], ['destructive', 'bg'],
 ];
 
+/**
+ * Glyph pairs: every icon colour the app draws (tab bar, header, rows, the lock, the recording disc's
+ * mic) on every surface it sits on. Icons carry meaning, so they need 3:1 (WCAG 1.4.11), and the glyphs
+ * that stand in for a word (Settings gear, back arrow, lock) are drawn with the text-grade roles.
+ */
+const GLYPH_ROLES: (keyof C)[] = ['text', 'textMuted', 'accent', 'editMark', 'destructive', 'recording', 'success', 'caution', 'focus'];
+const GLYPH_PAIRS: [keyof C, keyof C][] = [
+  ...GLYPH_ROLES.flatMap((g) => SURFACES.map((s) => [g, s] as [keyof C, keyof C])),
+  ['text', 'accentSoft'], ['textMuted', 'accentSoft'], ['accent', 'accentSoft'], ['editMark', 'accentSoft'],
+  // Glyphs on filled controls and on the recording disc.
+  ['onAccent', 'accent'], ['onAccent', 'recording'], ['onDestructive', 'destructive'],
+];
+
 describe('design tokens: generated CSS', () => {
   it('tokens.native.css is in sync with tokens.ts (run npm run build -w @scribe/design-tokens)', () => {
     expect(readFileSync(join(__dirname, '..', 'dist', 'tokens.native.css'), 'utf8')).toBe(nativeCss());
@@ -82,6 +95,14 @@ describe('design tokens: colour', () => {
         const c = palette(mode, hc);
         for (const [f, b] of NON_TEXT_PAIRS) expect(ratio(c[f], c[b]), `${f} on ${b}`).toBeGreaterThanOrEqual(3);
       });
+      it(`${tag}: every glyph pair passes 3:1, and the glyphs that replace words pass 4.5:1`, () => {
+        const c = palette(mode, hc);
+        for (const [f, b] of GLYPH_PAIRS) expect(ratio(c[f], c[b]), `${f} on ${b}`).toBeGreaterThanOrEqual(3);
+        // Settings gear, back arrow, lock and tab icons are drawn with these roles on the page surfaces.
+        for (const g of ['text', 'textMuted', 'accent'] as const) {
+          for (const s of SURFACES) expect(ratio(c[g], c[s]), `${g} on ${s}`).toBeGreaterThanOrEqual(4.5);
+        }
+      });
     }
     it(`${mode} + Increase Contrast: muted text and accent reach 7:1, control edges 4.5:1`, () => {
       const c = palette(mode, true);
@@ -91,6 +112,15 @@ describe('design tokens: colour', () => {
         expect(ratio(c.controlBorder, c[s]), `controlBorder on ${s}`).toBeGreaterThanOrEqual(4.5);
         expect(ratio(c.line, c[s]), `line on ${s}`).toBeGreaterThanOrEqual(3);
       }
+    });
+    it(`${mode}: the other scheme's glyph colours fail on this scheme's pages, which is why nothing may read tokens.light or tokens.dark directly`, () => {
+      // QA journey J18: ink on the dark page was 1.24:1 (Settings gear) and 1.13:1 (lock), the light
+      // accent 3.16:1 (back arrow), the light recording red 3.29:1 (disc). Same mistake in reverse for light.
+      const here = tokens[mode];
+      const other = tokens[mode === 'light' ? 'dark' : 'light'];
+      expect(ratio(other.text, here.bg)).toBeLessThan(3);
+      expect(ratio(other.accent, here.bg)).toBeLessThan(4.5);
+      expect(ratio(other.recording, here.bg)).toBeLessThan(4.5);
     });
     it(`${mode}: the old alpha borders that failed 1.4.11 stay failing, so nobody brings them back`, () => {
       const c = tokens[mode];

@@ -10,7 +10,7 @@
 // - adults only: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8);
 // - 7 spoken languages, one per letter, no mixing in one sentence (D-056, D-059);
 // - family = the co-parent only (D-055); no grandparent or web-page promise;
-// - recordings: owner-only encrypted backup ships in v1.0 (D-073, superseding D-059's "no audio upload");
+// - recordings: no backup of our own in v1.0 (D-085 amends D-073); the person's own iPhone backup plus Export;
 //   no family listening and no word highlight in Read together (D-059);
 // - digital only, no printed-book promise (K-32); no health or development-tracking words (D-004);
 // - the privacy promise is `en.trust.promise`, word for word (D-061).
@@ -60,7 +60,7 @@ PRIVATE BY DEFAULT
 ${en.trust.promise} Only you and the people you invite can read your book. You can export everything or delete everything, any time, from Settings.
 
 A BOOK FOR EACH CHILD
-Each child gets their own book, with their own months. Your first child's book is free, and so are twins or more you add together when you set up.
+Each child gets their own book, with their own months. Starting a book is free, and your first two letters are free across every book.
 
 TAKE IT WITH YOU
 Export your memory book any time, for free: your letters, your recordings and a PDF of the book.
@@ -72,7 +72,7 @@ HOW IT WORKS
 
 ${brand.name} is for parents of babies and young children, from the first weeks to the first years. Written early. Read again and again.
 
-Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus is an optional subscription with a free trial: encrypted backup of your recordings, books for more children, and Read together whenever you like after the first 3 times in each book. It renews automatically until you cancel, and works with Family Sharing.
+Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus is an optional subscription that lets you keep adding letters. It renews automatically until you cancel, and works with Family Sharing.
 
 Terms of Use: ${brand.web.terms}
 Privacy Policy: ${brand.web.privacy}`,

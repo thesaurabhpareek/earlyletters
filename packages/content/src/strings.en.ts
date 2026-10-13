@@ -12,8 +12,8 @@
 // v1.0 scope (docs/DECISIONS.md, founder decisions of 3 Oct 2026): letters are spoken in one of 7
 // languages (D-056), one per letter, with no Hindi-English mixing in one sentence until v1.1 (D-059);
 // family at launch is the co-parent only (D-055); recordings stay on the phone that made them and in
-// that person's own iPhone backup, plus an optional encrypted backup that only the owner can restore or
-// play (D-073 supersedes D-059's "no audio upload"); family members hear each other's recordings only
+// that person's own iPhone backup, with Export as the second copy (D-085 amends D-073: our own encrypted backup
+// needs sign-in and a server, so it returns with them; no copy may claim it before then); family members hear each other's recordings only
 // from v1.1 (D-059); Read together plays recordings on this phone with no word highlight (D-059).
 // Copy must not promise any of those early.
 // Privacy is said calmly and the same way everywhere: see `trust` and VOICE.md (D-061).
@@ -53,6 +53,7 @@ export const en = {
       title: "{app}",
       subtitle: "The baby memory book you fill by talking.",
       body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
+      freeLine: "Your first two letters are free.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
       joinButton: "I was invited",
@@ -60,7 +61,7 @@ export const en = {
 
     promise: {
       title: "Exactly as you said it.",
-      body: "Word for word: we fix only what the microphone got wrong. A stray \"um\", a misheard name, a missing comma. Every small fix is marked, and you can undo it.",
+      body: "This is Word for word. We take out a stray \"um\", fix a misheard name, add a missing comma, and mark every small fix so you can undo it.",
       body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
       recordingTitle: "Your voice stays too",
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
@@ -208,7 +209,6 @@ export const en = {
     },
     typing: {
       placeholder: "Write it the way you would say it.",
-      letterPlaceholder: "Dear {child},",
       saveButton: "Save",
     },
     // A take that was recorded but not yet read back (TDD 01 3.4).
@@ -248,41 +248,46 @@ export const en = {
     autosaved: "Saved on this phone",
   },
 
+  // D-084: "Not much today" stores a mark with no text. The app never writes a sentence for the person.
   notMuch: {
     button: "Not much today",
-    confirmTitle: "That counts.",
-    confirmBody: "Some days are just days. We will keep a small line for today.",
-    template: "{weekday}. Not much today. Just {child}, and us, and an ordinary day.",
-    templateAlt: [
-      "{weekday}. A quiet one. {child} was here, and so were we.",
-      "{weekday}. Nothing big to tell. Just a day with {child} in it.",
-      "{weekday}. Tired tonight. Loved {child} all day anyway.",
-    ],
-    addWordButton: "Add a few words",
-    saveButton: "Keep this line",
+    confirmBody: "Marks today without writing anything.",
     savedToast: "Kept. Rest well.",
+    undo: "Undo",
   },
 
   review: {
     title: "Read it back",
-    // The edit feature is called "Word for word" (founder decision, Oct 3 2026). Small fixes are shown as marks
-    // the person can undo. Never "tidy", "tidied" or "tidying" in copy.
-    subtitle: "Here is what you said, word for word. Small fixes are marked.",
+    // The edit feature is called "Word for word" (D-074) and only where the feature is named (D-086: the promise,
+    // Settings, store, website). Here, plain words: a "small fix" is named by what happened, and "Exactly as said"
+    // is said only when it is true. Never "edit", "correct", "clean" or "tidy" in text a person reads.
+    subtitle: "Here is what you said. Small fixes are marked.",
     trustLine: "We only fixed what got in the way of your words. Nothing added.",
+    // The one view control, "With small fixes | Exactly as said": the view and the choice for this letter, until it is saved.
+    view: {
+      fixes: "With small fixes",
+      exact: "Exactly as said",
+      a11y: "How this letter reads",
+    },
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
-    noChanges: "Word for word. Nothing needed fixing.",
-    showOriginalLink: "Show exactly what I said",
-    showTidiedButton: "Show small fixes",
+    // Zero fixes, three honest wordings.
+    noChanges: "Nothing needed fixing. This is exactly what you said.",
+    noChangesAfterUndo: "You put every small fix back. This is exactly what you said.",
+    // A language with no fix rules yet: never a "nothing needed fixing" claim there.
+    noChangesNoRules: "Exactly as you said it.",
     originalLabel: "Exactly what you said",
-    tidiedLabel: "Word for word, small fixes marked",
+    cardYouSaid: "You said",
+    cardNowReads: "Now it reads",
+    cardTakenOut: "Taken out",
+    // A fix that changed a word: "Usher to Asha".
+    rowChange: "{a} to {b}",
     undoEditButton: "Put it back",
-    // D-074: "Word for word" names the fixing feature, so this button says what it does.
-    undoAllButton: "Undo every fix",
     putBackToast: "Put back.",
     editTextButton: "Change words",
-    editA11yHint: "Edited. Double tap to see what you said.",
+    editA11yHint: "Small fix. Double tap to see what you said.",
     removedA11y: "Words taken out here",
+    removedWordsA11y: "Taken out: {name}",
     toChildA11y: "To {child}. Change",
     // A recording kept before the words are ready on this phone (ADR 0001, TDD 03 FM-9).
     voiceOnlyButton: "Keep the recording",
@@ -295,21 +300,22 @@ export const en = {
       sampleBanner: "Sample words for testing, not your recording.",
       sampleNotSaved: "Sample words are never saved. Keep the recording only, or type it.",
     },
+    // Each fix is named by what happened, never by category (D-086).
     edits: {
       filler: {
-        label: "Filler",
-        explain: "We took out an \"um\" or \"uh\" so it reads smoothly.",
+        label: "Took out a sound",
+        explain: "You said um or uh. We took it out.",
       },
       falseStart: {
-        label: "False start",
-        explain: "You started a sentence, then began again. We kept the second try.",
+        label: "Took out a restart",
+        explain: "You began a sentence, then began again. We kept the second try.",
       },
       repeat: {
-        label: "Repeat",
+        label: "Took out a repeat",
         explain: "A word came out twice in a row. We kept one.",
       },
       misheardName: {
-        label: "Name",
+        label: "Spelled your way",
         explain: "The microphone misheard a name. We used the spelling from your words list.",
       },
       punctuation: {
@@ -317,17 +323,17 @@ export const en = {
         explain: "We added commas and full stops where you paused.",
       },
       grammarSlip: {
-        label: "Small slip",
+        label: "One word fixed",
         explain: "A tiny slip of the tongue, like \"a apple\". We fixed only that.",
       },
       paragraph: {
-        label: "Paragraph",
+        label: "New paragraph",
         explain: "You took a long pause, so we started a new paragraph.",
       },
       // A punctuation edit that only wrote a character in the author's chosen script (ADR 0014
       // section 4; packages/core describeEdit returns 'script'). Same word, same letters.
       script: {
-        label: "Characters",
+        label: "Your script",
         explain: "We wrote a character the way your chosen script writes it. It is the same word.",
       },
     },
@@ -336,13 +342,6 @@ export const en = {
       explain: "Locked phrases stay exactly as you said them, slips and all.",
       lockedLabel: "Kept as said",
       unlockButton: "Allow small fixes",
-    },
-    voiceCheck: {
-      question: "Does this sound like you?",
-      yesButton: "Sounds like me",
-      noButton: "Not quite",
-      noFollowUp: "Tap any word to change it, or show exactly what you said.",
-      thanks: "Thank you for telling us.",
     },
     destination: {
       title: "Where should this go?",
@@ -358,7 +357,7 @@ export const en = {
     // One-time card, the first time a spoken letter is transcribed on this install (in-app-disclosures.md section 2).
     firstNote: {
       title: "Please have a read",
-      body: "We fix small slips, like \"um\" and repeats. We can also mishear a word or a name. Please read it before you save.",
+      body: "We take out small slips, like an um or a repeat, and mark each one. Tap a mark to see it and put it back. We can mishear a name, so please read it before you save.",
       dismissButton: "Got it",
     },
   },
@@ -395,7 +394,7 @@ export const en = {
     signature: "From {signsAs}",
     together: "From {signsAs} and {child}",
     provenance: {
-      spokenTidied: "Spoken, word for word",
+      spokenFixed: "Spoken, with small fixes",
       spokenExact: "Spoken, exactly as said",
       typed: "Typed",
     },
@@ -405,6 +404,13 @@ export const en = {
     // v1.0: recordings stay on the phone that made them (D-059), so a co-parent's voice is on their own phone.
     recordingElsewhere: "Recording kept on {signsAs}'s phone",
     privateLabel: "Private",
+    // D-084: a quiet-day mark is the app's own small line, never a letter: no text, no signature.
+    quietDay: {
+      label: "A quiet day",
+      a11y: "{date}. A quiet day, kept.",
+      remove: "Remove this mark",
+      removedToast: "Removed.",
+    },
     familyLabel: "From family", // v1.1
     filters: {
       all: "All",
@@ -456,11 +462,6 @@ export const en = {
     noRecording: "This one was typed. Read it aloud together.",
     recordingElsewhere: "{signsAs}'s voice is on their phone. Read this one aloud together.",
     empty: "Letters you add to the book will be here to read together.",
-    plusGate: {
-      title: "Read together is part of Plus",
-      body: "You have read together {count} times for free. Plus keeps it open whenever you like.",
-      keepNote: "Every letter stays open to read and hear, with or without Plus.",
-    },
     endOfMonth: "That was Month {month}. You are so loved.",
     endOfMonthAlt: "That was Month {month}. Every word was for you.",
     endOfBook: "That is every letter so far. More are still being written.",
@@ -644,8 +645,8 @@ export const en = {
     tidyOn: "Small fixes, marked",
     tidyOff: "Exactly as said",
     tidyHelp: "Small fixes are marked in each letter, and you can undo any of them. Exactly as said keeps every um and false start. Either way, we never rewrite.",
-    // D-073: owner-only encrypted backup ships in v1.0 (supersedes D-059's "no audio upload").
-    // Show onPhone* only while backup is off; show backedUp* while it is on (lawyer-2 H4, register s.3 row 16).
+    // D-085 (amends D-073): v1.0 has no backup of our own; onPhone* is the honest line. Our encrypted backup,
+    // with its strings, returns with sign-in and a server (v1.1).
     recordings: {
       title: "Recordings",
       keepLabel: "Keep recordings",
@@ -657,19 +658,10 @@ export const en = {
       orphansTitle: "Recordings without a letter",
       orphansOne: "1 recording on this phone is not part of a letter yet. It stays on this phone.",
       orphansMany: "{count} recordings on this phone are not part of a letter yet. They stay on this phone.",
-    },
-    backup: {
-      title: "Encrypted backup",
-      offLabel: "Backup is off",
-      onLabel: "Backup is on",
-      // D-073 (supersedes D-059 here): encrypted backup of the owner's recordings ships in v1.0.
-      body: "Copies your recordings to our servers, encrypted on this phone first, so a new phone can bring them back. We keep a recovery key so we can help you restore them.",
-      // Backup is for the owner only in v1.0: no one else can play a backed-up recording (founder decision, Oct 3 2026).
-      honestNote: "Without backup, your recordings stay only on this phone. Your letters sync when you are signed in, so your co-parent and your next phone can read them.",
-      turnOnButton: "Turn on backup",
-      turnOffButton: "Turn off backup",
-      lastBackup: "Last backed up {weekday}",
-      backingUp: "Backing up",
+      // D-085: a take a kill cut off that would not open is kept, never dropped. Counts as a plain sentence.
+      unplayableTitle: "Takes that may not play",
+      unplayableOne: "This take may not play. Export keeps the file.",
+      unplayableMany: "{count} takes may not play. Export keeps the files.",
     },
     export: {
       title: "Export",
@@ -678,6 +670,10 @@ export const en = {
       preparing: "Gathering every letter. This can take a minute.",
       ready: "Your export is ready.",
       whereItGoes: "You choose where to keep it, for example in the Files app.",
+      // D-085: no claim of a backup. The date is when a copy was last prepared, not proof it was saved.
+      lastExport: "Last export: {date}",
+      neverExported: "Not exported yet",
+      exportNudge: "Save a copy of your book in Files or iCloud Drive. It is yours to keep.",
     },
     delete: {
       entryTitle: "Delete this letter?",
@@ -686,6 +682,16 @@ export const en = {
       entryToast: "Letter deleted.",
       recentlyDeleted: "Recently deleted",
       restoreButton: "Restore",
+      // D-085: Recently deleted shelf (30 days, Restore, Erase now).
+      keepButton: "Keep it",
+      shelfHelp: "Letters you delete wait here for 30 days.",
+      shelfEmpty: "Nothing here. Letters you delete wait here for 30 days.",
+      deletedOn: "Deleted {date}",
+      erasesOn: "Erased on {date}",
+      eraseNow: "Erase now",
+      eraseNowTitle: "Erase this letter now?",
+      eraseNowBody: "The letter and its recording will be erased from this phone, at once.",
+      restoredToast: "Letter restored.",
       bookTitle: "Delete the whole book?",
       bookBody: "Every letter and recording in {child}'s book will be removed from this phone and from our servers. Family members can save a copy of their own letters first.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
@@ -792,11 +798,7 @@ export const en = {
     add: {
       title: "Add a child",
       body: "Each child gets their own book, with their own months, family and settings.",
-      // PRD-REQ-015 (founder, 2 Oct 2026): one free book you start; books you joined as a co-parent do not count;
-      // children added together in first run are all free, so this sheet's twins line makes no price promise.
-      plusNote: "The first book you start is free, always. Books you start for more children are part of Plus.",
-      joinedNote: "A book you joined as a co-parent does not count as your free book.",
-      keepNote: "Every book you already have stays open for writing, reading and export, with or without Plus.",
+      // D-082, D-083: starting a book is free; the free letters are one pool across every book.
       twinsHelp: "Twins or more? Each child gets their own book.",
       cta: "Add {child}'s book",
     },
@@ -849,8 +851,8 @@ export const en = {
       restoreLink: "Restore",
       agree: "By continuing, you agree to the Subscription terms and Terms of Service.",
     },
-    // D-073: encrypted backup of the owner's recordings is part of Plus in v1.0.
-    promise: "Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Plus adds encrypted backup of your recordings, Read together whenever you like after the first 3 times in each book, and books for more children.",
+    // D-085 (amends D-073): no backup is claimed in v1.0.
+    promise: "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Plus lets you keep adding letters.",
   },
 
   errors: {
@@ -926,7 +928,7 @@ export const en = {
     },
     preview: "Dear {child}, today you laughed at the rain.",
     // No timed return to the book (TDD 09 A11Y-F03).
-    deletedBody: "You can still undo this, or close to go back to the book.",
+    deletedBody: "It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book.",
     notFoundTitle: "This letter is not here anymore.",
     notFoundCta: "Back to the book",
     openHint: "Opens the letter.",
@@ -962,8 +964,6 @@ export const en = {
       },
     },
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
-    plusGateTitle: "Another book is part of Plus",
-    plusCta: "See what Plus adds",
     plusNotYet: "Plus is not available on this device yet.",
   },
 
@@ -991,8 +991,6 @@ export const en = {
       light: "Light",
       dark: "Dark",
     },
-    // Recording backup ships in v1.0 (D-073); this shows only on builds made before it lands.
-    backupNotYet: "Backup arrives in a later update.",
     // No "beta" in app copy: the only release-stage note is About's "early version" (D-060, K-13).
     remindersNotYet: "Your choice is saved. Reminders start in a coming update.",
     legalTitle: "Legal",
@@ -1018,7 +1016,7 @@ export const en = {
     languageHelp: "The language you speak your letters in.",
     // "Settings, Plan" is the path the Plus legal text and Subscription Terms name.
     planLabel: "Plan",
-    planHelp: "Plus: backup, Read together whenever you like, and more books.", // D-073
+    planHelp: "Your first two letters are free. Plus lets you keep adding.", // D-082
     remindersLabel: "Reminders",
     exportLabel: "Export your book",
     exportHelp: "Every letter and recording, free, any time.",
@@ -1132,6 +1130,8 @@ export const en = {
 // Retired 3 Oct 2026 (bring back from git history if the feature returns):
 // - book.recordingBackedUp, settings.recordings.backedUpTitle and backedUpBody, errors.backupFailed:
 //   no recording upload or backup in v1.0 (D-059).
+// - settings.backup.* (Encrypted backup: on, off, turn on, last backed up) and settingsMore.backupNotYet:
+//   removed 4 Oct 2026 (D-085 amends D-073): our own backup needs sign-in and a server, so no claim until then.
 // - settings.privacy.aiLabel: cloud transcription is v1.1 (ROADMAP).
 // - settingsMore.signedOutHelp, deleteAccountNotYet, exportNotYet: sign-in, account deletion and
 //   export ship in v1.0; Settings home links to their screens.
@@ -1139,7 +1139,6 @@ export const en = {
 // - storeListing beta paragraph and promotionalTextBeta: D-030, D-060.
 // - pendingCopy in apps/mobile/src/lib/copy.ts: every string now lives here; it is a thin re-export.
 // Still in use and due to retire when their screens change: settingsMore.remindersNotYet (reminders),
-// settingsMore.backupNotYet and settings.backup.* (recordings screen), childrenExtra.plusNotYet
-// (Plus gate), familyTab.inviteNeedsSignIn (Family tab).
+// childrenExtra.plusNotYet (Plus gate), familyTab.inviteNeedsSignIn (Family tab).
 
 export type Strings = typeof en;

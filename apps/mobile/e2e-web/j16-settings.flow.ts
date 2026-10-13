@@ -5,7 +5,7 @@ test('[J16] settings: home, privacy, appearance, help, licences, about', async (
   const step = journey(record, 'J16', 'settings-and-help', 1, 'J15-02');
   await seeded(app, 'asha', '/settings');
   await expect(app.getByText('Version', { exact: true })).toBeVisible();
-  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, recordings, storage, help, legal, licences and version. No Account or Delete account rows in v1.0, since there are no accounts. An "early version" note stays at the top.');
+  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, legal, licences and version. No Account or Delete account rows in v1.0, since there are no accounts. An "early version" note stays at the top.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
   await expect(app.getByText('What we never do', { exact: false })).toBeVisible();

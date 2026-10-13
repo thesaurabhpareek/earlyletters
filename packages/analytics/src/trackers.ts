@@ -160,7 +160,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       return track('book_opened', { child_ordinal: childOrdinal(i.childIndex), letters_bucket: lettersBucket(i.letters), member_role: i.role });
     },
 
-    trackReadTogetherStarted(i: { childIndex: number; access: 'plus' | 'try'; letters: number }): TrackResult {
+    trackReadTogetherStarted(i: { childIndex: number; access: 'plus' | 'free'; letters: number }): TrackResult {
       return track('read_together_started', { child_ordinal: childOrdinal(i.childIndex), access: i.access, letters_bucket: lettersBucket(i.letters) });
     },
 

@@ -5,7 +5,6 @@
   "title": "Name entered, no birthday chosen yet",
   "note": "The birthday is not filled in for the person: the date row is empty (on a phone it says \"Choose a date\") and Continue waits, with a line saying what is needed. A seven-month-old can no longer be saved as \"0 days\" by an unseen default. \"Born today\" is one tap for a newborn.",
   "from": "J01-05",
-  "shot": "screens/J01-07.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

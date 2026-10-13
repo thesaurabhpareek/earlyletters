@@ -5,7 +5,6 @@
   "title": "What does Asha call you?",
   "note": "The name the child will call this parent, which signs every letter. Sign my letters is off until something is chosen or typed.",
   "from": "J01-07",
-  "shot": "screens/J01-13.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

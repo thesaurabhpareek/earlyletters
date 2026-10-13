@@ -5,12 +5,10 @@
   "title": "Whose book? sheet",
   "note": "A sheet lists every book on this phone with the current one marked. Choosing one switches Tonight, Book and writing to that child.",
   "from": "J03-04",
-  "shot": "screens/J03-05.png",
-  "full": "screens/J03-05-full.png",
   "route": "/book",
   "viewport": {
-    "width": 390,
-    "height": 664
+    "width": 402,
+    "height": 874
   },
   "safeArea": {
     "appliedOnWeb": {
@@ -22,10 +20,11 @@
       "bottom": 34
     }
   },
-  "scrolls": true,
-  "text": "Whose book? Asha's book Nila's book Add a child",
+  "scrolls": false,
+  "text": "Whose book? Close Asha's book Nila's book Add a child",
   "lines": [
     "Whose book?",
+    "Close",
     "Asha's book",
     "Nila's book",
     "Add a child"

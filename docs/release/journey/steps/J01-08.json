@@ -5,7 +5,6 @@
   "title": "A birthday in the future",
   "note": "On the web the date can be typed; a day after today is refused in words (on a phone the picker simply does not offer it).",
   "from": "J01-05",
-  "shot": "screens/J01-08.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
