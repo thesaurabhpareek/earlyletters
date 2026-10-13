@@ -5,6 +5,8 @@
   "title": "A recording with no words",
   "note": "A kept recording that came back with no words shows the app's own small note, \"No words in this one. The recording is kept just as it is.\", muted sans with a small icon: not in the letter's type and with no \"From ...\" signature under it. The recording may hold laughing or babble, so the note never says nobody spoke. It counts as a letter once kept.",
   "from": "J09-03",
+  "shot": "screens/J09-05.png",
+  "full": "screens/J09-05-full.png",
   "route": "/book",
   "viewport": {
     "width": 402,

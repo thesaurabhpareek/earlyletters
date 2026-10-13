@@ -5,6 +5,8 @@
   "title": "Book, dark",
   "note": "Chapters and cards in the dark theme.",
   "from": "J18-02",
+  "shot": "screens/J18-03.png",
+  "full": "screens/J18-03-full.png",
   "route": "/book",
   "viewport": {
     "width": 402,

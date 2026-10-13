@@ -5,6 +5,8 @@
   "title": "Opened again and again",
   "note": "The fourth opening and every one after it are the same as the first: no Plus gate, nothing counted. Letters that exist are always readable and playable; membership only decides whether a new letter can be kept.",
   "from": "J11-04",
+  "shot": "screens/J11-05.png",
+  "full": "screens/J11-05-full.png",
   "route": "/book",
   "viewport": {
     "width": 402,

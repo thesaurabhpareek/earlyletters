@@ -5,6 +5,8 @@
   "title": "Remove this mark, with Undo",
   "note": "Long-press (or the VoiceOver action \"Remove this mark\") removes the mark and shows \"Removed.\" with Undo, which stays until tapped or closed.",
   "from": "J08-05",
+  "shot": "screens/J08-06.png",
+  "full": "screens/J08-06-full.png",
   "route": "/book",
   "viewport": {
     "width": 402,

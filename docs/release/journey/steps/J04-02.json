@@ -5,6 +5,7 @@
   "title": "Another thought",
   "note": "The prompt card swaps for a different one in place. There is no limit and nothing is counted.",
   "from": "J04-01",
+  "shot": "screens/J04-02.png",
   "route": "/",
   "viewport": {
     "width": 402,

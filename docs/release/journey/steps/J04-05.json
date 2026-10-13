@@ -5,6 +5,7 @@
   "title": "Declined: nothing else changes",
   "note": "Saying no ends the asking for good and changes nothing else; it can be changed in Settings, Privacy.",
   "from": "J04-04",
+  "shot": "screens/J04-05.png",
   "route": "/",
   "viewport": {
     "width": 402,

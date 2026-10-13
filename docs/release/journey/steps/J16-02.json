@@ -5,6 +5,7 @@
   "title": "Privacy",
   "note": "The usage-and-crash-report switch (off until the person says yes), what is never done (ads, selling data, training models), and links to the full policies.",
   "from": "J16-01",
+  "shot": "screens/J16-02.png",
   "route": "/settings/privacy",
   "viewport": {
     "width": 402,

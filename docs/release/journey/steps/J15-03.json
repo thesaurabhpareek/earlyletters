@@ -5,6 +5,7 @@
   "title": "Export with an empty book",
   "note": "Nothing has been written yet, so \"Export everything\" is switched off (greyed) and the page still says what an export would hold. There is no empty-export error to reach.",
   "from": "J15-01",
+  "shot": "screens/J15-03.png",
   "route": "/settings/export",
   "viewport": {
     "width": 402,

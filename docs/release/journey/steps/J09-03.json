@@ -5,6 +5,8 @@
   "title": "Many letters, by month",
   "note": "Chapters by month of age, newest first. Each card shows the first words, the signature and a recording length. A private letter carries a \"Private\" mark. (Seeded fictional family Asha.) Full length capture shows every chapter.",
   "from": "J09-02",
+  "shot": "screens/J09-03.png",
+  "full": "screens/J09-03-full.png",
   "route": "/book",
   "viewport": {
     "width": 402,

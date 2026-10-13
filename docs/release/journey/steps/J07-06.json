@@ -5,6 +5,7 @@
   "title": "Picking the draft back up",
   "note": "Tapping the card reopens the page with the words exactly as left.",
   "from": "J07-05",
+  "shot": "screens/J07-06.png",
   "route": "/write",
   "viewport": {
     "width": 402,

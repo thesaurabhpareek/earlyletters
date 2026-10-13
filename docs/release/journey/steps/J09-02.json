@@ -5,6 +5,7 @@
   "title": "One letter",
   "note": "The first letter sits under its month chapter. Read together appears once there is at least one letter in the book.",
   "from": "J09-01",
+  "shot": "screens/J09-02.png",
   "route": "/book",
   "viewport": {
     "width": 402,

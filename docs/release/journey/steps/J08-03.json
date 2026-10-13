@@ -5,6 +5,8 @@
   "title": "A quiet day in the Book",
   "note": "The Book shows one small row, \"A quiet day\", with the date: muted, unsigned, not a card and not a button into a letter. It is never counted, printed or read in Read together, and it hides on any day that has a letter.",
   "from": "J08-02",
+  "shot": "screens/J08-03.png",
+  "full": "screens/J08-03-full.png",
   "route": "/book",
   "viewport": {
     "width": 402,

@@ -5,6 +5,7 @@
   "title": "The held letter waits on Tonight",
   "note": "Tonight shows the waiting letter. Tapping it opens Review with the words as typed.",
   "from": "J07-09",
+  "shot": "screens/J07-10.png",
   "route": "/",
   "viewport": {
     "width": 402,

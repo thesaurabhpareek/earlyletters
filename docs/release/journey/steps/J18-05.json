@@ -5,6 +5,8 @@
   "title": "Review, dark",
   "note": "Review with its underlined tidy-ups in the dark theme.",
   "from": "J18-04",
+  "shot": "screens/J18-05.png",
+  "full": "screens/J18-05-full.png",
   "route": "/review",
   "viewport": {
     "width": 402,

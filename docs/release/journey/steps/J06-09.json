@@ -5,6 +5,7 @@
   "title": "Saved to the book",
   "note": "The letter settles into a card with \"Added to Asha's book\". Review closes by itself or on tap.",
   "from": "J06-08",
+  "shot": "screens/J06-09.png",
   "route": "/review",
   "viewport": {
     "width": 402,

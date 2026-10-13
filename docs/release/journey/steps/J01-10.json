@@ -5,6 +5,7 @@
   "title": "Not born yet: due date not chosen",
   "note": "Choosing \"Not here yet\" turns the date into a due date, which is not filled in either. Continue waits and says why.",
   "from": "J01-09",
+  "shot": "screens/J01-10.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

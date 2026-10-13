@@ -5,6 +5,8 @@
   "title": "An older quiet day, shown as a mark",
   "note": "A \"Not much today\" saved by an older build holds a template sentence in the old row. The Book ignores that text and shows the same small \"A quiet day\" row; on a day that already has a letter no mark is listed. Counts say letters only. (Seeded fictional family Asha, with older-build rows.)",
   "from": "J08-03",
+  "shot": "screens/J08-05.png",
+  "full": "screens/J08-05-full.png",
   "route": "/book",
   "viewport": {
     "width": 402,

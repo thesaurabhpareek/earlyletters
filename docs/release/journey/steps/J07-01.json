@@ -5,6 +5,7 @@
   "title": "Write, empty",
   "note": "A page, not a form: the child's name and age, the prompt as a quiet line, and a blank letter. Save is off until something is typed.",
   "from": "J01-14",
+  "shot": "screens/J07-01.png",
   "route": "/write",
   "viewport": {
     "width": 402,

@@ -5,6 +5,7 @@
   "title": "A later session: \"Help us make it better?\"",
   "note": "Never in the first session. On a later session with at least one letter, a calm sheet asks once whether to share which screens are opened and when something crashes, never any words, recordings or names. \"Don't share\" and \"Share usage\" are equal; closing it without choosing asks at most once more. (Shown on a tab screen only, 1.2 seconds after it opens.)",
   "from": "J04-02",
+  "shot": "screens/J04-04.png",
   "route": "/",
   "viewport": {
     "width": 402,

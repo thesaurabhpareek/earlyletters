@@ -5,6 +5,7 @@
   "title": "Review a typed letter",
   "note": "Typed words are kept exactly as typed: no tidying, no list of changes, no \"does this sound like you\". The person chooses where it goes.",
   "from": "J07-02",
+  "shot": "screens/J07-03.png",
   "route": "/review",
   "viewport": {
     "width": 402,

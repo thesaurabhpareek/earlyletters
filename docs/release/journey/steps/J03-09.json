@@ -5,6 +5,8 @@
   "title": "Back to Settings",
   "note": "Leaving the page changes nothing and goes back.",
   "from": "J03-08",
+  "shot": "screens/J03-09.png",
+  "full": "screens/J03-09-full.png",
   "route": "/settings",
   "viewport": {
     "width": 402,

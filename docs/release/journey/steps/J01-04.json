@@ -5,6 +5,7 @@
   "title": "The promise",
   "note": "What the app does with words (tidies, never rewrites), that the voice is kept on the phone, that it can mishear, and that it is private by default.",
   "from": "J01-03",
+  "shot": "screens/J01-04.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

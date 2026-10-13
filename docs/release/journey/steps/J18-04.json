@@ -5,6 +5,7 @@
   "title": "A letter, dark",
   "note": "The letter page in the dark theme.",
   "from": "J18-03",
+  "shot": "screens/J18-04.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,

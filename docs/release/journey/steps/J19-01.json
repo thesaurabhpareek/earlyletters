@@ -5,6 +5,7 @@
   "title": "Unknown route (404)",
   "note": "A designed not-found screen in the product voice replaces Expo Router's \"Unmatched Route\" page. It never shows the address, and has one way back: Back to Tonight. Reached by a malformed or old link.",
   "from": "J00-open",
+  "shot": "screens/J19-01.png",
   "route": "/this-page-does-not-exist",
   "viewport": {
     "width": 402,

@@ -5,6 +5,8 @@
   "title": "Settings",
   "note": "Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, legal, licences and version. No Account or Delete account rows in v1.0, since there are no accounts. An \"early version\" note stays at the top.",
   "from": "J15-02",
+  "shot": "screens/J16-01.png",
+  "full": "screens/J16-01-full.png",
   "route": "/settings",
   "viewport": {
     "width": 402,

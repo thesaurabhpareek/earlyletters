@@ -1,10 +1,12 @@
 {
   "id": "J10-09",
   "journey": "letter-detail",
-  "kind": "unhappy",
-  "title": "A letter waiting for its words",
-  "note": "The page shows the app's own small, muted note instead of an empty page, with no signature under it; the recording is there.",
-  "from": "J10-01",
+  "kind": "happy",
+  "title": "Undo restores the letter",
+  "note": "The letter is back exactly as it was.",
+  "from": "J10-08",
+  "shot": "screens/J10-09.png",
+  "full": "screens/J10-09-full.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -20,19 +22,20 @@
       "bottom": 34
     }
   },
-  "scrolls": false,
-  "text": "Aa Saturday, October 10, 2026. Asha is 6 months and 3 weeks old. Private A recording, waiting for its words. Hear Mama 0:00 0:54 The download is about 575 MB and starts when you are on Wi-Fi. Get words ready Write the words Add to book Delete",
+  "scrolls": true,
+  "text": "Aa Thursday, August 13, 2026. Asha is 5 months old. Private So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, with small fixes Recording kept on this phone Exactly as said Add to book Delete",
   "lines": [
     "Aa",
-    "Saturday, October 10, 2026. Asha is 6 months and 3 weeks old.",
+    "Thursday, August 13, 2026. Asha is 5 months old.",
     "Private",
-    "A recording, waiting for its words.",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
     "Hear Mama",
     "0:00",
-    "0:54",
-    "The download is about 575 MB and starts when you are on Wi-Fi.",
-    "Get words ready",
-    "Write the words",
+    "0:42",
+    "Spoken, with small fixes",
+    "Recording kept on this phone",
+    "Exactly as said",
     "Add to book",
     "Delete"
   ]

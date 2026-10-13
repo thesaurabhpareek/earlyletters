@@ -5,6 +5,7 @@
   "title": "Close without saving",
   "note": "Closing leaves the draft where it was: the \"A letter is waiting to be read back\" card is still on Tonight. Nothing is deleted. (\"Let it go\", the only delete, is a native confirm dialog that does not appear on web.)",
   "from": "J06-02",
+  "shot": "screens/J06-12.png",
   "route": "/",
   "viewport": {
     "width": 402,

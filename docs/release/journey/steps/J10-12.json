@@ -5,6 +5,7 @@
   "title": "Recently deleted",
   "note": "Settings, Recently deleted lists the letter with its first words, its date, the day it was deleted and \"Erased on\" the day the purge removes it (30 days on), with Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)",
   "from": "J10-01",
+  "shot": "screens/J10-12.png",
   "route": "/settings/recently-deleted",
   "viewport": {
     "width": 402,

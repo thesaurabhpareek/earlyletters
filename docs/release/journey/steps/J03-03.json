@@ -5,6 +5,8 @@
   "title": "The book is open, for two",
   "note": "The closing screen names both children.",
   "from": "J03-02",
+  "shot": "screens/J03-03.png",
+  "full": "screens/J03-03-full.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,
@@ -20,12 +22,18 @@
       "bottom": 34
     }
   },
-  "scrolls": false,
-  "text": "Back The book is open. Say one thing about Asha and Nila today. That is a letter. Write the first one",
+  "scrolls": true,
+  "text": "Back The book is open. Say one thing about Asha and Nila today. That is a letter. Get your words ready Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB. It waits for Wi-Fi, and carries on where it left off if it is interrupted. Download on Wi-Fi Not now You can do this later in Settings, Recordings. Your voice is always kept. Write the first one",
   "lines": [
     "Back",
     "The book is open.",
     "Say one thing about Asha and Nila today. That is a letter.",
+    "Get your words ready",
+    "Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB.",
+    "It waits for Wi-Fi, and carries on where it left off if it is interrupted.",
+    "Download on Wi-Fi",
+    "Not now",
+    "You can do this later in Settings, Recordings. Your voice is always kept.",
     "Write the first one"
   ]
 }

@@ -5,6 +5,7 @@
   "title": "Plan: Plus is off",
   "note": "The Plan screen says plainly: \"Your first two letters are free. Plus lets you keep adding.\" (no price, no trial length and no count of what is left; Apple's own sheet shows those). Every letter kept stays readable, playable and exportable. Apple handles payment; no card details are seen. There is no Buy button and no \"Redeem a code\" row on web: both need StoreKit, which exists only in the iOS app. NEEDS A REAL IPHONE: See what Plus adds, Redeem a code, Manage subscription.",
   "from": "J11-05",
+  "shot": "screens/J12-01.png",
   "route": "/settings/plus",
   "viewport": {
     "width": 402,

@@ -5,6 +5,8 @@
   "title": "Keep it",
   "note": "Choosing \"Keep it\" closes the sheet and changes nothing: the letter is still on its page.",
   "from": "J10-06",
+  "shot": "screens/J10-07.png",
+  "full": "screens/J10-07-full.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,

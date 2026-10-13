@@ -5,6 +5,7 @@
   "title": "A recording with no words",
   "note": "The page shows the app's own small note instead of words, and no \"From Mama\" signature under it (the signature is only under words a person said); the recording is still there and can be kept.",
   "from": "J10-01",
+  "shot": "screens/J10-10.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,

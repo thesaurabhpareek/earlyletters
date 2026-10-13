@@ -5,6 +5,7 @@
   "title": "The end of the book",
   "note": "After the last letter: an end line, a finish button and \"again\".",
   "from": "J11-03",
+  "shot": "screens/J11-04.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,
