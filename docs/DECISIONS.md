@@ -519,8 +519,8 @@ Two kinds of entry. **Founder** entries record what the founder said in this ses
 
 ### D-082 Plus membership: first 2 letters free, then Plus (founder)
 - **Status:** Decided by the founder, 4 Oct. (Drafted earlier as D-051 and D-052 on `main`; those ids mean other decisions on `develop`, so this is the id that stands.)
-- **Decision:** Plus is a membership. The first 2 letters per account are free; after that, adding letters needs Plus. Existing letters always stay readable, playable and exportable. One membership covers the book. $3.99 a month with a 1 month free trial, or $29.99 a year with a 2 month free trial. Apple in-app purchase only. Offer codes come from Apple (no code system of our own). Family Sharing on.
-- **Supersedes:** the "Read together after 3 free sessions" rule of D-053 and the "free, always" copy.
+- **Decision:** Plus is a membership. The first 2 letters per account are free; after that, adding letters needs Plus. Existing letters always stay readable, playable and exportable. One membership covers the book. Prices as the founder finalised them: **$4.99 a month with a 1 month free trial, or $49.99 a year with a 2 month free trial.** The yearly plan is about ten months' price for twelve months of access (12 x $4.99 = $59.88; $59.88 - $49.99 = $9.89 less than paying monthly for a year). Apple in-app purchase only. Offer codes come from Apple (no code system of our own). Family Sharing on.
+- **Supersedes:** the "Read together after 3 free sessions" rule of D-053 and the "free, always" copy and the earlier Plus prices ($3.99 a month, $29.99 a year) in D-012, D-053 and the website price decision, which stay in the record as history. Wherever those older entries disagree with the prices above, D-082 stands.
 - **Owner:** payments engineer. **Effects:** plan engine, Plan and gate screens, copy, legal (Terms, Subscription Terms), website.
 
 ### D-083 Open edges of the membership model (delegated; debate Q-013 pricing-membership-engine)
