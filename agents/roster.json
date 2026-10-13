@@ -200,7 +200,7 @@
         "scripts/*.mjs",
         "scripts/release/**",
         "apps/mobile/version.json",
-        "docs/release/RELEASE.md"
+        "docs/ops/RELEASE.md"
       ]
     },
     {

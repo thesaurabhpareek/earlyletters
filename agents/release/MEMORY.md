@@ -5,7 +5,7 @@ Curated long-term memory. Update it in the same PR as your work when you learn s
 Seeded on 3 Oct 2026 and refreshed 13 Oct from ADR 0022 and the release fact check. Nothing below comes from a run yet.
 
 ## Current focus
-- D-089 to D-092 recorded 13 Oct 2026 (D-091, no OTA in v1.0, awaits founder OK). BL-436 (version.json, store.config.json) and BL-437 (release-ios.yml) in review; BL-438 keeps `docs/release/1.0.0.md` current twice a week until release.
+- D-089 to D-092 recorded 13 Oct 2026 (D-091, no OTA in v1.0, approved 13 Oct). BL-436 (version.json, store.config.json) and BL-437 (release-ios.yml) in review; BL-438 keeps `docs/release/1.0.0.md` current twice a week until release.
 - v1.0 calendar (ROADMAP 2.1): C0 14 Oct, C1 19 to 29 Oct (preview lane), freeze and `release/1.0` Mon 26 Oct, submit Mon 2 Nov.
 
 ## Facts about this codebase (with paths)
@@ -14,7 +14,7 @@ Seeded on 3 Oct 2026 and refreshed 13 Oct from ADR 0022 and the release fact che
 - `apps/mobile/eas.json`: `appVersionSource: "remote"`, `production.autoIncrement: true`; `submit.production` empty until the production App Store Connect record exists.
 - Builds only from tags: `ios-v<x.y.z>-rc.<n>` builds, `ios-v<x.y.z>` releases (`.github/workflows/release-ios.yml`).
 - Bundle id comes from `packages/brand` (`publisher.domain`); it is permanent after the first App Store Connect upload.
-- No `expo-updates` in the code and no crash SDK (D-091 proposes no OTA in v1.0, pending the founder's OK); v1.0 is on-device only (PR #54). Two lanes: preview (`testflight` profile, `.preview` record, `docs/release/TESTFLIGHT.md`) and store (`production`, RC tags).
+- No `expo-updates` in the code and no crash SDK (D-091: no OTA in v1.0); v1.0 is on-device only (PR #54). Two lanes: preview (`testflight` profile, `.preview` record, `docs/release/TESTFLIGHT.md`) and store (`production`, RC tags).
 
 ## Decisions and constraints I must respect
 - ADR 0022 (accepted): `release/<major>.<minor>` from `main`; build once, promote; Actions orchestrates, EAS builds; no EAS Workflows; private repo on GitHub Free, so no environments or required reviewers: tag pushes by the coordinator are the gate.
@@ -25,6 +25,8 @@ Seeded on 3 Oct 2026 and refreshed 13 Oct from ADR 0022 and the release fact che
 
 ## Open threads
 - Founder confirms export compliance (`usesNonExemptEncryption: false`) at first upload.
+
+- One runbook: `docs/ops/RELEASE.md` (qa-e2e's train, amended for D-089). Check open branches and `docs/agents/BOARD.md` claims before editing shared files; the coordinator's wave branches append to BOARD.md too.
 
 ## Lessons
 - None yet.

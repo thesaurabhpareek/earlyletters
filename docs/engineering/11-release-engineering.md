@@ -5,14 +5,14 @@ owner: principal-architect
 reviewers: [security-architect, compliance-engineer]
 status: adopted
 last_reviewed: 2026-10-03
-applies_to: apps/mobile/version.json, apps/mobile/store.config.json, apps/mobile/eas.json, apps/mobile/app.config.ts (version, updates, runtimeVersion), packages/content/src/store*.ts, packages/content/src/release-notes*.ts, docs/release/<x.y.z>.md, docs/release/RELEASE.md, scripts/release/**, .github/workflows/release*.yml, .eas/**
+applies_to: apps/mobile/version.json, apps/mobile/store.config.json, apps/mobile/eas.json, apps/mobile/app.config.ts (version, updates, runtimeVersion), packages/content/src/store*.ts, packages/content/src/release-notes*.ts, docs/release/<x.y.z>.md, docs/ops/RELEASE.md, scripts/release/**, .github/workflows/release*.yml, .eas/**
 ---
 
 # 11. Release engineering
 
 ## Purpose
 
-A family trusts the app with words they cannot say again. A release must never lose a letter, must reach people in small steps, and must be stoppable without waiting for App Review. This chapter covers branches, versions, builds, store metadata, OTA updates and the release gates. The decision record is ADR 0022 and the founder's per-release steps are in `docs/release/RELEASE.md`. Kill switches and remote config are CODE-R19; old builds and contracts are API-R11 and API-R12; release health is OBS-R11.
+A family trusts the app with words they cannot say again. A release must never lose a letter, must reach people in small steps, and must be stoppable without waiting for App Review. This chapter covers branches, versions, builds, store metadata, OTA updates and the release gates. The decision record is ADR 0022 and the founder's per-release steps are in `docs/ops/RELEASE.md`. Kill switches and remote config are CODE-R19; old builds and contracts are API-R11 and API-R12; release health is OBS-R11.
 
 ## Principles
 
@@ -20,7 +20,7 @@ A family trusts the app with words they cannot say again. A release must never l
 2. **The branch decides what is in the binary; remote config decides what is on.**
 3. **Agents prepare, CI executes, the founder approves.** No agent holds a store or build credential.
 4. **Every release has one record** a person can read in two minutes.
-5. **Small steps out, fast way back.** Phased release and kill switches; OTA updates after v1.0 if D-091 is approved.
+5. **Small steps out, fast way back.** Phased release and kill switches; OTA updates only after v1.0 (D-091).
 
 ## Rules
 
@@ -58,7 +58,7 @@ A family trusts the app with words they cannot say again. A release must never l
 
 **REL-R13 (MUST)** Unfinished work on a release branch is reverted or ships dark with its bundled default off in the signed config document (D-066, D-068). A feature never depends on a remote value being reachable to stay off. *Why:* config may not load; the default is what users get. *Enforced by:* review; CODE-R19.
 
-**REL-R14 (MUST)** When `expo-updates` is in a build (not in v1.0 if D-091, pending the founder's OK, is approved), an OTA update follows TDD 01 3.10: JS, asset and copy fixes only, never new collection, destinations, SDKs, permissions, pricing text or features (guideline 2.5.2); it applies on the next cold start; it passes the same gates as a binary and needs founder approval; after launch it starts at 10 percent or less. *Why:* DPLA 3.3.1(B) allows interpreted code only within the app's purpose; privacy labels must stay true. *Enforced by:* review until `expo-updates` exists; the OTA job is added with it.
+**REL-R14 (MUST)** When `expo-updates` is in a build (not in v1.0, D-091), an OTA update follows TDD 01 3.10: JS, asset and copy fixes only, never new collection, destinations, SDKs, permissions, pricing text or features (guideline 2.5.2); it applies on the next cold start; it passes the same gates as a binary and needs founder approval; after launch it starts at 10 percent or less. *Why:* DPLA 3.3.1(B) allows interpreted code only within the app's purpose; privacy labels must stay true. *Enforced by:* review until `expo-updates` exists; the OTA job is added with it.
 
 **REL-R15 (MUST)** Migrations a release needs reach production (D-041; the `db-v*` tag proposed in PR #36, `deploy-db.yml`) before the binary is released, and are expand-only until the oldest supported build no longer needs the old shape (API-R11; `minSupportedVersion` in the signed config, not yet enforced by the app). *Why:* builds in the field cannot be recalled. *Enforced by:* release record review; DB-R09.
 
@@ -72,7 +72,7 @@ A family trusts the app with words they cannot say again. A release must never l
 
 ## How to apply it
 
-- Cutting a release and shipping a hotfix: follow `docs/release/RELEASE.md`. Preview-lane builds: `docs/release/TESTFLIGHT.md`.
+- Cutting a release and shipping a hotfix: follow `docs/ops/RELEASE.md`. Preview-lane builds: `docs/release/TESTFLIGHT.md`.
 - A PR that needs to reach a release branch: merge to `develop` first and label it `release:<major>.<minor>`; the `release` agent lists it in the release record and the founder cherry-picks (agents may only base PRs on `develop` today).
 - A PR that changes a screen listed in `docs/store/screenshots.json`: say so in the PR body; the release record picks it up.
 

@@ -13,7 +13,7 @@ Department: operations. Journal: the issue labelled `journal` and `agent:ops` (i
 The pipeline is fast, green and cheap; every environment is reproducible from the repo; we know within a day when a release hurts families, and every incident has a runbook. Re-chartered 3 Oct 2026 (ADR 0022): release mechanics moved to `release`; you keep the platform and add reliability.
 
 ## You own
-- `docs/ops/**` except `docs/release/RELEASE.md` and `docs/ops/proposed/release-*` (owned by `release`), including `docs/ops/proposed/` for workflow patches the founder applies.
+- `docs/ops/**` except `docs/ops/RELEASE.md` (the release train: `qa` writes it for the coordinator) and `docs/ops/proposed/release-*` (owned by `release`), including `docs/ops/proposed/` for workflow patches the founder applies.
 - `apps/mobile/eas.json` (profiles, channels, environments, submit profiles; no credential values).
 - `scripts/**` except `scripts/agents/**`, `scripts/trace.mjs` and `scripts/release/**`.
 - `.github/README.md` documentation.

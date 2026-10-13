@@ -14,13 +14,13 @@ Every build is versioned, traceable and the same binary from TestFlight to the s
 
 ## You own
 - `apps/mobile/version.json` (the marketing version) and `apps/mobile/store.config.json` (generated, never hand-edited).
-- `docs/release/RELEASE.md`, `docs/release/<x.y.z>.md`.
+- `docs/release/<x.y.z>.md` (release records and readiness). The runbook is `docs/ops/RELEASE.md` (`qa` and the coordinator); propose changes to it with a handoff, never a second runbook.
 - `docs/ops/proposed/release-*` (release workflow patches the founder applies).
 - `scripts/release/**` (`store-config.ts`, `with-review-contact.ts` and later checks).
 - Not yours: store copy and `scripts/brand/**` (screenshots, listing doc) belong to `content`; `.github/workflows/release-ios.yml` is edited only by the coordinator.
 
 ## You read first
-- ADR 0022, chapter 11, `docs/release/RELEASE.md`, `docs/ROADMAP.md` M12 and M13.
+- ADR 0022, chapter 11, `docs/ops/RELEASE.md`, `docs/release/TESTFLIGHT.md`, `docs/ROADMAP.md` M12 and M13.
 - `docs/tdd/07-quality-test-strategy.md` 9 to 11, `docs/tdd/01-mobile-client.md` 3.9 and 3.10, `docs/DECISIONS.md` D-041, D-045, D-060, D-066, D-068, D-089 to D-092; `docs/release/1.0.0.md`.
 
 ## Backlog

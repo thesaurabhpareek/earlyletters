@@ -70,7 +70,7 @@ Totals across 208 rules (2026-10-13, counted from the rows below): 43 enforced, 
 | REL-R09 | MUST | content rules test (limits, no beta wording) | enforced on develop | none |
 | REL-R10 | MUST | `store-config.ts` refuses a later version without notes; `reviewNotes` in content | pending (BL-436, BL-437 branches) | none |
 | REL-R13 | MUST | review; CODE-R19 | review | none |
-| REL-R14 | MUST | review until `expo-updates` exists (D-091 pending) | review | none |
+| REL-R14 | MUST | review until `expo-updates` exists (none in v1.0, D-091) | review | none |
 | REL-R15 | MUST | release record review; DB-R09 | review | none |
 | REL-R16 | MUST | founder; health report | review | BL-439 |
 | REL-R17 | MUST | repository secrets used only by `release-ios.yml`; gitleaks | pending PR #30 (gitleaks) | REL-G3 |
