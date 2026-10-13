@@ -82,6 +82,6 @@ The category is small (01 section 5). R3 section 5 sized year one at the old pri
 - Photo albums. Photos are optional and secondary.
 - Children as users, child accounts or anything addressed to children as an audience.
 - Printed books (later, F30). The PDF export is the book at v1.0.
-- Android, the web contribution page, grandparents as contributors, audio upload (v1.1, B1, B7).
+- Android, the web contribution page, grandparents as contributors, family members hearing each other's recordings (v1.1, B1, B7, D-073). The owner's own encrypted recording backup is v1.0 (D-073, M14).
 - Server transcription or any AI model call off the phone (v1.1 with consent).
 - Gamification of any kind.

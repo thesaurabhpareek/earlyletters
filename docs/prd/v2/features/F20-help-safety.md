@@ -11,7 +11,7 @@
 
 > **Not legal or clinical advice.** Items marked **[Counsel]** wait on a licensed attorney. Nothing here is a clinical protocol.
 
-> **Build state.** Every v1.0 build profile sets `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`; commit c1764f9). With it off there is no account, no sync and no co-parent: every letter lives only on the phone, so support can never see, restore or delete a letter. Rows marked **[server]** apply only to a build with the switch on.
+> **Build state.** Server features are on for v1.0 (M14, founder, 13 Oct 2026), reversing commit c1764f9: accounts, sync and co-parents exist at launch, so support handles deletion requests, under-18 reports and safety removal from day one. On 13 Oct every build profile still sets `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`) until the release profiles flip; a build with it off (the kill path) has no account, every letter lives only on the phone, and support can never see, restore or delete a letter. Rows marked **[server]** need our server and are v1.0.
 
 ## 1. Why
 
@@ -56,10 +56,10 @@
 - TestFlight feedback for C0 and C1: test information, a tester welcome note, daily triage with severity labels.
 - Runbooks and reply templates for sensitive cases (section 6.5), with no loss language in any copy.
 - A support log that holds tags and counts, never content.
+- Report a concern (LEGAL-REQ-056, P1) **[server]**: v1.0 now that co-parents ship (M14).
+- Safety removal of a parent through an audited service-role path **[server]** (F11, LEGAL-REQ-025): v1.0 now that co-parents ship (M14).
 
 **Later**
-- Report a concern (LEGAL-REQ-056, P1): v1.1 with family members; required in any build with server features on.
-- Safety removal of a parent through an audited service-role path **[server]** (F11): v1.1 in a server-off release.
 - The on-device safety classifier and its cards, only with a perinatal clinician's written sign-off (F39, D-034).
 - An accessibility statement page with a contact route (LEGAL-REQ-052, P1): v1.0.1 unless counsel asks for it at launch.
 - A published help centre at earlyletters.com (articles from the help-centre branch, v1.0 parts only), hosted by F21.
@@ -93,7 +93,7 @@
 | Settings > Help and legal > If you are struggling | Disclosure with lines, tap to call | Built (same file; copy `struggling` in `strings.en.ts`) |
 | Settings > Recordings footer, first-run Ready screen | How transcription works (`settings.help.mistakes`) | Built there; not in Help and legal |
 | Settings top card | "Early version" note with Export a copy | Built (`settings/index.tsx`; `settings.about.beta`) |
-| Website `/delete-account` | Deletion by email route | Live (F21); text describes account deletion, which a server-off build does not have |
+| Website `/delete-account` | Deletion by email route | Live (F21); text describes account deletion, which v1.0 has (M14); check it against F17 before submission (F21-REQ-014) |
 | TestFlight app | Screenshot and crash feedback to App Store Connect | Apple feature; tester note not written |
 | `hello@earlyletters.com` | Founder's inbox through forwarding (`docs/ops/DOMAINS.md` 3 and 9) | Live per D-063 |
 
@@ -128,7 +128,7 @@
 | F20-U10 | A user says they are under 18 **[server]** | Runbook S-4 (`close_underage_account`, TDD 04 3.3 item 5) | A human reply | Counsel decides grace | Runbook dry run |
 | F20-U11 | A custody dispute or court order | Runbook S-5: Terms 9.3 and 9.4; counsel decides; never move or hand over one parent's letters at the other's request | A human reply | Counsel | Runbook dry run **[Counsel]** |
 | F20-U12 | Apparent child sexual abuse material reported or found **[server]** | Counsel-led runbook (Q27): preserve, report to NCMEC, do not browse beyond what the runbook requires | n/a | Counsel | Tabletop **[Counsel]** |
-| F20-U13 | A parent asks to remove the other parent for safety **[server]** | F11 audited removal (LEGAL-REQ-025) | A human reply | F11 | v1.1 in server-off |
+| F20-U13 | A parent asks to remove the other parent for safety **[server]** | F11 audited removal (LEGAL-REQ-025) | A human reply | F11 | v1.0 (M14) |
 | F20-U14 | VoiceOver on the struggling row | Row announces title and hint "Shows free, confidential support lines."; expanded state; each line is a link named with its name and how | Readable | n/a | A11y snapshot |
 | F20-U15 | AX5 text | Lines wrap; no truncation of numbers | Readable | n/a | AX5 snapshot |
 | F20-U16 | Reduce Motion | Expand without animation | n/a | n/a | Snapshot |
@@ -163,7 +163,7 @@ Each runbook states: when to use it, the first reply template, the steps, what n
 | S-7 | Rights request (access, deletion, correction) by email | In a server-off build: explain local data and in-app deletion; delete support and mailing-list data on request; in a server-on build: the deletion runbook | Founder; counsel for edge cases | Partly built: `docs/ops/runbooks/stuck-deletion.md` covers the server path only |
 | S-8 | Billing and refunds | Point to Apple's manage and refund sheets in Settings > Plan (F14) | Founder | Not built |
 
-Five of these (S-1, S-2, S-3, S-5, S-7) apply to a server-off v1.0 and need a dry run before C1.
+With server features on for v1.0 (M14), seven of these (S-1 to S-7) apply at launch and need a dry run before C1, including S-4 and S-6, which need our server.
 
 ### 6.6 TestFlight feedback
 
@@ -174,7 +174,7 @@ Five of these (S-1, S-2, S-3, S-5, S-7) apply to a server-off v1.0 and need a dr
 
 ## 7. Requirements and acceptance criteria
 
-Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[server]** applies only to a build with server features on.
+Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[server]** needs our server and is v1.0 (M14); built code behind the switch is "Built, switch off in release profiles" until the profiles flip.
 
 | ID | P | Requirement | Acceptance criteria | Status | Source |
 |---|---|---|---|---|---|
@@ -198,7 +198,7 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | F20-REQ-017 | P0 | No promotion in any support reply or sensitive case | Given templates, Then no price, offer or Plus pitch | Not built | R1 F20 |
 | F20-REQ-018 | P0 | Support has no tool to read letters | Given the repo, Then no admin screen or script reads `entries` text except the counsel-only preservation path **[server]** | Built by design (no admin tool found) | LEGAL-REQ-057 |
 | F20-REQ-019 | P1 | Privacy and security mailboxes exist, and the policies and `security.txt` name the right ones | Given DNS and the site, Then `privacy@` and `security@` forward, and `/.well-known/security.txt` returns 200 | Partly built: `hello@` live; others suggested (`docs/ops/DOMAINS.md`); live `security.txt` returned 404 on 13 Oct | LEGAL-REQ-052, DOMAINS.md |
-| LEGAL-REQ-056 | P1 | Report a concern **[server]** | Given a family member exists, Then a Help row opens a support form with category only | Not built; v1.1 in a server-off release | CR-086 |
+| LEGAL-REQ-056 | P1 | Report a concern **[server]** | Given a family member exists, Then a Help row opens a support form with category only | Not built; v1.0 (M14) | CR-086 |
 | LEGAL-REQ-052 | P1 | Accessibility statement and feedback route | Given the website, Then the statement and a contact route exist; Help links it | Not built (`/accessibility` returned 404 on 13 Oct) | CR-070 |
 
 ## 8. Data, privacy and security
@@ -211,7 +211,7 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | TestFlight feedback and screenshots | May contain L4 | App Store Connect | Founder | Apple's retention [U] | Copied into GitHub issues |
 | Mailing-list address (website) | L3 | Resend | Founder | Until unsubscribe | Used for product messages to app users |
 
-- In a server-off build we hold no letter, so a breach of our systems cannot expose one; support email is the main store of personal data and gets the same care.
+- v1.0 holds account data, letter text and encrypted recordings on our server (M14), so a breach of our systems could expose letter text; the security fixes come first (09 R-17). Support email is also a store of personal data and gets the same care. In a kill-path build we hold no letter.
 - The subprocessor list names Resend and the mail forwarder (F21).
 
 ## 9. Non-functional requirements

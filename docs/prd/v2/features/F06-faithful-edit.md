@@ -384,7 +384,7 @@ Status read on `develop`, 13 Oct 2026.
 | Kind control, date sheet | F04 | Not built (F04 WP-F04-08, -10) |
 | Local schema | `apps/mobile/src/lib/db/migrations.ts` migration 7 | Not built (5 is D-084; F04 takes 6) |
 | Engine audit job | `apps/mobile/src/lib/review/engine-audit.ts` | Not built; F06-REQ-022 |
-| Server columns | `supabase/migrations/<new>_f06_author_layer.sql` | Not built; not needed while server features are off in v1.0 |
+| Server columns | `supabase/migrations/<new>_f06_author_layer.sql` | Not built; needed for v1.0 now that sync ships (M14) |
 
 Libraries: none new in `packages/core` (pure TypeScript, ES2018 Unicode property escapes). The word diff is about 60 lines of our own code over the core tokenizer [R]: a library diff (`diff`, BSD) works on characters or its own word regex, and would reintroduce D1 for Devanagari. ADR 0014 records that Hermes has Unicode property escapes including `Script=` and no `Intl.Segmenter`; whether it supports `\p{Default_Ignorable_Code_Point}` and `\p{Bidi_Control}` is Unverified until WP-F06-01.
 
@@ -413,7 +413,7 @@ ALTER TABLE drafts ADD COLUMN review_state TEXT;  -- JSON: level, edit states, l
 
 Store functions (new, synchronous, same patterns as `store.ts`): `setDraftReviewState(id, state)`, `openEntryForReview(id)`, `saveEntryEdits(id, { machineEdits, authorEdits, lockedSpans, finalText, editLevel, baseSeq })`. `saveLetterFromDraft` writes every field in F06-REQ-023 and -024. `setWordsForWaitingEntry` stays the only way a voice-only letter gets raw text, and only on the device (F06-REQ-030).
 
-Server migration (data architect, `approve-migration`; not needed for the on-device v1.0 build): add `author_edits jsonb not null default '[]'`, `locked_spans jsonb not null default '[]'`, `pack_ref text` to `entries` with classification comments; add `pack_ref` to `entries_guard_immutable`; add `author_edits` and `locked_spans` to `entries_record_version` and to `entry_versions`; leave `book_entries` unchanged. Sync field group (F16-REQ-011): words, `machine_edits`, `author_edits`, `locked_spans`, `edit_level` push together.
+Server migration (data architect, `approve-migration`; needed for v1.0 now that sync ships, M14): add `author_edits jsonb not null default '[]'`, `locked_spans jsonb not null default '[]'`, `pack_ref text` to `entries` with classification comments; add `pack_ref` to `entries_guard_immutable`; add `author_edits` and `locked_spans` to `entries_record_version` and to `entry_versions`; leave `book_entries` unchanged. Sync field group (F16-REQ-011): words, `machine_edits`, `author_edits`, `locked_spans`, `edit_level` push together.
 
 ### 11.4 Sequencing
 

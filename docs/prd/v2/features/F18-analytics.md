@@ -11,7 +11,7 @@
 
 > **Not legal advice.** Items marked **[Counsel]** wait on a licensed attorney.
 
-> **Build state that shapes this spec.** Every v1.0 build profile sets `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`, `apps/mobile/.env.development`; commit c1764f9, 4 Oct, "v1.0 ships on this phone only"). Off means no Supabase client, no sign-in, no sync and no account deletion (`apps/mobile/src/lib/capabilities.ts`). ROADMAP 2.1 and `_AUTHORING.md` 3b (M6, M7, M8) still describe sign-in, sync and a server status report at v1.0. This spec marks every requirement that needs our server with **[server]**. Those requirements apply only to a build with the switch on. Which state ships on 2 Nov is founder question Q1.
+> **Build state that shapes this spec.** Server features are on for v1.0 (M14, founder, 13 Oct 2026), reversing commit c1764f9 (4 Oct, "v1.0 ships on this phone only"). On 13 Oct every build profile still sets `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`, `apps/mobile/.env.development`); off means no Supabase client, no sign-in, no sync and no account deletion (`apps/mobile/src/lib/capabilities.ts`). The release profiles flip to `on` per M14 and the switch stays as the kill path. This spec marks every requirement that needs our server with **[server]**; all of them are v1.0. A build with the switch off runs only the device rows.
 
 ## 1. Why
 
@@ -167,7 +167,7 @@
 
 ### 6.5 Metric definitions (03 section 4)
 
-Sources: **S** server aggregate **[server]**, **D** device analytics (consenting only), **ASC** App Store Connect. A server-off build feeds no S metric: every S row below is blank for v1.0 users until the switch is on.
+Sources: **S** server aggregate **[server]**, **D** device analytics (consenting only), **ASC** App Store Connect. A server-off build feeds no S metric: every S row below stays blank until the release profiles turn the switch on (M14), and in any kill-path build.
 
 | 03 metric | Definition | Source and view or events | Server-off build |
 |---|---|---|---|
@@ -204,7 +204,7 @@ Sources: **S** server aggregate **[server]**, **D** device analytics (consenting
 
 ## 7. Requirements and acceptance criteria
 
-Status: **Built** (file), **Partly built**, or **Not built**, checked in code on 13 Oct. **[server]** applies only to a build with server features on.
+Status: **Built** (file), **Partly built**, or **Not built**, checked in code on 13 Oct. **[server]** needs our server and is v1.0 (M14); built code behind the switch is "Built, switch off in release profiles" until the profiles flip.
 
 | ID | P | Requirement | Acceptance criteria | Status | Source |
 |---|---|---|---|---|---|
@@ -326,7 +326,7 @@ Only for what is missing or partly built.
 
 | Q | Who, by when | What changes |
 |---|---|---|
-| Q1 Does the 2 Nov submission ship with server features off (code, c1764f9) or on (ROADMAP 2.1, M6 to M8)? | Founder; 16 Oct | Every **[server]** row; 03 section 4 sources; the label |
+| Q1 Does the v1.0 submission ship with server features off (code, c1764f9) or on (ROADMAP 2.1, M6 to M8)? **Answered by M14 (founder, 13 Oct 2026): on.** Every **[server]** row is v1.0 | Founder (decided) | Every **[server]** row; 03 section 4 sources; the label (account data declared) |
 | Q2 Sentry in v1.0? Default [R]: no. ASC and Xcode Organizer are the release gate already (D-003), the label says no Crash Data (1.3.0), and adding it reopens the label, manifest and subprocessor list two weeks before submission | Founder; 16 Oct | WP-F18-14, F18-REQ-005 copy |
 | Q3 A deletion path for usage data without an account: route (option A) or retention only (option B)? **[Counsel]** | Counsel; 23 Oct | WP-F18-15 |
 | Q4 Is the `analytics_opted_in` first-run summary acceptable under LEGAL-REQ-003? **[Counsel]** | Counsel; 23 Oct | Drop properties if no |

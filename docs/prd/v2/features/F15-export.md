@@ -184,7 +184,7 @@ Format `early-letters-export` (built from `brand.name` in `schema.ts`), `format_
 
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
-| C-REQ-017 | P0 | Export, free forever, offline | Given a lapsed user with 400 letters, When they tap Export everything, Then the ZIP holds all entries, audio, PDF and README, and no Plus UI appears | C |
+| C-REQ-017 | P0 | Export, never gated (also after a lapse, M1), offline | Given a lapsed user with 400 letters, When they tap Export everything, Then the ZIP holds all entries, audio, PDF and README, and no Plus UI appears | C |
 | LEGAL-REQ-034 | P0 | Complete export | Given a lapsed Free user offline, When they export, Then the ZIP contains own entries (raw transcript, edits, final text, timestamps), audio, PDF and `account.json` with profile, memberships, dictionary terms, consent history and plan status; a schema check passes | Legal |
 | DATA-REQ-050 | P0, Rev (B6, B7) | Export contents | Given 400 own letters (2 private), 30 co-parent letters in the book, Then `entries.json` has 430 objects, co-parent letters have no `raw_transcript`, own letters do; co-parent audio is `audio_missing.reason = "not_on_this_device"`; no listening copy appears | DATA spec; F08 row DATA-REQ-050; ADR 0015 |
 | DATA-REQ-051 | P0 | Checksums and self-verification | Given an export, Then every file except the manifest pair is listed with SHA-256 and bytes, and the app re-reads every file before `settings.export.ready`; a flipped byte is reported | DATA spec |

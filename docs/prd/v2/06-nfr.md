@@ -371,7 +371,7 @@ The target in 03 section 4.4 holds: run cost near $0.02 to $0.10 per family per 
 | **Total** | **About $45 to $71 a month** | **About $780 to $980 a month, including TDD 06's compute estimate** | arithmetic |
 | **Per family per month** | **About $0.05 to $0.07** | **About $0.01** | arithmetic |
 
-Not in v1.0 and therefore $0: server transcription (F35), shared voice playback egress (F31), RevenueCat (B2), PowerSync (D-023 decided against for v1.0). The whole table assumes server features are on. The v1.0 build as configured on 13 Oct has them off (`apps/mobile/src/lib/capabilities.ts`), and the cost decision of 3 Oct keeps Supabase paused and free until the first real family's letters reach a server; the $25 Pro base starts that day (F08 section 13 Q1). Cost guardrails from TDD 06 section 4.3 apply: billing alerts at 150% of this table in every console and a monthly 15-minute review [R].
+Not in v1.0 and therefore $0: server transcription (F35), shared voice playback egress (F31), RevenueCat (B2), PowerSync (D-023 decided against for v1.0). The whole table assumes server features are on, as they are for v1.0 (M14, founder, 13 Oct 2026; the release profiles still have them off on 13 Oct, `apps/mobile/src/lib/capabilities.ts`). The cost decision of 3 Oct keeps Supabase paused and free until the first real family's letters reach a server; the $25 Pro base starts that day, which M14 puts at v1.0 launch or the first outside tester who signs in (F08 section 13 Q1). Cost guardrails from TDD 06 section 4.3 apply: billing alerts at 150% of this table in every console and a monthly 15-minute review [R].
 
 ## 16. Load targets
 

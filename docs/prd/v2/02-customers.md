@@ -1,6 +1,6 @@
 # 02. Customers
 
-Status: Draft V2, 3 Oct 2026. Desk evidence only; no primary interviews yet (section 7 has the plan). Labels and source ids per `_AUTHORING.md` section 6.
+Status: Draft V2, 3 Oct 2026; revised 13 Oct 2026 for the membership (M1 to M3) and M14. Desk evidence only; no primary interviews yet (section 7 has the plan). Labels and source ids per `_AUTHORING.md` section 6.
 
 ## 1. Three roles, often different people
 
@@ -34,14 +34,14 @@ Handles are fixed and used across every spec. Each persona lists the moment, wha
 - **Short of.** Time, sleep, a free hand, patience for set-up screens.
 - **Fears.** Losing what they made (9 lost-work stories in R2's sample) [S] R2 section 5; surprise or new charges [S] R2 section 0 item 3; the app shutting down with years inside it [S] R2 section 5; being made to feel behind [S] UR S24.
 - **Delights.** Short entries and a no-pressure tone [S] R2-S13; prompts that surface something they would have forgotten [S] R2-S19; a finished book [S] R2 section 5.
-- **What V2 does.** Speak or type in under a minute and never lose it (F04); transcript cleaned only mechanically and shown (F05, F06); a book that fills itself by month (F09); reminders that never count gaps (F13); free forever to read, play and export (F14, F15).
+- **What V2 does.** Speak or type in under a minute and never lose it (F04); transcript cleaned only mechanically and shown (F05, F06); a book that fills itself by month (F09); reminders that never count gaps (F13); the first 2 kept letters free, then Plus at Keep, and every letter already kept stays readable, playable and exportable with or without Plus (M1; F14, F15).
 
 ### P2 Co-parent
 - **Moment.** Writes less often, on their own cadence; fathers in the research write letters or record videos to the future child [S] UR S25, S30. 95.3% of fathers of children under 6 are in the labor force [F] R2-S30.
 - **Short of.** Evidence: only 1 of 287 coded reviews mentions a partner contributing [S] R2-S13. We know little about P2.
 - **Fears.** Privacy failures in shared albums [S] R2-S17. Being pushed into a role they did not choose [A].
 - **A real case to design for.** In mixed-language couples P2 may not read P4's letters (55% against 92% transmission among Latino parents) [F] R2-S31.
-- **What V2 does.** Joins free by link or code (F11); their own letters, their own voice, their own signature; sees the other parent's letters in the language they were written, with no machine translation (F10, F11). At v1.0 the other parent's audio stays on the author's phone (B7); see `09-decisions-and-risks.md` DR-07.
+- **What V2 does.** Joins free by link or code (F11); their own letters, their own voice, their own signature; sees the other parent's letters in the language they were written, with no machine translation (F10, F11). At v1.0 the other parent's audio does not reach their phone: family listening is v1.1, and the author's own encrypted backup is readable only by the author's devices (D-073, M14); see `09-decisions-and-risks.md` DR-07.
 
 ### P3 Expecting parent
 - **Moment.** Pregnancy, often the third trimester; parents advise looking at the baby book during pregnancy [S] UR S27.
@@ -66,7 +66,7 @@ Handles are fixed and used across every spec. Each persona lists the moment, wha
 - **Moments.** Shared reading from about age 2 to 5 (the AAP recommends shared reading from birth) [F] R2-S29; handover at 18 [S] UR S30.
 - **Needs.** A book that makes sense without the app: by age, signed by each author, in open formats, with the voice.
 - **Caution.** No study we opened tests a recorded parent's voice; the live-voice study (61 girls aged 7 to 12) does not transfer [F] R2-S24. Copy never claims calming or developmental effects.
-- **What V2 does.** Month chapters and signatures (F09), Read together (F10), export in open formats free forever, and a 90-day shutdown pledge (F15, PRD-REQ-009).
+- **What V2 does.** Month chapters and signatures (F09), Read together (F10), export in open formats that is never gated, with or without Plus (M1), and a 90-day shutdown pledge (F15, PRD-REQ-009).
 
 ### Not for (anti-personas)
 - Parents who want the app to write for them. We say no to "make it nicer" (CLAUDE.md constitution). [S] Some buyers want polish (R2 section 0 item 5); we accept losing them.
@@ -121,7 +121,7 @@ Jobs 1 to 3 outrank the emotional job (6) on evidence. That is the order V2 buil
 | U2 | Do parents value the untouched original over a polished version? | If many want polish, our promise narrows the market | Study 2 |
 | U3 | Is co-parent-only at v1.0 enough? | Grandparents seeing the baby is top praise in photo apps | Study 3 |
 | U4 | Is transcription good enough on names and accents in each language? | A misheard name is the fastest way to lose trust | Study 1 plus per-language experiments (R5 section 8) |
-| U5 | Will parents use Read together, at what child age? | It defines part of the Plus boundary | Study 3, v1.0 analytics |
+| U5 | Will parents use Read together, at what child age? | Read together is free with no session limit (M2), so it no longer sets the Plus boundary; low use would change what the listing leads with [A] | Study 3, v1.0 analytics |
 | U6 | How does a co-parent who does not read the letter's language experience the book? | Mixed couples are common in P4 | Study 3 |
 | U7 | When do capture habits fade? | Reminder design and trial timing depend on it | Study 1, v1.0 cohort data |
 

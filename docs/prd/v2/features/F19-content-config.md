@@ -11,7 +11,7 @@
 
 > **Not legal advice.** Items marked **[Counsel]** wait on a licensed attorney.
 
-> **Build state.** Every v1.0 build profile sets `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`; commit c1764f9). In that state the app fetches signed documents only from `EXPO_PUBLIC_DOCS_BASE_URL` (`apps/mobile/src/lib/remote/base.logic.ts`). No build profile or backlog item sets it today. Without it, a store build has no remote config, no kill switches, no content bundle and no pack manifest, so it can install no speech model and no non-English pack (section 6.3, F19-U01).
+> **Build state.** Server features are on for v1.0 (M14, founder, 13 Oct 2026), reversing commit c1764f9; with them on, remote documents fall back to the Supabase URL (`apps/mobile/src/lib/capabilities.ts`). On 13 Oct every build profile still sets `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`). In that state, which is also the kill path, the app fetches signed documents only from `EXPO_PUBLIC_DOCS_BASE_URL` (`apps/mobile/src/lib/remote/base.logic.ts`), and no build profile or backlog item sets it today. Without either, a store build has no remote config, no kill switches, no content bundle and no pack manifest, so it can install no speech model and no non-English pack (section 6.3, F19-U01).
 
 ## 1. Why
 
@@ -119,7 +119,7 @@
 
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
-| F19-U01 | Store build with server features off and no `EXPO_PUBLIC_DOCS_BASE_URL` | Every document refresh returns `not_configured`; bundled defaults only; the pack engine fails `no_manifest` | No speech model or non-English pack can install; first letter is saved as audio only | Set the env var in the production EAS environment (F19-REQ-005) | Build-config test fails if a store profile has neither a docs base nor server features |
+| F19-U01 | Store build with server features off (before the M14 flip, or the kill path) and no `EXPO_PUBLIC_DOCS_BASE_URL` | Every document refresh returns `not_configured`; bundled defaults only; the pack engine fails `no_manifest` | No speech model or non-English pack can install; first letter is saved as audio only | Set the env var in the production EAS environment (F19-REQ-005) | Build-config test fails if a store profile has neither a docs base nor server features |
 | F19-U02 | `keys.ts` empty (today) | Every fetched document fails verification; fail closed | Same as U01 | BL-335 key ceremony | `integrity.test.ts` |
 | F19-U03 | Offline at launch, never fetched before | Bundled defaults, packaged copy, no manifest | Writing and reading work; Settings > Storage shows `packsCopy.failures.offline` "Starts when you are back online." | Automatic on reconnect | `documents.test.ts` offline case |
 | F19-U04 | Bad signature, unknown key or wrong kind | Ignored; last good copy stays; outcome code recorded without body | Nothing | Republish | `integrity.test.ts` |
@@ -170,7 +170,7 @@ Direction: **up** may only raise, **down** may only lower, **kill** may only sto
 | `killSwitches.packDownloads` | bool, false | kill | `apps/mobile/src/lib/packs/index.ts` | Built |
 | `killSwitches.serverContent` | bool, false | kill | `apps/mobile/src/lib/remote/index.ts` | Built |
 | `captureMaxMinutes` (F04 asks `capture_max_minutes`) | int, 30, clamp 5 to 30 | down | F04 recorder | Not built (new) |
-| `flags.listeningCopy` (F08 asks `listening_copy_enabled`) | bool, false | variant, only if the reviewed build shows the listening copy | F08 | Not built (new) |
+| `flags.listeningCopy` | Removed: F08-REQ-006 Rev (D-068) has no remote listening-copy key; the player uses a copy only when its hash matches | n/a | F08 | Not to be built |
 | `appLockGraceSeconds` (F17) | int, 60, clamp 0 to 300 | variant | F17 lock | Not built (new) |
 | Language gate states (F03, F05) | In the pack manifest, not config: optional `gate` on each entry (`passed`, `early`, `paused`) | A language not named in the reviewed listing may not be moved to `passed` remotely | F03 chips, F05 | Not built (new field in `PackEntrySchema`) |
 
@@ -178,7 +178,7 @@ Sibling specs use snake_case names from the old D-035 table; the contract uses c
 
 ## 7. Requirements and acceptance criteria
 
-Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[server]** applies only to a build with server features on.
+Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[server]** needs our server and is v1.0 (M14); built code behind the switch is "Built, switch off in release profiles" until the profiles flip.
 
 | ID | P | Requirement | Acceptance criteria | Status | Source |
 |---|---|---|---|---|---|
@@ -192,7 +192,7 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | F19-REQ-008 | P0 | No stale kill switch: a same-version document with a different body is ignored, and a config older than 7 days by `generatedAt` against the last good server `Date` header is treated as stale for kill switches (switches keep their last good state, no new document lowers them) | Given a replayed old config, Then a set kill switch stays set | Not built (review L10) | Review L10 |
 | F19-REQ-009 | P0 | Closed vocabulary with a guard test | Given `RemoteConfigSchema` and the block types, Then a test lists every key and block type and fails on any not in 6.5 or ADR 0016 5.1; no key matches `analytic`, `sampl`, `consent`, `price`, `paywall`, `layout`, `rewrite` | Partly built: closed by construction; no guard test | B14, 2.3.1(a) |
 | F19-REQ-010 | P0 | `freeLettersAllowance` may only raise the reviewed 2 | Given a served 0 or 1, Then the effective value is 2; given 5, Then 5 | Built (`effectiveFreeLetters`, `_layout.tsx`) | M1 |
-| F19-REQ-011 | P0 | Each kill switch and one-way key has a consumer before the feature it guards ships | Given server features on, Then `sync` pauses the outbox, `invites` disables create and redeem, `forceReauthEpoch` signs out once per epoch | Not built for `sync`, `invites`, `forceReauthEpoch` (no consumer found); not needed in a server-off build | LEGAL-REQ-040, L3 |
+| F19-REQ-011 | P0 | Each kill switch and one-way key has a consumer before the feature it guards ships | Given server features on, Then `sync` pauses the outbox, `invites` disables create and redeem, `forceReauthEpoch` signs out once per epoch | Not built for `sync`, `invites`, `forceReauthEpoch` (no consumer found); needed for v1.0 (M14) | LEGAL-REQ-040, L3 |
 | F19-REQ-012 | P1 | Gentle update card from `minSupportedVersion` | Given the running version below it, Then one dismissible card on Tonight with an App Store link; capture and reading unaffected | Not built | ADR 0016 5.1 |
 | F19-REQ-013 | P0 | New keys in 6.5 with their direction rules | Given each new key out of range or moving the wrong way, Then the bundled default applies | Not built | F04, F08, F17 |
 | F19-REQ-014 | P0 | Content blocks: 4 types, plain text, only `{child}`, `{app}`, `{signsAs}`, forbidden characters refused | Given fixtures with a curly quote, an unknown placeholder and a newline, Then each block is skipped | Built (`packages/api/src/content.ts`, `test/content.test.ts`) | B14 |
@@ -269,7 +269,7 @@ Only for what is missing or partly built.
 | WP-F19-09 | Screen slots: Tonight prompts from `usePromptLibrary`, tip and announcement slots | Mobile | `apps/mobile/src/app/(tabs)/index.tsx`, `review.tsx`, `(tabs)/book.tsx`, `settings/index.tsx` (slot lines only) | WP-F19-04 | `[F19-REQ-016]` | Agent |
 | WP-F19-10 | Update card | Mobile | New `apps/mobile/src/components/content-blocks/update-card.tsx`, copy in feature `copy.ts` | none | `[F19-REQ-012]` | Agent |
 | WP-F19-11 | Full content rules in the publisher | Content | `scripts/packs/lib.ts`, `packages/content/test/rules.test.ts` (read the extra file) | none | `[F19-REQ-017]` | Agent |
-| WP-F19-12 | Kill-switch consumers for sync, invites, re-auth **[server]** | Sync, family, auth owners | `apps/mobile/src/lib/sync/`, `lib/family/`, `lib/auth/` | Q1 in F18 | `[F19-REQ-011]` | Agent |
+| WP-F19-12 | Kill-switch consumers for sync, invites, re-auth **[server]** | Sync, family, auth owners | `apps/mobile/src/lib/sync/`, `lib/family/`, `lib/auth/` | none (F18 Q1 answered by M14) | `[F19-REQ-011]` | Agent |
 | WP-F19-13 | Staging kill test and local smoke under every switch | QA | `docs/qa/` script | WP-F19-04 | `[F19-REQ-006]`, `[F19-REQ-007]` | Pair (two phones) |
 | WP-F19-14 | Review-notes flag list | Release owner | F21 review notes | WP-F19-07 | `[F19-REQ-024]` | Agent |
 
@@ -277,7 +277,7 @@ Only for what is missing or partly built.
 
 | Q | Who, by when | What changes |
 |---|---|---|
-| Q1 Where do documents live for a server-off v1.0: the Supabase functions origin set as `EXPO_PUBLIC_DOCS_BASE_URL`, or a Cloudflare host in front? Default [R]: the Supabase origin now, Cloudflare later with no app change | Founder; 16 Oct | WP-F19-02 |
+| Q1 Where do documents live? With server features on (M14) the app falls back to the Supabase origin; a build with the switch off (the kill path) needs `EXPO_PUBLIC_DOCS_BASE_URL`. Supabase functions origin set as that variable too, or a Cloudflare host in front? Default [R]: the Supabase origin now, Cloudflare later with no app change | Founder; 16 Oct | WP-F19-02 |
 | Q2 Pack host and name: R2 on `packs.earlyletters.com` (moves DNS to Cloudflare) or `packs.earlyletters.app` (ADR 0016 F-1, F-2) | Founder; 16 Oct | WP-F19-03, subprocessor page |
 | Q3 Mobile data threshold 5 MB or 0 (ADR 0016 F-3) | Founder; 16 Oct | One constant |
 | Q4 Does a file name that reveals a chosen language, seen by the host with an IP, need more than a Privacy Policy line? **[Counsel]** (COUNSEL_PACKET Q12) | Counsel; 29 Oct | Mirror models to our host |

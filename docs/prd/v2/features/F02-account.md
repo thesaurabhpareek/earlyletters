@@ -122,7 +122,7 @@ Words: the product and email say "sign-in link", never "magic link" (email catal
 ### 6.4 Re-ownership and the merge prompt
 
 1. One SQLite transaction sets `author_id`, `created_by` and dictionary `owner_id` on every local row and marks rows `queued` (TDD 01 3.2.5). Children keep their device UUIDv7 ids, which `create_child(p_id, ...)` accepts idempotently (migration `20261003010000_children_and_entitlements.sql`, pending), so no id remap happens (TDD 01 X-7).
-2. If the account already has books on the server and this phone has local books: "Add the letters on this phone to {child}'s book?" per local child, with Add to an existing book or Keep as a new book (A F6.3). Nothing local is deleted. "Keep as a new book" follows the Plus rule for a second started book (PRD-REQ-015); a refused book stays "On this phone only" and is never deleted (D-038).
+2. If the account already has books on the server and this phone has local books: "Add the letters on this phone to {child}'s book?" per local child, with Add to an existing book or Keep as a new book (A F6.3). Nothing local is deleted. "Keep as a new book" is free: books for more children have no gate (M2, PRD-REQ-015 Rev), and the server no longer refuses a book for Plus (`20261004000000_plus_on_device_only.sql` retires `SCPLS`, pending). Nothing local is ever deleted (D-038).
 3. Moving letters between children uses the P1 `move_entry` (B section 6 item 8); until it ships, the choice is limited to keeping both books.
 
 ### 6.5 Returning user on a new phone
@@ -149,7 +149,7 @@ Gate (F01), Welcome > Sign in, same method as last time. The install remembers t
 | F02-U14 | Fifth wrong code in 15 minutes | Client pause 15 minutes (A-REQ-027); server keeps Supabase per-IP limit | `auth.code.pause` | Wait, or Send a new email | Unit |
 | F02-U15 | Network drops after the provider succeeded but before `record_policy_act` | Session kept; terms act queued; no content syncs because the server gate refuses it | Book; quiet Settings row "Finishing sign-in" (new) | Retry on reconnect and foreground | Fault injection |
 | F02-U16 | App killed during re-ownership | Transaction rolls back; nothing changed | On relaunch, Retry on the sheet | Retry | Fault injection, 100 iterations (A-NFR-013) |
-| F02-U17 | Re-ownership succeeds, server refuses a second book (`SCPLS`) | Book stays local, "On this phone only" (D-038) | Quiet row on that book | Plus or keep local | Integration |
+| F02-U17 | Re-ownership succeeds, but a server without `20261004000000_plus_on_device_only.sql` applied still returns the retired `SCPLS` for a second book | Client tolerates it (migration header): book stays local, never deleted (D-038), and the push retries after the migration is applied. No Plus sheet: books are free (M2) | Quiet "not sent yet" state on that book (F16) | Apply the migration; push retries | Integration against a fixture that raises `SCPLS` |
 | F02-U18 | Declines sensitive-data consent | Records decline; sync, backup and family stay off; letters stay local | `.declineHelp`; Settings > Privacy `sensitiveLabel` can turn it on (LEGAL-REQ-008, two taps) | Settings | Automated: zero entries uploaded after decline (checklist 6.1) |
 | F02-U19 | Sign out with unsynced letters | Stays signed in until `pendingUploadCount() == 0` (A F6.4, TDD 01 3.2.6) | "Your letters are still going to your book. We'll sign you out once they're there." (new) | Automatic | Integration with a blocked network |
 | F02-U20 | Sign out offline | Same as U19 | Same, plus offline note | Reconnect | Integration |

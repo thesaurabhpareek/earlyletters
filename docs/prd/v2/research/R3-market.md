@@ -223,6 +223,8 @@ Derived [A]:
 - No benchmark source I opened breaks out a family, parenting or memory-keeping category. **Unverified.** The RevenueCat SOSA 2025 page was rate limited (section 8). Its 45.7% figure comes from UR S5, opened 1 Oct.
 - **Inferred:** For Early Letters' prices, the annual 1-month trial sits in the best-converting bucket (17 to 32 days, about 44.6% trial-to-paid, 47.5% first renewal). The 2-month annual trial has no benchmark. The $29.99 annual price is below Adapty's global annual median of $38.42.
 
+- **Note (13 Oct 2026).** Superseded on 13 Oct by M1 to M3 (`_AUTHORING.md` 3b): Plus is the membership (the first 2 kept letters free, then Plus at Keep; books and Read together free), at $4.99 a month with a 1-month trial and $49.99 a year with a 2-month trial. The benchmarks and inferences above are kept as researched; read every $29.99 and $3.99 here as the old price.
+
 ### 4.4 Apple commission and US steering (only as they touch the paywall)
 
 - [F] Small Business Program: 15% commission while the developer and associated accounts earn $1M or less in proceeds in the prior and current calendar year. It switches to the standard rate for the rest of the year once $1M is crossed (R3-S36).
@@ -231,6 +233,8 @@ Derived [A]:
 - **[D] B2:** Early Letters is Apple-only (StoreKit 2), with no server that sees purchases. A web checkout would need a server and a payment processor, which B2 rules out. The commission saving is real today (15% to roughly the processor's fee) but legally unsettled. At $29.99, 15% is $4.50 per year per subscriber. **Founder decision**, not a research finding.
 
 ## 5. Simple sizing [A]
+
+> **Note (13 Oct 2026).** Superseded on 13 Oct by M1 to M3 (`_AUTHORING.md` 3b): Plus is the membership (the first 2 kept letters free, then Plus at Keep; books and Read together free), at $4.99 a month with a 1-month trial and $49.99 a year with a 2-month trial. This section is kept as researched at the old B2 prices ($3.99 and $29.99). `03-goals-and-principles.md` reprices the Base case at the new prices.
 
 Everything in this section is [A]. Sourced inputs carry their R3-S id. Every other input is an assumption of mine, labeled as one, to be replaced by TestFlight and launch data.
 
@@ -271,7 +275,7 @@ Reading the table:
 
 ## 6. Cost check
 
-Re-verified against the list prices in `docs/ARCHITECTURE.md` section 7 (opened 1 Oct 2026). Note the 3 Oct status box: RevenueCat, PowerSync, server ASR and the LLM edit pass are out of v1.0, and B7 means no audio upload in v1.0.
+Re-verified against the list prices in `docs/ARCHITECTURE.md` section 7 (opened 1 Oct 2026). Note the 3 Oct status box: RevenueCat, PowerSync, server ASR and the LLM edit pass are out of v1.0, and B7 means no audio upload in v1.0. (Note, 13 Oct 2026: superseded by D-073 and M14; the owner's encrypted recording backup and server features ship in v1.0.)
 
 ### 6.1 Prices today against ARCHITECTURE section 7
 

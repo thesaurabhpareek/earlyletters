@@ -7,7 +7,7 @@
 | Personas | P1 to P6 as named per feature |
 | Existing IDs | PRD-REQ-021, B-REQ-008, B-REQ-013, B-REQ-017 to B-REQ-024, C-REQ-013, C-REQ-014, C-REQ-030 to C-REQ-032, A-REQ-003 to A-REQ-011, A-REQ-020, LEGAL-REQ-004, LEGAL-REQ-005, LEGAL-REQ-010, LEGAL-REQ-013, LEGAL-REQ-020, LEGAL-REQ-022, LEGAL-REQ-023, LEGAL-REQ-030, LEGAL-REQ-035, LEGAL-REQ-056, LEGAL-REQ-059, LEGAL-REQ-060, D-032, D-034, D-043, DR-07, DR-08, DR-14, DR-15 |
 | Depends on | The v1.0 features F01 to F21 |
-| Status | Draft V2, 3 Oct 2026; F31 revised 13 Oct 2026 for D-073 (audio backup of the owner's recordings moved to v1.0 in F08; family listening stays here). Light specs. Each item gets a full spec from the `_AUTHORING.md` section 5 template before its build starts |
+| Status | Draft V2, 3 Oct 2026; F31 revised 13 Oct 2026 for D-073 (audio backup of the owner's recordings moved to v1.0 in F08; family listening stays here); revised again 13 Oct for M1, M2 and M14. Light specs. Each item gets a full spec from the `_AUTHORING.md` section 5 template before its build starts |
 
 ## 0. How to read this file
 
@@ -48,7 +48,7 @@ F31 (shared voice) and F32 (close family contributors) are the first v1.1 items 
 | Existing IDs | PRD-REQ-021 (moved here by B7), D-032 (superseded), D-059, D-073, DR-07, C-NFR-008, LEGAL-REQ-022, LEGAL-REQ-023, LEGAL-REQ-040, DATA-REQ-047 |
 | Depends on | F08 (the owner's encrypted backup, v1.0), F11, F14, F16, F17; counsel on LEGAL-REQ-022(a) |
 
-Audio backup has moved out of this item. D-073 (founder, 3 Oct 2026 evening) puts the encrypted backup of the owner's own recordings in v1.0, specified in F08 section 6.5, and keeps family members hearing each other's recordings in v1.1, which is what F31 now covers. F08 section 13 Q1 records that the code and the content lane still treat backup as later; if the founder moves backup back, it returns here as one item with shared voice.
+Audio backup has moved out of this item. D-073 (founder, 3 Oct 2026 evening) puts the encrypted backup of the owner's own recordings in v1.0, specified in F08 section 6.5, and keeps family members hearing each other's recordings in v1.1, which is what F31 now covers. M14 (founder, 13 Oct 2026) turns server features on for v1.0, which answers F08 section 13 Q1: backup stays in v1.0. The code and the content lane still treat backup as later and must follow (`reviews/STALE-OUTSIDE-PRD.md`).
 
 ### Why
 - [D] Family listening is v1.1 (D-073, D-059). In v1.0 a co-parent can read but not hear the other parent's letters, and Read together plays only voices recorded on that phone (DR-07).
@@ -59,7 +59,7 @@ Audio backup has moved out of this item. D-073 (founder, 3 Oct 2026 evening) put
 1. **Reuse the v1.0 backup.** The owner's recordings are already ciphertext in the `entry-audio` bucket with per-file keys wrapped by the per-child CCK (F08 section 6.5, ADR 0006). Shared voice adds member access, not a second upload path.
 2. **Member key grants.** Each member has an account key pair (TDD 04 D-1: per account, not per device); the CCK is wrapped to each approved member's public key in `child_key_grants` (ADR 0006 item 3). Removing a member rotates the CCK for new files; older files stay readable by those who had them, and the app says so (ADR 0006).
 3. **Member playback.** A member's phone downloads the ciphertext and unwraps the file key with its own grant; nothing plaintext passes through our server. It verifies the capture SHA-256 and caches the plaintext in a backed-up directory beside its own recordings.
-4. **Who pays.** Open (Q1). Playing a recording stays free forever (F08-REQ-008), and backed-up audio of a lapsed user is never deleted (C-NFR-008).
+4. **Who pays.** Open (Q1). Playing a recording is never gated, with or without Plus (M1, F08-REQ-008), and backed-up audio of a lapsed user is never deleted (C-NFR-008).
 5. **Only the original travels** [R]. A listening copy is made on the receiving phone from the original (F08-REQ-003).
 6. **Honest copy.** `book.recordingElsewhere` (F11-REQ-015) and the Read together line (F10-REQ-018) change to say the voice is on its way or ready; the claims registry changes with counsel. Until then, no v1.0 string promises family listening (D-073, F08-REQ-026).
 
@@ -119,7 +119,7 @@ Upload start, backup confirmation and the escrow unwrap alarm moved to v1.0 with
 4. **What a contributor sees.** Only their own letters by default; the book only if the parents turn on "Family can read" (`children.family_can_read`, exists). The child's name, nickname and birthday month and day; never the due date or birth year (D-039). Never raw transcripts, edits or another author's working material (PRD-REQ-004).
 5. **Notifications.** A separate "Letters from family" channel, muted independently of Reminders (C-REQ-007).
 6. **Leave and remove.** A contributor can leave, keeping or taking out their letters; a parent can remove a contributor (B-REQ-010). Nobody deletes another person's words (DATA-REQ-015).
-7. **Free.** Contributors never see the Plus sheet (PRD-REQ-022) and family authorship stays free forever (03 principle 6; `family_authors` in `FREE_FOREVER`).
+7. **Free.** Contributors never see the Plus sheet (PRD-REQ-022): family authors add letters under the book's membership without their own (M4, D-051 (main); `family_authors` in `FREE_FOREVER` in `packages/core/src/plan.ts`). Whether their kept letters count toward an account's 2 free letters is the open edge DR-16; F32 needs that answer before build.
 
 ### Dependencies
 F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern and removal (LEGAL-REQ-056); F31 if contributors' voices should play for parents; F37 for family who will not install the app; counsel on D-050 (second consent at first share) and LEGAL-REQ-035 (contributor rights without an account, relevant once F37 ships).
@@ -159,7 +159,7 @@ F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern a
 - **Why.** [D] Deferred by B7. PRD-REQ-020 originally defined a session by word-highlight playback (DR-06). [F] whisper.cpp word timestamps are marked experimental and community reports of DTW timing drift exist (ADR 0009).
 - **What.** Highlight each word of `final_text` as the recording plays, with timings projected from raw through the stored edits; fall back to sentence-level highlighting when alignment quality is low (ADR 0009 items 2 and 3). Honour Reduce Motion with a static underline [R].
 - **Dependencies.** F05 word timings; F06 edit offsets against raw; F10; F31 for other authors' voices.
-- **Open questions.** Does the Read together session definition change back (DR-06)? Is sentence-level enough for Hindi and Chinese, where word boundaries differ?
+- **Open questions.** None on sessions: DR-06 is answered (M2), Read together has no session limit, so highlighting changes no count. Is sentence-level enough for Hindi and Chinese, where word boundaries differ?
 - **Size.** [A] 2 engineer-weeks.
 - **What v1.0 must do now.** Store word timings with exact offsets into raw for every spoken entry (F05-REQ-034, BL-145). Store every edit with offsets against raw (F06-REQ-023). Keep the F10 text view one component that already receives the playing entry's position [R] (F10 owner).
 
@@ -169,7 +169,7 @@ F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern a
 - **What.** An opt-in, per-feature consent (LEGAL-REQ-004) to send a recording for transcription when on-device is unavailable or the language has not passed. Results stored as a transcript version with the engine recorded; the raw transcript is set once and never overwritten. A daily spend breaker and the `ai_gateway_enabled` kill switch (TDD 06 section 4.3).
 - **Dependencies.** F05 queue and versions; F17 consent rows; F19 kill switch; counsel on the consent text and the subprocessor list.
 - **Budgets parked.** Gateway p95 4 s, p99 10 s for 2 minutes of audio (PRD 1.3 7.2, not a gate). Cost about $160 to $530 a month at 100k families (ADR 0002).
-- **Open questions.** Does each language need its own server model (for example a Hindi fine-tune)? Is a recording sent for transcription an "audio upload" under the v1.0 privacy copy?
+- **Open questions.** Does each language need its own server model (for example a Hindi fine-tune)? How does the privacy copy separate a recording sent for transcription from the v1.0 encrypted backup (D-073, M14), which our server cannot read?
 - **Size.** [A] 3 engineer-weeks.
 - **What v1.0 must do now.** Keep the `ai-processing` consent type seeded in the policy documents (exists in `20261002020000_data_governance.sql`). Keep the transcription queue's target kinds and the per-result engine record generic, not whisper-specific [R] (WP-F05-07 owner). No v1.0 code calls any AI endpoint (03 section 5).
 

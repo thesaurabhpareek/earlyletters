@@ -121,9 +121,9 @@ Maestro flows on the SE 3 and current-iPhone simulators, nightly and per release
 | E2E-05 Read together gate | Session starts at sequenced playback of a chapter (DR-06); other parent's recordings skipped |
 | E2E-07 Add a child | The server accepts the book from a modified client (DR-04) |
 | E2E-11 Consent on and off | Unchanged |
-| E2E-12 Offline capture, then sync | Uses the outbox and `sync_pull` (D-023, decided); runs only in a build with server features on |
+| E2E-12 Offline capture, then sync | Uses the outbox and `sync_pull` (D-023, decided); v1.0 (M14); runs in a build with server features on |
 | E2E-13 Co-parent invite | Parent role only; at most two parents; no grandparent step (B1) |
-| E2E-14 Trial and cancel | StoreKit sandbox on device; device-computed notices (DR-02 A); no server webhooks (B2) |
+| E2E-14 Trial and cancel | StoreKit sandbox on device; phone reminders plus the status-report emails (DR-02, M6, M14); no server webhooks (B2) |
 | New E2E-16 Language pack | Pick Portuguese in first run: only the Portuguese pack is requested; delete it in Settings; letters unchanged (F05-REQ-019, F05-REQ-024) |
 | New E2E-17 Export with listening copies | Export on and off copies; originals byte-identical (F15-REQ-001, F15-REQ-002) |
 
@@ -177,7 +177,7 @@ On device, by the founder and the payments owner, every release candidate that t
 | Drill | When | Pass | Source |
 |---|---|---|---|
 | Server restore: restore to a scratch project, ledger replay, restore epoch, two synthetic devices reconcile | Before the first non-founder family, then quarterly | Zero own rows deleted on either device; others' rows kept 30 days as waiting; RPO 24 h or less; RTO 4 h or less; `npm run test:db` passes on the restored copy | BL-247; WP-F16-08; F16-REQ-012; DATA-REQ-030, DATA-REQ-031 |
-| Device durability: iCloud device backup restored to a second phone (DL-03); negative restore and the purge clock guard (DL-04); export ZIP re-read; with server features on, sign-in on a new phone re-downloads text; with the owner's backup on, every recording restores with equal hashes | Every release candidate | Letters, recordings and the Recently deleted shelf back from the device backup; day-31 letters erased at first launch with no orphan; ZIP passes self-verification; one year of text on the new phone within p95 30 s; 20 of 20 backed-up recordings restored (F08-REQ-023) | BL-284; D-033; D-073; D-085; WP-F15-10; WP-F08-B6 |
+| Device durability: iCloud device backup restored to a second phone (DL-03); negative restore and the purge clock guard (DL-04); export ZIP re-read; sign-in on a new phone re-downloads text (server features on, M14); with the owner's backup on, every recording restores with equal hashes | Every release candidate | Letters, recordings and the Recently deleted shelf back from the device backup; day-31 letters erased at first launch with no orphan; ZIP passes self-verification; one year of text on the new phone within p95 30 s; 20 of 20 backed-up recordings restored (F08-REQ-023) | BL-284; D-033; D-073; D-085; WP-F15-10; WP-F08-B6 |
 | Kill switches | Every release candidate, in staging | Each switch takes effect within 5 minutes; local recording, reading and export keep working | LEGAL-REQ-040; F16-REQ-018 |
 
 Until the server restore drill passes, production is not restored to an earlier point while non-founder families exist; fix forward instead (TDD 06 section 6.3).
@@ -226,7 +226,7 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 ### F03 First run
 - [ ] [auto] Only a name and a birthday or due date are required; nothing asks for surname, gender, photo or contacts (B-REQ-001).
 - [ ] [auto] Children, signatures, languages and dictionary terms commit in one transaction at the final tap; a kill before it leaves no child row (F03-REQ-002, B-REQ-006 Rev).
-- [ ] [auto] Three children in first run make three books, no Plus sheet, one `create_first_run_children` call accepted (PRD-REQ-015).
+- [ ] [auto] Three children in first run make three books, no Plus sheet, one `create_first_run_children` call accepted (PRD-REQ-015 Rev, M2).
 - [ ] [auto] A language that has not passed its gate shows Record and type; the label changes from the signed manifest on next launch without a release; offline uses the last good copy (F03-REQ-003, F03-REQ-004).
 - [ ] [auto] Choosing Portuguese requests only the Portuguese pack; the model download never blocks first run (F03-REQ-005, F03-REQ-006).
 - [ ] [auto] No OS prompt and no paywall during first run (F03-REQ-007).
@@ -317,7 +317,7 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Milestones render as inline cards once per reader; no modal, push or confetti (C-REQ-010, F09-REQ-017).
 
 ### F10 Read together
-- [ ] [auto] With `read_together_free_sessions = 3`, the 4th Start opens the Plus sheet; changing the value changes the limit without a release; single-letter playback is never counted (PRD-REQ-020 Rev).
+- [ ] [auto] Read together is free with no session limit: on a Free phone with 3 letters, 5 Starts open every time with 0 Plus sheets and 0 StoreKit calls; no remote session value is read (PRD-REQ-020 Rev, M2).
 - [ ] [auto] A session counts once, at first playback, only in try mode; chapters with no recording on this phone never count (F10-REQ-001, F10-REQ-002, F10-REQ-004).
 - [ ] [auto] Nothing plays before Start; interruptions never auto-resume; no background audio mode (F10-REQ-005, F10-REQ-011, F10-REQ-013).
 - [ ] [auto] No Plus sheet during a session (F10-REQ-014).
@@ -340,7 +340,7 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Cross-child leak: no sibling row, member or photo for any pull or query (PRD-REQ-011, F16-REQ-008).
 - [ ] [auto] "To {child}" visible while recording; changing it in Review saves to the chosen child only (PRD-REQ-012, B-REQ-004).
 - [ ] [manual] Switch child p95 300 ms offline on SE 3 (PRD-REQ-012).
-- [ ] [auto] Free with one started book reaches the Plus sheet at the third tap; a joined book never counts; the server accepts a book from a modified client (PRD-REQ-015 Rev, DR-04).
+- [ ] [auto] Books for more children are free: a Free phone adds a second and third book with 0 Plus sheets, and the server accepts every book (PRD-REQ-015 Rev, M2, DR-04).
 - [ ] [auto] `create_child` never reads `has_plus` (F12-REQ-002).
 - [ ] [auto] Hiding a book removes every child-anchored notification on every member device within one sync; Show again restores them (B-REQ-014, F12-REQ-005).
 - [ ] [auto] A lapsed user can write in every book (C-REQ-028).
@@ -359,11 +359,11 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [manual] 198 or more of 200 slots fire within 15 minutes over 14 days on a test build (C-NFR-001 Rev).
 
 ### F14 Plus
-- [ ] [auto] The sheet opens only from Add a child, Read together Start or Settings > Plan; zero sheets and zero product fetches on the 8 forbidden surfaces (C-REQ-023 Rev, F14-REQ-019).
+- [ ] [auto] The purchase view opens only from See Plus on the Keep sheet or See what Plus adds in Settings > Plan; zero store views and zero product fetches anywhere else (C-REQ-023 Rev, F14-REQ-019).
 - [ ] [auto] Eligible users see price, "Free until" with the date, "renews automatically" and the cancel line; ineligible users see no "free"; AX5 on SE 3 has no truncation (C-REQ-022 Rev).
 - [ ] [manual] Counsel signs off the disclosure layout inside Apple's view (LEGAL-REQ-046 Rev).
-- [ ] [auto] Trial and renewal notices computed on the device fall inside the windows in C-REQ-025 and C-REQ-026 over a synthetic year; turning auto-renew off clears pending notices (C-REQ-025 Rev, C-REQ-026 Rev, PRD-REQ-003 Rev). Blocked by DR-02 until counsel answers.
-- [ ] [auto] Exactly 1 `completed` and at least 1 `started` `auto-renewal-terms` act per purchase; no transaction id stored (LEGAL-REQ-049 Rev).
+- [ ] [auto] Trial and renewal notices computed on the device fall inside the windows in C-REQ-025 and C-REQ-026 over a synthetic year; turning auto-renew off clears pending notices (C-REQ-025 Rev, C-REQ-026 Rev, PRD-REQ-003 Rev). DR-02 is answered (M6): the phone half here, the email half from the status report (F14-REQ-032, v1.0 per M14); counsel reviews wording (F14 Q-C1).
+- [ ] [auto] Exactly 1 consent record per original purchase, sent with the first status report (product, offer type, Subscription Terms version shown, time); no transaction id, receipt or price stored (LEGAL-REQ-049 Rev, D-081; F14).
 - [ ] [auto] StoreKit stubbed to throw with a lapsed fixture: write, read, play and export succeed with zero Plus UI (LEGAL-REQ-050, C-NFR-004 Rev).
 - [ ] [auto] Zero purchase data in any request, header, log, event or crash report (F14-REQ-014).
 - [ ] [auto] Family-shared Plus: Plus allowed, zero notices planned, no refund row (F14-REQ-006).
@@ -441,7 +441,7 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [manual] App Store Connect territories equal {United States}; age rating answered; not in the Kids category (LEGAL-REQ-058).
 - [ ] [manual] Terms, Privacy Policy, Consumer Health Data Privacy Policy and Subscription terms are published at versioned URLs on `https://earlyletters.com/terms`, `/privacy`, `/health-privacy`, and linked in the app and listing; `/subprocessors` is live (B11).
 - [ ] [manual] `packages/brand` holds the real domain and support email; no `example.com` in the build; the publisher's legal name appears only in legal documents and App Store Connect (PRD-REQ-023).
-- [ ] [manual] Review notes name every feature, explain that Plus adds extra children and Read together beyond 3 sessions, include a demo path, and describe a family memory journal that does not require health information (App Review 2.3.1, R4 section 0 item 8; DR-08).
+- [ ] [manual] Review notes name every feature, explain that the first 2 kept letters are free and Plus is needed at the Keep step after that, with every other action free (M1, M2; F14-REQ-031), include a demo path, and describe a family memory journal that does not require health information (App Review 2.3.1, R4 section 0 item 8; DR-08).
 - [ ] [auto] Website, legal pages and `/j` pass axe with zero critical violations (LEGAL-REQ-051).
 
 ### Cross-cutting non-functional gates
@@ -526,7 +526,7 @@ Source: TDD 07 section 9.1, re-pointed to V2 scope; TDD 06 FM-R18.
 
 ### 5.2 The launch gate
 
-Every item below passes before submission on Mon 11 Jan 2027 (ROADMAP M13). Items 1 to 6 carry over from PRD 1.3 section 2.3; items 7 to 10 are new for V2.
+Every item below passes before submission to App Review. ROADMAP 2.1 plans the week of Mon 2 Nov 2026 (`_AUTHORING.md` M13); M14 puts that date at risk and `08-delivery.md` re-plans it (09 R-16). Items 1 to 6 carry over from PRD 1.3 section 2.3; items 7 to 10 are new for V2.
 
 1. Every line in section 3 passes (PRD 1.3 2.3 item 1).
 2. Every P0 LEGAL-REQ and DATA-REQ for v1.0 scope passes; v1.1 LEGAL-REQs bind the day their feature ships (PRD 1.3 2.3 items 2 and 6).
@@ -555,9 +555,9 @@ A founder-signed exception may move a budget marked [A] or a non-gate row. It ma
 | Kill during save 500 iterations | 500 Simulator plus 50 SE 3; plus kill while recording, typed kills and Review kills | F04, F06 |
 | Grandparent joins as Family; contributor approval paths; web page lines (6.2) | Removed from v1.0; dormant contributor rules keep server tests green | B1 |
 | Shared voice playback line (6.2, if D-032) | Removed: family listening is v1.1 (D-073); the owner's encrypted backup is v1.0 and its gate is ciphertext only | D-073; DR-07 |
-| Server notice scheduler, purchase consent via webhook, forged notification, refund webhook, entitlement service fail-open (6.5) | Device-computed notices (blocked by DR-02), device-written consent acts, StoreKit-stubbed fail-open, zero purchase data to our servers; webhook lines removed | B2; DR-02 A |
+| Server notice scheduler, purchase consent via webhook, forged notification, refund webhook, entitlement service fail-open (6.5) | Phone reminders and cards plus status-report emails (DR-02 answered, M6, M14), consent facts on the first status report (D-081), StoreKit-stubbed fail-open, no purchase data on our servers beyond the D-080 status fields; webhook lines removed | B2; D-080; D-081 |
 | Server rejects `create_child` without Plus (6.8) | Server accepts every book; Plus is enforced on the device only | B2; DR-04 A |
-| A co-parent gets Plus when the other parent holds it (K-28, 6.8) | Only through Apple Family Sharing inside one Apple Family | B2; DR-03 A |
+| A co-parent gets Plus when the other parent holds it (K-28, 6.8) | Only through Apple Family Sharing inside one Apple Family; one membership covering the book outside it is open (DR-16) | D-080; DR-03 answered |
 | AI gateway returns 403 without consent (6.7) | Not in v1.0; returns with F35 | Server transcription is v1.1 |
 | Keep the book sheet with Apple, Email and Later (6.1) | Apple, Google, Email and Later | B3 |
 | Store listing beta line (K-37) | No beta wording in the listing | B8 |
@@ -572,7 +572,7 @@ A founder-signed exception may move a budget marked [A] or a non-gate row. It ma
 | Q | Who answers, by when | What changes |
 |---|---|---|
 | Q1 D-045: confirm C1-only before submission, C2 after | Founder, 4 Dec | Section 4.1 |
-| Q2 DR-02: is a device-computed notice and in-app card enough under the California ARL, or does Apple own the notices? | Counsel then founder, 6 Nov | F14 checklist line on notices; cut order 2 if unanswered |
+| Q2 DR-02 is answered by D-080, D-081 and M14 (phone reminders plus status-report emails). Counsel still answers whether both channels meet the California ARL (F14 Q-C1) | Counsel, Fri 23 Oct (FT-33) | F14 checklist line on notices |
 | Q3 Can TestFlight screenshot feedback be turned off for a group, and if not, how do we handle letter text in it? | Counsel, founder, before C1 | Section 4.2 |
 | Q4 Does an external TestFlight cohort count as public launch for LEGAL-REQ purposes? | Counsel, before C1 | Which LEGAL-REQs G3 must pass (TDD 07 OQ-3) |
 | Q5 Who runs the SE 3 device scripts for each release candidate? | Founder, before week 6 | G3 and G4 capacity |

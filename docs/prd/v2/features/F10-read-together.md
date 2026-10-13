@@ -147,7 +147,7 @@ Changed 13 Oct 2026 (M2): sessions are no longer counted against a limit. A sess
 | F10-U19 | Hidden book | Read together not reachable from the hidden view [R] | n/a | Show book again | Unit |
 | F10-U20 | Signed out (every v1.0 build) | Works the same | Normal | n/a | n/a |
 | F10-U23 | Plus lapsed or never bought | Works the same; every existing letter plays (PRD-REQ-026) | Normal | n/a | `[F10-REQ-014]` |
-| F10-U21 | Listening copy flag turned off remotely mid-session | Current letter keeps playing; next uses the original | No gap | n/a | F08-REQ-006 |
+| F10-U21 | Removed (F08-REQ-006 Rev, D-068): there is no remote listening-copy flag. A copy whose hash does not match its original is never used; that letter plays the original | Original plays | No gap | n/a | F08-REQ-006 Rev |
 | F10-U22 | Low battery or Low Power Mode | No change; no background work exists | Normal | n/a | n/a |
 
 ## 7. Requirements and acceptance criteria

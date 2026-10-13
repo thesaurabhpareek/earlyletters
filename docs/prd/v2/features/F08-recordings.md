@@ -7,7 +7,7 @@
 | Personas | P1 Evening parent, P2 Co-parent, P4 Multilingual family, P6 Future reader |
 | Existing IDs | C-REQ-017, C-REQ-018, PRD-REQ-020 (playback always free), LEGAL-REQ-014, LEGAL-REQ-022, LEGAL-REQ-023, LEGAL-REQ-050, DATA-REQ-010, DATA-REQ-011, DATA-REQ-046, DATA-REQ-048, DATA-REQ-050, DATA-REQ-051, DATA-REQ-055, D-032 (superseded), D-033, D-058, D-059, D-073, D-085, DR-07, DR-09, R-10, R-11, BL-134, BL-140, BL-150, BL-205, BL-232, BL-245, BL-284, BL-306 |
 | Depends on | F02 (sign-in, for backup), F04 (capture writes the original), F05 (transcription reads the original; the queue makes listening copies), F09 (letter view, Recently deleted), F14 (Plus copy, if backup is ever gated), F15 (export), F16 (sync engine and the server switch), F17 (Settings > Recordings, Storage and backup rows), F19 (remote config) |
-| Status | Draft V2, 3 Oct 2026. Rewritten 13 Oct 2026 for D-073 (backup in v1.0), D-085 (Recently deleted, durable erase, playable check) and the code on `develop` |
+| Status | Draft V2, 3 Oct 2026. Rewritten 13 Oct 2026 for D-073 (backup in v1.0), D-085 (Recently deleted, durable erase, playable check) and the code on `develop`; revised 13 Oct for M14 (server features on for v1.0, Q1 answered) |
 
 ## 1. Why
 
@@ -16,7 +16,8 @@
 - [F] Apple Voice Memos offers one-tap Enhance to reduce background noise (R1-S64). Nobody we found keeps a cleaned copy beside an untouched original (R1 F08 opportunity).
 - [D] The original recording is never altered; a clearer listening copy is allowed; the person can always hear the original (D-058, B6).
 - [D] **Encrypted backup of the owner's recordings ships in v1.0; family members hearing each other's recordings stays v1.1** (D-073, founder, evening of 3 Oct 2026, superseding D-032 and the "no audio upload in v1.0" part of D-059; `_AUTHORING.md` M7). Copy must not promise family listening in v1.0 (D-073 consequences).
-- [F] The code and every other plan on `develop` say the opposite, and this spec does not resolve it (section 13 Q1): the v1.0 build has no server at all (`EXPO_PUBLIC_SERVER_FEATURES=off` in every `eas.json` profile, `apps/mobile/src/lib/capabilities.ts`, commit c1764f9, recorded there as a founder decision of 3 Oct for $0 running cost); ROADMAP 2.1 section 7 lists "backup and restore" under "Not in v1.0"; `packages/content` comments say "D-085 amends D-073: our own encrypted backup needs sign-in and a server, so it returns with them", and every recording string claims no backup (`strings.en.ts` lines 15 and 642, `site.en.ts`, `store.en.ts`, `features/billing.en.ts`). D-085 has no entry in `docs/DECISIONS.md` (`_AUTHORING.md` 3b), so its amendment of D-073 is carried only by those comments.
+- [D] **Server features are on for v1.0** (M14, founder, 13 Oct 2026), reversing commit c1764f9 ("v1.0 on-device only"). Sign-in, sync and the production database ship with backup, so section 13 Q1 is answered: D-073 stands.
+- [F] The code and other plans on `develop` still say the opposite on 13 Oct, and must follow M14: every `eas.json` profile still sets `EXPO_PUBLIC_SERVER_FEATURES=off` (`apps/mobile/src/lib/capabilities.ts`, commit c1764f9); ROADMAP 2.1 section 7 lists "backup and restore" under "Not in v1.0"; `packages/content` comments say "D-085 amends D-073", and every recording string claims no backup (`strings.en.ts` lines 15 and 642, `site.en.ts`, `store.en.ts`, `features/billing.en.ts`). D-085 is logged on `origin/develop` (commit feaffb3, not yet on this branch) with an "Amends D-073 for v1.0" clause that rests on v1.0 having no server; M14 removes that premise. These are listed in `reviews/STALE-OUTSIDE-PRD.md`.
 - [F] No backup code exists: no upload of audio, no encryption library, no synchronizable Keychain module, no `entry-audio` bucket or `audio_blobs` table in any migration. The purge worker already lists `entry-audio` with the path `{child}/{author}/{entry}.m4a.enc`, marked `since: 'v1.1'` (`supabase/functions/purge-worker/lib/buckets.ts`).
 - [F] What is built (13 Oct): originals at 48 kHz in Documents, kept in the person's own iPhone backup (`lib/capture/recorder.ts`); listening copies from Apple's AUSoundIsolation in Application Support, excluded from backup and never exported (`lib/audio-enhance`, ADR 0015 section 5); the letter view player with an "Original recording" switch (`components/player/audio-player.tsx`, `lib/player/`); delete with confirm, a 30-day Recently deleted shelf, Erase now and a launch purge that removes the recording and its listening copy before the row (`lib/capture/erase.ts`, `app/settings/recently-deleted.tsx`, D-085); a playability probe for takes cut off by a kill (`lib/capture/probe.ts`); and "Last export" in Settings > Export.
 
@@ -25,13 +26,13 @@
 | Persona | Moment | What F08 must do |
 |---|---|---|
 | P1 Evening parent | Listens back in Review at night, later replays old letters; one day changes or loses a phone | Play in one tap, quietly, with the original always one tap away. Never lose the file. After a new phone, sign in and get every recording back (backup) |
-| P2 Co-parent | Opens a letter the other parent spoke (only in a build with server features on) | Read it, and see plainly that the voice is on the other parent's phone. No dead play button. No promise that it will arrive (family listening is v1.1) |
+| P2 Co-parent | Opens a letter the other parent spoke (v1.0 per M14) | Read it, and see plainly that the voice is on the other parent's phone. No dead play button. No promise that it will arrive (family listening is v1.1) |
 | P4 Multilingual family | The recording is the safety net when transcription is weak (DR-01) | Audio kept in full whatever the transcript quality; playback needs no language support |
 | P6 Future reader | Years later, from an export, with no app | Byte-identical original M4A that plays in any browser (DATA-REQ-055) |
 
 ## 3. What we are solving
 
-**Outcome.** Every recording stays exactly as it was captured, plays in one tap on the author's phone for free forever, survives a lost or replaced phone through an encrypted backup only the family's keys can open, and the family is told honestly where it lives.
+**Outcome.** Every recording stays exactly as it was captured, plays in one tap on the author's phone with no gate, also after a lapse (M1), survives a lost or replaced phone through an encrypted backup only the family's keys can open, and the family is told honestly where it lives.
 
 | Metric | Target | How measured | Consent caveat |
 |---|---|---|---|
@@ -79,7 +80,7 @@
 | Product | What it does | Does it work? (evidence) | What customers say | Our call |
 |---|---|---|---|---|
 | Remento | Recordings kept and downloadable at any time; QR codes in printed stories play the original [F] R1-S13 | 4.8 (1,738) [F] R1-S15 | Voice is the emotional core [S] R2 section 0 item 5 | **Match** original always available |
-| Day One | Playback on every tier, including after a subscription ends; recording needs a paid tier [F] R1-S60 | 4.8 (118K) [F] R1-S6 | n/a | **Match** playback free forever, and recording free too |
+| Day One | Playback on every tier, including after a subscription ends; recording needs a paid tier [F] R1-S60 | 4.8 (118K) [F] R1-S6 | n/a | **Match** playback never gated, also after a lapse; capture never gated either (M1) |
 | Apple Voice Memos | One-tap Enhance reduces noise and echo [F] R1-S64 | 4.8 (1.1M) [F] R1-S64 | n/a | **Innovate**: the clearer version is a separate copy; the original stays |
 | Dearest | Voice memories; full ZIP export [F] R1-S3 | 5.0 (1) | n/a | **Match** ZIP with audio (F15) |
 | Tiny Treasures | Exports audio files for offline keeping [F] R1-S67 | 5.0 (7) | n/a | **Match** |
@@ -121,7 +122,7 @@ Durability was our weak point: Day One, Voice Memos and the iCloud apps back up 
 3. Restore puts it back exactly as it was. Erase now asks once, then removes the recording and listening copy, then the row (`store.eraseEntry`).
 4. At launch, letters deleted 30 or more days ago are erased the same way; no purge runs while the phone clock is earlier than the last recorded launch, and none runs in a build where sync is on (the server owns the clock).
 
-### 6.3 Co-parent view (only with server features on)
+### 6.3 Co-parent view (v1.0 per M14)
 
 The letter text shows as written. Instead of a player: `book.recordingElsewhere` ("Recording kept on {signsAs}'s phone"); in Read together `readTogether.recordingElsewhere`. Backup does not change this: an owner's backup is readable only by that owner's own devices in v1.0 (no member grants).
 
@@ -131,7 +132,7 @@ Settings > Recordings shows `settings.recordings.onPhoneTitle` and `onPhoneBody`
 
 ### 6.5 Encrypted backup of the owner's recordings (D-073; not built)
 
-What follows is the spec agents build from once the founder answers section 13 Q1. Design source: ADR 0006 (Accepted, 1 Oct 2026) and TDD 04 sections 3.6 to 3.8, narrowed to the owner's own recordings (no member grants until v1.1).
+What follows is the spec agents build from (section 13 Q1 answered by M14). Design source: ADR 0006 (Accepted, 1 Oct 2026) and TDD 04 sections 3.6 to 3.8, narrowed to the owner's own recordings (no member grants until v1.1).
 
 **What is encrypted where**
 
@@ -164,7 +165,7 @@ Honest limit (ADR 0006 consequences; TDD 04 section 2): in Standard mode whoever
 
 **C. Erase and account deletion.** Erase now and the 30-day purge remove the server object and its `audio_blobs` row through the purge queue (DATA-REQ-011; BL-232 bucket registry, today deferred). Turning backup off asks whether to delete what is already backed up; Yes queues the same deletes; No keeps it until account deletion. Account deletion removes every object, wrap and escrow row (DELETION_AND_EXPORT_SPEC; purge worker).
 
-**Plus or free.** Not decided by a logged decision. D-073 is silent; D-032 (superseded) said full backup is Plus; FUTURE OPEN-02 and G-19 assumed Plus. The code already answers it one way: the plan engine lists `backup_upload` as a gated (Plus) feature and `download_backed_up_audio` and `restore_backup` as free forever (`packages/core/src/plan.ts`, `GATED_FEATURES`, `FREE_FOREVER`). The shipped billing copy lists only "keeping more letters" as Plus and says backup is not listed (`features/billing.en.ts`, D-083), because backup does not ship yet. The server never enforces Plus (D-053, D-080), so the gate is checked on the phone only. Spec default [R]: follow the plan engine, so turning backup on and uploading needs Plus, while restoring and playing what was backed up is free forever, also after a lapse (C-NFR-008). Running cost per family is small either way (TDD 06 4.1: about $22 a month of storage at 10k families after 12 months, about $243 at 100k, plus about $9 a month of restore egress at 100k). F14 owns the Plus copy; the founder confirms (section 13 Q2).
+**Plus or free.** Not decided by a logged decision. D-073 is silent; D-032 (superseded) said full backup is Plus; FUTURE OPEN-02 and G-19 assumed Plus. The code already answers it one way: the plan engine lists `backup_upload` as a gated (Plus) feature and `download_backed_up_audio` and `restore_backup` as free forever (`packages/core/src/plan.ts`, `GATED_FEATURES`, `FREE_FOREVER`). The shipped billing copy lists only "keeping more letters" as Plus and says backup is not listed (`features/billing.en.ts`, D-083), written when backup was not planned for v1.0; it changes with Q2. The server never enforces Plus (D-053, D-080), so the gate is checked on the phone only. Spec default [R]: follow the plan engine, so turning backup on and uploading needs Plus, while restoring and playing what was backed up is never gated, also after a lapse (C-NFR-008). Running cost per family is small either way (TDD 06 4.1: about $22 a month of storage at 10k families after 12 months, about $243 at 100k, plus about $9 a month of restore egress at 100k). F14 owns the Plus copy; the founder confirms (section 13 Q2).
 
 **Cost.** Supabase Pro from $25 a month the day real recordings reach a server (cost decisions 3 Oct; `docs/backlog/future/06-coparent-sharing-v1-1.md`), plus storage at $0.0213 per GB over 100 GB included and egress at $0.09 per GB over 250 GB included (ARCHITECTURE section 7; TDD 06 4.1, 4.2). Audio is 0.48 MB per minute (ADR 0005). The $25 is the decision; storage is noise below 10k families.
 
@@ -182,7 +183,7 @@ Honest limit (ADR 0006 consequences; TDD 04 section 2): in Standard mode whoever
 | F08-U08 | Call, Siri or alarm during playback | Playback pauses; never auto-resumes | Paused player | Tap play | Manual script |
 | F08-U09 | App backgrounded during playback | Pause; idle mode | Paused on return | Tap play | E2E |
 | F08-U10 | Silent switch on | Letter audio plays (deliberate tap) | Audio plays | n/a | Manual |
-| F08-U11 | Co-parent letter, audio on the other phone | No player; `book.recordingElsewhere` | Text plus line | v1.1 shared voice | E2E two fixture devices (server features on) |
+| F08-U11 | Co-parent letter, audio on the other phone | No player; `book.recordingElsewhere` | Text plus line | v1.1 shared voice | E2E two fixture devices |
 | F08-U12 | Lapsed, signed out, offline | Playback and export work, no Plus UI (LEGAL-REQ-050) | Normal | n/a | E2E lapsed fixture |
 | F08-U13 | Phone lost, no backup, no device backup, no export | Audio cannot come back; letter text returns after sign-in if sync was on (F16) | New phone shows letters with `playerCopy.notOnPhone` | Prevention: backup (D-073), keep-safe nudge | DL-03 negative case |
 | F08-U14 | Restore from iCloud device backup to a new phone | Files return in Documents; sweep rebases paths by file name; hashes checked; Recently deleted dates kept; letters past day 30 erased at first launch with no orphan reappearing | Recordings play | n/a | DL-03, DL-04 (device) |
@@ -225,7 +226,7 @@ Removed on 4 Oct and not to return until backup ships: `settings.backup.*`, `set
 | F08-REQ-009 | P0 | Playback controls | Given a spoken letter on this phone, Then play, pause, elapsed and total time and scrub work; tap to first audio p95 300 ms on SE 3 over 200 runs | COMPONENTS 2.21; TDD 06 2.2 | Partly: no speed control; timing not measured |
 | F08-REQ-010 | P0 | Wire the letter view player | Given `letter/[id].tsx` and a spoken letter whose file is on this phone, Then the player renders (no disabled Hear button) | `letter/[id].tsx` | Yes (`AudioPlayer`) |
 | F08-REQ-011 | P0 | Audio session for playback | Given play, Then playback mode; Given pause, end, background, unmount, Then idle within 500 ms; interruptions pause and never auto-resume | `audio-mode.ts` | Yes in code; device S1-20 |
-| F08-REQ-012 | P0 | Co-parent view | Given a letter by another author whose file is not on this phone, Then no play control renders and `book.recordingElsewhere` shows | D-073; DR-07 | Yes in code; reachable only with server features on |
+| F08-REQ-012 | P0 | Co-parent view | Given a letter by another author whose file is not on this phone, Then no play control renders and `book.recordingElsewhere` shows | D-073; DR-07 | Built, switch off in release profiles |
 | F08-REQ-013 | P0 | Where files live | Given iOS, Then originals are in Documents (in device backup); listening copies, models and packs are in Application Support with backup excluded | D-033; ADR 0015; ADR 0016 | Yes; device check S1-25 |
 | F08-REQ-014 | P0 | Honest durability copy | Given a build or an owner without backup on, Then no string claims a backup of ours; Given backup on and current, Then the row says when it last finished and nothing promises family listening | D-033; D-073; R-10 | Yes for no-backup copy |
 | DATA-REQ-010, DATA-REQ-011 | P0, Rev (D-085) | Audio follows its letter through delete, restore, erase, purge | Given a deleted letter, Then both files remain for 30 days and Restore brings them back. Given Erase now or a tombstone 30 days old at launch, Then the recording and listening copy are removed before the row; a file that will not go keeps the row for a retry; no purge while the clock is earlier than the last launch; no local purge in a sync build | DATA-REQ-010, -011; D-085 | Yes (`store.ts` `eraseEntry`, `purgeExpired`; `capture/erase.ts`); device DL-04, DL-05 |
@@ -318,7 +319,7 @@ All opt-in, L2 only.
 
 ### 11.3 Sequencing
 
-Backup cannot start without section 13 Q1, and it needs everything server features need first: sign-in, the production Supabase project on Pro, the security fixes before anyone signs in (BL-330, BL-347, BL-322, BL-331), deletion with Apple token revocation, and counsel on the changed privacy statements. If the founder confirms v1.0: WP-F08-B1 spike this week, then B2 to B6 in parallel lanes before 26 Oct, with B6 the release gate. If backup moves with server features (v1.1, CP-01): WP-F08-B1 may still run as a spike; B2 to B6 wait.
+Section 13 Q1 is answered (D-073, M14): backup is v1.0. It needs everything server features need first: sign-in, the production Supabase project on Pro, the security fixes before anyone signs in (BL-330, BL-347, BL-322, BL-331), deletion with Apple token revocation, and counsel on the changed privacy statements. WP-F08-B1 spike this week, then B2 to B6 in parallel lanes, with B6 the release gate. The 26 Oct freeze is at risk (09 R-16); `08-delivery.md` re-plans the date.
 
 ## 12. Work packages
 
@@ -334,7 +335,7 @@ Status is what `develop` holds on 13 Oct 2026. "Device" names the run in `docs/q
 | WP-F08-06 | Keep-safe card | `apps/mobile/src/components/book/keep-safe-card.tsx` (new) | F15 entry, ask sequencer | `[C-REQ-018]` | agent | Not built | none |
 | WP-F08-07 | Integrity: original-unaltered test across copy, play, export, update; monthly scrub | `apps/mobile/src/lib/audio/scrub.ts` (new), `apps/mobile/test/` | WP-F08-04 | `[F08-REQ-002]`, `[DATA-REQ-046]` | agent | Not built | none |
 | WP-F08-08 | Analytics | `packages/analytics/src/catalog.ts` | none | Catalogue tests | agent | Partly: `playback_started.version` exists; `playback_failed`, backup events not | none |
-| WP-F08-B1 | Spike: synchronizable Keychain module, AES-GCM choice and speed, resumable upload | `apps/mobile/modules/scribe-keys/` (new, spike branch), `docs/qa/evidence/` | Q1 answered or spike approved | Keychain item created on phone A appears on phone B (same Apple Account) and deletes from both; 15 MB encrypt time on SE 3; upload resumes after a kill | pair (mobile engineer, security) | Not built | Two iPhones, one Apple Account |
+| WP-F08-B1 | Spike: synchronizable Keychain module, AES-GCM choice and speed, resumable upload | `apps/mobile/modules/scribe-keys/` (new, spike branch), `docs/qa/evidence/` | none (Q1 answered by M14) | Keychain item created on phone A appears on phone B (same Apple Account) and deletes from both; 15 MB encrypt time on SE 3; upload resumes after a kill | pair (mobile engineer, security) | Not built | Two iPhones, one Apple Account |
 | WP-F08-B2 | Key hierarchy on the phone: CCK per child, file keys, wrap and unwrap, AAD | `apps/mobile/modules/scribe-keys/`, `apps/mobile/src/lib/backup/keys.ts` (new) | WP-F08-B1 | `[F08-REQ-020]`, `[F08-REQ-021]` device part; unit tests for AAD binding and wrong-key refusal | agent plus device check | Not built | Two iPhones |
 | WP-F08-B3 | Server: bucket, `audio_blobs`, `child_keys`, `escrow_unwraps`, RLS, purge registry | `supabase/migrations/<new>_audio_backup.sql`, `supabase/tests/`, `supabase/functions/purge-worker/lib/buckets.ts` | data architect, `approve-migration` | `[F08-REQ-022]`, `[F08-REQ-024]` in `npm run test:db` and `npm run test:functions` | agent, `approve-migration` | Not built | none |
 | WP-F08-B4 | Escrow Edge Function | `supabase/functions/escrow/` (new) | WP-F08-B3, ADR 0017 | `[F08-REQ-021]` server part: re-wrap only, log row per unwrap, rate limit, kill switch | agent, security review | Not built | none |
@@ -345,11 +346,11 @@ Status is what `develop` holds on 13 Oct 2026. "Device" names the run in `docs/q
 
 | # | Question | Who | By when | What changes |
 |---|---|---|---|---|
-| Q1 | **D-073 versus the on-device v1.0.** D-073 (logged, 3 Oct evening) puts encrypted backup of the owner's recordings in v1.0. The v1.0 build has no server (capabilities switch, commit c1764f9), ROADMAP 2.1 lists backup as not in v1.0, and `packages/content` says "D-085 amends D-073" with no log entry. Which stands? If D-073: sign-in, sync, the production database on Supabase Pro ($25 a month), the four security fixes and counsel on the privacy pages all move into v1.0 with it, and the 26 Oct freeze is at risk (OPEN-02: 3 to 4 person-weeks [E]). If not: log the amendment in DECISIONS.md and move backup to ship with server features (CP-01, v1.1). Spec default: agents build nothing past WP-F08-B1 until answered | Founder | 16 Oct | WP-F08-B1 to B6; F02, F16, F17; ROADMAP |
-| Q2 | Backup upload Plus (as `plan.ts` gates it) or free, and on or off by default. Spec default [R]: upload is Plus, restore and playback free forever, off until the owner turns it on | Founder; F14 for copy | With Q1 | F14 copy; section 6.5 |
+| Q1 | **D-073 versus the on-device v1.0.** Answered by M14 (founder, 13 Oct 2026): server features are on for v1.0, so D-073 stands and backup ships in v1.0 with sign-in, sync, the production database on Supabase Pro ($25 a month), the four security fixes and counsel on the privacy pages. The 26 Oct freeze is at risk (OPEN-02: 3 to 4 person-weeks [E]; 09 R-16). Still owed: mark D-085's "Amends D-073 for v1.0" clause (logged on `origin/develop`, feaffb3) as reversed by M14, and update ROADMAP 2.1 and `packages/content` (`reviews/STALE-OUTSIDE-PRD.md`) | Founder (decided) | n/a | WP-F08-B1 to B6 are v1.0; F02, F16, F17; ROADMAP |
+| Q2 | Backup upload Plus (as `plan.ts` gates it) or free, and on or off by default. Spec default [R]: upload is Plus, restore and playback never gated, off until the owner turns it on | Founder; F14 for copy | 16 Oct | F14 copy; section 6.5 |
 | Q3 | DR-09 named RNNoise; the code uses AUSoundIsolation (ADR 0015 section 5). Confirm and close DR-09 | Founder | 30 Oct | 09 DR-09 |
-| Q4 | Privacy label and Privacy Policy: audio declared or not for v1.0, depending on Q1 | Counsel, F21 owner | 20 Nov | `app-store-privacy-labels.md`, PrivacyInfo |
-| Q5 | Standard mode only at v1.0, Vault mode later (T5-06)? Spec default: yes | Founder | With Q1 | Section 4 |
+| Q4 | Privacy label and Privacy Policy: audio is declared for v1.0 (Q1 answered: backup uploads encrypted audio) | Counsel, F21 owner | 20 Nov | `app-store-privacy-labels.md`, PrivacyInfo |
+| Q5 | Standard mode only at v1.0, Vault mode later (T5-06)? Spec default: yes | Founder | 16 Oct | Section 4 |
 
 | # | Assumption | How we validate |
 |---|---|---|

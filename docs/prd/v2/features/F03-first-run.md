@@ -26,7 +26,7 @@
 | P1 | First minutes after install, often at night, baby nearby [A] | One hand; wants to talk now, not fill a profile |
 | P3 | Pregnant, more time, may not have a name yet | Placeholder names are common (B F2.3); no countdown copy |
 | P4 | Parent who speaks Hindi, Spanish, Mandarin, French, Arabic or Portuguese with the child | Wants the letter kept in their language and script; English interface (B4) |
-| Parent of twins or siblings | First run with two or more children | Must never meet a paywall in first run (PRD-REQ-015) |
+| Parent of twins or siblings | First run with two or more children | Never meets a gate for adding children: every book is free (M2, PRD-REQ-015 Rev). The only gate is Keep after the first 2 letters (M1), which first run never reaches |
 | P2 invitee | Joined by link (F11) | The child already exists; only their own signature and languages matter |
 
 ## 3. What we are solving
@@ -43,7 +43,7 @@ Outcome: a parent names the child, gives a birthday or due date, says what the c
 ## 4. Scope
 
 **In v1.0**
-- Child name (1 to 60 characters, any script) and birthday or due date; add more children together, all free (PRD-REQ-015, D-038 cap 6).
+- Child name (1 to 60 characters, any script) and birthday or due date; add more children together, all free, as any book is (M2, PRD-REQ-015 Rev; D-038 first-run batch cap 6).
 - Signature: "What does {child} call you?" (B-REQ-002).
 - Letter languages per author, from the seven, gated by DR-01; script or variety where it matters.
 - Model and pack download offer (hand-off to F05); names and signature seed the dictionary (hand-off to F07).
@@ -114,7 +114,7 @@ Per author, not per family; one to three letter languages [R]. Each letter recor
 
 **Decision [R]: cut from v1.0 first run and from v1.0 entirely; revisit in v1.1 as an optional card.**
 - Evidence against an extra first-run question: Headspace's quiz raised first use but not habit [F] R1-S58; UR R1 caps first run at 90 s and no tutorial [F] UR S10.
-- At v1.0 most mapped effects in B F3 cannot be delivered: "Bring family in" needs contributors (v1.1, B1); "Keep our voices" points at backup (v1.1, B7); "Letters for when they're older" surfaces sealed letters (P1, B-REQ-018); "A book to hold" leans on print (later). B's own rule says every question must change something visible (B goal 6).
+- At v1.0 most mapped effects in B F3 cannot be delivered: "Bring family in" needs contributors (v1.1, B1); "Keep our voices" points at backup, which is v1.0 for the owner's own recordings (D-073, M14) but not built on 13 Oct (F08), while family listening stays v1.1; "Letters for when they're older" surfaces sealed letters (P1, B-REQ-018); "A book to hold" leans on print (later). B's own rule says every question must change something visible (B goal 6).
 - Goals are L4 and never sent to analytics (catalog `goals_set` sends a count only), so we would learn little from them at launch.
 - Cost of cutting: `profile_settings.goals` and the `goals_set` event stay defined but unused; B-REQ-013 marked Rev (B1, B7), v1.1. Founder confirms (Q1).
 
@@ -159,7 +159,7 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 | B-REQ-003 Rev (B4, DR-01) | P0 | Per-author letter languages from the seven; transcription only for languages that passed their gate; script or variety where relevant | Given Hindi and Devanagari with Hindi passed, When recording, Then transcription runs with `language: hi` and renders Devanagari, untranslated; Given Arabic (not passed), Then the recording is kept, the author types, and no model transcribes it | B-REQ-003, DR-01, R5 8.1 |
 | B-REQ-005 | P0 | Due-date mode creates the book | Given Not here yet and a due date, When a letter is saved, Then it files into Before You (F09) | B-REQ-005 |
 | B-REQ-006 Rev (B4) | P0 | Names and signature seed the dictionary | Given "Asha" and "Papa", Then local `dictionary_terms` rows exist with kinds `child` and `self`, written in the same transaction as the child; per-script forms are a field (new) the author fills, never generated | B-REQ-006, R5 section 3 |
-| PRD-REQ-015 | P0 | Children added together in first run are free | Given three children in first run, Then three books, no Plus sheet, and the server accepts all three in one `create_first_run_children` call | PRD-REQ-015, D-038 |
+| PRD-REQ-015 Rev (M2) | P0 | Children added together in first run are free (as every book is) | Given three children in first run, Then three books, no Plus sheet, and the server accepts all three in one `create_first_run_children` call | PRD-REQ-015 Rev (M2), D-038 |
 | F03-REQ-001 | P0 | Each first-run child has its own date | Given twins with one date and a sibling with another, Then each book stores its own date | D-038 |
 | F03-REQ-002 | P0 | One transaction at the end of first run | Given a kill before the final tap, Then no child row exists; Given the final tap, Then children, signatures, languages and dictionary terms commit together | DATA-REQ-048 pattern |
 | F03-REQ-003 | P0 | Record and type for languages not yet passed | Given a language whose gate status is not passed, Then its chip shows the Record and type label and the letter path keeps audio plus typed text | DR-01 A |

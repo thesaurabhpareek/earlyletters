@@ -11,7 +11,7 @@
 
 > **Not legal advice.** Items marked **[Counsel]** wait on a licensed attorney.
 
-> **Build state.** Every v1.0 build profile sets `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`; commit c1764f9): no account, no sync, no co-parent. The listing on develop (`packages/content/src/store.en.ts`) still describes co-parent invites, and the live website describes backup and family writing. App Review 2.3.1 forbids promoting what the app lacks (R1-S49). This spec requires the listing, review notes, privacy label and website to describe the build being submitted, whichever state it is (F18 Q1).
+> **Build state.** Server features are on for v1.0 (M14, founder, 13 Oct 2026), reversing commit c1764f9: account, sync, co-parent and the owner's encrypted recording backup ship. On 13 Oct every build profile still sets `EXPO_PUBLIC_SERVER_FEATURES` to `off` (`apps/mobile/eas.json`) until the release profiles flip. The listing on develop (`packages/content/src/store.en.ts`) describes co-parent invites (now true for v1.0), says the original recording stays "on your phone and in your iPhone's own backup" with a source comment citing D-085 for no backup of our own (out of date once backup ships), and says "the book holds both your voices" (read as family listening, which is v1.1), and the live website describes backup and family writing (`reviews/STALE-OUTSIDE-PRD.md`). App Review 2.3.1 forbids promoting what the app lacks (R1-S49). This spec requires the listing, review notes, privacy label and website to describe the build being submitted: server features on, unless the founder uses the kill path.
 
 ## 1. Why
 
@@ -53,9 +53,9 @@
 - Legal pages rendered at build time from `docs/legal/*.md` (`apps/web/src/lib/legal/load.ts`), final versions after counsel sign-off (Thu 29 Oct, ROADMAP 2.1).
 - A claims list for v1.0 (section 6.5): every privacy, AI, free and price claim, where it appears, the fact behind it, and counsel's approval.
 - One source for public prices and trial wording: `packages/content/src/pricing.ts`.
+- `/j` invite page, `/auth/confirm`, and a working AASA file **[server]** (F11, F02): v1.0 now that sign-in and co-parent ship (M14).
 
 **Later**
-- `/j` invite page, `/auth/confirm`, and a working AASA file **[server]** (F11, F02): v1.1 in a server-off release.
 - A published help centre (F20 content).
 - Accessibility statement page (LEGAL-REQ-052, P1).
 - The full `claims-registry.yaml` with a content-test hook (LEGAL-REQ-044; BL-118 defers it to v1.1, merged into T5-08).
@@ -100,7 +100,7 @@ Our subtitle "Baby journal in your own voice" (`brand.subtitle`, 30 of 30 charac
 ### 6.2 Happy path
 
 **A. Listing (by Fri 30 Oct, FT-43).**
-1. Content regenerates `docs/store/app-store.md` from `store.en.ts` for the build state chosen in F18 Q1, and the rules test passes.
+1. Content regenerates `docs/store/app-store.md` from `store.en.ts` for the build state set by M14 (server features on), and the rules test passes.
 2. The founder enters the fields in ASC, uploads screenshots rendered from the release build with the fictional family "Asha" (BL-340), sets Lifestyle, overrides the age rating to 18+, sets availability to the United States only, attaches `plus.monthly` and `plus.annual`, and pastes the review notes (6.4).
 3. The founder enters App Privacy answers from the label for that build state (6.6) and checks them against the archived `.ipa` manifest (LEGAL-REQ-042, -043).
 
@@ -114,10 +114,10 @@ Our subtitle "Baby journal in your own voice" (`brand.subtitle`, 30 of 30 charac
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
 | F21-U01 | A language misses its gate in week 2 (ROADMAP cut) | Remove it from the description, keywords and screenshots before submission; the rules test today requires all 7 names | Listing names only shipping languages | Next release adds it | Rules test reads a shipping-languages list (F21-REQ-006) |
-| F21-U02 | Server features stay off for v1.0 | Listing, What's New, screenshot 3 and the trust lines drop co-parent and "people you invite" claims; label drops account data | Accurate listing | n/a | F21-REQ-005 |
+| F21-U02 | The founder uses the kill path and submits with server features off (M14 keeps the switch) | Listing, What's New, screenshot 3 and the trust lines drop co-parent and "people you invite" claims; label drops account data | Accurate listing | n/a | F21-REQ-005 |
 | F21-U03 | Counsel has not signed off by 29 Oct | Submission moves (ROADMAP 2.1 risk 5); drafts are never published as final | n/a | Founder decides the date | n/a |
 | F21-U04 | App Review rejects under 5.1.1(ix) | Resolution Center reply per D-004 positioning; entity hedge if started (FT-48) | n/a | 2 to 6 weeks (ROADMAP 0) | n/a |
-| F21-U05 | App Review asks how Plus gives ongoing value with no sync in a server-off build | Notes say: each month Plus lets the family keep adding letters to a book that grows by month; Plus works on every device signed in to the purchaser's Apple Account; letters stay on the phone that made them | n/a | Reply within a day | Review notes check |
+| F21-U05 | App Review asks how Plus gives ongoing value with no sync in a kill-path build (server features off) | Notes say: each month Plus lets the family keep adding letters to a book that grows by month; Plus works on every device signed in to the purchaser's Apple Account; letters stay on the phone that made them | n/a | Reply within a day | Review notes check |
 | F21-U06 | Reviewer cannot pass the 18+ gate | Notes say to answer "Yes, 18 or older" | n/a | n/a | Notes check |
 | F21-U07 | Reviewer needs to reach the Keep gate | Notes: keep 2 letters, start a third, tap Keep; StoreKit sandbox sheet appears | Apple's subscription sheet | n/a | Notes walk-through on TestFlight |
 | F21-U08 | A legal page fails to build (docs/legal not readable by Vercel) | `next build` fails loudly (`load.ts`) | Previous deployment stays | Fix `LEGAL_DOCS_DIR` | Build test |
@@ -153,13 +153,13 @@ Rules: the notes name every flag the build reads (F19-REQ-024); they never say "
 
 ### 6.5 Claims list for v1.0 (until `claims-registry.yaml` exists)
 
-| Claim | Where | Fact behind it | Status for server-off v1.0 |
+| Claim | Where | Fact behind it | Status for v1.0 (server features on, M14) |
 |---|---|---|---|
 | "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models." (`en.trust.promise`) | App, listing, website | LEGAL-REQ-016; no ad SDK; on-device transcription | Holds; website uses different words today (D-061 asks word for word) **[Counsel]** Q17 |
-| "Only you and the people you invite can read your book" | Listing "Private by default" | Invites | Does not hold: no invites in a server-off build |
-| "Invite your co-parent to the same book" | Listing "Write it together", What's New | F11 | Does not hold in a server-off build |
+| "Only you and the people you invite can read your book" | Listing "Private by default" | Invites | Holds once the release profiles turn server features on (M14); does not hold in a kill-path build |
+| "Invite your co-parent to the same book" | Listing "Write it together", What's New | F11 | Holds once the release profiles turn server features on (M14); does not hold in a kill-path build |
 | "The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one" | Listing | D-033; Application Support excluded only for packs | Holds if letters and audio are in the iPhone backup [U: confirm on device] |
-| "Backs up every recording" | Website pricing (live) | No backup of our own in v1.0: `store.en.ts` header and `rules.test.ts` say backup needs sign-in and a server and cite "D-085", while commit 6482cd3 and `_AUTHORING.md` M11 use D-085 for Recently deleted; M7 (D-073) still says backup ships | Does not hold in a server-off build |
+| "Backs up every recording" | Website pricing (live) | No backup of our own in v1.0: `store.en.ts` header and `rules.test.ts` say backup needs sign-in and a server and cite "D-085", while commit 6482cd3 and `_AUTHORING.md` M11 use D-085 for Recently deleted; M7 (D-073) and M14 say backup ships in v1.0 | Holds only once the owner backup is built and turned on (not built 13 Oct, F08); "every" overclaims if backup is opt-in (F08 Q2 default) [R]: reword with counsel |
 | "Opens Read together after the free sessions" | Website pricing (live) | D-083: Read together is free, no sessions | Does not hold |
 | "With the whole family adding letters" | Website pricing (live) | B1: co-parent only; contributors v1.1 | Does not hold |
 | "$3.99 a month ... $29.99 a year" | Website (live) | D-082: $4.99 and $49.99 | Does not hold |
@@ -172,7 +172,7 @@ Rules: the notes name every flag the build reads (F19-REQ-024); they never say "
 
 ## 7. Requirements and acceptance criteria
 
-Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[server]** applies only to a build with server features on.
+Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[server]** needs our server and is v1.0 (M14); built code behind the switch is "Built, switch off in release profiles" until the profiles flip.
 
 | ID | P | Requirement | Acceptance criteria | Status | Source |
 |---|---|---|---|---|---|
@@ -184,14 +184,14 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | F21-REQ-004 | P0 | Listing names only shipping languages | Given a `SHIPPING_LANGUAGES` list (new, set after FT-34), Then the description and keywords name exactly those | Partly built: the test requires all 7 (`rules.test.ts` "names the seven v1.0 languages") | DR-01, ROADMAP 6 |
 | F21-REQ-005 | P0 | Category Lifestyle; age rating 18+; United States only; both subscriptions attached; Family Sharing on | Given ASC before submission, Then each is set; screenshot in release evidence | Not built (FT-43, BL-286) | D-004, LEGAL-REQ-058 |
 | F21-REQ-006 | P0 | Notes for Review per 6.4, filled for the build state, listing every flag the build reads | Given the notes, Then they explain 2 free letters then Plus at Keep, every never-gated action, letters always open, how to reach the gate, the 18+ answer, and each F19 key | Not built (step 8 draft describes the second book and 3 Read together sessions as Plus) | M1, M2, 2.3.1(a), BL-341 |
-| F21-REQ-007 | P0 | App Privacy answers match the build state and the manifest | Given a server-off build with a PostHog key, Then the label declares only opt-in analytics types (per Q-005) and no Contact Info, User ID for app functionality or Sensitive Info; the manifest's collected types match | Partly built: `docs/legal/app-store-privacy-labels.md` 1.3.0 describes a signed-in app; manifest `NSPrivacyCollectedDataTypes` is empty (`apps/mobile/app.config.ts`) | LEGAL-REQ-042, -043 |
-| F21-REQ-008 | P0 | Screenshots from the release build with the fictional family "Asha" | Given the 6 frames, Then each is captured from the release build's web preview by `scripts/brand/screenshots.mts`; frame 3 shows no co-parent letter in a server-off build | Partly built (script and captions exist; BL-340 blocked; caption 3 shows "A letter from Mama") | BL-340, B1 |
+| F21-REQ-007 | P0 | App Privacy answers match the build state and the manifest | Given the v1.0 build (server features on, M14), Then the label declares what the server holds (account, letters, encrypted recordings, the D-080 status facts per F14 Q-C9) plus opt-in analytics types (per Q-005), as counsel answers; the manifest's collected types match. A kill-path build declares only opt-in analytics types | Partly built: `docs/legal/app-store-privacy-labels.md` 1.3.0 describes a signed-in app, without backup or the status report; manifest `NSPrivacyCollectedDataTypes` is empty (`apps/mobile/app.config.ts`) | LEGAL-REQ-042, -043 |
+| F21-REQ-008 | P0 | Screenshots from the release build with the fictional family "Asha" | Given the 6 frames, Then each is captured from the release build's web preview by `scripts/brand/screenshots.mts`; frame 3 may show a co-parent letter (v1.0, M14) but never implies the other parent's voice plays on this phone (D-073) | Partly built (script and captions exist; BL-340 blocked; caption 3 shows "A letter from Mama") | BL-340, B1 |
 | F21-REQ-009 | P0 | Field limits | Given `store.en.ts`, Then name 30, subtitle 30, promotional 170, keywords 100 with no word from name or subtitle, captions 40 | Built (`store.en.ts` header, rules test) | ASC limits |
 | F21-REQ-010 | P0 | Export compliance answered | Given ASC, Then the answer matches COUNSEL_PACKET Q24 | Not built | Q24 **[Counsel]** |
 | F21-REQ-011 | P0 | earlyletters.app redirects to earlyletters.com | Given `https://earlyletters.app/`, Then 308 to `https://earlyletters.com/` | Built (verified 13 Oct) | B11 |
 | F21-REQ-012 | P0 | Legal pages live and final at submission | Given /terms, /privacy, /health-privacy, /subprocessors, Then each returns 200, shows a version and effective date, and contains no "Drafting notice", no "being finalised", no `{PLACEHOLDER}` and no "Appendix A. Notes for counsel" | Partly built: all 4 return 200; each shows the banner and drafting notice; /privacy body says 1.1.0 | 5.1.1(i) (R4 section 5), Q31 |
-| F21-REQ-013 | P0 | Legal pages describe the submitted build | Given a server-off build, Then the Privacy Policy, Terms, Subscription Terms and subprocessor page describe no account, no sync and no co-parent, and name the pack host and PostHog | Not built on main or develop; drafts for the on-device v1.0 sit on `origin/docs/web-legal-v1` (version 2.0.0, unmerged) | LEGAL-REQ-041 **[Counsel]** |
-| F21-REQ-014 | P0 | /delete-account matches the build | Given a server-off build, Then the page explains deleting letters and books in the app, "Erase everything" if built, and the email route for mailing-list and support data; no 30-day account undo text | Partly built: live page describes account deletion with a 30-day undo and Sign in with Apple | D-042, 5.1.1(v) |
+| F21-REQ-013 | P0 | Legal pages describe the submitted build | Given the v1.0 build (server features on, M14), Then the Privacy Policy, Terms, Subscription Terms and subprocessor page describe the account, sync, co-parent sharing, the owner's encrypted recording backup and the status report with reminder emails, and name Supabase, Resend, the pack host and PostHog | Not built: drafts on `origin/docs/web-legal-v1` (version 2.0.0, unmerged) describe the on-device v1.0 that M14 reverses | LEGAL-REQ-041 **[Counsel]** |
+| F21-REQ-014 | P0 | /delete-account matches the build | Given the v1.0 build (server features on, M14), Then the page describes in-app account deletion exactly as F17 builds it and the email route for mailing-list and support data. A kill-path build explains deleting letters and books in the app, "Erase everything" if built, and no account undo text | Partly built: live page describes account deletion with a 30-day undo and Sign in with Apple | D-042, 5.1.1(v) |
 | F21-REQ-015 | P0 | Website prices come from `packages/content/src/pricing.ts` | Given the built site, Then the pricing scene shows `$4.99 a month` and `$49.99 a year` with their trial wording, and no other price string exists in `apps/web/src` | Not built (hardcoded $3.99 and $29.99 in `apps/web/src/content/site.ts` on main) | D-075, D-082 |
 | F21-REQ-016 | P0 | Website claims match 6.5 | Given the site copy, Then 0 claims marked "Does not hold" | Not built | 2.3.1, LEGAL-REQ-044 |
 | F21-REQ-017 | P0 | No real family details on the website | Given `apps/web/**`, Then the hashed-name guard (`packages/content/test/no-real-family-data.test.ts` logic) finds 0 matches, and the sample letter uses the fictional family | Not built: the sample child name on the live site and in `apps/web/src/content/site.ts` matches a hash in the guard's name list; the guard is not on main | CLAUDE.md, `_AUTHORING.md` 7 |
@@ -218,7 +218,7 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | Review demo data | Fictional "Asha" | TestFlight build | App Review | n/a | Real letters |
 
 - The website sets no cookie for analytics and loads no third-party script on `/j` or `/auth/` paths (`docs/ops/DOMAINS.md` 5).
-- The subprocessor page lists every processor the submitted build and site use: Apple, Vercel, Resend, the mail forwarder, PostHog (opt-in), the pack host and mirrors (F19), and Supabase only if server features are on.
+- The subprocessor page lists every processor the submitted build and site use: Apple, Vercel, Resend, the mail forwarder, PostHog (opt-in), the pack host and mirrors (F19), and Supabase (server features are on for v1.0, M14; drop it only for a kill-path build).
 
 ## 9. Non-functional requirements
 
@@ -243,9 +243,9 @@ Shared budgets: `06-nfr.md`.
 
 - **Listing.** `packages/content/src/store.en.ts` holds every field; `scripts/brand/store-listing.ts` writes `docs/store/app-store.md`; the rules test fails on drift. Add a build-state claim set and a `SHIPPING_LANGUAGES` constant in `packages/content` (new), both read by the test.
 - **Website.** Next.js on Vercel, `apps/web` on main. Prices import `plusPriceLine` from `@scribe/content` instead of literals; the sample letter moves to the fictional family; the copy test gains the overclaim rules; legal Markdown from the counsel-approved set. Reconcile branches: `integration/develop-plus-main` exists; the coordinator decides.
-- **Legal pages.** Markdown in `docs/legal/`, rendered at build; `status: final` removes banners. Counsel signs the versions that match the build state chosen in F18 Q1.
-- **Label.** A label version for the server-off build (new section in `app-store-privacy-labels.md`), and the manifest's collected types filled to match when a PostHog key is present (F18 WP-F18-08).
-- **Riskiest unknown.** That App Review accepts a subscription in an app with no sync as giving ongoing value across devices (3.1.2(a)). Mitigation: the 6.4 notes; a reply ready within a day.
+- **Legal pages.** Markdown in `docs/legal/`, rendered at build; `status: final` removes banners. Counsel signs the versions that match the build state set by M14 (server features on); legal pages are live before sign-in (M14).
+- **Label.** The label for the server-on v1.0 (1.3.0 describes a signed-in app; add backup and the status report), a server-off section only if the kill path is used, and the manifest's collected types filled to match when a PostHog key is present (F18 WP-F18-08).
+- **Riskiest unknown.** That App Review accepts the subscription as ongoing value across devices (3.1.2(a)). With sync in v1.0 (M14) letters reach every signed-in device, which answers the cross-device part; a kill-path build has no sync. Mitigation: the 6.4 notes; a reply ready within a day.
 
 ## 12. Work packages
 
@@ -253,14 +253,14 @@ Only for what is missing or partly built.
 
 | WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode |
 |---|---|---|---|---|---|---|
-| WP-F21-01 | Build-state claim set, `SHIPPING_LANGUAGES`, subtitle guard | Content | `packages/content/src/store.en.ts`, new `packages/content/src/claims.ts`, `test/rules.test.ts` | F18 Q1, FT-34 | `[F21-REQ-002]`, `[F21-REQ-003]`, `[F21-REQ-004]` | Agent |
+| WP-F21-01 | Build-state claim set, `SHIPPING_LANGUAGES`, subtitle guard | Content | `packages/content/src/store.en.ts`, new `packages/content/src/claims.ts`, `test/rules.test.ts` | M14, FT-34 | `[F21-REQ-002]`, `[F21-REQ-003]`, `[F21-REQ-004]` | Agent |
 | WP-F21-02 | Listing copy for the chosen build state; regenerate `docs/store/app-store.md` | Content | `store.en.ts`, `docs/store/app-store.md` | WP-F21-01 | `[F21-REQ-003]`; rules test green | Agent |
 | WP-F21-03 | Notes for Review | QA, content | `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 8, new `docs/store/review-notes.md` | F19 6.5 | `[F21-REQ-006]` | Agent |
 | WP-F21-04 | Screenshots from the release build | Content, founder | `scripts/brand/screenshots.mts` captions in `store.en.ts` | Release build | `[F21-REQ-008]` | Pair |
 | WP-F21-05 | Website prices from `pricing.ts`, claims fixed, trust promise word for word | Web | `apps/web/src/content/site.ts` (main) | none | `[F21-REQ-015]`, `[F21-REQ-016]`, `[F21-REQ-018]` | Agent |
 | WP-F21-06 | Fictional sample family on the website and the guard over `apps/web` | Web | `apps/web/src/content/site.ts`, scenes that import it, guard test | Founder Q2 | `[F21-REQ-017]` | Agent |
 | WP-F21-07 | Website copy test extended | Web | `apps/web/test/copy-rules.test.ts` | WP-F21-01 | `[F21-REQ-019]`, `[LEGAL-REQ-045]` | Agent |
-| WP-F21-08 | Legal pages for the build state; /delete-account rewrite | Legal lane, counsel | `docs/legal/*.md`, `apps/web/src/lib/legal/delete-account-copy.ts` | F18 Q1, counsel 29 Oct | `[F21-REQ-012]`, `[F21-REQ-013]`, `[F21-REQ-014]` | Agent then counsel |
+| WP-F21-08 | Legal pages for the build state; /delete-account rewrite | Legal lane, counsel | `docs/legal/*.md`, `apps/web/src/lib/legal/delete-account-copy.ts` | M14, counsel 29 Oct | `[F21-REQ-012]`, `[F21-REQ-013]`, `[F21-REQ-014]` | Agent then counsel |
 | WP-F21-09 | Privacy label for the build state and manifest | Legal lane, mobile | `docs/legal/app-store-privacy-labels.md`, `apps/mobile/app.config.ts` | F18 WP-F18-08 | `[F21-REQ-007]` | Pair |
 | WP-F21-10 | security.txt, footer line, axe in CI | Web | `apps/web/src/app/.well-known/`, footer component, CI config | none | `[F21-REQ-023]`, `[F21-REQ-026]`, `[F21-REQ-025]` | Agent |
 | WP-F21-11 | Claims list with counsel ticks | Legal lane | `docs/legal/claims-v1.md` (new) | WP-F21-02, WP-F21-05 | `[F21-REQ-028]` | Agent then counsel |
@@ -271,9 +271,9 @@ Only for what is missing or partly built.
 
 | Q | Who, by when | What changes |
 |---|---|---|
-| Q1 Which build state is submitted (F18 Q1)? | Founder; 16 Oct | Listing, notes, label, legal pages, /delete-account |
+| Q1 Which build state is submitted (F18 Q1)? **Answered by M14 (founder, 13 Oct 2026): server features on** | Founder (decided) | Listing, notes, label, legal pages, /delete-account follow the on state |
 | Q2 The website's sample letter uses a child name that the repo's real-family guard lists; `site.ts` says it was the founder's choice. CLAUDE.md and `_AUTHORING.md` 7 say real family details never appear. Keep or switch to "Asha"? Default [R]: switch | Founder; 16 Oct | WP-F21-06 |
-| Q3 Does a subscription in a server-off app meet 3.1.2(a) "work across the user's devices"? Default: yes, the entitlement works on every device of the Apple Account; notes say so | Founder; before submission | Notes; possibly server-on |
+| Q3 Does a subscription in a server-off app meet 3.1.2(a) "work across the user's devices"? Mostly moot after M14 (v1.0 syncs); still relevant if the kill path is used. Default: yes, the entitlement works on every device of the Apple Account; notes say so | Founder; before submission | Notes |
 | Q4 Linked or Not linked for usage (Q-005) **[Counsel]** | Counsel; 29 Oct (default Linked) | Label |
 | Q5 Consumer Health Data policy link in the App Store description (Q3 default yes) **[Counsel]** | Counsel; 23 Oct | Description length |
 | Q6 Trademark clearance (Q10) **[Counsel]** | Counsel; 23 Oct | Name |
