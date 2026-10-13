@@ -5,10 +5,11 @@
  *   behind it; text never animates its size, it cross-fades (MOTION 5i).
  * - Day One: the recording and its words in one entry; the voice comes first after the text.
  * - Apple Settings inset list for the few actions (Make private, Delete).
- * - Apple Mail / Airbnb: Delete is immediate with a persistent Undo, no confirm dialog.
+ * - Delete asks first (D-085, "Keep it" is the default), then moves the letter to Recently deleted
+ *   for 30 days; the persistent Undo stays (TDD 09 A11Y-F03).
  * Haptics: `tap` for private / book, `warning` for Delete. Nothing on open or scroll.
  */
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
@@ -23,6 +24,7 @@ import { AudioPlayer } from '@/components/player/audio-player';
 import { Button, LARGE_CONTENT } from '@/components/ui/button';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { UIProvider } from '@/components/ui/provider';
+import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
@@ -47,12 +49,15 @@ import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-wo
 import { planFor } from '@/lib/models/speech-packs';
 import { TextField } from '@/components/ui/text-field';
 import { provenanceOf } from '@/components/book/chapters';
+import { AppNote } from '@/components/book/app-note';
 import { bookCopy } from '@/components/book/copy';
 import { letterWords } from '@/components/book/letter-words.logic';
+import { isQuietMark, showsSignature } from '@/components/book/quiet-day.logic';
 import { track } from '@/lib/analytics/track';
 import { PrivateChip } from '@/components/book/letter-card';
 import { letterDateline } from '@/lib/dates';
 import { ReadingSizeSheet } from '@/components/book/reading-size-sheet';
+import { ConfirmSheet } from '@/components/book/confirm-sheet';
 import { UndoToast } from '@/components/book/undo-toast';
 import { authorOf, getReadingSize, isOwnEntry, setReadingSize, type ReadingSize } from '@/components/child/child-store';
 
@@ -88,11 +93,12 @@ function Letter() {
       }),
     [id],
   );
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // letter_opened once per open (who wrote it, relative to you, and whether it has a recording; never which letter).
   useEffect(() => {
     const e = getEntry(id);
-    if (e) track('letter_opened', { author_relation: isOwnEntry(e) ? 'self' : 'other_parent', has_audio: !!e.audioUri });
+    if (e && !isQuietMark(e)) track('letter_opened', { author_relation: isOwnEntry(e) ? 'self' : 'other_parent', has_audio: !!e.audioUri });
   }, [id]);
 
   const headerRight = () => (
@@ -137,15 +143,12 @@ function Letter() {
     );
   }
 
+  // A quiet-day mark is not a letter: there is no page for it (D-084). Back to the Book.
+  if (entry && isQuietMark(entry)) return <Redirect href="/book" />;
+
   if (!entry || !child) {
-    return (
-      <View className="flex-1 items-start justify-center gap-5 bg-background px-6">
-        <Text variant="title1" asHeading>
-          {copy.reader.notFoundTitle}
-        </Text>
-        <Button size="lg" label={copy.reader.notFoundCta} onPress={() => router.back()} />
-      </View>
-    );
+    // The one state pattern. A pushed screen: the native header has the back arrow; the action goes to the book.
+    return <StateScreen kind="notFound" title={copy.reader.notFoundTitle} primary={{ label: copy.reader.notFoundCta, onPress: () => router.back() }} />;
   }
 
   const scale = tokens.readingScale[size];
@@ -170,7 +173,8 @@ function Letter() {
   };
 
   const remove = () => {
-    deleteEntry(entry.id); // tombstone; restorable
+    setConfirmOpen(false);
+    deleteEntry(entry.id); // tombstone; waits 30 days on the Recently deleted shelf
     haptic('warning');
     track('letter_deleted', { action: 'deleted', destination: entry.inBook ? 'book' : 'private' });
     // Undo stays until the parent taps Undo, Close or Back: no timed navigation (TDD 09 A11Y-F03).
@@ -198,19 +202,19 @@ function Letter() {
           )}
           <Animated.View key={`${size}:${showOriginal}`} entering={crossFade}>
             {words !== 'words' && !showOriginal ? (
-              // Waiting for words, or nobody spoke: a calm italic note, never an empty page.
-              <Text variant="signature" scale={scale} tone="muted">
-                {words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke}
-              </Text>
+              // Waiting for words, or no words in the recording: the app's note, never an empty page.
+              <AppNote scale={scale}>{words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke}</AppNote>
             ) : (
               <Text variant="letterBody" scale={scale} selectable>
                 {text}
               </Text>
             )}
           </Animated.View>
-          <Text variant="signature" scale={scale} className="self-end">
-            {signature}
-          </Text>
+          {showsSignature(words) || showOriginal ? (
+            <Text variant="signature" scale={scale} className="self-end">
+              {signature}
+            </Text>
+          ) : null}
         </Animated.View>
 
         {spoken && <AudioPlayer entryId={entry.id} />}
@@ -264,10 +268,20 @@ function Letter() {
               leading={entry.inBook ? <LockSimpleIcon size={20} color={c.text} /> : <BookOpenIcon size={20} color={c.text} />}
               onPress={toggleInBook}
             />
-            <ListRow title={copy.book.entryMenu.deleteButton} variant="destructive" leading={<TrashIcon size={20} color={c.destructive} />} onPress={remove} accessibilityHint={copy.settings.delete.entryConfirm} />
+            <ListRow title={copy.book.entryMenu.deleteButton} variant="destructive" leading={<TrashIcon size={20} color={c.destructive} />} onPress={() => setConfirmOpen(true)} accessibilityHint={copy.settings.delete.entryConfirm} />
           </ListSection>
         )}
       </ScrollView>
+
+      <ConfirmSheet
+        open={confirmOpen}
+        title={copy.settings.delete.entryTitle}
+        body={copy.settings.delete.entryBody}
+        confirmLabel={copy.settings.delete.entryConfirm}
+        keepLabel={copy.settings.delete.keepButton}
+        onKeep={() => setConfirmOpen(false)}
+        onConfirm={remove}
+      />
 
       <ReadingSizeSheet
         visible={sizeOpen}

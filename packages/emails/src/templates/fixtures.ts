@@ -41,9 +41,9 @@ export const previewValues: EmailValues = {
   subscriptionTermsUrl: `${SITE}/subscription-terms`, // apps/web/src/lib/legal.ts
   manageUrl: 'https://apps.apple.com/account/subscriptions',
 
-  // billing (fictional dates; prices are the D-001 list prices)
+  // billing (fictional dates; prices are the list prices, D-082)
   planName: 'Plus Annual',
-  price: '$29.99',
+  price: '$49.99',
   billingPeriod: 'a year',
   periodUnit: 'year',
   agreedDate: 'Saturday, October 3, 2026',
@@ -52,8 +52,8 @@ export const previewValues: EmailValues = {
   cancelByDate: 'Wednesday, December 2, 2026',
   accessEndDate: 'Thursday, December 3, 2026',
   effectiveDate: 'Thursday, December 3, 2026',
-  oldPrice: '$29.99',
-  newPrice: '$34.99',
+  oldPrice: '$49.99',
+  newPrice: '$54.99',
 
   // account and privacy requests
   requestId: 'REQ-482913',

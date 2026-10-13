@@ -47,7 +47,7 @@ function InviteCoParent() {
   if (!book) {
     // No book on this phone (stale link to this screen): nothing to invite to.
     return (
-      <SheetFrame footer={<QuietButton label={familyCopy.accept.close} onPress={close} />}>
+      <SheetFrame closeLabel={familyCopy.accept.close}>
         <ErrorLine message={familyCopy.errors.book_deleted} />
       </SheetFrame>
     );
@@ -88,7 +88,7 @@ function InviteCoParent() {
   }
 
   return (
-    <SheetFrame footer={<QuietButton label={familyCopy.accept.close} onPress={close} disabled={busy} />}>
+    <SheetFrame closeLabel={familyCopy.accept.close} closeDisabled={busy}>
       <SheetTitle>{fill(k.title, { child })}</SheetTitle>
       <SheetBody muted>{fill(k.body, { child })}</SheetBody>
       <AccountGate trigger="invite_create" signInBody={familyCopy.card.signedOutNote}>

@@ -27,8 +27,16 @@ export type EmptyStateProps = {
   className?: string;
 };
 
-export function EmptyState({ art, title, body, action, align = 'start', className }: EmptyStateProps) {
-  const focused = useIsFocused();
+/** Screen-level: breathes only while its screen is focused. */
+export function EmptyState(props: EmptyStateProps) {
+  return <EmptyStateView {...props} focused={useIsFocused()} />;
+}
+
+/**
+ * The same drawing without reading navigation: for places that render outside a navigator
+ * (the root ErrorBoundary replaces the whole navigator when it catches).
+ */
+export function EmptyStateView({ art, title, body, action, align = 'start', className, focused = true }: EmptyStateProps & { focused?: boolean }) {
   const center = align === 'center';
   return (
     <View className={cn('gap-4', center && 'items-center', className)}>

@@ -73,7 +73,7 @@ Files: geometry in `scripts/brand/mark.mjs` (the single source); `node scripts/b
 
 ## Proof discipline
 
-Only claim what the product does today. No user counts, rankings or testimonials until real and verifiable. The website shows the price (D-075, Brief decision 3): "$3.99 a month or $29.99 a year", with a 1-month free trial on monthly and a 2-month free trial on annual. In the app, prices come from the App Store, localized. The v1.0 scope is in docs/DECISIONS.md (3 Oct 2026); `packages/content/test/rules.test.ts` blocks the known overclaims in store and website copy.
+Only claim what the product does today. No user counts, rankings or testimonials until real and verifiable. The website shows the price (D-075, Brief decision 3): "$4.99 a month or $49.99 a year", with a 1-month free trial on monthly and a 2-month free trial on annual. In the app, prices come from the App Store, localized. The v1.0 scope is in docs/DECISIONS.md (3 Oct 2026); `packages/content/test/rules.test.ts` blocks the known overclaims in store and website copy.
 
 ## Glossary
 
@@ -104,7 +104,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Backup | encrypted backup; "a backup is for you alone" | cloud sync (for audio), sharing | Owner only at v1.0. Family listening is v1.1. |
 | Subscription | Plus | Early Letters Plus, Book Plus, Premium, Pro | |
 | Plans (D-077) | Plus Monthly, Plus Annual | Plus Yearly, annual plan (as a name), monthly plan (as a name) | Must equal App Store display names. |
-| Prices | $3.99 a month (1 month free); $29.99 a year (2 months free) | "/mo", "per mo", "{price}" left unfilled on public pages | In the app, prices come from StoreKit. |
+| Prices | $4.99 a month (1 month free); $49.99 a year (2 months free) | "/mo", "per mo", "{price}" left unfilled on public pages | In the app, prices come from StoreKit. |
 | Languages | English, Hindi, Spanish, Mandarin Chinese, French, Arabic, Portuguese | "any language", "both in one sentence", "any mix" | Hindi-English mixing is v1.1. |
 | Apple identity | Apple Account | Apple ID, iCloud account, store account | |
 | Google identity | Google Account | Google ID, Gmail account | |

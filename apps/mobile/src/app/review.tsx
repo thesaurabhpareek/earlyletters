@@ -16,6 +16,13 @@
  * the recording as a letter waiting for its words (TDD 03 FM-9). Sample
  * words (development builds) are never saved as a transcript.
  *
+ * The Keep gate (D-082, D-083): the first 2 letters are free, then keeping another needs
+ * Plus. It runs here, at the Keep buttons (spoken, typed, or a voice kept without words),
+ * after the recording is hashed and BEFORE anything is saved. When Plus is needed, the
+ * sheet opens and nothing is written: the draft stays exactly where it is, so a closed
+ * sheet, a kill or no network never loses a letter. After Plus starts, this same Review
+ * shows again and the person taps Keep themselves.
+ *
  * Words come from the transcription queue (src/lib/transcription-queue),
  * never from a transcriber called here, so reopening Review never starts a
  * second job (TDD 03 FM-18). Progress is honest: "Part 2 of 5" from the
@@ -29,8 +36,8 @@ import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -59,21 +66,25 @@ import {
   type ReviewView,
 } from '@/components/capture/review-view.logic';
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
+import { PlusGate } from '@/components/child/plus-gate';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
-import { Button } from '@/components/ui/button';
+import { Button, ButtonRow } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { TextField } from '@/components/ui/text-field';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
+import { InlineState, StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
 import { ensureAudioHash } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
+import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { useAuth } from '@/lib/auth/session-provider';
-import { useTheme } from '@/lib/a11y';
+import { afterLetterKept, billingCopy, freeLettersAllowance, hasPlus, keepLetterGate, type KeepGate } from '@/lib/billing';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
@@ -96,6 +107,8 @@ import { languageNames, wordsCopy } from '@/lib/transcription-queue/copy';
 import type { SpeechLanguage } from '@/lib/models/catalog';
 import { planFor } from '@/lib/models/speech-packs';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
+import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { footerPlacement } from '@/lib/review-layout.logic';
 
 /** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
 const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
@@ -121,7 +134,8 @@ function hasAnyLetter(): boolean {
 type Phase = 'transcribing' | 'ready' | 'waiting' | 'saved';
 
 export default function Review() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
+  const inlineFooter = footerPlacement(useIsAccessibilitySize()) === 'inline';
   const r = copy.review;
   const motion = useMotion();
   const { draftId } = useLocalSearchParams<{ draftId: string }>();
@@ -140,6 +154,10 @@ export default function Review() {
   const job = useWordsJob(phase === 'transcribing' ? draft?.id : null);
   const download = useSpeechDownload(phase === 'transcribing' && job?.phase === 'waiting_for_pack' ? language : null);
   const [saveFailed, setSaveFailed] = useState(false);
+  // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
+  const [gate, setGate] = useState<KeepGate | null>(null);
+  // The calm line on the saved card after the second free letter (once: the count passes it once).
+  const [secondFree, setSecondFree] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [voiceOnly, setVoiceOnly] = useState(false);
   const [keptForWords, setKeptForWords] = useState(false);
@@ -324,6 +342,32 @@ export default function Review() {
     setTimeout(leave, 900); // sequenceMaxMs; a tap skips it
   };
 
+  // Development profile only (Expo Go has no StoreKit): lets the founder pass the sheet.
+  const devPass = useRef(false);
+  /** True when the Keep sheet opened instead: the caller returns without saving. Never throws. */
+  const keepNeedsPlus = async (): Promise<boolean> => {
+    if (devPass.current) return false;
+    const g = await keepLetterGate();
+    if (g.decision.kind === 'allow') return false;
+    track('keep_gate_shown', {
+      letters_kept: Math.min(1000, g.lettersKept),
+      allowance: Math.min(100, Math.max(2, g.allowance)),
+      lapsed: g.decision.lapsed ? 1 : 0,
+    });
+    setGate(g);
+    return true;
+  };
+
+  /** After the letter is saved: copy the count to the Keychain, and note the moment the free letters are used. */
+  const noteKept = async () => {
+    const kept = await afterLetterKept();
+    const allowance = freeLettersAllowance();
+    if (!hasPlus() && kept === allowance) {
+      track('free_allowance_reached', { allowance: Math.min(100, allowance) });
+      if (allowance === 2) setSecondFree(true);
+    }
+  };
+
   const saving = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
@@ -332,6 +376,10 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
+      if (await keepNeedsPlus()) {
+        saving.current = false; // held: the draft is untouched
+        return;
+      }
       const firstLetter = !hasAnyLetter();
       saveLetterFromDraft(
         draft.id,
@@ -373,6 +421,7 @@ export default function Review() {
         fromNotificationWithin2h: fromReminderWithin2h(),
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
+      await noteKept();
       finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
@@ -389,6 +438,10 @@ export default function Review() {
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
+      if (await keepNeedsPlus()) {
+        saving.current = false; // held: the draft is untouched
+        return;
+      }
       const firstLetter = !hasAnyLetter();
       const fresh = getDraft(draft.id) ?? draft;
       saveVoiceOnlyFromDraft(
@@ -411,6 +464,7 @@ export default function Review() {
       setDraft(fresh);
       setKeptForWords(phase === 'transcribing' && job?.outcome !== 'no_speech');
       setVoiceOnly(true);
+      await noteKept();
       finishSave(false, firstLetter);
     } catch {
       saving.current = false;
@@ -424,13 +478,14 @@ export default function Review() {
   };
 
   if (!draft || !child) {
+    // The one state pattern (ui/state-screen); a modal, so Close is the header's, top right.
     return (
-      <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-background px-5">
-        <Text className="text-center text-lg text-foreground">{copy.errors.generic.body}</Text>
-        <Button onPress={() => router.back()}>
-          <Text>{copy.common.closeButton}</Text>
-        </Button>
-      </SafeAreaView>
+      <StateScreen
+        kind="error"
+        title={copy.errors.generic.title}
+        body={copy.errors.generic.body}
+        header={<ModalHeader onClose={() => router.back()} />}
+      />
     );
   }
 
@@ -449,19 +504,77 @@ export default function Review() {
   const openE = openEdit !== null ? applied[openEdit] : null;
   const many = listChildren().length > 1;
 
+  if (gate && gate.decision.kind === 'offer' && phase !== 'saved') {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <PlusGate
+          variant="keep_letter"
+          childName={child.name}
+          lapsed={gate.decision.lapsed}
+          lettersKept={gate.lettersKept}
+          onHold={() => {
+            track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+            router.back(); // the draft stays: Tonight shows "A letter is waiting"
+          }}
+          onPlus={() => setGate(null)} // the same Review again; the person taps Keep
+          onContinueDev={
+            devShortcutsAllowed
+              ? () => {
+                  devPass.current = true;
+                  setGate(null);
+                }
+              : undefined
+          }
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // One primary (56 pt), one quiet 44 pt: the footer is about 100 pt, not 130 (QA journey J06-01). While the
+  // letter is being edited the footer is just "Done", so the only way out of the most committing task is a primary.
+  const footerShell = (children: ReactNode) => (
+    <View className={inlineFooter ? 'gap-1 pt-2' : 'gap-1 border-t border-border bg-background px-5 pb-2 pt-3'}>{children}</View>
+  );
+  const footer =
+    phase === 'ready' && !isSample
+      ? footerShell(
+          editing ? (
+            <Button size="lg" fullWidth label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.done" />
+          ) : (
+            <>
+              <Button size="lg" fullWidth onPress={() => save(true)} disabled={!finalText.trim()} accessibilityHint={r.destination.title} testID="review.save.book">
+                <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
+              </Button>
+              <Button variant="quiet" fullWidth onPress={() => save(false)} disabled={!finalText.trim()} testID="review.save.private">
+                <Text>{r.destination.privateButton}</Text>
+              </Button>
+            </>
+          ),
+        )
+      : null;
+  // No words to save yet (language still downloading, nobody spoke, a failure) or only sample words: keep the recording itself.
+  const keepFooter =
+    spoken && (phase === 'waiting' || (phase === 'ready' && isSample) || (phase === 'transcribing' && canKeepVoice))
+      ? footerShell(
+          <Button size="lg" fullWidth onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp} testID="review.keepVoice">
+            <Text>{packWait ? wordsCopy.pack.keepButton : pendingCopy.review.voiceOnlyButton}</Text>
+          </Button>,
+        )
+      : null;
+
   if (phase === 'saved') {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-background px-5">
         <Pressable onPress={leave} className="w-full" accessibilityRole="button" accessibilityLabel={copy.common.doneButton}>
           <Animated.View style={settleStyle}>
             <Card className="rounded-3xl border-0 bg-card p-6">
-              <Text className="font-serif text-xl leading-8 text-foreground" numberOfLines={4}>
+              <Text variant="letterBody" numberOfLines={4}>
                 {voiceOnly ? pendingCopy.book.waitingForWords : finalText}
               </Text>
             </Card>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(250).duration(200)} className="mt-6 items-center" accessibilityLiveRegion="polite">
-            <Text className="text-lg text-success">
+            <Text variant="callout" tone="success">
               {voiceOnly
                 ? keptForWords
                   ? wordsCopy.pack.keptToast
@@ -470,6 +583,7 @@ export default function Review() {
                   ? fill(r.destination.addedToast, { child: child.name })
                   : r.destination.privateToast}
             </Text>
+            {secondFree && <Text className="mt-1 text-base text-muted-foreground">{billingCopy.keepGate.secondFreeNote}</Text>}
           </Animated.View>
         </Pressable>
       </SafeAreaView>
@@ -478,22 +592,18 @@ export default function Review() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between px-5 pt-2">
-        {editing ? (
-          // Words are kept as they are typed, so Done only leaves the text box.
-          <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.done" />
-        ) : (
-          <Button variant="ghost" size="sm" className="-ml-4" onPress={() => router.back()} accessibilityHint={pendingCopy.write.savedOnPhone}>
-            <Text className="text-primary">{copy.common.closeButton}</Text>
-          </Button>
-        )}
-        {spoken && (
-          <Button variant="ghost" size="sm" className="-mr-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
-            {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
-            <Text className="text-primary">{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
-          </Button>
-        )}
-      </View>
+      <ModalHeader
+        onClose={() => router.back()}
+        closeHint={pendingCopy.write.savedOnPhone}
+        leading={
+          spoken ? (
+            <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
+              {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
+              <Text>{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
+            </Button>
+          ) : null
+        }
+      />
 
       <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
         <View className="gap-1">
@@ -507,7 +617,9 @@ export default function Review() {
               {dateline}
             </Text>
           </Pressable>
-          <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">{r.title}</Text>
+          <Text variant="title1" asHeading>
+            {r.title}
+          </Text>
           {!typed && phase === 'ready' && (
             <Text variant="subhead" tone="default" testID="review.trustLine">
               {r.trustLine}
@@ -517,8 +629,12 @@ export default function Review() {
 
         {isSample && (
           <View className="rounded-2xl border border-caution p-3">
-            <Text className="text-sm text-caution">{pendingCopy.review.sampleBanner}</Text>
-            <Text className="text-sm text-caution">{pendingCopy.review.sampleNotSaved}</Text>
+            <Text variant="subhead" tone="caution">
+              {pendingCopy.review.sampleBanner}
+            </Text>
+            <Text variant="subhead" tone="caution">
+              {pendingCopy.review.sampleNotSaved}
+            </Text>
           </View>
         )}
 
@@ -527,12 +643,14 @@ export default function Review() {
             {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
             <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
               <View className="flex-row items-center justify-between gap-2">
-                <Text variant="headline" className="flex-1">{r.firstNote.title}</Text>
-                <Button variant="ghost" size="sm" onPress={dismissFirstNote} testID="review.firstNote.dismiss">
-                  <Text className="text-primary">{r.firstNote.dismissButton}</Text>
-                </Button>
+                <Text variant="headline" className="flex-1">
+                  {r.firstNote.title}
+                </Text>
+                <Button variant="quiet" size="sm" label={r.firstNote.dismissButton} onPress={dismissFirstNote} testID="review.firstNote.dismiss" />
               </View>
-              <Text variant="subhead" className="pr-2">{r.firstNote.body}</Text>
+              <Text variant="subhead" className="pr-2">
+                {r.firstNote.body}
+              </Text>
             </View>
           </Animated.View>
         )}
@@ -552,21 +670,16 @@ export default function Review() {
 
         {phase === 'waiting' && (
           // The recording file is empty (a take cut off before any audio): nothing to write down.
-          <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
-            <Text role="heading" className="text-lg font-semibold text-foreground">
-              {copy.errors.transcriptionFailed.title}
-            </Text>
-            <Text className="text-base leading-6 text-foreground">{copy.errors.transcriptionFailed.body}</Text>
-            <View className="flex-row flex-wrap gap-3">
-              <Button variant="secondary" onPress={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}>
-                <Text>{copy.errors.micDenied.typeButton}</Text>
-              </Button>
-            </View>
-          </Card>
+          <InlineState
+            kind="error"
+            title={copy.errors.transcriptionFailed.title}
+            body={copy.errors.transcriptionFailed.body}
+            primary={{ label: copy.errors.micDenied.typeButton, onPress: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }) }}
+          />
         )}
 
         {saveFailed && (
-          <Text className="text-base text-caution" accessibilityLiveRegion="assertive">
+          <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive">
             {copy.errors.generic.body}
           </Text>
         )}
@@ -599,7 +712,7 @@ export default function Review() {
                     />
                   </View>
                 ) : userText !== null ? (
-                  <Text className="font-serif text-xl leading-8 text-foreground" selectable>
+                  <Text variant="letterBody" selectable>
                     {userText}
                   </Text>
                 ) : (
@@ -635,25 +748,25 @@ export default function Review() {
                     ) : (
                       <Text variant="footnote">{r.cardTakenOut}</Text>
                     )}
-                    <View className="flex-row gap-3">
+                    <ButtonRow>
                       <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.card.putBack">
                         <Text>{r.undoEditButton}</Text>
                       </Button>
-                      <Button size="sm" variant="ghost" onPress={() => setOpenEdit(null)}>
-                        <Text className="text-muted-foreground">{copy.common.closeButton}</Text>
+                      <Button size="sm" variant="quiet" onPress={() => setOpenEdit(null)}>
+                        <Text tone="muted">{copy.common.closeButton}</Text>
                       </Button>
-                    </View>
+                    </ButtonRow>
                   </Animated.View>
                 )}
 
                 {restored && (
-                  <View className="flex-row items-center gap-3" accessibilityLiveRegion="polite">
-                    <Text className="text-base text-muted-foreground">{pendingCopy.review.putBack}</Text>
-                    <Button size="sm" variant="ghost" onPress={undoPutBack}>
-                      <Text className="text-primary">{copy.common.undoButton}</Text>
+                  <View className="flex-row flex-wrap items-center gap-x-2" accessibilityLiveRegion="polite">
+                    <Text variant="subhead" tone="muted">{pendingCopy.review.putBack}</Text>
+                    <Button size="sm" variant="quiet" onPress={undoPutBack}>
+                      <Text>{copy.common.undoButton}</Text>
                     </Button>
-                    <Button size="sm" variant="ghost" onPress={() => setRestored(null)}>
-                      <Text className="text-muted-foreground">{copy.common.closeButton}</Text>
+                    <Button size="sm" variant="quiet" onPress={() => setRestored(null)}>
+                      <Text tone="muted">{copy.common.closeButton}</Text>
                     </Button>
                   </View>
                 )}
@@ -689,43 +802,30 @@ export default function Review() {
 
             {!isSample && !editing && (
               <Button
-                variant="ghost"
+                variant="quiet"
                 size="sm"
-                className="self-start px-0"
+                className="-ml-4 self-start"
                 testID="review.edit"
                 onPress={() => {
                   track('review_action', { action: 'edit_text' });
                   setEditing(true);
                 }}>
-                <Text className="text-primary">{pendingCopy.review.editTextButton}</Text>
+                <Text>{pendingCopy.review.editTextButton}</Text>
               </Button>
             )}
 
-            <Text className="text-sm text-muted-foreground">{r.destination.privateHelp}</Text>
+            <Text variant="subhead" tone="muted">{r.destination.privateHelp}</Text>
+            {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. */}
+            {inlineFooter ? footer : null}
           </>
         )}
+        {inlineFooter ? keepFooter : null}
       </ScrollView>
 
-      {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll. */}
-      {phase === 'ready' && !isSample && (
-        <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing} accessibilityHint={r.destination.title} testID="review.save.book">
-            <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
-          </Button>
-          {/* Keep private is the quieter choice: still a full 44 pt target. */}
-          <Button variant="quiet" size="sm" onPress={() => save(false)} disabled={!finalText.trim() || editing} testID="review.save.private">
-            <Text>{r.destination.privateButton}</Text>
-          </Button>
-        </View>
-      )}
-      {/* No words to save yet (language still downloading, nobody spoke, a failure) or only sample words: keep the recording itself. */}
-      {spoken && (phase === 'waiting' || (phase === 'ready' && isSample) || (phase === 'transcribing' && canKeepVoice)) && (
-        <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp} testID="review.keepVoice">
-            <Text>{packWait ? wordsCopy.pack.keepButton : pendingCopy.review.voiceOnlyButton}</Text>
-          </Button>
-        </View>
-      )}
+      {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll.
+          At accessibility text sizes it moves into the scroll instead, so the letter keeps the screen. */}
+      {!inlineFooter && footer}
+      {!inlineFooter && keepFooter}
 
       <WhoseBookSheet
         visible={pickerOpen}
@@ -826,45 +926,30 @@ function WordsStatus({
   onGetReady: () => void;
   onType: () => void;
 }) {
-  const typeButton = (
-    <Button variant="secondary" onPress={onType} testID="review.type">
-      <Text>{copy.errors.micDenied.typeButton}</Text>
-    </Button>
-  );
+  const type = { label: copy.errors.micDenied.typeButton, onPress: onType, testID: 'review.type' };
 
   if (job?.phase === 'failed') {
+    const canRetry = job.failure !== 'file_missing' && job.failure !== 'unsupported';
     return (
-      <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
-        <Text role="heading" className="text-lg font-semibold text-foreground">{copy.errors.transcriptionFailed.title}</Text>
-        <Text className="text-base leading-6 text-foreground">{copy.errors.transcriptionFailed.body}</Text>
-        <View className="flex-row flex-wrap gap-3">
-          {/* One primary action, then the way out: try again, or type it. */}
-          {job.failure !== 'file_missing' && job.failure !== 'unsupported' && (
-            <Button onPress={onRetry} testID="review.retry">
-              <Text>{copy.errors.transcriptionFailed.button}</Text>
-            </Button>
-          )}
-          {typeButton}
-        </View>
-      </Card>
+      <InlineState
+        kind="error"
+        title={copy.errors.transcriptionFailed.title}
+        body={copy.errors.transcriptionFailed.body}
+        primary={canRetry ? { label: copy.errors.transcriptionFailed.button, onPress: onRetry, testID: 'review.retry' } : type}
+        quiet={canRetry ? [type] : undefined}
+      />
     );
   }
 
   if (job?.phase === 'done' && job.outcome === 'no_speech') {
     return (
-      <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
-        <Text role="heading" className="text-lg font-semibold text-foreground">{wordsCopy.noSpeech.title}</Text>
-        <Text className="text-base leading-6 text-foreground">{wordsCopy.noSpeech.body}</Text>
-        <View className="flex-row flex-wrap gap-3">
-          <Button onPress={onRetry} testID="review.retry">
-            <Text>{wordsCopy.noSpeech.tryAgainButton}</Text>
-          </Button>
-          <Button variant="secondary" onPress={onRecordAgain} testID="review.recordAgain">
-            <Text>{wordsCopy.noSpeech.recordAgainButton}</Text>
-          </Button>
-          {typeButton}
-        </View>
-      </Card>
+      <InlineState
+        kind="empty"
+        title={wordsCopy.noSpeech.title}
+        body={wordsCopy.noSpeech.body}
+        primary={{ label: wordsCopy.noSpeech.tryAgainButton, onPress: onRetry, testID: 'review.retry' }}
+        quiet={[{ label: wordsCopy.noSpeech.recordAgainButton, onPress: onRecordAgain, testID: 'review.recordAgain' }, type]}
+      />
     );
   }
 
@@ -879,42 +964,35 @@ function WordsStatus({
             ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
             : null;
     return (
-      <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
-        <Text role="heading" className="text-lg font-semibold text-foreground">
-          {fill(wordsCopy.pack.title, { name: languageName })}
-        </Text>
-        <Text className="text-base leading-6 text-foreground">{fill(wordsCopy.pack.body, { name: languageName })}</Text>
-        {line && <Text variant="footnote">{line}</Text>}
-        {p === null && <Text variant="footnote">{fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })}</Text>}
+      <InlineState
+        kind="loading"
+        title={fill(wordsCopy.pack.title, { name: languageName })}
+        body={fill(wordsCopy.pack.body, { name: languageName })}
+        primary={
+          p === null
+            ? // Not started yet (or waiting on Wi-Fi or space): one way to start it now, then the way out.
+              { label: wordsCopy.waiting.readyButton, onPress: onGetReady, testID: 'review.getReady' }
+            : { label: wordsCopy.pack.typeButton, onPress: onType, testID: 'review.type' }
+        }
+        quiet={p === null ? [{ label: wordsCopy.pack.typeButton, onPress: onType, testID: 'review.type' }] : undefined}>
+        {line && <Text variant="subhead" tone="muted">{line}</Text>}
+        {p === null && <Text variant="subhead" tone="muted">{fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })}</Text>}
         {p !== null && download.hold === null && <ProgressLine value={p} />}
-        <View className="flex-row flex-wrap gap-3">
-          {/* Not started yet (or waiting on Wi-Fi or space): one way to start it now. */}
-          {p === null && (
-            <Button onPress={onGetReady} testID="review.getReady">
-              <Text>{wordsCopy.waiting.readyButton}</Text>
-            </Button>
-          )}
-          <Button variant="secondary" onPress={onType} testID="review.type">
-            <Text>{wordsCopy.pack.typeButton}</Text>
-          </Button>
-        </View>
-      </Card>
+      </InlineState>
     );
   }
 
   const total = job?.phase === 'running' ? (job.progress?.total ?? 0) : 0;
   const done = job?.progress?.done ?? 0;
   const part = Math.min(total, done + 1);
+  const line = total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing;
   return (
-    <Card
-      className="items-center gap-3 rounded-3xl border-0 bg-card p-8"
-      accessibilityLiveRegion="polite"
+    <InlineState
+      kind="loading"
+      title={line}
       accessibilityLabel={total > 1 ? fill(wordsCopy.listeningA11y, { n: part, count: total }) : wordsCopy.preparing}>
-      <Text className="text-center text-lg text-muted-foreground">
-        {total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing}
-      </Text>
       {total > 1 && <ProgressLine value={done / total} />}
-    </Card>
+    </InlineState>
   );
 }
 
