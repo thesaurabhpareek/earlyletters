@@ -1,0 +1,174 @@
+# iOS store-lane release pipeline (ADR 0022, D-089; runbook docs/release/RELEASE.md). Preview-lane TestFlight
+# builds (C0, C1) are testflight.yml and docs/release/TESTFLIGHT.md, not this file.
+#
+#   tag ios-v<x.y.z>-rc.<n>   checks, then an EAS production build uploaded to internal TestFlight
+#   tag ios-v<x.y.z>          the released RC: checks an RC tag sits on the same commit, then the GitHub Release
+#   manual run, job=metadata  pushes store text (apps/mobile/store.config.json) with the review contact
+#
+# Only the coordinator pushes tags and only the founder runs it by hand (COORDINATION section 1), so those
+# acts are the approval: the repo is private on GitHub Free, which has no environment secrets or required
+# reviewers. Builds run on EAS (--no-wait), so this workflow uses a few Actions minutes per release.
+# Needs (docs/release/1.0.0.md section 1): repository secrets EXPO_TOKEN and, for metadata, ASC_REVIEW_CONTACT_JSON;
+# `owner` and `extra.eas.projectId` in app.config.ts (BL-339); the production App Store Connect record with
+# `submit.production.ascAppId` in eas.json; production signing credentials and the App Store Connect API key in EAS.
+name: Release iOS
+
+on:
+  push:
+    tags: ['ios-v*']
+  workflow_dispatch:
+    inputs:
+      job:
+        description: What to run
+        type: choice
+        options: [metadata]
+        required: true
+
+concurrency:
+  group: release-ios-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  EAS_CLI_VERSION: 24.10.0
+
+jobs:
+  classify:
+    name: classify tag
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      kind: ${{ steps.tag.outputs.kind }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: tag
+        name: Tag, version.json and branch agree
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse "$GITHUB_SHA^{commit}")
+          if [[ "$TAG" =~ ^ios-v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then kind=rc; version="${BASH_REMATCH[1]}"
+          elif [[ "$TAG" =~ ^ios-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then kind=release; version="${BASH_REMATCH[1]}"
+          else echo "::error::$TAG is not ios-v<x.y.z>-rc.<n> or ios-v<x.y.z>"; exit 1; fi
+          file_version=$(node -p "require('./apps/mobile/version.json').version")
+          if [ "$file_version" != "$version" ]; then
+            echo "::error::tag says $version but apps/mobile/version.json says $file_version"; exit 1
+          fi
+          major_minor="${version%.*}"
+          if ! git branch -r --contains "$sha" | grep -qE "origin/release/${major_minor//./\\.}$"; then
+            echo "::error::$TAG must point at a commit on release/$major_minor"; exit 1
+          fi
+          if [ "$kind" = release ]; then
+            if ! git tag --points-at "$sha" | grep -qE "^ios-v${version//./\\.}-rc\.[0-9]+$"; then
+              echo "::error::no ios-v$version-rc.<n> tag on this commit: release only a built and tested RC"; exit 1
+            fi
+            test -f "docs/release/$version.md" || { echo "::error::docs/release/$version.md is missing"; exit 1; }
+          fi
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  checks:
+    name: checks (G2)
+    needs: classify
+    if: needs.classify.outputs.kind == 'rc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: npm test
+      - run: npm run typecheck
+      - name: Store metadata matches packages/content
+        run: npx tsx scripts/release/store-config.ts --check
+      - name: No placeholder identity in the build
+        run: |
+          set -euo pipefail
+          if grep -rnE "example\.com|com\.example\." packages/brand/index.ts apps/mobile/app.config.ts; then
+            echo "::error::placeholder domain or bundle id"; exit 1
+          fi
+
+  build:
+    name: EAS build to TestFlight (internal)
+    needs: [classify, checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: EXPO_TOKEN is set
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: '[ -n "$EXPO_TOKEN" ] || { echo "::error::Add the EXPO_TOKEN repository secret (docs/release/RELEASE.md)"; exit 1; }'
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8 (8.2.1)
+        with:
+          eas-version: ${{ env.EAS_CLI_VERSION }}
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build and auto-submit
+        working-directory: apps/mobile
+        env:
+          TAG: ${{ github.ref_name }}
+        run: >
+          eas build --platform ios --profile production --non-interactive --freeze-credentials
+          --no-wait --auto-submit --message "$TAG"
+          --what-to-test "Release candidate $TAG. Smoke test: first run, a spoken and a typed letter, the Book, Read together, Plus."
+
+  github-release:
+    name: GitHub Release
+    needs: classify
+    if: needs.classify.outputs.kind == 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.classify.outputs.version }}
+        run: gh release create "$TAG" --verify-tag --title "iOS $VERSION" --notes-file "docs/release/$VERSION.md"
+
+  metadata:
+    name: push store metadata
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'metadata'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # metadata:push reads the submit profile, not the build profile's env; without this the app config
+      # resolves to the development bundle id once an unset APP_ENV means development (PR #27).
+      EXPO_PUBLIC_APP_ENV: production
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Store metadata matches packages/content
+        run: npx tsx scripts/release/store-config.ts --check
+      - name: Add the App Review contact from the secret (never committed)
+        env:
+          REVIEW: ${{ secrets.ASC_REVIEW_CONTACT_JSON }}
+        run: npx tsx scripts/release/with-review-contact.ts
+      - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8 (8.2.1)
+        with:
+          eas-version: ${{ env.EAS_CLI_VERSION }}
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: eas metadata:push
+        working-directory: apps/mobile
+        run: eas metadata:push --profile production --non-interactive

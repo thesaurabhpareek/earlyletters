@@ -17,6 +17,7 @@ import {
   STORE_CONFIG_PATH,
 } from '../../../scripts/release/store-config';
 import { storeListing } from '../../../packages/content/src/store.en';
+import { REVIEW_NOTES, withReviewContact } from '../../../scripts/release/with-review-contact';
 
 const APP = join(__dirname, '..');
 const config = () => appConfig({ config: {} } as Parameters<typeof appConfig>[0]);
@@ -77,5 +78,25 @@ describe('store.config.json (EAS Metadata)', () => {
     expect(listingProblems(undefined, sharing).length).toBeGreaterThan(0);
     expect(listingProblems('on', sharing)).toEqual([]);
     expect(listingProblems('off', plain)).toEqual([]);
+  });
+});
+
+describe('App Review contact (added in CI only)', () => {
+  const contact = { firstName: 'Asha', lastName: 'Reviewer', email: 'review@earlyletters.com', phone: '+1 555 0100', demoRequired: false };
+
+  it('adds the contact and default notes without touching the listing', () => {
+    const base = buildStoreConfig(FIRST_VERSION);
+    const out = withReviewContact(base, JSON.stringify(contact)) as { apple: { review: unknown; info: unknown } };
+    expect(out.apple.review).toMatchObject({ ...contact, notes: REVIEW_NOTES });
+    expect(out.apple.info).toEqual(base.apple.info);
+  });
+
+  it('fails loudly when the secret is missing or incomplete', () => {
+    expect(() => withReviewContact({}, undefined)).toThrow(/not set/);
+    expect(() => withReviewContact({}, JSON.stringify({ firstName: 'A' }))).toThrow(/lastName, email, phone/);
+  });
+
+  it('keeps review notes within the App Store Connect limit (4,000 bytes)', () => {
+    expect(new TextEncoder().encode(REVIEW_NOTES).length).toBeLessThanOrEqual(4000);
   });
 });
