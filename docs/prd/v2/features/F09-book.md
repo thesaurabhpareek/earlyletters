@@ -5,9 +5,9 @@
 | Release | v1.0 gate (search: v1.0 P1, first to cut) |
 | Priority and rank | P0, rank 5 (`05-feature-map.md` section 2) |
 | Personas | P1, P2, P3, P4, P6 |
-| Existing IDs | B-REQ-002, B-REQ-005, B-REQ-011, B-REQ-014, B-REQ-015, B-REQ-016, B-NFR-007, C-REQ-010, C-REQ-011, C-REQ-012, C-REQ-015, PRD-REQ-004, PRD-REQ-011, PRD-REQ-012, DATA-REQ-010, DATA-REQ-011, DATA-REQ-013, DATA-REQ-015, D-027, D-028, K-09, BL-034, BL-035, BL-134, BL-151, BL-156, BL-160, BL-258, BL-264, BL-265, BL-266 |
+| Existing IDs | B-REQ-002, B-REQ-005, B-REQ-011, B-REQ-014, B-REQ-015, B-REQ-016, B-NFR-007, C-REQ-010, C-REQ-011, C-REQ-012, C-REQ-015, PRD-REQ-004, PRD-REQ-011, PRD-REQ-012, DATA-REQ-010, DATA-REQ-011, DATA-REQ-013, DATA-REQ-015, D-027, D-028, D-084, D-085, K-09, BL-034, BL-035, BL-134, BL-151, BL-156, BL-160, BL-258, BL-264, BL-265, BL-266 |
 | Depends on | F03 (child, birthday or due date, signature), F04 (save, backdating, `occurred_precision`), F06 (Review destination), F08 (player), F11 (co-parent letters), F13 (notifications), F16 (sync) |
-| Status | Draft V2, 3 Oct 2026 |
+| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with D-084 (quiet-day rows), D-085 (Recently deleted shelf) and the code on `develop` |
 
 ## 1. Why
 
@@ -17,6 +17,8 @@
 - [S] Unfilled baby books feel like failure; blank books are reported at 14 months, 19 months and nearly 3 years (UR S24, S26). An empty month must read as an invitation, not a gap.
 - [S] Legacy for future generations is the most common Remento and Storyworth praise (25 of 84, R2 T23). The book is what P6 reads; it has to make sense by age without the app.
 - [S] Preterm parents asked for adjusted dates (R2 T28; R2-S2, R2-S14). Pregnancy pages are praised (R2-S15).
+- [D] A quiet day is a mark, not a letter: "Not much today" stores a mark with no words; the Book shows an unsigned "A quiet day" row with the date; marks never count, print, play or move into the book (D-084, `_AUTHORING.md` M10). Built in commit f4cdbc3 (`components/book/quiet-day.logic.ts`, `quiet-day-row.tsx`, `chapters.ts`).
+- [D] Deleting asks first, then the letter waits 30 days on a Recently deleted shelf with its recording; Erase now and the launch purge erase it for good, recording first (D-085, M11). Built in commit 6482cd3 (`app/settings/recently-deleted.tsx`, `components/book/confirm-sheet.tsx`, `shelf.logic.ts`, `lib/capture/erase.ts`).
 
 ## 2. Who
 
@@ -48,11 +50,12 @@
 - Free backdating at save (F04) and "Change the date" on your own saved letters (new here).
 - In book versus private: the author's choice; co-parent letters per F11 (no approval between parents, F11-REQ-010).
 - Signatures frozen at save ("From Papa").
+- Quiet-day rows (D-084): one unsigned "A quiet day" row per marked day, hidden on a day that also has a letter; never counted in a chapter line, never in the printable book, never in Read together, never movable into the book; removable.
 - Empty months as a quiet invitation, never counted.
 - Quiet milestone cards (C-REQ-010), birthday and month-age cards in the book (C-REQ-011 book half; notifications are F13), pause celebrations (C-REQ-012), never-celebrated list (C-REQ-015).
 - Hidden books (B-REQ-014) and the Hidden books list.
 - Mixed scripts and right-to-left letters in one chapter.
-- Delete, undo, Recently deleted, restore (DATA-REQ-010).
+- Confirm before delete, undo, the Recently deleted shelf with Restore and Erase now, and the 30-day launch purge (DATA-REQ-010, D-085).
 - Large-book reading: 60 letters per chapter budget; five years of chapters.
 - Search on the device, P1 (cut first if late).
 
@@ -103,11 +106,15 @@
 5. **Read a letter.** Tap a card (`LetterCard`). `letter/[id].tsx` shows the dateline (`letterDateline` in `lib/dates.ts`), the text at the reader's size (`reader.sizes.*`), the signature at the end (`book.signature` "From {signsAs}"), provenance (`book.provenance.*`), and the recording line or player (F08).
 6. **Change the date (own letter).** New action `book.entryMenu.changeDate` (new) opens the F04 date sheet (day or month tab). Saving writes `occurred_on` and `occurred_precision` as a new version (the server versions `occurred_on` changes, migration `20261003000000_security_and_family.sql`). The letter moves to its chapter with a 200 ms cross-fade.
 7. **Add to book or make private (own letter).** Existing actions `book.entryMenu.moveToBook` and `makePrivate` call `setEntryInBook`. Toasts `review.destination.addedToast` and `privateToast`.
-8. **Delete (own letter).** `book.entryMenu.deleteButton`, confirm `settings.delete.entryTitle` and `entryBody`. A tombstone is written; the persistent undo toast stays until dismissed (`UndoToast`, BL-264). The letter appears in Recently deleted with its erase date (server `deleted_at` + 30 days).
-9. **Restore.** Settings > Your data > `settings.delete.recentlyDeleted` lists own tombstoned letters; `settings.delete.restoreButton` calls `restore_entry()` online, or queues it offline. The letter returns to its chapter.
-10. **Milestones.** On the save that reaches a C-REQ-010 milestone, the next Book open shows one inline card at that letter (`moments.*`), once per reader, no modal, push, sound or confetti. "Lovely" (`moments.dismissButton`) dismisses it for good.
-11. **Birthday and month-age in the book.** On a monthly birthday the new chapter's header settles in (MOTION `gentle`); on the 12, 24, 36, 48 and 60 month birthdays one quiet card opens that chapter (new `moments.birthdayInBook`: "{child} turned {n}."). No card when celebrations are paused for this person and child (C-REQ-012).
-12. **Search (P1).** A search field above the chapters. Results list matching letters in chapter order with the match in context; empty result shows `book.empty.searchTitle`.
+8. **Delete (own letter, D-085).** `book.entryMenu.deleteButton` opens a confirm sheet whose large button is "Keep it" (`components/book/confirm-sheet.tsx`). Confirming writes a tombstone; the undo toast stays until dismissed (`UndoToast`, BL-264). The letter, with its recording, waits on the Recently deleted shelf.
+9. **Recently deleted (D-085).** Settings > `settings.delete.recentlyDeleted` (row with `shelfHelp`, `app/settings/index.tsx`) lists own deleted letters, newest deletion first (`listDeleted`). Each row shows the first words (`firstWords`, up to 90 characters), the letter's date, the day it was deleted and the day it will be erased, once, in the phone's own day; nothing counts down (`shelfRow`). A letter waiting for words or with no words shows no excerpt.
+10. **Restore.** Restore (`undeleteEntry`) puts the letter back exactly as it was, to the book or private as before, with a toast. With sync on, the change goes out as an `entry.restore` outbox op, never as `deleted_at = NULL` (`lib/sync/outbox.ts`).
+11. **Erase now.** Asks once, then erases the recording and its listening copy and then the row (`eraseDeletedLetter`). If the file will not go, the row stays for a retry.
+12. **Launch purge.** At launch, after the capture sweep and never during a recording, letters deleted 30 or more days ago are erased the same way (`purgeShelfAtLaunch`). No purge while the phone clock is earlier than the last launch; no local purge in a build where sync is on (the server owns the clock, DELETION_AND_EXPORT_SPEC 2.2 step 7).
+13. **Quiet-day rows (D-084).** A day marked with "Not much today" shows one small unsigned row: the date and `book.quietDay.label` ("A quiet day"), VoiceOver `book.quietDay.a11y` ("{date}. A quiet day, kept."). The row is hidden when the same day has a letter or note (`visibleInBook`). A chapter of only quiet days has no author line, and the chapter count line never counts marks (`countLine` filters them). Remove this mark (`book.quietDay.remove`) deletes it with `book.quietDay.removedToast`.
+14. **Milestones.** On the save that reaches a C-REQ-010 milestone, the next Book open shows one inline card at that letter (`moments.*`), once per reader, no modal, push, sound or confetti. "Lovely" (`moments.dismissButton`) dismisses it for good.
+15. **Birthday and month-age in the book.** On a monthly birthday the new chapter's header settles in (MOTION `gentle`); on the 12, 24, 36, 48 and 60 month birthdays one quiet card opens that chapter (new `moments.birthdayInBook`: "{child} turned {n}."). No card when celebrations are paused for this person and child (C-REQ-012).
+16. **Search (P1).** A search field above the chapters. Results list matching letters in chapter order with the match in context; empty result shows `book.empty.searchTitle`.
 
 ### 6.3 Age math, dates and ordering rules
 
@@ -184,8 +191,10 @@
 | F09-REQ-009 | P0 | Co-parent letters | Given Papa adds a letter to the book, Then Mama's Book shows it signed "From Papa" with no approval step and `book.recordingElsewhere` when his audio is on his phone | F11-REQ-010, F11-REQ-015 |
 | F09-REQ-010 | P0 | Book reads no working material | Given `listBookRows`, Then the SQL selects no `raw_transcript` or `machine_edits` (static SQL check) | TDD 01 3.8 |
 | F09-REQ-011 | P0 | Chapter render budget | Given a 60-letter chapter on iPhone SE 3, Then first paint of the chapter p95 500 ms over 200 runs | PRD 7.1 |
-| F09-REQ-012 | P0 | Recently deleted screen | Given own tombstoned letters, Then Settings > Your data > Recently deleted lists them newest first with "Erased on {date}" and Restore; others' letters never appear | DATA spec 2.2 step 4 |
-| F09-REQ-013 | P0 | Restore goes through the RPC | Given Restore, Then the client calls `restore_entry()` (or queues it) and never writes `deleted_at = NULL` | DATA-REQ-013 |
+| F09-REQ-012 | P0, Rev (D-085) | Recently deleted shelf | Given own deleted letters, Then Settings > Recently deleted lists them newest deletion first with first words, the deletion day and the erase day (deletion plus 30 days, `SHELF_DAYS`), Restore and Erase now; no countdown and no count of what is left; others' letters never appear. Given Erase now confirmed, Then the recording and listening copy are removed before the row and the letter does not return after a relaunch | D-085; DATA spec 2.2 step 4; `store.shelf.test.ts`, `shelf.logic.test.ts` |
+| F09-REQ-018 | P0 | Confirm before delete | Given Delete on a letter, Then a sheet asks first with "Keep it" as the large, default button; nothing is deleted until the second tap | D-085; E2E-08 |
+| F09-REQ-019 | P0 | Quiet-day rows | Given a quiet-day mark, Then the Book shows one unsigned row with the date and "A quiet day", hidden on a day that has a letter; the chapter count line, the author line, the printable book, Read together and the membership ledger ignore it; it offers no move to the book | D-084; `quiet-day.logic.test.ts` |
+| F09-REQ-013 | P0 | Restore goes through the RPC | Given Restore in a sync build, Then the client queues an `entry.restore` op that the server applies through `restore_entry()`, and never sends `deleted_at = NULL` | DATA-REQ-013 |
 | F09-REQ-014 | P0 | Book never gated | Given Free, trial, Plus, lapsed, offline, signed out, Then the Book, letter view, date change, delete and restore import nothing from the plan engine | LEGAL-REQ-050 |
 | F09-REQ-015 | P1 | Search on this device | Given 1,000 letters, When the parent types 3 or more characters, Then results appear within 300 ms p95 on SE 3, scoped to the active child, own private letters included, others' private never; CJK queries use the substring path | new |
 | F09-REQ-016 | P0 | Hidden books read-only | Given a hidden book opened from Hidden books, Then letters read and play; capture entry points are absent; Show this book again restores it to the switcher | B F2 step 4 |
@@ -241,19 +250,21 @@ All consent-gated (LEGAL-REQ-003); no query text, dates or names ever.
 
 ## 12. Work packages
 
-| WP | Scope | Owner | Owns files | Depends on | Done when | Mode |
-|---|---|---|---|---|---|---|
-| WP-F09-01 | Spike: 60-letter 4-script chapter render on SE 3 | Mobile engineer | `apps/mobile/src/dev/book-fixture.ts` (new) | BL-258 | Numbers recorded in PR; decision SectionList or FlashList | pair |
-| WP-F09-02 | Age and chapter helpers, empty ranges, precision, property test | Mobile engineer (core) | `packages/core/src/age.ts`, `packages/core/src/book.ts` (new), `packages/core/test/book.test.ts` (new) | none | `[F09-REQ-001]`, `[F09-REQ-002]`, `[F09-REQ-003]`, `[F09-REQ-005]` | agent |
-| WP-F09-03 | Dateline fix and month-only dateline | Mobile engineer | `apps/mobile/src/lib/dates.ts`, `apps/mobile/test/dates.test.ts` (new) | WP-F09-02 | `[F09-REQ-007]`, `[F09-REQ-003]` | agent |
-| WP-F09-04 | `listBookRows` projection and Book screen wiring (BL-160, BL-034) | Mobile engineer | `apps/mobile/src/lib/store.ts` (or `LocalStore`), `(tabs)/book.tsx`, `components/book/chapters.ts` | BL-111, WP-F09-02 | `[F09-REQ-010]`, `[F09-REQ-011]`, `[F09-REQ-005]`, `[F09-REQ-006]` | agent |
-| WP-F09-05 | `LetterText` script runs and direction (BL-265) | Design systems | `apps/mobile/src/components/book/letter-text.tsx` (new), `letter-card.tsx`, `letter/[id].tsx` | BL-258 | `[F09-REQ-008]` render fixture | agent |
-| WP-F09-06 | Change the date on own letters | Mobile engineer | `letter/[id].tsx`, `components/book/copy.ts` (new) | F04 date sheet (WP-F04) | `[F09-REQ-004]`, `[DATA-REQ-015]` | agent |
-| WP-F09-07 | Delete, undo, Recently deleted, restore RPC (BL-264) | Mobile engineer | `settings/recently-deleted.tsx` (new), `store.ts` restore path | BL-174 | `[DATA-REQ-010]`, `[F09-REQ-012]`, `[F09-REQ-013]`, E2E-08 | agent |
-| WP-F09-08 | Milestone and birthday cards, pause rule | Mobile engineer | `components/book/moment-card.tsx` (new) | BL-035 | `[C-REQ-010]`, `[C-REQ-011]`, `[C-REQ-012]`, `[F09-REQ-017]` | agent |
-| WP-F09-09 | Hidden books list and read-only view (BL-035) | Mobile engineer | `settings/children/*` | BL-035 | `[B-REQ-014]`, `[F09-REQ-016]` | agent |
-| WP-F09-10 | Copy keys into a feature `copy.ts` (BL-156) | Content | `components/book/copy.ts` | none | Content rules pass; C-REQ-015 test | agent |
-| WP-F09-11 | Search (P1) | Mobile engineer | `apps/mobile/src/lib/search.ts` (new), local migration, `app.config.ts` (`enableFTS`) | WP-F09-04 | `[F09-REQ-015]` | agent |
+Status is what `develop` holds on 13 Oct 2026; "Device" names the `docs/qa/DEVICE_TEST_PLAN.md` run owed.
+
+| WP | Scope | Owner | Owns files | Depends on | Done when | Mode | Status 13 Oct | Device |
+|---|---|---|---|---|---|---|---|---|
+| WP-F09-01 | Spike: 60-letter 4-script chapter render on SE 3 | Mobile engineer | `apps/mobile/src/dev/book-fixture.ts` (new) | BL-258 | Numbers recorded in PR; decision SectionList or FlashList | pair | Not run | SE 3 render timing |
+| WP-F09-02 | Age and chapter helpers, empty ranges, precision, property test | Mobile engineer (core) | `packages/core/src/age.ts`, `packages/core/src/book.ts` (new), `packages/core/test/book.test.ts` (new) | none | `[F09-REQ-001]`, `[F09-REQ-002]`, `[F09-REQ-003]`, `[F09-REQ-005]` | agent | Partly built: month chapters from `packages/core/src/age.ts` and `components/book/chapters.ts`; `packages/core/src/book.ts`, empty ranges and month precision not built | none |
+| WP-F09-03 | Dateline fix and month-only dateline | Mobile engineer | `apps/mobile/src/lib/dates.ts`, `apps/mobile/test/dates.test.ts` (new) | WP-F09-02 | `[F09-REQ-007]`, `[F09-REQ-003]` | agent | Partly built: `lib/dates.ts` one Intl format and `apps/mobile/test/dates.test.ts` exist; month-only dateline not built | none |
+| WP-F09-04 | `listBookRows` projection and Book screen wiring (BL-160, BL-034) | Mobile engineer | `apps/mobile/src/lib/store.ts` (or `LocalStore`), `(tabs)/book.tsx`, `components/book/chapters.ts` | BL-111, WP-F09-02 | `[F09-REQ-010]`, `[F09-REQ-011]`, `[F09-REQ-005]`, `[F09-REQ-006]` | agent | Partly built: Book reads `listEntriesForChild` with quiet-day filtering (`visibleInBook`); a `listBookRows` projection that excludes working material is not built | none |
+| WP-F09-05 | `LetterText` script runs and direction (BL-265) | Design systems | `apps/mobile/src/components/book/letter-text.tsx` (new), `letter-card.tsx`, `letter/[id].tsx` | BL-258 | `[F09-REQ-008]` render fixture | agent | Not built (`letter-text.tsx` absent) | Arabic and Devanagari render on device |
+| WP-F09-06 | Change the date on own letters | Mobile engineer | `letter/[id].tsx`, `components/book/copy.ts` (new) | F04 date sheet (WP-F04) | `[F09-REQ-004]`, `[DATA-REQ-015]` | agent | Not built | none |
+| WP-F09-07 | Delete with confirm, undo, Recently deleted shelf, Erase now, purge, restore op; quiet-day rows (BL-264, D-084, D-085) | Mobile engineer | `settings/recently-deleted.tsx` (new), `store.ts` restore path | BL-174 | `[DATA-REQ-010]`, `[F09-REQ-012]`, `[F09-REQ-013]`, E2E-08 | agent | Built (D-085, commit 6482cd3): confirm sheet, undo toast, Recently deleted shelf, Restore, Erase now, launch purge; restore in a sync build goes out as `entry.restore`. Quiet-day rows built (D-084, commit f4cdbc3) | DL-04, DL-05 |
+| WP-F09-08 | Milestone and birthday cards, pause rule | Mobile engineer | `components/book/moment-card.tsx` (new) | BL-035 | `[C-REQ-010]`, `[C-REQ-011]`, `[C-REQ-012]`, `[F09-REQ-017]` | agent | Not built (`moment-card.tsx` absent) | none |
+| WP-F09-09 | Hidden books list and read-only view (BL-035) | Mobile engineer | `settings/children/*` | BL-035 | `[B-REQ-014]`, `[F09-REQ-016]` | agent | Partly built: Hide this book in `settings/children/[id].tsx`; the read-only Hidden books view not verified | none |
+| WP-F09-10 | Copy keys into a feature `copy.ts` (BL-156) | Content | `components/book/copy.ts` | none | Content rules pass; C-REQ-015 test | agent | Partly built: `components/book/copy.ts` exists; `book.quietDay.*` in content | none |
+| WP-F09-11 | Search (P1) | Mobile engineer | `apps/mobile/src/lib/search.ts` (new), local migration, `app.config.ts` (`enableFTS`) | WP-F09-04 | `[F09-REQ-015]` | agent | Not built; P1, recommended cut from v1.0 (freeze Mon 26 Oct) | SE 3 timing |
 
 ## 13. Open questions and assumptions
 

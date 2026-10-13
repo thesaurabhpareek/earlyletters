@@ -1,6 +1,6 @@
 # 07. Quality bar: done, tests, launch checklist, beta and release
 
-Status: Draft V2, 3 Oct 2026. Replaces `docs/prd/PRD.md` 1.3 section 6 (launch checklist) and section 2.3 (launch gates), and folds in the Definition of Done from `docs/BACKLOG.md` and the test strategy in `docs/tdd/07-quality-test-strategy.md`. Budgets live in `06-nfr.md`; this file says how each one is proved and when it blocks.
+Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with the R-01 re-run on engine 5, D-073, D-074, D-084, D-085, ADR 0014 to 0017 and `docs/qa/DEVICE_TEST_PLAN.md`. Replaces `docs/prd/PRD.md` 1.3 section 6 (launch checklist) and section 2.3 (launch gates), and folds in the Definition of Done from `docs/BACKLOG.md` and the test strategy in `docs/tdd/07-quality-test-strategy.md`. Budgets live in `06-nfr.md`; this file says how each one is proved and when it blocks.
 
 Twenty agent engineers build from this. If a work package cannot show the evidence below, it is not done, whatever the code looks like.
 
@@ -82,7 +82,7 @@ Every WP adds unit tests for its pure logic first. The ones that guard promises:
 
 ### 2.3 Engine regression, including R-01
 
-The faithful-edit engine is the one claim nobody else makes (05 rank 2), and R-01 showed it accepts meaning changes outside English (09 R-01).
+The faithful-edit engine is the one claim nobody else makes (05 rank 2), and R-01 showed it accepted meaning changes outside English (09 R-01). On 13 Oct, engine 5 refuses every Hindi, Arabic and Chinese case in R-01; 8 of 15 items stay open in whole or part, mostly English rules and dictionary paths (F06 section 7.1). Today's suites (`lang.languages.test.ts`, `unicode.test.ts`, `golden.test.ts`, the fuzz tests) cover the fixed items; the open items have no test yet because they would fail.
 
 | Suite | Content | Pass bar | Where | Source |
 |---|---|---|---|---|
@@ -121,7 +121,7 @@ Maestro flows on the SE 3 and current-iPhone simulators, nightly and per release
 | E2E-05 Read together gate | Session starts at sequenced playback of a chapter (DR-06); other parent's recordings skipped |
 | E2E-07 Add a child | The server accepts the book from a modified client (DR-04) |
 | E2E-11 Consent on and off | Unchanged |
-| E2E-12 Offline capture, then sync | Uses the outbox and `sync_pull` (D-023 default) |
+| E2E-12 Offline capture, then sync | Uses the outbox and `sync_pull` (D-023, decided); runs only in a build with server features on |
 | E2E-13 Co-parent invite | Parent role only; at most two parents; no grandparent step (B1) |
 | E2E-14 Trial and cancel | StoreKit sandbox on device; device-computed notices (DR-02 A); no server webhooks (B2) |
 | New E2E-16 Language pack | Pick Portuguese in first run: only the Portuguese pack is requested; delete it in Settings; letters unchanged (F05-REQ-019, F05-REQ-024) |
@@ -177,7 +177,7 @@ On device, by the founder and the payments owner, every release candidate that t
 | Drill | When | Pass | Source |
 |---|---|---|---|
 | Server restore: restore to a scratch project, ledger replay, restore epoch, two synthetic devices reconcile | Before the first non-founder family, then quarterly | Zero own rows deleted on either device; others' rows kept 30 days as waiting; RPO 24 h or less; RTO 4 h or less; `npm run test:db` passes on the restored copy | BL-247; WP-F16-08; F16-REQ-012; DATA-REQ-030, DATA-REQ-031 |
-| Device durability: iCloud device backup restored to a second phone; export ZIP re-read; sign-in on a new phone re-downloads text | Every release candidate | Letters and recordings back from the device backup; ZIP passes self-verification; one year of text on the new phone within p95 30 s | BL-284; D-033; WP-F15-10 |
+| Device durability: iCloud device backup restored to a second phone (DL-03); negative restore and the purge clock guard (DL-04); export ZIP re-read; with server features on, sign-in on a new phone re-downloads text; with the owner's backup on, every recording restores with equal hashes | Every release candidate | Letters, recordings and the Recently deleted shelf back from the device backup; day-31 letters erased at first launch with no orphan; ZIP passes self-verification; one year of text on the new phone within p95 30 s; 20 of 20 backed-up recordings restored (F08-REQ-023) | BL-284; D-033; D-073; D-085; WP-F15-10; WP-F08-B6 |
 | Kill switches | Every release candidate, in staging | Each switch takes effect within 5 minutes; local recording, reading and export keep working | LEGAL-REQ-040; F16-REQ-018 |
 
 Until the server restore drill passes, production is not restored to an earlier point while non-founder families exist; fix forward instead (TDD 06 section 6.3).
@@ -190,7 +190,7 @@ Pass when: every control is reachable by swipe in visual order; states are annou
 
 ### 2.12 Load
 
-k6 scenarios S1 to S13 from TDD 06 section 8.2, with S5, S6, S10 and S13's entitlement part removed (no audio upload, no webhooks, B2 and B7) and a `sync_pull` storm added. Launch gate: 2x the 1k targets plus a 4-hour soak (06-nfr.md section 16; BL-282; WP-F16-12).
+k6 scenarios S1 to S13 from TDD 06 section 8.2, with S5, S6, S10 and S13's entitlement part removed (no webhooks, B2; owner audio backup uploads from D-073 still to be added as a scenario) and a `sync_pull` storm added. Launch gate: 2x the 1k targets plus a 4-hour soak (06-nfr.md section 16; BL-282; WP-F16-12).
 
 ## 3. Launch acceptance checklist, by feature
 
@@ -248,6 +248,7 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Storage under 50 MB creates no draft; a drop under 20 MB mid-take stops and keeps the take within 30 s (F04-REQ-008).
 - [ ] [auto] Microphone asked only at first Speak, after the primer; the purpose string matches v1.0 facts (LEGAL-REQ-007 Rev).
 - [ ] [auto] No Keep the book, reminder or analytics sheet appears in Listen, Write or Review (PRD-REQ-001).
+- [ ] [auto] Not much today saves one quiet-day mark with no words, once per child per day; marks are never counted, printed, read in Read together or moved into the book; an old mark's stored sentence never shows (F04-REQ-016 Rev, D-084; `quiet-day.logic.test.ts`, migration 5 test).
 - [ ] [auto] With `child-input` off, no `together` prompt and no "Write one together" entry (PRD-REQ-005).
 - [ ] [manual] Tap Speak to microphone live p95 500 ms over 200 taps on SE 3 (F04-REQ-023).
 - [ ] [manual] VoiceOver order on Listen, announcements on start, pause and resume, Magic Tap toggles Pause (F04-REQ-019).
@@ -267,7 +268,8 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Audio never leaves the phone (F05-REQ-038).
 
 ### F06 Faithful edit and review
-- [ ] [auto] R-01 regression suite: zero accepted meaning changes per launch language in Node CI (F06-REQ-019).
+- [ ] [auto] R-01 regression suite: zero accepted meaning changes per launch language in Node CI, including the items open on 13 Oct (D4, D6, D7, D9, D10, D13, D14 English, D15; F06 section 7.1) (F06-REQ-019).
+- [ ] [auto] Copy uses "Word for word" for the feature, "Small fixes, marked" and "Exactly as said" for the levels, and no "tidy" word in any shown string (D-074; content rules test).
 - [ ] [manual] Same suite inside the iOS dev build under Hermes on the release candidate: zero accepted meaning changes; byte-identical edits to Node (F06-REQ-019).
 - [ ] [auto] Every machine edit passes `verifyEdits`; a `raw_transcript` update fails at the database (CLAUDE.md, DATA-REQ-040 Rev).
 - [ ] [auto] Property test with scripts and invisible characters: zero accepted meaning changes, 10,000 cases (F06-REQ-021).
@@ -288,14 +290,18 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Deleted terms leave saved letters byte-identical (F07-REQ-018).
 
 ### F08 Recordings
-- [ ] [auto] The original's SHA-256 is unchanged after a listening copy, 10 plays, export and an app update; no code path opens an original for writing (F08-REQ-002).
-- [ ] [auto] The listening copy is a second file made after save from the original only; off while `listening_copy_enabled` is false (F08-REQ-003, F08-REQ-006).
+- [ ] [auto] The original's SHA-256 is unchanged after a listening copy, 10 plays, export, backup and restore, and an app update; no code path opens an original for writing (F08-REQ-002).
+- [ ] [auto] The listening copy is a second file made from the original only, used only when its sidecar hash matches the original, never exported or uploaded (F08-REQ-003, F08-REQ-006, F15-REQ-001).
+- [ ] [manual] AUSoundIsolation listening copy on SE 3 and a current iPhone: renders, lines up, keeps a baby's sounds audible (DEVICE_TEST_PLAN S1-19).
 - [ ] [auto] Single-letter playback works in every plan and account state with no entitlement check (F08-REQ-008).
 - [ ] [auto] Another author's letter whose file is not on this phone shows `book.recordingElsewhere` and no play control (F08-REQ-012).
-- [ ] [auto] No audio in any request across the full E2E run (F08-REQ-018).
+- [ ] [auto] No plaintext audio in any request across the full E2E run; with backup on, only ciphertext to the `entry-audio` bucket (F08-REQ-018, F08-REQ-020).
 - [ ] [manual] Local playback start p95 300 ms on SE 3 (F08 section 9).
-- [ ] [auto] Settings > Recordings shows the v1.0 durability copy and no backup toggle; the sentence is in the claims registry (F08-REQ-014).
-- [ ] [auto] The keep-safe card points to export and device backup, once per chapter, never as a push (C-REQ-018 Rev).
+- [ ] [auto] Settings > Recordings shows the durability copy; no string claims a backup of ours unless backup is on for this owner; no string promises family listening (F08-REQ-014, F08-REQ-026, D-073).
+- [ ] [auto] The keep-safe card points to export and device backup while backup is off, once per chapter, never as a push (C-REQ-018 Rev).
+- [ ] [auto] Delete asks first; Recently deleted shows first words and the erase day; Restore, Erase now and the launch purge remove the recording before the row; no purge while the clock is earlier than the last launch (D-085; `store.shelf.test.ts`; DL-04, DL-05 on device).
+- [ ] [manual] A take cut off by a kill that will not open is kept and listed under Settings > Recordings, never shown as ready (F08-REQ-019; DL-01).
+- [ ] [manual] With backup on: 20 of 20 recordings restore on a second iPhone with equal hashes, with and without iCloud Keychain (F08-REQ-023; WP-F08-B6).
 
 ### F09 The book
 - [ ] [auto] Chapters by month of age, ordered by the moment, ties by capture time (F09-REQ-001, F09-REQ-002).
@@ -304,6 +310,8 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Private by default; a private letter reaches no other member's device (B-REQ-011).
 - [ ] [auto] A co-parent's letter shows no Delete, Edit or Change the date; `delete_entry()` fails (DATA-REQ-015).
 - [ ] [auto] Restore goes through `restore_entry()` only (F09-REQ-013).
+- [ ] [auto] Delete asks first with "Keep it" as the large button; the Recently deleted shelf shows first words, deletion day and erase day, with no countdown (F09-REQ-012 Rev, F09-REQ-018, D-085).
+- [ ] [auto] A quiet-day mark shows as one unsigned "A quiet day" row, hidden on a day with a letter, never in a chapter count (F09-REQ-019, D-084).
 - [ ] [auto] No due-date card, line or countdown (B-REQ-015).
 - [ ] [auto] The book, letter view, date change, delete and restore import nothing from the plan engine (F09-REQ-014).
 - [ ] [auto] Milestones render as inline cards once per reader; no modal, push or confetti (C-REQ-010, F09-REQ-017).
@@ -366,11 +374,10 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 ### F15 Export and the PDF book
 - [ ] [auto] A lapsed user offline exports a ZIP with every own entry (raw transcript, edits, final text, timestamps), audio, PDF and `account.json`; co-parent letters have no raw transcript; zero Plus UI (LEGAL-REQ-034, C-REQ-017, DATA-REQ-050 Rev).
 - [ ] [auto] Every file is listed with SHA-256 and bytes and re-read before ready; a flipped byte is reported (DATA-REQ-051).
-- [ ] [auto] Originals byte-identical to capture; listening copies included by default and switchable (F15-REQ-001, F15-REQ-002).
+- [ ] [auto] Originals byte-identical to capture; listening copies never in the ZIP (F15-REQ-001 Rev, F15-REQ-002).
 - [ ] [auto] PDF text equals each in-book letter's `final_text`; no blank pages; no empty-month chapters; private letters absent (F15-REQ-004, F15-REQ-005).
 - [ ] [manual] PDF fixture with Hindi, Arabic, Mandarin and English: every script in its font, Arabic right to left, no missing glyphs; prints at 100% on US Letter (F15-REQ-006, F15-REQ-008).
 - [ ] [manual] 230 MB year, originals only, airplane mode on SE 3: under 2 minutes (C-NFR-007, DATA-REQ-052).
-- [ ] [manual] 470 MB year with listening copies: time recorded against the 4-minute target (F15 Q1; gate only if the founder accepts it).
 - [ ] [auto] Export is the primary action before any delete-book or delete-account confirm (DATA-REQ-053).
 - [ ] [auto] The plaintext notice shows above the share sheet; no export file remains after it closes (DATA-REQ-056).
 - [ ] [auto] Background pauses and resumes; a kill offers Start again once and leaves no partial ZIP (F15-REQ-011).
@@ -383,9 +390,10 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Two devices editing one letter offline: neither version lost; the author sees the note (F16-REQ-010).
 - [ ] [auto] Words, `machine_edits` and `edit_level` travel as one group; a partial change is rejected `SCPAIR` (F16-REQ-011).
 - [ ] [auto] Take-out, tombstone and removal reach every member device within one pull (F16-REQ-009, LEGAL-REQ-032).
-- [ ] [auto] Zero audio, listening copy or photo bytes in any sync request (F16-REQ-014).
+- [ ] [auto] Zero audio, listening copy or photo bytes in any sync request; the owner's backup uses its own ciphertext path (F16-REQ-014 Rev).
+- [ ] [auto] With sync on, Erase now and the 30-day purge reach the server and every device (F16-REQ-024, D-085).
 - [ ] [auto] "Not sent yet" appears within 10 s for queued ops offline (F16-REQ-016).
-- [ ] [auto] `sync_enabled` off takes effect within 5 minutes; the outbox is kept (F16-REQ-018).
+- [ ] [auto] `killSwitches.sync` on takes effect within 5 minutes; the outbox is kept (F16-REQ-018, D-068).
 - [ ] [auto] N-1 contract fixtures pass; older builds get `SCVER` (F16-REQ-019).
 - [ ] [auto] 61 pushes in a minute return `SCRAT` with `retry_after` (F16-REQ-021).
 - [ ] [auto] No service key in the built bundle (F16-REQ-022).
@@ -399,6 +407,7 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Account deletion: export offered first, the Apple billing line with the Manage link before confirm when subscribed, 30-day undo, Apple token revoked (C-REQ-019, LEGAL-REQ-029, A-NFR-011).
 - [ ] [auto] After the undo window, a cross-system verification script finds no rows or objects except pseudonymised acceptances and the suppression hash (LEGAL-REQ-029, LEGAL-REQ-031).
 - [ ] [auto] Purge deletes tombstones older than 30 days; deletion SLAs held with clock control (LEGAL-REQ-031, LEGAL-REQ-033, DATA-REQ-036).
+- [ ] [auto] Recently deleted: Restore and Erase now on the device; launch purge after 30 days, recording before row, no purge when the clock went back (F17-REQ-005 Rev, D-085; `store.shelf.test.ts`).
 - [ ] [auto] Deleting the account of the parent who created a book leaves the co-parent's letters intact (DATA-REQ-012, K-22).
 - [ ] [manual] `https://earlyletters.com/delete-account` explains in-app deletion and accepts a request by email, handled by the runbook within LEGAL-REQ-031 times (LEGAL-REQ-030, D-042).
 - [ ] [auto] Settings > Help and Legal > About shows the "early version, can make mistakes" note; no beta string on Tonight, Listen, Review, Book, sign-in or Plus screens (K-13, B8).
@@ -526,8 +535,8 @@ Every item below passes before submission on Mon 11 Jan 2027 (ROADMAP M13). Item
 5. The "early version, can make mistakes" note is in About; the store listing has no beta wording (PRD 1.3 2.3 item 5 revised by B8).
 6. `npm test`, `npm run test:db` and `npm run typecheck` pass on the tagged commit.
 7. App Store download size for iPhone SE 3 is under 40 MB on the submitted build (B13).
-8. Every language offered for transcription has passed its gate on the SE 3 tier with a native-speaker sign-off, and the R-01 suite is green for its script; every other language shows as Record and type (DR-01 A; F05-REQ-001 to F05-REQ-006).
-9. Zero audio bytes and zero purchase data in any request across the full E2E suite (B7, B2).
+8. Every language offered for transcription has passed its gate on the SE 3 tier with a native-speaker sign-off, and the R-01 suite is green for its script; every other language shows as Record and type or is held back from the release and named nowhere in the listing (DR-01 A; F05-REQ-001 to F05-REQ-006; ROADMAP 2.1 section 6; F05 Q11: no in-app gate is built).
+9. Zero plaintext audio bytes and zero purchase data in any request across the full E2E suite; the owner's backup sends only ciphertext (D-073, B2).
 10. C1 exit criteria met (section 4.4).
 
 ### 5.3 What never gets waived
@@ -545,7 +554,7 @@ A founder-signed exception may move a budget marked [A] or a non-gate row. It ma
 | Hindi plus Devanagari transcribes (6.2) | Each of seven languages gated by its own corpus; only passed languages are transcribed | B4; DR-01 A |
 | Kill during save 500 iterations | 500 Simulator plus 50 SE 3; plus kill while recording, typed kills and Review kills | F04, F06 |
 | Grandparent joins as Family; contributor approval paths; web page lines (6.2) | Removed from v1.0; dormant contributor rules keep server tests green | B1 |
-| Shared voice playback line (6.2, if D-032) | Removed; zero audio bytes in any request is a gate | B7; DR-07 A |
+| Shared voice playback line (6.2, if D-032) | Removed: family listening is v1.1 (D-073); the owner's encrypted backup is v1.0 and its gate is ciphertext only | D-073; DR-07 |
 | Server notice scheduler, purchase consent via webhook, forged notification, refund webhook, entitlement service fail-open (6.5) | Device-computed notices (blocked by DR-02), device-written consent acts, StoreKit-stubbed fail-open, zero purchase data to our servers; webhook lines removed | B2; DR-02 A |
 | Server rejects `create_child` without Plus (6.8) | Server accepts every book; Plus is enforced on the device only | B2; DR-04 A |
 | A co-parent gets Plus when the other parent holds it (K-28, 6.8) | Only through Apple Family Sharing inside one Apple Family | B2; DR-03 A |

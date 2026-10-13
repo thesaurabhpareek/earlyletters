@@ -6,8 +6,8 @@
 | Priority and rank | P0, rank 14 (`05-feature-map.md` section 2) |
 | Personas | P1 Evening parent, P2 Co-parent, P3 Expecting parent, P4 Multilingual family |
 | Existing IDs | C-REQ-001 to C-REQ-009, C-REQ-011, C-REQ-012 (notification half), C-NFR-001, C-NFR-005, C-NFR-006, C-NFR-009, B-REQ-014, B-REQ-015, PRD-REQ-001, PRD-REQ-005, PRD-REQ-013, LEGAL-REQ-014, LEGAL-REQ-054, D-025, D-035, DR-12, K-02, K-03, K-12; BL-022, BL-023, BL-151, BL-157, BL-196 |
-| Depends on | F02 (ask sequencer, `nextAsk`), F03 (birthday or due date), F09 (month chapters, celebrations in the book), F11 (co-parent letter push, `notify_letters`), F12 (hide, include in reminders), F14 (plan notice dates, "Your plan" category), F17 (Settings shell), F19 (content blocks, remote config) |
-| Status | Draft V2, 3 Oct 2026 |
+| Depends on | F02 (ask sequencer, `nextAsk`), F03 (birthday or due date), F09 (month chapters, celebrations in the book), F11 (co-parent letter push, `notify_letters`), F12 (hide, include in reminders), F14 (plan reminder dates for the day rule, 4 reserved slots and the "Your plan" row; F14 owns the plan reminders themselves: local notices on the phone (BL-342) and server emails from the status-only report (D-080)), F17 (Settings shell), F19 (content blocks, remote config) |
+| Status | Draft V2, 3 Oct 2026; plan-reminder rows revised 13 Oct 2026 for M6 (D-080, D-081, BL-342): plan reminders come from on-device notices plus server emails, both owned by F14. Letter reminders stay local only |
 
 ## 1. Why
 
@@ -55,21 +55,21 @@
 - Primed permission after the first letter, in the F02 ask order (DR-12 A).
 - Separate switches for Reminders, Letters from your co-parent and Your plan; one tap pauses all reminders.
 - Hidden books and due-date books silence every child-anchored notification.
-- The shared device planner that F14 plan notices and F11 co-parent pushes respect (one budget, one quiet window, one day rule).
+- The shared device planner that F14 plan reminders on the phone and F11 co-parent pushes respect (one budget, one quiet window, one day rule). F14's emails (D-080) are outside this planner.
 
 **Later**
 - Prompts in the author's language (pack prompt text, B13): v1.1 or with UI localisation (F44). The pack format keeps a prompt slot.
 - Picking which evenings for "A few times a week" (Headspace pattern, R1-S58): P1 at v1.0 if time allows, else v1.1.
 - "On this day" cards (C-REQ-014) and Year One (C-REQ-013): F47, later.
 - Home Screen and Lock Screen widgets as quiet reminders (Dearest pattern, R1-S3; `expo-widgets`, R4-S61): F04 owns the lock-screen widget; no reminder widget at v1.0.
-- Server-sent reminders of any kind.
+- Server-sent letter reminders of any kind. (Plan reminder emails are F14's and ship under M6, D-080.)
 
 **Never**
 - Streaks, day counts, "since your last", "missed", "in a row" or any gap count in any notification, card or setting (C-REQ-005, CLAUDE.md content rules).
 - Promotions, Plus offers or marketing in any notification channel (App Review 4.5.4, R1-S49; LEGAL-REQ-054).
 - A due-date countdown or due-date push (B-REQ-015).
 - Letter text, transcript or audio reference in any notification (LEGAL-REQ-054).
-- Email or SMS reminders. One channel by default (R2 F13 row; R1-S15).
+- Email or SMS letter reminders. One channel by default (R2 F13 row; R1-S15). The transactional plan reminder emails in `docs/emails/CATALOG.md` section 7 are F14's, carry no letter prompt and are not reminders to write.
 - Notifications that change behaviour from the server without a release (B14: never server-driven if it changes data collection; 2.3.1(a) no hidden features, R4-S55).
 
 ## 5. Market reference
@@ -141,7 +141,7 @@
 | Reminder time | 07:00 to 21:30, 15-minute steps | 20:30 | `settings.reminders.timeLabel` |
 | Pause all reminders | On or off | Off | `settings.reminders.pauseLabel` |
 | Letters from your co-parent | Per child switch lives under Children; this row links there | On (F11 Q4) | new `settings.reminders.coParentLink` |
-| Your plan notices | Read-only line: "Sent when a free period ends or a plan renews" | n/a | new `settings.reminders.planLine` |
+| Your plan reminders | Read-only line; says reminders come on this phone before a free period ends or a plan renews, and by email once the status report ships (F14 6.6). F14 and counsel own the words | n/a | new `settings.reminders.planLine` |
 | Names in notifications | On or off | Off (D-025) | `settings.privacy.lockScreenLabel` (exists), help line new `settings.privacy.lockScreenHelp` |
 | Reminders on this device | On or off | On for the device that granted first, off on a second device (6.3 U27) | new `settings.reminders.thisDeviceLabel` |
 
@@ -255,7 +255,7 @@ The publish pipeline (F19) runs the full content test suite before signing. The 
 | B-REQ-015 | P0 | No due-date countdown or due-date notification, ever | Given any book with a due date, Then no string, card or notification references the due date or days remaining (content test plus planner test) | B |
 | PRD-REQ-005 | P0 | `together` prompts are never served while `child-input` is off | Given the flag off and a block with 13 `together` prompts, When 1,000 seeded selections run, Then 0 return kind `together` | PRD, K-19 |
 | LEGAL-REQ-054 | P0 | No letter text, transcript, audio reference or promotion in any notification; names only when the setting allows | Given every notification type built from Asha fixtures, Then no payload or rendered body contains fixture letter text; names appear only with the toggle on | Legal |
-| C-NFR-001 Rev (B2) | P0 | Local scheduling only; 99% fire within 15 minutes of the slot; zero between 21:30 and 07:00. Plan notices are local too (F14) | Given a device lab run of 200 slots over 14 days, Then 198 or more fire within 15 minutes (logged by a test build). Given the planner property test across 24 zones and both DST changes, Then 0 slots in the quiet window | C, B2 |
+| C-NFR-001 Rev (B2, M6) | P0 | Letter reminders: local scheduling only; 99% fire within 15 minutes of the slot; zero between 21:30 and 07:00. F14 plan reminders are local on the phone too, and also go by server email from the D-080 status report; the emails are not F13 requests | Given a device lab run of 200 slots over 14 days, Then 198 or more fire within 15 minutes (logged by a test build). Given the planner property test across 24 zones and both DST changes, Then 0 slots in the quiet window | C, B2 |
 | F13-REQ-001 | P0 | The live prompt library comes from the F19 `prompts` block; fallback is the last good cached block, then the bundled `packages/content` library. Tonight never waits for the network | Given no network on first launch, Then Tonight shows a bundled prompt in under 300 ms (first route budget). Given a cached v3 and a failed fetch, Then v3 serves | B14, D-035 |
 | F13-REQ-002 | P0 | A block goes live only after SHA-256 matches the signed manifest, `prompts.v1` schema passes, version is higher than live, and the on-device checks in 6.5 pass | Given 6 corrupt fixtures (bad hash, bad signature, unknown schema, lower version, a curly quote, a gendered pronoun), Then all 6 are rejected and the previous library stays live | B14, CLAUDE.md content rules |
 | F13-REQ-003 | P0 | Selection is by the child's month of age (`bandFor`) on the local date, and by the `expecting` band for a book with a due date and no birth date. Expecting books never get a born-age band | Given a due-date book, When 500 seeded selections run, Then 0 prompts from bands `0-3` to `37-60`. Given Asha turning 4 months today, Then band `4-6` applies today | B14, defect in 1 (Tonight passes 0) |
@@ -329,7 +329,7 @@ All events are sent only after analytics opt-in (K-01). Properties are L2 enums.
 |---|---|---|
 | Prompt selection | `packages/core/src/prompts.ts` (exists) | Add band `expecting`; new `pickPrompt(input): Prompt \| null` with `history: {key, date}[]` (365-day window), `allowKinds` (drops `together` when `child-input` is off), `expecting: boolean`. Keep `selectPrompt` until Tonight moves, then remove it. `AVOID_RECENT` goes |
 | Planner | New `packages/core/src/reminder-plan.ts` | Pure: input is settings, children (birth date, due date, hidden, included, paused), saves, foreground times, plan dates from F14, now, zone; output is a list of `{id, fireAtLocal, kind, routeChildId, variantId}`. No clock reads, no React Native (CLAUDE.md `packages/core` rule) |
-| Scheduler adapter | New `apps/mobile/src/lib/notifications/` (`schedule.ts`, `permissions.ts`, `routes.ts`, `copy.ts`) | `expo-notifications` (not installed today: `apps/mobile/package.json`; TDD 01 section 2). Install with `flock /tmp/scribe-npm.lock npx expo install expo-notifications`; check its licence and last release before merge (BRIEF) |
+| Scheduler adapter | New `apps/mobile/src/lib/notifications/` (`schedule.ts`, `permissions.ts`, `routes.ts`, `copy.ts`) | `expo-notifications` (not installed today: `apps/mobile/package.json`; TDD 01 section 2). Install with `flock /tmp/scribe-npm.lock npx expo install expo-notifications`; check its licence and last release before merge (BRIEF). **Update 13 Oct 2026:** the adapter now exists as `apps/mobile/src/lib/reminders/` (`scheduler.ts`, `planner.ts`) with `expo-notifications` ~57.0.21 installed. It cancels only requests marked `scribe.reminders`, so F14 plan reminders must carry their own marker and pass their dates in for the day rule; plan reminders are not in its planner yet (its header lists them as later) |
 | Prompt history | `apps/mobile/src/lib/db/migrations.ts` (exists): new local table `prompt_history(key, child_id, shown_on)` | Append-only migration step |
 | Content block client | F19 client (BL-022); contract `prompts.v1` in `packages/api` (new package, B15, F19 owns) | Schema validation library chosen by F19 |
 | Copy | `packages/content/src/prompts.ts` (12 or more `expecting` prompts), `strings.en.ts` (`notifications.*` name-free variants, BL-157; `reminders.backoff.*`; new `settings.reminders.*` keys listed in 6.2 and 6.3) | New strings first land in the feature folder `copy.ts` (BRIEF); content agent moves them |
@@ -364,7 +364,7 @@ All events are sent only after analytics opt-in (K-01). Properties are L2 enums.
 |---|---|---|
 | Q1 The 365-day no-repeat rule empties today's first-year pool in about 11 weeks at 4 evenings a week. Keep the rule and grow the English library to about 200 first-year prompts before beta C1, or allow repeats after 6 months? Spec default: keep 12 months, show no prompt when exhausted, content writes 120 or more new prompts by week 10 | Founder, content owner; 23 Oct | WP-F13-03 scope, `F13-REQ-004` window |
 | Q2 Due-date silence starts 21 days before the due date. Right length? | Founder; 30 Oct | One planner constant |
-| Q3 Under DR-02 A the F14 trial and renewal notices are local notifications. May a user switch "Your plan" notifications off in the app, given the in-app card stays? | Counsel with DR-02; 6 Nov | Settings row becomes read-only |
+| Q3 Under M6 (DR-02 answered by D-080) plan reminders go by local notification and card on the phone and by email. May a user switch the phone's "Your plan" notifications off in the app, given the card and the email stay? Spec default: read-only row, no switch | Counsel; Fri 23 Oct (FT-33) | Settings row |
 | Q4 Weekly fires on Saturday. Keep? | Founder; 30 Oct | Planner constant |
 | Q5 Run DR-12 option B (prime right after the first letter) as a TestFlight cohort if cohorts allow (D-045) | Founder; 4 Dec | `nextAsk` order table only |
 | Q6 Does iOS give users one notification switch per app, so our three switches must be in-app? (not verified in R4) | Mobile engineer in WP-F13-08 | Settings copy |
@@ -381,7 +381,8 @@ All events are sent only after analytics opt-in (K-01). Properties are L2 enums.
 ## 14. Sources
 
 - Brief and rulebook: `docs/agents/BRIEF-2026-10-03.md` (decisions 9, 16); `docs/prd/v2/_AUTHORING.md` B1, B2, B4, B14, B15.
-- V2: `01-problem.md` 2.1; `02-customers.md` P1 to P4, section 6, section 7; `03-goals-and-principles.md` principles 4 and 10, metrics 4.2 and 4.3; `05-feature-map.md` ranks 14, 17, 18; `09-decisions-and-risks.md` DR-02, DR-12.
+- V2: `01-problem.md` 2.1; `02-customers.md` P1 to P4, section 6, section 7; `03-goals-and-principles.md` principles 4 and 10, metrics 4.2 and 4.3; `05-feature-map.md` ranks 14, 17, 18; `09-decisions-and-risks.md` DR-02 (answered by D-080), DR-12, DR-17.
+- Plan reminders (M6): `docs/DECISIONS.md` D-080, D-081; `docs/BACKLOG.md` BL-342; `docs/emails/CATALOG.md` section 7; `features/F14-plus.md` 6.6.
 - PRD: `docs/prd/C-habits-pricing-settings.md` F1, F2, C-REQ-001 to -012, C-REQ-016, C-REQ-025, C-REQ-034, C-NFR-001, -005, -006, -009, section 7; `docs/prd/PRD.md` PRD-REQ-001, -005, -013, K-02, K-03, K-12, K-19, 6.4, 7.10; `docs/prd/B-first-run-and-family.md` B-REQ-014, B-REQ-015.
 - Decisions: `docs/DECISIONS.md` D-025, D-035, D-045.
 - Legal: `docs/legal/ENGINEERING_REQUIREMENTS.md` LEGAL-REQ-014, LEGAL-REQ-054.

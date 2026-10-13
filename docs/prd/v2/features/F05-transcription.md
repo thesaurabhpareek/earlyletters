@@ -7,17 +7,19 @@
 | Personas | P1, P2, P3, P4, P6 |
 | Existing IDs | B-REQ-003, B-REQ-006, A-REQ-002, A-REQ-030, K-14, K-24, PRD 7.4, PRD 7.7, PRD-REQ-004, LEGAL-REQ-007, LEGAL-REQ-014, LEGAL-REQ-018, LEGAL-REQ-019, LEGAL-REQ-022, DATA-REQ-040, DATA-REQ-041, DATA-REQ-042, DATA-REQ-046, D-031, D-040, D-046, DR-01, DR-14, R-01, R-02, R-08, R-12, R-14, BL-043, BL-140, BL-141, BL-142, BL-143, BL-144, BL-145, BL-147, BL-258, BL-265 |
 | Depends on | F03 (author languages and script), F04 (recording, drafts, voice-only save), F06 (generic engine reads pack tables; verifier fix for marks and non-Latin punctuation, R-01), F07 (dictionary terms and phonetic tables), F16 (sync of new columns), F17 (Settings shell), F19 (manifest and pack delivery) |
-| Status | Draft V2, 3 Oct 2026 |
+| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with ADR 0014 (languages as data), ADR 0015 (speech models per language, Hindi on its own model), ADR 0016 (packs and signed manifest), ADR 0017 (API standards) and the code on `develop`; ADRs decide, this spec cites them (`_AUTHORING.md` M12) |
 
 ## 1. Why
 
-- [F] Today no spoken letter can be transcribed in a release build: `availability()` in `apps/mobile/src/lib/transcribe-whisper.ts` always returns `'decoder-missing'`, and `modelFile()` loads any file that exists, verified or not (read 3 Oct). TDD 10 ranks this the top launch risk (risk 1).
+- [F] On 3 Oct no spoken letter could be transcribed in a release build (`availability()` returned `'decoder-missing'`). On `develop` on 13 Oct the pipeline exists in code: M4A decode in memory (`modules/scribe-audio` `decodePcm16`, BL-140), Silero VAD and per-chunk Whisper with the family's names and a language seed in each prompt (`lib/transcribe-whisper.ts`, `transcribe-plan.ts`, `transcribe-prompt.ts`, BL-141), a transcription queue with voice-only save (`lib/transcription-queue/`, BL-142), and speech models fetched through the pack system and checked by SHA-256 against the signed manifest (`lib/models/speech-packs.ts`, `lib/packs/engine.ts`, BL-143). None of it has run on a real iPhone (ROADMAP 2.1 section 0); speed, memory and heat per language are unmeasured (BL-043, FT-22). TDD 10 ranks this the top launch risk (risk 1).
 - [D] The founder set seven spoken-letter languages at v1.0, each with language-specific transcription, script and punctuation (B4), and a lean app under 40 MB with models and non-English packs downloaded on demand as data (B13).
 - [S] Quality differs widely by language. Whisper large-v3-turbo scores 3.62 to 5.97 WER on Spanish, English, Portuguese and French and 7.97 CER on Mandarin in a third-party FLEURS run, but 29.64 WER on Hindi and 15.72 on read Modern Standard Arabic [S] R5 section 1.1 (R5-S9). Arabic dialect speech sits at about 30 to 60 WER on open models [F, S] R5 section 1.2 (R5-S35, R5-S36).
 - [F] A misheard word in a keepsake is permanent: `raw_transcript` is immutable by database trigger (DATA-REQ-040, `supabase/migrations/20261002020000_data_governance.sql`). A weak transcript saved once stays weak forever.
 - [F] 24.5% of 2024 US births were to mothers born outside the 50 states and DC, and the six non-English launch languages have 53.5 million US speakers [F] R3 section 2.1, 2.3. No competitor we found asks which languages a family speaks; Day One takes the language from the keyboard and users report broken mixed-language output [F, S] R1 section 0 item 4 (R1-S60, R1-S61).
 - [S] One Tinybeans user reported 9 GB of mobile data used overnight [S] R2-S14. A 574 MB model on cellular without consent would repeat that.
-- [F] The engine would let a Hindi edit change "daughter" to "son", and an Arabic edit change "you" from feminine to masculine, today (R-01, R5 section 4.4 E2, E3). No non-English pack may ship until F06 fixes it.
+- [F] On 3 Oct the engine let a Hindi edit change "daughter" to "son" and an Arabic edit change "you" from feminine to masculine (R-01, R5 section 4.4 E2, E3). Engine versions 4 and 5 refuse both; a 13 Oct re-run confirms it, and lists the R-01 items still open, none of them specific to Hindi, Arabic or Chinese script (F06 section 7.1).
+- [D] Languages are data (ADR 0014): one generic engine in `packages/core/src/lang/`, one text-rules pack per language in `packs/text-rules/`, English bundled. The six downloadable packs ship with word tables in `draft`, so they run in punctuation-safe mode until a native speaker signs each off; the app cleans every non-English letter at `verbatim` (`LANGUAGES_WITH_TIDY_RULES`, `transcription-queue/clean.ts`).
+- [D] Speech models (ADR 0015, Proposed until each language's golden-corpus check): one shared Whisper large-v3-turbo q5_0 (574 MB, MIT) for English, Spanish, French, Portuguese, Arabic and Mandarin; Hindi gets its own model, vasista22/whisper-hindi-small q5_1 (190 MB, Apache-2.0), because turbo's Hindi is the weakest result measured (6 FLEURS clips: 30.2% word error for turbo, 10.1% for Hindi small). Phones under 4 GB RAM use whisper-small q5_1 (190 MB). The Hindi file is built by us and is not uploaded yet (`hosted: false` in `lib/models/catalog.ts`), so today Hindi falls back to turbo.
 
 ## 2. Who
 
@@ -46,9 +48,8 @@
 ## 4. Scope
 
 **In v1.0**
-- On-device transcription with whisper.rn for English, Spanish, French, Portuguese and Mandarin on one shared model, Whisper large-v3-turbo q5_0 (574 MB) [R] R5 section 8.1.
-- Hindi with a Hindi-tuned model, only if it passes its gate on the SE 3 tier (DR-01 A); otherwise Hindi is "record and type".
-- Arabic as "record and type" at v1.0 unless a model passes its gate (DR-01 A, R5 section 9 option A).
+- On-device transcription with whisper.rn 0.7.4 for English, Spanish, French, Portuguese, Arabic and Mandarin on one shared model, Whisper large-v3-turbo q5_0 (574 MB), and Hindi on whisper-hindi-small q5_1 (190 MB) once hosted; compact tier whisper-small q5_1 (190 MB) on phones under 4 GB RAM [D] ADR 0015 sections 1, 2.
+- Each language ships only if it passes its week-2 device check and the founder's per-language go or no-go on Fri 23 Oct (ROADMAP 2.1 sections 2, 6; FT-34). A language that fails is held back to a later pack update and the listing names only shipping languages. The in-app per-language gate below (7.1, 7.2) is not built: today every one of the seven can be chosen and transcribed. Arabic remains the most likely to be held (DR-01; ADR 0015: dialect error rates).
 - A per-language quality gate that decides, per language and device tier, whether the language transcribes or offers record and type.
 - Language packs as data (B13): versioned JSON plus model reference, SHA-256 against a signed manifest, interpreted by a generic engine in `packages/core`. English pack in the app; the rest downloaded when an author picks the language.
 - Model download manager: Application Support, excluded from backup, resumable, verified, removable.
@@ -109,7 +110,7 @@ No memory product we found transcribes Hindi or Arabic on-device (R1 F05 opportu
 |---|---|---|---|
 | 1 | Taps Finish after a 2-minute letter | Listen moves to processing (F04 step 5) | F04 writes the draft `ready` with `audio_sha256` and `language = en`. F05 inserts one `transcription_jobs` row (new table, section 11.3) with `state = queued`, priority `open_review` |
 | 2 | Lands on Review | Review (`review.title`) with an honest progress line, "chunk i of n" (new `review.transcribing.progress`), and the recording player | Queue picks the job. Checks: model file verified (section 7, F05-REQ-020), pack for `en` loaded, thermal state below `serious`, app in foreground. Verifies the audio hash, then decodes M4A to 16 kHz mono PCM in memory (BL-140) whatever the source rate (44.1 kHz today, `listen.tsx`; 48 kHz if F08 moves it) |
-| 3 | Waits, listens, or leaves the screen | Same progress line; nothing else moves | Silero VAD plans speech chunks of 28 s or less (TDD 03 3.5.3). Each chunk runs `transcribeData` with `language: 'en'` (forced, never `auto`), `translate: false`, `tdrzEnable: false`, `tokenTimestamps: true`, `maxLen: 1`, temperature 0 and the dictionary prompt rendered by the English pack (F07). Completed chunks are written to the job's `partial` after each chunk |
+| 3 | Waits, listens, or leaves the screen | Same progress line; nothing else moves | Silero VAD plans speech chunks of 28 s or less (TDD 03 3.5.3). Each chunk runs `transcribeData` with `language: 'en'` (forced, never `auto`), `translate: false`, `tdrzEnable: false`, `tokenTimestamps: true`, `maxLen: 1`, temperature 0 and the dictionary prompt rendered by the English pack (F07). Completed chunks are held in memory for the job (no `partial` is stored, section 7.6) |
 | 4 | Reads the transcript | Text appears only when every chunk is done (TDD 03 5.1); machine edits underlined (F06); first-time note `review.firstNote` (K-14) | Post-processing in `packages/core`: non-speech tags dropped, loop guard, words with exact offsets, `stt_meta` with model id and SHA-256, pack id and version, binding version, language. Result stored on the job. `faithfulClean` runs with the English pack tables (F06) |
 | 5 | Saves (Add to the book or Keep private) | F06 destination buttons | In one local transaction the entry is inserted with `raw_transcript` and `stt_meta` from the chosen job result; from that insert the raw is immutable (DATA-REQ-040). Job row marked `done` and its `partial` cleared. Whisper context released after 45 s idle (TDD 03 3.5.4) |
 
@@ -181,7 +182,7 @@ A language is transcribed on a device tier only after it passes its own gate. Un
 | Hindi | WER | 15% or less | Devanagari 95% or more of Hindi words; English words left in Latin 95% or more (TDD 03 7.3) | 95% or more | 0 | 30 s, or a founder-approved relaxed bar (R5 8.1) | same |
 | Arabic | WER on the speaker's dialect group | 20% or less per dialect group | Arabic punctuation; no harakat added or removed by the engine | 95% or more | 0 | same | same |
 
-Also required for every non-English language before its gate can pass: (a) the F06 verifier fix for marks, harakat and non-Latin punctuation with that language's adversarial test set green (R-01; R5 section 4.4 E1 to E8); (b) a native speaker has signed off the pack's filler, repeat and punctuation tables (R-08; R5 section 4.2); (c) the dictionary fix rules for that script pass F07's defect tests (F07 section 7).
+Also required for every non-English language before its gate can pass: (a) the F06 verifier fix for marks, harakat and non-Latin punctuation with that language's adversarial test set green (R-01; R5 section 4.4 E1 to E8; on 13 Oct the script-specific items D1, D2, D3, D5, D8 and D11 are fixed and the open items are listed in F06 section 7.1); (b) a native speaker has signed off the pack's filler, repeat and punctuation tables (R-08; R5 section 4.2); (c) the dictionary fix rules for that script pass F07's defect tests (F07 section 7).
 
 **Sample design** (R5 section 8.2, extended in `experiments/`):
 
@@ -234,66 +235,52 @@ Rules: synchronous reads from the cached manifest and the local asset table (no 
 
 ### 7.3 Model per language and device tier
 
-Tiers come from physical memory read on device (`expo-device` is installed at ~57.0.2; whether its `totalMemory` reports physical RAM on iOS is Unverified and WP-F05-05 checks it): **T6** 6 GB or more; **T4** 4 GB (iPhone SE 3, 12, 13 class; SE 3 RAM is a third-party figure, R5-S48); **T3** under 4 GB, if the iOS 17 floor (D-040) allows any such phone (TDD 03 OQ-1).
+Decided in ADR 0015 (status Proposed; final per language only after its golden-corpus check, TDD 03 7.3). The mapping lives in the app, `LANGUAGE_MODELS` in `apps/mobile/src/lib/models/catalog.ts`; `speechPlan` computes what a family downloads and is tested. The first hosted entry in each list wins, and every list ends in a shared upstream model, so a language always has a model.
 
-| Language | T6 | T4 (SE 3, the budget device) | T3 | Fallback when the gate fails |
-|---|---|---|---|---|
-| en, es, fr, pt, zh | Whisper large-v3-turbo q5_0, 574 MB, MIT (R5-S16, R5-S38), one shared file | Same file, if BL-043 shows the 30 s bar and no jetsam; else small q5_1, 190 MB (TDD 03 3.5.8), and each language must pass its gate again on small | small q5_1, gated per language (small per-language quality is Unverified, R5 1.1) | Record and type for that language on that tier |
-| hi | IndicWhisper Hindi (Whisper medium, MIT, about 539 MB at q5_0, Inferred) first; ARTPARK whisper-large-v3-vaani-hindi (Apache-2.0, about 1.08 GB, Inferred) only if medium fails quality (R5 8.1) | IndicWhisper medium, only if it passes speed and memory on SE 3; large-v3 class is not attempted (1.42 times real time on A15, about 85 s per 2-minute letter, R5-S44; uncompressed large unsupported on A15 per Argmax, R5-S43) | Record and type | Record and type (DR-01 A) |
-| ar | None at v1.0 unless a candidate passes: oddadmix whisper-large-v3-turbo-arabic-dialectal (Apache-2.0, about 574 MB, a separate file, R5-S34), which describes itself as a model to evaluate on your own data | Same | Record and type | Record and type (DR-01 A; R5 section 9 option A) |
+| Language | Full tier (4 GB RAM and up) | Compact tier (under 4 GB, or after 2 memory kills) | Hosted today |
+|---|---|---|---|
+| en, es, fr, pt, ar, zh | Whisper large-v3-turbo q5_0, 574,041,195 bytes, MIT | whisper-small q5_1, 190,085,487 bytes | Yes, pinned Hugging Face revisions (`hosted: true`) |
+| hi | whisper-hindi-small q5_1 (190,085,487 bytes, Apache-2.0), then turbo | whisper-hindi-small q5_1, then small | No: the Hindi file is our build and `hosted: false`, so Hindi uses turbo (full) or small (compact) until the founder uploads it (ADR 0015 section 9 item 2) |
+| zh candidate | Belle-whisper-large-v3-turbo-zh q5_0, built and hashed, not chosen | n/a | No (candidate only, ADR 0015 M-1) |
 
-Conversion of the Hindi and Arabic fine-tunes to ggml for whisper.rn is Unverified (R5 section 10). Every model file is pinned by SHA-256 and source revision in the manifest. Silero VAD is bundled in the app (TDD 03 3.5.8; size under 1 MB, Unverified). Core ML encoders are not downloaded at v1.0 (1.17 GB for turbo, R5-S16; TDD 03 9.1).
+Silero VAD v6.2.0 (885,098 bytes, MIT) downloads with the first speech model; it is not in the app (ADR 0015 section 4). Prompts carry the family's names and a per-language seed in the language's own script (ADR 0015 section 3, `lib/transcribe-prompt.ts`). Every chunk is decoded with the language set explicitly; nothing auto-detects. Download sizes per family (ADR 0015 section 2): any one non-Hindi language 575 MB; Hindi only 191 MB once hosted; Hindi with English 765 MB.
 
-One model context is in memory at a time. An author with English and Hindi downloads two files (574 MB plus about 539 MB, R5 section 7); the queue releases one context before loading the other.
+Open from ADR 0015 section 9: golden corpus per language (founder recordings); uploading the Hindi file; counsel on the training-data terms of the two models we built; device speed and memory per tier (BL-043).
 
 ### 7.4 Language packs as data
 
-A pack is data a generic engine in `packages/core` interprets (B13; App Review 2.5.2, R4 section 5). A pack holds no code, no expressions that are evaluated, and no flags that switch on a feature that was not reviewed (R4 section 5, 2.3.1).
+Decided in ADR 0014 (text-rules packs) and ADR 0016 (pack system, signing, hosting). This spec does not re-specify them. Facts an agent needs:
 
-**Contents** (one JSON document per language, schema `speech-pack/1`, new; validated on load):
-
-| Field | What | Who uses it |
+| Topic | What is decided and built | Where |
 |---|---|---|
-| `packId`, `language`, `packVersion` (semver), `schemaVersion`, `engineMin` (lowest `ENGINE_VERSION` that can read it) | Identity and compatibility | Loader |
-| `whisper` | `language` code passed to whisper.rn; `promptPreamble` in the target script (simplified-Chinese sentence for zh; a Devanagari sentence for hi, R5 section 3); prompt term order | `asr-prompt` (new) |
-| `fillers` | `auto` list (pure hesitation sounds) and `offer` list (words with meaning, offered only), R5 section 4.1 | F06 rules |
-| `repeats` | Always-remove and suggest-only words; empty `auto` for non-English packs at v1.0 (R5 section 4.2) | F06 rules |
-| `negation`, `modals`, `pronouns`, `kinship` | Closed word lists the verifier protects | F06 verifier, F07 |
-| `punctuation` | Sentence-final marks, mood marks (? ! ？ ！ ؟), opening marks rule (¿ ¡), spacing (French no-break spaces), danda for hi, full-width set for zh (R5 section 4.3) | F06 |
-| `script` | Expected script ranges for the mismatch flag (F05-U19); for zh a traditional-to-simplified pair table derived from OpenCC data (Apache 2.0, R5-S32) for the `script` edit (F06, new edit type) | F05, F06 |
-| `phonetic` | Per-script tables for dictionary matching: Double Metaphone codes for Latin (npm `double-metaphone`, MIT, R5-S53), IndicSOUNDEX rules for Devanagari (paper only, code licence Unverified, R5-S55), toneless pinyin for zh (`pinyin-pro`, MIT, R5-S54), consonant skeleton for Arabic (low confidence, R5-S56) | F07 |
-| `variety` | Portuguese pt-BR or pt-PT dictionary and punctuation choices only; never a spelling conversion (R5 section 1.2) | F06, F07 |
-| `fonts` | Optional font files for reading: Noto Naskh Arabic (308 KB) and Noto Serif SC (25.1 MB) per F15's figures; Devanagari and Latin fonts ship in the app (BL-258) | F09, F15 |
+| Pack type and engine | `TextRulesPack` compiled into `LanguageRules` by one generic engine; packs hold only lists, maps, enums, numbers and literal strings; nothing is evaluated | `packages/core/src/lang/types.ts`, `engine.ts`, `validate.ts` (ADR 0014 section 1) |
+| Packs that exist | `packs/text-rules/en.json` (reference, bundled in code), `hi`, `es`, `zh`, `fr`, `ar`, `pt`; published sizes 5 to 7 KB each except zh at 62 KB (ADR 0014 section 8 table) | `packs/text-rules/` |
+| Trust per table | `draft`, `cited` or `native-reviewed`; enabling tables need sign-off, protective tables load as drafts; all six downloadable packs are `draft` for word tables today (punctuation-safe mode) | ADR 0014 section 3 |
+| Script conversion | A `punctuation` edit labelled `script` by `describeEdit`; per author, never inside quotes or on a dictionary term, only for one-to-one characters | ADR 0014 section 4 |
+| Manifest | One signed `PackManifest` (`schemaVersion: 1`) for every downloadable file, kinds `speech-model`, `text-rules`, `prompts`; Ed25519 over canonical JSON with `@noble/ed25519`; rollback refused | `packages/api/src/pack-manifest.ts`, `integrity.ts`, `keys.ts` (ADR 0016 sections 4.1, 4.2) |
+| Signing keys | `TRUSTED_SIGNING_KEYS` is empty until the founder runs the key ceremony; until then the app trusts nothing, installs no downloaded pack or model, and keeps bundled defaults (fail closed) | `packages/api/src/keys.ts`; BL-335, FT-16 |
+| Hosting | Recommended Cloudflare R2 with Hugging Face mirrors for upstream weights; founder decides (Q-001, BL-337) | ADR 0016 section 3 |
+| On the phone | Range download in 16 MiB parts, SHA-256 against the manifest, atomic install into Application Support excluded from backup, Wi-Fi only above 5 MB unless allowed, one download at a time, `packDownloads` kill switch, Settings > Storage lists and removes packs | `apps/mobile/src/lib/packs/engine.ts`, `expo-adapter.ts`, `app/settings/storage.tsx` (ADR 0016 section 4.3) |
+| App budget | Under 40 MB (D-065); speech area adds about 1 MB (E, ADR 0015 section 6) | `docs/ops/APP_SIZE.md` |
 
-Size: under 100 KB per pack except Mandarin (OpenCC and pinyin data, under 5 MB estimated, R5 section 7) plus any font file. The English pack ships inside the app; the other six are downloaded only when an author picks that language (B13; F03-REQ-006).
-
-**Versioning.** `packVersion` follows semver: patch for table corrections, minor for additive fields, major for a schema change that needs a newer engine. A pack whose `engineMin` exceeds the running `ENGINE_VERSION` is not loaded; the previous compatible pack stays in use (F05-U28). Every entry records the pack id and version that cleaned it in `stt_meta` (new fields `packId`, `packVersion`), so a letter can be re-derived.
-
-**Signed manifest.** The speech section of the F19 manifest (new schema `speech-manifest/1` in `packages/api`, new) lists, per language: gate state per tier, paused flag, pack id, version, URL, bytes, SHA-256; and per model: id, URL with a pinned revision, bytes, SHA-256, licence, minimum tier. The manifest carries a monotonic `manifestVersion` and an Ed25519 detached signature [R]; the public key is compiled into the app; the private key never sits in the repo (who holds it: Q5). The app rejects an unsigned manifest, a bad signature, an unknown schema or a lower `manifestVersion` than the cached one (F05-U17). Signature library: a permissive, maintained library chosen in WP-F05-03 under the brief's licence and 12-month release rule (B16; brief coordination rules); none is installed today. A manifest snapshot is bundled at build time for first launch offline (F05-U18).
-
-**Hosting.** v1.0 uses the CDN path (DR-14 A, D-046): model files we did not change come from a pinned Hugging Face revision of the whisper.cpp model repository (R5-S16) or a zero-egress mirror; converted models and packs live on a zero-egress object store such as Cloudflare R2 (B13; founder picks the host, D-046). Never Supabase egress (D-046; about $11k to $12k at 220k installs, TDD 03 C-8). URLs are versioned and identical for every user; requests carry no user id, cookie or query string. Range requests must work on the chosen host (assumed for Hugging Face and R2, TDD 03 3.5.8, [A]); WP-F05-04 confirms. Apple-hosted asset packs are later (F49; iOS 26 only, no Expo module, R4 section 6).
-
-**Download UX.** Sizes are shown before anything downloads ("Spanish words, 0.1 MB. Speech model, 574 MB, shared with English." new copy). Wi-Fi by default; mobile data only by the explicit choice (F05-U06; R2-S14 mobile data complaint). Never during launch and never blocking capture or first run (A-REQ-002; F03-REQ-005). Progress lives in Settings > Languages and speech and in a quiet line on the F03 Ready screen; no modal, no notification.
-
-**Deletion in Settings.** Each downloaded language row and each model row has Delete with the size freed. Deleting a pack or model never touches letters, recordings or transcripts. After deletion, new letters in that language save audio and wait (F05-U01) until the files come back; the chip label does not change. The English pack cannot be deleted (it is in the app); the shared model can. Deleting the shared model while a non-English language still needs it asks once: "English, Spanish and French use this model. Delete it?" (new).
-
-**App size budget.** F05 adds to the binary: whisper.rn native code, the decode module (BL-140), Silero VAD, the English pack and the manifest snapshot. TDD 03 estimates whisper.rn, VAD and decoder at 15 MB or less (E, TDD 03 5.4) against the 40 MB budget (B13). No model file and no non-English pack may be in the build (F05-REQ-016).
+Gaps between this spec and the ADRs, for the platform and language owners (not decided here):
+- The manifest has no per-language gate or pause field (`PackEntry` in `pack-manifest.ts` has id, kind, language, version, url, mirrors, bytes, sha256, fileName, minAppVersion, required). F05-REQ-001 and F05-U16 need one, or the gate stays a release decision as ROADMAP 2.1 does it today (section 13 Q10).
+- A per-entry `packId` and `packVersion` record (this spec's `stt_meta` fields; F06 `pack_ref`) is not built.
+- No bundled manifest snapshot exists for a first launch offline (F05-U18): with no network the app has bundled config defaults and no model.
 
 ### 7.5 Model download manager
 
-Replaces the load-any-file behaviour of `modelFile()` in `transcribe-whisper.ts` (verified 3 Oct: it returns the first existing file among the turbo and small names in Application Support and `Documents/models`, with no hash check; TDD 03 H-4).
-
-- One manager for models and packs (`apps/mobile/src/lib/speech/assets.ts`, new), one download per asset id at a time (F05-U30).
-- Download to `<modelsDirectory>/<id>.bin.part` with a sidecar `<id>.json` holding bytes done and the incremental SHA-256 state; HTTP Range requests in 8 MB parts; resume after kill, reboot and network change (TDD 03 3.5.8). Whether expo-file-system 57 offers a background `URLSession` download is Unverified (TDD 03 OQ-8); if it does, prefer it and keep Range as the fallback.
-- Verify SHA-256 over the whole file against the signed manifest, then rename atomically to `<id>.bin`, mark it excluded from backup (`excludeFromBackup` in `model-files.ts`, exists), and write a row in the local `speech_assets` table (new: id, kind, version, sha256, bytes, path, verified_at, state).
-- Loading a model reads the `speech_assets` row and checks size; a file without a verified row is never loaded (F05-U04). The full hash is checked again on the first load after an app update [R]; its cost on SE 3 is measured in WP-F05-04 [A].
-- Disk check before start: asset size plus 100 MB free (TDD 03 3.5.8).
-- Upgrades download beside the old file; the old file is deleted only after the new one verifies and no job is running on it.
-- `Documents/models` is no longer read in release builds (ADR 0001 wants Application Support, TDD 03 C-9); dev builds may keep reading it behind `devShortcutsAllowed`.
+Built as the general pack engine (ADR 0016 section 4.3; BL-143 "done in code"): speech models are `speech-model.*` packs asked for by id through `ensurePack` from `lib/models/speech-packs.ts`. It replaced the load-any-file `modelFile()` of 3 Oct. Facts:
+- Files live under `Library/Application Support/packs/installed/<id>/<version>/`, excluded from backup through `ScribeFiles.setExcludedFromBackup`.
+- Resume after kill, cancel or network change from the `.part` size; a host that ignores Range is accepted when the size matches.
+- SHA-256: native `Crypto.digest` up to 32 MB, else native `sha256File` when present, else JS slices; how long Hermes takes on a 574 MB file is Unverified (ADR 0016 section 4.3; DEVICE_TEST_PLAN S1-15).
+- Free space must cover the file plus 1 GB for large packs, 20 MB for small ones.
+- Development builds only: a model copied by hand into Application Support/models is used after its SHA-256 matches the catalog, while no signed manifest is published (`speech-packs.ts` header).
+- Device checks owed: Range across Hugging Face redirects through URLSession, hash time, resume at 40% (S1-15).
 
 ### 7.6 Transcription queue
 
-`apps/mobile/src/lib/speech/transcription-queue.ts` (new), persisted in a local `transcription_jobs` table (new). It replaces `review.tsx` calling `getTranscriber()` and `transcribe()` directly (verified 3 Oct; it passes no `language`, TDD 03 M-1).
+Built on `develop` (13 Oct) as `apps/mobile/src/lib/transcription-queue/` (BL-142): the rules are a pure reducer in `machine.ts` (phases `queued`, `waiting_for_pack`, `running`, `done`, `failed`; kinds `draft` and `entry`; automatic retry with a cap), `index.ts` feeds it from the store, app state and pack system and runs one job at a time, and Review calls `requestWords(draftId)`. Each job carries its language (`languageFor`, `models/author-language.ts`). Jobs are held in memory; at start the queue re-adds every letter waiting for words (`listWaitingForWords`), and a draft gets a job when Review asks. There is no `transcription_jobs` table and no stored partial result, so a job cut off by a kill starts again from the first chunk. A marker setting written while Whisper runs lets the next launch count a memory kill toward the compact tier. The rules below are the target; rows the code does not meet are listed in section 12.
 
 | Rule | Detail |
 |---|---|
@@ -316,7 +303,7 @@ Replaces the load-any-file behaviour of `modelFile()` in `transcribe-whisper.ts`
 | Mandarin | Simplified by default [R]; prompt opens with a simplified sentence (R5-S30); traditional characters become simplified only through verified, undoable `script` edits from the pack table; full-width punctuation (GB/T 15834, R5-S66). Traditional as a choice is open (F03 Q3). Chinese quotation marks versus the curly-quote content rule is open (R5 4.3; Q9) | R5 1.2, 4.3 |
 | Arabic | Letter text renders right to left inside the English UI: each paragraph's direction follows its first strong character (Unicode bidi, R5-S68), digits stay left to right, no hardcoded LTR (B-NFR-007). Arabic punctuation ، ؛ ؟ kept. The engine never adds or removes harakat (they can carry gender, R5 1.2). At v1.0 this applies to typed Arabic and to any later transcript | R5 1.2, 4.3 |
 | Spanish | ¿ and ¡ kept; added only where the sentence already ends in ? or ! (needs the E6 fix) | R5-S70; R5 4.4 |
-| French | No-break spaces before : ; ? ! and inside « » kept in final text (needs the E7 fix) | R5-S71; R5 4.4 |
+| French | No-break spaces before : ; ? ! and inside « » kept in final text (built with the French pack: 13 Oct scratch run, F06 section 7.1 D14) | R5-S71; R5 4.4 |
 | Portuguese | Author's variety stored for dictionary and punctuation; no conversion between varieties | R5-S73 |
 | All | `translate: false` always; no automatic language switch; output stays in the language and script spoken | Section 4 Never |
 
@@ -358,7 +345,7 @@ Data contract (P0 at v1.0; compare and adopt UI is P1):
 | F05-REQ-014 | P0 | Kill and jetsam safe | Given a kill during a job, When the app relaunches, Then the job is `queued` with its `partial` and no audio or draft is lost; Given 2 jetsams for one model on one phone, Then that phone moves to the tier fallback and Settings says so | TDD 03 FM-7 |
 | F05-REQ-015 | P0 | Thermal and battery rules | Given thermal `critical`, Then no job starts; Given `serious`, Then the queue pauses between chunks; Given Low Power Mode, Then `maxThreads` is 2 | TDD 03 3.5.4, 5.3 |
 | F05-REQ-016 | P0 | Lean app: no model or non-English pack in the build | Given a release build, Then the IPA contains no file over 5 MB matching `*.bin` and no pack other than `en`; App Store Connect download size for iPhone SE 3 is under 40 MB (CI proxy check on the IPA every build) | B13 |
-| F05-REQ-017 | P0 | Packs are data | Given any pack, Then it validates against `speech-pack/1`, contains no field the engine evaluates as code, and adding or removing a pack changes no screen or feature; a test loads each pack through the generic engine only | B13; App Review 2.5.2 (R4 section 5) |
+| F05-REQ-017 | P0 | Packs are data | Given any pack, Then it validates with `validatePackJson` (`TextRulesPack`, ADR 0014) or as a `PackEntry` in the signed manifest (ADR 0016), contains no field the engine evaluates as code, and adding or removing a pack changes no screen or feature; a test loads each pack through the generic engine only | B13; App Review 2.5.2 (R4 section 5) |
 | F05-REQ-018 | P0 | Pack and model integrity against a signed manifest | Given a manifest with a bad signature, an unknown schema, or a lower `manifestVersion`, Then it is rejected and the last good copy stays; Given an asset whose SHA-256 differs from the manifest, Then it is deleted, retried once, then `failed`, and never loaded | B13; TDD 03 FM-10 |
 | F05-REQ-019 | P0 | Packs only for chosen languages | Given an author who picked Portuguese, Then only the Portuguese pack is requested and no other non-English pack is fetched | B13; F03-REQ-006 |
 | F05-REQ-020 | P0 | Only verified model files load | Given a model file on disk with no verified `speech_assets` row (including a hand-copied file in `Documents/models`), When `availability()` runs in a release build, Then it returns `model-missing` and whisper.rn is not initialised with that file | TDD 03 H-4; ADR 0001 |
@@ -451,103 +438,71 @@ The author correction rate per language (03 section 4.3) cannot be sent without 
 
 ## 11. How we build it (with the architect)
 
-### 11.1 What exists (verified 3 Oct 2026)
+### 11.1 What exists (verified on `develop`, 13 Oct 2026)
 
 | Part | File | State |
 |---|---|---|
-| `Transcriber` interface, `getTranscriber()`, `dictionaryPrompt()` | `apps/mobile/src/lib/transcribe.ts` | Exists; `language` typed as `'auto' \| 'en' \| 'hi'` only |
-| whisper.rn adapter | `apps/mobile/src/lib/transcribe-whisper.ts` | `availability()` always returns `'decoder-missing'` once the module and a file exist; `pcmFor()` throws for M4A; `modelFile()` loads any existing turbo or small file from Application Support or `Documents/models` with no hash; module-level context never released; one call per letter, so the prompt biases only the first 30 s (TDD 03 H-4, H-5, H-7, X-1) |
-| Dev sample transcriber | `apps/mobile/src/lib/transcribe-sample.ts` | Dev only |
-| Models directory, backup exclusion | `apps/mobile/src/lib/model-files.ts`, `apps/mobile/modules/scribe-files` | Exists |
-| Voice-only save and set-once words | `apps/mobile/src/lib/store.ts`: `saveVoiceOnlyFromDraft`, `listWaitingForWords` (per child), `setWordsForWaitingEntry`, `setDraftTranscript` | Exists |
-| Review calling the transcriber directly, no language | `apps/mobile/src/app/review.tsx` | Exists; replaced by queue subscription |
-| Recording at 44.1 kHz AAC M4A | `apps/mobile/src/app/listen.tsx` | Exists (F08 may move to 48 kHz) |
-| Engine, verifier, English-only tables | `packages/core/src/text.ts` (`WORD_RE`, `FILLERS`), `rules.ts`, `repeats.ts`, `meaning.ts`, `verify.ts`, `pipeline.ts` (`ENGINE_VERSION = 3`) | English-only (R5 section 4.4) |
-| Experiment harness | `experiments/score.ts`, `config.example.json`, `setup-hinglish.sh` | Exists; E8 defect |
+| Decode, hash, listening copy (native) | `apps/mobile/modules/scribe-audio/ios/ScribeAudioModule.swift` (`probe`, `decodePcm16`, `sha256File`, `enhance`) | Built (BL-140). Security review L9: `samples()` traps on NaN or huge input; clamp owed |
+| Whisper engine | `apps/mobile/src/lib/transcribe-whisper.ts`, `transcribe-plan.ts`, `transcribe-post.ts`, `transcribe-prompt.ts`, `transcribe-language.ts`, `models/whisper-runtime.ts` | Built (BL-141): Silero VAD, chunk planner, per-chunk prompt with names and seed, `stripPromptEcho`, contexts released |
+| Model catalog and plan | `apps/mobile/src/lib/models/catalog.ts` (`SPEECH_MODELS`, `LANGUAGE_MODELS`, `speechPlan`), `tiers.ts`, `speech-packs.ts` | Built (ADR 0015) |
+| Pack system | `apps/mobile/src/lib/packs/` | Built (ADR 0016); installs nothing until `packages/api/src/keys.ts` has a key |
+| Language settings and text packs | `apps/mobile/src/lib/language/` (`packs.ts`, `rules.ts`, `spoken-language.ts`), `app/settings/language.tsx`, `app/settings/storage.tsx` | Built |
+| Transcription queue | `apps/mobile/src/lib/transcription-queue/` (`machine.ts`, `index.ts`, `clean.ts`, `use-words.ts`, `copy.ts`) | Built (BL-142); in memory, no job table |
+| Engine and packs | `packages/core/src/lang/*`, `packs/text-rules/*.json`, `ENGINE_VERSION = 5` | Built (ADR 0014); R-01 status in F06 section 7.1 |
+| Contracts | `packages/api/src/pack-manifest.ts`, `integrity.ts`, `canonical.ts`, `keys.ts`, `standards.ts` | Built (ADR 0016, ADR 0017) |
+| Publishing | `scripts/packs/` (`keygen`, `publish`) | Built; never run (no key) |
+| Experiment harness | `experiments/score.ts`, `config.example.json`, `setup-hinglish.sh` | Exists; E8 open (F06 D15) |
+| Per-language in-app gate | none | Not built (Q11) |
+| Transcript versions | none (`transcript_versions` table absent) | Not built (BL-144 deferred to v1.1, CVL-20) |
 
-### 11.2 Components (new unless marked)
+### 11.2 Components still to build (new unless marked)
 
 | Component | Package or path | Notes |
 |---|---|---|
-| Decode module `scribe-audio-decode` | `apps/mobile/modules/scribe-audio-decode/` | BL-140: `probe`, `decodeRange`, `sha256File`, `fsyncFile`; AVAudioFile and AVAudioConverter; no PCM on disk |
-| Engine v2 | `apps/mobile/src/lib/transcribe-whisper.ts` (rewrite) | BL-141: bundled VAD, per-chunk `transcribeData`, tokens to words, `SttMeta`, `useCoreMLIos: false`, context lifecycle |
-| Pure helpers | `packages/core/src/asr-plan.ts`, `asr-words.ts`, `asr-post.ts`, `asr-prompt.ts` | TDD 03 3.5.3 to 3.5.7; vitest |
-| Pack schema and loader | `packages/core/src/packs/` (schema, loader, generic tables) | Engine reads tables from the pack per letter instead of the English constants; each change bumps `ENGINE_VERSION` |
-| Manifest contract | `packages/api/src/speech-manifest.ts` | `packages/api` does not exist yet (B15; L0 work in 05 section 4) |
-| Asset manager | `apps/mobile/src/lib/speech/assets.ts` | 7.5 |
-| Gate-status API | `apps/mobile/src/lib/speech/languages.ts` | 7.2 |
-| Queue | `apps/mobile/src/lib/speech/transcription-queue.ts` | 7.6 |
-| Settings screen | `apps/mobile/src/app/settings/languages.tsx`, copy in `apps/mobile/src/components/speech/copy.ts` | F17 owns the Settings list entry |
-| Local migration | `apps/mobile/src/lib/db/migrations.ts` next version | `transcription_jobs`, `speech_assets`, `transcript_versions`, `entries.active_transcript_seq`, `entries.language` (F04) |
-| Server migration | `supabase/migrations/<timestamp in range>_transcript_versions.sql` | Data architect, `approve-migration` |
-| Gate tooling | `experiments/gate.ts`, `experiments/reports/` (git-ignored) | Extends `score.ts` after the E8 fix |
-| Manifest build and signing | `scripts/speech-manifest/` | Signing key handling: Q5 |
+| Gate status (if Q11 says build) | `apps/mobile/src/lib/language/gate.ts` (new); additive `PackEntry` field in `packages/api/src/pack-manifest.ts` | ADR 0016 amendment by the platform owner |
+| Gate tooling | `experiments/gate.ts` (new), `experiments/reports/` (git-ignored) | After the E8 fix |
+| Script mismatch flag for Hindi | `apps/mobile/src/lib/transcribe-post.ts` (exists) | F05-U19 |
+| Transcript versions data contract | local migration (next free version after F04 6 and F06 7), server migration | P1 UI; data contract only if time allows (BL-144 deferred) |
 
-Libraries: whisper.rn ~0.7.4 (MIT, installed); `double-metaphone` (MIT), `pinyin-pro` (MIT) for pack generation (build time, not in the app bundle unless F07 needs them at run time); OpenCC data (Apache 2.0) converted into the zh pack at build time; an Ed25519 verifier chosen in WP-F05-03. Each new dependency goes through the brief's licence and 12-month release check.
+Libraries in use (installed): whisper.rn 0.7.4 (bundles whisper.cpp 1.9.3), `@noble/ed25519` 3.2.0, `@noble/hashes` 2.4.0, `valibot` 1.5.0 (ADR 0015 Context, ADR 0016 section 4.2). Chinese data from OpenCC (Apache-2.0), pinyin-data (MIT) and Unihan travel inside the zh pack (ADR 0014 section 8).
 
-### 11.3 Local tables (new)
+### 11.3 Local tables
 
-```sql
-CREATE TABLE transcription_jobs (
-  id TEXT PRIMARY KEY,               -- UUIDv7
-  target_kind TEXT NOT NULL,         -- 'draft' | 'entry'
-  target_id TEXT NOT NULL,
-  language TEXT NOT NULL,            -- 'en' | 'hi' | 'es' | 'zh' | 'fr' | 'ar' | 'pt'
-  state TEXT NOT NULL,               -- queued | running | waiting_model | waiting_pack | done | failed | cancelled
-  priority INTEGER NOT NULL,
-  model_id TEXT, pack_id TEXT, pack_version TEXT,
-  chunks_total INTEGER, chunks_done INTEGER NOT NULL DEFAULT 0,
-  partial TEXT,                      -- JSON of completed chunk results (L4)
-  result TEXT,                       -- JSON {raw, words, meta, outcome} (L4)
-  fail_code TEXT, attempts INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-);
--- At most one live job (queued, running, waiting_model, waiting_pack) per target:
-CREATE UNIQUE INDEX transcription_jobs_live ON transcription_jobs (target_kind, target_id)
-  WHERE state IN ('queued', 'running', 'waiting_model', 'waiting_pack');
-CREATE TABLE speech_assets (
-  id TEXT PRIMARY KEY, kind TEXT NOT NULL, version TEXT NOT NULL,
-  sha256 TEXT NOT NULL, bytes INTEGER NOT NULL, path TEXT NOT NULL,
-  state TEXT NOT NULL, verified_at TEXT
-);
-CREATE TABLE transcript_versions (
-  id TEXT PRIMARY KEY, entry_id TEXT NOT NULL, seq INTEGER NOT NULL,
-  raw_text TEXT NOT NULL, stt_meta TEXT NOT NULL, machine_edits TEXT NOT NULL,
-  created_at TEXT NOT NULL, UNIQUE (entry_id, seq)
-);
-```
+No `transcription_jobs`, `speech_assets` or `transcript_versions` table exists or is needed for v1.0: the pack engine records installs in `pack.json` files beside each install, and the queue rebuilds from the store. If transcript versions ship (P1), their table is specified then.
 
 ### 11.4 Sequencing
 
-1. WP-F05-01 decode module and WP-F05-02 harness fixes start now (no dependencies). BL-043 device spike runs on the decoder prototype in weeks 2 to 4 (R-02).
-2. WP-F05-03 manifest and pack schema, WP-F05-04 asset manager, in parallel with WP-F05-06 engine v2.
-3. WP-F05-07 queue after engine v2 and BL-130.
-4. WP-F05-05 gate-status API, then F03 WP-F03-03 and F04 WP-F04-06 consume it.
-5. WP-F05-08 Settings screen, WP-F05-09 transcript versions data contract.
-6. Language waves: en first; es, fr, pt, zh as each passes; hi when its gate passes on T4; ar only if a candidate passes (DR-01, R-08). Each wave is WP-F05-11 for that language.
+Dates follow ROADMAP 2.1.
+1. Week of 12 Oct: founder runs the key ceremony and picks the host (FT-16, BL-335, BL-337), then publishes the first signed manifest. Without it no model or non-English pack can install on a TestFlight phone.
+2. Week of 12 Oct: device spikes per language on SE 3, 12 and 15 (FT-22, BL-043; DEVICE_TEST_PLAN S1-15 to S1-18).
+3. Fri 23 Oct: per-language go or no-go (FT-34); counsel on training-data terms (Q12); upload Hindi small if cleared.
+4. Before freeze (Mon 26 Oct): WP-F05-02 scorer fix, WP-F05-10 Hindi script flag; WP-F05-05 only if Q11 says build.
+5. After v1.0: transcript versions (WP-F05-09, -13), native-speaker sign-off per pack as data updates (ADR 0014 section 3).
 
 ### 11.5 Riskiest unknown and the spike
 
-**Unknown:** turbo q5_0 speed and memory under whisper.cpp on an A15 with 4 GB. No published figure exists in any runtime (R5 section 2.2); Argmax's uncompressed turbo is not supported on A15 and its compressed builds have no A15 speed entry (R5-S43, R5-S44).
-**Spike:** BL-043 with the WP-F05-01 prototype: 30 runs of a 2-minute letter on SE 3, a 12 and a current iPhone; seconds per audio minute, peak memory, jetsam count, battery and thermal; repeated for IndicWhisper medium after conversion. If turbo misses on SE 3: small q5_1 on T4 with per-language re-gating, or a founder-recorded relaxed budget (TDD 03 5.1; 05 section 5 item 3).
+**Unknown:** turbo q5_0 speed, memory and heat under whisper.cpp on an A15 with 4 GB; Hindi small on the same phone. No published A15 figure exists (R5 section 2.2). ADR 0015 estimates resident memory at about 1 GB for turbo and 0.4 GB for the small models (E).
+**Spike:** DEVICE_TEST_PLAN S1-17 (BL-043): each language x 30 s, 2 min, 5 min on SE 3, 12 and 15; seconds to words, peak memory, thermal state, battery over 10 runs; confirm `Device.totalMemory` sits above the 3.4e9-byte full-tier line. If turbo misses on SE 3: that phone tier uses small q5_1, or the language is held back (ROADMAP 2.1 section 6 cut table).
 
 ## 12. Work packages
 
-| WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode |
-|---|---|---|---|---|---|
-| WP-F05-01 | M4A decode module (BL-140) | `apps/mobile/modules/scribe-audio-decode/` | none | Device contract test: 44.1 and 48 kHz fixtures give 16 kHz mono PCM16 within 1 frame of duration; no file created in tmp or caches; `[F05-REQ-026]` | agent plus device check (speech engineer) |
-| WP-F05-02 | Harness fixes and gate tooling (E8, per-phrase language, CER, bootstrap, report JSON) | `experiments/score.ts`, `experiments/gate.ts` (new), `experiments/config.example.json` | F06 tokenizer fix for marks (shared regex) | `score.test.ts` cases for Devanagari tokens and Chinese CER; `[F05-REQ-003]` report schema test | agent (speech engineer) |
-| WP-F05-03 | Speech manifest and pack schema, signature verify, bundled snapshot | `packages/api/src/speech-manifest.ts`, `packages/core/src/packs/schema.ts`, `scripts/speech-manifest/` | `packages/api` scaffold (L0) | `[F05-REQ-017]`, `[F05-REQ-018]` with tampered, unsigned, rolled-back fixtures | agent (speech engineer, platform engineer) |
-| WP-F05-04 | Asset manager: Range download, sidecar, SHA-256, rename, backup flag, disk check, delete, upgrades (BL-143) | `apps/mobile/src/lib/speech/assets.ts`, local migration part for `speech_assets` | WP-F05-03, BL-111 | `[F05-REQ-018]`, `[F05-REQ-020]` to `[F05-REQ-025]` against a local Range server fixture; kill at 5 offsets on device | agent plus device check (mobile engineer) |
-| WP-F05-05 | Gate-status API and tier detection | `apps/mobile/src/lib/speech/languages.ts` | WP-F05-03, WP-F05-04 | `[F05-REQ-001]`, `[F05-REQ-007]` with manifest fixtures; tier read checked on SE 3 | agent (mobile engineer) |
-| WP-F05-06 | Engine v2: VAD, chunk planner, per-chunk prompt, words, `SttMeta`, context lifecycle, verified-model load (BL-141) | `apps/mobile/src/lib/transcribe-whisper.ts`, `transcribe.ts`, `packages/core/src/asr-*.ts` | WP-F05-01, WP-F05-04 | `[F05-REQ-008]`, `[F05-REQ-009]`, `[F05-REQ-027]`, `[F05-REQ-028]`, `[F05-REQ-033]`, `[F05-REQ-034]`; config lint | agent (speech engineer) |
-| WP-F05-07 | Transcription queue, waiting entries, Review subscription (BL-142) | `apps/mobile/src/lib/speech/transcription-queue.ts`, local migration part for `transcription_jobs`, `review.tsx` transcription call only | WP-F05-06, BL-130 | `[F05-REQ-010]` to `[F05-REQ-015]`, `[F05-REQ-032]`, `[F05-REQ-037]` | agent (mobile engineer, speech engineer) |
-| WP-F05-08 | Settings > Languages and speech | `apps/mobile/src/app/settings/languages.tsx`, `apps/mobile/src/components/speech/` | WP-F05-05 | `[F05-REQ-022]`, `[F05-REQ-024]`, `[F05-REQ-041]` component tests at AX5 and with VoiceOver labels | agent (mobile engineer, design systems) |
-| WP-F05-09 | Transcript versions data contract (local and server) (BL-144 part) | local migration part, `supabase/migrations/<range>_transcript_versions.sql`, `supabase/tests/` | BL-111, data architect | `[F05-REQ-035]`, `[PRD-REQ-004]` access tests in `npm run test:db` | agent, `approve-migration` (data architect) |
-| WP-F05-10 | Script rules: zh `script` edit table generation, Hindi mismatch flag, Arabic direction in transcript views | `packages/core/src/packs/zh/`, `packages/core/src/asr-post.ts` | F06 `script` edit type, WP-F05-03 | `[F05-REQ-029]`, `[F05-REQ-030]` | agent (speech engineer) |
-| WP-F05-11 | Per-language gate run and pack sign-off (one WP per language, in waves) | `docs/qa/evidence/F05-gate-<lang>.md`, `docs/qa/evidence/F05-pack-<lang>-<version>.md`, pack JSON | WP-F05-02, F06 verifier fix (BL-120 widened), corpus (BL-147) | `[F05-REQ-002]` to `[F05-REQ-006]` report and sign-off present | pair (speech engineer with a native reviewer; founder signs) |
-| WP-F05-12 | Device budget run for passed languages | `docs/qa/evidence/F05-device.md` | WP-F05-06, WP-F05-07 | `[F05-REQ-040]` numbers recorded (BL-044) | human (QA engineer) |
-| WP-F05-13 | P1: compare and adopt a newer transcript | `apps/mobile/src/components/speech/compare.tsx` | WP-F05-09, F06 Review | `[F05-REQ-036]` | agent (mobile engineer) |
+Status is what `develop` holds on 13 Oct 2026. "Device" names the DEVICE_TEST_PLAN item that must pass on a real iPhone; none has run.
+
+| WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode | Status 13 Oct | Device |
+|---|---|---|---|---|---|---|---|
+| WP-F05-01 | M4A decode module (BL-140) | `apps/mobile/modules/scribe-audio/` | none | Device contract test: 44.1 and 48 kHz fixtures give 16 kHz mono PCM16 within 1 frame of duration; no file created in tmp or caches; `[F05-REQ-026]` | agent plus device check (speech engineer) | Built (`decodePcm16`, in memory). Clamp for review L9 owed | S1-01, S1-02 |
+| WP-F05-02 | Harness fixes and gate tooling (E8, per-phrase language, CER, bootstrap, report JSON) | `experiments/score.ts`, `experiments/gate.ts` (new), `experiments/config.example.json` | none (the core tokenizer is fixed) | `score.test.ts` cases for Devanagari tokens and Chinese CER; `[F05-REQ-003]` report schema test | agent (speech engineer) | Not built (`normWords` has no `\p{M}`) | none |
+| WP-F05-03 | Signed manifest and pack schema | `packages/api/src/pack-manifest.ts`, `packages/core/src/lang/types.ts`, `scripts/packs/` | none | `[F05-REQ-017]`, `[F05-REQ-018]` with tampered, unsigned, rolled-back fixtures | agent (platform engineer) | Built (ADR 0014, 0016; `packages/api/test`). Not done: key ceremony and first publish (founder) | S1-16 after the first publish |
+| WP-F05-04 | Model and pack download: Range, SHA-256, atomic install, backup flag, disk check, delete (BL-143) | `apps/mobile/src/lib/packs/`, `apps/mobile/src/lib/models/speech-packs.ts` | WP-F05-03 | `[F05-REQ-018]`, `[F05-REQ-020]` to `[F05-REQ-025]` | agent plus device check (mobile engineer) | Built; kill-at-every-file-operation test exists per ADR 0016 section 4.3 | S1-15 (resume at 40%, hash time, Wi-Fi rule) |
+| WP-F05-05 | Per-language gate status and tier detection | `apps/mobile/src/lib/language/gate.ts` (new), `apps/mobile/src/lib/models/tiers.ts` | Q11 | `[F05-REQ-001]`, `[F05-REQ-007]` with manifest fixtures | agent (mobile engineer) | Partly built: tiers built (`pickTier`, memory-kill fallback); gate not built | S1-17 (`Device.totalMemory`) |
+| WP-F05-06 | Engine v2: VAD, chunk planner, per-chunk prompt, words, context lifecycle (BL-141) | `apps/mobile/src/lib/transcribe-whisper.ts`, `transcribe-*.ts`, `models/whisper-runtime.ts` | WP-F05-01, WP-F05-04 | `[F05-REQ-008]`, `[F05-REQ-009]`, `[F05-REQ-027]`, `[F05-REQ-028]`, `[F05-REQ-033]`, `[F05-REQ-034]` | agent (speech engineer) | Built | S1-17, S1-18 |
+| WP-F05-07 | Transcription queue, waiting entries, Review hook (BL-142) | `apps/mobile/src/lib/transcription-queue/` | WP-F05-06 | `[F05-REQ-010]` to `[F05-REQ-015]`, `[F05-REQ-032]`, `[F05-REQ-037]` | agent (mobile engineer, speech engineer) | Built, in memory; partial results not kept across a kill | S1-10, S1-13 |
+| WP-F05-08 | Settings > Spoken language and Storage | `apps/mobile/src/app/settings/language.tsx`, `storage.tsx` | WP-F05-04 | `[F05-REQ-022]`, `[F05-REQ-024]`, `[F05-REQ-041]` component tests at AX5 and with VoiceOver labels | agent (mobile engineer, design systems) | Built (screens exist; AX5 and VoiceOver checks owed) | S1-16, S1-23 |
+| WP-F05-09 | Transcript versions data contract (BL-144 part) | local and server migrations | data architect | `[F05-REQ-035]` | agent, `approve-migration` | Not built; BL-144 deferred to v1.1 (CVL-20) | none |
+| WP-F05-10 | Script rules: zh script table, Hindi mismatch flag, Arabic direction in transcript views | `packs/text-rules/zh.json`, `apps/mobile/src/lib/transcribe-post.ts` | none | `[F05-REQ-029]`, `[F05-REQ-030]` | agent (speech engineer) | Partly built: zh script conversion built (ADR 0014 section 4); Hindi mismatch flag not built; Arabic direction unverified on device | Arabic RTL check (S1-18) |
+| WP-F05-11 | Per-language go or no-go and pack sign-off | `docs/qa/evidence/`, pack JSON review status | WP-F05-02, F06 open R-01 items, recordings | `[F05-REQ-002]` to `[F05-REQ-006]`, or the founder's FT-34 record | pair (speech engineer with a native reviewer; founder signs) | Not run; all six non-English packs `draft` | S1-17, S1-18 |
+| WP-F05-12 | Device budget run for shipping languages | `docs/qa/evidence/` | WP-F05-06, WP-F05-07 | `[F05-REQ-040]` numbers recorded (BL-044) | human (QA engineer) | Not run | S1-17 on SE 3, 12, 15 |
+| WP-F05-13 | P1: compare and adopt a newer transcript | `apps/mobile/src/components/speech/compare.tsx` | WP-F05-09, F06 Review | `[F05-REQ-036]` | agent (mobile engineer) | Not built; v1.1 | none |
 
 ## 13. Open questions and assumptions
 
@@ -556,13 +511,15 @@ CREATE TABLE transcript_versions (
 | Q1 | DR-01: which languages ship at v1.0, and is Arabic Record and type | Founder | 30 Oct | Manifest gate states; F03 labels |
 | Q2 | Accept the 7.1 pass bars, including Hindi 15% WER and Arabic 20% per dialect group | Founder, speech engineer | 23 Oct (before the gate runs) | F05-REQ-002 |
 | Q3 | If turbo misses 30 s on SE 3: small model on T4 with re-gating, or a relaxed budget | Founder | 30 Oct (after BL-043) | Section 7.3; F05-REQ-040 |
-| Q4 | Model and pack host (Hugging Face pinned revision, R2, or both) and its data-map row | Founder, counsel for the row | 16 Oct (D-046) | Manifest URLs; data map |
-| Q5 | Who holds the manifest signing key and how CI signs without it in the repo | Founder, platform engineer | 23 Oct | WP-F05-03 |
+| Q4 | Model and pack host (Hugging Face pinned revision, R2, or both) and its data-map row. ADR 0016 recommends R2 plus Hugging Face mirrors; FOUNDER_TASKS Q-001, BL-337 | Founder, counsel for the row | 16 Oct (D-046) | Manifest URLs; data map |
+| Q5 | Answered by ADR 0016 section 4.2 and 7: the founder holds the Ed25519 secret in a password manager and signs offline with `scripts/packs/publish.ts`; CI never signs. Still owed: running the key ceremony (`keys.ts` is empty; BL-335, FT-16) | Founder | Fri 9 Oct (ROADMAP critical path), late | WP-F05-03 |
 | Q6 | DATA-REQ-042 says edit offsets point into `raw_transcript`; with versions they point into the active version's raw. Amend the wording | Data architect, counsel | 30 Oct | 7.9; DATA-REQ-042 text |
 | Q7 | Is a voice-only letter allowed into the book before it has words (TDD 03 OQ-4) | Founder with F06 | 16 Oct | Waiting entry destination |
 | Q8 | How to pause a pack on correction rate without sending the language name (section 10) | Founder, analytics engineer | 30 Oct | `correction_guard` event |
 | Q9 | Chinese quotation marks in letter text versus the curly-quote content rule (R5 4.3) | Founder, content owner | 30 Oct | zh punctuation profile |
 | Q10 | Recruiting and paying 70 native speakers and 7 reviewers (R-08) | Founder | 16 Oct | Gate timeline per wave |
+| Q11 | The in-app per-language gate (7.1, 7.2) needs a gate or pause field in the signed manifest, which ADR 0016's `PackEntry` does not have. Build it before v1.0, or keep the gate as a release decision (ROADMAP 2.1: a language that fails is held back and the listing names only shipping languages)? Spec default [R]: release decision for v1.0; the field is an additive manifest change for v1.0.x | Founder, platform owner | 16 Oct | F05-REQ-001, F05-U15, F05-U16, F03 labels |
+| Q12 | Training-data terms for the two models we built (Hindi small, Belle) before upload (ADR 0015 section 7) | Counsel, founder | 23 Oct | Whether Hindi ships on its own model |
 
 | A | Assumption | How we validate |
 |---|---|---|

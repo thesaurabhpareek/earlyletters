@@ -1,6 +1,6 @@
 # 04. Market and positioning
 
-Status: Draft V2, 3 Oct 2026. Per-feature competitor detail lives in each feature spec (section 5) and in `research/R1-competitors-by-feature.md`. This file is the summary a founder reads once.
+Status: Draft V2, 3 Oct 2026. Revised 13 Oct 2026 for the membership and the 4 Oct prices (M1 to M4): price table, white space, threats. Per-feature competitor detail lives in each feature spec (section 5) and in `research/R1-competitors-by-feature.md`. This file is the summary a founder reads once.
 
 ## 1. The landscape in five groups
 
@@ -16,16 +16,18 @@ Status: Draft V2, 3 Oct 2026. Per-feature competitor detail lives in each featur
 
 | Product | Annual | Monthly | Lifetime | Source |
 |---|---|---|---|---|
-| Early Letters Plus | $29.99 (2-month trial) | $3.99 (1-month trial) | about $99.99 later | [D] B2 |
+| Early Letters Plus | $49.99 (2-month free trial) | $4.99 (1-month free trial) | about $99.99 later | [D] D-082 (M3) |
 | Tiny Treasures | $29.99 | $4.99 | $99 | [F] R1 section 0 item 1 |
 | FirstChapter | $39.99 | Unverified in this file | none found | [F] R1 section 0 item 7 |
 | Qeepsake Essential | $47.88 | $4.99 | none | [F] CR section 1 |
 | Dearest Plus | $49.99 | $4.99 | none | [F] R1 section 0 item 7 |
 | From, Mama | $49.99 | $5.99 | none found | [F] R1 section 0 item 1 |
 | Day One Silver | $49.99 | $8.99 | none | [F] CR section 1 |
+| Notabli Plus | $49.99 | $4.99 | none | [F] `docs/research/competitors/us.md` section 8.1 |
+| Moment Garden Star | $49.99 | $4.99 | none | [F] `docs/research/competitors/us.md` section 8.1 |
 | Tinybeans+ | $74.99 | $7.99 | none | [F] CR section 1, R3 section 4.1 |
 
-Our annual price is at the floor of the category [F] R1 section 0 item 7. Trials of 17 to 32 days convert best (44.6% on annual plans); nothing published covers trials over 32 days, so our 2-month annual trial has no benchmark [F] R3 section 0.
+Monthly $4.99 matches the category floor (seven of 20 apps), below the $6.24 median; annual $49.99 equals the median of 18 apps and sits $20 above Tiny Treasures and Bloom at $29.99 [F] `docs/research/competitors/us.md` section 0 item 8, section 8.2. The annual plan costs about ten months of monthly (17% off 12 x $4.99) [F] arithmetic. A 1-month trial on a monthly plan sits in the 17 to 32 day bucket (43.7% median trial-to-paid on monthly plans); nothing published covers trials over 32 days, so the 2-month annual trial has no benchmark [F] R3 section 4.3 (R3-S33). What is free also changed: the first 2 kept letters, not writing (M1). Dearest, at the same price, keeps a free tier [F] `us.md` section 3; Qeepsake is moving to paid-only [S] `us.md` section 3.
 
 ## 3. Category economics (why the product must be cheap to run)
 - Tinybeans plus Qeepsake: $6.49M revenue in FY26 from 93,300 paid families; adjusted EBITDA turned positive at $0.43M [F] R3 section 4.1.
@@ -39,10 +41,10 @@ Our annual price is at the floor of the category [F] R1 section 0 item 7. Trials
 |---|---|---|---|
 | **Faithful words, visibly** | Competitors rewrite or offer verbatim as a side mode; nobody shows what changed [F] R1 section 0 item 2 | Typed edits verified by `verifyEdits`, raw transcript immutable, visible change list with undo (F06) | The engine today accepts gender-changing edits in Hindi and Arabic [F] R5 section 0 item 6; must be fixed before those packs (R-01) |
 | **Voice as the keepsake** | Baby-journal leaders ignore voice [F] CR section 5 | Original kept, listening copy, Read together (F08, F10) | New entrants now use "voice memory book" [F] R1 section 0 item 1; no audio upload in v1.0 means a co-parent cannot hear the other's voice (B7, DR-07) |
-| **The whole family, free** | Qeepsake gates contributors; every competitor that gates co-parents is criticised [F] CR section 2 | Co-parent free at v1.0 (F11); grandparents in v1.1 (F30) | From, Mama already has family contributors [F] R1 section 0 item 1; we wait until v1.1 (R-05) |
+| **The whole family, one membership** | Qeepsake gates contributors; every competitor that gates co-parents is criticised [F] CR section 2 | One membership covers the book; family authors add letters without their own (M4; F11, F14); grandparents in v1.1 (F30) | Without a server signal, a co-parent outside the payer's Apple Family is not covered (DR-16); co-parent sharing is off in v1.0 builds today (`apps/mobile/src/lib/capabilities.ts`); From, Mama already has family contributors [F] R1 section 0 item 1 (R-05) |
 | **The family's languages** | No competitor asks which languages a family speaks [F] R1 section 0 item 4 | Per-author languages, per-language packs and gates (F03, F05, F07) | Hindi conditional and Arabic not realistic on device at v1.0 [S, F] R5 section 0 items 2, 3 (DR-01) |
 | **Organised by month of age** | Competitors organise by date, feed or prompt [A] CR section 5 item 7 | Month chapters, Before You, backdating free (F09) | Easy to copy |
-| **Never held hostage** | Paywalls on past memories and price rises anger users [S] R2 section 0 item 3 | Free read, play, export after lapse; 90-day shutdown pledge (F14, F15) | Qeepsake and Day One are also reasonable after lapse [F] R1 section 0 item 6; the claim is stronger, not unique |
+| **Never held hostage** | Paywalls on past memories and price rises anger users [S] R2 section 0 item 3; Qeepsake is moving to paid-only and deactivating inactive free accounts [S] `us.md` section 3 | Every letter already kept reads, plays and exports without paying, forever; a letter waiting at the Keep gate is never lost; 90-day shutdown pledge (M1; F14, F15) | Day One and Dearest are also reasonable after lapse [F] R1 section 0 item 6, `us.md` section 3; and writing past 2 letters is paid, so the claim is about what you made, not what you will make |
 | **Clean privacy label** | Most leaders declare tracking [F] R1 section 0 item 9 | No tracking SDKs, opt-in analytics, content never in analytics (F17, F18, F21) | Dearest already matches it [F] R1 section 0 item 9 |
 
 ## 5. Positioning
@@ -56,8 +58,8 @@ The store subtitle must not be generic "voice memory book" (two competitors alre
 |---|---|---|
 | Apple Journal or Voice Memos add child-centred features | Apple Journal is free with audio transcription [F] CR section 1 | Our moat is the constitution, multiple authors and the book by age; Apple's speech stack excludes Hindi and Arabic [F] R1 section 0 item 3 |
 | A funded entrant copies "never rewritten" | Low cost to claim, high cost to prove | Make the proof visible: change list, raw transcript in export, engine version on each letter |
-| Tinybeans adds voice to Qeepsake | Owns the paid base | Price floor and free co-parent; the faithful claim |
-| Price pressure to the floor | Tiny Treasures at $29.99 [F] R1 section 0 item 1 | We are already at the floor; compete on trust, not price |
+| Tinybeans adds voice to Qeepsake | Owns the paid base | The faithful claim; one membership for the family (M4) |
+| Price pressure | Tiny Treasures at $29.99 a year [F] R1 section 0 item 1 | Monthly is at the floor and annual at the median (M3); compete on trust, not price. Watch trial to paid in ASC against the review gate at 200 annual trials (R3 section 7) |
 | Platform policy shifts (age laws, auto-renewal) | Texas SB 2420 in force; California ARL amended [F] R4 section 0 items 5, 7 | DR-02, DR-12 |
 
 ## 7. What this means for the PRD

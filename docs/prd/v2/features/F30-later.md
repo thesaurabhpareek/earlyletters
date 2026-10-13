@@ -7,7 +7,7 @@
 | Personas | P1 to P6 as named per feature |
 | Existing IDs | PRD-REQ-021, B-REQ-008, B-REQ-013, B-REQ-017 to B-REQ-024, C-REQ-013, C-REQ-014, C-REQ-030 to C-REQ-032, A-REQ-003 to A-REQ-011, A-REQ-020, LEGAL-REQ-004, LEGAL-REQ-005, LEGAL-REQ-010, LEGAL-REQ-013, LEGAL-REQ-020, LEGAL-REQ-022, LEGAL-REQ-023, LEGAL-REQ-030, LEGAL-REQ-035, LEGAL-REQ-056, LEGAL-REQ-059, LEGAL-REQ-060, D-032, D-034, D-043, DR-07, DR-08, DR-14, DR-15 |
 | Depends on | The v1.0 features F01 to F21 |
-| Status | Draft V2, 3 Oct 2026. Light specs. Each item gets a full spec from the `_AUTHORING.md` section 5 template before its build starts |
+| Status | Draft V2, 3 Oct 2026; F31 revised 13 Oct 2026 for D-073 (audio backup of the owner's recordings moved to v1.0 in F08; family listening stays here). Light specs. Each item gets a full spec from the `_AUTHORING.md` section 5 template before its build starts |
 
 ## 0. How to read this file
 
@@ -15,11 +15,11 @@ Each item has: why (with evidence), what, dependencies, open questions, a rough 
 
 Sizes are in engineer-weeks of agent work plus review, [A] unless a source is given. They exclude counsel time, App Review time and native-speaker review.
 
-F31 (shared voice and audio backup) and F32 (close family contributors) are the first v1.1 items and get more depth. They share one theme: v1.0 is a two-parent book where each phone holds only its own author's voice (B1, B7, DR-07). v1.1 opens it to the family and their voices.
+F31 (shared voice) and F32 (close family contributors) are the first v1.1 items and get more depth. They share one theme: in v1.0 each author's voice plays only on that author's own devices, even with the owner's encrypted backup on (D-073, DR-07). v1.1 opens it to the family and their voices.
 
 | Rank | ID | Feature | Release | Size [A] | Biggest v1.0 hook |
 |---|---|---|---|---|---|
-| 1 | F31 | Shared voice and encrypted audio backup | v1.1 | 4 to 5 | Capture-time audio hash; Storage path rule; plan gates already list backup |
+| 1 | F31 | Shared voice: family members hear each other's recordings | v1.1 | 2 to 3 on top of F08 backup | F08 backup with a versioned key-wrap format; capture-time audio hash |
 | 2 | F32 | Close family contributors in the app | v1.1 | 3 to 4 | Contributor rules stay in the database with tests green; `book_access` carries role and pending visibility |
 | 3 | F33 | Hindi and Arabic catch-up; Hindi-English mode | v1.1 | 3 to 6 | Waiting letters keep audio; transcript versions contract; gate tooling per language |
 | 4 | F34 | Read together word highlighting | v1.1 | 2 | Word timings stored with offsets into raw |
@@ -36,70 +36,65 @@ F31 (shared voice and audio backup) and F32 (close family contributors) are the 
 | 15 | F45 | Next spoken languages | later | 2 to 3 per language | Language-agnostic packs and gates |
 | 16 | F46 | Themes, author and child photos | later | 3 | `theme_extra` gate; photo path rule; export keeps `photos/` |
 | 17 | F47 | On this day, Year One | later | 2 | One visibility path; no counts |
-| 18 | F48 | Vault mode and end-to-end keys | later | 6 or more | F31 ciphertext format versioned |
+| 18 | F48 | Vault mode and end-to-end keys | later | 6 or more | F08 backup ciphertext and key-wrap format versioned |
 | 19 | F49 | Apple-hosted asset packs | later | 2 | Asset manager behind an interface |
 
-## F31 Shared voice and encrypted audio backup
+## F31 Shared voice: family members hear each other's recordings
 
 | | |
 |---|---|
 | Release | v1.1, rank 1 |
 | Personas | P1, P2, P6 |
-| Existing IDs | PRD-REQ-021 (moved here by B7), D-032, DR-07, DR-08, C-NFR-008, LEGAL-REQ-022, LEGAL-REQ-023, LEGAL-REQ-040, DATA-REQ-047 |
-| Depends on | F08, F11, F14, F16, F17; counsel on LEGAL-REQ-022(a) |
+| Existing IDs | PRD-REQ-021 (moved here by B7), D-032 (superseded), D-059, D-073, DR-07, C-NFR-008, LEGAL-REQ-022, LEGAL-REQ-023, LEGAL-REQ-040, DATA-REQ-047 |
+| Depends on | F08 (the owner's encrypted backup, v1.0), F11, F14, F16, F17; counsel on LEGAL-REQ-022(a) |
+
+Audio backup has moved out of this item. D-073 (founder, 3 Oct 2026 evening) puts the encrypted backup of the owner's own recordings in v1.0, specified in F08 section 6.5, and keeps family members hearing each other's recordings in v1.1, which is what F31 now covers. F08 section 13 Q1 records that the code and the content lane still treat backup as later; if the founder moves backup back, it returns here as one item with shared voice.
 
 ### Why
-- [D] v1.0 uploads no audio (B7). A co-parent can read but not hear the other parent's letters, and Read together plays only voices recorded on that phone (DR-07). The "your own voice" promise holds only on the author's phone.
+- [D] Family listening is v1.1 (D-073, D-059). In v1.0 a co-parent can read but not hear the other parent's letters, and Read together plays only voices recorded on that phone (DR-07).
 - [S] Voice is what reviewers of voice products love: 11 of 64 Remento reviews name hearing the person's voice as the point (R2 section 0 item 5).
-- [F] Without device backup, a lost phone loses a Free user's recordings that were not exported (09 R-11; D-033).
-- [D] Plus at v1.0 holds extra children's books and Read together beyond 3 sessions only. App Review 3.1.2 asks subscriptions to give ongoing value (R4 section 0 item 8). Backup is the lasting value Plus lacks (DR-08).
 - [A] Two voices raise retention; `read_together_page_without_audio{reason: other_parent}` (F10 section 10) measures how often DR-07 bites and is the input to this item's priority.
 
 ### What
-1. **Upload pipeline.** On the phone, each original gets a random per-file AES-256-GCM key; the ciphertext uploads to a private bucket under `{child_id}/{author_id}/{entry_id}` (DATA-REQ-047); the file key is wrapped by a server-held key inside an Edge Function. This is the one-scheme design in TDD 10 risk 9 and D-032; ADR 0006's per-child keys, member key grants, synchronizable Keychain module and Vault mode stay out (F48).
-2. **Member playback.** A member's phone asks an Edge Function, which checks `book_access` for the caller and returns a short-lived signed URL plus the unwrapped file key over TLS (D-032). The phone decrypts, verifies the capture SHA-256 and caches the plaintext in a backed-up directory beside its own recordings.
-3. **Backup and restore.** A new phone signed in to the same account restores its own recordings in the background, resumable, showing "Preparing voice" until ready (PRD 1.3 7.3).
-4. **What uploads, and who pays.** Open (Q1). D-032 recommended: Free uploads recordings of letters that are in a shared book (two or more members); Plus uploads every recording, private letters included, plus restore on a new phone. `05-feature-map.md` titles F31 "(Plus)". Either way, playing a recording is free forever (F08-REQ-008), and backed-up audio of a lapsed user is never deleted (C-NFR-008).
-5. **Only the original uploads** [R]. A listening copy is rebuilt on the receiving phone from the original (F08-REQ-003), which halves Storage and keeps one source of truth.
-6. **Honest copy.** `book.recordingElsewhere` (F11-REQ-015) and the Read together subtitle (F10-REQ-018) change to say the voice is on its way or ready; the claims registry and the durability line (F08-REQ-014, D-033) change with counsel.
+1. **Reuse the v1.0 backup.** The owner's recordings are already ciphertext in the `entry-audio` bucket with per-file keys wrapped by the per-child CCK (F08 section 6.5, ADR 0006). Shared voice adds member access, not a second upload path.
+2. **Member key grants.** Each member has an account key pair (TDD 04 D-1: per account, not per device); the CCK is wrapped to each approved member's public key in `child_key_grants` (ADR 0006 item 3). Removing a member rotates the CCK for new files; older files stay readable by those who had them, and the app says so (ADR 0006).
+3. **Member playback.** A member's phone downloads the ciphertext and unwraps the file key with its own grant; nothing plaintext passes through our server. It verifies the capture SHA-256 and caches the plaintext in a backed-up directory beside its own recordings.
+4. **Who pays.** Open (Q1). Playing a recording stays free forever (F08-REQ-008), and backed-up audio of a lapsed user is never deleted (C-NFR-008).
+5. **Only the original travels** [R]. A listening copy is made on the receiving phone from the original (F08-REQ-003).
+6. **Honest copy.** `book.recordingElsewhere` (F11-REQ-015) and the Read together line (F10-REQ-018) change to say the voice is on its way or ready; the claims registry changes with counsel. Until then, no v1.0 string promises family listening (D-073, F08-REQ-026).
 
 ### Dependencies
-F08 file layout and hashes; F16 for a new attachment queue beside the outbox (F16 section 4 lists it for v1.1); F14 plan engine (`backup_upload` is already a gated feature in `packages/core/src/plan.ts`); F17 deletion and purge; F19 kill switch to pause signed-URL issuance (LEGAL-REQ-040); counsel on whether a server-wrapped key meets LEGAL-REQ-022(a) and on the Privacy Policy and Terms 12.1 wording (D-032).
+F08 backup (bucket, `audio_blobs`, `child_keys`, escrow, purge); F11 membership and removal; F14 plan engine; F17 deletion and purge; F19 kill switch (LEGAL-REQ-040); counsel on LEGAL-REQ-022(a) and the Privacy Policy and Terms 12.1 wording.
 
 ### Budgets parked from PRD 1.3 and TDD 06 (return with this feature)
 | Item | Budget | Source |
 |---|---|---|
-| Storage upload start (signed URL plus first byte) | p95 1 s, p99 2.5 s | PRD 1.3 7.2 |
-| Backed-up playback first audio on LTE (URL, download start, first chunk decrypted) | p95 2 s | TDD 06 section 2.2 [R] |
-| Backup confirmed (SHA-256 verified in Storage) | 99% within 24 h of save on Wi-Fi; 100% eventually | TDD 06 section 2.2 [R] |
-| Audio uploads at peak | 1 per s at 1k families; 10 per s at 100k | PRD 1.3 7.8 |
-| Escrow unwrap anomaly | Any child over 100 unwraps an hour pages the founder | LEGAL-REQ-023; TDD 06 section 5.6 |
+| Backed-up playback first audio on LTE for a member (download start, first chunk decrypted) | p95 2 s | TDD 06 section 2.2 [R] |
 | Mass download | Any account over 500 Storage downloads an hour alerts | TDD 06 section 5.6 |
 
+Upload start, backup confirmation and the escrow unwrap alarm moved to v1.0 with F08 (06-nfr.md section 17).
+
 ### Cost
-[F] At ARCHITECTURE's 100k-family volume (11.4 TB of audio), Supabase Storage is $240.69 a month and Cloudflare R2 $170.85 (R3 section 6.2). [A] A Plus-only upload policy at a 10% to 20% payer share cuts those figures by 60% to 80% (TDD 06 section 4.1). A second-provider ciphertext copy, nightly with 35-day versioning, is needed before backup reaches Plus users because Supabase Storage has no backup of its own (TDD 06 section 6.1).
+[F] At ARCHITECTURE's 100k-family volume (11.4 TB of audio), Supabase Storage is $240.69 a month and Cloudflare R2 $170.85 (R3 section 6.2). Storage is paid by F08's backup; shared voice adds member download egress, about $81 a month at 100k (TDD 06 section 4.2). A second-provider ciphertext copy is needed before backup reaches many families because Supabase Storage has no backup of its own (TDD 06 section 6.1); that question now sits with F08.
 
 ### Open questions
 | Q | Who, by when | What changes |
 |---|---|---|
-| Q1 Free shared-book uploads plus Plus backup (D-032), or Plus only (05 title)? | Founder, v1.1 planning | Plan gates, copy, cost, retention signal |
-| Q2 Does a server-wrapped key meet LEGAL-REQ-022(a), and what can the privacy copy say? | Counsel, before build | Claims, Privacy Policy, Terms 12.1 |
-| Q3 R2 or Supabase Storage for ciphertext; which provider holds the second copy? | Founder, platform engineer | Data map, subprocessors, cost |
-| Q4 Escrow key custody: sealed offline copies in two places and a yearly recovery drill (TDD 06 section 6.1) | Founder | DR runbook |
-| Q5 Does an in-app import of an export ZIP bring recordings back (F16 Q4)? | Founder | Overlaps restore |
+| Q1 Is family listening free for every member of a shared book, or Plus? | Founder, v1.1 planning | Plan gates, copy, retention signal |
+| Q2 What can the privacy copy say about member grants (LEGAL-REQ-022(a))? | Counsel, before build | Claims, Privacy Policy, Terms 12.1 |
+| Q3 Revocation: rotate the CCK at every removal, or only on request? | Founder, security | Key rotation cost |
 
 ### Size
-[A] 4 to 5 engineer-weeks: D-032 estimates about 3 for the pipeline (ROADMAP M7); restore, the Plus split, copy and the second copy add the rest.
+[A] 2 to 3 engineer-weeks on top of the F08 backup: member key pairs, grants, rotation, member download, copy.
 
 ### What v1.0 must do now
-1. Hash every original at capture and keep the hash with the entry (DATA-REQ-046; F04 WP-F04-04). The upload verifies against it.
-2. Keep originals byte-identical and never write to them (F08-REQ-002); file names `<entry_id>.m4a` (F08 section 8).
+1. Hash every original at capture and keep the hash with the entry (DATA-REQ-046). Built (`capture/recorder.ts`).
+2. Keep originals byte-identical and never write to them (F08-REQ-002).
 3. Sync `entries.audio_kept_on_device` to members (exists; F08 section 8) so the receiving phone knows a voice exists.
-4. Keep `backup_upload` gated and `download_backed_up_audio` and `restore_backup` in `FREE_FOREVER` in `packages/core/src/plan.ts` (exists). Do not remove them while cleaning up v1.0 plan code.
-5. Keep the purge path ready for audio objects: the data governance migration already marks where ciphertext objects join the purge queue (`20261002020000_data_governance.sql`, comment at the purge function). F31 adds a table for audio objects in a new migration.
-6. Build F16's outbox so a second queue kind (attachments) can sit beside it without changing op semantics [R] (WP-F16-05 owner).
-7. Keep F16-REQ-014 and F08-REQ-018 ("zero audio bytes in any request") as v1.0 gates; F31 replaces them with "only ciphertext, only to the audio bucket" tests in the same PR that adds the upload.
-8. Use one `LetterAudio` source resolver in F08 and F10 (local file, or "elsewhere") [R], so a third state (downloadable) is one branch, not a rewrite (WP-F08-03 owner).
+4. Keep `download_backed_up_audio` and `restore_backup` in `FREE_FOREVER` in `packages/core/src/plan.ts` (exists).
+5. Version the backup ciphertext and key-wrap format from the first upload (F08 WP-F08-B2) [R], so member grants and Vault mode (F48) can rewrap later.
+6. Give F08's backup tables room for grants: `child_key_grants` keyed by member and key version, empty in v1.0 (F08-REQ-022).
+7. Use one `LetterAudio` source resolver in F08 and F10 (local file, or "elsewhere") [R], so a third state (downloadable) is one branch, not a rewrite.
 
 ## F32 Close family contributors in the app
 
@@ -144,7 +139,7 @@ F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern a
 ### What v1.0 must do now
 1. Keep the contributor role (`child_members.role in ('parent', 'contributor')`), `entries.approval` (default `not_needed`), `review_family_letter` and `children.family_can_read` in the schema, and keep their access tests green while the app hides the path (B1; B-REQ-009 Rev; F11-REQ-003).
 2. Build `book_access(child_id, profile_id, role, sees_book, sees_pending)` with both visibility columns from day one (F16-REQ-006), so the pull serves pending letters to parents without a schema change.
-3. Keep `contributors_enabled` (default false) as a server-checked flag in the D-035 config table (F11-REQ-003). F32 flips it.
+3. Keep `contributors_enabled` (default false) as a server-checked flag (F11-REQ-003); D-068 removed D-035's config table, so [R] the flag becomes a server setting read by the invite functions, the way `app.max_parents_per_book` is. F32 flips it.
 4. Keep the parent and contributor visibility matrix in the leak suite, including dormant contributor fixtures (F11 WP-F11-10; 07-quality-bar.md section 2.4).
 5. Build the co-parent notification channel as one of N named channels, not a boolean [R] (WP-F11-09 owner).
 6. Keep the invite RPC's explicit role argument (`create_child_invite(p_child, p_role, ...)`, exists) and its parents-only creation rule (B-REQ-007).
@@ -289,12 +284,12 @@ F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern a
 
 ## F48 Vault mode and end-to-end keys
 
-- **Why.** ADR 0006 designed per-child keys, member grants, iCloud Keychain sync and a Recovery Kit. TDD 10 risk 9 says a solo founder cannot operate it and any bug is permanent voice loss. 05 ranks it "only if asked for".
+- **Why.** ADR 0006 designed per-child keys, member grants, iCloud Keychain sync and a Recovery Kit; the v1.0 owner backup (F08 section 6.5) uses the Standard mode of that design, with escrow. TDD 10 risk 9 says a solo founder cannot operate a no-escrow mode and any bug is permanent voice loss. 05 ranks it "only if asked for".
 - **What.** An opt-in mode where only the family's devices hold keys; losing every device and the Recovery Kit makes backups unreadable, and the app says so.
-- **Dependencies.** F31.
+- **Dependencies.** F08 backup (v1.0, D-073), F31.
 - **Open questions.** Demand; Android key sync.
 - **Size.** [A] 6 or more engineer-weeks.
-- **What v1.0 must do now.** Nothing in v1.0. F31 must version its ciphertext and key-wrap format so a user-held key can rewrap later [R].
+- **What v1.0 must do now.** F08's backup versions its ciphertext and key-wrap format so a user-held key can rewrap later [R] (WP-F08-B2).
 
 ## F49 Apple-hosted asset packs (iOS 26 and later)
 

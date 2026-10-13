@@ -5,9 +5,9 @@
 | Release | v1.0 gate (lock-screen widget is P1 inside v1.0, first to cut) |
 | Priority and rank | P0, rank 1 (05-feature-map.md section 2) |
 | Personas | P1 Evening parent, P2 Co-parent, P3 Expecting parent, P4 Multilingual family |
-| Existing IDs | A-REQ-012, A-REQ-014, A-REQ-030, B-REQ-003, B-REQ-004, PRD-REQ-001, PRD-REQ-005, PRD-REQ-012, C-REQ-005, C-REQ-009, LEGAL-REQ-007, LEGAL-REQ-011, LEGAL-REQ-014, LEGAL-REQ-051, DATA-REQ-044, DATA-REQ-046, DATA-REQ-048, D-025, D-033, D-040, DR-01, DR-09, BL-130, BL-134, BL-135, BL-136, BL-140, BL-142, BL-272 |
-| Depends on | F03 (child, signature, languages), F05 (transcription queue), F06 (Review screen), F08 (audio format, file locations), F09 (month chapters), F19 (remote config), design system (ADR 0101) |
-| Status | Draft V2, 3 Oct 2026 |
+| Existing IDs | A-REQ-012, A-REQ-014, A-REQ-030, B-REQ-003, B-REQ-004, PRD-REQ-001, PRD-REQ-005, PRD-REQ-012, C-REQ-005, C-REQ-009, LEGAL-REQ-007, LEGAL-REQ-011, LEGAL-REQ-014, LEGAL-REQ-051, DATA-REQ-044, DATA-REQ-046, DATA-REQ-048, D-025, D-033, D-040, D-084, D-085, DR-01, DR-09, BL-130, BL-134, BL-135, BL-136, BL-140, BL-142, BL-272 |
+| Depends on | F03 (child, signature, languages), F05 (transcription queue), F06 (Review screen), F08 (audio format, file locations), F09 (month chapters, quiet-day rows), F19 (remote config), design system (ADR 0101) |
+| Status | Draft V2, 3 Oct 2026. Reconciled with code on `develop` and decisions M10, M11, M13 on 13 Oct 2026 (section 12 says what is built) |
 
 ## 1. Why
 
@@ -15,15 +15,17 @@
 - [S] Every voice product checked has a loss story: entries lost on app switch (Qeepsake, R1-S56), data loss in voice processing (Rosebud, R1-S33), failed uploads (StoryCorps, R1-S31). FirstChapter's September release added retry and a confirm-before-discard prompt (R1 section 0 item 5; R1-S4).
 - [F] Parents with a child under 6 have about 3.2 hours of leisure a day, and secondary childcare runs 4.2 to 7.7 hours a day, so capture happens in minutes, often one-handed (R2-S25, R2-S26). [S] Reviewers praise entries made while nursing and entries that take five minutes or less (R2-S13).
 - [S] All 6 reviews about chronology are complaints, and one product charges a fee to backdate (R2 section 0 item 6, T25).
-- [F] The current code already writes the draft row before the microphone goes live, stops and keeps the take on background, interruption and dismiss, and saves in one transaction (`apps/mobile/src/lib/capture/recorder.ts`, `apps/mobile/src/app/listen.tsx`, `apps/mobile/src/lib/store.ts` `saveLetterFromDraft`). It has no fsync, no low-storage check, no length cap, no screen keep-awake, no microphone primer and no backdating (TDD 03 section 8 M-5, M-6; `listen.tsx` read 3 Oct).
-- [F] Typed text currently passes through `normalizeChars` in Review, which turns an em dash into a comma and curly quotes into straight ones (`apps/mobile/src/app/review.tsx` `cleanedText`; `packages/core/src/text.ts`). That is a machine edit on typed text, which B5 forbids.
+- [F] The code on `develop` (read 13 Oct 2026) writes the draft row before the microphone goes live, stops and keeps the take on background, interruption and dismiss, pauses and resumes in one file, keeps the screen awake while a take is live or paused (`apps/mobile/src/app/listen.tsx` with `lib/resilience/keep-awake`), hashes the file, and saves in one transaction (`lib/capture/recorder.ts`, `lib/store.ts` `saveLetterFromDraft`). After a kill, the launch sweep probes the recovered take before it marks it ready; a take that will not open is kept and listed in Settings > Recordings (`lib/capture/probe.ts`, `sweep.ts`, D-085). It has no low-storage check, no length cap, no microphone primer before the iOS prompt, no backdating and no language chip (searches of `apps/mobile/src` on 13 Oct found none).
+- [F] Typed text still passes through `normalizeChars` in Review, which turns an em dash into a comma and curly quotes into straight ones (`apps/mobile/src/app/review.tsx` line 244 `cleanedText`; `packages/core/src/text.ts`). That is a machine edit on typed text, which B5 forbids.
+- [D] "Not much today" stores a mark with no words; the Book shows an unsigned "A quiet day" row; marks never count, print, play or move into the book (D-084, `_AUTHORING.md` M10). Built in commit f4cdbc3.
+- [D] v1.0 ships on this phone only: every `eas.json` profile sets `EXPO_PUBLIC_SERVER_FEATURES=off`, so there is no sign-in, sync or co-parent in the v1.0 build (`apps/mobile/src/lib/capabilities.ts`, commit c1764f9, founder decision of 3 Oct recorded there and in `docs/backlog/future/06-coparent-sharing-v1-1.md`). Rows below that assume a signed-in co-parent apply only when that switch is on.
 
 ## 2. Who
 
 | Persona | Moment | Holding, feeling, short of | What F04 must do for them |
 |---|---|---|---|
 | P1 Evening parent | After the baby is down, or mid-feed with one hand free | A phone in the dark, a sleeping baby nearby, a few minutes. Afraid of losing what they made (R2 section 5) | One tap to speak or type. Nothing lost on a call, a lock or a crash. Quiet: no sounds, no flashes (SOUND.md section 2) |
-| P2 Co-parent | Their own cadence, often a longer letter at a weekend [S] UR S25, S30 | Their own phone; audio stays on it at v1.0 (B7) | The same capture flow, writing to a shared book chosen with "To {child}" |
+| P2 Co-parent | Their own cadence, often a longer letter at a weekend [S] UR S25, S30 | Their own phone; their audio stays on it, and family listening is v1.1 (D-073) | The same capture flow, writing to a shared book chosen with "To {child}" |
 | P3 Expecting parent | Pregnancy, third trimester [S] UR S27 | A due date, no birthday | Capture works with a due date; letters file into Before You (F09); backdating by day only |
 | P4 Multilingual family | Speaking the heritage language at bedtime | One or two letter languages set at first run (F03) | A language chip on the record screen; the recording kept whatever the transcription quality (DR-01); typed letters in any script, right to left included |
 
@@ -85,7 +87,7 @@
 
 | Product | What it does | Does it work? (evidence) | What customers say | Our call |
 |---|---|---|---|---|
-| FirstChapter | 30-second voice notes; v1.0.6 added retry, background upload and confirm before discarding a recording [F] R1-S4 | No US average yet [F] R1-S4 | n/a | **Match** confirm before discard. Retry is moot: nothing uploads at v1.0 (B7) |
+| FirstChapter | 30-second voice notes; v1.0.6 added retry, background upload and confirm before discarding a recording [F] R1-S4 | No US average yet [F] R1-S4 | n/a | **Match** confirm before discard. Capture uploads nothing; the owner's encrypted backup (D-073, F08) retries on its own queue |
 | Day One | Audio up to 3 hours, transcription limited to 10 minutes, up to 30 recordings per entry, Siri Shortcuts [F] R1-S60, R1-S6 | 4.8 (118K) [F] R1-S6 | n/a | **Match** a generous cap; we choose 30 minutes for one take, bounded by on-device transcription (section 11) |
 | Remento | Recordings up to 30 minutes [F] R1-S13 | 4.8 (1,738) [F] R1-S15 | Elders record on their own [S] R2-S22, R2-S23 | **Match** 30 minutes |
 | StoryCorps | Interviews stop automatically at 45 minutes [F] R1-S30 | 4.6 (1.6K) [F] R1-S31 | Earlier versions lost uploads [S] R1-S31 | **Avoid** silent hard stops: warn 5 minutes before the cap and keep everything |
@@ -106,7 +108,7 @@
 |---|---|---|---|---|
 | Speak | Tonight CaptureBar (`tonight.speakButton`) | `/listen` | active child, `promptKey` of the shown prompt, `kind = letter` | Exists in `(tabs)/index.tsx` |
 | Type | Tonight CaptureBar (`tonight.typeButton`) | `/write` | same | Exists |
-| Not much today | Tonight, quiet button (`tonight.notMuchButton`) | Saves inline | weekday, child | Exists; rules change (F04-REQ-016) |
+| Not much today | Tonight, quiet button (`tonight.notMuchButton`) | Saves a quiet-day mark inline | child, local date | Built to D-084 (`(tabs)/index.tsx`, `components/book/quiet-day.logic.ts`) |
 | Prompt card | Tonight (`tonight.promptLabel`) | No action of its own at v1.0 | Its prompt rides on Speak or Type | "Another thought" (`tonight.newPromptButton`) changes it |
 | Waiting draft row | Tonight (`pendingCopy.tonight.waitingTitle`) | `/review` for audio, `/write` for typed | `draftId` | Exists; one row per waiting draft (F04-REQ-027) |
 | Empty month in the Book | F09 chapter empty state | `/write` or `/listen` | `occurredOn` preset to the start of that month of age, `occurredPrecision = month` | F09 owns the button; F04 accepts the params |
@@ -137,11 +139,12 @@
 4. Taps Save (`tonight.typing.saveButton`). Review opens with the text exactly as typed, `edit_level = verbatim`, no machine edits, and no transcription.
 5. Saves as in A step 7.
 
-**D. Not much today.**
-1. Taps Not much today.
-2. The app saves one `not_much` entry for the active child and today's local date, private, with the template text `notMuch.template` (weekday from `Intl.DateTimeFormat` in the device locale, D-028).
-3. Haptic `soft`. The button is replaced by `notMuch.savedToast` with Undo (`common.undoButton`). Undo tombstones the entry.
-4. Until local midnight the button shows the kept state for that child; a second entry for the same child and date is never created.
+**D. Not much today (quiet-day mark, D-084).**
+1. Taps Not much today. The button's VoiceOver hint is `notMuch.confirmBody` ("Marks today without writing anything.").
+2. The app saves one quiet-day mark for the active child and today's local date: `kind = not_much`, `raw_transcript = ''`, `final_text = ''`, `in_book = false`, `edit_level = verbatim`, no prompt (`newQuietMark` in `components/book/quiet-day.logic.ts`). No words are ever generated for it, so no weekday sentence and no template.
+3. The button is replaced by `notMuch.savedToast` ("Kept. Rest well.") with `notMuch.undo`. Undo removes the mark.
+4. A second tap that day for that child adds nothing (`markOn`).
+5. The Book shows the mark as an unsigned "A quiet day" row with the date (`book.quietDay.label`), and hides it on a day that also has a letter (F09). The mark is never counted, printed, read in Read together, played, or moved into the book (`isLetterLike`, `readableInBook`).
 
 **E. Backdated letter.** In Review the date row reads `review.date.today` (new). Tapping it opens a sheet with two tabs, `review.date.dayTab` and `review.date.monthTab` (new). Day uses the installed `@react-native-community/datetimepicker`, bounded by section 6.3 F04-U36. Month lists Before You (`book.beforeYouChapter`), The first weeks (`book.chapterNewborn`) and Month 1 to the current month (`book.chapterTitle`). Choosing a month stores the first day of that month of age with `occurred_precision = month`.
 
@@ -192,15 +195,16 @@
 | F04-U39 | Recorded to the wrong child | "To {child}" changes the draft's child in Review before save (`setDraftChild`) | Whose book sheet | Pick the right child | E2E E-06 |
 | F04-U40 | Book hidden or deleted on another device while recording | The draft keeps its child id; save is local and succeeds; if sync later rejects it, the write moves to `rejected_writes` and stays exportable (DATA-REQ-043) | The letter saves | Export or move later (F16) | Integration with a fake sync rejection |
 | F04-U41 | Signed out, lapsed, or in the 30-day deletion grace | Capture works in every plan and account state (A-REQ-014, LEGAL-REQ-050); after deletion executes, the device wipes (DATA-REQ-023) | Normal capture | n/a | E2E with a lapsed fixture |
-| F04-U42 | Not much today tapped again the same day for the same child | No second entry | The kept state | Undo while the toast is visible | Unit |
-| F04-U43 | Not much today tapped by mistake | Undo tombstones the entry | Toast with Undo, persists until dismissed (DESIGN_LANGUAGE section 11 rule 5) | Undo | Unit |
+| F04-U42 | Not much today tapped again the same day for the same child | No second mark (`markOn`) | The kept state | Undo while the toast is visible | Unit (`quiet-day.logic.test.ts`, exists) |
+| F04-U43 | Not much today tapped by mistake | Undo removes the mark; later, the Book row offers `book.quietDay.remove` | Toast with Undo, persists until dismissed (DESIGN_LANGUAGE section 11 rule 5) | Undo, or Remove this mark | Unit |
+| F04-U43b | A quiet-day mark saved by an older build with a template sentence | Local migration 5 blanks `final_text` and queues the change through the sync outbox; `raw_transcript` is untouched (server trigger); every screen decides by `kind`, never by text | "A quiet day", never the old sentence | n/a | `apps/mobile/test/migrations.test.ts` (migration 5) |
 | F04-U44 | Audio file missing at save (removed outside the app, storage fault) | `AudioMissingError`; nothing saved; draft kept (`saveLetterFromDraft`) | `errors.generic.title`, `errors.generic.body`; Review offers Type the words and Let it go | Type the words (capture mode `mixed`) or let it go | Unit (exists) |
 | F04-U45 | Over-the-air JS update arrives mid-take | Updates apply only on the next cold start (TDD 06 FM-R18) | Nothing | n/a | Release checklist |
 | F04-U46 | iOS update moves the app container | Sweep rebases stored paths by file name (`sweep.logic.ts`) | Nothing | n/a | Unit (exists in `test/sweep.test.ts`) |
 | F04-U47 | Language chip set to a language whose pack has not passed its gate (Arabic at v1.0, DR-01 A) | Recording kept; Review offers Type the words; no transcript attempted (F05) | Waiting card | Type the words | E2E with a gated-language fixture |
 | F04-U48 | Recorder cannot start (microphone in use by a call, `prepareToRecordAsync` throws) | If no draft exists: card `capture.micBusyTitle` and `capture.micBusyBody` (new) with Type instead. If a draft exists: finalize and keep | Card or Review | Try again after the call, or type | Unit with a throwing fake |
 | F04-U49 | Offline | Capture, Review, save, Not much today all work; zero network requests | Normal | n/a | E2E E-01 proxy log |
-| F04-U50 | Co-parent records a letter in a shared book | Same capture on their own phone; the audio stays on that phone (B7); the text syncs after save and sign-in (F16) | Normal capture. The other parent later sees the F08 line for a recording kept on another phone | n/a | E2E with two signed-in fixture devices (F11) |
+| F04-U50 | Co-parent records a letter in a shared book (only in a build with `EXPO_PUBLIC_SERVER_FEATURES=on`; v1.0 profiles are off) | Same capture on their own phone; the audio stays on that phone; family listening is v1.1 (D-073); the text syncs after save and sign-in (F16) | Normal capture. The other parent later sees the F08 line for a recording kept on another phone | n/a | E2E with two signed-in fixture devices (F11) |
 | F04-U51 | Two children and the active child changes on another screen while Listen is open | The draft keeps the child it started with; Review shows that child | "To {child}" of the draft | Change in Review | Unit |
 | F04-U52 | Dark room, system dark mode | Listen opens on dark surfaces with no white frame; keep-awake never changes brightness | Dark screen | n/a | Snapshot of the first frame of the modal transition |
 
@@ -229,11 +233,12 @@ Existing keys are in `packages/content/src/strings.en.ts` or `apps/mobile/src/li
 | `review.date.dayTab` | New | A day |
 | `review.date.monthTab` | New | A month |
 | `widget.startLabel` | New | Start a note |
-| `errors.storageLow.body` | Revise (today it suggests backup, which v1.0 does not have) | New recordings may not fit. Freeing some space will help. Typing always works. |
-| `permissions.microphone` | Revise (Q2) | {app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone and in your iPhone's own backup, if you use one. |
-| `notMuch.template`, `notMuch.savedToast` | Exist | as in content |
+| `errors.storageLow.body` | Revised in content (13 Oct: "New recordings may not fit. Freeing some space on this phone will help.") | Add "Typing always works." when F04-U18 ships |
+| `permissions.microphone` | Revised in `apps/mobile/src/lib/permission-copy.ts` (13 Oct: "...Your recordings stay on this phone.") | Counsel confirms (Q2). If D-073 backup ships, this string must not change to promise family listening (D-073 consequence) |
+| `notMuch.button`, `notMuch.confirmBody`, `notMuch.savedToast`, `notMuch.undo` | Exist | as in content |
+| `book.quietDay.label`, `.a11y`, `.remove`, `.removedToast` | Exist (D-084) | as in content |
 
-`quickNote.widgetLabel` and `quickNote.lockScreenLabel` exist but carry `{child}`, which a static widget cannot fill and D-025 keeps off the lock screen by default; the widget uses `widget.startLabel`. The microphone string's backup clause depends on D-033; if the founder keeps recordings out of device backup, the clause is removed.
+`quickNote.widgetLabel` and `quickNote.lockScreenLabel` exist but carry `{child}`, which a static widget cannot fill and D-025 keeps off the lock screen by default; the widget uses `widget.startLabel`. `notMuch.template` no longer exists: a quiet-day mark carries no words (D-084).
 
 ## 7. Requirements and acceptance criteria
 
@@ -264,7 +269,7 @@ Existing keys are in `packages/content/src/strings.en.ts` or `apps/mobile/src/li
 | F04-REQ-013 | P0 | Write respects the keyboard and any script | Given Write, Then the TextInput keeps the system defaults for autocorrect, spell check and capitalisation (no prop turns them off) and adds no suggestion bar of ours. Given an Arabic keyboard, Then text aligns right and the caret moves right to left (manual script) | B4, B5; DR-01 A (typed Arabic) |
 | F04-REQ-014 | P0 | Note or letter is a label chosen in Review | Given Speak or Type from Tonight, Then the draft `kind` is `letter`; Given the widget, Then `note`. Given Review, Then a two-option control (`tonight.noteOrLetter.note`, `tonight.noteOrLetter.letter`) shows the draft kind preselected; the saved entry's `kind` matches the control. `not_much` is never offered in the control | BRAND.md naming system |
 | F04-REQ-015 | P0 | Backdating to a day or a month, free | Given a born child, Then the day picker allows any date from 3 years before the birthday to today; the month tab lists Before You, The first weeks, and Month 1 to the current month. Given a month choice, Then `occurred_on` is the first day of that month of age and `occurred_precision = month`. Given an expecting child, Then only the day tab shows, bounded from 3 years before the due date to today. Never a Plus check | R2 T25, UR R10 |
-| F04-REQ-016 | P0 | Not much today in one tap | Given a tap, Then one `not_much` entry for the active child and local date is saved private in under 100 ms with haptic `soft` and `notMuch.savedToast` plus Undo. Given a second tap that day for that child, Then no new row. The weekday comes from `Intl.DateTimeFormat` in the device locale | BRAND.md; C-REQ-005; D-028 |
+| F04-REQ-016 | P0, Rev (D-084) | Not much today saves a quiet-day mark with no words | Given a tap, Then one entry with `kind = not_much`, `raw_transcript = ''`, `final_text = ''`, `in_book = false` for the active child and local date is saved in under 100 ms, and `notMuch.savedToast` shows with Undo. Given a second tap that day for that child, Then no new row. Given any mark, Then it is excluded from every count (letters kept, the membership ledger, chapter counts), from the printable book, from Read together and from playback, and it can never be added to the book. Given an old mark with a stored sentence, Then no screen, export or read-aloud path shows that sentence | D-084; C-REQ-005; `quiet-day.logic.test.ts` |
 | F04-REQ-017 | P0 | Language chip on Listen | Given an author with two or more letter languages (F03), Then a chip shows the current language and a tap opens the list of the author's languages; the value at Finish is stored on the draft `language`. Given one language, Then no chip. Never auto-detected | B-REQ-003; R5 section 2.4 |
 | F04-REQ-018 | P0 | Model state never blocks capture | Given no model on the phone, When Speak, Then recording starts with the same latency and Review shows the waiting card with Keep the recording only | TDD 03 FM-9; PRD 7.4 |
 | F04-REQ-019 | P0 | Capture is fully accessible | Given VoiceOver, Then the swipe order on Listen is "To {child}", audience line, prompt, elapsed time, state, language chip, Pause, Finish, Let it go; the aura is hidden from accessibility; starting, pausing and resuming are announced; Magic Tap toggles Pause [A]. Given AX5, Then nothing truncates and buttons stack. Given Reduce Motion, Then only fades and the stepped ring. Pause and Finish sit in the bottom third at 56 pt or taller; Speak and Type at 64 pt | LEGAL-REQ-051; A-NFR-005; DESIGN_LANGUAGE section 1 principle 2; TDD 09 |
@@ -293,12 +298,12 @@ Existing keys are in `packages/content/src/strings.en.ts` or `apps/mobile/src/li
 | `drafts.occurred_on` (new) | L3 | Local SQLite | Author | As above | Never |
 | `drafts.language` (new) | L4 (languages are L4, PRD 7.10) | Local SQLite | Author | As above | Never |
 | `entries.occurred_precision` (new), `entries.language` (new) | L2, L4 | Local SQLite, then Postgres through sync (F16) | Author; book members see the date precision, never the language in analytics | Life of the letter | With the letter, after sign-in and sensitive-data consent (LEGAL-REQ-006) |
-| `not_much` entry text | L4 | Local SQLite | Author; members if added to the book | Life of the entry | As a letter |
+| Quiet-day mark (`kind = not_much`): child, date, no text (D-084) | L2 (a date and a kind; no words) [A: classification row to confirm in `DATA_CLASSIFICATION.md`] | Local SQLite | Author | Until removed or the book is erased | Syncs as an entry when sync is on; never in the book, so never seen by members |
 | Settings `capture.micPrimerSeen` (new) | L2 | Local `settings` | App | Install | Never |
 | Analytics events (section 10) | L2 | PostHog after opt-in | Analytics | 12 months (TDD 03 section 4.1) | Only after consent; nothing queued before (PRD-REQ-016) |
 
 Rules:
-1. Capture makes no network request. No audio is uploaded at v1.0 (B7). No server transcription at v1.0 (03 section 5).
+1. Capture makes no network request. Capture itself never uploads audio. The encrypted backup of the owner's recordings that D-073 puts in v1.0 is a separate, later step owned by F08 and F16, and is not built (F08 section 12). No server transcription at v1.0 (03 section 5).
 2. The reason a take ended is shown in the UI and sent only as an L2 enum after consent; it is never stored in the row (`recorder.ts` keeps it in memory today).
 3. Errors carry codes only. No SQLite message, file path or text goes into logs or crash reports (TDD 01 section 4.2 rules 1 and 2).
 4. Files keep iOS Data Protection at least complete until first user authentication (LEGAL-REQ-022(b), BL-245).
@@ -354,13 +359,15 @@ Not sent: the reason a take ended before consent, the letter language (B-NFR-001
 | Tonight CaptureBar, Not much today, waiting rows | `apps/mobile/src/app/(tabs)/index.tsx` | Exists |
 | Recorder session | `apps/mobile/src/lib/capture/recorder.ts` | Exists; add keep-awake, storage checks, native hash and fsync |
 | Launch sweep | `apps/mobile/src/lib/capture/sweep.ts`, `sweep.logic.ts` | Exists; add the `discarding` rule |
-| Free space reader | `apps/mobile/src/lib/capture/storage.ts` | New. Uses the expo-file-system free-space API if the installed version has one (Unverified; confirm in `build/*.d.ts`), else a new `availableBytes()` method on `modules/scribe-files` |
-| Keep-awake wrapper | `apps/mobile/src/lib/capture/keep-awake.ts` | New, over `expo-keep-awake` [A] (Expo SDK package; agent confirms the API and licence in the installed version before use, brief rule) |
+| Free space reader | `apps/mobile/src/lib/capture/storage.ts` | New. Use `Paths.availableDiskSpace` from expo-file-system, which export already uses (`apps/mobile/src/lib/export/device.ts`) |
+| Keep-awake wrapper | `apps/mobile/src/lib/resilience/keep-awake.ts` (`useKeepAwakeWhile`) over `expo-keep-awake` | Built; used by `listen.tsx` and `read-together.tsx`. The 5-minute release while paused (F04-REQ-005) is not in it: it holds while paused for as long as the pause lasts |
+| Playability probe | `apps/mobile/src/lib/capture/probe.ts` | Built (D-085): a recovered take that does not load with a duration is kept, marked `unrecoverable` and listed in Settings > Recordings |
+| Quiet-day mark | `apps/mobile/src/components/book/quiet-day.logic.ts`, `quiet-day-row.tsx` | Built (D-084) |
 | Date sheet for Review | `apps/mobile/src/components/capture/date-sheet.tsx` | New; F06 places it in Review |
 | Kind control for Review | `apps/mobile/src/components/capture/kind-control.tsx` | New; F06 places it |
 | Language chip | `apps/mobile/src/components/capture/language-chip.tsx` | New; reads the author's languages from F03 |
 | Capture strings | `apps/mobile/src/components/capture/copy.ts` | New (brief rule: feature-folder `copy.ts`; content agent moves them) |
-| Local schema | `apps/mobile/src/lib/db/migrations.ts` migration 4 | New |
+| Local schema | `apps/mobile/src/lib/db/migrations.ts` migration 6 | New (versions 4 and 5 are taken: 4 is sync, 5 is the D-084 quiet-day fix) |
 | Store API | `apps/mobile/src/lib/store.ts` | Exists; new functions in 11.3 |
 | Native hash and fsync | `apps/mobile/modules/scribe-audio-decode` (`sha256File`, `fsyncFile`) | New, BL-140 (speech engineer) |
 | Widget | `expo-widgets` config plugin plus a `'widget'` component (R4-S61) | New, P1 |
@@ -385,7 +392,7 @@ Constants in `packages/core/src/capture.ts`: `maxMs` from remote config `capture
 
 ### 11.3 Data model and store contract
 
-Migration 4 (append-only, one transaction, test in `apps/mobile/test/migrations.test.ts`):
+Migration 6 (append-only, one transaction, test in `apps/mobile/test/migrations.test.ts`; versions 4 and 5 already exist on `develop`):
 ```sql
 ALTER TABLE drafts ADD COLUMN kind TEXT NOT NULL DEFAULT 'letter';      -- note | letter
 ALTER TABLE drafts ADD COLUMN occurred_on TEXT;                          -- YYYY-MM-DD; null = local date of created_at
@@ -429,31 +436,35 @@ TDD 03 treats a call or Siri as a pause that the person resumes. This spec final
 
 ### 11.7 Sequencing
 
-1. WP-F04-01 spike and WP-F04-02 reducer (week 2).
-2. WP-F04-03 migration 4, then WP-F04-04 recorder hardening (weeks 2 to 3; needs BL-111 for the store interface).
-3. WP-F04-05 primer, WP-F04-06 Listen UI, WP-F04-07 Write, in parallel (week 3).
-4. WP-F04-08 backdating, WP-F04-09 Not much today, WP-F04-10 drafts and discard (weeks 3 to 4).
-5. WP-F04-11 kill runs (week 4, then every release candidate).
-6. WP-F04-12 widget (weeks 5 to 8, P1, cut first at the week 6 checkpoint).
+Dates follow ROADMAP 2.1: feature freeze Mon 26 Oct, submission in the week of Mon 2 Nov 2026 (M13).
+
+1. WP-F04-01 device runs (week of 12 Oct, with FT-22) and WP-F04-02 reducer.
+2. WP-F04-03 migration 6, then WP-F04-04 recorder hardening (cap and storage checks).
+3. WP-F04-05 primer and WP-F04-07 typed exactness in parallel.
+4. WP-F04-08 backdating and WP-F04-10 discard state before freeze; if they slip, they are the first F04 cuts (backdating moves to v1.0.x; the `discarding` state is a durability fix and does not move).
+5. WP-F04-11 kill runs on every release candidate.
+6. WP-F04-12 widget: not started; with freeze on 26 Oct it is cut from v1.0 unless the founder says otherwise (Q4).
 
 ## 12. Work packages
 
-| WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode |
-|---|---|---|---|---|---|
-| WP-F04-01 | Device spike: kill-while-recording playability, interruption events, lock to background, resume after interruption, keep-awake API | `docs/qa/evidence/F04-spike.md` (new) | BL-030 dev build | 50 kills recorded with playable count and seconds lost; each of F04-U05 to U13 has an observed behaviour; result attached to BL-130 | pair (QA engineer, mobile engineer) |
-| WP-F04-02 | Pure capture reducer and constants | `packages/core/src/capture.ts`, `packages/core/test/capture.test.ts` | none | `[F04-REQ-001]` insert before record; `[F04-REQ-003]`, `[F04-REQ-006]`, `[F04-REQ-007]`, `[F04-REQ-008]`, `[F04-REQ-010]` state tests green; `npm test` | agent (mobile engineer) |
-| WP-F04-03 | Migration 4, store functions, classification rows | `apps/mobile/src/lib/db/migrations.ts`, `apps/mobile/src/lib/store.ts`, `apps/mobile/test/migrations.test.ts`, `docs/legal/DATA_CLASSIFICATION.md` section 4.5 | BL-111 | Fixture DBs v0 to v3 migrate to v4 with row counts and hashes unchanged; `[DATA-REQ-044]` retry test; `npm test` | agent (mobile engineer) |
-| WP-F04-04 | Recorder hardening: keep-awake, cap, storage checks, interruption finalize, one take at a time, native hash and fsync when available | `apps/mobile/src/lib/capture/recorder.ts`, `keep-awake.ts`, `storage.ts` | WP-F04-02, WP-F04-03, BL-140 for native hash | `[F04-REQ-004]`, `[F04-REQ-005]` (device), `[F04-REQ-008]` integration with fake free space; `[DATA-REQ-046]` | agent plus device check (mobile engineer) |
-| WP-F04-05 | Microphone primer, denied card, return from Settings, revised purpose string | `apps/mobile/src/app/listen.tsx` (primer and denied branches), `apps/mobile/src/lib/permission-copy.ts`, `apps/mobile/src/components/capture/copy.ts` | WP-F04-02 | `[LEGAL-REQ-007]` manifest lint; `[F04-REQ-022]` E2E; counsel approves the purpose string (Q2) | agent (mobile engineer, content) |
-| WP-F04-06 | Listen UI: "To {child}" from `children.switcher.toLabel`, prompt line, language chip, Ready state, AX5 stack, VoiceOver order and announcements, Magic Tap, kept-so-far and limit lines | `apps/mobile/src/app/listen.tsx`, `apps/mobile/src/components/capture/language-chip.tsx` | WP-F04-02, F03 languages API | `[F04-REQ-017]`, `[F04-REQ-019]` component tests at AX5; VoiceOver script V1 run | agent (mobile engineer, design systems) |
-| WP-F04-07 | Write: background flush, exact typed text, RTL check, kind and date pass-through | `apps/mobile/src/app/write.tsx`; the typed branch of `apps/mobile/src/app/review.tsx` (only `cleanedText` for typed) | WP-F04-03 | `[F04-REQ-011]`, `[F04-REQ-012]` byte-equality test, `[F04-REQ-013]` manual Arabic script | agent (mobile engineer) |
-| WP-F04-08 | Backdating rules and date sheet | `packages/core/src/backdate.ts`, `packages/core/test/backdate.test.ts`, `apps/mobile/src/components/capture/date-sheet.tsx` | WP-F04-03 | `[F04-REQ-015]` bounds, month starts on the 31st, expecting child; component test | agent (mobile engineer) |
-| WP-F04-09 | Not much today: once per child per day, Undo, `Intl` weekday, kind on `letter_saved` | `apps/mobile/src/app/(tabs)/index.tsx` | WP-F04-03 | `[F04-REQ-016]`; `[C-REQ-005]` content test | agent (mobile engineer) |
-| WP-F04-10 | Drafts: kind control, all waiting rows on Tonight, confirmed discard from Review and Tonight with the `discarding` state | `apps/mobile/src/components/capture/kind-control.tsx`, `apps/mobile/src/lib/capture/sweep.logic.ts` (discarding rule), `apps/mobile/test/sweep.test.ts` | WP-F04-03 | `[F04-REQ-009]` kill between steps never re-attaches; `[F04-REQ-014]`; `[F04-REQ-027]` | agent (mobile engineer) |
-| WP-F04-11 | Kill runs and capture E2E: 500 kill-during-save, 50 kill-while-recording, 100 typed kills, Maestro E-01, E-04, E-05, E-06 | `apps/mobile/e2e/capture/*` (new), `docs/qa/evidence/` | WP-F04-04, WP-F04-07, BL-275 | `[DATA-REQ-048]`, `[F04-REQ-024]`, `[F04-REQ-011]`, `[LEGAL-REQ-011]` pass on the release candidate | human plus agent (QA engineer) |
-| WP-F04-12 | Widget (P1): `expo-widgets` plugin, static Lock Screen and Home Screen widget, deep link to Ready state | `apps/mobile/app.config.ts` (plugin entry only), `apps/mobile/src/widgets/` (new) | WP-F04-06; licence check | `[F04-REQ-020]` E2E: widget deep link records nothing until Start; IPA size check within budget | pair (mobile engineer) |
-| WP-F04-13 | Analytics: new events and properties | `packages/analytics/src/catalog.ts`, `docs/analytics/TRACKING_PLAN.md` | none | Catalogue schema tests; `[LEGAL-REQ-017]` allowlist test | agent (analytics engineer) |
-| WP-F04-14 | Server columns `occurred_precision`, `language` with classification comments and access tests | `supabase/migrations/` (new file in the assigned range), `supabase/tests/` | WP-F04-03 | `npm run test:db` green; `approve-migration` label | agent (data architect) |
+Status is what the code on `develop` holds on 13 Oct 2026. "Device" names the run in `docs/qa/DEVICE_TEST_PLAN.md` that must pass on a real iPhone; none of them has run yet (ROADMAP 2.1 section 0).
+
+| WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode | Status 13 Oct | Device |
+|---|---|---|---|---|---|---|---|
+| WP-F04-01 | Device spike: kill-while-recording playability, interruption events, lock to background, resume after interruption, keep-awake | `docs/qa/evidence/` (new evidence file per DEVICE_TEST_PLAN) | BL-030 dev build | 50 kills recorded with playable count and seconds lost; each of F04-U05 to U13 has an observed behaviour | pair (QA engineer, mobile engineer) | Not run | S1-10 to S1-13, DL-01 (iPhone SE 3) |
+| WP-F04-02 | Pure capture reducer and constants | `packages/core/src/capture.ts`, `packages/core/test/capture.test.ts` | none | `[F04-REQ-001]` insert before record; `[F04-REQ-003]`, `[F04-REQ-006]`, `[F04-REQ-007]`, `[F04-REQ-008]`, `[F04-REQ-010]` state tests green; `npm test` | agent (mobile engineer) | Not built. The phases live inside `listen.tsx` (`Phase` type: ready, asking, denied, recording, paused, finishing) | none |
+| WP-F04-03 | Local migration 6 (draft kind, date, precision, language), store functions, classification rows | `apps/mobile/src/lib/db/migrations.ts`, `apps/mobile/src/lib/store.ts`, `apps/mobile/test/migrations.test.ts`, `docs/legal/DATA_CLASSIFICATION.md` section 4.5 | none (BL-111 done: store routes through `db/repos`) | Fixture DBs v0 to v5 migrate to v6 with row counts and hashes unchanged; `[DATA-REQ-044]` retry test; `npm test` | agent (mobile engineer) | Not built | none |
+| WP-F04-04 | Recorder hardening: 30-minute cap, storage checks, release keep-awake after 5 minutes paused | `apps/mobile/src/lib/capture/recorder.ts`, `apps/mobile/src/lib/capture/storage.ts` (new), `apps/mobile/src/lib/resilience/keep-awake.ts` | WP-F04-02, WP-F04-03 | `[F04-REQ-005]` (device), `[F04-REQ-006]`, `[F04-REQ-008]` integration with fake free space | agent plus device check (mobile engineer) | Partly built. Built: draft before record, stop and keep on background and interruption (`listen.tsx` line 166), one take at a time (`activeTakeId`), keep-awake while live or paused, SHA-256 at stop, playability probe after a kill. Not built: cap, storage checks, the 5-minute paused release. No fsync: `recorder.ts` header says expo-file-system has none and relies on AVAudioRecorder closing the file | S1-11, S1-12, S1-14 |
+| WP-F04-05 | Microphone primer, denied card, return from Settings | `apps/mobile/src/app/listen.tsx` (primer and denied branches), `apps/mobile/src/components/capture/copy.ts` | WP-F04-02 | `[LEGAL-REQ-007]` manifest lint; `[F04-REQ-022]` E2E | agent (mobile engineer, content) | Partly built. Denied state exists (`listen.tsx` phase `denied`); the iOS prompt is asked on first Speak with no in-app primer. Purpose string revised to "Your recordings stay on this phone" (`permission-copy.ts`); counsel confirms (Q2) | S1-03, S1-10 |
+| WP-F04-06 | Listen UI: "To {child}", prompt line, language chip, Ready state, AX5 stack, VoiceOver order, kept-so-far and limit lines | `apps/mobile/src/app/listen.tsx`, `apps/mobile/src/components/capture/language-chip.tsx` | WP-F04-02, F03 languages API | `[F04-REQ-017]`, `[F04-REQ-019]` component tests at AX5; VoiceOver script V1 | agent (mobile engineer, design systems) | Partly built. Built: listening, paused and still-here lines, elapsed time announced each minute, pause and resume. Not built: language chip, "To {child}" line on Listen (search found no `toLabel` in `listen.tsx`), limit lines | S1-23 VoiceOver walk |
+| WP-F04-07 | Write: background flush, exact typed text, RTL check | `apps/mobile/src/app/write.tsx`; the typed branch of `apps/mobile/src/app/review.tsx` (only `cleanedText` for typed) | WP-F04-03 | `[F04-REQ-011]`, `[F04-REQ-012]` byte-equality test, `[F04-REQ-013]` manual Arabic script | agent (mobile engineer) | Partly built. Typed drafts save through `setDraftTyped`. Not built: typed text is still passed through `normalizeChars` (`review.tsx` line 244), which breaks F04-REQ-012 and B5 | Arabic keyboard check on device |
+| WP-F04-08 | Backdating rules and date sheet | `packages/core/src/backdate.ts`, `packages/core/test/backdate.test.ts`, `apps/mobile/src/components/capture/date-sheet.tsx` | WP-F04-03 | `[F04-REQ-015]` bounds, month starts on the 31st, expecting child; component test | agent (mobile engineer) | Not built | none |
+| WP-F04-09 | Not much today as a quiet-day mark (D-084) | `apps/mobile/src/app/(tabs)/index.tsx`, `apps/mobile/src/components/book/quiet-day.logic.ts`, `quiet-day-row.tsx`, local migration 5 | none | `[F04-REQ-016]`; `quiet-day.logic.test.ts`; migration 5 test | agent (mobile engineer) | Built (commit f4cdbc3). Remaining: a test that the membership ledger never counts a mark (`billing/letter-ledger.logic.ts`) | none |
+| WP-F04-10 | Drafts: kind control, all waiting rows on Tonight, confirmed discard with the `discarding` state | `apps/mobile/src/components/capture/kind-control.tsx`, `apps/mobile/src/lib/capture/sweep.logic.ts`, `apps/mobile/test/sweep.test.ts` | WP-F04-03 | `[F04-REQ-009]` kill between steps never re-attaches; `[F04-REQ-014]`; `[F04-REQ-027]` | agent (mobile engineer) | Partly built. Confirmed discard exists (`abandonTake`); the waiting-row card exists on Tonight. Not built: kind control, the `discarding` state | none |
+| WP-F04-11 | Kill runs and capture E2E | `apps/mobile/e2e/` (Maestro flows exist, for example `flows/E2E-08-delete-and-undo.yaml`), `docs/qa/evidence/` | WP-F04-04, WP-F04-07 | `[DATA-REQ-048]`, `[F04-REQ-024]`, `[F04-REQ-011]`, `[LEGAL-REQ-011]` pass on the release candidate | human plus agent (QA engineer) | Not run. Maestro cannot drive a physical iPhone (DEVICE_TEST_PLAN "How to use"), so kill runs are by hand | DL-01, DL-02, S1-13 |
+| WP-F04-12 | Widget (P1) | `apps/mobile/app.config.ts` (plugin entry only), `apps/mobile/src/widgets/` (new) | WP-F04-06; licence check | `[F04-REQ-020]` E2E: widget deep link records nothing until Start; IPA size check within budget | pair (mobile engineer) | Not built; no widget package in `apps/mobile/package.json`. Recommended cut from v1.0 (Q4) | Lock Screen check |
+| WP-F04-13 | Analytics: new events and properties | `packages/analytics/src/catalog.ts`, `docs/analytics/TRACKING_PLAN.md` | none | Catalogue schema tests; `[LEGAL-REQ-017]` allowlist test | agent (analytics engineer) | Not built: `capture_ended`, `capture_recovered`, `mic_permission_result` are not in the catalogue | none |
+| WP-F04-14 | Server columns `occurred_precision` with classification comments and access tests | `supabase/migrations/` (new file), `supabase/tests/` | WP-F04-03 | `npm run test:db` green; `approve-migration` label | agent (data architect) | Partly built: `entries.language` exists on the server (`20261005000000_family_cap_language_idempotency.sql`, not applied to any project yet). `occurred_precision` not built. Not needed for v1.0 while server features are off | none |
 
 ## 13. Open questions and assumptions
 
@@ -462,9 +473,9 @@ TDD 03 treats a call or Siri as a pause that the person resumes. This spec final
 | # | Question | Who answers | By when | What changes |
 |---|---|---|---|---|
 | Q1 | Is a 30-minute cap per take right for v1.0, with remote config able only to lower it? | Founder | 16 Oct | `capture_max_minutes` default and F05 chunking load |
-| Q2 | Approve the revised microphone purpose string; the current one names backup, family sharing and cloud transcription, none of which exist at v1.0 (B7) | Counsel, founder | 23 Oct | `permission-copy.ts`; `docs/legal/app-store-privacy-labels.md` section 4 |
+| Q2 | Approve the revised microphone purpose string (now "Your recordings stay on this phone", `permission-copy.ts`). If the D-073 backup ships, the string must still not promise family listening, and "stay on this phone" must be rechecked against what backup uploads | Counsel, founder | 23 Oct | `permission-copy.ts`; `docs/legal/app-store-privacy-labels.md` section 4 |
 | Q3 | Can the first-letter time be kept on the device as an L2 bucket and sent once after analytics consent, or is that "queued before consent" (PRD-REQ-016)? | Analytics engineer, counsel | 30 Oct | Whether the 90 s activation metric is measurable outside TestFlight |
-| Q4 | Keep the widget in v1.0 as P1? | Founder | Week 6 checkpoint, 13 Nov | WP-F04-12 |
+| Q4 | Keep the widget in v1.0 as P1? Nothing is built and freeze is Mon 26 Oct (ROADMAP 2.1); spec default [R]: cut to v1.1 | Founder | 16 Oct | WP-F04-12 |
 | Q5 | Confirm finalize on interruption instead of TDD 03's pause (section 11.5) | Architect, after WP-F04-01 | 23 Oct | `capture.ts` interruption transition |
 | Q6 | `normalizeChars` and `FORBIDDEN_CHARS` in `packages/core/src/text.ts` say forbidden characters must never survive into an entry. B5 says typed text is never rewritten. This spec exempts typed text. The same rule also rewrites standard Chinese quotation marks in spoken text (R5 risk K7) | Core owner with F06 | 16 Oct | `packages/core` text rules and F06 |
 
@@ -475,7 +486,7 @@ TDD 03 treats a call or Siri as a pause that the person resumes. This spec final
 | A1 | Locking the phone moves the app to the background, which ends the take | WP-F04-01 on an SE 3 |
 | A2 | `expo-keep-awake` exists for SDK 57 with a permissive licence and stops Auto-Lock | Read the installed package; WP-F04-01 |
 | A3 | `expo-audio` 57 reports interruptions only through recorder status, so the `isRecording` poll is the detector | WP-F04-01; TDD 03 OQ-8 |
-| A4 | A free-space API is reachable from Expo or a one-method native addition | Read `expo-file-system` 57 types; else extend `modules/scribe-files` |
+| A4 | Answered: `Paths.availableDiskSpace` (expo-file-system) is in use in `lib/export/device.ts` | Device value checked in S1-14 |
 | A5 | React Native 0.86 exposes a Magic Tap handler on iOS | Read RN 0.86 docs before WP-F04-06; drop the line if absent |
 | A6 | A killed M4A is often unplayable (TDD 03 R-4) | WP-F04-01 |
 | A7 | Parents will speak at night near a sleeping baby (U1) | Study 1 (02 section 7) |
@@ -489,4 +500,5 @@ TDD 03 treats a call or Siri as a pause that the person resumes. This spec final
 - Decisions: `docs/DECISIONS.md` D-025, D-028, D-033, D-040; `docs/ROADMAP.md` M2; `docs/BACKLOG.md` BL-111, BL-130, BL-134, BL-135, BL-136, BL-140, BL-142, BL-275.
 - Design: `docs/tdd/01-mobile-client.md` sections 3.2, 3.4, 3.6, 4, 5.3, 6, 7; `docs/tdd/03-audio-transcription.md` sections 3.1 to 3.5, 6, 8, 12; `docs/tdd/06-performance-reliability.md` sections 2.2, 7.2; `docs/tdd/09-accessibility-design-system.md` V1, A11Y-F19; `docs/tdd/10-red-team-critique.md` risks 1, 2, 8; `docs/adr/0001-on-device-asr.md`; `docs/adr/0005-audio-format.md`; `docs/adr/0101-ui-component-library.md`; `docs/design/DESIGN_LANGUAGE.md` sections 1, 11, 12; `docs/design/COMPONENTS.md` 2.17, 2.18, 2.21; `docs/design/MOTION.md` sections 2, 4, 5b, 6; `docs/design/SOUND.md` sections 2, 3; `packages/content/BRAND.md`; `packages/content/VOICE.md`.
 - Code read 3 Oct 2026: `apps/mobile/src/app/listen.tsx`, `write.tsx`, `review.tsx`, `(tabs)/index.tsx`, `_layout.tsx`; `apps/mobile/src/lib/capture/recorder.ts`, `sweep.ts`, `sweep.logic.ts`; `apps/mobile/src/lib/store.ts`, `audio-mode.ts`, `copy.ts`, `permission-copy.ts`, `haptics.ts`, `transcribe.ts`; `apps/mobile/src/lib/db/migrations.ts`, `expo-adapter.ts`; `apps/mobile/app.config.ts`; `apps/mobile/package.json`; `packages/content/src/strings.en.ts`; `packages/core/src/text.ts`; `packages/analytics/src/catalog.ts`.
+- Code read 13 Oct 2026 on `develop`: `apps/mobile/src/app/listen.tsx`, `write.tsx`, `review.tsx`, `(tabs)/index.tsx`; `apps/mobile/src/lib/capture/recorder.ts`, `probe.ts`, `erase.ts`, `sweep.ts`; `apps/mobile/src/lib/resilience/keep-awake.ts`; `apps/mobile/src/lib/db/migrations.ts` (versions 1 to 5); `apps/mobile/src/lib/capabilities.ts`; `apps/mobile/eas.json`; `apps/mobile/src/components/book/quiet-day.logic.ts`; `apps/mobile/src/lib/permission-copy.ts`; commits f4cdbc3 (D-084), 6482cd3 (D-085), c1764f9 (on-device only). `docs/qa/DEVICE_TEST_PLAN.md`; `docs/ROADMAP.md` 2.1.
 - Research: R1 section 0 items 5, F04 table (R1-S1, R1-S3, R1-S4, R1-S6, R1-S11, R1-S13, R1-S15, R1-S20, R1-S30, R1-S31, R1-S33, R1-S56, R1-S60, R1-S64, R1-S67, R1-S68); R2 section 0 items 1, 6, sections 2.2, 2.3, 5, 6 (R2-S7, R2-S10, R2-S13, R2-S16, R2-S22, R2-S23, R2-S25, R2-S26); R4 section 9 (R4-S61); R5 sections 2.4, 5, 6; UR S25, S27, S30, R10.

@@ -5,18 +5,18 @@
 | Release | v1.0 gate |
 | Priority and rank | P0, rank 2 (05-feature-map.md section 2) |
 | Personas | P1, P2, P4, P6 |
-| Existing IDs | PRD-REQ-004, K-09, K-14, K-26, DATA-REQ-040, DATA-REQ-041, DATA-REQ-042, DATA-REQ-046, DATA-REQ-048, DATA-REQ-050, LEGAL-REQ-014, LEGAL-REQ-044, B-REQ-003, B-REQ-006, D-031, R-01, DR-01, BL-120 (was TDD 03 BL-064; widened here to R-01 D1 to D15), BL-020, BL-118, BL-142, BL-144, BL-146, BL-147, BL-148, BL-156, BL-043 |
+| Existing IDs | PRD-REQ-004, K-09, K-14, K-26, D-074, DATA-REQ-040, DATA-REQ-041, DATA-REQ-042, DATA-REQ-046, DATA-REQ-048, DATA-REQ-050, LEGAL-REQ-014, LEGAL-REQ-044, B-REQ-003, B-REQ-006, D-031, R-01, DR-01, BL-120 (was TDD 03 BL-064; widened here to R-01 D1 to D15), BL-020, BL-118, BL-142, BL-144, BL-146, BL-147, BL-148, BL-156, BL-043 |
 | Depends on | F05 (raw transcript, language packs), F07 (dictionary), F19 (pack delivery), F16 (sync of edits) |
-| Status | Draft V2, 3 Oct 2026 |
+| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with D-074 (Word for word), engine version 5 on `develop`, and a fresh R-01 run (section 7.1) |
 
 ## 1. Why
 
 - [D] The constitution: the machine may remove and repair; it may never add meaning. Every machine edit goes through `verifyEdits`, `raw_transcript` never changes, and every edit is stored and reversible (CLAUDE.md). B5 confirms the scope: spelling, script, punctuation, "um" and stumbles, tiny agreement slips, never rewording, and typed text never touched.
 - [F] The category is moving the other way. Remento offers first-person and third-person "story" rewrites, and changing the style overwrites the user's own edits; FirstChapter, Sproutbook and Dujour polish or summarise notes; Day One Gold and Apple's Writing Tools add AI summaries and tone changes (R1 F06; R1-S63, R1-S4, R1-S38, R1-S22, R1-S23, R1-S65). None of the products opened shows a list of what the machine changed (R1 F06, Inferred from pages opened).
 - [S] People notice. 3 reviewers praise AI polish (2 Remento, 1 Sproutbook) and 1 was surprised that AI changed spoken words (R2 section 0 item 5; R2-S8, R2-S21, R2-S22). [F] 76% of US adults say telling AI-made from human-made content apart is extremely or very important (R2-S27).
-- [F] The engine accepts meaning changes outside English today. A `punctuation` edit turning बेटी (daughter) into बेटा (son), or أنتِ into أنتَ (you, feminine to masculine), passes `verifyEdits`; Devanagari words split into single letters; Chinese and Arabic question marks pass the sentence-type guard (R-01; R5 section 4.4 E1 to E4). I re-ran every R-01 item on 3 Oct against a scratch copy of `packages/core/src` (Node 22, no repo change) and each one reproduces. Several need no model at all: the English filler list removes Portuguese "um", "uh-uh" is cut apart, and a child named Hope turns "I hope" into "I Hope".
+- [F] On 3 Oct the engine accepted meaning changes outside English: बेटी (daughter) to बेटा (son) and أنتِ to أنتَ as `punctuation` edits, Devanagari words split into letters, Chinese and Arabic question marks past the sentence-type guard (R-01; R5 section 4.4 E1 to E4). Engine versions 4 (ADR 0014, 3 Oct) and 5 (Unicode safety, 4 Oct) fixed those (`packages/core/src/pipeline.ts` changelog). A re-run of the R-01 scratch check on 13 Oct against `packages/core` on `develop` (scratch tests only, no repo change) found 7 of the 15 items fixed, 3 open in part and 5 open. 4 of the open items are reachable by today's English rules alone: "uh-uh" is cut apart, a child named Hope turns "I hope" into "I Hope", a taught mishearing can swap one family name for another, and curly or em-dash characters change with no stored edit (section 7.1).
 - [F] Review stores only the applied edits, not the rejected ones, so DATA-REQ-042 is not met; "Change words" overwrites `final_text` with no author layer, so DATA-REQ-041 replay breaks (`apps/mobile/src/app/review.tsx` `save`; TDD 03 section 3.7 item 4; BL-148).
-- [F] `faithfulClean` runs `normalizeChars` after the verified edits, so em dashes, curly quotes, ellipses and no-break spaces change with no typed edit, no underline and no undo (`packages/core/src/pipeline.ts`). In French it removes the no-break space before ? and ! (R5 E7).
+- [F] `faithfulClean` still runs the language's `normalizeFinal` after the verified edits. For English, an em dash becomes a comma, curly quotes become straight and an ellipsis character becomes three dots with no stored edit, no underline and no undo (13 Oct scratch run: `applied` was empty while the text changed). With the French pack the no-break spaces before ? and ! are now kept, and with the Chinese pack curly quotes are kept (13 Oct scratch run).
 - [F] The machine's output is permanent once saved. `raw_transcript` is immutable by trigger (DATA-REQ-040), and a book letter is read years later by the child (P6). A wrong edit puts words in a parent's mouth for good.
 
 ## 2. Who
@@ -39,7 +39,7 @@
 | Author correction rate per language | Per-language threshold from the F05 gate; a rise of 50% over baseline pauses that pack (03 section 4.3) | Computed on device from the author edit layer (F06-REQ-026); how it leaves the device is F05 Q8 | Opt-in; language is L4 (B-NFR-001) |
 | Silent changes to a saved letter by an engine or pack update | Zero (gate) | Engine audit test (F06-REQ-022); release replay of fixture letters | None |
 | Untracked character changes in `final_text` | Zero (gate) | Replay test: `final_text` equals apply(raw, applied edits) plus author edits, byte for byte (DATA-REQ-041) | None |
-| Share of spoken letters saved word for word | Watched, no target. Answers U2 alongside Study 2 | `letter_saved` with a new `edit_level` property (section 10) | Opt-in |
+| Share of spoken letters saved exactly as said (level `verbatim`) | Watched, no target. Answers U2 alongside Study 2 | `letter_saved` with a new `edit_level` property (section 10) | Opt-in |
 | "Does this sound like you?" answered "Sounds like me" | Watched, no target [A]; a drop of 10 points after a release is reviewed | `entries.sounds_like_me` server aggregate (S) | Synced users only |
 | Review open to text on screen, 2-minute letter, iPhone SE 3 | p95 300 ms after the transcript exists | Perf build marker (section 9) | Lab only |
 
@@ -69,7 +69,7 @@ Every substitution also passes the whole-text guards in `checkEdit`: negation co
 - **Per-language rule packs as data** [D] B13. The engine reads filler, repeat, agreement, punctuation and word tables from the letter's pack. Pure hesitation sounds are removed automatically; word fillers are offered, never applied [R] R5 section 0 item 7, 4.1. Non-English packs remove no repeats automatically [R] R5 section 4.2. A letter whose language has no installed, verified pack gets zero machine edits.
 - **The R-01 launch gate**: every confirmed defect fixed, each with a regression test in a per-language suite that runs in CI and under Hermes on the device (section 7.2).
 - **Immutable raw transcript, reversible stored edits**: applied, reverted and rejected edits stored against raw; hand edits stored as an author layer; every version replayable (DATA-REQ-040 to -042).
-- **The Review screen**: every change marked and undoable, Show exactly what I said, word for word, lock a phrase, add to your words, Change words, the one-time read card (K-14), low-confidence marks, note or letter, date, child, Add to the book, Keep private, Let it go.
+- **The Review screen**: every change marked and undoable, Show exactly what I said, Undo every fix, lock a phrase, add to your words, Change words, the one-time read card (K-14), low-confidence marks, note or letter, date, child, Add to the book, Keep private, Let it go.
 - **Saved letters**: the author can reopen and edit their own letter; a co-parent sees final text only (K-09).
 - **Engine versioning**: a saved letter is never re-cleaned; an engine update audits old edits and asks, never changes.
 
@@ -133,7 +133,7 @@ A co-parent's letter never opens Review on another author's phone (F06-REQ-033).
 |---|---|---|---|
 | 1 | Taps Finish on Listen | Review (`review.title`). Header: dateline with "To {child}" (`pendingCopy.review.toChildA11y`), then one row with the kind control (`tonight.noteOrLetter.*`), the date row (`review.date.today`, from F04) and the language chip if the author has two or more languages (F05). While F05 works: `tonight.states.transcribing` | Reads the draft. F05 runs the queue and hands back the raw transcript and `stt_meta` |
 | 2 | Waits about 30 s or less (F05 budget) | The letter in letter type with each machine change under a quiet dotted underline; a removal shows a short dotted mark where the words were (`components/capture/transcript.tsx`). Under the title: `review.trustLine`. First spoken letter on this install only: the read card `review.firstNote.*` (K-14) | Pins the letter's pack id and version. Runs `faithfulClean(raw, { level, dictionary, locked, pack })` once; the verifier decides every edit. Stores applied, rejected and offered edits in memory and autosaves the review state to the draft |
-| 3 | Reads it | Below the letter: `pendingCopy.review.changesLabelOne` or `review.changesLabel`, then one row per change (label plus the words as said), Show exactly what I said (`review.showOriginalLink`), Keep it word for word (`review.undoAllButton`), Change words (`pendingCopy.review.editTextButton`) | Nothing until a tap |
+| 3 | Reads it | Below the letter: `pendingCopy.review.changesLabelOne` or `review.changesLabel`, then one row per change (label plus the words as said), Show exactly what I said (`review.showOriginalLink`), Undo every fix (`review.undoAllButton`), Change words (`pendingCopy.review.editTextButton`) | Nothing until a tap |
 | 4 | Taps an underline or its row | Card: change label and plain explanation (`review.edits.*`), "Exactly what you said" (`review.originalLabel`) with the words, the new form if any, Put it back (`review.undoEditButton`) | On Put it back: `withoutEdit`; the edit's state becomes `reverted`; soft wash on the span (MOTION 5d); `pendingCopy.review.putBack` with Undo (`common.undoButton`); haptic `tap`; review state autosaved |
 | 5 | Optionally taps Show exactly what I said | The raw transcript, selectable, under `review.originalLabel`; Hear it (`review.playButton`) plays the recording | Raw is shown only to its author (K-09) |
 | 6 | Optionally holds a phrase and taps Keep this as said | The phrase gets a `review.lock.lockedLabel` mark; `review.lock.explain` once | Adds the phrase to `locked`, re-runs the clean; edits inside it drop out |
@@ -144,7 +144,7 @@ A co-parent's letter never opens Review on another author's phone (F06-REQ-033).
 
 **C. Spanish letter with a signed Spanish pack.** As A. "eh" is removed as a `filler` (pack auto list). "este" is not touched; if the suggestions UX ships (F06-REQ-012, P1), a hollow ring after it opens a card "Maybe a filler" with Take it out and Keep it. Sentence case and a final mark come from the Spanish pack. No repeat is removed by rule.
 
-**D. A letter in a language with no installed pack** (pack not downloaded, failed its SHA-256 check, or the language has no text-rules table). Review shows the letter word for word, with `review.noPackLine` (new) under the title. Only verified dictionary spellings apply. Save as A.
+**D. A letter in a language with no installed pack** (pack not downloaded, failed its SHA-256 check, or the language has no text-rules table). Review shows the letter exactly as said, with `review.noPackLine` (new) under the title. Only verified dictionary spellings apply. Save as A.
 
 **E. Edit my own saved letter.** From the letter view, Edit opens Review on the entry. The stored applied and reverted edits show as in A; the person can put back, re-apply a reverted edit, switch level, lock a phrase or Change words. No new machine edit is proposed: the engine is not re-run on a saved letter. Save writes a new version (DATA-REQ-041).
 
@@ -154,7 +154,7 @@ A co-parent's letter never opens Review on another author's phone (F06-REQ-033).
 |---|---|---|---|---|---|
 | F06-U01 | No transcriber or model not ready (F05 `model-missing`) | No clean runs. Draft kept | `pendingCopy.review.waitingTitle`, `.waitingBody`, Keep the recording only, Type it (`errors.micDenied.typeButton`) | Voice-only save (private, F06-REQ-030); words fill in later and open Review (6.1) | Unit; E2E with no model |
 | F06-U02 | Transcription fails or returns nothing | Same as U01 with the failed copy; retry allowed unless the draft is `unrecoverable` | `errors.transcriptionFailed.*` | Retry, Type it, or Keep the recording only | Unit (exists in `review.tsx` paths) |
-| F06-U03 | The engine throws on a transcript (a bug) | Catch; show the raw transcript word for word with no edits; never block save; record `error_shown{code: clean_failed}` (new enum) | The letter as heard, `review.noChanges` | Save word for word | Unit: inject a throwing pack |
+| F06-U03 | The engine throws on a transcript (a bug) | Catch; show the raw transcript exactly as said with no edits; never block save; record `error_shown{code: clean_failed}` (new enum) | The letter as heard, `review.noChanges` | Save it exactly as said | Unit: inject a throwing pack |
 | F06-U04 | App killed or backgrounded in Review | Review state (level, reverted ids, locked phrases, author edits, kind, date, child) autosaved to the draft within 500 ms of each change; raw is already on the draft | On relaunch, the waiting row on Tonight; Review reopens exactly as left | Continue | Kill test, 100 iterations: state identical after relaunch |
 | F06-U05 | Phone call, Siri or alarm while Hear it plays | Player pauses on the interruption; audio mode back to idle | Play button shows Hear it again | Tap to resume | Manual device script |
 | F06-U06 | Low storage at save | Save is one SQLite transaction with no new audio bytes; if it fails, nothing half-saves | `errors.generic.body` in the footer area (exists) | Free space, tap save again; draft intact | Unit with a failing store (exists pattern) |
@@ -167,7 +167,7 @@ A co-parent's letter never opens Review on another author's phone (F06-REQ-033).
 | F06-U13 | Portuguese "um" (a, one), English "uh-uh" (no) or "mm-hmm" (yes) | Not removed (F06-REQ-005, -010) | Kept as said | n/a | R-01 regression cases |
 | F06-U14 | A child named Hope, Will, Joy or Grace | "heard as" and case-variant fixes change a lowercase word only when it was taught as a mishearing for that term; a common word that matches a name is never capitalised mid-sentence (F06-REQ-014) | "I hope" stays "I hope" | Tap the word and Add to your words if it was the name | R-01 regression cases |
 | F06-U15 | A machine change the person disagrees with | Put it back reverts it; stored as `reverted`, counted in `machine_edit_reverted` | Words as said, soft wash, Undo | Undo restores the edit | Unit (exists: `withoutEdit`) |
-| F06-U16 | Person taps Keep it word for word, then wants the fixes back | Level returns to clean; edits re-applied from the stored list, not re-run | Underlines return | n/a | Unit |
+| F06-U16 | Person taps Undo every fix, then wants the fixes back | Level returns to clean; edits re-applied from the stored list, not re-run | Underlines return | n/a | Unit |
 | F06-U17 | Person edits text in Change words that overlaps a machine edit | The author diff wins over that span; the machine edit is stored as `superseded_by_author` and no longer shown as a change | The words they typed | Undo inside the text field; Show exactly what I said stays available | Replay test (DATA-REQ-041) |
 | F06-U18 | Person clears the whole text in Change words | Save buttons disabled while `final_text` is empty (exists) | Buttons disabled | Type words, or leave and Let it go from Tonight | Unit (exists) |
 | F06-U19 | Person leaves Review with Close | The draft and its review state are kept; nothing is deleted | Tonight waiting row | Reopen | Unit |
@@ -189,23 +189,25 @@ A co-parent's letter never opens Review on another author's phone (F06-REQ-033).
 
 ### 6.4 Copy
 
-Existing keys are in `packages/content/src/strings.en.ts` (`review.*`, `settings.*`) or `apps/mobile/src/lib/copy.ts` `pendingCopy.review`. New strings go in `apps/mobile/src/components/review/copy.ts` (new) until the content agent moves them (brief coordination rule; BL-156). Proposed text follows `packages/content/VOICE.md`; content and counsel own the final words. VOICE bans words that suggest software tidied a letter, so new strings use "fix" (K-26).
+Existing keys are in `packages/content/src/strings.en.ts` (`review.*`, `settings.*`) or `apps/mobile/src/lib/copy.ts` `pendingCopy.review`. New strings go in `apps/mobile/src/components/review/copy.ts` (new) until the content agent moves them (brief coordination rule; BL-156). Proposed text follows `packages/content/VOICE.md`; content and counsel own the final words. The feature is named "Word for word" (D-074, `_AUTHORING.md` M9): words that suggest software tidied a letter ("tidy", "tidied", "tidying", "lightly tidied") leave the product, so new strings use "small fix" (K-26). The two levels are shown as "Small fixes, marked" (`clean`) and "Exactly as said" (`verbatim`). Copy key names still contain `tidy` (`settings.tidyLabel`, `review.tidiedLabel`, `book.provenance.spokenTidied`); only their values changed. Renaming the keys is optional and owned by content.
 
 | Key | Status | Proposed text |
 |---|---|---|
 | `review.title`, `.trustLine`, `.changesLabel`, `.noChanges`, `.showOriginalLink`, `.originalLabel`, `.undoEditButton`, `.undoAllButton` | Exist | as in content |
 | `review.edits.*.label`, `.explain` | Exist | as in content, except punctuation below |
 | `review.edits.punctuation.explain` | Revise: today it says we added commas where you paused, which v1.0 rules never do | We added a capital letter or a full stop. Your words are the same. |
-| `review.tidiedLabel` | Revise (K-26) | With small fixes |
-| `review.showTidiedButton` | Revise (K-26) | Show with small fixes |
-| `review.subtitle` | Revise (K-26); unused in `review.tsx` today | Here is what you said, with small fixes. |
+| `review.tidiedLabel` | Renamed in content (D-074) | Word for word, small fixes marked |
+| `review.showTidiedButton` | Renamed in content (D-074) | Show small fixes |
+| `review.subtitle` | Renamed in content (D-074) | Here is what you said, word for word. Small fixes are marked. |
+| `review.undoAllButton` | Renamed in content (D-074) | Undo every fix |
+| `review.noChanges` | Renamed in content (D-074) | Word for word. Nothing needed fixing. |
 | `review.lock.button`, `.explain`, `.lockedLabel`, `.unlockButton` | Exist, not yet wired | as in content |
 | `review.addWordToDictionary` | Exists, not yet wired | as in content |
 | `review.firstNote.title`, `.body`, `.dismissButton` | Exist (K-14) | as in content |
 | `review.voiceCheck.*` | Exist | as in content |
 | `review.destination.*` | Exist | as in content |
 | `pendingCopy.review.*` | Pending (BL-156) | as in `copy.ts` |
-| `review.noPackLine` | New | Kept word for word. Small fixes for this language are not on this phone yet. |
+| `review.noPackLine` | New | Kept exactly as said. Small fixes for this language are not on this phone yet. |
 | `review.unsure.label` | New | Might be misheard |
 | `review.unsure.explain` | New | We were not sure about this part. Hear it, then change it if it is wrong. |
 | `review.unsure.hearButton` | New | Hear this part |
@@ -218,8 +220,8 @@ Existing keys are in `packages/content/src/strings.en.ts` (`review.*`, `settings
 | `review.suggestions.repeat.explain` (P1) | New | This came out twice in a row. You decide whether to keep both. |
 | `review.suggestions.removeButton` (P1) | New | Take it out |
 | `review.suggestions.keepButton` (P1) | New | Keep it |
-| `settings.tidyLabel`, `.tidyOn`, `.tidyOff`, `.tidyHelp` | Revise (K-26), owned by F17 | Small fixes; With small fixes; Word for word; Word for word keeps every um and false start. Either way, we never rewrite your words. |
-| `book.provenance.spokenTidied` | Revise (K-26), owned by F09 and F15 | Spoken, with small fixes |
+| `settings.tidyLabel`, `.tidyOn`, `.tidyOff`, `.tidyHelp` | Renamed in content per D-074 (owned by F17; key names keep `tidy`, values do not) | Word for word; Small fixes, marked; Exactly as said; "Small fixes are marked in each letter, and you can undo any of them. Exactly as said keeps every um and false start. Either way, we never rewrite." |
+| `book.provenance.spokenTidied`, `.spokenExact` | Renamed in content (D-074), owned by F09 and F15 | Spoken, word for word; Spoken, exactly as said |
 | `support.macro.noRewrite` | New, support macro (not in-app) | Thank you for telling us. We keep each letter in your own words, so we do not reword or polish them. You can change any word yourself with Change words, and the recording always keeps exactly how you said it. |
 
 Every string with "never" goes through the claims registry (LEGAL-REQ-044). "We never rewrite your words" already exists (`settings.neverRewrite`).
@@ -228,27 +230,29 @@ Every string with "never" goes through the claims registry (LEGAL-REQ-044). "We 
 
 ### 7.1 The R-01 defect inventory
 
-Every item below was reproduced on 3 Oct against a scratch copy of `packages/core/src` run with Node 22 type stripping (repo dependencies are not installed in this checkout, so `npm test` could not run here; 09 R-01 records 237 of 237 passing). Rules-only means the shipped rules reach it with no model.
+Every item below was first reproduced on 3 Oct against a scratch copy of `packages/core/src`. On 13 Oct 2026 the check was run again against `packages/core` on `develop` (`ENGINE_VERSION = 5`), from vitest files in a scratch folder that import the repo source and the text-rules packs in `packs/text-rules/` read only; no repo file changed. "Draft pack" means the pack as it ships (word tables `draft`, ADR 0014 section 3); "vetted" means a copy with its word tables raised to `native-reviewed`. Rules-only means the shipped rules reach it with no model.
 
-| # | Defect (09 R-01, R5 4.4) | Reachable by | Fixed by |
-|---|---|---|---|
-| D1 | Tokenizer drops combining marks: Devanagari words split into single letters (E1) | Rules (every Hindi count and boundary) | F06-REQ-001 |
-| D2 | A `punctuation` edit changes बेटी to बेटा, or أنتِ to أنتَ, and passes (E2, E3) | Rule provider or model | F06-REQ-002 |
-| D3 | Decomposed accents: swapping one combining accent for another passes | Rule provider or model | F06-REQ-002 |
-| D4 | Inserting an invisible direction mark or joiner passes | Rule provider or model | F06-REQ-003 |
-| D5 | Chinese ？ and ！ and Arabic ؟ bypass the sentence-type guard (E4) | Rule provider or model | F06-REQ-004 |
-| D6 | "uh-uh" (no) is cut into two fillers, leaving a stray hyphen | Rules | F06-REQ-005 |
-| D7 | Fillers inside guillemets or curly single quotes are removed; only the straight double quote, U+201C, U+201D, « and » are counted as quote marks | Rules | F06-REQ-006 |
-| D8 | Hindi or Arabic agreement changes pass when labelled `punctuation` | Rule provider or model | F06-REQ-002 |
-| D9 | `agreement` allows plural to singular on nouns through the generic -s rule | Model (no rule emits `agreement`) | F06-REQ-007 |
-| D10 | Dictionary case-variant fixes change common words that match a name ("hope" to "Hope", "will" to "Will") | Rules | F06-REQ-008 |
-| D11 | Dictionary "heard as" forms match inside Devanagari words, doubling a vowel sign | Rules | F06-REQ-009 |
-| D12 | The English filler list removes Portuguese "um" (a, one) | Rules | F06-REQ-010 |
-| D13 | A "heard as" form that is another family member's name swaps one name for the other | Rules | F06-REQ-014 |
-| D14 | `normalizeChars` removes the French no-break space before ? and ! with no edit (E7) | Rules (every letter) | F06-REQ-016 |
-| D15 | The experiment scorer uses the same broken word regex, so Hindi and Chinese error rates are meaningless (E8) | Experiments | F06-REQ-020 |
+| # | Defect (09 R-01, R5 4.4) | Reachable by | 13 Oct result on engine 5 | Status | Fixed by |
+|---|---|---|---|---|---|
+| D1 | Tokenizer drops combining marks: Devanagari words split into single letters (E1) | Rules | `tokens('मेरी प्यारी बेटी हिंदी')` gives 4 whole words | Fixed (engine 4) | F06-REQ-001 |
+| D2 | A `punctuation` edit changes बेटी to बेटा, or أنتِ to أنتَ, and passes (E2, E3) | Rule provider or model | Refused `punctuation_changed_letters` with draft pack, vetted pack and no pack | Fixed (engine 4) | F06-REQ-002 |
+| D3 | Decomposed accents: swapping one combining accent for another passes | Rule provider or model | French e + U+0301 to e + U+0300 and Spanish decomposed papá to papa refused `punctuation_changed_letters` | Fixed (engine 5) | F06-REQ-002 |
+| D4 | Inserting an invisible direction mark or joiner passes | Rule provider or model | Inside a word: refused `changes_word` for U+200B to U+200F and U+202E. Right after a word: U+200E, U+200F, U+202E and U+200B **accepted** as `punctuation`; U+200C and U+200D refused | Open in part | F06-REQ-003 |
+| D5 | Chinese ？ and ！ and Arabic ؟ bypass the sentence-type guard (E4) | Rule provider or model | 。 to ？ and . to ؟ refused `changes_sentence_type` | Fixed (engine 4) | F06-REQ-004 |
+| D6 | "uh-uh" (no) is cut into two fillers, leaving a stray hyphen | Rules | "Did you want more? Uh-uh, she said." became "Did you want more?-she said." "Uh uh, not now." became "not now." | **Open** | F06-REQ-005 |
+| D7 | Fillers inside some quotation styles are removed | Rules | Protected now: U+201C and U+201D, « », 「 」, 『 』. Still removed: "um" inside U+2018 and U+2019 used as a pair, and inside U+201E with U+201C | Open in part | F06-REQ-006 |
+| D8 | Hindi or Arabic agreement changes pass when labelled `punctuation` or `agreement` | Rule provider or model | Hindi गई to गया and Arabic ذهبت to ذهب as `agreement` refused `not_vetted_for_language` even with a vetted pack (agreement stays English-only, ADR 0014 Consequences); as `punctuation`, refused | Fixed (engine 4) | F06-REQ-002 |
+| D9 | `agreement` allows plural to singular on nouns through the generic -s rule | Model (no rule emits `agreement`) | "babies" to "baby" and "dogs" to "dog" **accepted** | **Open** | F06-REQ-007 |
+| D10 | Dictionary case-variant fixes change common words that match a name | Rules | With terms Hope and Will, "I hope you sleep well and we will see." became "I Hope you sleep well and we Will see." | **Open** | F06-REQ-008 |
+| D11 | Dictionary "heard as" forms match inside Devanagari words, doubling a vowel sign | Rules | "heard as" आसा does not match inside आसाएँ or आसामी; the standalone word is fixed | Fixed (engine 5) | F06-REQ-009 |
+| D12 | The English filler list removes Portuguese "um" (a, one) | Rules | With `language: 'pt'` (draft or vetted pack) "um" is kept. With no language passed, core still defaults to English and removes it. The app passes the language (`transcription-queue/clean.ts` `cleanSpoken`) and runs every non-English letter at `verbatim` (`LANGUAGES_WITH_TIDY_RULES` is English only) | Fixed in the app path | F06-REQ-010 |
+| D13 | A "heard as" form that is another family member's name swaps one name for the other | Rules | Dictionary Asha (heard as Usha) plus Usha (family): "Usha came over today." became "Asha came over today." | **Open** | F06-REQ-014 |
+| D14 | Characters change after the verified edits with no stored edit | Rules (every letter) | French no-break spaces before ? and ! kept with the French pack; Chinese U+201C and U+201D kept with the Chinese pack. English: em dash to comma, curly to straight quotes, ellipsis character to three dots, with `applied` empty | Open in part (English) | F06-REQ-016 |
+| D15 | The experiment scorer uses a word regex without marks, so Hindi and Chinese error rates are meaningless (E8) | Experiments | `experiments/score.ts` `normWords` still matches `[\p{L}\p{N}]+` with no `\p{M}` | **Open** | F06-REQ-020 |
 
-Found on 3 Oct while checking D5, not in R-01: `punctuationEdits` treats only `. ! ? । ॥` as sentence ends, so it appends "." after a Chinese 。 or an Arabic ؟ [F] scratch run of `packages/core/src/punctuation.ts`. Not reachable today because the app does not run `RulePunctuationProvider`; F06-REQ-015 covers it before it is wired. Proposed for the R-01 list (section 13).
+Summary on 13 Oct: 7 fixed (D1, D2, D3, D5, D8, D11, and D12 in the app path), 3 open in part (D4, D7, D14), 5 open (D6, D9, D10, D13, D15). Every case of a gendered word, a mood flip or a vowel-sign change in Hindi, Arabic or Chinese is now refused. The open items are English-rule and dictionary paths and two verifier gaps. BACKLOG lists BL-120 as "done in code"; against the widened R-01 list it is not done.
+
+Found on 3 Oct while checking D5, not in R-01: the English-only `punctuationEdits` (`packages/core/src/punctuation.ts`, `TERMINAL = /[.!?।॥]/`) appends "." after a Chinese 。 or an Arabic ؟. Still true on 13 Oct. Not reachable: the app runs neither `RulePunctuationProvider` nor `cleanRulesOnly`, and the language-aware `languagePunctuationEdits` (`packages/core/src/lang/punctuation.ts`) proposes nothing for those two inputs. F06-REQ-015 covers it before any punctuation provider is wired.
 
 ### 7.2 Requirements
 
@@ -260,7 +264,7 @@ Found on 3 Oct while checking D5, not in R-01: `punctuationEdits` treats only `.
 | F06-REQ-004 | P0 | Sentence type covers every script we ship | Given `moodMarks`, Then it counts `? ! ¿ ¡ ？ ！ ؟`. Given 。 to ？, . to ؟, or ！ removed, Then refused `changes_sentence_type`. Given "You did it." to "You did it?", Then still refused (control) | R-01 D5; R5 E4 |
 | F06-REQ-005 | P0 | A filler joined to another word by a hyphen is not a filler | Given "uh-uh" anywhere in a letter, When the rules run at level clean, Then no edit touches it and `final_text` contains "uh-uh". The same holds for any listed filler joined by a hyphen to a word | R-01 D6 |
 | F06-REQ-006 | P0 | Every quotation style is protected and counted | Given words inside `« »`, curly single quotes (U+2018, U+2019) used as a pair, low-high quotes (U+201E, U+201C), `「 」` or `『 』`, Then `quotedSpans` protects them and no filler, repeat or dictionary edit lands inside. Given `quoteMarkCount`, Then it counts those marks; an apostrophe inside a word is not a quote mark. Given the R-01 case of a filler inside guillemets, Then it is kept | R-01 D7 |
-| F06-REQ-007 | P0 | Agreement is a closed table of verb and article pairs | Given `isAgreementPair`, Then it accepts only pairs listed in the letter's pack `agreement.pairs` (English: today's `AGREEMENT_GROUPS`); the generic -s, -es, -ies rule is removed. Given "dogs" to "dog", Then refused. Given a pack with an empty table (every non-English pack at v1.0), Then every `agreement` edit is refused `type_not_allowed_at_level` | R-01 D9 |
+| F06-REQ-007 | P0 | Agreement is a closed table of verb and article pairs | Given `isAgreementPair`, Then it accepts only pairs listed in the letter's pack `agreement.pairs` (English: today's `AGREEMENT_GROUPS`); the generic -s, -es, -ies rule is removed. Given "dogs" to "dog", Then refused. Given any non-English letter, Then every `agreement` edit is refused `not_vetted_for_language` (built: agreement is English-only per ADR 0014) | R-01 D9 |
 | F06-REQ-008 | P0 | A common word that matches a name stays as said | Given a dictionary term whose lowercase form is in the pack's `nameWords` table (English seeds include hope, will, joy, grace, rose, june, faith; native reviewers extend each pack), When `dictionaryEdits` runs, Then it never proposes a case-variant fix of the lowercase word. Given the R-01 cases, Then "I hope you sleep" and "You will love it" are unchanged with a child named Hope or Will. Given the recogniser wrote "Hope" mid-sentence, Then it stays "Hope" | R-01 D10 |
 | F06-REQ-009 | P0 | Names match whole words only, in every script | Given `termRegex`, Then its boundaries treat `\p{M}` and joiners as part of a word. Given the R-01 Devanagari case, a "heard as" form that is the start of a longer word, Then no edit is proposed and no vowel sign doubles | R-01 D11 |
 | F06-REQ-010 | P0 | Fillers come from the letter's own pack, and only pure hesitation sounds are removed | Given a letter with `language = pt`, Then the English filler list is not used and "um" (a, one) is kept (R-01 D12). Given any pack, Then only words in `fillers.auto` are removed as `filler`; words in `fillers.offer` are never applied by the engine. Given English, Then `fillers.auto` equals today's `FILLERS` | R-01 D12; R5 section 0 item 7, 4.1; B5 |
@@ -271,7 +275,7 @@ Found on 3 Oct while checking D5, not in R-01: `punctuationEdits` treats only `.
 | F06-REQ-015 | P0 | Sentence case and the final mark follow the pack | Given `RulePunctuationProvider` wired into Review through `cleanWithProviders`, Then sentence ends and the final mark come from the pack `punctuation` profile (`。` for zh, `।` for hi if the pack says so, `.` for Latin scripts), caseless scripts get no case edits, and a text already ending in any of the pack's terminal marks gets no final mark. Given a Chinese letter ending in 。 or an Arabic letter ending in ؟, Then no "." is added | Section 7.1 note; R5 4.3; TDD 03 3.7 item 1 |
 | F06-REQ-016 | P0 | Nothing changes a letter except a stored edit | Given a spoken letter, Then `final_text` equals `applyEdits(raw, applied)` with leading and trailing whitespace trimmed, then the author layer; `normalizeChars` is not called by `faithfulClean`, `withoutEdit` or `segments`. Given the founder's character rule (no em or en dashes, curly quotes or ellipsis characters), Then each replacement is a `punctuation` edit from a pack character table, underlined and undoable. Given a French pack, Then U+00A0 and U+202F before `? ! : ;` and inside `« »` are kept (R5 E7). Given a Chinese pack, Then full-width punctuation is kept | R-01 D14; F04 Q6; R5 4.3, K7 |
 | F06-REQ-017 | P0 | The verifier is the only gate | Given any edit (rule, pack table, accepted suggestion, re-applied edit, dictionary fix), Then it passes `verifyEdits` against raw at the moment of save; there is no bypass flag, no remote switch and no code path from a provider to `final_text` that skips it. Given `JsonModelEditProvider`, Then no app module imports it (lint rule) | CLAUDE.md; ADR 0003; B14 |
-| F06-REQ-018 | P0 | The engine version moves with every behaviour change | Given F06-REQ-001 to -016 merged, Then `ENGINE_VERSION` is 4 with a dated changelog line in `pipeline.ts`. Every new test is titled with the constitution rule and the R-01 item it proves ("never genders the child: R-01 D2") | CLAUDE.md; R5 4.4 |
+| F06-REQ-018 | P0 | The engine version moves with every behaviour change | Given any change to what the engine accepts or produces, Then `ENGINE_VERSION` rises by one with a dated changelog line in `pipeline.ts` (5 on 13 Oct; the fixes in WP-F06-02, -03 and -05 make it 6). Every new test is titled with the constitution rule and the R-01 item it proves ("never genders the child: R-01 D2") | CLAUDE.md; R5 4.4 |
 | F06-REQ-019 | P0 | Per-language regression suite gates every pack | Given the suite in `packages/core/test/regression/`, Then each of D1 to D14 has at least one refused case in every launch language whose script it applies to (Latin: D3, D4, D6, D7, D10, D12, D13, D14; Devanagari: D1, D2, D4, D8, D9, D13; Arabic: D2, D3, D4, D5, D8; Chinese: D4, D5, D7), plus one accepted legitimate edit per language as a control. When it runs in Node CI and inside the iOS dev build under Hermes, Then accepted meaning changes are 0. Given any failure for a language, Then that language's pack cannot be published to the manifest (F19) and the build fails. Cases come from R-01 and R5 4.4; each non-English case is signed off by a native reviewer (R-08) | R-01 launch gate; 05 section 5 never-cut list |
 | F06-REQ-020 | P0 | The experiment scorer counts words the same way | Given `experiments/score.ts` `normWords`, Then it uses the core tokenizer; Chinese is scored by character error rate. Given the R5 E8 Hindi and Chinese inputs, Then word counts match the core tokenizer | R-01 D15; R5 E8 |
 | F06-REQ-021 | P0 | The property test covers scripts and invisibles | Given `verify.fuzz.test.ts`, Then its generators include combining marks, joiners, direction marks and the mood marks in F06-REQ-004, with a fixed seed in CI and a random seed nightly; invariant: no accepted edit changes a letter, mark, invisible character, negation, number, mood mark or quote count | TDD 03 7.2 |
@@ -281,7 +285,7 @@ Found on 3 Oct while checking D5, not in R-01: `punctuationEdits` treats only `.
 | F06-REQ-025 | P0 | Every version replays byte for byte | Given any saved version, When `replayFinalText(raw, machine_edits, author_edits)` (new, `packages/core`) runs, Then it equals that version's `final_text` byte for byte. Given 500 generated letters with random put-backs, locks and hand edits, Then 500 of 500 replay | DATA-REQ-041; BL-148 |
 | F06-REQ-026 | P0 | Hand edits are stored as the author's own layer | Given Change words, When the author saves, Then the change is stored as `author_edits` (new): word-level `{start, end, replacement}` against the machine-cleaned text, computed by a word diff; each save writes an `entry_versions` row; machine edits overlapping an author span become `superseded_by_author`. Author edits never pass the verifier and are never counted as machine edits | TDD 03 3.7 item 4; DATA-REQ-041; BL-148 |
 | F06-REQ-027 | P0 | A saved letter is never re-cleaned | Given a saved letter reopened in Review, Then the engine is not re-run on raw; Review shows the stored records. Given a reverted edit re-applied, Then it is re-verified with the current verifier and pack; if refused, it stays reverted and its row reads that this fix is no longer offered | DATA-REQ-040; 03 PS2 |
-| F06-REQ-028 | P0 | Every machine change is visible and undoable | Given a spoken letter at level clean, Then each applied edit has an underline or removal mark and a row; the count label matches the number of applied edits. Given Put it back, Then the text equals raw with that edit removed and a toast with Undo shows for 5 s. Given Keep it word for word, Then level becomes verbatim and only dictionary spellings and punctuation remain. Given Show exactly what I said, Then raw shows, selectable, to its author only | DATA-REQ-042; K-26; PS3 |
+| F06-REQ-028 | P0 | Every machine change is visible and undoable | Given a spoken letter at level clean, Then each applied edit has an underline or removal mark and a row; the count label matches the number of applied edits. Given Put it back, Then the text equals raw with that edit removed and a toast with Undo shows for 5 s. Given Undo every fix, Then level becomes verbatim and only dictionary spellings and punctuation remain. Given Show exactly what I said, Then raw shows, selectable, to its author only | DATA-REQ-042; K-26; PS3 |
 | F06-REQ-029 | P0 | Low-confidence words are marked, never changed | Given `flags` with `reason = 'low_confidence'` from F05, Then each flagged span shows a dashed mark distinct from machine changes, a row "Might be misheard", and a card with Hear this part (plays from the span's word timings, else from the start) and Change words. No machine edit is ever proposed from a flag. Given no flags, Then nothing shows | types.ts `Flag`; ADR 0009 |
 | F06-REQ-030 | P0 | A voice-only letter stays private and on the phone until it has words | Given Keep the recording only, Then the entry saves with `in_book = false`, `transcript_status = waiting`, and does not sync. Given F05 fills its words, Then the letter opens in Review with a destination choice, and syncs only after save. Never auto-added to the book | TDD 03 OQ-4; BL-142; DATA-REQ-040 (raw is immutable once on the server) |
 | F06-REQ-031 | P0 | The author can lock a phrase | Given a selection in the letter and Keep this as said (`review.lock.button`), Then the span is stored in `locked_spans` (new) against raw, edits inside it drop out, and the span shows `review.lock.lockedLabel`; Allow small fixes removes the lock. Given the engine, Then `CleanOptions` accepts locked spans (new) as well as phrases | `review.lock.*`; `protect.ts` |
@@ -291,7 +295,7 @@ Found on 3 Oct while checking D5, not in R-01: `punctuationEdits` treats only `.
 | F06-REQ-035 | P0 | Review places the F04 controls | Given Review, Then the header shows "To {child}" (picker when two or more children), the kind control (`kind-control.tsx` from F04, F04-REQ-014), the date row (`date-sheet.tsx`, F04-REQ-015) and the language chip when the author has two or more languages. Given a change to any of them, Then it is written to the draft at once and the saved entry matches | F04 11.1, 11.4 |
 | F06-REQ-036 | P0 | Review never loses work | Given any change in Review, Then the review state is written to the draft within 500 ms. Given 100 kills at random points in Review, Then 100 of 100 reopen with the same text, edit states, locks, author edits, kind, date and child | DATA-REQ-048; F04 durability |
 | F06-REQ-037 | P0 | Typed letters get no machine edits | Given a typed or mixed draft, Then `faithfulClean`, character edits and `normalizeChars` are not called; Review shows no change count, underline, read card, level switch or Show exactly what I said; save stores `edit_level = verbatim` and `machine_edits = []` | B5; F04-REQ-012 |
-| F06-REQ-038 | P0 | Clean is the default; the author can choose | Given a spoken draft and no author default, Then level is clean. Given the author default set to Word for word (F17), Then Review opens at verbatim. Given a switch in Review, Then it applies to this letter only | PRD 1.3 levels; `settings.tidy*` |
+| F06-REQ-038 | P0 | Clean is the default; the author can choose | Given a spoken draft and no author default, Then level is clean. Given the author default set to Exactly as said (F17, `settings.tidyOff`), Then Review opens at verbatim. Given a switch in Review, Then it applies to this letter only | PRD 1.3 levels; `settings.tidy*` |
 | F06-REQ-039 | P0 | No control makes words nicer | Given every screen and remote config, Then there is no rewrite, polish, summarise, shorten, translate or tone control, and no flag can add one. Given `packages/content/test/rules.test.ts`, Then a new rule fails review, book and settings strings that offer to improve, polish or rewrite a letter | CLAUDE.md; 03 principle 1 |
 | F06-REQ-040 | P0 | Review is fully accessible | Given VoiceOver, Then the order is dateline, title, read card, letter, change rows, low-confidence rows, actions, footer; each row announces its label and the words as said. Given AX5, Then the header row and footer stack and nothing truncates. Given Reduce Motion, Then fades only. Every target is 44 by 44 pt or larger | LEGAL-REQ-051; TDD 09; COMPONENTS 2.19 |
 | F06-REQ-041 | P0 | Review is fast | Given an SE 3 and a 300-word transcript, Then raw to fully marked text is p95 300 ms. Given a 4,000-word transcript, Then raw text shows within 300 ms and marks within 1 s, with no frame over 50 ms on the JS thread | Section 9 |
@@ -343,7 +347,7 @@ All events fire only after analytics opt-in (B-NFR-001, B10) and carry L2 proper
 | Event | Status | Properties | Question it answers |
 |---|---|---|---|
 | `machine_edit_reverted` | Exists | `edit_type`, `source` | Is any edit type wrong often enough to change the rules? (guardrail: under 5% overall, 10% per type) |
-| `letter_saved` | Exists; add `edit_level` (enum: clean, verbatim) and `low_confidence_count` (int 0 to 500) | `machine_edit_count`, `edits_reverted_count` exist | Revert rate denominator; how often people choose word for word (U2); how often F05 flags words |
+| `letter_saved` | Exists; add `edit_level` (enum: clean, verbatim) and `low_confidence_count` (int 0 to 500) | `machine_edit_count`, `edits_reverted_count` exist | Revert rate denominator; how often people choose Exactly as said (U2); how often F05 flags words |
 | `review_action` | Exists; add values `lock_phrase`, `add_word`, `suggestion_accepted`, `suggestion_kept`, `edit_reapplied`, `engine_note_opened`, `low_confidence_opened` | `action` | Which Review tools people use; whether low-confidence marks get attention |
 | `error_shown` | Exists; add `code` value `clean_failed` | `code` | Does the engine ever fail on real transcripts? Target zero |
 | `engine_audit_completed` | New | `letters_bucket` (enum: lt_10, 10_99, 100_999, 1000_plus), `refused_bucket` (enum: 0, 1_9, 10_plus) | Does a new engine refuse edits already in saved letters, and how many? |
@@ -356,64 +360,48 @@ Author correction rate per language (03 section 4.3) is computed on the device f
 
 ### 11.1 Components and files
 
+Status read on `develop`, 13 Oct 2026.
+
 | Part | File | Status |
 |---|---|---|
-| Tokenizer, letters-only, fillers out of code | `packages/core/src/text.ts` | Exists; F06-REQ-001, -002, -010, -016 |
-| Mood marks, quote marks, invisible-character guard, agreement table from pack | `packages/core/src/meaning.ts` | Exists; F06-REQ-003, -004, -006, -007 |
-| Verifier | `packages/core/src/verify.ts` | Exists; reads the pack through `VerifyContext.pack` (new field); new reason `changes_invisible` in `types.ts` |
-| Quoted spans, whole-word term match, family-name guard, locked spans | `packages/core/src/protect.ts` | Exists; F06-REQ-006, -008, -009, -014, -031 |
-| Fillers and repeats from the pack | `packages/core/src/rules.ts`, `repeats.ts` | Exists; tables move to the English pack; F06-REQ-005, -010, -013 |
-| Pack-driven punctuation and character edits | `packages/core/src/punctuation.ts` | Exists; F06-REQ-015, -016 |
-| Text-rules pack type, English pack, loader and validator | `packages/core/src/pack.ts`, `packages/core/packs/en.json` | New. Schema shared with F05 (which owns delivery and the speech parts of a pack) |
-| Pipeline: pack option, locked spans, no `normalizeChars`, `ENGINE_VERSION` 4, `replayFinalText`, `auditEdits` | `packages/core/src/pipeline.ts` | Exists; F06-REQ-016, -018, -022, -025 |
-| Author layer word diff | `packages/core/src/author-edits.ts` | New; F06-REQ-026 |
-| Regression suite, per language | `packages/core/test/regression/*.test.ts` | New; F06-REQ-019 |
-| Property test | `packages/core/test/verify.fuzz.test.ts` | Exists; F06-REQ-021 |
-| Experiment scorer | `experiments/score.ts` | Exists; F06-REQ-020 |
-| Review screen | `apps/mobile/src/app/review.tsx` | Exists; split into the parts below |
-| Review state reducer (pure) | `packages/core/src/review-state.ts` | New: level, edit states, locks, author edits, put back, re-apply; unit-tested in Node |
-| Transcript marks: applied, removed, offered, low confidence, locked | `apps/mobile/src/components/capture/transcript.tsx` | Exists; extend |
-| Change rows, edit card, suggestion card, unsure card | `apps/mobile/src/components/review/*.tsx` | New |
-| Review strings | `apps/mobile/src/components/review/copy.ts` | New (moves to `packages/content` with BL-156) |
-| Kind control, date sheet | `apps/mobile/src/components/capture/kind-control.tsx`, `date-sheet.tsx` | New in F04; F06 places them |
-| Local schema | `apps/mobile/src/lib/db/migrations.ts` migration 5 (F04 owns 4) | New |
-| Store: save with full records, review state on draft, open saved letter, author edits | `apps/mobile/src/lib/store.ts` | Exists; new functions in 11.3 |
-| Engine audit job | `apps/mobile/src/lib/review/engine-audit.ts` | New; F06-REQ-022 |
-| Server columns | `supabase/migrations/<new>_f06_author_layer.sql` | New; data architect |
+| Tokenizer, letters-only with marks, NFC compare | `packages/core/src/text.ts`, `packages/core/src/lang/engine.ts` (`tokens`, `words`) | Built (engine 4 and 5); F06-REQ-001, -002 met |
+| Mood marks, quote marks, agreement guard | `packages/core/src/meaning.ts`, `lang/engine.ts` | Partly built: mood marks across scripts and most quote styles done (F06-REQ-004 met; F06-REQ-006 open for U+2018 and U+2019 pairs and U+201E); no invisible-character guard (F06-REQ-003 open); generic plural rule still accepts nouns (F06-REQ-007 open) |
+| Verifier | `packages/core/src/verify.ts` | Built; reads language rules through `VerifyContext.rules` (ADR 0014); reason `not_vetted_for_language` exists; `changes_invisible` does not |
+| Quoted spans, whole-word term match, family-name guard, locked spans | `packages/core/src/protect.ts`, `lang/dictionary.ts` | Partly built: Devanagari whole-word match done (F06-REQ-009 met); name-word guard and family-name guard not built (F06-REQ-008, -014 open); locked phrases accepted by `CleanOptions.locked`, locked spans not |
+| Fillers and repeats from the pack | `packages/core/src/rules.ts`, `repeats.ts`, `lang/english-tables.ts` | Built for the pack path (ADR 0014); the hyphen rule for "uh-uh" is not (F06-REQ-005 open) |
+| English-only punctuation provider | `packages/core/src/punctuation.ts` | Exists, not wired in the app; appends "." after 。 and ؟ (section 7.1 note) |
+| Language punctuation and script edits | `packages/core/src/lang/punctuation.ts`, `lang/script.ts` | Built (ADR 0014 sections 2, 4) |
+| Text-rules pack type, validator, packs | `packages/core/src/lang/types.ts` (`TextRulesPack`), `lang/validate.ts`, `packs/text-rules/*.json` | Built (ADR 0014). This spec no longer defines its own pack schema (section 11.2) |
+| Pipeline: language and pack options, `ENGINE_VERSION` 5 with changelog | `packages/core/src/pipeline.ts` | Built. Not built: removing the silent final normalisation for English (F06-REQ-016), `replayFinalText`, `auditEdits` (F06-REQ-022, -025) |
+| Author layer word diff | `packages/core/src/author-edits.ts` | Not built; F06-REQ-026 |
+| Regression suite, per language | `packages/core/test/lang.languages.test.ts`, `unicode.test.ts`, `golden.test.ts` (exist); `packages/core/test/regression/` | Partly built: hostile edits per language exist; the R-01 D4, D6, D7, D9, D10, D13, D14 cases are not in them (they would fail) |
+| Property test | `packages/core/test/verify.fuzz.test.ts`, `lang.fuzz.test.ts` | Built; generators for direction marks after a word are missing (D4 passes) |
+| Experiment scorer | `experiments/score.ts` | Not fixed; F06-REQ-020 |
+| Review screen | `apps/mobile/src/app/review.tsx` | Built as one file: language-aware clean (`cleanSpoken` with `languageCleanOptions`), marks and rows, Put it back (`withoutEdit`), Undo every fix, Show exactly what I said, read card, voice-only save. Saves applied edits only (rejected ones are counted for analytics, not stored), no `pack_ref`, `kind` always `letter`; typed text still through `normalizeChars` |
+| Review state reducer (pure) | `packages/core/src/review-state.ts` | Not built |
+| Transcript marks | `apps/mobile/src/components/capture/transcript.tsx` | Built for applied and removed edits; low-confidence and locked marks not built |
+| Change rows, edit card, suggestion card, unsure card | `apps/mobile/src/components/review/*.tsx` | Not built as separate files |
+| Kind control, date sheet | F04 | Not built (F04 WP-F04-08, -10) |
+| Local schema | `apps/mobile/src/lib/db/migrations.ts` migration 7 | Not built (5 is D-084; F04 takes 6) |
+| Engine audit job | `apps/mobile/src/lib/review/engine-audit.ts` | Not built; F06-REQ-022 |
+| Server columns | `supabase/migrations/<new>_f06_author_layer.sql` | Not built; not needed while server features are off in v1.0 |
 
-Libraries: none new in `packages/core` (pure TypeScript, ES2018 Unicode property escapes, which the scratch run used). The word diff is about 60 lines of our own code over the core tokenizer [R]: a library diff (`diff`, BSD) works on characters or its own word regex, and would reintroduce D1 for Devanagari. Agents confirm Hermes supports `\p{Default_Ignorable_Code_Point}` and `\p{Bidi_Control}` in the dev build before WP-F06-02 merges (Unverified; part of the spike).
+Libraries: none new in `packages/core` (pure TypeScript, ES2018 Unicode property escapes). The word diff is about 60 lines of our own code over the core tokenizer [R]: a library diff (`diff`, BSD) works on characters or its own word regex, and would reintroduce D1 for Devanagari. ADR 0014 records that Hermes has Unicode property escapes including `Script=` and no `Intl.Segmenter`; whether it supports `\p{Default_Ignorable_Code_Point}` and `\p{Bidi_Control}` is Unverified until WP-F06-01.
 
-### 11.2 The text-rules pack (shared schema with F05)
+### 11.2 The text-rules pack
 
-A pack is data, never code (B13, App Review 2.5.2). F06 reads these tables; F05 owns the file, manifest, download and speech fields.
+Decided by ADR 0014 (languages as data) and delivered per ADR 0016 (signed manifest, `text-rules.<lang>` ids); this spec does not re-specify them. What F06 relies on:
+- The pack type is `TextRulesPack` in `packages/core/src/lang/types.ts`; sources are `packs/text-rules/<lang>.json`; English is bundled.
+- Each table carries a review status (`draft`, `cited`, `native-reviewed`). Enabling tables (fillers, repeats, agreement, name similarity) apply only when `native-reviewed`; protective tables load even as drafts. All six downloadable packs ship with word tables in `draft`, so they run in punctuation-safe mode (ADR 0014 section 3).
+- Agreement repairs stay English-only (ADR 0014 Consequences), which already meets the non-English half of F06-REQ-007.
+- Script conversion is a `punctuation` edit, labelled `script` by `describeEdit` (ADR 0014 section 4).
+- The app runs every non-English spoken letter at `verbatim` until its pack's word tables are signed off (`LANGUAGES_WITH_TIDY_RULES` in `apps/mobile/src/lib/transcription-queue/clean.ts` is English only).
 
-```ts
-// packages/core/src/pack.ts (new)
-export interface TextRulesPack {
-  id: string;              // "pt"
-  version: string;         // "1.0.0"; recorded on the entry as pack_ref "pt@1.0.0"
-  script: 'Latn' | 'Deva' | 'Arab' | 'Hans' | 'Hant';
-  fillers: { auto: string[]; offer: string[] };     // F06-REQ-010
-  repeats: { always: string[]; offer: string[] };   // empty "always" outside English at v1.0 (F06-REQ-013)
-  agreement: { pairs: string[][] };                 // empty outside English at v1.0 (F06-REQ-007)
-  nameWords: string[];                              // common words a name may match (F06-REQ-008)
-  negations: string[];                              // added to the core NEGATIONS set for this letter (B13)
-  punctuation: {
-    terminal: string[];        // marks that end a sentence, e.g. [".", "?", "!"] or ["。", "？", "！"]
-    finalMark: string | null;  // added when a text ends with no terminal mark; null adds nothing
-    caseless: boolean;         // no sentence-case edits
-    characters: Array<{ from: string; to: string }>;  // F06-REQ-016, e.g. em dash to comma for Latin packs
-    keepSpaces: string[];      // e.g. [" ", " "] for fr
-  };
-  reviewedBy: string;          // role and date of the native sign-off, e.g. "native reviewer 2026-11-02"
-}
-```
-
-Validation: the loader refuses a pack whose JSON fails the schema, whose tables hold a word that is also in the pack's negation table, or whose `characters` entry changes a letter or mark. A refused pack means F06-REQ-011 (no pack-driven edits).
+Gaps against this spec that need a pack schema change go to the language owner as an ADR 0014 amendment, not a new file: a `nameWords` table for F06-REQ-008, an `offer` versus `auto` filler split for F06-REQ-010, and a character table that turns the English final normalisation into stored `punctuation` edits for F06-REQ-016.
 
 ### 11.3 Data model and store contract
 
-Local migration 5 (append-only, one transaction, fixture DBs v0 to v4 must migrate with row counts and hashes unchanged):
+Local migration 7 (append-only, one transaction; versions 4 sync and 5 D-084 exist, F04 takes 6; fixture DBs v0 to v6 must migrate with row counts and hashes unchanged):
 ```sql
 ALTER TABLE entries ADD COLUMN author_edits TEXT NOT NULL DEFAULT '[]';
 ALTER TABLE entries ADD COLUMN locked_spans TEXT NOT NULL DEFAULT '[]';
@@ -421,47 +409,48 @@ ALTER TABLE entries ADD COLUMN pack_ref TEXT;
 ALTER TABLE drafts ADD COLUMN review_state TEXT;  -- JSON: level, edit states, locks, author edits; never syncs
 ```
 
-`Edit` gains optional `state`, `reason` and `accepted_by` (types.ts); stored edits from engine 3 read as `state: 'applied'`.
+`Edit` gains optional `state`, `reason` and `accepted_by` (types.ts); stored edits from engines 3 to 5 read as `state: 'applied'`.
 
 Store functions (new, synchronous, same patterns as `store.ts`): `setDraftReviewState(id, state)`, `openEntryForReview(id)`, `saveEntryEdits(id, { machineEdits, authorEdits, lockedSpans, finalText, editLevel, baseSeq })`. `saveLetterFromDraft` writes every field in F06-REQ-023 and -024. `setWordsForWaitingEntry` stays the only way a voice-only letter gets raw text, and only on the device (F06-REQ-030).
 
-Server migration (data architect, `approve-migration`): add `author_edits jsonb not null default '[]'`, `locked_spans jsonb not null default '[]'`, `pack_ref text` to `entries` with classification comments; add `pack_ref` to `entries_guard_immutable`; add `author_edits` and `locked_spans` to `entries_record_version` and to `entry_versions`; leave `book_entries` unchanged. Sync field group (F16-REQ-011): words, `machine_edits`, `author_edits`, `locked_spans`, `edit_level` push together.
+Server migration (data architect, `approve-migration`; not needed for the on-device v1.0 build): add `author_edits jsonb not null default '[]'`, `locked_spans jsonb not null default '[]'`, `pack_ref text` to `entries` with classification comments; add `pack_ref` to `entries_guard_immutable`; add `author_edits` and `locked_spans` to `entries_record_version` and to `entry_versions`; leave `book_entries` unchanged. Sync field group (F16-REQ-011): words, `machine_edits`, `author_edits`, `locked_spans`, `edit_level` push together.
 
 ### 11.4 Sequencing
 
-1. Weeks 2 to 3: WP-F06-01 (spike) and WP-F06-02 (verifier and tokenizer, R-01 D1 to D9, D14 guard) in parallel.
-2. Weeks 3 to 4: WP-F06-03 (packs out of code, fillers, repeats, names), WP-F06-04 (regression suite and scorer). Gate: no non-English pack on the manifest until WP-F06-04 is green for it.
-3. Weeks 4 to 6: WP-F06-05 (character edits, punctuation provider), WP-F06-06 (records and replay), WP-F06-07 (migrations).
-4. Weeks 5 to 7: WP-F06-08 to -11 (Review UI), WP-F06-12 (engine audit).
+Dates follow ROADMAP 2.1 (feature freeze Mon 26 Oct; submission in the week of Mon 2 Nov).
+1. Now: WP-F06-02 and WP-F06-03 close the open R-01 items (D4, D6, D7, D9, D10, D13). They are pure TypeScript with tests and no device need. Each fix raises `ENGINE_VERSION` to 6 with a changelog line.
+2. Week of 12 Oct: WP-F06-01 runs the R-01 fixtures under Hermes on the SE 3 with the FT-22 device session.
+3. Before freeze: WP-F06-04 (regression suite with every R-01 case and the scorer), WP-F06-05 (English character edits instead of silent normalisation), WP-F04-07 (typed text exact).
+4. Before freeze if capacity allows, else v1.0.x: WP-F06-06, -07, -10, -11 (full edit records, author layer, lock, unsure marks). The v1.0 floor is the constitution: every applied edit verified, stored and undoable, which the current Review meets for applied edits.
 5. P1, cut first: WP-F06-13 (suggestions).
 
 ### 11.5 Riskiest unknown and the spike
 
-The riskiest unknown is whether the fixed verifier behaves the same under Hermes on an iPhone as on Node: Unicode property escapes, normalisation and regex boundaries can differ by engine. A difference would let a case refused in CI pass on the phone. Spike WP-F06-01: run the R-01 fixtures and the 4,000-word timing fixture inside the iOS dev build on an SE 3, compare verdicts with Node byte for byte, and record timings. If any verdict differs, the suite runs in the dev build on every release candidate (it does anyway, F06-REQ-019) and the differing construct is replaced with an explicit code-point table.
+The riskiest unknown is whether the verifier behaves the same under Hermes on an iPhone as on Node: Unicode property escapes, normalisation and regex boundaries can differ by engine. A difference would let a case refused in CI pass on the phone. Spike WP-F06-01: run the R-01 fixtures and the 4,000-word timing fixture inside the iOS dev build on an SE 3, compare verdicts with Node byte for byte, and record timings. If any verdict differs, the suite runs in the dev build on every release candidate (it does anyway, F06-REQ-019) and the differing construct is replaced with an explicit code-point table.
 
 Second unknown: whether parents notice and accept the marks. Study 2 (R2 8.2) and Study 1 (TestFlight diary) answer it; the revert-rate guardrail watches it in beta.
 
 ## 12. Work packages
 
-BL-120 is widened from the eight TDD 03 7.1 cases (already refused by engine 3, confirmed in the scratch run) to the R-01 list D1 to D15 (09 R-01 mitigation). WP-F06-02 to -05 together close it. Owner roles follow `08-delivery.md`.
+BL-120 is listed "done in code" in `docs/BACKLOG.md` (status at a glance, verified 3 Oct). Against the widened R-01 list D1 to D15 (09 R-01 mitigation) it is not done: 8 items stay open in whole or part on 13 Oct (section 7.1). WP-F06-02 to -05 close them. Owner roles follow `08-delivery.md`. "Device" names the run in `docs/qa/DEVICE_TEST_PLAN.md` that must pass on a real iPhone.
 
-| WP | Scope | Owner | BL | Owns files or folders | Depends on | Done when (tests that must pass) | Mode |
-|---|---|---|---|---|---|---|---|
-| WP-F06-01 | Spike: R-01 fixtures and the 4,000-word timing fixture under Hermes on an SE 3; Unicode property escapes in Hermes | Speech engineer | BL-120 | `docs/qa/evidence/F06-spike.md` (new) | BL-030 dev build | Verdicts for every R-01 fixture equal Node byte for byte, or each difference is listed with its construct; timings recorded | pair (speech engineer, QA engineer) |
-| WP-F06-02 | Verifier and tokenizer: marks, invisibles, mood marks, quote styles, closed agreement table, whole-word terms | Core owner | BL-120 | `packages/core/src/text.ts`, `meaning.ts`, `verify.ts`, `protect.ts` (`quotedSpans`, `termRegex`), `types.ts`, `packages/core/test/verify.test.ts` | none | `[F06-REQ-001]` to `[F06-REQ-007]`, `[F06-REQ-009]` green; existing 237 engine tests green or changed only where a test asserted a defect, each listed in the PR | agent |
-| WP-F06-03 | Text-rules pack type, English pack, loader; fillers, repeats, agreement, name words and negations read from the pack; hyphen and name-word rules; family-name guard | Core owner | BL-120 | `packages/core/src/pack.ts` (new), `packages/core/packs/en.json` (new), `rules.ts`, `repeats.ts`, `protect.ts` (`dictionaryEdits`), `pipeline.ts` (pack option) | WP-F06-02 | `[F06-REQ-005]`, `[F06-REQ-008]`, `[F06-REQ-010]`, `[F06-REQ-011]`, `[F06-REQ-013]`, `[F06-REQ-014]`; English output for every existing fixture unchanged except the R-01 cases | agent |
-| WP-F06-04 | Per-language regression suite and property test; scorer fix | Speech engineer | BL-120, BL-147 | `packages/core/test/regression/*` (new), `packages/core/test/verify.fuzz.test.ts`, `experiments/score.ts`, `experiments/score.test.ts` | WP-F06-02, WP-F06-03 | `[F06-REQ-019]` zero accepted meaning changes per language in Node; `[F06-REQ-020]`; `[F06-REQ-021]` 10k cases fixed seed; native sign-off recorded per non-English file | agent, then human sign-off per language |
-| WP-F06-05 | Character edits replace `normalizeChars` in the pipeline; pack-driven sentence case and final mark; `ENGINE_VERSION` 4 | Core owner | BL-120 | `packages/core/src/punctuation.ts`, `pipeline.ts`, `text.ts` (`normalizeChars` kept only for product copy) | WP-F06-03 | `[F06-REQ-015]`, `[F06-REQ-016]`, `[F06-REQ-018]`; segments joined equal `text` for every fixture | agent |
-| WP-F06-06 | Edit records with state; author layer word diff; `replayFinalText`; review-state reducer; `auditEdits` | Speech engineer | BL-144, BL-148 | `packages/core/src/author-edits.ts` (new), `review-state.ts` (new), `pipeline.ts` (replay, audit), `packages/core/test/replay.test.ts` (new) | WP-F06-05 | `[F06-REQ-023]`, `[F06-REQ-025]` 500 of 500 replay, `[F06-REQ-026]`, `[F06-REQ-027]` reducer tests | agent |
-| WP-F06-07 | Local migration 5 and store functions; server migration for `author_edits`, `locked_spans`, `pack_ref`, guard and version trigger | Data architect, mobile engineer | BL-144 | `apps/mobile/src/lib/db/migrations.ts`, `apps/mobile/src/lib/store.ts`, `apps/mobile/test/migrations.test.ts`, `supabase/migrations/<new>_f06_author_layer.sql`, `supabase/tests/*` | WP-F04-03, WP-F06-06 | Fixture DBs v0 to v4 migrate unchanged; `[DATA-REQ-040 Rev]` `pack_ref` update fails `SCIMM`; `[DATA-REQ-041 Rev]` version row on author edit; `[PRD-REQ-004 Rev]` member cannot read new columns | agent, `approve-migration` |
-| WP-F06-08 | Review shell: split `review.tsx`; header with child, kind, date, language; autosave review state; typed path with no machine edits | Mobile engineer | BL-148 | `apps/mobile/src/app/review.tsx`, `apps/mobile/src/components/review/header.tsx` (new), `copy.ts` (new) | WP-F06-07, WP-F04-10 | `[F06-REQ-035]`, `[F06-REQ-036]` 100 of 100 kills, `[F06-REQ-037]`, `[F04-REQ-012]` byte equality | agent |
-| WP-F06-09 | Changes: marks, rows, edit card, put back and re-apply, word for word, show exactly what I said, read card, no-pack line | Mobile engineer | BL-120 | `apps/mobile/src/components/capture/transcript.tsx`, `apps/mobile/src/components/review/changes.tsx` (new), `edit-card.tsx` (new) | WP-F06-08 | `[F06-REQ-028]`, `[F06-REQ-034]`, `[F06-REQ-038]`, `[F06-REQ-040]` VoiceOver script and AX5 snapshots | agent |
-| WP-F06-10 | Lock a phrase, add to your words, Change words as author layer, low-confidence marks | Mobile engineer | BL-148 | `apps/mobile/src/components/review/lock.tsx` (new), `unsure-card.tsx` (new), `review.tsx` (edit mode) | WP-F06-09, F07 sheet | `[F06-REQ-026]` end to end, `[F06-REQ-029]`, `[F06-REQ-031]`, `[F06-REQ-032]` | agent |
-| WP-F06-11 | Save paths: full records, voice-only stays local, open and edit a saved letter, co-parent read path | Mobile engineer | BL-142, BL-144 | `apps/mobile/src/app/review.tsx` (save), `apps/mobile/src/lib/store.ts` (save functions) | WP-F06-07, WP-F06-09 | `[F06-REQ-023]` on device, `[F06-REQ-030]`, `[F06-REQ-033]` render and access tests, `[F06-REQ-041]` perf on SE 3 | agent |
-| WP-F06-12 | Engine audit job and the author-only engine note | Mobile engineer | BL-120 | `apps/mobile/src/lib/review/engine-audit.ts` (new), letter view note (coordinate with F09) | WP-F06-06, WP-F06-11 | `[F06-REQ-022]` no row changed, 1,000 letters in 60 s on SE 3 | agent |
-| WP-F06-13 | P1: offered fillers and repeats with the hollow ring and card | Speech engineer, mobile engineer | BL-146 | `apps/mobile/src/components/review/suggestion-card.tsx` (new) | WP-F06-09 | `[F06-REQ-012]` | agent |
-| WP-F06-14 | Copy: new review strings, K-26 renames, content rule against improve or polish offers, support macro | Content | BL-156, BL-118 | `apps/mobile/src/components/review/copy.ts`, `packages/content/src/strings.en.ts` (review, settings tidy keys, provenance), `packages/content/test/rules.test.ts`, `docs/legal/claims-registry.yaml` | none | `[F06-REQ-039]` content test; `npm test` content rules green; counsel signs any "never" claim | agent, counsel review |
-| WP-F06-15 | Analytics enum additions and `engine_audit_completed` | Analytics engineer | BL-020 | `packages/analytics/src/catalog.ts`, `docs/analytics/TRACKING_PLAN.md` | none | Catalogue tests green; every new property L2 | agent |
+| WP | Scope | Owner | BL | Owns files or folders | Depends on | Done when (tests that must pass) | Mode | Status 13 Oct | Device |
+|---|---|---|---|---|---|---|---|---|---|
+| WP-F06-01 | Spike: R-01 fixtures and the 4,000-word timing fixture under Hermes on an SE 3; Unicode property escapes in Hermes | Speech engineer | BL-120 | `docs/qa/evidence/` (session file) | BL-030 dev build | Verdicts for every R-01 fixture equal Node byte for byte, or each difference is listed with its construct; timings recorded | pair (speech engineer, QA engineer) | Not run | S1-18 transcription spot check plus this fixture run (SE 3) |
+| WP-F06-02 | Verifier: invisible-character guard (D4), remaining quote styles (D7), closed agreement table with no noun plurals (D9) | Core owner | BL-120 | `packages/core/src/meaning.ts`, `verify.ts`, `protect.ts`, `types.ts` (`changes_invisible`), `packages/core/test/verify.test.ts` | none | `[F06-REQ-003]`, `[F06-REQ-006]`, `[F06-REQ-007]` green; golden master (`golden.test.ts`) changed only where a case asserted a defect, each listed in the PR | agent | Partly built: D1, D2, D3, D5, D8 fixed (engines 4, 5); D4, D7, D9 open | none |
+| WP-F06-03 | Rules and dictionary: hyphenated fillers (D6), name-word guard (D10), family-name guard (D13), filler auto and offer split | Core owner | BL-120 | `packages/core/src/rules.ts`, `lang/dictionary.ts`, `lang/english-tables.ts`, `lang/types.ts` (with the language owner, ADR 0014 amendment) | WP-F06-02 | `[F06-REQ-005]`, `[F06-REQ-008]`, `[F06-REQ-010]`, `[F06-REQ-014]`; English output for every existing fixture unchanged except the R-01 cases | agent | Partly built: pack path and D11, D12 done; D6, D10, D13 open | none |
+| WP-F06-04 | Regression suite with every R-01 case per script; property test generators for marks after a word; scorer fix | Speech engineer | BL-120 | `packages/core/test/regression/*` (new), `packages/core/test/verify.fuzz.test.ts`, `experiments/score.ts`, `experiments/score.test.ts` | WP-F06-02, WP-F06-03 | `[F06-REQ-019]` zero accepted meaning changes per language in Node; `[F06-REQ-020]`; `[F06-REQ-021]` 10k cases fixed seed; native sign-off recorded per non-English file | agent, then human sign-off per language | Partly built: `lang.languages.test.ts` has hostile edits per language; R-01 open cases and the scorer fix missing | Hermes run with WP-F06-01 |
+| WP-F06-05 | English final characters become stored `punctuation` edits instead of a silent normalisation; pack-driven sentence case and final mark; `ENGINE_VERSION` 6 | Core owner | BL-120 | `packages/core/src/pipeline.ts`, `lang/engine.ts` (`normalizeFinal`), `punctuation.ts`, `text.ts` (`normalizeChars` kept for product copy only) | WP-F06-03 | `[F06-REQ-015]`, `[F06-REQ-016]`, `[F06-REQ-018]`; segments joined equal `text` for every fixture | agent | Partly built: French and Chinese keep their characters (packs); English still changes silently | none |
+| WP-F06-06 | Edit records with state; author layer word diff; `replayFinalText`; review-state reducer; `auditEdits` | Speech engineer | BL-144, BL-148 | `packages/core/src/author-edits.ts` (new), `review-state.ts` (new), `pipeline.ts`, `packages/core/test/replay.test.ts` (new) | WP-F06-05 | `[F06-REQ-023]`, `[F06-REQ-025]` 500 of 500 replay, `[F06-REQ-026]`, `[F06-REQ-027]` reducer tests | agent | Not built (BL-148 ready) | none |
+| WP-F06-07 | Local migration 7 and store functions; server migration for `author_edits`, `locked_spans`, `pack_ref` | Data architect, mobile engineer | BL-144 | `apps/mobile/src/lib/db/migrations.ts`, `apps/mobile/src/lib/store.ts`, `apps/mobile/test/migrations.test.ts`, `supabase/migrations/<new>_f06_author_layer.sql`, `supabase/tests/*` | WP-F04-03, WP-F06-06 | Fixture DBs v0 to v6 migrate unchanged; `[DATA-REQ-040 Rev]` `pack_ref` update fails `SCIMM`; `[DATA-REQ-041 Rev]` version row on author edit; `[PRD-REQ-004 Rev]` member cannot read new columns | agent, `approve-migration` | Not built | none |
+| WP-F06-08 | Review shell: split `review.tsx`; header with child, kind, date, language; autosave review state; typed path with no machine edits | Mobile engineer | BL-148 | `apps/mobile/src/app/review.tsx`, `apps/mobile/src/components/review/header.tsx` (new), `copy.ts` (new) | WP-F06-07, WP-F04-10 | `[F06-REQ-035]`, `[F06-REQ-036]` 100 of 100 kills, `[F06-REQ-037]`, `[F04-REQ-012]` byte equality | agent | Partly built: "To {child}" picker and voice-only save exist; kind, date, language chip, autosaved review state and the typed exactness fix do not | Kill run in Review (S1-13 pattern) |
+| WP-F06-09 | Changes: marks, rows, edit card, put back and re-apply, Undo every fix, show exactly what I said, read card, no-pack line | Mobile engineer | BL-120 | `apps/mobile/src/components/capture/transcript.tsx`, `apps/mobile/src/components/review/changes.tsx` (new), `edit-card.tsx` (new) | WP-F06-08 | `[F06-REQ-028]`, `[F06-REQ-034]`, `[F06-REQ-038]`, `[F06-REQ-040]` VoiceOver script and AX5 snapshots | agent | Partly built: marks, rows, Put it back, Undo every fix, Show exactly what I said and the read card exist in `review.tsx`; re-apply after a reverted edit, the no-pack line and the Settings default (F06-REQ-038) are not built | S1-23 VoiceOver walk |
+| WP-F06-10 | Lock a phrase, add to your words, Change words as author layer, low-confidence marks | Mobile engineer | BL-148 | `apps/mobile/src/components/review/lock.tsx` (new), `unsure-card.tsx` (new), `review.tsx` (edit mode) | WP-F06-09, F07 sheet | `[F06-REQ-026]` end to end, `[F06-REQ-029]`, `[F06-REQ-031]`, `[F06-REQ-032]` | agent | Not built (Change words exists and overwrites `final_text`) | none |
+| WP-F06-11 | Save paths: full records, voice-only stays local, open and edit a saved letter | Mobile engineer | BL-142, BL-144 | `apps/mobile/src/app/review.tsx` (save), `apps/mobile/src/lib/store.ts` (save functions) | WP-F06-07, WP-F06-09 | `[F06-REQ-023]` on device, `[F06-REQ-030]`, `[F06-REQ-033]` render and access tests, `[F06-REQ-041]` perf on SE 3 | agent | Partly built: voice-only save private and waiting (BL-142 done); rejected edits not stored; no edit of a saved letter | Perf on SE 3 |
+| WP-F06-12 | Engine audit job and the author-only engine note | Mobile engineer | BL-120 | `apps/mobile/src/lib/review/engine-audit.ts` (new), letter view note (coordinate with F09) | WP-F06-06, WP-F06-11 | `[F06-REQ-022]` no row changed, 1,000 letters in 60 s on SE 3 | agent | Not built. Engines 4 and 5 were merged without it; no app has reached real users yet (ROADMAP 2.1 section 0), so no saved letter outside development builds is exposed | 1,000-letter run on SE 3 |
+| WP-F06-13 | P1: offered fillers and repeats with the hollow ring and card | Speech engineer, mobile engineer | BL-146 | `apps/mobile/src/components/review/suggestion-card.tsx` (new) | WP-F06-09 | `[F06-REQ-012]` | agent | Not built (BL-146 deferred) | none |
+| WP-F06-14 | Copy: new review strings, content rule against improve or polish offers, support macro | Content | BL-156, BL-118 | `apps/mobile/src/components/review/copy.ts`, `packages/content/src/strings.en.ts`, `packages/content/test/rules.test.ts`, `docs/legal/claims-registry.yaml` | none | `[F06-REQ-039]` content test; `npm test` content rules green; counsel signs any "never" claim | agent, counsel review | Partly built: D-074 renames done in `packages/content`; new strings in section 6.4 marked New are not | none |
+| WP-F06-15 | Analytics enum additions and `engine_audit_completed` | Analytics engineer | BL-020 | `packages/analytics/src/catalog.ts`, `docs/analytics/TRACKING_PLAN.md` | none | Catalogue tests green; every new property L2 | agent | Not built | none |
 
 ## 13. Open questions and assumptions
 
@@ -476,7 +465,7 @@ BL-120 is widened from the eight TDD 03 7.1 cases (already refused by engine 3, 
 | Q5 | Add the 3 Oct finding to R-01: `punctuationEdits` appends "." after 。 or ؟ (section 7.1 note) | Core owner (edit to 09) | 9 Oct | 09 R-01, BL-120 |
 | Q6 | Native reviewers for six languages sign off each pack and the regression file (R-08). Who are they and what is the budget? | Founder | 23 Oct | F06-REQ-019; non-English packs cannot ship without it |
 | Q7 | Should the edit-level choice in Settings (F17) be per author or per letter language? Spec default: per author | Product, F17 owner | 30 Oct | F06-REQ-038 |
-| Q8 | K-26 renames ("Lightly tidied" to "With small fixes") touch the printed book and F15 export. Confirm the new words for all three | Content, design leads | 23 Oct | Section 6.4, F09, F15 |
+| Q8 | Answered by D-074: "Word for word" names the feature; content renamed the values (`packages/content/src/strings.en.ts`, `features/export.en.ts`). Remaining check: 23 copy lines in `apps/mobile/src` and `packages/content/src` still contain "tidy" in code comments or key names (search on 13 Oct); none was found in a shown string, but the content rules test does not check key names | Content | 23 Oct | Section 6.4, F09, F15 |
 
 ### Assumptions
 
@@ -485,7 +474,7 @@ BL-120 is widened from the eight TDD 03 7.1 cases (already refused by engine 3, 
 | A1 | [A] Whisper writes hesitation sounds in enough letters for filler removal to matter in each language (R5 4.1 marks this Unverified) | Per-language experiment: share of reference fillers present in raw (R5 8.2) |
 | A2 | [A] Parents read the marks and use Put it back rather than ignoring them | Revert rate in TestFlight; Study 1 diary; Study 2 |
 | A3 | [A] A 4,000-word letter cleans within 1 s on an SE 3 after WP-F06-03 profiling | WP-F06-01 spike numbers |
-| A4 | [A] Most parents keep clean as the default; few switch to word for word | `letter_saved.edit_level` share in beta |
+| A4 | [A] Most parents keep clean as the default; few switch to Exactly as said | `letter_saved.edit_level` share in beta |
 | A5 | [A] Engine audits rarely refuse an existing edit, because each engine only tightens | `engine_audit_completed.refused_bucket` |
 | A6 | [A] Pack text tables stay under 50 KB compressed | First non-English pack build |
 
@@ -496,6 +485,7 @@ Repo (read 3 Oct 2026):
 - `docs/agents/BRIEF-2026-10-03.md` items 7 (what the machine may do) and 11 (privacy, said calmly); `_AUTHORING.md` B5, B13, B14.
 - `packages/core/src/types.ts`, `verify.ts`, `pipeline.ts`, `rules.ts`, `meaning.ts`, `protect.ts`, `punctuation.ts`, `repeats.ts`, `model-edits.ts`, `edit-provider.ts`, `text.ts`; `packages/core/test/verify.test.ts`, `verify.fuzz.test.ts`, `core.test.ts`.
 - Scratch runs, 3 Oct, of a copy of `packages/core/src` with Node 22 type stripping (no repo change): R-01 D1 to D14, the punctuation finding in 7.1, the TDD 03 7.1 controls, and the timing baseline in section 9.
+- Scratch re-run, 13 Oct 2026: vitest files outside the repo importing `packages/core/src` and `packs/text-rules/*.json` on `develop` (engine 5), every D1 to D15 case in section 7.1; `experiments/score.ts` read. `docs/adr/0014-languages-and-phonetics.md`; `docs/DECISIONS.md` D-074; `packages/content/src/strings.en.ts` (review and settings keys); `apps/mobile/src/app/review.tsx`; `apps/mobile/src/lib/transcription-queue/clean.ts`.
 - `apps/mobile/src/app/review.tsx`, `apps/mobile/src/components/capture/transcript.tsx`, `apps/mobile/src/lib/store.ts` (`saveLetterFromDraft`, `setWordsForWaitingEntry`), `apps/mobile/src/lib/copy.ts` (`pendingCopy`), `apps/mobile/src/lib/db/migrations.ts`, `apps/mobile/src/app/settings/recordings.tsx`, `apps/mobile/src/components/book/chapters.ts`.
 - `packages/content/src/strings.en.ts` (`review.*`, `settings.*`, `book.provenance.*`), `packages/content/VOICE.md`.
 - `packages/analytics/src/catalog.ts`; `docs/analytics/TRACKING_PLAN.md` fidelity guardrail and `letter_saved`, `review_action`, `machine_edit_reverted`.

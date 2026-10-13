@@ -7,7 +7,7 @@
 | Personas | P1, P2, P3, P4, P6 |
 | Existing IDs | B-REQ-006, B-REQ-017, B-NFR-001, B-NFR-003, PRD-REQ-004, PRD-REQ-013, PRD-REQ-016, LEGAL-REQ-014, LEGAL-REQ-018, DATA-REQ-001, DATA-REQ-042, DATA-REQ-048, D-031, DR-01, R-01, R-08, R-14, BL-120, BL-136, BL-146, BL-148, BL-178, BL-305 |
 | Depends on | F03 (names and signature at first run), F05 (prompt rendering, packs, phonetic tables, model for the name check), F06 (verifier fix for R-01, Review screen, author edit layer), F11 (co-parent membership), F16 (sync), F17 (Settings shell), F15 (export of terms) |
-| Status | Draft V2, 3 Oct 2026 |
+| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with ADR 0014 (phonetic keys, dictionary matching per script), engine version 5 and the R-01 re-run (F06 section 7.1) |
 
 ## 1. Why
 
@@ -16,7 +16,9 @@
 - [F] Whisper can be steered toward the family's spellings by putting names in the initial prompt; only the final 224 prompt tokens count [F] R5-S49. whisper.rn biases only the first 30 s of each call, so F05 prompts every chunk (TDD 03 3.5.1, 3.5.3).
 - [F] Today the dictionary is two terms derived on the fly from the child's name and the signature (`dictionaryFor` in `apps/mobile/src/lib/store.ts`); there is no local table, no nickname, no family names, and no way to teach a mishearing (`heardAs` is always empty) (read 3 Oct).
 - [F] A term holds one spelling (`DictionaryTerm.term` is one string, `packages/core/src/types.ts`), while a Hindi-speaking family may write the child's name in Devanagari in a Hindi letter and in Latin letters in an English one (R5 section 3).
-- [F] The dictionary fix path has known defects that change meaning: it changes ordinary words that share a spelling with a name, matches inside Devanagari words, and can swap one family name for another (R-01, found 3 Oct in a scratch copy of `packages/core`; engine tests still pass 237 of 237).
+- [F] The dictionary fix path had three defects that change meaning (R-01, found 3 Oct): it changes ordinary words that share a spelling with a name, matches inside Devanagari words, and can swap one family name for another. Re-run on 13 Oct against engine 5 (F06 section 7.1, where they are D10, D11 and D13): the Devanagari match is fixed; with terms Hope and Will, "I hope ... we will see" still becomes "I Hope ... we Will see"; and a taught "heard as" Usha on Asha still turns the family term Usha into Asha.
+- [D] Phonetic keys are decided by ADR 0014 section 6: `phoneticKey` romanizes by table (Devanagari, Arabic, toneless pinyin), applies the language's spelling rewrites and returns a consonant skeleton; keys only suggest (`soundAlikeTerms` in `packages/core/src/lang/dictionary.ts`). Automatic similarity fixes stay limited to cased scripts, where a mid-sentence capital shows the recogniser heard a name; in Devanagari, Arabic and Han only taught mishearings are fixed. This replaces this spec's earlier plan of Double Metaphone, IndicSOUNDEX and `pinyin-pro` libraries.
+- [F] On `develop` the app's dictionary is derived, not stored: `dictionaryFor` in `apps/mobile/src/lib/store.ts` returns the child's name and the author's signature only. There is no local dictionary table, no add-term sheet and no Settings list (BL-136 remainder deferred to v1.2, CVL-03).
 - [F] The server keys terms on `(owner_id, term)` (`supabase/migrations/20260930000000_scribe_core.sql`), so one parent cannot hold "the same word" for two children, and B-REQ-006 asks for child-level terms every member can read (B section 6 item 10; BL-178).
 
 ## 2. Who
@@ -117,7 +119,7 @@ Shown once per language the author records in, only when `languageStatus(lang).g
 3. All three match the form exactly: `onboarding.nameCheck.doneTitle`, `.doneBody`. Otherwise `.heardLabel` with the heard text and `.correctPrompt`; Yes or "Let me spell it" (`.yesButton`, `.fixButton`, `.spellPlaceholder`).
 4. Distinct non-matching spellings become `heardAs` of that form, each passing the save-time checks in 7.2 (a heard text that is a common word or another term is not stored).
 
-Name suggestions (P1): when a capitalised word in a Latin-script transcript has the same pack phonetic code as a term's form (Double Metaphone for Latin, R5-S53), Review offers "Is this {term}?" as a tap-to-accept suggestion (F06 suggestions UX, BL-146). Accepting adds the heard text as a `heardAs` (through 7.2 checks) and re-runs cleaning. Non-Latin phonetic tables (IndicSOUNDEX, pinyin, Arabic skeleton) feed suggestions only after native review of each table (R5 section 3: low confidence for Arabic; IndicSOUNDEX code licence Unverified).
+Name suggestions (P1): when a word in the transcript has the same `phoneticKey` as a term (ADR 0014 section 6; `soundAlikeTerms`), Review offers "Is this {term}?" as a tap-to-accept suggestion (F06 suggestions UX, BL-146). Accepting adds the heard text as a `heardAs` (through 7.2 checks) and re-runs cleaning. The phonetic tables are enabling tables, so they suggest only once the language's pack has them signed off by a native speaker (ADR 0014 section 3); every pack's `phonetic` table is `draft` today.
 
 ### 6.5 Unhappy paths and edge cases
 
@@ -173,7 +175,7 @@ Rules (all in `packages/core`, each with a test titled after the constitution ru
 1. **Boundaries.** Matching of terms, forms and `heardAs` runs on NFC-normalised text, and a word character is `[\p{L}\p{M}\p{N}]` plus U+200C and U+200D (joiners appear in R-01's list). A match whose neighbour on either side is a word character is not a match.
 2. **No other-term targets.** An `stt_fix` is rejected when its original, after normalisation, equals any term, any form, or any `heardAs` of a different term in the effective dictionary, whatever the source (rule or model) and before any dictionary-backed shortcut.
 3. **Protected spans for dictionary fixes.** Every other term's exact-form spans are protected while dictionary fixes are verified.
-4. **Case-only fixes.** A fix that only changes letter case (Latin forms) is applied automatically only when the lower-cased form is not in the letter pack's `commonWords` list (new pack field, F05 7.4) and not in the verifier's protected word sets (function words, pronouns, kinship, negation, modals, numbers in `meaning.ts`). Otherwise it is offered, never applied, until the author taps it.
+4. **Case-only fixes.** A fix that only changes letter case (Latin forms) is applied automatically only when the lower-cased form is not in the letter pack's `commonWords` list (new field in `TextRulesPack`, `packages/core/src/lang/types.ts`, as an ADR 0014 amendment by the language owner; F06 F06-REQ-008 calls the same list `nameWords`, one list serves both) and not in the verifier's protected word sets (function words, pronouns, kinship, negation, modals, numbers in `meaning.ts`). Otherwise it is offered, never applied, until the author taps it.
 5. **Taught heard-as values.** At save, a `heardAs` value is refused if it equals another term, form or another term's `heardAs`; it is stored as offer-only if it is in `commonWords` or a protected word set. A kinship word may be taught only to a term of kind `self` or `family` (a spelling of what the child calls someone); never to `child`, `nickname`, `place` or `word`.
 6. **Scripts without case or spaces.** Devanagari and Arabic forms have no case-only fixes. For Chinese, a taught `heardAs` is auto-applied only when it is 2 or more characters long and bounded by punctuation, line ends or a segmenter boundary (whether `Intl.Segmenter` works in Hermes on iOS is Unverified, R5 section 4.4); otherwise it is offered. Homophones are common in Chinese, so phonetic matching never auto-applies (R5 section 3).
 7. **Merging shared terms.** The effective dictionary for a letter is the author's own terms for that child, owner-wide kinds, and the shared child-level terms of other members. Rules 2 and 5 run again on every merge; a colliding value is ignored on this device and flagged in Settings.
@@ -213,7 +215,7 @@ Rules (all in `packages/core`, each with a test titled after the constitution ru
 | F07-REQ-019 | P0 | L4 handling | Given the log canary with Asha fixture terms, Then zero matches in logs, crash reports, analytics payloads or URLs; Given analytics, Then only `kind` and `source` leave the device | LEGAL-REQ-014; B-NFR-001 |
 | F07-REQ-020 | P0 | Accessibility | Given VoiceOver, Then each row reads term, kind, script and shared state; Given AX5 on SE 3, Then forms stack without truncation | LEGAL-REQ-051 |
 | B-REQ-017 Rev | P1 | Say the name three times, per language, after the model is ready | Given transcripts that differ from the form in clips 2 and 3, Then those spellings are stored as heard-as values after the 7.2 checks, and no clip file remains in the sandbox after completion, cancel or a kill plus relaunch; Given the language not passed, Then the card does not appear | B-REQ-017; LEGAL-REQ-018; TDD 03 3.9 |
-| F07-REQ-021 | P1 | Offered name suggestions from Latin phonetic codes | Given a capitalised word with the same Double Metaphone code as a term's Latin form, Then Review offers it; Accept adds a heard-as through the 7.2 checks and re-runs cleaning; nothing applies without the tap | R5 section 3; BL-146 |
+| F07-REQ-021 | P1 | Offered name suggestions from phonetic keys | Given a word with the same `phoneticKey` as a term in a pack whose `phonetic` table is `native-reviewed` (or English), Then Review offers it; Accept adds a heard-as through the 7.2 checks and re-runs cleaning; nothing applies without the tap | R5 section 3; BL-146 |
 
 ## 8. Data, privacy and security
 
@@ -253,16 +255,15 @@ Opt-in, L2 only (LEGAL-REQ-003, PRD-REQ-016). Never a term, form, heard-as, scri
 
 ## 11. How we build it (with the architect)
 
-### 11.1 What exists (verified 3 Oct 2026)
+### 11.1 What exists (verified on `develop`, 13 Oct 2026)
 
 | Part | File | State |
 |---|---|---|
 | `DictionaryTerm { term, kind, heardAs }`, `DictionaryKind` | `packages/core/src/types.ts` | One string per term |
-| Rule fixes and protected spans | `packages/core/src/protect.ts` (`termRegex`, `dictionaryEdits`, `protectedSpans`, `isDictionaryTerm`) | Boundary without marks (D2) |
-| Verifier `stt_fix` check | `packages/core/src/verify.ts` `checkSttFix` | Dictionary-backed shortcut before other checks (D1, D3) |
-| Pipeline order | `packages/core/src/pipeline.ts` `faithfulClean` | Dictionary fixes verified without other terms protected (D3) |
-| Sound key and `soundsLike` | `packages/core/src/meaning.ts` | English letter rules only (R5 section 3) |
-| Prompt | `apps/mobile/src/lib/transcribe.ts` `dictionaryPrompt` | Unique terms joined, no cap, no order (TDD 03 L-3) |
+| Term matching, dictionary edits, protected spans, sound-alike suggestions | `packages/core/src/lang/dictionary.ts` (`termMatches`, `dictionaryEditsFor`, `protectedSpansFor`, `soundAlikeTerms`) | Devanagari whole-word match fixed (engine 5; F06 D11). Case variants of everyday words (D1 here, F06 D10) and name swaps (D3 here, F06 D13) still pass |
+| Verifier `stt_fix` check | `packages/core/src/verify.ts` | Refuses pronouns, kinship words, numbers, negations (`stt_fix_protected_word`); does not refuse a fix whose original is another dictionary term when that term's `heardAs` names it (13 Oct run) |
+| Phonetic keys | `packages/core/src/lang/engine.ts` `phoneticKey`; pack `phonetic` tables | Built (ADR 0014 section 6); tables `draft` in every downloadable pack |
+| Prompt | `apps/mobile/src/lib/transcribe-prompt.ts` | Built: child first, then other names, then the language seed, capped at 200 estimated tokens, lowest-priority names dropped first (ADR 0015 section 3) |
 | Derived dictionary | `apps/mobile/src/lib/store.ts` `dictionaryFor` | Child name and signature only |
 | Server table | `supabase/migrations/20260930000000_scribe_core.sql` `dictionary_terms`, unique `(owner_id, term)`, owner-only policy; consent gate in `20261003000000_security_and_family.sql` | Exists |
 | Copy | `packages/content/src/strings.en.ts`: `onboarding.dictionary.*`, `onboarding.nameCheck.*`, `review.edits.misheardName.*`, `review.addWordToDictionary`, `settings.dictionaryLabel`, `settings.dictionaryHelp` | Exists; `onboarding.dictionary.languagesBody` promises code-switching (F05-REQ-031) |
@@ -309,7 +310,7 @@ Server (new migration, data architect, `approve-migration`): add `forms jsonb no
 | Review sheet | `apps/mobile/src/components/dictionary/add-term-sheet.tsx` (new), copy in `apps/mobile/src/components/dictionary/copy.ts` | @gorhom/bottom-sheet (B16) |
 | Settings list | `apps/mobile/src/app/settings/children/` names-and-words screen (new file) | F17 owns the list entry |
 | Name check (P1) | `apps/mobile/src/components/dictionary/name-check.tsx` (new) | F05 queue gives one short job; clips in tmp |
-| Common-word lists | F05 pack field `commonWords` | Source: a permissively licensed frequency list per language, chosen in WP-F07-02 with native review (R-08); none chosen yet |
+| Common-word lists | `TextRulesPack` field `commonWords` (ADR 0014 amendment) | Source: a permissively licensed frequency list per language, chosen in WP-F07-02 with native review (R-08); none chosen yet |
 
 ### 11.4 Sequencing and the riskiest unknown
 
@@ -322,16 +323,18 @@ Server (new migration, data architect, `approve-migration`): add `forms jsonb no
 
 ## 12. Work packages
 
-| WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode |
-|---|---|---|---|---|---|
-| WP-F07-01 | R-01 dictionary rules 1 to 7 in core, property suite, `ENGINE_VERSION` bump | `packages/core/src/protect.ts`, `verify.ts` (`checkSttFix` only), `pipeline.ts` (dictionary verification step only), `dictionary.ts` (new), `packages/core/test/dictionary.test.ts` (new), `packages/core/test/dictionary.fuzz.test.ts` (new) | BL-120 fixtures D1 to D3 | `[F07-REQ-009]`, `[F07-REQ-010]`, `[F07-REQ-011]`, `[F07-REQ-012]`, `[F07-REQ-013]`, `[F07-REQ-016]`; engine suite still green | agent (speech engineer, core owner) |
-| WP-F07-02 | `commonWords` lists per language with native review | F05 pack JSON `commonWords` field, `docs/qa/evidence/F07-common-words-<lang>.md` (new) | F05 WP-F05-03 | Licence recorded; reviewer sign-off; size under 50 KB per pack [A] | pair (speech engineer, native reviewer) |
-| WP-F07-03 | Type change, local table, store functions, remove `dictionaryFor` | `packages/core/src/types.ts`, `apps/mobile/src/lib/db/migrations.ts` (dictionary part), `apps/mobile/src/lib/dictionary-store.ts` (new), callers in `review.tsx` and `apps/mobile/src/dev/asha-seed.ts` | BL-111, WP-F07-01 | `[F07-REQ-001]`, `[F07-REQ-002]`, `[F07-REQ-008]`, `[F07-REQ-017]`, `[B-REQ-006]` local part | agent (mobile engineer) |
-| WP-F07-04 | Server migration: forms, unique key, shared read, leave deletion | `supabase/migrations/<range>_dictionary_scope.sql`, `supabase/tests/` | BL-178, BL-175 | `[F07-REQ-015]`, `[F07-REQ-018]` server part in `npm run test:db` | agent, `approve-migration` (data architect) |
-| WP-F07-05 | Add-term sheet from Review, one transaction with the draft | `apps/mobile/src/components/dictionary/` | WP-F07-03, F06 Review | `[F07-REQ-005]`, `[F07-REQ-006]`, `[F07-REQ-004]` | agent (mobile engineer) |
-| WP-F07-06 | Settings > Names and words | names-and-words screen under `apps/mobile/src/app/settings/children/` (new) | WP-F07-03 | `[F07-REQ-007]`, `[F07-REQ-020]` component tests at AX5 | agent (mobile engineer, design systems) |
-| WP-F07-07 | P1: say the name three times | `apps/mobile/src/components/dictionary/name-check.tsx` (new) | F05 WP-F05-07, counsel on TDD 03 C-5 | `[B-REQ-017]` sandbox test after complete, cancel and kill | agent (speech engineer) |
-| WP-F07-08 | P1: offered Latin name suggestions | `packages/core/src/dictionary.ts` suggestion function, F06 suggestions UX | WP-F07-01, BL-146 | `[F07-REQ-021]` | agent (speech engineer) |
+Status is what `develop` holds on 13 Oct 2026. With feature freeze on Mon 26 Oct (ROADMAP 2.1), the v1.0 floor is WP-F07-01 (the constitution: no dictionary fix may change another word or swap names); WP-F07-03 to -06 (a stored, editable dictionary) are recommended for v1.0.x or v1.2 with CVL-03 [R], founder to confirm (Q7).
+
+| WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode | Status 13 Oct | Device |
+|---|---|---|---|---|---|---|---|
+| WP-F07-01 | R-01 dictionary rules 1 to 7 in core, property suite, `ENGINE_VERSION` bump | `packages/core/src/protect.ts`, `verify.ts` (`checkSttFix` only), `pipeline.ts` (dictionary verification step only), `dictionary.ts` (new), `packages/core/test/dictionary.test.ts` (new), `packages/core/test/dictionary.fuzz.test.ts` (new) | BL-120 fixtures D1 to D3 | `[F07-REQ-009]`, `[F07-REQ-010]`, `[F07-REQ-011]`, `[F07-REQ-012]`, `[F07-REQ-013]`, `[F07-REQ-016]`; engine suite still green | agent (speech engineer, core owner) | Partly built: Devanagari boundaries done (engine 5). Not built: everyday-word guard (D1), other-term guard (D3), save-time checks, property suite | Hermes fixture run with WP-F06-01 |
+| WP-F07-02 | `commonWords` lists per language with native review | F05 pack JSON `commonWords` field, `docs/qa/evidence/F07-common-words-<lang>.md` (new) | F05 WP-F05-03 | Licence recorded; reviewer sign-off; size under 50 KB per pack [A] | pair (speech engineer, native reviewer) | Not built; needs the ADR 0014 amendment for `commonWords` | none |
+| WP-F07-03 | Type change, local table, store functions, remove `dictionaryFor` | `packages/core/src/types.ts`, `apps/mobile/src/lib/db/migrations.ts` (dictionary part), `apps/mobile/src/lib/dictionary-store.ts` (new), callers in `review.tsx` and `apps/mobile/src/dev/asha-seed.ts` | BL-111, WP-F07-01 | `[F07-REQ-001]`, `[F07-REQ-002]`, `[F07-REQ-008]`, `[F07-REQ-017]`, `[B-REQ-006]` local part | agent (mobile engineer) | Not built: `dictionaryFor` derives the child's name and signature only; no local table | none |
+| WP-F07-04 | Server migration: forms, unique key, shared read, leave deletion | `supabase/migrations/<range>_dictionary_scope.sql`, `supabase/tests/` | BL-178, BL-175 | `[F07-REQ-015]`, `[F07-REQ-018]` server part in `npm run test:db` | agent, `approve-migration` (data architect) | Not built; server `dictionary_terms` table exists (`20260930000000_scribe_core.sql`) but is unused while server features are off | none |
+| WP-F07-05 | Add-term sheet from Review, one transaction with the draft | `apps/mobile/src/components/dictionary/` | WP-F07-03, F06 Review | `[F07-REQ-005]`, `[F07-REQ-006]`, `[F07-REQ-004]` | agent (mobile engineer) | Not built (`review.addWordToDictionary` copy exists, not wired) | none |
+| WP-F07-06 | Settings > Names and words | names-and-words screen under `apps/mobile/src/app/settings/children/` (new) | WP-F07-03 | `[F07-REQ-007]`, `[F07-REQ-020]` component tests at AX5 | agent (mobile engineer, design systems) | Not built | VoiceOver and AX5 (S1-23) |
+| WP-F07-07 | P1: say the name three times | `apps/mobile/src/components/dictionary/name-check.tsx` (new) | F05 WP-F05-07, counsel on TDD 03 C-5 | `[B-REQ-017]` sandbox test after complete, cancel and kill | agent (speech engineer) | Not built; P1, recommended v1.1 | SE 3 |
+| WP-F07-08 | P1: offered Latin name suggestions | `packages/core/src/dictionary.ts` suggestion function, F06 suggestions UX | WP-F07-01, BL-146 | `[F07-REQ-021]` | agent (speech engineer) | Partly built: `soundAlikeTerms` exists in core; no Review UI | none |
 
 ## 13. Open questions and assumptions
 
@@ -343,6 +346,7 @@ Server (new migration, data architect, `approve-migration`): add `forms jsonb no
 | Q4 | Should the co-parent's prompt include the other parent's signature (from `child_member_prefs.signs_as`), given `self` rows stay private | Founder with F11 | 23 Oct | Prompt contents for co-parents |
 | Q5 | Which frequency list per language seeds `commonWords` (permissive licence) | Speech engineer | 23 Oct | WP-F07-02 |
 | Q6 | Server Postgres version: `NULLS NOT DISTINCT` available, or a sentinel for owner-wide terms | Data architect | 16 Oct | WP-F07-04 |
+| Q7 | Ship a stored, editable names-and-words list in v1.0, or keep the derived dictionary (child's name and signature) until v1.0.x or CVL-03 (v1.2)? Freeze is Mon 26 Oct and none of it is built | Founder | 16 Oct | WP-F07-03 to -06; B-REQ-006 tier |
 
 | A | Assumption | How we validate |
 |---|---|---|
