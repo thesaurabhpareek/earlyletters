@@ -55,4 +55,4 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 ## Branches and commits
 - `main` is always releasable. Work on short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `exp/<what>` (experiments), `docs/<what>`.
 - One concern per pull request. Database changes ship as a new migration file; never edit a migration that has been applied.
-- Release tags: `ios-v<major>.<minor>.<patch>`.
+- Releases (ADR 0022, `docs/release/RELEASE.md`): `release/<major>.<minor>` cut from `main` at freeze, fixes cherry-picked from `develop`. Version only in `apps/mobile/version.json`; build numbers only from EAS. `ios-v<x.y.z>-rc.<n>` builds a candidate, `ios-v<x.y.z>` marks the released one; tags never move.

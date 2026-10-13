@@ -408,7 +408,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-44 Approve the release**
   - Time: 30 minutes.
   - Cost: US $0.
-  - Steps: approve the coordinator's release PR from `develop` to `main` and the `ios-v1.0.0` tag; the production build comes only from the tag (COORDINATION 6).
+  - Steps: approve the coordinator's release PR from `develop` to `main`; the coordinator cuts `release/1.0` and pushes `ios-v1.0.0-rc.<n>`, which builds the production binary into the production record's TestFlight (D-089, `docs/release/RELEASE.md`). `ios-v1.0.0` itself is pushed after Apple approves and you release.
   - By: Fri 30 Oct or Mon 2 Nov.
   - Blocks: FT-45.
 
@@ -419,7 +419,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-45 Submit for App Review**
   - Time: 30 minutes, then answer any question within a day.
   - Cost: US $0.
-  - Steps: choose **manual release** so you pick the day; submit Mon 2 Nov (Fri 6 Nov at the latest). If App Review cites guideline 5.1.1(ix) (individual publisher, sensitive information), answer the same day with the D-004 positioning and tell the coordinator: the fallback is an organisation account (entity, D-U-N-S, enrolment; 2 to 6 weeks [U]).
+  - Steps: select the release-candidate build that passed FT-39 (its build number is in `docs/release/1.0.0.md`); choose **manual release** so you pick the day; submit Mon 2 Nov (Fri 6 Nov at the latest). If App Review cites guideline 5.1.1(ix) (individual publisher, sensitive information), answer the same day with the D-004 positioning and tell the coordinator: the fallback is an organisation account (entity, D-U-N-S, enrolment; 2 to 6 weeks [U]).
   - By: Mon 2 Nov (ROADMAP).
   - Blocks: release.
 
