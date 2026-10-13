@@ -5,7 +5,6 @@
   "title": "Review with no draft",
   "note": "If Review is opened with a draft that no longer exists (only reachable by a stale link) the app says the words are safe and offers Close. It is not reachable by tapping.",
   "from": "J06-01",
-  "shot": "screens/J06-13.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -22,9 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Your words are safe. Please try again. Close",
+  "text": "Close Something went wrong Your words are safe. Please try again.",
   "lines": [
-    "Your words are safe. Please try again.",
-    "Close"
+    "Close",
+    "Something went wrong",
+    "Your words are safe. Please try again."
   ]
 }

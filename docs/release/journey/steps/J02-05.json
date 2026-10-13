@@ -5,7 +5,6 @@
   "title": "The question again, nothing preselected",
   "note": "The age question returns, empty, and the person can answer again.",
   "from": "J02-04",
-  "shot": "screens/J02-05.png",
   "route": "/",
   "viewport": {
     "width": 402,

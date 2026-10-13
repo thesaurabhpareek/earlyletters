@@ -171,8 +171,8 @@ describe('(5) selection state consistency', () => {
     }
   });
 
-  it('Review Yes/No and the reminder evenings use the shared ChoiceGroup and Chip', () => {
-    expect(read('app/review.tsx')).toMatch(/<ChoiceGroup[\s\S]*r\.voiceCheck\.question/);
+  it('the reminder evenings use the shared Chip; Review no longer asks "Does this sound like you?" (D-086)', () => {
+    expect(read('app/review.tsx')).not.toMatch(/voiceCheck/);
     expect(read('app/settings/reminders.tsx')).toMatch(/<Chip[\s\S]*variant="filter"/);
   });
 

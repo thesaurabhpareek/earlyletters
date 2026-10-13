@@ -5,7 +5,6 @@
   "title": "Paused",
   "note": "Pause stops the clock and the glow. Keep talking continues the same recording.",
   "from": "J05-01",
-  "shot": "screens/J05-02.png",
   "route": "/listen",
   "viewport": {
     "width": 402,
@@ -22,11 +21,11 @@
     }
   },
   "scrolls": false,
-  "text": "To Asha Only you, until you add it to the book. 0:03 Paused. Keep talking Finish Let it go",
+  "text": "To Asha Only you, until you add it to the book. 0:02 Paused. Keep talking Finish Let it go",
   "lines": [
     "To Asha",
     "Only you, until you add it to the book.",
-    "0:03",
+    "0:02",
     "Paused.",
     "Keep talking",
     "Finish",

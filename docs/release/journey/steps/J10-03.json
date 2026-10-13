@@ -5,7 +5,6 @@
   "title": "Reading size sheet",
   "note": "A small \"Aa\" sheet changes the letter size live behind it: Standard, Large, Large print.",
   "from": "J10-02",
-  "shot": "screens/J10-03.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -22,9 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Reading size Standard Large Large print",
+  "text": "Reading size Close Standard Large Large print",
   "lines": [
     "Reading size",
+    "Close",
     "Standard",
     "Large",
     "Large print"

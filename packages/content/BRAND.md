@@ -91,8 +91,8 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | A month section of the book | month, "Month 4" | chapter (in copy), page | "chapter" may stay in code and design docs. |
 | The spoken audio | recording; "your voice" in headlines | voice note, audio file, clip | |
 | The words from a recording | your words; "what you said" | transcript (in app copy), caption | Legal pages may say "transcript". |
-| The edit feature (D-074) | Word for word | Lightly tidied, Tidying, tidy, tidied, cleaned up, polished, improved, corrected | Founder decision. |
-| What the machine changes | small fixes, shown as marks you can undo | edits, corrections, improvements | |
+| The edit feature (D-074, D-086) | Word for word, only where the feature is named: the promise, Settings, the store, the website | Any word that says software tidied or cleaned a letter, polished, improved, corrected | Founder decision. In review and on the letter page we say what happened ("Took out a sound") and use "Exactly as said" only when it is true. |
+| What the machine changes | small fix (each one named by what happened), shown as a mark you can undo | edits, corrections, improvements | D-086. The Review views are "With small fixes" and "Exactly as said". |
 | The untouched words | "Exactly what you said"; setting "Exactly as said" | raw transcript, original text | |
 | Record control | the red circle ("Tap the red circle and talk") | microphone button, record button, big round button | Brand review BRD-11; colour token `recording` is a UI state, never a brand fill. |
 | Listening mode | Read together (two words, capital R only) | Read Together, story mode, bedtime mode, playback | No word highlighting claims until v1.1. |

@@ -5,8 +5,6 @@
   "title": "Every evening",
   "note": "Choosing a cadence updates the evenings and the time (7 AM to 9:30 PM; quiet on a day already written). The time picker is a native control and does not open on web.",
   "from": "J13-02",
-  "shot": "screens/J13-03.png",
-  "full": "screens/J13-03-full.png",
   "route": "/settings/reminders",
   "viewport": {
     "width": 402,

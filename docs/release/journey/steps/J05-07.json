@@ -5,7 +5,6 @@
   "title": "Review with no connection",
   "note": "Review opens as usual; nothing waits on the network.",
   "from": "J05-06",
-  "shot": "screens/J05-07.png",
   "route": "/review",
   "viewport": {
     "width": 402,
@@ -22,10 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Close Hear it Asha · 0 days Read it back Writing down what you said.",
+  "text": "Hear it Close Asha · 0 days Read it back Writing down what you said.",
   "lines": [
-    "Close",
     "Hear it",
+    "Close",
     "Asha · 0 days",
     "Read it back",
     "Writing down what you said."

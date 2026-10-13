@@ -5,7 +5,6 @@
   "title": "Whose book? sheet",
   "note": "A sheet lists every book on this phone with the current one marked. Choosing one switches Tonight, Book and writing to that child.",
   "from": "J03-04",
-  "shot": "screens/J03-05.png",
   "route": "/book",
   "viewport": {
     "width": 402,
@@ -22,11 +21,12 @@
     }
   },
   "scrolls": false,
-  "text": "Whose book? Asha's book Ashu's book Add a child",
+  "text": "Whose book? Close Asha's book Nila's book Add a child",
   "lines": [
     "Whose book?",
+    "Close",
     "Asha's book",
-    "Ashu's book",
+    "Nila's book",
     "Add a child"
   ]
 }

@@ -5,7 +5,6 @@
   "title": "The end of the book",
   "note": "After the last letter: an end line, a finish button and \"again\".",
   "from": "J11-03",
-  "shot": "screens/J11-04.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,
@@ -22,10 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Close 5 / 5 That is every letter so far. More are still being written. Close the book Read it again",
+  "text": "5 / 5 Close That is every letter so far. More are still being written. Close the book Read it again",
   "lines": [
-    "Close",
     "5 / 5",
+    "Close",
     "That is every letter so far. More are still being written.",
     "Close the book",
     "Read it again"

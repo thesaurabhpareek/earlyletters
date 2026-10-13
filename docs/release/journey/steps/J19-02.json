@@ -5,7 +5,6 @@
   "title": "Listen opened without a tap",
   "note": "Opened by a link, a restored screen or a stale route (not by Speak), Listen waits: \"Nothing is recording yet. Tap Start when you want to speak.\" The microphone is not touched. On a phone the scribe://listen link goes to Tonight instead.",
   "from": "J19-01",
-  "shot": "screens/J19-02.png",
   "route": "/listen",
   "viewport": {
     "width": 402,
@@ -22,11 +21,11 @@
     }
   },
   "scrolls": false,
-  "text": "Ready when you are Nothing is recording yet. Tap Start when you want to speak. Start Close",
+  "text": "Close Ready when you are Nothing is recording yet. Tap Start when you want to speak. Start",
   "lines": [
+    "Close",
     "Ready when you are",
     "Nothing is recording yet. Tap Start when you want to speak.",
-    "Start",
-    "Close"
+    "Start"
   ]
 }

@@ -1,12 +1,10 @@
 {
   "id": "J10-07",
   "journey": "letter-detail",
-  "kind": "happy",
-  "title": "Undo restores the letter",
-  "note": "The letter is back exactly as it was.",
+  "kind": "unhappy",
+  "title": "Keep it",
+  "note": "Choosing \"Keep it\" closes the sheet and changes nothing: the letter is still on its page.",
   "from": "J10-06",
-  "shot": "screens/J10-07.png",
-  "full": "screens/J10-07-full.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -23,19 +21,19 @@
     }
   },
   "scrolls": true,
-  "text": "Aa Tuesday, August 4, 2026. Asha is 5 months old. Private So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, word for word Recording kept on this phone Show exactly what I said Add to book Delete",
+  "text": "Aa Thursday, August 13, 2026. Asha is 5 months old. Private So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, with small fixes Recording kept on this phone Exactly as said Add to book Delete",
   "lines": [
     "Aa",
-    "Tuesday, August 4, 2026. Asha is 5 months old.",
+    "Thursday, August 13, 2026. Asha is 5 months old.",
     "Private",
     "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
     "From Mama",
     "Hear Mama",
     "0:00",
     "0:42",
-    "Spoken, word for word",
+    "Spoken, with small fixes",
     "Recording kept on this phone",
-    "Show exactly what I said",
+    "Exactly as said",
     "Add to book",
     "Delete"
   ]

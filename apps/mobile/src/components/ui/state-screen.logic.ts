@@ -30,7 +30,7 @@ export const STATE_SPEC: Record<StateKind, StateSpec> = {
   loading: { art: 'moon', live: 'polite', busy: true, allowsPrimary: false },
 };
 
-export type StateAction = { label: string; onPress: () => void };
+export type StateAction = { label: string; onPress: () => void; testID?: string };
 
 /**
  * The action layout, as data: one primary (full width, 56 pt, pinned to the bottom of a screen) and

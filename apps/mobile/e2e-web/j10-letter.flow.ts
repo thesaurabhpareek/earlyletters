@@ -11,12 +11,13 @@ const open = async (app: import('@playwright/test').Page, text: RegExp) => {
 test('[J10] a letter: the page, the original words, reading size, make private, delete and undo', async ({ app, record }) => {
   const step = journey(record, 'J10', 'letter-detail', 1, 'J09-03');
   await open(app, /rained all morning/);
-  await expect(app.getByText('Show exactly what I said').or(app.getByText(/original/i)).first()).toBeVisible();
+  await expect(app.getByText('Exactly as said', { exact: true }).first()).toBeVisible();
   await step('happy', 'A letter, as a page', 'The words large in the letter face, signed "From Mama", with the recording player, how it was made, "Recording on this phone", and the actions below. (Seeded fictional family Asha; the seeded audio files do not exist, so the player is the closest honest state, see the note on the next step.)');
 
-  await app.getByText('Show exactly what I said').click();
-  await step('happy', 'Show exactly what I said', 'The raw words replace the tidied ones, under an "original" label.');
-  await app.getByText(/Show (tidied|small fixes)/i).click();
+  await app.getByText('Exactly as said', { exact: true }).click();
+  await expect(app.getByText('Exactly what you said')).toBeVisible();
+  await step('happy', 'Exactly as said', 'The raw words replace the fixed ones, under an "Exactly what you said" label.');
+  await app.getByText('With small fixes', { exact: true }).click();
 
   await app.getByRole('button', { name: /Reading size/i }).click();
   await expect(app.getByText('Large print')).toBeVisible();

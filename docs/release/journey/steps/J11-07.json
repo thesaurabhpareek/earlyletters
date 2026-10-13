@@ -5,7 +5,6 @@
   "title": "Read together with no letters",
   "note": "With no letters in the book, Read together says so and offers Close. The Book hides the button until a letter is in the book, so this is reached only by a stale link.",
   "from": "J11-01",
-  "shot": "screens/J11-07.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,
@@ -22,10 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Read together Letters you add to the book will be here to read together. Close",
+  "text": "Close Read together Letters you add to the book will be here to read together.",
   "lines": [
+    "Close",
     "Read together",
-    "Letters you add to the book will be here to read together.",
-    "Close"
+    "Letters you add to the book will be here to read together."
   ]
 }

@@ -17,7 +17,7 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await btn(app, 'Got it').click();
   await step('happy', 'First note dismissed', '"Got it" collapses the note for good.');
 
-  await app.getByRole('button', { name: /Filler/ }).first().click();
+  await app.getByRole('button', { name: /Took out a sound/ }).first().click();
   await expect(btn(app, /Put it back/i)).toBeVisible();
   await step('happy', 'Why was this changed?', 'Tapping a tidy-up (the underline or its row) says what kind of fix it was, shows the exact words said and the tidied version, and offers to put it back.');
   await btn(app, /Put it back/i).click();
@@ -26,20 +26,16 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await app.getByRole('button', { name: 'Undo', exact: true }).click();
   await step('happy', 'Undo the put-back', 'Undo re-applies the tidy-up. Every edit is reversible both ways.');
 
-  await app.getByText('Show exactly what I said', { exact: true }).click();
-  await step('happy', 'Exactly what was said', 'The raw words, untouched, with their "um" and repeats, labelled as the original.');
-  await app.getByText(/Show small fixes/i).first().click().catch(() => undefined);
-
-  await app.getByText('Undo every fix', { exact: true }).click();
-  await expect(app.getByText(/No changes|Nothing was changed|word for word/i).first()).toBeVisible();
-  await step('happy', 'Word for word', 'One tap undoes every tidy-up at once; the screen says nothing was changed.');
+  await app.getByRole('radio', { name: 'Exactly as said' }).click();
+  await expect(app.getByText('Exactly as you said it.')).toBeVisible();
+  await step('happy', 'Exactly as said', 'One tap shows the words exactly as spoken, with their "um" and repeats; the screen says so. This is the view and the choice for this letter, until it is saved.');
+  await app.getByRole('radio', { name: 'With small fixes' }).click();
+  await expect(app.getByText(/small fixes/i).first()).toBeVisible();
+  await step('happy', 'Back to small fixes', 'The same control returns to the words with each small fix marked. Every choice is reversible both ways.');
 
   await app.getByText('Change words', { exact: true }).click();
-  await step('happy', 'Change words', 'The person may edit any word themselves. Save is off while editing; Done returns.');
+  await step('happy', 'Change words', 'The person may edit any word themselves, in the letter face. Done returns.');
   await app.getByText('Done', { exact: true }).click();
-
-  await app.getByRole('radio', { name: /Not quite/ }).click();
-  await step('happy', 'Does this sound like you? Not quite', 'A private two-button check on how faithful the words sound. "Not quite" shows a kind follow-up line; nothing is stored about the words.');
 
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText(/Added to/)).toBeVisible();

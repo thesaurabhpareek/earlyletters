@@ -3,9 +3,8 @@
   "journey": "quiet-day",
   "kind": "happy",
   "title": "Kept, with no guilt",
-  "note": "One line of warmth replaces the link. A one-line note is stored for the day (it never appears in the book and is not counted as a letter).",
+  "note": "One line of warmth and an Undo replace the link. The app stores a mark for the day with no words at all: it never writes a sentence for the person. The mark is not counted as a letter.",
   "from": "J08-01",
-  "shot": "screens/J08-02.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -22,10 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months The house is quiet, Mama. What do you want Asha to know about today? A thought to start with What is Asha's favorite thing in the house this week? Another thought A letter is waiting to be read back. Read it back Speak Type Kept. Rest well. Tonight Book Family",
+  "text": "Asha · 7 months Good afternoon, Mama. What do you want Asha to know about today? A thought to start with What is Asha's favorite thing in the house this week? Another thought A letter is waiting to be read back. Read it back Speak Type Kept. Rest well. Undo Tonight Book Family",
   "lines": [
     "Asha · 7 months",
-    "The house is quiet, Mama.",
+    "Good afternoon, Mama.",
     "What do you want Asha to know about today?",
     "A thought to start with",
     "What is Asha's favorite thing in the house this week?",
@@ -35,6 +34,7 @@
     "Speak",
     "Type",
     "Kept. Rest well.",
+    "Undo",
     "Tonight",
     "Book",
     "Family"

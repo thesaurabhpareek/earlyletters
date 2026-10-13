@@ -5,7 +5,6 @@
   "title": "Declined: nothing else changes",
   "note": "Saying no ends the asking for good and changes nothing else; it can be changed in Settings, Privacy.",
   "from": "J04-04",
-  "shot": "screens/J04-05.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -22,10 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months The house is quiet, Mama. What do you want Asha to know about today? A thought to start with What is Asha's favorite thing in the house this week? Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 7 months Good afternoon, Mama. What do you want Asha to know about today? A thought to start with What is Asha's favorite thing in the house this week? Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 7 months",
-    "The house is quiet, Mama.",
+    "Good afternoon, Mama.",
     "What do you want Asha to know about today?",
     "A thought to start with",
     "What is Asha's favorite thing in the house this week?",

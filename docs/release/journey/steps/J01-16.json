@@ -5,7 +5,6 @@
   "title": "The book is open",
   "note": "A page with one line. The only action is to write the first letter.",
   "from": "J01-15",
-  "shot": "screens/J01-16.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

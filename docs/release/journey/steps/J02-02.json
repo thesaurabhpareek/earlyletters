@@ -5,7 +5,6 @@
   "title": "The stop screen",
   "note": "A calm explanation with no way to continue or go back. No child, letter or recording exists, only the time of the No is stored.",
   "from": "J02-01",
-  "shot": "screens/J02-02.png",
   "route": "/",
   "viewport": {
     "width": 402,

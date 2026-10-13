@@ -52,9 +52,9 @@ function Actions({ kind, primary, quiet }: Pick<Common, 'kind' | 'primary' | 'qu
   const main = layout.primary as ActionWithIcon | null;
   return (
     <View className="gap-1">
-      {main ? <Button size="lg" fullWidth label={main.label} icon={main.icon} onPress={main.onPress} /> : null}
+      {main ? <Button size="lg" fullWidth label={main.label} icon={main.icon} onPress={main.onPress} testID={main.testID} /> : null}
       {layout.quiet.map((a) => (
-        <Button key={a.label} variant="quiet" fullWidth label={a.label} onPress={a.onPress} />
+        <Button key={a.label} variant="quiet" fullWidth label={a.label} onPress={a.onPress} testID={a.testID} />
       ))}
     </View>
   );

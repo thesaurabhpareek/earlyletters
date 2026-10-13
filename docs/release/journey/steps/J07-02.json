@@ -5,7 +5,6 @@
   "title": "Typing, autosaved",
   "note": "After a pause \"Saved on this phone\" appears. Every pause saves a local draft, so a closed sheet or a crash loses nothing.",
   "from": "J07-01",
-  "shot": "screens/J07-02.png",
   "route": "/write",
   "viewport": {
     "width": 402,
@@ -22,10 +21,10 @@
     }
   },
   "scrolls": false,
-  "text": "Close Saved on this phone Asha · 0 days Tell Asha how the name was chosen. You put both hands on the window today and watched the rain. Save",
+  "text": "Saved on this phone Close Asha · 0 days Tell Asha how the name was chosen. You put both hands on the window today and watched the rain. Save",
   "lines": [
-    "Close",
     "Saved on this phone",
+    "Close",
     "Asha · 0 days",
     "Tell Asha how the name was chosen.",
     "You put both hands on the window today and watched the rain.",

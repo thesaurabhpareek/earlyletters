@@ -5,7 +5,6 @@
   "title": "The age question",
   "note": "The first screen is one neutral question, with nothing preselected. Continue stays off until the person picks Yes or No.",
   "from": "J00-open",
-  "shot": "screens/J01-01.png",
   "route": "/",
   "viewport": {
     "width": 402,

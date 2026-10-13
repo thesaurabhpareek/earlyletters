@@ -90,6 +90,18 @@ describe('transcription queue: lifecycle', () => {
     expect(nextJob(s, T0)).toBeNull(); // words are set once: never transcribed again
   });
 
+  it('[D-086] Try again after "No talking in this one" listens once more; a job that found words never re-runs', () => {
+    let s = run([{ type: 'start', id: 'a' }, { type: 'finish', id: 'a', outcome: 'no_speech' }], ready);
+    s = reduce(s, { type: 'retry', id: 'a' });
+    expect(s.jobs.a).toMatchObject({ phase: 'queued', attempts: 0 });
+    expect(s.jobs.a.outcome).toBeUndefined();
+    expect(nextJob(s, T0)).toBe('a');
+
+    let ok = run([{ type: 'start', id: 'a' }, { type: 'finish', id: 'a', outcome: 'ok' }], ready);
+    ok = reduce(ok, { type: 'retry', id: 'a' });
+    expect(ok.jobs.a).toMatchObject({ phase: 'done', outcome: 'ok' });
+  });
+
   it('[FM-6] an interruption (app backgrounded) puts the job back without counting a failure', () => {
     const s = run([{ type: 'start', id: 'a' }, { type: 'progress', id: 'a', done: 2, total: 5 }, { type: 'interrupt', id: 'a' }], ready);
     expect(s.jobs.a).toMatchObject({ phase: 'queued', attempts: 0, progress: null });

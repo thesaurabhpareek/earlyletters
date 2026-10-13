@@ -5,7 +5,6 @@
   "title": "Typing instead",
   "note": "The person lands on the Write page for the same prompt.",
   "from": "J05-04",
-  "shot": "screens/J05-05.png",
   "route": "/write",
   "viewport": {
     "width": 402,
