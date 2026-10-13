@@ -405,7 +405,7 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 - **Status:** Decided (coordinator).
 
 ### D-089 Release engineering model
-- **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct). Ids chosen above D-088 on PR #91.
+- **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct). Ids chosen above D-088 on the unmerged branch `docs/decisions-4-oct`.
 - **Decision:** ADR 0022. Preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, per `docs/release/TESTFLIGHT.md`. Store lane: `release/1.0` cut from `main` at freeze (Mon 26 Oct), fixes cherry-picked from `develop`; `ios-v1.0.0-rc.<n>` tags build the production profile into the production record's internal TestFlight; the RC that passed FT-39 is submitted (FT-45); `ios-v1.0.0` is pushed after release. One version in `apps/mobile/version.json`; build numbers only from EAS. Store text generated from `packages/content` into `apps/mobile/store.config.json`.
 - **Effects:** COORDINATION section 6 and FT-44 (tag the RC before submission; the version tag follows release); runbook `docs/release/RELEASE.md`; record `docs/release/1.0.0.md`; BL-436 to BL-439.
 
@@ -416,7 +416,7 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 ### D-091 No OTA updates in v1.0
 - **Status:** Recommended (needs founder OK). Changes the 3 Oct recommendation to ship `expo-updates` in v1.0.
 - **Decision:** no `expo-updates` in v1.0. Fixes ship as PATCH builds from the release branch, with expedited review for an S0.
-- **Rationale:** v1.0 became on-device only (PR #54) and keeps "Data Not Collected" (D-088). An update check on every launch is a new network destination for the data map and a privacy-label question for counsel, three weeks before submission. Revisit for v1.1, when sign-in brings a server anyway.
+- **Rationale:** v1.0 became on-device only (PR #54) and plans "Data Not Collected" (D-088, on the unmerged branch `docs/decisions-4-oct`). An update check on every launch is a new network destination for the data map and a privacy-label question for counsel, three weeks before submission. Revisit for v1.1, when sign-in brings a server anyway.
 
 ### D-092 EAS plan
 - **Status:** Decided (founder, 13 Oct 2026; matches the cost decisions of 3 Oct).

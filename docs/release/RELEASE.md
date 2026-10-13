@@ -40,7 +40,7 @@ feature PRs -> develop --(release PR)--> main
 |---|---|---|---|
 | G0 | every PR | PR CI | |
 | G1 | merge to `main` | G0 on the merge commit | |
-| G2 | internal TestFlight | G1, nightly green once BL-275 lands, manual smoke on D1 | RC tag: tag, `version.json` and branch agree; `npm test`; typecheck; store metadata matches content; no placeholder identity |
+| G2 | internal TestFlight | G1, nightly green in the last 24 h (waived until BL-275 lands; record the waiver in the release record), manual smoke on D1 | RC tag: tag, `version.json` and branch agree; `npm test`; typecheck; store metadata matches content; no placeholder identity |
 | G3 | external TestFlight (preview lane) | P0 LEGAL-REQ and DATA-REQ tests for shipped scope, privacy labels and manifest diffed, VoiceOver script | |
 | G4 | submission | 76 PRD section 6 lines on D1 and D2, device budgets, kill-during-save 500x, M-01 to M-09, no open S0 or S1; C1 exit (FT-40) | release tag needs an RC tag on the same commit and a release record |
 | G5 | after release | v1.0: manual release with kill switches ready (no phased release for a first version). Updates: phased release; crash-free sessions 99.8 percent, users 99.5 percent; pause on any S0 | |
@@ -58,7 +58,7 @@ Download size under 40 MB (D-065): `scripts/size/measure.ts --ipa` on each RC, b
 ## Shipping it
 
 6. **Founder** FT-39 on the RC: device budgets, kill-during-save, StoreKit checks, durability drill.
-7. **Founder** runs `release-ios.yml` by hand with `job: metadata` to push store text (`eas metadata:push`, review contact from the secret); uploads screenshots from `scripts/brand/screenshots.mts` (EAS Metadata cannot); works through "Before submission" in `docs/store/app-store.md` and FT-43.
+7. **Founder** runs `release-ios.yml` by hand from the release branch ("Use workflow from: release/x.y"; manual runs appear only once the workflow is on `main`) with `job: metadata` to push store text (`eas metadata:push`, review contact from the secret); uploads screenshots from `scripts/brand/screenshots.mts` (EAS Metadata cannot); works through "Before submission" in `docs/store/app-store.md` and FT-43.
 8. **Founder** FT-45: submits that RC build, manual release selected.
 9. On approval **Founder** releases; **Coordinator** pushes `ios-v<x.y.z>` on the RC's commit. The workflow checks it and publishes the GitHub Release from the record.
 10. `ops` posts the day 1, 3 and 7 health report from App Store Connect crash numbers the founder pastes (no crash SDK in v1.0).
@@ -71,14 +71,14 @@ Download size under 40 MB (D-065): `scripts/size/measure.ts --ipa` on each RC, b
 
 ## Stopping a bad release
 
-Fastest first: a kill switch in the signed config document (D-066, D-068; today `sync`, `invites`, `photos`, `packDownloads`, `serverContent` in `packages/api/src/remote-config.ts`) -> pause phased release (updates only) -> hotfix with expedited review. Kill switches reach phones only when the build carries the signing key and the documents host (FT-16, `EXPO_PUBLIC_DOCS_BASE_URL`); without them a build has no remote stop at all. `minSupportedVersion` exists in the config schema but nothing in the app enforces it yet, so it cannot force an update. There is no binary rollback and no OTA in v1.0 (D-091).
+Fastest first: a kill switch in the signed config document (D-066, D-068; today `sync`, `invites`, `photos`, `packDownloads`, `serverContent` in `packages/api/src/remote-config.ts`) -> pause phased release (updates only) -> hotfix with expedited review. Kill switches reach phones only when the build carries the signing key and the documents host (FT-16, `EXPO_PUBLIC_DOCS_BASE_URL`); without them a build has no remote stop at all. `minSupportedVersion` exists in the config schema but nothing in the app enforces it yet, so it cannot force an update. There is no binary rollback, and no OTA in v1.0 if D-091 is approved.
 
 ## Secrets (repository secrets while the repo is private on GitHub Free)
 
 | Name | What | Used by |
 |---|---|---|
 | `EXPO_TOKEN` | Expo robot token (FT-17); a robot token needs `owner` in app config | RC build, metadata push |
-| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","demoRequired"}` and, only if a demo account ever exists, `demoUsername` and `demoPassword` | metadata push |
+| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","demoRequired"}`; optional `notes` overrides `storeListing.reviewNotes`; `demoUsername` and `demoPassword` only if a demo account ever exists | metadata push |
 
 The App Store Connect API key and signing credentials live in EAS credentials, never in GitHub.
 
