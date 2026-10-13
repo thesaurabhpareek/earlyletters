@@ -1,6 +1,6 @@
 # Release train: from a merged wave to the App Store
 
-Owner: qa-e2e (writer) for the coordinator, who runs the train, and the founder, who approves every irreversible step (COORDINATION section 1). Version 1.0, 13 Oct 2026.
+Owner: qa-e2e (writer) for the coordinator, who runs the train, and the founder, who approves every irreversible step (COORDINATION section 1). Version 1.1, 13 Oct 2026: amended for the founder's release decisions D-089 to D-092 (ADR 0022) by the release-engineering thread; where this file and ADR 0022 differed, ADR 0022 is what the founder approved.
 Inputs: `docs/agents/COORDINATION.md` 6, `docs/DECISIONS.md` (D-004, D-041, D-045, D-053, D-060, D-064 to D-067), `docs/ROADMAP.md` 2.1, `docs/FOUNDER_TASKS.md`, TDD 07 sections 9 to 11, `supabase/APPLY.md`, `scripts/packs/publish.ts` and ADR 0016 section 7, `docs/ops/AUTH_SETUP.md`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`, `docs/ops/APP_SIZE.md`, `docs/legal/app-store-privacy-labels.md`, `docs/store/app-store.md`, `docs/qa/DEVICE_TEST_PLAN.md` 1.1.
 
 Labels: **V** verified on a vendor page on the date given (sources at the end); **A** assumption, check when you get there; **F** fact found in this repo. Apple's and Expo's screens move; if a label below differs, follow the screen and fix this file.
@@ -9,14 +9,15 @@ Labels: **V** verified on a vendor page on the date given (sources at the end); 
 
 ```
 wave branch auto/<date>-<topic>  --(coordinator: all checks green)-->  develop
-develop  --(release PR, founder approves)-->  main  --(tag ios-vX.Y.Z)-->  EAS production build
-EAS build  --(eas submit)-->  App Store Connect  -->  TestFlight internal (C0)  -->  external group, Beta App Review (C1)
-release candidate  --(DEVICE_TEST_PLAN, section 6 checklist)-->  submit for App Review, manual release
-approved  -->  release (v1.0.0: all at once; updates: phased over 7 days)
+preview lane (C0, C1): develop  --(testflight.yml, `testflight` profile, .preview record)-->  TestFlight  (docs/release/TESTFLIGHT.md)
+store lane:  develop  --(release PR, founder approves FT-44, Mon 26 Oct)-->  main  --(coordinator cuts)-->  release/1.0
+release/1.0  --(tag ios-v1.0.0-rc.<n>)-->  release-ios.yml: checks, EAS production build, TestFlight internal on the production record
+release candidate  --(FT-39, DEVICE_TEST_PLAN, section 6 checklist)-->  submit that same build, manual release
+approved and released  -->  tag ios-v1.0.0 on the RC's commit  -->  GitHub Release from docs/release/1.0.0.md
 alongside, never inside the binary:  migrations (APPLY.md order, founder)  |  packs, config, content (scripts/packs, founder's key)
 ```
 
-Dates for v1.0 (ROADMAP 2.1): C0 Wed 14 Oct, Beta App Review submitted Thu 15 Oct, C1 Mon 19 Oct, feature freeze Mon 26 Oct, C1 exit and counsel sign-off Thu 29 Oct, tag `ios-v1.0.0` Fri 30 Oct, submit Mon 2 Nov (Fri 6 Nov latest), release planned Mon 16 Nov with 9 to 20 Nov as the buffer.
+Dates for v1.0 (ROADMAP 2.1): C0 Wed 14 Oct, Beta App Review submitted Thu 15 Oct, C1 Mon 19 Oct, feature freeze Mon 26 Oct, C1 exit and counsel sign-off Thu 29 Oct, release candidate `ios-v1.0.0-rc.<n>` from `release/1.0` by Fri 30 Oct, submit Mon 2 Nov (Fri 6 Nov latest), release planned Mon 16 Nov with 9 to 20 Nov as the buffer.
 
 Who does what:
 
@@ -32,12 +33,12 @@ Who does what:
 - `main`: always releasable; changes only through a release PR from `develop` (or a hotfix PR, 1.4) that the founder approves.
 - `develop`: integration. Each agent wave lands on `auto/<date>-<topic>` first; the coordinator runs every check and merges.
 - Human branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `exp/<what>`. One concern per pull request.
-- `release/<x.y.z>` is **not** used for v1.0: feature freeze happens on `develop` (Mon 26 Oct) and fixes go there. Cut a `release/<x.y.z>` branch from `develop` only when work for the next version must merge before the current one ships (A: not before v1.1).
+- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Mon 26 Oct), right after the release PR. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open for v1.0.1 and the fix waves. The branch stays for 1.0.x hotfixes.
 
 ### 1.2 Tags (F: CLAUDE.md, COORDINATION 6)
-- `ios-v<major>.<minor>.<patch>` on the merge commit on `main`, annotated: `git tag -a ios-v1.0.0 -m "Early Letters 1.0.0" && git push origin ios-v1.0.0` (coordinator).
-- The tag's version equals `version` in `apps/mobile/app.config.ts` (F: `'1.0.0'` today). The build number is not in the tag (2.2).
-- Release candidates for TestFlight before the final tag: `ios-v1.0.0-rc.<n>` (A: proposed here; it keeps "EAS builds come only from tagged commits" true for C0 and C1 builds as well).
+- `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
+- `ios-v<x.y.z>` is pushed after Apple approves and the founder releases, on the same commit as the released RC. The workflow refuses it without an RC tag on that commit and a release record `docs/release/<x.y.z>.md`, then publishes the GitHub Release from the record.
+- Tags never move and are never reused (D-089). The tag's version equals `apps/mobile/version.json`; the build number is not in the tag (2.2).
 
 ### 1.3 CI gates (F: `.github/workflows/ci.yml`, `migration-guard.yml`; TDD 07 9.1)
 
@@ -52,20 +53,20 @@ Who does what:
 
 The macOS E2E job is a sketch (`apps/mobile/e2e/ci/ios-e2e.yml.example`), not enabled; the coordinator moves it to `.github/workflows/` when the seams exist.
 
-### 1.4 Hotfix
-1. `fix/<what>` from the release tag (`git switch -c fix/<what> ios-v1.0.0`).
-2. Bump `version` in `app.config.ts` to the next patch (`1.0.1`); build numbers keep increasing on their own (2.2).
-3. PR to `main` (G0), founder approves, tag `ios-v1.0.1`, build, TestFlight smoke (TF-04), submit; ask for an expedited review if it fixes a critical bug (7.3).
-4. Merge `main` back into `develop` the same day.
+### 1.4 Hotfix (D-089)
+1. Fix merged to `develop` first (upstream first), labelled `release:<major>.<minor>`.
+2. Coordinator cherry-picks it onto `release/<major>.<minor>` and bumps PATCH in `apps/mobile/version.json` there only (never on `develop`).
+3. Push the next RC tag (`ios-v1.0.1-rc.1`); same gates; TF-04 smoke; submit that build; ask for an expedited review if it fixes a critical bug (7.3). No OTA in v1.0 (D-091, section 8).
+4. After release, tag `ios-v1.0.1` on the RC's commit.
 
 ## 2. Versions and build numbers
 
 ### 2.1 What each number is
 | Number | Where | Who changes it |
 |---|---|---|
-| Marketing version (`CFBundleShortVersionString`) | `version` in `apps/mobile/app.config.ts` | the coordinator, in the release PR, for every App Store version (V: Expo "App version management": set it explicitly for each store release) |
+| Marketing version (`CFBundleShortVersionString`, Android `versionName`) | `apps/mobile/version.json`, read by `app.config.ts` (D-089, BL-436) | MINOR: a PR on `develop` before the release PR; PATCH: the coordinator on the release branch (1.4) (V: Expo "App version management": set it explicitly for each store release) |
 | Build number (`CFBundleVersion`) | EAS servers | EAS, automatically (2.2) |
-| Runtime version | not used: no `expo-updates` (section 8) | n/a |
+| Runtime version | not used: no `expo-updates` in v1.0 (D-091, section 8) | n/a |
 
 ### 2.2 Remote build numbers (F: `eas.json`)
 `cli.appVersionSource` is `remote` and the `production` profile has `autoIncrement: true` (F). EAS stores the iOS build number and bumps it on every production build, which avoids the common rejection for a duplicate build number (V: Expo "App version management", remote version source recommended from EAS CLI 12). Never set `ios.buildNumber` in `app.config.ts`. To see or set it: `npx eas-cli build:version:get -p ios` and `build:version:set` (A: command names from the EAS CLI reference).
@@ -86,7 +87,8 @@ npx eas-cli@latest init             # creates or links the EAS project for slug 
 |---|---|---|---|---|
 | `development` | `com.earlyletters.scribe.dev` | internal (ad hoc, registered devices) | dev client on the founder's phones; device spikes with Instruments (S1-17) | exists |
 | `preview` | `com.earlyletters.scribe.preview` | internal | release JavaScript for timing and most device checks; no StoreKit products | exists |
-| `production` | `com.earlyletters.scribe` | store (default) | TestFlight C0 and C1, App Store | exists, `autoIncrement: true` |
+| `production` | `com.earlyletters.scribe` | store (default) | release candidates (internal TestFlight on the production record) and the App Store | exists, `autoIncrement: true` |
+| `testflight` | `com.earlyletters.scribe.preview` | store | C0 and C1 (preview lane, `docs/release/TESTFLIGHT.md`) | exists on `develop` (PR #100) |
 | `e2e` | `.preview` | simulator, `withoutCredentials` | Maestro suite (`EXPO_PUBLIC_E2E=1`) | requested (B-1) |
 | `development-simulator` | `.dev` | simulator | Maestro authoring loop | requested (B-2) |
 
@@ -105,14 +107,27 @@ Requested submit profile (A: values come from the founder after FT-08):
 ### 3.3 Build variables
 Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS (FT-17), never in the repo: `npx eas-cli env:set --name <NAME> --value <value> --environment production --visibility plaintext` (V: Expo "Environment variables"), and the profile names its environment (`"environment": "production"`). The list is AUTH_SETUP section 8 plus `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` (G-05), `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` once FT-24 is done (or left out entirely if analytics is cut, ROADMAP 6). The Supabase **secret** key never goes into EAS.
 
-### 3.4 The build commands (coordinator, from a tag)
+### 3.4 The build (from an RC tag)
+Pushing `ios-v<x.y.z>-rc.<n>` runs `.github/workflows/release-ios.yml` (BL-437): tag, version and branch checks, `npm test`, typecheck, store metadata drift, placeholder scan, then `eas build --platform ios --profile production --non-interactive --freeze-credentials --no-wait --auto-submit`. The build runs on EAS; the upload to TestFlight follows when it finishes. It needs the secrets in 3.5, `owner` and `extra.eas.projectId` in `app.config.ts`, production signing credentials in EAS (sign the first production build once from a computer, 4) and `submit.production.ascAppId` (3.2).
+
+The same by hand, if the workflow cannot run:
 ```bash
 git switch --detach ios-v1.0.0-rc.1
 cd apps/mobile
 npx eas-cli@latest build --platform ios --profile production      # store build, build number bumped by EAS
 npx eas-cli@latest submit --platform ios --latest                   # uploads to App Store Connect (TestFlight)
 ```
-`eas submit` uploads the build; it shows in TestFlight after processing (V: Expo "Submit to the Apple App Store", "usually 10-15 minutes"). Record the build id, build number and commit in the release notes (section 12).
+`eas submit` uploads the build; it shows in TestFlight after processing (V: Expo "Submit to the Apple App Store", "usually 10-15 minutes"). Record the build id, build number and commit in `docs/release/<x.y.z>.md`.
+
+Store text: `apps/mobile/store.config.json` is generated from `packages/content` (`npx tsx scripts/release/store-config.ts`, BL-436). The founder runs `release-ios.yml` by hand from the release branch with `job: metadata`, which adds the review contact from its secret and runs `eas metadata:push`. EAS Metadata cannot upload screenshots: upload them by hand (6.3).
+
+### 3.5 Release secrets (repository secrets; the repo is private on GitHub Free, which has no environment secrets)
+| Name | What | Used by |
+|---|---|---|
+| `EXPO_TOKEN` | Expo robot token (FT-17); a robot token needs `owner` in app config | RC build, metadata push |
+| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","demoRequired"}`; optional `notes` overrides `storeListing.reviewNotes`; `demoUsername` and `demoPassword` only if a demo account exists | metadata push |
+
+The App Store Connect API key and signing credentials stay in EAS credentials (4), never in GitHub.
 
 ## 4. Signing with an individual developer account
 
@@ -126,6 +141,8 @@ npx eas-cli@latest submit --platform ios --latest                   # uploads to
 - **If the account later moves to an organisation** (D-004 triggers), Apple's app transfer applies; signing assets are re-created in the new team (DECISIONS D-004 point 5).
 
 ## 5. TestFlight
+
+C0 and C1 run on the preview lane (`testflight` profile, `.preview` App Store Connect record; `docs/release/TESTFLIGHT.md`, PR #100), so test builds never spend the permanent production id. Release candidates from `release/1.0` go to the production record's internal group for TF-04 and FT-39 before submission (D-089). The rest of this section applies to both records.
 
 ### 5.1 Facts that shape the plan (V: Apple App Store Connect Help and Expo "TestFlight", opened 13 Oct 2026)
 | | Internal (C0) | External (C1) |
@@ -174,16 +191,13 @@ Tick every line in the release PR's description with the evidence file it rests 
 - [ ] Screenshots from a release build with the fictional family only (FT-38, BL-340): 1 to 10 iPhone screenshots; supply the 6.9-inch size (1260 x 2736, 1290 x 2796 or 1320 x 2868 portrait) or the 6.5-inch size (1284 x 2778); iPad screenshots are not required because the app does not run natively on iPad (`supportsTablet: false`, F) (V: Apple "Screenshot specifications").
 - [ ] Each subscription has its review screenshot and is attached to this version (the first subscription ships with an app version, APP_STORE_CONNECT_SUBSCRIPTIONS step 8).
 
-### 6.4 App Review information and the demo account
-- [ ] **Contact information** (name, email, phone in international format) and **Notes** (at most 4,000 bytes) (V: Apple "Platform version information").
-- [ ] **Sign-in required**: a demo account that does not expire (V, same page). Ours, on **production** (FT-23 says production gets no fixture data except this account):
-  - Created by the coordinator with the founder: an email address on our domain reserved for review (for example `appreview@earlyletters.com`, A: alias to be made in FT-13); sign in once with the app's email code, answer the gate, accept Terms and sensitive data, then load the fictional family "Asha" only (child Asha, signs as Mama, a handful of typed and spoken letters with fictional words, no real name, photo, voice or date of anyone; CLAUDE.md privacy rules). Never copy a family's data.
-  - Because sign-in is by email code, App Review cannot receive the code: either (a) the account uses Sign in with Apple through Apple's own review account (A: not possible to share), or (b) the notes explain "Sign in is optional: everything can be reviewed signed out. To see sync, use Continue with email with <address>; the code arrives at that address" and the founder watches that inbox during review and answers within an hour (A: the usual practice; App Review asks for "login credentials", V, Guidelines "Before You Submit"). Recommended: (b), and make the notes say clearly that recording, the book, export, deletion and Plus are reachable without an account.
-  - Keep the account. Do not delete it after review; it is reused for every version.
-- [ ] **Notes** (draft; BL-341, legal and content owners finalize): a family memory journal parents fill by talking or typing; letters stay on the phone unless the parent signs in to sync with a co-parent; answer Yes to the 18+ question; how to reach Plus (Settings, Children, Add a child; or Read together more than 3 times; from APP_STORE_CONNECT_SUBSCRIPTIONS step 8); speech models and language packs download as data after a language is chosen, checked against a signed manifest, and contain no code (guideline 2.5.2: apps may not "download, install, or execute code which introduces or changes features or functionality", V); account deletion is in Settings, Delete account (5.1.1(v)); a due date is optional and nothing is a health service (D-004 5.1.1(ix) positioning). Describe every feature specifically; generic notes are rejected under 2.3.1(a) (V).
+### 6.4 App Review information
+- [ ] **Contact information** (name, email, phone in international format) and **Notes** (at most 4,000 bytes) (V: Apple "Platform version information"). Both are pushed by the metadata job (3.4): contact from `ASC_REVIEW_CONTACT_JSON`, notes from `storeListing.reviewNotes` in `packages/content` (BL-341 finishes them).
+- [ ] **No demo account for v1.0.** v1.0 is on this phone only: no sign-in, account or sync (PR #54), so "Sign-in required" is No. The notes say so. If sign-in ships (v1.1), the demo-account plan returns: a non-expiring account on production with the fictional family "Asha" only, kept between versions.
+- [ ] Notes cover: a family memory journal parents fill by talking or typing; everything stays on the phone; answer Yes to the 18+ question; how to reach Plus (BL-341); speech models and language packs download as data checked against a signed manifest and contain no code (guideline 2.5.2, V); a birthday or due date files letters by month and nothing is a health service (D-004 5.1.1(ix) positioning). Describe every feature specifically; generic notes are rejected under 2.3.1(a) (V).
 
 ### 6.5 Export compliance (encryption)
-- [ ] `ITSAppUsesNonExemptEncryption` is `false` in the build's Info.plist (request B-4: `ios.infoPlist.ITSAppUsesNonExemptEncryption = false` in `app.config.ts`). Set it to NO only if the app, including its libraries, uses no encryption or only exempt encryption; without the key App Store Connect asks the export compliance questions on every upload (V: Apple `ITSAppUsesNonExemptEncryption`). Encryption built into the operating system, such as HTTPS through `URLSession`, is typically exempt; proprietary encryption is not (V: Apple "Complying with Encryption Export Regulations").
+- [ ] `ITSAppUsesNonExemptEncryption` is `false` in the build's Info.plist (done on `develop` by PR #100 as `ios.config.usesNonExemptEncryption: false`). Set it to NO only if the app, including its libraries, uses no encryption or only exempt encryption; without the key App Store Connect asks the export compliance questions on every upload (V: Apple `ITSAppUsesNonExemptEncryption`). Encryption built into the operating system, such as HTTPS through `URLSession`, is typically exempt; proprietary encryption is not (V: Apple "Complying with Encryption Export Regulations").
 - [ ] Founder confirms the facts before the key is set (F, checked 13 Oct): the app uses HTTPS (system networking), the Keychain and iOS Data Protection, SHA-256 hashing (CryptoKit in `scribe-audio`, `expo-crypto`) and Ed25519 signature **verification** of packs and config (`@noble/ed25519` in `packages/api`). No app-level encryption of user content ships in v1.0 (the AES-GCM wrapping of Apple tokens runs in an Edge Function on the server, not in the app). Authentication, hashing and signature checks are generally exempt (A: confirm against Apple's "Determine and upload app encryption documentation" page and with counsel if unsure). If any of this changes (for example encrypted backup, ADR 0006), revisit.
 - [ ] Apple notes that apps using exempt encryption may still owe a year-end self-classification report to the US government (V: same Apple page, links the BIS guidance). Founder asks counsel whether it applies (A: US-only distribution may change the answer); add to FT-47's counsel batch.
 
@@ -194,7 +208,7 @@ Tick every line in the release PR's description with the evidence file it rests 
 - [ ] Version Release: **Manually release this version** (status becomes Pending Developer Release after approval, V: Apple "Platform version information"). For 1.0 phased release does not exist (section 7).
 
 ### 6.8 The binary
-- [ ] Built from the `ios-v1.0.0` tag with the `production` profile and the pinned image (3.2); build number recorded.
+- [ ] The submitted build is the release candidate from `ios-v1.0.0-rc.<n>` on `release/1.0` that passed FT-39, built with the `production` profile and the pinned image (3.2); its build number is in `docs/release/1.0.0.md` (D-089).
 - [ ] App size: largest variant download under 40 MB from App Store Connect's numbers or the App Thinning Size Report (`npx tsx scripts/size/measure.ts --thinning-report ...`, `docs/ops/APP_SIZE.md`; DEVICE_TEST_PLAN TF-01).
 - [ ] The production bundle has no e2e seam strings (`grep -c e2eSeed main.jsbundle` is 0, TESTID_REQUESTS B-8) and no `example.com`.
 - [ ] Production Supabase has every migration through the newest the build needs (section 10), the beta or 1.0.0 policy versions, the pepper set, functions deployed (`purge-worker`, `analytics-forget`, `config`, `content`, `apple-token`).
@@ -214,6 +228,8 @@ Phased release is available only for version updates, not for the first release 
 For a critical bug fix, request an expedited review (V: Apple "App Review": "fixing a critical bug in your app"). Use it for S0 only.
 
 ## 8. Over-the-air (OTA) policy
+
+No OTA in v1.0 (D-091, founder, 13 Oct 2026).
 
 - **v1.0 ships with no OTA JavaScript updates.** `expo-updates` is not a dependency (F: `apps/mobile/package.json`), and no `runtimeVersion` or `channel` is configured. Every code change is a new binary through this train. Reasons: TDD 07 9.1 requires the same gates for an OTA as for an external build; App Review guideline 2.5.2 forbids downloading code that changes features (V); and the founder's quality bar favours one reviewed binary per change.
 - **What does change without a release** (decision 16, D-066, ADR 0016): signed, versioned data only: remote config and kill switches, pack manifests and language packs, prompts, tips and story cards. Never anything that changes data collection, the paywall, the 18+ gate or consent (ADR 0016 5.3). These go through section 9.
@@ -272,17 +288,18 @@ Rules for a release:
 ## 12. Per-release checklist (copy into the release PR)
 
 ```markdown
-Release ios-vX.Y.Z (build N), commit <sha>
-- [ ] develop green (G0) and merged; release PR approved by the founder; tag pushed
+Release ios-vX.Y.Z (RC tag ios-vX.Y.Z-rc.N, build N), commit <sha> on release/X.Y
+- [ ] develop green (G0) and merged; release PR approved by the founder; release branch cut; RC tag pushed; record docs/release/X.Y.Z.md current
 - [ ] Migrations needed by this build are live on staging and production (RELEASE 10); migrations-applied.txt updated
 - [ ] Packs, config, content published and committed if changed (RELEASE 9)
-- [ ] EAS production build from the tag, image sdk-57; build number recorded
+- [ ] EAS production build from the RC tag (release-ios.yml), image sdk-57; build number recorded
+- [ ] Store text pushed (metadata job) after BL-440; screenshots uploaded
 - [ ] Size: largest download under 40 MB (APP_SIZE)
 - [ ] TF-04 smoke on SE 3; TF-10 privacy manifest; TF-03 update over the previous build
 - [ ] DEVICE_TEST_PLAN items for this milestone: evidence file <path>
 - [ ] Submission checklist RELEASE 6.1 to 6.8 (first version and any version that changes data collection, age rating, screenshots or subscriptions)
 - [ ] Release option: manual (1.0) or phased (updates)
-- [ ] After release: G5 watch for 7 days; DECISIONS go/no-go note (coordinator)
+- [ ] After release: tag ios-vX.Y.Z on the RC's commit; G5 watch for 7 days; DECISIONS go/no-go note (coordinator)
 ```
 
 ## Facts and assumptions
