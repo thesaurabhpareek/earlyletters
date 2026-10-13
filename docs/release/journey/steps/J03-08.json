@@ -1,0 +1,38 @@
+{
+  "id": "J03-08",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "Another book is free",
+  "note": "Starting a book for another child opens the same page as the first, with no Plus gate (D-082, D-083): the first two letters are one pool across every book, and the gate is at Keep, not here.",
+  "from": "J03-07",
+  "route": "/settings/children/new",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Add a child Who is this book for? Each child gets their own book, with their own months, family and settings. Their name You can add a nickname later. Not here yet Letters written before birth go into a part of the book called Before You. Birthday October 13, 2026 We sort letters by Their name's month of age. Add a child",
+  "lines": [
+    "Add a child",
+    "Who is this book for?",
+    "Each child gets their own book, with their own months, family and settings.",
+    "Their name",
+    "You can add a nickname later.",
+    "Not here yet",
+    "Letters written before birth go into a part of the book called Before You.",
+    "Birthday",
+    "October 13, 2026",
+    "We sort letters by Their name's month of age.",
+    "Add a child"
+  ]
+}

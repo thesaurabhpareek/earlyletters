@@ -1,0 +1,32 @@
+{
+  "id": "J10-06",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "Delete asks first",
+  "note": "Delete opens a small sheet: \"Delete this letter?\", \"You can undo this for 30 days from Recently deleted.\" The safe choice, \"Keep it\", is the large primary button and the default; \"Delete letter\" is the quiet red one. (D-085.)",
+  "from": "J10-05",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Delete this letter? Close You can undo this for 30 days from Recently deleted. Keep it Delete letter",
+  "lines": [
+    "Delete this letter?",
+    "Close",
+    "You can undo this for 30 days from Recently deleted.",
+    "Keep it",
+    "Delete letter"
+  ]
+}

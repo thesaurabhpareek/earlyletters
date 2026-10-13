@@ -13,7 +13,7 @@
 
 - [ ] No machine edit bypasses `verifyEdits`; nothing writes, rewrites, summarizes or "shapes" a person's words
 - [ ] If cleaning behaviour changed, `ENGINE_VERSION` is bumped with a dated comment
-- [ ] Gates use `decide()` from `packages/core/src/plan.ts`; write, read, play, export and family authorship stay ungated
+- [ ] Gates use `decide()` or `decideKeepLetter()` from `packages/core/src/plan.ts`; read, play, export, delete, restore and family authorship stay ungated, and capturing and typing never are: only the Keep step of a letter is (D-082)
 - [ ] Copy lives in `packages/content` and a failing content rule was fixed in the copy, not the test
 - [ ] No entry text, transcript, audio or child name in analytics, logs or crash reports
 - [ ] Tests and fixtures use the fictional family "Asha" only; no real family details anywhere

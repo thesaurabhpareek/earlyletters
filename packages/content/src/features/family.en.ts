@@ -95,7 +95,8 @@ export const familyCopy = {
     notify: {
       button: "Tell me when it's here",
       hint: 'Saves a note on this phone. Nothing is sent.',
-      done: "Thank you. We'll let you know here when it's ready.",
+      // True only with the v1.1 card on Tonight (the first time a build with co-parent sharing opens on a phone that asked).
+      done: "Noted on this phone. When the update arrives, you will see it here.",
     },
     quiet: {
       title: 'Just you, for now.',

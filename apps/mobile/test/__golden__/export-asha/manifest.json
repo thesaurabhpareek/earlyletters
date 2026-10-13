@@ -10,7 +10,7 @@
     "include_recently_deleted": false
   },
   "counts": {
-    "entries": 11,
+    "entries": 13,
     "audio": 5,
     "audio_missing": 2,
     "audio_mismatch": 1,
@@ -56,8 +56,8 @@
     },
     {
       "path": "letters/Asha/2026-03/2026-03-12_e2.txt",
-      "bytes": 286,
-      "sha256": "9325b7e1c7adf2d56ce20f929595204b95c84cc2895f57946bcf5e5c087b2921",
+      "bytes": 289,
+      "sha256": "1e717b47f23fcf1bb6d1919e4bbf69ef1bf3eb99c48cf2c0308973d49a483516",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -86,14 +86,26 @@
     },
     {
       "path": "letters/Asha/2026-08/2026-08-10_e7.txt",
-      "bytes": 185,
-      "sha256": "29fb6a26722a0dbcc4a1a6bdfaa66bd435ac42cbb317e55b53ca7e4aeb4dee61",
+      "bytes": 188,
+      "sha256": "b7ff64ffc91fb389aca0d824de0f82e3f99d5f8065192c4301c8b8fc7e5db0cb",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "letters/Asha/2026-09/2026-09-01_e8.txt",
       "bytes": 245,
       "sha256": "bc76e0b925ba6f05f2152a63471cd9499f05e13fdf11c900899728bb7ac77408",
+      "media_type": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "letters/Asha/2026-10/2026-10-02_q1.txt",
+      "bytes": 78,
+      "sha256": "b643eab6c8c6e14fdf8dea75e9dbe492bde9035006de5ac8a35e636e40b26c3c",
+      "media_type": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "letters/Asha/2026-10/2026-10-03_q2.txt",
+      "bytes": 80,
+      "sha256": "da3faf8204a4907a776bcaf3533d165fcca749377f1ab80da7f4df2105dcf779",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -110,8 +122,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 5092,
-      "sha256": "a6c43aa87e547ccf8d5ee506c291f87e8b23d49eef75cceece7d90b9fa2901df",
+      "bytes": 5593,
+      "sha256": "97ae13f0a3257c222257366f19cd46d32838f4be4e66125357a69b92cc9dac17",
       "media_type": "text/html; charset=utf-8"
     },
     {
@@ -152,8 +164,8 @@
     },
     {
       "path": "data/entries.json",
-      "bytes": 11840,
-      "sha256": "01abfcd19b535be605083010e076e77b081e16ed1bef45bf75933a591bc5e6da",
+      "bytes": 13556,
+      "sha256": "ac376d9cfece27ff9b113ee3ce9e7903d428e9fb0c8ace149924630bf1a69ad4",
       "media_type": "application/json"
     },
     {

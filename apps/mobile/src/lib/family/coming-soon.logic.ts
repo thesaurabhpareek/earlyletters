@@ -1,6 +1,7 @@
 /**
  * "Tell me when it's here" on the co-parent coming-soon presentation: a local
- * flag on this phone only. No network, no account, no analytics event. The v1.1
+ * flag on this phone only. No network, no account (the screen counts two content-free taps, see
+ * components/family/coparent-soon.tsx). The v1.1
  * build reads it to show a quiet "Writing together is here" note once
  * (docs/backlog/future/06-coparent-sharing-v1-1.md, acceptance criteria).
  *

@@ -512,14 +512,23 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(leaves(features, 'features'), new RegExp(brand.name, 'i'))).toEqual([]);
   });
 
-  // D-073 (founder, 3 Oct 2026, evening) puts the owner's encrypted backup in v1.0 and in Plus, so backup is
-  // no longer an overclaim here. Themes, covers and vault mode still are.
-  it('promises only what Plus gates in v1.0 (D-053, D-073): backup, Read together after 3 per book, more books', () => {
+  // D-085 amends D-073 for v1.0: our own encrypted backup needs sign-in and a server, so no Plus or store copy
+  // may claim backup until it ships. Themes, covers and vault mode are overclaims too.
+  // D-082 and D-083 (4 Oct 2026) replace D-053's rules: the first 2 letters are free, then Plus lets you keep adding;
+  // Read together has no limit and starting a book is free, so those are no longer claimed as Plus.
+  it('promises only what Plus gates in v1.0 (D-085, D-082): keeping more letters, no backup', () => {
     const plus = [...leaves(features.billing, 'billing'), ...leaves(en.plus, 'plus'), ...leaves(storeListing, 'store')];
     expect(offenders(plus, /\b(themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\btheme/i.test(o))).toEqual([]);
-    expect(en.plus.promise).toMatch(/backup/);
-    expect(en.plus.promise).toMatch(/Read together/);
-    expect(en.plus.promise).toMatch(/more children/);
+    expect(en.plus.promise).not.toMatch(/backup/);
+    expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
+    expect(en.plus.promise).toMatch(/first two letters are free/);
+    expect(en.plus.promise).toMatch(/keep adding letters/);
+    expect(en.plus.promise).not.toMatch(/Read together|more children|more books|free, always/);
+    // Nothing may still claim a limit that no longer exists (D-083), or an unconditional "free, always".
+    expect(offenders(plus, /free, always|first book|more children|books for more|first 3|after the first/i)).toEqual([]);
+    // D-083: app copy never types a price, "free trial", "free months" or "we will email you" in the Keep gate or Plan rows.
+    const keepAndPlan = [...leaves(features.billing.keepGate, 'keepGate'), ...leaves(features.billing.plan, 'plan')];
+    expect(offenders(keepAndPlan, /\$\d|free trial|free months?|we will email|we'll email|\bprice\b/i)).toEqual([]);
   });
 
   it('[K-13] has no beta wording in the store listing (D-060, App Review 2.2)', () => {
@@ -728,6 +737,21 @@ describe('glossary (BRAND.md)', () => {
 
   it('calls the edit feature Word for word, never tidying', () => {
     expect(offenders(COPY, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
+  });
+
+  it('says "small fix", never edit, correct, clean or improve, where the app talks about its fixes (D-086)', () => {
+    const where = (l: Leaf) => /^(en\.review|en\.onboarding\.promise|en\.book\.provenance|features\.words|features\.speech)\b/.test(l.path);
+    const BANNED = /\bedit(s|ed|ing)?\b|\bcorrect(s|ed|ing|ion|ions)?\b|\bclean(s|ed|ing)?\b|\bimprov\w*/i;
+    expect(offenders(ALL.filter(where), BANNED)).toEqual([]);
+  });
+
+  it('uses "Word for word" only where the feature is named, never to caption fixed text (D-086)', () => {
+    const named = /^(en\.onboarding\.promise\b|en\.settings\.tidyLabel$|site\.|store\.|pages\.|email\.)/;
+    const bad = [...ALL, ...EMAIL].filter((l) => /word for word/i.test(l.text) && !named.test(l.path));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    expect(en.review.view.exact).toBe('Exactly as said');
+    expect(en.review.view.fixes).toBe('With small fixes');
+    expect(en.book.provenance.spokenFixed).toBe('Spoken, with small fixes');
   });
 
   it('names the subscription Plus only', () => {

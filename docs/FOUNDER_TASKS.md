@@ -128,7 +128,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-09 The two Plus products**
   - Time: 1 hour (plus the review screenshot later, from a build).
   - Cost: US $0.
-  - Steps: `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` steps 3 to 7 and 9: group `Plus`; `plus.monthly` US $3.99 with a free 1-month introductory offer; `plus.annual` US $29.99 with a free 2-month offer; both at the same level; descriptions say only what v1.0 has; **Family Sharing on** for both (cannot be undone); Billing Grace Period 16 days, all renewals, production and sandbox; United States only; three sandbox testers. Do **not** create an App Store Server Notifications URL, an In-App Purchase key or a RevenueCat account (D-053). The old `el_plus_*` ids in earlier docs are superseded.
+  - Steps: `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` steps 3 to 7 and 9: group `Plus`; `plus.monthly` US $4.99 with a free 1-month introductory offer; `plus.annual` US $49.99 with a free 2-month offer; both at the same level; descriptions say only what v1.0 has; **Family Sharing on** for both (cannot be undone); Billing Grace Period 16 days, all renewals, production and sandbox; United States only; three sandbox testers. Do **not** create an App Store Server Notifications URL, an In-App Purchase key or a RevenueCat account (D-053). The old `el_plus_*` ids in earlier docs are superseded.
   - By: Thu 8 Oct (ROADMAP).
   - Blocks: the StoreKit sandbox spike in week 2, BL-222, submission (the first subscription goes in with the app version, step 8).
 
@@ -348,7 +348,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-36 Check the "If you are struggling" resources**
   - Time: 15 minutes.
   - Cost: US $0.
-  - Steps: confirm the 988 Lifeline and Postpartum Support International entries in `packages/content/src/strings.en.ts` (`struggling`) are current on their own sites; counsel sees the wording in the package (D-059: the classifier waits for v1.1 and a clinician).
+  - Steps: confirm the 988 Lifeline and Postpartum Support International entries in `packages/content/src/strings.en.ts` (`struggling`) are current on their own sites (988lifeline.org, postpartum.net: primary sources, not search snippets); counsel sees the wording in the package (D-059: the classifier waits for v1.1 and a clinician). Also check the 988 language options (Spanish, interpreter in other languages). Only if the pages say so, change the 988 `how` line to: "Call or text 988, any time. Press 2 for Spanish, or say your language to reach an interpreter." (D-087). If a page does not say it, leave the line as it is. Before any second storefront opens, add a verified region list to the launch checklist.
   - By: Fri 23 Oct.
   - Blocks: submission (an inaccurate support line is a trust and legal problem).
 

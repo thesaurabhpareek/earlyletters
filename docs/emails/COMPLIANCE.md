@@ -285,7 +285,7 @@ Field codes. Under D-080 (founder, 3 Oct 2026) every date and the plan come from
 |---|---|---|---|
 | A1 | Plan name exactly as sold ("Early Letters Plus, yearly" or the store display name) | `{planName}` | 17602 product identification; Subscription terms use "Plus Monthly" and "Plus Annual". **Fix:** D2's fixtures say "Book Plus"; pick one name and use it in the app, the store and every email. |
 | A2 | What Plus includes, one line | static copy | 17602(h) "product or service"; Terms 14.6 annual reminder |
-| A3 | Price and billing period ("$29.99 a year") | `{price}` | (b), (g), (h) |
+| A3 | Price and billing period ("$49.99 a year") | `{price}` | (b), (g), (h) |
 | A4 | It renews automatically until cancelled | static copy | (b)(1), (b)(2); NY; Terms 14.4 |
 | A5 | Length of the renewal term ("each year", "each month") | static, by plan | (b)(1), (b)(2) |
 | A6 | The date it renews or the trial ends (`E`) as a calendar date in the user's time zone | `{renewalDate}` or `{trialEndDate}` | (b); Terms 14.6; CATALOG principle 6 |
