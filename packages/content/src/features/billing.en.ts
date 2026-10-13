@@ -69,5 +69,82 @@ export const billingCopy = {
     payment: 'Apple handles payment for Plus. We never see your card details.',
     needsNewerIos: 'Plus can be added on iOS 17 or later.',
     unavailable: 'Plus is not available on this device yet.',
+    saveCopy: 'Save a copy of the terms',
+    saveCopyHelp: 'Your plan, dates and how to cancel, to keep in Mail, Notes or Files.',
+    /** Shown when Plus will renew on this iPhone's purchase but notifications are off (Q-003 gap 2). */
+    notificationsOff: 'Reminders before Plus renews come as notifications, and they are off for {app}. The dates are always here in Settings, Plan.',
+    turnOnNotifications: 'Allow notifications',
+  },
+
+  /**
+   * Plan reminders on this iPhone (Q-003 memo section 5; Subscription Terms
+   * "Receipts and reminders"). Lock-screen text names no child and no price.
+   * The note in the app carries the date, the price after, the cancel-by date
+   * and Manage subscription.
+   */
+  reminders: {
+    title: 'Plus',
+    trialOneMonth: 'Your free month ends on {date}. Plus then renews unless you cancel. You can change this in Settings, Plan.',
+    trialMonths: 'Your free months end on {date}. Plus then renews unless you cancel. You can change this in Settings, Plan.',
+    renews: 'If Plus is still set to renew, it renews on {date}. You can change this in Settings, Plan.',
+    yearly: 'A yearly note: Plus renews until you cancel. You can change this in Settings, Plan.',
+  },
+
+  /** The same reminder inside the app: on the next open inside its window, and in Settings, Plan until the date passes. */
+  note: {
+    title: 'A note about Plus',
+    trialOneMonth: 'Your free month ends on {date}.',
+    trialMonths: 'Your free months end on {date}.',
+    renews: 'Plus renews on {date}.',
+    yearly: 'Plus is on, and it renews until you cancel.',
+    priceAfter: 'Then it is {price}, until you cancel.',
+    cancelByTrial: 'Cancel by {cancelBy} and you pay nothing.',
+    cancelByRenewal: 'To avoid the next charge, cancel by {cancelBy}.',
+    dismiss: 'Got it',
+  },
+
+  /** {price} filled with Apple's display price, for "Then it is {price}". */
+  price: {
+    month: '{price} a month',
+    year: '{price} a year',
+  },
+
+  /**
+   * Right after a purchase (in-app-disclosures 1.4.0 section 3; Subscription
+   * Terms "Receipts and reminders"; California 17602(a)(3) retained
+   * acknowledgment). "Save a copy" shares `summary` as plain text.
+   */
+  confirmation: {
+    title: 'Plus is on',
+    planMonthly: 'Plus Monthly',
+    planAnnual: 'Plus Annual',
+    trial: 'Free until {date}. Then {price}, until you cancel.',
+    paid: '{price}, until you cancel. Next renewal on {date}.',
+    priceUnknown: 'the price shown on Apple\'s subscription screen',
+    cancelByTrial: 'Cancel by {cancelBy} and you pay nothing.',
+    cancelByRenewal: 'To avoid the next charge, cancel by {cancelBy}.',
+    renewal: 'Plus renews automatically at the end of each period, at the price shown when you subscribed, until you cancel. Cancel at least 24 hours before a free trial or period ends.',
+    howToCancel: 'To cancel: on your iPhone, open Settings, tap your name, Subscriptions, {app}, Cancel Subscription. Or in {app}: Settings, Plan, Manage subscription.',
+    apple: 'Apple charges your Apple Account and handles every payment, renewal, cancellation and refund. Deleting the app or your account does not cancel your plan.',
+    family: 'People in your Apple family group get Plus too, through Apple Family Sharing.',
+    reminders: 'This iPhone reminds you before a free trial ends, before an annual plan renews and once a year, if notifications are allowed. Settings, Plan always shows the dates.',
+    saveCopy: 'Save a copy',
+    saveCopyHelp: 'Keep these terms in Mail, Notes or Files.',
+    remindTrialOneMonth: 'Remind me before the free month ends',
+    remindTrialMonths: 'Remind me before the free months end',
+    remindRenewal: 'Remind me before Plus renews',
+    remindOn: 'Reminders are on for this iPhone.',
+    remindOff: 'Notifications are off, so the dates stay in Settings, Plan.',
+    done: 'Done',
+    /** The saved copy (plain text). */
+    summary: {
+      heading: '{app} Plus: what you agreed to',
+      plan: 'Plan: {name}, {price}.',
+      trialEnd: 'Free trial ends: {date}.',
+      renewsOn: 'Renews on: {date}.',
+      cancelBy: 'Cancel by: {cancelBy}.',
+      terms: 'Subscription Terms (Terms of Service, Section 14):',
+      saved: 'Saved on {date}.',
+    },
   },
 } as const;

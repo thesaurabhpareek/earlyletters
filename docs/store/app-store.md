@@ -20,7 +20,7 @@ Rules this copy follows (docs/DECISIONS.md, 3 Oct 2026): no "beta" (D-060, guide
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (2939 / 4000)
+## Description (3016 / 4000)
 
 ```text
 Early Letters is a baby memory book you fill by talking.
@@ -65,6 +65,7 @@ Writing, reading, playing your recordings, export and writing with your co-paren
 
 Terms of Use: https://earlyletters.com/terms
 Privacy Policy: https://earlyletters.com/privacy
+Consumer Health Data Privacy Policy: https://earlyletters.com/health-privacy
 ```
 
 ## What's New (version 1.0)

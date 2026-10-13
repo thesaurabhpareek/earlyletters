@@ -27,7 +27,7 @@ function documentedManifest(): typeof privacyManifests {
   return (JSON.parse(block[1]) as { ios: { privacyManifests: typeof privacyManifests } }).ios.privacyManifests;
 }
 
-const byType = <T extends Record<string, unknown>>(list: T[], key: keyof T) => [...list].sort((a, b) => String(a[key]).localeCompare(String(b[key])));
+const byType = <T extends object>(list: T[], key: keyof T) => [...list].sort((a, b) => String(a[key]).localeCompare(String(b[key])));
 
 describe('privacy manifest (PrivacyInfo.xcprivacy)', () => {
   it('[G-23] matches the privacy label document, section 3.3, entry for entry', () => {

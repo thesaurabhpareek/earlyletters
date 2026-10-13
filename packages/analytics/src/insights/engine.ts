@@ -227,7 +227,10 @@ export function computeInsights(input: InsightsInput): InsightsReport {
     }
 
     // --- Co-parent invites --------------------------------------------------------
-    const inv = s.family_invites.filter((r) => r.role === 'co_parent' && week(r.week) < current);
+    // Only weeks where both counts are published: a week whose accepted count is suppressed
+    // (k-anonymity, including the nested-chain rule of 20261005200000) would otherwise add to
+    // sent but not to accepted and pull the rate down.
+    const inv = s.family_invites.filter((r) => r.role === 'co_parent' && week(r.week) < current && kc(r.sent) !== null && kc(r.accepted) !== null);
     const sent = inv.reduce((n, r) => n + (kc(r.sent) ?? 0), 0);
     const acc = inv.reduce((n, r) => n + (kc(r.accepted) ?? 0), 0);
     const accRate = sent >= K_MIN ? acc / sent : null;

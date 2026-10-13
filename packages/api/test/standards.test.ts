@@ -222,6 +222,15 @@ describe('[DECISION-17] every RPC the app calls is in ENDPOINTS', () => {
     for (const m of src.matchAll(/\bcall<[^>]*>\(\s*'([a-z0-9_]+)'/g)) called.add(m[1]);
   }
   const listed = new Set(Object.values(ENDPOINTS as Record<string, EndpointSpec>).map((e) => /\/rpc\/([a-z0-9_]+)$/.exec(e.path)?.[1]).filter(Boolean));
+  const invoked = new Set<string>();
+  for (const f of files(APP)) {
+    for (const m of readFileSync(f, 'utf8').matchAll(/functions\.invoke\(\s*'([a-z0-9/-]+)'/g)) invoked.add(m[1]);
+  }
+  const listedFunctions = new Set(Object.values(ENDPOINTS as Record<string, EndpointSpec>).map((e) => /^\/functions\/v1\/(.+)$/.exec(e.path)?.[1]).filter(Boolean));
+
+  it.each([...invoked].sort())('Edge Function %s is in ENDPOINTS', (fn) => {
+    expect(listedFunctions.has(fn), `add ${fn} to ENDPOINTS`).toBe(true);
+  });
 
   it('finds the calls it checks', () => {
     expect(called.has('sync_push') && called.has('record_policy_act')).toBe(true);

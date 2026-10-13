@@ -46,10 +46,10 @@ export default function DeleteAccount() {
 
   if (!d.configured || !d.signedIn) {
     return (
-      <ScrollView contentContainerClassName="gap-6 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+      <ScrollView testID="deleteAccount.signedOut" contentContainerClassName="gap-6 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
         {header}
         <Text className="text-base leading-6 text-foreground">{d.configured ? c.signedOut.body : c.notConfigured}</Text>
-        {d.configured && <Button onPress={() => router.push('/settings/account')}><Text>{c.signedOut.button}</Text></Button>}
+        {d.configured && <Button onPress={() => router.push('/settings/account')} testID="deleteAccount.signIn"><Text>{c.signedOut.button}</Text></Button>}
       </ScrollView>
     );
   }
@@ -75,7 +75,7 @@ export default function DeleteAccount() {
   if (step === 'scheduled' && d.status && d.status.state !== 'none' && d.status.state !== 'executing') {
     const date = longDate(localDay(d.status.scheduledFor));
     return (
-      <ScrollView contentContainerClassName="gap-6 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+      <ScrollView testID="deleteAccount.scheduled" contentContainerClassName="gap-6 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
         {header}
         <View className="gap-2">
           <Text role="heading" className="text-2xl font-semibold text-foreground">{c.scheduled.heading}</Text>
@@ -87,6 +87,7 @@ export default function DeleteAccount() {
         </ListSection>
         {errorLine}
         <Button
+          testID="deleteAccount.cancel"
           variant="outline"
           disabled={d.busy}
           onPress={async () => {
@@ -95,7 +96,7 @@ export default function DeleteAccount() {
           }}>
           <Text>{c.scheduled.cancelButton}</Text>
         </Button>
-        <Button variant="ghost" onPress={() => void d.signOut()}>
+        <Button variant="ghost" onPress={() => void d.signOut()} testID="deleteAccount.signOut">
           <Text>{c.scheduled.doneButton}</Text>
         </Button>
       </ScrollView>
@@ -115,6 +116,7 @@ export default function DeleteAccount() {
         <View className="gap-2">
           <Text nativeID="confirm-label" className="text-base font-medium text-muted-foreground">{c.confirm.typeLabel}</Text>
           <TextInput
+            testID="deleteAccount.confirm.input"
             className="min-h-14 rounded-2xl border border-border bg-card px-4 text-lg text-foreground"
             value={typed}
             onChangeText={setTyped}
@@ -128,6 +130,7 @@ export default function DeleteAccount() {
         </View>
         {errorLine}
         <Button
+          testID="deleteAccount.confirm.button"
           variant="destructive"
           disabled={!ready}
           accessibilityState={{ disabled: !ready, busy: d.busy }}
@@ -148,7 +151,7 @@ export default function DeleteAccount() {
   }
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView testID="deleteAccount.screen" contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       {header}
       {d.cancelled && (
         <Text accessibilityRole="alert" className="text-base leading-6 text-foreground">{c.scheduled.cancelled}</Text>
@@ -161,15 +164,15 @@ export default function DeleteAccount() {
         ))}
       </View>
       <ListSection title={c.exportFirst.heading} footer={c.exportFirst.body}>
-        <ListRow title={c.exportFirst.button} trailing="chevron" onPress={() => (d.trackStage('export_offered'), router.push('/settings/export'))} />
+        <ListRow title={c.exportFirst.button} trailing="chevron" onPress={() => (d.trackStage('export_offered'), router.push('/settings/export'))} testID="deleteAccount.exportFirst" />
       </ListSection>
       {d.subscriptionNotice && (
         <ListSection title={c.subscription.heading} footer={c.subscription.body}>
-          <ListRow title={c.subscription.button} trailing="chevron" onPress={() => void manageSubscription()} />
+          <ListRow title={c.subscription.button} trailing="chevron" onPress={() => void manageSubscription()} testID="deleteAccount.subscription" />
         </ListSection>
       )}
       {errorLine}
-      <Button variant="outline" onPress={() => (haptic('tap'), setWanted('confirm'))}>
+      <Button variant="outline" onPress={() => (haptic('tap'), setWanted('confirm'))} testID="deleteAccount.continue">
         <Text>{c.continueButton}</Text>
       </Button>
     </ScrollView>

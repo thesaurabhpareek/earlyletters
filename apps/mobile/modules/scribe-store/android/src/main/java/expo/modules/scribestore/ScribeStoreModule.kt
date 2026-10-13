@@ -47,5 +47,9 @@ class ScribeStoreModule : Module() {
     AsyncFunction("beginRefundRequest") { _: List<String> ->
       "unavailable"
     }
+
+    AsyncFunction("displayPrices") { _: List<String> ->
+      emptyMap<String, String>()
+    }
   }
 }

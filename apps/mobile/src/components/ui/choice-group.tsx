@@ -50,9 +50,14 @@ export type ChoiceGroupProps<T extends string> = {
   onSelect?: (v: T) => void;
   layout?: 'segmented' | 'list';
   className?: string;
+  /** E2E id on the group; each option gets `${testID}.${option.value}` unless `optionTestID` is set. */
+  testID?: string;
+  /** One shared E2E id for every option (repeated rows such as books; flows pick one by index). */
+  optionTestID?: string;
 };
 
-export function ChoiceGroup<T extends string>({ label, showLabel, options, value, onChange, onSelect, layout = 'segmented', className }: ChoiceGroupProps<T>) {
+export function ChoiceGroup<T extends string>({ label, showLabel, options, value, onChange, onSelect, layout = 'segmented', className, testID, optionTestID }: ChoiceGroupProps<T>) {
+  const idOf = (v: T) => optionTestID ?? (testID && `${testID}.${v}`);
   const stacked = useIsLargeText();
   const pick = (v: T) => {
     if (v !== value) {
@@ -71,22 +76,23 @@ export function ChoiceGroup<T extends string>({ label, showLabel, options, value
       <View
         accessibilityRole="radiogroup"
         accessibilityLabel={label}
+        testID={testID}
         className={cn(layout === 'list' ? 'overflow-hidden rounded-lg bg-card' : stacked ? 'flex-col gap-2' : 'flex-row gap-3')}>
         {layout === 'list'
           ? withDividers(options).map((item) =>
               item.type === 'divider' ? (
                 <ListDivider key={item.key} />
               ) : (
-                <ListChoice key={item.row.value} option={item.row} checked={item.row.value === value} onPress={() => pick(item.row.value)} />
+                <ListChoice key={item.row.value} option={item.row} checked={item.row.value === value} onPress={() => pick(item.row.value)} testID={idOf(item.row.value)} />
               ),
             )
-          : options.map((o) => <SegmentChoice key={o.value} option={o} checked={o.value === value} grow={!stacked} onPress={() => pick(o.value)} />)}
+          : options.map((o) => <SegmentChoice key={o.value} option={o} checked={o.value === value} grow={!stacked} onPress={() => pick(o.value)} testID={idOf(o.value)} />)}
       </View>
     </View>
   );
 }
 
-function SegmentChoice<T extends string>({ option, checked, grow, onPress }: { option: ChoiceOption<T>; checked: boolean; grow: boolean; onPress: () => void }) {
+function SegmentChoice<T extends string>({ option, checked, grow, onPress, testID }: { option: ChoiceOption<T>; checked: boolean; grow: boolean; onPress: () => void; testID?: string }) {
   const { c } = useTheme();
   const press = usePressScale('control');
   return (
@@ -94,6 +100,7 @@ function SegmentChoice<T extends string>({ option, checked, grow, onPress }: { o
       onPress={onPress}
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
+      testID={testID}
       accessibilityRole="radio"
       accessibilityState={{ checked }}
       accessibilityLabel={option.label}
@@ -111,11 +118,12 @@ function SegmentChoice<T extends string>({ option, checked, grow, onPress }: { o
   );
 }
 
-function ListChoice<T extends string>({ option, checked, onPress }: { option: ChoiceOption<T>; checked: boolean; onPress: () => void }) {
+function ListChoice<T extends string>({ option, checked, onPress, testID }: { option: ChoiceOption<T>; checked: boolean; onPress: () => void; testID?: string }) {
   const { c } = useTheme();
   return (
     <AnimatedPressable
       onPress={onPress}
+      testID={testID}
       accessibilityRole="radio"
       accessibilityState={{ checked }}
       accessibilityLabel={option.label}
@@ -138,9 +146,10 @@ export type ChipProps = {
   onPress?: () => void;
   accessibilityHint?: string;
   className?: string;
+  testID?: string;
 };
 
-export function Chip({ label, variant = 'suggestion', selected = false, icon: IconCmp, onPress, accessibilityHint, className }: ChipProps) {
+export function Chip({ label, variant = 'suggestion', selected = false, icon: IconCmp, onPress, accessibilityHint, className, testID }: ChipProps) {
   const { c } = useTheme();
   const press = usePressScale('control', !!onPress);
   const tag = variant === 'tag';
@@ -155,7 +164,7 @@ export function Chip({ label, variant = 'suggestion', selected = false, icon: Ic
   );
   if (tag || !onPress) {
     return (
-      <View className={cn('flex-row items-center gap-1 self-start rounded-full bg-secondary px-2.5 py-1', className)} accessibilityLabel={label}>
+      <View className={cn('flex-row items-center gap-1 self-start rounded-full bg-secondary px-2.5 py-1', className)} accessibilityLabel={label} testID={testID}>
         {body}
       </View>
     );
@@ -169,6 +178,7 @@ export function Chip({ label, variant = 'suggestion', selected = false, icon: Ic
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
       hitSlop={4}
+      testID={testID}
       role="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}

@@ -86,6 +86,17 @@ tags:
     visible:
       id: "language.row.hi.status.waiting-downloads_paused"
     timeout: 15000
-- assertNotVisible:
-    id: "language.row.hi.retry"
+# No retry is offered while downloads are paused (canRetry is false for
+# downloads_paused): tapping the row leaves the status unchanged.
+- tapOn:
+    id: "language.row.hi"
+- assertVisible:
+    id: "language.row.hi.status.waiting-downloads_paused"
+- runFlow:
+    when:
+      visible:
+        id: "languagePicker.sheet"
+    commands:
+      - tapOn:
+          id: "languagePicker.close"
 - stopApp

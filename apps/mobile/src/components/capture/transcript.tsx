@@ -49,6 +49,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, sca
           return (
             <View key={i} style={{ width: MARK_W + 4, height: h, alignItems: 'center' }}>
               <Pressable
+                testID="review.edit"
                 onPress={() => onPressEdit(edit)}
                 hitSlop={{ left: 8, right: 8, top: v, bottom: v }}
                 accessibilityRole="button"
@@ -63,6 +64,7 @@ export function Transcript({ segments, openEdit, restoredIndex, onPressEdit, sca
         return (
           <Text
             key={i}
+            testID="review.edit"
             onPress={() => onPressEdit(edit)}
             accessibilityRole="button"
             accessibilityHint={pendingCopy.review.editA11yHint}

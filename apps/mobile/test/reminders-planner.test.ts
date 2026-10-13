@@ -6,6 +6,9 @@ import {
   activeWeekdays,
   clampReminderTime,
   DEFAULT_PREFS,
+  eveningDueTimes,
+  firedSince,
+  parseDueTimes,
   DEFAULT_WINDOW,
   normalizeWindow,
   isQuietTime,
@@ -447,5 +450,27 @@ describe('reminder copy rules (VOICE.md, C-REQ-005)', () => {
       expect(v.title.length).toBeLessThanOrEqual(40);
       expect(v.body.length).toBeLessThanOrEqual(110);
     }
+  });
+});
+
+describe('reminder_sent bookkeeping (TRACKING_PLAN 9, G-24)', () => {
+  const note = (kind: PlannedNotification['kind'], fireAt: number): PlannedNotification =>
+    ({ id: `el.${kind}.${fireAt}`, kind, fireAt, date: '2026-10-13', hour: 20, minute: 30, title: 't', body: 'b' }) as PlannedNotification;
+
+  it('remembers only evening notes, never month-age or birthday notes (their timing reveals the birth date)', () => {
+    expect(eveningDueTimes([note('birthday', 5), note('evening', 30), note('monthAge', 7), note('evening', 10)])).toEqual([10, 30]);
+  });
+
+  it('counts each remembered time that has passed once, and keeps the rest', () => {
+    expect(firedSince([10, 20, 30], 20)).toEqual({ fired: 2, ahead: [30] });
+    expect(firedSince([], 99)).toEqual({ fired: 0, ahead: [] });
+    expect(firedSince([NaN, 50], 10)).toEqual({ fired: 0, ahead: [50] });
+  });
+
+  it('a damaged stored value is an empty list, never an error', () => {
+    expect(parseDueTimes(null)).toEqual([]);
+    expect(parseDueTimes('not json')).toEqual([]);
+    expect(parseDueTimes('{"a":1}')).toEqual([]);
+    expect(parseDueTimes('[1, "2", 3]')).toEqual([1, 3]);
   });
 });

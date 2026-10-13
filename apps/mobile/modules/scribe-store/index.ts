@@ -29,6 +29,8 @@ declare class ScribeStoreNative extends NativeModule<Events> {
   showManageSubscriptions(): Promise<ManageOutcome>;
   sync(): Promise<SyncOutcome>;
   beginRefundRequest(productIds: string[]): Promise<RefundOutcome>;
+  /** Product id -> Apple's localized display price ("$29.99"); empty when the App Store cannot be reached. */
+  displayPrices(productIds: string[]): Promise<Record<string, string>>;
 }
 
 export const ScribeStore = requireOptionalNativeModule<ScribeStoreNative>('ScribeStore');

@@ -9,7 +9,7 @@ import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { exporterRole, mergeDictionary, phoneConsentHistory, planExport, safeSegment } from '../src/lib/export/build.logic';
 import { ExportCancelledError, packExport, type PackDeps } from '../src/lib/export/pack';
-import { EXPORT_SCHEMA_VERSION, type AccountFile, type EntriesFile, type Manifest } from '../src/lib/export/schema';
+import { EXPORT_SCHEMA_VERSION, type AccountFile, type EntriesFile, type ExportDictionaryTerm, type Manifest } from '../src/lib/export/schema';
 import { readCentralDirectory, verifyExport, type RandomAccess } from '../src/lib/export/verify';
 import { ASHA_AUDIO, ashaSignedInSnapshot, ashaSnapshot, sha256Hex } from './helpers/asha-export';
 
@@ -188,13 +188,13 @@ describe('Asha export (golden)', () => {
   });
 
   it('[G-19] adds server spelling-list words the phone does not have, once', () => {
-    const phone = [{ child_id: 'c1', term: 'Asha', kind: 'child', heard_as: [], source: 'phone' }] as const;
-    const server = [
+    const phone: ExportDictionaryTerm[] = [{ child_id: 'c1', term: 'Asha', kind: 'child', heard_as: [], source: 'phone' }];
+    const server: ExportDictionaryTerm[] = [
       { child_id: 'c1', term: 'asha', kind: 'child', heard_as: ['Asher'], source: 'server' },
       { child_id: 'c1', term: 'Nani', kind: 'family', heard_as: ['Nanny'], source: 'server' },
       { child_id: null, term: ' ', kind: 'word', heard_as: [], source: 'server' },
-    ] as const;
-    expect(mergeDictionary([...phone], [...server]).map((d) => `${d.term}:${d.source}`)).toEqual(['Asha:phone', 'Nani:server']);
+    ];
+    expect(mergeDictionary(phone, server).map((d) => `${d.term}:${d.source}`)).toEqual(['Asha:phone', 'Nani:server']);
   });
 
   it('[review L4] records the real role, not always parent', async () => {

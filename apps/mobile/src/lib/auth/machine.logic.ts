@@ -40,6 +40,10 @@ export type AuthErrorKind =
   | 'session_expired'
   | 'under_18'
   | 'consent_unavailable'
+  /** An email link this phone did not ask for (security review H1): never verified here. */
+  | 'other_phone'
+  /** A link opened while an account is signed in: never replaces the session. */
+  | 'already_signed_in'
   | 'unknown';
 
 export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account';

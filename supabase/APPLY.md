@@ -510,3 +510,118 @@ alter table public.sync_rate_windows add constraint sync_rate_windows_bucket_che
 grant insert, update, delete on public.sync_rate_windows to authenticated;   -- file 9's sync functions write it directly
 ```
 Step 1 must come first: the replaced functions call the objects step 2 drops. The rollback re-opens the client-resettable sync counter and the stale-invite path (security review H2, M3).
+
+
+## File 20261005100000_db_fix_privacy_limits.sql (fix wave, db-fix)
+
+File 13. Apply after file 12 (`20261005000000_family_cap_language_idempotency.sql`), in the same way as step 9. It adds two columns, three RPCs, one service function and one trigger, changes privileges on `children` and `sync_op_receipts`, and replaces functions with `create or replace`; it drops nothing that holds data. Tests: `db_fix_security_review` (the security review PoC appendix F1 to F6, now asserting the safe behaviour) and `db_fix_limits_pepper_invite` (88 checks together, mutation-checked), plus new rows in `access_matrix`; `npm run test:db` now runs 17 files.
+
+What it does:
+- **Birth date and due date (review M1, D-039; G-08).** Signed-in people may select every column of `children` except `date_of_birth` and `due_date`. Rows are unchanged (members see their books). Parents get both dates, and family the birthday month and day only, from `sync_pull()` and `sync_books()`, as today. Parents still change the dates directly or through `sync_push` (`book.update` now runs through the new `book_update(p_child, p_data)`, which makes the same checks: `22023`, `P0002`, `SCCON`, `SCPAR`). A `select *` on `children` through the API now fails with `42501`; name the columns.
+- **Pull digest (review M5; G-09).** A private letter written, edited or deleted by someone else no longer changes what `sync_pull` answers. Letters that leave what the caller could read (taken out of the book, deleted, withdrawn, set aside) still make the phone drop them: the new columns `entries.left_parents_xid` and `entries.left_family_xid` record when that happened (trigger `entries_unshared`). The paragraph in file 9 that said the old check hid private activity is superseded (`comment on function sync_pull`).
+- **Op receipts (review L1; G-10).** Keyed by `(profile_id, op_id)`; clients can no longer insert or delete them; `sync_push` claims each op through `sync_op_claim(p_op)`. Old receipts are trimmed only by the hourly `scribe-sync-housekeeping` job (step 15), so keep that job scheduled.
+- **Limits (review M3; G-11).** `create_child` and `create_first_run_children`: at most 20 new books per person per rolling 24 hours (`SCRAT`; a retry of an existing book is free; a first run of up to 6 books always fits). `delete_entry` and `restore_entry`: 300 calls per person per hour (bucket `entry_state`). Inside `sync_push`, `SCRAT` now **stops the batch** (`"stopped": true, "code": "SCRAT"`) instead of rejecting that op, so the phone keeps the book or deletion and retries it after backoff. `rate_hit()` also gains the bucket `apple_token` (10 per hour) for the `apple-token` Edge Function.
+- **Consent pepper (TDD 05 X-12, BL-334; G-12).** Deleting a person who has consent records now fails with SQLSTATE `55000` and the message `app.consent_pepper is missing or shorter than 32 characters; set it before deleting accounts (supabase/APPLY.md step 6)` when the pepper is unset, empty, blank or shorter than 32 characters. The account deletion step `auth_user` then fails and retries (purge worker backoff) until the pepper is set; nothing is pseudonymised with a guessable hash. `consent_pepper_ready()` (service role) answers true or false without revealing the value. The hash formula is unchanged.
+- **Look before joining (review H2; G-13).** `peek_invite(p_token text) returns jsonb`: `{"inviter": <the inviter's sign-off for that book, or null>, "role": "parent" | "contributor"}`, plus `"joined": true` when the caller already accepted that invite. Never the child's name, ids or book data. Signed-in only, works before consent, same errors as `accept_child_invite` (`SCINV`, `SCCAP`), 120 per hour together with the other membership calls (`SCRAT`).
+
+### Step 20. Before file 13
+
+1. **The consent pepper must be set first** (step 6). Check without revealing it:
+   ```sql
+   select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32 as pepper_ok;   -- must be true
+   ```
+   If false, do step 6 now (`openssl rand -hex 32`, then `alter database postgres set app.consent_pepper = '<value>';`, password manager copy). From file 13 on, an account deletion without it stops with the `55000` message above instead of completing.
+2. Read only:
+   ```sql
+   -- a) Nothing already uses the new names (expect six nulls).
+   select to_regprocedure('public.book_update(uuid, jsonb)'), to_regprocedure('public.sync_op_claim(uuid)'),
+          to_regprocedure('public.peek_invite(text)'), to_regprocedure('public.consent_pepper_ready()'),
+          (select attname from pg_attribute where attrelid = 'public.entries'::regclass and attname = 'left_parents_xid' and not attisdropped),
+          (select tgname from pg_trigger where tgname = 'entries_unshared');
+   -- b) No op id is held by two people today (expect 0; the old key made it impossible).
+   select count(*) from (select op_id from public.sync_op_receipts group by 1 having count(*) > 1) x;
+   ```
+3. App compatibility: no signature changes. Today's build never selects the date columns from `children` directly (it uses `sync_pull` and `sync_books`; `lib/family/invites.ts` selects `name` only). A build that sends `book.update` keeps working. Older builds that see a `SCRAT` result in `sync_push` treat `"stopped": true` as a retry (existing behaviour for transient codes).
+
+### Step 21. Apply file 13
+
+SQL Editor > New query, `begin;` on the first line, the whole file, `commit;` on the last line, Run. Any error rolls the file back; copy it and stop. Then:
+```sql
+insert into supabase_migrations.schema_migrations (version, name) values ('20261005100000', 'db_fix_privacy_limits')
+on conflict do nothing;
+```
+Add `20261005100000_db_fix_privacy_limits.sql` to `.github/migrations-applied.txt` in the pull request that records the apply.
+
+Check the result:
+```sql
+select has_column_privilege('authenticated', 'public.children', 'date_of_birth', 'select') dob,
+       has_column_privilege('authenticated', 'public.children', 'due_date', 'select') due,
+       has_column_privilege('authenticated', 'public.children', 'name', 'select') name,
+       has_column_privilege('authenticated', 'public.children', 'due_date', 'update') due_update;   -- false, false, true, true
+select has_table_privilege('authenticated', 'public.sync_op_receipts', 'insert') ins,
+       has_table_privilege('authenticated', 'public.sync_op_receipts', 'delete') del,
+       has_table_privilege('authenticated', 'public.sync_op_receipts', 'select') sel;                 -- false, false, true
+select pg_get_constraintdef(oid) from pg_constraint where conname = 'sync_op_receipts_pkey';          -- PRIMARY KEY (profile_id, op_id)
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in, has_function_privilege('anon', p.oid, 'execute') anon
+  from pg_proc p where p.pronamespace = 'public'::regnamespace
+   and p.proname in ('book_update', 'sync_op_claim', 'peek_invite', 'consent_pepper_ready', 'entries_unshared') order by 1;
+-- book_update, peek_invite, sync_op_claim: true / false; consent_pepper_ready, entries_unshared: false / false
+select public.consent_pepper_ready();                                                                -- true (step 20)
+```
+Then repeat the classification and RLS queries from step 4 (expect 0 and 0). Advisors, expected and accepted: **0029** for `book_update`, `sync_op_claim` and `peek_invite` (each starts with `require_user()` and acts only for the caller).
+
+### Step 22. Settings for file 13
+
+- **Pepper:** precondition, step 20. Never change it once set (step 6).
+- **Cron:** nothing new, but `scribe-sync-housekeeping` (step 15) is now the only thing that trims op receipts. Check it runs.
+- **Book limit:** 20 new books per person per 24 hours is fixed in `create_child` and `create_first_run_children`; changing it is a new migration.
+
+### Error codes added or widened by file 13
+
+| SQLSTATE | Where | App |
+|---|---|---|
+| `SCRAT` | now also `create_child`, `create_first_run_children`, `delete_entry`, `restore_entry`, `peek_invite`. Inside `sync_push` it is a batch stop (`"stopped": true, "code": "SCRAT"`), never a per-op result | Back off and retry the same op later (as for transient codes); never move it to `rejected_writes` |
+| `SCINV`, `SCCAP` | `peek_invite`, same messages as `accept_child_invite` | Show the matching invite error before asking to join |
+| `42501` | `select *` or `select date_of_birth / due_date` on `children`; insert or delete on `sync_op_receipts` | Permanent; read dates from `sync_pull` / `sync_books` |
+| `55000` | Deleting a profile with consent records while the pepper is not set (service paths only: purge worker `auth_user` step) | Ops: set the pepper (step 20), the worker retries |
+
+### App changes for file 13 (auth-fix, mobile-fix, platform-fix)
+
+- **Invites (auth-fix, G-02):** call `peek_invite(p_token)` before showing "Join the book"; show `inviter` (or a nameless line when null) and the role; `joined: true` means go straight to the book. Errors map like `accept_child_invite`.
+- **Sync (mobile-fix):** nothing required. `merge.ts` already treats `stopped` as backoff-and-retry from the unanswered op. Do not read `children.date_of_birth` or `due_date` with a direct select anywhere (use `sync_pull` meta).
+- **API (platform-fix, G-17):** `createChild` (20 per 86,400 s) and `peekInvite` (bucket `membership`) are now enforced by the RPC, as `ENDPOINTS` already says; `deleteEntry` / `restoreEntry`, if added to `ENDPOINTS`, are 300 per 3,600 s, bucket `entry_state`, `enforcedBy: 'rpc'`.
+- **apple-token function (auth-fix):** may call `rpc('rate_hit', { p_bucket: 'apple_token' })` with the caller's JWT (10 per hour, `SCRAT`) for a limit shared across instances.
+
+### Rolling back file 13
+
+Prefer fixing forward. Partial switches, each on its own:
+- Pepper refusal causing an incident while the pepper cannot be set: do not roll back; set the pepper (step 6). Rolling back reopens reversible consent hashes.
+- Book limit or delete/restore limit too tight: re-run the earlier function bodies named below for just those functions.
+
+Full rollback (tested in PGlite: afterwards the rls, sync_engine, security_family, data_governance, children_entitlements, classification and both db_followup suites pass), in one transaction:
+1. Restore the single-key receipts first, keeping the oldest row of any op id held twice:
+   ```sql
+   delete from public.sync_op_receipts r using public.sync_op_receipts r2
+    where r.op_id = r2.op_id and (r.applied_at, r.profile_id) > (r2.applied_at, r2.profile_id);
+   alter table public.sync_op_receipts drop constraint sync_op_receipts_pkey;
+   alter table public.sync_op_receipts add constraint sync_op_receipts_pkey primary key (op_id);
+   ```
+2. Re-run these `create or replace function` blocks, unchanged: `rate_hit`, `sync_pull`, `sync_push`, `sync_housekeeping` (file 12, `20261005000000`); `create_child`, `create_first_run_children` (file 8, `20261004000000`); `delete_entry`, `restore_entry` (file 5, `20261003000000`); `policy_acceptances_pseudonymise` (file 4, `20261002020000`).
+3. Then:
+   ```sql
+   drop trigger entries_unshared on public.entries;
+   drop function public.entries_unshared();
+   drop function public.book_update(uuid, jsonb);
+   drop function public.sync_op_claim(uuid);
+   drop function public.peek_invite(text);
+   drop function public.consent_pepper_ready();
+   alter table public.entries drop column left_parents_xid, drop column left_family_xid;
+   grant insert, delete on public.sync_op_receipts to authenticated;
+   grant select on public.children to authenticated;
+   delete from public.sync_rate_windows where bucket in ('entry_state', 'apple_token');
+   alter table public.sync_rate_windows drop constraint sync_rate_windows_bucket_check;
+   alter table public.sync_rate_windows add constraint sync_rate_windows_bucket_check
+     check (bucket in ('pull', 'push', 'policy_actions', 'membership'));
+   comment on function public.sync_pull(jsonb, int) is null;
+   ```
+The rollback re-opens review M1 (family read the birth year and due date), M5, L1, the missing book and delete/restore limits and the fail-open pepper; the app's ask-before-joining screen falls back to its nameless form without `peek_invite`.

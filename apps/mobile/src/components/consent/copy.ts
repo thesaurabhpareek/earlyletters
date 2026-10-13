@@ -5,8 +5,7 @@
  * test scans this file.
  */
 export const consentCopy = {
-  // settings.privacy.analyticsSection
-  analyticsSection: 'Usage and crash reports',
+  // analyticsSection moved to packages/content settings.privacy.analyticsSection (no crash SDK in v1.0, DEBATES Q-012/Q-013)
   // settings.privacy.sensitiveSection
   sensitiveSection: 'Your letters',
   // settings.privacy.neverTitle

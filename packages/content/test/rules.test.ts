@@ -164,12 +164,12 @@ describe('prompts', () => {
     // app: the public name, filled from packages/brand (never typed in in-app copy);
     // version, build: the app version row; date, reference, days, email: transactional emails;
     // label, duration, elapsed, total: player VoiceOver; size, percent: downloads; format: export
-    // readme; cancelBy: trial end; coParent: deletion summary.
+    // readme; cancelBy: trial end; coParent: deletion summary; trial: free-trial length from StoreKit.
     const allowed = new Set([
       'child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n',
       'a', 'b', 'minutes', 'seconds', 'letters', 'notes', 'app', 'version', 'build',
       'date', 'reference', 'days', 'email', 'label', 'duration', 'elapsed', 'total', 'size',
-      'percent', 'format', 'cancelBy', 'coParent',
+      'percent', 'format', 'cancelBy', 'coParent', 'trial',
     ]);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);
@@ -250,6 +250,30 @@ describe('brand name and v1.0 claims', () => {
   it('points the store listing at the live legal pages (D-063)', () => {
     expect(storeListing.description).toContain(brand.web.terms);
     expect(storeListing.description).toContain(brand.web.privacy);
+  });
+
+  it('links the Consumer Health Data Privacy Policy from the store listing (HN-6, G-21)', () => {
+    expect(storeListing.description).toContain(`Consumer Health Data Privacy Policy: ${brand.web.healthPrivacy}`);
+  });
+});
+
+describe('legal alignment of consent and plan copy (G-21)', () => {
+  it('names the co-parent as the only person the book is shared with in v1.0 (D-055, CHD notice HN-4)', () => {
+    expect(en.sensitiveConsent.body).toMatch(/your co-parent/);
+    expect(en.sensitiveConsent.body).not.toMatch(/family you choose/i);
+  });
+
+  it('never promises crash reports while no crash reporter ships (Q-012)', () => {
+    const analytics = [...leaves(en.analyticsConsent, 'analyticsConsent'), ...leaves(en.settings.privacy, 'settings.privacy')];
+    expect(offenders(analytics, /\bcrash/i)).toEqual([]);
+  });
+
+  it('never types a trial length: it comes from Apple\'s offer (in-app-disclosures 1.4.0)', () => {
+    const plus = [...leaves(en.plus, 'plus'), ...leaves(features.billing, 'billing'), ...leaves(storeListing, 'store')];
+    expect(offenders(plus, /\b(free for|trial of)\s+(\d+|one|two|three)\s+(days?|weeks?|months?|years?)\b/i)).toEqual([]);
+    expect(en.plus.legal.renewAnnual).toContain('{trial}');
+    expect(en.plus.legal.renewMonthly).toContain('{trial}');
+    for (const unit of Object.values(en.plus.legal.trialLength)) expect(unit.other).toContain('{n}');
   });
 });
 

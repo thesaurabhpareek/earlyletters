@@ -47,13 +47,14 @@ export default function PrivacySettings() {
   return (
     <>
       <Stack.Screen options={{ title: p.title }} />
-      <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-        <ListSection title={consentCopy.analyticsSection} footer={p.analyticsOffNote}>
-          <ToggleRow title={p.analyticsLabel} description={p.analyticsHelp} value={analytics === 'granted'} onValueChange={setAnalytics} disabled={busy} />
+      <ScrollView testID="privacy.screen" contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+        <ListSection title={p.analyticsSection} footer={p.analyticsOffNote}>
+          <ToggleRow title={p.analyticsLabel} description={p.analyticsHelp} value={analytics === 'granted'} onValueChange={setAnalytics} disabled={busy} testID="privacy.analytics" />
         </ListSection>
 
         <ListSection title={consentCopy.sensitiveSection} footer={fill(p.sensitiveHelp, { child })}>
           <ListRow
+            testID="privacy.sensitive"
             title={p.sensitiveLabel}
             value={sensitiveValue}
             trailing={sensitive.open ? 'chevron' : 'none'}

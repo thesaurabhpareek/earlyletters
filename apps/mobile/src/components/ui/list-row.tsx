@@ -69,9 +69,11 @@ export type ListRowProps = {
   accessibilityHint?: string;
   /** 'link' for rows that open a web page (Privacy Policy, Terms). */
   accessibilityRole?: 'button' | 'link';
+  /** E2E id (apps/mobile/e2e/TESTID_REQUESTS.md); inert for VoiceOver. */
+  testID?: string;
 };
 
-export function ListRow({ title, subtitle, leading, trailing = 'none', value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button' }: ListRowProps) {
+export function ListRow({ title, subtitle, leading, trailing = 'none', value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button', testID }: ListRowProps) {
   const { c } = useTheme();
   const ax = useIsAccessibilitySize();
   const value = typeof trailing === 'string' && trailing !== 'chevron' && trailing !== 'none' ? trailing : (valueProp ?? null);
@@ -102,7 +104,7 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
   const rowClass = 'min-h-11 flex-row items-center gap-3 px-4 py-3';
   if (!onPress) {
     return (
-      <View className={rowClass} accessible accessibilityLabel={label} accessibilityState={disabled ? { disabled: true } : undefined}>
+      <View className={rowClass} accessible accessibilityLabel={label} accessibilityState={disabled ? { disabled: true } : undefined} testID={testID}>
         {body}
       </View>
     );
@@ -111,6 +113,7 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      testID={testID}
       role={accessibilityRole}
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
@@ -121,7 +124,8 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
   );
 }
 
-export function ToggleRow({ title, description, value, onValueChange, disabled }: { title: string; description?: string; value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean }) {
+/** `testID` goes on the switch itself (platform/toggle forwards it). */
+export function ToggleRow({ title, description, value, onValueChange, disabled, testID }: { title: string; description?: string; value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean; testID?: string }) {
   const ax = useIsAccessibilitySize();
   return (
     <View className={cn('min-h-11 px-4 py-3', ax ? 'gap-3' : 'flex-row items-center gap-3')}>
@@ -131,7 +135,7 @@ export function ToggleRow({ title, description, value, onValueChange, disabled }
         </Text>
         {description ? <Text variant="footnote">{description}</Text> : null}
       </View>
-      <Toggle label={title} description={description} value={value} onValueChange={onValueChange} disabled={disabled} />
+      <Toggle label={title} description={description} value={value} onValueChange={onValueChange} disabled={disabled} testID={testID} />
     </View>
   );
 }

@@ -1,15 +1,30 @@
-# E2E-12  Sign in with the email code (and, optionally, the link).
-# Proves: A-REQ-018 (one email with a link and a 6-digit code; the code signs
-# in), PRD-REQ-002 and LEGAL-REQ-001 (Terms with the 18+ line, then the
-# sensitive-data sheet; nothing syncs before both), D-054.
-# The code comes from the e2e project (scripts/fetch-otp.js: OTP_SOURCE admin,
-# or mailpit for a local stack). Real mail clients, Apple and Google sign-in are
-# device checks (DEVICE_TEST_PLAN S1-06 to S1-09).
-# Link variant: set LINK=1 to open the universal link with the token hash
-# instead of typing the code. It works only when the AASA file is live on
-# earlyletters.com (Apple's CDN serves it to the simulator too).
+# E2E-12  Magic-link sign-in: the code path, the new "Is this your account?"
+# step (G-01, security review H1) and the hijack regression.
+#
+# Proves:
+# - A-REQ-018, D-054: one email with a link and an 8-digit code (G-05); the
+#   code signs in.
+# - PRD-REQ-002, LEGAL-REQ-001: Terms with the 18+ line, then the
+#   sensitive-data sheet; nothing syncs before both.
+# - G-01 part 1: after any sign-in on a phone whose letters belong to no
+#   account, the account email is shown and nothing is claimed until
+#   "Yes, this is me"; "No, sign out" leaves the letters on the phone and the
+#   server empty (scripts/server-rows.js).
+# - G-01 part 2 (LINK=1): a sign-in link this phone never asked for (made by
+#   the admin API, so it carries no PKCE request from this phone) signs
+#   nothing in and offers the code; the server stays empty.
+# - Link happy path (LINK=1 and OTP_SOURCE=mailpit): the real email's link,
+#   opened on the phone that asked, signs in through PKCE and then confirms.
+#
+# Test inbox strategy (README 4.2): hosted e2e project + admin generate_link
+# (OTP_SOURCE=admin, CI default) for the code; a local stack + Mailpit
+# (OTP_SOURCE=mailpit) for the real email, its template and its link. Addresses
+# are Resend test addresses (delivered+<label>@resend.dev), never a person's.
+# The universal-link parts need the AASA file live on earlyletters.com (Apple's
+# CDN serves it to the simulator too), so they run only with LINK=1.
+# Real mail clients, Apple and Google sign-in: DEVICE_TEST_PLAN S1-06 to S1-08b.
 appId: ${APP_ID}
-name: E2E-12 Sign in with email
+name: E2E-12 Sign in with email, confirm the account
 tags:
   - e2e
   - E2E-12
@@ -20,11 +35,13 @@ tags:
   - needs-backend
 env:
   E2E_EMAIL: ${E2E_EMAIL || "delivered+e2e12@resend.dev"}
+  E2E_EMAIL_NO: ${E2E_EMAIL_NO || "delivered+e2e12-no@resend.dev"}
+  E2E_EMAIL_LINK: ${E2E_EMAIL_LINK || "delivered+e2e12-link@resend.dev"}
 ---
+# 1. Welcome, "I already have a book": email code, confirm, consent.
 - runFlow:
     file: ../subflows/launch-fresh.yaml
 - runFlow: ../subflows/pass-age-gate.yaml
-# Welcome, "I already have a book": the sign-in sheet.
 - assertVisible:
     id: "onboarding.step.welcome"
 - tapOn:
@@ -34,7 +51,7 @@ env:
     env:
       E2E_EMAIL: ${E2E_EMAIL}
 # Signed in with no book on the server: first run continues, and Settings,
-# Account shows the email sign-in.
+# Account shows the email sign-in with nothing left to finish.
 - runFlow: ../subflows/first-run-one-child.yaml
 - runFlow: ../subflows/open-settings.yaml
 - tapOn:
@@ -43,10 +60,96 @@ env:
     id: "account.signedIn"
 - assertNotVisible:
     id: "account.finishSetup"
-# Optional: the universal link path on a fresh install.
+- stopApp
+
+# 2. G-01 "No, sign out": a phone with letters signs in, sees the account
+#    email, says no. The letters stay on the phone, unclaimed and unsynced.
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.account"
+- tapOn:
+    id: "account.signIn"
+- runFlow:
+    file: ../subflows/sign-in-code.yaml
+    env:
+      E2E_EMAIL: ${E2E_EMAIL_NO}
+- assertVisible:
+    id: "accountConfirm.screen"
+- assertVisible:
+    id: "accountConfirm.email"
+- assertNotVisible:
+    id: "consent.terms"
+- tapOn:
+    id: "accountConfirm.no"
+- extendedWaitUntil:
+    visible:
+      id: "account.signedOut"
+    timeout: 15000
+- runScript:
+    file: ../scripts/server-rows.js
+    env:
+      EXPECT_ENTRIES: "0"
+      EXPECT_CHILDREN: "0"
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    id: "book.letter"
+    index: 0
+- stopApp
+
+# 3. G-01 regression (LINK=1): a link this phone never asked for.
 - runFlow:
     when:
       true: ${LINK == "1"}
+    commands:
+      - runFlow:
+          file: ../subflows/launch-fresh.yaml
+          env:
+            E2E_SEED: "asha"
+      - runScript:
+          file: ../scripts/lib-guard.js
+      - runScript:
+          file: ../scripts/ensure-user.js
+          env:
+            E2E_EMAIL: ${E2E_EMAIL_NO}
+      - runScript:
+          file: ../scripts/fetch-otp.js
+          env:
+            E2E_EMAIL: ${E2E_EMAIL_NO}
+            OTP_SOURCE: "admin"
+      - openLink: ${"https://earlyletters.com/auth/callback#token_hash=" + output.tokenHash + "&type=" + output.linkType}
+      - runFlow:
+          when:
+            visible:
+              text: "Open"
+          commands:
+            - tapOn: "Open"
+      - extendedWaitUntil:
+          visible:
+            id: "signInVerify.notRequested"
+          timeout: 20000
+      - assertVisible:
+          id: "signInVerify.typeCode"
+      - assertNotVisible:
+          id: "accountConfirm.screen"
+      - assertNotVisible:
+          id: "consent.(terms|age|sensitive).*"
+      - runScript:
+          file: ../scripts/server-rows.js
+          env:
+            EXPECT_ENTRIES: "0"
+            EXPECT_CHILDREN: "0"
+      - stopApp
+
+# 4. Link happy path (LINK=1 and OTP_SOURCE=mailpit): ask on this phone, open
+#    the real email's link here. PKCE exchange, then the confirm step.
+- runFlow:
+    when:
+      true: ${LINK == "1" && OTP_SOURCE == "mailpit"}
     commands:
       - runFlow:
           file: ../subflows/launch-fresh.yaml
@@ -57,7 +160,7 @@ env:
           id: "signIn.email"
       - tapOn:
           id: "signInEmail.input"
-      - inputText: ${E2E_EMAIL}
+      - inputText: ${E2E_EMAIL_LINK}
       - tapOn:
           id: "signInEmail.send"
       - extendedWaitUntil:
@@ -69,9 +172,9 @@ env:
       - runScript:
           file: ../scripts/fetch-otp.js
           env:
-            E2E_EMAIL: ${E2E_EMAIL}
-            OTP_SOURCE: ${OTP_SOURCE || "admin"}
-      - openLink: ${"https://earlyletters.com/auth/callback#token_hash=" + output.tokenHash + "&type=email"}
+            E2E_EMAIL: ${E2E_EMAIL_LINK}
+            OTP_SOURCE: "mailpit"
+      - openLink: ${"https://earlyletters.com/auth/callback#token_hash=" + output.tokenHash + "&type=" + output.linkType}
       - runFlow:
           when:
             visible:
@@ -80,6 +183,12 @@ env:
             - tapOn: "Open"
       - extendedWaitUntil:
           visible:
+            id: "accountConfirm.screen"
+          timeout: 20000
+      - tapOn:
+          id: "accountConfirm.yes"
+      - extendedWaitUntil:
+          visible:
             id: "consent.(terms|age|sensitive).*"
           timeout: 20000
-- stopApp
+      - stopApp

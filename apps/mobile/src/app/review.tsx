@@ -409,8 +409,8 @@ export default function Review() {
 
   if (phase === 'saved') {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background px-5">
-        <Pressable onPress={leave} className="w-full" accessibilityRole="button" accessibilityLabel={copy.common.doneButton}>
+      <SafeAreaView testID="review.body.saved" className="flex-1 items-center justify-center bg-background px-5">
+        <Pressable testID="review.saved" onPress={leave} className="w-full" accessibilityRole="button" accessibilityLabel={copy.common.doneButton}>
           <Animated.View style={settleStyle}>
             <Card className="rounded-3xl border-0 bg-card p-6">
               <Text className="font-serif text-xl leading-8 text-foreground" numberOfLines={4}>
@@ -435,22 +435,23 @@ export default function Review() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView testID="review.screen" className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-5 pt-2">
         <Button variant="ghost" size="sm" className="-ml-4" onPress={() => router.back()} accessibilityHint={pendingCopy.write.savedOnPhone}>
           <Text className="text-primary">{copy.common.closeButton}</Text>
         </Button>
         {spoken && (
-          <Button variant="ghost" size="sm" className="-mr-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
+          <Button variant="ghost" size="sm" className="-mr-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton} testID="review.play">
             {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
             <Text className="text-primary">{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
           </Button>
         )}
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
+      <ScrollView testID={`review.body.${phase}`} className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
         <View className="gap-1">
           <Pressable
+            testID="review.to"
             onPress={pickChild}
             disabled={!many}
             accessibilityRole={many ? 'button' : 'text'}
@@ -474,10 +475,10 @@ export default function Review() {
         {firstNote && phase === 'ready' && (
           <Animated.View entering={motion.enter()} layout={LinearTransition.springify().damping(30)}>
             {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
-            <View className="gap-1 rounded-2xl bg-secondary py-3 pl-4 pr-2">
+            <View testID="review.firstNote" className="gap-1 rounded-2xl bg-secondary py-3 pl-4 pr-2">
               <View className="flex-row items-center justify-between gap-2">
                 <Text className="flex-1 text-base font-semibold text-foreground">{r.firstNote.title}</Text>
-                <Button variant="ghost" size="sm" onPress={dismissFirstNote}>
+                <Button variant="ghost" size="sm" onPress={dismissFirstNote} testID="review.firstNote.dismiss">
                   <Text className="text-primary">{r.firstNote.dismissButton}</Text>
                 </Button>
               </View>
@@ -512,7 +513,7 @@ export default function Review() {
         )}
 
         {saveFailed && (
-          <Text className="text-base text-caution" accessibilityLiveRegion="assertive">
+          <Text testID="review.saveFailed" className="text-base text-caution" accessibilityLiveRegion="assertive">
             {copy.errors.generic.body}
           </Text>
         )}
@@ -570,7 +571,7 @@ export default function Review() {
                       </>
                     )}
                     <View className="flex-row gap-3">
-                      <Button size="sm" onPress={() => putBack(openEdit!)}>
+                      <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.edit.putBack">
                         <Text>{r.undoEditButton}</Text>
                       </Button>
                       <Button size="sm" variant="ghost" onPress={() => setOpenEdit(null)}>
@@ -681,10 +682,10 @@ export default function Review() {
       {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll. */}
       {phase === 'ready' && !isSample && (
         <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing} accessibilityHint={r.destination.title}>
+          <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing} accessibilityHint={r.destination.title} testID="review.save.book">
             <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
           </Button>
-          <Button variant="secondary" onPress={() => save(false)} disabled={!finalText.trim() || editing}>
+          <Button variant="secondary" onPress={() => save(false)} disabled={!finalText.trim() || editing} testID="review.save.private">
             <Text>{r.destination.privateButton}</Text>
           </Button>
         </View>
@@ -692,7 +693,7 @@ export default function Review() {
       {/* No words to save yet (language still downloading, nobody spoke, a failure) or only sample words: keep the recording itself. */}
       {spoken && (phase === 'waiting' || (phase === 'ready' && isSample) || (phase === 'transcribing' && canKeepVoice)) && (
         <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp}>
+          <Button size="lg" onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp} testID="review.keepVoice">
             <Text>{packWait ? wordsCopy.pack.keepButton : pendingCopy.review.voiceOnlyButton}</Text>
           </Button>
         </View>
@@ -724,7 +725,7 @@ function WordsStatus({
   onType: () => void;
 }) {
   const typeButton = (
-    <Button variant="secondary" onPress={onType}>
+    <Button variant="secondary" onPress={onType} testID="review.type">
       <Text>{copy.errors.micDenied.typeButton}</Text>
     </Button>
   );
@@ -736,7 +737,7 @@ function WordsStatus({
         <Text className="text-base leading-6 text-foreground">{copy.errors.transcriptionFailed.body}</Text>
         <View className="flex-row flex-wrap gap-3">
           {job.failure !== 'file_missing' && job.failure !== 'unsupported' && (
-            <Button variant="secondary" onPress={onRetry}>
+            <Button variant="secondary" onPress={onRetry} testID="review.retry">
               <Text>{copy.errors.transcriptionFailed.button}</Text>
             </Button>
           )}

@@ -81,7 +81,7 @@ Every L3 and L4 row tied to a child is readable only by that child's members (PR
 
 ### 4.1 Postgres (generated from the column comments)
 
-Generated on 3 Oct 2026 by loading every migration through `20261004300000_insights_aggregates.sql` into the test database and reading `col_description` for schemas `public`, `ops` and `insights` (internal underscore views omitted). If this table disagrees with a migration, the migration wins and this table must be regenerated. Status: pending live apply (see `supabase/APPLY.md`).
+Generated on 3 Oct 2026 by loading every migration through `20261004300000_insights_aggregates.sql` into the test database and reading `col_description` for schemas `public`, `ops` and `insights` (internal underscore views omitted); updated on 13 Oct 2026 (db-fix) for `20261005000000_family_cap_language_idempotency.sql` and `20261005100000_db_fix_privacy_limits.sql` (columns below, and 4.1.4 for functions and access changes). If this table disagrees with a migration, the migration wins and this table must be regenerated. Status: pending live apply (see `supabase/APPLY.md`).
 
 Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, founder decision 3): `store_subscriptions`, `store_notifications` and `app_account_tokens`. No server table holds purchases; Plus is checked on the device with StoreKit (ADR 0013).
 
@@ -172,14 +172,14 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 |---|---|---|
 | `id` | L3 | book id (identifies a child's book) |
 | `name` | L4 | child name |
-| `date_of_birth` | L4 | child birthday |
+| `date_of_birth` | L4 | child birthday; not selectable by API roles (20261005100000, D-039): parents get it from `sync_pull` / `sync_books`, family get month and day only |
 | `created_by` | L3 | person id; null after creator account deletion |
 | `created_at` | L2 | system timestamp |
 | `updated_at` | L2 | system timestamp |
 | `deleted_at` | L2 | book tombstone time (server clock) |
 | `deletion_request_id` | L2 | internal request id |
 | `nickname` | L4 | child nickname |
-| `due_date` | L4 | due date (consumer health data, PRD K-25) |
+| `due_date` | L4 | due date (consumer health data, PRD K-25); not selectable by API roles (20261005100000): parents get it from `sync_pull` / `sync_books`, family never |
 | `photo_path` | L3 | object path ({child_id}/...), points at L4 photo |
 | `book_look` | L2 | theme enum |
 | `family_can_read` | L2 | sharing setting |
@@ -263,6 +263,9 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `reviewed_at` | L2 | system timestamp |
 | `sync_xid` | L2 | system version: id of the transaction that last wrote the row (sync cursor) |
 | `sync_restored_from` | L2 | system timestamp: server time a restore re-upload brought back (null after any other write) |
+| `language` | L4 | spoken-letter language (one of the seven v1.0 codes), author-only: never in `book_entries` (20261005000000) |
+| `left_parents_xid` | L2 | system version: transaction that took the letter out of what parents can read (sync digest; 20261005100000) |
+| `left_family_xid` | L2 | system version: transaction that took the letter out of what family can read (sync digest; 20261005100000) |
 
 ##### `entry_versions`
 
@@ -275,6 +278,17 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `created_at` | L2 | system timestamp |
 | `machine_edits` | L4 | content: previous edit list |
 | `superseded_by` | L3 | person id; nulled at account deletion |
+
+##### `idempotency_keys` (20261005000000; no client access, functions only)
+
+| Column | Level | Note |
+|---|---|---|
+| `profile_id` | L3 | person id |
+| `idem_key` | L2 | client-made request key (UUID) |
+| `fn` | L2 | enum (function name) |
+| `request_sha256` | L2 | hash of the request arguments |
+| `result` | L3 | ids of what the first call made (invite id or act id), never tokens or text |
+| `created_at` | L2 | system timestamp (rows live 24 hours) |
 
 ##### `legal_holds`
 
@@ -393,6 +407,8 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 
 ##### `sync_op_receipts`
 
+Primary key `(profile_id, op_id)` since 20261005100000; written only by `sync_op_claim()`, readable by the person, trimmed after 30 days by `sync_housekeeping()`.
+
 | Column | Level | Note |
 |---|---|---|
 | `op_id` | L2 | device-made op id (UUIDv7) |
@@ -401,10 +417,12 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 
 ##### `sync_rate_windows`
 
+Unlogged per-person counters for every server-side rate limit; written only by `rate_hit()` (20261005000000), readable by the person, trimmed after a day.
+
 | Column | Level | Note |
 |---|---|---|
 | `profile_id` | L3 | person id |
-| `bucket` | L2 | enum |
+| `bucket` | L2 | enum: pull, push, policy_actions, membership, entry_state, apple_token |
 | `window_start` | L2 | system timestamp |
 | `hits` | L2 | count |
 
@@ -521,6 +539,29 @@ See 4.9.
 | `spoken_letters` | L2 | count, k-anonymised with remainder |
 | `typed_letters` | L2 | count, k-anonymised with remainder |
 
+#### 4.1.4 Functions and access rules added in 20261005000000 and 20261005100000
+
+Functions hold no data of their own; this lists what each one reads or returns, at the level of the returned data. All `security definer` with a pinned `search_path`; RPCs start with `require_user()` (no anonymous sessions); none is callable by `anon`.
+
+| Object | Kind | Callable by | Data returned or written | Level of output |
+|---|---|---|---|---|
+| `leave_child(p_child, p_keep_in_book)` | RPC | signed in | caller's membership row; caller's letters taken out of the book on request | L2 (`'left'` / `'not_member'`) |
+| `remove_child_member(p_child, p_member, p_set_aside)` | RPC | signed in (parents act) | a family member's membership; their letters set aside on request | L2 status |
+| `rate_hit(p_bucket)` | RPC and internal | signed in | the caller's own counter in `sync_rate_windows` | none returned |
+| `max_parents_per_book()` | internal | functions only | the `app.max_parents_per_book` setting | L2 |
+| `request_idempotency_key()`, `idempotency_claim(...)`, `idempotency_store(...)` | internal | functions only | `idempotency_keys` rows of the caller | L3 ids |
+| `child_members_revoke_invites()` | trigger | none | revokes a leaving parent's open invites | none |
+| `entries_language_guard()` | trigger | none | refuses a language change by anyone but the author | none |
+| `book_update(p_child, p_data)` | RPC (used by `sync_push`) | signed in (parents act) | writes book settings incl. birth date and due date; returns nothing, so the dates are never read back to the caller | none returned |
+| `sync_op_claim(p_op)` | RPC (used by `sync_push`) | signed in | the caller's own op receipt | L2 boolean |
+| `peek_invite(p_token)` | RPC | signed in, before consent | inviter's sign-off for that book (L3, a name the inviter chose) and the role offered (L3); never the child's name, any id or book data | L3 |
+| `consent_pepper_ready()` | service | service role | whether `app.consent_pepper` is set; never the value | L2 boolean |
+| `entries_unshared()` | trigger | none | stamps `left_parents_xid` / `left_family_xid` | L2 |
+| `policy_acceptances_pseudonymise()` (replaced) | trigger | none | now refuses (`55000`) to hash consent records without a pepper of at least 32 characters | L3 hash |
+| `create_child`, `create_first_run_children`, `delete_entry`, `restore_entry`, `record_policy_act`, `policy_actions_needed`, `request_account_deletion`, `cancel_account_deletion`, `accept_child_invite`, `create_child_invite`, `sync_pull`, `sync_push`, `sync_housekeeping` (replaced) | RPCs, service | unchanged | unchanged outputs; added rate limits, the parent cap, idempotency, `entries.language` (author's own rows only) and the digest rule | unchanged |
+
+Access rules changed by these files: `children.date_of_birth` and `children.due_date` lose column SELECT for API roles (all other `children` columns stay selectable by members under RLS); `sync_rate_windows` and `sync_op_receipts` lose client INSERT, UPDATE and DELETE; `idempotency_keys` has no client privileges at all. The access matrix (`supabase/tests/access_matrix.test.mjs`) has a row for each.
+
 ### 4.2 Postgres `auth` schema (Supabase managed; no comments possible)
 
 | Element | Level | Note |
@@ -541,7 +582,6 @@ Each must get column comments in the migration that creates it; the CI gate enfo
 | Table or column | Planned level of the sensitive columns |
 |---|---|
 | `profile_settings` (languages, Hindi script, goals, reminder cadence) | Languages and goals L4 (PRD 7.10); cadence and reading size L2 |
-| `public.entries.language` (spoken-letter language of a letter; feeds `insights.language_mix`) | L4 (a person's language) |
 | `member_return_links` (hashed bearer token) | Hash L3 |
 | `audio_blobs` (path, size, sha256, wrapped file key; v1.1 shared voice) | Wrapped key L4; sha256 of ciphertext L3; path L3 |
 | `child_key_grants`, escrow wraps | L4 |
@@ -563,7 +603,7 @@ Registry in code: `supabase/functions/purge-worker/lib/buckets.ts` (every bucket
 | `avatars` | `{profile_id}/{uuid}.{ext}` | Member photo | L3 | P1 |
 | `exports` | `{profile_id}/{export_id}.zip` | Server-built exports, 7 days | L4 | P1 (v1.0 exports are made on the phone) |
 
-### 4.5 Device: local SQLite (`apps/mobile/src/lib/store.ts`, `scribe.db`, schema `src/lib/db/migrations.ts` version 4)
+### 4.5 Device: local SQLite (`apps/mobile/src/lib/store.ts`, `scribe.db`, schema `src/lib/db/migrations.ts` version 5)
 
 Protection floor for the whole file: iOS Data Protection at least "complete until first user authentication" (LEGAL-REQ-022(b)); SQLCipher decision pending (LEGAL-REQ-022(d)). The highest level in the file is L4, so the file is handled as L4.
 
@@ -587,6 +627,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `server_version`, `server_updated_at`, `server_epoch` | L2 | Sync state of the server copy (version, time, restore epoch) |
 | `sync_state` | L2 | Enum: local, pending, synced, rejected, held, gone |
 | `approval` | L2 | Family review state from the server |
+| `language` | L4 | Language a spoken letter was recorded in (local migration v5); synced to the author's own phones only, never to co-parents or family |
 
 **`children`**
 
@@ -670,7 +711,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `auth.lastMethod` | L2 | Last sign-in method (apple, google, email, passkey) |
 | `language.spoken` | L4 | The author's spoken-letter languages, script and region (PRD 7.10: languages are L4) |
 | `speech.language` | L4 | The author's primary speech language |
-| `speech.letterLanguage.<letter id>` | L4 | Language a letter was spoken in; the key holds a letter id (L3) |
+| `speech.letterLanguage.<letter id>` | L4 | Language of a draft not yet saved as a letter (saved letters keep it in `entries.language` since local v5); the key holds a letter id (L3) |
 | `speech.memoryFailures`, `speech.jobRunning` | L2 | Model tier fallback count; transcription job marker |
 | `packs.allowCellular` | L2 | Download packs on mobile data |
 | `plus.cache` | L3 | Last StoreKit plan snapshot (state, product, period, dates, environment) for offline launch; purchase state of a person |

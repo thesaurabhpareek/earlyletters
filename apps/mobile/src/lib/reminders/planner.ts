@@ -379,3 +379,32 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
 export function planSignature(plan: PlannedNotification[]): string {
   return plan.map((p) => `${p.id}|${p.date}|${p.hour}:${p.minute}|${p.fireAt}|${p.title}|${p.body}`).join('\n');
 }
+
+/**
+ * `reminder_sent` bookkeeping (TRACKING_PLAN 3.1: logged on the next foreground, evening reminders
+ * only; month-age and birthday notes never, because their timing reveals the birth date). The phone
+ * remembers when its scheduled evening notes were due; on the next re-plan, every remembered time
+ * that has passed counts as one reminder that fired, and the rest are kept for the new plan.
+ * Only times are stored (setting `reminders.eveningDue`, L2): never a name, a kind other than
+ * evening, or anything about a letter.
+ */
+export function eveningDueTimes(plan: readonly PlannedNotification[]): number[] {
+  return plan.filter((p) => p.kind === 'evening').map((p) => p.fireAt).sort((a, b) => a - b);
+}
+
+/** Splits remembered due times into those that fired by `now` and those still ahead. */
+export function firedSince(remembered: readonly number[], now: number): { fired: number; ahead: number[] } {
+  const ahead = remembered.filter((t) => Number.isFinite(t) && t > now);
+  return { fired: remembered.filter((t) => Number.isFinite(t) && t <= now).length, ahead };
+}
+
+/** Parses the stored list defensively: a bad value is an empty list, never an error. */
+export function parseDueTimes(value: string | null): number[] {
+  if (!value) return [];
+  try {
+    const v = JSON.parse(value) as unknown;
+    return Array.isArray(v) ? v.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : [];
+  } catch {
+    return [];
+  }
+}

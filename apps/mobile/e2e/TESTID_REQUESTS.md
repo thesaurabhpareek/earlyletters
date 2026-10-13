@@ -1,8 +1,26 @@
 # Requests to app owners: testIDs, e2e seams and build settings
 
-Owner of this list: qa-e2e. Written 3 Oct 2026. The flows in `flows/` select **only** by these ids (never by words from `packages/content`), so copy can change without breaking a test. Nothing here has been added to app code: the qa-e2e agent edits only `apps/mobile/e2e/**`, `docs/qa/**` and `docs/ops/RELEASE.md`. The coordinator assigns each block to the owner of the file.
+Owner of this list: qa-e2e. Written 3 Oct 2026, updated 13 Oct 2026 for the fix wave (G-01, G-02, G-04, G-05, G-15, G-29). The flows in `flows/` select **only** by these ids (never by words from `packages/content`), so copy can change without breaking a test. qa-e2e edits only `apps/mobile/e2e/**`, `docs/qa/**` and `docs/ops/RELEASE.md`; the coordinator assigns each open block to the owner of the file. `bin/lint-flows.mjs` checks that every id a flow uses is listed here.
 
-Fact found on 3 Oct 2026: `apps/mobile/src` has **zero** `testID` props on screens (the only two are pass-throughs in `components/platform/toggle*.tsx`), and no e2e seam exists. Until sections 1 to 3 land, every flow fails at its first `id:` selector. `bin/lint-flows.mjs` checks that every id a flow uses is listed here.
+## Status on 13 Oct 2026 (checked in `apps/mobile/src` on snapshot 5b79f50 plus the fix-wave working tree)
+
+| Block | State | Owner now |
+|---|---|---|
+| Section 1 primitives forward `testID` (ListRow, ToggleRow, ChoiceGroup with `optionTestID`, Chip, Sheet with `closeTestID`, Toast action) | **done** (mobile-fix, G-29) | n/a |
+| Section 2 ids on gate, tabs, onboarding, language picker and rows, Tonight, Listen, Review, Write, Book, switcher, letter, player, Read together, Plus gate, add child, Settings home and the Settings screens mobile-fix owns, consent sheet | **done** (mobile-fix, G-29) | n/a |
+| Section 2 ids on sign-in and consent (`app/(auth)/sign-in/*`), Family (`app/(tabs)/family.tsx`), invites (`app/invite/*`), Plan (`app/settings/plus.tsx`), purchase confirmation (`app/plus/confirmed.tsx`) | **open**: auth-fix and payments-fix closed their claims without adding them | coordinator assigns (files were auth-fix's and payments-fix's) |
+| Section 2a new ids for the fix-wave screens (account confirm, link from another phone, ask before joining, purchase confirmation) | **open** | same |
+| Section 3 e2e launch-argument seams | **open**: not built; needs boot wiring in `app/_layout.tsx` | coordinator (owns `_layout.tsx` now) |
+| Section 4 build requests B-1 to B-8 | B-4 open, B-5 **done** (G-23 privacy manifest), the rest open | coordinator, founder (B-6) |
+
+Until the open rows land, these flows fail at their first missing id: E2E-09 and E2E-12 (sign-in ids), E2E-13 (family, invite), E2E-14 (plan, confirmation). Every flow fails at launch until section 3 exists, because `launch-fresh.yaml` passes the seam arguments and the flows rely on `e2eOffline`, `e2eSeed` and `e2eAnalyticsAsk`.
+
+Differences from the first request that the flows now follow (mobile-fix, BOARD 16:39):
+- Spoken language rows have no separate retry button: a row whose status id is `language.row.<code>.status.waiting-*` is itself the retry control (tap `language.row.<code>`).
+- Add a child: "when" is a switch, `addChild.when` (on means expecting), not a ChoiceGroup.
+- Switcher and Whose book options share one id each (`switcher.child`, `whoseBook.option`); flows pick by `index`.
+- New: `letter.nobodySpoke` (a letter whose recording had no speech), `whoseBook.sheet`, `deleteAccount.signIn`, `book.empty`.
+- `LetterCard` is one accessibility element on iOS, so the nested `book.letter.private` and `book.letter.waitingForWords` may be invisible to XCUITest. Flows therefore check the waiting state on the letter screen (`letter.waitingForWords`) and treat the card ids as best effort (A: confirm on the first simulator run).
 
 ## 0. Conventions
 
@@ -20,7 +38,7 @@ Fact found on 3 Oct 2026: `apps/mobile/src` has **zero** `testID` props on scree
 | `ChoiceGroup` (`ui/choice-group.tsx`) | no testID | add `testID?: string`; each option gets `${testID}.${option.value}` |
 | `Chip` (`ui/choice-group.tsx`) | no testID | add `testID?: string` on the `AnimatedPressable` |
 | Settings-local `Row`, `ToggleRow`, `Section` (`app/settings/privacy.tsx`, `plus.tsx`, `account.tsx`, `delete-account.tsx`, `export.tsx`) | no testID | add `testID?: string`; `ToggleRow` puts it on the switch (`components/platform/toggle` already forwards it) |
-| `LanguageRow` (`components/language/language-row.tsx`) | no testID | see section 2, Settings > Spoken language |
+| `LanguageRow` (`components/language/language-row.tsx`) | done | see section 2, Settings > Spoken language |
 | `LetterCard` (`components/book/letter-card.tsx`) | no testID | `book.letter` on the card; `book.letter.waitingForWords` on the waiting line; `book.letter.private` on the private chip |
 | `ChildSwitcher`, `WhoseBookSheet` (`components/child/*`) | no testID | section 2 |
 | `PlusGate` (`components/child/plus-gate.tsx`) | no testID | section 2 |
@@ -106,6 +124,9 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 | `consent.sensitive`, `consent.sensitive.agree`, `consent.sensitive.decline` | sensitive-data sheet | 12, 13 |
 | `consent.failed` | "couldn't finish setting up" state | 12 |
 
+### Analytics consent sheet (`components/consent/analytics-consent-sheet.tsx`, mounted from `app/(tabs)/_layout.tsx`)
+`consentSheet.screen`, `consentSheet.yes`, `consentSheet.no` (done). Flows: 11.
+
 ### Book (`app/(tabs)/book.tsx`, `components/child/child-switcher.tsx`)
 | testID | Element | Flows |
 |---|---|---|
@@ -118,13 +139,13 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 | `switcher.sheet`, `switcher.child` (repeated), `switcher.addChild`, `switcher.close` | switcher modal | 02, 07 |
 
 ### Letter (`app/letter/[id].tsx`)
-`letter.screen`, `letter.text`, `letter.waitingForWords`, `letter.signature`, `letter.togglePrivate`, `letter.delete`, `letter.deleted` (the undo banner), `letter.undo`, `letter.size`. Flows: 03, 04, 08.
+`letter.screen`, `letter.text`, `letter.waitingForWords`, `letter.nobodySpoke`, `letter.signature`, `letter.togglePrivate`, `letter.delete`, `letter.deleted` (the undo banner), `letter.undo`, `letter.size`. Flows: 03, 04, 08.
 
 ### Read together and the Plus gate (`app/read-together.tsx`, `components/child/plus-gate.tsx`)
 `readTogether.screen`, `readTogether.close`, `readTogether.next`, `readTogether.previous`, `readTogether.finish`, `readTogether.again`, `readTogether.empty`; `plusGate.screen`, `plusGate.subscribe`, `plusGate.note`, `plusGate.notNow`. Flows: 06, 07, 14.
 
 ### Add a child (`components/child/add-child-form.tsx`)
-`addChild.screen`, `addChild.name`, `addChild.when` (ChoiceGroup), `addChild.save`. Flows: 07.
+`addChild.screen`, `addChild.name`, `addChild.when` (a switch; on = expecting), `addChild.save`. Flows: 07.
 
 ### Family and invites (`app/(tabs)/family.tsx`, `app/invite/*`)
 | testID | Element | Flows |
@@ -140,18 +161,35 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 | Screen | testIDs | Flows |
 |---|---|---|
 | Account (`settings/account.tsx`) | `account.screen`, `account.signedOut`, `account.signIn`, `account.signedIn`, `account.sync`, `account.finishSetup`, `account.signOut` | 09, 12 |
-| Plan (`settings/plus.tsx`) | `plan.screen`, `plan.status.free`, `plan.status.plus` (id carries the state), `plan.seePlans`, `plan.manage`, `plan.restore`, `plan.refund`, `plan.message` | 14 |
-| Spoken language (`settings/language.tsx`, `language-row.tsx`) | `language.screen`, `language.row.<code>`, status line `language.row.<code>.status.<state>` where state is `bundled`, `installed`, `downloading`, `absent`, or `waiting-<reason>` with the `PackFailure` reason (`waiting-offline`, `waiting-waiting_for_wifi`, `waiting-downloads_paused`, `waiting-no_space`, `waiting-no_manifest`, ...); `language.row.<code>.retry`, `language.row.<code>.remove`, `language.add` | 05 |
+| Plan (`settings/plus.tsx`) | `plan.screen`, `plan.status.free`, `plan.status.plus`, `plan.status.shared` (id carries the state; `shared` = Family Sharing), `plan.seePlans`, `plan.manage`, `plan.restore`, `plan.refund`, `plan.message`, `plan.saveCopy` (Save a copy row), `plan.note` (the in-app reminder note, G-15), `plan.turnOnNotifications` | 14 |
+| Spoken language (`settings/language.tsx`, `language-row.tsx`) | `language.screen`, `language.row.<code>`, status line `language.row.<code>.status.<state>` where state is `bundled`, `installed`, `downloading`, `absent`, or `waiting-<reason>` with the `PackFailure` reason (`waiting-offline`, `waiting-waiting_for_wifi`, `waiting-downloads_paused`, `waiting-no_space`, `waiting-no_manifest`, ...); `language.row.<code>.remove`, `language.add` (no separate retry id: tap the row) | 05 |
 | Storage (`settings/storage.tsx`) | `storage.screen`, `storage.pack.<packId>` (for example `storage.pack.text-rules.hi`), `storage.pack.<packId>.remove`, `storage.inProgress.<packId>`, `storage.cellular` | 05 |
 | Privacy (`settings/privacy.tsx`) | `privacy.screen`, `privacy.analytics` (the switch), `privacy.sensitive` | 11 |
 | Export (`settings/export.tsx`) | `export.screen`, `export.start`, `export.progress`, `export.cancel`, `export.ready`, `export.share`, `export.error` | 10 |
 | Delete account (`settings/delete-account.tsx`) | `deleteAccount.screen`, `deleteAccount.signedOut`, `deleteAccount.exportFirst`, `deleteAccount.subscription`, `deleteAccount.continue`, `deleteAccount.confirm.input`, `deleteAccount.confirm.button`, `deleteAccount.scheduled`, `deleteAccount.cancel`, `deleteAccount.signOut` | 09 |
 | Reminders (`settings/reminders.tsx`) | `reminders.screen`, `reminders.toggle`, `reminders.priming.continue` | *(device plan)* |
 
-### Not mounted yet (product gaps found while writing the flows)
-- The **analytics consent sheet** (`components/consent/analytics-consent-sheet.tsx`) is not rendered by any route, and no ask sequencer exists (PRD-REQ-001: Keep the book, then reminders, then analytics, one per session). E2E-11 tests the Settings switch and keeps the sheet steps as a marked pending block. When the sheet is mounted: `consentSheet.screen`, `consentSheet.yes`, `consentSheet.no`.
+### 2a. New ids for the fix-wave screens (open; files were auth-fix's and payments-fix's)
+
+| testID | Element | File | Flows |
+|---|---|---|---|
+| `accountConfirm.screen` | "Is this your account?" step (G-01) | `app/(auth)/sign-in/consent.tsx` | 09, 12, 13 (through `subflows/sign-in-email.yaml`) |
+| `accountConfirm.email` | the account email line (a flow checks it shows the test address) | same | 12 |
+| `accountConfirm.yes`, `accountConfirm.no` | "Yes, this is me"; "No, sign out" | same | 12 (no), every sign-in (yes) |
+| `signInVerify.notRequested` | the state shown when a link was asked for on another phone (or this phone never asked) and the code is offered instead | `app/(auth)/sign-in/verify.tsx` | 12 |
+| `signInVerify.signedIn` | "You're already signed in" state | same | 12 |
+| `signInVerify.typeCode`, `signInVerify.newEmail` | the two ways forward from an unusable link | same | 12 |
+| `invite.ask`, `invite.ask.join`, `invite.ask.notNow` | "Join this family book?" with the inviter's sign-off name (G-02) | `app/invite/index.tsx` | 13 |
+| `invite.ask.inviter` | the "Invited by ..." line | same | 13 |
+| `invite.full` | "This book already has two parents" (SCCAP) | same | 13 (optional third-parent check) |
+| `plusConfirmed.screen`, `plusConfirmed.saveCopy`, `plusConfirmed.remind`, `plusConfirmed.done` | purchase confirmation with Save a copy and the one-time reminder ask (G-15) | `app/plus/confirmed.tsx` | 14 |
+| `family.member.leave`, `family.member.remove` | leave the book; remove a family member (G-02) | `app/(tabs)/family.tsx` | *(device plan S1-09)* |
+
+### Product gaps still open (found while writing the flows)
 - The **reminder priming card** after the first letter (C-REQ-001) is only reachable from Settings > Reminders; Tonight never shows it.
 - There is **no Recently deleted screen**; deletion has an Undo on the letter only. E2E-08 covers Undo and notes the gap (DATA-REQ-010 30-day restore UI).
+- `<PlanNoticeHost/>` (payments-fix, G-15) is not mounted in `_layout.tsx` yet, so the in-app plan reminder card cannot appear (coordinator, BOARD 16:05).
+- The analytics consent sheet is mounted twice (root layout and `(tabs)/_layout.tsx`); the root copy is inert but should go (coordinator, BOARD 16:39).
 
 ## 3. E2E seams (mobile owner; one new file, for example `src/lib/e2e.ts`)
 
@@ -165,6 +203,7 @@ The flows pass these as Maestro `launchApp.arguments`. On iOS they arrive in `NS
 | `e2eOffline` | `0`, `1` | Every request made through the app's fetch fails as a network error before it leaves the phone (Supabase client, packs, remote config, PostHog). iOS simulators have no airplane mode (Maestro docs: `setAirplaneMode` "is supported on Android only"), so this is the stand-in; the real radio-off check is on device (DEVICE_TEST_PLAN). | 01, 02, 03, 04, 05, 10 |
 | `e2eClockOffsetHours` | integer, may be negative | Added to `Date.now()` in one seam (`nowMs()`) used by the age gate (`lib/age-gate.ts`), Read together and reminders. | 01 |
 | `e2eConfig` | JSON | Merged over the remote config after the signed copy loads (for example `{"readTogetherFreeSessions":5}` or `{"killSwitches":{"packDownloads":true}}`). Keeps the existing rule that the free sessions value may only be raised. | 05, 06 |
+| `e2eAnalyticsAsk` | `off` (default in `launch-fresh.yaml`), `on` | `off`: the analytics consent ask never appears (as if already offered twice; the consent value stays `unknown`, so nothing is sent). `on`: the real sequencer. Needed because a seeded install has letters from earlier days, so the real sequencer shows the sheet on Tonight 1.2 s after launch and it would cover the screen in every seeded flow. | 11 (`on`); all others (`off`) |
 | `e2eTranscriber` | `auto` (default), `none`, `sample` | `none`: no speech model and no sample words, so Review offers "keep the recording" (letter waiting for words). `sample`: the existing sample transcriber. | 03 |
 
 ## 4. Build and config requests
@@ -175,10 +214,10 @@ The flows pass these as Maestro `launchApp.arguments`. On iOS they arrive in `NS
 | B-2 | `eas.json`: add profile `development-simulator` = `{"extends": "development", "ios": {"simulator": true}, "env": {"EXPO_PUBLIC_APP_ENV": "development", "EXPO_PUBLIC_E2E": "1"}}` | integration | The quick authoring loop with an EAS dev build (README section 3.2) |
 | B-3 | `eas.json`: pin `"image": "sdk-57"` under `build.*.ios` (today `macos-tahoe-26.5-xcode-26.6`; the default `auto` may move to an Xcode 27 image) | integration | Apps built with the iOS 27 SDK need the scene life cycle; SDK 57 supports it only by opt-in, and cold-start deep links under scenes were fixed in SDK 58 (Expo fyi "ios-scene-lifecycle"). Xcode 26 is still accepted by App Store Connect (Apple: "built with Xcode 26 or later" since 28 Apr 2026). |
 | B-4 | `app.config.ts`: `ios.infoPlist.ITSAppUsesNonExemptEncryption = false` (after the founder confirms the app uses only OS encryption: HTTPS, Keychain, CryptoKit hashing) | integration | Skips the export questionnaire on every upload (Apple, `ITSAppUsesNonExemptEncryption`) |
-| B-5 | `app.config.ts`: `ios.privacyManifests` from `docs/legal/app-store-privacy-labels.md` 3.3 | integration + legal | Not present today |
+| B-5 | `app.config.ts`: `ios.privacyManifests` from `docs/legal/app-store-privacy-labels.md` 3.3 | integration + legal | **Done** 13 Oct (mobile-fix G-23, `src/lib/privacy-manifest.ts`); the archived build still needs DEVICE_TEST_PLAN TF-10 |
 | B-6 | `app.config.ts`: `extra.eas.projectId` and `owner` after `eas init` (the config is dynamic, so the founder pastes the id) | founder + integration | EAS Build, Submit, Update |
 | B-7 | Only if the local Supabase stack is used for e2e (README 4.2): an `e2e-local` profile with `NSAllowsLocalNetworking` | integration | Lets the simulator reach `http://127.0.0.1:54321`. Never in `preview` or `production` (LEGAL-REQ-021). Not needed with the hosted e2e project. |
-| B-8 | Release check: production bundle contains no `e2eSeed`, `e2eOffline`, `e2eConfig` strings | platform | Section 3 hard rule |
+| B-8 | Release check: production bundle contains no `e2eSeed`, `e2eOffline`, `e2eConfig` strings | platform | Section 3 hard rule (`e2eAnalyticsAsk` included) |
 
 ## 5. Backend for e2e (founder)
 

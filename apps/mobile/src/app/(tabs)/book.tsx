@@ -84,7 +84,7 @@ export default function Book() {
     <View className="gap-3 px-5 pb-2" style={{ paddingTop: insets.top + 4 }}>
       <View className="flex-row items-center justify-between">
         <ChildSwitcher />
-        <IconButton icon={GearSixIcon} label={copy.settings.title} onPress={() => router.push('/settings')} className="-mr-2" />
+        <IconButton icon={GearSixIcon} label={copy.settings.title} onPress={() => router.push('/settings')} className="-mr-2" testID="book.settings" />
       </View>
       <Text variant="display" asHeading={1}>
         {title}
@@ -95,6 +95,7 @@ export default function Book() {
           size="sm"
           icon={BookOpenTextIcon}
           label={copy.readTogether.title}
+          testID="book.readTogether"
           className="self-start"
           onPress={() => router.push({ pathname: '/read-together', params: { childId: active.id } })}
           accessibilityHint={fill(copy.readTogether.subtitle, { child })}
@@ -128,11 +129,11 @@ export default function Book() {
   );
 
   return (
-    <View className="flex-1 bg-background">
+    <View testID="book.screen" className="flex-1 bg-background">
       {chapters.length === 0 ? (
         <View className="flex-1">
           {header}
-          <View className="flex-1 justify-center px-5 pb-16">
+          <View testID="book.empty" className="flex-1 justify-center px-5 pb-16">
             <EmptyState
               art="page"
               title={copy.book.empty.bookTitle}

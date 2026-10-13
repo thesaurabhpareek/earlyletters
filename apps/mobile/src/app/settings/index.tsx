@@ -41,12 +41,13 @@ const go = (route: string) => () => router.push(route as Href);
 const openWeb = (url: string) => () => void WebBrowser.openBrowserAsync(url);
 
 /** A row that opens more detail in place (VoiceOver: "button, collapsed"). */
-function Disclosure({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+function Disclosure({ title, hint, children, testID }: { title: string; hint?: string; children: ReactNode; testID?: string }) {
   const { c } = useTheme();
   const [open, setOpen] = useState(false);
   return (
     <View>
       <Pressable
+        testID={testID}
         onPress={() => setOpen((v) => !v)}
         role="button"
         accessibilityLabel={title}
@@ -76,7 +77,7 @@ export default function Settings() {
   const versionValue = build ? fill(h.versionValue, { version, build }) : version;
 
   return (
-    <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+    <ScrollView testID="settings.screen" contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       {/* "Early version, can make mistakes" stays in the app until the founder ends the beta (D-060). */}
       <View accessible className="gap-1 rounded-lg bg-secondary p-4">
         <Text variant="caption" tone="accent" caps>
@@ -86,42 +87,43 @@ export default function Settings() {
       </View>
 
       <ListSection title={h.sections.account}>
-        <ListRow title={h.accountLabel} subtitle={h.accountHelp} trailing="chevron" onPress={go(ROUTES.account)} />
-        <ListRow title={h.planLabel} subtitle={h.planHelp} trailing="chevron" onPress={go(ROUTES.plan)} />
+        <ListRow title={h.accountLabel} subtitle={h.accountHelp} trailing="chevron" onPress={go(ROUTES.account)} testID="settings.account" />
+        <ListRow title={h.planLabel} subtitle={h.planHelp} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" />
       </ListSection>
 
       <ListSection title={copy.children.settings.sectionTitle}>
         {s.children.map((ch: Child) => (
           <ListRow
             key={ch.id}
+            testID="settings.child"
             title={ch.name}
             trailing={ch.birthday || ch.dueDate ? 'chevron' : copy.childrenExtra.notSet}
             onPress={() => router.push({ pathname: '/settings/children/[id]', params: { id: ch.id } })}
           />
         ))}
-        <ListRow title={copy.children.switcher.addButton} trailing="chevron" onPress={() => router.push('/settings/children/new')} />
+        <ListRow title={copy.children.switcher.addButton} trailing="chevron" onPress={() => router.push('/settings/children/new')} testID="settings.addChild" />
       </ListSection>
 
       <ListSection title={h.sections.writing}>
-        <ListRow title={h.languageLabel} subtitle={h.languageHelp} trailing="chevron" onPress={go(ROUTES.language)} />
-        <ListRow title={h.remindersLabel} value={s.reminders} trailing="chevron" onPress={go(ROUTES.reminders)} />
-        <ListRow title={h.appearanceLabel} value={copy.settingsMore.themes[s.appearance]} trailing="chevron" onPress={go(ROUTES.appearance)} />
+        <ListRow title={h.languageLabel} subtitle={h.languageHelp} trailing="chevron" onPress={go(ROUTES.language)} testID="settings.language" />
+        <ListRow title={h.remindersLabel} value={s.reminders} trailing="chevron" onPress={go(ROUTES.reminders)} testID="settings.reminders" />
+        <ListRow title={h.appearanceLabel} value={copy.settingsMore.themes[s.appearance]} trailing="chevron" onPress={go(ROUTES.appearance)} testID="settings.appearance" />
       </ListSection>
 
       <ListSection title={h.sections.data} footer={copy.trust.short}>
-        <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
-        <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
-        <ListRow title={h.recordingsLabel} trailing="chevron" onPress={go(ROUTES.recordings)} />
-        <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
+        <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} testID="settings.privacy" />
+        <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} testID="settings.export" />
+        <ListRow title={h.recordingsLabel} trailing="chevron" onPress={go(ROUTES.recordings)} testID="settings.recordings" />
+        <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} testID="settings.storage" />
       </ListSection>
 
       <ListSection>
-        <ListRow title={h.deleteAccountLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.deleteAccount)} />
+        <ListRow title={h.deleteAccountLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.deleteAccount)} testID="settings.deleteAccount" />
       </ListSection>
 
       <ListSection title={h.sections.help}>
-        <ListRow title={h.helpLabel} trailing={h.helpValue} accessibilityHint={brand.support.email} onPress={() => void Linking.openURL(supportMailto(h.helpSubject))} />
-        <Disclosure title={copy.struggling.title} hint={h.strugglingA11yHint}>
+        <ListRow title={h.helpLabel} trailing={h.helpValue} accessibilityHint={brand.support.email} onPress={() => void Linking.openURL(supportMailto(h.helpSubject))} testID="settings.help" />
+        <Disclosure title={copy.struggling.title} hint={h.strugglingA11yHint} testID="settings.struggling">
           <Text variant="subhead">{copy.struggling.body}</Text>
           {copy.struggling.resources.map((r) => (
             <Pressable key={r.tel} role="link" accessibilityLabel={`${r.name}. ${r.how}`} onPress={() => void Linking.openURL(`tel:${r.tel}`)} className="gap-0.5 py-1">
@@ -133,9 +135,9 @@ export default function Settings() {
           ))}
           <Text variant="footnote">{copy.struggling.emergency}</Text>
         </Disclosure>
-        <ListRow accessibilityRole="link" title={h.termsLabel} trailing="chevron" onPress={openWeb(brand.web.terms)} />
-        <ListRow accessibilityRole="link" title={h.privacyPolicyLabel} trailing="chevron" onPress={openWeb(brand.web.privacy)} />
-        <Disclosure title={h.licencesLabel}>
+        <ListRow accessibilityRole="link" title={h.termsLabel} trailing="chevron" onPress={openWeb(brand.web.terms)} testID="settings.terms" />
+        <ListRow accessibilityRole="link" title={h.privacyPolicyLabel} trailing="chevron" onPress={openWeb(brand.web.privacy)} testID="settings.privacyPolicy" />
+        <Disclosure title={h.licencesLabel} testID="settings.licences">
           <Text variant="subhead">{licences.intro}</Text>
           {licences.sections.map((sec) => (
             <View key={sec.title} className="gap-1">
@@ -170,7 +172,7 @@ export default function Settings() {
       </ListSection>
 
       <ListSection title={copy.settings.about.title} footer={`${copy.settings.neverRewrite} ${copy.trust.short}`}>
-        <ListRow title={h.versionLabel} trailing={versionValue} />
+        <ListRow title={h.versionLabel} trailing={versionValue} testID="settings.version" />
       </ListSection>
     </ScrollView>
   );

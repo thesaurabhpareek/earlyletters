@@ -65,6 +65,12 @@ export interface PlanDetails {
   graceEnd: string | null;
   /** periodEnd minus 24 hours, when it will renew and the person bought it. */
   cancelBy: string | null;
+  /** Start of the current period or free trial (StoreKit purchaseDate). */
+  purchasedAt: string | null;
+  /** First purchase of this subscription: the yearly reminder's anniversary. */
+  originalPurchasedAt: string | null;
+  /** The next renewal's price as Apple formats it ("$29.99"), when StoreKit reports it. */
+  renewalPrice: string | null;
 }
 
 export interface PlanState {
@@ -84,6 +90,9 @@ const NO_DETAILS: PlanDetails = {
   periodEnd: null,
   graceEnd: null,
   cancelBy: null,
+  purchasedAt: null,
+  originalPurchasedAt: null,
+  renewalPrice: null,
 };
 
 /** Never read StoreKit (Expo Go, web, Android, first launch offline): Free, nothing locked. */
@@ -111,8 +120,10 @@ function transactionOf(raw: unknown): NativeTransaction | null {
   const expiresAt = isoOrUndefined(r.expiresAt);
   const purchasedAt = isoOrUndefined(r.purchasedAt);
   const revokedAt = isoOrUndefined(r.revokedAt);
+  const originalPurchasedAt = isoOrUndefined(r.originalPurchasedAt);
   if (expiresAt) tx.expiresAt = expiresAt;
   if (purchasedAt) tx.purchasedAt = purchasedAt;
+  if (originalPurchasedAt) tx.originalPurchasedAt = originalPurchasedAt;
   if (revokedAt) tx.revokedAt = revokedAt;
   return tx;
 }
@@ -128,6 +139,8 @@ function statusOf(raw: unknown): NativeStatus | null {
   if (typeof r.willAutoRenew === 'boolean') status.willAutoRenew = r.willAutoRenew;
   const grace = isoOrUndefined(r.gracePeriodExpiresAt);
   if (grace) status.gracePeriodExpiresAt = grace;
+  // A short display string from Apple; anything else is dropped (it is shown and shared as text).
+  if (typeof r.renewalPrice === 'string' && r.renewalPrice.length > 0 && r.renewalPrice.length <= 32) status.renewalPrice = r.renewalPrice;
   return status;
 }
 
@@ -243,6 +256,9 @@ export function planFromSnapshot(snap: NativeEntitlementSnapshot | null): PlanSt
         periodEnd,
         graceEnd: best.inGrace ? (best.status?.gracePeriodExpiresAt ?? null) : null,
         cancelBy,
+        purchasedAt: best.tx.purchasedAt ?? null,
+        originalPurchasedAt: best.tx.originalPurchasedAt ?? best.status?.originalPurchasedAt ?? null,
+        renewalPrice: best.status?.renewalPrice ?? null,
       },
       checkedAt: snap.checkedAt,
     };

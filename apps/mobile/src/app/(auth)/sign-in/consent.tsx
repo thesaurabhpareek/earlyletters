@@ -13,7 +13,13 @@
  *   "Keep on this phone" records a decline; the person stays signed in and
  *   can turn sync on later in Settings, Privacy.
  *
- * Also the "Finish setting up" target from Family and Account.
+ * First, when this phone's letters do not belong to any account yet: "Is this
+ * your account?" with the account's email (security review H1, gap G-01).
+ * Nothing claims or uploads a letter until "Yes, this is me"; "No, sign out"
+ * ends the session and leaves the phone as it was.
+ *
+ * Also the "Finish setting up" target from Family and Account, and where
+ * AccountConfirmWatcher sends a restored session that was never confirmed.
  */
 import { brand } from '@scribe/brand';
 import { router } from 'expo-router';
@@ -52,7 +58,7 @@ export default function ConsentSteps() {
       if (!switching.current) close();
       return;
     }
-    if (s.status !== 'ready') return;
+    if (s.status !== 'ready' || auth.accountConfirmPending) return;
     if (getSignInTrigger() !== 'sign_in' || children.length > 0 || !auth.client || s.sync !== 'on') {
       close();
       return;
@@ -70,7 +76,7 @@ export default function ConsentSteps() {
     };
     // Runs when the state settles; close and children are stable enough for this one-shot decision.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.status]);
+  }, [s.status, auth.accountConfirmPending]);
 
   const answer = async (step: ConsentStep, accepted: boolean) => {
     haptic('tap');
@@ -99,6 +105,42 @@ export default function ConsentSteps() {
             <Text>{n.startBook}</Text>
           </Button>
         </View>
+      </SheetFrame>
+    );
+  }
+
+  if (auth.accountConfirmPending && (s.status === 'checkingConsent' || s.status === 'needsConsent' || s.status === 'ready')) {
+    const cf = authCopy.confirm;
+    return (
+      <SheetFrame
+        footer={
+          <>
+            <Button
+              size="lg"
+              onPress={() => {
+                haptic('tap');
+                auth.confirmAccount();
+              }}>
+              <Text>{cf.yes}</Text>
+            </Button>
+            <QuietButton
+              label={cf.no}
+              onPress={() => {
+                switching.current = false;
+                void auth.declineAccount();
+              }}
+            />
+          </>
+        }>
+        <SheetTitle>{cf.title}</SheetTitle>
+        <View className="gap-1">
+          <SheetBody muted>{cf.signingInAs}</SheetBody>
+          <Text selectable className="text-lg font-semibold text-foreground">
+            {auth.account.email ?? cf.noEmail}
+          </Text>
+        </View>
+        <SheetBody>{cf.body}</SheetBody>
+        <Text className="text-base leading-6 text-muted-foreground">{cf.help}</Text>
       </SheetFrame>
     );
   }

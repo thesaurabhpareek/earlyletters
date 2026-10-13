@@ -163,6 +163,20 @@ export const ENDPOINTS = {
     method: 'POST', path: '/rest/v1/rpc/cancel_account_deletion', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 5, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
   },
+  /**
+   * Sign in with Apple: exchanges the one-time authorization code for a refresh
+   * token kept for revocation at account deletion (review H3, G-03; App Store
+   * 5.1.1(v)). The code is single use, so a repeat fails harmlessly.
+   */
+  appleToken: {
+    method: 'POST', path: '/functions/v1/apple-token/v1', class: 'edge_light', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'user', enforcedBy: 'edge_function' }, status: 'this_change',
+  },
+  /** At deletion request: asks PostHog to delete this device's analytics ids (TDD 05 X-02). Deleting twice is harmless. */
+  analyticsForget: {
+    method: 'POST', path: '/functions/v1/analytics-forget/v1', class: 'edge_light', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 5, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'live',
+  },
   inviteRedeem: {
     method: 'POST', path: '/functions/v1/invite-redeem', class: 'edge_light', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'ip_hash', enforcedBy: 'edge_function' }, status: 'planned',

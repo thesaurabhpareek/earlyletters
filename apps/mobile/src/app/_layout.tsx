@@ -16,6 +16,7 @@ import { startAnalytics } from '@/lib/analytics';
 import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
+import { AccountConfirmWatcher } from '@/lib/auth/account-confirm-watcher';
 import { SessionProvider } from '@/lib/auth/session-provider';
 import { startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
@@ -153,6 +154,8 @@ function Root() {
               <Stack.Screen name="invite" options={{ presentation: 'modal' }} />
             </Stack>
             <PendingInviteWatcher />
+            {/* A restored session never confirmed for this phone's letters asks first (security review H1). */}
+            <AccountConfirmWatcher />
             {/* The analytics ask: a later session after the first letter, on a tab root only (TRACKING_PLAN 9). */}
             <AnalyticsConsentAsk />
           </SessionProvider>

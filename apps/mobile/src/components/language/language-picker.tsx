@@ -48,12 +48,12 @@ export function LanguagePicker({ visible, onClose, onSelect, selected, unavailab
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-      <View className="flex-1 bg-background">
+      <View className="flex-1 bg-background" testID="languagePicker.sheet">
         <View className="flex-row items-center gap-3 ps-5 pe-3 pb-2 pt-5">
           <Text variant="headline" asHeading className="flex-1">
             {title}
           </Text>
-          <Button variant="quiet" size="sm" label={languageCopy.picker.close} onPress={close} />
+          <Button variant="quiet" size="sm" label={languageCopy.picker.close} onPress={close} testID="languagePicker.close" />
         </View>
         <View className="px-5 pb-3">
           <TextField
@@ -112,6 +112,7 @@ function LanguageRow({ info, first, checked, disabled, onPress }: { info: Langua
   const p = languageCopy.picker;
   return (
     <Pressable
+      testID={`languagePicker.option.${info.code}`}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="radio"

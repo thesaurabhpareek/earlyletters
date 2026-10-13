@@ -673,7 +673,10 @@ export const en = {
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
-      analyticsLabel: "Share usage and crash reports",
+      // Q-012 (a): no crash reporter in v1.0, so the label promises only usage reports.
+      analyticsLabel: "Share usage reports",
+      // Section title above the switch (was "Usage and crash reports" in components/consent/copy.ts).
+      analyticsSection: "Usage reports",
       analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing straight away. Nothing else changes.",
       sensitiveLabel: "Sync and family sharing",
@@ -698,7 +701,7 @@ export const en = {
   // (PRD.md K-15, PRD-REQ-002; text from consumer-health-data-notice.md HN-4, counsel to approve).
   sensitiveConsent: {
     title: "Before your book syncs",
-    body: "Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.",
+    body: "Letters can hold private things, like health details about you or {child}. To sync your book and share it with your co-parent, we store what you write on our servers.",
     use: "We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
     changeLater: "You can change this any time in Settings, Privacy.",
     // v1.0 has no backup (D-059); counsel to re-approve this line with the HN-4 text.
@@ -710,7 +713,7 @@ export const en = {
   // Product analytics consent. Third ask after the first letter, on a later session (PRD.md K-01, PRD-REQ-001).
   analyticsConsent: {
     title: "Help us make it better?",
-    body: "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
+    body: "Share how you use the app, like which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
     detail: "Nothing is shared unless you say yes. Saying no changes nothing else.",
     changeLater: "You can change this any time in Settings, Privacy.",
     yesButton: "Share usage",
@@ -774,10 +777,21 @@ export const en = {
   },
 
   // Plus sheet store-required disclosure (in-app-disclosures.md section 3). {price} is the localized store price.
+  // {trial} is the free-trial length Apple reports for this person's introductory offer (StoreKit
+  // Product.SubscriptionOffer.period, filled through trialLength below). Show renewAnnual and renewMonthly
+  // only when Apple says the person is eligible for the trial; otherwise use the renewNoTrial lines.
+  // Never type a trial length here: App Store Connect owns it (lib/billing/config.ts).
   plus: {
     legal: {
-      renewAnnual: "Free for 2 months, then {price} a year. Renews automatically until you cancel, at least 24 hours before it renews.",
-      renewMonthly: "Free for 1 month, then {price} a month. Renews automatically until you cancel, at least 24 hours before it renews.",
+      renewAnnual: "Free for {trial}, then {price} a year. Renews automatically until you cancel, at least 24 hours before it renews.",
+      renewMonthly: "Free for {trial}, then {price} a month. Renews automatically until you cancel, at least 24 hours before it renews.",
+      /** Fills {trial}: pick by the offer's unit, then put the count in {n}. */
+      trialLength: {
+        day: { one: "1 day", other: "{n} days" },
+        week: { one: "1 week", other: "{n} weeks" },
+        month: { one: "1 month", other: "{n} months" },
+        year: { one: "1 year", other: "{n} years" },
+      },
       renewNoTrialAnnual: "{price} a year, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",
       renewNoTrialMonthly: "{price} a month, charged now. Renews automatically until you cancel, at least 24 hours before it renews.",
       cancel: "Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions.",

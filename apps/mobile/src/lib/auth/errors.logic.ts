@@ -29,6 +29,11 @@ export function authErrorKind(e: unknown, context: AuthErrorContext): AuthErrorK
     case 'otp_expired':
       // Supabase says "expired or invalid" for both; a typed code is most often a typo.
       return context === 'code' ? 'wrong_code' : 'expired';
+    // PKCE (security review H1): the link was asked for on another phone, or its flow is gone.
+    case 'pkce_code_verifier_not_found':
+    case 'bad_code_verifier':
+    case 'flow_state_not_found':
+      return 'other_phone';
     case 'webauthn_challenge_expired':
     case 'flow_state_expired':
       return 'expired';

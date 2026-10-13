@@ -9,6 +9,7 @@ appId: ${APP_ID}
       e2eSeed: none
       e2eOffline: ${E2E_OFFLINE || "0"}
       e2eTranscriber: ${E2E_TRANSCRIBER || "auto"}
+      e2eAnalyticsAsk: ${E2E_ANALYTICS_ASK || "off"}
       e2eClockOffsetHours: ${E2E_CLOCK_OFFSET_HOURS || "0"}
       e2eConfig: '${E2E_CONFIG || "{}"}'
 - runFlow:

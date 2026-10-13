@@ -25,7 +25,7 @@ check('signup creates a profile automatically', (await sys('select id from publi
 // Child + invite flow
 const CHILD = (await as(A, `select public.create_child($1, 'Asha', '2025-05-20') as id`, [uuid7()])).rows[0].id;
 check('create_child makes the creator a member', (await as(A, 'select * from child_members')).rows.length === 1);
-check('stranger cannot see the child', (await as(C, 'select * from children')).rows.length === 0);
+check('stranger cannot see the child', (await as(C, 'select id from children')).rows.length === 0);
 check('cannot insert a child directly', await fails(() => as(C, `insert into children (name, created_by) values ('x', '${C}')`)));
 check('cannot add yourself as a member directly', await fails(() => as(C, `insert into child_members (child_id, profile_id) values ('${CHILD}', '${C}')`)));
 check('stranger cannot create an invite', await fails(() => as(C, `select public.create_child_invite('${CHILD}', 'contributor')`)));

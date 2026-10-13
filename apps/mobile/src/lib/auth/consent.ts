@@ -16,7 +16,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
-import { idempotencyKey } from '../supabase/client';
+import { actionKeys, isRetryableWrite } from '../supabase/client';
+import { withActionKey } from '../supabase/idempotency.logic';
 import { errorCode } from '../supabase/errors.logic';
 import type { AuthMethod, ConsentStep, SyncGate } from './machine.logic';
 
@@ -100,22 +101,47 @@ export async function recordConsent(
   const version = await currentVersion(sb, document);
   const context =
     step === 'sensitive' ? {} : step === 'terms' ? { auth: method ?? 'unknown', age_attested: true } : { age_attested: true };
-  const { error } = await sb
-    .rpc('record_policy_act', {
-      p_document: document,
-      p_version: version,
-      p_action: accepted ? 'accept' : 'decline',
-      p_method: step === 'sensitive' ? 'consent_sheet' : 'signin_sheet',
-      p_surface: SURFACE[step],
-      p_app_version: (Constants.expoConfig?.version ?? '0.0.0').slice(0, 32),
-      p_platform: platform(),
-      // The sheets are in English at v1.0 (BRIEF decision 6).
-      p_locale: 'en',
-      p_client_recorded_at: new Date().toISOString(),
-      p_context: context,
-    })
-    .setHeader(HEADER_IDEMPOTENCY_KEY, idempotencyKey());
-  if (error) throw error;
+  const action = accepted ? 'accept' : 'decline';
+  // One key per answer, reused by its retries (G-07). The client time is fixed with the key,
+  // because the server compares the arguments of a repeat with the first call's.
+  const scope = consentActionScope(step, document, version, action);
+  const recordedAt = (clientTimes.get(scope) ?? clientTimes.set(scope, new Date().toISOString()).get(scope)) as string;
+  try {
+    await withActionKey(
+      actionKeys,
+      scope,
+      async (key) => {
+        const { error } = await sb
+          .rpc('record_policy_act', {
+            p_document: document,
+            p_version: version,
+            p_action: action,
+            p_method: step === 'sensitive' ? 'consent_sheet' : 'signin_sheet',
+            p_surface: SURFACE[step],
+            p_app_version: (Constants.expoConfig?.version ?? '0.0.0').slice(0, 32),
+            p_platform: platform(),
+            // The sheets are in English at v1.0 (BRIEF decision 6).
+            p_locale: 'en',
+            p_client_recorded_at: recordedAt,
+            p_context: context,
+          })
+          .setHeader(HEADER_IDEMPOTENCY_KEY, key);
+        if (error) throw error;
+      },
+      isRetryableWrite,
+    );
+    clientTimes.delete(scope);
+  } catch (e) {
+    if (!isRetryableWrite(e)) clientTimes.delete(scope);
+    throw e;
+  }
+}
+
+const clientTimes = new Map<string, string>();
+
+/** The action a consent answer is: which sheet, which document version, which answer. */
+export function consentActionScope(step: ConsentStep, document: string, version: string, action: 'accept' | 'decline'): string {
+  return `record_policy_act:${step}:${document}:${version}:${action}`;
 }
 
 /** True when this error means "consent is missing" (pause and show the sheets, never drop a write). */

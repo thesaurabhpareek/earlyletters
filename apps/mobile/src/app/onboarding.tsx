@@ -143,10 +143,10 @@ export default function Onboarding() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerClassName="flex-grow px-6 pb-6" keyboardShouldPersistTaps="handled">
           <View className="min-h-12 justify-center">
-            {step !== 'welcome' && <Button variant="quiet" size="sm" icon={CaretLeftIcon} label={copy.common.backButton} className="-ml-4 self-start" onPress={back} />}
+            {step !== 'welcome' && <Button variant="quiet" size="sm" icon={CaretLeftIcon} label={copy.common.backButton} className="-ml-4 self-start" onPress={back} testID="onboarding.back" />}
           </View>
 
-          <Animated.View key={step} entering={motion.enter()} className={centred ? 'flex-1 justify-center gap-6 py-6' : 'flex-1 gap-6 pb-8 pt-4'}>
+          <Animated.View key={step} testID={`onboarding.step.${step}`} entering={motion.enter()} className={centred ? 'flex-1 justify-center gap-6 py-6' : 'flex-1 gap-6 pb-8 pt-4'}>
             {step === 'welcome' && (
               <>
                 <LineArt name="envelopeOpen" width={176} style={{ marginLeft: -12 }} />
@@ -203,6 +203,7 @@ export default function Onboarding() {
                   {names.map((n, i) => (
                     <TextField
                       key={i}
+                      testID={`onboarding.child.name.${i}`}
                       label={names.length > 1 ? `${o.child.nameLabel} ${i + 1}` : o.child.nameLabel}
                       value={n}
                       onChangeText={(v) => setNameAt(i, v)}
@@ -216,16 +217,17 @@ export default function Onboarding() {
                       helper={i === names.length - 1 ? (names.length > 1 ? o.child.addAnotherHelp : o.child.nameHelp) : undefined}
                       trailing={
                         i > 0 ? (
-                          <IconButton icon={XIcon} label={fill(pc.removeChild, { child: n.trim() || `${o.child.nameLabel} ${i + 1}` })} size="sm" onPress={() => removeName(i)} className="mr-2" />
+                          <IconButton icon={XIcon} label={fill(pc.removeChild, { child: n.trim() || `${o.child.nameLabel} ${i + 1}` })} size="sm" onPress={() => removeName(i)} className="mr-2" testID={`onboarding.child.remove.${i}`} />
                         ) : undefined
                       }
                     />
                   ))}
                   {names.length < MAX_FIRST_RUN_CHILDREN && (
-                    <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
+                    <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} testID="onboarding.child.addAnother" />
                   )}
                 </View>
                 <ChoiceGroup
+                  testID="onboarding.child.when"
                   label={o.child.birthdayLabel}
                   value={expecting ? 'expecting' : 'born'}
                   onChange={(v) => setExpecting(v === 'expecting')}
@@ -247,6 +249,7 @@ export default function Onboarding() {
                       </View>
                     ) : expecting ? (
                       <DateTimePicker
+                        testID="onboarding.child.date"
                         value={dueDate}
                         mode="date"
                         display={Platform.OS === 'ios' ? 'compact' : 'default'}
@@ -258,6 +261,7 @@ export default function Onboarding() {
                       />
                     ) : (
                       <DateTimePicker
+                        testID="onboarding.child.date"
                         value={birthday}
                         mode="date"
                         display={Platform.OS === 'ios' ? 'compact' : 'default'}
@@ -284,6 +288,7 @@ export default function Onboarding() {
                   </Text>
                 </View>
                 <TextField
+                  testID="onboarding.signsAs.input"
                   label={signsAsTitle}
                   labelHidden
                   value={signsAs}
@@ -297,8 +302,8 @@ export default function Onboarding() {
                     {o.signsAs.examplesLabel}
                   </Text>
                   <ChipGroup label={o.signsAs.examplesLabel}>
-                    {o.signsAs.examples.map((ex) => (
-                      <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => setSignsAs(ex)} />
+                    {o.signsAs.examples.map((ex, i) => (
+                      <Chip key={ex} label={ex} selected={signsAs === ex} onPress={() => setSignsAs(ex)} testID={`onboarding.signsAs.example.${i}`} />
                     ))}
                   </ChipGroup>
                 </View>
@@ -313,6 +318,7 @@ export default function Onboarding() {
                 </View>
                 <ListSection footer={o.dictionary.languagesBody}>
                   <ListRow
+                    testID="onboarding.language"
                     title={copy.settingsHome.languageLabel}
                     trailing={languageInfo(spoken.primary.code).native}
                     onPress={() => setLanguageOpen(true)}
@@ -334,11 +340,11 @@ export default function Onboarding() {
           </Animated.View>
 
           {/* Controls never animate in (MOTION principle 2). */}
-          <Button size="lg" fullWidth disabled={disabled} label={cta} onPress={step === 'finish' ? finish : next} />
+          <Button size="lg" fullWidth disabled={disabled} label={cta} onPress={step === 'finish' ? finish : next} testID="onboarding.cta" />
           {step === 'welcome' && (
             <View className="mt-2 gap-1">
-              <Button variant="quiet" fullWidth label={o.welcome.signInButton} onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'sign_in' } })} />
-              <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push('/invite')} />
+              <Button variant="quiet" fullWidth label={o.welcome.signInButton} onPress={() => router.push({ pathname: '/sign-in', params: { trigger: 'sign_in' } })} testID="onboarding.welcome.signIn" />
+              <Button variant="quiet" fullWidth label={o.welcome.joinButton} onPress={() => router.push('/invite')} testID="onboarding.welcome.invited" />
             </View>
           )}
         </ScrollView>

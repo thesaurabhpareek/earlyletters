@@ -22,9 +22,10 @@
 import { router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { AppState, Platform } from 'react-native';
-import { subscribe } from '../store';
+import { track } from '../analytics/track';
+import { getSetting, setSetting, subscribe } from '../store';
 import { reminderCopy } from './copy';
-import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
+import { ID_PREFIX, eveningDueTimes, firedSince, parseDueTimes, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
 import { lastOwnSaveAt, plannerChildren, readPrefs, writePrefs } from './prefs';
 
 /** Marks our notifications in `content.data`, so we never cancel anyone else's. */
@@ -98,8 +99,30 @@ export async function currentPlan(now = Date.now()): Promise<PlannedNotification
   });
 }
 
+/** Device setting: due times (epoch ms) of the evening notes scheduled last (planner.ts `eveningDueTimes`). */
+const EVENING_DUE_KEY = 'reminders.eveningDue';
+
+/**
+ * `reminder_sent` (one per evening note whose time passed since the last plan), then remembers the
+ * new plan's evening times. Approximate by design: iOS does not tell an app which local notes it
+ * showed, so a note that fired while notifications were switched off in Settings still counts.
+ * Writes only when the list changes, so the store listener above never loops.
+ */
+function noteFiredEvenings(plan: PlannedNotification[], now = Date.now()): void {
+  const stored = getSetting(EVENING_DUE_KEY);
+  const { fired } = firedSince(parseDueTimes(stored), now);
+  for (let i = 0; i < fired; i++) track('reminder_sent', { type: 'letter_reminder' });
+  const next = JSON.stringify(eveningDueTimes(plan).filter((t) => t > now));
+  if (next !== (stored ?? '[]')) setSetting(EVENING_DUE_KEY, next);
+}
+
 async function apply(): Promise<void> {
   const plan = await currentPlan();
+  try {
+    noteFiredEvenings(plan);
+  } catch {
+    // analytics bookkeeping never blocks reminders
+  }
   const signature = planSignature(plan);
   if (signature === lastSignature) return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();

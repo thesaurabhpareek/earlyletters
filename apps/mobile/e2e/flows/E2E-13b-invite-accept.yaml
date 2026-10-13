@@ -1,5 +1,11 @@
 # E2E-13b  Co-parent invite round trip, simulator B (Papa): a fresh install
-# joins with the link from simulator A (INVITE_URL, passed by bin/run-coparent.sh).
+# joins with the link from simulator A (INVITE_URL, passed by bin/run-coparent.sh;
+# the new form https://earlyletters.com/i#t=<token>, G-04).
+# Asks before joining (G-02, security review H2): after sign-in the app shows
+# "Join this family book?" with the inviter's sign-off name only (peek_invite,
+# never the child's name). "Not now" joins nothing and forgets the link; the
+# second time "Join the book" joins, and the open book changes only on
+# "Open the book".
 # The link is pasted on "I was invited" (the app never reads the clipboard on
 # its own, A-REQ-029); set OPEN_LINK=1 to open it as a universal link instead
 # (needs the AASA file live on earlyletters.com).
@@ -11,6 +17,7 @@ tags:
   - B-REQ-007
   - A-REQ-028
   - A-REQ-029
+  - LEGAL-REQ-024
   - PRD-REQ-019
   - needs-backend
 env:
@@ -47,7 +54,7 @@ env:
       - tapOn:
           id: "invite.paste.continue"
           enabled: true
-# Not signed in: the invite asks for sign-in, then consent, then joins.
+# Not signed in: the invite asks for sign-in, then confirm and consent, then asks.
 - extendedWaitUntil:
     visible:
       id: "signIn.sheet"
@@ -56,10 +63,54 @@ env:
     file: ../subflows/sign-in-email.yaml
     env:
       E2E_EMAIL: ${E2E_EMAIL}
+# 1. Ask before joining: the inviter's sign-off (fixture "Mama"), never the child's name.
+- extendedWaitUntil:
+    visible:
+      id: "invite.ask"
+    timeout: 30000
+- assertVisible:
+    id: "invite.ask.inviter"
+    text: ".*Mama.*"
+- assertNotVisible:
+    text: ".*Asha.*"
+- tapOn:
+    id: "invite.ask.notNow"
+- assertNotVisible:
+    id: "invite.ask"
+# Nothing joined on the server.
+- runScript:
+    file: ../scripts/server-rows.js
+    env:
+      EXPECT_ENTRIES: "0"
+      EXPECT_CHILDREN: "0"
+# 2. The same link again (pasted, since Not now forgot it); this time join.
+- extendedWaitUntil:
+    visible:
+      id: "onboarding.welcome.invited"
+    timeout: 10000
+- tapOn:
+    id: "onboarding.welcome.invited"
+- tapOn:
+    id: "invite.paste.input"
+- inputText: ${INVITE_URL}
+- tapOn:
+    id: "invite.paste.continue"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "invite.ask"
+    timeout: 30000
+- tapOn:
+    id: "invite.ask.join"
 - extendedWaitUntil:
     visible:
       id: "invite.joined"
     timeout: 60000
+- runScript:
+    file: ../scripts/server-rows.js
+    env:
+      EXPECT_ENTRIES: "0"
+      EXPECT_CHILDREN: "1"
 - tapOn:
     id: "invite.open"
 # Papa sees Asha's book (fixture name) and is a member on the Family tab.

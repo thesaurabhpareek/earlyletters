@@ -9,17 +9,28 @@ import {
   parseInviteInput,
   parseInviteUrl,
 } from '../src/lib/family/invite-link.logic';
-import { inviteErrorKind } from '../src/lib/family/invite-errors.logic';
+import { FINAL_INVITE_ERRORS, inviteErrorKind, isMissingFunction, trackedInviteReason } from '../src/lib/family/invite-errors.logic';
+import { readInvitePreview } from '../src/lib/family/invite-preview.logic';
 
 const ORIGIN = brand.web.origin; // https://earlyletters.com
 // What create_child_invite returns today: two v4 UUIDs without dashes, 64 hex characters.
 const TOKEN = '3f2a9c1e5b7d4e8fa1c2d3e4f5a6b7c89d0e1f2a3b4c5d6e7f8091a2b3c4d5e6';
 
 describe('invite links (PRD A F7, B F5)', () => {
-  it('builds the shared link on the brand origin', () => {
-    expect(inviteUrl(TOKEN, ORIGIN)).toBe(`https://earlyletters.com/i/${TOKEN}`);
-    expect(inviteUrl(TOKEN, `${ORIGIN}/`)).toBe(`https://earlyletters.com/i/${TOKEN}`);
+  it('[review M2, G-04] builds the shared link with the token in the fragment, which servers never receive', () => {
+    expect(inviteUrl(TOKEN, ORIGIN)).toBe(`https://earlyletters.com/i#t=${TOKEN}`);
+    expect(inviteUrl(TOKEN, `${ORIGIN}/`)).toBe(`https://earlyletters.com/i#t=${TOKEN}`);
     expect(() => inviteUrl('short', ORIGIN)).toThrow('invite_token_invalid');
+  });
+
+  it('[G-04] still reads links sent before the change (/i/<token>), and the fragment form with a slash', () => {
+    expect(parseInviteUrl(`https://earlyletters.com/i/${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl(`https://earlyletters.com/i/#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl(`https://www.earlyletters.com/i#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteUrl('https://earlyletters.com/i#t=short', ORIGIN)).toBeNull();
+    expect(parseInviteUrl('https://earlyletters.com/i', ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com/i?t=${TOKEN}`, ORIGIN)).toBeNull();
+    expect(parseInviteUrl(`https://earlyletters.com/x#t=${TOKEN}`, ORIGIN)).toBeNull();
   });
 
   it('round-trips: the link it builds is the link it reads', () => {
@@ -75,6 +86,12 @@ describe('"I was invited": pasted text (A-REQ-029)', () => {
     expect(parseInviteInput(msg, ORIGIN)).toBe(TOKEN);
   });
 
+  it('[G-04] finds the new fragment link inside a message, and the old and new forms side by side', () => {
+    expect(parseInviteInput(`Join me here: https://earlyletters.com/i#t=${TOKEN} see you soon`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteInput(`https://earlyletters.com/i/#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+    expect(parseInviteInput(`https://earlyletters.app/i#t=${TOKEN} then https://earlyletters.com/i#t=${TOKEN}`, ORIGIN)).toBe(TOKEN);
+  });
+
   it('returns null when nothing usable is there', () => {
     expect(parseInviteInput('', ORIGIN)).toBeNull();
     expect(parseInviteInput('hello', ORIGIN)).toBeNull();
@@ -116,6 +133,28 @@ describe('invite errors (supabase/APPLY.md SCINV, SCPAR, SCRAT)', () => {
     expect(inviteErrorKind(pg('SCCON', 'consent required before content is stored'))).toBe('consent_needed');
     expect(inviteErrorKind(pg('SCDEL', 'book is deleted'))).toBe('book_deleted');
     expect(inviteErrorKind(pg('P0002', 'invite not found'))).toBe('not_found');
+  });
+
+  it('[G-02] maps the two-parent cap, the last parent and a refused removal to their own calm lines', () => {
+    expect(inviteErrorKind({ ...pg('SCCAP', 'this book already has the most parents allowed'), details: '2' })).toBe('parents_full');
+    expect(inviteErrorKind(pg('SCLPG', 'last parent'))).toBe('last_parent');
+    expect(inviteErrorKind(pg('42501', 'a parent leaves a book only by their own choice'))).toBe('not_allowed');
+    expect(FINAL_INVITE_ERRORS).toContain('parents_full');
+    expect(FINAL_INVITE_ERRORS).not.toContain('network');
+  });
+
+  it('reports only reasons the analytics catalog knows', () => {
+    expect(trackedInviteReason('parents_full')).toBe('unknown');
+    expect(trackedInviteReason('expired')).toBe('expired');
+  });
+
+  it('[G-02] reads what peek_invite says, never more than a short sign-off', () => {
+    expect(readInvitePreview({ inviter: '  Papa ', role: 'parent' })).toEqual({ inviter: 'Papa', role: 'parent', known: true });
+    expect(readInvitePreview([{ inviter: null, role: 'contributor' }])).toEqual({ inviter: null, role: 'contributor', known: true });
+    expect(readInvitePreview({ inviter: 'x'.repeat(80) }).inviter).toHaveLength(30);
+    expect(readInvitePreview(null)).toEqual({ inviter: null, role: 'parent', known: true });
+    expect(isMissingFunction({ code: 'PGRST202' })).toBe(true);
+    expect(isMissingFunction({ code: 'SCINV' })).toBe(false);
   });
 
   it('maps signed-out and network failures', () => {

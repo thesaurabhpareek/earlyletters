@@ -14,7 +14,8 @@
  * fallback button must not put secrets in it. The person types the code from
  * the same email instead, which is what the fallback page shows.
  *
- * Invites: https://earlyletters.com/i/<token> (family/invite-link.logic.ts).
+ * Invites: https://earlyletters.com/i#t=<token>, and the older
+ * https://earlyletters.com/i/<token> (family/invite-link.logic.ts).
  */
 import { parseInviteUrl } from '../family/invite-link.logic';
 import { originHost, splitUrl } from './url.logic';

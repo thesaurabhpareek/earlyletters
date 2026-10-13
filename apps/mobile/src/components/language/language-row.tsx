@@ -7,6 +7,7 @@
  * VoiceOver element (a ListRow would merge it into the row's label), and
  * both offer Remove and Try again as accessibility actions too.
  */
+import { statusKey } from './status-key.logic';
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import { Platform, Pressable, View, type AccessibilityActionEvent } from 'react-native';
 import { languageInfo, type LanguageCode } from '@scribe/core';
@@ -88,6 +89,7 @@ export function LanguageRow({ code, status, first, onChange, onRemove, onRetry }
   return (
     <View className={cn('min-h-14 flex-row items-center gap-2 ps-4 pe-2', !first && 'border-t border-border')}>
       <Pressable
+        testID={`language.row.${code}`}
         onPress={press}
         disabled={!press}
         role={press ? 'button' : undefined}
@@ -101,14 +103,14 @@ export function LanguageRow({ code, status, first, onChange, onRemove, onRetry }
           <Text variant="body" accessibilityLanguage={info.bcp47} style={{ writingDirection: info.script.direction }}>
             {info.native}
           </Text>
-          <Text variant="footnote" tone="muted">
+          <Text variant="footnote" tone="muted" testID={`language.row.${code}.status.${statusKey(status)}`}>
             {[sameName ? null : info.english, line].filter(Boolean).join(', ')}
           </Text>
         </View>
         {onChange && Platform.OS !== 'android' ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
       </Pressable>
       {onRemove ? (
-        <Button variant="quiet" size="sm" label={languageCopy.remove} accessibilityLabel={fill(languageCopy.removeA11y, { name: info.english })} onPress={onRemove} />
+        <Button variant="quiet" size="sm" label={languageCopy.remove} accessibilityLabel={fill(languageCopy.removeA11y, { name: info.english })} onPress={onRemove} testID={`language.row.${code}.remove`} />
       ) : null}
     </View>
   );

@@ -52,11 +52,14 @@ Budgets come from PRD 7.2 and TDD 06 3.2; the AI gateway (`edge_heavy`, 4 s) ret
 | `sync_push` | 60 batches per minute | user | RPC, `rate_hit('push')` (V-code, 20261005000000) |
 | `sync_pull` | 120 per minute | user | RPC, `rate_hit('pull')` |
 | `policy_actions_needed` | 60 per hour | user | RPC, `rate_hit('policy_actions')` |
-| `accept_child_invite`, `leave_child`, `remove_child_member`, `peek_invite` | 120 per hour together | user | RPC, `rate_hit('membership')` (`peek_invite`: db-fix, G-13) |
+| `accept_child_invite`, `leave_child`, `remove_child_member`, `peek_invite` | 120 per hour together | user | RPC, `rate_hit('membership')` (`peek_invite`: 20261005100000) |
 | `create_child_invite` | 20 per day per book and per parent | user | RPC (`SCRAT`, V-code) |
 | `record_policy_act` | 60 per hour and 200 per 24 hours | user | RPC |
 | `request_account_deletion`, `cancel_account_deletion` | 5 new requests, 5 cancellations per 24 hours (a repeat of an open request is free) | user | RPC |
-| `create_child` | 20 per day | user | RPC (db-fix, G-11; until it lands, book creation reaches the server only through `sync_push`, which is limited) |
+| `create_child`, `create_first_run_children` | 20 new books per rolling 24 hours (a retry of an existing book is free) | user | RPC (`SCRAT`, 20261005100000; inside `sync_push` it stops the batch instead of rejecting the op) |
+| `delete_entry`, `restore_entry` | 300 per hour together | user | RPC, `rate_hit('entry_state')` (20261005100000) |
+| `apple-token` Edge Function | 10 per hour | user | Edge Function (per instance) and `rate_hit('apple_token')` |
+| `analytics-forget` Edge Function | 5 per day | user | Edge Function (`ops.forget_quota`) |
 | `sync_books`, `my_sync_gate`, `revoke_invite` | as in `ENDPOINTS` | user | **client only (gap, section 6)** |
 | invite redeem (planned) | 10 per hour | hashed device id and IP | Edge Function |
 
@@ -78,17 +81,18 @@ Hashed IPs use a daily rotating salt and are never stored raw (TDD 02 2.7, LEGAL
 
 ## 6. Gaps and requests
 
-Closed on 2026-10-05 (migration 20261005000000, pending live apply):
+Closed on 2026-10-05 (migrations 20261005000000 and 20261005100000, pending live apply):
 - **Sync RPCs had no server-side rate limit.** `sync_push` and `sync_pull` now count through `rate_hit()`, and the counters are no longer writable by their owner.
 - **Idempotency keys were not stored server side.** `idempotency_keys` (24 hours, trimmed hourly by `scribe-sync-housekeeping`) backs `create_child_invite` and `record_policy_act`.
+- **`create_child` had no daily limit; `delete_entry` and `restore_entry` had none** (G-11, 20261005100000).
+- **`peek_invite`** (ask before joining, G-13, 20261005100000): returns the inviter's sign-off and the role only; counts in `membership`.
+- **Edge Functions the app calls were not all listed:** `apple-token` and `analytics-forget` are now in `ENDPOINTS`, and the contract test fails on any `functions.invoke` target that is not.
 
 Open:
 
 | Gap | Owner | Ask |
 |---|---|---|
 | `sync_books`, `my_sync_gate` and `revoke_invite` have no server-side limit (`RATE_LIMIT_GAPS` in `standards.ts`). Each answers only for the caller, is cheap, and is called a few times per session | data owner | count them in `rate_hit()` (`sync_books` and `my_sync_gate` in `pull`, `revoke_invite` in `membership`), then set `enforcedBy: 'rpc'` |
-| `create_child` has no daily limit; `delete_entry` and `restore_entry` have none (not called by the app directly) | db-fix (G-11) | as planned in the fix wave; `standards.test.ts` turns green when it lands |
-| `peek_invite` (ask before joining) | db-fix (G-13) | returns the inviter's sign-off name only; counts in `membership` |
 | The client reuses one idempotency key per action only after the auth fix (G-07) | auth-fix | `invites.ts` and `consent.ts` |
 | The shared logger does not know the `config` and `content` functions | `_shared` owner | add both to `FUNCTIONS` in `_shared/log/log.ts` (they log as `unknown` until then) |
 | Whether Supabase caches Edge Function responses at its edge | platform | measure `cf-cache-status`-style headers on the first deploy (U) |

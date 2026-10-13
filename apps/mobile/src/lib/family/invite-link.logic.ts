@@ -2,7 +2,12 @@
  * Co-parent invite links (PRD A F7, B F5; TDD 04 3.4). Pure, tested in
  * test/invite-link.test.ts.
  *
- * Format: `https://earlyletters.com/i/<token>` (origin from packages/brand).
+ * Format: `https://earlyletters.com/i#t=<token>` (origin from packages/brand;
+ * security review M2, gap G-04). The token sits in the fragment, which
+ * browsers never send to a server, so it cannot reach website request logs,
+ * analytics or a link-preview fetcher. Links sent before this change,
+ * `https://earlyletters.com/i/<token>`, are still read (they expire within 7
+ * days; drop the old form in the release after 1.0, BL backlog note).
  * The token is the raw value `create_child_invite` returns once; the server
  * keeps only its SHA-256. Today it is 64 hex characters (two v4 UUIDs);
  * base64url tokens of 32 to 128 characters are accepted so a later server
@@ -15,7 +20,9 @@
  */
 import { originHost, splitUrl } from '../auth/url.logic';
 
-export const INVITE_PATH_PREFIX = '/i/';
+export const INVITE_PATH = '/i';
+/** The fragment key the token travels in: /i#t=<token>. */
+export const INVITE_FRAGMENT_KEY = 't';
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/;
 
 export function isInviteToken(s: string): boolean {
@@ -25,7 +32,7 @@ export function isInviteToken(s: string): boolean {
 /** The link the inviter shares. */
 export function inviteUrl(token: string, origin: string): string {
   if (!isInviteToken(token)) throw new Error('invite_token_invalid');
-  return `${origin.replace(/\/+$/, '')}${INVITE_PATH_PREFIX}${token}`;
+  return `${origin.replace(/\/+$/, '')}${INVITE_PATH}#${INVITE_FRAGMENT_KEY}=${token}`;
 }
 
 /** Hosts an invite link may use: the brand origin and its www alias (people retype links). */
@@ -35,12 +42,17 @@ function inviteHosts(origin: string): Set<string> {
 }
 
 /**
- * Token from a system link (universal link). https on the brand host only,
+ * Token from a system link (universal link). https on the brand host only.
+ * New form: path /i (or /i/) with the token in the fragment `t`. Old form:
  * path exactly /i/<token> (one trailing slash tolerated). Anything else: null.
  */
 export function parseInviteUrl(url: string, origin: string): string | null {
   const u = splitUrl(url);
   if (!u || u.scheme !== 'https' || !inviteHosts(origin).has(u.host)) return null;
+  if (u.path === INVITE_PATH || u.path === `${INVITE_PATH}/`) {
+    const t = u.fragment[INVITE_FRAGMENT_KEY] ?? '';
+    return isInviteToken(t) ? t : null;
+  }
   const m = /^\/i\/([^/]+)\/?$/.exec(u.path);
   if (!m) return null;
   return isInviteToken(m[1]) ? m[1] : null;
@@ -56,7 +68,8 @@ export function parseInviteInput(text: string, origin: string): string | null {
   if (!t) return null;
   if (isInviteToken(t)) return t;
   const host = originHost(origin).replace(/\./g, '\\.');
-  const re = new RegExp(`https://(?:www\\.)?${host}/i/[A-Za-z0-9_-]+/?`, 'gi');
+  // New form (/i#t=<token>, also /i/#t=) first in the text order, old form (/i/<token>) too.
+  const re = new RegExp(`https://(?:www\\.)?${host}/i(?:/?#t=[A-Za-z0-9_-]+|/[A-Za-z0-9_-]+/?)`, 'gi');
   for (const m of t.matchAll(re)) {
     const token = parseInviteUrl(m[0], origin);
     if (token) return token;

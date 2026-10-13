@@ -4,7 +4,7 @@
  * at launch). `/invite/new?childId=<id>` from the Family tab.
  *
  * create_child_invite(child, 'parent', signs_as) returns the token once; the
- * link https://earlyletters.com/i/<token> goes straight to the share sheet
+ * link https://earlyletters.com/i#t=<token> goes straight to the share sheet
  * and is never stored or shown again. "Share again" on the Family tab makes a
  * new link and cancels the old one.
  */
@@ -18,7 +18,7 @@ import { AccountGate, Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, Sheet
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { childIndexOf, track, trackInviteCreated } from '@/lib/analytics/track';
-import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
+import { inviteErrorKind, trackedInviteReason, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import { createCoParentInvite } from '@/lib/family/invites';
 import { shareInviteLink } from '@/lib/family/share';
 import { haptic } from '@/lib/haptics';
@@ -58,7 +58,7 @@ export default function InviteCoParent() {
       setDone(true);
     } catch (e) {
       const kind = inviteErrorKind(e);
-      track('invite_failed', { stage: 'create', reason: kind });
+      track('invite_failed', { stage: 'create', reason: trackedInviteReason(kind) });
       setError(kind);
     } finally {
       setBusy(false);

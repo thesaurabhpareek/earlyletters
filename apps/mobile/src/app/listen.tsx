@@ -215,7 +215,7 @@ export default function Listen() {
     const e = copy.errors.micDenied;
     // A choice, not an error: calm card, Type offered first (DESIGN_LANGUAGE 12, Listening).
     return (
-      <SafeAreaView className="flex-1 justify-center bg-background px-5">
+      <SafeAreaView testID="listen.denied" className="flex-1 justify-center bg-background px-5">
         <Card padding={6} radius="xl" className="gap-5">
           <LineArt name="envelope" width={128} wash={false} style={{ marginLeft: -8 }} />
           <View className="gap-2">
@@ -225,7 +225,7 @@ export default function Listen() {
             <Text variant="body">{e.body}</Text>
           </View>
           <View className="gap-1">
-            <Button size="lg" icon={PencilSimpleIcon} label={e.typeButton} onPress={typeInstead} />
+            <Button size="lg" icon={PencilSimpleIcon} label={e.typeButton} onPress={typeInstead} testID="listen.denied.type" />
             <Button variant="quiet" label={e.settingsButton} onPress={() => Linking.openSettings()} />
             <Button variant="quiet" label={copy.common.closeButton} onPress={() => router.back()} />
           </View>
@@ -246,7 +246,7 @@ export default function Listen() {
   // Design: Voice Memos-simple, Calm-quiet. The glow is the only thing that moves, and
   // only with the voice (MOTION 5b). Controls are static and full strength from frame one.
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView testID="listen.screen" className="flex-1 bg-background">
       <View className="items-center gap-1.5 px-6 pt-6">
         <Text variant="headline" asHeading className="text-center">
           {fill(p.toChild, { child: child.name })}
@@ -261,7 +261,7 @@ export default function Listen() {
 
       <View className="flex-1 items-center justify-center gap-5">
         <ListeningAura state={aura} db={db} reduced={reduced} />
-        <Text variant="headline" scale={1.75} className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y}>
+        <Text variant="headline" scale={1.75} className="text-center" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={elapsedA11y} testID="listen.timer">
           {clock(status.durationMillis)}
         </Text>
         <View className="items-center gap-1 px-8" accessibilityLiveRegion="polite">
@@ -283,11 +283,12 @@ export default function Listen() {
             size="lg"
             disabled={!live}
             onPress={togglePause}
+            testID="listen.pause"
             label={phase === 'paused' ? t.resumeButton : copy.common.pauseButton}
           />
-          <Button size="lg" disabled={!live} onPress={finish} label={t.stopButton} accessibilityHint={elapsedA11y} />
+          <Button size="lg" disabled={!live} onPress={finish} label={t.stopButton} accessibilityHint={elapsedA11y} testID="listen.finish" />
         </ButtonRow>
-        <Button variant="quiet" onPress={discard} disabled={phase === 'finishing'} className="self-center">
+        <Button variant="quiet" onPress={discard} disabled={phase === 'finishing'} className="self-center" testID="listen.discard">
           <Text tone="muted">{p.discardButton}</Text>
         </Button>
       </View>

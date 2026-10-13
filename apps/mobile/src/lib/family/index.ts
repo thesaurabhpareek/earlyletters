@@ -1,10 +1,15 @@
 export { familyCopy } from './copy';
-export { inviteErrorKind, type InviteErrorKind } from './invite-errors.logic';
+export { FINAL_INVITE_ERRORS, inviteErrorKind, isMissingFunction, trackedInviteReason, type InviteErrorKind } from './invite-errors.logic';
 export { inviteUrl, isInviteToken, parseInviteInput, parseInviteUrl } from './invite-link.logic';
 export {
   acceptInvite,
   bookName,
   createCoParentInvite,
+  inviteActionScope,
+  leaveBook,
+  peekInvite,
+  removeMember,
+  type InvitePreview,
   listBookMembers,
   listPendingInvites,
   revokeInvite,
@@ -14,3 +19,4 @@ export {
 } from './invites';
 export { clearPendingInvite, readPendingInvite, savePendingInvite } from './pending-invite';
 export { shareInviteLink } from './share';
+export { readInvitePreview } from './invite-preview.logic';
