@@ -50,7 +50,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 ## Privacy rules
 - No entry text, transcript, audio or child name in analytics, logs or crash reports.
 - Safety tiers stay on the device; there is no server table for them.
-- Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha".
+- Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha". Enforced by `packages/content/test/no-real-family-data.test.ts` (stores only hashes).
 
 ## Branches and commits
 - `main` is always releasable. Work on short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `exp/<what>` (experiments), `docs/<what>`.

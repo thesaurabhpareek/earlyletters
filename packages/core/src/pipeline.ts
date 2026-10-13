@@ -21,7 +21,7 @@ import type { LanguageCode, ScriptCode, TextRulesPack } from './lang/types';
  * Bump when cleaning behaviour changes. Stored on every entry so any
  * entry can be re-derived with the exact engine that produced it.
  */
-export const ENGINE_VERSION = 4;
+export const ENGINE_VERSION = 5;
 // 2 (2026-10-02): phrase restarts ("like a like a") and subject "you you"
 //   collapse; "in in", "so so" become suggestions; "what it was was" kept.
 // 3 (2026-10-03): verifier hardening (BL-064, TDD 03 7.1). Refuses edits that
@@ -35,6 +35,14 @@ export const ENGINE_VERSION = 4;
 //   harakat; full-width and Arabic ? ! count as mood marks; « » 「 」 『 』
 //   quotes are protected. Rules come from the entry's language pack;
 //   English output is unchanged (golden master over the fuzz corpus).
+// 5 (2026-10-04): Unicode safety (CORE-01, PMOB-01), on top of 4. Words
+//   compare in NFC, so a decomposed accent repaired to its precomposed form
+//   is accepted and a dropped accent is not. Any edit boundary that cuts a
+//   letter from its marks (before a vowel sign, after a virama, inside a
+//   surrogate pair) is refused as splits_word. Devanagari negations (नहीं,
+//   नही, मत, ना, न) are guarded. Dictionary terms no longer match the start
+//   of a longer Indic word. ZWJ and ZWNJ stay inside a word. Pinned by
+//   test/golden.test.ts (CORE-08).
 
 export interface CleanOptions {
   level: EditLevel;

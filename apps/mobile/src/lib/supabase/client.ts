@@ -21,6 +21,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 import { AppState, type AppStateStatus } from 'react-native';
+import { serverFeaturesEnabled } from '../capabilities';
 import { uuidv7 } from '../store';
 import { readSupabaseEnv } from './env';
 import { secureStorage } from './secure-storage';
@@ -44,8 +45,9 @@ export class SupabaseNotConfiguredError extends Error {
 
 let client: SupabaseClient | null = null;
 
+/** False when the build has server features off (v1.0, lib/capabilities.ts) or no Supabase settings. */
 export function isSupabaseConfigured(): boolean {
-  return readSupabaseEnv() !== null;
+  return serverFeaturesEnabled() && readSupabaseEnv() !== null;
 }
 
 const APP_VERSION = (Constants.expoConfig?.version ?? '0.0.0').slice(0, 32);
@@ -62,8 +64,13 @@ const fetchWithRequestId: typeof fetch = (input, init) => {
   return fetch(input, { ...init, headers });
 };
 
-/** The client, or null when this build has no Supabase settings. */
+/**
+ * The client, or null when this build has server features off (v1.0: the app is
+ * fully local, lib/capabilities.ts) or no Supabase settings. With the switch off
+ * nothing is ever constructed, so no request reaches Supabase.
+ */
 export function getSupabaseOrNull(): SupabaseClient | null {
+  if (!serverFeaturesEnabled()) return null;
   if (client) return client;
   const env = readSupabaseEnv();
   if (!env) return null;

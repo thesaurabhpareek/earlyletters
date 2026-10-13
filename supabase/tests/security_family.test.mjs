@@ -204,7 +204,7 @@ check('[K-08] an anonymous member reads no book, member or letter rows',
   (await asW(`select 1 from children union all select 1 from child_members union all select 1 from book_entries union all select 1 from profiles`)).rows.length === 0);
 check('[K-08] the same person with a full session reads the book', (await as(W, `select 1 from book_entries where child_id=$1`, [CHILD])).rows.length > 0);
 for (const [name, sql, params] of [
-  ['create_child', `select public.create_child('0192d000-0000-7000-8000-000000000001', 'Asha', '2025-05-20')`, []],
+  ['create_child', `select public.create_child('0192d000-0000-7000-8000-000000000001', 'Asha', '2025-04-12')`, []],
   ['create_child_invite', `select public.create_child_invite($1, 'contributor')`, [CHILD]],
   ['accept_child_invite', `select public.accept_child_invite('x')`, []],
   ['request_account_deletion', `select * from public.request_account_deletion('web')`, []],

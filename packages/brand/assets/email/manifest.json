@@ -1,0 +1,19 @@
+{
+  "note": "Built from the primary mark by packages/brand/scripts/build-touchpoints.mjs. Registry ids: email.logo.*, email.avatar, email.bimi.template.",
+  "source": {
+    "light": "packages/brand/assets/logo/primary/lockup-horizontal.svg",
+    "dark": "packages/brand/assets/logo/primary/lockup-horizontal-reversed.svg"
+  },
+  "displayWidthPx": 154,
+  "displayHeightPx": 32,
+  "haloPx": 0.7,
+  "alt": "Early Letters",
+  "files": {
+    "logo-light.png": "308x64",
+    "logo-light@1x.png": "154x32",
+    "logo-dark.png": "308x64",
+    "logo-dark@1x.png": "154x32",
+    "avatar-1024.png": "1024x1024"
+  },
+  "hostedAt": "https://earlyletters.com/email/"
+}

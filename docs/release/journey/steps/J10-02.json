@@ -1,0 +1,40 @@
+{
+  "id": "J10-02",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Exactly as said",
+  "note": "The raw words replace the fixed ones, under an \"Exactly what you said\" label.",
+  "from": "J10-01",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Thursday, August 13, 2026. Asha is 5 months old. Exactly what you said So it rained all morning so we we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, with small fixes Recording kept on this phone With small fixes Make private Delete",
+  "lines": [
+    "Aa",
+    "Thursday, August 13, 2026. Asha is 5 months old.",
+    "Exactly what you said",
+    "So it rained all morning so we we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:42",
+    "Spoken, with small fixes",
+    "Recording kept on this phone",
+    "With small fixes",
+    "Make private",
+    "Delete"
+  ]
+}

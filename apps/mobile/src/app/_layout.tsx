@@ -1,30 +1,32 @@
 import '@/global.css';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
 import { Uniwind } from 'uniwind';
-import { effectiveFreeSessions } from '@scribe/api';
-import { tokens } from '@scribe/design-tokens';
+import { effectiveFreeLetters } from '@scribe/api';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
+import { RootErrorBoundary } from '@/components/resilience/error-boundary';
+import { LaunchRecovery } from '@/components/resilience/launch-recovery';
 import { UIProvider } from '@/components/ui/provider';
+import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
 import { startAnalytics } from '@/lib/analytics';
 import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
-import { startPlus } from '@/lib/billing';
+import { setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
 import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
 import { startPacks } from '@/lib/packs';
-import { setReadTogetherFreeSessionsSource } from '@/lib/read-together';
 import { startReminders } from '@/lib/reminders';
 import { getRemoteConfig, startRemote } from '@/lib/remote';
+import { useLaunch } from '@/lib/resilience/use-launch';
 import { getSetting, subscribe } from '@/lib/store';
 import { startSync } from '@/lib/sync';
 import { startTranscriptionQueue } from '@/lib/transcription-queue';
@@ -68,8 +70,8 @@ let servicesStarted = false;
 function startServices(launchedAt: number): void {
   if (servicesStarted) return;
   servicesStarted = true;
-  // Read together allowance: remote config may only raise the reviewed default (packages/api).
-  setReadTogetherFreeSessionsSource(() => effectiveFreeSessions(getRemoteConfig()));
+  // Free letters (D-082): remote config may only raise the reviewed 2 (packages/api effectiveFreeLetters).
+  setFreeLettersAllowanceSource(() => effectiveFreeLetters(getRemoteConfig()));
   safely(startRemote); // signed config, pack manifest, content bundle
   safely(startPacks); // after remote: installs pack updates when a newer manifest arrives
   // After packs: the queue registers the speech plan as a language resolver on the
@@ -78,6 +80,7 @@ function startServices(launchedAt: number): void {
   safely(startListeningCopies); // the player's clearer listening copy lookup, stale copies swept
   safely(startSync); // waits for a signed-in, consented session itself (syncAllowed)
   safely(startPlus); // StoreKit 2 entitlements on this phone
+  safely(startLetterLedger); // heals the free-letter count after a reinstall or a backup restore (D-083)
   safely(startReminders);
   safely(cleanupExports); // ZIPs left in the cache by an export cut off by a kill
   // Opt-in analytics: nothing is sent before a yes (LEGAL-REQ-003).
@@ -87,15 +90,29 @@ function startServices(launchedAt: number): void {
 
 const launchedAt = Date.now();
 
-/** Native: always ready. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts). */
+/**
+ * A render error anywhere under the root layout lands here instead of a blank screen: calm words, Try again
+ * and Go to Tonight, no error text, nothing logged (components/resilience/error-boundary.tsx).
+ */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <RootErrorBoundary {...props} />;
+}
+
+/**
+ * Native: the store is always ready to open. Web preview only: waits for the SQLite worker (src/dev/store-ready.web.ts).
+ * The database is opened once here; if opening or updating it throws, the recovery screen replaces the app
+ * (Try again, Export what is readable) and nothing is deleted.
+ */
 export default function RootLayout() {
-  return useStoreReady() ? <Root /> : null;
+  const launch = useLaunch(useStoreReady());
+  if (launch.status === 'recovery') return <LaunchRecovery onTryAgain={launch.retry} />;
+  return launch.status === 'ok' ? <Root /> : null;
 }
 
 function Root() {
   useAppearance();
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const c = tokens[scheme];
+  // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
+  const { c, scheme } = useTheme();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
@@ -109,6 +126,12 @@ function Root() {
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
+
+  // The native window behind everything is the page colour in both schemes, so a screen swap, a crash or an
+  // overscroll never shows white (iOS root view; on the web preview it is the body).
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(c.bg).catch(() => {});
+  }, [c.bg]);
 
   // After the first frame, never awaited: finish takes cut off by a kill,
   // rebase moved paths, keep stray recordings (lib/capture/sweep.ts); then

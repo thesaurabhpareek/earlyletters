@@ -5,6 +5,7 @@
  */
 export const bookCopy = {
   // book.nobodySpoke: a spoken letter whose recording had no talking in it (transcription outcome no_speech).
-  // Shown instead of an empty excerpt on the card and the page. Calm, never an error.
-  nobodySpoke: 'A quiet recording. Nobody spoke, and it is kept just as it is.',
+  // Shown as an app note (components/book/app-note.tsx: small, muted, unsigned), never in the letter's type.
+  // Soft on purpose: the recording may hold laughing or babble, so it does not say that nobody spoke.
+  nobodySpoke: 'No words in this one. The recording is kept just as it is.',
 } as const;

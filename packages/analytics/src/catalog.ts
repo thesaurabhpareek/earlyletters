@@ -20,7 +20,8 @@
  *   Store Connect, never from events or a server of ours.
  * - Every property is L2 and every event cites the requirement it serves.
  */
-import { bool, int, oneOf, opt, type EventSpec } from './schema';
+import { CAPTURE_MODES, MEMBER_ROLES, OFFER_TRIGGERS } from '@scribe/core';
+import { bool, int, oneOf, opt, type EventSpec, type PropSpec } from './schema';
 
 // ---------------------------------------------------------------------------
 // Shared value sets
@@ -28,12 +29,17 @@ import { bool, int, oneOf, opt, type EventSpec } from './schema';
 
 export const CHILD_ORDINAL = oneOf('first', 'second', 'third_plus');
 export const CHILD_COUNT_BUCKET = oneOf('none', 'one', 'two', 'three_plus');
-/** The viewer's role in the current child's book (B section 6). */
-export const MEMBER_ROLE = oneOf('parent', 'contributor');
-export const INVITE_ROLE = oneOf('co_parent', 'contributor');
+/**
+ * The viewer's role in the current child's book (B section 6). DB values from
+ * @scribe/core: the UI's "Co-parent" is `parent` here (CORE-05).
+ */
+export const MEMBER_ROLE = oneOf(...MEMBER_ROLES);
+/** Role an invite grants: the same DB values as MEMBER_ROLE. */
+export const INVITE_ROLE = MEMBER_ROLE;
 /** Who wrote a letter, relative to the person viewing it. */
 export const AUTHOR_RELATION = oneOf('self', 'other_parent', 'family');
-export const CAPTURE_MODE = oneOf('spoken', 'typed');
+/** entries.capture_mode, from @scribe/core (includes `mixed`). */
+export const CAPTURE_MODE = oneOf(...CAPTURE_MODES);
 /** packages/core PromptKind, plus `none` when no prompt was shown. */
 export const PROMPT_KIND = oneOf('opening', 'gap', 'hard', 'family', 'together', 'none');
 export const AUDIO_BUCKET = oneOf('lt_15s', '15_60s', '1_2m', '2_5m', 'gt_5m');
@@ -87,7 +93,7 @@ export const AUTH_METHOD = oneOf('apple', 'google', 'email', 'passkey');
 /** Where the sign-in sheet was opened from (src/lib/auth SignInTrigger). */
 export const SIGN_IN_TRIGGER = oneOf('first_letter', 'invite', 'invite_create', 'sign_in', 'settings');
 /** packages/core OfferTrigger. */
-export const PLUS_TRIGGER = oneOf('chapter_complete', 'second_child', 'backup', 'read_together', 'themes', 'settings');
+export const PLUS_TRIGGER = oneOf(...OFFER_TRIGGERS);
 export const NETWORK = oneOf('wifi', 'cellular', 'none', 'unknown');
 /** Speech model in use, by role (src/lib/models/catalog.ts; ADR 0015). Never a file name or URL. */
 export const SPEECH_MODEL = oneOf('turbo', 'small', 'hindi_small', 'zh_turbo', 'server_default', 'none');
@@ -187,8 +193,29 @@ export const GLOBAL_PROPS = {
   sample_pct: opt(int(1, 99)),
 } as const;
 
-/** Bump when an event or property changes meaning. 2: Apple-only Plus events, cadence values, packs replace model_download (3 Oct 2026). */
-export const SCHEMA_VERSION = 2;
+/**
+ * Bump when an event or property changes meaning. A test hashes
+ * `catalogShape()` and fails until the new hash is recorded below under a
+ * new version (PDATA-10). Never edit an existing entry: append one.
+ * 2: Apple-only Plus events, cadence values, packs replace model_download (3 Oct 2026).
+ * 3: shared core enums (`mixed` capture mode, roles `parent | contributor`), `child_ordinal`
+ *    replaces `ordinal`, `child_added.has_date` replaces `mode`, required properties enforced.
+ * 4: membership engine (D-082, D-083): `keep_letter` offer trigger replaces `second_child` and
+ *    `read_together`; `read_together_try_used` removed; `read_together_started.access` is `plus | free`
+ *    (no limit, so no `try`); five numbers-only Plus events added.
+ * 5: two content-free events for the co-parent teaser (`coparent_soon_opened`, `coparent_soon_notify`, D-087).
+ */
+export const SCHEMA_VERSION = 5;
+
+/**
+ * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
+ * and 2 predate fingerprinting.
+ */
+export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.freeze({
+  3: '971df5e782a0d91011fe559476313e6c40cc52babd65f779bb71422f61ed6a35',
+  4: '4d0cc81648b7d3d0cb334e0cd7c38d611f244009f1a5e578b2cb4ecf520750da',
+  5: '807e09376410c4f2f955535a6655dacca9de2fd2fc35e4ac7750bd03debb4860',
+});
 
 // ---------------------------------------------------------------------------
 // Events
@@ -240,7 +267,7 @@ export const EVENTS = {
       letters_bucket: LETTERS_BUCKET,
       signed_in: bool(),
       member_role: MEMBER_ROLE,
-      first_letter_mode: oneOf('spoken', 'typed', 'none'),
+      first_letter_mode: oneOf(...CAPTURE_MODES, 'none'),
       time_to_first_letter: oneOf('lt_90s', '90s_5m', '5_30m', '30m_24h', 'gt_24h', 'unknown'),
       came_from_invite: bool(),
     },
@@ -320,6 +347,22 @@ export const EVENTS = {
     level: 'L2',
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
   },
+  // The co-parent teaser (D-087): measures interest without any content. `surface` is only the Family tab or the
+  // invite sheet (every door except the tab opens the sheet). Nothing about the book or the child.
+  coparent_soon_opened: {
+    area: 'entry',
+    when: 'The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens)',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: { surface: oneOf('tab', 'sheet') },
+  },
+  coparent_soon_notify: {
+    area: 'entry',
+    when: 'Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us)',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: {},
+  },
   local_merge_choice: {
     area: 'entry',
     when: 'User with local letters picks where they go at sign-in',
@@ -335,8 +378,13 @@ export const EVENTS = {
     reqs: ['PRD-REQ-011', 'PRD-REQ-015', 'B-REQ-004'],
     level: 'L2',
     props: {
-      mode: oneOf('birthday', 'due_date', 'month_only'),
-      ordinal: CHILD_ORDINAL,
+      /**
+       * True when a full date (birthday or due date) was entered, false for
+       * month only or none. Which kind of date is never sent: it reveals a
+       * pregnancy (PPRIV-02).
+       */
+      has_date: bool(),
+      child_ordinal: CHILD_ORDINAL,
       in_first_run: bool(),
       added_together: bool(),
     },
@@ -346,7 +394,7 @@ export const EVENTS = {
     when: 'User switches the current book',
     reqs: ['PRD-REQ-012'],
     level: 'L2',
-    props: { ordinal: CHILD_ORDINAL, surface: oneOf('tonight', 'book', 'review', 'listen') },
+    props: { child_ordinal: CHILD_ORDINAL, surface: oneOf('tonight', 'book', 'review', 'listen') },
   },
   child_setting_changed: {
     area: 'children',
@@ -368,7 +416,7 @@ export const EVENTS = {
         'pause_celebrations',
         'auto_add',
       ),
-      ordinal: CHILD_ORDINAL,
+      child_ordinal: CHILD_ORDINAL,
     },
   },
   make_it_yours_card: {
@@ -553,7 +601,7 @@ export const EVENTS = {
     when: 'Read together session starts',
     reqs: ['C-REQ-034', 'PRD-REQ-016'],
     level: 'L2',
-    props: { child_ordinal: CHILD_ORDINAL, access: oneOf('plus', 'try'), letters_bucket: LETTERS_BUCKET },
+    props: { child_ordinal: CHILD_ORDINAL, access: oneOf('plus', 'free'), letters_bucket: LETTERS_BUCKET },
   },
   read_together_ended: {
     area: 'book',
@@ -565,13 +613,6 @@ export const EVENTS = {
       session_bucket: SESSION_BUCKET,
       letters_heard: int(0, 50),
     },
-  },
-  read_together_try_used: {
-    area: 'book',
-    when: 'A free Read together try is used (Free tier)',
-    reqs: ['C-REQ-034'],
-    level: 'L2',
-    props: { n: int(1, 10) },
   },
 
   // --- Family (co-parent only at v1.0, founder decision 5) -------------------
@@ -636,7 +677,7 @@ export const EVENTS = {
     when: 'A member leaves a book',
     reqs: ['B-REQ-010'],
     level: 'L2',
-    props: { role: INVITE_ROLE, letters: oneOf('keep', 'take_out') },
+    props: { role: MEMBER_ROLE, letters: oneOf('keep', 'take_out') },
   },
 
   // --- Reminders (C-REQ-034) -----------------------------------------------------
@@ -814,6 +855,42 @@ export const EVENTS = {
       ownership: oneOf('purchased', 'family_shared', 'unknown'),
     },
   },
+  // Membership engine (D-082, D-083): numbers only. Never the letter, its words, the recording or the child.
+  free_allowance_reached: {
+    area: 'plus',
+    when: 'The last free letter was kept, so the next Keep will ask for Plus (once per phone)',
+    reqs: ['C-REQ-034', 'C-REQ-023'],
+    level: 'L2',
+    props: { allowance: int(2, 100) },
+  },
+  keep_gate_shown: {
+    area: 'plus',
+    when: 'The Keep sheet asked for Plus (the letter is held on the phone)',
+    reqs: ['C-REQ-034', 'C-REQ-023'],
+    level: 'L2',
+    props: { letters_kept: int(0, 1000), allowance: int(2, 100), lapsed: int(0, 1) },
+  },
+  letter_held: {
+    area: 'plus',
+    when: 'The person chose to keep the letter on the phone for now instead of starting Plus',
+    reqs: ['C-REQ-034', 'C-REQ-023'],
+    level: 'L2',
+    props: { letters_kept: int(0, 1000) },
+  },
+  plus_started_from_gate: {
+    area: 'plus',
+    when: 'Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code)',
+    reqs: ['C-REQ-034', 'C-REQ-023'],
+    level: 'L2',
+    props: { letters_kept: int(0, 1000) },
+  },
+  offer_code_redeemed: {
+    area: 'plus',
+    when: "Apple's offer code sheet closed and Plus was on afterwards",
+    reqs: ['C-REQ-034'],
+    level: 'L2',
+    props: {},
+  },
   restore_result: {
     area: 'plus',
     when: 'Restore purchases finished',
@@ -840,4 +917,32 @@ export const EVENTS = {
 } as const satisfies Record<string, EventSpec>;
 
 export type Catalog = typeof EVENTS;
+
+function shapeOf(p: PropSpec): unknown[] {
+  const base: unknown[] = [p.type, p.level, p.optional === true];
+  if (p.type === 'enum') base.push([...p.values]);
+  if (p.type === 'int') base.push(p.min, p.max);
+  return base;
+}
+
+function shapeOfProps(props: Readonly<Record<string, PropSpec>>): [string, unknown[]][] {
+  return Object.keys(props)
+    .sort()
+    .map((k) => [k, shapeOf(props[k])]);
+}
+
+/**
+ * Everything about the catalogue that changes what is sent: event names,
+ * levels, property keys, types, values, ranges and optionality, in a stable
+ * order. Excludes `when`, `reqs` and `area`, which are documentation.
+ */
+export function catalogShape(): unknown {
+  const events = EVENTS as Record<string, EventSpec>;
+  return {
+    globals: shapeOfProps(GLOBAL_PROPS),
+    events: Object.keys(events)
+      .sort()
+      .map((name) => [name, events[name].level, shapeOfProps(events[name].props)]),
+  };
+}
 export type EventName = keyof Catalog;
