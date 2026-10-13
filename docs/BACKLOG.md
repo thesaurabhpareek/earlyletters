@@ -100,7 +100,7 @@ Exact steps, time, cost and deadlines are in `docs/FOUNDER_TASKS.md`. This secti
 
 #### BL-103 App Store Connect: app record and Plus products [Critical]
 - Status: needs-founder (FT-08, FT-09), after BL-101 and BL-102.
-- Scope (rewritten for D-053; the old scope is superseded): app record for `com.earlyletters.scribe`; subscription group `Plus`; `plus.monthly` US $3.99 with a free 1-month introductory offer and `plus.annual` US $29.99 with a free 2-month offer; same level; **Family Sharing on** for both; Billing Grace Period 16 days (D-048); United States only; sandbox testers. Steps: `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
+- Scope (rewritten for D-053; the old scope is superseded): app record for `com.earlyletters.scribe`; subscription group `Plus`; `plus.monthly` US $4.99 with a free 1-month introductory offer and `plus.annual` US $49.99 with a free 2-month offer; same level; **Family Sharing on** for both; Billing Grace Period 16 days (D-048); United States only; sandbox testers. Steps: `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
 - Superseded parts (D-053): product ids `el_plus_*`, Family Sharing off, experiment-arm products, the In-App Purchase key and the App Store Server Notifications URLs.
 
 #### BL-104 Counsel engagement and sign-off [Critical]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BUNDLED_READ_TOGETHER_FREE_SESSIONS, DEFAULT_REMOTE_CONFIG, effectiveFreeSessions, isKilled, KILL_SWITCH_KEYS, parseRemoteConfig } from '../src';
+import { BUNDLED_FREE_LETTERS, BUNDLED_READ_TOGETHER_FREE_SESSIONS, effectiveFreeLetters, DEFAULT_REMOTE_CONFIG, effectiveFreeSessions, isKilled, KILL_SWITCH_KEYS, parseRemoteConfig } from '../src';
 
 const base = { schemaVersion: 1, version: 5, generatedAt: '2026-10-03T12:00:00.000Z' };
 
@@ -60,7 +60,24 @@ describe('parseRemoteConfig', () => {
   });
 });
 
-describe('effectiveFreeSessions', () => {
+describe('effectiveFreeLetters', () => {
+  it('[D-082] remote config can raise the free letters but never lower them below what App Review saw', () => {
+    expect(BUNDLED_FREE_LETTERS).toBe(2);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 0 })).toBe(2);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 1 })).toBe(2);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 2 })).toBe(2);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 5 })).toBe(5);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 1000 })).toBe(100);
+  });
+  it('a bad value falls back to 2 without rejecting the document', () => {
+    const r = parseRemoteConfig({ ...base, freeLettersAllowance: 'lots' });
+    expect(r.ok && r.value.freeLettersAllowance).toBe(2);
+    const missing = parseRemoteConfig({ ...base, freeLettersAllowance: undefined });
+    expect(missing.ok && missing.value.freeLettersAllowance).toBe(2);
+  });
+});
+
+describe('effectiveFreeSessions (deprecated: Read together has no limit)', () => {
   it('[DECISION-16] remote config can raise the free Read together allowance but never lower it below what App Review saw', () => {
     expect(effectiveFreeSessions({ readTogetherFreeSessions: 0 })).toBe(BUNDLED_READ_TOGETHER_FREE_SESSIONS);
     expect(effectiveFreeSessions({ readTogetherFreeSessions: 1 })).toBe(BUNDLED_READ_TOGETHER_FREE_SESSIONS);

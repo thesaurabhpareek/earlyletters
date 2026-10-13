@@ -30,9 +30,11 @@ Rules: show the label quietly (caption style, no badge colour). Never show it on
 | Key | Where it appears | String | Chars |
 |---|---|---|---|
 | `review.firstNote.title` | One-time card at the top of Review, the first time a spoken letter is transcribed on this install | Please have a read | 18 |
-| `review.firstNote.body` | Same card | We fix small slips, like "um" and repeats. We can also mishear a word or a name. Please read it before you save. | 112 |
+| `review.firstNote.body` | Same card | We take out small slips, like an um or a repeat, and mark each one. Tap a mark to see it and put it back. We can mishear a name, so please read it before you save. | 163 |
 | `review.firstNote.dismiss` | Card button | Got it | 6 |
 | `help.mistakes` | Settings > Help and Legal > How transcription works (always available) | Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong. | 104 |
+
+**[LEGAL-ALIGNMENT: text changed 4 Oct 2026 under D-086 (debate Q-013 edit-trust-and-words); it now says what the app does and how to undo it. Needs a read by legal-alignment before it ships: it is disclosure text. The onboarding promise body (`onboarding.promise.body`) changed in the same decision.]**
 
 Rules: shown once per install, after the first transcript appears and before the first save, so it is seen at the right moment without blocking. It never returns as a nag. It never appears for typed letters. (A web contributor version waits for the web contribution page, which is later than v1.0, D-055.)
 

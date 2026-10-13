@@ -131,7 +131,24 @@ describe('tombstones (PMOB-02)', () => {
     entries.tombstone(f.ctx, letter().id);
     expect(entries.get(f.ctx, letter().id)).toBeNull();
     expect(entries.listForChild(f.ctx, 'child-asha')).toEqual([]);
-    expect(entries.audioRows(f.ctx)).toEqual([{ id: letter().id, audioUri: 'file:///Documents/recording-1.m4a' }]);
+    expect(entries.audioRows(f.ctx)).toEqual([{ id: letter().id, audioUri: 'file:///Documents/recording-1.m4a', deleted: true }]);
+  });
+
+  it('[D-085] the shelf: listDeleted is newest first, expiredIds respects the cutoff, eraseRow refuses a live letter', () => {
+    entries.tombstone(f.ctx, letter().id);
+    const deletedAt = rawRow(f.db, letter().id)!.deleted_at as string;
+    expect(entries.listDeleted(f.ctx).map((e) => [e.id, e.deletedAt])).toEqual([[letter().id, deletedAt]]);
+    expect(entries.expiredIds(f.ctx, new Date(Date.parse(deletedAt) - 1).toISOString())).toEqual([]);
+    expect(entries.expiredIds(f.ctx, deletedAt)).toEqual([letter().id]);
+    expect(entries.deletedAudioUri(f.ctx, letter().id)).toBe('file:///Documents/recording-1.m4a');
+    entries.undelete(f.ctx, letter().id);
+    expect(entries.deletedAudioUri(f.ctx, letter().id)).toBeUndefined();
+    expect(entries.eraseRow(f.ctx, letter().id)).toBe(false);
+    expect(entries.get(f.ctx, letter().id)).not.toBeNull();
+    entries.tombstone(f.ctx, letter().id);
+    expect(entries.eraseRow(f.ctx, letter().id)).toBe(true);
+    expect(rawRow(f.db, letter().id)).toBeNull();
+    expect(entries.eraseRow(f.ctx, letter().id)).toBe(false);
   });
 
   it('undelete restores a tombstone and reports false when there was none', () => {
@@ -173,6 +190,36 @@ describe('words for a waiting letter are set once', () => {
   it('a letter that already had words never takes new ones', () => {
     entries.upsert(f.ctx, letter({ id: 'l2' }), defaults);
     expect(entries.setWordsOnce(f.ctx, 'l2', w)).toBe(false);
+  });
+});
+
+describe('typed words for a waiting letter (D-086, "Write the words")', () => {
+  beforeEach(() => entries.upsert(f.ctx, letter({ id: 'w1', rawTranscript: '', finalText: '', transcriptStatus: 'waiting' }), defaults));
+
+  it('become the words once, untouched, and the letter is a recording with typed words', () => {
+    expect(entries.setTypedWordsOnce(f.ctx, 'w1', '  Asha clapped at the dog  ')).toBe(true);
+    expect(entries.get(f.ctx, 'w1')).toMatchObject({
+      rawTranscript: 'Asha clapped at the dog',
+      finalText: 'Asha clapped at the dog',
+      machineEdits: [],
+      captureMode: 'mixed',
+      editLevel: 'verbatim',
+      transcriptStatus: null,
+    });
+  });
+
+  it('are refused when empty, and a letter that already has words keeps them', () => {
+    expect(entries.setTypedWordsOnce(f.ctx, 'w1', '   ')).toBe(false);
+    entries.setTypedWordsOnce(f.ctx, 'w1', 'first words');
+    expect(entries.setTypedWordsOnce(f.ctx, 'w1', 'second words')).toBe(false);
+    expect(rawRow(f.db, 'w1')!.raw_transcript).toBe('first words');
+    entries.upsert(f.ctx, letter({ id: 'l2' }), defaults);
+    expect(entries.setTypedWordsOnce(f.ctx, 'l2', 'new words')).toBe(false);
+  });
+
+  it('never write into a deleted letter', () => {
+    entries.tombstone(f.ctx, 'w1');
+    expect(entries.setTypedWordsOnce(f.ctx, 'w1', 'words')).toBe(false);
   });
 });
 
