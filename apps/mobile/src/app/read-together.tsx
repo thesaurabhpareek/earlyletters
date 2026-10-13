@@ -32,7 +32,6 @@ import { letterWords } from '@/components/book/letter-words.logic';
 import { readableInBook, showsSignature } from '@/components/book/quiet-day.logic';
 import { getActiveChild, getChild, listEntriesForChild } from '@/lib/store';
 import { useTheme } from '@/lib/a11y';
-import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 
 
 export default function ReadTogether() {
@@ -74,9 +73,6 @@ export default function ReadTogether() {
     },
     [], // eslint-disable-line react-hooks/exhaustive-deps
   );
-
-  // Letters are playing or being read aloud: keep the screen on while the reading pages are showing.
-  useKeepAwakeWhile(!!child && letters.length > 0, KEEP_AWAKE_TAGS.readTogether);
 
   const close = () => router.back();
 

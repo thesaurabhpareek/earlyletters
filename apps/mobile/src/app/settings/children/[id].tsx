@@ -5,7 +5,7 @@ import { Alert, ScrollView } from 'react-native';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
-import { inviteHref } from '@/lib/family/entry.logic';
+import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { getChild, hideChild, listChildren, subscribe, todayISO, updateChild } from '@/lib/store';
@@ -20,6 +20,7 @@ import { ordinalOf, track } from '@/lib/analytics/track';
 export default function ChildSettings() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [child, setChild] = useState(() => getChild(id));
+  const doors = visibleCoParentDoors(serverFeaturesEnabled());
   const [editing, setEditing] = useState<'name' | 'date' | 'signsAs' | 'born' | null>(null);
   useEffect(() => subscribe(() => setChild(getChild(id))), [id]);
 
@@ -101,9 +102,12 @@ export default function ChildSettings() {
         />
       </ListSection>
 
-      <ListSection footer={fill(x.familyCanReadHelp, { child: name })}>
-        <ToggleRow title={fill(s.familyCanReadLabel, { child: name })} value={child.familyCanRead} onValueChange={() => {}} disabled />
-      </ListSection>
+      {/* A switch that cannot be turned on is hidden until co-parent sharing exists (D-087). */}
+      {doors.familyCanReadSwitch && (
+        <ListSection footer={fill(x.familyCanReadHelp, { child: name })}>
+          <ToggleRow title={fill(s.familyCanReadLabel, { child: name })} value={child.familyCanRead} onValueChange={() => {}} disabled />
+        </ListSection>
+      )}
 
       {listChildren().length > 1 && (
         <ListSection footer={fill(s.hideBody, { child: name })}>

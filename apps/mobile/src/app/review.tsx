@@ -101,11 +101,14 @@ import {
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { languageFor, requestSpeechFor, requestWords, retryWords, sampleWordsFor, spokenFor, type Job } from '@/lib/transcription-queue';
+import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload, type Job } from '@/lib/transcription-queue';
+import { speechConsentCopy } from '@scribe/content';
+import { showReviewAsk } from '@/lib/models/speech-consent.logic';
+import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent';
+import { formatBytes } from '@/lib/packs/copy';
 import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
 import { languageNames, wordsCopy } from '@/lib/transcription-queue/copy';
 import type { SpeechLanguage } from '@/lib/models/catalog';
-import { planFor } from '@/lib/models/speech-packs';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { footerPlacement } from '@/lib/review-layout.logic';
@@ -138,7 +141,7 @@ export default function Review() {
   const inlineFooter = footerPlacement(useIsAccessibilitySize()) === 'inline';
   const r = copy.review;
   const motion = useMotion();
-  const { draftId } = useLocalSearchParams<{ draftId: string }>();
+  const { draftId, stopped } = useLocalSearchParams<{ draftId: string; stopped?: string }>();
   const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : null));
   const [childId, setChildId] = useState(draft?.childId ?? '');
   const child = childId ? getChild(childId) : null;
@@ -655,6 +658,13 @@ export default function Review() {
           </Animated.View>
         )}
 
+        {/* Leaving the app ended the take (it never records in the background). One honest line, nothing alarming. */}
+        {stopped === 'background' && spoken && (
+          <Text variant="subhead" tone="muted" accessibilityLiveRegion="polite">
+            {wordsCopy.pack.stoppedInBackground}
+          </Text>
+        )}
+
         {phase === 'transcribing' && (
           <WordsStatus
             job={job}
@@ -663,7 +673,6 @@ export default function Review() {
             languageName={languageNames[language]}
             onRetry={tryAgain}
             onRecordAgain={recordAgain}
-            onGetReady={() => void requestSpeechFor(language)}
             onType={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}
           />
         )}
@@ -914,7 +923,6 @@ function WordsStatus({
   languageName,
   onRetry,
   onRecordAgain,
-  onGetReady,
   onType,
 }: {
   job: Job | null;
@@ -923,7 +931,6 @@ function WordsStatus({
   languageName: string;
   onRetry: () => void;
   onRecordAgain: () => void;
-  onGetReady: () => void;
   onType: () => void;
 }) {
   const type = { label: copy.errors.micDenied.typeButton, onPress: onType, testID: 'review.type' };
@@ -955,6 +962,24 @@ function WordsStatus({
 
   if (job?.phase === 'waiting_for_pack') {
     const p = download.progress;
+    const ask = speechAskFor(language);
+    const type = { label: wordsCopy.pack.typeButton, onPress: onType, testID: 'review.type' };
+    // The person has not yet said yes to the one-time download: ask, with the size (D-087). Nothing started on its own.
+    if (showReviewAsk({ choice: speechDownloadChoice(), progress: p, hold: download.hold })) {
+      return (
+        <InlineState
+          kind="empty"
+          title={fill(wordsCopy.pack.askTitle, { name: languageName })}
+          body={fill(wordsCopy.pack.askBody, { size: formatBytes(ask.bytes) })}
+          primary={ask.kind === 'ask' ? { label: wordsCopy.pack.askButton, onPress: () => void startSpeechDownload(language), testID: 'review.getReady' } : undefined}
+          quiet={[type]}>
+          {ask.kind === 'low_space' && (
+            <Text variant="subhead" tone="muted">{fill(speechConsentCopy.lowSpace, { size: formatBytes(ask.neededBytes) })}</Text>
+          )}
+          <Text variant="subhead" tone="muted">{speechConsentCopy.footnote}</Text>
+        </InlineState>
+      );
+    }
     const line =
       download.hold === 'waiting_for_wifi'
         ? wordsCopy.pack.waitingForWifi
@@ -968,15 +993,14 @@ function WordsStatus({
         kind="loading"
         title={fill(wordsCopy.pack.title, { name: languageName })}
         body={fill(wordsCopy.pack.body, { name: languageName })}
-        primary={
-          p === null
-            ? // Not started yet (or waiting on Wi-Fi or space): one way to start it now, then the way out.
-              { label: wordsCopy.waiting.readyButton, onPress: onGetReady, testID: 'review.getReady' }
-            : { label: wordsCopy.pack.typeButton, onPress: onType, testID: 'review.type' }
-        }
-        quiet={p === null ? [{ label: wordsCopy.pack.typeButton, onPress: onType, testID: 'review.type' }] : undefined}>
+        quiet={[
+          // One time, this download only. The Wi-Fi-only default stays.
+          ...(download.hold === 'waiting_for_wifi'
+            ? [{ label: fill(wordsCopy.pack.mobileDataButton, { size: formatBytes(ask.bytes) }), onPress: () => void startSpeechDownload(language, { allowCellularOnce: true }), testID: 'review.mobileData' }]
+            : []),
+          type,
+        ]}>
         {line && <Text variant="subhead" tone="muted">{line}</Text>}
-        {p === null && <Text variant="subhead" tone="muted">{fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })}</Text>}
         {p !== null && download.hold === null && <ProgressLine value={p} />}
       </InlineState>
     );

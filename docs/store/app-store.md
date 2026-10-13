@@ -102,7 +102,7 @@ Promotional text carries the short form. No locks, shields or "bank-level" langu
 - [ ] App Privacy answers in App Store Connect match `docs/legal/app-store-privacy-labels.md` and the shipped build.
 - [ ] Subscriptions attached to the version with display names, and Family Sharing turned on for both products (D-053).
 - [ ] Age rating questionnaire answered; category Lifestyle.
-- [ ] App Review notes: a family memory journal; a due date is optional; no health service (D-004 5.1.1(ix) positioning); a demo account if review needs one.
+- [ ] App Review notes: a family memory journal; a due date is optional; no health service (D-004 5.1.1(ix) positioning); a demo account if review needs one. Say plainly that co-parent sharing is not in this version: the Family tab and the Settings row say "Coming soon" on purpose, and the speech model is a one-time download the person chooses at the end of first run (data, not code; D-065, D-087).
 - [ ] Every language named in the description is shipping in this build (D-056). If one slips, remove it here first.
 - [ ] Screenshots regenerated from the release build's web preview and checked frame by frame.
 

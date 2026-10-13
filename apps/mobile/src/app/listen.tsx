@@ -11,7 +11,7 @@
  *
  * Starts only from a tap: Tonight's Speak arms it (lib/resilience/start-intent.ts). Opened any other way
  * (the scribe://listen link, a restored screen) it waits in the ready state until the person taps Start.
- * The screen stays awake while a take is live or paused, and is released when it ends.
+ * The screen stays awake only while a take is recording (not paused), and is released when it ends.
  */
 import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import { File } from 'expo-file-system';
@@ -103,7 +103,8 @@ export default function Listen() {
     setPhase('finishing');
     const draft = await finalizeTake(recorder, id, reason, lastDuration.current);
     haptic('press'); // after the session ends: iOS mutes haptics while recording
-    if (draft) router.replace({ pathname: '/review', params: { draftId: draft.id } });
+    // `stopped=background`: Review says so in one honest line when leaving the app ended the take.
+    if (draft) router.replace({ pathname: '/review', params: reason === 'background' ? { draftId: draft.id, stopped: 'background' } : { draftId: draft.id } });
     else router.back();
   };
 
@@ -136,8 +137,8 @@ export default function Listen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // A take that is live or paused keeps the screen on; every other phase, and leaving, releases it.
-  useKeepAwakeWhile(phase === 'recording' || phase === 'paused', KEEP_AWAKE_TAGS.listen);
+  // Only a live take keeps the screen on. Paused, finishing, and leaving all release it (auto-lock is a privacy control).
+  useKeepAwakeWhile(phase === 'recording', KEEP_AWAKE_TAGS.listen);
 
   // App leaves the foreground: stop and keep (LEGAL-REQ-011, PRD checklist 6.3).
   // `inactive` alone (Control Center, a notification) does nothing; a real

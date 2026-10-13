@@ -203,8 +203,9 @@ export const GLOBAL_PROPS = {
  * 4: membership engine (D-082, D-083): `keep_letter` offer trigger replaces `second_child` and
  *    `read_together`; `read_together_try_used` removed; `read_together_started.access` is `plus | free`
  *    (no limit, so no `try`); five numbers-only Plus events added.
+ * 5: two content-free events for the co-parent teaser (`coparent_soon_opened`, `coparent_soon_notify`, D-087).
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -213,6 +214,7 @@ export const SCHEMA_VERSION = 4;
 export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.freeze({
   3: '971df5e782a0d91011fe559476313e6c40cc52babd65f779bb71422f61ed6a35',
   4: '4d0cc81648b7d3d0cb334e0cd7c38d611f244009f1a5e578b2cb4ecf520750da',
+  5: '807e09376410c4f2f955535a6655dacca9de2fd2fc35e4ac7750bd03debb4860',
 });
 
 // ---------------------------------------------------------------------------
@@ -344,6 +346,22 @@ export const EVENTS = {
     reqs: ['B-REQ-007'],
     level: 'L2',
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
+  },
+  // The co-parent teaser (D-087): measures interest without any content. `surface` is only the Family tab or the
+  // invite sheet (every door except the tab opens the sheet). Nothing about the book or the child.
+  coparent_soon_opened: {
+    area: 'entry',
+    when: 'The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens)',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: { surface: oneOf('tab', 'sheet') },
+  },
+  coparent_soon_notify: {
+    area: 'entry',
+    when: 'Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us)',
+    reqs: ['PRD-REQ-016'],
+    level: 'L2',
+    props: {},
   },
   local_merge_choice: {
     area: 'entry',

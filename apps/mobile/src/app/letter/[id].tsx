@@ -43,7 +43,7 @@ import {
   type Entry,
 } from '@/lib/store';
 import { clearReadItBack, isReadItBack } from '@/lib/read-it-back';
-import { languageFor, requestSpeechFor, retryWords } from '@/lib/transcription-queue';
+import { languageFor, retryWords, startSpeechDownload } from '@/lib/transcription-queue';
 import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { planFor } from '@/lib/models/speech-packs';
@@ -357,7 +357,7 @@ function WaitingCard({ entry }: { entry: Entry }) {
   const primary = retryable ? (
     <Button size="md" label={w.retryButton} onPress={() => retryWords(entry.id)} testID="letter.retry" />
   ) : packWait && p === null ? (
-    <Button size="md" label={w.readyButton} onPress={() => void requestSpeechFor(language)} testID="letter.getReady" />
+    <Button size="md" label={w.readyButton} onPress={() => void startSpeechDownload(language)} testID="letter.getReady" />
   ) : null;
 
   return (
