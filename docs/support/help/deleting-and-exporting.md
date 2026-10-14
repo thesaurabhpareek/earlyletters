@@ -22,26 +22,30 @@ The file is not locked with a password, so keep it somewhere private.
 
 If the app says the export is larger than one file can hold, write to us and we will help you get every letter out.
 
-Exporting now and then is a good habit. Settings notes that Early Letters is an early version and can make mistakes, and an export is a copy that is entirely in your hands. It is also the one copy of your recordings that you can keep anywhere you like.
+Exporting now and then is a good habit. Settings notes that Early Letters is an early version and can make mistakes, and an export is a copy that is entirely in your hands. It is also the one copy of your recordings that you can keep anywhere you like. Settings, Export your book shows the date of your last export.
 
 ## Delete a letter
 
-Open the letter and tap **Delete**. You can tap Undo straight away.
+Open the letter and tap **Delete**. The app asks first: tap **Delete letter**, or **Keep it** to change your mind. Straight after, you can tap **Undo**.
 
-After that, the letter waits in **Recently deleted** for 30 days. Tap **Restore** to bring it back. After 30 days it is erased.
+The letter then waits in **Recently deleted** for 30 days, with its recording. Find it in Settings, **Recently deleted**. Each letter there shows the day it will be erased.
+
+- Tap **Restore** to put it back exactly as it was.
+- Tap **Erase now** to erase the letter and its recording from this phone at once. The app asks first.
+
+After 30 days, the letter and its recording are erased from this phone the next time you open the app. A copy can still be in an iPhone backup made before then.
+
+Deleting a letter does not give a free letter back. See [Plus and your Apple subscription](subscriptions.md).
 
 You can delete only letters you wrote. Nobody can delete or change another person's words.
 
+To take away a quiet-day mark, press and hold **A quiet day** in the book. You can tap Undo straight after.
+
 ## Delete {child}'s book
 
-Settings, {child}'s book, **Delete this book**.
+There is no way to delete a whole book in this version. You can delete its letters one at a time, as above, and export first, free.
 
-- **In this version,** every letter and recording in the book is removed from this phone.
-- **From version 1.1, if you keep the book on your own,** they are also removed from our servers. **If you share the book with a co-parent,** the book stays with your co-parent, and only your own letters and recordings leave it.
-
-Either way you have 30 days to change your mind. You can export first, free.
-
-Want a rest instead? **Hide this book** quiets every reminder and note about {child}. Nothing is deleted, and you can show it again any time.
+If you have more than one book, you can also hide one: Settings, {child}'s book, **Hide this book**. It quiets every reminder and message about {child}. Nothing is deleted, and you can show it again any time.
 
 ## Delete your account
 
@@ -64,7 +68,9 @@ Settings, **Delete account**. You can do it all in the app. There is nothing to 
 
 ## Deleting the app
 
-Deleting the app removes everything it keeps on this phone, including recordings. (From version 1.1, if you are signed in and synced, your letters are still in your account.) Your recordings live on this phone, so export them first to keep a copy.
+Deleting the app removes the letters and recordings it keeps on this phone. (From version 1.1, if you are signed in and synced, your letters are still in your account.) Your recordings live on this phone, so export them first to keep a copy.
+
+One thing usually stays: a single number in your iPhone's Keychain, how many letters you have kept, so your two free letters are counted fairly if you install the app again. It holds no words, names or dates.
 
 Deleting the app does not cancel Plus. Cancel with Apple: see [Plus and your Apple subscription](subscriptions.md).
 
@@ -82,19 +88,23 @@ Write to us at {SUPPORT_EMAIL}. Please do not send the letters themselves. Tell 
 
 ## Reviewer notes (remove before publishing)
 
-**Version 1.1 marks (founder decision, v1.0 is on-device only).** Marked above: co-parent letters in the export, server deletion, Delete account, the synced-account line under Deleting the app, and Without the app. Open question for the founder (PR #54, decision 2): v1.0 has no "Delete everything on this phone" path; if one is added, this article names it where Delete account sits now. Until then, "delete the app" is the only way to remove local data. The `/delete-account` page and email route (D-042) cover accounts, so they are v1.1 too. Export itself is unchanged and runs on the phone.
+**Version 1.1 marks (founder decision, v1.0 is on-device only).** Marked above: co-parent letters in the export, Delete account, the synced-account line under Deleting the app, and Without the app. The `/delete-account` page and email route (D-042) cover accounts, so they are v1.1 too. Export itself is unchanged and runs on the phone.
 
-**Built on develop (7cc43b1):**
-- **Export:** `apps/mobile/src/app/settings/export.tsx` and `apps/mobile/src/lib/export/`. Contents from `packages/content/src/features/export.en.ts` lines 10 to 14 (the "What is inside" list) and the README lines 64 to 87 (printable book leaves out private letters; `index.html` works with no connection; recordings byte for byte). "Works without a connection. Nothing is sent anywhere." (line 15), "Save or share" (line 21), the unlocked-file notice (line 23), the too-big message (line 28). The words exactly as heard and the fixes are exported for your own letters only (`apps/mobile/src/lib/export/schema.ts` line 67). The path is the Settings row "Export your book" (`settingsHome.exportLabel`) and the button "Export everything" (`settings.export.button`, `strings.en.ts` line 627).
-- **Account deletion:** `apps/mobile/src/app/settings/delete-account.tsx` with `apps/mobile/src/lib/account-deletion/`; words in `packages/content/src/features/account-deletion.en.ts` (type "delete" lines 42 and 43; date, cancel and receipt lines 41 and 49 to 54; Plus step lines 31 to 35, shown only with a subscription). Server: `request_account_deletion` schedules 30 days out (`supabase/migrations/20261002020000_data_governance.sql` lines 425 to 469, line 440); books with a co-parent stay with them (lines 450 to 455). The purge worker and its checks are in `supabase/migrations/20261004200000_ops_deletion_worker.sql` (an alert fires if anything deleted more than 31 days ago is still there, line 274) and `supabase/functions/purge-worker/`. That migration is pending, not applied (its line 4).
-- **Delete a letter** with Undo: `apps/mobile/src/app/letter/[id].tsx`. **Hide this book:** `apps/mobile/src/app/settings/children/[id].tsx` line 62.
+**Re-checked against develop at ed16ca3 (14 Oct 2026), the shipping on-device v1.0:**
+- **Delete a letter asks first** (D-085, `docs/DECISIONS.md` line 536): `apps/mobile/src/app/letter/[id].tsx`, the `ConfirmSheet` with `settings.delete.entryTitle`, `entryBody`, `entryConfirm` "Delete letter" and `keepButton` "Keep it" (`packages/content/src/strings.en.ts` lines 679 to 686). The Undo toast stays.
+- **Recently deleted** (#98): `apps/mobile/src/app/settings/recently-deleted.tsx` lines 19 to 27 and 93 to 112 (Restore, Erase now, "Erased on {date}"). Strings lines 683 to 694 ("Letters you delete wait here for 30 days."; "The letter and its recording will be erased from this phone, at once."). The row is on Settings home (`apps/mobile/src/app/settings/index.tsx` line 118). The purge runs at launch (`apps/mobile/src/lib/capture/sweep.ts` lines 121 to 124; `apps/mobile/src/lib/capture/erase.ts` lines 29 to 31), file first, then the row. The screen's own comment (recently-deleted.tsx lines 23 and 24) says deleted text can remain in an old iPhone backup, so the article says so.
+- **Last export** (D-085): `apps/mobile/src/app/settings/export.tsx` lines 146 and 147; `settings.export.lastExport` and `exportNudge` (strings lines 674 and 676).
+- **Quiet-day marks** (D-084, #92): a long press removes a mark, with Undo (`apps/mobile/src/components/book/quiet-day-row.tsx` line 34; `apps/mobile/src/app/(tabs)/book.tsx` lines 82 to 84; `book.quietDay` strings lines 408 to 413).
+- **Free letters:** a deleted letter still counts (D-083, DECISIONS.md line 527; `apps/mobile/src/lib/billing/letter-ledger.logic.ts` lines 4 to 8).
+- **The Keychain count usually survives deleting the app:** letter-ledger.logic.ts lines 10 to 20. It holds only the number (`serializeKeychain`, line 66). So "Deleting the app removes everything it keeps on this phone" was no longer true and is replaced.
+- **No Delete this book in v1.0.** `apps/mobile/src/app/settings/children/[id].tsx` has name, date, signature, reminders, the co-parent row and Hide this book, and no delete row. Hide shows only when there is more than one book (line 112). The `settings.delete.book*` strings (lines 695 to 701) are unused, and `bookBody` names "our servers", which v1.0 does not use. The old section said "Settings, {child}'s book, Delete this book" and is replaced.
+- **Export:** `apps/mobile/src/app/settings/export.tsx` and `packages/content/src/features/export.en.ts`, unchanged in substance since my last check.
+- **Account deletion** (version 1.1): Settings shows Delete account only when `capabilities.signIn` is on (index.tsx lines 123 to 125; `apps/mobile/src/lib/capabilities.ts` lines 44 to 48).
+- **Not built:** the page at {WEB_DELETION_URL} (D-042). It covers accounts, so it is version 1.1.
 
-**Not built in the app yet:**
-- **Recently deleted** (no screen uses `settings.delete.recentlyDeleted`). The server keeps deleted letters restorable until purge.
-- **Delete this book.** The server function exists (`request_book_deletion`, data_governance.sql lines 491 to 517, the equals rule included), but `settings/children/[id].tsx` has no delete row.
-- **The page at {WEB_DELETION_URL}.** D-042 (Recommended): a static page plus an email route at v1.0. `docs/ops/DOMAINS.md` line 12 lists `/delete-account` as "later".
+**Open question (product, then counsel):** v1.0 has no way to delete a whole book and no "Erase everything" path. D-083 refers to Erase everything (it resets the free count). `eraseLetterLedger()` exists (`apps/mobile/src/lib/billing/gates.ts` lines 114 to 124) but no screen calls it. Until one ships, deleting letters one at a time, or deleting the app, are the only ways to remove local data, and deleting the app usually leaves the Keychain count. D-083 already asks counsel about the Keychain count.
 
-**Changed in this review:**
+**Changed in the 3 Oct review:**
 - Paths follow Settings home (`apps/mobile/src/app/settings/index.tsx` lines 111 to 120): "Export your book" and "Delete account" are rows of their own.
 - "Your photos" is gone from the export list: letters have no photos in this version (`photo: null`, `apps/mobile/src/lib/export/build.logic.ts` line 478). The account deletion "what happens" line no longer names recordings or photos, because recordings are not on our servers in v1.0 (D-059).
 - "We send a sign-in link first" is gone from "Without the app". That is the full web flow, which D-042 moves to before Android.
