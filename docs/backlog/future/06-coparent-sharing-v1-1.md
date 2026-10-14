@@ -85,3 +85,27 @@ Turn `EXPO_PUBLIC_SERVER_FEATURES` to `on` in an `eas.json` profile only when ev
 - [Q founder] In-app "Delete everything on this phone" for v1.0 (section 1, fact 8), or is deleting the app enough?
 - [Q founder] Where remote documents are hosted for v1.0. With the switch off they are fetched only from `EXPO_PUBLIC_DOCS_BASE_URL` (a CDN, for example Cloudflare R2, ADR 0016). If it is not set, the app runs on bundled defaults and cannot fetch language packs for the six non-English languages (`lib/remote/base.logic.ts`, `lib/language/packs.ts`). Speech models come from Hugging Face directly and are not affected (`lib/models/catalog.ts`).
 - [Q founder] Keep the Sign in with Apple entitlement and associated domains in the v1.0 build (harmless and avoids re-provisioning), or drop them until v1.1? They are unchanged today (`apps/mobile/app.config.ts`).
+
+---
+
+## 5. Fixes already written on `auto/2026-10-05-fixes`, parked for v1.1
+
+Added 13 Oct 2026 by the port of Line B (`docs/agents/PORT_MAP_2026-10-13.md`). These fixes were written on branch `auto/2026-10-05-fixes` (commit `d1cbddb`) for the server product. v1.0 runs none of that code (section 1), so they wait here. The branch is kept: start from its files rather than rewriting them. Rows are the gap ids in that branch's `docs/agents/GAPS.md`.
+
+| Gap | What it fixes | Code to reuse (on the branch) | Ties to |
+|---|---|---|---|
+| G-01 | Email-link sign-in hijack (security review H1) | `apps/mobile/src/lib/auth/email-link.logic.ts`, `account-confirm*.ts`, `test/auth-email-link.test.ts` | BL-347, criterion 11 (PR #107) |
+| G-02, G-13 | Ask before joining a book; SCCAP; leave and remove; `peek_invite` (H2) | `lib/family/invite-*.logic.ts`, `test/invite-link.test.ts`; migration `20261005100000` | BL-322, BL-331, criterion 11 |
+| G-03 | Apple token captured so deletion can revoke it (H3) | `supabase/functions/apple-token/**` | BL-330, criterion 11 |
+| G-04, G-05, G-06 | Invite token in the fragment (`/i#t=`), 8-digit codes, forced re-auth (M2, M4, L3) | `lib/auth/links.logic.ts`, `code-length.logic.ts`, `reauth.logic.ts`, AASA file | CP-02 |
+| G-07 | One idempotency key per user action | `lib/supabase/idempotency.logic.ts`, `test/auth-idempotency.test.ts` | PR #32's retry-safe signatures (reconcile first) |
+| G-08 to G-12, G-14 | DOB read path, private-activity digest, receipts, limits, pepper fail-closed, classification rows (M1, M5, L1, M3) | migration `20261005100000_db_fix_privacy_limits.sql`, `supabase/tests/db_fix_*.test.mjs`, `docs/legal/DATA_CLASSIFICATION.md` 4.1 | CP-03 |
+| G-17 | API contract: `parents_full`, leave, remove and peek endpoints | `packages/api/src/envelope.ts`, `standards.ts` | PR #34 |
+| G-19 | Export carries the server consent record and dictionary (LEGAL-REQ-034) | `apps/mobile/src/lib/export/*` schema 1.1.0, goldens | Founder or counsel: whether v1.0 needs the phone-only part |
+| G-20 | Insights k-anonymity against differencing (review L12) | migration `20261005200000_insights_differencing.sql`, `supabase/tests/platform_fix_insights_differencing.test.mjs` | Analytics, after D-088 |
+| G-21c | Sign-in consent says "co-parent" | `packages/content/src/strings.en.ts` | CP-02 |
+| G-24 | Analytics consent sheet after first run | `app/(tabs)/_layout.tsx`, `components/consent/consent-ask.tsx` | D-088 |
+| G-26 | A letter's language on the row and in sync | local migration (must become v6; `develop`'s v5 is D-084) | CP-03 |
+| G-28a | Maestro flows for sign-in, invites, consent | `apps/mobile/e2e/flows/E2E-11*`, `E2E-12*`, `E2E-13*`, `subflows/sign-in-*` | CP-01, CP-02 |
+
+Rules when any of these is picked up: one concern per PR into `develop`; anything under `supabase/**` or auth needs the founder's `approve-migration` label (D-041); migrations get new timestamps after PR #32's files and follow PR #51's `search_path = pg_catalog, public, pg_temp` rule.
