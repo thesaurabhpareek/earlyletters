@@ -46,6 +46,10 @@ Your iPhone's own backup, such as iCloud Backup, may include what the app keeps 
 
 We never imitate your voice. Your original recording is always kept exactly as you made it. We never make a voiceprint: recordings are kept so they can be played, and that is all.
 
+## Your free letters
+
+To count your two free letters fairly, the app keeps one number: how many letters you have kept. It is kept in the app and in your iPhone's Keychain, so it usually stays if you delete the app and install it again. It holds no words, names or dates, and it is not sent to us.
+
 ## Usage and crash reports
 
 They help us find what is broken. They stay off until you say yes, and nothing in the app depends on them. When they are on, they say which screens you open and what happened, like "a letter was saved", and never what you wrote or said. Turn them on or off in Settings, Privacy, **Share usage and crash reports**.
@@ -67,7 +71,9 @@ Early Letters is for adults. A book is about a child, and the child does not use
 | You want to | Where |
 |---|---|
 | Export your book | Settings, Export your book |
-| Delete a letter, a book or your account | See [Deleting and exporting](deleting-and-exporting.md). Your account (version 1.1): Settings, Delete account. |
+| Delete a letter | Open the letter, Delete. See [Deleting and exporting](deleting-and-exporting.md). |
+| Restore or erase a deleted letter | Settings, Recently deleted |
+| Delete your account (version 1.1) | Settings, Delete account |
 | Stop syncing (version 1.1) | Settings, Privacy, Sync and family sharing |
 | Turn usage and crash reports on or off | Settings, Privacy, Share usage and crash reports |
 | Show or hide names in notifications | Settings, Reminders, Names in notifications |
@@ -86,6 +92,10 @@ You never need to send your letters, recordings or {child}'s name to get help. W
 ---
 
 ## Reviewer notes (remove before publishing)
+
+**Re-checked against develop at ed16ca3 (14 Oct 2026).**
+- New section "Your free letters": the letter ledger (D-083, `docs/DECISIONS.md` line 527: "The count is held on the device (Keychain, mirrored in the database) so a reinstall does not reset it; counsel confirms this is acceptable"). `apps/mobile/src/lib/billing/letter-ledger.logic.ts` lines 4 to 20: one never-decreasing number, "No identifier, no timestamp, no content, no device id"; the Keychain item is this-device-only and never in a backup, the database mirror comes back with a backup restore. Line 19: Apple does not guarantee the Keychain item survives deleting the app, hence "usually". Nothing here talks to a server (`apps/mobile/src/lib/billing/gates.ts`). Hand-off to `legal`: `docs/legal/DATA_CLASSIFICATION.md` and `docs/legal/data-policy.md` line 141 list Keychain contents as session tokens and keys only; the ledger item `earlyletters.letters.keptEver` (letter-ledger.logic.ts line 27) is not in either. PR #81 changes `data-policy.md`; I did not check whether it adds this.
+- "Your choices": the old row said "Delete a letter, a book", but v1.0 has no way to delete a book (`apps/mobile/src/app/settings/children/[id].tsx` has no delete row). Recently deleted is a Settings row (`apps/mobile/src/app/settings/index.tsx` line 118, D-085).
 
 **Version 1.1 marks (founder decision, v1.0 is on-device only).** Marked above: the co-parent paragraph, the whole sync and servers passage under "Where your letters live", and the Stop syncing and Delete account rows. At v1.0 publish, drop the marked passages. Unmarked text was checked against on-device only: letters and recordings stay on the phone, transcription is on the phone, and the "backup" mention is Apple's own iPhone backup (D-033), not ours. The short-version bullets still hold. Open for `legal`: the Privacy Policy sections that describe servers and sharing need the same v1.0 reading.
 

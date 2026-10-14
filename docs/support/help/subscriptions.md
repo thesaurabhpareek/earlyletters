@@ -13,7 +13,7 @@ That is all Plus does in this version.
 - **Your first two letters.** They are kept, and always will be. The two are shared across all your books, not two for each book.
 - **Starting a book**, for each of your children. A second book does not need Plus.
 - **Reading, playing your recordings, Read together and export**, for every letter you have kept.
-- **Speaking or typing a letter.** Plus is asked for only when you tap Keep on a third letter, and the letter is never lost.
+- **Speaking or typing a letter.** Plus is asked for only when you tap Keep on a third letter, and that letter stays safe on your phone.
 
 ## What counts as a letter
 

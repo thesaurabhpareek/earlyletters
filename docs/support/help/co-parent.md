@@ -8,7 +8,7 @@ Invite your co-parent, and you can both write to {child}, in one book.
 
 A co-parent writes, reads the whole book, and has the same say over it as you do. You are equals. Neither of you can remove the other, or change or delete the other's letters.
 
-Inviting your co-parent is free, and so is everything they write.
+Inviting your co-parent is free.
 
 ## Invite your co-parent
 
@@ -48,7 +48,7 @@ Then you are in {child}'s book, and it arrives on your phone.
 
 ## Plus and your co-parent
 
-If one of you has Plus, you can share it through Apple Family Sharing. See [Plus and your Apple subscription](subscriptions.md). A book you joined as a co-parent does not count as your free book, so you can still start one of your own.
+If one of you has Plus, you can share it through Apple Family Sharing. See [Plus and your Apple subscription](subscriptions.md).
 
 ## Leaving a shared book
 
@@ -73,6 +73,8 @@ Inviting grandparents, aunts, uncles and friends to write is not in this version
 ---
 
 ## Reviewer notes (remove before publishing)
+
+**Re-checked against develop at ed16ca3 (14 Oct 2026).** Two lines followed the old Plus model and are changed: "and so is everything they write" (Plus now starts after two free letters, D-082, `docs/DECISIONS.md` line 522) and "A book you joined as a co-parent does not count as your free book" (there is no free-book rule now; books are free to start, D-083 line 527). How a co-parent's letters count in a shared book, and whether "One membership covers the book" (D-082) means one parent's Plus covers the other's letters, is not settled for version 1.1 (`packages/core/src/plan.ts` lines 9 and 10 still describe the server-era rule). Hand-off to `payments` and `product` before this article is published. The rest of the article is still version 1.1 and unchanged.
 
 **Version 1.1 (founder decision, v1.0 is on-device only).** This whole article describes co-parent sharing, invites, accounts and sync, which move to v1.1 (brief decisions 4 and 5, as amended in PR #33; the v1.0 build shows a "coming soon" screen in PR #54). Do not publish it with the v1.0 help centre. The notes below describe what is built on develop.
 

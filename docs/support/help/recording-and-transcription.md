@@ -46,7 +46,7 @@ Only these small things, and only to help the words read clearly:
 - **Tiny slips of the tongue.** Like "a apple". We fix that one word and nothing around it.
 - **Paragraphs.** A long pause starts a new paragraph.
 
-Each language other than English also has a small spelling and punctuation download. Until it arrives, letters in that language keep your words exactly as heard, with only punctuation tidied.
+Each language other than English also has a small spelling and punctuation download. Until it arrives, letters in that language keep your words exactly as heard, with only punctuation fixed.
 
 Each fix is marked when you read the letter back, and the app says how many there are. Tap a fix to see what you said, then **Put it back** to undo it. To see and keep the letter with no fixes at all, choose **Exactly as said** at the top. You can switch back before you keep it.
 
