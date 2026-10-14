@@ -5,9 +5,9 @@
 | Release | v1.0 gate (passkeys: not in v1.0, see 4) |
 | Priority and rank | P0, rank 10 (05-feature-map.md section 2) |
 | Personas | P1 Evening parent, P2 Co-parent, P3 Expecting parent, P4 Multilingual family |
-| Existing IDs | A-REQ-012 to A-REQ-034, A-NFR-004, A-NFR-008 to A-NFR-013, PRD-REQ-001, PRD-REQ-002, PRD-REQ-022, LEGAL-REQ-001, LEGAL-REQ-006, LEGAL-REQ-008, LEGAL-REQ-009, LEGAL-REQ-014, DATA-REQ-023, DATA-REQ-033, DATA-REQ-044, D-026, D-036, D-038, D-044 (overridden by B3), DR-12, DR-13, BL-050, BL-051, BL-052, BL-053, BL-054, BL-170, BL-171, BL-172, BL-248, BL-302 |
+| Existing IDs | A-REQ-012 to A-REQ-034, A-NFR-004, A-NFR-008 to A-NFR-013, PRD-REQ-001, PRD-REQ-002, PRD-REQ-022, LEGAL-REQ-001, LEGAL-REQ-006, LEGAL-REQ-008, LEGAL-REQ-009, LEGAL-REQ-014, LEGAL-REQ-024, LEGAL-REQ-026, DATA-REQ-023, DATA-REQ-033, DATA-REQ-044, D-026, D-036, D-038, D-044 (overridden by B3), DR-12, DR-13, R-17, BL-050, BL-051, BL-052, BL-053, BL-054, BL-170, BL-171, BL-172, BL-248, BL-302, BL-322, BL-330, BL-331, BL-332, BL-347, BL-349 |
 | Depends on | F01 (gate state, link parser), F03 (local children and signature), F04 (first saved letter), F16 (sync starts after this feature), F17 (Settings > Account, Privacy, deletion), F21 (`/auth/confirm` page, AASA). Domain BL-100 |
-| Status | Draft V2, 3 Oct 2026 |
+| Status | Draft V2, 3 Oct 2026. M14 pass and security reconciliation 13 Oct 2026 after critique round 1 (R1 PL-04, PL-19, PL-20; R3 DX-07, DX-15; R4 PT-12, PT-19, PT-20, PT-32; R5 EQ-19): sign-in is v1.0 and gates every server feature; the BL-330, BL-347, BL-322, BL-331 fixes are requirements here |
 
 ## 1. Why
 
@@ -18,6 +18,8 @@
 - [D] Sign-in at v1.0: Apple, Google and email link; no passwords; passkeys can be added after sign-in (B3, brief item 4). This overrides D-044's move of Google to v1.1.
 - [F] FirstChapter v1.0.6 had to fix Hide My Email compatibility and offline sign-in persistence (R1-S4). Both are tested from day one here.
 - [F] Supabase passkeys are labelled experimental in docs dated 2 Oct 2026, and a user must be signed in before registering one (R4 section 7, R4-S59).
+- [D] **Server features are on for v1.0** (M14, founder, 13 Oct 2026). Sign-in is the door to sync, co-parent sharing, recording backup and the subscription status report, so every M14 feature inherits this spec's security. M14 also says the security fixes BL-330, BL-347, BL-322 and BL-331 gate any outside tester (`_AUTHORING.md` 3b).
+- [F] What the code does on 13 Oct (security review `docs/reviews/2026-10-04-security-privacy.md`): Apple, Google and email sign-in exist in `apps/mobile/src/lib/auth/` and `app/(auth)/sign-in/`. **H1 (BL-347) is open**: `verify.tsx` verifies any opened link, `session-provider.tsx` accepts it whatever the state, the Supabase client uses the implicit flow (no `flowType: 'pkce'` in `lib/supabase/client.ts`), and local letters are claimed on `SIGNED_IN` before consent, so one tapped link from an attacker uploads a family's letters to the attacker's account. **H3 (BL-330) is open**: `lib/auth/apple.ts` never sends the authorization code, so deletion cannot revoke Apple tokens. **H2 (BL-322, BL-331)**: the server half (two-parent cap, stale invites) is in the pending `20261005000000`; the app still joins without a tap. **M4**: email codes are 6 digits valid 1 hour (`lib/auth/email.ts` reads `EXPO_PUBLIC_EMAIL_OTP_LENGTH`, default 6). Passkey code exists in `lib/auth/passkey.ts` behind `EXPO_PUBLIC_PASSKEYS`, which no `eas.json` profile sets.
 
 ## 2. Who
 
@@ -49,17 +51,19 @@ Outcome: after the first saved letter, a parent can keep the book on any phone i
 - Terms line with the 18+ confirmation; `terms` acceptance with `age_attested: true`.
 - Sensitive-data consent screen after a new account and before the first sync.
 - Re-ownership of local data in one transaction; merge prompt when the account already has books.
-- Sign-out guard; Apple credential revocation check; Apple token capture for deletion-time revocation.
+- Sign-out guard; Apple credential revocation check; Apple token capture for deletion-time revocation (BL-330).
+- The H1 fix (BL-347): PKCE for email links; a link is accepted only while this phone has a pending request; local letters move to an account only after consent, behind a screen with the masked account email and a tap; a link is refused while another account is signed in.
+- New-device sign-in email, P0 (R4 PT-19): sent on every sign-in from a device the account has not used, before any recording key can be released (F08 6.5 C).
+- 8-digit email codes valid 15 minutes [R] (security review M4; Q2).
+- The outside-sign-in gate (R-17): no one outside the founding family signs in until the gate in F02-REQ-024 passes.
 - Scanner-safe `/auth/confirm` page, universal links on earlyletters.com, rate limits, specific errors, offline session restore.
 - "Ways to sign in" in Settings: add a second method while signed in (A-REQ-019, raised to v1.0 P1 with Google, Rev B3).
 - Sign out other devices (TDD 04 3.2.3).
 
-**Passkeys: what "experimental" means for v1.0.** Supabase labels passkeys experimental (API may change), the changelog calls it Beta, registration needs a signed-in user, and changing the relying party id invalidates every passkey (R4-S59). No React Native passkey bridge was checked (R4 section 11). So v1.0 ships no passkey UI and no passkey code path in the release build. We fix the relying party id now as `earlyletters.com` so a later rollout never invalidates anything, and we re-check Supabase status at each milestone; passkeys ship when Supabase marks them generally available and a maintained, permissively licensed bridge exists (F02-REQ-016). App Review 2.3.1 forbids hidden features, so a dormant flag is not an option (R4 section 5).
+**Passkeys: what "experimental" means for v1.0.** Supabase labels passkeys experimental (API may change), the changelog calls it Beta, registration needs a signed-in user, and changing the relying party id invalidates every passkey (R4-S59). No React Native passkey bridge was checked (R4 section 11). So v1.0 ships no passkey UI, and the release profiles never set `EXPO_PUBLIC_PASSKEYS` (the module in `lib/auth/passkey.ts` stays unreachable). We fix the relying party id now as `earlyletters.com` so a later rollout never invalidates anything, and we re-check Supabase status at each milestone; passkeys ship when Supabase marks them generally available and a maintained, permissively licensed bridge exists (F02-REQ-016). App Review 2.3.1 forbids hidden features, so a dormant flag is not an option (R4 section 5).
 
 **Later**
 - Passkeys (above). Apple on Android, Google Credential Manager (A-REQ-020, with Android, F36).
-- Sign-in alert email on a new device (`new-device-sign-in`, email catalog section 4; P1).
-- 8-digit codes if abuse detection fires (TDD 04 OQ-S1).
 
 **Never**
 - Passwords or a forgot-password flow (B3).
@@ -89,10 +93,25 @@ Outcome: after the first saved letter, a parent can keep the book on any phone i
 | Welcome > Sign in (F01) | Sign in | `sign_in` |
 | I was invited, not signed in (F11) | Sign in to join | `invite` |
 | Once after the third saved letter, if Later (A F3.3) | Keep the book | `third_letter` |
-| A Plus feature tapped while signed out (PRD-REQ-022, D-036) | Keep the book, then Plus | n/a |
+| The Keep gate reached while signed out (F14) | No Keep the book sheet: the Plus sheet shows directly and purchase needs no account with us (F14). Never a Plus sheet inside Keep the book (D-036). Whether the gate should route through Keep the book first so billing notices can reach the buyer is R4 PT-08 (a), for counsel | n/a |
 | Settings > Account (F17) | Sign in | `settings` |
 
-Re-offer rule: Keep the book shows at most once per calendar day, never in the same session as another ask, never during recording, review or export (PRD-REQ-001). Ask order at launch is Keep the book, then the reminder prime on a later session, then analytics consent (DR-12 default A). If DR-12 B wins after cohorts, only the order table in `nextAsk` changes.
+Re-offer rule: Keep the book shows at most once per calendar day, never in the same session as another ask, never during recording, review or export (PRD-REQ-001). Ask order at launch is Keep the book, then the reminder prime on a later session, then analytics consent (DR-12 default A; R1 PL-19 recommends B, the founder decides in `09`). If DR-12 B wins, only the order table in `nextAsk` changes.
+
+**One definition of a session, and every ask in the first 14 days** (R5 EQ-19, R3 DX-15). F02 owns this table; other specs cite it. The sequencer exists (`apps/mobile/src/lib/analytics/ask-sequencer.logic.ts`); the table is what it must implement.
+- A session starts at a cold start, or at a return to the foreground after 30 minutes or more away [R].
+- At most one ask per session and one per calendar day, never during recording, review or export.
+
+| Ask | Earliest | Owner |
+|---|---|---|
+| 18+ gate | First launch | F01 |
+| Microphone primer and OS prompt | First tap on Speak | F04 |
+| Keep the book (sign-in with Terms) | After the first saved letter | F02 |
+| Sensitive-data consent | Right after a new sign-in, as the same moment's second screen; counsel decides whether it can sit on the sign-in sheet (DX-15) | F02, F17 |
+| Recording backup | The next session after sign-in and consent | F08 |
+| Reminder prime and OS prompt | The next session after the one that asked anything else | F13 |
+| Analytics consent | After the first letter, in a session with no other ask | F18 |
+| Keep gate (Plus) | Not an ask: it appears only at the Keep step after the free letters (F14) | F14 |
 
 ### 6.2 Happy path: Apple, after the first letter
 
@@ -101,9 +120,9 @@ Re-offer rule: Keep the book shows at most once per calendar day, never in the s
 | 1 | Saves the first letter | Save animation; then the sheet at medium detent: `auth.sheet.title`, `auth.sheet.body`, the child-data notice (K-16), the Terms line `auth.legal.accept` (in-app-disclosures 3a: "By continuing, you confirm you are 18 or older and agree to the Terms and Privacy Policy."), buttons Apple, Google, Email (equal size, Apple not smaller than Google, A-REQ-016), Later | `nextAsk()` returns `keep_the_book`; letter is already committed locally (F04) |
 | 2 | Taps Sign in with Apple | System Apple sheet | 32 random bytes as raw nonce; SHA-256 passed to Apple (TDD 04 3.1.1) |
 | 3 | Confirms with Face ID | Spinner on the button, sheet stays | `signInWithIdToken({ provider: 'apple', token, nonce })`; session to Keychain (`AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`); full name saved once to `profiles.display_name`; authorization code posted in the body to `apple-token` (new Edge Function, BL-171) which stores the refresh token encrypted for deletion-time revocation |
-| 4 | Nothing | Same sheet, step text "Setting up your book" (new) | `record_policy_act('terms', <offered version>, 'accept', 'signin_sheet', ..., context {auth: 'apple', age_attested: true, age_signal: 'declared_range' or 'none'})` plus `privacy` acknowledge; any locally queued consent acts flush after it (POLICY_VERSIONING 7.3; TDD 01 3.11.4) |
-| 5 | Reads the consent screen | `sensitiveConsent.title`, `.body`, `.use`, `.changeLater`, `.declineHelp`; buttons `.agreeButton` "Agree and sync", `.declineButton` "Keep on this phone"; nothing preselected | New accounts only. Agree records `sensitive-data` accept (`consent_sheet`); decline records decline (PRD-REQ-002, LEGAL-REQ-006) |
-| 6 | Taps Agree and sync | Book, unchanged, with a quiet "Syncing" row in Settings only | Re-ownership transaction (6.4), then `create_first_run_children` for the first-run batch (or `create_child` per book), then sync starts (F16). The server refuses content writes until Terms with `age_attested` and sensitive-data consent exist (`require_content_consent()`, migration `20261003000000_security_and_family.sql`, pending apply) |
+| 4 | Nothing | Same sheet, step text "Setting up your book" (new) | `record_policy_act('terms', <offered version>, 'accept', 'signin_sheet', ..., context {auth: 'apple', age_attested: true})` plus `privacy` acknowledge; any locally queued consent acts flush after it (POLICY_VERSIONING 7.3; TDD 01 3.11.4). No `age_signal` is sent until counsel answers Q6, because F01-REQ-001 keeps age data off the server (R4 PT-12). The phone posts the authorization code to `apple-token` (BL-330); the account's new-device email goes out (F02-REQ-017) |
+| 5 | Reads the consent screen | `sensitiveConsent.title`, `.body`, `.use`, `.changeLater`, `.declineHelp`; buttons `.agreeButton` "Agree and sync", `.declineButton` "Keep on this phone"; nothing preselected | Shown to every account whose sensitive-data consent is missing, new or existing (R4 PT-20). Agree records `sensitive-data` accept (`consent_sheet`); decline records decline (PRD-REQ-002, LEGAL-REQ-006) |
+| 6 | Taps Agree and sync, then confirms the account | If this phone has local letters: one screen "Your letters on this phone will be kept in the account a***@example.com" (masked email; new `auth.claim.*`) and a Keep them here button. Then the Book, unchanged, with a quiet "Syncing" row in Settings only | Re-ownership runs only after this tap, never on `SIGNED_IN` (BL-347). Then `create_first_run_children` (or `create_child` per book), then sync starts (F16). The server refuses content writes until Terms with `age_attested` and sensitive-data consent exist (`require_content_consent()`, `20261003000000_security_and_family.sql`, pending apply) |
 
 Google is identical with the native Google ID token (`@react-native-google-signin/google-signin` per Supabase's guide, nonce on: hashed nonce to Google, raw nonce to Supabase, R4-S58).
 
@@ -112,12 +131,12 @@ Google is identical with the native Google ID token (`@react-native-google-signi
 | # | Person does | App shows | System does |
 |---|---|---|---|
 | 1 | Taps Email | Labelled field, email keyboard, autofill (A F4) | Nothing sent yet |
-| 2 | Types the address, taps Send | "Check your email" screen: `auth.email.sent` with the address, 6-digit code field (autofill, paste, auto-submit at 6 digits), Open email app, Send a new email (enabled after 60 s), Use a different email | `signInWithOtp({ email, options: { shouldCreateUser: true } })` from every entry point, so the response never reveals whether the account exists (email SECURITY.md 3.6, TDD 04 3.1.3). Email `sign-in-link` (copy on `origin/feat/email-brand-library`, `packages/content/src/emails/auth.en.ts`) carries the link `https://earlyletters.com/auth/confirm#token_hash=...&type=email` and the code |
-| 3a | Taps the link on the same iPhone | App opens, then step 4 of 6.2 | Universal link; `verifyOtp({ token_hash, type: 'email' })` |
+| 2 | Types the address, taps Send | "Check your email" screen: `auth.email.sent` with the address, 8-digit code field (autofill, paste, auto-submit at 8 digits; the length follows `EXPO_PUBLIC_EMAIL_OTP_LENGTH` and the Supabase setting together), Open email app, Send a new email (enabled after 60 s), Use a different email | `signInWithOtp({ email, options: { shouldCreateUser: true } })` from every entry point, so the response never reveals whether the account exists (email SECURITY.md 3.6, TDD 04 3.1.3). Email `sign-in-link` (copy on `origin/feat/email-brand-library`, `packages/content/src/emails/auth.en.ts`) carries the link `https://earlyletters.com/auth/confirm#token_hash=...&type=email` and the code |
+| 3a | Taps the link on the same iPhone | App opens, then step 4 of 6.2 | Universal link. The app accepts it only while this phone holds a pending request from this install (the request made in step 2) and no other account is signed in; the link carries a PKCE code that only this install can exchange (BL-347). Otherwise it routes to "Type the code from the email" |
 | 3b | Opens the email on a laptop or in an in-app mail browser | `/auth/confirm` page: type the code from the email into the app, an Open the app button (scheme, no token) | The page never calls Supabase on load, on script run or on any button (A-REQ-023; SECURITY.md 3.1) |
 | 3c | Types the code | Auto-submits | `verifyOtp({ email, token, type: 'email' })` |
 
-Words: the product and email say "sign-in link", never "magic link" (email catalog reconciliation note). Email copy status: `sign-in-link`, `verify-email`, `account-create-attempt`, `sign-in-trouble` and `welcome` are drafted on the unmerged branch and marked launch-blocking there; `{expiresIn}` is filled from config.
+Words: the product and email say "sign-in link", never "magic link" (email catalog reconciliation note). The PKCE change needs the email template update in `supabase/templates/magic_link.html` and an ADR (section 11). Email copy status: `sign-in-link`, `verify-email`, `account-create-attempt`, `sign-in-trouble` and `welcome` are drafted on the unmerged branch and marked launch-blocking there; `{expiresIn}` is filled from config.
 
 ### 6.4 Re-ownership and the merge prompt
 
@@ -127,13 +146,13 @@ Words: the product and email say "sign-in link", never "magic link" (email catal
 
 ### 6.5 Returning user on a new phone
 
-Gate (F01), Welcome > Sign in, same method as last time. The install remembers the last method, never the email: "Last time you used {method}." (A-REQ-021). If the account has no books: `auth.noBook` with Try another way and Start a book. Book list and child visible p95 10 s; a year of text p95 30 s on LTE (PRD 7.3). Audio does not restore at v1.0 for anyone (no audio upload, B7; DR-07): the copy says recordings stay on the phone that made them.
+Gate (F01), Welcome > Sign in, same method as last time. The install remembers the last method, never the email: "Last time you used {method}." (A-REQ-021). If the account has no books: `auth.noBook` with Try another way and Start a book. Book list and child visible p95 10 s; a year of text p95 30 s on LTE (PRD 7.3). Recordings come back only for owners who turned on recording backup (D-073, M16): through iCloud Keychain, or through the recovery key with the checks in F08 6.5 C, including a 24-hour hold on a new device unless an enrolled device approves. Owners without backup see each letter's "not on this phone" line and the iPhone's own backup or an export is the way back (F08). The other parent's recordings never come to this phone in v1.0.
 
 ### 6.6 Unhappy paths and edge cases
 
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
-| F02-U01 | Later on the sheet | `auth_deferred` (if consented); nothing uploads | Book; everything local works, including export and Read together within free tries (A-REQ-014) | Re-offer per 6.1 | Automated: a week of use with Later makes zero Supabase requests |
+| F02-U01 | Later on the sheet | `auth_deferred` (if consented); nothing uploads | Book; everything local works, including export and Read together, which is free (M2; A-REQ-014) | Re-offer per 6.1 | Automated: a week of use with Later makes zero Supabase requests |
 | F02-U02 | Offline when the sheet would open | Sheet still opens; provider buttons disabled | `auth.offline` "You're offline. Your letter is saved on this phone. Sign in when you're back online." Later enabled | Buttons enable on reconnect | Airplane test |
 | F02-U03 | Cancels the Apple or Google sheet | No error state (A-REQ-031) | Sheet as before | Try again | Unit |
 | F02-U04 | Apple returns no name on a second sign-in | Expected (Apple sends it once, A F4); keep any stored display name | Nothing | n/a | Unit |
@@ -143,7 +162,7 @@ Gate (F01), Welcome > Sign in, same method as last time. The install remembers t
 | F02-U08 | Email typo | Nothing is created until verified | Code never arrives | Use a different email | Unit |
 | F02-U09 | Link opened in a mail scanner or in-app browser | Page does not verify | `/auth/confirm` text and code instruction | Type the code | Web test: page makes no request to Supabase |
 | F02-U10 | Link expired or already used | `verifyOtp` error `expired` or `used` | `auth.link.expired` with one-tap resend to the same address (A-REQ-024) | Resend | Unit |
-| F02-U11 | Link requested on phone A, tapped on phone B | Token hash is not device-bound | Signs in on B | n/a | Acceptance check: SECURITY.md 3.3 lists this as unverified under PKCE; if it fails, the code path still works |
+| F02-U11 | Link requested on phone A, tapped on phone B; or a link someone else requested | Refused: phone B holds no pending request, and the PKCE code cannot be exchanged there (BL-347) | "Type the code from the email on this phone instead." (new `auth.link.otherDevice`) | Type the code | `[F02-REQ-018]` H1 regression test: the five steps in security review H1 fail on the fixed code |
 | F02-U12 | Resend tapped before 60 s | Button disabled | `auth.email.resendWait` "You can send another in a minute." (no ticking numbers) | Wait | Unit |
 | F02-U13 | Sixth email to one address in an hour | Blocked client-side and by Supabase per-address limit | `auth.email.limit` | Try later, or another method | Unit plus staging |
 | F02-U14 | Fifth wrong code in 15 minutes | Client pause 15 minutes (A-REQ-027); server keeps Supabase per-IP limit | `auth.code.pause` | Wait, or Send a new email | Unit |
@@ -159,7 +178,10 @@ Gate (F01), Welcome > Sign in, same method as last time. The install remembers t
 | F02-U24 | Session stored, no network at launch | Lands in the book signed in; refresh on reconnect and foreground (A-REQ-032) | Book | n/a | Airplane test |
 | F02-U25 | Keychain not readable (locked since boot) | Sync waits; recording and reading continue (TDD 04 F-01) | Nothing | Unlock | Device test |
 | F02-U26 | Double tap on a provider button | Second press ignored while a request is pending | One sheet | n/a | Component test |
-| F02-U27 | Signed into another account on this phone when a link for a different address arrives | Confirm switch; unsynced letters block it (A F5.5) | "You're signed in as another account" (new) with Keep current | Finish sync, then switch | Integration |
+| F02-U27 | Signed into another account on this phone when a link for a different address arrives | Refused; nothing changes (BL-347) | "You're signed in as another account. Sign out first to use this link." (new) | Sign out, then use the code | `[F02-REQ-020]` integration |
+| F02-U33 | Sign-in from a device this account has not used | `new-device-sign-in` email to the account address, with a "Not you? Secure your account" link that signs out every session | Nothing on the phone | Owner taps the link | `[F02-REQ-017]` |
+| F02-U34 | An existing account with Terms but no sensitive-data consent signs in on a phone with local letters | Consent screen shows (PT-20); claim screen with the masked email; nothing uploads until both taps | Consent, then claim | Decline keeps everything local | `[F02-REQ-019]` |
+| F02-U35 | The Keep gate reached while signed out | Plus sheet directly, no account needed (F14) | F14 sheet | n/a | F14 tests |
 | F02-U28 | Policy major version effective while signed in | Re-consent sheet before sync resumes; record, read and export unaffected (LEGAL-REQ-009) | Change summary, Agree, Not now | Not now pauses sync only | Automated |
 | F02-U29 | VoiceOver | Focus to the sheet title on open; errors announced; code field announces digits entered | Spoken order matches visual | n/a | Script V-F02 |
 | F02-U30 | AX5 on SE 3 | Notice and Terms line fully visible above the buttons without scrolling past them (LEGAL-REQ-001); buttons stack; sheet expands to large detent | Full text | n/a | Component test at AX5 |
@@ -176,7 +198,7 @@ Gate (F01), Welcome > Sign in, same method as last time. The install remembers t
 | A-REQ-015 | P0 | Re-ownership in one transaction | Given local data and a successful sign-in, Then every local row carries the new user id before any sync request; Given a forced failure, Then zero rows changed and Retry shows | A-REQ-015, DATA-REQ-044 |
 | A-REQ-016 | P0 | Sign in with Apple | Given iOS, Then native sign-in runs with a hashed nonce, the first-sign-in name is saved, and the button is no smaller than Google's | A-REQ-016 |
 | A-REQ-017 Rev (B3) | P0 | Google at v1.0 | Given iOS, When Google is tapped, Then a native ID token with nonce is exchanged through `signInWithIdToken` | B3, R4-S58 |
-| A-REQ-018 Rev (DR-13) | P0 | Email link and 6-digit code in one email | Given an email submitted, Then one email arrives with a link and a code, each single use, valid for the configured expiry (1 hour today, A-REQ-018; see Q2); using either signs in | DR-13 A |
+| A-REQ-018 Rev (DR-13, M4 review) | P0 | Email link and 8-digit code in one email, valid 15 minutes [R] | Given an email submitted, Then one email arrives with a PKCE link and an 8-digit code, each single use, valid 15 minutes; the code signs in on any phone, the link only on the phone that asked | DR-13 A; security review M4; Q2 |
 | A-REQ-019 Rev (B3) | P1 | Ways to sign in | Given a signed-in user, Then they can add Apple, Google or email, and remove one while two remain; each change writes a `security_events` row | A-REQ-019, TDD 04 3.1.5 |
 | A-REQ-021 | P1 | Last method hint | Given a prior sign-in on this install, Then the sheet shows the method name and no email is stored | A-REQ-021 |
 | A-REQ-022 | P0 | Universal links on earlyletters.com | Given the app installed, When `/auth/confirm` or `/j` opens from Mail, Gmail, Outlook or Messages, Then the app opens the right flow; the AASA file lists only those paths | A-REQ-022, B11 |
@@ -190,7 +212,7 @@ Gate (F01), Welcome > Sign in, same method as last time. The install remembers t
 | A-REQ-033 | P0 | Apple revocation | Given a revoked credential at launch, Then sign-out happens only after unsynced letters sync | A-REQ-033 |
 | A-REQ-034 | P0 | Terms line and acceptance row | Given a new account, Then exactly one `terms` accept row with `method='signin_sheet'`, `context.auth` and `context.age_attested = true` exists before any other row of theirs syncs | A-REQ-034, LEGAL-REQ-001 |
 | PRD-REQ-002 | P0 | Account creation sequence | Given a new account, Then the order is provider sign-in with Terms, then sensitive-data consent, then sync; each step records its own row; declining keeps all content local | PRD-REQ-002, LEGAL-REQ-006 |
-| PRD-REQ-001 Rev (DR-12) | P0 | One ask per session, Keep the book first | Given a session after the first letter, Then at most one of Keep the book, reminder prime or analytics consent shows, in that order across sessions | PRD-REQ-001, DR-12 A |
+| PRD-REQ-001 Rev (DR-12) | P0 | One ask per session and per day, per the 6.1 session definition and ask table; this row is the one home of the rule (R5 EQ-05) | Given a cold start, Then a new session begins; given a return after 29 minutes, Then the same session; given any session, Then at most one row of the 6.1 table shows, and at most one per calendar day | PRD-REQ-001, DR-12 A |
 | F02-REQ-001 | P0 | Sign-out never discards unsynced letters | Given 3 unsynced letters and Sign out, Then the session stays until the queue is empty, and the letters exist on the server afterwards | A F6.4 |
 | F02-REQ-002 | P0 | Merge prompt per local child | Given an account with one book and a phone with one local book, When sign-in completes, Then the prompt offers Add to existing or Keep as new, and no local row is deleted by either choice | A F6.3 |
 | F02-REQ-003 | P0 | Tokens only in Keychain-backed storage | Given any session or invite token, Then it is never in AsyncStorage, the settings table, logs, route params or Sentry | A-NFR-008, A-NFR-012 |
@@ -199,13 +221,21 @@ Gate (F01), Welcome > Sign in, same method as last time. The install remembers t
 | F02-REQ-006 | P0 | Relay addresses receive auth mail | Given a Hide My Email address, Then the sign-in email arrives (domain, return path and sender registered with Apple) | Email CATALOG 11 |
 | F02-REQ-007 | P0 | Account deleted elsewhere | Given an auth failure with the deletion marker, Then the app offers one export, then wipes database, audio, Keychain and analytics id | DATA-REQ-023 |
 | F02-REQ-008 | P0 | Sign out other devices | Given Settings > Account, Then "Sign out other devices" ends other sessions at their next refresh | TDD 04 3.2.3 |
-| F02-REQ-009 | P0 | No Plus sheet in or before Keep the book | Given a signed-out Plus tap, Then Keep the book shows first and no purchase UI is on it | D-036, PRD-REQ-022 |
+| F02-REQ-009 Rev (M1) | P0 | No Plus sheet or purchase UI inside the Keep the book sheet | Given the Keep the book sheet, Then no price, product or purchase control renders; given the Keep gate signed out, Then F14's sheet shows without Keep the book (unless counsel answers PT-08 (a) otherwise) | D-036, M1 |
 | F02-REQ-010 | P0 | Server refuses content before consent | Given an account with Terms but no sensitive-data consent, When the client writes an entry, Then the server raises `SCCON` and the client treats it as paused | LEGAL-REQ-006, migration `20261003000000` |
 | F02-REQ-011 | P0 | Tokens never travel in the custom scheme | Given the `/auth/confirm` page, Then its Open the app button carries no token; the app accepts tokens only from `https://earlyletters.com` with a fragment | TDD 04 3.1.6, SECURITY.md 3.2 |
 | F02-REQ-012 | P0 | Redirect allowlist | Given Supabase settings, Then only `https://earlyletters.com/**` and the brand scheme are allowed redirects | A-NFR-010 |
 | F02-REQ-013 | P1 | Re-consent on a major Terms change | Given a major `terms` version effective, Then the sheet appears before sync resumes and record, read and export work whatever the answer | LEGAL-REQ-009 |
 | F02-REQ-014 | P0 | Consent acts before sign-in flush after Terms | Given an analytics answer recorded before sign-in, Then it uploads through `record_policy_act` after the `terms` row with its device time | POLICY_VERSIONING 7.2 note, TDD 01 3.11.4 |
 | F02-REQ-015 | P0 | Auth reliability | Auth success excluding cancels 97% or more weekly per method; alert below 93% | A-NFR-013 |
+| F02-REQ-017 | P0 | New-device sign-in email | Given a sign-in from a device id the account has not used, Then within 2 minutes the account address receives `new-device-sign-in` with no content and a link that signs out every session; F08 escrow does not release a key to that device before the email is sent | R4 PT-19; TDD 04 3.1.4 |
+| F02-REQ-018 | P0 | An opened email link is accepted only while this install has a pending request, and only through PKCE | Given a link requested on another phone or by another person, Then no session is created and the app routes to the code screen; the H1 steps 1 to 5 fail as a regression test | BL-347; security review H1 |
+| F02-REQ-019 | P0 | Local letters move to an account only after consent and a tap on a screen that shows the masked account email | Given `SIGNED_IN`, Then no re-ownership has run; given consent and the tap, Then re-ownership runs once; given an existing account without sensitive-data consent, Then the consent screen shows first | BL-347; R4 PT-20 |
+| F02-REQ-020 | P0 | A link is refused while another account is signed in on this phone | Given account A signed in and a link for B, Then A stays signed in and nothing changes | BL-347 |
+| F02-REQ-021 | P0 | Joining by invite asks first and never switches the open book by itself | As F11-REQ-006 and BL-322: `peek_invite` shows the child's first name and the inviter's signature, and a tap is needed | BL-322; security review H2 |
+| F02-REQ-022 | P0 | Apple refresh token captured at sign-in | As F02-REQ-004: the app posts the authorization code to `apple-token` once after native sign-in; Deno tests with fake keys | BL-330; security review H3 |
+| F02-REQ-023 | P0 | Forced re-authentication epoch is honoured | Given `forceReauthEpoch` raised in the signed remote config, Then each phone signs out locally once per epoch after its outbox drains (F19-REQ-011) | Security review L3; LEGAL-REQ-040 |
+| F02-REQ-024 | P0 | Outside-sign-in gate (R-17) | Given the release profile with server features on, Then the build goes to anyone outside the founding family only when BL-330, BL-347, BL-322, BL-331, BL-332 and BL-349 have merged, the pending migrations are applied to staging and production, F11-REQ-025 is green, and `/terms`, `/privacy`, `/health-privacy` are live | M14; 09 R-17; BACKLOG gate row 6; R4 PT-20 |
 | F02-REQ-016 | P2 | Passkeys after sign-in, when GA | Given Supabase passkeys marked generally available and a maintained MIT, Apache-2.0, BSD or ISC bridge, Then "Add a passkey" appears in Ways to sign in with relying party id `earlyletters.com` | B3, R4-S59 |
 
 ## 8. Data, privacy and security
@@ -217,7 +247,8 @@ Gate (F01), Welcome > Sign in, same method as last time. The install remembers t
 | Session and refresh tokens | L4 | Keychain (`THIS_DEVICE_ONLY`) | App | Sign-out, deletion, revocation | In iCloud backup, logs |
 | Apple refresh token | L4 | `apple_tokens` (new), encrypted, service role only | `apple-token` function | Deleted after revocation | Returned to the app |
 | Last method used | L2 | Device settings | App | Install | Email itself |
-| `policy_acceptances` rows | L3 | Postgres, append-only | User (own); service role | Pseudonymised 3 years after the account ends (POLICY_VERSIONING 7.1, counsel) | IP address, user agent |
+| `policy_acceptances` rows | L3 | Postgres, append-only | User (own); service role | Kept after the account ends, linked or pseudonymised, for the period counsel sets (POLICY_VERSIONING 7.1; R4 PT-09; F17 section 8.4) | IP address, user agent, age signal (until counsel answers Q6) |
+| Device ids seen per account (for F02-REQ-017) | L3 | Postgres (new; F08 `backup_devices` can serve both) | Service role | Account deletion | Device model or name |
 | Sign-in link token hash and code | L4 | Supabase; email; memory on device | Supabase | Single use; expiry | In URLs as query strings, logs |
 
 `ThisDeviceOnly` means a restored iCloud backup never carries a live session, so every new phone sees the Terms line again (TDD 04 3.2.1). Counsel confirms whether Washington's MHMDA exemption removes the need for the separate consent there; Connecticut still needs it (LEGAL-REQ-006 note). Not legal advice.
@@ -252,7 +283,7 @@ Events exist in `packages/analytics/src/catalog.ts` and fire only after analytic
 
 ## 11. How we build it (with the architect)
 
-**What exists (verified 3 Oct).** No Supabase client, secure store, Apple or Google library is in `apps/mobile/package.json`; `currentUserId()` in `apps/mobile/src/lib/store.ts` returns null; Settings copy says sign-in "arrives in a coming update" (`settingsMore.signedOutHelp`, to be removed in the release that ships sign-in). Server side: `record_policy_act`, `policy_actions_needed`, `my_sync_gate`, `require_content_consent`, `create_child(p_id, ...)`, `create_first_run_children` exist in migrations `20261002020000`, `20261003000000` and `20261003010000`; only the first two migrations are applied (`.github/migrations-applied.txt`). `record_policy_act` allowlists context keys including `auth`, `age_attested`, `age_signal`.
+**What exists (checked 13 Oct).** `apps/mobile/src/lib/auth/` (`apple.ts`, `google.ts`, `email.ts`, `pending.ts`, `consent.ts`, `machine.logic.ts`, `session-provider.tsx`, `passkey.ts` behind `EXPO_PUBLIC_PASSKEYS`) and `apps/mobile/src/app/(auth)/sign-in/` (`index`, `email`, `code`, `verify`, `consent`); the Supabase client in `lib/supabase/client.ts` (implicit flow); sessions in Keychain through `lib/supabase/secure-storage.ts`. All of it runs only with `EXPO_PUBLIC_SERVER_FEATURES=on`, which no `eas.json` profile sets on 13 Oct. Open: BL-330, BL-347, BL-322 app part, BL-331 and BL-332 apply, the new-device email, `forceReauthEpoch` consumer (security review L3). (On 3 Oct none of this existed.) Server side: `record_policy_act`, `policy_actions_needed`, `my_sync_gate`, `require_content_consent`, `create_child(p_id, ...)`, `create_first_run_children` exist in migrations `20261002020000`, `20261003000000` and `20261003010000`; only the first two migrations are applied (`.github/migrations-applied.txt`). `record_policy_act` allowlists context keys including `auth`, `age_attested`, `age_signal`.
 
 **Libraries (standard over custom; verify licence, last release within 12 months and SDK 57 support before install, brief rule).**
 - `@supabase/supabase-js` for Auth (`signInWithIdToken`, `signInWithOtp`, `verifyOtp`, `linkIdentity`).
@@ -260,11 +291,18 @@ Events exist in `packages/analytics/src/catalog.ts` and fire only after analytic
 - Sign in with Apple: `expo-apple-authentication` is the expected Expo package [A]; not yet checked in this repo.
 - Google: `@react-native-google-signin/google-signin` (named in Supabase's guide, R4-S58).
 
-**Components.** `src/lib/auth/` (new): `session.ts`, `apple.ts`, `google.ts`, `email.ts`, `reown.ts`, `acts.ts` (queued consent acts). Sheets through Expo Router `formSheet` (ADR 0101 rule 4): `keep-the-book`, `consent/sensitive`. `nextAsk(state)` in `packages/core` (BL-023). Edge Function `apple-token` (new). Web page `/auth/confirm` in the website thread (F21).
+**Components.** `src/lib/auth/` (exists; S01 owns): add the pending-request check and PKCE exchange (BL-347), the claim screen gate, the `apple-token` call (BL-330) and the epoch consumer. Sheets through Expo Router `formSheet` (ADR 0101 rule 4): `keep-the-book`, `consent/sensitive`. `nextAsk(state)` in `packages/core` (BL-023). Edge Function `apple-token` (new). Web page `/auth/confirm` in the website thread (F21).
 
-**Sequencing.** BL-100 domain and BL-053 provider setup (human) gate everything; then secure store (BL-170) and auth config as code (BL-172), then Apple (BL-171), sheet (BL-050), email (BL-051), consent (BL-054), re-ownership (BL-052), Google (BL-302, now v1.0).
+**Sequencing.** Order only; dates in `08-delivery.md` section 5. The email-links ADR, then BL-347 and BL-330 (S01), BL-331 and BL-332 applied (S02), BL-322 (S04), BL-349 (S20), then the new-device email, then the switch flip for anyone outside the founding family (F02-REQ-024).
 
-**Riskiest unknown and spike.** Whether Supabase's Apple sign-in yields a refresh token for revocation, or the `apple-token` exchange is needed (BL-171 spike), plus the cross-device link check (SECURITY.md acceptance check). Two days in week 4 on staging.
+**ADRs required before build** (numbers per `08-delivery.md` section 8.1; matches R2's list item 6)
+
+| ADR | Content | Blocks |
+|---|---|---|
+| Email links: PKCE and when a link is accepted | Flow type, template change, pending-request rule, refusal while another account is signed in, claim only after consent and a tap, code length and life | WP-F02-12; escrow deploy (F08-REQ-034) |
+| Account deletion across systems (F17 owns) | Apple token revoke step and device wipe | WP-F02-03 |
+
+**Riskiest unknown and spike.** PKCE email links from React Native with Supabase: that the code verifier survives an app kill between request and tap, and that the template change reaches every email client (WP-F02-12). BL-330 settled the Apple question: the `apple-token` exchange is needed.
 
 ## 12. Work packages
 
@@ -272,7 +310,7 @@ Events exist in `packages/analytics/src/catalog.ts` and fire only after analytic
 |---|---|---|---|---|---|
 | WP-F02-01 | Secure session store, sign out, sign out others, offline restore | `apps/mobile/src/lib/secure.ts` (new), `apps/mobile/src/lib/auth/session.ts` (new) | BL-040 (BL-170) | `[F02-REQ-003]`, `[A-REQ-032]`, `[F02-REQ-008]` | agent (mobile engineer, security engineer) |
 | WP-F02-02 | Auth configuration as code: OTP length and expiry, JWT 15 min, SMTP, redirects, manual linking | `docs/security/auth-config.md` (new), Supabase config | BL-053 (BL-172) | `[F02-REQ-012]`, `[A-REQ-026]` checks in staging | agent plus human dashboard |
-| WP-F02-03 | Sign in with Apple and `apple-token` | `apps/mobile/src/lib/auth/apple.ts` (new), `supabase/functions/apple-token/` (new), migration for `apple_tokens` (new) | WP-F02-01, WP-F02-02 (BL-171) | `[A-REQ-016]`, `[F02-REQ-004]`, `[A-REQ-033]` | pair (`approve-migration`) |
+| WP-F02-03 | `apple-token` function and the app call (BL-330) | `apps/mobile/src/lib/auth/apple.ts` (exists), `supabase/functions/apple-token/` (new); `ops.apple_tokens` and `ops_apple_token_put` exist | WP-F02-02 | `[A-REQ-016]`, `[F02-REQ-004]`, `[F02-REQ-022]`, `[A-REQ-033]` | pair. Status 13 Oct: native Apple sign-in built; capture not built |
 | WP-F02-04 | Google sign-in | `apps/mobile/src/lib/auth/google.ts` (new) | WP-F02-01 (BL-302, now v1.0) | `[A-REQ-017]` integration in staging | agent (security engineer) |
 | WP-F02-05 | Keep the book sheet with notice and Terms line; `terms` act with `age_attested` | `apps/mobile/src/app/keep-the-book.tsx` (new), `apps/mobile/src/lib/auth/acts.ts` (new), feature `copy.ts` | WP-F02-03, BL-023 (BL-050) | `[A-REQ-013]`, `[A-REQ-034]`, `[F02-REQ-009]`, `[F02-REQ-014]`; AX5 test | agent (mobile engineer) |
 | WP-F02-06 | Email link and code screens, limits, errors | `apps/mobile/src/lib/auth/email.ts` (new), `apps/mobile/src/app/sign-in-email.tsx` (new) | WP-F02-05 (BL-051) | `[A-REQ-018]`, `[A-REQ-024]`, `[A-REQ-025]`, `[A-REQ-027]`, `[F02-REQ-005]` | agent (mobile engineer) |
@@ -280,18 +318,23 @@ Events exist in `packages/analytics/src/catalog.ts` and fire only after analytic
 | WP-F02-08 | Re-ownership transaction and merge prompt | `apps/mobile/src/lib/auth/reown.ts` (new) | BL-111, BL-113, WP-F02-07 (BL-052) | `[A-REQ-015]` fault injection 100 runs; `[F02-REQ-002]` | agent (mobile engineer) |
 | WP-F02-09 | Sign-out guard and account-deleted wipe | `apps/mobile/src/lib/auth/session.ts` | BL-174 sync client | `[F02-REQ-001]`, `[F02-REQ-007]` | agent (sync owner) |
 | WP-F02-10 | `/auth/confirm` page and AASA paths | Website repo (F21 thread) | BL-100 | `[A-REQ-023]` network capture; `[A-REQ-022]` manual on 4 mail apps | agent in the website thread |
-| WP-F02-11 | Email-code abuse detection job | `supabase/functions/` job (new) | BL-236 (BL-248) | Synthetic 25 failures page once | agent (security engineer) |
+| WP-F02-11 | Email-code abuse detection job | `supabase/functions/` job (new) | BL-236 (BL-248) | Synthetic 25 failures page once | agent (security engineer); stream S01 |
+| WP-F02-12 | H1 fix (BL-347): PKCE, pending-request check, refusal while signed in, claim after consent and tap | `apps/mobile/src/lib/auth/**`, `lib/supabase/client.ts`, `app/(auth)/**`, `supabase/templates/magic_link.html`, `docs/ops/AUTH_SETUP.md` | Email-links ADR | `[F02-REQ-018]`, `[F02-REQ-019]`, `[F02-REQ-020]`; the H1 PoC as a failing-then-passing test | agent, S01, two review verdicts and `approve-migration`. Not built |
+| WP-F02-13 | New-device sign-in email | `supabase/functions/` (new function or a step in an existing one; S07), email template from `feat/email-brand-library` (S16) | WP-F02-12 | `[F02-REQ-017]` | agent, S07 with S16. Not built |
+| WP-F02-14 | 8-digit, 15-minute codes and the session and ask table in the sequencer | Supabase Auth setting (founder), `EXPO_PUBLIC_EMAIL_OTP_LENGTH` in release profiles (S20), `lib/analytics/ask-sequencer.logic.ts` (S18) | Q2 | `[A-REQ-018]`, `[PRD-REQ-001]` | pair. Not built |
+| WP-F02-15 | `forceReauthEpoch` consumer | `apps/mobile/src/lib/auth/` | F19 WP-F19-12 | `[F02-REQ-023]` | agent, S01. Not built |
 
 ## 13. Open questions and assumptions
 
 | Q | Who | By when | What changes |
 |---|---|---|---|
 | Q1. Google at v1.0 (B3) supersedes D-044; DECISIONS.md and PRD 3.0 still list Google as v1.1 | Founder confirms; PM edits D-044 | 16 Oct | Nothing in this spec; BL-302 moves to M5 |
-| Q2. Code and link expiry: 1 hour (A-REQ-018) or 15 minutes (SECURITY.md 3.4 on the email branch, a 4x cut in brute-force odds at no normal-path cost). Spec default: 1 hour until the founder says yes | Founder | 16 Oct (with DR-13) | Supabase OTP expiry, `{expiresIn}` copy |
+| Q2. Code and link expiry and length. Spec default changed [R]: 8 digits, 15 minutes (security review M4; R4 PT-19), because escrow now hangs off the session | Founder | Before WP-F02-14 | Supabase OTP settings, `{expiresIn}` copy |
 | Q3. Keep link plus code (DR-13 A, spec default) | Founder | 16 Oct | Email template, code screen |
 | Q4. Does one Apple Family covering the co-parent (DR-03) interact with separate accounts here? No product change; F14 explains | Founder | 23 Oct | F14 copy |
 | Q5. Should Keep the book become required at the second letter if under 50% have an account by day 7 (A Q2)? | Founder, from C1 data | 4 Dec | A-REQ-014 |
-| Q6. Is `age_signal: declared_range` acceptable evidence in the acceptance context, or should only `none` and `self` be recorded? | Counsel | 20 Nov | Context value |
+| Q6. May we store any age signal on the server (Texas SB 2420 limits age data to compliance use; F01-REQ-001 keeps age data off the server)? Spec default: send none until counsel answers (R4 PT-12) | Counsel | Counsel delta | Context value; DATA_CLASSIFICATION |
+| Q7. Rename the account sheet so "Keep" means only the save step (R1 PL-20), for example "Keep your letters safe on a new phone"? | Founder with S16 | Before WP-F02-05 | `auth.sheet.title` |
 
 | A | Assumption | Validate |
 |---|---|---|
@@ -304,4 +347,6 @@ Events exist in `packages/analytics/src/catalog.ts` and fire only after analytic
 - Repo: `apps/mobile/package.json`, `apps/mobile/src/lib/store.ts`, `packages/content/src/strings.en.ts` (`sensitiveConsent.*`, `settingsMore.*`, `children.*`), `packages/analytics/src/catalog.ts`, `supabase/migrations/20261002020000_data_governance.sql`, `20261003000000_security_and_family.sql`, `20261003010000_children_and_entitlements.sql`, `.github/migrations-applied.txt`.
 - Docs: `docs/prd/A-entry-and-auth.md` (sections 0, 3 F3 to F8, 5, 6, 9, 10), `docs/prd/PRD.md` (PRD-REQ-001, -002, -015, -022; K-07, K-15, K-16; 6.1; 7.2; 7.3), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-001, -006, -008, -009), `docs/legal/POLICY_VERSIONING.md` (5, 6, 7), `docs/legal/in-app-disclosures.md` (3a), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ-023, -044), `docs/DECISIONS.md` (D-026, D-036, D-038, D-044), `docs/tdd/04-security-identity.md` (3.1 to 3.2, 3.11, 4, 5), `docs/tdd/01-mobile-client.md` (3.2.5, 3.2.6, 3.11), `docs/BACKLOG.md` (BL-050 to BL-054, BL-170 to BL-172, BL-248, BL-302), `docs/prd/v2/09-decisions-and-risks.md` (DR-12, DR-13).
 - Branch `origin/feat/email-brand-library`: `docs/emails/CATALOG.md` (sections 4, 10, 11, reconciliation), `docs/emails/SECURITY.md` (3.1 to 3.6), `packages/content/src/emails/auth.en.ts`.
+- Reviews and security: `reviews/R1-product-leader.md` PL-04, PL-19, PL-20; `reviews/R3-design-research.md` DX-07, DX-15; `reviews/R4-privacy-trust.md` PT-08, PT-09, PT-12, PT-19, PT-20, PT-32; `reviews/R5-eng-qa.md` EQ-05, EQ-19; `docs/reviews/2026-10-04-security-privacy.md` H1, H2, H3, M4, L3; `docs/BACKLOG.md` BL-322, BL-330 to BL-332, BL-347, BL-349 and gate row 6; `09-decisions-and-risks.md` R-17.
+- Code read 13 Oct 2026: `apps/mobile/src/lib/auth/*`, `apps/mobile/src/app/(auth)/sign-in/*`, `apps/mobile/src/lib/supabase/client.ts`, `apps/mobile/src/lib/analytics/ask-sequencer.logic.ts`, `supabase/migrations/20261004200000_ops_deletion_worker.sql` (`ops.apple_tokens`).
 - Research: R1 F02 (R1-S3, R1-S4, R1-S6, R1-S34, R1-S40, R1-S52, R1-S59, R1-S68); R2 section 0 item 1 and section 6 (R2-S3, R2-S16); R4 sections 5 and 7 (R4-S55, R4-S58, R4-S59).

@@ -3,22 +3,23 @@
 | | |
 |---|---|
 | Release | v1.0 gate |
-| Priority and rank | P0, rank 14 (`05-feature-map.md` section 2) |
+| Priority and rank | P0, rank 15 (`05-feature-map.md` section 2) |
 | Personas | P1 Evening parent, P2 Co-parent, P3 Expecting parent, P4 Multilingual family |
 | Existing IDs | C-REQ-001 to C-REQ-009, C-REQ-011, C-REQ-012 (notification half), C-NFR-001, C-NFR-005, C-NFR-006, C-NFR-009, B-REQ-014, B-REQ-015, PRD-REQ-001, PRD-REQ-005, PRD-REQ-013, LEGAL-REQ-014, LEGAL-REQ-054, D-025, D-035, DR-12, K-02, K-03, K-12; BL-022, BL-023, BL-151, BL-157, BL-196 |
 | Depends on | F02 (ask sequencer, `nextAsk`), F03 (birthday or due date), F09 (month chapters, celebrations in the book), F11 (co-parent letter push, `notify_letters`), F12 (hide, include in reminders), F14 (plan reminder dates for the day rule, 4 reserved slots and the "Your plan" row; F14 owns the plan reminders themselves: local notices on the phone (BL-342) and server emails from the status-only report (D-080)), F17 (Settings shell), F19 (content blocks, remote config) |
-| Status | Draft V2, 3 Oct 2026; plan-reminder rows revised 13 Oct 2026 for M6 (D-080, D-081, BL-342): plan reminders come from on-device notices plus server emails, both owned by F14. Letter reminders stay local only |
+| Status | Draft V2, 3 Oct 2026; plan-reminder rows revised 13 Oct 2026 for M6 (D-080, D-081, BL-342): plan reminders come from on-device notices plus server emails, both owned by F14; letter reminders stay local only. Revised again 13 Oct after critique round 1: M14 makes co-parent letter pushes v1.0 (R1 PL-04); DR-12 default is now B, the reminder prime right after the first letter (R1 PL-19; the Calm evidence relabelled [S], R3 DX-32); "Quiet this book" (R3 DX-05) and the early-birth reminder question (DX-18) feed the planner; Apple's rating request (R1 PL-29); proposed copy for new keys (DX-25); one home per requirement id (R5 EQ-05, EQ-19); local schema numbering (EQ-23); WP status (EQ-25). Dates are milestone ids in `08-delivery.md` section 2.1 |
 
 ## 1. Why
 
 - [S] Prompts and reminders are the most praised feature of prompted baby books: 27 reviews praise them. The top prompt complaint is repetition or prompts that do not fit the child's age: 4 reviews, all at Qeepsake, one saying they may cancel over it [S] R2 section 0 item 4, theme T5.
 - [S] Too many messages across text, email and push draws 5 more complaints, including marketing texts during postpartum and a pregnancy notification that felt wrong [S] R2 theme T6, R2-S14; R1-S56.
-- [F] The strongest published habit pattern is Calm's: a reminder ask right after the first completed session; 40% of those shown set a reminder and they retained 3x better, which Calm judged causal [F] R1-S57.
+- [S] The strongest published habit pattern is Calm's: a reminder ask right after the first completed session; 40% of those shown set a reminder and they retained 3x better. The source is an analytics vendor's case study, and the claim that it is causal is the vendor's [S] R1-S57.
 - [F] Headspace's precommitment (the user picks days and triggers) raised app opens 7.5% with no gain in active days [F] R1-S58. Picking the evening helps a little; it is not the habit.
 - [S] A no-pressure tone and short entries reduce journaling guilt; tracking can make parents stress about consistency [S] R2 theme T27.
 - [F] The shipped selector avoids only the last 10 prompt keys (`AVOID_RECENT = 10` in `packages/core/src/prompts.ts`), so a parent who opens Tonight most evenings sees repeats within weeks. The library has 103 prompts; the 0-3 month opening pool is 18 (10 any-age plus 8) [F] `packages/content/src/prompts.ts`, counted 3 Oct.
 - [F] An expecting parent with no birthday gets newborn prompts: Tonight passes `ageMonths: 0` when there is no birthday (`apps/mobile/src/app/(tabs)/index.tsx`, `selectPrompt` call), so "Describe {child}'s hands" can show during pregnancy. No pregnancy prompt exists in the library (searched 3 Oct).
-- [D] Prompts are server-delivered content blocks with an offline last good copy (B14). Lock-screen names are off by default (D-025). Reminders are a few evenings a week plus the month-age note (K-03). The reminder ask comes after Keep the book, on a later session (DR-12 default A).
+- [D] Prompts are server-delivered content blocks with an offline last good copy (B14). Lock-screen names are off by default (D-025). Reminders are a few evenings a week plus the month-age note (K-03). Co-parent letter pushes ship in v1.0 with sign-in (M14; F11 owns them; this planner gives them its budget and quiet rules).
+- [R] The reminder prime comes right after the first letter, and the account ask comes in session 2 or after letter 2 (DR-12 B, spec default since 13 Oct; R1 PL-19). Habit fade (U7) is a likelier loss than a phone lost in the first days. The C1 cohort test of A against B decides at T34 if cohort sizes allow; F02 owns the ask order and adopts it.
 
 ## 2. Who
 
@@ -26,13 +27,13 @@
 |---|---|---|
 | P1 Evening parent | 20:00 to 21:30, baby just down, phone in one hand | Minutes, sleep. Wants one idea to start with and a nudge that never scolds. Fears a count of what they missed (02 section 6 item 4) |
 | P2 Co-parent | Own cadence, often less frequent (UR S25, S30) | Wants to know when the other parent added a letter, without the letter showing on a lock screen at work |
-| P3 Expecting parent | Third trimester, then a birth that may come early, late or not as planned | Must never get a due-date countdown or a nudge during labour, a NICU stay or a loss (B-REQ-015; R2-S14) |
+| P3 Expecting parent | Third trimester, then a birth that may come early, late or not as planned | Must never get a due-date countdown or a nudge during labour, a NICU stay or a loss (B-REQ-015; R2-S14). Setting a birth date well before the due date must not switch reminders on by itself (R3 DX-18) |
 | P4 Multilingual family | Writes in Hindi, Spanish or another launch language | Prompts and notifications are English at v1.0 (B4 keeps the UI in English); the letter is in their language |
-| Anyone in a hard season | Separation, illness, loss | Needs one tap to make every nudge stop (C-REQ-007, C-REQ-012; UR section 1.1) |
+| Anyone in a hard season | Separation, illness, loss | Needs one tap to make every nudge stop (C-REQ-007, C-REQ-012; UR section 1.1), and for one child, Quiet this book from a notification's long-press (F12-REQ-011) |
 
 ## 3. What we are solving
 
-**Outcome.** A parent gets a fresh, age-right idea to start each letter and a calm nudge at a time they chose, never more often than they asked, never late at night, and never anything that counts, pressures or exposes their child.
+**Outcome.** A parent gets a fresh, age-right idea to start each letter and a nudge at a time they chose, never more often than they asked, never late at night, and never anything that counts, pressures or exposes their child.
 
 | Metric | Target | How measured | Consent caveat |
 |---|---|---|---|
@@ -52,13 +53,17 @@
 - Local reminders only, scheduled on the phone with `expo-notifications`: default "A few times a week" (Tuesday and Saturday, 20:30) plus the month-age note per included child; Off, Weekly, Every evening; a time picker from 07:00 to 21:30.
 - Smart quiet, back-off, copy rotation, birthday note replacing that day's reminder, nothing on a plan-notice day.
 - Lock-screen names off by default with a Settings toggle (D-025, C-REQ-009 at v1.0).
-- Primed permission after the first letter, in the F02 ask order (DR-12 A).
+- Primed permission right after the first letter, in the F02 ask order (DR-12 B spec default).
+- Co-parent letter pushes (F11, M14) inside this planner's budget and quiet window.
+- Quiet this book per person (F12-REQ-011); one neutral question when a birth date is entered more than 3 weeks before the due date (F13-REQ-021).
+- Apple's App Store rating request after a good moment (F13-REQ-020, P1): specified now, built first in 1.0.x (`08-delivery.md` section 6.4).
 - Separate switches for Reminders, Letters from your co-parent and Your plan; one tap pauses all reminders.
-- Hidden books and due-date books silence every child-anchored notification.
+- Hidden and quieted books (per person) and due-date books silence every child-anchored notification.
 - The shared device planner that F14 plan reminders on the phone and F11 co-parent pushes respect (one budget, one quiet window, one day rule). F14's emails (D-080) are outside this planner.
 
 **Later**
-- Prompts in the author's language (pack prompt text, B13): v1.1 or with UI localisation (F44). The pack format keeps a prompt slot.
+- Prompts in the author's language (pack prompt text, B13): v1.1 or with UI localisation (F44). The pack format keeps a prompt slot. Until then, language stays out of the lead positioning (04 section 5; R1 PL-31).
+- Corrected-age chapter titles for babies born early: v1.1 decision for F09 (R3 DX-18).
 - Picking which evenings for "A few times a week" (Headspace pattern, R1-S58): P1 at v1.0 if time allows, else v1.1.
 - "On this day" cards (C-REQ-014) and Year One (C-REQ-013): F47, later.
 - Home Screen and Lock Screen widgets as quiet reminders (Dearest pattern, R1-S3; `expo-widgets`, R4-S61): F04 owns the lock-screen widget; no reminder widget at v1.0.
@@ -79,7 +84,7 @@
 | Qeepsake | 2 questions a day (Essential) or 4 (Premium); 1 a week on free Lite [F] R1-S16, R1-S44 | 4.9 (15K) [F] R1-S1 | Repeated questions within short spans; age-inappropriate questions; marketing texts during postpartum [S] R1-S56, R2-S13, R2-S1 | **Avoid** daily volume, repeats and marketing in the same channel [R] |
 | Remento | Weekly prompt by text or email, adjustable [F] R1-S53 | Trustpilot 4.8 (1,738) [F] R1-S15 | Too many reminder emails and texts after sign-up [S] R1-S15 | **Avoid** sign-up bursts and multi-channel nudges [R] |
 | Storyworth | Weekly emailed question [F] R1-S14 | Trustpilot 4.7 (65,094) [F] R1-S54 | Prompts help reluctant, busy authors [S] R1-S54 | **Match** a weekly-or-so rhythm; our default is 2 evenings a week (UR R7) [R] |
-| Calm (quality bar) | Reminder ask after the first session [F] R1-S57 | 40% set one; 3x retention [F] R1-S57 | n/a | **Match** after the first letter, behind Keep the book at launch (DR-12 A), with a cohort test of B [R] |
+| Calm (quality bar) | Reminder ask after the first session [S] R1-S57 (vendor case study) | 40% set one; 3x retention, causal per the vendor [S] R1-S57 | n/a | **Match** right after the first letter (DR-12 B), with a C1 cohort test against A [R] |
 | Headspace (quality bar) | User picks days and triggers [F] R1-S58 | +7.5% opens, no gain in active days [F] R1-S58 | n/a | **Match lightly**: the parent picks the time; evenings picker P1 [R] |
 | Dearest | Home Screen widgets as reminders [F] R1-S3 | n/a | n/a | Later (widgets) [R] |
 | Tinybeans | Pregnancy notifications [S] R2-S14 | n/a | One reviewer said they felt wrong [S] R2-S14 | **Avoid**: due-date silence (F13-REQ-013) [R] |
@@ -92,7 +97,8 @@
 | Entry | Owner | What happens |
 |---|---|---|
 | Tonight "A thought to start with" (`tonight.promptLabel`), "Another thought" (`tonight.newPromptButton`), "Just talk" (`tonight.writeFreelyButton`) | F13 (prompt), F04 (capture) | Shows one prompt; skip shows another; Just talk starts without one |
-| Reminder priming card on Tonight (`onboarding.reminder.*`) | F13, sequenced by F02 `nextAsk` | After the first letter, on a later session than Keep the book |
+| Reminder priming card (`onboarding.reminder.*`) | F13, sequenced by F02 `nextAsk` | Right after the first letter's saved moment (DR-12 B); the account ask follows in session 2 or after letter 2 |
+| Long-press on any F13 notification | F13, F12 | Action "Quiet this book" for the routed child (F12-REQ-011) |
 | Settings > Reminders (`settings.reminders.*`) | F13 inside F17 | Cadence, time, pause all, channels, names in notifications |
 | Settings > Children > {child}'s book: "Include {child} in my reminders", "Pause celebrations for {child}", "Letters from your co-parent" | F12, F11, F13 rules | Per person, per child (PRD-REQ-013) |
 | A reminder tapped | F13 | Opens Tonight for the named child; never opens a live recording (F04-REQ-021) |
@@ -112,16 +118,17 @@
 | 4 | Taps "Another thought" | A different prompt | The skipped key joins the history for 12 months |
 | 5 | Every eligible prompt has been shown in the last 12 months | `tonight.subtitle` ("What do you want {child} to know about today?") and no prompt label | `selectPrompt` returns none; `prompt_shown{exhausted: true}` after consent |
 
-#### B. Reminder set-up after the first letter (DR-12 A, PRD-REQ-001, K-02)
+#### B. Reminder set-up after the first letter (DR-12 B, PRD-REQ-001 in F02, K-02)
 
 | # | Person does | App shows (copy key) | System does |
 |---|---|---|---|
 | 1 | Saves the first letter | The first-letter moment (F09) | No OS notification prompt anywhere before this (C-REQ-001) |
-| 2 | Answers Keep the book (sign in or Later) | F02 sheet | `nextAsk` records the answer |
-| 3 | Opens Tonight in a later session | Priming card: `onboarding.reminder.title`, `.body`, `.yesEveningsButton`, `.pickTimeButton`, `.noneOption` | `nextAsk` returns `reminder_prime`; `reminder_prime_shown{source: tonight}` |
+| 2 | Closes the first-letter moment | Priming card: `onboarding.reminder.title`, `.body`, `.yesEveningsButton`, `.pickTimeButton`, `.noneOption` | `nextAsk` returns `reminder_prime` as the first ask (DR-12 B); `reminder_prime_shown{source: first_letter}` (new enum value) |
+| 3 | (Session 2 or after letter 2) | The account sheet (F02) | `nextAsk` returns the account ask; one ask per session (F02) |
 | 4a | Taps "Yes, evenings" | iOS permission sheet | `requestPermissionsAsync` (expo-notifications, verified in WP-F13-08); on grant, schedule the default |
 | 4b | Taps "Pick a time" | Time picker 07:00 to 21:30 in 15-minute steps, default 20:30 (`onboarding.reminder.timeLabel`, `.cta`) | Then the iOS sheet |
 | 4c | Taps "No reminders" | `onboarding.reminder.noneHelp` | No OS prompt. One more prime is allowed after the first month chapter completes, never more than 2 in total (C F1) |
+| 4d | (Birth date entered more than 3 weeks before the due date) | Once, instead of the default schedule: "Would you like reminders now, or later on?" with Later preselected (`reminders.earlyBirth.*`, new) | Later keeps reminders and month notes off for that child until the parent turns them on; no copy names a hospital, NICU or prematurity (F13-REQ-021) |
 | 5 | Grants | Card closes; Settings > Reminders now reads "A few times a week, 8:30 PM" | Planner writes the next horizon of local notifications (6.4) |
 | 5' | Denies | Card closes | Choice saved; the OS sheet is never shown again; Settings > Reminders shows "Notifications are off for this app" with Open Settings (new `settings.reminders.osOff`, `settings.reminders.openSettings`) |
 
@@ -141,7 +148,7 @@
 | Reminder time | 07:00 to 21:30, 15-minute steps | 20:30 | `settings.reminders.timeLabel` |
 | Pause all reminders | On or off | Off | `settings.reminders.pauseLabel` |
 | Letters from your co-parent | Per child switch lives under Children; this row links there | On (F11 Q4) | new `settings.reminders.coParentLink` |
-| Your plan reminders | Read-only line; says reminders come on this phone before a free period ends or a plan renews, and by email once the status report ships (F14 6.6). F14 and counsel own the words | n/a | new `settings.reminders.planLine` |
+| Your plan reminders | Read-only line; says reminders come on this phone before a free period ends or a plan renews, and by email (F14 6.6). F14 and counsel own the words | n/a | new `settings.reminders.planLine` |
 | Names in notifications | On or off | Off (D-025) | `settings.privacy.lockScreenLabel` (exists), help line new `settings.privacy.lockScreenHelp` |
 | Reminders on this device | On or off | On for the device that granted first, off on a second device (6.3 U27) | new `settings.reminders.thisDeviceLabel` |
 
@@ -167,7 +174,7 @@ Weekly fires on Saturday at the chosen time [R]. A few times a week fires Tuesda
 | F13-U08 | Save at 19:00, slot at 20:30 | On save, the planner removes any slot within 20 h after the save | No reminder | n/a | `[C-REQ-004] save suppresses next slot` |
 | F13-U09 | App in use at 19:45, slot at 20:30 | On foreground and on background, the planner removes any slot within 2 h of that moment | No reminder | n/a | Unit |
 | F13-U10 | Time picker set to 22:30 | Clamped to 21:30 | "We keep late nights quiet." (new `settings.reminders.lateClamp`) | n/a | `[C-REQ-003] clamp` |
-| F13-U11 | Book hidden on one parent's phone | Within one sync, every member's planner drops reminders naming that child, month-age and birthday notes; F11 stops co-parent letter pushes for that book | Nothing for that child | Show this book again | `[B-REQ-014]` two-device test |
+| F13-U11 | Book hidden by one parent | Hide is per person (B-REQ-014 Rev, F12): within one sync, that parent's devices drop reminders naming that child, month-age and birthday notes, and do not show co-parent pushes for that book; the other parent is unchanged | Nothing for that child, for that parent | Show this book again | `[F13-REQ-024]` two-device test |
 | F13-U12 | Every book hidden | No reminders, notes or co-parent pushes at all | Settings > Reminders footnote: new `settings.reminders.allHidden` | Show a book | Unit |
 | F13-U13 | Due-date book, 21 days before the due date | That child's letter reminders, month notes and birthday notes stop until a birth date is set (F13-REQ-013); no copy mentions the date | Silence for that child | Setting the birth date resumes | Unit with clock |
 | F13-U14 | Due date passes with no birth date | Silence continues; no prompt, card or push asks whether the baby is here | Nothing | Parent sets the birth date in Settings (F12-U16) | Unit |
@@ -194,6 +201,9 @@ Weekly fires on Saturday at the chosen time [R]. A few times a week fires Tuesda
 | F13-U35 | Hindi or Arabic author | Prompts and notifications in English at v1.0; `{child}` renders in the script the parent typed, right to left where needed | English prompt with the child's name as written | v1.1 language prompts | Render test with Devanagari and Arabic names |
 | F13-U36 | Phone in a Focus or silent mode | Nothing special; iOS decides delivery | n/a | n/a | n/a |
 | F13-U37 | Celebrations paused for Asha by one parent | That parent gets no month or birthday note for Asha; the other parent still does (PRD-REQ-013) | Silence for that parent | Turn back on | `[PRD-REQ-013]` |
+| F13-U38 | One parent quiets Asha's book | That parent's planner drops every request for Asha, Tonight shows no prompt for Asha, no co-parent push for Asha reaches that parent; the other parent is unchanged | Silence for that parent | Turn notes back on | `[F13-REQ-022]` |
+| F13-U39 | Birth date entered 5 weeks before the due date | The early-birth question shows once; default Later keeps that child's reminders and month notes off | One neutral question | Settings > Reminders | `[F13-REQ-021]` |
+| F13-U40 | Fifth letter saved, no gate, no deletion and no support case in the last 7 days | Apple's rating request may show, at most within Apple's yearly limit; never right after a Keep sheet, a deletion, an export of everything or a support email | Apple's sheet, or nothing | n/a | `[F13-REQ-020]` |
 
 ### 6.4 The planner (one set of rules for every notification on the phone)
 
@@ -210,6 +220,8 @@ The planner is a pure function on the device. It runs on every save, foreground,
 | Month-age note | On the monthly birthday at the reminder time; per included child, not paused, not hidden, born | C-REQ-011, K-12 |
 | Plan notice day | No letter reminder or month note on a day with an F14 plan notice | C-REQ-025 |
 | Due-date silence | From 21 days before the due date until a birth date exists, nothing anchored to that child | B-REQ-015, F13-REQ-013 |
+| Quiet and hidden books | Nothing anchored to a child this person quieted or hid; co-parent pushes for that book are not shown to this person | F12-REQ-011, B-REQ-014 Rev (F12) |
+| Early birth | A child whose birth date is more than 3 weeks before the due date gets no reminders or month notes until the parent says "Now" | F13-REQ-021 |
 | Hidden book | Nothing anchored to that child | B-REQ-014 |
 | Rotation | Each letter reminder routes to the next included child in turn | K-12, F12-REQ-010 |
 | Variant rotation | 8 `notifications.evening` variants; none repeats within 4 sends; no title twice in a row; `gentleReturn` only during back-off, at most once in 30 days | C-REQ-006 |
@@ -239,8 +251,7 @@ The publish pipeline (F19) runs the full content test suite before signing. The 
 
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
-| C-REQ-001 Rev (DR-12) | P0 | Primed permission after the first letter, after Keep the book is answered, in a later session; at most 2 primes ever | Given first run, Then no OS notification prompt appears on any screen. Given the first letter saved and Keep the book answered in session 1, When session 2 opens Tonight, Then the priming card shows before any OS prompt. Given "No reminders" twice, Then the card never shows a third time | C, K-02, PRD-REQ-001, DR-12 A |
-| PRD-REQ-001 Rev (DR-12) | P0 | One ask per session in the F02 order: Keep the book, reminder prime, analytics consent | Given any session after the first letter, Then at most 1 of the 3 shows; never during recording, review or export | PRD, F02 |
+| C-REQ-001 Rev (DR-12) | P0 | Primed permission right after the first letter, before any OS prompt; at most 2 primes ever | Given first run, Then no OS notification prompt appears on any screen. Given the first letter saved, When its saved moment closes, Then the priming card shows before any OS prompt and before the account sheet. Given "No reminders" twice, Then the card never shows a third time | C, K-02, DR-12 B |
 | C-REQ-002 | P0 | Default "A few times a week" (Tuesday and Saturday at 20:30) plus the month-age note; options Off, Weekly, A few times a week, Every evening | Given the default and no saves for 7 days, Then exactly 2 reminders plus at most 1 month-age note per included child are delivered | C, K-03 |
 | C-REQ-003 | P0 | Time from 07:00 to 21:30 in 15-minute steps, device time zone and DST | Given 22:30 chosen, Then 21:30 is saved and `settings.reminders.lateClamp` shows. Given travel from LA to New York, Then the next reminder fires at the chosen New York time | C |
 | C-REQ-004 | P0 | Smart quiet on the device: no slot within 20 h after a save or 2 h after the app was in the foreground; a slot shifted past 21:30 by a time zone change is dropped | Given a save at 19:00, When 20:30 arrives, Then nothing fires and `reminder_suppressed{reason: wrote_recently}` logs on next foreground (consented only). Given a zone shift that puts a slot at 23:00, Then it is dropped | C, catalogue enum |
@@ -251,7 +262,6 @@ The publish pipeline (F19) runs the full content test suite before signing. The 
 | C-REQ-009 Rev (D-025) | P0 | "Names in notifications" off by default from remote config `lock_screen_names_default` (false); off means no child name, nickname or signature in any title or body | Given a fresh install, Then every scheduled request's title and body contain no child name (Asha fixture). Given the toggle on, Then `{child}` renders from the local book | C, D-025, BL-157 |
 | C-REQ-011 | P0 | Birthday note at 09:00 replaces that day's reminder; month-age note on the monthly birthday at the reminder time; day 29 to 31 births fall back to the month's last day | Given a birth date of 31 January, Then the April note fires on 30 April. Given a birthday, Then 0 letter reminders that day in that book for that person | C |
 | C-REQ-012 | P0 | Pause celebrations per person per child stops that child's month and birthday notes for that person only | Given parent A pauses Asha, Then A has 0 Asha notes pending and B's are unchanged | C, PRD-REQ-013 |
-| B-REQ-014 | P0 | A hidden book silences every child-anchored notification for every member within one sync | Given Asha hidden on A's phone, When B's phone completes a sync, Then B has 0 pending requests routing to Asha and F11 sends no co-parent push for Asha's book | B, F12-REQ-005 |
 | B-REQ-015 | P0 | No due-date countdown or due-date notification, ever | Given any book with a due date, Then no string, card or notification references the due date or days remaining (content test plus planner test) | B |
 | PRD-REQ-005 | P0 | `together` prompts are never served while `child-input` is off | Given the flag off and a block with 13 `together` prompts, When 1,000 seeded selections run, Then 0 return kind `together` | PRD, K-19 |
 | LEGAL-REQ-054 | P0 | No letter text, transcript, audio reference or promotion in any notification; names only when the setting allows | Given every notification type built from Asha fixtures, Then no payload or rendered body contains fixture letter text; names appear only with the toggle on | Legal |
@@ -275,6 +285,13 @@ The publish pipeline (F19) runs the full content test suite before signing. The 
 | F13-REQ-017 | P0 | On first launch after install, and at account deletion wipe, cancel every pending local request before planning | Given a reinstall with 30 orphaned requests, Then 0 remain after launch and the new plan matches settings | this spec |
 | F13-REQ-018 | P0 | Tapping any F13 notification opens Tonight or the Book for the routed child; a hidden or deleted child routes to the first visible book; no tap starts recording | Given a tap on a reminder for a deleted book, Then Tonight for the first visible book opens with the audio session idle | F04-REQ-021 |
 | F13-REQ-019 | P0 | Remote config may change cadence slots, the quiet window inside 07:00 to 21:30, rotation and back-off thresholds; it can never widen the quiet window, add a channel or turn a promotion on | Given a config that sets the window to 06:00, Then the client clamps to 07:00 | C-NFR-009, B14 |
+| F13-REQ-020 | P1 | Apple's App Store rating request (`StoreKit` review request) after a good moment: the fifth letter saved or a finished Read together session; never within 7 days of a Keep sheet, a deletion, an "Export everything", a support email or a refund; never more than Apple's yearly limit | Given a fifth letter saved with none of those events in 7 days, Then the request is called once. Given a Keep sheet shown today, Then it is not called | R1 PL-29 |
+| F13-REQ-021 | P0 | When a birth date is entered more than 3 weeks before the due date, ask once in neutral words whether to start reminders now or later, Later preselected; Later keeps that child's reminders and month notes off until changed; no copy names a hospital, NICU or prematurity | Given a due date of 1 March and a birth date of 20 January, Then the question shows once; given Later, Then 0 reminders and 0 month notes for that child | R3 DX-18, R2-S14 |
+| F13-REQ-022 | P0 | The planner drops every request anchored to a child this person quieted (F12-REQ-011) | Given Asha quieted by A, Then A has 0 pending requests routing to Asha within one replan, and B is unchanged | R3 DX-05 |
+| F13-REQ-023 | P0 | The reminder prime takes the first ask slot after the first letter in F02's sequencer; F02 owns the order and the session definition (PRD-REQ-001, home F02) | Given the first letter saved, Then `nextAsk` returns `reminder_prime` before the account ask | DR-12 B, R5 EQ-19 |
+| F13-REQ-024 | P0 | Hide reaches the planner: a book hidden by this person (B-REQ-014 Rev, home F12) drops every request anchored to that child on this person's devices within one sync | Given Asha hidden by A on phone 1, When A's phone 2 syncs, Then phone 2 has 0 requests routing to Asha | F12 |
+
+Defined in another spec and checked there (R5 EQ-05, EQ-19): **PRD-REQ-001** one ask per session and the session definition (home F02; F13's slice is F13-REQ-023); **B-REQ-014 Rev** hide (home F12; F13's slice is F13-REQ-024). F13 is the home of B-REQ-015, C-REQ-007 (the in-app switches), C-REQ-011, C-REQ-012 (notification half) and LEGAL-REQ-054; F09 and F11 cite them.
 
 ## 8. Data, privacy and security
 
@@ -332,11 +349,11 @@ All events are sent only after analytics opt-in (K-01). Properties are L2 enums.
 | Scheduler adapter | New `apps/mobile/src/lib/notifications/` (`schedule.ts`, `permissions.ts`, `routes.ts`, `copy.ts`) | `expo-notifications` (not installed today: `apps/mobile/package.json`; TDD 01 section 2). Install with `flock /tmp/scribe-npm.lock npx expo install expo-notifications`; check its licence and last release before merge (BRIEF). **Update 13 Oct 2026:** the adapter now exists as `apps/mobile/src/lib/reminders/` (`scheduler.ts`, `planner.ts`) with `expo-notifications` ~57.0.21 installed. It cancels only requests marked `scribe.reminders`, so F14 plan reminders must carry their own marker and pass their dates in for the day rule; plan reminders are not in its planner yet (its header lists them as later) |
 | Prompt history | `apps/mobile/src/lib/db/migrations.ts` (exists): new local table `prompt_history(key, child_id, shown_on)` | Append-only migration step |
 | Content block client | F19 client (BL-022); contract `prompts.v1` in `packages/api` (new package, B15, F19 owns) | Schema validation library chosen by F19 |
-| Copy | `packages/content/src/prompts.ts` (12 or more `expecting` prompts), `strings.en.ts` (`notifications.*` name-free variants, BL-157; `reminders.backoff.*`; new `settings.reminders.*` keys listed in 6.2 and 6.3) | New strings first land in the feature folder `copy.ts` (BRIEF); content agent moves them |
+| Copy | `packages/content/src/prompts.ts` (12 or more `expecting` prompts; none today), `packages/content/src/features/reminders.en.ts` (`notifications.*` name-free variants, BL-157; `reminders.backoff.*`; `reminders.earlyBirth.*`; new `settings.reminders.*` keys listed in 6.2 and 6.3) | Strings go straight to the stream's `packages/content` feature file, never a `copy.ts` in a component folder (R5 EQ-29) |
 | Ask order | F02 `nextAsk` (BL-023) | F13 provides the prime card only |
 | Settings screen | `apps/mobile/src/app/settings/reminders.tsx` (exists; today it saves choices and says scheduling is not built: `settingsMore.remindersNotYet`) | Remove `remindersNotYet` when the planner ships |
 
-**Sequencing.** Planner and selector (pure, weeks 5 to 6) then the expo-notifications spike, then the adapter and Settings, then the content block switch after F19's client exists (week 6 or later). Tonight can ship on the bundled library first.
+**Sequencing (order only; dates in `08-delivery.md` section 2.1).** Planner and selector (pure) first, with the quiet, hidden and early-birth inputs; then the expo-notifications device checks (WP-F13-08, W2); then the existing adapter in `apps/mobile/src/lib/reminders/` and Settings; then the content block switch after F19's client exists. Tonight can ship on the bundled library first.
 
 **Riskiest unknowns and spikes.**
 1. `expo-notifications` on SDK 57: calendar triggers in local time across zone and DST changes, the real pending limit (R4 section 9 marks 64 as Unverified), and `getPermissionsAsync` after a revoke. Spike WP-F13-08, two days on an SE 3 and a current iPhone, results written into this spec.
@@ -344,29 +361,49 @@ All events are sent only after analytics opt-in (K-01). Properties are L2 enums.
 
 ## 12. Work packages
 
-| WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode |
-|---|---|---|---|---|---|---|
-| WP-F13-01 | Prompt selector: `expecting` band, 365-day history, none on exhaustion, kind filter | Core owner | `packages/core/src/prompts.ts`, `packages/core/test/prompts.test.ts` | none | `[F13-REQ-003]`, `[F13-REQ-004]` 2-year property test, `[F13-REQ-005]`, `[F13-REQ-007]`, `[PRD-REQ-005]` | Agent. BL-151 |
-| WP-F13-02 | Pure planner | Core owner | New `packages/core/src/reminder-plan.ts`, its test | none | `[C-REQ-002]`, `[C-REQ-004]`, `[C-REQ-006]`, `[C-REQ-008]`, `[C-REQ-011]`, `[F13-REQ-011]`, `[F13-REQ-013]`, `[F13-REQ-014]`, `[F13-REQ-015]`; quiet-window property test over 24 zones and both DST changes | Agent. BL-151 |
-| WP-F13-03 | Expecting prompts and name-free notification copy | Content | `packages/content/src/prompts.ts`, `strings.en.ts`, `packages/content/test/rules.test.ts` | none | `[F13-REQ-008]`, `[C-REQ-005]` daily and day-count terms, BL-157 variants without `{child}` | Agent. BL-157 |
-| WP-F13-08 | Spike: expo-notifications on SDK 57 | Mobile engineer | `experiments/notifications-spike/` (throwaway) | none | Written results for local-time triggers across zone and DST, pending limit, revoke detection; this spec's 6.4 budget confirmed or changed | Pair |
-| WP-F13-04 | Scheduler adapter, permissions, routing | Mobile engineer | New `apps/mobile/src/lib/notifications/` | WP-F13-02, WP-F13-08 | `[F13-REQ-009]`, `[F13-REQ-010]` 7 triggers, `[F13-REQ-012]`, `[F13-REQ-017]`, `[F13-REQ-018]`, `[C-REQ-009]` | Agent (adds a package: pair for the install). BL-151 |
-| WP-F13-05 | Priming card in the ask sequencer | Mobile engineer | Prime card component under `apps/mobile/src/components/settings/` (new file) | BL-023, WP-F13-04 | `[C-REQ-001]` 3 cases, `[PRD-REQ-001]` | Agent. BL-023 |
-| WP-F13-06 | Settings > Reminders and names toggle | Mobile engineer | `apps/mobile/src/app/settings/reminders.tsx`, `apps/mobile/src/components/settings/labels.ts` | WP-F13-04 | `[C-REQ-003]` clamp, `[C-REQ-007]` pause keeps co-parent push, `[F13-REQ-016]`, AX5 snapshot | Agent. BL-159 |
-| WP-F13-07 | Prompt history table and Tonight switch to `pickPrompt` | Mobile engineer | `apps/mobile/src/lib/db/migrations.ts`, `apps/mobile/src/app/(tabs)/index.tsx` | WP-F13-01 | `[F13-REQ-006]`, `[F13-REQ-007]`; migrator test on v1 to v3 fixtures | Agent |
-| WP-F13-09 | Prompts from the content block | Mobile engineer | New `apps/mobile/src/lib/prompts-source.ts` | F19 client (BL-022), WP-F13-07 | `[F13-REQ-001]`, `[F13-REQ-002]` 6 corrupt fixtures | Agent |
-| WP-F13-10 | Hide and due-date propagation | Mobile engineer | Planner inputs from F12 and F16 | WP-F13-04, WP-F12-07 | `[B-REQ-014]` two-device test, `[F13-REQ-013]` | Agent |
-| WP-F13-11 | Analytics enum changes | Analytics engineer | `packages/analytics/src/catalog.ts` | none | Catalogue tests pass with new `cadence` and `reason` values and `prompt_shown`, `prompt_skipped` | Agent. BL-020 |
+Stream: S14, with S03 for the local table and S16 for copy (`08-delivery.md` section 3.3 governs file ownership; a path here owned by another stream is a request). Status checked on `origin/develop` on 13 Oct.
+
+| WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode | Status 13 Oct |
+|---|---|---|---|---|---|---|---|
+| WP-F13-01 | Prompt selector: `expecting` band, 365-day history, none on exhaustion, kind filter | S14 | `packages/core/src/prompts.ts`, `packages/core/test/prompts.test.ts` | none | `[F13-REQ-003]`, `[F13-REQ-004]` 2-year property test, `[F13-REQ-005]`, `[F13-REQ-007]`, `[PRD-REQ-005]` | Agent. BL-151 | Partly built: `selectPrompt` exists with `AVOID_RECENT = 10`; no `expecting` band |
+| WP-F13-02 | Pure planner, with quiet, hidden and early-birth inputs | S14 | New `packages/core/src/reminder-plan.ts`, its test | none | `[C-REQ-002]`, `[C-REQ-004]`, `[C-REQ-006]`, `[C-REQ-008]`, `[C-REQ-011]`, `[F13-REQ-011]`, `[F13-REQ-013]`, `[F13-REQ-014]`, `[F13-REQ-015]`, `[F13-REQ-021]`, `[F13-REQ-022]`; quiet-window property test over 24 zones and both DST changes | Agent. BL-151 | Not built in core; a planner exists in `apps/mobile/src/lib/reminders/planner.ts` and is the starting point |
+| WP-F13-03 | Expecting prompts, name-free notification copy, the proposed keys in 6.6 | S16 | `packages/content/src/prompts.ts`, `packages/content/src/features/reminders.en.ts`, `packages/content/test/rules.test.ts` | none | `[F13-REQ-008]`, `[C-REQ-005]` daily and day-count terms, BL-157 variants without `{child}` | Agent. BL-157 | Not built (0 `expecting` prompts) |
+| WP-F13-08 | Device checks: expo-notifications on SDK 57 | Device operator with S14 | `docs/qa/evidence/` | none | Written results for local-time triggers across zone and DST, pending limit, revoke detection; 6.4 budget confirmed or changed | Human (W2) | Not run |
+| WP-F13-04 | Scheduler adapter, permissions, routing, the long-press Quiet action | S14 | `apps/mobile/src/lib/reminders/` (exists; was `lib/notifications/` in the 3 Oct draft) | WP-F13-02, WP-F13-08 | `[F13-REQ-009]`, `[F13-REQ-010]` 7 triggers, `[F13-REQ-012]`, `[F13-REQ-017]`, `[F13-REQ-018]`, `[C-REQ-009]` | Agent | Partly built: `scheduler.ts`, `planner.ts`; `expo-notifications` ~57.0.21 installed |
+| WP-F13-05 | Priming card first in the ask sequencer | S14 | Prime card component under `apps/mobile/src/components/settings/` (new file) | BL-023, WP-F13-04 | `[C-REQ-001]` 3 cases, `[F13-REQ-023]` | Agent. BL-023 | Not built against DR-12 B |
+| WP-F13-06 | Settings > Reminders and names toggle | S14 | `apps/mobile/src/app/settings/reminders.tsx`, `apps/mobile/src/components/settings/labels.ts` | WP-F13-04 | `[C-REQ-003]` clamp, `[C-REQ-007]` pause keeps co-parent push, `[F13-REQ-016]`, AX5 by harness or device script | Agent. BL-159 | Partly built: `reminders.tsx` and `labels.ts` exist |
+| WP-F13-07 | Prompt history table (local v9) and Tonight switch to `pickPrompt` | S03 table, S10 Tonight line | `apps/mobile/src/lib/db/migrations.ts`, `apps/mobile/src/app/(tabs)/index.tsx` | WP-F13-01 | `[F13-REQ-006]`, `[F13-REQ-007]`; migrator test from v0 to head | Agent | Not built |
+| WP-F13-09 | Prompts from the content block | S14 | New `apps/mobile/src/lib/prompts-source.ts` | F19 client (BL-022), WP-F13-07 | `[F13-REQ-001]`, `[F13-REQ-002]` 6 corrupt fixtures | Agent | Not built; 1.0.x if no slot (`08-delivery.md` section 6.3 does not list it) |
+| WP-F13-10 | Hide, quiet and due-date inputs from F12 and F16 | S14 | Planner inputs | WP-F13-04, WP-F12-07, WP-F12-08 | `[F13-REQ-024]` two-device test, `[F13-REQ-013]`, `[F13-REQ-022]` | Agent | Not built |
+| WP-F13-11 | Analytics enum changes | S18 | `packages/analytics/src/catalog.ts` | none | Catalogue tests pass with new `cadence`, `reason` and `source` values and `prompt_shown`, `prompt_skipped` | Agent. BL-020 | Not built |
+| WP-F13-12 | Early-birth question | S14 | Planner input and one card | WP-F13-02 | `[F13-REQ-021]` | Agent | Not built |
+| WP-F13-13 | App Store rating request | S14 | One module under `apps/mobile/src/lib/reminders/` (new file) | none | `[F13-REQ-020]` | Agent; P1, cut from v1.0 now, first in 1.0.x (`08-delivery.md` section 6.4) | Not built |
+
+### 12.1 Proposed copy for the new keys (R3 DX-25; content owns the final words)
+
+| Key | Proposed text |
+|---|---|
+| `reminders.backoff.title` | Would fewer nudges suit you better? |
+| `reminders.backoff.body` | You can keep only the month notes, or turn reminders off. Your letters stay as they are. |
+| `reminders.earlyBirth.title` | Would you like reminders now, or later on? |
+| `reminders.earlyBirth.later` | Later |
+| `reminders.earlyBirth.now` | Now |
+| `settings.reminders.planLine` | Before a free period ends or Plus renews, we remind you on this phone and by email. (F14 and counsel own this line) |
+| `settings.reminders.lateClamp` | We keep late nights quiet. |
+| `settings.reminders.allHidden` | Every book is hidden or quiet, so there are no reminders. |
+| `settings.reminders.osOff` | Notifications are off for this app. |
+| `settings.reminders.thisDeviceLabel` | Reminders on this device |
 
 ## 13. Open questions and assumptions
 
 | Q | Who, by when | What changes |
 |---|---|---|
-| Q1 The 365-day no-repeat rule empties today's first-year pool in about 11 weeks at 4 evenings a week. Keep the rule and grow the English library to about 200 first-year prompts before beta C1, or allow repeats after 6 months? Spec default: keep 12 months, show no prompt when exhausted, content writes 120 or more new prompts by week 10 | Founder, content owner; 23 Oct | WP-F13-03 scope, `F13-REQ-004` window |
-| Q2 Due-date silence starts 21 days before the due date. Right length? | Founder; 30 Oct | One planner constant |
-| Q3 Under M6 (DR-02 answered by D-080) plan reminders go by local notification and card on the phone and by email. May a user switch the phone's "Your plan" notifications off in the app, given the card and the email stay? Spec default: read-only row, no switch | Counsel; Fri 23 Oct (FT-33) | Settings row |
-| Q4 Weekly fires on Saturday. Keep? | Founder; 30 Oct | Planner constant |
-| Q5 Run DR-12 option B (prime right after the first letter) as a TestFlight cohort if cohorts allow (D-045) | Founder; 4 Dec | `nextAsk` order table only |
+| Q1 The 365-day no-repeat rule empties today's first-year pool in about 11 weeks at 4 evenings a week. Keep the rule and grow the English library to about 200 first-year prompts before C1, or allow repeats after 6 months? Spec default: keep 12 months, show no prompt when exhausted, content writes 120 or more new prompts before T22 | Founder, content owner; T15 | WP-F13-03 scope, `F13-REQ-004` window |
+| Q2 Due-date silence starts 21 days before the due date. Right length? | Founder; T15 | One planner constant |
+| Q3 Under M6 (DR-02 answered by D-080) plan reminders go by local notification and card on the phone and by email. May a user switch the phone's "Your plan" notifications off in the app, given the card and the email stay? Spec default: read-only row, no switch | Counsel; T17 (FT-33) | Settings row |
+| Q4 Weekly fires on Saturday. Keep? | Founder; T15 | Planner constant |
+| Q8 Is "more than 3 weeks before the due date" the right trigger for the early-birth question, and is Later the right default? Review with a NICU family organisation before C1 (02 section 7) | Founder; T22 | F13-REQ-021 |
+| Q5 DR-12 spec default is now B. Run A against B as C1 cohorts if sizes allow (D-045); decide at C1 exit | Founder; T34 | `nextAsk` order table only (F02) |
 | Q6 Does iOS give users one notification switch per app, so our three switches must be in-app? (not verified in R4) | Mobile engineer in WP-F13-08 | Settings copy |
 | Q7 Should P4 authors get prompts in their spoken language before UI localisation? Needs translated prompt text, not machine translation of letters | Founder; v1.1 planning | Pack prompt slot |
 

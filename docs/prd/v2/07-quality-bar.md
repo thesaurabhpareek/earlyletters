@@ -1,6 +1,6 @@
 # 07. Quality bar: done, tests, launch checklist, beta and release
 
-Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with the R-01 re-run on engine 5, D-073, D-074, D-084, D-085, ADR 0014 to 0017 and `docs/qa/DEVICE_TEST_PLAN.md`. Replaces `docs/prd/PRD.md` 1.3 section 6 (launch checklist) and section 2.3 (launch gates), and folds in the Definition of Done from `docs/BACKLOG.md` and the test strategy in `docs/tdd/07-quality-test-strategy.md`. Budgets live in `06-nfr.md`; this file says how each one is proved and when it blocks.
+Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with the R-01 re-run on engine 5, D-073, D-074, D-084, D-085, ADR 0014 to 0017 and `docs/qa/DEVICE_TEST_PLAN.md`. Revised 14 Oct 2026 after critique round 1 (M14 to M17; R5 EQ-02 to EQ-04, EQ-09, EQ-10, EQ-16, EQ-18, EQ-28, EQ-31; R3 DX-06, DX-21, DX-30; R2 AR-26; disposition in `reviews/DISPOSITION-C.md`). Dates live only in `08-delivery.md` section 2.1; this file names milestones (R1 PL-03). Replaces `docs/prd/PRD.md` 1.3 section 6 (launch checklist) and section 2.3 (launch gates), and folds in the Definition of Done from `docs/BACKLOG.md` and the test strategy in `docs/tdd/07-quality-test-strategy.md`. Budgets live in `06-nfr.md`; this file says how each one is proved and when it blocks.
 
 Twenty agent engineers build from this. If a work package cannot show the evidence below, it is not done, whatever the code looks like.
 
@@ -16,6 +16,7 @@ A work package (WP-F##-##) is one pull request a reviewer can check in under 30 
 4. A bug fix lands with a test that failed before the fix, titled with the bug id and the requirement id (TDD 07 section 9.2).
 5. No test is deleted, skipped or weakened without an ID-cited reason in the PR body. A known defect is marked `test.fails` with its backlog id, never removed (TDD 09 section 8.3).
 6. A WP that touches a budgeted path (06-nfr.md) states the budget and how it was checked: unit timing, bundle size, or "needs device check" with a named human follow-up task (BACKLOG DoD 8).
+7. Every P0 requirement names its test file or device run in its spec's test map (section 7.x of each spec, added 14 Oct, R5 EQ-05 and the R5 sample). A test file marked "new" there is created by the WP that owns the requirement. A legacy ID (A-, B-, C-, PRD-, LEGAL-, DATA-REQ) has one home spec; other specs cite it with their own F##-REQ slice, so one test title traces to one acceptance criterion. Test map tables list IDs only to name their tests; they define nothing, and `scripts/trace.mjs` (BL-002) reads definitions from the requirements tables alone.
 
 ### 1.2 Lint and static checks
 
@@ -37,7 +38,7 @@ A work package (WP-F##-##) is one pull request a reviewer can check in under 30 
 
 ### 1.4 Accessibility
 
-New or changed screens: Dynamic Type to AX5 with no truncation (letter text never capped, D-027); VoiceOver labels and roles; focus to sheet titles; 44 pt targets (56 pt primary); Reduce Motion honoured; contrast from tokens only. Proved by a component test at default and AX5, and for P0 flows by the VoiceOver script on SE 3 before beta (section 2.11) (A-NFR-005 to A-NFR-007; LEGAL-REQ-051).
+New or changed screens: Dynamic Type to AX5 with no truncation (letter text never capped, D-027); VoiceOver labels and roles; focus to sheet titles; 44 pt targets (56 pt primary); Reduce Motion honoured; contrast from tokens only. Letter text carries `accessibilityLanguage` from the letter's language, and AX5 is checked with Latin, Devanagari, Arabic and Han fixtures (R3 DX-21). Proved by a component test at default and AX5 once the render harness lands (WP-F00-01, 2.1), until then by the AX5 device script with evidence; and for P0 flows by the VoiceOver scripts on SE 3 before beta (section 2.11) (A-NFR-005 to A-NFR-007; LEGAL-REQ-051). Nothing the phone says out loud may be recorded into a letter (F04-REQ-040).
 
 ### 1.5 Review
 
@@ -61,15 +62,15 @@ The author's final report lists: files changed; test results with counts; what n
 | L0 static | tsc, `expo lint`, docs lint, data-map diff, SDK denylist, manifest lint, secret scan, IPA size | Every PR | Types, banned imports, banned SDKs, ATS, permissions, keys in bundle, 40 MB | G0 |
 | L1 unit | vitest | Every PR | `packages/core` (engine, verifier, plan, prompts, planner, notice windows, backdating, capture reducer), `packages/content`, `packages/analytics`, `packages/design-tokens`, `apps/mobile/test` logic | G0 |
 | L1b engine regression and property | vitest, fast-check | Every PR (fixed seed); nightly (random seed, printed) | R-01 suite, verifier property tests, Hermes parity | G0 (nightly red blocks G2) |
-| L2 component | jest-expo and Testing Library (new, BL-Q08) [R] | PRs touching `apps/mobile` | AX5 rendering, labels, targets, focus order, placement rules | G0 once the harness lands |
+| L2 component | Render harness, new: WP-F00-01 (proposed in R5 EQ-04; one library decided in that WP, pair mode with the founder because it adds a package; first in its wave). `BL-Q08`, cited here before, does not exist in `docs/BACKLOG.md` | PRs touching `apps/mobile` | AX5 rendering, labels, targets, focus order, placement rules | G0 once the harness lands; until then the AX5 device script is the evidence |
 | L3 database | PGlite harness (`npm run test:db`) | Every PR; always on `main` | RLS matrix, triggers, RPCs, parity and leak suite, purge with clock control, classification, plan-shape performance | G0 |
 | L4 service | Deno tests with fakes | PRs touching `supabase/functions` | `invite-redeem`, `apple-token`, `push-send` | G0 |
-| L5 end to end | Maestro on iOS simulators, mitmproxy for network assertions | Nightly and release candidate | The flows in section 2.6 | G2 |
+| L5 end to end | Maestro on iOS simulators, mitmproxy for network assertions. On 14 Oct neither runs in CI: Maestro exists only as `e2e/ci/ios-e2e.yml.example`, mitmproxy capture is not built (R5 EQ-10) | Nightly and release candidate, once Q6 is answered | The flows in section 2.6 | G2 once running; until then each proxy-based line is `[manual]` evidence |
 | L6 device | Scripted runs on iPhone SE 3 and a current iPhone | Release candidate | Budgets, kill runs, transcription speed and memory, sandbox, VoiceOver | G3, G4 |
 | L7 corpus | `experiments/` gate tooling (WP-F05-02) | On any change to model, pack, prompt rendering, VAD, chunk planner or `ENGINE_VERSION` | Per-language transcription gates | Manifest publish |
 | L8 load | k6 in staging | Before public launch; before 10k and 25k families | 06-nfr.md section 16 | G4 (2x 1k) |
 
-Today's suites, as CLAUDE.md lists them: engine 237, mobile 31, content rules 16, analytics 39, tokens 4, experiments 11; `npm run test:db` runs 8 files (access matrix, security and family, governance, classification, entitlements, purge, performance, RLS). Counts change as WPs land; CLAUDE.md is updated by the coordinator, not here.
+Test counts are not kept here (they went stale, R5 EQ-28); each PR cites `npm test` and `npm run test:db` output.
 
 ### 2.2 Unit
 
@@ -82,7 +83,7 @@ Every WP adds unit tests for its pure logic first. The ones that guard promises:
 
 ### 2.3 Engine regression, including R-01
 
-The faithful-edit engine is the one claim nobody else makes (05 rank 2), and R-01 showed it accepted meaning changes outside English (09 R-01). On 13 Oct, engine 5 refuses every Hindi, Arabic and Chinese case in R-01; 8 of 15 items stay open in whole or part, mostly English rules and dictionary paths (F06 section 7.1). Today's suites (`lang.languages.test.ts`, `unicode.test.ts`, `golden.test.ts`, the fuzz tests) cover the fixed items; the open items have no test yet because they would fail.
+The faithful-edit engine carries the claim the product rests on: it shows every change the machine made and lets the author undo it (05 rank 2; R1 PL-25 narrows the claim to that), and R-01 showed it accepted meaning changes outside English (09 R-01). On 13 Oct, engine 5 refuses every Hindi, Arabic and Chinese case in R-01; 8 of 15 items stay open in whole or part, mostly English rules and dictionary paths (F06 section 7.1). Today's suites (`lang.languages.test.ts`, `unicode.test.ts`, `golden.test.ts`, the fuzz tests) cover the fixed items; the open items have no test yet because they would fail.
 
 | Suite | Content | Pass bar | Where | Source |
 |---|---|---|---|---|
@@ -113,17 +114,18 @@ No non-English language may pass its corpus gate (2.8) before its script's R-01 
 
 ### 2.6 End to end
 
-Maestro flows on the SE 3 and current-iPhone simulators, nightly and per release candidate, with mitmproxy recording every request. TDD 07 section 3.3 defines 15 flows; V2 keeps them with these changes:
+Maestro flows on the SE 3 and current-iPhone simulators, nightly and per release candidate once Q6 is answered, with mitmproxy recording every request. The flow files on `develop` (14 Oct) are `apps/mobile/e2e/flows/E2E-01a` to `E2E-15`; their numbers differ from TDD 07 section 3.3, so this table uses the file names:
 
-| Flow | Change for V2 |
+| Flow file | Change for V2 |
 |---|---|
-| E2E-03 Speak, review, save | Add the zero-request assertion for capture and the "Please have a read" card once |
-| E2E-05 Read together gate | Session starts at sequenced playback of a chapter (DR-06); other parent's recordings skipped |
-| E2E-07 Add a child | The server accepts the book from a modified client (DR-04) |
-| E2E-11 Consent on and off | Unchanged |
-| E2E-12 Offline capture, then sync | Uses the outbox and `sync_pull` (D-023, decided); v1.0 (M14); runs in a build with server features on |
-| E2E-13 Co-parent invite | Parent role only; at most two parents; no grandparent step (B1) |
-| E2E-14 Trial and cancel | StoreKit sandbox on device; phone reminders plus the status-report emails (DR-02, M6, M14); no server webhooks (B2) |
+| `E2E-03-speak-save-offline.yaml` | Add the zero-request assertion for capture and the "Please have a read" card once |
+| `E2E-06-read-together-plus-gate.yaml` | Rewrite: Read together is free with no limit (M2); the flow asserts 0 Plus sheets and 0 StoreKit calls. Today its name says it tests a gate M2 removed |
+| `E2E-07-add-child-plus-gate.yaml` | Rewrite: books for more children are free (M2); the server accepts the book from a modified client (DR-04) |
+| `E2E-11-analytics-consent.yaml` | Unchanged |
+| `E2E-12-sign-in-email.yaml` plus a new offline-then-sync flow | The sync flow uses the outbox and `sync_pull` (D-023, decided); v1.0 (M14); runs in a build with server features on |
+| `E2E-13a`, `E2E-13b`, `E2E-13c` invite flows | Parent role only; at most two parents; no grandparent step (B1, M8) |
+| `E2E-14-restore-purchases.yaml` plus a trial-and-cancel run on device | StoreKit sandbox on device; phone reminders plus the status-report emails (DR-02, M6, M14); no server webhooks (B2) |
+| `E2E-15-voiceover-smoke.yaml` | Add a VoiceOver-on take; the device run VO-REC (2.11 V1c) is the real check because the simulator's VoiceOver audio is not the phone speaker |
 | New E2E-16 Language pack | Pick Portuguese in first run: only the Portuguese pack is requested; delete it in Settings; letters unchanged (F05-REQ-019, F05-REQ-024) |
 | New E2E-17 Export with listening copies | Export on and off copies; originals byte-identical (F15-REQ-001, F15-REQ-002) |
 
@@ -131,7 +133,25 @@ Every flow runs with the Asha fixtures, and the proxy log of every run is scanne
 
 ### 2.7 Device tests on iPhone SE 3
 
-Owned devices: one iPhone SE (3rd gen) and one current iPhone (TDD 07 section 4). Each release candidate runs, on SE 3 on iOS 17 and the latest iOS:
+Owned devices: one iPhone SE (3rd gen) and one current iPhone (TDD 07 section 4). iOS cannot be downgraded, so one SE 3 cannot be both iOS 17 and the latest iOS (R5 EQ-03). The rule from 14 Oct: the full suite runs once per release candidate on an SE 3 on iOS 17 (a second SE 3 kept on iOS 17 is to be bought or borrowed [A: cost]); a 2-hour smoke runs on the current iPhone on the latest iOS. The device scripts need a named operator, founder or paid (Q5).
+
+**Device budget per release candidate** [A: R5's estimate, to be replaced by measured minutes after the first run]:
+
+| Run | Device | Minutes [A] | Who |
+|---|---|---|---|
+| Kill during save, 50 | SE 3, iOS 17 | 100 | Operator |
+| Kill while recording, 50 | SE 3, iOS 17 | 150 | Operator |
+| Typed kills, 100; Review kills, 100 | SE 3, iOS 17 | 200 | Operator |
+| Speak latency, 200 taps | SE 3, iOS 17 | 40 | Operator |
+| Transcription, 30 runs per passed language with cool-down (F05 section 9 protocol) | SE 3, iOS 17 | 120 per language | Operator |
+| Listening copy, 30 runs | SE 3, iOS 17 | 60 | Operator |
+| Export, settings sweep, Arabic keyboard | SE 3, iOS 17 | 90 | Operator |
+| VoiceOver V1, V1b, V1c, V4 | SE 3, iOS 17 | 90 | Operator who uses VoiceOver daily if possible |
+| Purchase sandbox S-1 to S-10 (only when F14 changed) | SE 3 plus a second Apple Account in a Family | 120 | Founder |
+| Two-phone sync and backup B1, B6 | Two iPhones | 180 | Founder |
+| Smoke on the latest iOS | Current iPhone | 120 | Operator |
+
+Each release candidate runs:
 
 | Run | What | Pass | Source |
 |---|---|---|---|
@@ -142,7 +162,7 @@ Owned devices: one iPhone SE (3rd gen) and one current iPhone (TDD 07 section 4)
 | Review kills | 100 kills in Review | 100 of 100 recover exactly | F06-REQ-036 |
 | Transcription | 30 runs of a 2-minute letter per passed language | p90 30 s or less; 2% battery or less; zero jetsam | F05-REQ-040 |
 | Listening copy | 30 runs of a 2-minute clip | 10 s or less once measured; original hash unchanged | F08 section 9; F08-REQ-002 |
-| Export | Year-1 fixture, airplane mode | Originals under 2 minutes; with copies measured against 4 minutes | C-NFR-007; F15 Q1 |
+| Export | Year-1 fixture, airplane mode | Originals under 2 minutes (listening copies are never exported, ADR 0015) | C-NFR-007; F15-REQ-001 |
 | Settings sweep | Dark mode, Reduce Motion, Bold Text, Increase Contrast, AX5, Low Power Mode, under 1 GB free, time zone and DST change, 12 and 24-hour time | No defect on a P0 screen | TDD 07 section 4 |
 | Arabic keyboard | Type a letter right to left | Text and caret right to left; stored exactly | F04-REQ-013 |
 
@@ -178,7 +198,7 @@ On device, by the founder and the payments owner, every release candidate that t
 |---|---|---|---|
 | Server restore: restore to a scratch project, ledger replay, restore epoch, two synthetic devices reconcile | Before the first non-founder family, then quarterly | Zero own rows deleted on either device; others' rows kept 30 days as waiting; RPO 24 h or less; RTO 4 h or less; `npm run test:db` passes on the restored copy | BL-247; WP-F16-08; F16-REQ-012; DATA-REQ-030, DATA-REQ-031 |
 | Device durability: iCloud device backup restored to a second phone (DL-03); negative restore and the purge clock guard (DL-04); export ZIP re-read; sign-in on a new phone re-downloads text (server features on, M14); with the owner's backup on, every recording restores with equal hashes | Every release candidate | Letters, recordings and the Recently deleted shelf back from the device backup; day-31 letters erased at first launch with no orphan; ZIP passes self-verification; one year of text on the new phone within p95 30 s; 20 of 20 backed-up recordings restored (F08-REQ-023) | BL-284; D-033; D-073; D-085; WP-F15-10; WP-F08-B6 |
-| Kill switches | Every release candidate, in staging | Each switch takes effect within 5 minutes; local recording, reading and export keep working | LEGAL-REQ-040; F16-REQ-018 |
+| Kill switches | Every release candidate, in staging | Each switch takes effect within the bar in `06-nfr.md` (R2 AR-27 shows the 5-minute bar cannot pass with today's cache settings; 06 and F19 own the fix); local recording, reading and export keep working | LEGAL-REQ-040; F16-REQ-018 |
 
 Until the server restore drill passes, production is not restored to an earlier point while non-founder families exist; fix forward instead (TDD 06 section 6.3).
 
@@ -186,7 +206,11 @@ Until the server restore drill passes, production is not restored to an earlier 
 
 Run on SE 3 by a person, at AX5 with VoiceOver on, before G3 and G4, under 20 minutes per script (TDD 09 section 8.3). V1 covers: 18+ gate, welcome, first run, Tonight, Speak, Pause, Finish, Review, open one change row, put it back, Undo, Add to book, Book, open a letter, play, Read together start and pause, Settings > Plan, Export, Delete account up to the final confirm.
 
-Pass when: every control is reachable by swipe in visual order; states are announced (Listening, Paused, checked); errors and saves are announced; focus lands on sheet titles; nothing announces while a voice is playing (F10-REQ-017); no Undo window closes while VoiceOver is reading. V2 Voice Control, V3 Switch Control, V4 large text with Bold Text, V5 contrast and grayscale, V6 motion and Low Power Mode, V7 Full Keyboard Access run before G4 (TDD 09 section 8.3). Recruit 2 or 3 beta testers who use VoiceOver or large text daily; their findings outrank our script (TDD 07 section 5).
+Two scripts added on 14 Oct:
+- **V1b Multilingual reading.** One Hindi, one Arabic (starting with a Latin name) and one Mandarin letter in one chapter: each is read aloud by VoiceOver in its own language's voice (`accessibilityLanguage`), the Arabic letter reads right to left, and AX5 shows no clipped marks (F06-REQ-044, F09-REQ-033; R3 DX-21).
+- **V1c Recording with VoiceOver on (run VO-REC).** SE 3, built-in speaker, no headphones, quiet room: start a take with VoiceOver on, stay silent 60 s, pause with Magic Tap, resume, finish. Pass: F05's voice detector finds no speech in the file and the transcript is empty (F04-REQ-040, F04-REQ-041; R3 DX-06). Record what happens when another app's notification arrives during a take (F04-U54).
+
+Pass when: every control is reachable by swipe in visual order; states are announced (Paused, checked) except while a recording is live, when nothing is announced; errors and saves are announced; focus lands on sheet titles; nothing announces while a voice is playing (F10-REQ-017); no Undo window closes while VoiceOver is reading. V2 Voice Control, V3 Switch Control, V4 large text with Bold Text, V5 contrast and grayscale, V6 motion and Low Power Mode, V7 Full Keyboard Access run before G4 (TDD 09 section 8.3). Recruit 2 or 3 beta testers who use VoiceOver or large text daily; their findings outrank our script (TDD 07 section 5).
 
 ### 2.12 Load
 
@@ -194,15 +218,16 @@ k6 scenarios S1 to S13 from TDD 06 section 8.2, with S5, S6, S10 and S13's entit
 
 ## 3. Launch acceptance checklist, by feature
 
-Each line is pass or fail. **[auto]** is an automated test that runs in CI, nightly or the release workflow; **[manual]** is a scripted check by a person with evidence saved in `docs/qa/evidence/`. Every line must pass on an iPhone SE (3rd gen) and a current iPhone before App Store submission (G4, section 5). IDs are the requirements the line proves; the test title carries the first one.
+Each line is pass or fail. **[auto]** is an automated test that runs in CI, nightly or the release workflow; **[manual]** is a scripted check by a person with evidence saved in `docs/qa/evidence/`. Every **[manual]** line, and every **[auto]** line that is an end-to-end flow, must pass on an iPhone SE (3rd gen) on iOS 17 before App Store submission, with the smoke on a current iPhone (2.7; R5 EQ-31). Unit and database tests pass in CI. IDs are the requirements the line proves; the test title carries the first one; each spec's test map names the file.
 
-Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the time of writing), lines cite PRD 1.3 and LEGAL-REQ IDs and are re-pointed to F##-REQ IDs when the spec lands. The checklist is regenerated from test titles by `scripts/trace.mjs` (BL-002) once it exists; until then this list is the source.
+Every feature spec, F01 to F21, now has a section 7. The lines below were checked against them on 14 Oct for F01, F03 to F07, F09, F15, F18, F20 and F21; lines for the other features follow their specs and are regenerated from test titles by `scripts/trace.mjs` (BL-002) once it exists (R5 EQ-18).
 
 ### F01 Entry, 18+ gate and welcome
 - [ ] [auto] Airplane-mode cold start renders the first route and hides the splash; no awaited network, model or sync (A-REQ-002).
 - [ ] [auto] Fresh install opened by icon, invite link or auth link: the first interactive screen is the 18+ gate with nothing selected and Continue disabled (PRD-REQ-019 Rev, LEGAL-REQ-002).
 - [ ] [auto] Yes stores only `ageGate.passed = '1'`; no age, date, range or timestamp of the Yes on the device or server (F01-REQ-001).
-- [ ] [auto] No leaves exactly one `ageGate.stoppedAt` row, no Keychain token, no file, zero network requests; a relaunch at 23 h 59 min shows the stop screen (F01-REQ-002).
+- [ ] [auto] No shows the confirm step and writes nothing; a confirmed No leaves exactly one `ageGate.stoppedAt` row, no Keychain token, no file, zero network requests; a relaunch at 23 h 59 min shows the stop screen (F01-REQ-002).
+- [ ] [auto] Where iOS provides an age signal, it is read at launch, an under-18 result stops at once, and nothing about it is stored, logged or sent (F01-REQ-010, AB 1043).
 - [ ] [auto] A Declared Age Range result is never stored, logged or sent (store, logger, Sentry and analytics spies see zero calls) (F01-REQ-003).
 - [ ] [auto] An invite link survives the gate only after Yes; No deletes the token (F01-REQ-004).
 - [ ] [auto] Welcome shows Start a book, I was invited and Sign in, each 44 pt or taller, all reachable at AX5 without horizontal scroll (F01-REQ-005).
@@ -211,7 +236,7 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 
 ### F02 Account and sign-in
 - [ ] [auto] A first letter is saved with no sign-in asked (A-REQ-012).
-- [ ] [auto] Keep the book opens within 500 ms of the first save's animation with Apple, Google, Email and Later; Later keeps record, review, save, book, Read together tries and export working (A-REQ-013 Rev, A-REQ-014).
+- [ ] [auto] Keep the book opens within 500 ms of the first save's animation with Apple, Google, Email and Later; Later keeps record, review, save, book, Read together and export working (A-REQ-013 Rev, A-REQ-014).
 - [ ] [auto] Re-ownership: every local row carries the new user id before any sync request; a forced failure changes zero rows (A-REQ-015).
 - [ ] [auto] Email sends one message with a link and a 6-digit code; either signs in once; resend disabled 60 s; at most 5 per address per hour; 5 wrong codes in 15 minutes pause the device (A-REQ-018 Rev, A-REQ-025, A-REQ-027).
 - [ ] [auto] A scanner that runs scripts and clicks buttons on `/auth/confirm` sends no request to Supabase; the page's button carries no token (A-REQ-023, F02-REQ-011).
@@ -221,12 +246,12 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Sign out or Apple revocation never discards an unsynced letter: with 3 unsynced letters the session stays until the queue is empty (F02-REQ-001, A-REQ-033).
 - [ ] [auto] Tokens are never in AsyncStorage, settings, logs, route params or Sentry (F02-REQ-003).
 - [ ] [auto] Known and unknown email addresses get identical screens and timing class (F02-REQ-005).
-- [ ] [auto] At most one of Keep the book, reminder prime or analytics consent per session, in that order across sessions (PRD-REQ-001 Rev).
+- [ ] [auto] At most one of Keep the book, reminder prime or analytics consent per session, with "session" and the order defined once in F02 (PRD-REQ-001 Rev; R5 EQ-19).
 
 ### F03 First run
 - [ ] [auto] Only a name and a birthday or due date are required; nothing asks for surname, gender, photo or contacts (B-REQ-001).
-- [ ] [auto] Children, signatures, languages and dictionary terms commit in one transaction at the final tap; a kill before it leaves no child row (F03-REQ-002, B-REQ-006 Rev).
-- [ ] [auto] Three children in first run make three books, no Plus sheet, one `create_first_run_children` call accepted (PRD-REQ-015 Rev, M2).
+- [ ] [auto] Children, signatures, languages and dictionary terms commit in one transaction at the final tap; a kill before it leaves no child row (F03-REQ-002, F03-REQ-010).
+- [ ] [auto] Three children in first run make three books, no Plus sheet, one `create_first_run_children` call accepted (F03-REQ-011, M2).
 - [ ] [auto] A language that has not passed its gate shows Record and type; the label changes from the signed manifest on next launch without a release; offline uses the last good copy (F03-REQ-003, F03-REQ-004).
 - [ ] [auto] Choosing Portuguese requests only the Portuguese pack; the model download never blocks first run (F03-REQ-005, F03-REQ-006).
 - [ ] [auto] No OS prompt and no paywall during first run (F03-REQ-007).
@@ -236,7 +261,7 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 
 ### F04 Capture
 - [ ] [auto] A `drafts` row with state `recording` and the file path exists before `record()` is called (F04-REQ-001).
-- [ ] [auto] Capture works offline: voice-only, typed and Not much today all save with 0 requests in the proxy log (A-REQ-030).
+- [ ] [manual until mitmproxy runs] Capture works offline: voice-only, typed and Not much today all save with 0 requests in the proxy log (F04-REQ-032).
 - [ ] [auto] Backgrounding while recording stops and keeps the take within 1 s; `UIBackgroundModes` has no `audio` (LEGAL-REQ-011).
 - [ ] [auto] Any OS interruption finalizes the take once and opens Review; never auto-resumes (F04-REQ-003).
 - [ ] [auto] Launch recovery never deletes audio; only a confirmed Let it go deletes a file (F04-REQ-004, F04-REQ-009).
@@ -246,10 +271,13 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Typed text is stored exactly as typed (em dash, curly quotes, ellipsis, emoji, Devanagari and Arabic survive byte for byte); `edit_level = verbatim` (F04-REQ-012, B5).
 - [ ] [auto] The recorder enables no voice processing, gain or noise suppression (F04-REQ-026, B6).
 - [ ] [auto] Storage under 50 MB creates no draft; a drop under 20 MB mid-take stops and keeps the take within 30 s (F04-REQ-008).
-- [ ] [auto] Microphone asked only at first Speak, after the primer; the purpose string matches v1.0 facts (LEGAL-REQ-007 Rev).
-- [ ] [auto] No Keep the book, reminder or analytics sheet appears in Listen, Write or Review (PRD-REQ-001).
+- [ ] [auto] Microphone asked only at first Speak, after the primer; the purpose string makes no claim about where recordings are kept (F04-REQ-034, F04-REQ-047).
+- [ ] [auto] No Keep the book, reminder or analytics sheet appears in Listen, Write or Review (F04-REQ-038).
+- [ ] [auto] While a take is live, `announce()` holds every message, no Listen element changes its accessibility label, and the app shows none of its own notifications (F04-REQ-040, F04-REQ-041).
+- [ ] [manual] VO-REC: a VoiceOver-on take on SE 3 with the speaker route contains no synthetic speech (F04-REQ-040; 2.11 V1c).
+- [ ] [auto] A first spoken letter with no model saves voice-only, private, and leaves the free-letter ledger unchanged until its words are seen (F04-REQ-044, F05-REQ-043, M17).
 - [ ] [auto] Not much today saves one quiet-day mark with no words, once per child per day; marks are never counted, printed, read in Read together or moved into the book; an old mark's stored sentence never shows (F04-REQ-016 Rev, D-084; `quiet-day.logic.test.ts`, migration 5 test).
-- [ ] [auto] With `child-input` off, no `together` prompt and no "Write one together" entry (PRD-REQ-005).
+- [ ] [auto] With `child-input` off, no `together` prompt and no "Write one together" entry (F04-REQ-039).
 - [ ] [manual] Tap Speak to microphone live p95 500 ms over 200 taps on SE 3 (F04-REQ-023).
 - [ ] [manual] VoiceOver order on Listen, announcements on start, pause and resume, Magic Tap toggles Pause (F04-REQ-019).
 
@@ -265,7 +293,8 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Download resumes at 5 kill offsets with no part fetched twice; no bytes on cellular with mobile data off; size shown before Download (F05-REQ-021, F05-REQ-022).
 - [ ] [auto] Deleting a pack or model frees space and leaves every letter, recording and transcript unchanged; models are backup-excluded (F05-REQ-024, F05-REQ-025).
 - [ ] [manual] Per passed language on SE 3: p90 30 s or less, 2% battery or less, zero jetsam in 30 runs (F05-REQ-040).
-- [ ] [auto] Audio never leaves the phone (F05-REQ-038).
+- [ ] [manual until mitmproxy runs] Transcription sends no audio, text or dictionary term anywhere; the owner's backup is a separate ciphertext path tested in F08 (F05-REQ-038).
+- [ ] [auto] Speech starts downloading from the first-run speech card on Wi-Fi; words that arrive later stay unreviewed until the author saves them (F05-REQ-042, F05-REQ-043).
 
 ### F06 Faithful edit and review
 - [ ] [auto] R-01 regression suite: zero accepted meaning changes per launch language in Node CI, including the items open on 13 Oct (D4, D6, D7, D9, D10, D13, D14 English, D15; F06 section 7.1) (F06-REQ-019).
@@ -280,6 +309,8 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [manual] 100 of 100 kills in Review recover exactly (F06-REQ-036).
 - [ ] [manual] 300-word clean p95 300 ms on SE 3; 4,000 words: raw within 300 ms, marks within 1 s (F06-REQ-041).
 - [ ] [auto] No control offers to make words nicer (content test) (F06-REQ-039).
+- [ ] [auto] Review's default state saves in one tap and uses one save vocabulary (F06-REQ-042, F06-REQ-043).
+- [ ] [auto] An Arabic letter that starts with a Latin name renders right to left from its stored direction, and every letter carries its `accessibilityLanguage` (F06-REQ-044).
 
 ### F07 Names and words dictionary
 - [ ] [auto] A taught heard-as becomes an `stt_fix` that passes `verifyEdits` and is reversible; no other path writes a spelling into text (F07-REQ-004).
@@ -305,20 +336,21 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 
 ### F09 The book
 - [ ] [auto] Chapters by month of age, ordered by the moment, ties by capture time (F09-REQ-001, F09-REQ-002).
-- [ ] [auto] Empty months show invite rows with no digit counting letters (F09-REQ-005, C-REQ-015).
-- [ ] [auto] Mixed scripts render byte for byte, Arabic right to left, Devanagari in Tiro, no missing-glyph boxes (F09-REQ-008).
-- [ ] [auto] Private by default; a private letter reaches no other member's device (B-REQ-011).
-- [ ] [auto] A co-parent's letter shows no Delete, Edit or Change the date; `delete_entry()` fails (DATA-REQ-015).
+- [ ] [auto] Empty past months get no row; one end-of-book action offers an earlier month (F09-REQ-005, F09-REQ-006, C-REQ-015).
+- [ ] [auto] Mixed scripts render byte for byte, each letter in its stored direction, Devanagari in Tiro, no missing-glyph boxes, `accessibilityLanguage` per letter (F09-REQ-008, F09-REQ-033).
+- [ ] [auto] Private by default; a private letter reaches no other member's device (F09-REQ-022; B-REQ-011 in F11).
+- [ ] [auto] A co-parent's letter shows no Delete, Edit or Change the date; `delete_entry()` fails (F09-REQ-028).
+- [ ] [auto] Quiet this book stops every reminder, prompt, month or birthday message and milestone card for that child for this person only, changes no letter, asks no reason, and its copy has no loss words (F09-REQ-030).
+- [ ] [auto] A birth date 21 or more days before the due date asks once about reminders, with Leave them off for now as the default (F09-REQ-031).
 - [ ] [auto] Restore goes through `restore_entry()` only (F09-REQ-013).
 - [ ] [auto] Delete asks first with "Keep it" as the large button; the Recently deleted shelf shows first words, deletion day and erase day, with no countdown (F09-REQ-012 Rev, F09-REQ-018, D-085).
 - [ ] [auto] A quiet-day mark shows as one unsigned "A quiet day" row, hidden on a day with a letter, never in a chapter count (F09-REQ-019, D-084).
-- [ ] [auto] No due-date card, line or countdown (B-REQ-015).
+- [ ] [auto] No due-date card, line or countdown (F09-REQ-021).
 - [ ] [auto] The book, letter view, date change, delete and restore import nothing from the plan engine (F09-REQ-014).
 - [ ] [auto] Milestones render as inline cards once per reader; no modal, push or confetti (C-REQ-010, F09-REQ-017).
 
 ### F10 Read together
 - [ ] [auto] Read together is free with no session limit: on a Free phone with 3 letters, 5 Starts open every time with 0 Plus sheets and 0 StoreKit calls; no remote session value is read (PRD-REQ-020 Rev, M2).
-- [ ] [auto] A session counts once, at first playback, only in try mode; chapters with no recording on this phone never count (F10-REQ-001, F10-REQ-002, F10-REQ-004).
 - [ ] [auto] Nothing plays before Start; interruptions never auto-resume; no background audio mode (F10-REQ-005, F10-REQ-011, F10-REQ-013).
 - [ ] [auto] No Plus sheet during a session (F10-REQ-014).
 - [ ] [auto] No string says every letter plays in its author's voice while DR-07 A holds (F10-REQ-018).
@@ -367,7 +399,8 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] StoreKit stubbed to throw with a lapsed fixture: write, read, play and export succeed with zero Plus UI (LEGAL-REQ-050, C-NFR-004 Rev).
 - [ ] [auto] Zero purchase data in any request, header, log, event or crash report (F14-REQ-014).
 - [ ] [auto] Family-shared Plus: Plus allowed, zero notices planned, no refund row (F14-REQ-006).
-- [ ] [auto] Remote config can raise but never lower Read together tries below 3 (F14-REQ-018).
+- [ ] [auto] Remote config can raise but never lower the free-letters allowance below 2 (F14-REQ-018, M1).
+- [ ] [auto] A letter counts toward the free letters only at a Save with its words on screen (F14-REQ-037); voice-only letters waiting for words and the other parent's synced letters never count; the ledger never decreases (M17; F05-REQ-043; F14 owns the ledger).
 - [ ] [manual] Sandbox checklist S-1 to S-10 passes on device, including restore on a second device in under 10 s and Plus within 2 s in 48 of 50 purchases (section 2.9; C-REQ-020 Rev, C-NFR-002 Rev).
 - [ ] [auto] Store tables and functions are dropped; server code enforces no Plus (F14-REQ-012, B2).
 
@@ -378,7 +411,8 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] PDF text equals each in-book letter's `final_text`; no blank pages; no empty-month chapters; private letters absent (F15-REQ-004, F15-REQ-005).
 - [ ] [manual] PDF fixture with Hindi, Arabic, Mandarin and English: every script in its font, Arabic right to left, no missing glyphs; prints at 100% on US Letter (F15-REQ-006, F15-REQ-008).
 - [ ] [manual] 230 MB year, originals only, airplane mode on SE 3: under 2 minutes (C-NFR-007, DATA-REQ-052).
-- [ ] [auto] Export is the primary action before any delete-book or delete-account confirm (DATA-REQ-053).
+- [ ] [auto] Export is the primary action before any delete-book or delete-account confirm (F15-REQ-016; DATA-REQ-053 in F17).
+- [ ] [auto] Letters held at the Keep step, drafts waiting to be read back and typed drafts are exported under `waiting/` with byte-identical originals (F15-REQ-018).
 - [ ] [auto] The plaintext notice shows above the share sheet; no export file remains after it closes (DATA-REQ-056).
 - [ ] [auto] Background pauses and resumes; a kill offers Start again once and leaves no partial ZIP (F15-REQ-011).
 - [ ] [manual] The offline `index.html` lists every letter and plays every recording in Safari and Chrome with no network (F15-REQ-013).
@@ -411,11 +445,11 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [auto] Deleting the account of the parent who created a book leaves the co-parent's letters intact (DATA-REQ-012, K-22).
 - [ ] [manual] `https://earlyletters.com/delete-account` explains in-app deletion and accepts a request by email, handled by the runbook within LEGAL-REQ-031 times (LEGAL-REQ-030, D-042).
 - [ ] [auto] Settings > Help and Legal > About shows the "early version, can make mistakes" note; no beta string on Tonight, Listen, Review, Book, sign-in or Plus screens (K-13, B8).
-- [ ] [auto] Re-pointed to F17-REQ IDs when F17 section 7 lands; F17's P0 leak surfaces (search, widgets, notification previews, app switcher) each get a line then (F17 header).
+- [ ] [auto] F17's P0 leak surfaces (search, widgets, notification previews, app switcher) each have a line generated from F17 section 7 by `scripts/trace.mjs` (BL-002); until it exists the F17 owner adds them here.
 
 ### F18 Analytics and the learning loop
 - [ ] [auto] Fresh install through first letter, Keep the book and reminder prime: zero requests to PostHog or Sentry hosts and no event queued on disk (PRD-REQ-016, LEGAL-REQ-003).
-- [ ] [auto] The consent sheet is the third ask, never in the same session as another, nothing preselected (PRD-REQ-001).
+- [ ] [auto] The consent sheet is the third ask, never in the same session as another, nothing preselected (F18-REQ-027).
 - [ ] [auto] Every event validates against its typed schema; unknown properties and strings over 40 characters are dropped; the Asha canary never appears (PRD-REQ-016, LEGAL-REQ-017).
 - [ ] [auto] Every feature works the same with analytics on or off (LEGAL-REQ-003; 03 section 4.3).
 - [ ] [auto] Server aggregates report accounts, books and letters with no device analytics and no purchase data (PRD-REQ-017 Rev, B10).
@@ -428,7 +462,8 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 
 ### F20 Help, support and safety resources
 - [ ] [auto] The static "If you are struggling" row is reachable from Settings > Help in 2 taps or fewer; no classifier code path is reachable in the build (B7, D-034).
-- [ ] [auto] A support request carries app version, build, plan state, route enum and error codes, never letter content (C-REQ-016, LEGAL-REQ-014).
+- [ ] [auto] A support email carries only the app version, build and iOS version in its body, never plan state or letter content (F20-REQ-006, LEGAL-REQ-014).
+- [ ] [manual] Runbooks S-1 to S-5, S-7, S-8 and S-9 dry-run before C1, with a named backup responder (F20-REQ-011).
 - [ ] [auto] No safety tier in any request, event or server table (LEGAL-REQ-015).
 
 ### F21 App Store listing, website and legal pages
@@ -441,26 +476,29 @@ Where a feature spec is not yet written (F18 to F21, and F17 section 7 at the ti
 - [ ] [manual] App Store Connect territories equal {United States}; age rating answered; not in the Kids category (LEGAL-REQ-058).
 - [ ] [manual] Terms, Privacy Policy, Consumer Health Data Privacy Policy and Subscription terms are published at versioned URLs on `https://earlyletters.com/terms`, `/privacy`, `/health-privacy`, and linked in the app and listing; `/subprocessors` is live (B11).
 - [ ] [manual] `packages/brand` holds the real domain and support email; no `example.com` in the build; the publisher's legal name appears only in legal documents and App Store Connect (PRD-REQ-023).
-- [ ] [manual] Review notes name every feature, explain that the first 2 kept letters are free and Plus is needed at the Keep step after that, with every other action free (M1, M2; F14-REQ-031), include a demo path, and describe a family memory journal that does not require health information (App Review 2.3.1, R4 section 0 item 8; DR-08).
+- [ ] [manual] Review notes name every feature, explain that the first 2 kept letters are free (counted once their words are seen, M17) and Plus is needed at the Keep step after that, with every other action free (M1, M2; F14-REQ-031), include a demo path, and describe a family memory journal that does not require health information (App Review 2.3.1, R4 section 0 item 8; DR-08).
 - [ ] [auto] Website, legal pages and `/j` pass axe with zero critical violations (LEGAL-REQ-051).
+- [ ] [manual] Every live claim in F21 6.6 is fixed, re-fetched and linked to its change (F21-REQ-030).
+- [ ] [manual] Notes for Review cover F21 6.7 (M1 to M17) and give a demo account with a two-parent book (F21-REQ-031).
+- [ ] [auto] No language without a passed gate is named next to "written down" or "transcribed" (F21-REQ-032).
 
 ### Cross-cutting non-functional gates
 - [ ] [auto] Every row marked Gate in `06-nfr.md` passes in the release-candidate performance run, with the evidence file named per row.
 - [ ] [auto] App Store download size for iPhone SE 3 is under 40 MB on the release build (B13, F05-REQ-016).
-- [ ] [auto] Crash-free sessions 99.8% or more and crash-free users 99.5% or more over the last beta build in App Store Connect (06-nfr.md section 6).
+- [ ] [manual] Zero unresolved crash signatures on the release-candidate build across C1 and the device scripts, over at least 500 sessions [A] (R2 AR-26: a 99.8% rate cannot be read from a few hundred beta sessions). The 99.8% and 99.5% rates stay as the G5 post-release gate (06-nfr.md section 6).
 - [ ] [auto] Load test at 2x the 1k targets and a 4-hour soak pass in staging (BL-282).
 - [ ] [auto] `npm test`, `npm run test:db` and `npm run typecheck` pass on the release commit.
 
 ## 4. Beta on TestFlight
 
-The beta runs on TestFlight; the store listing never says "beta"; the app keeps a small "early version, can make mistakes" note in About (B8). Cohorts follow D-045 (recommended, founder OK needed by 4 Dec): C0 internal, then C1 friendly families for 3 weeks, then App Store submission. The C2 public link is optional and runs after submission (D-045). Everyone in every cohort is 18 or older and passes the in-app 18+ gate like any user (TDD 07 section 11).
+The beta runs on TestFlight; the store listing never says "beta"; the app keeps a small "early version, can make mistakes" note in About (B8). Cohorts follow D-045 (recommended; founder OK needed before C1): C0 internal, then C1 friendly families for 3 weeks, then App Store submission. Dates for every row below are in `08-delivery.md` section 2.1 (R5 EQ-16, R3 DX-30). The C2 public link is optional and runs after submission (D-045). Everyone in every cohort is 18 or older and passes the in-app 18+ gate like any user (TDD 07 section 11).
 
 ### 4.1 Cohorts
 
 | Cohort | Who | Size | Dates (ROADMAP) | Entry gate | What we learn |
 |---|---|---|---|---|---|
-| C0 internal | Founder, engineers, the founding family; internal testers need no Beta App Review | Up to 10 | From week 6 (9 Nov) | G2 | Crashes, durability, daily-use friction |
-| C1 friendly families | Chosen for coverage: at least 2 co-parent pairs; speakers of each language that passed its gate (at least 2 Hindi speakers if Hindi passed); 1 twins or multiples family; 1 expecting parent; 2 VoiceOver or large-text users; 1 separated co-parent pair if any volunteer | 15 to 25 families | Build to Beta App Review by Fri 11 Dec; runs 14 Dec to 8 Jan | G3 | First run, the co-parent loop, transcription fidelity on real accents, accessibility, Plus in sandbox |
+| C0 internal | Founder, engineers, the founding family; internal testers need no Beta App Review | Up to 10 | C0 start in 08 section 2.1 | G2 | Crashes, durability, daily-use friction |
+| C1 friendly families | Chosen for coverage: at least 2 co-parent pairs; speakers of each language that passed its gate (at least 2 Hindi speakers if Hindi passed); 1 twins or multiples family; 1 expecting parent; 2 VoiceOver or large-text users; 1 separated co-parent pair if any volunteer | 15 to 25 families, at least 4 Hindi and 2 Arabic speakers whatever the gate status (R3 DX-26) | C1 rows in 08 section 2.1 | G3 | First run, the co-parent loop, transcription fidelity on real accents, accessibility, Plus in sandbox |
 | C2 public link (optional) | TestFlight public link with a tester cap, US only | 100 to 300 | After submission (D-045) | G3 plus C1 exit; external penetration test first (BL-313) | Sync at scale, notices, retention signal |
 
 V2 removes the C1 grandparent and web-page coverage TDD 07 listed (B1: contributors and the web page are v1.1). Purchases in TestFlight run in the sandbox and cost testers nothing, so C1 tests the Plus flow but not real conversion [A] (TDD 07 section 11.1; verify in WP-F14-12).
@@ -468,7 +506,7 @@ V2 removes the C1 grandparent and web-page coverage TDD 07 listed (B1: contribut
 ### 4.2 Feedback and privacy in the beta
 
 - Testers are asked in the welcome note not to screenshot letters; TestFlight screenshot feedback can carry letter text to App Store Connect (TDD 07 section 11.2). Whether it can be turned off per group is open (Q3).
-- In-app Report a problem (F20) sends app version, build, plan state, route enum and error codes, never content.
+- Settings > Help (F20) sends only the app version, build and iOS version, never plan state or content (F20-REQ-006).
 - Crash data comes from TestFlight and App Store Connect for everyone, and Sentry only for consenting testers.
 - Surveys at day 7 and day 21 ask for no letter content.
 - Issues never contain letter text, child names or screenshots of letters (TDD 07 section 11.3).
@@ -486,25 +524,26 @@ Source: TDD 07 section 11.3; ROADMAP week 11 (daily 20-minute triage during C1).
 
 ### 4.4 Exit criteria
 
-**C0 to C1** (by Fri 11 Dec):
+**C0 to C1** (C1 start in 08 section 2.1):
 1. 14 days of C0 use with zero open S0.
-2. Crash-free sessions 99.5% or more on C0 builds.
+2. No crash signature open from the last 7 days of C0 (a rate cannot be read from 10 testers, R2 AR-26).
 3. Kill during save passed on SE 3 (500 Simulator plus 50 device, zero loss).
 4. Restore drill passed (before the first non-founder family; section 2.10).
 5. Every P0 LEGAL-REQ and DATA-REQ line for the shipped scope green (G3).
 6. Security migration pack and access matrix green in staging (09 R-09).
 
-**C1 to App Store submission** (C1 exit review, week 14, 4 to 8 Jan):
-1. At least 21 days of C1 use (14 Dec to 4 Jan) [A: the holiday weeks count; the founder may extend].
+**C1 to App Store submission** (C1 exit review, in 08 section 2.1):
+1. At least 21 days of C1 use (D-045). If 08 plans a shorter C1, the founder signs a dated exception line here naming the length and why (R5 EQ-16); the holiday weeks count [A].
 2. Zero open S0 and S1.
-3. Crash-free sessions 99.8% or more and crash-free users 99.5% or more on the C1 build (App Store Connect).
+3. Zero unresolved crash signatures on the C1 build over at least 500 sessions [A]; the App Store Connect rate is read as a signal, not a gate (R2 AR-26).
 4. Zero letters or recordings lost or silently changed across the cohort (03 section 4.3).
 5. No transcription fidelity complaint traced to an engine edit; each fidelity report is classified as model error (fixable in Review) or engine edit (S0).
 6. Author correction rate per language shown to the founder for every passed language; no language more than 50% over its gate baseline (03 section 4.3) [A: small samples; read as a signal].
 7. At least 2 co-parent pairs completed invite and join without help.
 8. At least 1 VoiceOver or large-text tester completed first letter, Review and export without help.
 9. No paywall shown outside its allowed triggers (C-REQ-023).
-10. Every line in section 3 passes on SE 3 and a current iPhone, with evidence.
+10. Every line in section 3 passes per the device rule in section 3's header, with evidence.
+11. At least 1 VoiceOver tester recorded a letter with VoiceOver on, and its transcript held no VoiceOver speech (F04-REQ-040).
 
 C2, if run after submission, exits on the founder's decision with zero open S0 and crash-free sessions 99.8% or more.
 
@@ -514,11 +553,11 @@ C2, if run after submission, exits on the founder's decision with zero open S0 a
 
 | Gate | When | Must pass | Who signs |
 |---|---|---|---|
-| G0 PR | Every pull request | Section 1 done; CI: typecheck, unit, content rules, database, docs lint where changed, IPA size where `apps/mobile` or `packages` changed | CI plus a CODEOWNERS reviewer; founder `approve-migration` for `supabase/**` and auth |
+| G0 PR | Every pull request | Section 1 done; CI's `required` job today: install, unit (content rules included), database, functions, typecheck. Not yet in `required` and therefore not yet part of G0 (R5 EQ-09): `expo lint`, docs lint, the migration guard (a separate workflow today), IPA size, the trace check, the SDK denylist. S20's first PR adds the first three; IPA size, Maestro and the data-map diff run in the release workflow only | CI plus a CODEOWNERS reviewer; founder `approve-migration` for `supabase/**` and auth |
 | G1 main | Merge to `main` | G0 on the merge commit; `main` is always releasable (CLAUDE.md) | CI |
-| G2 internal TestFlight (C0) | Any binary to internal testers | G1, plus a green nightly in the last 24 h (Maestro flows, random-seed property tests, log canary); manual smoke on SE 3 | QA lead |
-| G3 external TestFlight (C1) | First external build and every external build | G2, plus: every P0 LEGAL-REQ and DATA-REQ test for shipped scope green; the R-01 suite green in Node and Hermes; each shipped language's gate report and sign-off present; kill during save on SE 3; restore drill; deletion verification in staging; privacy labels and manifest generated and diffed; VoiceOver script V1 and V4 on SE 3; kill switch drill; IPA under 40 MB | QA lead and founder |
-| G4 App Store submission | Release candidate tag `ios-v<major>.<minor>.<patch>` | G3, plus: C1 exit (4.4); every line in section 3 passes on SE 3 and a current iPhone with evidence; every Gate row in 06-nfr.md; load test at 2x 1k and the 4-hour soak; purchase sandbox S-1 to S-10; V2, V3, V5, V6, V7 scripts; counsel sign-off (5.2 item 3); no open S0, S1 or P0-screen S2 | Founder |
+| G2 internal TestFlight (C0) | Any binary to internal testers | G1, plus a green nightly in the last 24 h (random-seed property tests and the database suite, which `nightly.yml` runs today; Maestro and the log canary once Q6 puts them in the nightly, R5 EQ-10); manual smoke on SE 3 | QA lead |
+| G3 external TestFlight (C1) | First external build and every external build | G2, plus: every P0 LEGAL-REQ and DATA-REQ test for shipped scope green; the R-01 suite green in Node and Hermes; each shipped language's gate report and sign-off present; kill during save on SE 3; restore drill (BL-247, before the first non-founder family); deletion verification in staging; privacy labels and manifest generated and diffed; VoiceOver scripts V1 and V1c on SE 3 (V4 may move to G4); kill switch drill; IPA under 40 MB; no live false claim from F21 6.6 rows 1 to 8. If 08 schedules C1 before an item can run, the founder signs a dated deferral naming the item, the reason and the gate it moves to; items in 5.3 are never deferred (R5 EQ-02; M15 moved submission, which leaves room to run them) | QA lead and founder |
+| G4 App Store submission | Release candidate tag `ios-v<major>.<minor>.<patch>` | G3, plus: C1 exit (4.4); every line in section 3 passes per its device rule with evidence; zero unresolved crash signatures (section 3, cross-cutting); every Gate row in 06-nfr.md; load test at 2x 1k and the 4-hour soak; purchase sandbox S-1 to S-10; V2, V3, V5, V6, V7 scripts; counsel sign-off (5.2 item 3); no open S0, S1 or P0-screen S2 | Founder |
 | G5 post-release | Phased release, days 1 to 7 | Crash-free sessions 99.8% and users 99.5% in App Store Connect; zero data-loss reports; any S0 pauses the phased release | Founder (on call) |
 | OTA (only if `expo-updates` is used) | A JavaScript-only update | G3 for the changed scope plus Maestro on the exact update bundle; an OTA never changes consent, the 18+ gate, the paywall or data collection without a binary; updates apply on the next cold start, never mid-recording | QA lead |
 
@@ -526,7 +565,7 @@ Source: TDD 07 section 9.1, re-pointed to V2 scope; TDD 06 FM-R18.
 
 ### 5.2 The launch gate
 
-Every item below passes before submission to App Review. ROADMAP 2.1 plans the week of Mon 2 Nov 2026 (`_AUTHORING.md` M13); M14 puts that date at risk and `08-delivery.md` re-plans it (09 R-16). Items 1 to 6 carry over from PRD 1.3 section 2.3; items 7 to 10 are new for V2.
+Every item below passes before submission to App Review, now about mid-January 2027 (M15); `08-delivery.md` section 2.1 sets the week. Items 1 to 6 carry over from PRD 1.3 section 2.3; items 7 to 10 are new for V2.
 
 1. Every line in section 3 passes (PRD 1.3 2.3 item 1).
 2. Every P0 LEGAL-REQ and DATA-REQ for v1.0 scope passes; v1.1 LEGAL-REQs bind the day their feature ships (PRD 1.3 2.3 items 2 and 6).
@@ -538,17 +577,19 @@ Every item below passes before submission to App Review. ROADMAP 2.1 plans the w
 8. Every language offered for transcription has passed its gate on the SE 3 tier with a native-speaker sign-off, and the R-01 suite is green for its script; every other language shows as Record and type or is held back from the release and named nowhere in the listing (DR-01 A; F05-REQ-001 to F05-REQ-006; ROADMAP 2.1 section 6; F05 Q11: no in-app gate is built).
 9. Zero plaintext audio bytes and zero purchase data in any request across the full E2E suite; the owner's backup sends only ciphertext (D-073, B2).
 10. C1 exit criteria met (section 4.4).
+11. California AB 1043 handling is in the build, since submission falls after 1 Jan 2027 (F01-REQ-010; counsel Q4 in F01).
+12. No public claim in F21 6.6 is still false (F21-REQ-030), and the listing and notes match F21 6.7.
 
 ### 5.3 What never gets waived
 
-A founder-signed exception may move a budget marked [A] or a non-gate row. It may not waive: zero lost or silently changed letters; zero accepted meaning changes in the R-01 suite; the immutable raw transcript; kill during save 500 of 500 and 50 of 50; export complete and free offline; in-app account deletion; the 18+ gate; nothing sent before consent; server-side access checks and the leak suite; accurate claims (05 section 5 never-cut list; 03 section 4.3).
+A founder-signed exception may move a budget marked [A] or a non-gate row. A LEGAL-REQ or DATA-REQ is relaxed or retired only by counsel in writing, never by a founder decision alone (R4 PT-06). Nothing may waive: zero lost or silently changed letters; no synthetic speech recorded into a letter (F04-REQ-040); zero accepted meaning changes in the R-01 suite; the immutable raw transcript; kill during save 500 of 500 and 50 of 50; export complete and free offline; in-app account deletion; the 18+ gate; nothing sent before consent; server-side access checks and the leak suite; accurate claims (05 section 5 never-cut list; 03 section 4.3).
 
 ## 6. Gates changed from PRD 1.3 and why
 
 | 1.3 gate or checklist line | V2 | Why |
 |---|---|---|
 | App download 80 MB or less (not a gate) | Under 40 MB, gate, every release build | B13 |
-| 1-year export under 2 minutes (230 MB) | Kept for originals; 470 MB with listening copies has a 4-minute target, gate only if the founder accepts F15 Q1 | B6 doubles audio; F15 Q1 |
+| 1-year export under 2 minutes (230 MB) | Kept; listening copies are never exported (ADR 0015), so originals alone set the bar | ADR 0015; F15 Q1 closed |
 | Transcription 30 s and 2% battery (Unverified, no gate) | Gate per passed language on SE 3, or a founder-recorded change | F05-REQ-040; R-02 |
 | "Every machine edit passes `verifyEdits`" | Plus the R-01 regression suite, zero accepted meaning changes per language, Node and Hermes | 09 R-01; F06-REQ-019 |
 | Hindi plus Devanagari transcribes (6.2) | Each of seven languages gated by its own corpus; only passed languages are transcribed | B4; DR-01 A |
@@ -566,20 +607,22 @@ A founder-signed exception may move a budget marked [A] or a non-gate row. It ma
 | Load test at 2x the 1k targets (2.2 members per family, uploads, webhooks) | Same gate on F16's recomputed targets (1.5 accounts, no uploads or webhooks) plus a 4-hour soak | F16 section 9; TDD 06 section 8.3 |
 | Beta: TDD 07 C2 public link before the store | C1 only before submission; C2 optional after | D-045 (recommended) |
 | none | New gates: local playback p95 300 ms; zero jetsam in 30 transcription runs; RTL and mixed-script rendering; restore drill before the first non-founder family | F08, F05, F09, F16 |
+| none | New on 14 Oct: no synthetic speech in a VoiceOver recording; multilingual VoiceOver reading; held letters in the export; no live false public claim | F04, F06, F09, F15, F21 |
+| Crash-free rate as the beta gate | Zero unresolved crash signatures over a minimum session count; the rate becomes G5 | R2 AR-26 |
 
 ## 7. Open questions
 
 | Q | Who answers, by when | What changes |
 |---|---|---|
-| Q1 D-045: confirm C1-only before submission, C2 after | Founder, 4 Dec | Section 4.1 |
-| Q2 DR-02 is answered by D-080, D-081 and M14 (phone reminders plus status-report emails). Counsel still answers whether both channels meet the California ARL (F14 Q-C1) | Counsel, Fri 23 Oct (FT-33) | F14 checklist line on notices |
+| Q1 D-045: confirm C1-only before submission, C2 after | Founder, before C1 | Section 4.1 |
+| Q2 DR-02 is answered by D-080, D-081 and M14 (phone reminders plus status-report emails). Counsel still answers whether both channels meet the California ARL (F14 Q-C1) | Counsel, FT-33 | F14 checklist line on notices |
 | Q3 Can TestFlight screenshot feedback be turned off for a group, and if not, how do we handle letter text in it? | Counsel, founder, before C1 | Section 4.2 |
 | Q4 Does an external TestFlight cohort count as public launch for LEGAL-REQ purposes? | Counsel, before C1 | Which LEGAL-REQs G3 must pass (TDD 07 OQ-3) |
-| Q5 Who runs the SE 3 device scripts for each release candidate? | Founder, before week 6 | G3 and G4 capacity |
-| Q6 Where Maestro runs nightly: GitHub macOS minutes, a self-hosted Mac mini or Maestro Cloud | Founder (cost), week 3 | Section 2.6 |
+| Q5 Who runs the SE 3 device scripts for each release candidate (2.7 budget), and is a second SE 3 kept on iOS 17? | Founder, before C0 | G3 and G4 capacity |
+| Q6 Where Maestro runs nightly: GitHub macOS minutes (cheapest start [A], R5 EQ-10), a self-hosted Mac mini or Maestro Cloud | Founder (cost), before G2 | Sections 2.1, 2.6, G2 |
 | Q7 Will the app use `expo-updates` OTA? | Mobile lead | OTA gate in 5.1 |
 | Q8 Should `scripts/trace.mjs` block merges from day one or report only? | Founder, QA lead | Section 3 regeneration |
-| Q9 F15 Q1: 4 minutes with listening copies as a gate | Founder, week 6 | Section 3 F15 lines; 06-nfr.md section 2.5 |
+| Q9 Closed: listening copies are never exported (ADR 0015; F15 Q1), so the 2-minute originals gate stands alone | n/a | n/a |
 
 | A | Assumption | How we validate |
 |---|---|---|

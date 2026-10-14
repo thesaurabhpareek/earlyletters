@@ -8,10 +8,10 @@ Labels: **[F]** fact from a page opened today (R3-S#). **[S]** signal. **[A]** a
 
 - **Pool:** 3,606,400 US births in 2025 (provisional, down 1%) [F]. About 39.6% are first births [A]. About 18.5 million children are under 5 [A from F]. At an assumed 55% iPhone share, about 2.0 million new families a year are reachable [A].
 - **iPhone share is not settled:** 53.6% of US mobile web traffic and 69% of Q4 2025 sales are iOS [F]. No source gives the share among parents (**Unverified**).
-- **Languages:** the six non-English launch languages have 53.5 million US speakers at home (ACS 2024), 72% of everyone who speaks a language other than English at home [F, A]. Spanish is 44.9 million of that. Tagalog (1.9M), Vietnamese (1.6M), Korean (1.2M) and Haitian (1.0M) are each larger than Hindi (1.06M) and are not in the seven [F].
+- **Languages:** the six non-English launch languages have 53.5 million US speakers at home (ACS 2024), 72% of everyone who speaks a language other than English at home [F, A]. Spanish is 44.9 million of that. Tagalog (1.9M), Vietnamese (1.6M) and Korean (1.2M) are each larger than Hindi (1.06M) and are not in the seven; Haitian (1.04M) and Russian (1.02M) are just smaller than Hindi [F] (corrected 13 Oct 2026: the first version listed Haitian as larger than Hindi, which the table in 2.2 contradicts; `reviews/R6-fact-check.md` row 20).
 - **Immigrant parents:** 24.5% of 2024 births were to mothers born outside the 50 states and DC [F]. 22.8% of parents of a child under 3 are foreign-born [F, A].
 - **Grandparents:** about 65 million; 76% say digital tools are a primary way to stay in touch; they spend $2,654 a year on grandchildren [F]. Distance and abroad figures are **Unverified**.
-- **Category ceiling:** Tinybeans plus Qeepsake earn $6.49M a year from 93,300 paid families and only just reached positive EBITDA (FY26) [F]. Qeepsake sold for $2.7M in stock, about $54 per subscriber and about 0.66 times revenue [A].
+- **Category ceiling:** Tinybeans plus Qeepsake earn $6.49M a year from 93,300 paid families and reached positive adjusted EBITDA (FY26) only with a one-off $0.59M R&D tax refund; without it the year was a loss [F] R3-S26. Qeepsake sold for a headline $2.7M: $1.2M in shares plus up to $1.5M in performance rights tied to EBITDA, subscriber and revenue targets, recorded at $2.075M [F] R3-S26; about $24 to $54 per subscriber and 0.29 to 0.66 times revenue [A] (corrected 13 Oct 2026, `reviews/R6-fact-check.md` rows 16 and 17).
 - **Benchmarks:** 17 to 32 day trials convert best (44.6% on annual plans). Trials over 32 days have no benchmark. Freemium converts 2.1% by day 35, hard paywalls 10.7% [F]. Year-1 Base case: about 19,800 families, about 990 payers, about $30k net [A].
 - **Costs:** no list price in ARCHITECTURE section 7 changed since 1 Oct. PostHog overage and Vercel Pro ($20) are now verified. Hosting models on R2 or Hugging Face (free egress) instead of Supabase avoids $3.8k to $11.3k at 220k installs [F, A].
 
@@ -165,7 +165,7 @@ Source for every row: AARP Research, *Powering Families: The Essential Role of G
 | Paid subscribers | 51,000 | 93,300 (Tinybeans 49,600; Qeepsake 43,700) | [F] R3-S24, R3-S26 |
 | ARPU | $75 a year (up 40% since FY23) | not disclosed | [F] R3-S24 |
 | Churn and retention | monthly churn down 33% from FY24; retention 93% | not disclosed | [F] R3-S24 |
-| Adjusted EBITDA | loss of $1.44M | profit of $0.43M | [F] R3-S24, R3-S26 |
+| Adjusted EBITDA | loss of $1.44M | profit of $0.43M, including a one-off $0.59M R&D tax refund (note added 13 Oct 2026, R6 row 16) | [F] R3-S24, R3-S26 |
 | Operating cash flow | outflow of $1.07M | inflow of $0.09M | [F] R3-S24, R3-S26 |
 | Cash at year end | $1.71M | $1.64M | [F] R3-S24, R3-S26 |
 | Plans | Tinybeans+ $74.99/yr; Legacy $39.99/yr; Family $119.99/yr planned for FY26 | | [F] R3-S24 |
@@ -174,17 +174,17 @@ Source for every row: AARP Research, *Powering Families: The Essential Role of G
 - US$2.7M, all in stock, no cash.
 - Qeepsake had nearly 50,000 paid subscribers in Oct 2025.
 - The combined business expected about 90,000 paid subscribers, over a million free users, and pro forma FY2025 revenue of about US$8.9M.
-- No earn-out is mentioned. CR S3 noted that Dealroom reports $4M; that figure remains conflicting and **Unverified**.
+- No earn-out is mentioned in the announcement. Correction, 13 Oct 2026 (`reviews/R6-fact-check.md` row 17): Tinybeans' FY26 annual report (R3-S26, note 4) gives the consideration as $1.2M in shares plus up to $1.5M in performance rights that vest only on EBITDA, subscriber (40,000 at 30 Sep 2026) and revenue ($3.75M) milestones, recorded at $2.075M. CR S3 noted that Dealroom reports $4M; that figure remains conflicting and **Unverified**.
 
 Derived [A]:
-- Price per Qeepsake subscriber: $2,700,000 / 50,000 = **$54**, which matches CR.
+- Price per Qeepsake subscriber: $2,700,000 / 50,000 = **$54** at the headline, which matches CR; $1,200,000 / 50,000 = **$24** for the upfront shares alone (added 13 Oct 2026, R6 row 17).
 - Qeepsake's implied revenue: $8.9M pro forma minus Tinybeans' $4.82M FY25 = about **$4.1M a year**. Divided by about 50,000 subscribers, that is about **$82 per subscriber per year**.
-- Price as a multiple of revenue: $2.7M / $4.1M = about **0.66 times**.
+- Price as a multiple of revenue: $2.7M / $4.1M = about **0.66 times** at the headline; $1.2M / $4.1M = about 0.29 times upfront (added 13 Oct 2026, R6 row 17).
 - Qeepsake subscribers fell from about 50,000 (Oct 2025) to 43,700 (Jun 2026): 43,700 / 50,000 = 0.874, a **12.6% fall in about 8 months**.
 - Tinybeans' own base went from 51,000 to 49,600, down 2.7%.
 
 **Inferred:**
-1. In a public, privacy-first family memory business with about 90,000 paid families, the whole group earns $6.5M a year and only just reached positive EBITDA. A private family memory app sold for less than one year of its revenue.
+1. In a public, privacy-first family memory business with about 90,000 paid families, the whole group earns $6.5M a year and reached positive adjusted EBITDA only with a one-off tax refund (corrected 13 Oct 2026, R6 row 16). A private family memory app sold for less than one year of its revenue.
 2. Tinybeans' price rise (about 87% in 2024 per CR S22) raised ARPU 40% while it kept 93% retention and grew subscription revenue 12% (R3-S24). Parents with years of memories stored tend to pay rather than leave, which is the "hostage" dynamic UR flags as a trust risk.
 3. Tinybeans' advertising revenue fell 35% and then 32%, so ad funding in this category keeps shrinking.
 

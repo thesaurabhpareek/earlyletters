@@ -7,7 +7,7 @@
 | Personas | P1 to P6 as named per feature |
 | Existing IDs | PRD-REQ-021, B-REQ-008, B-REQ-013, B-REQ-017 to B-REQ-024, C-REQ-013, C-REQ-014, C-REQ-030 to C-REQ-032, A-REQ-003 to A-REQ-011, A-REQ-020, LEGAL-REQ-004, LEGAL-REQ-005, LEGAL-REQ-010, LEGAL-REQ-013, LEGAL-REQ-020, LEGAL-REQ-022, LEGAL-REQ-023, LEGAL-REQ-030, LEGAL-REQ-035, LEGAL-REQ-056, LEGAL-REQ-059, LEGAL-REQ-060, D-032, D-034, D-043, DR-07, DR-08, DR-14, DR-15 |
 | Depends on | The v1.0 features F01 to F21 |
-| Status | Draft V2, 3 Oct 2026; F31 revised 13 Oct 2026 for D-073 (audio backup of the owner's recordings moved to v1.0 in F08; family listening stays here); revised again 13 Oct for M1, M2 and M14. Light specs. Each item gets a full spec from the `_AUTHORING.md` section 5 template before its build starts |
+| Status | Draft V2, 3 Oct 2026; F31 revised 13 Oct 2026 for D-073 (audio backup of the owner's recordings moved to v1.0 in F08; family listening stays here); revised again 13 Oct for M1, M2 and M14; revised 14 Oct after critique round 1 (M16 wording, the Haitian fact, candidates raised by the reviews; disposition in `reviews/DISPOSITION-C.md`). Light specs. Each item gets a full spec from the `_AUTHORING.md` section 5 template before its build starts |
 
 ## 0. How to read this file
 
@@ -56,12 +56,12 @@ Audio backup has moved out of this item. D-073 (founder, 3 Oct 2026 evening) put
 - [A] Two voices raise retention; `read_together_page_without_audio{reason: other_parent}` (F10 section 10) measures how often DR-07 bites and is the input to this item's priority.
 
 ### What
-1. **Reuse the v1.0 backup.** The owner's recordings are already ciphertext in the `entry-audio` bucket with per-file keys wrapped by the per-child CCK (F08 section 6.5, ADR 0006). Shared voice adds member access, not a second upload path.
+1. **Reuse the v1.0 backup.** The owner's recordings are already ciphertext in the `entry-audio` bucket with per-file keys wrapped by the content key F08 specifies (F08 section 6.5, ADR 0006; R2 AR-05 proposes one key per child and author, which the backup ADR decides). Shared voice adds member access, not a second upload path.
 2. **Member key grants.** Each member has an account key pair (TDD 04 D-1: per account, not per device); the CCK is wrapped to each approved member's public key in `child_key_grants` (ADR 0006 item 3). Removing a member rotates the CCK for new files; older files stay readable by those who had them, and the app says so (ADR 0006).
 3. **Member playback.** A member's phone downloads the ciphertext and unwraps the file key with its own grant; nothing plaintext passes through our server. It verifies the capture SHA-256 and caches the plaintext in a backed-up directory beside its own recordings.
 4. **Who pays.** Open (Q1). Playing a recording is never gated, with or without Plus (M1, F08-REQ-008), and backed-up audio of a lapsed user is never deleted (C-NFR-008).
 5. **Only the original travels** [R]. A listening copy is made on the receiving phone from the original (F08-REQ-003).
-6. **Honest copy.** `book.recordingElsewhere` (F11-REQ-015) and the Read together line (F10-REQ-018) change to say the voice is on its way or ready; the claims registry changes with counsel. Until then, no v1.0 string promises family listening (D-073, F08-REQ-026).
+6. **Copy that matches the build.** `book.recordingElsewhere` (F11-REQ-015) and the Read together line (F10-REQ-018) change to say the voice is on its way or ready; the claims registry changes with counsel. Until then, no v1.0 string promises family listening (D-073, F08-REQ-026).
 
 ### Dependencies
 F08 backup (bucket, `audio_blobs`, `child_keys`, escrow, purge); F11 membership and removal; F14 plan engine; F17 deletion and purge; F19 kill switch (LEGAL-REQ-040); counsel on LEGAL-REQ-022(a) and the Privacy Policy and Terms 12.1 wording.
@@ -169,7 +169,7 @@ F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern a
 - **What.** An opt-in, per-feature consent (LEGAL-REQ-004) to send a recording for transcription when on-device is unavailable or the language has not passed. Results stored as a transcript version with the engine recorded; the raw transcript is set once and never overwritten. A daily spend breaker and the `ai_gateway_enabled` kill switch (TDD 06 section 4.3).
 - **Dependencies.** F05 queue and versions; F17 consent rows; F19 kill switch; counsel on the consent text and the subprocessor list.
 - **Budgets parked.** Gateway p95 4 s, p99 10 s for 2 minutes of audio (PRD 1.3 7.2, not a gate). Cost about $160 to $530 a month at 100k families (ADR 0002).
-- **Open questions.** Does each language need its own server model (for example a Hindi fine-tune)? How does the privacy copy separate a recording sent for transcription from the v1.0 encrypted backup (D-073, M14), which our server cannot read?
+- **Open questions.** Does each language need its own server model (for example a Hindi fine-tune)? How does the privacy copy separate a recording sent for transcription from the v1.0 encrypted backup (D-073, M14), which we can open only with the recovery key we hold under strict, logged access (M16)?
 - **Size.** [A] 3 engineer-weeks.
 - **What v1.0 must do now.** Keep the `ai-processing` consent type seeded in the policy documents (exists in `20261002020000_data_governance.sql`). Keep the transcription queue's target kinds and the per-result engine record generic, not whisper-specific [R] (WP-F05-07 owner). No v1.0 code calls any AI endpoint (03 section 5).
 
@@ -194,7 +194,7 @@ F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern a
 
 ## F38 Author's own second-language version of a letter
 
-- **Why.** [F] Among US Latino parents, 92% with a Latino partner speak Spanish to their children against 55% with a non-Latino partner (R2-S31). [A] A co-parent often cannot read the other parent's letters (DR-15). The constitution forbids machine translation (03 principle 1).
+- **Why.** [F] Among US Latino parents, 92% with a Latino partner speak Spanish to their children against 55% with a non-Latino partner (2015 survey, R2-S31). [A] A co-parent often cannot read the other parent's letters (DR-15; R2 marks it Inferred; study 3 in R3 tests it). The constitution forbids machine translation (03 principle 1).
 - **What.** An author adds their own second version of a letter in another language, written or spoken by them, linked to the first. Readers choose which version to read; both are kept and exported. Nothing is generated.
 - **Dependencies.** F05, F06, F09, F15.
 - **Open questions.** Does a second version count as a separate letter for milestones? Can it be spoken and transcribed in the second language? Does it need its own recording?
@@ -257,7 +257,7 @@ F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern a
 
 ## F45 Next spoken languages
 
-- **Why.** [F] Tagalog (1.9M), Vietnamese (1.6M), Korean (1.2M) and Haitian (1.0M) each have more US speakers than Hindi (1.06M); together 5.7M (R3 section 2.2). [F] ACS reports Chinese as one category; a Mandarin-only engine will not serve Cantonese speakers (R3 section 2.1). [F] Urdu is close to spoken Hindi but uses another script (R3 section 2.2).
+- **Why.** [F] Tagalog (1.9M), Vietnamese (1.6M) and Korean (1.2M) each have more US speakers than Hindi (1.06M); Haitian (1.04M) and Russian (1.02M) are just smaller. Tagalog, Vietnamese, Korean and Haitian, the four largest not in the seven, total 5.7M (R3 section 2.2; corrected 14 Oct per `reviews/R6-fact-check.md` row 20). [F] ACS reports Chinese as one category; a Mandarin-only engine will not serve Cantonese speakers (R3 section 2.1). [F] Urdu is close to spoken Hindi but uses another script (R3 section 2.2).
 - **What.** One pack and one gate per new language, shipped in waves as each passes (DR-01 pattern).
 - **Dependencies.** F05, F06 (verifier coverage for each new script), F07 phonetics.
 - **Open questions.** Which first; Urdu right-to-left Nastaliq rendering.
@@ -299,6 +299,16 @@ F11 invite and redeem path; F16 pull with `sees_pending`; F17 report a concern a
 - **Open questions.** Whether Apple hosting is free with membership (Unverified, R4 section 6); whether Apple signs packs.
 - **Size.** [A] 2 engineer-weeks.
 - **What v1.0 must do now.** Keep the asset manager behind one interface with the source as a field in `speech_assets` [R] (WP-F05-04 owner). Keep our SHA-256 check for every source (F05-REQ-018).
+
+## Candidates raised by critique round 1 (14 Oct 2026)
+
+Not ranked in `05-feature-map.md` yet; each needs the founder to place it.
+
+| Candidate | Why | v1.0 hook already in place |
+|---|---|---|
+| Corrected age for babies born early: a parent-entered "adjusted from {date}" line beside the dateline; chapters stay by birth date | Preterm parents ask for adjusted dates [S] R2 T28 (R2-S2, R2-S14); R3 DX-18 asks for a decision. Wording needs a clinician (BL-105) | v1.0 leaves reminders off when a birth date is 21 or more days early (F09 step 17); dates are stored as dates, so a display line adds no migration |
+| A trusted person who can ask for the book if the only parent dies | Accounts exist at v1.0; fiduciary access is governed by state law (R4 PT-17) | v1.0 runbook S-9 (F20) and a Terms clause; export is the hand-over format (F15) |
+| Shared voice first for books with two languages | A co-parent who does not read the letter's language can neither read nor hear it at v1.0 (R3 DX-10) | F31 above; F09 shows the language label and "Ask {signsAs} to read this one with you" |
 
 ## Open questions across this file
 

@@ -7,14 +7,14 @@
 | Personas | P1 Evening parent, P2 Co-parent (invitee first run), P3 Expecting parent, P4 Multilingual family |
 | Existing IDs | B-REQ-001, B-REQ-002, B-REQ-003, B-REQ-004 (first-run part), B-REQ-005 (create part), B-REQ-006, B-REQ-012, B-REQ-013, B-NFR-007, B-NFR-008, B-NFR-009, PRD-REQ-015, A-REQ-030, A-REQ-035, LEGAL-REQ-007, LEGAL-REQ-012, D-028, D-031, D-038, DR-01, BL-033, BL-136, BL-143, BL-178, BL-258 |
 | Depends on | F01 (gate passed, Welcome > Start a book). Hands off to F04 (first letter), F05 (model and pack download, language gate), F07 (dictionary), F09 (month chapters, Before You), F11 (invitee first run), F12 (more children later), F17 (settings rows) |
-| Status | Draft V2, 3 Oct 2026 |
+| Status | Draft V2, 3 Oct 2026. Revised 14 Oct 2026 after critique round 1 (M2, M14, M17; disposition in `reviews/DISPOSITION-C.md`) |
 
 ## 1. Why
 
 - [F] UR R1: median time from first launch to first saved letter 90 s or less, no tutorial before the first recording (UR S10, S24). UR R2: only the child's first name or nickname and a birth or due date are required (UR S9, S27).
-- [F] Tinybeans made child details optional and reported +885% onboarding completion (R1-S51). Headspace's quiz doubled course starts (31% to 63%) but did not raise practice days (R1-S58): first-run questions buy first use, not habit.
+- [S] Tinybeans made child details optional; a designer's portfolio case study, not the company, reports +885% onboarding completion (R1-S51). Self-reported; not used for any decision here (R3 DX-31). Headspace's quiz doubled course starts (31% to 63%) but did not raise practice days (R1-S58): first-run questions buy first use, not habit.
 - [F] No competitor asks which languages a family speaks; Day One takes the transcription language from the keyboard and users ask for a separate setting (R1-S60, R1-S61).
-- [F] In mixed-language couples the heritage language often does not reach the child: 92% against 55% among US Latino parents (R2-S31). Languages are asked per author, not per family.
+- [F] Among US Latino parents, 92% with a Latino partner and 55% with a non-Latino partner speak Spanish to their children (2015 survey, R2-S31). That is about speaking, in one community; whether a partner can read the other's letters is [A] (R3 DX-29). Languages are asked per author, not per family.
 - [F] Only English, Spanish, French, Portuguese and Mandarin look realistic on an SE 3 with one shared model; Hindi needs a Hindi-tuned model whose SE 3 speed is unproven; Arabic dialect speech is 30% to 60% WER on open models (R5 section 0 items 1 to 3). DR-01 default A: a language appears for transcription only after it passes its gate.
 - [F] Auto-detection is risky for Hindi (Whisper can return Urdu script) (R5 section 1.2, R5-S27, R5-S29). The author sets languages explicitly.
 - [S] Preterm parents asked for dates adjusted for a preterm birth; pregnancy pages are praised (R2-S2, R2-S14, R2-S15).
@@ -68,7 +68,7 @@ Outcome: a parent names the child, gives a birthday or due date, says what the c
 |---|---|---|---|---|
 | Qeepsake | Journal name up to 14 characters, name inside prompts, age-adjusted questions from pregnancy [F] R1-S42, R1-S43, R1-S1 | 4.9 (15K) [F] R1-S1 | Age-inappropriate prompts outside the target range [S] R1-S56 | **Match** age-aware prompts; **Avoid** the 14-character cap [R] |
 | Qeepsake twins | One journal per child or one shared [F] R1-S43 | n/a | n/a | **Match** one book per child [R] (PRD-REQ-011) |
-| Tinybeans | Child details optional at sign-up [F] R1-S51 | +885% completion [F] R1-S51 | n/a | **Match** [R]: two required facts only |
+| Tinybeans | Child details optional at sign-up [F] R1-S51 | +885% completion, self-reported in a designer's portfolio [S] R1-S51 | n/a | **Match** [R]: two required facts only (the principle, not the number) |
 | BabyPage | Pregnancy milestones [F] R1-S9 | 4.8 (4.1K) [F] R1-S9 | n/a | **Match** due-date mode (P3) [R] |
 | Day One | Transcription language from the keyboard [F] R1-S60 | n/a | Users ask for a separate setting [S] R1-S61 | **Avoid** [R]: ask languages per author |
 | From, Mama | Dictation with automatic name correction [F] R1-S20; method Unverified | 4.9 (48) [F] R1-S20 | n/a | **Innovate** [R]: names seed the dictionary at first run |
@@ -82,7 +82,7 @@ Outcome: a parent names the child, gives a birthday or due date, says what the c
 |---|---|
 | Welcome > Start a book (F01) | Full first run: child, date, signature, languages, ready |
 | Welcome > I was invited, after sign-in and join (F11) | Invitee first run: signature, languages, ready |
-| Child switcher > Add a child after first run | F12 (not first run; Plus rule applies) |
+| Child switcher > Add a child after first run | F12 (not first run; free, as every book is, M2) |
 
 ### 6.2 Happy path (new parent, one child, English)
 
@@ -91,8 +91,8 @@ Outcome: a parent names the child, gives a birthday or due date, says what the c
 | 1 | Taps Start a book | `onboarding.child.title` "Who is this book for?", name field `onboarding.child.nameLabel`, placeholder `.namePlaceholder`, help `.nameHelp`; Add another child (`.addAnotherButton`) | Keyboard opens; nothing stored yet |
 | 2 | Types "Asha" | Birthday or Not here yet segmented control (`.birthdayLabel`, `.expectingLabel`); birthday picker, no future dates; due-date picker today to 305 days ahead (today's code; server allows 310) | Name 1 to 60 characters, trimmed, any script, never transliterated |
 | 3 | Picks a date, Continue | `onboarding.signsAs.title` "What does {child} call you?", chips `.examples`, preview `.preview` "From Papa", `.notYetHelp` | Continue disabled until 1 to 30 characters |
-| 4 | Taps "Papa", Continue | Languages: "Which languages will you speak your letters in?" (new `onboarding.languages.title`), seven chips; English preselected only if the device language is English [R]; help "Your words stay in the language you said them." (new; VOICE multilingual rule) | Store per-author languages locally |
-| 5 | Leaves English, Continue | Ready screen: `onboarding.finish.title` "The book is open.", `.body`; a quiet line about getting speech ready on Wi-Fi (new `onboarding.finish.speechNote`) | One transaction: children (shared `first_run_batch` id), per-child signature, author languages, dictionary terms (`child`, `self`); model download queued for Wi-Fi (F05) |
+| 4 | Taps "Papa", Continue | Languages: "Which languages will you speak your letters in?" (new `onboarding.languages.title`), seven chips; English preselected only if the device language is English [R]; help `onboarding.dictionary.languagesBody` (exists: "Your words stay in the language you speak. We never translate them.") | Store per-author languages locally. On Continue, the built speech card (`speechConsentCopy.title` "Get your words ready", `.body` with the size, `.downloadButton` "Download on Wi-Fi", `.laterButton` "Not now"; `apps/mobile/test/speech-consent.test.ts` exists) shows once; Download on Wi-Fi starts the model and pack downloads at once (F05-REQ-042), so they have the rest of first run and the first letter to arrive |
+| 5 | Leaves English, Continue | Ready screen: `onboarding.finish.title` "The book is open.", `.body`; one footnote line (`AppNote`, COMPONENTS 2.5b): `speechConsentCopy.chosenYes` ("Getting ready. It waits for Wi-Fi.", exists) or `.chosenLater` ("Not now. Your voice is kept either way.") | One transaction: children (shared `first_run_batch` id), per-child signature, author languages, dictionary terms (`child`, `self`). Downloads already running (step 4) |
 | 6 | Taps Write the first one | Tonight with the first prompt (F04) | Route to Tonight |
 
 Today's code (`apps/mobile/src/app/onboarding.tsx`) has a promise step between Welcome and the child step and no languages step; the promise copy moves to Welcome (F01) or is cut, and the languages step is new (WP-F03-03).
@@ -108,7 +108,7 @@ Per author, not per family; one to three letter languages [R]. Each letter recor
 | Hindi | Record and type until its gate passes on SE 3 (DR-01, R5 K1) | Devanagari or Roman letters; default Devanagari (D-031 default if unanswered); Roman offered only if the experiment shows it works (D-031) | Recording kept; author types with the Hindi keyboard, or keeps the recording and adds words later |
 | Arabic | Record and type at v1.0 (DR-01 A, R5 section 9 option A) | None at v1.0 (dialect handling is the transcription problem); typed text right to left | Recording kept; author types with the Arabic keyboard |
 
-**How a family whose language has not passed still writes.** The chip is never hidden: the language shows with a quiet label "We keep your recording. You type the words." (new `onboarding.languages.recordAndType`). Choosing it sets the letter language, so the recording is filed correctly, the typed text keeps the keyboard's own autocorrect and is never machine-edited (B5), and when the language passes later, F05 offers to fill words for recordings that have none, once, never overwriting typed text (R5 section 8.1 note on immutable raw). No language is ever transcribed by a model that has not passed its gate.
+**How a family whose language has not passed still writes.** The chip is never hidden: the language shows with a footnote label `onboarding.languages.recordAndType` (new): "We keep your recording. Type the words now, or keep the recording and add words later." A recording kept without words waits with no time limit and uses none of the free letters until its words exist and the author has seen them (M17; F05-REQ-044) (R3 DX-26). Choosing it sets the letter language, so the recording is filed correctly, the typed text keeps the keyboard's own autocorrect and is never machine-edited (B5), and when the language passes later, F05 offers to fill words for recordings that have none, once, never overwriting typed text (R5 section 8.1 note on immutable raw). No language is ever transcribed by a model that has not passed its gate.
 
 ### 6.4 Goals (B-REQ-013): decision
 
@@ -133,7 +133,8 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 | F03-U05 | Seventh child | Add another child hidden at 6 (code cap `MAX_FIRST_RUN_CHILDREN`) | No button | Add later through F12 | Unit |
 | F03-U06 | Siblings with different dates | Today's code applies one date to every child | n/a | Spec: each child row gets its own date control (WP-F03-02); still free (D-038) | Unit |
 | F03-U07 | Expecting, no name yet | Any placeholder accepted; renamed later (B F2.3) | Normal | Settings > {child}'s book | n/a |
-| F03-U08 | Due date passes without a birth date | No notification or card (B-REQ-015); 14 days later a quiet Settings row only | Nothing in first run | F09 transition | Unit |
+| F03-U08 | Due date passes without a birth date | No notification or card (B-REQ-015); 14 days later one Settings row in the child's settings, no badge | Nothing in first run | F09 transition | Unit |
+| F03-U24 | A baby born early, or in a NICU, at first run | First run asks nothing about it and adds no question (R3 DX-15 ask load). A parent who starts in due-date mode meets F09's one-time reminders question when they set the birth date (F09 6.2 step 17, R3 DX-18). A parent who starts after the birth with only a birthday gets default reminders; they turn them off per child in one tap from the book menu ("Quiet this book", F09) | Nothing extra | Quiet this book | F09 tests |
 | F03-U09 | Adoption, only the month is known | P1: "I only know the month" stores month precision (B F1 edge) | Not in v1.0 picker [R] | Pick the first of the month | Open question Q4 |
 | F03-U10 | "My partner already started one" | Link under the date step: ask for an invite, then I was invited (B F1.2) | "Ask them to send you an invite from Family." (new) | F11 | Maestro |
 | F03-U11 | Offline throughout | Every step is local (B-NFR-009); model download waits | Normal; speech note says it starts on Wi-Fi | n/a | Airplane test |
@@ -150,7 +151,18 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 | F03-U22 | Double tap on the final button | `finish()` guarded so one transaction runs | One set of books | n/a | Unit |
 | F03-U23 | Invitee already keeps a local book for the same child | Both coexist; merge is P1 (B-REQ-021) | No prompt in first run | Later | n/a |
 
+### 6.7 Screen states
+
+| Screen | Empty | Loading | Error | Offline | AX5 (SE 3) | VoiceOver |
+|---|---|---|---|---|---|---|
+| Child step | Name field with `onboarding.child.namePlaceholder`; Continue disabled with `onboarding.child.birthdayHelp` until a date is picked | n/a | Name empty: `childrenExtra.nameRequired` under the field | Identical; nothing needs the network | Fields stack; date picker compact; Continue at the end of the scroll | Title is a header; each child row is a group "Child 1 of 2" |
+| Signature step | Chips `onboarding.signsAs.examples`; preview hidden until a value | n/a | Over 30 characters: Continue disabled, counter hidden (no counts), help line | Identical | Chips wrap | Chips are toggle buttons with selected state |
+| Languages step | Seven chips, none selected unless the device language is English | n/a | n/a | Identical; gate labels from the last good manifest or the bundled snapshot | Chips wrap two per row; labels never truncate | Chip reads name, then "transcribed" or `onboarding.languages.recordAndType` |
+| Ready screen | n/a | Speech downloading: the `speechConsentCopy.chosenYes` footnote, no bar, no spinner | Not enough space: the F03-U13 line; cellular: the F03-U14 choice | The note says it starts on Wi-Fi | Stack | Note read after the title |
+
 ## 7. Requirements and acceptance criteria
+
+Renamed on 14 Oct 2026 (R5 EQ-05): F03-REQ-010 and F03-REQ-011 replace rows that restated legacy IDs owned by F07 and F12. F03 stays the home of B-REQ-001, -002, -003, -005, -012, B-NFR-007, -008 and -009.
 
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
@@ -158,8 +170,8 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 | B-REQ-002 | P0 | Signature before the first letter | Given "Papa", Then letters to this child are signed "From Papa"; Given different signatures for two children, Then each book shows its own | B-REQ-002 |
 | B-REQ-003 Rev (B4, DR-01) | P0 | Per-author letter languages from the seven; transcription only for languages that passed their gate; script or variety where relevant | Given Hindi and Devanagari with Hindi passed, When recording, Then transcription runs with `language: hi` and renders Devanagari, untranslated; Given Arabic (not passed), Then the recording is kept, the author types, and no model transcribes it | B-REQ-003, DR-01, R5 8.1 |
 | B-REQ-005 | P0 | Due-date mode creates the book | Given Not here yet and a due date, When a letter is saved, Then it files into Before You (F09) | B-REQ-005 |
-| B-REQ-006 Rev (B4) | P0 | Names and signature seed the dictionary | Given "Asha" and "Papa", Then local `dictionary_terms` rows exist with kinds `child` and `self`, written in the same transaction as the child; per-script forms are a field (new) the author fills, never generated | B-REQ-006, R5 section 3 |
-| PRD-REQ-015 Rev (M2) | P0 | Children added together in first run are free (as every book is) | Given three children in first run, Then three books, no Plus sheet, and the server accepts all three in one `create_first_run_children` call | PRD-REQ-015 Rev (M2), D-038 |
+| F03-REQ-010 | P0 | Names and signature seed the dictionary (first-run slice of B-REQ-006; home F07) | Given "Asha" and "Papa", Then local `dictionary_terms` rows exist with kinds `child` and `self`, written in the same transaction as the child; per-script forms are a field (new) the author fills, never generated | B-REQ-006, R5 section 3 |
+| F03-REQ-011 | P0 | Children added together in first run are free, as every book is (first-run slice of PRD-REQ-015 Rev; home F12) | Given three children in first run, Then three books, no Plus sheet, and the server accepts all three in one `create_first_run_children` call | PRD-REQ-015 Rev (M2), D-038 |
 | F03-REQ-001 | P0 | Each first-run child has its own date | Given twins with one date and a sibling with another, Then each book stores its own date | D-038 |
 | F03-REQ-002 | P0 | One transaction at the end of first run | Given a kill before the final tap, Then no child row exists; Given the final tap, Then children, signatures, languages and dictionary terms commit together | DATA-REQ-048 pattern |
 | F03-REQ-003 | P0 | Record and type for languages not yet passed | Given a language whose gate status is not passed, Then its chip shows the Record and type label and the letter path keeps audio plus typed text | DR-01 A |
@@ -174,6 +186,23 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 | B-NFR-008 | P0 | First-run screens interactive 300 ms or less | SE 3 perf run | B-NFR-008 |
 | B-NFR-009 | P0 | First run works offline | Airplane test from gate to first saved letter (typed) | B-NFR-009 |
 | F03-REQ-009 | P0 | Invitee first run creates no child | Given an invitee, Then first run shows signature, languages and reading size only, and writes `child_member_prefs.signs_as` for the joined book | F11, B-REQ-002 |
+
+### 7.1 Test map (P0)
+
+| ID | Test file or run | Exists? |
+|---|---|---|
+| B-REQ-001, F03-REQ-001, F03-REQ-002 | `apps/mobile/test/first-run.test.ts`; `apps/mobile/e2e/flows/E2E-02-first-run-twins.yaml` | Flow exists; test new |
+| B-REQ-002 | `apps/mobile/test/store.child-edit.test.ts` | Exists |
+| B-REQ-003 Rev | `apps/mobile/src/lib/language/spoken-language.logic.test.ts` | Exists |
+| B-REQ-005 | `packages/core/test/book.test.ts` (F09) | New |
+| F03-REQ-003, F03-REQ-004 | `apps/mobile/test/languages-step.test.ts` with a gate-status fixture | New |
+| F03-REQ-005, F03-REQ-006 | `apps/mobile/test/first-run-download.test.ts` (shared with F05-REQ-042) | New |
+| F03-REQ-007, F03-REQ-011, B-NFR-009 | `apps/mobile/e2e/flows/E2E-02-first-run-twins.yaml` (no prompt, no paywall, airplane); `supabase/tests/children_entitlements.test.mjs` | Exist; assertions new |
+| F03-REQ-008, B-NFR-008 | Device timing run WP-F03-07 on SE 3 | Not run |
+| F03-REQ-009 | `apps/mobile/e2e/flows/E2E-13b-invite-accept.yaml` | Exists |
+| F03-REQ-010 | `packages/core/test/dictionary-seed.test.ts` | New |
+| B-REQ-012 Rev | `apps/mobile/test/theme-leaks.test.ts`; `apps/mobile/test/reader-size.test.ts` | First exists |
+| B-NFR-007 | `apps/mobile/test/dates.test.ts`; RTL device check (07 section 2.7) | Test exists |
 
 ## 8. Data, privacy and security
 
@@ -222,16 +251,18 @@ No first-run event is sent at the time (consent comes later, K-01). Facts arrive
 4. Dictionary: local `dictionary_terms` with per-script forms (new field) through `packages/core` (F07).
 5. Speech-ready line hands off to F05's model manager (BL-143).
 
-**Riskiest unknown.** The 90 s budget with an added languages step and no transcriber on first launch (model not yet downloaded): the first spoken letter saves audio and waits for words (BL-142, F05). Spike: 10 timed runs on SE 3 in week 3.
+**Riskiest unknown.** The 90 s budget with an added languages step and no transcriber on first launch (model not yet downloaded): the first spoken letter saves audio and waits for words (BL-142, F05; F04 6.2 G), and with M17 it uses no free letter until its words are seen. Spike: 10 timed runs on SE 3 before C1 (WP-F03-07).
 
 ## 12. Work packages
 
+`08-delivery.md` section 3.3 governs file ownership: a path below owned by another stream is a request to that stream (R5 EQ-08).
+
 | WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode |
 |---|---|---|---|---|---|
-| WP-F03-01 | First-run transaction, batch id, per-child signature move | `apps/mobile/src/lib/db/` migration (new), `apps/mobile/src/lib/store.ts` first-run function | BL-111 (BL-136) | `[F03-REQ-002]` kill test; `[PRD-REQ-015]` local batch | agent (mobile engineer) |
-| WP-F03-02 | Child step: per-child dates, partner link, name rules | `apps/mobile/src/app/onboarding.tsx` | WP-F03-01 (BL-033) | `[B-REQ-001]`, `[F03-REQ-001]`, AX5 component test | agent (mobile engineer) |
+| WP-F03-01 | First-run transaction, batch id, per-child signature move | `apps/mobile/src/lib/db/` migration (new; coordinator numbers it), `apps/mobile/src/lib/store.ts` first-run function | BL-111 (BL-136) | `[F03-REQ-002]` kill test; `[F03-REQ-011]` local batch | agent (mobile engineer) |
+| WP-F03-02 | Child step: per-child dates, partner link, name rules | `apps/mobile/src/app/onboarding.tsx` | WP-F03-01 (BL-033) | `[B-REQ-001]`, `[F03-REQ-001]`; AX5 by device script until the render harness WP-F00-01 merges (R5 EQ-04) | agent (mobile engineer) |
 | WP-F03-03 | Languages step with DR-01 labels, script and variety | `apps/mobile/src/components/first-run/languages.tsx` (new), feature `copy.ts` | F05 gate-status API, F19 manifest | `[B-REQ-003]`, `[F03-REQ-003]`, `[F03-REQ-004]` | agent (mobile engineer, content) |
-| WP-F03-04 | Dictionary seeding with per-script forms | `packages/core/src/` dictionary helpers (F07 owns types) | F07 WP for `DictionaryTerm` forms | `[B-REQ-006]` unit | agent (speech engineer) |
+| WP-F03-04 | Dictionary seeding with per-script forms; stream S08 proposed (R5 EQ-07; 08 section 3.3 assigns) | `packages/core/src/` dictionary helpers (F07 owns types) | F07 WP for `DictionaryTerm` forms | `[F03-REQ-010]` unit | agent (speech engineer) |
 | WP-F03-05 | Ready screen and download hand-off | `apps/mobile/src/app/onboarding.tsx` finish step | BL-143 | `[F03-REQ-005]`, `[F03-REQ-006]` with storage and network mocks | agent (mobile engineer) |
 | WP-F03-06 | Invitee first run (signature, languages, reading size) | `apps/mobile/src/app/join/first-run.tsx` (new) | F11 WP-F11-06 (BL-191) | `[F03-REQ-009]` Maestro from a link | agent (mobile engineer) |
 | WP-F03-07 | 90 s budget run on SE 3 | `docs/qa/` timing script (new) | WP-F03-02 to -05, F04 save | `[F03-REQ-008]` median recorded | human (QA engineer) |
@@ -244,7 +275,7 @@ No first-run event is sent at the time (consent comes later, K-01). Facts arrive
 | Q2. Hindi script default (D-031) | Founder, from the experiment | 30 Oct | Default chip |
 | Q3. Mandarin traditional characters at v1.0? | Founder, speech engineer | 30 Oct (with DR-01) | Pack script table |
 | Q4. Month-only birthday for adoption in v1.0 or P1 | Founder | 23 Oct | Picker and `birth_date_precision` column |
-| Q5. Preterm adjusted age for chapters | Founder with F09 | 30 Oct | F09 age math |
+| Q5. Preterm adjusted age for chapters: spec default [R] no corrected age at v1.0; a parent-entered adjusted line is a v1.1 candidate (F09 Q2, F30 candidates) | Founder with F09 | Before the F09 stream starts | F09 age math |
 | Q6. Maximum letter languages per author (spec default 3) | Speech engineer | 30 Oct | Memory and download plan (R5 section 7) |
 
 | A | Assumption | Validate |

@@ -7,7 +7,7 @@
 | Personas | P1, P2, P5 (receives the PDF), P6 |
 | Existing IDs | C-REQ-017, C-REQ-018, C-NFR-004, C-NFR-007, DATA-REQ-050, DATA-REQ-051, DATA-REQ-052, DATA-REQ-053, DATA-REQ-054 (P1), DATA-REQ-055 (P1), DATA-REQ-056, LEGAL-REQ-013, LEGAL-REQ-034, LEGAL-REQ-035 (v1.1), LEGAL-REQ-036 (P1), LEGAL-REQ-050, PRD-REQ-004, PRD-REQ-009, K-05, K-32, D-033, BL-150, BL-243, BL-284 |
 | Depends on | F08 (original files, hashes), F09 (chapters, signatures, `LetterText` rules), F11 (what a co-parent's letters include), F05 (language packs that carry fonts), F17 (Your data, deletion), F02 (account fields for `account.json`) |
-| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with D-073 (owner backup), D-084, D-085, ADR 0015 (listening copies never exported) and the export code on `develop` (`apps/mobile/src/lib/export/`) |
+| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with D-073 (owner backup), D-084, D-085, ADR 0015 (listening copies never exported) and the export code on `develop` (`apps/mobile/src/lib/export/`). Revised 14 Oct 2026 after critique round 1: letters not yet saved (held at the Keep step, waiting to be read back, typed drafts) are exported; direction per letter; copy keys checked against `develop` (disposition in `reviews/DISPOSITION-C.md`) |
 
 ## 1. Why
 
@@ -38,14 +38,13 @@
 |---|---|---|---|
 | Export success rate | 99.5% or more of started exports finish or resume to finish | `export_completed` / `export_started` | Opt-in only; failures also in local diagnostics |
 | 1-year export time on SE 3, originals only | Under 2 minutes, 230 MB (C-NFR-007, gate) | Device perf run with year-1 fixture | None |
-| 1-year export time on SE 3, originals | Under 2 minutes, about 230 MB (C-NFR-007) | Same | None |
 | Manifest verification | 100% of files re-read and hashed before "ready" | Unit, E2E-10 | None |
 | Plus UI during export | 0 | E2E-10 lapsed | None |
 
 ## 4. Scope
 
 **In v1.0**
-- Export everything: one ZIP built on the phone from local data, offline, free in every plan state.
+- Export everything: one ZIP built on the phone from local data, offline, free in every plan state, including every letter that is not saved yet (held at the Keep step, waiting to be read back, a typed draft) under `waiting/` (R3 DX-01).
 - Contents: `entries.json` with raw transcript, machine edits and final text for own letters; letters as text; audio originals (never listening copies); the PDF book per child; `account.json`; `children.json`; README; offline `index.html`; manifest with hashes. Quiet-day marks as rows with no words (D-084).
 - Co-parent letters: final text, signature, dates, audio only if on this phone; never the other author's raw transcript or edits (PRD-REQ-004).
 - PDF book: chapter per month of age, no blank pages, every script, signatures, page breaks that keep short letters whole.
@@ -87,7 +86,7 @@
 
 | Entry | Where | Copy key |
 |---|---|---|
-| Settings > Your data > Export everything | `settings/*` (row disabled today: `settingsMore.exportNotYet`) | `settings.export.button` |
+| Settings > Export your book | `settings/index.tsx` row (built; `settingsMore.exportNotYet` is retired) | `settingsHome.exportLabel`, `.exportHelp` (exist) |
 | Settings > Help and Legal > About (beta) | About | `settings.about.beta.exportCta` |
 | Delete a book or account | F17 step before Confirm | `settings.delete.bookExportFirst` |
 | Keep-safe card at a chapter milestone | Book (C-REQ-018, F08 WP-F08-06) | `settings.recordings.onPhoneBody` |
@@ -98,11 +97,11 @@
 ### 6.2 Happy path
 
 1. **Start.** Parent taps `settings.export.button`. Sheet shows `settings.export.body` ("Download every letter and recording, any time, free. Plain text and audio files."), the scope (which books: all by default; a list when there are two or more), no listening-copy or recently-deleted switch (listening copies are never exported; Recently deleted letters are left out by D-085, and the person restores them first if they want them), the plaintext notice (DATA-REQ-056), and Start. No entitlement call (LEGAL-REQ-050, `export` is `FreeForever` in `plan.ts`).
-2. **Space check.** The app estimates the size from file sizes in the database plus 5 MB per PDF [A]. If free space is under the estimate times 1.1 plus 50 MB (`device.ts`), it says so before starting and offers "One book at a time" (new `export.spaceLow`).
+2. **Space check.** The app estimates the size from file sizes in the database plus 5 MB per PDF [A]. If free space is under the estimate times 1.1 plus 50 MB (`device.ts`), it says so before starting and shows `exportCopy.screen.lowSpaceBody` (exists) and offers "One book at a time" (new label `exportCopy.screen.oneBookButton`).
 3. **Build.** `settings.export.preparing` ("Gathering every letter. This can take a minute.") with a progress line in words ("Month 7 of 14") and a determinate bar. The screen stays awake (`expo-keep-awake`, as F10). The builder streams files into the ZIP from file paths; JS never holds the archive (TDD 01 3.7).
 4. **PDF.** One PDF per child is rendered from the HTML book template (`packages/book`, new, ADR 0010) with `expo-print` `printToFileAsync` (Expo docs, opened 3 Oct 2026), then streamed into the ZIP.
 5. **Verify.** Every file is re-read and hashed against the manifest (DATA-REQ-051). Audio whose hash differs from the capture hash is kept and flagged `integrity: "mismatch"`.
-6. **Ready.** `settings.export.ready` ("Your export is ready.") and the share sheet (`expo-sharing` `shareAsync`, Expo docs). Above the button: "This file holds your letters and recordings, unlocked. Keep it somewhere private." (DATA-REQ-056 text; new key `export.plaintextNotice`).
+6. **Ready.** `settings.export.ready` ("Your export is ready.") and the share sheet (`expo-sharing` `shareAsync`, Expo docs). Above the button: `exportCopy.screen.privacyNotice` (exists: "This file holds your letters and recordings, unlocked. Keep it somewhere private.", DATA-REQ-056).
 7. **After.** When the share sheet closes, the temp ZIP is deleted from the sandbox (DATA-REQ-056). Settings shows `settings.export.lastExport` ("Last export: {date}") or `neverExported`, from the local setting `lastExportedAt`; the date is when a copy was last prepared, not proof it was saved (D-085). Built.
 
 ### 6.3 What the ZIP holds
@@ -122,9 +121,10 @@ Format `early-letters-export` (built from `brand.name` in `schema.ts`), `format_
 | `audio/<entry_id>.m4a` | Original, byte-identical (F08-REQ-002, ADR 0005) | If on this phone | Only if on this phone (never at v1.0, B7) |
 | `book/<child>.pdf` | The PDF book (6.4) | In-book letters only | In-book |
 | `history/<entry_id>.json` | Every version of the letter | Yes | Never |
+| `waiting/<child>/<draft_id>.txt`, `waiting/<child>/<draft_id>.m4a`, `data/waiting.json` | Every letter on this phone that is not saved yet: held at the Keep step (F14), waiting to be read back, or a typed draft. Text exactly as typed or as heard, the original recording byte-identical, the date it was started and why it waits (`held_for_plus`, `not_read_back`, `typed_draft`). README says these are not in the book yet and how to finish them in the app (R3 DX-01) | Yes | Never (drafts are the author's own and never sync) |
 | `photos/` | Empty at v1.0 (no photo capture) | n/a | n/a |
 
-`entries.json` fields per letter: `id`, `child_id`, `author {signs_as, is_exporter}`, `kind`, `occurred_on`, `occurred_precision` (new, F04), `captured_at`, `capture_mode`, `edit_level`, `language` (own letters only, when known; F04 adds the column), `final_text`, `in_book`, `audio {path, sha256, bytes, duration_ms, codec}` or `audio_missing {reason}`, and for own letters only `raw_transcript`, `raw_sha256`, `machine_edits` (accepted and rejected), `stt_meta.engine`, `alignment`, `engine_version`, `prompt_key`. The fixed `audio_missing.reason` values: `not_on_this_device` (the other parent's recording, DATA-REQ-050), `voice_only_none` (never recorded: typed), `file_missing`, `offline` (backed-up audio not yet downloaded on this phone, once D-073 backup ships).
+`entries.json` fields per letter: `id`, `child_id`, `author {signs_as, is_exporter}`, `kind`, `occurred_on`, `occurred_precision` (new, F04), `captured_at`, `capture_mode`, `edit_level`, `language` (own letters only, when known; F04 adds the column), `base_direction` (new, F04), `final_text`, `in_book`, `audio {path, sha256, bytes, duration_ms, codec}` or `audio_missing {reason}`, and for own letters only `raw_transcript`, `raw_sha256`, `machine_edits` (accepted and rejected), `stt_meta.engine`, `alignment`, `engine_version`, `prompt_key`. The fixed `audio_missing.reason` values: `not_on_this_device` (the other parent's recording, DATA-REQ-050), `voice_only_none` (never recorded: typed), `file_missing`, `offline` (backed-up audio not yet downloaded on this phone, once D-073 backup ships).
 
 ### 6.4 The PDF book
 
@@ -136,7 +136,7 @@ Format `early-letters-export` (built from `brand.name` in `schema.ts`), `format_
 | Letter block | Dateline (`letterDateline`, or the month-only form for `occurred_precision = month`, F09-REQ-003), the full `final_text`, the signature right-aligned ("From Papa"), provenance line (`book.provenance.*`), and "Recording kept" or `book.recordingElsewhere` as plain text |
 | Page breaks | A letter shorter than one page never splits (CSS `break-inside: avoid`); a longer letter flows and repeats nothing; no orphan dateline at a page foot (dateline kept with the first lines) |
 | Page size | US Letter 612 by 792 points, the `printToFileAsync` default (Expo docs); 54 point margins [A]; body text 12 point serif [A]. Prints on a home printer at 100% |
-| Scripts | Per paragraph direction (`dir="auto"` in HTML) so Arabic sits right to left beside English; Devanagari in Tiro Devanagari Hindi; Latin in Literata; Arabic in Noto Naskh Arabic; Chinese in Noto Serif SC (all SIL OFL) |
+| Scripts | Each letter block carries `dir` from its stored `base_direction` and `lang` from its language (not `dir="auto"`, which an Arabic letter starting with a Latin name gets wrong, R3 DX-20), so Arabic sits right to left beside English and screen readers pick the right voice; Devanagari in Tiro Devanagari Hindi; Latin in Literata; Arabic in Noto Naskh Arabic; Chinese in Noto Serif SC (all SIL OFL) |
 | Fonts | `printToFileAsync` on iOS cannot load local asset URLs from WKWebView (Expo docs), so fonts go into the HTML as base64 `@font-face`. File sizes checked on 3 Oct 2026 from Google Fonts' repository: Literata variable 955 KB, Tiro Devanagari Hindi 423 KB, Noto Naskh Arabic 308 KB, Noto Serif SC 25.1 MB. Literata and Tiro ship in the app (BL-258). Arabic and Chinese reading fonts come with their language pack (F05) [R]; Chinese is subset at export to only the characters used in that book [R], which keeps the PDF small |
 | Missing font | If a letter uses a script whose font is not on the phone (a pack was deleted), the PDF uses the system font for that run and README says so; never empty boxes |
 | Links | No audio links or QR codes at v1.0 (QR is F42) |
@@ -159,7 +159,7 @@ Format `early-letters-export` (built from `brand.name` in `schema.ts`), `format_
 |---|---|---|---|---|---|
 | F15-U01 | Airplane mode | Builds from local data; nothing waits on network | Normal flow | n/a | E2E-10 |
 | F15-U02 | Lapsed, refunded, billing retry, Free, signed out | Same flow, no plan check | No Plus UI | n/a | `[DATA-REQ-052]` per state |
-| F15-U03 | Not enough space | Pre-check stops before writing; mid-build ENOSPC deletes the partial file | `export.spaceLow` with One book at a time | Retry smaller | Fault injection |
+| F15-U03 | Not enough space | Pre-check stops before writing; mid-build ENOSPC deletes the partial file | `exportCopy.screen.lowSpaceBody` (exists) with One book at a time | Retry smaller | Fault injection |
 | F15-U04 | App backgrounded | Builder pauses at the next file boundary; iOS background time not relied on (TDD 01 3.7) | On return: "Paused. Carry on?" (new `export.paused`) | Carry on resumes from the last finished file | Kill and background test |
 | F15-U05 | App killed mid-build | A small job file records finished entries; temp ZIP is discarded at next launch and the job restarts from scratch, keeping the scope [R] (resuming inside a ZIP is not safe) | "Your export did not finish. Start again?" once | Start again | Kill test 20 of 20 |
 | F15-U06 | One audio file unreadable | Skip, record `audio_missing.reason = "file_missing"`, continue | Ready screen says "1 recording could not be added" with details in README | Export again after F08 scrub | Fixture |
@@ -179,8 +179,23 @@ Format `early-letters-export` (built from `brand.name` in `schema.ts`), `format_
 | F15-U20 | Export started from the delete flow | After the share sheet closes, the delete flow resumes at Confirm | Delete flow | n/a | E2E-09 |
 | F15-U21 | 5 years, 3 GB | Two ZIP parts by child-year; progress per part | "Part 1 of 2" | n/a | Synthetic fixture |
 | F15-U22 | Company announces shutdown | Export unchanged; an app update (PRD-REQ-009) shows the pledge banner pointing to Export | Pledge banner | Export | Runbook drill |
+| F15-U23 | Letters held at the Keep step, a draft waiting to be read back, and a typed draft exist | All three go under `waiting/` with their text and audio; `data/waiting.json` lists them; the ready screen counts nothing | Normal flow | Finish them in the app | `apps/mobile/test/export-waiting.test.ts` (new) |
+| F15-U24 | The owner's backup holds recordings that are not on this phone (new phone, restore still running) | Each such letter gets `audio_missing.reason = "offline"`; the ready screen says some recordings are still coming back and Export can run again later (F08 restore) | `exportCopy.screen.restoringNote` (new): "Some recordings are still coming back to this phone. Export again once they are here." | Export again after restore | `apps/mobile/test/export-golden.test.ts` (new case) |
+
+### 6.7 Screen states
+
+Copy from `packages/content/src/features/export.en.ts` (`exportCopy.screen.*`, exists) unless marked new.
+
+| Screen | Empty | Loading | Error | Offline | AX5 (SE 3) | VoiceOver |
+|---|---|---|---|---|---|---|
+| Export sheet | No letters yet: the sheet still offers Export (README and `account.json` only) with `exportCopy.screen.includesTitle` and the four include lines | n/a | Not enough space: `exportCopy.screen.lowSpaceBody` with One book at a time | Identical (`exportCopy.screen.offlineNote`) | Include lines stack; Start full width | Title first, then the include lines, then the notice |
+| Building | n/a | `exportCopy.screen.packing`, then `.checking`, over a determinate bar with the month in words; Stop (`.cancelButton`) | Failed: `exportCopy.screen.failedTitle`, `.failedBody`; too big: `.tooBigBody` | Identical | Bar and line stack | Progress every 10% and at done (F15-REQ-014) |
+| Ready | n/a | n/a | One recording could not be added: count line plus README; recordings still restoring: `exportCopy.screen.restoringNote` (new) | Identical | Share button full width; notice above it | Notice read before the button |
+| After share | `exportCopy.screen.afterShare`, Export again (`.againButton`) | n/a | n/a | Identical | Stack | n/a |
 
 ## 7. Requirements and acceptance criteria
+
+Renamed on 14 Oct 2026 (R5 EQ-05): F15-REQ-016 and F15-REQ-017 replace rows that restated DATA-REQ-053 (home F17) and PRD-REQ-004 (home F06). F15 stays the home of DATA-REQ-050, -051, -052, -056, C-REQ-017, LEGAL-REQ-034 and PRD-REQ-009.
 
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
@@ -189,9 +204,9 @@ Format `early-letters-export` (built from `brand.name` in `schema.ts`), `format_
 | DATA-REQ-050 | P0, Rev (B6, B7) | Export contents | Given 400 own letters (2 private), 30 co-parent letters in the book, Then `entries.json` has 430 objects, co-parent letters have no `raw_transcript`, own letters do; co-parent audio is `audio_missing.reason = "not_on_this_device"`; no listening copy appears | DATA spec; F08 row DATA-REQ-050; ADR 0015 |
 | DATA-REQ-051 | P0 | Checksums and self-verification | Given an export, Then every file except the manifest pair is listed with SHA-256 and bytes, and the app re-reads every file before `settings.export.ready`; a flipped byte is reported | DATA spec |
 | DATA-REQ-052 | P0, Rev | Always available | Given every plan state and airplane mode, Then export completes; given a 230 MB year, originals only, Then under 2 minutes on SE 3 | DATA spec, C-NFR-007 |
-| DATA-REQ-053 | P0 | Export before deletion | Given any delete-book or delete-account flow, Then Export is the primary action on the step before Confirm | DATA spec |
+| F15-REQ-016 | P0 | Export before deletion (export slice of DATA-REQ-053; home F17) | Given any delete-book or delete-account flow, Then Export is the primary action on the step before Confirm, and the export it starts is the full one in this spec | DATA spec |
 | DATA-REQ-056 | P0 | Plaintext notice and temp cleanup | Given the share sheet, Then the notice line is visible above it; Given the sheet closes, Then no export file remains in the sandbox | DATA spec |
-| PRD-REQ-004 | P0 | No one else's working material | Given any export, Then no other author's `raw_transcript`, `machine_edits`, `stt_meta` or history appears (they are never on the phone, TDD 01 3.7) | K-09 |
+| F15-REQ-017 | P0 | No one else's working material in an export (export slice of PRD-REQ-004; home F06) | Given any export, Then no other author's `raw_transcript`, `machine_edits`, `stt_meta` or history appears (they are never on the phone, TDD 01 3.7) | K-09 |
 | PRD-REQ-009 | P0 | 90-day shutdown pledge | Given Settings > Help and Legal, Then the pledge reads 90 days and matches Terms 17 and Privacy 18 word for number; given a shutdown, Then export works for the whole 90 days | K-05 |
 | LEGAL-REQ-050 | P0 | Never gated | Given the export module, Then it imports nothing from the plan engine (static test) | Legal |
 | F15-REQ-001 | P0, Rev (ADR 0015) | Only originals are exported | Given letters with listening copies, Then the ZIP holds only originals, and no file under `Application Support/listening` is read by the export | ADR 0015 section 5; `player/listening.ts` |
@@ -203,12 +218,34 @@ Format `early-letters-export` (built from `brand.name` in `schema.ts`), `format_
 | F15-REQ-007 | P0 | PDF: signatures and short letters whole | Given a letter under one page, Then it is not split across pages and its signature is on the same page as its last line | DESIGN_LANGUAGE, B-REQ-002 |
 | F15-REQ-008 | P0 | PDF prints at home | Given the PDF, Then pages are US Letter with margins of at least 0.5 inch and print at 100% without clipping | K-32 |
 | F15-REQ-009 | P0 | Share the book as a PDF | Given the Book menu, When the parent picks Share the book as a PDF, Then one child's PDF is built and handed to the share sheet with the plaintext notice; temp deleted after | new |
-| F15-REQ-010 | P0 | Space pre-check | Given free space below estimate plus 200 MB, Then no file is written and `export.spaceLow` offers smaller options | new |
+| F15-REQ-010 | P0 | Space pre-check | Given free space below estimate plus 200 MB, Then no file is written and `exportCopy.screen.lowSpaceBody` (exists) offers smaller options | new |
 | F15-REQ-011 | P0 | Pause and restart | Given background mid-build, Then the job pauses and resumes on return. Given a kill, Then the next launch offers Start again once and no partial ZIP remains | TDD 01 3.7 |
-| F15-REQ-012 | P0 | Partial failure honest | Given one unreadable file, Then the export finishes, the ready screen names the count, README lists them, and `entries.json` marks each | DATA-REQ-051 |
+| F15-REQ-012 | P0 | Partial failure reported | Given one unreadable file, Then the export finishes, the ready screen names the count, README lists them, and `entries.json` marks each | DATA-REQ-051 |
 | F15-REQ-013 | P0 | Offline reader | Given the ZIP opened on a laptop with no network, Then `index.html` lists every letter by child and month and plays every `.m4a` in Safari and Chrome | DATA-REQ-055 |
 | F15-REQ-014 | P0 | Keep awake and progress | Given a 4-minute build, Then the screen does not auto-lock, progress names the month, and VoiceOver hears progress every 10% | new |
 | F15-REQ-015 | P0 | No export during recording | Given a recording in progress, Then Export is unavailable until it stops; Given export running, Then capture still works and is not blocked | PRD-REQ-001 spirit, 03 principle 2 |
+| F15-REQ-018 | P0 | Letters not saved yet are exported | Given 2 letters held at the Keep step, 1 draft waiting to be read back and 1 typed draft, Then the ZIP holds 4 entries under `waiting/` with their text and byte-identical originals, `data/waiting.json` lists 4 objects with their reason, and the manifest hashes cover them | R3 DX-01; 03 promise 4 |
+| F15-REQ-019 | P0 | Direction and language per letter in the PDF and the reader | Given an Arabic letter that starts with a Latin name, Then its block in the PDF and in `index.html` has `dir="rtl"` and `lang="ar"` | R3 DX-20, DX-21 |
+
+### 7.1 Test map (P0)
+
+| ID | Test file or run | Exists? |
+|---|---|---|
+| C-REQ-017, LEGAL-REQ-034, DATA-REQ-050, F15-REQ-017 | `apps/mobile/test/export-golden.test.ts`, `apps/mobile/test/export-schema.test.ts`; `apps/mobile/e2e/flows/E2E-10-export.yaml` | Exist; consent history and role cases new (Q6) |
+| DATA-REQ-051, F15-REQ-002, F15-REQ-012 | `apps/mobile/test/export-golden.test.ts` (flipped byte, unreadable file) | Exists |
+| DATA-REQ-052 | Device run S1-21 on SE 3 (230 MB, airplane mode) | Not run |
+| F15-REQ-016 | `apps/mobile/e2e/flows/E2E-09-account-deletion.yaml` | Exists; assertion new |
+| DATA-REQ-056 | `apps/mobile/e2e/flows/E2E-10-export.yaml` (no file left after the sheet closes) | Exists |
+| PRD-REQ-009 | `packages/content/test/rules.test.ts` (pledge reads 90 days in content, Terms and Policy) | Exists; case new |
+| LEGAL-REQ-050 | `apps/mobile/test/billing-plan.test.ts` (export imports nothing from the plan engine) | Exists; case new |
+| F15-REQ-001, F15-REQ-003 | `apps/mobile/test/export-schema.test.ts` | Exists; precision case new |
+| F15-REQ-004 to F15-REQ-008 | `apps/mobile/test/export-pdf.test.ts` (text extraction, page count) with the 4-script fixture; PDF visual check on device | New |
+| F15-REQ-009 | `apps/mobile/test/export-pdf.test.ts` (one-child PDF path) | New |
+| F15-REQ-010, F15-REQ-011 | `apps/mobile/test/export-job.test.ts`; kill test 20 of 20 on device | New |
+| F15-REQ-013 | Manual check in Safari and Chrome with the exported `index.html` | Not run |
+| F15-REQ-014, F15-REQ-015 | `apps/mobile/test/keep-awake.test.ts`; `apps/mobile/test/export-job.test.ts` | First exists |
+| F15-REQ-018 | `apps/mobile/test/export-waiting.test.ts` | New |
+| F15-REQ-019 | `apps/mobile/test/export-pdf.test.ts` (dir and lang attributes) | New |
 
 ## 8. Data, privacy and security
 
@@ -220,7 +257,7 @@ Format `early-letters-export` (built from `brand.name` in `schema.ts`), `format_
 
 - No server sees the export at v1.0. The privacy label already says the ZIP and PDF are created on the device and handed to the share sheet (`docs/legal/app-store-privacy-labels.md`).
 - LEGAL-REQ-013 (strip photo location) applies when photos return (F46); v1.0 has none.
-- The pledge (PRD-REQ-009): before any shutdown, an app update keeps export working for 90 days. At v1.0 there is no backed-up audio, so nothing needs escrow decryption (DATA-REQ-055 item applies from v1.1).
+- The pledge (PRD-REQ-009): before any shutdown, an app update keeps export working for 90 days. The owner's encrypted backup ships in v1.0 (D-073, M7, M14) with a recovery key we hold (M16), so the 90 days must also keep F08's restore working, so that a family on a new phone can bring backed-up recordings back before they export (request to the F08 owner; the DATA-REQ-055 item now applies from v1.0).
 
 ## 9. Non-functional requirements
 
@@ -255,20 +292,23 @@ Consent-gated (LEGAL-REQ-003). Business counts of exports come from nowhere else
 
 ## 12. Work packages
 
+`08-delivery.md` section 3.3 governs file ownership: a path below owned by another stream is a request to that stream (R5 EQ-08).
+
 Status is what `develop` holds on 13 Oct 2026; "Device" names the `docs/qa/DEVICE_TEST_PLAN.md` run owed.
 
 | WP | Scope | Owner | Owns files | Depends on | Done when | Mode | Status 13 Oct | Device |
 |---|---|---|---|---|---|---|---|---|
 | WP-F15-01 | Spike: ZIP library choice, SE 3 throughput for 230 and 470 MB, PDF memory at 240 letters | Mobile engineer | `apps/mobile/src/dev/export-probe.tsx` (new) | BL-030 | Numbers and library decision in PR (closes TDD 01 OQ-3) | pair, device | Partly done: library chosen in code (fflate stored ZIP, expo-print PDF); SE 3 throughput not measured | S1-21 on SE 3 |
-| WP-F15-02 | Export format 1.1.0: schema, `entries.json`, manifest, README, `account.json`, fixtures | Privacy engineer | `packages/export/` (new) | none | `[DATA-REQ-050]`, `[DATA-REQ-051]` schema tests, `[F15-REQ-001]`, `[F15-REQ-003]` | agent | Partly built in `apps/mobile/src/lib/export/schema.ts`, `build.logic.ts` (not a separate `packages/export`); format 1.0.0; consent history, dictionary and real role missing (security review L4) | none |
+| WP-F15-02 | Export format 1.1.0: schema, `entries.json` (with `base_direction`), `data/waiting.json`, manifest, README, `account.json`, fixtures | Privacy engineer | `packages/export/` (new) | none | `[DATA-REQ-050]`, `[DATA-REQ-051]` schema tests, `[F15-REQ-001]`, `[F15-REQ-003]`, `[F15-REQ-018]` | agent | Partly built in `apps/mobile/src/lib/export/schema.ts`, `build.logic.ts` (not a separate `packages/export`); format 1.0.0; consent history, dictionary and real role missing (security review L4) | none |
 | WP-F15-03 | Book template and PDF render | Design systems, mobile engineer | `packages/book/` (new), `apps/mobile/src/lib/export/pdf.ts` (new) | WP-F09-02, BL-258 | `[F15-REQ-004]` to `[F15-REQ-008]` with the 4-script fixture | agent | Partly built: PDF book from HTML through expo-print (`device.ts`); `packages/book/` not built | PDF on device, page breaks (A2) |
 | WP-F15-04 | Fonts in packs and Chinese subsetting | Speech engineer (packs), design systems | F05 pack manifest fields (request), `apps/mobile/src/lib/export/fonts.ts` (new) | WP-F15-03, F05 packs | `[F15-REQ-006]`; Mandarin PDF under 3 MB of font data [A] | agent | Not built | Chinese and Arabic PDF on device |
 | WP-F15-05 | Streaming builder, verify, pause and restart, space check (BL-150) | Mobile engineer | `apps/mobile/src/lib/export/build.ts` (new), `apps/mobile/src/lib/export/job.ts` (new) | WP-F15-01, WP-F15-02, BL-111 | `[DATA-REQ-052]`, `[F15-REQ-010]`, `[F15-REQ-011]`, `[F15-REQ-012]`, kill test 20 of 20 | agent plus device | Built: streaming ZIP (`pack.ts`), check after write (`verify.ts`), free-space check, 4 GiB limit; split above 2 GB not built | S1-21 |
-| WP-F15-06 | Export screen, share sheet, notice, cleanup | Mobile engineer | `apps/mobile/src/app/settings/export.tsx` (new), `apps/mobile/src/components/export/copy.ts` (new) | WP-F15-05 | `[DATA-REQ-056]`, `[F15-REQ-014]`, `[F15-REQ-015]`, E2E-10 | agent | Built: `app/settings/export.tsx`, share sheet, temp deleted on close, Last export (D-085) | S1-21 (ZIP opens on Mac and Windows) |
+| WP-F15-06 | Export screen, share sheet, notice, cleanup | Mobile engineer | `apps/mobile/src/app/settings/export.tsx` (exists), `packages/content/src/features/export.en.ts` (exists) | WP-F15-05 | `[DATA-REQ-056]`, `[F15-REQ-014]`, `[F15-REQ-015]`, E2E-10 | agent | Built: `app/settings/export.tsx`, share sheet, temp deleted on close, Last export (D-085) | S1-21 (ZIP opens on Mac and Windows) |
 | WP-F15-07 | Offline `index.html` reader | Mobile engineer | `packages/book/reader/` (new) | WP-F15-03 | `[F15-REQ-013]` in Safari and Chrome | agent | Built: `index.html` reader in `build.logic.ts` | Opens in Safari and Chrome |
-| WP-F15-08 | Entry points: Book PDF share, delete flows, About, ErrorBoundary | Mobile engineer | `(tabs)/book.tsx` menu, F17 flow hooks (request to F17 owner) | WP-F15-06 | `[F15-REQ-009]`, `[DATA-REQ-053]` | agent | Not built: no Book PDF share entry found | none |
-| WP-F15-09 | Pledge copy in Help and Legal and shutdown runbook | Content, founder | `apps/mobile/src/components/export/copy.ts`, `docs/` runbook (request) | BL-159 | `[PRD-REQ-009]` text equality test against Terms 17 number | pair | Not built | none |
+| WP-F15-08 | Entry points: Book PDF share, delete flows, About, ErrorBoundary | Mobile engineer | `(tabs)/book.tsx` menu, F17 flow hooks (request to F17 owner) | WP-F15-06 | `[F15-REQ-009]`, `[F15-REQ-016]` | agent | Not built: no Book PDF share entry found | none |
+| WP-F15-09 | Pledge copy in Help and Legal and shutdown runbook; stream S16 proposed (R5 EQ-07; 08 section 3.3 assigns) | Content, founder | `packages/content/src/strings.en.ts` (`settings` pledge line exists), `docs/` runbook (request) | BL-159 | `[PRD-REQ-009]` text equality test against Terms 17 number | pair | Not built | none |
 | WP-F15-10 | Durability drill includes export re-read (BL-284) | QA engineer | `docs/` QA script (request) | WP-F15-06 | Drill evidence each release candidate | human | Not run | DL-03, BL-284 |
+| WP-F15-11 | Export letters not saved yet under `waiting/`; direction and language per letter in PDF and reader | Mobile engineer | `apps/mobile/src/lib/export/build.logic.ts`, `schema.ts`, `apps/mobile/test/export-waiting.test.ts` (new) | WP-F15-02, F04 WP-F04-03 (`base_direction`) | `[F15-REQ-018]`, `[F15-REQ-019]` | agent | Not built: `build.logic.ts` reads entries only | none |
 
 ## 13. Open questions and assumptions
 

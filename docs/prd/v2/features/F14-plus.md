@@ -3,47 +3,64 @@
 | | |
 |---|---|
 | Release | v1.0 gate |
-| Priority and rank | P0, rank 16 (`05-feature-map.md` section 2) |
+| Priority and rank | P0, rank 14 (`05-feature-map.md` section 2) |
 | Personas | P1 Evening parent (buyer), P2 Co-parent, P3 Expecting parent |
-| Existing IDs | PRD-REQ-024 to PRD-REQ-027, K-44, K-45 (PRD 1.4 on `origin/main`); C-REQ-019 to C-REQ-029, C-NFR-002 to C-NFR-004, C-NFR-006, C-NFR-007; PRD-REQ-003, PRD-REQ-015 Rev, PRD-REQ-017, PRD-REQ-020 Rev, PRD-REQ-022; K-04, K-11, K-12, K-28, K-38; LEGAL-REQ-029, LEGAL-REQ-046 to LEGAL-REQ-050, LEGAL-REQ-053, LEGAL-REQ-054, LEGAL-REQ-058; D-001, D-012, D-022, D-047, D-048, D-049, D-053, D-077, D-080, D-081, D-082, D-083; D-051 (main), D-052 (main); DR-02 to DR-06, DR-08, DR-16, DR-17, R-06; BL-036, BL-103, BL-215, BL-216, BL-219 to BL-222, BL-342, BL-344 |
-| Depends on | F06 (Review and its Keep buttons), F04 (drafts that hold a letter), F11 (co-parent, Family Sharing line), F13 (notification budget, plan-notice day rule), F15 (export never gated), F17 (Settings > Plan, Erase everything, account deletion), F19 (remote config `freeLettersAllowance`), F21 (review notes, store listing) |
-| Status | Draft V2.1, 13 Oct 2026. Rewritten for founder decisions M1 to M6 (`_AUTHORING.md` section 3b). Not legal advice: every item marked **[Counsel]** waits for counsel |
+| Existing IDs | PRD-REQ-024 to PRD-REQ-027, K-44, K-45 (PRD 1.4 on `origin/main`); C-REQ-019 to C-REQ-029, C-NFR-002 to C-NFR-004, C-NFR-006, C-NFR-007; PRD-REQ-003, PRD-REQ-015 Rev, PRD-REQ-017, PRD-REQ-020 Rev, PRD-REQ-022; K-04, K-11, K-12, K-28, K-38; LEGAL-REQ-029, LEGAL-REQ-046 to LEGAL-REQ-050, LEGAL-REQ-053, LEGAL-REQ-054, LEGAL-REQ-058; D-001, D-012, D-022, D-047, D-048, D-049, D-053, D-077, D-080, D-081, D-082, D-083; D-051 (main), D-052 (main); M15, M16, M17; DR-02 to DR-06, DR-08, DR-16 (answered by M17), DR-17, R-06; BL-036, BL-103, BL-215, BL-216, BL-219 to BL-222, BL-342, BL-344 |
+| Depends on | F06 (Review and its Keep buttons), F04 (drafts that hold a letter; the Tonight line and held row), F05 (when a letter's words exist), F08 (owner backup of held letters' audio), F16 (held letters sync as author-only drafts), F11 (co-parent, Family Sharing line), F13 (notification budget, plan-notice day rule), F15 (export never gated), F17 (Settings > Plan, Erase everything, account deletion), F19 (remote config `freeLettersAllowance`), F21 (review notes, store listing) |
+| Status | Draft V2.2, 13 Oct 2026. Rewritten for founder decisions M1 to M6; revised after critique round 1 for M15 to M17 (`_AUTHORING.md` section 3b) and the findings listed in `reviews/DISPOSITION-A.md`. Dates are milestone ids in `08-delivery.md` section 2.1. Not legal advice: every item marked **[Counsel]** waits for counsel |
 
 **What changed from the 3 Oct draft.** Plus is now the membership (M1). The two old Plus gates are gone: books for more children and Read together sessions are free (M2). The one gate is the Keep step of a new letter after the first 2 letters an account keeps. Prices are $4.99 and $49.99 (M3). Offer codes are in (M5). Plan reminders come from the phone and from server emails fed by a status-only report (M6). Each requirement in section 7 now says whether it is Built, Partly built or Not built, checked against the code on `docs/prd-v2` rebased on `origin/develop` (6482cd3).
 
+**What changed after critique round 1 (13 Oct).** M17 changes what counts: only your own letters, and only once their words exist and you have seen them; the other parent's letters never count, and a voice-only letter counts only when its words are reviewed and kept (section 6.2 C). So the gate never fires before a parent has seen a transcript. Held letters become as durable as kept ones: they sync as private drafts and their audio is backed up (F14-REQ-039). A standing line on Tonight says, before the parent records, that new letters need Plus (F14-REQ-040). A pre-committed rule raises the free allowance if the business number falls short (section 6.9). The "ship v1.0 free, add Plus in 1.0.1" cut is removed (R1 PL-22). DR-16 is answered by M17 for counting; Plus reaches a co-parent through Apple Family Sharing (D-080). The status report contract gains the R2 AR-13 fields and the R4 PT-08 and PT-10 cases.
+
 ## 1. Why
 
-- [D] Membership: the first 2 letters kept per account are free, one pool across every book. After that, the Keep step of a new letter needs Plus. Capturing, typing, reviewing, reading, playing, exporting, deleting and restoring are never gated. A letter held at the gate is never lost. A never-decreasing ledger counts letters ever kept (D-051 (main), D-082, D-083; M1).
+- [D] Membership: the first 2 of your own letters are free, one pool across every book, counted once their words exist and you have seen them (M1, M17). The other parent's letters never count. After that, the Keep step of a new letter needs Plus. Capturing, typing, reviewing, reading, playing, exporting, deleting and restoring are never gated. A letter held at the gate is never lost. A never-decreasing ledger counts letters ever kept (D-051 (main), D-082, D-083; M1, M17).
+- [R] Plainly, this is a hard paywall with a two-letter sample. A keepsake's value builds over months; two letters are one or two evenings (R1 PL-06). Section 6.9 holds the pre-committed rule for raising the allowance.
 - [D] Prices: Plus Monthly $4.99 with a 1-month free trial; Plus Annual $49.99 with a 2-month free trial (D-082, M3). Display names per D-077. Apple only, StoreKit 2, Apple's own subscription view, restore, manage and refund sheets (D-053, ADR 0013).
 - [D] The app reports subscription status only (plan, trial end, renewal date, cancelled flag) so our server can send the California auto-renewal reminder emails. No receipts, no payment data; the server never enforces Plus (D-080, D-081, M6). On-device plan reminders and "Save a copy" after purchase are also v1.0 (ROADMAP 2.1 section 1, BL-342).
 - [S] Charging for something that used to be free drew a negative review every time in the R2 sample: 10 of 10 reviews across 6 products [S] R2 section 0 item 3, theme T2. No user has been bound yet (v1.0 is not released), so the membership is the model from the first day, not a take-back. Plus must still never move an existing letter behind payment (03 principle 6).
 - [S] Paywalls on existing memories are the single biggest trust failure in the category this year: Qeepsake is moving to "a paid-only system" and deactivating inactive free accounts [S] `docs/research/competitors/us.md` section 3 (Qeepsake lesson), section 9.
 - [F] At $4.99 a month we match the category's monthly floor (seven of 20 apps) below the $6.24 median; $49.99 a year equals the annual median [F] `docs/research/competitors/us.md` section 0 item 8.
-- [F] A 1-month trial on a monthly plan sits in the 17 to 32 day bucket: 43.7% median trial-to-paid and 77.5% first renewal on monthly plans. Trials over 32 days are excluded from the benchmark, so the 2-month annual trial has none [F] R3 section 4.3 (R3-S33).
-- [F] Hard paywalls convert 10.7% of installs by day 35 against 2.1% for freemium, with almost the same 12-month retention (27% against 28%) [F] R3 section 4.3 (R3-S32). Two free letters then a gate sits between the two models [A]; no published benchmark covers it.
+- [F] A 1-month trial on a monthly plan sits in the 17 to 32 day bucket: 43.7% trial-to-paid, and 77.5% first renewal among paying subscribers, on monthly plans. Trials over 32 days are excluded from the benchmark, so the 2-month annual trial has none [F] R3 section 4.3 (R3-S33).
+- [F] Hard paywalls show a median day-35 conversion of 10.7% against 2.1% for freemium (RevenueCat's wording: trial-to-paid), with almost the same 12-month retention (27% against 28%) [F] R3 section 4.3 (R3-S32). No published benchmark covers a two-letter sample [A].
 - [F] Much of this exists in code and is green in CI but has not run on a real iPhone (M13; ROADMAP 2.1 section 0). Section 7 marks what is missing.
+
+**One source for prices and Plus contents.** Other V2 files cite this table; `packages/content/src/pricing.ts` carries the prices to the app and the website (F21-REQ-015).
+
+| | v1.0 |
+|---|---|
+| Prices | Plus Monthly $4.99 with a 1-month free trial; Plus Annual $49.99 with a 2-month free trial (D-082, M3). Display names per D-077 |
+| What Plus adds | Adding each new letter of your own to a book after your first 2 with words you have seen (M1, M17). Nothing else at v1.0 |
+| Free, with or without Plus | Recording, typing, reviewing; reading, playing and exporting every letter; starting books for more children; Read together; deleting and restoring from Recently deleted; restoring a backup (`FreeForever`, M2) |
+| Owner backup | Free under the spec default [R]; F08 Q2 is the founder's call at T07. If backup becomes Plus, principle 6 and every "only the Keep step" claim change first (R1 PL-02, R3 DX-04) |
+| Co-parent | The other parent's letters never count against you (M17). Plus reaches a co-parent through Apple Family Sharing inside one Apple Family (D-080); outside it, the co-parent's own first 2 letters are free, then they need Plus of their own |
 
 ## 2. Who
 
 | Person | Moment | Holding, feeling, short of |
 |---|---|---|
-| P1 Evening parent, third letter | Has kept 2 letters; records a third at 21:00 and taps Keep | Must not lose the words just spoken; wants a plain choice, not a sales page; may be offline |
+| P1 Evening parent, third letter | Has kept 2 letters with words; has seen the Tonight line since; records a third at 21:00, reads the words in Review and taps Keep | Must not lose the words just spoken; wants a plain choice, not a sales page; may be offline |
+| P1 on the first night | No speech model on the phone yet; records a first letter | Must see what the app does with their words before any gate; a voice-only letter does not count (M17) |
 | P1 on a free month | 4 days before the first charge | Wants the date, the price and how to cancel, without hunting (UR R16) |
 | P1 after a lapse | Card declined, or chose to stop | Every letter, recording and book must be exactly where it was; new letters wait at Keep (PRD-REQ-026) |
-| P2 Co-parent | Partner bought Plus | Expects to keep letters too. Works on their phone only through Apple Family Sharing today (DR-16) |
+| P2 Co-parent | Partner bought Plus, or not | Expects to keep letters too. The partner's letters never count against them (M17). Inside the partner's Apple Family, Plus reaches them; outside it, their own 2 letters are free, then the Keep sheet says how Family Sharing works before it offers Plus (F14-U21) |
 | P3 Expecting parent | Before birth, first two letters | Books and the due-date book are free; only the third kept letter meets the gate |
 | A tester or friend | Has an offer code from the founder | Wants to type it in once and have Plus on (D-052 (main)) |
 
 ## 3. What we are solving
 
-**Outcome.** A family can try the product with 2 kept letters, meets one calm gate at the third Keep, never loses that letter, pays through Apple in a few taps, knows what it costs and when, is reminded before every charge the law requires, and keeps every letter readable, playable and exportable whatever happens to Plus.
+**Outcome.** A family can try the product with 2 of their own letters whose words they have seen, is told before recording a third that new letters need Plus, meets one gate at that third Save, never loses that letter, pays through Apple in a few taps, knows what it costs and when, is reminded before every charge the law requires, and keeps every letter readable, playable and exportable whatever happens to Plus.
 
 | Metric | Target | How measured | Caveat |
 |---|---|---|---|
-| Letters lost or discarded at the Keep gate | Zero (gate) | `[never lose a recording]` ledger test; device checks D-1, D-9 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11 | None |
-| Plus started after the gate / gate shown | Set after cohorts [A] | `plus_started_from_gate` / `keep_gate_shown` (device, opt-in) | Opt-in only; counts include restores and offer codes |
+| Letters lost or discarded at the Keep gate, including after a lost phone for a signed-in parent with backup on | Zero (gate) | `[never lose a recording]` ledger test; device checks D-1, D-9 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11; the held-letter restore check (F14-REQ-039) | None |
+| Keep sheets shown on a Keep with no words on screen | Zero (gate, M17) | `[F14-REQ-037]` | None |
+| Paying families over first-time downloads, by install week | 5% at T39 [A] | App Store Connect only (03 section 4.1) | No consent needed; this, not the opt-in funnel, decides section 6.9 |
+| Plus started after the gate / gate shown | Diagnostic only, no target | `plus_started_from_gate` / `keep_gate_shown` (device, opt-in) | Opt-in only and biased toward engaged users; counts include restores and offer codes (R1 PL-17) |
 | Held letters later kept | Set after cohorts [A] | Not linkable (no letter ids in analytics); proxy: `plus_started_from_gate` per `letter_held` | Opt-in only |
-| Trial to paid | 40% or more [A] | App Store Connect (ASC) | Review gate at the first 200 annual trials (R3 section 7 item 3) |
+| Trial to paid, monthly | 40% or more [A] | App Store Connect (ASC) | Nearest benchmark 43.7% (R3-S33) |
+| Trial to paid, annual | Set at T40 | ASC | No benchmark for a 2-month trial (R3-S33); section 6.9 price rule |
 | Annual share of Plus | 60% or more [A] | ASC | |
 | Refund rate | Under 3% [A] | ASC | R3-S35: 2% to 5% typical |
 | Required plan reminders inside their windows | 100% of purchased subscriptions on the purchasing phone | Clock-controlled planner test over a synthetic year (BL-342) | Local delivery needs the app installed and notifications allowed; emails need sign-in and the status report (M6; v1.0 per M14) |
@@ -53,7 +70,7 @@
 ## 4. Scope
 
 **In v1.0**
-- The membership gate at Keep, the letter ledger, held letters, the calm line after the second free letter, the lapsed wording (M1).
+- The membership gate at Keep, the letter ledger with the M17 count, held letters as durable as kept ones, the one line after the second free letter, the standing Tonight line, one row for held letters, the lapsed wording (M1, M17).
 - Books for more children and Read together with no Plus gate (M2; F10, F12).
 - Two auto-renewable products in one group, Apple free trials, Family Sharing on, Billing Grace Period 16 days, US only (M3).
 - Apple's `SubscriptionStoreView` through our native module `apps/mobile/modules/scribe-store/`, with our marketing text above the plans. No price or trial length typed by us (D-083 copy rule).
@@ -65,14 +82,16 @@
 - Review notes that describe the membership (DR-08).
 
 **Later**
-- Encrypted backup as a Plus feature (`backup_upload` stays a `GatedFeature` with no caller; F31). Extra themes (`theme_extra`, F46).
+- Extra themes (`theme_extra`, F46). Backup is not planned as a Plus feature: under the spec default it is free (F08 Q2), and principle 6 then keeps it free; `backup_upload` stays a `GatedFeature` with no caller until the founder answers, then is removed if backup is free.
 - Gifts and lifetime (C-REQ-030, C-REQ-032, F43). Dormant-payer email (`plus-quiet`, v1.1 in CATALOG section 7).
-- A server "book has a member" signal so one membership covers a co-parent outside the payer's Apple Family (DR-16).
+- A server "book has a member" signal so one membership covers a co-parent outside the payer's Apple Family (DR-16 option B; a 1.0.x candidate if Study 3 shows co-parents outside one Apple Family are common).
 - Price-increase notice (`price-increase` email; Apple's consent flow until then, D-080).
 - Google Play billing (F36).
 
 **Never**
 - A gate on capturing, typing, reviewing, reading, playing a recording, export, deleting, restoring from Recently deleted, starting a book or Read together (`FreeForever` in `packages/core/src/plan.ts`; LEGAL-REQ-050).
+- A Keep sheet on a Keep where the letter's words are not on screen, or before the parent's first letter with words (M17).
+- Shipping v1.0 without the gate and adding it later: launch users would get unlimited letters and then a gate (03 principle 6; R1 PL-22). If StoreKit is not ready, submission slips.
 - Discarding, truncating or hiding a letter because of the gate (PRD-REQ-025; the constitution).
 - Counters or gap counts: no "1 letter left", no "2 of 2" on any screen (M1; CLAUDE.md content rules).
 - A price, "free trial", "free months" or "we will email you" in our app copy; Apple's sheets show price and trial to eligible people (D-083 copy rule in `packages/content/src/features/billing.en.ts`).
@@ -92,7 +111,7 @@
 | Tinybeans | $7.99 / $74.99; after a lapse, content over 5 GB is archived and hidden [F] R1-S2, R1-S46 | 4.9 (104K) | Price rises and new paywalls drew anger [S] R2 T1, T2 | **Avoid** hiding content after a lapse [R] |
 | Day One | Silver $49.99 a year, 1-month trial; media stays playable after a lapse; Family Sharing does not apply [F] R1-S6, R1-S23, R1-S25, R1-S60 | n/a | A user compares $25 a year with a rival at $4 [S] R2 T1 | **Match** lapse; **Innovate** with Family Sharing on (R4-S17) [R] |
 | Dearest | Plus $4.99 / $49.99 with a free tier; in-app renewal reminders with cancellation deadlines (v1.4.2) [F] R1-S3; "If your subscription ends, nothing is taken from you" [F] `us.md` section 3 (U37) | 1 US rating [F] R2-S6 | n/a | Same price as ours. **Match** in-app reminders as one of the two reminder channels [R] |
-| Tiny Treasures | $4.99 / $29.99 / $99 lifetime; free with one child; one plan covers the family [F] R1-S67; `us.md` section 8.1 | 5.0 (7) [F] R1-S67 | n/a | Now $20 a year cheaper than us. **Match** one membership for the family (M4) [R] |
+| Tiny Treasures | $4.99 / $29.99 / $99 lifetime; free with one child; one plan covers the family [F] R1-S67; `us.md` section 8.1 | 5.0 (7) [F] R1-S67 | n/a | $20 a year cheaper than us. **Match** one membership for the family inside one Apple Family (D-080); outside it we do not match at v1.0 (DR-16 option B is a 1.0.x candidate) [R] |
 | FirstChapter | $6.99 / $39.99; free tier of 3 AI voice entries a month [F] R1-S4 | No US average [F] R1-S4 | n/a | Meters capture every month. **Avoid** monthly metering: our 2 free letters are a one-time allowance [R] |
 | Notabli, Moment Garden | $4.99 / $49.99 each [F] `us.md` section 8.1 | 4.66 (70); 4.84 (3,878) | n/a | Price peers; no action |
 | Calm (quality bar) | $14.99 / $69.99 [F] R1-S48 | n/a | Cost, limited free content, hard to cancel [S] R1-S48 | **Avoid** cancel friction: Apple's manage sheet one tap from Settings > Plan [R] |
@@ -106,34 +125,62 @@
 
 | Entry | Where (code) | Opens |
 |---|---|---|
-| Keep, Keep privately or keep the voice without words, after the allowance is used and without Plus | `apps/mobile/src/app/review.tsx` (`keepNeedsPlus` before `saveLetterFromDraft` or `saveVoiceOnlyFromDraft`) | The Keep sheet (`PlusGate variant="keep_letter"` in `apps/mobile/src/components/child/plus-gate.tsx`) |
+| Keep or Keep privately with the letter's words on screen, after your allowance is used and without Plus. Keeping the voice without words never opens it (M17) | `apps/mobile/src/app/review.tsx` (`keepNeedsPlus` before `saveLetterFromDraft`; not before `saveVoiceOnlyFromDraft` once WP-F14-20 lands) | The Keep sheet (`PlusGate variant="keep_letter"` in `apps/mobile/src/components/child/plus-gate.tsx`; moves to `components/plus/` in WP-F14-21) |
+| Reviewing and keeping the words of a voice-only letter, after your allowance is used and without Plus | Review of a letter whose words arrived later (F05, F06) | The Keep sheet (section 6.2 B2) |
 | Keep sheet > See Plus | `plus-gate.tsx` | Apple's subscription view (`presentPlusStore`) |
 | Keep sheet > Redeem a code | `plus-gate.tsx` | Apple's offer code sheet (`redeemOfferCode`) |
 | Settings > Plan | `apps/mobile/src/app/settings/plus.tsx` (route `/settings/plus`) | Status, See what Plus adds, Redeem a code, Manage, Restore, Refund |
 | A plan reminder notification or card | BL-342 (not built) | Settings > Plan, never the purchase view |
 | A reminder email | D-080 (not built) | Apple's subscriptions page through `{manageUrl}` |
+| Tonight and Write, once your allowance is used and Plus is off | Tonight (F04, S10) | A line, never a sheet: `billingCopy.tonight.plusLine` (new, F14-REQ-040) |
 | Add a child, Read together, first run, export, a letter, a notification | n/a | Never a Plus sheet (M2; 6.4) |
 
 ### 6.2 Happy paths
+
+**Words we use (proposed; content owns the final text; the F06 and F02 owners adopt the same words).** One meaning per word on these screens (R3 DX-08, R1 PL-20). Copy keys stay; only their text changes.
+
+| Place | Today | Proposed |
+|---|---|---|
+| Review, book button | Add to {child}'s book | Save to {child}'s book |
+| Review, private button | Keep private | Save just for me |
+| Keep sheet, hold button | Keep it here for now | Leave it waiting |
+| Account sheet after the first letter (F02) | Keep the book | A name that says what it does, for example "Keep your letters safe on a new phone" (F02 owner) |
+| "Kept" | Several meanings | Only in durability statements, for example "Everything you said is kept" |
+
+In this spec "Keep" still names the step the gate guards: saving a letter of your own, with its words, into a book.
 
 #### A. The first two letters
 
 | # | Person does | App shows (copy key) | System does |
 |---|---|---|---|
-| 1 | Records or types a letter, reviews it, taps Keep | Normal Review and saved card | `ensureAudioHash`, then `keepLetterGate()` reads the ledger (0) and `decideKeepLetter` returns `allow free_letters`. `saveLetterFromDraft` writes the letter and counts it in one transaction (`ledger.recordKept`). `afterLetterKept` copies the count to the Keychain |
-| 2 | Keeps a second letter | Saved card plus one calm line: "That was your second free letter." (`billingCopy.keepGate.secondFreeNote`) | Ledger reaches 2; `free_allowance_reached{allowance: 2}` after consent. The line shows once, only when the allowance is 2 and Plus is off |
+| 1 | Records or types a letter, reads its words in Review, taps Save | Normal Review and saved card | `ensureAudioHash`, then `keepLetterGate()` reads the ledger (0) and `decideKeepLetter` returns `allow free_letters`. `saveLetterFromDraft` writes the letter and counts it in one transaction (`ledger.recordKept`), because its words are on screen and its author is this person (M17). `afterLetterKept` copies the count to the Keychain |
+| 2 | Saves a second letter with words | Saved card plus one line: "That was your second free letter." (`billingCopy.keepGate.secondFreeNote`) | Ledger reaches 2; `free_allowance_reached{allowance: 2}` after consent. The line shows once, only when the allowance is reached and Plus is off |
+| 2b | Opens Tonight or Write afterwards | One standing line above Speak and on Write: "Adding new letters to the book needs Plus. Recording, reading and export are always free." (`billingCopy.tonight.plusLine`, new). A state, not a count; no button | Shown while the allowance is used and Plus is off (F14-REQ-040). Tells the parent before they record, not after (R1 PL-07, R3 DX-03). Study 2 tests the wording (02 section 7) |
 | 3 | Later, opens Settings > Plan | "Your first two letters are free. Plus lets you keep adding." (`billingCopy.plan.off`) | No count of letters left anywhere |
 
 #### B. The third letter: held, then kept with Plus
 
 | # | Person does | App shows (copy key) | System does |
 |---|---|---|---|
-| 1 | Reviews a third letter, taps Keep | The Keep sheet: "Keep adding to {child}'s book" (`keepGate.title`), `keepGate.body`, `keepGate.heldNote` ("This letter is safe on your phone. Come back to it once Plus is on."), buttons See Plus, Keep it here for now, Redeem a code | Recording already closed and hashed. `decideKeepLetter` returns `offer keep_letter`. Nothing is saved; the draft is untouched. `keep_gate_shown{letters_kept, allowance, lapsed}` |
-| 2a | Taps Keep it here for now | Back to Tonight; the draft card "A letter is waiting to be read back." (`tonight.draftWaiting.title`) | `letter_held{letters_kept}`. The draft stays in the local database and its audio stays on disk (F04) |
+| 1 | Reads the words of a third letter in Review, taps Save | The Keep sheet. Proposed text (content owns it, R3 DX-25): title "Adding this letter needs Plus" (`keepGate.title`); body "Your first two letters were free. Plus adds each new letter to {child}'s book. Reading, playing and export stay free." (`keepGate.body`); held note first, by state (`keepGate.heldNote`): signed out "This letter is waiting on this phone.", signed in "This letter is waiting, saved with your account." (R4 PT-13; the signed-in text ships only with F14-REQ-039); in a shared book, one more line: "If {signsAs} has Plus, it can reach you through Apple Family Sharing." (`keepGate.familySharing`, new). Buttons: See Plus, Leave it waiting, Redeem a code | Recording already closed and hashed. `decideKeepLetter` returns `offer keep_letter`. Nothing is added to the book; the draft is untouched. `keep_gate_shown{letters_kept, allowance, lapsed}` |
+| 2a | Taps Leave it waiting | Back to Tonight. Held letters show as one row, "{n} letters waiting to go in the book" with plural forms (`tonight.heldRow.title`, new), which opens the list; never one row per letter (R3 DX-22) | `letter_held{letters_kept}`. The draft stays in the local database and its audio on disk (F04). Signed in: it syncs as a private draft only its author can read; with backup on, its audio uploads; "Export everything" includes it under `waiting/` (F14-REQ-039) |
 | 2b | Taps See Plus | Apple's subscription view (6.5) | `plus_offer_viewed{trigger: keep_letter}` |
 | 3 | Picks a plan, confirms with Face ID | Apple's purchase sheet | StoreKit transaction arrives through the native listener (`startTransactionListener`); `refreshPlan()` |
-| 4 | Sheet closes | The same Review again; the person taps Keep themselves (D-083) | `plus_started_from_gate`; `decideKeepLetter` returns `allow plus_own`; the letter saves and counts (the count keeps rising under Plus) |
+| 4 | Sheet closes | The same Review again; the person taps Save themselves (D-083). If other letters are waiting, one offer after the save: "Add the {n} waiting letters too?" with each letter still openable on its own (`keepGate.addWaiting`, new) | `plus_started_from_gate`; `decideKeepLetter` returns `allow plus_own`; the letter saves and counts (the count keeps rising under Plus). Each waiting letter had its words on screen at its own gate, so each counts when added (M17) |
 | 5 | (Not built) after the purchase | The acknowledgment sheet with Save a copy (6.6) | BL-342; then the first status report with consent facts (D-081) |
+
+#### B2. Letters with no words yet (M17)
+
+A spoken letter has no words while the speech model is missing or downloading, or when its language has no passed model (record-and-type at v1.0, DR-01).
+
+| # | Person does | App shows | System does |
+|---|---|---|---|
+| 1 | Records a letter on a phone with no model yet | Review shows the recording and "Your words will appear here when the speech model is ready." (F05 owns the text); "Save the recording" | Saving a voice-only letter never reads the ledger and never opens the Keep sheet. It does not count (F14-REQ-037) |
+| 2 | Later, the words arrive | The letter's Review opens on its words | Nothing counts until the author reviews them |
+| 3 | Reads the words and taps Save | Saved, or the Keep sheet if the allowance is used and Plus is off | This is the counting moment. If the sheet shows and the parent leaves it waiting, the words wait as a held change to that letter; the recording stays where it is |
+| 4 | Types the words instead (record-and-type language) | Typed words on screen | Same rule: counts at the Save where the typed words are on screen |
+
+Spec default [R]: a voice-only letter goes into the book uncounted, as before M17, so a P4 parent in a language with no model can keep voice letters without typing (R3 DX-26). The cost: a free family could keep many voice-only letters and never add words. Accepted as a gift, never a lock [A]; watched with the share of voice-only letters among free accounts (`letter_kept{has_words}`). The alternative, voice-only letters waiting outside the book until words exist, is founder question Q-F5.
 
 #### C. Not eligible for a free trial, or lapsed
 - Apple's view shows only the price for a person who used a trial in this group before. Our text never says "free trial", so nothing to change (D-083 copy rule).
@@ -145,7 +192,10 @@
 3. An offer-code member is a member: the Keep gate allows (`planActive`). When the free period ends, Apple converts it to the normal price unless the person cancels **[Counsel]** wording (D-052 (main)).
 
 #### E. Co-parent in the payer's Apple Family
-The co-parent's phone lists the Plus transaction with ownership `familyShared`; Plus is on; Plan reads "Shared with you through Apple Family Sharing." (`billingCopy.plan.shared`); no refund row; no reminders and no status report from this phone (D-080 rule). Co-parent sharing ships in v1.0 (M14; built, switch off in release profiles on 13 Oct); see DR-16.
+The co-parent's phone lists the Plus transaction with ownership `familyShared`; Plus is on; Plan reads "Shared with you through Apple Family Sharing." (`billingCopy.plan.shared`); no refund row; no reminders and no status report from this phone (D-080 rule). Co-parent sharing ships in v1.0 (M14).
+
+#### E2. Co-parent outside the payer's Apple Family
+The other parent's letters never count on this phone (M17, F14-REQ-036). This person's own first 2 letters with words are free. At their third, the Keep sheet adds the Family Sharing line before See Plus (6.2 B step 1) and a link to Apple's Family Sharing help page; buying is the second choice, not the first (R3 DX-11). DR-16 is answered by M17 for counting; coverage outside one Apple Family stays D-080's answer at v1.0.
 
 #### F. Restore on a new iPhone
 StoreKit lists current entitlements on the first launch after install, so Plus usually appears with no tap. Settings > Plan > Restore purchases calls `ScribeStore.sync()` only on a tap (Apple may ask the person to sign in). Plus follows the Apple Account, not our account (DR-05). The letter ledger is separate: see U03 to U06.
@@ -176,45 +226,50 @@ The display name in the period label reads "Yearly" today; D-077 names the produ
 
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
-| F14-U01 | Offline at Keep, allowance used, no cached Plus | Still `offer` (offline changes only wording, never the answer); the draft is kept | Keep sheet; See Plus returns `unavailable`; `keepGate.offline`: "Plus needs the internet to start. Your letter stays safe on your phone until then." | Keep it here for now; try online | Device check D-9 |
+| F14-U01 | Offline at Keep, allowance used, no cached Plus | Still `offer` (offline changes only wording, never the answer); the draft is kept | Keep sheet; See Plus returns `unavailable`; `keepGate.offline`: "Plus needs the internet to start. Your letter stays safe on your phone until then." | Leave it waiting; try online | Device check D-9 |
 | F14-U02 | Offline at Keep with cached Plus whose period is still paid | `planActive` true from the cached snapshot | Letter keeps normally | n/a | `plan.test.ts` row 13 (cache 9 days old, period ahead) |
-| F14-U03 | Held letter, then the phone is lost | The held letter is a draft in the local database plus its audio file, as durable as any draft (F04, F08). It comes back only from the person's own iPhone backup | Nothing from us on the lost phone | Restore from the device backup; the draft card returns | Device check D-8 variant |
+| F14-U03 | Held letter, then the phone is lost | Signed in: the held letter synced as a private draft and, with backup on, its audio uploaded (F14-REQ-039); on the new phone it returns as a waiting letter. Signed out: it is a local draft and audio file, and comes back only from the person's own iPhone backup | Signed in: the waiting row on the new phone. Signed out: nothing from us | Sign in on the new phone; or restore the device backup | `[F14-REQ-039]` restore check on two phones; device check D-8 variant |
 | F14-U04 | Reinstall on the same phone (Free, 2 kept) | The Keychain item (`earlyletters.letters.keptEver`, this-device-only) usually survives; `startLetterLedger` raises the mirror to it; the third Keep asks for Plus. Apple does not guarantee Keychain survival; a lost item gives 2 more free letters (accepted: a gift, never a lock-out) | Keep sheet at the third Keep | n/a | `billing-ledger.test.ts` reinstall rows; device check D-7 |
 | F14-U05 | iCloud backup restored to a new phone | Mirror and letters present come back; the Keychain item does not; the gate uses the largest and heals the Keychain | Keep sheet at the third Keep | n/a | `billing-ledger.test.ts` restore rows; device check D-8 |
-| F14-U06 | Two iPhones, one person, no sync (v1.0) | Each phone has its own ledger; each allows 2 free letters. Plus on one Apple Account covers both phones | 2 free letters per phone | n/a | Accepted (open edge 4 default, 6.7) |
+| F14-U06 | Two iPhones, one person | Signed in on both: this person's letters sync, so each phone counts the same own letters and reaches the same count after a sync. Signed out on either: that phone has its own ledger and its own 2. Plus on one Apple Account covers both phones | Same gate on both after a sync | n/a | `billing-ledger.test.ts` two-phone rows; accepted when signed out (edge 4) |
 | F14-U07 | Offline keep past the limit | Impossible on an unmodified client: the gate decides on the device with no network. A modified client can bypass it; the server accepts every letter (D-080) | n/a | n/a | Accepted (DR-04) |
-| F14-U08 | Co-parent keeps a letter (when co-parent sharing ships) | The co-parent's phone decides with its own ledger and its own Plus (own or Family Sharing). The book owner's Plus does not reach a co-parent outside the Apple Family | Co-parent outside the family meets the gate at their third kept letter | Join the Apple Family, or buy | DR-16 default; blocked until `capabilities.coParent` |
+| F14-U08 | Co-parent joins a book that already holds 30 letters by the other parent, then keeps one | The ledger counts only this person's own letters (M17); the 30 never count and never raise the mirror or Keychain (R2 AR-04) | Their first own letter is free letter 1 | n/a | `[F14-REQ-036]` join-with-30 test |
 | F14-U09 | Trial-ineligible person | Apple's view shows price only; our text has no "free" word | Price and Apple's terms | n/a | `packages/content/test/rules.test.ts` D-083 case (no price, "free trial" or "free months" in `keepGate` and `plan`) |
-| F14-U10 | Erase everything | `eraseLetterLedger()` removes the Keychain item and the mirror; the next kept letter is free letter 1 | Fresh start | n/a | `billing-ledger.test.ts` "removes the Keychain item and the database mirror". No v1.0 surface calls it today (F14-REQ-026) |
+| F14-U10 | Erase everything | Signed out: `eraseLetterLedger()` removes the Keychain item and the mirror; the next kept letter is free letter 1. Signed in: letters on our server sync back and the ledger heals to them, so a reset follows only account deletion (R2 AR-23) | Fresh start only when the letters are gone | n/a | `billing-ledger.test.ts` "removes the Keychain item and the database mirror"; F14-REQ-026 (P1) |
 | F14-U11 | Letter deleted, then another written | Count never decreases; deleting does not give a free letter back | Keep sheet at the third keep overall | n/a | `billing-ledger.test.ts` delete rows |
 | F14-U12 | Letter restored from Recently deleted (D-085) | Not counted again (idempotent per id, recent ids kept) | Letter back, no gate | n/a | `billing-ledger.test.ts` restore row |
 | F14-U13 | App killed between Keep and save under the gate | A held letter wrote nothing; an allowed letter and its count commit together or not at all | Draft or letter, never both, never neither | n/a | `[atomic]` ledger test; kill test (F04) |
 | F14-U14 | Double tap on Keep | `saving` ref blocks a second save; idempotent count per id | One letter | n/a | `[Keep after Plus starts saves once]` |
-| F14-U15 | Person closes Apple's view without buying | Back on the Keep sheet; the draft is untouched | Keep sheet | Keep it here for now | `plus_offer_closed{outcome: dismissed}` |
+| F14-U15 | Person closes Apple's view without buying | Back on the Keep sheet; the draft is untouched | Keep sheet | Leave it waiting | `plus_offer_closed{outcome: dismissed}` |
 | F14-U16 | Ask to Buy pending | Plan stays Free; the listener waits; when approved, `plan.plusOn` turns true and the sheet carries on | Keep sheet until approval | Automatic | Sandbox |
 | F14-U17 | Network drops or app killed after Apple charges | StoreKit redelivers at next launch; the listener starts at boot (`startPlus` in `_layout.tsx`) | Plus on next launch; the held letter still waits for Keep | Tap Keep | Sandbox |
-| F14-U18 | iOS 16 phone | `storeViewSupport` is `needs_ios_17`; See Plus is hidden | `gate.needsNewerIos` | Update iOS; Keep it here for now | Unit; BL-336 sets iOS 17 |
+| F14-U18 | iOS 16 phone | `storeViewSupport` is `needs_ios_17`; See Plus is hidden | `gate.needsNewerIos` | Update iOS; Leave it waiting | Unit; BL-336 sets iOS 17 |
 | F14-U19 | Native module missing (Expo Go, web) | `ScribeStore` null; Free; nothing locked except the Keep gate | `gate.unavailable` | Dev profile only: the dev pass button (`devShortcutsAllowed`) | Release-bundle grep (BL-117) |
-| F14-U20 | Signed out (every v1.0 build) | Purchase needs no account with us; Plus belongs to the Apple Account | Normal | n/a | `plan.logic.ts` note |
-| F14-U21 | Co-parent outside the payer's Apple Family | Free on their phone | Gate at their third kept letter | Join the family or buy | DR-16 |
+| F14-U20 | Signed out (sign-in is optional until the account step) | Purchase needs no account with us; Plus belongs to the Apple Account. The status report waits in the outbox until sign-in (F14-REQ-043); until then only phone reminders reach this person **[Counsel]** Q-C1 | Normal | n/a | `plan.logic.ts` note; `[F14-REQ-043]` queue test |
+| F14-U21 | Co-parent outside the payer's Apple Family | Their own first 2 letters with words are free | At their third, the Keep sheet with the Family Sharing line and Apple's help link before See Plus (6.2 E2) | Join the Apple Family, or buy | DR-16 answered by M17; Study 3 checks the copy |
 | F14-U22 | Purchaser leaves the Apple Family | Co-parent's transaction is revoked; Plus off on that phone | Lapsed wording at their next gated Keep | Re-share or buy | Sandbox if Apple allows the test (A3) |
 | F14-U23 | Both parents buy | Both pay; we cannot detect it | Each phone shows its own Plus | Cancel through Apple | Documented in F20 help |
 | F14-U24 | Refund granted | Transaction revoked; leaves current entitlements | Lapsed wording at the next gated Keep; letters unchanged | n/a | StoreKit file: refund |
 | F14-U25 | Renewal fails inside grace (16 days) | Plus continues (`grace` is on) | `plan.grace` line | Apple's own sheets and emails | `plan.test.ts` |
 | F14-U26 | Grace ends, Apple retries | `billing_retry`: Plus off | `plan.retry`; the Keep sheet uses the normal body, not the lapsed one (`billing_retry` is not a lapsed state) | Payment recovered: Plus returns | `plan.test.ts` |
-| F14-U27 | Cancels in iOS Settings and does not open the app | Local reminders already scheduled still fire; their wording holds either way; the server learns at the next app open (D-080) | "If you have already cancelled, there is nothing to do." | Next launch cancels pending reminders | Planner unit **[Counsel]** wording |
-| F14-U28 | App deleted before a reminder | No local reminder can fire; the email still goes if a status report was received (D-080) | Email only | n/a | D-080; v1.0 per M14 (DR-17 answered) |
+| F14-U27 | Cancels in iOS Settings and does not open the app | Local reminders already scheduled still fire; their wording holds either way. The server learns at the next app open (D-080); until then it projects the next renewal from the last known period and sends with the "already cancelled" line (F14-REQ-046) | "If you have already cancelled, there is nothing to do." | Next launch cancels pending reminders | Planner unit; scheduler projection test **[Counsel]** wording |
+| F14-U28 | App deleted before a reminder | No local reminder can fire; the email still goes if a status report was received, with the renewal projected forward each period (F14-REQ-046) | Email only | n/a | D-080; `[F14-REQ-046]` |
 | F14-U29 | Notifications not allowed | Reminders show only as in-app cards; emails unaffected | Card on Tonight and in Plan | Allow notifications | Unit |
 | F14-U30 | Different Apple Account on this phone | Free; Restore finds nothing | `plan.restoreNothing` | Switch Apple Account | Sandbox |
-| F14-U31 | Account deletion while subscribed | Deletion step 1 shows that billing continues through Apple with Manage subscription; the status record is deleted with the account (D-080) | Billing step | Manage | `[C-REQ-019]`; deletion is built but hidden until the release profiles turn server features on (M14) |
+| F14-U31 | Account deletion while subscribed | Deletion step 1 shows that billing continues through Apple with Manage subscription (C-REQ-019, home F17). Spec default, pending counsel: a minimal billing-notice record (email, plan, next date) stays until the subscription ends so the legally required notices continue, and the deletion screen says so (F14-REQ-045, R4 PT-08) | Billing step and the notice line | Manage | `[C-REQ-019]` in F17; `[F14-REQ-045]` **[Counsel]** |
 | F14-U32 | Monthly subscriber switches to Annual | Apple handles the crossgrade; no second free trial (one introductory offer per group) | Apple's sheet | n/a | Sandbox |
 | F14-U33 | Remote config sends `freeLettersAllowance` 0, 1, 1.5 or "two" | Falls back to 2; values above 100 stop at 100 | 2 free letters | n/a | `plan.test.ts` `freeLettersFrom` rows |
-| F14-U34 | Remote config raises the allowance to 5 | Gate allows letters 3 to 5; the calm line does not show (it names the second letter) | No line | n/a | Unit |
-| F14-U35 | Birthday or first run at the gate | The Keep gate never goes quiet: a quiet answer would leave the letter neither kept nor explained (`KeepLetterDecision` comment). First run cannot reach a third letter | Keep sheet | Keep it here for now | Unit |
+| F14-U34 | Remote config raises the allowance to 5 | Gate allows letters 3 to 5; the second-letter line does not show (it names the second letter); the Tonight line shows from the fifth | No line | n/a | Unit |
+| F14-U35 | Birthday or first run at the gate | The Keep gate never goes quiet: a quiet answer would leave the letter neither kept nor explained (`KeepLetterDecision` comment). First run cannot reach a third letter | Keep sheet | Leave it waiting | Unit |
 | F14-U36 | AX5 text on iPhone SE 3 | Keep sheet scrolls; Apple's view scrolls our text | Full text | n/a | AX5 snapshot |
 | F14-U37 | VoiceOver | Keep sheet: title, body, held note, then buttons in order; the held note is a polite live region | Spoken in order | n/a | VoiceOver script |
 | F14-U38 | iOS app on a Mac | Manage sheet unsupported; web fallback | Apple's web page | n/a | Unit |
-| F14-U39 | Sandbox transaction in an App Store build | Counted as a tester purchase (`isTester`), because App Review buys in the sandbox and a verified sandbox transaction exists only in TestFlight, development builds or App Review | Plus | n/a | `billing-plan.test.ts` |
+| F14-U39 | Sandbox transaction in an App Store build | Counted as a tester purchase (`isTester`), because App Review buys in the sandbox and a verified sandbox transaction exists only in TestFlight, development builds or App Review. Its status report carries `environment: sandbox`, and no email is sent for it (F14-REQ-043, R2 AR-13) | Plus; no billing email | n/a | `billing-plan.test.ts`; `[F14-REQ-043]` |
+| F14-U40 | First letters before the speech model exists | Voice-only letters are saved and never counted; the gate cannot open (M17) | No Keep sheet | Words arrive later; the counting moment is their review (6.2 B2) | `[F14-REQ-037]` |
+| F14-U41 | Words of a voice-only letter arrive after the allowance is used, no Plus | The Keep sheet at the Save of those words; leaving it waiting keeps the words as a held change; the recording stays in the book | Keep sheet | See Plus, or leave it waiting | `[F14-REQ-037]` |
+| F14-U42 | Signs out with letters waiting | Waiting letters stay on the phone and, if they synced, on our server as private drafts; nothing is deleted by signing out | The waiting row stays | Sign in again | `[F14-REQ-039]` sign-out case |
+| F14-U43 | Offer code redeemed outside the app (App Store link) | No Subscription Terms were shown in the app; the first report records `terms_shown: none_outside_app`. Reminders follow the actual free period and offer type, not the product (F14-REQ-044, R4 PT-10) | Normal | n/a | `[F14-REQ-044]` |
+| F14-U44 | The same account on two phones with two Apple Accounts | Status stored per (profile, `sub_ref`), so the two purchases never overwrite each other (R2 AR-13) | Each phone's own Plan | n/a | `[F14-REQ-043]` |
 
 ### 6.4 Placement rules
 
@@ -222,12 +277,12 @@ The purchase view opens only from a tap: See Plus on the Keep sheet, or See what
 
 | Never shown | Enforced by |
 |---|---|
-| At launch, in onboarding, in first run, on Tonight | No caller exists |
+| At launch, in onboarding, in first run, on Tonight (Tonight shows only the standing line, which has no button) | No caller exists |
 | During recording, export, Read together, Add a child | No caller exists (M2) |
 | In the Book, a letter, a notification or an email | No caller; LEGAL-REQ-054 |
 | When this phone already has Plus | `decideKeepLetter` allows; Settings rows hidden while `plusOn` |
 
-The Keep sheet itself is not a sales screen: it says the letter is safe first, then offers a choice. It never names a price.
+The Keep sheet itself is not a sales screen: it says the letter is safe first, then offers a choice. It never names a price, and it never opens on a Keep without words on screen (M17).
 
 ### 6.5 Apple's subscription view and our text
 
@@ -246,8 +301,8 @@ The Keep sheet itself is not a sales screen: it says the letter is safe first, t
 | Notice | When | On the phone (BL-342) | Email (D-080, CATALOG 7) |
 |---|---|---|---|
 | Acknowledgment | Purchase or trial start | Sheet with the terms, first charge date, price after, cancel-by date, how to cancel, and Save a copy (share sheet: Mail, Files, Notes); same text stays in Settings > Plan | `trial-started` or `plus-started` within 1 h |
-| Trial week | Trial of 31 days or less that will renew (monthly) | `E - 7d`, window `[E-8d, E-5d]`: notification and card | `trial-ending-week` |
-| Trial long | Trial over 31 days (annual's 2 months) | `E - 18d`, window `[E-21d, E-16d]` | `trial-ending-long` |
+| Trial week | Free period of 31 days or less that will renew, whatever the product or offer type | `E - 7d`, window `[E-8d, E-5d]`: notification and card | `trial-ending-week` |
+| Trial long | Free period over 31 days (the annual trial, or an offer code with a long free period) | `E - 18d`, window `[E-21d, E-16d]` | `trial-ending-long` |
 | Trial final | Every trial that will renew | `E - 4d 12h`, window `[E-5d, E-4d]` | `trial-ending-final` plus its one push |
 | Annual renewal, long | Annual, will renew | `E - 30d 12h`, window `[E-31d, E-30d]` | `annual-renewal-long` |
 | Annual renewal, short | Annual, will renew | `E - 7d`, window `[E-8d, E-6d]` | `annual-renewal-short` |
@@ -255,30 +310,33 @@ The Keep sheet itself is not a sales screen: it says the letter is safe first, t
 | Cancelled, ended | Renewal off; Plus ended | Plan line only | `plus-cancelled`, `plus-ended` |
 
 **Rules for the phone (BL-342).**
-1. Inputs come from the snapshot the app already reads (`apps/mobile/modules/scribe-store/types.ts`): `expiresAt`, `isTrial`, `willAutoRenew`, `ownership`, `productId`. Only `purchased` ownership plans reminders.
+1. Inputs come from the snapshot the app already reads (`apps/mobile/modules/scribe-store/types.ts`): `expiresAt`, `isTrial`, `willAutoRenew`, `ownership`, `productId`, plus the offer type (introductory, promotional, offer code) and the free period's length, which the native module adds (R4 PT-10). Notices key on the free period, not on the product. Only `purchased` ownership plans reminders.
 2. Recompute at launch, foreground, every transaction update, purchase, restore and return from the manage sheet. Replace every pending plan reminder. `willAutoRenew` false cancels them.
 3. Fire between 09:00 and 20:00 local inside the hard window; never outside it. A passed window shows the card only.
 4. Plan reminders carry their own source marker so `apps/mobile/src/lib/reminders/scheduler.ts` (which cancels only `scribe.reminders` items) leaves them alone; at most 4 pending (F13-REQ-011); no letter reminder on a plan-reminder day (F13-REQ-015).
 5. Wording: transactional, no child name, no letter text, no offer; date, the plan's published price, cancel-by date, how to cancel, and "If you have already cancelled, there is nothing to do." (D-080 rule) **[Counsel]**.
+6. Above the legal minimum counsel sets (Q-C1), one channel per notice per day: if the in-app card was seen, skip that notice's push; never a push and an email on the same day (R3 DX-37) [R].
 
 **Rules for the status report (D-080, D-081).**
 1. The app sends plan, trial end date, renewal date and the cancelled flag: when a purchase or trial completes in the app, and on each launch when the values changed. Only a phone whose transaction is `purchased` reports; Family Sharing members never report and get no billing email.
-2. The first report after a purchase also carries the consent facts: product, offer type, the Subscription Terms version shown, the time. One record per original purchase; life of account plus 3 years; pseudonymised at deletion (D-081).
+2. The first report after a purchase also carries the consent facts: product, offer type, the Subscription Terms version shown (`none_outside_app` for a code redeemed outside the app), the time. One record per original purchase. Retention is life of account plus 3 years, pseudonymised at deletion (D-081); R4 PT-09 asks counsel whether the record must stay linked for 1 year after the subscription ends or 3 years, whichever is longer **[Counsel]** Q-C3.
+2b. Identity and freshness (R2 AR-13): the purchase is identified by `sub_ref`, a SHA-256 of the original transaction id with a per-account salt from the server, never the id in clear; the report carries `environment` (production, sandbox, xcode) and the server sends no email unless production; status is stored per (profile, `sub_ref`); a report made while signed out waits in the outbox until sign-in; while not cancelled, the scheduler projects the next renewal date one period at a time.
 3. Never: receipts, signed transactions, transaction ids in clear, card or payment data, prices. `{price}` in emails is the published price of the reported plan.
 4. The server never enforces Plus and never answers "is this person a member" to the app.
 5. Needs a signed-in account with an email address and an authenticated, idempotent endpoint in `packages/api` (D-080 effects). Sign-in ships in v1.0 (M14); the endpoint is not built.
+6. On account deletion with an active purchased plan, spec default pending counsel: keep a minimal billing-notice record (email, plan, next date) until the subscription ends, disclosed on the deletion screen and the web deletion page; delete it then (R4 PT-08) **[Counsel]**.
 
 ### 6.7 The eight D-051 (main) open edges
 
 | # | Edge | Spec default | Basis | Owner | Status |
 |---|---|---|---|---|---|
-| 1 | Do family letters count toward the 2 free letters? | Per account: each person's own keeps count on their own phone; a co-parent's letters count against the co-parent's own allowance, and the book owner's Plus covers a co-parent only inside one Apple Family | Code counts per phone (`countPresent` comment in `apps/mobile/src/lib/db/repos/ledger.ts`); M4 states the edge as open | Founder | Open: **DR-16** |
+| 1 | Do family letters count toward the 2 free letters? | Only your own letters count, once their words exist and you have seen them; the other parent's synced letters never count. The payer's Plus covers a co-parent inside one Apple Family (D-080) | M17 (founder, 13 Oct). The code today counts every letter on the phone (`countPresent` in `apps/mobile/src/lib/db/repos/ledger.ts`); WP-F14-20 changes it | Founder (decided) | Answered by M17 (DR-16) |
 | 2 | What does a second child's book get without Plus? | Free; one pool of 2 letters across every book | D-082, D-083 (M2) | Founder (decided) | Answered |
 | 3 | In-progress letter at the limit | Held on the phone, never lost; after Plus starts, the same Review shows and the person taps Keep | D-083; `review.tsx`, `plus-gate.tsx` | Founder (decided) | Answered |
-| 4 | How entitlement is counted offline, reinstall, second device | On the device: largest of Keychain, local mirror and letters present; reinstall usually keeps the count; a second phone gets its own 2; accepted | D-083; `letter-ledger.ts` | Founder confirms; payments engineer | Spec default |
+| 4 | How entitlement is counted offline, reinstall, second device | On the device: largest of Keychain, local mirror and this person's own letters present with words; reinstall usually keeps the count; signed in, a second phone syncs to the same count; signed out, a second phone gets its own 2; accepted | D-083, M17; `letter-ledger.ts` | Founder confirms; payments engineer | Spec default |
 | 5 | Read together and the allowance | Read together is free with no counter | D-082, D-083 (M2) | Founder (decided) | Answered |
 | 6 | First-run children and joined books | Every book is free to start; letters, not books, are counted | D-082, D-083 (M2) | Founder (decided) | Answered |
-| 7 | Letters made offline past the limit | Cannot happen on an unmodified client (the gate is on the device). Sync ships in v1.0 (M14): the server accepts every letter and the ledger rises to letters present; nothing is refused, deleted or hidden (D-038 pattern) | D-080 (server never enforces); `lettersKeptFrom` | Payments engineer, data architect | Spec default |
+| 7 | Letters made offline past the limit | Cannot happen on an unmodified client (the gate is on the device). Sync ships in v1.0 (M14): the server accepts every letter and the ledger rises to this person's own letters present with words; nothing is refused, deleted or hidden (D-038 pattern) | D-080 (server never enforces); `lettersKeptFrom`; M17 | Payments engineer, data architect | Spec default |
 | 8 | Lapsed members and trial-ineligible wording | Lapsed sheet says Plus has ended and every letter stays; our text never says "free trial"; Apple shows trial only to the eligible | D-083 copy rule; `keepGate.lapsedBody` | Content; **[Counsel]** reviews | Spec default |
 
 ### 6.8 Review notes (DR-08)
@@ -287,10 +345,23 @@ Draft for F21 to paste into App Store Connect. Guideline 3.1.2(a) asks for ongoi
 
 - Plus is an auto-renewable subscription. Each account keeps its first 2 letters free. After that, keeping each new letter to a child's book needs Plus. A family adds letters month after month as the child grows; that is the ongoing value.
 - Reading, playing recordings, export, starting books for more children and Read together are free and never ask for Plus. Every letter already kept stays readable, playable and exportable if Plus ends.
-- How to see it: answer Yes to 18 or older, add a child, keep two letters, record a third and tap Keep. The Keep sheet opens; See Plus opens Apple's subscription view. Settings, Plan has Redeem a code, Restore purchases, Manage subscription and Request a refund, all Apple's sheets. No account with us is needed.
+- How to see it: answer Yes to 18 or older, add a child, type two letters and save each, then type a third and tap Save. The Keep sheet opens; See Plus opens Apple's subscription view. Settings, Plan has Redeem a code, Restore purchases, Manage subscription and Request a refund, all Apple's sheets. The Keep gate needs no account with us; sign-in, sync, co-parent sharing and backup do, and F21's notes give a demo account (R4 PT-35).
 - Remote config can only raise the number of free letters (`freeLettersAllowance`, default 2); the sheet, triggers and prices are never server-driven.
 
 The current notes in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 8 still describe Add a child and Read together gates and must be replaced (gap, F14-REQ-031).
+
+### 6.9 Pre-committed review rules (allowance and price)
+
+Written now so the founder does not decide under pressure later (R1 PL-06, PL-28). Remote config can only raise the allowance (F14-REQ-018), so every step below is reversible only upward. Each rule, when applied, is logged as a D-### entry. The founder confirms or changes the numbers at T15 (Q-F6); all numbers are [R].
+
+| Rule | Read at | Input (consent-free) | If | Then |
+|---|---|---|---|---|
+| Allowance, first read | T39 (week 8) | Trial or paid starts over first-time downloads for install weeks 1 to 4 (ASC), with at least 1,000 first-time downloads | Under 4% | Raise `freeLettersAllowance` from 2 to 5 for everyone, through remote config |
+| Allowance, second read | Week 16 after release | Same, for install weeks 9 to 12 | Under 4% after the raise | Raise to 10 and open a founder review of the model (for example time-based free use, R3 DX-02's "2 letters with words, or 14 days") |
+| Copy, before any number | T15 | Study 2 | Over half of parents say a waiting letter could be lost, or call the gate a trick | Change the Keep sheet and Tonight line before C1; numbers unchanged |
+| Price | T40 (200th annual trial ended) | Annual trial to paid (ASC); Study 3 pricing answers | Under 30% (the nearest benchmark, a 17 to 32 day annual trial, is 44.6%, R3-S33) | For new subscribers only, test $39.99 a year, or a 1-month annual trial; existing subscribers keep their price. Never raise a price for existing subscribers outside Apple's consent flow (F14-REQ-021) |
+
+Why 4%: R3's Base case needs 5% of families paying (R3 section 5.1), and trials then lose some of those, so starts under 4% of downloads put the Base case out of reach [A].
 
 ## 7. Requirements and acceptance criteria
 
@@ -298,8 +369,8 @@ Build: **Built** (file) means the code exists on `origin/develop` and unit tests
 
 | ID | P | Requirement | Acceptance criteria | Source | Build |
 |---|---|---|---|---|---|
-| PRD-REQ-024 Rev (D-082, D-083) | P0 | The first 2 letters kept per account are free, one pool across every book; after that, Keep needs Plus. Spoken, typed, private and voice-without-words letters all count; quiet-day marks and drafts never count. Enforced on the device only | Given 0 or 1 letters kept and no Plus, Then `decideKeepLetter` returns `allow free_letters`. Given 2, Then `offer keep_letter`. Given Plus on, Then `allow plus_own` at any count | M1, D-080 (no server enforcement) | Built: `packages/core/src/plan.ts`, `apps/mobile/src/lib/billing/gates.ts`, `apps/mobile/src/app/review.tsx`; tests `packages/core/test/plan.test.ts`, `apps/mobile/test/billing-ledger.test.ts` |
-| PRD-REQ-025 Rev (D-083) | P0 | A letter at the gate is held, never lost: the gate runs after the recording is hashed and before anything is saved; the draft stays exactly as it was; the person taps Keep after Plus starts | Given a Free phone with 2 kept, When Keep is tapped, Then 0 letters are written, the draft row and audio file are byte-identical, and Tonight shows the draft card. Given Plus then starts, When Keep is tapped twice, Then exactly 1 letter exists | M1, constitution | Built: `review.tsx` (`keepNeedsPlus`), `plus-gate.tsx`; tests `[never lose a recording]`, `[Keep after Plus starts saves once]`. Device check D-1, D-9 not run |
+| PRD-REQ-024 Rev (D-082, D-083, M17) | P0 | The first 2 of your own letters are free, one pool across every book; after that, Keep needs Plus. A letter counts when it is saved, private or to a book, with its words on screen and this person as its author (spoken or typed). Voice-only letters, quiet-day marks, drafts and the other parent's letters never count. Enforced on the device only | Given 0 or 1 letters counted and no Plus, Then `decideKeepLetter` returns `allow free_letters`. Given 2, Then `offer keep_letter`. Given Plus on, Then `allow plus_own` at any count. Given a voice-only save, Then the ledger is unchanged | M1, M17, D-080 (no server enforcement) | Partly built: `packages/core/src/plan.ts`, `apps/mobile/src/lib/billing/gates.ts`, `apps/mobile/src/app/review.tsx`; today voice-only saves and other authors' letters count (R2 AR-04); WP-F14-20 |
+| PRD-REQ-025 Rev (D-083) | P0 | A letter at the gate is held, never lost: the gate runs after the recording is hashed and before anything is saved; the draft stays exactly as it was; the person taps Keep after Plus starts. Its durability beyond this phone is F14-REQ-039 | Given a Free phone with 2 kept, When Keep is tapped, Then 0 letters are written, the draft row and audio file are byte-identical, and Tonight shows the draft card. Given Plus then starts, When Keep is tapped twice, Then exactly 1 letter exists | M1, constitution | Built: `review.tsx` (`keepNeedsPlus`), `plus-gate.tsx`; tests `[never lose a recording]`, `[Keep after Plus starts saves once]`. Device check D-1, D-9 not run |
 | PRD-REQ-026 | P0 | Existing letters stay readable, playable and exportable for never-subscribed and lapsed accounts; those paths never consult Plus | Given a lapsed fixture with StoreKit stubbed to throw, Then read, play, export and delete succeed with 0 Plus UI | D-051 (main) item 3, LEGAL-REQ-050 | Partly built: `FreeForever` makes a gate on these uncompilable (`plan.ts`); the E2E run (BL-221) is blocked |
 | C-REQ-021 Rev (D-082, D-077) | P0 | Products `plus.monthly` ($4.99, 1-month free introductory offer) and `plus.annual` ($49.99, 2-month free introductory offer) in one group "Plus", same level, US only, Family Sharing on, Billing Grace Period 16 days for all renewals | Given the App Store Connect checklist, Then both products match. Given `PLUS_PRODUCT_IDS` and `storekit/EarlyLetters.storekit`, Then they match (unit test) | M3, D-048, R4-S17 | Partly built: `apps/mobile/src/lib/billing/config.ts`, StoreKit file. App Store Connect setup is founder work (BL-103, FT-09). $49.99 price point availability unverified |
 | C-REQ-020 Rev | P0 | Restore: entitlements appear at first launch after install; Restore calls `sync()` only on a tap | Given an annual subscriber on a second iPhone, When Restore is tapped, Then "Plus is on." within 10 s in 99% of sandbox runs | C, R4-S8 | Built: `restorePurchases`; device check D-5 not run |
@@ -312,9 +383,6 @@ Build: **Built** (file) means the code exists on `origin/develop` and unit tests
 | C-REQ-026 Rev (M6) | P0 | Renewal reminders: annual long and short; the annual reminder for monthly plans; on the phone and by email | Given an annual renewal on 1 March, Then notifications inside `[29 Jan, 30 Jan]` and `[21 Feb, 23 Feb]` | D-022, BL-342, D-080 | Not built |
 | PRD-REQ-003 Rev (M6) | P0 | The phone's reminder schedule is computed on the device from the StoreKit snapshot; windows are data in `packages/core`; nothing outside a hard window | Given the clock-controlled planner test over a synthetic year (monthly, annual, both trials, cancel, DST in March and November, leap day, 31 and 32 day trials, birthday in window), Then every reminder lands inside its window | BL-342 | Not built |
 | LEGAL-REQ-049 Rev (D-081) | P0 | Consent facts on the first report after a purchase: product, offer type, Subscription Terms version shown, time; one record per original purchase; life of account plus 3 years; pseudonymised at deletion; no transaction id in clear | Given a purchase, Then exactly 1 consent record with those 4 facts and no transaction id, receipt or price | D-081 **[Counsel]** 17602(a)(6) | Not built |
-| C-REQ-019 | P0 | Account deletion while subscribed shows that billing continues through Apple, with Manage subscription, before the final confirm | Given an active purchased subscription, Then the manage step precedes the confirm | C, LEGAL-REQ-029 | Built, switch off in release profiles: `apps/mobile/src/app/settings/delete-account.tsx` (BL-220) |
-| PRD-REQ-015 Rev (M2) | P0 | Books for more children are free; the server never enforces Plus on `create_child` | Given a Free phone with 1 book, When Add a child, Then no gate | M2 | Built: client (`add-child-form.tsx`); server: `supabase/migrations/20261004000000_plus_on_device_only.sql` (pending, not yet applied) |
-| PRD-REQ-020 Rev (M2) | P0 | Read together has no session limit and no counter | As F10 | M2 | Built: `read-together.tsx` |
 | PRD-REQ-017 Rev | P0 | Business purchase totals come only from App Store Connect; server aggregates hold no purchase data | Given the BL-024 aggregate job, Then it reads no status or consent table | B10, D-080 | Built for today (no billing table exists) |
 | C-NFR-002 Rev | P0 | Plus usable within 2 s of Apple's sheet closing (p95); purchase error rate under 1% | Given 50 sandbox purchases, Then 48 or more show Plus within 2 s | C | Partly built: `presentPlusStore` re-reads after close; not measured on a device |
 | F14-REQ-001 | P0 | Apple's `SubscriptionStoreView` on iOS 17 and later, neither plan preselected, Terms and Privacy pointed at earlyletters.com, Restore visible, our text above the plans | Given a dev build with the StoreKit file, Then 2 plans with prices and trials show, no plan is selected, and Terms opens `https://earlyletters.com/terms` | D-053 | Built: `modules/scribe-store/ios/PlusStoreSheet.swift`, `actions.ts` `storeSheetOptions` (BL-216). Not run on a device |
@@ -338,20 +406,34 @@ Build: **Built** (file) means the code exists on `origin/develop` and unit tests
 | F14-REQ-019 | P0 | The purchase view opens only from See Plus on the Keep sheet or See what Plus adds in Settings > Plan (6.4) | Given a placement test over every screen with a Free user, Then 0 store views open outside those two | C-REQ-023 | Built by absence (only `plus-gate.tsx` and `plus.tsx` call `presentPlusStore`); placement test not built |
 | F14-REQ-020 | P0 | After reinstall, plan reminders are replanned from StoreKit on first launch | Given an active annual plan and a reinstall, Then the next renewal reminders are pending after first launch | F13-REQ-017 | Not built |
 | F14-REQ-021 | P1 (later) | Price-increase notice; until it exists, only Apple's opt-in consent flow is used for any increase | Given any price change, Then App Store Connect keeps existing subscribers' price or uses Apple's consent flow | D-080 rules, Terms 14.8 | Not built (later) |
-| F14-REQ-022 | P0 | Only `keep_letter`, `backup_upload` and `theme_extra` can be gated; v1.0 calls only `keep_letter` | Given a repo grep, Then `decide(` and `decideKeepLetter(` have no caller outside `lib/billing/gates.ts` and `review.tsx` | M1, M2 | Built: `GatedFeature`, `NO_OVERLAP` in `plan.ts` |
-| F14-REQ-023 | P0 | The ledger never decreases: the gate uses the largest of the Keychain item, the local mirror `letters.keptEver` and letters present; a kept letter is counted in the same transaction as its save, once per id; launch heals every copy to the largest | Given each case in `billing-ledger.test.ts` (reinstall, restore, purge, delete, undo, move, double record), Then the count matches. Given a kill during save, Then letter, draft removal and count commit together or not at all | M1 | Built: `letter-ledger.logic.ts`, `letter-ledger.ts`, `letter-ledger.native.ts`, `db/repos/ledger.ts`, `store.ts` `saveLetterFromDraft`, `_layout.tsx` `startLetterLedger`. Device checks D-7, D-8 not run |
+| F14-REQ-022 | P0 | Only `keep_letter`, `backup_upload` and `theme_extra` can be gated; v1.0 calls only `keep_letter`. If the founder keeps backup free (F08 Q2), `backup_upload` leaves `GatedFeature` (founder-approved change to `plan.ts`) | Given a repo grep, Then `decide(` and `decideKeepLetter(` have no caller outside `lib/billing/gates.ts` and `review.tsx` | M1, M2 | Built: `GatedFeature`, `NO_OVERLAP` in `plan.ts` |
+| F14-REQ-023 Rev (M17) | P0 | The ledger never decreases: the gate uses the largest of the Keychain item, the local mirror `letters.keptEver` and this person's own letters present with words; a counted letter is counted in the same transaction as its save, once per id; launch heals every copy to the largest, never from another author's rows | Given each case in `billing-ledger.test.ts` (reinstall, restore, purge, delete, undo, move, double record), Then the count matches. Given a kill during save, Then letter, draft removal and count commit together or not at all | M1 | Built: `letter-ledger.logic.ts`, `letter-ledger.ts`, `letter-ledger.native.ts`, `db/repos/ledger.ts`, `store.ts` `saveLetterFromDraft`, `_layout.tsx` `startLetterLedger`. Device checks D-7, D-8 not run |
 | F14-REQ-024 | P0 | Deleting a letter never gives a free letter back; restoring from Recently deleted never counts twice | Given 2 kept, 1 deleted, When a new letter is kept, Then the gate offers Plus. Given a restore, Then the count is unchanged | M1, D-085 | Built: tests "delete, undo, restore..." and "deleting a letter and writing another" |
 | F14-REQ-025 | P0 | The ledger stores only a version, a count and up to 25 recent letter ids; the Keychain item stores only the count; no device id, timestamp or content; this-device-only, never in a backup | Given the stored values, Then their keys are exactly `v`, `n`, `recent` (mirror) and `v`, `n` (Keychain) | Privacy rules (CLAUDE.md) | Built: test "holds nothing but a version, a count and letter ids" |
-| F14-REQ-026 | P0 | Erase everything resets the ledger (Keychain item and mirror) | Given Erase everything completes, When a letter is kept, Then it is free letter 1 | M1, D-083 | Partly built: `eraseLetterLedger()` in `gates.ts`, tested; no caller and no Erase everything flow yet (Delete account is built, switch off in release profiles until M14 is applied). F17 owns the surface |
-| F14-REQ-027 | P0 | One calm line after the second free letter; no counter anywhere | Given the second free letter kept with allowance 2, Then the saved card shows `keepGate.secondFreeNote` once. Given any screen, Then no string states letters left (content test) | M1 | Partly built: `review.tsx` (`secondFree`), `billingCopy.keepGate.secondFreeNote`. No content test bans a letters-left count yet (`rules.test.ts` bans gap and comparison words only) |
-| F14-REQ-028 | P0 | The Keep sheet says the letter is safe before any offer, offers See Plus, Keep it here for now and Redeem a code, uses the lapsed wording for lapsed members, and never names a price or trial | Given the sheet, Then `heldNote` renders before the buttons, and no string contains "$", "trial" or "free months" | M1, M5, D-083 | Built: `plus-gate.tsx`, `billingCopy.keepGate` |
+| F14-REQ-026 Rev | P1 | Erase everything resets the ledger (Keychain item and mirror). In a signed-in build the ledger heals back from synced letters, so the reset follows account deletion, not a local wipe (R2 AR-23) | Given a signed-out phone and Erase everything completes, When a letter is kept, Then it is free letter 1. Given a signed-in phone, Then Erase everything is not offered as a ledger reset | M1, D-083 | Partly built: `eraseLetterLedger()` in `gates.ts`, tested; no caller and no Erase everything flow yet (Delete account is built, switch off in release profiles until M14 is applied). F17 owns the surface |
+| F14-REQ-027 | P0 | One line after the second free letter; no count of letters left anywhere | Given the second free letter kept with allowance 2, Then the saved card shows `keepGate.secondFreeNote` once. Given any screen, Then no string states letters left (content test) | M1 | Partly built: `review.tsx` (`secondFree`), `billingCopy.keepGate.secondFreeNote`. No content test bans a letters-left count yet (`rules.test.ts` bans gap and comparison words only) |
+| F14-REQ-028 Rev | P0 | The Keep sheet says the letter is safe before any offer, with the held note for the person's sign-in state; offers See Plus, Leave it waiting and Redeem a code; adds the Family Sharing line in a shared book; uses the lapsed wording for lapsed members; never names a price or trial | Given the sheet, Then `heldNote` renders before the buttons; given signed out, Then the note says "on this phone"; given a two-parent book, Then `keepGate.familySharing` shows; no string contains "$", "trial" or "free months" | M1, M5, D-083 | Built: `plus-gate.tsx`, `billingCopy.keepGate` |
 | F14-REQ-029 | P0 | Books for more children and Read together have no Plus gate | Given a Free phone, When Add a child and 5 Read together sessions run, Then 0 Plus sheets and 0 StoreKit calls | M2 | Built: `add-child-form.tsx`, `read-together.tsx`; device check D-3 not run |
 | F14-REQ-030 | P1 | Display names "Plus Monthly" and "Plus Annual" everywhere a plan is named | Given App Store Connect and the Plan screen, Then the annual plan reads "Plus Annual" | D-077 | Partly built: ops doc step 4 says display name "Plus Yearly"; Plan shows "Yearly" (`billingCopy.plan.yearly`) |
 | F14-REQ-031 | P0 | Review notes describe the membership per 6.8 | Given the notes in App Store Connect, Then they name 2 free letters, the Keep gate and that existing letters stay open, and do not mention Add a child or Read together as Plus | D-051 (main), DR-08 | Not built: ops doc step 8 notes are stale |
-| F14-REQ-032 | P0 | Status-only report: plan, trial end date, renewal date, cancelled flag; on purchase in the app and at launch when changed; only `purchased` ownership; authenticated and idempotent; deleted with the account | Given a purchase, Then exactly one report reaches the endpoint with those 4 fields. Given a family-shared phone, Then 0 reports. Given a retried request, Then one stored status | D-080 | Not built: no endpoint in `packages/api`, no table, no client call; v1.0 per M14 |
+| F14-REQ-032 | P0 | Status-only report: plan, trial end date, renewal date, cancelled flag; on purchase in the app and at launch when changed; only `purchased` ownership; authenticated and idempotent; deleted with the account except the record in F14-REQ-045 | Given a purchase, Then exactly one report reaches the endpoint with those 4 fields. Given a family-shared phone, Then 0 reports. Given a retried request, Then one stored status | D-080 | Not built: no endpoint in `packages/api`, no table, no client call; v1.0 per M14 |
 | F14-REQ-033 | P0 | Reminder emails from the status record per `docs/emails/CATALOG.md` section 7 | Given a reported annual trial, Then `trial-ending-long` sends inside its window; given a cancelled flag, Then pending trial and renewal emails for that period are skipped | D-080 | Partly built: copy in `packages/content/src/emails/billing.en.ts`, templates in `packages/emails/src/templates/billing/`; no scheduler or sender |
 | F14-REQ-034 | P0 | The development pass on the Keep sheet exists only in development builds | Given a preview or production bundle, Then `onContinueDev` is unreachable (`devShortcutsAllowed` false) | BL-117 | Partly built: guard exists; release-bundle grep in BL-117 not built |
 | F14-REQ-035 | P1 | `readTogetherFreeSessions` and `effectiveFreeSessions` leave `packages/api/src/remote-config.ts` | Given a grep, Then 0 hits | M2 | Not built |
+| F14-REQ-036 | P0 | Own letters only (M17): the ledger counts only letters whose author is this person (`author_id` equals the signed-in profile, or is null for letters made on this phone before sign-in); another author's letters never count and never raise the mirror or Keychain | Given a person joins a book that holds 30 letters by the other parent, When they keep their first own letter with words, Then it is free letter 1 and the mirror reads 1. Given a sync that pulls 10 more of the other parent's letters, Then the count is unchanged | M17; R2 AR-04 | Not built: `db/repos/ledger.ts` counts every `kind = 'letter'` row; WP-F14-20 |
+| F14-REQ-037 | P0 | Words seen (M17): a letter counts, and the Keep sheet can open, only at a Save where the letter's words are on screen in Review. A voice-only letter never counts and never opens the sheet; it counts at the Save where its words, transcribed or typed, are first on screen | Given a Free phone with 0 counted and 3 voice-only saves, Then 0 Keep sheets and a count of 0. Given those letters' words arrive and the author saves 3 of them, Then 2 are free and the third opens the Keep sheet. Given any `keep_gate_shown`, Then the Review it came from had words on screen (UI test) | M17 | Not built: today `saveVoiceOnlyFromDraft` goes through `keepNeedsPlus`; WP-F14-20 |
+| F14-REQ-038 | P0 | The first letters of a new install cannot reach the gate before words exist: with no speech model on the phone, every spoken letter is voice-only (F14-REQ-037) | Given a fresh install with no model and 5 spoken letters, Then 0 Keep sheets | M17; R1 PL-05; R3 DX-02 | Not built (follows F14-REQ-037) |
+| F14-REQ-039 | P0 | Held letters are as durable as kept ones (R3 DX-01): signed in, a held or waiting letter syncs as a draft only its author can read; with backup on, its audio uploads with the owner backup; "Export everything" includes it under `waiting/` with text and audio; signing out never deletes it | Given a signed-in phone with backup on and 2 held letters, When the phone is replaced and the person signs in on a new phone, Then both return as waiting letters with equal text and audio hashes. Given an export, Then `waiting/` holds both. Given sign-out, Then both stay on the phone | M1 promise 4; R1 PL-08 | Not built. Needs F16 (author-only draft op, S03 and S02), F08 (B5a queue includes held audio, S05), F15 (export folder, S13): WP-F14-22. Release gate before the signed-in held note ships |
+| F14-REQ-040 | P0 | A standing line on Tonight and Write once the allowance is used and Plus is off: "Adding new letters to the book needs Plus. Recording, reading and export are always free." No count, no button | Given 2 counted and Plus off, Then the line shows above Speak and on Write; given Plus on, Then it is absent; given the content test, Then it has no number | R1 PL-07; R3 DX-03 | Not built: request to S10 (Tonight), text in `billing.en.ts` (new key) |
+| F14-REQ-041 | P0 | Held letters show as one row on Tonight that opens a list; after a purchase, one offer adds the waiting letters, each still openable | Given 3 held letters, Then Tonight shows 1 row with "3 letters waiting" in correct plural form. Given Plus starts and one letter is saved, Then the add-waiting offer shows once | R3 DX-22 | Not built: today one draft card per letter (F04-REQ-027); request to S10 |
+| F14-REQ-042 | P1 | The review rules in section 6.9 are applied at T39, week 16 and T40 with consent-free ASC inputs, and each outcome is logged as a decision entry | Given T39, Then a `docs/DECISIONS.md` entry records the inputs, the threshold and the action (raise or hold) | R1 PL-06, PL-28 | Not built (process; founder) |
+| F14-REQ-043 | P0 | Status report identity and environment (R2 AR-13): `sub_ref` is a salted SHA-256 of the original transaction id; `environment` is sent and no email goes for a non-production report; status is stored per (profile, `sub_ref`); a report made while signed out is queued and sent after sign-in | Given a sandbox purchase, Then 1 stored status with `environment = sandbox` and 0 emails. Given two Apple Accounts on two phones for one profile, Then 2 status rows. Given a purchase while signed out, Then 0 requests until sign-in and exactly 1 after | D-080; R2 AR-13 | Not built: WP-F14-15a to c |
+| F14-REQ-044 | P0 | Notices key on the free period and the offer type, not the product; an offer code redeemed outside the app records `terms_shown: none_outside_app` | Given a 3-month offer code on the monthly product, Then the long-trial windows apply. Given an outside redemption, Then the consent record says `none_outside_app` | R4 PT-10 **[Counsel]** Q-C11 | Not built: WP-F14-02 |
+| F14-REQ-045 | P0 | Account deletion with an active purchased plan keeps a minimal billing-notice record (email, plan, next date) until the subscription ends, says so on the deletion screen, then deletes it | Given deletion with an active annual plan, Then 1 billing-notice record remains, its retention ends at the period end, and the deletion screen shows the line | R4 PT-08 **[Counsel]** Q-C12 | Not built: WP-F14-15b, WP-F14-16; spec default until counsel answers |
+| F14-REQ-046 | P0 | While a status is not cancelled, the email scheduler projects the next renewal one period at a time and sends with the "already cancelled" line | Given a status last reported 13 months ago for an annual plan, Then this year's renewal notices go inside their windows | R4 PT-08; R2 AR-13 | Not built: WP-F14-16 |
+| F14-REQ-047 | P1 | Above the legal minimum, one channel per notice per day: a seen card skips that notice's push; never a push and an email on the same day | Given a seen trial-week card, Then 0 trial-week pushes. Given a notice email day, Then 0 pushes that day | R3 DX-37 [R] **[Counsel]** Q-C1 | Not built |
+
+Defined in another spec and checked there (R5 EQ-05): **C-REQ-019** account deletion while subscribed (home F17); **PRD-REQ-015 Rev** every book free to start (home F12); **PRD-REQ-020 Rev** Read together without a session limit (home F10). F14-REQ-029 is F14's own check that neither books nor Read together open a Plus sheet.
 
 ## 8. Data, privacy and security
 
@@ -361,14 +443,15 @@ Build: **Built** (file) means the code exists on `origin/develop` and unit tests
 | Plan cache `plus.cache` (product id, dates, flags; no ids) | L2 | Device settings | This device | Replaced on change; wiped with the app |
 | Letter ledger mirror `letters.keptEver` (version, count, up to 25 letter ids) | L2 | Device database | This device | Until Erase everything; comes back with a device backup |
 | Letter ledger Keychain item `earlyletters.letters.keptEver` (version, count) | L2 | iOS Keychain, this device only, after first unlock | This app | Usually survives app deletion (not guaranteed by Apple); removed by Erase everything |
-| Held letter | L4 | Device draft row and audio file (F04, F08) | This device | Until kept or deleted |
+| Held or waiting letter | L4 | Device draft row and audio file (F04, F08); signed in, also an author-only draft row on Postgres and, with backup on, encrypted audio in Storage (F14-REQ-039) | The author only (never the other parent) | Until kept or deleted; deleted with the account |
 | Pending plan reminders (date, price, no name) | L2 | iOS notification store | This device | Until fired or replaced |
-| Subscription status (plan, trial end, renewal date, cancelled flag) | L3 [A] | Postgres (not built) | Server email scheduler; owner | Deleted with the account (D-080) |
+| Subscription status (plan, trial end, renewal date, cancelled flag, `sub_ref`, `environment`) | L3 [A] | Postgres (not built) | Server email scheduler; owner | Deleted with the account (D-080), except the billing-notice record below |
+| Billing-notice record after deletion (email, plan, next date) | L3 [A] | Postgres (not built) | Server email scheduler | Until the subscription ends, then deleted **[Counsel]** (F14-REQ-045) |
 | Consent record (product, offer type, terms version, time) | L3 | Postgres (not built) | Owner; service role | Life of account plus 3 years, pseudonymised at deletion (D-081) |
 
 - **Never on our servers:** receipts, signed transactions, transaction ids in clear, card or payment data, prices, the ledger count.
 - **Privacy label.** The status report adds a purchase-derived fact to our servers; the "Purchases" data type in `docs/legal/app-store-privacy-labels.md` needs a fresh answer **[Counsel]** Q-C9.
-- **Data map.** The status and consent tables need rows in `docs/legal/DATA_CLASSIFICATION.md` and `DELETION_AND_EXPORT_SPEC.md` when built.
+- **Data map.** The status, consent and billing-notice tables and the held-draft rows need rows in `docs/legal/DATA_CLASSIFICATION.md` and `DELETION_AND_EXPORT_SPEC.md` when built, and a line in the account deletion matrix (`08-delivery.md` section 8.1).
 
 ## 9. Non-functional requirements
 
@@ -385,7 +468,7 @@ Build: **Built** (file) means the code exists on `origin/develop` and unit tests
 
 ## 10. Analytics
 
-Device events only, after opt-in. Money (trials, conversions, renewals, refunds, churn) comes only from App Store Connect.
+Device events only, after opt-in, and diagnostic only: the business number and the section 6.9 rules use App Store Connect (03 section 4.1). Money (trials, conversions, renewals, refunds, churn) comes only from App Store Connect.
 
 | Event | In catalogue (`packages/analytics/src/catalog.ts`, schema 4) | Wired | Properties | Question |
 |---|---|---|---|---|
@@ -398,6 +481,7 @@ Device events only, after opt-in. Money (trials, conversions, renewals, refunds,
 | `plan_changed` | Yes | `lib/analytics/observers.ts` | `from_state`, `to_state`, `period`, `ownership` | Lifecycle seen on the device |
 | `restore_result` | Yes | `plus.tsx` | `outcome` | Restore health |
 | `plan_notice_shown` | No (new, BL-342) | n/a | `kind`, `channel` | Do reminders reach people? Never dates |
+| `letter_saved` (exists) | Yes | `review.tsx` | add `has_words` (new property) | How many free letters are voice-only (the M17 gift in 6.2 B2)? |
 
 `docs/analytics/TRACKING_PLAN.md` section 9 still lists `plus_offer_viewed`, `plus_offer_closed` and `restore_result` as "to wire"; the code wires them.
 
@@ -407,7 +491,8 @@ Device events only, after opt-in. Money (trials, conversions, renewals, refunds,
 |---|---|---|
 | Rules | `packages/core/src/plan.ts` | Built. `decide()` keeps `backup_upload` and `theme_extra` for later |
 | Ledger | `apps/mobile/src/lib/billing/letter-ledger*.ts`, `apps/mobile/src/lib/db/repos/ledger.ts`, `store.ts` | Built |
-| Gate | `apps/mobile/src/lib/billing/gates.ts`, `review.tsx`, `components/child/plus-gate.tsx` | Built. The sheet lives under `components/child/` for history; moving it to `components/plus/` is optional |
+| Gate | `apps/mobile/src/lib/billing/gates.ts`, `review.tsx`, `components/child/plus-gate.tsx` | Built. The sheet moves to `components/plus/` in WP-F14-21 so S06 owns it (R2 AR-17); the M17 count is WP-F14-20 |
+| Held letters durable | F16 author-only draft op; F08 upload queue; F15 export folder | Not built (WP-F14-22) |
 | Store module | `apps/mobile/modules/scribe-store/` (Swift `ScribeStoreModule`, `PlusStoreSheet.swift`) | Built (`expo-iap` removed, a66376a) |
 | Plan state and actions | `apps/mobile/src/lib/billing/plan.logic.ts`, `plan-store.ts`, `actions.ts`, `use-plan.ts` | Built |
 | Plan screen | `apps/mobile/src/app/settings/plus.tsx` | Built; terms row and delete note to add |
@@ -418,17 +503,18 @@ Device events only, after opt-in. Money (trials, conversions, renewals, refunds,
 | Reminder emails | New function under `supabase/functions/` reading the status table; templates in `packages/emails/src/templates/billing/` | Templates exist; scheduler not built |
 | Erase everything | F17 surface calling `eraseLetterLedger()` | Not built |
 
-**Sequencing (ROADMAP 2.1).** Week 2 (12 to 16 Oct): BL-342 planner and reminders; StoreKit sandbox device spike (FT-22). Week 3 (19 to 23 Oct): device checks D-1 to D-12; counsel comments Fri 23 Oct. Feature freeze Mon 26 Oct with BL-342 in. If the StoreKit sandbox is not green by Fri 23 Oct, ROADMAP section 6 ships v1.0 free and adds Plus in 1.0.1. The status report and emails are v1.0 (M14); `08-delivery.md` re-plans their place.
+**Sequencing (order only; dates in `08-delivery.md` section 2.1).** Wave 1: WP-F14-02 planner, WP-F14-20 M17 ledger, WP-F14-07 scheduling and cards, WP-F14-06 acknowledgment sheet; StoreKit device checks D-1 to D-12 at T11. Wave 2: WP-F14-15b tables, -15c endpoint, -15a client; WP-F14-21 Keep sheet move and held row; WP-F14-22 held letters durable through S02, S03, S05 and S13. Wave 3: WP-F14-16 email scheduler. If StoreKit is not green, submission slips; there is no "ship free" cut (R1 PL-22).
 
 **Riskiest unknowns.**
 1. Purchases and offer codes behave on a real iPhone as in the StoreKit file (D-1 to D-12 never run).
 2. Keychain survival after deleting the app (D-7; Apple gives no guarantee).
 3. Whether $49.99 exists as a price point and which trial durations App Store Connect offers (ops doc step 4, U).
 4. The status report and emails ship at v1.0 (M14); the risk is the date (R-16).
+5. Whether parents read two letters then a gate as fair, and whether they trust the waiting letter (Study 2, T15).
 
 ## 12. Work packages
 
-Numbers keep their 3 Oct meaning where the work still exists; 15 to 19 are new.
+Numbers keep their 3 Oct meaning where the work still exists; 15 to 22 are new. Stream S06 unless the row says otherwise; `08-delivery.md` section 3.3 governs file ownership, and a path here owned by another stream is a request (R5 EQ-08). The Mode column carries the 13 Oct status.
 
 | WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode |
 |---|---|---|---|---|---|---|
@@ -446,11 +532,16 @@ Numbers keep their 3 Oct meaning where the work still exists; 15 to 19 are new.
 | WP-F14-12 | Device run of the sandbox checklist | Founder, payments engineer | `docs/qa/evidence/` | BL-103, FT-09 | D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11 signed with date and build; a network capture | Human. BL-222 |
 | WP-F14-13 | Review notes and ops doc | Founder, payments engineer | `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` steps 4, 8, 11 | none | `[F14-REQ-031]`; check ids unique (step 11 repeats D-7 to D-10) | Human |
 | WP-F14-14 | Analytics | Analytics engineer | `packages/analytics/src/catalog.ts` | WP-F14-07 | Membership events built (schema 4); `plan_notice_shown` added | Agent |
-| WP-F14-15 | Status report: contract, endpoint, migration, client | Payments engineer, data architect | `packages/api`; new migration; `apps/mobile/src/lib/billing/` | Sign-in on (M14); BL-330, BL-347, BL-322, BL-331 merged (R-17) | `[F14-REQ-032]`, `[LEGAL-REQ-049]` | Agent, `approve-migration` |
-| WP-F14-16 | Reminder email scheduler | Payments engineer | new function under `supabase/functions/` | WP-F14-15 | `[F14-REQ-033]` window tests | Agent |
+| WP-F14-15a | Status report client: report on change, signed-out outbox queue | Payments engineer (S06) | `apps/mobile/src/lib/billing/` | WP-F14-15c; S07 contract | `[F14-REQ-032]`, `[F14-REQ-043]` client cases | Agent |
+| WP-F14-15b | Status, consent and billing-notice tables | Payments engineer (S06) in S06's migration file, S02 review | New migration (timestamp at merge) | R-17 gate (T16) | `[F14-REQ-032]` storage, `[LEGAL-REQ-049]`, `[F14-REQ-045]` | Agent, fenced, `approve-migration` |
+| WP-F14-15c | `subscription-status` endpoint | Payments engineer (S06), S07 contract | `supabase/functions/subscription-status/` (new) | WP-F14-15b; sign-in on (M14) | `[F14-REQ-032]`, `[F14-REQ-043]` | Agent, fenced |
+| WP-F14-16 | Reminder email scheduler with renewal projection and production-only sends | Payments engineer (S06) | `supabase/functions/plan-reminders/` (new) | WP-F14-15c | `[F14-REQ-033]` window tests, `[F14-REQ-046]`, `[F14-REQ-043]` environment case | Agent, fenced |
 | WP-F14-17 | Remove the Read together session config | Payments engineer | `packages/api/src/remote-config.ts` and test; `apps/mobile/src/lib/billing/config.ts` | none | `[F14-REQ-035]` | Agent |
-| WP-F14-18 | CI grep for purchase data and the dev pass | Security engineer | CI config | none | `[F14-REQ-014]`, `[F14-REQ-034]` | Agent. BL-117 |
-| WP-F14-19 | Erase everything calls the ledger reset | Mobile engineer | F17 surface | F17 design | `[F14-REQ-026]` | Agent |
+| WP-F14-18 | CI grep for purchase data and the dev pass | Release (S20) | CI config | none | `[F14-REQ-014]`, `[F14-REQ-034]` | Agent. BL-117 |
+| WP-F14-19 | Erase everything calls the ledger reset (signed-out phones) | Mobile engineer | F17 surface | F17 design | `[F14-REQ-026]` | Agent; P1, cut to 1.0.x with WP-F17-15 |
+| WP-F14-20 | M17 ledger: own letters, words seen; voice-only saves skip the gate | Payments engineer (S06); query by request to S03; gate call in `review.tsx` by request to S11 | `apps/mobile/src/lib/billing/letter-ledger.logic.ts`, `gates.ts`; requests for `db/repos/ledger.ts` and `review.tsx` | none | `[F14-REQ-036]`, `[F14-REQ-037]`, `[F14-REQ-038]`, `[PRD-REQ-024]`, `[F14-REQ-023]` | Agent; founder approval if `plan.ts` changes |
+| WP-F14-21 | Keep sheet moved to `components/plus/`; new sheet text and states; the Tonight line and the held row (requests to S10) | Payments engineer (S06) | `apps/mobile/src/components/plus/` (new), `packages/content/src/features/billing.en.ts` | WP-F14-20 | `[F14-REQ-028]`, `[F14-REQ-040]`, `[F14-REQ-041]` | Agent |
+| WP-F14-22 | Held letters durable: requests to S02 (author-only draft table or columns), S03 (sync op), S05 (held audio in the upload queue), S13 (`waiting/` in export) | Payments engineer (S06) coordinates; each part merges in its owner's stream | Requests only | Sync ADR (T15); backup B5a | `[F14-REQ-039]` two-phone restore, export and sign-out cases | Agent; release gate for the signed-in held note |
 
 ## 13. Open questions and assumptions
 
@@ -458,24 +549,27 @@ Numbers keep their 3 Oct meaning where the work still exists; 15 to 19 are new.
 
 | Q | Question | Needed by | What changes |
 |---|---|---|---|
-| Q-C1 | With D-080, reminders go by email when a status report exists and by local notification and card on the purchasing phone. Is that enough for 17602(b)(1) and (b)(2) for a person who never signs in (no email)? Sign-in ships in v1.0 (M14) but stays optional before the account step. | Fri 23 Oct (FT-33) | DR-17 (answered by M14) |
-| Q-C2 | Does the acknowledgment sheet with Save a copy meet 17602(a)(3) before the email exists? | Fri 23 Oct | C-REQ-024 |
-| Q-C3 | Is the D-081 consent record adequate proof under 17602(a)(6)? | Fri 23 Oct | LEGAL-REQ-049 |
+| Q-C1 | With D-080, reminders go by email when a status report exists and by local notification and card on the purchasing phone. Is that enough for 17602(b)(1) and (b)(2) for a person who never signs in (no email)? Sign-in ships in v1.0 (M14) but stays optional before the account step. Options from R4 PT-08: phone-only notices suffice; See Plus routes through sign-in first (check App Review 5.1.1(v)); or a billing-only email capture | T17 (FT-33) | F14-REQ-043, 6.6 |
+| Q-C2 | Does the acknowledgment sheet with Save a copy meet 17602(a)(3) before the email exists? | T17 | C-REQ-024 |
+| Q-C3 | Is the D-081 consent record adequate proof under 17602(a)(6)? | T17 | LEGAL-REQ-049, retention per R4 PT-09 |
 | Q-C4 | Does Apple's view with our text above the plans, and no price or trial typed by us, meet "clear and conspicuous, close to the consent request"? Is a trial timeline of ours needed (BL-342 asks; D-083 forbids)? | Before BL-222 | 6.5 |
-| Q-C5 | Is "If you have already cancelled, there is nothing to do." acceptable on a reminder that cannot see a cancel made outside the app? | Fri 23 Oct | F14-REQ-009 |
-| Q-C6 | Does 17602(h)'s annual reminder apply to monthly plans? | Fri 23 Oct | Anniversary reminder |
-| Q-C8 | Is a 1-month trial outside 17602(b)(1)? | Fri 23 Oct | Trial week reminder becomes courtesy |
+| Q-C5 | Is "If you have already cancelled, there is nothing to do." acceptable on a reminder that cannot see a cancel made outside the app? | T17 | F14-REQ-009 |
+| Q-C6 | Does 17602(h)'s annual reminder apply to monthly plans? | T17 | Anniversary reminder |
+| Q-C8 | Is a 1-month trial outside 17602(b)(1)? | T17 | Trial week reminder becomes courtesy |
 | Q-C9 | Privacy label "Purchases" with the status report | Before submission | `app-store-privacy-labels.md` |
-| Q-C10 | Subscription Terms 1.4.0 and the Q-003 memo say "We do not email you about Plus" and list the old Plus contents and prices; D-080, D-082 and D-083 change all three | Fri 23 Oct | `docs/legal/subscription-terms.md`, `in-app-disclosures.md`, COUNSEL_PACKET Q8 |
-| Q-C11 | Offer-code wording: the free period converts at the normal price unless cancelled (D-052 (main)) | Before codes are issued | Subscription Terms |
+| Q-C10 | Subscription Terms 1.4.0 and the Q-003 memo say "We do not email you about Plus" and list the old Plus contents and prices; D-080, D-082 and D-083 change all three | T17 | `docs/legal/subscription-terms.md`, `in-app-disclosures.md`, COUNSEL_PACKET Q8 |
+| Q-C11 | Offer-code wording: the free period converts at the normal price unless cancelled (D-052 (main)). Until answered, issue no code with a free period over 31 days (R4 PT-10) | Before codes are issued | Subscription Terms, F14-REQ-044 |
+| Q-C12 | Must billing notices continue after account deletion while Apple still bills, and may we keep the email, plan and next date for that (R4 PT-08)? | T17 | F14-REQ-045 |
 
 **Founder**
 
 | Q | Question | Needed by | What changes |
 |---|---|---|---|
-| Q-F1 | DR-16: does a co-parent's letter count, and how does one membership reach a co-parent outside the Apple Family? Co-parent sharing ships in v1.0 (M14) | Fri 23 Oct | F11, edge 1 |
-| Q-F2 | DR-17: ship the status report and emails at v1.0? **Answered by M14 (founder, 13 Oct): yes**, with sign-in on and the phone reminders as well | n/a | WP-F14-15, WP-F14-16 are v1.0 |
-| Q-F3 | Confirm edge 4 default: a second iPhone gets its own 2 free letters; reinstall may give 2 more if the Keychain item is lost | Mon 26 Oct | None if confirmed |
+| Q-F1 | DR-16: does a co-parent's letter count? **Answered by M17 (founder, 13 Oct):** only your own letters count; the other parent's never do. Coverage outside one Apple Family stays D-080 at v1.0 | n/a | F11, edge 1 |
+| Q-F2 | DR-17: ship the status report and emails at v1.0? **Answered by M14 (founder, 13 Oct): yes**, with sign-in on and the phone reminders as well | n/a | WP-F14-15a to c and WP-F14-16 are v1.0 |
+| Q-F3 | Confirm edge 4 default: signed out, a second iPhone gets its own 2 free letters; reinstall may give 2 more if the Keychain item is lost | T15 | None if confirmed |
+| Q-F5 | Voice-only letters under M17: spec default puts them in the book uncounted, with their words counted when first saved (6.2 B2). Alternative: they wait outside the book until their words exist, which closes the free voice-only path but leaves P4 parents in record-and-type languages with no book letters unless they type | T15 | 6.2 B2, F14-REQ-037, F04, F05, F06 |
+| Q-F6 | Confirm the section 6.9 numbers (4% of downloads, raise to 5 then 10; annual trial to paid under 30%, test $39.99 or a 1-month annual trial) | T15 | 6.9, F14-REQ-042 |
 | Q-F4 | Billing Grace Period for all renewals (ops doc default) or paid to paid only | FT-09 | App Store Connect |
 
 | A | Assumption | How we validate |

@@ -3,11 +3,11 @@
 | | |
 |---|---|
 | Release | v1.0 gate |
-| Priority and rank | P0, rank 17 (`05-feature-map.md` section 2) |
+| Priority and rank | P0, rank 16 (`05-feature-map.md` section 2) |
 | Personas | P1 Evening parent, P2 Co-parent, P3 Expecting parent |
 | Existing IDs | B-REQ-004, B-REQ-005, B-REQ-014, B-REQ-016, B-REQ-020, B-REQ-021, PRD-REQ-011, PRD-REQ-012, PRD-REQ-013, PRD-REQ-014, PRD-REQ-015 Rev (M2), C-REQ-012, C-REQ-023, C-REQ-028, DATA-REQ-014; K-12, K-28; D-007, D-008, D-014 (all amended by D-051 (main) and D-082), D-038; DR-03, DR-04 (answered); BL-034, BL-035, BL-036, BL-113, BL-213 |
 | Depends on | F03 (first-run batch), F11 (per-child sharing), F13 (reminders per child), F16 (sync of books), F17 (Settings), F20 (support path). Not F14: starting a book has no Plus gate |
-| Status | Draft V2.1, 13 Oct 2026. **Change:** every book is free to start; the second-book Plus gate is removed (M2; D-082, D-083 in `apps/mobile/src/components/child/add-child-form.tsx`). The membership counts letters, not books (F14). IDs are kept and marked |
+| Status | Draft V2.2, 13 Oct 2026. Every book is free to start; the second-book Plus gate is removed (M2; D-082, D-083 in `apps/mobile/src/components/child/add-child-form.tsx`); the membership counts letters, not books (F14). Revised after critique round 1: "Quiet this book" (R3 DX-05), hide per person, a note and 72-hour undo for book changes by the other parent, a confirm before a birthday change moves letters (R3 DX-12, R4 PT-18), one home per requirement id (R5 EQ-05), local schema numbering (R5 EQ-23), WP status (R5 EQ-25, EQ-26). Dates are milestone ids in `08-delivery.md` section 2.1 |
 
 ## 1. Why
 
@@ -25,7 +25,8 @@
 | P1 with twins or more | First run, on day 1 to 10 | Two names, one date, one free hand; any paywall here reads as a charge for twins (K-12) |
 | P3 expecting a second child | Third trimester with a toddler at home | Needs a due-date book next to a born child's book (B-REQ-005) |
 | P2 co-parent | Joined the partner's book | Can also start their own books, free (M2) |
-| A parent whose child has died | Any time | Needs a quiet way out or support, never product copy about it (B section 1 non-goals) |
+| A parent whose child has died, or whose baby is in intensive care | Any time | Needs a self-serve way to stop the app talking about that child, without being asked why and without any copy that names the loss (B section 1 non-goals; R3 DX-05), and a person to write to (F20) |
+| Separated or separating parents | Any time | Must not have the other parent silently rename the child, move every letter by changing the birthday, or hide the book for both (R3 DX-12) |
 
 ## 3. What we are solving
 
@@ -37,15 +38,19 @@
 | Switch child time | p95 300 ms offline (PRD 7.1, gate) | Device performance run | n/a |
 | Families with 2 or more books whose second book has a letter in its first 30 days | 60% or more [A] | Server aggregate (books per family bucket, BL-024) | Synced users only |
 | Plus sheets or StoreKit calls from first run or Add a child | Zero (gate, M2) | Automated test | n/a |
+| Taps from the book header to "Quiet this book" | 2 or fewer | UI test | n/a |
+| Book-level changes by one parent that the other parent never sees noted | Zero | Two-device test | n/a |
 
 ## 4. Scope
 
 **In v1.0**
-- One profile and book per child (PRD-REQ-011), the switcher (PRD-REQ-012), per-child settings in three scopes (PRD-REQ-013), per-child sharing (PRD-REQ-014).
+- One profile and book per child (PRD-REQ-011), the switcher (PRD-REQ-012), per-child settings in three scopes (PRD-REQ-013), per-child sharing (PRD-REQ-014, home F11).
 - Every book free to start; no Plus gate (PRD-REQ-015 Rev (M2)).
-- Hide and show a book (B-REQ-014); delete a book (B-REQ-016).
+- Hide and show a book, for this person (B-REQ-014 Rev); delete a book (B-REQ-016).
+- "Quiet this book", for this person: stops prompts, reminders, month notes, birthday notes, milestone cards and Read together suggestions for that child; letters untouched; no reason asked; reversible (F12-REQ-011).
+- Book-level changes by one parent show the other parent a one-time note with who changed what, and Undo for 72 hours; a birthday change on a book with letters asks to confirm that letters will move chapters (F12-REQ-012, F12-REQ-013).
 - Bring never-synced letters from a local book into a joined book for the same child (F12-REQ-007).
-- Change the child of a letter before it first syncs (store rule in `apps/mobile/src/lib/store.ts`: `child_id` changes only while `synced_at` is null).
+- Change the child of a letter before it first syncs (rule in `apps/mobile/src/lib/db/repos/entries.ts`: `child_id` changes only while `synced_at` is null).
 - Twins and siblings in the first-run batch, up to 6 (D-038, `create_first_run_children`).
 - A support path for a family whose child has died, routed to F20.
 
@@ -76,6 +81,8 @@
 | Entry | Where |
 |---|---|
 | "For {child}" switcher atop Tonight and Book (`children.switcher.label`) | `apps/mobile/src/components/child/child-switcher.tsx` (exists) |
+| Book header menu: Quiet this book, Hide this book (new) | Book header (F09 owner places the menu; S13) |
+| Long-press on any F13 notification for a child: Quiet this book (new) | Notification action (F13, S14) |
 | "Whose book?" sheet with Add a child and Hidden books | `apps/mobile/src/components/child/whose-book-sheet.tsx` (exists) |
 | "To {child}" in Listening and Review (`children.switcher.toLabel`, `changeLink`) | Capture and Review (F04, F06) |
 | Settings > Children > {child}'s book (`children.settings.*`) | Settings (F17) |
@@ -99,7 +106,10 @@ F03 owns the form. Each child gets a book. The batch is sent once through `creat
 Tap "For {child}", pick a book. The last opened book is remembered per device (`settings.activeChildId`). With one book, the name shows with no chevron (PRD-REQ-012). Hidden books appear only under Hidden books.
 
 #### D. Hide and show
-Settings > {child}'s book > Hide this book (`children.settings.hideLabel`, `hideBody`). Parents only (`children_guard`, exists). Sets `children.hidden_at`; every member's device drops reminders, month, birthday and celebration notifications for that child within one sync (B-REQ-014). Letters stay readable from Hidden books and exportable. Show this book again clears it.
+Book header menu, or Settings > {child}'s book > Hide this book (`children.settings.hideLabel`, `hideBody`). **Per person** (R3 DX-12): sets a hidden flag in this person's `child_member_prefs` row (new column); the book moves under Hidden books and this person's devices drop every notification for that child within one sync. The other parent sees no change. Letters stay readable from Hidden books and exportable. Show this book again clears it. Hiding the book for both parents is a support action (F20), done only after the other parent is asked (R4 PT-18). The existing book-level `children.hidden_at` stays for that support path.
+
+#### D2. Quiet this book (F12-REQ-011)
+Book header menu or a notification's long-press: Quiet this book (`children.quiet.*`, new; proposed text "Quiet this book" and, under it, "No prompts, reminders or notes for {child}. Your letters stay as they are."). Per person, reversible from the same menu ("Turn notes back on"). The F13 planner drops every request for that child for this person; Tonight shows no prompt for that child; the Book shows no milestone or birthday cards; Read together is not suggested. Nothing asks why. The copy is reviewed with a perinatal loss and NICU family organisation before C1 (T22; 02 section 7).
 
 #### E. Delete
 Settings > {child}'s book > Delete the book. Sole parent: `request_book_deletion` schedules the book, 30-day restore (`settings.delete.bookBody`, `bookUndo`, `bookTypeToConfirmLabel`). With a co-parent: leave and remove own letters (`settings.delete.bookBodyCoParent`), per B-REQ-016 and DATA-REQ-014. Export is offered first (`settings.delete.bookExportFirst`).
@@ -108,14 +118,14 @@ Settings > {child}'s book > Delete the book. Sole parent: `request_book_deletion
 When a person joins a co-parent's book (F11) and has a local book for what may be the same child with letters never synced, one sheet asks "Bring your letters into {child}'s book?" with Keep them separate as the default. Bring moves `child_id` on those never-synced rows and their drafts in one local transaction, then removes the empty local book. Synced letters are never moved at v1.0.
 
 #### G. A child who has died
-No product copy about it, ever (B section 1). Settings > Help shows the existing support row (F20). Support offers, through the runbook: hide the book, stop every notification for it, export, or delete; and pauses celebrations for both parents. F20 owns all wording. F12 only guarantees the actions exist: hide (B-REQ-014), pause celebrations (C-REQ-012), export (LEGAL-REQ-034), delete (B-REQ-016).
+No product copy names it, ever (B section 1). The parent can act alone with Quiet this book (D2) or Hide this book (D), which name no loss. Settings > Help shows the support row (F20). Support offers, through the runbook: quiet or hide the book, export, delete, offer to delete a due date (consumer health data, R4 PT-18), and says which emails continue and why (billing notices required by law, with Apple's Manage subscription and refund pages). It never hides the book for the other parent without asking them. F20 owns the wording. F12 guarantees the actions exist: quiet (F12-REQ-011), hide per person (B-REQ-014 Rev), pause celebrations (C-REQ-012), export (LEGAL-REQ-034), delete (B-REQ-016).
 
 #### Per-child settings (PRD-REQ-013, K-12)
 
 | Scope | Settings | Who changes | Stored |
 |---|---|---|---|
-| Book (shared) | Name, nickname, birthday or due date, photo, book look, hide, delete (book deletion through `request_book_deletion`) | Parents | `children` (exists; `children_guard` blocks non-parents) |
-| Person, per child | Sign my letters as, include in my reminders, pause celebrations, co-parent letter notifications (F11) | Each member | `child_member_prefs` (exists; `notify_letters` new in F11) |
+| Book (shared) | Name, nickname, birthday or due date, photo, book look, delete (book deletion through `request_book_deletion`). A change by one parent shows the other a one-time note with who changed what and Undo for 72 hours; a birthday change on a book with letters asks to confirm first | Parents | `children` (exists; `children_guard` blocks non-parents); the previous value of a changed field kept 72 hours (new, S02 decides the shape) |
+| Person, per child | Sign my letters as, include in my reminders, pause celebrations, co-parent letter notifications (F11), hide this book, quiet this book | Each member | `child_member_prefs` (exists; `notify_letters` new in F11; hidden and quiet flags new) |
 | Person, all children | Reminder cadence and time, languages, reading size, analytics | Each member | Profile and device settings |
 
 "Family can read" stays in the schema and is hidden at v1.0 (B1).
@@ -141,7 +151,7 @@ Changed 13 Oct 2026. The old rule (one free started book, first-run batch free, 
 | F12-U08 | Wrong child noticed after save, letter not yet synced | Letter menu offers Move to another child | Moves | n/a | Unit: move allowed while `synced_at` null |
 | F12-U09 | Wrong child noticed after sync | No move at v1.0 | Copy the text into a new letter to the right child; delete the old one (Recently deleted keeps it 30 days) | v1.1 move (B-REQ-021) | Manual |
 | F12-U10 | Hidden book with a birthday today | No birthday note or card for anyone | Nothing | Show again | `[B-REQ-014]` (PRD 6.2 checklist) |
-| F12-U11 | One parent hides, the other expected reminders | Hide is book-level, by design | Book under Hidden books for both | Either parent shows it | Integration |
+| F12-U11 | One parent hides the book | Hide is per person (B-REQ-014 Rev) | Hidden for that parent only; the other sees no change | That parent shows it | Two-device test |
 | F12-U12 | Contributor-era data: a non-parent member edits book settings | `SCPAR` (exists) | n/a at v1.0 | n/a | Exists |
 | F12-U13 | Delete with a co-parent | Leave and remove own letters (exists) | `bookBodyCoParent` | Restore own letters 30 days | `[DATA-REQ-014]` (exists) |
 | F12-U14 | Two parents each started a book for the same child | Two books | Both in switcher | Hide one; merge v1.1 | Manual |
@@ -152,6 +162,10 @@ Changed 13 Oct 2026. The old rule (one free started book, first-run batch free, 
 | F12-U19 | Names in Devanagari, Arabic or Chinese | Rendered as typed, never transliterated (B F1) | Correct script | n/a | Render test |
 | F12-U20 | A family tells support their child has died | F20 runbook | F20 copy only | Hide, pause, export, delete | Runbook checklist |
 | F12-U21 | Delete of the last visible book | Hidden books remain; if none, first run returns | First run | Restore within 30 days | Manual |
+| F12-U22 | Parent quiets a book | No prompt, reminder, note, milestone card or Read together suggestion for that child for that parent | Nothing | Turn notes back on | `[F12-REQ-011]` planner and UI cases |
+| F12-U23 | Other parent changes the birthday of a book with letters | The changer first confirms that letters will move chapters; the other parent then sees a one-time note with Undo for 72 hours | Note on next open | Undo within 72 hours | `[F12-REQ-012]`, `[F12-REQ-013]` two-device test |
+| F12-U24 | Other parent renames the child or changes the photo | One-time note with Undo for 72 hours | Note | Undo | `[F12-REQ-012]` |
+| F12-U25 | Both parents change the same field within 72 hours | The later change wins; each note shows the latest; Undo returns the value before the first change [A] | Note | Undo | Unit |
 
 ## 7. Requirements and acceptance criteria
 
@@ -160,10 +174,9 @@ Changed 13 Oct 2026. The old rule (one free started book, first-run batch free, 
 | PRD-REQ-011 | P0 | One profile and book per child; nothing about one child is readable through another child's book | Given Asha and a sibling, When any pull or query runs for Asha, Then no sibling row, member or photo appears (cross-child leak test, F16-REQ-008) | PRD, K-12 |
 | PRD-REQ-012 | P0 | Switcher on Tonight and Book; "To {child}" in recording and Review, changeable before save; last book per device; no chevron with one book | Given two books, When recording, Then "To {child}" is visible; switch p95 300 ms offline on iPhone SE 3 | PRD |
 | PRD-REQ-013 | P0 | Per-child settings in three scopes, each row 2 taps or fewer from Settings | Given Settings, Then every row in the 6.2 table is reachable in 2 taps; one parent's "pause celebrations" leaves the other's on | PRD, K-12 |
-| PRD-REQ-014 | P0 | Sharing is per child; an invite names one child | Given an invite to Asha, Then the joiner sees no other book (F11) | PRD |
 | PRD-REQ-015 Rev (M2) | P0 | Every book is free to start; lapse never closes a book; the server never enforces Plus | Given a Free user with 3 books, When Add a child, Then the form opens with 0 Plus sheets and 0 StoreKit calls. Given `create_child` from a consented user, Then the server creates the book | D-082, D-083, D-080. Built: `add-child-form.tsx`; server in pending migration `20261004000000_plus_on_device_only.sql` |
 | B-REQ-004 | P0 | Multiple children; switcher; "To {child}" | As PRD-REQ-012 | B |
-| B-REQ-014 | P0 | Hide stops every child-anchored notification for every member within one sync | Given Asha hidden on A's phone, When B's phone syncs, Then no reminder, month, birthday or celebration for Asha is scheduled on B's phone | B |
+| B-REQ-014 Rev (R3 DX-12) | P0 | Hide is per person: it moves the book under Hidden books for that person and stops every child-anchored notification on that person's devices within one sync; the other parent sees no change. Book-level hide for both is a support action | Given A hides Asha's book, When A's second phone syncs, Then 0 requests for Asha on it; and B's phone still has its requests and shows the book | B, R3 DX-12 |
 | B-REQ-016 | P0 | Only a sole parent deletes a book; 30-day restore | As DATA-REQ-014 (exists) | B, K-10 |
 | B-REQ-021 Rev | P1 (v1.1) | Merge duplicate synced books and move synced letters move to v1.1 | Given v1.0, Then no UI moves a synced letter between books | B, this spec |
 | C-REQ-023 | P0 | No Plus sheet in first run, Add a child, at launch, during recording or export | Given first run with 3 children and then Add a child, Then zero Plus sheets and zero purchase calls | C, K-12, M2 |
@@ -171,13 +184,18 @@ Changed 13 Oct 2026. The old rule (one free started book, first-run batch free, 
 | F12-REQ-001 | n/a | Removed (M2): no book gate. `start_book`, `countStartedBooks` and `newChildNeedsPlus` are gone from code (commit 71070c4) | n/a | D-082 |
 | F12-REQ-002 | P0 | `create_child_row` never raises `SCPLS`, and `create_child` no longer reads `has_plus` | Given a consented user with one started book and no store rows, When `create_child` runs, Then the book is created. Given the migration source, Then no function in `create_child` paths references `has_plus` | B2, D-080. Built in pending `20261004000000_plus_on_device_only.sql` |
 | F12-REQ-003 | P0 | The client never discards a book for any server answer; permanent refusals go to `rejected_writes` and the book stays local and exportable (F16) | Given a forced `SCCID` on create, Then the book and its letters stay on the phone with "Not sent yet" | D-038, DATA-REQ-043 |
-| F12-REQ-004 | P0 | Local `children` keeps only book-level columns; per-person columns (`signs_as`, `reminders_on`) move to a local `child_member_prefs` table in a new local migration | Given a v3 database, When migrated to the next version, Then each child's `signs_as` and `reminders_on` exist in `child_member_prefs` and the old values are not lost | TDD 01 3.2.2, TDD 02 3.4 |
-| F12-REQ-005 | P0 | Hide is parents only and book-level; Show again restores everything | Given hide then show, Then reminders reschedule on every member's phone within one sync | B-REQ-014 |
+| F12-REQ-004 | P0 | Local `children` keeps only book-level columns; per-person columns (`signs_as`, `reminders_on`, and the new hidden and quiet flags) move to a local `child_member_prefs` table in local schema v7 (`08-delivery.md` section 4) | Given every database version from v0 to the current head, When migrated to v7, Then each child's `signs_as` and `reminders_on` exist in `child_member_prefs` and no value is lost | TDD 01 3.2.2, TDD 02 3.4 |
+| F12-REQ-005 Rev | P0 | Hide is per person; Show again restores everything for that person | Given hide then show, Then that person's reminders reschedule on each of their devices within one sync | B-REQ-014 Rev |
 | F12-REQ-006 | P0 | Move a letter to another child only while it has never synced | Given a synced letter, Then the Move action is absent; given an unsynced one, Then the move updates the row and its draft in one transaction | `store.ts` rule, DATA-REQ-040 |
 | F12-REQ-007 | P0 | On joining a book, offer to bring never-synced letters from a local book; default Keep them separate | Given 4 unsynced letters in a local book, When Bring is chosen, Then all 4 file to the joined book and the empty local book is removed in one transaction; a crash mid-way changes nothing | B F5 edge, F11-U17 |
 | F12-REQ-008 | P1 (v1.1) | Move synced letters and merge books (B-REQ-021) | Deferred | B |
 | F12-REQ-009 | P0 | Support path for a child who has died: F20 lists the actions; no product string mentions it | Given the content test, Then no string contains loss language; given the F20 runbook, Then hide, pause, export and delete are listed | B section 1, F20 |
 | F12-REQ-010 | P0 | Reminders rotate across included children; a child is named only if included (K-12) | Given 2 included children, Then 4 consecutive reminders name each child twice | K-12, F13 |
+| F12-REQ-011 | P0 | Quiet this book: per person, reachable in 2 taps from the book header and from a notification's long-press; stops prompts, reminders, month and birthday notes, milestone cards and Read together suggestions for that child; letters untouched; no reason asked; reversible; no string names a loss | Given Asha quieted by A, Then 0 F13 requests for Asha on A's devices, 0 prompts for Asha on A's Tonight, 0 milestone cards for Asha in A's Book; B is unchanged. Given the content test, Then `children.quiet.*` has no loss words | R3 DX-05 |
+| F12-REQ-012 | P0 | A book-level change (name, nickname, birthday or due date, photo, look) by one parent shows the other parent a one-time note naming who changed what, with Undo for 72 hours | Given B renames Asha, When A next opens the app, Then 1 note with B's signature and Undo; Given Undo within 72 hours, Then the old name returns on both phones | R3 DX-12 |
+| F12-REQ-013 | P0 | A birthday or due-date change on a book with letters asks the changer to confirm that letters will move chapters | Given a book with 1 or more letters, When the birthday changes, Then a confirm sheet shows before save | R3 DX-12 |
+
+Defined in another spec and checked there (R5 EQ-05): **PRD-REQ-014** sharing is per child (home F11). F12 is the home of B-REQ-014, B-REQ-016, PRD-REQ-013 and PRD-REQ-015; F09, F11, F13, F14 and F17 cite them.
 
 ## 8. Data, privacy and security
 
@@ -189,7 +207,7 @@ Changed 13 Oct 2026. The old rule (one free started book, first-run batch free, 
 | `child_member_prefs` | L3 | Device, Postgres | Owner | Cascades on leave |
 | Active child setting | L3 | Device only | Device | Install |
 
-The child's name never goes into analytics; children appear only as `child_ordinal` and `child_count_bucket` (PRD-REQ-016). Plus state leaves the device only as the status-only report (D-080, F14).
+The hidden and quiet flags are per person and readable only by that person; the 72-hour previous values are readable by the book's parents. The child's name never goes into analytics; children appear only as `child_ordinal` and `child_count_bucket` (PRD-REQ-016). Plus state leaves the device only as the status-only report (D-080, F14).
 
 ## 9. Non-functional requirements
 
@@ -216,8 +234,8 @@ Consent-gated; L2 only. The `second_child` offer trigger is removed from the cat
 | Part | Files | Notes |
 |---|---|---|
 | Rules | none | No book rule exists (M2) |
-| Local schema | `apps/mobile/src/lib/db/migrations.ts` (exists): new version adds local `child_member_prefs`, `children.created_by`, `children.first_run_batch` (TDD 01 3.2.2) | Append-only; never edit a shipped step |
-| Server | `supabase/migrations/20261004000000_plus_on_device_only.sql` (exists, pending apply) replaces `create_child_row` and `create_child` without the Plus check and drops the store tables | Apply after `20261003020000_purge_batching.sql` |
+| Local schema | `apps/mobile/src/lib/db/migrations.ts` (exists, at v5 on 13 Oct): v7 adds local `child_member_prefs` with hidden and quiet flags, `children.created_by`, `children.first_run_batch` (TDD 01 3.2.2) | Append-only; never edit a shipped step; number from `08-delivery.md` section 4 |
+| Server | `supabase/migrations/20261004000000_plus_on_device_only.sql` (exists, pending apply) replaces `create_child_row` and `create_child` without the Plus check and drops the store tables. New in v1.0: hidden and quiet columns on `child_member_prefs`, and the 72-hour previous value of book fields (S02, in one migration) | Apply after `20261003020000_purge_batching.sql` |
 | UI | `apps/mobile/src/components/child/*` (exist), `apps/mobile/src/app/settings/` | `add-child-form.tsx` has no gate (done) |
 | Sync | Children and prefs sync through F16 | `children` pulled with the book |
 
@@ -225,23 +243,28 @@ Riskiest unknown: the local schema split (F12-REQ-004) on installs with real let
 
 ## 12. Work packages
 
-| WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode |
-|---|---|---|---|---|---|---|
-| WP-F12-01 | Server: apply the migration that drops the Plus check | Data architect | `supabase/migrations/20261004000000_plus_on_device_only.sql` (exists) | BL-113 pack in staging | `[F12-REQ-002]`; `npm run test:db` green; applied in staging (FT-10) | Human apply. BL-213 superseded |
-| WP-F12-02 | Local schema split | Mobile engineer | `apps/mobile/src/lib/db/migrations.ts`, its test | BL-111 | `[F12-REQ-004]` on v1, v2, v3 fixtures | Agent. BL-136 |
-| WP-F12-03 | Removed (M2): no book gate; `[C-REQ-023]` stays in the F14 placement tests | | | | | |
-| WP-F12-04 | Switcher and Review child change | Mobile engineer | `child-switcher.tsx`, `whose-book-sheet.tsx` | WP-F12-02 | `[PRD-REQ-012]`; switch p95 300 ms | Agent. BL-034 |
-| WP-F12-05 | Per-child settings, hide, show, delete | Mobile engineer | `apps/mobile/src/app/settings/` child pages | WP-F12-04 | `[PRD-REQ-013]`, `[F12-REQ-005]`, `[B-REQ-016]` | Agent. BL-035 |
-| WP-F12-06 | Move unsynced letter; bring local letters on join | Mobile engineer | `apps/mobile/src/lib/store.ts` (move function), join sheet | WP-F11-06 | `[F12-REQ-006]`, `[F12-REQ-007]` crash test | Agent |
-| WP-F12-07 | Hide propagation to notifications | Mobile engineer | F13 planner inputs | F13 planner | `[B-REQ-014]` two-device test | Agent |
+Streams: S13 client, S03 local schema, S02 server, S14 planner inputs (`08-delivery.md` section 3.3, which governs file ownership; a path here owned by another stream is a request). Status checked on `origin/develop` on 13 Oct.
+
+| WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode | Status 13 Oct |
+|---|---|---|---|---|---|---|---|
+| WP-F12-01 | Server: apply the migration that drops the Plus check | Data architect | `supabase/migrations/20261004000000_plus_on_device_only.sql` (exists) | BL-113 pack in staging | `[F12-REQ-002]`; `npm run test:db` green; applied in staging (FT-10) | Human apply. BL-213 superseded | Built; not applied |
+| WP-F12-02 | Local schema split, v7 | S03 | `apps/mobile/src/lib/db/migrations.ts`, its test | BL-111 | `[F12-REQ-004]` from v0 to head | Agent. BL-136 | Not built (schema at v5) |
+| WP-F12-03 | Removed (M2): no book gate | n/a | n/a | n/a | Removed; `[C-REQ-023]` is checked in the F14 placement tests | n/a | Removed |
+| WP-F12-04 | Switcher and Review child change | S13 | `child-switcher.tsx`, `whose-book-sheet.tsx` | WP-F12-02 | `[PRD-REQ-012]`; switch p95 300 ms | Agent. BL-034 | Partly built: both components exist; verify against PRD-REQ-012 |
+| WP-F12-05 | Per-child settings, hide, show, delete | S13 | `apps/mobile/src/app/settings/children/` | WP-F12-04 | `[PRD-REQ-013]`, `[F12-REQ-005]`, `[B-REQ-016]` | Agent. BL-035 | Partly built: `children/[id].tsx` and `new.tsx` exist; hide is book-level today |
+| WP-F12-06 | Move unsynced letter; bring local letters on join | S03 move function, S04 join sheet | `apps/mobile/src/lib/db/repos/entries.ts` (move rule exists), join sheet | WP-F11-06 | `[F12-REQ-006]`, `[F12-REQ-007]` crash test | Agent | Partly built: the unsynced-only rule exists in `entries.ts`; bring-on-join not built |
+| WP-F12-07 | Hide propagation to notifications | S14 | F13 planner inputs | F13 planner | `[B-REQ-014]` two-device test | Agent | Not built |
+| WP-F12-08 | Quiet this book: menu, notification action, planner input | S13 menu, S14 planner and notification action | Book header menu (request to the F09 owner's file), `packages/core/src/reminder-plan.ts` input | WP-F12-02, WP-F13-02 | `[F12-REQ-011]` | Agent | Not built |
+| WP-F12-09 | Per-person hide; book-change note and 72-hour undo; birthday confirm | S02 server columns (fenced), S13 client | New migration; `apps/mobile/src/app/settings/children/[id].tsx` | WP-F12-02 | `[B-REQ-014]` Rev, `[F12-REQ-012]`, `[F12-REQ-013]` two-device test | Agent | Not built |
 
 ## 13. Open questions and assumptions
 
 | Q | Who, by when | What changes |
 |---|---|---|
 | Q1 Answered by M2 (D-082, D-083): no book gate | n/a | n/a |
-| Q2 Defer B-REQ-021 merge and move to v1.1 | Founder, 23 Oct | WP-F12-06 scope |
-| Q3 Should a co-parent be able to hide a book for themselves only? Today hide is book-level | Founder, 30 Oct | New per-person column |
+| Q2 Defer B-REQ-021 merge and move to v1.1 | Founder, T15 | WP-F12-06 scope |
+| Q3 Hide per person (spec default now, R3 DX-12), with book-level hide only through support after asking the other parent (R4 PT-18). Confirm | Founder, T15 | WP-F12-09 |
+| Q4 Are 72 hours right for undoing the other parent's book change? | Founder, T15 | One constant |
 
 | A | Assumption | Validate |
 |---|---|---|

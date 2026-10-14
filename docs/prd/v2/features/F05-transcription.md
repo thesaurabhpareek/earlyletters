@@ -7,7 +7,7 @@
 | Personas | P1, P2, P3, P4, P6 |
 | Existing IDs | B-REQ-003, B-REQ-006, A-REQ-002, A-REQ-030, K-14, K-24, PRD 7.4, PRD 7.7, PRD-REQ-004, LEGAL-REQ-007, LEGAL-REQ-014, LEGAL-REQ-018, LEGAL-REQ-019, LEGAL-REQ-022, DATA-REQ-040, DATA-REQ-041, DATA-REQ-042, DATA-REQ-046, D-031, D-040, D-046, DR-01, DR-14, R-01, R-02, R-08, R-12, R-14, BL-043, BL-140, BL-141, BL-142, BL-143, BL-144, BL-145, BL-147, BL-258, BL-265 |
 | Depends on | F03 (author languages and script), F04 (recording, drafts, voice-only save), F06 (generic engine reads pack tables; verifier fix for marks and non-Latin punctuation, R-01), F07 (dictionary terms and phonetic tables), F16 (sync of new columns), F17 (Settings shell), F19 (manifest and pack delivery) |
-| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with ADR 0014 (languages as data), ADR 0015 (speech models per language, Hindi on its own model), ADR 0016 (packs and signed manifest), ADR 0017 (API standards) and the code on `develop`; ADRs decide, this spec cites them (`_AUTHORING.md` M12) |
+| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with ADR 0014 (languages as data), ADR 0015 (speech models per language, Hindi on its own model), ADR 0016 (packs and signed manifest), ADR 0017 (API standards) and the code on `develop`; ADRs decide, this spec cites them (`_AUTHORING.md` M12). Revised 14 Oct 2026 after critique round 1 (M15 to M17; disposition in `reviews/DISPOSITION-C.md`) |
 
 ## 1. Why
 
@@ -49,7 +49,7 @@
 
 **In v1.0**
 - On-device transcription with whisper.rn 0.7.4 for English, Spanish, French, Portuguese, Arabic and Mandarin on one shared model, Whisper large-v3-turbo q5_0 (574 MB), and Hindi on whisper-hindi-small q5_1 (190 MB) once hosted; compact tier whisper-small q5_1 (190 MB) on phones under 4 GB RAM [D] ADR 0015 sections 1, 2.
-- Each language ships only if it passes its week-2 device check and the founder's per-language go or no-go on Fri 23 Oct (ROADMAP 2.1 sections 2, 6; FT-34). A language that fails is held back to a later pack update and the listing names only shipping languages. The in-app per-language gate below (7.1, 7.2) is not built: today every one of the seven can be chosen and transcribed. Arabic remains the most likely to be held (DR-01; ADR 0015: dialect error rates).
+- Each language ships only if it passes its device check and the founder's per-language go or no-go (FT-34; the date is in `08-delivery.md` section 2.1). A language that fails is held back to a later pack update and the listing names only shipping languages. The in-app per-language gate below (7.1, 7.2) is not built: today every one of the seven can be chosen and transcribed. Arabic remains the most likely to be held (DR-01; ADR 0015: dialect error rates).
 - A per-language quality gate that decides, per language and device tier, whether the language transcribes or offers record and type.
 - Language packs as data (B13): versioned JSON plus model reference, SHA-256 against a signed manifest, interpreted by a generic engine in `packages/core`. English pack in the app; the rest downloaded when an author picks the language.
 - Model download manager: Application Support, excluded from backup, resumable, verified, removable.
@@ -71,7 +71,7 @@
 **Never**
 - Translation or transliteration of anyone's words (constitution, B-REQ-003). `translate: false` always.
 - Automatic language detection that switches language silently.
-- Audio leaving the phone in v1.0 (B7, 03 section 5).
+- Audio sent anywhere for transcription in v1.0 (03 section 5). The owner's encrypted backup (D-073, M14, M16; F08) stores ciphertext and is not a transcription path.
 - Speaker identification, diarization or voiceprints (LEGAL-REQ-019). `tdrzEnable` is never true.
 - Converting one Portuguese or English spelling variety into the other (rewording) [R] R5 section 1.2.
 - Executable code inside a pack (App Review 2.5.2, R4 section 5).
@@ -80,7 +80,7 @@
 
 | Product | What it does | Does it work? (evidence) | What customers say | Our call |
 |---|---|---|---|---|
-| Remento | Speech-to-Story in English and Spanish [F] R1-S13 | 4.8 (1,738 ratings) [F] R1-S15 | Transcription praised in 2 reviews [S] R2 T12; proper nouns dropped (CR S27, not re-checked) | **Innovate**: seven languages and names taught at first run |
+| Remento | Speech-to-Story in English and Spanish, through a web link with no app [F] R1-S13 | Trustpilot 4.8 (1,738), not an App Store rating [F] R1-S15 | Transcription praised in 2 reviews [S] R2 T12; proper nouns dropped (CR S27, not re-checked) | **Innovate**: seven languages and names taught at first run |
 | Rosebud | Voice transcription in 20 languages [F] R1-S33 | 4.9 (3.3K) | Voice-to-text unreliable at times [S] R1-S33 | Engine and on-device status Unverified; no call |
 | Day One | Transcription language from the keyboard, then device language; on-device on iOS 26 with Apple Intelligence, Apple servers otherwise [F] R1-S60 | n/a | Dutch and English in one session gave broken Dutch; users asked for a per-recording setting [S] R1-S61 | **Avoid** keyboard-driven language; **Innovate** per-author default plus per-letter chip |
 | Apple SpeechAnalyzer / SpeechTranscriber | On-device, model in system storage, iOS 26 and later, `supportedLocales` [F] R1-S70, R1-S73, R5-S18 | One developer found it about 3x faster than Whisper Small [F] R1-S28; Arabic assets failed to download in a beta [S] R1-S27 | n/a | **Match later** for languages it covers (v1.1 spike); cannot serve our iOS 17 floor (D-040) |
@@ -88,7 +88,7 @@
 | Tiny Treasures | No transcription, sold as a privacy feature [F] R1-S67 | 5.0 (7) | n/a | **Innovate**: transcribe, but on the phone; say so calmly |
 | Then | 7 languages, on-device [F] R1-S68 | Too new | n/a | Neutral; watch |
 
-No memory product we found transcribes Hindi or Arabic on-device (R1 F05 opportunity). Our honest record-and-type state for a language that fails its gate is also something no competitor shows (Inferred from pages opened).
+No memory product we found transcribes Hindi or Arabic on-device (R1 F05 opportunity). No product we opened shows a record-and-type state for a language it cannot yet transcribe (Inferred from pages opened).
 
 ## 6. Experience
 
@@ -98,7 +98,7 @@ No memory product we found transcribes Hindi or Arabic on-device (R1 F05 opportu
 |---|---|---|
 | Finish on Listen (F04 step 5) | A transcription job for the draft, in the draft's `language` | F04 hands off; Review (F06) subscribes to the job |
 | Keep the recording only on Review (`pendingCopy.review.voiceOnlyButton`) | A voice-only entry with `transcript_status = 'waiting'` (`saveVoiceOnlyFromDraft`, exists) and a queued job that fills the words once (`setWordsForWaitingEntry`, exists) | F04, F05 |
-| Ready screen at the end of first run (F03 step 5) | Model and chosen packs queued for Wi-Fi (F03-REQ-005, -006) | F03 hands off |
+| Speech card right after the languages step of first run (F03 step 4; `speechConsentCopy`, built) | On Download on Wi-Fi, model and chosen packs start downloading at once, so they have the rest of first run and the first letter to arrive (F05-REQ-042; F03-REQ-005, -006) | F03 hands off |
 | Settings > Languages and speech (new screen, F17 shell) | Status, sizes, download, mobile data choice, delete | F05 |
 | A language passes its gate later (manifest update) | Language chip changes from Record and type to transcribed; waiting entries in that language get one job each | F05, F03 labels |
 | Review, before first save: change the letter language (new) | A new job for the same draft in the new language; the earlier result is discarded | F06 screen, F05 job |
@@ -109,7 +109,7 @@ No memory product we found transcribes Hindi or Arabic on-device (R1 F05 opportu
 | # | Person does | App shows (copy key) | System does |
 |---|---|---|---|
 | 1 | Taps Finish after a 2-minute letter | Listen moves to processing (F04 step 5) | F04 writes the draft `ready` with `audio_sha256` and `language = en`. F05 inserts one `transcription_jobs` row (new table, section 11.3) with `state = queued`, priority `open_review` |
-| 2 | Lands on Review | Review (`review.title`) with an honest progress line, "chunk i of n" (new `review.transcribing.progress`), and the recording player | Queue picks the job. Checks: model file verified (section 7, F05-REQ-020), pack for `en` loaded, thermal state below `serious`, app in foreground. Verifies the audio hash, then decodes M4A to 16 kHz mono PCM in memory (BL-140) whatever the source rate (44.1 kHz today, `listen.tsx`; 48 kHz if F08 moves it) |
+| 2 | Lands on Review | Review (`review.title`) with an `InlineState` (COMPONENTS 2.15a): the line `wordsCopy.preparing` ("Writing down what you said.", exists) over a determinate bar that fills by finished chunks, and the recording player. `wordsCopy.listening` ("Writing down what you said. Part {n} of {count}.", exists) is retired: no chunk numbers in front of a parent (R3 DX-23) | Queue picks the job. Checks: model file verified (section 7, F05-REQ-020), pack for `en` loaded, thermal state below `serious`, app in foreground. Verifies the audio hash, then decodes M4A to 16 kHz mono PCM in memory (BL-140) whatever the source rate (44.1 kHz today, `listen.tsx`; 48 kHz if F08 moves it) |
 | 3 | Waits, listens, or leaves the screen | Same progress line; nothing else moves | Silero VAD plans speech chunks of 28 s or less (TDD 03 3.5.3). Each chunk runs `transcribeData` with `language: 'en'` (forced, never `auto`), `translate: false`, `tdrzEnable: false`, `tokenTimestamps: true`, `maxLen: 1`, temperature 0 and the dictionary prompt rendered by the English pack (F07). Completed chunks are held in memory for the job (no `partial` is stored, section 7.6) |
 | 4 | Reads the transcript | Text appears only when every chunk is done (TDD 03 5.1); machine edits underlined (F06); first-time note `review.firstNote` (K-14) | Post-processing in `packages/core`: non-speech tags dropped, loop guard, words with exact offsets, `stt_meta` with model id and SHA-256, pack id and version, binding version, language. Result stored on the job. `faithfulClean` runs with the English pack tables (F06) |
 | 5 | Saves (Add to the book or Keep private) | F06 destination buttons | In one local transaction the entry is inserted with `raw_transcript` and `stt_meta` from the chosen job result; from that insert the raw is immutable (DATA-REQ-040). Job row marked `done` and its `partial` cleared. Whisper context released after 45 s idle (TDD 03 3.5.4) |
@@ -124,7 +124,7 @@ No memory product we found transcribes Hindi or Arabic on-device (R1 F05 opportu
 
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
-| F05-U01 | No model on the phone at Finish | Job `state = waiting_model`; capture and save never wait (F04-REQ-018) | `pendingCopy.review.waitingTitle`, `.waitingBody`, `.voiceOnlyButton` | Keep the recording only; words arrive once the model verifies; or type | E2E with the model directory empty |
+| F05-U01 | No model on the phone at Finish (the usual first letter, R3 DX-02) | Job `state = waiting_model`; capture and save never wait (F04-REQ-018). This is a designed path, not an error: F04 6.2 G | `wordsCopy.pack.*` (exists, F04 6.2 G) | Keep the recording; words arrive once the model verifies and the letter counts only after its words are seen (M17); or type | `apps/mobile/test/first-letter-waiting.test.ts` (new); E2E with the model directory empty |
 | F05-U02 | Model download interrupted by kill, reboot, network change or Airplane Mode | Download resumes with HTTP Range from the byte in the sidecar; parts already verified are not fetched again | Settings row shows the same percentage on return | Automatic | Device test with kill at 5 random byte offsets |
 | F05-U03 | Downloaded file fails SHA-256 against the signed manifest | `.part` deleted; one automatic retry; then `failed`. The file is never loaded | Settings: "Speech did not download. Try again." (new `speech.download.failed`) | Try again button | Unit with a corrupted fixture; device run |
 | F05-U04 | A model file exists with no verified install record (hand-copied dev file in `Documents/models`, or an old partial) | Not loaded. Today `modelFile()` loads any existing file; this changes (F05-REQ-020) | Model shown as not downloaded | Download through the manager | Unit: file present, no record, `availability()` returns `model-missing` |
@@ -136,7 +136,7 @@ No memory product we found transcribes Hindi or Arabic on-device (R1 F05 opportu
 | F05-U10 | Thermal state `serious` or `critical` | No job starts at `critical`; pause between chunks at `serious` (TDD 03 5.3; F04-U28) | Progress line stays; no alarm | Resumes when the state drops | Manual with a thermal simulation build |
 | F05-U11 | Low Power Mode on | Job continues with `maxThreads: 2` (TDD 03 3.5.4) | Slower progress | n/a | Unit on the parameter builder |
 | F05-U12 | Phone call or Siri while a job runs (recording already finished) | Audio session interruption does not affect CPU work; job continues unless the app backgrounds (then U08) | Nothing | n/a | Manual on device |
-| F05-U13 | Silence or noise only (white-noise machine, fan) | VAD finds no speech; Whisper is not run; `outcome = no_speech`; raw stays empty | Recording kept with "Nothing to write down here. You can type it." (new `review.noSpeech`) | Type, or keep the recording | Corpus noise clips: zero phantom words (gate) |
+| F05-U13 | Silence, noise only (white-noise machine, fan), or a whisper the voice detector drops | VAD finds no speech; Whisper is not run; `outcome = no_speech`; raw stays empty | Recording kept with `wordsCopy.noSpeech.*` (exists; title "No talking in this one"). Revise the title so it also fits a whisper (R3 DX-14): "We could not make out words this time"; the body stays ("The recording is kept just as it is. You can add words by typing them.") | Type, or keep the recording | Corpus noise clips: zero phantom words (gate); whisper clips reported (F05-REQ-003) |
 | F05-U14 | Repetition loop in a chunk | Re-decoded once at temperature 0.4; if it still loops, text kept and a `repetition_loop` flag added (TDD 03 3.5.7) | F06 marks the span "listen to this part" | Author listens and edits | Unit on `asr-post` |
 | F05-U15 | Draft language not passed (Arabic at v1.0, Hindi until its gate) | No job created | Review with Type the words (F04-U47); waiting card if the author keeps the recording only | Type; when the language passes, one job per waiting entry | E2E with a gate-status fixture |
 | F05-U16 | A language is paused by the manifest after letters exist (correction-rate guardrail, 03 section 4.3, or a defect) | New letters in that language record and type; queued jobs move to `waiting_pack`; saved transcripts untouched | Chip label changes to Record and type on next launch | Resumes when the pause lifts | Unit: manifest fixture with `paused` |
@@ -158,11 +158,24 @@ No memory product we found transcribes Hindi or Arabic on-device (R1 F05 opportu
 | F05-U32 | Co-parent on their own phone | Their own languages, model and packs; no audio of the other parent's letters exists on their phone at v1.0 (B7), so nothing of the other parent's is transcribed there | Their own Settings status | n/a | Two-phone test (BL-177) |
 | F05-U33 | Several children with waiting letters | Queue serves all children in `captured_at` order, the open Review first (today `listWaitingForWords` is per child) | Each book shows its own waiting rows (`pendingCopy.book.waitingForWords`) | n/a | Unit |
 | F05-U34 | Signed out, lapsed Plus, or account never created | Transcription is local and free for everyone; no account or Plus check anywhere in F05 | Same | n/a | Unit: no entitlement read in `transcription-queue.ts` |
-| F05-U35 | VoiceOver | Progress announced once at start and once when words are ready (new `review.transcribing.a11yStart`, `.a11yDone`); Settings rows read name, status and size | Spoken state, no per-chunk chatter | n/a | Script V-F05 |
+| F05-U35 | VoiceOver | Progress announced once at start and once when words are ready (new `review.transcribing.a11yStart` "Writing down what you said.", `.a11yDone` "Your words are ready."), through `announce()` so nothing is spoken over the recording player (`lib/a11y.ts`); Settings rows read name, status and size | Spoken state, no per-chunk chatter | n/a | VoiceOver script V1 (07 section 2.11) |
+| F05-U38 | A letter in a language that has not passed (Hindi or Arabic record and type) kept as a recording with no typing | Saved voice-only with `transcript_status = waiting`; it waits for words for as long as it takes; when the language passes, one job fills the words and the author reviews them (F05-REQ-044) | `book.waitingForWords` on its card | n/a | `apps/mobile/test/transcription-queue.test.ts` (new case) |
 | F05-U36 | AX5 text on an SE 3 | Settings rows wrap; sizes on their own line; nothing truncates | Full text | n/a | Component test at AX5 |
 | F05-U37 | Reduce Motion | Progress shown as text and a static bar, no animation | Static | n/a | Component test |
 
+### 6.4 Screen states
+
+Review's own states are in F06 6.5; the first-letter waiting card is F04 6.2 G. F05 owns Settings > Languages and speech and the transcribing card. Components are from `docs/design/COMPONENTS.md`.
+
+| Screen | Empty | Loading | Error | Offline | AX5 (SE 3) | VoiceOver |
+|---|---|---|---|---|---|---|
+| Review, words on their way | n/a | `InlineState`: `wordsCopy.preparing` over a determinate bar; the recording player stays live above | `errors.transcriptionFailed.*` (exists) with Try again and Type instead | Same as online: the model is local | Bar and line stack; player controls 44 pt | Announced once at start and once at done (F05-U35) |
+| Settings > Languages and speech | One row per chosen language, each with its state from `speechSettingsCopy` (exists in `packages/content/src/features/speech.en.ts`): `ready`, `absent`, `noSpace` | `speechSettingsCopy.downloading` ("Getting ready, {n}%") | Row `speech.download.failed` (new) "Speech did not download. Try again." with Try again | `speechSettingsCopy.waitingForWifi` and the mobile-data choice (`wordsCopy.pack.mobileDataButton`, exists) | Name, status and size on separate lines; no truncation | Each row reads name, status and size as one element; Delete is a custom action |
+| Delete a pack or model (sheet) | n/a | n/a | n/a | Works offline | Buttons stack | Sheet title focused first |
+
 ## 7. Requirements and acceptance criteria
+
+Renamed on 14 Oct 2026 (R5 EQ-05): rows that restated a legacy ID owned by another spec now carry a new F05 ID and name the home spec.
 
 Sections 7.1 to 7.9 set the rules each requirement in 7.10 tests. Everything marked new does not exist in the repo on 3 Oct 2026.
 
@@ -190,7 +203,7 @@ Also required for every non-English language before its gate can pass: (a) the F
 |---|---|
 | Harness fixes first | Fix E8 in `experiments/score.ts` (marks in `normWords`, CER for Chinese); add a per-phrase `language` field (today one global `language` in `experiments/config.example.json`); run the conversion path in `experiments/setup-hinglish.sh` for the Hindi candidates and the Arabic dialect model |
 | Speakers | 10 consenting adult native speakers per language, recruited with written consent naming the use (TDD 03 7.3). Arabic: at least 3 dialect groups with 4 speakers each. Portuguese: 5 Brazilian, 5 European |
-| Clips per speaker | 3 scripted fictional "Asha" letters of about 2 minutes, each with the child's name, nicknames and two family names, plus 1 unscripted 1-minute letter; recorded on an iPhone in bedtime conditions (low voice, white-noise machine, baby sounds) |
+| Clips per speaker | 3 scripted fictional "Asha" letters of about 2 minutes, each with the child's name, nicknames and two family names, plus 1 unscripted 1-minute letter; recorded on an iPhone in bedtime conditions (low voice, white-noise machine, baby sounds). Plus, per speaker, 1 whispered clip and 1 clip of normal speech over a white-noise machine, reported as separate rows and not gating at v1.0 [R] (R3 DX-14; study 1 in R3 supplies real bedtime recordings) |
 | Noise clips | 5 per language with no speech |
 | Size | About 40 clips and 80 minutes per language |
 | Metrics | WER (CER for zh) on raw and after cleaning; names exact after cleaning; script compliance; sentence-final punctuation per profile; filler presence in raw; phantom words; repetition loops; seconds per audio minute and peak memory on the tier device (30 runs, p90); jetsam count |
@@ -311,7 +324,7 @@ Built on `develop` (13 Oct) as `apps/mobile/src/lib/transcription-queue/` (BL-14
 
 Hindi-English mode is v1.1 (B4; F33). At v1.0 each letter has one language, chosen on the chip or from the author's default, and the model runs with that language forced. Words from another language are written however the model hears them under the forced language: in Hindi mode English words may come out in Devanagari, and in English mode Hindi words get English spellings (TDD 03 3.5.6, unmeasured). Names stay right through the dictionary (F07). Nothing detects or switches language automatically. The Review screen keeps the recording one tap away, and the author can edit or type.
 
-Shipped copy must not promise more: `onboarding.dictionary.languagesBody` in `packages/content/src/strings.en.ts` says the parent can switch languages mid-sentence and every word stays in the language spoken. That is the v1.1 mode and must not ship at v1.0 (F05-REQ-031; change requested from the content owner).
+Shipped copy must not promise more. On 3 Oct `onboarding.dictionary.languagesBody` promised mid-sentence switching; on `develop` on 14 Oct it reads "Your words stay in the language you speak. We never translate them.", which holds at v1.0. F05-REQ-031 keeps a content test so the promise cannot return.
 
 ### 7.9 Transcript versions and re-transcription
 
@@ -331,7 +344,7 @@ Data contract (P0 at v1.0; compare and adopt UI is P1):
 |---|---|---|---|---|
 | F05-REQ-001 | P0 | A language is transcribed only after its gate passes on this phone's tier | Given the manifest marks `es` not passed for T4, When an SE 3 author records in Spanish, Then no job is created and Review offers Type the words. Given `es` passed for T4, Then a job runs with `language: 'es'` | DR-01 A; R5 8.1 |
 | F05-REQ-002 | P0 | Gate bars per language as in 7.1, run on the shipped model, pack and engine | Given a gate report for a language, When any bar in 7.1 fails (including one phantom word on a noise clip or one jetsam in 30 runs), Then `passed` is false and the release owner cannot set it true in the manifest without a founder-signed exception recorded in `docs/qa/evidence/` | R5 8.1, 8.2; ADR 0012 |
-| F05-REQ-003 | P0 | Gate sample per R5 8.2 | Given a gate report, Then it lists at least 10 speakers and 40 clips (Arabic: 3 dialect groups of 4; Portuguese: 5 pt-BR and 5 pt-PT), 5 noise clips, per-speaker bootstrap intervals, and the model, pack and engine versions | R5 8.2 |
+| F05-REQ-003 | P0 | Gate sample per R5 8.2 | Given a gate report, Then it lists at least 10 speakers and 40 clips (Arabic: 3 dialect groups of 4; Portuguese: 5 pt-BR and 5 pt-PT), 5 noise clips, per-speaker bootstrap intervals, the model, pack and engine versions, and separate word error rows for whispered clips and speech over white noise | R5 8.2; R3 DX-14 |
 | F05-REQ-004 | P0 | No non-English gate can pass before the F06 verifier fix for its script | Given `ENGINE_VERSION` without the marks, harakat and full-width punctuation fixes (R-01), When the gate runs for hi, ar or zh, Then the report fails with `verifier_not_ready`; Given the fix, Then the language's adversarial set (R5 4.4 E1 to E8) has zero accepted meaning changes | R-01; R5 4.4 |
 | F05-REQ-005 | P0 | Native-speaker sign-off per pack | Given a non-English pack version, Then its manifest entry is accepted by CI only with a sign-off file `docs/qa/evidence/F05-pack-<lang>-<version>.md` (new) naming the reviewer role and date | R-08; R5 4.2 |
 | F05-REQ-006 | P0 | Gate re-run on change | Given a change to model file, pack, prompt rendering, VAD settings, chunk planner or `ENGINE_VERSION`, Then CI marks every affected language's gate stale and the manifest build fails until new reports exist | R5 8.2 |
@@ -356,26 +369,60 @@ Data contract (P0 at v1.0; compare and adopt UI is P1):
 | F05-REQ-025 | P0 | Models excluded from backup, in Application Support | Given a verified model, Then it lives under `modelsDirectory()` with the backup-excluded flag set (`excludeFromBackup`) | ADR 0001; TDD 03 C-9 |
 | F05-REQ-026 | P0 | M4A decoded in memory at any source rate | Given a 44.1 kHz or 48 kHz AAC M4A, When a job runs, Then 16 kHz mono PCM is produced in memory, no PCM file is written to tmp, caches or documents, and `availability()` no longer returns `decoder-missing` | BL-140; LEGAL-REQ-018; `listen.tsx` 44.1 kHz |
 | F05-REQ-027 | P0 | Per-chunk dictionary prompt | Given a 5-minute letter with the child's name said at 4 minutes, Then the chunk containing it was decoded with the dictionary prompt (each chunk 28 s or less), and the prompt is rendered by the letter's pack in the letter's script (F07) | TDD 03 3.5.3, 3.5.5, H-7 |
-| F05-REQ-028 | P0 | No speech, no words | Given a noise-only clip, Then Whisper is not called, raw stays empty and Review shows `review.noSpeech` (new); corpus noise clips produce zero phantom words | TDD 03 3.5.7; ADR 0012 |
+| F05-REQ-028 | P0 | No speech, no words | Given a noise-only clip, Then Whisper is not called, raw stays empty and Review shows `wordsCopy.noSpeech.*`; corpus noise clips produce zero phantom words | TDD 03 3.5.7; ADR 0012 |
 | F05-REQ-029 | P0 | Script rules per 7.7 | Given Hindi with Devanagari, Then output is never transliterated; Given Mandarin with traditional output, Then only verified `script` edits change characters and each is undoable; Given Arabic text, Then paragraph direction follows the first strong character and digits stay left to right | D-031; R5 1.2, 4.3; B-NFR-007 |
 | F05-REQ-030 | P0 | Script mismatch flagged, never converted | Given a Hindi transcript with 10% or more of letters outside Devanagari and Latin [A], Then a `script_mismatch` flag is stored and Review shows `review.scriptMismatch` (new); no character is converted | R5-S27; TDD 03 FM-14 |
-| F05-REQ-031 | P0 | v1.0 promises one language per letter | Given the v1.0 build, Then no shipped string says words in two languages are kept as spoken (today `onboarding.dictionary.languagesBody` does); Given a code-switched corpus clip per language, Then its WER is reported and does not gate | B4; TDD 03 3.5.6 |
+| F05-REQ-031 | P0 | v1.0 promises one language per letter | Given the v1.0 build, Then no shipped string says words in two languages are kept as spoken (a content rules case; `onboarding.dictionary.languagesBody` was fixed on `develop` by 14 Oct); Given a code-switched corpus clip per language, Then its WER is reported and does not gate | B4; TDD 03 3.5.6 |
 | F05-REQ-032 | P0 | Change language before first save | Given a draft transcribed as `en`, When the author picks Spanish in Review before saving, Then a new job runs as `es`, the `en` result is discarded and never written as raw | ADR 0002 (choose before first save); TDD 03 C-4 |
 | F05-REQ-033 | P0 | Every result records how it was made | Given a saved entry, Then `stt_meta` holds model id and SHA-256, pack id and version, binding version, language, prompt SHA-256, chunk times, dropped spans, flags and timing quality | TDD 03 3.5.2; BL-144 |
 | F05-REQ-034 | P0 | Word timings stored | Given a saved spoken entry, Then word timings with exact offsets into raw are stored (for F34 in v1.1) and the quality gate value is recorded | BL-145; ADR 0009 |
 | F05-REQ-035 | P0 | Transcript versions data contract | Given an entry, Then `raw_transcript` never changes; Given a second transcript, Then it is inserted as `transcript_versions.seq = 2` and an update to its `raw_text` fails with an immutability error in `npm run test:db` | DATA-REQ-040, -041; ADR 0002 |
 | F05-REQ-036 | P1 | Compare and adopt a newer transcript | Given a letter made with an older model or pack and a newer passed one, When the author taps "Write it down again with the newer model", Then a job creates version n+1, Review shows both side by side with the recording, and Adopt writes the old state to `entry_versions` and can be undone | ADR 0002; DATA-REQ-041 |
 | F05-REQ-037 | P0 | Transcription is free and local for every account state | Given signed out, lapsed Plus, or a joined co-parent, Then transcription behaves identically; no code under `apps/mobile/src/lib/speech/` reads entitlements | B2; B7 |
-| F05-REQ-038 | P0 | Audio never leaves the phone in v1.0 | Given a full transcription run with a proxy, Then 0 requests carry audio, transcript text or dictionary terms; the only F05 requests are manifest, pack and model GETs with no user identifier | B7; 03 section 5; LEGAL-REQ-014 |
+| F05-REQ-038 | P0 | Transcription sends no audio anywhere | Given a full transcription run with a proxy, Then 0 requests from F05 code carry audio, transcript text or dictionary terms; the only F05 requests are manifest, pack and model GETs with no user identifier. The owner's encrypted backup (F08) is a separate path and is tested there | 03 section 5; LEGAL-REQ-014; M14 |
 | F05-REQ-039 | P0 | Content-free logs | Given the log canary over a transcription run with Asha fixtures, Then zero fixture strings appear in logs or crash reports; whisper.rn native logging is off in release (`toggleNativeLog(false)`) | LEGAL-REQ-014; TDD 03 4.5 |
 | F05-REQ-040 | P0 | Speed on the budget device for passed languages | Given 30 runs of a 2-minute letter per passed language on SE 3, Then Finish to text is p90 30 s or less and battery use is 2% or less per letter, or the founder records a changed budget (TDD 03 C-7) | PRD 7.7; BL-043, BL-044 |
 | F05-REQ-041 | P0 | Accessibility of transcription states | Given VoiceOver, Then the start and the end of a job are each announced once; Given AX5 on SE 3, Then Settings > Languages and speech rows wrap without truncation; Given Reduce Motion, Then progress is static | LEGAL-REQ-051; F05-U35 to U37 |
-| B-REQ-003 Rev (B4, DR-01) | P0 | Per-author languages drive transcription; Hindi script from D-031 | As in F03's revision; plus: Given the step was skipped, Then English is the letter language, not automatic detection (the 1.3 criterion "automatic detection is used" is withdrawn, R5 2.4) | B-REQ-003; R5 2.4 |
-| B-REQ-006 Rev (B4) | P0 | Dictionary terms feed the prompt | Given terms from F07, Then the per-chunk prompt contains the terms' forms for the letter's script, capped at 200 tokens with lower-priority kinds dropped first | B-REQ-006; TDD 03 3.5.5 |
-| A-REQ-002 | P0 | Splash never waits on model or network | Given a cold start with a model on disk, Then no whisper context is created before the first job | A-REQ-002 |
-| A-REQ-030 | P0 | Offline | Given Airplane Mode with a verified model, Then record, transcribe and save succeed with 0 network requests | A-REQ-030 |
-| PRD-REQ-004 | P0 | Author-only working material | Given a co-parent, Then `raw_transcript`, `stt_meta`, `machine_edits` and `transcript_versions` of the other parent's letters are not readable (access test) | PRD-REQ-004; K-09 |
-| K-14 | P0 | It can make mistakes | Given the first transcribed letter on this install, Then `review.firstNote` shows once before save | K-14 |
+| F05-REQ-046 | P0 | Per-author languages drive transcription; Hindi script from D-031 (transcription slice of B-REQ-003; home F03) | As in F03's revision; plus: Given the step was skipped, Then English is the letter language, not automatic detection (the 1.3 criterion "automatic detection is used" is withdrawn, R5 2.4) | B-REQ-003; R5 2.4 |
+| F05-REQ-047 | P0 | Dictionary terms feed the prompt (prompt slice of B-REQ-006; home F07) | Given terms from F07, Then the per-chunk prompt contains the terms' forms for the letter's script, capped at 200 tokens with lower-priority kinds dropped first | B-REQ-006; TDD 03 3.5.5 |
+| F05-REQ-048 | P0 | Splash never waits on the model (model slice of A-REQ-002; home F01) | Given a cold start with a model on disk, Then no whisper context is created before the first job | A-REQ-002 |
+| F05-REQ-049 | P0 | Transcription works offline (slice of A-REQ-030; home F01) | Given Airplane Mode with a verified model, Then record, transcribe and save succeed with 0 network requests | A-REQ-030 |
+| F05-REQ-050 | P0 | Author-only working material, transcription fields (slice of PRD-REQ-004; home F06) | Given a co-parent, Then `raw_transcript`, `stt_meta`, `machine_edits` and `transcript_versions` of the other parent's letters are not readable (access test) | PRD-REQ-004; K-09 |
+| F05-REQ-051 | P0 | It can make mistakes (slice of K-14; home F06, F06-REQ-034) | Given the first transcribed letter on this install, Then `review.firstNote` shows once before save | K-14 |
+| F05-REQ-042 | P0 | Speech starts downloading at the languages step | Given first run on Wi-Fi with enough free space, When the author taps Download on Wi-Fi on the speech card shown right after the languages step (`speechConsentCopy`, built), Then the model and the chosen packs start downloading before the Ready screen shows; Given Not now, Then nothing downloads and the first letter takes path G (F04); Given cellular only, Then they wait for Wi-Fi unless the author allowed mobile data; first run never waits on them. The card counts in F02's ask table (R3 DX-15) | R3 DX-02; R1 PL-05; B13 |
+| F05-REQ-043 | P0 | Words that arrive later stay unreviewed until the author saves them | Given a voice-only letter, When F05 fills its words, Then the entry's `transcript_status` becomes `unreviewed` (new value) and stays so until the author saves Review with those words on screen, when it becomes `ready`; F14 counts the letter at that Save and never before (M17; F14 6.2 B2, F14-REQ-037). Given a letter whose words were never saved by the author, Then it never counts | M17; R3 DX-02, DX-26 |
+| F05-REQ-044 | P0 | A record-and-type language never forces typing | Given a language that has not passed, When the author keeps the recording without typing, Then it saves voice-only, waits for words with no time limit, and gets one job when the language passes; it uses no free letter while it waits (M17) | DR-01 A; M17; R3 DX-26 |
+
+### 7.11 Test map (P0)
+
+Test titles start with the ID in brackets (07 section 1.1). "New" means not on `develop` on 14 Oct 2026.
+
+| ID | Test file or run | Exists? |
+|---|---|---|
+| F05-REQ-001, F05-REQ-007 | `apps/mobile/test/language-gate.test.ts`; only if Q11 builds the in-app gate, else the FT-34 release record in `docs/qa/evidence/` | New |
+| F05-REQ-002 to F05-REQ-006 | `experiments/gate.test.ts` (report schema, stale marking); `experiments/score.test.ts`; `docs/qa/evidence/F05-gate-<lang>.md` and `F05-pack-<lang>-<version>.md` | `score.test.ts` exists; the rest new |
+| F05-REQ-008, F05-REQ-009 | `apps/mobile/test/speech-config-lint.test.ts` (no `'auto'`, `translate` false, `tdrzEnable` off) | New |
+| F05-REQ-010 to F05-REQ-015, F05-REQ-032, F05-REQ-037, F05-REQ-044 | `apps/mobile/test/transcription-queue.test.ts` (new cases for resume and record-and-type waits) | Exists |
+| F05-REQ-016 | `scripts/size/lib.test.ts`; IPA check in the release workflow | Test exists; workflow step new |
+| F05-REQ-017, F05-REQ-018 | `packages/core/test/lang.pack.test.ts`; `packages/api/test/pack-manifest.test.ts`; `packages/api/test/integrity.test.ts` | Exist |
+| F05-REQ-019 | `apps/mobile/test/models-catalog.test.ts` | Exists |
+| F05-REQ-020 to F05-REQ-025 | `apps/mobile/src/lib/packs/__tests__/engine.test.ts`; device S1-15 | Test exists; run not done |
+| F05-REQ-026 | Device S1-01, S1-02 (decode contract) | Not run |
+| F05-REQ-027, F05-REQ-028, F05-REQ-033, F05-REQ-034, F05-REQ-047 | `apps/mobile/test/transcribe-plan.test.ts`; `apps/mobile/test/transcribe-text.test.ts` | Exist |
+| F05-REQ-029, F05-REQ-030 | `packages/core/test/lang.languages.test.ts`; `apps/mobile/test/transcribe-text.test.ts` (new script-mismatch case) | Exist |
+| F05-REQ-031 | `packages/content/test/rules.test.ts` (new case) | File exists |
+| F05-REQ-035 | `supabase/tests/transcript_versions.test.mjs`; only if WP-F05-09 is in v1.0 (BL-144 deferred) | New |
+| F05-REQ-038 | E2E proxy capture of a transcription run (needs mitmproxy, 07 section 2.6) | New |
+| F05-REQ-039 | `supabase/functions/_shared/log/canary.test.ts` (functions); app log canary (BL-239) | First exists |
+| F05-REQ-040 | Device S1-17 per passed language, protocol in section 9 | Not run |
+| F05-REQ-041 | VoiceOver script V1; AX5 by device script until WP-F00-01 | Not run |
+| F05-REQ-042 | `apps/mobile/test/first-run-download.test.ts` | New |
+| F05-REQ-043 | `apps/mobile/test/transcription-queue.test.ts` (new `unreviewed` cases); F14-REQ-037 test (F14 owns it) | File exists; cases new |
+| F05-REQ-046 | `apps/mobile/src/lib/language/spoken-language.logic.test.ts` | Exists |
+| F05-REQ-048 | `apps/mobile/test/launch-no-model.test.ts` | New |
+| F05-REQ-049 | `apps/mobile/e2e/flows/E2E-03-speak-save-offline.yaml` with a model present | Flow exists |
+| F05-REQ-050 | `supabase/tests/access_matrix.test.mjs` | Exists |
+| F05-REQ-051 | `apps/mobile/src/components/capture/review-view.logic.test.ts` (new case) | File exists |
 
 ## 8. Data, privacy and security
 
@@ -418,6 +465,7 @@ Rules:
 | Idle energy | Zero background work from F05 | Yes | PRD 7.7 |
 | Lost or silently changed letters | Zero | Yes | 03 section 4.3 |
 | Accessibility | VoiceOver, AX5, Reduce Motion on every F05 state | Yes | LEGAL-REQ-051 |
+| Measurement protocol for speed and battery | Unplugged, fixed brightness, room temperature, nominal thermal state at start, 2-minute cool-down between runs; report p90 cold and p90 on the fifth back-to-back run; battery from Instruments Energy Log or MetricKit, not `batteryLevel` steps (R2 AR-30) | Applies to every Gate row above | R2 AR-30 |
 
 Shared budgets live in `06-nfr.md` (not yet written).
 
@@ -462,7 +510,8 @@ The author correction rate per language (03 section 4.3) cannot be sent without 
 | Gate status (if Q11 says build) | `apps/mobile/src/lib/language/gate.ts` (new); additive `PackEntry` field in `packages/api/src/pack-manifest.ts` | ADR 0016 amendment by the platform owner |
 | Gate tooling | `experiments/gate.ts` (new), `experiments/reports/` (git-ignored) | After the E8 fix |
 | Script mismatch flag for Hindi | `apps/mobile/src/lib/transcribe-post.ts` (exists) | F05-U19 |
-| Transcript versions data contract | local migration (next free version after F04 6 and F06 7), server migration | P1 UI; data contract only if time allows (BL-144 deferred) |
+| Transcript versions data contract | local migration (number assigned by the coordinator, R2 AR-37), server migration | P1 UI; data contract only if time allows (BL-144 deferred) |
+| Download at the languages step; the `unreviewed` transcript state | `apps/mobile/src/lib/models/speech-packs.ts` (request call), `apps/mobile/src/app/review.tsx` (seen signal), local migration | F05-REQ-042, F05-REQ-043 |
 
 Libraries in use (installed): whisper.rn 0.7.4 (bundles whisper.cpp 1.9.3), `@noble/ed25519` 3.2.0, `@noble/hashes` 2.4.0, `valibot` 1.5.0 (ADR 0015 Context, ADR 0016 section 4.2). Chinese data from OpenCC (Apache-2.0), pinyin-data (MIT) and Unihan travel inside the zh pack (ADR 0014 section 8).
 
@@ -472,11 +521,11 @@ No `transcription_jobs`, `speech_assets` or `transcript_versions` table exists o
 
 ### 11.4 Sequencing
 
-Dates follow ROADMAP 2.1.
-1. Week of 12 Oct: founder runs the key ceremony and picks the host (FT-16, BL-335, BL-337), then publishes the first signed manifest. Without it no model or non-English pack can install on a TestFlight phone.
-2. Week of 12 Oct: device spikes per language on SE 3, 12 and 15 (FT-22, BL-043; DEVICE_TEST_PLAN S1-15 to S1-18).
-3. Fri 23 Oct: per-language go or no-go (FT-34); counsel on training-data terms (Q12); upload Hindi small if cleared.
-4. Before freeze (Mon 26 Oct): WP-F05-02 scorer fix, WP-F05-10 Hindi script flag; WP-F05-05 only if Q11 says build.
+Order only; dates live in `08-delivery.md` section 2.1 (R1 PL-03, R2 AR-36).
+1. The founder runs the key ceremony and picks the host (FT-16, BL-335, BL-337), then publishes the first signed manifest. Without it no model or non-English pack can install on a TestFlight phone.
+2. Device spikes per language on SE 3, 12 and 15 (FT-22, BL-043; DEVICE_TEST_PLAN S1-15 to S1-18).
+3. Per-language go or no-go (FT-34); counsel on training-data terms (Q12); upload Hindi small if cleared.
+4. Before feature freeze: WP-F05-02 scorer fix, WP-F05-10 Hindi script flag, WP-F05-14 first-letter path; WP-F05-05 only if Q11 says build.
 5. After v1.0: transcript versions (WP-F05-09, -13), native-speaker sign-off per pack as data updates (ADR 0014 section 3).
 
 ### 11.5 Riskiest unknown and the spike
@@ -485,6 +534,8 @@ Dates follow ROADMAP 2.1.
 **Spike:** DEVICE_TEST_PLAN S1-17 (BL-043): each language x 30 s, 2 min, 5 min on SE 3, 12 and 15; seconds to words, peak memory, thermal state, battery over 10 runs; confirm `Device.totalMemory` sits above the 3.4e9-byte full-tier line. If turbo misses on SE 3: that phone tier uses small q5_1, or the language is held back (ROADMAP 2.1 section 6 cut table).
 
 ## 12. Work packages
+
+`08-delivery.md` section 3.3 governs file ownership: a path below owned by another stream is a request to that stream (R5 EQ-08).
 
 Status is what `develop` holds on 13 Oct 2026. "Device" names the DEVICE_TEST_PLAN item that must pass on a real iPhone; none has run.
 
@@ -502,6 +553,7 @@ Status is what `develop` holds on 13 Oct 2026. "Device" names the DEVICE_TEST_PL
 | WP-F05-10 | Script rules: zh script table, Hindi mismatch flag, Arabic direction in transcript views | `packs/text-rules/zh.json`, `apps/mobile/src/lib/transcribe-post.ts` | none | `[F05-REQ-029]`, `[F05-REQ-030]` | agent (speech engineer) | Partly built: zh script conversion built (ADR 0014 section 4); Hindi mismatch flag not built; Arabic direction unverified on device | Arabic RTL check (S1-18) |
 | WP-F05-11 | Per-language go or no-go and pack sign-off | `docs/qa/evidence/`, pack JSON review status | WP-F05-02, F06 open R-01 items, recordings | `[F05-REQ-002]` to `[F05-REQ-006]`, or the founder's FT-34 record | pair (speech engineer with a native reviewer; founder signs) | Not run; all six non-English packs `draft` | S1-17, S1-18 |
 | WP-F05-12 | Device budget run for shipping languages | `docs/qa/evidence/` | WP-F05-06, WP-F05-07 | `[F05-REQ-040]` numbers recorded (BL-044) | human (QA engineer) | Not run | S1-17 on SE 3, 12, 15 |
+| WP-F05-14 | Speech download at the languages step; the `unreviewed` transcript state; record-and-type letters wait without typing | `apps/mobile/src/lib/models/speech-packs.ts`, `apps/mobile/src/app/onboarding.tsx` (languages step hook, with S08 and the F03 owner), `apps/mobile/src/lib/transcription-queue/`, local migration (coordinator numbers it) | F03 WP-F03-03, F14 ledger change (M17) | `[F05-REQ-042]`, `[F05-REQ-043]`, `[F05-REQ-044]` | agent (mobile engineer, speech engineer) | Not built | First-run timing run on SE 3 (F03-REQ-008) |
 | WP-F05-13 | P1: compare and adopt a newer transcript | `apps/mobile/src/components/speech/compare.tsx` | WP-F05-09, F06 Review | `[F05-REQ-036]` | agent (mobile engineer) | Not built; v1.1 | none |
 
 ## 13. Open questions and assumptions
@@ -519,7 +571,10 @@ Status is what `develop` holds on 13 Oct 2026. "Device" names the DEVICE_TEST_PL
 | Q9 | Chinese quotation marks in letter text versus the curly-quote content rule (R5 4.3) | Founder, content owner | 30 Oct | zh punctuation profile |
 | Q10 | Recruiting and paying 70 native speakers and 7 reviewers (R-08) | Founder | 16 Oct | Gate timeline per wave |
 | Q11 | The in-app per-language gate (7.1, 7.2) needs a gate or pause field in the signed manifest, which ADR 0016's `PackEntry` does not have. Build it before v1.0, or keep the gate as a release decision (ROADMAP 2.1: a language that fails is held back and the listing names only shipping languages)? Spec default [R]: release decision for v1.0; the field is an additive manifest change for v1.0.x | Founder, platform owner | 16 Oct | F05-REQ-001, F05-U15, F05-U16, F03 labels |
-| Q12 | Training-data terms for the two models we built (Hindi small, Belle) before upload (ADR 0015 section 7) | Counsel, founder | 23 Oct | Whether Hindi ships on its own model |
+| Q12 | Training-data terms for the two models we built (Hindi small, Belle) before upload (ADR 0015 section 7) | Counsel, founder | Before FT-34 | Whether Hindi ships on its own model |
+| Q13 | A smaller "starter" model (whisper-small, 190 MB, about a third of turbo) for the first letters while turbo downloads? Spec default [R]: no. Raw transcripts are permanent (DATA-REQ-040), so a weaker first transcript stays weak; with M17 a waiting letter costs the parent nothing | Founder, speech engineer | Before WP-F05-14 | F05-REQ-042 |
+
+Answer dates above are when the answer is needed; if `08-delivery.md` section 2.1 moves a milestone, the answer date moves with it.
 
 | A | Assumption | How we validate |
 |---|---|---|

@@ -250,7 +250,7 @@ Permission: LEGAL-REQ-007 forbids the speech-recognition permission (TDD 03 3.1)
 | Prompt script | A simplified-Chinese prompt steers simplified output [F, R5-S30] | Chinese pack prompt opens with a simplified sentence; Hindi with a Devanagari one |
 | Logit or shallow-fusion biasing | Not exposed by whisper.rn (V-prior). Contextual biasing for Whisper needs an extra trained component (TCPGen) [F, R5-S50]. Plain zero-shot prompting is limited; a fine-tune on 670 h of English gave 45.6% better rare-word recognition [F, R5-S51] | No (needs training or runtime changes) |
 | Apple contextual strings | `AnalysisContext.contextualStrings` (iOS 26) [F, R5-S21]; DictationTranscriber documents it [F, R5-S20]; SpeechTranscriber support Unverified | v1.1 engine only |
-| Post-hoc phonetic correction | Today `soundsLike` in `packages/core/src/meaning.ts` uses English letter rules only [F, repo] | Yes, per-script tables in the pack, feeding `stt_fix` with the verifier bound from BL-064 |
+| Post-hoc phonetic correction | Today `soundsLike` in `packages/core/src/meaning.ts` uses English letter rules only [F, repo] | Yes, per-script tables in the pack, feeding `stt_fix` with the verifier bound from BL-120 (was TDD 03 BL-064; renumbered, note 13 Oct 2026, `reviews/R6-fact-check.md` check 1 row 2) |
 
 Per-script phonetic matching for `stt_fix` candidates (pack phonetic tables, brief B13):
 
@@ -433,7 +433,7 @@ A weak transcript is costly because `raw_transcript` is immutable once saved (CL
 |---|---|---|---|
 | K1 | Hindi fine-tunes too slow or too large for a 4 GB A15 (full large-v3 at 1.42 times real time [R5-S44]; uncompressed large not supported on A15 [R5-S43]) | High / High | Test medium first; device-gate Hindi; audio-first fallback |
 | K2 | Arabic dialect quality far below keepsake level | High / High | Founder options below |
-| K3 | Engine lets edits gender the child or flip mood in hi, ar, zh (E1 to E4) | Certain if packs ship unchanged / Critical | Fix before packs; BL-064 hardening |
+| K3 | Engine lets edits gender the child or flip mood in hi, ar, zh (E1 to E4) | Certain if packs ship unchanged / Critical | Fix before packs; BL-120 hardening (was TDD 03 BL-064, note 13 Oct 2026) |
 | K4 | Benchmarks are read speech; whispered bedtime letters, singing and baby noise untested in every language | Medium / High | Section 8.2 corpus |
 | K5 | QA load: seven packs, seven native reviewers, seven test corpora | Certain / Medium | Ship languages in waves as each passes |
 | K6 | Model egress and download time for 0.5 to 1.7 GB per author | Medium / Medium | Hugging Face pinned revision or zero-egress host (TDD 03 OQ-3) |

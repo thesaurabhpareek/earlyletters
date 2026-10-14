@@ -7,11 +7,11 @@
 | Personas | P1, P2, P3, P4, P6 |
 | Existing IDs | B-REQ-006, B-REQ-017, B-NFR-001, B-NFR-003, PRD-REQ-004, PRD-REQ-013, PRD-REQ-016, LEGAL-REQ-014, LEGAL-REQ-018, DATA-REQ-001, DATA-REQ-042, DATA-REQ-048, D-031, DR-01, R-01, R-08, R-14, BL-120, BL-136, BL-146, BL-148, BL-178, BL-305 |
 | Depends on | F03 (names and signature at first run), F05 (prompt rendering, packs, phonetic tables, model for the name check), F06 (verifier fix for R-01, Review screen, author edit layer), F11 (co-parent membership), F16 (sync), F17 (Settings shell), F15 (export of terms) |
-| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with ADR 0014 (phonetic keys, dictionary matching per script), engine version 5 and the R-01 re-run (F06 section 7.1) |
+| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with ADR 0014 (phonetic keys, dictionary matching per script), engine version 5 and the R-01 re-run (F06 section 7.1). Revised 14 Oct 2026 after critique round 1 (disposition in `reviews/DISPOSITION-C.md`) |
 
 ## 1. Why
 
-- [F] Names are where transcription fails first: Remento transcripts dropped proper nouns (CR S27, not re-checked in R1). `02-customers.md` U4 calls a misheard name the fastest way to lose trust.
+- [S] Remento transcripts dropped proper nouns (CR S27, not re-checked in R1). That a misheard name loses trust fastest is [A] (02 U4), to be checked in Study 1. `02-customers.md` U4 calls a misheard name the fastest way to lose trust.
 - [F] Only one product we found claims name handling: From, Mama advertises dictation with automatic name correction, mechanism Unverified [F] R1-S20. Remento's FAQ and Day One's audio guide show no vocabulary feature [F] R1-S13, R1-S53, R1-S60.
 - [F] Whisper can be steered toward the family's spellings by putting names in the initial prompt; only the final 224 prompt tokens count [F] R5-S49. whisper.rn biases only the first 30 s of each call, so F05 prompts every chunk (TDD 03 3.5.1, 3.5.3).
 - [F] Today the dictionary is two terms derived on the fly from the child's name and the signature (`dictionaryFor` in `apps/mobile/src/lib/store.ts`); there is no local table, no nickname, no family names, and no way to teach a mishearing (`heardAs` is always empty) (read 3 Oct).
@@ -75,7 +75,7 @@
 | Product | What it does | Does it work? (evidence) | What customers say | Our call |
 |---|---|---|---|---|
 | From, Mama | Dictation with automatic name correction [F] R1-S20 | 4.9 (48) [F] R1-S20; mechanism Unverified | n/a | **Innovate**: names seeded at first run, a form per script, every fix shown and undoable |
-| Remento | No name or vocabulary feature on its FAQ or how-it-works pages [F] R1-S13, R1-S53 | 4.8 (1,738) [F] R1-S15 | Proper nouns dropped (CR S27, not re-checked) | **Innovate**: fill the gap |
+| Remento | No name or vocabulary feature on its FAQ or how-it-works pages [F] R1-S13, R1-S53 | Trustpilot 4.8 (1,738), not an App Store rating; web link, no app [F] R1-S15 | Proper nouns dropped (CR S27, not re-checked) | **Innovate**: fill the gap |
 | Day One | No vocabulary feature on its audio guide [F] R1-S60 | n/a | n/a | Gap |
 | Apple Speech framework | Docs group `AnalysisContext`, `SFSpeechLanguageModel` and `SFCustomLanguageModelData` under custom vocabulary [F] R1-S72; one developer thread says contextual strings work with DictationTranscriber, not SpeechTranscriber [S] R1-S74 | Not confirmed by Apple in the thread read | n/a | **Match later** behind F05's engine interface; our own post-hoc fix stays needed whatever the engine (R1 F07, Inferred) |
 
@@ -88,7 +88,7 @@
 | First run final transaction (F03 step 5) | `child`, `nickname` (if given) and `self` terms written with the children (F03-REQ-002) | n/a |
 | Review: tap an underlined name fix | Edit card with Put it back (F06) and the label `review.edits.misheardName.label`, `.explain` | Exists |
 | Review: select a word, Add to your words | Add-term sheet prefilled with the selected text as "what we heard" | `review.addWordToDictionary` (exists), sheet strings new |
-| Settings > {child}'s book > Names and words | The list for that child, with Add | `settings.dictionaryLabel`, `settings.dictionaryHelp` (exist) |
+| Settings > {child}'s book > Names and words | The list for that child, with Add | `settings.dictionaryLabel` (exists); `settings.dictionaryHelp` (new on 14 Oct: not in content on `develop`; proposed "How you spell the names and words in your letters. Every fix that uses them is marked.") |
 | Tonight card after the model is ready (P1) | Say the name three times | `onboarding.nameCheck.*` (exist) |
 | Co-parent joins a book (F11) | Shared child-level terms arrive read-only with the book | n/a |
 
@@ -153,7 +153,16 @@ Name suggestions (P1): when a word in the transcript has the same `phoneticKey` 
 | F07-U26 | AX5 on SE 3 | Forms stack; nothing truncates (D-027 for names) | Full text | n/a | Component test |
 | F07-U27 | Double tap on Save | One transaction | One term | n/a | Unit |
 
+### 6.6 Screen states
+
+| Screen | Empty | Loading | Error | Offline | AX5 (SE 3) | VoiceOver |
+|---|---|---|---|---|---|---|
+| Settings > Names and words | `EmptyState` (COMPONENTS 2.15): the child's name and signature are always there from first run, so the list is never fully empty; with only those, body `settings.dictionaryHelp` (new, 6.1) and Add | n/a | Save refused (a heard-as equal to another term): the collision line under the field (F07-REQ-012), field keeps the text | Add, edit and delete work offline; shared terms sync later | Each row: term, kind and script on separate lines | Row reads term, kind, script and shared state (F07-REQ-020) |
+| Add-term sheet (from Review) | "We heard" prefilled, "Spell it your way" empty, kind chips none selected | n/a | As above; a rejected fix still saves the term and says so (F07-REQ-006) | Identical | Fields stack; chips wrap | Sheet title focused first |
+
 ## 7. Requirements and acceptance criteria
+
+F07 is the home of B-REQ-006 (R5 EQ-05); F03 and F05 cite it with their own slice IDs.
 
 ### 7.1 Terms in more than one script
 
@@ -216,6 +225,18 @@ Rules (all in `packages/core`, each with a test titled after the constitution ru
 | F07-REQ-020 | P0 | Accessibility | Given VoiceOver, Then each row reads term, kind, script and shared state; Given AX5 on SE 3, Then forms stack without truncation | LEGAL-REQ-051 |
 | B-REQ-017 Rev | P1 | Say the name three times, per language, after the model is ready | Given transcripts that differ from the form in clips 2 and 3, Then those spellings are stored as heard-as values after the 7.2 checks, and no clip file remains in the sandbox after completion, cancel or a kill plus relaunch; Given the language not passed, Then the card does not appear | B-REQ-017; LEGAL-REQ-018; TDD 03 3.9 |
 | F07-REQ-021 | P1 | Offered name suggestions from phonetic keys | Given a word with the same `phoneticKey` as a term in a pack whose `phonetic` table is `native-reviewed` (or English), Then Review offers it; Accept adds a heard-as through the 7.2 checks and re-runs cleaning; nothing applies without the tap | R5 section 3; BL-146 |
+
+### 7.5 Test map (P0)
+
+| ID | Test file or run | Exists? |
+|---|---|---|
+| B-REQ-006 Rev, F07-REQ-001, F07-REQ-002, F07-REQ-008, F07-REQ-017 | `apps/mobile/test/dictionary-store.test.ts`; `packages/core/test/dictionary.test.ts` | New |
+| F07-REQ-003 | `apps/mobile/test/transcribe-plan.test.ts` (prompt contents per script) | Exists; case new |
+| F07-REQ-004, F07-REQ-009 to F07-REQ-014 | `packages/core/test/dictionary.test.ts`, `packages/core/test/dictionary.fuzz.test.ts`; R-01 cases in `packages/core/test/regression/` | New |
+| F07-REQ-005, F07-REQ-006 | `apps/mobile/test/add-term.test.ts` | New |
+| F07-REQ-007, F07-REQ-020 | `apps/mobile/test/names-and-words.test.ts`; VoiceOver script V1; AX5 by device script until WP-F00-01 | New |
+| F07-REQ-015, F07-REQ-016, F07-REQ-018 | `supabase/tests/dictionary_scope.test.mjs` (server part); `apps/mobile/test/dictionary-store.test.ts` (local part) | New |
+| F07-REQ-019 | App log canary (BL-239); `packages/analytics/test/domain.test.ts` | Second exists |
 
 ## 8. Data, privacy and security
 
@@ -306,8 +327,8 @@ Server (new migration, data architect, `approve-migration`): add `forms jsonb no
 | Verifier | `packages/core/src/verify.ts` `checkSttFix` | Rule 2 before the shortcut |
 | Save-time checks and merge | `packages/core/src/dictionary.ts` | Rules 5, 7 |
 | Prompt rendering | `packages/core/src/asr-prompt.ts` (F05 WP-F05-06) | Reads `LetterDictionary` |
-| Local table and store functions | `apps/mobile/src/lib/db/migrations.ts` next version; `apps/mobile/src/lib/dictionary-store.ts` (new) | `addTerm`, `updateTerm`, `deleteTerm`, `dictionaryForLetter` |
-| Review sheet | `apps/mobile/src/components/dictionary/add-term-sheet.tsx` (new), copy in `apps/mobile/src/components/dictionary/copy.ts` | @gorhom/bottom-sheet (B16) |
+| Local table and store functions | `apps/mobile/src/lib/db/migrations.ts`, next version as the coordinator assigns it (R2 AR-37); `apps/mobile/src/lib/dictionary-store.ts` (new) | `addTerm`, `updateTerm`, `deleteTerm`, `dictionaryForLetter` |
+| Review sheet | `apps/mobile/src/components/dictionary/add-term-sheet.tsx` (new), copy in `packages/content/src/features/dictionary.en.ts` (new; R5 EQ-29) | @gorhom/bottom-sheet (B16) |
 | Settings list | `apps/mobile/src/app/settings/children/` names-and-words screen (new file) | F17 owns the list entry |
 | Name check (P1) | `apps/mobile/src/components/dictionary/name-check.tsx` (new) | F05 queue gives one short job; clips in tmp |
 | Common-word lists | `TextRulesPack` field `commonWords` (ADR 0014 amendment) | Source: a permissively licensed frequency list per language, chosen in WP-F07-02 with native review (R-08); none chosen yet |
@@ -323,16 +344,16 @@ Server (new migration, data architect, `approve-migration`): add `forms jsonb no
 
 ## 12. Work packages
 
-Status is what `develop` holds on 13 Oct 2026. With feature freeze on Mon 26 Oct (ROADMAP 2.1), the v1.0 floor is WP-F07-01 (the constitution: no dictionary fix may change another word or swap names); WP-F07-03 to -06 (a stored, editable dictionary) are recommended for v1.0.x or v1.2 with CVL-03 [R], founder to confirm (Q7).
+Status is what `develop` holds on 13 Oct 2026. The v1.0 floor is WP-F07-01 (the constitution: no dictionary fix may change another word or swap names). WP-F07-03 to -06 (a stored, editable dictionary) follow the founder's Q7 answer; with sync in v1.0 (M14) and the date moved (M15), WP-F07-04's server columns land in v1.0 either way so a later client change needs no migration (R5 EQ-07; R2 AR-31). `08-delivery.md` section 3.3 governs file ownership; WP-F07-04 is proposed for S02 (R5 EQ-07).
 
 | WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode | Status 13 Oct | Device |
 |---|---|---|---|---|---|---|---|
 | WP-F07-01 | R-01 dictionary rules 1 to 7 in core, property suite, `ENGINE_VERSION` bump | `packages/core/src/protect.ts`, `verify.ts` (`checkSttFix` only), `pipeline.ts` (dictionary verification step only), `dictionary.ts` (new), `packages/core/test/dictionary.test.ts` (new), `packages/core/test/dictionary.fuzz.test.ts` (new) | BL-120 fixtures D1 to D3 | `[F07-REQ-009]`, `[F07-REQ-010]`, `[F07-REQ-011]`, `[F07-REQ-012]`, `[F07-REQ-013]`, `[F07-REQ-016]`; engine suite still green | agent (speech engineer, core owner) | Partly built: Devanagari boundaries done (engine 5). Not built: everyday-word guard (D1), other-term guard (D3), save-time checks, property suite | Hermes fixture run with WP-F06-01 |
 | WP-F07-02 | `commonWords` lists per language with native review | F05 pack JSON `commonWords` field, `docs/qa/evidence/F07-common-words-<lang>.md` (new) | F05 WP-F05-03 | Licence recorded; reviewer sign-off; size under 50 KB per pack [A] | pair (speech engineer, native reviewer) | Not built; needs the ADR 0014 amendment for `commonWords` | none |
-| WP-F07-03 | Type change, local table, store functions, remove `dictionaryFor` | `packages/core/src/types.ts`, `apps/mobile/src/lib/db/migrations.ts` (dictionary part), `apps/mobile/src/lib/dictionary-store.ts` (new), callers in `review.tsx` and `apps/mobile/src/dev/asha-seed.ts` | BL-111, WP-F07-01 | `[F07-REQ-001]`, `[F07-REQ-002]`, `[F07-REQ-008]`, `[F07-REQ-017]`, `[B-REQ-006]` local part | agent (mobile engineer) | Not built: `dictionaryFor` derives the child's name and signature only; no local table | none |
+| WP-F07-03 | Type change, local table, store functions, remove `dictionaryFor` | `packages/core/src/types.ts`, `apps/mobile/src/lib/db/migrations.ts` (dictionary part), `apps/mobile/src/lib/dictionary-store.ts` (new), callers in `review.tsx` and `apps/mobile/src/dev/asha-seed.ts` | BL-111, WP-F07-01 | `[F07-REQ-001]`, `[F07-REQ-002]`, `[F07-REQ-008]`, `[F07-REQ-017]`, `[B-REQ-006]` local part (F07 is its home) | agent (mobile engineer) | Not built: `dictionaryFor` derives the child's name and signature only; no local table | none |
 | WP-F07-04 | Server migration: forms, unique key, shared read, leave deletion | `supabase/migrations/<range>_dictionary_scope.sql`, `supabase/tests/` | BL-178, BL-175 | `[F07-REQ-015]`, `[F07-REQ-018]` server part in `npm run test:db` | agent, `approve-migration` (data architect) | Not built; server `dictionary_terms` table exists (`20260930000000_scribe_core.sql`) but is unused until sync ships; needed for v1.0 (M14) | none |
 | WP-F07-05 | Add-term sheet from Review, one transaction with the draft | `apps/mobile/src/components/dictionary/` | WP-F07-03, F06 Review | `[F07-REQ-005]`, `[F07-REQ-006]`, `[F07-REQ-004]` | agent (mobile engineer) | Not built (`review.addWordToDictionary` copy exists, not wired) | none |
-| WP-F07-06 | Settings > Names and words | names-and-words screen under `apps/mobile/src/app/settings/children/` (new) | WP-F07-03 | `[F07-REQ-007]`, `[F07-REQ-020]` component tests at AX5 | agent (mobile engineer, design systems) | Not built | VoiceOver and AX5 (S1-23) |
+| WP-F07-06 | Settings > Names and words | names-and-words screen under `apps/mobile/src/app/settings/children/` (new) | WP-F07-03 | `[F07-REQ-007]`, `[F07-REQ-020]`; AX5 by device script until the render harness WP-F00-01 merges (R5 EQ-04) | agent (mobile engineer, design systems) | Not built | VoiceOver and AX5 (S1-23) |
 | WP-F07-07 | P1: say the name three times | `apps/mobile/src/components/dictionary/name-check.tsx` (new) | F05 WP-F05-07, counsel on TDD 03 C-5 | `[B-REQ-017]` sandbox test after complete, cancel and kill | agent (speech engineer) | Not built; P1, recommended v1.1 | SE 3 |
 | WP-F07-08 | P1: offered Latin name suggestions | `packages/core/src/dictionary.ts` suggestion function, F06 suggestions UX | WP-F07-01, BL-146 | `[F07-REQ-021]` | agent (speech engineer) | Partly built: `soundAlikeTerms` exists in core; no Review UI | none |
 

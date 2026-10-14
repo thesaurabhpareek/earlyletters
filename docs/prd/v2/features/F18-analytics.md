@@ -7,7 +7,7 @@
 | Personas | P1, P2 (as people who choose to share or not); the founder and agents as readers |
 | Existing IDs | PRD-REQ-001, PRD-REQ-016, PRD-REQ-017, PRD-REQ-018, C-REQ-034, C-NFR-005, C-NFR-009, B-NFR-001, A-NFR-002, A-NFR-012, LEGAL-REQ-003, LEGAL-REQ-012, LEGAL-REQ-014, LEGAL-REQ-015, LEGAL-REQ-016, LEGAL-REQ-017, LEGAL-REQ-029, LEGAL-REQ-031, LEGAL-REQ-033, LEGAL-REQ-043, DATA-REQ-004, DATA-REQ-033, DATA-REQ-062, K-01, D-003, D-070, D-080, D-081, ADR 0008, BL-020, BL-021, BL-023, BL-024, BL-235, BL-239, BL-250, BL-251, BL-252, BL-319 |
 | Depends on | F17 (Privacy switch, account deletion hook), F02 (ask sequencer, queued consent acts), F14 (on-device purchase events; App Store Connect as purchase source), F16 (sync health counts), F19 (signed config; no analytics keys by design), every feature that fires events (their section 10) |
-| Status | Draft V2, 13 Oct 2026. Code checked on `docs/prd-v2` rebased on `origin/develop` at 6482cd3 |
+| Status | Draft V2, 13 Oct 2026. Code checked on `docs/prd-v2` rebased on `origin/develop` at 6482cd3. Revised 14 Oct 2026 after critique round 1: an App Store Connect business number that needs no consent, letters made versus kept, M17, renamed duplicate IDs (disposition in `reviews/DISPOSITION-C.md`) |
 
 > **Not legal advice.** Items marked **[Counsel]** wait on a licensed attorney.
 
@@ -48,6 +48,7 @@
 | Weekly findings page delivered | 1 per week from beta C1 | A new `docs/insights/YYYY-MM-DD.md` committed by the coordinator | n/a |
 | Proposals accepted into the backlog | Watch only | Count of proposals copied into `docs/BACKLOG.md` | n/a |
 | Events per active consenting user per month | 190 or fewer (TRACKING_PLAN 5.1 estimate) | PostHog monthly total / consenting MAU | Consenting only |
+| Paying families per first-time download, by install week (the business number, R1 PL-17) | 5% by week 8 [A] (03 section 4.4) | ASC only: paid subscriptions started by install-week cohort over first-time downloads that week, typed into the weekly report by the founder (F18-REQ-025) | None: Apple's own data, no consent needed |
 
 ## 4. Scope
 
@@ -89,8 +90,8 @@
 | The Days We Keep | Label: no tracking; contact and content not linked [F] R1-S35 | n/a | n/a | Neutral |
 | Rosebud, FirstChapter, Notabli | No tracking; usage or identifiers linked [F] R1-S33, R1-S4, R1-S7 | n/a | n/a | Neutral. Our label may also say Linked (Q-005, counsel default); linked is not tracking |
 | Qeepsake | Declares Usage Data used to track [F] R1-S1 | 4.9 | n/a | **Avoid** [R] |
-| Day One, Tinybeans, 23snaps, Calm and others | Declare "Data Used to Track You" [F] R1 section 0 item 9 | n/a | Privacy is the top reason to choose (36% of positive baby-app reviews) [S] R2 section 0 item 2 | **Avoid**; an empty tracking section is our proof [R] |
-| Calm | Published habit data from its own analytics: 40% set a reminder when asked after the first session; those users retained 3x better [F] R1-S57 | Published result | n/a | **Match** the practice of measuring ask timing (DR-12), with opt-in data only [R] |
+| Day One, Tinybeans, 23snaps, Calm and others | Declare "Data Used to Track You" [F] R1 section 0 item 9 | n/a | 29 of 80 positive reviews (36%) name privacy, coded from short paraphrases of reviews Apple chose to show, so directional only [S] R2 section 0 item 2, 1.2 (R3 DX-28) | **Avoid**; an empty tracking section is our proof [R] |
+| Calm | An analytics vendor's case study reports that 40% set a reminder when asked after the first session and that those users retained 3x better; the causal reading is the vendor's [S] R1-S57 (R3 DX-32) | Vendor marketing, not a study | n/a | **Match** the practice of measuring ask timing (DR-12), with opt-in data only [R] |
 
 ## 6. Experience
 
@@ -173,7 +174,7 @@ Sources: **S** server aggregate **[server]**, **D** device analytics (consenting
 |---|---|---|---|
 | North star WKF | Families with 1 or more letters (not a quiet-day mark, not deleted, in a live book) in the ISO week | S `insights.weekly_keeping_families` | Not measurable. Proxy: D weekly people with `letter_saved` (consenting only; never presented as WKF) |
 | Activation: median time to first letter | Median bucket of `time_to_first_letter` on `analytics_opted_in` (buckets `lt_90s` to `gt_24h`) | D | Same |
-| Activation: share of installs passing 18+ and saving a letter in 24 h | ASC first-time downloads in a week as denominator; numerator not measurable without first-run events (TRACKING_PLAN 2) | ASC + D summary | Partial: D numerator from `analytics_opted_in.time_to_first_letter` among consenters only |
+| Activation: share of installs passing 18+ and saving a letter in 24 h | Lab and C1 observation only at v1.0; no field target (R1 PL-16). Field proxy, labelled as such: accounts created over ASC first-time downloads, by week | Lab; S + ASC for the proxy | Proxy only |
 | Keep the book: account by day 7 | First-letter users with an account by day 7 | S `first_letter_conversion` | Not applicable (no accounts) |
 | Habit: letters on 2 or more days within 14 days | Distinct days with `letter_saved` per id in 14 days from the first | S `retention_cohorts` (weeks, not days); D for days | D only |
 | Two voices by day 30 | Books with a second author | S `letters_per_active_family.families_two_plus_voices` | Not applicable (no co-parent) |
@@ -181,6 +182,8 @@ Sources: **S** server aggregate **[server]**, **D** device analytics (consenting
 | Reminders | `letter_saved{from_notification_2h: true}` / `notification_opened{type: letter_reminder}` | D | Same |
 | Read together | Ids with `read_together_started` / ids with `app_opened` in the month | D | Same |
 | Plus | Trial starts, trial to paid, annual share, refunds | ASC subscription reports | Same |
+| Business number | Paying families per first-time download by install week (section 3) | ASC only | Same |
+| Letters made versus letters kept (R1 PL-15) | Made: every saved or held letter, including those held at the Keep step and voice-only letters waiting for words. Kept: letters that went past the Keep step. Habit metrics use made; WKF stays kept. Free letters count only kept letters with words seen or typed (M17), which is F14's ledger, not an analytics number | D `letter_saved` plus F14's held event (name owned by F14, request) | D only |
 | Guardrail: lost content | Support tickets tagged lost content (F20) | Support log | Same |
 | Guardrail: crash-free sessions | ASC and Xcode Organizer crash rate | ASC | Same |
 | Guardrail: machine edit revert rate | `machine_edit_reverted` / sum of `letter_saved.machine_edit_count` | D | Same |
@@ -202,20 +205,29 @@ Sources: **S** server aggregate **[server]**, **D** device analytics (consenting
 | Proposal folder | `docs/backlog/proposals/` | Does not exist yet; created by the first run |
 | Security review L12 (nested `k_part` subtraction) | `docs/reviews/2026-10-04-security-privacy.md` | Open |
 
+### 6.7 Screen states
+
+| Screen | Empty | Loading | Error | Offline | AX5 (SE 3) | VoiceOver |
+|---|---|---|---|---|---|---|
+| Consent sheet (`analyticsConsent.*`, exists) | n/a | n/a | The consent recorder fails offline: the choice applies on the phone at once and the record uploads later (F18-REQ-004) | Identical | Buttons stack, equal weight; text scrolls | Title, body, detail, Share usage, Don't share |
+| Settings > Privacy, Share usage switch | Hidden in a build with no PostHog key (F18-REQ-003) | n/a | n/a | Identical | Label and help wrap | Switch reads label, state and help |
+
 ## 7. Requirements and acceptance criteria
+
+Renamed on 14 Oct 2026 (R5 EQ-05): F18-REQ-027 and F18-REQ-028 replace rows that restated PRD-REQ-001 (home F02) and LEGAL-REQ-014 (home F17). F18 stays the home of LEGAL-REQ-003, PRD-REQ-016, -017, -018 and C-NFR-005.
 
 Status: **Built** (file), **Partly built**, or **Not built**, checked in code on 13 Oct. **[server]** needs our server and is v1.0 (M14); built code behind the switch is "Built, switch off in release profiles" until the profiles flip.
 
 | ID | P | Requirement | Acceptance criteria | Status | Source |
 |---|---|---|---|---|---|
 | LEGAL-REQ-003 | P0 | Analytics and crash reports are opt-in; declining changes nothing; withdrawal is immediate | Given a fresh install through record, save and read of a first letter, Then a network capture shows 0 requests to PostHog or Sentry hosts. Given decline, When every feature is used for a week (QA matrix), Then 0 analytics requests and 0 feature differences | Partly built: PostHog gating built (`apps/mobile/src/lib/analytics/index.ts`); Sentry absent; the network-capture E2E is blocked (BL-239, BL-275) | CR-082 |
-| PRD-REQ-001 | P0 | One ask per session; analytics is the third ask, after the first letter, never stacked, never during recording, review or export | Given the sequencer facts, Then the sheet is due only in a later session than the first letter, only on a tab root, at most once per session and at most 2 offers in total | Built (`apps/mobile/src/lib/analytics/ask-sequencer.logic.ts`, `components/consent/consent-ask.tsx`, `packages/analytics/src/consent-timing.ts`) | K-01, K-02 |
+| F18-REQ-027 | P0 | Analytics consent follows the ask order (analytics slice of PRD-REQ-001; home F02, which defines a session and the order): analytics is the third ask, after the first letter, never stacked, never during recording, review or export | Given the sequencer facts, Then the sheet is due only in a later session than the first letter, only on a tab root, at most once per session and at most 2 offers in total | Built (`apps/mobile/src/lib/analytics/ask-sequencer.logic.ts`, `components/consent/consent-ask.tsx`, `packages/analytics/src/consent-timing.ts`) | K-01, K-02 |
 | PRD-REQ-016 | P0 | One typed, content-free catalogue for the whole product | Given `catalog.ts`, Then TRACKING_PLAN 3.1 regenerates with no diff and the schema fingerprint test passes | Built (`packages/analytics/src/catalog.ts`, `test/catalog.test.ts`, `test/schema-version.test.ts`) | K-01 |
 | PRD-REQ-017 Rev (B2, M6) | P0 | Server aggregates count families, books, letters, invites and retention, with no purchase data and no cell from 1 to 9 **[server]** | Given the fixture database, Then every published count is 0 or 10 or more, and no view reads any subscription or status table | Built, not applied (`supabase/migrations/20261004300000_insights_aggregates.sql`, `supabase/tests/insights_aggregates.test.mjs`); L12 open | B2, D-080 |
 | PRD-REQ-018 | P0 | Off stops sending within the session; deletion asks PostHog to delete the ids' events **[server]** for the deletion half | Given consent then the switch off, When 10 events are tracked, Then 0 reach the provider and the queue length is 0. Given a deletion request, Then `analytics-forget` receives every current and retired id before `forgetIds()` | Built (`packages/analytics/src/client.ts` revoke; `apps/mobile/src/lib/account-deletion/use-account-deletion.ts`) | K-01 |
 | LEGAL-REQ-017 | P0 | Allowlist enforced in our client and again in `before_send`; replay, screen capture and touches off; `defaultOptIn` false | Given an unknown property, Then it is dropped and a dev build throws. Given the options object, Then the values in `REQUIRED_POSTHOG_OPTIONS` hold and `FORBIDDEN_POSTHOG_OPTIONS` are absent | Built (`packages/analytics/src/validate.ts`, `posthog.ts`, `test/posthog.test.ts`) | ADR 0008 |
 | LEGAL-REQ-012 | P0 | SDK device fields limited to app version, build, OS name, OS version and device type | Given a captured payload, Then `$device_name`, `$locale`, `$timezone`, `$set` and `$set_once` are absent | Built (`keepAllowedAppProperties`, `posthogBeforeSend`) | CR-088 |
-| LEGAL-REQ-014 | P0 | No content in analytics, crash reports or function logs | Given the E2E suite at debug level, Then 0 fixture strings in payloads or logs | Partly built: function log canary (`supabase/functions/_shared/log/canary.test.ts`); app payload capture blocked (BL-239) | CR-010 |
+| F18-REQ-028 | P0 | No content in analytics, crash reports or function logs (analytics slice of LEGAL-REQ-014; home F17) | Given the E2E suite at debug level, Then 0 fixture strings in payloads or logs | Partly built: function log canary (`supabase/functions/_shared/log/canary.test.ts`); app payload capture blocked (BL-239) | CR-010 |
 | LEGAL-REQ-015 | P0 | No safety tier in any event | Given the catalogue, Then no event or property names a tier | Built (no such event in `catalog.ts`) | CR-031 |
 | LEGAL-REQ-016 | P0 | No ad, attribution or tracking SDK; no AdSupport or ATT import | Given CI, Then a dependency denylist fails on the listed SDKs and imports | Not built (no denylist check found) | CR-014 |
 | LEGAL-REQ-043 | P0 | The privacy manifest's collected data types match what the build sends | Given a build with a PostHog key, Then `NSPrivacyCollectedDataTypes` lists the label's analytics types; given a build without, Then it may stay empty | Partly built: manifest present with `NSPrivacyCollectedDataTypes: []` (`apps/mobile/app.config.ts`) | CR-088 |
@@ -232,7 +244,7 @@ Status: **Built** (file), **Partly built**, or **Not built**, checked in code on
 | F18-REQ-008 | P0 | Per-id daily cap | Given 250 events tracked for one id on one local day, Then 200 reach the queue, `analytics_opted_in` and `account_deletion` are never capped, and `violationCounts().daily_cap` is 50 | Not built | PRD 7.7 |
 | F18-REQ-009 | P0 | Transport caps | Given 1.1 MB of events offline, Then the oldest drop first and the queue stays at or under 1 MB; flush at most every 60 s and on background | Built (`client.ts`, `lifecycle.ts`) | PRD 7.7 |
 | F18-REQ-010 | P0 | Sampling rates are fixed in the build, never from remote config | Given `packages/api/src/remote-config.ts`, Then no key matches `analytic`, `sampl`, `consent` or `track` (new test); rates live only in `apps/mobile/src/lib/analytics/index.ts` | Built in fact (contract has no such key; `sampleRates: {}`); the guard test is not built | B14, ADR 0016 5.3 |
-| F18-REQ-011 | P0 | PostHog project settings checked before each submission | Given the release checklist, Then the 6 items in `REQUIRED_PROJECT_SETTINGS` (discard IP, replay off, autocapture off, retention 12 months or less, US region, read-only insights key) are ticked with a screenshot in the release evidence | Partly built: list in `packages/analytics/src/posthog.ts`; no checklist step | LEGAL-REQ-012, Q26 |
+| F18-REQ-011 | P0 | PostHog project settings checked before each submission | Given the release checklist, Then the 6 items in `REQUIRED_PROJECT_SETTINGS` (discard IP, replay off, autocapture off, retention 12 months or less, US region, read-only insights key) are ticked with a screenshot in the release evidence. Retention: 90 days recommended [R] (R4 PT-28), counsel decides with Q26 | Partly built: list in `packages/analytics/src/posthog.ts`; no checklist step | LEGAL-REQ-012, Q26 |
 | F18-REQ-012 | P0 | Every catalogue event has an emitter or is removed before submission | Given a script that greps call sites, Then 0 events without an emitter, except those tagged `server_only_build` (family and merge events) | Partly built: 13 events have no emitter (section 10) | PRD-REQ-016 |
 | F18-REQ-013 | P0 | Device numbers are always labelled and never divided by server totals | Given the rendered report, Then every device metric carries "device" and no ratio mixes sources | Built (engine honesty rules, INSIGHTS_LOOP 3) | TRACKING_PLAN 1.4 |
 | F18-REQ-014 | P0 | The weekly report computes the 6.5 definitions it can, and states "not measurable in this build" for the rest | Given a server-off week, Then S rows read unknown, not zero | Partly built: engine treats suppressed cells as unknown; a server-off state is not modelled | 03 section 4 |
@@ -240,7 +252,7 @@ Status: **Built** (file), **Partly built**, or **Not built**, checked in code on
 | F18-REQ-016 | P0 | The M6 status table is never joined to analytics and never read by the insights loop without counsel approval **[server]** | Given `insights_reader`, Then it has no grant on the status table; given the engine sources, Then none reads it | Not built (the status table and its endpoint do not exist; no migration on develop) | D-080, Q5 |
 | F18-REQ-017 | P0 | `analytics-forget` is stateless: up to 21 ids, 5 calls per person per day, nothing stored or logged but counts **[server]** | Given a call, Then PostHog bulk delete is called once and no id appears in Postgres or logs | Built (`supabase/functions/analytics-forget/handler.ts`, `handler.test.ts`) | TDD 05 X-02, BL-235 |
 | F18-REQ-018 | P0 | The deletion request sends ids before the account call and calls `forgetIds()` only after a 202 **[server]** | Given a fake function returning 202, Then ids are forgotten; returning 500, Then ids stay | Built (`use-account-deletion.ts`, `account-deletion/api.ts`) | PRD-REQ-018 |
-| F18-REQ-019 | P0 | A failed forget is retried on each launch until a 202 **[server]** | Given a 500 at request time, When the app launches 3 times with the third succeeding, Then 3 attempts and the ids are forgotten after the third | Partly built: `retryForget` runs only when the Delete account screen refreshes | F17-U27 |
+| F18-REQ-019 | P0 | A failed forget is retried on each launch until a 202 **[server]** | Given a 500 at request time, When the app launches 3 times with the third succeeding, Then 3 attempts and the ids are forgotten after the third. Given the account deletion executes before any 202, Then the phone keeps the retired ids through its wipe and keeps retrying, and the deletion receipt marks the PostHog step `unconfirmed` (request to F17) (R4 PT-28) | Partly built: `retryForget` runs only when the Delete account screen refreshes | F17-U27 |
 | F18-REQ-020 | P0 | Under-18 at sign-in stops analytics at once and sends nothing about the answer **[server]** | Given consent then an under-18 answer, Then revoke runs and no event names the answer | Built (`observers.ts` `onUnder18`) | LEGAL-REQ-002 |
 | F18-REQ-021 | P1 | A person without an account can ask for their usage data to be deleted **[Counsel]** | Given consent history on a phone with no account, When the person taps "Delete shared usage data" in Settings > Privacy, Then current and retired ids reach a forget endpoint and `forgetIds()` runs on 202 | Not built (Q3) | CCPA deletion right, Q26 |
 | F18-REQ-022 | P0 | The weekly run is content-free and k-anonymised three times (SQL, HogQL, engine) | Given a synthetic run with a planted email and a planted 7-person cell, Then the report is refused or shows unknown | Built (`packages/analytics/src/insights/`, `test/insights.test.ts`) | INSIGHTS_LOOP 5 |
@@ -248,6 +260,27 @@ Status: **Built** (file), **Partly built**, or **Not built**, checked in code on
 | F18-REQ-024 | P0 | The insights agent writes the report and at most 3 proposals to the working tree only; it never commits, pushes or opens a pull request | Given INSIGHTS_LOOP 6, Then step 7 is replaced by "report the file paths; the coordinator commits"; the scheduler token has no write scope | Partly built: prompt step 7 opens a draft pull request, contrary to D-070 | D-070 |
 | F18-REQ-025 | P0 | Purchase numbers come only from ASC exports, typed into the report by the founder or coordinator, labelled "ASC" | Given a report, Then every money number names ASC and the export month | Not built | B2, 03 section 4 |
 | F18-REQ-026 | P0 | The crash-free release gate reads ASC and Xcode Organizer, never only consenting users | Given the C1 exit review, Then the crash-free figure cites ASC | Partly built: `docs/qa/DEVICE_TEST_PLAN.md` TF-09 says so; no evidence file yet | D-003 |
+
+### 7.1 Test map (P0)
+
+| ID | Test file or run | Exists? |
+|---|---|---|
+| LEGAL-REQ-003, F18-REQ-001 | Network capture E2E (BL-239, blocked by BL-275); container scan (BL-252); `packages/analytics/test/analytics.test.ts` | Unit exists; E2E and scan new |
+| F18-REQ-027 | `apps/mobile/src/lib/analytics/ask-sequencer.logic.test.ts`; `packages/analytics/test/helpers.test.ts` | Exist |
+| PRD-REQ-016, LEGAL-REQ-015, B-NFR-001, C-NFR-005, C-REQ-034 | `packages/analytics/test/catalog.test.ts`, `schema-version.test.ts`, `domain.test.ts` | Exist |
+| PRD-REQ-017 Rev, F18-REQ-015, F18-REQ-016 | `supabase/tests/insights_aggregates.test.mjs` (new cases for L12 and the status-table grant) | Exists |
+| PRD-REQ-018, F18-REQ-002, F18-REQ-009 | `packages/analytics/test/analytics.test.ts`; `apps/mobile/src/lib/account-deletion/account-deletion.test.ts` | Exist |
+| LEGAL-REQ-017, LEGAL-REQ-012, F18-REQ-011 (options half) | `packages/analytics/test/posthog.test.ts` | Exists |
+| F18-REQ-028 | `supabase/functions/_shared/log/canary.test.ts`; app payload capture (BL-239) | First exists |
+| LEGAL-REQ-016, F18-REQ-007 | CI dependency denylist and import lint (new, S20) | New |
+| LEGAL-REQ-043 | `apps/mobile/test/permissions-manifest.test.ts` (shared with F04; privacy manifest types) | New |
+| A-NFR-002, A-NFR-012 | `apps/mobile/test/resilience.test.ts`; `packages/analytics/test/helpers.test.ts` | Exist |
+| F18-REQ-003, F18-REQ-008, F18-REQ-010 | `apps/mobile/test/analytics-provider.test.ts`; `packages/analytics/test/analytics.test.ts` (cap); `packages/api/test/remote-config.test.ts` (no analytics key) | First new; others exist |
+| F18-REQ-004, F18-REQ-005, F18-REQ-006, F18-REQ-020 | `packages/analytics/test/observe.test.ts`; `packages/content/test/rules.test.ts` (consent copy says only what the build does) | Exist; cases new |
+| F18-REQ-012 | `scripts/` emitter check (new) | New |
+| F18-REQ-013, F18-REQ-014, F18-REQ-022 | `packages/analytics/test/insights.test.ts` | Exists |
+| F18-REQ-017, F18-REQ-018, F18-REQ-019 | `supabase/functions/analytics-forget/handler.test.ts`; `apps/mobile/src/lib/account-deletion/account-deletion.test.ts` | Exist; retry-through-wipe case new |
+| F18-REQ-024, F18-REQ-025, F18-REQ-026 | Process checks in the release checklist with evidence (no repo test can prove them, R5 sample items 33 and 34) | Human |
 
 ## 8. Data, privacy and security
 
@@ -301,6 +334,8 @@ F18 owns the catalogue; each sibling spec lists its own events. Events about con
 - **Riskiest unknown.** Whether the PostHog SDK writes anything to disk on first construction in a release build (BL-252). Spike: install a release build, grant, kill, and list the app container; repeat after withdrawal.
 
 ## 12. Work packages
+
+`08-delivery.md` section 3.3 governs file ownership: a path below owned by another stream is a request to that stream (R5 EQ-08).
 
 Only for what is missing or partly built.
 

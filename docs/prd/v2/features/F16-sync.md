@@ -5,9 +5,9 @@
 | Release | v1.0 gate |
 | Priority and rank | P0, rank 11 (`05-feature-map.md` section 2) |
 | Personas | P1 Evening parent, P2 Co-parent, P6 Future reader (durability) |
-| Existing IDs | A-REQ-015, A-REQ-032, A-REQ-033, B-NFR-003, B-NFR-009, PRD-REQ-004, PRD-REQ-014, DATA-REQ-010, DATA-REQ-011, DATA-REQ-013, DATA-REQ-023, DATA-REQ-030, DATA-REQ-031, DATA-REQ-032, DATA-REQ-040 to DATA-REQ-046, LEGAL-REQ-001, LEGAL-REQ-006, LEGAL-REQ-009, LEGAL-REQ-014, LEGAL-REQ-024, LEGAL-REQ-032, LEGAL-REQ-040; K-39; D-023, D-024, D-033, D-035, D-041, D-068, D-073, D-085; PRD 7.2, 7.3, 7.4, 7.8; ADR 0004; BL-022, BL-052, BL-107, BL-111, BL-173, BL-174, BL-175, BL-177, BL-236, BL-244, BL-247, BL-282 |
-| Depends on | F02 (account, session, re-ownership), F17 (consents), F19 (remote config kill switch `sync`, ADR 0016, D-068), F11 and F12 (what is shared), F08 (audio and its encrypted backup) |
-| Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026: D-023 decided, D-073 (owner's encrypted audio backup in v1.0), D-085 (durable erase), ADR 0017, and the sync code on `develop` |
+| Existing IDs | A-REQ-015, A-REQ-032, A-REQ-033, B-NFR-003, B-NFR-009, PRD-REQ-004, PRD-REQ-014, DATA-REQ-010, DATA-REQ-011, DATA-REQ-013, DATA-REQ-023, DATA-REQ-030, DATA-REQ-031, DATA-REQ-032, DATA-REQ-040 to DATA-REQ-046, LEGAL-REQ-001, LEGAL-REQ-006, LEGAL-REQ-009, LEGAL-REQ-014, LEGAL-REQ-024, LEGAL-REQ-032, LEGAL-REQ-040; K-39; D-023, D-024, D-033, D-035, D-041, D-055, D-068, D-073, D-085; PRD 7.2, 7.3, 7.4, 7.8; ADR 0004; BL-022, BL-052, BL-107, BL-111, BL-173, BL-174, BL-175, BL-177, BL-236, BL-244, BL-247, BL-282, BL-331 |
+| Depends on | F02 (account, session, re-ownership), F17 (consents), F19 (remote config kill switch `killSwitches.sync`, ADR 0016, D-068), F11 and F12 (what is shared), F08 (audio and its encrypted backup) |
+| Status | Draft V2, 3 Oct 2026. Rewritten 13 Oct 2026 after critique round 1 (R2 AR-01 to AR-03, AR-14, AR-31, AR-32; R5 EQ-20): sections 6.2, 7, 8 and 11 now describe the protocol as built in `20261004100000_sync_engine.sql` and `20261005000000`, and name the deltas as work packages |
 
 ## 1. Why
 
@@ -16,10 +16,12 @@
 - [F] Letters are author-owned and `raw_transcript` is immutable by trigger, so write conflicts are rare and narrow [F] `supabase/migrations/20261002020000_data_governance.sql` (`entries_guard_immutable`); TDD 10 section 2.
 - [F] Under a sync engine that treats the server as truth for downloaded rows, a database restore could delete the newest letters from every device [F] TDD 06 P-1.
 - [D] **D-023 is decided** (founder, 3 Oct 2026): outbox push and cursor pull on expo-sqlite and Supabase, with a restore epoch; PowerSync is revisited at 10k families or when attachment sync outgrows the simple queue (`docs/DECISIONS.md` D-023 update; ADR 0004 status note).
-- [F] Built on `develop` (13 Oct), green in CI, never run against a configured project or two real phones: client `apps/mobile/src/lib/sync/` (`engine.ts`, `outbox.ts`, `merge.ts`, `ownership.ts`, `signal.ts`), local migration 4 (outbox, `rejected_writes`, per-book cursors, server versions), server `supabase/migrations/20261004100000_sync_engine.sql` (`sync_push`, `sync_pull`, `sync_books`, `sync_op_receipts`, `sync_epochs`, `sync_housekeeping`, rate windows) amended by `20261005000000` (language field group, rate limits through `rate_hit`), tests `supabase/tests/sync_engine.test.mjs`, `sync_perf.test.mjs`. Neither migration is applied to any project (`.github/migrations-applied.txt`).
-- [D] Sync ships in v1.0 (M14, founder, 13 Oct 2026), reversing commit c1764f9.
+- [F] Built on `develop` (13 Oct), green in CI, never run against a configured project or two real phones: client `apps/mobile/src/lib/sync/` (`engine.ts`, `outbox.ts`, `merge.ts`, `ownership.ts`, `signal.ts`, `types.ts`), a local migration with `sync_outbox`, rejected writes, per-book cursors and server versions; server `supabase/migrations/20261004100000_sync_engine.sql` (`sync_push`, `sync_pull`, `sync_books`, `sync_op_receipts`, `sync_epochs`, `sync_begin_epoch`, `sync_housekeeping`, `sync_rate_windows`) amended by `20261005000000_family_cap_language_idempotency.sql` (field group `language`, counters only through `rate_hit`). Tests: `supabase/tests/sync_engine.test.mjs`, `sync_perf.test.mjs`. Neither migration is applied to any project (`.github/migrations-applied.txt`).
+- [F] **The built conflict rule is last writer wins, and that breaks a promise this spec makes.** The server applies an edit whatever its `base`; `base` only sets a `conflict` flag in the result (`20261004100000_sync_engine.sql` header "Conflicts: last writer wins by server arrival, per field group", and the line that computes `v_conflict`). The client never reads the flag: `types.ts` documents `base` as "conflict flag only" and no other file in `lib/sync` uses `conflict`; `merge.ts` states "Last writer wins by server arrival, per field group". Two offline edits of one letter on two phones: the later push replaces the earlier words, which survive only in server `entry_versions`, which the author never sees. This is a P0 gap; section 6.2 E specifies the fix and WP-F16-14 and WP-F16-15 build it.
+- [D] Sync ships in v1.0 (M14, founder, 13 Oct 2026), reversing commit c1764f9. The full scope stays in v1.0 and the date moves (M15).
 - [F] On 13 Oct the build still never starts sync: `startSync()` returns at once while `EXPO_PUBLIC_SERVER_FEATURES` is off, as it is in every `eas.json` profile (`lib/capabilities.ts`). The release profiles flip to `on` per M14; the switch stays as the kill path.
-- [D] Audio: the owner's own recordings get an encrypted backup in v1.0 (D-073); family members hearing each other's recordings stays v1.1. The backup travels in its own upload queue of ciphertext objects (F08 section 6.5), not in sync ops; sync carries only the letter's audio facts (`audio_kept_on_device`, hash, size). Not built. The content lane's note that D-085 moved backup out of v1.0 is superseded by M14 (F08 section 13 Q1, answered).
+- [D] `book_access` (D-024) is not in v1.0: BACKLOG BL-175 is deferred to v1.2 by D-055, no migration creates it, and `sync_pull` authorises through `child_members`, `is_child_member` and the `book_entries` view. This spec, F11 and 06 use the built authorisation (R2 AR-03).
+- [D] Audio: the owner's own recordings get an encrypted backup in v1.0 (D-073, M16); family members hearing each other's recordings stays v1.1. The backup travels in its own upload queue of ciphertext objects (F08 section 6.5), not in sync ops. Sync carries only `audio_kept_on_device`.
 - [D] Durable erase (D-085): with sync on, the phone never purges by its own clock (`purgeExpired` and `eraseEntry` return at once when `capabilities.sync` is true, `store.ts`); the server's `deleted_at` plus 30 days rules (DELETION_AND_EXPORT_SPEC 2.2 step 7).
 
 ## 2. Who
@@ -37,30 +39,32 @@
 
 | Metric | Target | How measured | Consent caveat |
 |---|---|---|---|
-| Letters lost or silently changed | Zero (gate, PRD 7.5) | Chaos suite, kill-during-save 500 of 500, restore drill | n/a |
-| Ops never dropped | 100% reach the server or `rejected_writes` (TDD 06 2.2) | Integration tests; L2 counts | n/a |
-| Letter on one phone visible on the co-parent's online phone | p95 5 s, p99 30 s (PRD 7.3, gate) | Two-client probe in load test | n/a |
+| Letters lost or silently changed | Zero (gate, PRD 7.5) | Chaos suite, kill-during-push 500 of 500, the two-phone conflict test (WP-F16-11), restore drill | n/a |
+| Ops never dropped | 100% reach the server or the rejected list (TDD 06 2.2) | Integration tests; L2 counts | n/a |
+| Letter on one phone visible on the co-parent's phone, app in the foreground with the book open | p95 30 s, p99 60 s (gate, Rev of PRD 7.3; section 6.2 C) | Two-client probe in the load test; two-phone script | n/a |
 | New phone: book list | p95 10 s (PRD 7.3) | Device run | n/a |
 | New phone: one year of text (about 240 letters) | p95 30 s on LTE (PRD 7.3) | Device run | n/a |
 | `sync_failed` per active device per week | Under 0.5 [A] | Device analytics | Consenting users only |
 | Rejected writes per 1,000 ops | Under 1 [A] | Server count of permanent SQLSTATEs (L2) | n/a |
+| Word conflicts shown to an author per 1,000 text pushes | Watched, no target (A1) | Server count of `conflict` results | n/a |
 
 ## 4. Scope
 
 **In v1.0**
-- Outbox push and cursor pull on expo-sqlite (D-023), with idempotency keys, rejected-write handling and a restore epoch.
-- One visibility predicate, `book_access` (D-024), shared by RLS, `book_entries` and the pull RPC.
-- What syncs: own letters (all columns), other parents' in-book letters (allowlisted columns), books, memberships, per-person prefs, dictionary terms, invites (F11), deletion request state.
-- Conflict rules with no silent overwrite (6.2 E).
-- New-phone restore of text; audio from the owner's encrypted backup when on (D-073, F08 section 6.5), else from the iPhone's own backup or an export.
+- Outbox push and per-book cursor pull on expo-sqlite (D-023), with op ids, rejected-write handling and restore epochs, as built.
+- Authorisation as built: `child_members`, `is_child_member`, `is_child_parent`, the `book_entries` view with its column allowlist, and RLS. One parity suite proves `sync_pull` returns exactly what RLS and `book_entries` allow.
+- What syncs: own letters (all columns in the wire contract), other parents' in-book letters (the `book_entries` allowlist), books and their members, per-person prefs, deletion and restore.
+- The word conflict protocol: compare and set on the words group, both versions kept, the author chooses (6.2 E). Not built today (P0 gap).
+- New-phone restore of text; audio from the owner's encrypted backup when on (F08 section 6.5), else from the iPhone's own backup or an export.
 - Sign-out, account switch and revocation.
 - A visible offline queue: "Not sent yet".
-- API standards (B15), typed contracts in `packages/api` (new), two environments and the agent fence (D-041), load targets recomputed.
+- A frozen v1.0 wire contract in `packages/api` with an API version (WP-F16-01, WP-F16-16).
 
 **Later**
 - v1.1: shared voice (F31) and photo upload; revisit PowerSync at 10k families or when attachment sync outgrows the simple queue (D-023).
+- v1.1: Supabase Realtime broadcast per book (ids only) for foreground phones, to bring freshness toward PRD 7.3's p95 5 s (Q2).
 - v1.1: in-app import of an export ZIP to bring recordings back [R] (Q4).
-- Later: realtime push of changes; v1.0 pulls on triggers (6.2 C).
+- v1.2: `book_access` table (D-024, BL-175, D-055), if a v1.1 role model needs it.
 
 **Never**
 - A machine merge of anyone's words (TDD 02 3.6: no CRDT, no text merge).
@@ -85,74 +89,91 @@
 Sync has no screen of its own. It shows in three places:
 - A letter row and the letter view: "Not sent yet" while its ops wait (new `sync.notSent`).
 - Settings > Sync (new row under Account, F17): status line, last synced time, counts, paused reason, Try now.
-- One-time notices for a rejected write or an edit conflict (6.2 E).
+- A note on the letter for a word conflict (6.2 E) and a one-time notice for a rejected write.
 
 ### 6.2 Happy path
 
-#### A. Push (outbox)
-1. A local write (save, edit, take out of book, delete, restore, settings change, invite) runs in one SQLite transaction that also inserts an op into the local `outbox` table (new). The op holds an idempotency key (UUIDv7), op kind, target id, the changed field group, and `base_seq` (the `server_seq` the edit was based on; null for inserts).
-2. The sync client runs when signed in, consented and online: after first frame, after each local write (debounced 2 s), on foreground, on network regain, and when iOS grants background time [A] (BGTaskScheduler through Expo is a spike, 11).
-3. It sends up to 50 ops (256 KB cap) in order to `sync_push(p_api_version, p_batch)` (new RPC, security invoker, so RLS and every trigger apply).
-4. The server applies each op in its own savepoint and returns one result per op: `applied` with the new `server_seq` and server-owned fields (`deleted_at`, `raw_sha256`, `approval`), `duplicate` (idempotency key seen; returns the stored result), `conflict` with the current server row (6.2 E), or `rejected` with the SQLSTATE.
-5. The client marks applied rows `synced`, stores server fields, compares `raw_sha256` with its own hash (DATA-REQ-046), and removes the op.
+#### A. Push (outbox), as built
+1. A local write (save, edit, take out of book, delete, restore, book or prefs change) runs in one SQLite transaction that also inserts a row in the local `sync_outbox` (built, `outbox.ts`). The op holds a device-made UUIDv7 op id, a type, the target id, the field groups it changes (`changed`), and `base`: the server version (`v`) this device last saw for the letter (`entries.server_version` locally).
+2. Consecutive edits of one letter that never left the phone collapse into one op (newest snapshot, union of field groups). An op that may have reached the server is never changed again (built).
+3. A letter waiting for its words is held out of the outbox; its raw transcript is set once, later (built, `outbox.ts` header). Whether a voice-only letter may sync with an empty transcript slot is F05 Q7; the backup rule in F08 section 6.5 does not depend on the answer.
+4. The sync client runs when signed in, consented and online: after first frame, after each local write (debounced), on foreground, on network regain, and when iOS grants background time [A].
+5. It sends up to 50 ops, at most 256 KB, in order, to `sync_push(p_ops jsonb)` (built; security invoker, so RLS, the consent gate and every trigger apply). Op types: `entry.upsert`, `entry.reupload`, `entry.delete`, `entry.restore`, `book.first_run`, `book.create`, `book.update`, `prefs.upsert`.
+6. The server writes a receipt for each op id before running it, applies each op in its own subtransaction and returns one result per op: `ok: true` with `dup`, `applied`, `conflict` or `missing` and the server state (`entry` with `v`, `updated_at`, `deleted_at`, `in_book`, `approval`), or `ok: false` with the SQLSTATE and, for a purged letter, `gone`. `SCCON` stops the batch with `paused` and the missing consents; a transient class (40, 53, 55, 57, 58, XX) stops it with `stopped`. No result ever carries a message or detail.
+7. The client stores the returned `v` and server fields, marks the letter synced when no op is left, and removes the op. Delta (WP-F16-15): after an op for a letter applies, every later queued op for that letter has its `base` set to the returned `v`, because it descends from the version this device just wrote.
 
-#### B. Pull (cursor)
-1. The client calls `sync_pull(p_api_version, p_cursor, p_restore_epoch, p_limit)` (new RPC, security definer reading `book_access`; never takes a profile id).
-2. It returns, ordered by commit: own rows of every synced table, other people's rows visible through `book_access` (allowlisted columns only, same as `book_entries`), and a `gone` stub (`id`, `child_id` only) for any row in a readable book whose change made it no longer visible to the caller (taken out of the book, tombstoned).
-3. It returns `books_removed`: child ids that left the caller's `book_access` since the cursor (left, removed, undone join, book deleted). The client deletes other people's rows, photos and shared book details for those books; own letters stay (DATA-REQ-016).
-4. A membership or visibility change for a book triggers a full re-pull of that book (about 240 rows a year, D-023).
-5. The new cursor is returned only up to a safe watermark (11, riskiest unknown 1), so a row committed late is never skipped. Repeated delivery is harmless: apply is idempotent by id and `server_seq`.
+#### B. Pull (per-book cursor), as built
+1. The client calls `sync_pull(p_since jsonb, p_limit int)` (built; security definer, `require_user()`, never takes a profile id). `p_since` is `{epoch, books: {<child id>: {cursor, access, meta, have: {n, sum}, verify, ids}}}`; `{}` is a first pull. At most 100 books per call; `p_limit` 1 to 500 rows across books.
+2. Per book the response carries rows after the book's cursor: own letters whole, in any state; other people's letters only through `book_entries` (the B F9 and K-09 column allowlist). The cursor is `<xid8>:<uuid>`: rows are served by (`sync_xid`, id) below `pg_snapshot_xmin`, so a row committed late is never skipped; a long transaction delays sync and never loses a row.
+3. Removal is a digest, not stubs. The last page of a book carries `visible`: a count and a 48-bit sum of the id suffixes of the caller's own letters plus the letters by others the caller may read. The phone compares it with its own copy and, on a difference, asks again with `ids: true` for the full list and drops what is not on it. An own deleted letter arrives as a tombstone with `deleted_at`. Another person's letter that stops being readable is never sent as a row.
+4. A change of the caller's access to a book returns `repull: true`, and the server serves that book from the start. A book the caller left, was removed from or that was deleted arrives in `gone` with `reason` `not_member` or `deleted`; the client deletes other people's rows and the book's shared details and keeps its own letters (DATA-REQ-016).
+5. Book details travel as `meta` (name, nickname, birthday month and day for family, date of birth and due date for parents, members with signatures) with a `meta_hash`, sent only when it changed.
+6. Repeated delivery is harmless: apply is idempotent by id and `v`.
+7. Delta (security review M5, in BL-331): the changed-since check that decides whether to compute the digest must look only at the caller's readable rows, so a co-parent cannot learn when the other parent writes a private letter. WP-F16-04 holds the regression test.
 
-#### C. When pulls run
-After first frame, on foreground (at most every 30 s), after a successful push, after a co-parent letter push arrives (F11; the push carries no ids, it only wakes a pull), and on Settings > Sync > Try now. A foreground app with an open book pulls every 60 s [A]; this meets PRD 7.3 p95 5 s only together with the push wake-up, which is measured in the load probe (Q2).
+#### C. When pulls run, and the freshness bar
+After first frame, on foreground, after a successful push, after a co-parent letter push arrives while the app is in the foreground (F11; the push carries no ids, it only wakes a pull), and on Settings > Sync > Try now. While the app is in the foreground with a book open it pulls every 30 s; that is the one interval, used in the load targets too.
+
+The gate is therefore: a letter saved on one phone appears on the other parent's phone, foreground with the book open, within p95 30 s and p99 60 s (section 3). A phone in the background sees the letter at its next foreground. PRD 7.3's p95 5 s is not reachable without a server-to-client channel: polling cannot meet it, and a passive push runs app code only in the foreground (R2 AR-14). Realtime broadcast is Q2 for v1.1.
+
+The watermark has an operating rule: one long transaction anywhere stalls every pull past it. App roles get `statement_timeout` 15 s and `idle_in_transaction_session_timeout` 30 s [R], and an alert fires when the oldest running transaction is older than 30 s (WP-F16-10, 06 section 4).
 
 #### D. New phone
 1. Sign in (F02). Consent state is read from the server (`my_sync_gate()`, exists).
-2. Pull from cursor zero: book list first (children, memberships, prefs), then letters newest first per book, in pages of 200.
-3. Letters with `audio_kept_on_device = true` whose audio is not on this phone show F08's "not on this phone" state (`recordings.notOnThisPhone`, F08). If the user restored this phone from an iCloud device backup, the audio files are already there and match by entry id and `audio_sha256` (D-033).
+2. `sync_books()` (exists) lists books; pull from an empty `p_since`, book list first, then letters per book in pages.
+3. Letters with `audio_kept_on_device = true` whose audio is not on this phone show F08's "not on this phone" state. If the owner's backup is on, recordings arrive per F08 section 6.5 B. If this phone was restored from an iCloud device backup, the files are already there and match by entry id against `audio_blobs` (F08), not by a synced hash: the wire contract carries no `audio_sha256` (R2 AR-32).
 4. Settings > Sync shows "{n} letters on this phone" when done.
 
-#### E. Conflicts: every case and how it resolves
+#### E. Conflicts: the protocol the code must implement
+
+**The rule.** For the words of a letter, the server compares before it writes, both versions are kept, and the author chooses. For every other field the later arrival wins and the earlier value is recorded where a history exists. Nothing merges or picks between two people's words; only the author of both versions is ever asked.
+
+**Words group (`text`: `final_text`, `machine_edits`, `edit_level`, which always travel together).**
+1. The client sends `base` = the `v` it last saw or wrote for this letter (6.2 A step 7).
+2. Server (delta, WP-F16-14): if the row exists, `text` is in `changed` and the row's `sync_xid` is greater than `base` and was not written by the current transaction, the server does not apply the `text` group. It applies the op's other groups by the later-arrival rule, writes the receipt, and returns `ok: true, applied: true or false, conflict: true, conflict_groups: ["text"]` plus `current`: the server's `final_text`, `machine_edits`, `edit_level` and `v`. These are the caller's own words, so returning them leaks nothing.
+3. Client (delta, WP-F16-15): on `conflict` it keeps the server version as the letter, stores its own words in a local `sync_conflicts` row (new) with the letter id, its text group, the server `v` it now rebases on and the device time, and shows the note. It never re-sends its version unless the author picks it.
+4. The author sees on that letter only: "This letter was changed on your other phone. Your version from this phone is kept too." with two buttons, "Use this phone's version" and "Keep the other one" (new `sync.conflict.title`, `.body`, `.useMine`, `.keepTheirs`). Use this phone's version enqueues an `entry.upsert` with `changed: ["text"]` and `base` = the current `v`; the server applies it (the earlier words stay in `entry_versions`). Keep the other one deletes the conflict row. The conflict row is also in export (DATA-REQ-043) until the author picks.
+5. An older app that sends no `base` keeps today's behaviour. `p_api_version` (WP-F16-16) lets the server refuse a pre-protocol build once the protocol ships: older builds get `SCVER` and `sync.updateNeeded`.
 
 | # | Conflict | Can it happen at v1.0? | Resolution | What the person sees |
 |---|---|---|---|---|
-| C1 | Same author edits the same letter's words on two devices offline | Yes, rare (two devices) | Push of words carries `base_seq`. Server applies only if the row's `server_seq` equals `base_seq`; else returns `conflict` with the current row. The client keeps the server version as the letter and stores its own text as a local conflict copy | On that letter, author only: "This letter was changed on your other phone. Your version from this phone is saved." with Use this version and Keep the current one (new `sync.conflict.*`). Use this version re-pushes with the new base. Both versions also live in `entry_versions` once applied |
-| C2 | Same author toggles in book on two devices | Yes | Same compare-and-set as C1 on the `in_book` field group | Same note; one tap to apply again |
-| C3 | Edit on one device, delete on another | Yes | Delete wins; the edit returns `SCTMB` (exists); op goes to `rejected_writes` with the edited text | "This letter was deleted on another phone. Restore it with your edit?" Restore and apply my edit (DATA-REQ-043) |
-| C4 | Delete and restore on two devices | Yes | Last arrival wins; both audited (exists) | Letter state follows the server |
-| C5 | Two parents edit the same book setting (name, nickname, date, photo, look, hidden) | Yes | Compare-and-set per field on `children` with `base_seq`; on conflict the server value stands | "{child}'s {setting} was changed on another phone." with the current value and Change it again (new `sync.conflict.bookSetting`) |
-| C6 | Person-per-child prefs edited on two devices | Yes | Same as C5 on `child_member_prefs` | Same pattern |
-| C7 | Words of a letter and its machine edits arriving from different devices | Prevented | Words, `machine_edits` and `edit_level` always travel as one field group (TDD 02 3.6); a push that changes one of them alone is rejected `SCPAIR` (new) | Never seen; a client bug if it fires |
-| C8 | Membership ended while writes are queued | Yes | Insert or update refused by RLS (`42501`) or `SCDEL` for a deleted book; op to `rejected_writes`; content stays local and in export | "{n} letters could not be sent to {child}'s book. They are safe on this phone." (new `sync.rejected.book`) |
-| C9 | Consent withdrawn or missing | Yes | `SCCON` pauses the queue; nothing is rejected (exists, APPLY.md) | Settings > Sync: paused, with a link to Privacy |
-| C10 | Two parents act on the same family letter | No (contributors hidden, B1) | First action wins (exists) | n/a |
-| C11 | Immutable column differs | Impossible by design | `SCIMM` (exists); a client bug | n/a |
+| C1 | Same author edits the same letter's words on two devices offline | Yes, rare | Words group protocol above | Note on the letter, author only |
+| C2 | Same author toggles in book, `occurred_on`, `sounds_like_me` or `language` on two devices | Yes | Later arrival wins per group (as built); `in_book` changes are kept in `entry_versions` (existing trigger) | Letter follows the server; no note |
+| C3 | Edit on one device, delete on another | Yes | Delete wins: a tombstoned row refuses the edit; the op goes to the rejected list with its text | "This letter was deleted on another phone. Restore it with your edit?" Restore and apply my edit (DATA-REQ-043) |
+| C4 | Delete and restore on two devices | Yes | Later arrival wins; both audited (built) | Letter state follows the server |
+| C5 | Two parents edit the same book setting (name, nickname, date of birth, due date, "Family can read") | Yes | Later arrival wins per field (as built, `book.update` has no base). The other parent sees a one-time note naming who changed what (F12 owns the note and any undo, R3 DX-12) | F12 copy |
+| C6 | Person-per-child prefs edited on two devices | Yes | Later arrival wins (as built) | Nothing |
+| C7 | Words and machine edits arriving separately | Prevented | One field group by construction: `changed` names groups, never columns (built) | Never |
+| C8 | Membership ended while writes are queued | Yes | Refused by RLS (`42501`) or `SCDEL` for a deleted book; op to the rejected list; content stays local and in export | "{n} letters could not be sent to {child}'s book. They are safe on this phone." (new `sync.rejected.book`) |
+| C9 | Consent withdrawn or missing | Yes | `SCCON` pauses the batch; nothing is rejected (built) | Settings > Sync: paused, with a link to Privacy |
+| C10 | Two parents act on the same family letter | No (contributors hidden, B1) | First action wins (built) | n/a |
+| C11 | Immutable column differs | Impossible by design | `SCIMM` (built); a client bug | n/a |
 | C12 | Clock skew | Yes | Server clock for every lifecycle column; device clock only for `captured_at` and `occurred_on` (TDD 02 3.6) | Dates the author chose stay as chosen |
 | C13 | Server restored to an earlier point | Rare | Restore epoch (6.2 F) | "Checking your book" in Settings > Sync during the re-upload |
+| C14 | A purged letter id pushed again | Yes, from a phone that missed the delete | `entries_not_purged` refuses with `SCDEL` detail `purged`; result carries `gone` (built) | The letter leaves this phone |
 
-Nothing in this table merges, rewords or picks between two people's words. The only choice ever offered is to the author of both versions.
-
-#### F. Restore epoch
-1. `sync_state` (new single-row table, L2) holds `restore_epoch` and `restore_point`.
-2. Restore runbook (RB-8): restore into a new project, replay the purge ledger (DATA-REQ-030), bump the epoch, set the restore point, reopen.
-3. A client sees a higher epoch in the pull response. It pauses applying `gone` stubs and `books_removed`, re-pushes every own row and tombstone changed after `restore_point` minus 1 hour (inserts are idempotent; immutable columns are identical, so `SCIMM` cannot fire), then resets the cursor and pulls fully.
-4. Own rows absent on the server are never deleted locally. Other people's rows the server no longer has stay on the phone marked "waiting for its author" for 30 days, then leave (TDD 06 6.3; co-members cannot re-upload others' letters, RLS forbids it).
+#### F. Restore epoch, as built
+1. `sync_epochs` (built) holds one row per epoch with `started_at`, `restore_point` and `reason` (`initial`, `database_restore`, `drill`); readable by every signed-in person; written only by `sync_begin_epoch()` (service role).
+2. Restore runbook (RB-8): restore into a new project, copy the Edge Function secrets and the Storage buckets (F08 section 6.5 G), replay the purge ledger (DATA-REQ-030), call `sync_begin_epoch('database_restore', <restore point>)`, reopen.
+3. A pull with an older epoch, or with a cursor ahead of the server's transaction counter, answers `reset` with `reason` `epoch` or `cursor_ahead`. The client deletes nothing: it re-uploads every own letter the server once held (`entry.reupload` with `known_at` = the server `updated_at` it last saw) and pulls every book from the start. A re-upload applies only when the server copy is older than what the phone knew and was not edited since the epoch began; between two re-uploads the newer `known_at` wins (`entries.sync_restored_from`).
+4. Other people's letters the restored server lacks stay on the phone marked as waiting for their author for 30 days, then leave (TDD 06 6.3; co-members cannot re-upload others' letters, RLS forbids it).
+5. On a reset the backup client re-checks every recording it believes uploaded against `audio_blobs` and re-uploads missing ones (F08 section 6.5, R2 AR-08).
 
 #### G. Sign-out, account switch, revocation
 
 | Event | Behaviour |
 |---|---|
-| Sign out | Waits until the outbox is empty (A-REQ-033, F02-REQ-001). Then removes other people's letters, photos and shared book details from the phone. Own letters and recordings stay on the phone as local letters (the user's own words; audio exists only here). Signing in again with the same account resumes from a full pull |
-| Sign in with a different account on a phone that holds another account's rows | Refused at v1.0 (one account per install). Choices: sign in as the previous account, or Remove the other account's letters from this phone, which offers export first and then deletes them locally |
+| Sign out | Waits until the outbox is empty (A-REQ-033, F02-REQ-001). Then removes other people's letters, photos and shared book details from the phone. Own letters and recordings stay on the phone as local letters. Signing in again with the same account resumes from a full pull |
+| Sign in with a different account on a phone that holds another account's rows | Refused at v1.0 (one account per install; `account_mismatch` phase, built). Choices: sign in as the previous account, or Remove the other account's letters from this phone, which offers export first and then deletes them locally |
 | Refresh rejected or Apple credential revoked | App keeps working locally; outbox keeps; "Sign in again to keep your book in sync" (TDD 04 3.2.2) |
-| Account deleted | DATA-REQ-023: one local export offered, then local wipe |
-| Left, removed or undone membership | `books_removed` in the next pull (6.2 B step 3) |
-| Kill switch `killSwitches.sync` in the signed remote config (ADR 0016 section 5.1; D-068 supersedes D-035's table) | Push and pull stop; outbox keeps; local use unchanged; resumes when on |
+| Account deleted | DATA-REQ-023: one local export offered, then local wipe (F17 section 8 matrix) |
+| Left, removed or undone membership | `gone` with `not_member` in the next pull (6.2 B step 4) |
+| Kill switch `killSwitches.sync` in the signed remote config (ADR 0016 section 5.1; D-068 supersedes D-035's table) | Push and pull stop; outbox keeps; local use unchanged; resumes when on. No consumer exists today (F19-REQ-011, WP-F19-12) |
 
 #### H. The visible queue
 - Letter row: "Not sent yet" (new `sync.notSent`) while any op for it waits, never during the first 10 s after save (avoids flicker).
 - Settings > Sync shows one line: "All letters are in your book" (new `sync.allSent`), or "{n} not sent yet" plus the reason: offline, signed out, waiting for consent, paused by us (kill switch), or "{n} could not be sent" with View.
-- View lists rejected writes by letter date and book, with the recovery action from the C table. Rejected content is in export (DATA-REQ-043).
+- View lists rejected writes by letter date and book, with the recovery action from the C table. Rejected content and conflict copies are in export (DATA-REQ-043).
 - Copy follows VOICE: never "failed" or fear words; "safe on this phone" is true and stated.
 
 ### 6.3 Unhappy paths and edge cases
@@ -160,89 +181,96 @@ Nothing in this table merges, rewords or picks between two people's words. The o
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
 | F16-U01 | Offline for days | Outbox grows; nothing blocks capture, review, save or reading (PRD 7.3) | "Not sent yet" | Automatic on reconnect | Integration, airplane mode 72 h simulated |
-| F16-U02 | App killed mid-push | Ops stay until the server result is stored; retry is idempotent by key | Nothing | Automatic | Chaos: kill during push, 500 iterations |
-| F16-U03 | Response lost after the server applied | Retry returns `duplicate` with the stored result | Nothing | n/a | `[DATA-REQ-044] duplicate push applies once` |
+| F16-U02 | App killed mid-push | Ops stay until the server result is stored; retry is idempotent by op id | Nothing | Automatic | Chaos: kill during push, 500 iterations |
+| F16-U03 | Response lost after the server applied | Retry returns `dup` | Nothing | n/a | `[DATA-REQ-044] duplicate push applies once` |
 | F16-U04 | Reboot with ops queued | Outbox is in SQLite with `synchronous = FULL` (`expo-adapter.ts`, exists) | Nothing | n/a | Device test |
-| F16-U05 | Server 5xx or timeout | Backoff 1 s to 5 min with jitter; order kept (TDD 02 3.5) | Nothing until 1 h, then Settings shows "waiting for our server" | Automatic | Fault injection |
-| F16-U06 | `429` from rate limit | Wait for `retry_after`; order kept | Nothing | Automatic | Unit |
-| F16-U07 | One op permanently rejected | Moved to `rejected_writes`; the queue continues (FM3 poison op) | One notice per book per day | Action from C table | `[DATA-REQ-043] rejected op does not block the queue` |
+| F16-U05 | Server 5xx, timeout or `stopped` | Backoff 1 s to 5 min with jitter; order kept (TDD 02 3.5) | Nothing until 1 h, then Settings shows "waiting for our server" | Automatic | Fault injection |
+| F16-U06 | `SCRAT` from the rate limit | Back off and retry; order kept | Nothing | Automatic | Unit |
+| F16-U07 | One op permanently rejected | Moved to the rejected list; the queue continues (FM3 poison op) | One notice per book per day | Action from C table | `[DATA-REQ-043] rejected op does not block the queue` |
 | F16-U08 | Low storage | Pull pauses below 200 MB free [A]; push continues | Settings: "This phone is almost full" (`errors.storageLow`, exists) | Free space | Unit with mocked free space |
 | F16-U09 | Background time cut off | Batch stops at a boundary; resumes next foreground | Nothing | n/a | Device test |
 | F16-U10 | Interruption during sync (call, Siri) | Sync is not audio; continues | Nothing | n/a | n/a |
-| F16-U11 | Edit conflict (C1, C2) | Conflict copy kept | Author note on the letter | Pick a version | `[F16-REQ-010]` two-device test |
+| F16-U11 | Word conflict (C1) | Server keeps its words; client keeps a conflict copy | Author note on the letter | Pick a version | `[F16-REQ-010]` two-device test |
+| F16-U11b | Same phone edits a letter twice; the first op applies while the second waits | Second op rebased to the returned `v`; no conflict | Nothing | n/a | `[F16-REQ-025]` unit: two queued edits never raise a conflict on one device |
 | F16-U12 | Book deleted on the other phone while writing | Save is local; push `SCDEL`; rejected | C8 notice | Export or keep local | Integration |
 | F16-U13 | Consent missing | Queue paused, not rejected | Settings paused line | Consent | `SCCON` tests (exist) |
 | F16-U14 | Duplicate taps on Try now | One sync run at a time (mutex) | One spinner | n/a | Unit |
-| F16-U15 | App update with a new API version while ops wait | Server accepts N and N-1 (F16-REQ-019) | Nothing | n/a | Contract test N-1 |
-| F16-U16 | Build below `min_supported_build` | Sync stops; local use continues | "Update the app to keep your book in sync" (new `sync.updateNeeded`) | Update | Unit |
-| F16-U17 | New phone without iCloud backup | Text returns; audio returns from the owner's encrypted backup if it was on (F08-REQ-023), else not | F08 state per letter | Backup, or an export kept elsewhere | Durability drill BL-284; F08 WP-F08-B6 |
-| F16-U17b | Erase now in a build with sync on | Today `eraseEntry` returns false and nothing is erased: the server path (an erase op that sets the purge in motion before day 30) is not built | Letter stays on the shelf until the server purge | Gap: WP-F16-13 | Unit plus sync test |
+| F16-U15 | App update with a new API version while ops wait | Server accepts the current and previous version (F16-REQ-019) | Nothing | n/a | Contract test N-1 |
+| F16-U16 | Build below the oldest supported API version | `SCVER`; sync stops; local use continues | "Update the app to keep your book in sync" (new `sync.updateNeeded`) | Update | Unit |
+| F16-U17 | New phone without iCloud backup | Text returns; audio returns from the owner's encrypted backup if it was on (F08-REQ-023), else not | F08 state per letter | Backup, or an export kept elsewhere | Durability drill BL-284; WP-F08-B6 |
+| F16-U17b | Erase now in a build with sync on | Today `eraseEntry` returns false and nothing is erased: the server path is not built | Letter stays on the shelf until the server purge | Gap: WP-F16-13; F17 hides Erase now in sync builds until it ships (F17-REQ-025) | Unit plus sync test |
 | F16-U18 | New phone restored from iCloud device backup | Database and audio return with the backup; session does not (Keychain `THIS_DEVICE_ONLY`, TDD 04 3.2.1) | Sign in; pull reconciles | n/a | Durability drill |
 | F16-U19 | Server restore | Restore epoch flow | "Checking your book" | Automatic | Restore drill BL-247 |
 | F16-U20 | Raw transcript hash mismatch after push | Report count (L2); re-download the row; never overwrite local text silently | Nothing | Support if repeated | `[DATA-REQ-046]` |
-| F16-U21 | Co-parent takes a letter out of the book | `gone` stub removes it on the reader's phone | Letter disappears | n/a | `[LEGAL-REQ-032]` |
-| F16-U22 | Reader left the book | `books_removed`; others' rows purged; own stay | The book moves to "Letters to {child}" | n/a | Integration |
+| F16-U21 | Co-parent takes a letter out of the book | Digest differs; the id list drops it on the reader's phone | Letter disappears | n/a | `[LEGAL-REQ-032]` |
+| F16-U22 | Reader left the book | `gone` `not_member`; others' rows purged; own stay | The book moves to "Letters to {child}" | n/a | Integration |
 | F16-U23 | Signed out | No sync; local use; Keep the book sheet rules (F02) | Settings: "Sign in to keep your book" | Sign in | n/a |
-| F16-U24 | VoiceOver and AX5 on Settings > Sync and the rejected list | Labels and wrapping (PRD 7.6) | Full text | n/a | AX5 component test |
+| F16-U24 | VoiceOver and AX5 on Settings > Sync, the rejected list and the conflict note | Labels and wrapping (PRD 7.6) | Full text | n/a | AX5 by the device script until the render harness lands (R5 EQ-04) |
 | F16-U25 | iPhone SE 3 with a 5-year book (1,200 letters) | Paged pull; local apply in transactions of 200 | Book usable during pull | n/a | Device run, 5-year fixture |
-| F16-U26 | Clock on the phone set years ahead | Server clock wins for lifecycle; `captured_at` checked within 1 day ahead (existing UUIDv7 check pattern) | Nothing | n/a | Unit |
+| F16-U26 | Clock on the phone set years ahead | Server clock wins for lifecycle; `captured_at` checked within 1 day ahead | Nothing | n/a | Unit |
 | F16-U27 | Two accounts on one phone | Refused (6.2 G) | Choice sheet | Export then remove | Integration |
+| F16-U28 | A long transaction holds the watermark | Pulls return no new rows past it; timeouts end it within 30 s; alert at 30 s | Nothing beyond normal delay | Automatic | DB test with a held transaction |
+| F16-U29 | Another account pre-inserts this person's op id (security review L1) | Today the op reports `dup` and is dropped. After BL-331: receipts keyed by (`profile_id`, `op_id`), written only inside `sync_push` | Nothing | n/a | Regression test from the review PoC F4 |
 
 ## 7. Requirements and acceptance criteria
 
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
-| DATA-REQ-043 | P0 | Sync conflict rules; no op silently dropped | Given a permanent SQLSTATE (`SC***`, `23***`, `42501`), Then the op moves to `rejected_writes` and the queue continues; given a transient error, Then retry keeps order | DELETION spec |
-| DATA-REQ-043 Rev (D-023) | P0 | Same author edits from two devices are compare-and-set, not last-writer-wins; the losing version is kept and shown to the author | As F16-REQ-010 | D-023, R2-S16 |
+| DATA-REQ-043 | P0 | Sync conflict rules; no op silently dropped | Given a permanent SQLSTATE (`SC***`, `23***`, `42501`), Then the op moves to the rejected list and the queue continues; given a transient error, Then retry keeps order | DELETION spec |
+| DATA-REQ-043 Rev (D-023) | P0 | Same-author word edits from two devices are compare and set, not last writer wins; the losing version is kept and shown to the author | As F16-REQ-010 | D-023, R2-S16, R2 AR-02 |
 | DATA-REQ-044 | P0 | Idempotent writes | Given an op retried 5 times, Then one server effect and one audit row | DELETION spec |
 | DATA-REQ-046 | P0 | Corruption detection on text | Given a forced mismatch, Then a count is reported and the row is re-downloaded | DELETION spec |
 | DATA-REQ-030, DATA-REQ-031 | P0, P1 | Restore with ledger replay; quarterly drill | Given a drill with two synthetic devices, Then zero letters lost on either device | DELETION spec, TDD 06 6.3 |
-| DATA-REQ-032 Rev (D-023) | P0 | Sync layer deletion: a purged or removed row reaches no device | Given a purged letter, When a fresh install of a former reader pulls, Then no row for it | DELETION spec |
+| DATA-REQ-032 Rev (D-023) | P0 | Sync layer deletion: a purged or removed row reaches no device | Given a purged letter, When a fresh install of a former reader pulls, Then no row for it; given a push of its id, Then `SCDEL` detail `purged` | DELETION spec |
 | A-REQ-015 | P0 | Re-ownership in one transaction before any sync | Given a crash mid-transaction, Then nothing changed (F02) | A |
 | A-REQ-033 | P0 | Sign-out and revocation only after unsynced letters sync | Given 3 queued ops, When Sign out, Then the session stays until the queue is empty | A, F02-REQ-001 |
 | B-NFR-003 Rev (D-023) | P0 | Every RLS rule has an access test and the pull RPC has a parity test | As F16-REQ-008 | B, ADR 0004 |
-| PRD-REQ-004 | P0 | Working material author-only in pull | Given another member's pull, Then no `raw_transcript`, `raw_sha256`, `machine_edits`, `stt_meta`, `deleted_reason`, `entries.language` (if added by F04) | PRD |
-| LEGAL-REQ-001, LEGAL-REQ-006 | P0 | No content row accepted before Terms with age and sensitive-data consent | Push returns `SCCON` and pauses (exists in triggers) | ENGINEERING_REQUIREMENTS |
-| LEGAL-REQ-032 | P0 | Deletion and removal reach every member device | Given take-out by the author, Then the reader's row is gone within one pull | ENGINEERING_REQUIREMENTS |
-| F16-REQ-001 | P0 | Local `outbox` table: one row per op with key, kind, target, field group, `base_seq`, created time; written in the same transaction as the data change | Given a kill between data write and outbox write in a fault test, Then both or neither exist | D-023, DATA-REQ-048 |
-| F16-REQ-002 | P0 | `sync_push` applies up to 50 ops per call in order, each in a savepoint, returning a typed per-op result | Given a batch where op 3 is rejected, Then ops 1, 2, 4 to 50 apply and op 3 returns its SQLSTATE | TDD 06 3.2 |
-| F16-REQ-003 | P0 | Idempotency ledger `sync_ops` (new, server): key, profile, result, created; kept 30 days | Given the same key twice, Then the second returns `duplicate` with the first result | B15 |
-| F16-REQ-004 | P0 | `server_seq` and a commit watermark on every synced table, set by trigger | Given two concurrent transactions committing out of order, Then a puller never skips the later-committed row (concurrency test) | D-023 |
-| F16-REQ-005 | P0 | `sync_pull` returns own rows, visible rows (allowlisted columns), `gone` stubs and `books_removed`, paged | Given the fixture families, Then each caller's pull equals the expected set exactly | D-024 |
-| F16-REQ-006 | P0 | `book_access(child_id, profile_id, role, sees_book, sees_pending)` maintained by triggers on `child_members` and `children`; RLS helpers, `book_entries` and `sync_pull` read it | Given a leave, Then the `book_access` row is gone in the same transaction | D-024, TDD 02 3.2 |
-| F16-REQ-007 | P0 | A membership or visibility change re-pulls that whole book | Given a parent joins, Then their first pull returns every in-book letter of that book | D-023 |
-| F16-REQ-008 | P0 | Parity and cross-child leak suite: for each fixture user, `sync_pull` returns exactly what RLS and `book_entries` allow | Given the matrix (author, other parent, left parent, stranger, sibling book), Then zero differences; runs on every PR touching `supabase/**` | LEGAL-REQ-024, BL-195 |
-| F16-REQ-009 | P0 | Take-out, tombstone and removal propagate as `gone` stubs or `books_removed`; the client deletes local copies and cached photos | p95 60 s online (PRD 7.3) | LEGAL-REQ-032 |
-| F16-REQ-010 | P0 | Compare-and-set for field groups (words with edits, in book, each book setting, each pref) with `base_seq`; conflict keeps both and asks the author (C1, C2, C5, C6) | Given two devices editing one letter offline, Then neither version is lost and the author sees the note on the second device | R2-S16 |
-| F16-REQ-011 | P0 | Words, `machine_edits` and `edit_level` push as one group; a partial change is rejected `SCPAIR` | Given a push of `final_text` alone after an edit list change, Then `SCPAIR` | TDD 02 3.6 |
+| PRD-REQ-004 | P0 | Working material author-only in pull | Given another member's pull, Then no `raw_transcript`, `machine_edits`, `stt_meta`, `deleted_reason` or `language` on others' rows (`book_entries` allowlist) | PRD |
+| LEGAL-REQ-001, LEGAL-REQ-006 | P0 | No content row accepted before Terms with age and sensitive-data consent | Push returns `paused` with `SCCON` (built in triggers) | ENGINEERING_REQUIREMENTS |
+| LEGAL-REQ-032 | P0 | Deletion and removal reach every member device | Given take-out by the author, Then the reader's row is gone after one pull | ENGINEERING_REQUIREMENTS |
+| F16-REQ-001 | P0 | Local `sync_outbox`: one row per op with op id, lane, type, target, book, payload, created time; written in the same transaction as the data change | Given a kill between data write and outbox write in a fault test, Then both or neither exist | D-023, DATA-REQ-048; built |
+| F16-REQ-002 | P0, Rev | `sync_push(p_ops)` applies up to 50 ops (256 KB) per call in order, each in a subtransaction, returning a typed per-op result; `SCCON` pauses and transient classes stop the batch | Given a batch where op 3 is rejected, Then ops 1, 2, 4 to 50 apply and op 3 returns its SQLSTATE and no message | TDD 06 3.2; built |
+| F16-REQ-003 | P0, Rev | Op receipts `sync_op_receipts` keyed by (`profile_id`, `op_id`), written only inside `sync_push`; kept 30 days | Given the same op id twice from one person, Then the second returns `dup`; given another person's account inserting that op id first, Then the victim's op still applies | B15; security review L1; BL-331 |
+| F16-REQ-004 | P0 | `entries.sync_xid` stamped by trigger; pull serves rows below `pg_snapshot_xmin` | Given two concurrent transactions committing out of order, Then a puller never skips the later-committed row (two-connection test) | D-023; built, two-connection proof owed (WP-F16-00) |
+| F16-REQ-005 | P0, Rev (AR-03) | `sync_pull` returns per book: own rows whole, others' rows through `book_entries` only, the digest, `repull` on an access change, `gone` books | Given the fixture families, Then each caller's pull equals the expected set exactly | D-024 Rev (D-055); built |
+| F16-REQ-006 | P0, Rev (AR-03) | Authorisation through `child_members`, `is_child_member`, `is_child_parent` and `book_entries`; no `book_access` table in v1.0 | Given a leave, Then the next pull returns the book in `gone` with `not_member` and no other person's row for it | D-055; R2 AR-03 |
+| F16-REQ-007 | P0 | An access change re-pulls that whole book | Given a parent joins, Then their first pull returns every in-book letter of that book | D-023; built |
+| F16-REQ-008 | P0 | Parity and cross-child leak suite: for each fixture user, `sync_pull` returns exactly what RLS and `book_entries` allow | Given the matrix (author, other parent, left parent, undone joiner, stranger, sibling book), Then zero differences; runs on every PR touching `supabase/**` | LEGAL-REQ-024, BL-195 |
+| F16-REQ-009 | P0 | Take-out, tombstone and removal reach other members through the digest and `gone`; the client deletes local copies and cached photos | p95 60 s online, foreground | LEGAL-REQ-032 |
+| F16-REQ-010 | P0, new protocol | Compare and set on the words group; conflict keeps both and asks the author (6.2 E) | Given phone A and phone B of one author, both offline, editing one letter's words, When A then B push, Then the server keeps A's words, B receives `conflict` with A's words, B shows the note, both versions survive a kill of B, and Use this phone's version makes B's words current with A's in `entry_versions`. Gate in WP-F16-11 | R2 AR-02; R2-S16 |
+| F16-REQ-011 | P0 | Words, `machine_edits` and `edit_level` change only as one group | Given an op whose `changed` names a column instead of a group, Then `22023` | TDD 02 3.6; built |
 | F16-REQ-012 | P0 | Restore epoch flow (6.2 F) | Restore drill: zero own rows deleted locally; others' rows kept 30 days as waiting | TDD 06 6.3 |
-| F16-REQ-013 | P0 | New phone pull order: books, then letters newest first, pages of 200 | Book list p95 10 s; one year p95 30 s on LTE | PRD 7.3 |
-| F16-REQ-014 | P0, Rev (D-073) | No audio, listening copy or photo bytes in any sync request; the owner's backup uses its own ciphertext upload path | Network capture of the E2E suite: zero audio bodies in `sync_push` or `sync_pull`; audio bytes appear only as ciphertext to the `entry-audio` bucket when backup is on (F08-REQ-018) | D-073 |
-| F16-REQ-024 | P0 | Durable erase in a sync build (D-085) | Given Erase now on a synced letter, Then an erase op reaches the server, which purges the row and any backup object within the DELETION_AND_EXPORT_SPEC window, and no device keeps a copy after its next pull | D-085; DATA-REQ-011 |
+| F16-REQ-013 | P0 | New phone pull: book list first, then letters in pages | Book list p95 10 s; one year p95 30 s on LTE | PRD 7.3 |
+| F16-REQ-014 | P0, Rev (D-073) | No audio, listening copy or photo bytes in any sync request; the owner's backup uses its own ciphertext path | Network capture of the E2E suite: zero audio bodies in `sync_push` or `sync_pull` | D-073 |
 | F16-REQ-015 | P0 | Sign-out and account switch per 6.2 G | Given sign-out, Then own letters and audio remain, others' rows are gone | A-REQ-033, DATA-REQ-023 |
 | F16-REQ-016 | P0 | "Not sent yet" on letter rows and a Settings > Sync line with reason and counts | Given 3 queued ops offline, Then the row and Settings show them within 10 s | B-NFR-009, PRD 7.4 |
-| F16-REQ-017 | P0 | Pull triggers per 6.2 C | Two-client probe: p95 5 s, p99 30 s with the app foreground | PRD 7.3 |
+| F16-REQ-017 | P0, Rev (AR-14) | Pull triggers per 6.2 C; one foreground interval of 30 s | Two-client probe, both foreground with the book open: p95 30 s, p99 60 s | PRD 7.3 Rev |
 | F16-REQ-018 | P0 | Kill switch `killSwitches.sync` honoured within 5 minutes on active clients; outbox kept | Staging drill per release | D-068, ADR 0016, LEGAL-REQ-040 |
-| F16-REQ-019 | P0 | Every RPC takes `p_api_version`; the server supports the current and previous version; older builds get `SCVER` (new) and the app shows `sync.updateNeeded` | Contract test with N-1 fixtures | B15, TDD 02 6.2 |
-| F16-REQ-020 | P0 | Logs carry only route template, SQLSTATE, durations, counts and a random request id; Postgres never echoes content (value-free validation trigger) | Log canary over the E2E run finds zero Asha fixture strings, letter text or ids | LEGAL-REQ-014, BL-244 |
-| F16-REQ-021 | P0 | Rate limits in the RPCs through `rate_limits` (hashed keys): `sync_push` 60 per user per minute, `sync_pull` 120 per user per minute | Given 61 pushes in a minute, Then `SCRAT` with `retry_after` | B15, TDD 06 3.2 |
+| F16-REQ-019 | P0 | `sync_push` and `sync_pull` take an API version; the server supports the current and previous version; older builds get `SCVER` (new) and the app shows `sync.updateNeeded` | Contract test with N-1 fixtures | B15, TDD 02 6.2; not built |
+| F16-REQ-020 | P0 | Logs carry only route template, SQLSTATE, durations, counts and a random request id; results never carry a message or detail | Log canary over the E2E run finds zero Asha fixture strings, letter text or ids | LEGAL-REQ-014, BL-244 |
+| F16-REQ-021 | P0 | Rate limits inside the RPCs through `rate_hit` (security definer): `sync_push` 60 and `sync_pull` 120 per user per rolling minute; clients cannot write the counters | Given 61 pushes in a minute, Then `SCRAT`; given a client update of its own counter, Then refused | B15, security review M3; built in `20261005000000` |
 | F16-REQ-022 | P0 | The app uses only the publishable key plus the user JWT; no service key in the bundle | Secret scan of the built bundle finds none | B15, LEGAL-REQ-026 |
-| F16-REQ-023 | P0 | Rejected writes are kept until the user resolves them, and included in export | Given a rejected letter, Then export contains it | DATA-REQ-043, LEGAL-REQ-034 |
+| F16-REQ-023 | P0 | Rejected writes and conflict copies are kept until the user resolves them, and included in export | Given a rejected letter and a conflict copy, Then export contains both | DATA-REQ-043, LEGAL-REQ-034 |
+| F16-REQ-024 | P0 | Durable erase in a sync build (D-085) | Given Erase now on a synced letter, Then an erase op reaches the server, which purges the row and any backup object within the DELETION_AND_EXPORT_SPEC window, and no device keeps a copy after its next pull | D-085; DATA-REQ-011 |
+| F16-REQ-025 | P0, new | Queued ops for a letter are rebased to the `v` returned for an earlier op of the same letter from the same device | Given two edits queued on one phone, When the first applies, Then the second carries the new `v` and the server reports no conflict | R2 AR-02 |
+| F16-REQ-026 | P0, new | The pull digest's changed-since check reads only the caller's readable rows | Given a co-parent pulling with a wrong `have` while the other parent writes a private letter, Then the response is the same as with no write | Security review M5; BL-331 |
+| F16-REQ-027 | P0, new | Watermark operating limits: `statement_timeout` 15 s and `idle_in_transaction_session_timeout` 30 s for app roles; alert when the oldest running transaction exceeds 30 s | Given a test transaction held for 31 s by an app role, Then it is ended and the alert row exists | R2 AR-14 |
+| F16-REQ-028 | P0, new | The v1.0 wire contract is frozen in `packages/api` with every column the server has or v1.0 specs need (nullable where not yet used): `language`, `author_edits`, `locked_spans`, `pack_ref`, `occurred_precision` | Given the contract test, Then the client types, the SQL op parser and the pull row match field for field | R2 AR-31 |
 
 ## 8. Data, privacy and security
 
 | Data | Level | Where | Who reads | Retention |
 |---|---|---|---|---|
-| `outbox` (local, new): op payloads | L4 | Device only (iOS Data Protection) | App | Until applied or moved to `rejected_writes` |
-| `rejected_writes` (local, new) | L4 | Device only | Author | Until resolved |
-| Local conflict copies (new) | L4 | Device only | Author | Until the author picks |
-| `book_access` (new) | L3 | Postgres | Own rows only; read by RLS helpers | Life of membership |
-| `server_seq`, commit watermark columns (new) | L2 | Postgres, device | Row readers | Life of row |
-| `sync_ops` (new) | L2 with L3 profile id | Postgres, service role and owner | Owner through `sync_push` results | 30 days |
-| `sync_state` (new, one row) | L2 | Postgres | Everyone signed in (epoch only) | Permanent |
-| Cursor and last sync time | L2 | Device | App | Install |
+| `sync_outbox` (local, built): op payloads | L4 | Device only (iOS Data Protection) | App | Until applied or moved to the rejected list |
+| Rejected writes (local, built) | L4 | Device only | Author | Until resolved |
+| `sync_conflicts` (local, new): the author's other version of a letter's words | L4 | Device only | Author | Until the author picks |
+| `entries.sync_xid`, `sync_restored_from` (built) | L2 | Postgres; `v` on the device | Row readers | Life of row |
+| `sync_op_receipts` (built; key change in BL-331) | L2 with L3 profile id | Postgres | Owner | 30 days (`sync_push` trims own, `sync_housekeeping` trims all) |
+| `sync_epochs` (built) | L2 | Postgres | Everyone signed in (epoch only) | Permanent |
+| `sync_rate_windows` (built, unlogged) | L2 with L3 profile id | Postgres | Owner reads; `rate_hit` writes | Rolling window |
+| Cursors, digests and last sync time | L2 | Device | App | Install |
 
-What never leaves the phone in v1.0: audio, listening copies, drafts, safety tiers, the outbox and rejected writes as tables, the Read together count. PowerSync is not used, so no sync processor holds L4 data (TDD 05 OQ-L15 is moot under D-023).
+What never leaves the phone in v1.0: listening copies, drafts, safety tiers, the outbox, rejected writes and conflict copies as tables. Audio leaves only as the owner's encrypted backup when on (F08). PowerSync is not used, so no sync processor holds L4 data (TDD 05 OQ-L15 is moot under D-023). Account deletion clears every server row above that references the person (F17 section 8 matrix).
 
 ## 9. Non-functional requirements
 
@@ -250,36 +278,37 @@ What never leaves the phone in v1.0: audio, listening copies, drafts, safety tie
 
 | Endpoint | p95 / p99 | Auth | Idempotency | Rate limit | Payload cap |
 |---|---|---|---|---|---|
-| `sync_push` (new RPC) | 800 ms / 2 s | User JWT, RLS (security invoker) | Op key in `sync_ops` | 60 per user per minute | 50 ops, 256 KB |
-| `sync_pull` (new RPC) | 300 ms / 800 ms per page | User JWT; reads `book_access` for `auth.uid()` only | Read; safe to repeat | 120 per user per minute | 200 rows per page |
-| `create_child`, `create_first_run_children` (exist) | 500 ms / 1.2 s | User JWT | Client id | 20 per user per day | 6 children |
-| `create_child_invite`, `accept_child_invite`, `leave_child` | 500 ms / 1.2 s | User JWT | Invite id or token | F11 | small |
-| `delete_entry`, `restore_entry` (exist) | 500 ms / 1.2 s | User JWT | Naturally idempotent (exists) | 120 per user per hour | 1 KB |
-| `my_sync_gate`, `policy_actions_needed` (exist) | 300 ms / 800 ms | User JWT | Read | 60 per user per hour | 4 KB |
-| Signed remote config read (`GET /functions/v1/config/v1/remote-config`, ADR 0016 section 6) | 300 ms (`public_document`, ADR 0017) | Public, no JWT; ETag and `stale-while-revalidate` | Read | n/a | 4 KB |
+| `sync_push(p_ops)` (built) | 800 ms / 2 s | User JWT, RLS (security invoker) | Op id receipt | 60 per user per minute | 50 ops, 256 KB |
+| `sync_pull(p_since, p_limit)` (built) | 300 ms / 800 ms per page | User JWT; `require_user()`, `book_entries` | Read; safe to repeat | 120 per user per minute | 500 rows, 100 books |
+| `sync_books()` (built) | 300 ms / 800 ms | User JWT | Read | Through `rate_hit` (BL-332) | small |
+| `create_child`, `create_first_run_children` (built) | 500 ms / 1.2 s | User JWT | Client id | 20 per user per day | 6 children |
+| `create_child_invite`, `accept_child_invite`, `leave_child`, `remove_child_member` | 500 ms / 1.2 s | User JWT | Idempotency key header (built in `20261005000000`) | F11 | small |
+| `delete_entry`, `restore_entry` (built) | 500 ms / 1.2 s | User JWT | Naturally idempotent | 120 per user per hour | 1 KB |
+| `my_sync_gate`, `policy_actions_needed` (built) | 300 ms / 800 ms | User JWT | Read | 60 per user per hour | 4 KB |
+| Signed remote config read (ADR 0016 section 6) | 300 ms (`public_document`, ADR 0017) | Public, no JWT; ETag | Read | n/a | 4 KB |
 
 Error budget: under 0.1% 5xx per endpoint class over 28 days (TDD 06 2.3). Request ids: the client sends a random `x-request-id` (UUIDv7) on every call and keeps it in on-device diagnostics; Edge Functions log it; whether the Supabase API gateway logs custom headers is Unverified (Q5). Region: one US region (B15, DATA-REQ-005).
 
-**Load targets (PRD 7.8 recomputed without contributors and audio uploads)** [A] unless marked
+**Load targets (PRD 7.8 recomputed without contributors)** [A] unless marked
 
 | Target | 1k families (launch) | 100k families | Change from PRD 7.8 |
 |---|---|---|---|
-| Accounts per family | 1.5 (at most 2 parents, D2 in F11; 25% or more second-parent goal) | 1.5 | Was 2.2 with contributors |
+| Accounts per family | 1.5 (at most 2 parents, D-069; 25% or more second-parent goal) | 1.5 | Was 2.2 with contributors |
 | MAU | 1.5k | 150k | Was 2.2k / 220k |
 | Concurrent sync clients at peak (5% of MAU) | 75; test at 200 (kept) | 7.5k | Was 200 / 11k |
-| Entry writes, peak 15 min | 5 per s (test load kept) | 50 per s (kept) | Unchanged: letters per family drive it |
+| Entry writes, peak 15 min | 5 per s (test load kept) | 50 per s (kept) | Unchanged |
 | `sync_pull` calls at peak (one per 30 s per concurrent client) | 2.5 per s; test at 7 per s | 250 per s | New |
-| Write RPCs (invites, leave) | 1 per s | 10 per s | Was 2 / 20 (no approvals) |
-| Encrypted audio uploads | 0 | 0 | Was 1 / 10 (B7) |
-| Store webhooks | 0 | 0 | Was 10 / 300 per minute (B2) |
-| Server notice emails | 0 (DR-02 default A is on device) | 0 | Was 100 / 5k per day |
+| Write RPCs (invites, leave) | 1 per s | 10 per s | Was 2 / 20 |
+| Encrypted audio uploads (owner backup, steady state) | About 0.1 per s at peak [A: 40 recordings per family per month, 50% of families backing up] | About 10 per s | Was 1 / 10 (B7); F08 section 9 holds the limits |
+| First-enable upload burst | One family's whole history at once (year 1 about 480 objects, 230 MB); test 20 families enabling at once | n/a | New (R2 AR-15) |
+| Escrow unwraps | Under 1 per hour [A] | Under 30 per hour [A] | New; F08 section 9 |
+| Status report writes (D-080) | F14 owns the number | F14 | New |
 | Children's books (1.3 per family) | 1.3k | 130k | Unchanged |
 | Letters after 12 months (240 per family) | 240k | 24M | Unchanged |
 | Database size (about 10 KB per letter, TDD 06 3.4) | About 3 GB | About 290 GB; about 120 GB if `stt_meta` stays on the device (Q3) | PRD said 8 GB / 150 GB |
-| Cumulative server audio | 0 | 0 | Was 115 GB / 11.4 TB |
 | Analytics events (40% consent, 150 per user per month) | About 90k per month | About 9M per month | Was 130k / 13M |
 
-Gate: load test at 2 times the 1k targets before public launch (BL-282); 2 times 100k before passing 25k families (PRD 7.8).
+Gate: load test at 2 times the 1k targets, including the first-enable burst, before public launch (BL-282); 2 times 100k before passing 25k families (PRD 7.8). Whether BL-282 runs before submission is 08 Q8.
 
 **Device budgets**
 
@@ -295,10 +324,10 @@ Gate: load test at 2 times the 1k targets before public launch (BL-282); 2 times
 | Env | Project | Who applies migrations | Data |
 |---|---|---|---|
 | local | PGlite harness (`npm run test:db`) and the Supabase CLI stack in CI | Tests only | Asha fixtures |
-| staging | `scribe-staging` (BL-107) | CI, `supabase db push` on merge to the release branch | Synthetic Asha families, load data |
-| prod | `scribe-prod` | CI on a release tag, after the founder's approval | Real families |
+| staging | `scribe-staging` (BL-107) | CI from `develop` with the `approve-migration` label (08 section 7; R2 AR-21) | Synthetic Asha families, load data |
+| prod | `scribe-prod` | CI on a `db-v*` tag, after the founder's approval | Real families |
 
-Rules: agents never apply a migration to a remote project; any PR touching `supabase/**` or auth needs an independent review run and the founder's `approve-migration` label; unattended runs stay paused for those paths until CI and branch protection are on (D-041). Database changes are new files only; applied files in `.github/migrations-applied.txt` are never edited (migration guard workflow). The pending pack (`20261002010000` to `20261003020000`) goes to staging first.
+Rules: agents never apply a migration to a remote project; any PR touching `supabase/**` or auth needs an independent review run and the founder's `approve-migration` label (D-041). Database changes are new files only; applied files in `.github/migrations-applied.txt` are never edited. A function defined in another stream's migration is changed only by S02 (R2 AR-16).
 
 ## 10. Analytics
 
@@ -306,66 +335,79 @@ Rules: agents never apply a migration to a remote project; any PR touching `supa
 |---|---|---|
 | `sync_failed` (exists) | `reason: network / auth / conflict / server / unknown` | Where does sync break? |
 | `error_shown` (exists) | new codes `sync_rejected`, `sync_conflict`, `sync_update_needed` | How often do people meet each state? |
-| Server aggregates (BL-024, L2 counts) | ops applied, duplicates, conflicts, rejections by SQLSTATE, pull pages | Contract health without device consent |
+| Server aggregates (BL-024, L2 counts) | ops applied, duplicates, word conflicts, rejections by SQLSTATE, pull pages, resets | Contract health without device consent |
 
 ## 11. How we build it (with the architect)
 
-| Part | Files (new unless stated) | Notes |
+| Part | Files | Status 13 Oct |
 |---|---|---|
-| Contracts | `packages/api/` (new workspace): `src/sync.ts`, `src/errors.ts`, `src/version.ts`; DB types generated with `supabase gen types` | Op kinds, field groups, per-op results, SQLSTATE enum shared by client and tests. A runtime validator with a permissive licence chosen in WP-F16-01 against installed sources |
-| Local store | `apps/mobile/src/lib/db/migrations.ts` (exists, append a version): `outbox`, `rejected_writes`, `conflict_copies`, `sync_meta`; `entries.sync_state`, `server_seq` | Through the `LocalStore` interface (BL-111) |
-| Sync client | `apps/mobile/src/lib/sync/` (new): `push.ts`, `pull.ts`, `scheduler.ts`, `apply.ts`, `restore.ts` | Pure logic testable in Node against `SqlDb` (`apps/mobile/src/lib/db/sql.ts`, exists) |
-| Server migrations (indicative names; the data architect assigns timestamps after the newest applied file) | `..._book_access.sql` (BL-175); `..._sync_seq_and_rpcs.sql` (`server_seq`, watermark, `sync_push`, `sync_pull`, `sync_ops`, `sync_state`, `SCPAIR`, `SCVER`); value-free validation (BL-244); `rate_limits` (BL-236) | Expand then contract for two app releases (TDD 02 6.2) |
-| Tests | `supabase/tests/sync_contract.test.mjs`, `sync_parity.test.mjs`, client unit tests, chaos suite in the CLI stack (BL-177) | Titles carry requirement ids |
+| Wire contract | `apps/mobile/src/lib/sync/types.ts` today; moves to `packages/api/src/sync.ts` (new) with an API version (WP-F16-01, WP-F16-16) | Types built in the app; not in `packages/api`; no API version |
+| Local store | `apps/mobile/src/lib/db/migrations.ts` (append a version; the coordinator assigns the number, R2 AR-37): `sync_conflicts` | Outbox, rejected writes, cursors built; conflicts table not built |
+| Sync client | `apps/mobile/src/lib/sync/` (`engine.ts`, `outbox.ts`, `merge.ts`, `ownership.ts`, `signal.ts`) | Built; conflict handling and rebase not built |
+| Server | `20261004100000_sync_engine.sql`, `20261005000000_family_cap_language_idempotency.sql`; deltas in a new S02 migration: receipts keyed by person (L1), digest check over readable rows (M5), words compare and set, `p_api_version`, role timeouts | Built and pending apply; deltas not built |
+| Tests | `supabase/tests/sync_engine.test.mjs`, `sync_perf.test.mjs` (built); `sync_parity.test.mjs`, `sync_conflict.test.mjs` (new); client unit tests; chaos suite (BL-177) | Partly built |
 
-Store fixes (TDD 02 3.4): `undeleteEntry` now queues an `entry.restore` op that the server applies with `restore_entry()` (built, `lib/sync/outbox.ts`, `sync_engine.sql`); local `children` per-person columns and the `birthday` mapping were not re-checked on 13 Oct. Not built: a shared `book_access` table (D-024; no migration creates it), `packages/api/src/sync.ts` contracts (the sync types live in `apps/mobile/src/lib/sync/types.ts`), a conflicts screen.
+**Sequencing.** Order only; dates live in `08-delivery.md` section 5. (1) The sync ADR below. (2) BL-331 deltas and the words compare and set in one S02 migration. (3) Client rebase and conflict handling (S03). (4) API version and contract freeze. (5) Two-phone conflict test, chaos suite, restore drill.
 
 **Riskiest unknowns and spikes**
-1. The commit watermark. Sequence values are taken in transaction order, not commit order, so a plain `server_seq > cursor` pull can skip a row. Proposed: store `pg_current_xact_id()` per row and serve only rows whose transaction id is below `pg_snapshot_xmin(pg_current_snapshot())`, then advance the cursor to that bound. Availability of these functions on hosted Supabase and in PGlite is Unverified. Spike WP-F16-00 with a two-connection concurrency test.
+1. The watermark on hosted Supabase: `pg_current_xact_id` and `pg_snapshot_xmin` work in PGlite (tests green); a two-connection proof on a real project is owed (WP-F16-00).
 2. Background sync from Expo (BGTaskScheduler wrapper) is Unverified; v1.0 does not depend on it.
-3. PRD 7.3 p95 5 s without realtime: depends on the F11 push wake-up and foreground pulls; measured in the two-client probe.
+3. Freshness without Realtime: measured in the two-client probe against the 30 s bar (6.2 C).
+
+**ADRs required before build** (numbers per `08-delivery.md` section 8.1: next free 0020 or later, checked against open branches; matches R2's list)
+
+| ADR | Content | Closes | Blocks |
+|---|---|---|---|
+| Sync protocol v1 (supersedes ADR 0004) | Ops and results as built, `sync_xid` watermark and its operating limits, digest removal, restore epochs, receipts keyed by person, API versioning and N-1, the words compare and set (6.2 E), the frozen v1.0 wire contract | R2 AR-01, AR-02, AR-14 (watermark), AR-31 | WP-F16-14 to -16 |
+| Account deletion across systems | Owned by F17 section 11 | R2 AR-22, AR-23 | WP-F16-13 server part |
+| M14 capabilities and kill switches (amends ADR 0016) | Owned by F19 section 11 | R2 AR-12, AR-27, AR-28 | WP-F19-12 |
 
 ## 12. Work packages
 
-Status is what `develop` holds on 13 Oct 2026. All of it is v1.0 (M14); none of it runs until the release profiles set `EXPO_PUBLIC_SERVER_FEATURES=on` (section 1), so built client code is "switch off in release profiles".
+Status is what `develop` holds on 13 Oct 2026. All of it is v1.0 (M14); none of it runs until the release profiles set `EXPO_PUBLIC_SERVER_FEATURES=on`. File ownership follows `08-delivery.md` section 3.3; a path here owned by another stream is a request.
 
-| WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode | Status 13 Oct | Device |
+| WP | Scope | Stream | Owns files or folders | Depends on | Done when | Mode | Status 13 Oct | Device |
 |---|---|---|---|---|---|---|---|---|
-| WP-F16-00 | Spike: commit watermark and concurrency | Sync owner, data architect | `experiments/sync-watermark/` | none | Two-connection test proves no skipped row; findings in PR | Pair. BL-173 | Partly built: `sync_engine.sql` orders by a transaction id (`sync_xid`, local `server_version`); a two-connection proof on a real project not recorded | none |
-| WP-F16-01 | `packages/api` skeleton and sync contracts | Platform engineer | `packages/api/` | none | Type tests; workspace builds | Agent | Partly built: `packages/api` exists (standards, envelope, manifest); sync contracts are in the app (`lib/sync/types.ts`), not in `packages/api` | none |
-| WP-F16-02 | `book_access` table, triggers, `book_entries` and helpers rebuilt on it | Data architect | Migration, `supabase/tests/visibility_matrix.test.mjs` | Pending pack in staging | Existing access tests green; perf test no regression (APPLY.md budgets) | Agent, `approve-migration`. BL-175 | Not built: no `book_access` table in any migration | none |
-| WP-F16-03 | `server_seq`, watermark, `sync_push`, `sync_pull`, `sync_ops`, `sync_state` | Data architect | Migration, `supabase/tests/sync_contract.test.mjs` | WP-F16-00, WP-F16-02 | `[F16-REQ-002]` to `[F16-REQ-005]`, `[F16-REQ-011]`, `[F16-REQ-019]`, `[DATA-REQ-044]` | Agent, `approve-migration`. BL-173 | Built in `20261004100000_sync_engine.sql` and `20261005000000` (not applied): `sync_push`, `sync_pull`, `sync_op_receipts` (security review L1: keyed globally, fix owed), `sync_epochs`, rate limits | none |
-| WP-F16-04 | Parity and leak suite | Security engineer, QA | `supabase/tests/sync_parity.test.mjs` | WP-F16-03 | `[F16-REQ-008]` | Agent. BL-195 | Partly built: `access_matrix.test.mjs`, `sync_engine.test.mjs` | none |
-| WP-F16-05 | Local schema and outbox writes | Mobile engineer | `apps/mobile/src/lib/db/migrations.ts`, `apps/mobile/src/lib/sync/outbox.ts` | BL-111 | `[F16-REQ-001]` fault test; migrator fixtures | Agent. BL-174 | Built: local migration 4, `lib/sync/outbox.ts` | none |
-| WP-F16-06 | Push and pull client, apply, scheduler | Sync owner | `apps/mobile/src/lib/sync/` | WP-F16-03, WP-F16-05 | `[F16-REQ-009]`, `[F16-REQ-013]`, `[F16-REQ-017]`, kill-during-push 500 of 500 | Agent. BL-174 | Built: `lib/sync/engine.ts`, `merge.ts`, `signal.ts`; switch off in release profiles | S1-22 two phones (build with the switch on) |
-| WP-F16-07 | Conflicts and rejected writes UI | Mobile engineer | `apps/mobile/src/lib/sync/conflicts.ts`, Settings > Sync screen, `copy.ts` | WP-F16-06 | `[F16-REQ-010]`, `[F16-REQ-016]`, `[F16-REQ-023]` | Agent | Partly built: `rejected_writes` stored; no conflicts screen | none |
-| WP-F16-08 | Restore epoch client and drill | Data architect, sync owner | `apps/mobile/src/lib/sync/restore.ts`, runbook RB-8 | WP-F16-06, BL-107 | `[F16-REQ-012]` drill passes in staging | Pair. BL-247 | Partly built: restore epoch client (`entry.reupload`, held rows in `merge.ts`); drill not run | Staging drill |
-| WP-F16-09 | Sign-out, account switch, revocation | Mobile engineer | `apps/mobile/src/lib/auth/session.ts` (F02 owns; coordinate) | WP-F16-06, WP-F02-09 | `[F16-REQ-015]`, `[A-REQ-033]` | Agent | Partly built: sign-out waits for the outbox (`auth/machine.logic.ts`); device check owed | S2-14 |
-| WP-F16-10 | Value-free validation and rate limits | Data architect | Migrations (BL-244, BL-236) | Pending pack | `[F16-REQ-020]` oversize letter canary; `[F16-REQ-021]` | Agent, `approve-migration` | Partly built: server rate limits through `rate_hit` (`20261005000000`); value-free validation not verified | none |
-| WP-F16-11 | Chaos suite and two-phone script | QA, sync owner | CLI stack in CI | WP-F16-06 | Offline, kill, duplicate push, reorder; manual two-phone p95 5 s | Agent plus human. BL-177 | Not run | S1-22 |
-| WP-F16-12 | Load test at 2 times the 1k targets | QA | k6 scripts | WP-F16-06, staging | Section 9 targets at 2x | Agent. BL-282 | Not run | none |
-| WP-F16-13 | Erase op for a synced letter (D-085): Erase now and the 30-day purge in a sync build | Data architect, sync owner | `apps/mobile/src/lib/store.ts` (`eraseEntry` sync branch), `lib/sync/outbox.ts`, new migration | WP-F16-06 | `[F16-REQ-024]` | Agent, `approve-migration` | Not built | none |
+| WP-F16-00 | Watermark proof on a real project | S02 with S03 | `experiments/sync-watermark/` | Staging project | Two-connection test on staging proves no skipped row; findings in PR | Pair. BL-173 | Partly built: watermark in SQL, PGlite tests green | none |
+| WP-F16-01 | Move the sync contract into `packages/api` | S07 | `packages/api/src/sync.ts` (new), its test | Sync ADR | Type tests; the app imports the contract from `packages/api`; `[F16-REQ-028]` | Agent | Not built | none |
+| WP-F16-02 | `book_access` table | none | n/a | n/a | n/a | n/a | Removed from v1.0 (D-055; R2 AR-03) | none |
+| WP-F16-03 | Server protocol | S02 | Migrations listed in section 11 | none | `[F16-REQ-002]`, `[F16-REQ-004]`, `[F16-REQ-005]`, `[F16-REQ-011]`, `[DATA-REQ-044]` | Agent, `approve-migration`. BL-173 | Built in `20261004100000` and `20261005000000`, not applied | none |
+| WP-F16-04 | Parity, leak and M5 regression suite | S02 with S19 | `supabase/tests/sync_parity.test.mjs` (new) | WP-F16-03 | `[F16-REQ-008]`, `[F16-REQ-026]` | Agent. BL-195 | Partly built: `access_matrix.test.mjs`, `sync_engine.test.mjs` | none |
+| WP-F16-05 | Local schema and outbox writes | S03 | `lib/db/migrations.ts`, `lib/sync/outbox.ts` | BL-111 | `[F16-REQ-001]` fault test; migrator fixtures v0 to head | Agent. BL-174 | Built | none |
+| WP-F16-06 | Push and pull client, apply, scheduler at one 30 s interval | S03 | `lib/sync/engine.ts`, `merge.ts`, `signal.ts` | WP-F16-03, WP-F16-05 | `[F16-REQ-009]`, `[F16-REQ-013]`, `[F16-REQ-017]`, kill-during-push 500 of 500 | Agent. BL-174 | Built; interval not checked against 30 s; switch off in release profiles | S1-22 two phones |
+| WP-F16-07 | Rejected writes and Settings > Sync screen | S03 with S14 | Settings > Sync screen, `lib/sync/` status | WP-F16-06 | `[F16-REQ-016]`, `[F16-REQ-023]` | Agent | Partly built: rejected writes stored; no screen | none |
+| WP-F16-08 | Restore epoch drill, with the backup re-check | S03, founder | Runbook RB-8 (`docs/runbooks/`, request) | WP-F16-06, BL-107, WP-F08-B5a | `[F16-REQ-012]` drill passes in staging, including one escrow restore end to end (F08) | Pair. BL-247 | Partly built: client re-upload and held rows in `merge.ts`; drill not run | Staging drill |
+| WP-F16-09 | Sign-out, account switch, revocation | S01 with S03 | `lib/auth/machine.logic.ts` | WP-F16-06, WP-F02-09 | `[F16-REQ-015]`, `[A-REQ-033]` | Agent | Partly built: sign-out waits for the outbox; device check owed | S2-14 |
+| WP-F16-10 | Value-free validation, rate limits, role timeouts and the long-transaction alert | S02 | New migration; `ops-health` alert row | WP-F16-03 | `[F16-REQ-020]`, `[F16-REQ-021]`, `[F16-REQ-027]` | Agent, `approve-migration` | Partly built: `rate_hit`; timeouts and alert not built | none |
+| WP-F16-11 | Chaos suite and the two-phone conflict gate | S19 with S03 | CLI stack in CI; `docs/qa/` two-phone script (request) | WP-F16-15 | Offline, kill, duplicate push, reorder; `[F16-REQ-010]` on two phones; freshness p95 30 s | Agent plus human. BL-177 | Not run | S1-22 |
+| WP-F16-12 | Load test at 2 times the 1k targets with the backup burst | S19 | k6 scripts | WP-F16-06, staging | Section 9 targets at 2x | Agent. BL-282 | Not run; 08 Q8 | none |
+| WP-F16-13 | Erase op for a synced letter (D-085) | S02 server, S03 client | `store.ts` `eraseEntry` sync branch, `lib/sync/outbox.ts`, new migration | WP-F16-06 | `[F16-REQ-024]` | Agent, `approve-migration` | Not built | none |
+| WP-F16-14 | Words compare and set, server | S02 | New migration (`sync_push` redefined by S02 only), `supabase/tests/sync_conflict.test.mjs` (new) | Sync ADR | `[F16-REQ-010]` server half: the conflicting text group is not applied, `conflict_groups` and `current` returned, other groups applied | Agent, `approve-migration` | Not built (P0 gap) | none |
+| WP-F16-15 | Conflict handling and rebase, client | S03 | `lib/sync/merge.ts`, `outbox.ts`, `types.ts`, local migration for `sync_conflicts`, conflict note component (request to S13 for the letter view slot) | WP-F16-14 contract | `[F16-REQ-010]` client half, `[F16-REQ-025]`, `[F16-REQ-023]` | Agent | Not built (P0 gap) | S1-22 |
+| WP-F16-16 | API version and N-1 support | S02 server, S03 client, S07 contract | `sync_push` and `sync_pull` signatures (new overloads), `packages/api/src/sync.ts` | WP-F16-01 | `[F16-REQ-019]` contract test with N-1 fixtures | Agent, `approve-migration` | Not built | none |
 
 ## 13. Open questions and assumptions
 
 | Q | Who answers, by when | What changes |
 |---|---|---|
-| Q1 D-023: outbox and cursor on expo-sqlite instead of PowerSync | Founder, 16 Oct | If PowerSync: ADR 0004 path, op-sqlite migration, vendor no-training clause (TDD 05 OQ-L15) |
-| Q2 Is foreground polling plus the F11 push wake-up enough for p95 5 s, or is Supabase Realtime needed? | Sync owner, after the week 8 probe | Adds a realtime channel scoped by `book_access` |
-| Q3 Do per-token timestamps in `stt_meta` sync to the server at all? | Data architect with F05 owner, 30 Oct | Database size at 100k: 290 GB or 120 GB |
+| Q1 D-023: outbox and cursor on expo-sqlite | Decided (founder, 3 Oct) | n/a |
+| Q2 Realtime broadcast per book (ids only) for foreground phones, to reach p95 5 s | Founder with S03, v1.1 planning | Adds a channel authorised by `is_child_member`; 06 section 4 freshness row |
+| Q3 Do per-token timestamps in `stt_meta` sync to the server at all? | Data architect with F05 owner, milestone in 08 | Database size at 100k: 290 GB or 120 GB |
 | Q4 In-app import of an export ZIP to bring recordings back | Founder, v1.1 planning | F15 and F08 |
 | Q5 Does the Supabase API gateway log custom request headers and paths with ids (TDD 06 C-1)? | Privacy counsel and data architect, before beta C1 | Request-id design and data map row |
+| Q6 Book-setting conflicts (C5): later arrival plus a note, or compare and set like words? Spec default: later arrival plus F12's note | Founder with F12 owner | C5 row; F12 |
 
 | A | Assumption | How we validate |
 |---|---|---|
-| A1 | Same-author two-device edits are rare | Server conflict count in C1 |
+| A1 | Same-author two-device word edits are rare | Server conflict count in C1 |
 | A2 | 1.5 accounts per family | Server aggregate after 8 weeks |
-| A3 | Pull every 30 s on foreground stays inside Supabase plan limits at 7.5k concurrent | Load test at 100k profile before 25k families |
+| A3 | A 30 s foreground pull stays inside Supabase plan limits at 7.5k concurrent | Load test at the 100k profile before 25k families |
 
 ## 14. Sources
 
-- Decisions: `docs/prd/v2/_AUTHORING.md` (B2, B7, B15); `docs/agents/BRIEF-2026-10-03.md` items 9, 17 and coordination rules; `docs/DECISIONS.md` D-023, D-024, D-033, D-035, D-041, D-068, D-073, D-085; `apps/mobile/src/lib/sync/*`, `apps/mobile/src/lib/capabilities.ts`, `apps/mobile/src/lib/store.ts`, `supabase/migrations/20261004100000_sync_engine.sql`, `20261005000000_family_cap_language_idempotency.sql` (read 13 Oct 2026); `09-decisions-and-risks.md` DR-02, "Still open"; ADR `docs/adr/0004-sync-engine.md` (status note).
+- Decisions: `docs/prd/v2/_AUTHORING.md` (B2, B7, B15, M14, M15, M16); `docs/agents/BRIEF-2026-10-03.md` items 9, 17; `docs/DECISIONS.md` D-023, D-024, D-033, D-035, D-041, D-055, D-068, D-073, D-085; ADR `docs/adr/0004-sync-engine.md` (status note); `08-delivery.md` sections 3.3, 7, 8.1.
+- Reviews: `reviews/R2-architect.md` AR-01 to AR-03, AR-08, AR-14 to AR-16, AR-21, AR-31, AR-32, AR-37; `reviews/R5-eng-qa.md` EQ-04, EQ-20; `docs/reviews/2026-10-04-security-privacy.md` M3, M5, L1.
+- Code read 13 Oct 2026: `apps/mobile/src/lib/sync/types.ts`, `outbox.ts`, `merge.ts`, `engine.ts`; `apps/mobile/src/lib/capabilities.ts`; `apps/mobile/src/lib/store.ts`; `supabase/migrations/20261004100000_sync_engine.sql` (header, sections 1 to 6, `sync_push`), `20261005000000_family_cap_language_idempotency.sql` (header, `c_groups`); `20261002020000_data_governance.sql` (`book_entries`, `is_child_parent`); `20260930000000_scribe_core.sql` (`is_child_member`, `entry_versions`); `.github/migrations-applied.txt`.
 - Requirements: `docs/prd/PRD.md` K-39, 7.2, 7.3, 7.4, 7.5, 7.7, 7.8, 7.10; `docs/prd/A-entry-and-auth.md` A-REQ-015, -032, -033; `docs/prd/B-first-run-and-family.md` B-NFR-003, -009; `docs/legal/DELETION_AND_EXPORT_SPEC.md` DATA-REQ-010 to -016, -023, -030 to -032, -040 to -048; `docs/legal/ENGINEERING_REQUIREMENTS.md` LEGAL-REQ-001, -006, -009, -014, -024, -026, -032, -034, -040.
-- Technical: `docs/tdd/02-sync-backend.md` 2.2, 3.2 to 3.6, 6, 7, 8; `docs/tdd/01-mobile-client.md` 3.2.2 to 3.2.6; `docs/tdd/04-security-identity.md` 3.2; `docs/tdd/06-performance-reliability.md` 2.2, 2.3, 3.1 to 3.4, 5.3, 5.4, 6.3; `docs/tdd/10-red-team-critique.md` section 2; `docs/BACKLOG.md` BL-022, -024, -052, -107, -111, -173 to -177, -195, -236, -244, -247, -282, -284; `supabase/APPLY.md` (error codes, perf budgets).
-- Code and schema: `supabase/migrations/20261002020000_data_governance.sql`, `20261003000000_security_and_family.sql`, `20261003010000_children_and_entitlements.sql`; `supabase/tests/security_family.test.mjs`; `.github/migrations-applied.txt`, `.github/README.md`; `apps/mobile/src/lib/store.ts`; `apps/mobile/src/lib/db/migrations.ts`, `sql.ts`, `expo-adapter.ts`; `packages/analytics/src/catalog.ts`; `packages/content/src/strings.en.ts` (`errors.*`).
-- Research: `research/R1-competitors-by-feature.md` F16 (R1-S4, R1-S5, R1-S6, R1-S12, R1-S23, R1-S31, R1-S44, R1-S64); `research/R2-customer-evidence.md` section 0 item 1, T7, T8, R2-S14, R2-S16.
+- Technical: `docs/tdd/02-sync-backend.md` 2.2, 3.2 to 3.6, 6; `docs/tdd/04-security-identity.md` 3.2; `docs/tdd/06-performance-reliability.md` 2.2, 2.3, 3.1 to 3.4, 6.3; `docs/BACKLOG.md` BL-022, -024, -107, -111, -173 to -177, -195, -244, -247, -282, -284, -331, -332.
+- Research: `research/R1-competitors-by-feature.md` F16 (R1-S4, R1-S5, R1-S6, R1-S12, R1-S23, R1-S31, R1-S44, R1-S64); `research/R2-customer-evidence.md` section 0 item 1, T8, R2-S14, R2-S16.

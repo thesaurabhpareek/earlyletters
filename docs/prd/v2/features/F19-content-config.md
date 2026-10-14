@@ -7,7 +7,7 @@
 | Personas | P1 Evening parent, P4 Multilingual family (packs), P2 Co-parent; the founder as publisher |
 | Existing IDs | LEGAL-REQ-040, LEGAL-REQ-059, C-NFR-009, A-REQ-002, A-REQ-011, C-REQ-009, PRD-REQ-005, D-035 (superseded), D-046, D-066, D-068, ADR 0016, ADR 0017, DR-14, BL-022 (superseded), BL-335, BL-337, BL-339; security review L3, L10 |
 | Depends on | `packages/api` (contracts, signing, standards), F05 (speech and text packs, language gates), F13 (prompts), F14 (free letters allowance), F17 (Settings > Storage), F21 (review notes list every flag; the pack and document host names) |
-| Status | Draft V2, 13 Oct 2026. Code checked on `docs/prd-v2` rebased on `origin/develop` at 6482cd3 |
+| Status | Draft V2, 13 Oct 2026. Code checked on `docs/prd-v2` rebased on `origin/develop` at 6482cd3. Revised after critique round 1 (R2 AR-12, AR-18, AR-27, AR-28; R5 EQ-17; R1 PL-03): kill-switch timing that can pass, two signing keys, per-feature build flags and switches for the M14 server features |
 
 > **Not legal advice.** Items marked **[Counsel]** wait on a licensed attorney.
 
@@ -22,6 +22,8 @@
 - [D] The app download stays under 40 MB; speech models and every non-English pack download on demand, checked by SHA-256 against a signed manifest (B13, brief item 15). Model files sit on a zero-egress or free-egress host, never Supabase egress (D-046).
 - [F] Most of it is built: contracts and Ed25519 signing in `packages/api`, the document client in `apps/mobile/src/lib/remote`, the pack engine in `apps/mobile/src/lib/packs`, four block components in `apps/mobile/src/components/content-blocks`, two Edge Functions (`supabase/functions/config`, `content`) and the offline publisher `scripts/packs/publish.ts`. The trusted key list ships empty (`packages/api/src/keys.ts`), so the app trusts nothing yet (BL-335), and nothing is published (`supabase/functions/config/published.ts` holds `null`).
 - [S] Apple's own on-device speech assets failed to download for Arabic in a beta, so a downloaded pack needs a visible state and a retry (R1-S27).
+- [F] The 5-minute kill-switch bar cannot pass with today's numbers: remote config is served with `max-age=60, stale-while-revalidate=3600` (`packages/api/src/standards.ts` `CACHE_POLICY.remoteConfig`) and the app asks at most every 4 minutes (`CLIENT_REFRESH_MS.remoteConfig`), so a cache can hand out a stale copy and the app may not ask again for minutes (R2 AR-27). Section 6.2 D sets numbers that can.
+- [F] One build switch, `EXPO_PUBLIC_SERVER_FEATURES`, drives sign-in, sync and co-parent together (`apps/mobile/src/lib/capabilities.ts`), and no remote switch exists for backup uploads, escrow or the subscription status report. M14 ships all of them, so each needs its own kill path (R2 AR-12).
 
 ## 2. Who
 
@@ -87,7 +89,7 @@
 | Where | What | Built? |
 |---|---|---|
 | App start, after the first frame | `startRemote()` loads the three caches, then refreshes | Built (`apps/mobile/src/app/_layout.tsx` `startServices`, `apps/mobile/src/lib/remote/index.ts`) |
-| Foreground and every 60 s while open | Refresh; each document keeps its own minimum interval (config 4 min, manifest and content 6 h) | Built (`CLIENT_REFRESH_MS`, `packages/api/src/standards.ts`) |
+| Foreground and every 60 s while open | Refresh; each document keeps its own minimum interval (config 4 min today, 2 min per F19-REQ-026; manifest and content 6 h) | Built (`CLIENT_REFRESH_MS`, `packages/api/src/standards.ts`); interval change not built |
 | First run language step, Settings > Spoken language | `ensureLanguage(lang)` asks the pack engine | Built (`apps/mobile/src/lib/packs/index.ts`) |
 | Settings > Storage | Installed packs, sizes, Stop, Try again, Remove, mobile data switch | Built (`apps/mobile/src/app/settings/storage.tsx`) |
 | Tonight, Review, Book, Settings | Tip and announcement slots | Not built (components exist, no screen renders them) |
@@ -113,7 +115,8 @@
 
 **D. Something breaks: invites misbehave [server].**
 1. Founder runs `publish.ts config --kill invites`, commits, deploys `config`.
-2. Within 5 minutes each open app has the new config (60 s cache plus the 4-minute refresh, ADR 0016 6). Invite entry points show their paused state; writing, reading and export are untouched.
+2. Within 5 minutes each open app has the new config. The numbers that make this hold [R] (F19-REQ-026): remote config served with `max-age=60, stale-while-revalidate=30`; the app refreshes it at most every 2 minutes while in the foreground. Worst case: 60 s fresh plus 30 s stale at the cache plus a 2-minute refresh gap, about 3.5 minutes, plus deploy time. Invite entry points show their paused state; writing, reading and export are untouched.
+3. Lifting the switch is the same command without `--kill`, signed with a higher version. A replayed or older document can never clear a set switch (F19-REQ-008).
 
 ### 6.3 Unhappy paths and edge cases
 
@@ -169,12 +172,17 @@ Direction: **up** may only raise, **down** may only lower, **kill** may only sto
 | `killSwitches.photos` | bool, false | kill | None (no photo feature) | Contract built |
 | `killSwitches.packDownloads` | bool, false | kill | `apps/mobile/src/lib/packs/index.ts` | Built |
 | `killSwitches.serverContent` | bool, false | kill | `apps/mobile/src/lib/remote/index.ts` | Built |
+| `killSwitches.backupUploads` | bool, false | kill | F08 backup queue **[server]** | Not built (new, R2 AR-12) |
+| `killSwitches.escrow` | bool, false | kill | F08 restore client; the `escrow` function also reads a server setting so it can be stopped without any phone **[server]** | Not built (new) |
+| `killSwitches.statusReport` | bool, false | kill | F14 status report sender **[server]** | Not built (new) |
 | `captureMaxMinutes` (F04 asks `capture_max_minutes`) | int, 30, clamp 5 to 30 | down | F04 recorder | Not built (new) |
 | `flags.listeningCopy` | Removed: F08-REQ-006 Rev (D-068) has no remote listening-copy key; the player uses a copy only when its hash matches | n/a | F08 | Not to be built |
 | `appLockGraceSeconds` (F17) | int, 60, clamp 0 to 300 | variant | F17 lock | Not built (new) |
 | Language gate states (F03, F05) | In the pack manifest, not config: optional `gate` on each entry (`passed`, `early`, `paused`) | A language not named in the reviewed listing may not be moved to `passed` remotely | F03 chips, F05 | Not built (new field in `PackEntrySchema`) |
 
-Sibling specs use snake_case names from the old D-035 table; the contract uses camelCase. The camelCase name in this table is the one to build. `sync_enabled` (F16) is `killSwitches.sync` inverted. `sensitive_withdrawal_mode` (F17) is a server setting, not remote config.
+This table is the one key registry; every spec and `06-nfr.md` cite these exact camelCase names (R5 EQ-17). The old snake_case names from D-035 (`sync_enabled`, `capture_max_minutes`, `app_lock_grace_seconds`) are retired. `sensitive_withdrawal_mode` (F17) is a server setting, not remote config.
+
+**Build flags (not remote).** Each M14 feature gets its own build flag so a release can ship with one of them off (R2 AR-12): `capabilities.signIn`, `capabilities.sync`, `capabilities.coParent` (built, all from `EXPO_PUBLIC_SERVER_FEATURES`), plus new `capabilities.backup` and `capabilities.statusReport`, each true only when server features are on and its own variable (`EXPO_PUBLIC_BACKUP`, `EXPO_PUBLIC_STATUS_REPORT`, new) is on. A build flag removes the feature from that build; a kill switch pauses it in builds that have it.
 
 ## 7. Requirements and acceptance criteria
 
@@ -183,16 +191,16 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | ID | P | Requirement | Acceptance criteria | Status | Source |
 |---|---|---|---|---|---|
 | F19-REQ-001 | P0 | Every remote document is Ed25519-signed over canonical JSON with a kind prefix; the app trusts only keys it ships; fail closed | Given a document signed by an unknown key, of the wrong kind, or altered by one byte, Then it is not used and the last good copy stays | Built (`packages/api/src/integrity.ts`, `canonical.ts`, `test/integrity.test.ts`) | ADR 0016 4.2 |
-| F19-REQ-002 | P0 | The production key is generated once by the founder; the public key ships in `keys.ts`; the secret lives only in the founder's password manager | Given a release build, Then `TRUSTED_SIGNING_KEYS` has at least 1 entry for all 3 kinds, and no secret appears in the repo, CI, EAS or Supabase | Not built (`keys.ts` empty; BL-335) | ADR 0016 7 |
+| F19-REQ-002 Rev (AR-28) | P0 | Two signing keys from the first ceremony: a primary and a cold backup generated at the same time, held offline in separate places; both public keys ship in `keys.ts`; a written rotation runbook | Given a release build, Then `TRUSTED_SIGNING_KEYS` has 2 entries covering all 3 kinds; a document signed with the backup key is accepted; no secret appears in the repo, CI, EAS or Supabase; `docs/runbooks/` holds the rotation steps | Not built (`keys.ts` empty; BL-335) | ADR 0016 7; R2 AR-28 |
 | F19-REQ-003 | P0 | Schema validation per key with bundled fallback; unknown keys ignored; one bad value never rejects the document | Given 30 corrupt fixtures, Then each bad key falls back and every good key applies | Built (`packages/api/src/remote-config.ts`, `test/remote-config.test.ts`) | ADR 0016 5.1 |
 | F19-REQ-004 | P0 | Offline first: synchronous last good copy, never awaited at launch | Given no network and an empty cache, Then cold start shows Tonight with bundled defaults and 0 network calls before the first frame | Built (`apps/mobile/src/lib/remote/documents.ts`, `index.ts`; `_layout.tsx`) | A-REQ-002, B14 |
 | F19-REQ-005 | P0 | Every store build can reach the documents | Given each EAS store profile, Then either server features are on or `EXPO_PUBLIC_DOCS_BASE_URL` is an https origin serving the three paths; a config test fails otherwise | Not built (no profile sets it; BL-339's env list omits it) | ADR 0016 6 |
-| F19-REQ-006 | P0 | Kill switches reach an open app within 5 minutes | Given staging, When `--kill packDownloads` is published at T, Then two open phones refuse a new download by T+5 min; repeat with a CDN in front | Partly built: timings in `CACHE_POLICY` and `CLIENT_REFRESH_MS`; staging test not run | LEGAL-REQ-040 |
+| F19-REQ-006 | P0 | Kill switches reach an open app within 5 minutes | Given staging with the F19-REQ-026 numbers, When `--kill packDownloads` is published at T, Then two open phones refuse a new download by T+5 min in 10 of 10 runs; repeat with a CDN in front | Partly built: today's `CACHE_POLICY` and `CLIENT_REFRESH_MS` allow more than 5 minutes; staging test not run | LEGAL-REQ-040; R2 AR-27 |
 | F19-REQ-007 | P0 | Kill switches stop only server-dependent features; local recording, typing, saving, reading, playback and export keep working | Given every kill switch on and the phone offline, Then the F04, F06, F09, F15 smoke tests pass | Built by construction (no key exists for them, `remote-config.ts`); smoke test not built | LEGAL-REQ-040 |
-| F19-REQ-008 | P0 | No stale kill switch: a same-version document with a different body is ignored, and a config older than 7 days by `generatedAt` against the last good server `Date` header is treated as stale for kill switches (switches keep their last good state, no new document lowers them) | Given a replayed old config, Then a set kill switch stays set | Not built (review L10) | Review L10 |
+| F19-REQ-008 Rev (AR-27) | P0 | No stale or replayed config can clear a kill switch; a newer signed one can | Given a same-version document with a different body, Then it is ignored. Given a config whose `generatedAt` is more than 7 days older than the last good server `Date` header, Then its kill switches are ignored and the last good state stays. Given a replayed older document with a switch cleared, Then the switch stays set. Given a newer signed document that clears it, Then it clears | Not built (review L10) | Review L10; R2 AR-27 |
 | F19-REQ-009 | P0 | Closed vocabulary with a guard test | Given `RemoteConfigSchema` and the block types, Then a test lists every key and block type and fails on any not in 6.5 or ADR 0016 5.1; no key matches `analytic`, `sampl`, `consent`, `price`, `paywall`, `layout`, `rewrite` | Partly built: closed by construction; no guard test | B14, 2.3.1(a) |
 | F19-REQ-010 | P0 | `freeLettersAllowance` may only raise the reviewed 2 | Given a served 0 or 1, Then the effective value is 2; given 5, Then 5 | Built (`effectiveFreeLetters`, `_layout.tsx`) | M1 |
-| F19-REQ-011 | P0 | Each kill switch and one-way key has a consumer before the feature it guards ships | Given server features on, Then `sync` pauses the outbox, `invites` disables create and redeem, `forceReauthEpoch` signs out once per epoch | Not built for `sync`, `invites`, `forceReauthEpoch` (no consumer found); needed for v1.0 (M14) | LEGAL-REQ-040, L3 |
+| F19-REQ-011 | P0 | Each kill switch and one-way key has a consumer before the feature it guards ships | Given server features on, Then `sync` pauses the outbox, `invites` disables create and redeem, `forceReauthEpoch` signs out once per epoch after the outbox drains, `backupUploads` stops new uploads, `escrow` stops restores on the phone and in the function, `statusReport` stops reports | Not built for any of these (no consumer found); needed for v1.0 (M14) | LEGAL-REQ-040, L3; R2 AR-12 |
 | F19-REQ-012 | P1 | Gentle update card from `minSupportedVersion` | Given the running version below it, Then one dismissible card on Tonight with an App Store link; capture and reading unaffected | Not built | ADR 0016 5.1 |
 | F19-REQ-013 | P0 | New keys in 6.5 with their direction rules | Given each new key out of range or moving the wrong way, Then the bundled default applies | Not built | F04, F08, F17 |
 | F19-REQ-014 | P0 | Content blocks: 4 types, plain text, only `{child}`, `{app}`, `{signsAs}`, forbidden characters refused | Given fixtures with a curly quote, an unknown placeholder and a newline, Then each block is skipped | Built (`packages/api/src/content.ts`, `test/content.test.ts`) | B14 |
@@ -206,6 +214,8 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | F19-REQ-022 | P0 | Requests are content-free: no user id, no token, no cookie, no query beyond `locale` | Given a captured request, Then only `accept`, `if-none-match`, `x-request-id`, the app version header | Built (`documents.ts` `doRefresh`) | B15 |
 | F19-REQ-023 | P0 | Publishing leaves an audit trail | Given a publish, Then `published.ts` and `remote-config.json` change in one commit whose message names the change | Partly built: the script writes both; nothing published yet | C-NFR-009 |
 | F19-REQ-024 | P0 | Every flag and kill switch is listed in the App Review notes with its reviewed variants | Given the review notes (F21), Then each key in 6.5 that the build reads appears once | Not built | 2.3.1(a) |
+| F19-REQ-025 | P0 | Per-feature build flags `capabilities.backup` and `capabilities.statusReport` | Given a build with server features on and `EXPO_PUBLIC_BACKUP` off, Then no backup UI, upload or escrow call exists in that build while sign-in, sync and co-parent work; same for the status report | Not built | R2 AR-12; 08 section 2.4 fallbacks |
+| F19-REQ-026 | P0 | Cache and refresh numbers that meet the 5-minute bar | Given `CACHE_POLICY.remoteConfig`, Then it is `public, max-age=60, stale-while-revalidate=30, stale-if-error=604800`; given the app in the foreground, Then remote config is requested at most every 2 minutes and at least every 2 minutes plus one tick | Not built (today 3600 s and 4 minutes) | R2 AR-27 |
 
 ## 8. Data, privacy and security
 
@@ -217,9 +227,9 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | Dismissed announcement ids | L1 | Device `settings` | The app | Until app deleted | Leaves the phone |
 | Installed packs | L1 | `Library/Application Support/packs`, excluded from backup | The app | Until removed | Uploaded |
 
-- The signing secret is the single point of failure for trust; revocation needs an app release (ADR 0016 4.2).
+- Two signing keys (F19-REQ-002) remove the single point of failure: losing the primary means signing with the backup and shipping a release that adds a new backup; a leaked key still needs a release to revoke (ADR 0016 4.2).
 - The subprocessor page and Privacy Policy section 8 name the pack host (D-046; F21).
-- `stale-while-revalidate=3600` on remote config lets a CDN serve one stale copy while it revalidates; the 5-minute test (F19-REQ-006) must run with the CDN in place [A: worst case about 9 minutes with an unlucky request order; measure].
+- Today's `stale-while-revalidate=3600` lets a cache serve a stale copy for up to an hour while it revalidates; F19-REQ-026 lowers it to 30 s for remote config only. The 5-minute test (F19-REQ-006) runs with the CDN in place.
 
 ## 9. Non-functional requirements
 
@@ -229,7 +239,8 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | Document request p95 | 300 ms, 5 s timeout, 3 attempts | `ENDPOINT_CLASSES.public_document` |
 | Pack file first byte p95 | 1 s, 60 s per Range request, 6 attempts per host | `ENDPOINT_CLASSES.pack_file` |
 | Refresh cost | About 5 document requests per active user per day [E, ADR 0016 6] | ADR 0016 6 |
-| Kill switch latency | 5 minutes or less | LEGAL-REQ-040 |
+| Kill switch latency | 5 minutes or less; worst case by arithmetic about 3.5 minutes plus deploy with F19-REQ-026 | LEGAL-REQ-040; R2 AR-27 |
+| Refresh cost at 2 minutes in the foreground | About 15 config requests per active user per day [A: 30 foreground minutes a day]; each a 304 when unchanged | ADR 0016 6 |
 | Bundle cost of `valibot` and noble libraries | Measured in `docs/ops/APP_SIZE.md` | B13 |
 | Accessibility | Storage and block cards pass AX5 and VoiceOver | LEGAL-REQ-051 |
 
@@ -249,7 +260,8 @@ Remote config never changes what is collected (F18-REQ-010). Document fetch outc
 
 - **As built (ADR 0016):** `packages/api` contracts (`remote-config.ts`, `content.ts`, `pack-manifest.ts`, `integrity.ts`, `keys.ts`, `standards.ts`); `apps/mobile/src/lib/remote` (`SignedDocumentClient`); `apps/mobile/src/lib/packs` (`PackManager` with Expo ports); `apps/mobile/src/components/content-blocks`; `supabase/functions/config` and `content`; `scripts/packs` publisher. Libraries: `@noble/ed25519` 3.2.0, `@noble/hashes` 2.4.0, `valibot` 1.5.0 (all MIT, per ADR 0016 4.2).
 - **To build:** the docs base for store builds; the guard test; the L10 fix in `documents.ts accept()`; new keys with direction clamps; the `gate` field in `PackEntrySchema` (optional, so older apps skip it); screen slots for tips and announcements; Tonight reading `usePromptLibrary`; the update card; full content rules over the extra file in `publish.ts`.
-- **Sequencing.** Week of 12 Oct: key ceremony (BL-335), host (BL-337), docs base env var, first signed publish of all three documents from the current `packages/content` (server and fallback start identical). Then screen slots and new keys; then the 5-minute staging test before C1.
+- **Sequencing.** Order only; dates in `08-delivery.md` section 5. The M14 capabilities ADR; the key ceremony with two keys (BL-335), host (BL-337), docs base env var, first signed publish of all three documents from the current `packages/content`. Then the cache numbers, the L10 fix, the new switches and their consumers; then screen slots and new keys; then the 5-minute staging test before C1.
+- **ADRs required before build** (numbers per `08-delivery.md` section 8.1; matches R2's list item 5): **M14 capabilities and kill switches (amends ADR 0016)**: per-feature build flags, the remote switch list in 6.5, the cache policy and refresh interval of F19-REQ-026, two signing keys and the rotation runbook. Closes R2 AR-12, AR-27, AR-28; blocks WP-F19-15, -16, -12a to -12r. ADR 0016 itself is still "Proposed" and is accepted with these deltas in the same PR (R2 AR-25).
 - **Riskiest unknown.** That an iPhone can download a 574 MB model through R2 and Hugging Face redirects with Range requests and hash it in acceptable time on an SE 3 (ADR 0016 9, U). Spike: one TestFlight build, Hindi chosen on Wi-Fi, timings recorded.
 
 ## 12. Work packages
@@ -258,7 +270,7 @@ Only for what is missing or partly built.
 
 | WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode |
 |---|---|---|---|---|---|---|
-| WP-F19-01 | Key ceremony and public key line | Founder, platform agent | `packages/api/src/keys.ts` | none | `[F19-REQ-002]`; app build trusts the key | Human then agent |
+| WP-F19-01 | Key ceremony with a primary and a cold backup key, rotation runbook | Founder, S07 | `packages/api/src/keys.ts`, `docs/runbooks/` (request) | none | `[F19-REQ-002]`; app build trusts both keys | Human then agent |
 | WP-F19-02 | Docs base for store builds and a config test | Platform | `apps/mobile/eas.json` (or EAS environment), `apps/mobile/test/capabilities.test.ts` | WP-F19-01, host decision | `[F19-REQ-005]` | Pair (founder sets the EAS variable) |
 | WP-F19-03 | Pack host, uploads, one host name | Founder, speech agent | `apps/mobile/src/lib/models/catalog.ts` `SELF_HOST_BASE`, `docs/ops/DOMAINS.md` | BL-337 | `[F19-REQ-019]` Range 206 from an iPhone | Pair |
 | WP-F19-04 | First signed publish and deploy | Coordinator with founder's OK | `supabase/functions/*/published.ts`, `scripts/packs/remote-config.json` | WP-F19-01 to 03 | `[F19-REQ-023]`; phones accept all three | Human |
@@ -269,15 +281,22 @@ Only for what is missing or partly built.
 | WP-F19-09 | Screen slots: Tonight prompts from `usePromptLibrary`, tip and announcement slots | Mobile | `apps/mobile/src/app/(tabs)/index.tsx`, `review.tsx`, `(tabs)/book.tsx`, `settings/index.tsx` (slot lines only) | WP-F19-04 | `[F19-REQ-016]` | Agent |
 | WP-F19-10 | Update card | Mobile | New `apps/mobile/src/components/content-blocks/update-card.tsx`, copy in feature `copy.ts` | none | `[F19-REQ-012]` | Agent |
 | WP-F19-11 | Full content rules in the publisher | Content | `scripts/packs/lib.ts`, `packages/content/test/rules.test.ts` (read the extra file) | none | `[F19-REQ-017]` | Agent |
-| WP-F19-12 | Kill-switch consumers for sync, invites, re-auth **[server]** | Sync, family, auth owners | `apps/mobile/src/lib/sync/`, `lib/family/`, `lib/auth/` | none (F18 Q1 answered by M14) | `[F19-REQ-011]` | Agent |
+| WP-F19-12s | `killSwitches.sync` consumer **[server]** | S03 | `apps/mobile/src/lib/sync/` | WP-F19-16 | `[F19-REQ-011]` sync row; `[F16-REQ-018]` | Agent |
+| WP-F19-12f | `killSwitches.invites` consumer **[server]** | S04 | `apps/mobile/src/lib/family/` | WP-F19-16 | `[F19-REQ-011]` invites row | Agent |
+| WP-F19-12a | `forceReauthEpoch` consumer **[server]** | S01 | `apps/mobile/src/lib/auth/` | none | `[F19-REQ-011]` epoch row; `[F02-REQ-023]` | Agent |
+| WP-F19-12b | `backupUploads` and `escrow` consumers **[server]** | S05 | `apps/mobile/src/lib/backup/`, `supabase/functions/escrow/` | WP-F19-16, WP-F08-B5a | `[F19-REQ-011]` backup rows; `[F08-REQ-041]` | Agent |
+| WP-F19-12r | `statusReport` consumer **[server]** | S06 | `apps/mobile/src/lib/billing/` | WP-F19-16 | `[F19-REQ-011]` status row | Agent |
 | WP-F19-13 | Staging kill test and local smoke under every switch | QA | `docs/qa/` script | WP-F19-04 | `[F19-REQ-006]`, `[F19-REQ-007]` | Pair (two phones) |
 | WP-F19-14 | Review-notes flag list | Release owner | F21 review notes | WP-F19-07 | `[F19-REQ-024]` | Agent |
+| WP-F19-15 | Cache and refresh numbers | S07 | `packages/api/src/standards.ts` (`CACHE_POLICY.remoteConfig`, `CLIENT_REFRESH_MS.remoteConfig`), `supabase/functions/config/serve.test.ts` | M14 capabilities ADR | `[F19-REQ-026]`; `serve.test.ts` header assertions | Agent |
+| WP-F19-16 | New kill-switch keys in the schema; build flags `capabilities.backup` and `capabilities.statusReport` | S07 (schema), S20 (`capabilities.ts`, `eas.json`) | `packages/api/src/remote-config.ts` and test; `apps/mobile/src/lib/capabilities.ts`, `apps/mobile/eas.json` | M14 capabilities ADR | `[F19-REQ-025]`; schema test lists the three new switches | Agent |
 
 ## 13. Open questions and assumptions
 
 | Q | Who, by when | What changes |
 |---|---|---|
 | Q1 Where do documents live? With server features on (M14) the app falls back to the Supabase origin; a build with the switch off (the kill path) needs `EXPO_PUBLIC_DOCS_BASE_URL`. Supabase functions origin set as that variable too, or a Cloudflare host in front? Default [R]: the Supabase origin now, Cloudflare later with no app change | Founder; 16 Oct | WP-F19-02 |
+| Q6 Is a 2-minute foreground refresh acceptable for Edge Function invocation cost at 100k families? Spec default: yes; the alternative is the counsel-approved 10-minute bar R2 AR-27 names | Founder with counsel | Before WP-F19-15 | F19-REQ-026, LEGAL-REQ-040 |
 | Q2 Pack host and name: R2 on `packs.earlyletters.com` (moves DNS to Cloudflare) or `packs.earlyletters.app` (ADR 0016 F-1, F-2) | Founder; 16 Oct | WP-F19-03, subprocessor page |
 | Q3 Mobile data threshold 5 MB or 0 (ADR 0016 F-3) | Founder; 16 Oct | One constant |
 | Q4 Does a file name that reveals a chosen language, seen by the host with an IP, need more than a Privacy Policy line? **[Counsel]** (COUNSEL_PACKET Q12) | Counsel; 29 Oct | Mirror models to our host |
@@ -287,12 +306,14 @@ Only for what is missing or partly built.
 |---|---|---|
 | A1 | Supabase does not cache Edge Function responses, so every request is a billed invocation (ADR 0016 6, U) | Usage dashboard after C1 |
 | A2 | URLSession follows Hugging Face redirects with Range intact | Spike in WP-F19-03 |
-| A3 | A CDN's `stale-while-revalidate` does not push kill latency past 5 minutes | WP-F19-13 |
+| A3 | With `stale-while-revalidate=30`, a CDN does not push kill latency past 5 minutes | WP-F19-13 |
 
 ## 14. Sources
 
 - Brief and rulebook: `docs/agents/BRIEF-2026-10-03.md` items 15 to 17; `_AUTHORING.md` 3 (B13 to B15), 3b (M1, M2, M12, M13).
-- Decisions: D-035, D-046, D-066, D-068 in `docs/DECISIONS.md` on develop; commit c1764f9.
+- Decisions: D-035, D-046, D-066, D-068 in `docs/DECISIONS.md` on develop; commit c1764f9; `_AUTHORING.md` M14 to M16.
+- Reviews: `reviews/R2-architect.md` AR-12, AR-18, AR-25, AR-27, AR-28; `reviews/R5-eng-qa.md` EQ-17; `reviews/R1-product-leader.md` PL-03; `docs/reviews/2026-10-04-security-privacy.md` L3, L10.
+- Code read 13 Oct 2026: `packages/api/src/standards.ts` (`CACHE_POLICY`, `CLIENT_REFRESH_MS`), `packages/api/src/keys.ts`, `apps/mobile/src/lib/capabilities.ts`.
 - ADRs: `docs/adr/0016-lean-app-and-server-driven-content.md` sections 2 to 9; `docs/adr/0017-api-standards.md` sections 1 to 4.
 - Code: `packages/api/src/` (`remote-config.ts`, `content.ts`, `pack-manifest.ts`, `integrity.ts`, `keys.ts`, `standards.ts`) and `packages/api/test/`; `apps/mobile/src/lib/remote/`; `apps/mobile/src/lib/packs/`; `apps/mobile/src/lib/models/speech-packs.ts`, `catalog.ts`; `apps/mobile/src/components/content-blocks/`; `apps/mobile/src/lib/capabilities.ts`; `apps/mobile/eas.json`; `apps/mobile/src/app/_layout.tsx`, `(tabs)/index.tsx`, `settings/storage.tsx`; `supabase/functions/config/`, `content/`; `scripts/packs/`.
 - Legal: `docs/legal/ENGINEERING_REQUIREMENTS.md` LEGAL-REQ-040, -044, -059; `docs/legal/COUNSEL_PACKET.md` Q12.
