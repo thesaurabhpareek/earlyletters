@@ -1,9 +1,15 @@
 // Moved from apps/mobile/src/lib/family/copy.ts on 3 Oct 2026; that file now re-exports this one.
 /**
- * Words for the Family tab and co-parent invites (PRD B F5, BRIEF decision 5:
- * co-parent only at launch, so Family roles stay hidden). Feature-local until
- * the content agent moves them into packages/content; the content rules test
- * scans this file. Placeholders: {child}, {signsAs}.
+ * Words for the Family tab and co-parent sharing (PRD V2 F11; PRD B F5). Co-parent only at
+ * launch (B1), so Family roles stay hidden. With server features on (D-100, drafted as D-089)
+ * these drive invite, join and leave; with them off, `soon` is the one presentation (the kill
+ * path). The content rules test scans this file. Placeholders: {child}, {signsAs}, {inviter},
+ * {coParent}, {date}.
+ *
+ * F11 names some keys in a `coParent.*` namespace; they live here: coParent.invite.fullNote is
+ * create.full, coParent.join.needsSync is accept.needsSync, coParent.leave.* is leave.*,
+ * coParent.cantTakeBack is leave.cantTakeBack, coParent.left.note is left.note, and
+ * errors.inviteFull is errors.book_full.
  */
 export const familyCopy = {
   members: {
@@ -11,6 +17,8 @@ export const familyCopy = {
     coParent: 'Co-parent',
     invited: 'Invited',
     invitedName: 'Your co-parent',
+    /** F11-REQ-019: a pending invite in the member list. */
+    openUntil: 'Invited, open until {date}',
   },
 
   card: {
@@ -45,10 +53,27 @@ export const familyCopy = {
     shareMessage: "I started a book of letters for {child}. Join me, so we can both write to {child}:",
     shareMessageNamed: "{signsAs}, I started a book of letters for {child}. Join me, so we can both write to {child}:",
     done: 'Invite ready. It shows on the Family tab until they join.',
+    /** F11-REQ-004: shown instead of Share when the book already has two parents (D-069). */
+    full: "{child}'s book has two parents.",
   },
 
   accept: {
     title: 'Join the family book',
+    /** Before sign-in nothing about the invite is known or shown (BL-322; peek_invite needs an account). */
+    invitedTitle: 'You were invited to a book',
+    /** After sign-in, before joining: only the inviter's sign-off, never the child's name (BL-322, review H2). */
+    askTitle: 'Join this book as a parent?',
+    invitedBy: 'Invited by {inviter}',
+    invitedByUnknown: 'You were invited to write a book together.',
+    askBody: 'You will both read every letter in the book. Join only if you know who sent you this link.',
+    join: 'Join the book',
+    notNow: 'Not now',
+    /** F11-U11: joining needs sync; the invite stays usable until it expires. */
+    needsSync: 'Joining a shared book needs sync. You can turn it on in Settings, Privacy.',
+    /** F11-REQ-024: the joined parent's signature for this book, prefilled with the inviter's suggestion. */
+    signsAsLabel: 'What does {child} call you?',
+    signsAsHelp: 'It signs your letters in this book.',
+    signsAsPlaceholder: 'Mama, Papa, Amma, Baba',
     pasteLabel: 'Invite link',
     pasteHelp: 'Open the message with the invite, copy the link and paste it here.',
     pastePlaceholder: 'Paste the link here',
@@ -65,6 +90,27 @@ export const familyCopy = {
     open: 'Open the book',
     close: 'Close',
     tryAgain: 'Try again',
+  },
+
+  /** Leaving a shared book (F11 6.2 D; F11-REQ-011, F11-REQ-027, F11-REQ-028; R4 PT-14, PT-15). Nothing is preselected. */
+  leave: {
+    row: "Leave {child}'s book",
+    title: "Leave {child}'s book?",
+    keep: 'Leave my letters in the book',
+    keepHelp: 'Anyone {coParent} invites later can read letters you leave in the book.',
+    takeOut: 'Take my letters out of the book',
+    takeOutHelp: 'Your letters stay yours. You can read, export and delete them on this phone.',
+    cantTakeBack: "Letters already on {coParent}'s phone or in an export can't be taken back.",
+    confirm: 'Leave the book',
+    cancel: 'Stay',
+    leaving: 'Leaving the book',
+    done: "You left {child}'s book. Your own letters are still on this phone.",
+    coParentFallback: 'your co-parent',
+  },
+
+  /** F11-REQ-023: the one neutral note the remaining parent sees. */
+  left: {
+    note: "{signsAs} has left {child}'s book.",
   },
 
   /**
@@ -121,5 +167,13 @@ export const familyCopy = {
     signed_out: 'Sign in again to continue.',
     network: "You're offline. Try again when you're back online.",
     unknown: 'Something went wrong. Please try again.',
+    /** SCCAP (F11-U10, F11-REQ-026): the invitee's line. The inviter's sheet shows create.full instead. */
+    book_full: 'This book already has two parents. Ask the person who invited you.',
+    /** SCLPG: the only parent of a book cannot leave it (DATA-REQ-016). */
+    last_parent: "You're the only parent of {child}'s book now, so it stays with you.",
+    /** 42501: a parent tried something only the server's own paths may do. Never offered by the app. */
+    not_allowed: "That isn't possible from here.",
+    /** An invite id or token collided twice in a row (SCCID, code_taken, token_taken); the app already retried once. */
+    retry_new_invite: 'Something went wrong. Please try again.',
   },
 } as const;

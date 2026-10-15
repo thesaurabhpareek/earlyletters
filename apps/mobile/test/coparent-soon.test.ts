@@ -1,8 +1,10 @@
 /// <reference types="node" />
 /**
- * Co-parent sharing is coming soon in v1.0 (founder decision, 3 Oct 2026):
- * every invite entry point leads to the coming-soon presentation, deep links
- * keep nothing they could not use, and "Tell me when it's here" is a local flag.
+ * Co-parent sharing follows one switch (capabilities.coParent, EXPO_PUBLIC_SERVER_FEATURES).
+ * On (D-100, drafted as D-089; the TestFlight alpha of D-106): "I was invited" is back on
+ * Welcome, the Family tab is live, and every entry opens its real flow. Off (the kill path):
+ * every invite entry point leads to the coming-soon presentation, deep links keep nothing they
+ * could not use, and "Tell me when it's here" is a local flag. Both states are tested here.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,8 +22,8 @@ const TOKEN = '3f2a9c1e5b7d4e8fa1c2d3e4f5a6b7c89d0e1f2a3b4c5d6e7f8091a2b3c4d5e6'
 const HASH = 'pkce_7b1c0f3e9a2d4c6b8e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b';
 
 describe('every invite entry point leads to coming soon when server features are off', () => {
-  it('covers the six entry points', () => {
-    expect([...INVITE_ENTRIES].sort()).toEqual(['family_tab', 'invite_join', 'invite_link', 'invite_new', 'onboarding_join', 'settings_child']);
+  it('covers the seven entry points', () => {
+    expect([...INVITE_ENTRIES].sort()).toEqual(['family_tab', 'invite_join', 'invite_leave', 'invite_link', 'invite_new', 'onboarding_join', 'settings_child']);
   });
 
   it('off: coming soon, every one; on: the real flow', () => {
@@ -45,6 +47,7 @@ describe('every invite entry point leads to coming soon when server features are
     expect(src('app/(tabs)/family.tsx')).toMatch(/capabilities\.coParent \? <FamilyShared \/> : <FamilySoon \/>/);
     expect(src('app/invite/index.tsx')).toMatch(/inviteDestination\('invite_join', serverFeaturesEnabled\(\)\) === 'flow' \? <JoinBook \/> : <InviteComingSoon \/>/);
     expect(src('app/invite/new.tsx')).toMatch(/inviteDestination\('invite_new', serverFeaturesEnabled\(\)\) === 'flow' \? <InviteCoParent \/> : <InviteComingSoon \/>/);
+    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\)\) === 'flow' \? <LeaveBook \/> : <InviteComingSoon \/>/);
     expect(src('app/settings/children/[id].tsx')).toMatch(/inviteHref\('settings_child', serverFeaturesEnabled\(\), child\.id\)/);
     expect(src('app/onboarding.tsx')).toMatch(/inviteHref\('onboarding_join', capabilities\.coParent\)/);
   });
@@ -203,10 +206,15 @@ describe('coming-soon copy', () => {
   });
 });
 
-describe('doors that lead nowhere in v1.0 are hidden (D-087)', () => {
-  it('off: no "I was invited" and no disabled "Family can read" switch; on: both come back', () => {
-    expect(visibleCoParentDoors(false)).toEqual({ joinButton: false, familyCanReadSwitch: false });
-    expect(visibleCoParentDoors(true)).toEqual({ joinButton: true, familyCanReadSwitch: true });
+describe('doors that would lead nowhere are hidden (D-087, amended by D-100; BL-391 rescoped)', () => {
+  it('off: no "I was invited"; on: "I was invited" is back (D-100 amends D-087)', () => {
+    expect(visibleCoParentDoors(false).joinButton).toBe(false);
+    expect(visibleCoParentDoors(true).joinButton).toBe(true);
+  });
+
+  it('[F11-REQ-003] "Family can read" is the family-contributor switch: hidden in both builds (contributors are absent from v1.0, B1, D4)', () => {
+    expect(visibleCoParentDoors(false).familyCanReadSwitch).toBe(false);
+    expect(visibleCoParentDoors(true).familyCanReadSwitch).toBe(false);
   });
 
   it('first run and child settings render them only through that rule', () => {
@@ -223,5 +231,47 @@ describe('doors that lead nowhere in v1.0 are hidden (D-087)', () => {
     expect(inviteDestination('invite_link', false)).toBe('coming_soon');
     expect(src('app/settings/children/[id].tsx')).toMatch(/familyCopy\.soon\.settingsRow\b/);
     expect(src('app/(tabs)/_layout.tsx')).toMatch(/family/);
+  });
+});
+
+describe('server features on: the shared flows are live (D-100; option B for the alpha, D-106)', () => {
+  it('Welcome shows "I was invited", and it opens the join sheet', () => {
+    expect(visibleCoParentDoors(true).joinButton).toBe(true);
+    expect(inviteHref('onboarding_join', true)).toBe('/invite');
+    expect(familyCopy.accept.invitedTitle).toBe('You were invited to a book');
+  });
+
+  it('the Family tab is the live view: members, open invites, the invite card and leave', () => {
+    const tab = src('app/(tabs)/family.tsx');
+    expect(tab).toMatch(/capabilities\.coParent \? <FamilyShared \/> : <FamilySoon \/>/);
+    expect(tab).toMatch(/familyTabState\(/);
+    expect(tab).toMatch(/state\.showInviteCard &&/);
+    expect(tab).toMatch(/state\.canLeave &&/);
+    expect(tab).toMatch(/pathname: '\/invite\/leave'/);
+  });
+
+  it('a child\'s settings row opens the invite itself, not a sign-in sheet or coming soon', () => {
+    expect(inviteHref('settings_child', true, 'child-1')).toBe('/invite/new?childId=child-1');
+    expect(inviteHref('family_tab', true, 'child-1')).toBe('/invite/new?childId=child-1');
+  });
+
+  it('[A-REQ-028] an invite link keeps its token for the join sheet; the 18+ stop still drops it', () => {
+    const path = `https://earlyletters.com/i/${TOKEN}`;
+    const link = classifyIncomingUrl(path, CFG);
+    expect(planIncomingLink(link, { serverFeatures: true, gateStopped: false, path })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
+    expect(planIncomingLink(link, { serverFeatures: true, gateStopped: true, path })).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
+  });
+
+  it('[D-087] no link opens the invite-making or leave screens, with the switch on or off', () => {
+    for (const serverFeatures of [false, true]) {
+      for (const p of ['/invite/new', '/invite/new?childId=x', '/invite/leave', '/invite/leave?childId=x', 'scribe://invite/leave', 'https://earlyletters.com/invite/new']) {
+        expect(planIncomingLink({ kind: 'other' }, { serverFeatures, gateStopped: false, path: p }).route, p).toBe('/');
+      }
+    }
+  });
+
+  it('the pending-invite watcher opens the join sheet only with the switch on', () => {
+    const watcher = src('lib/family/pending-invite-watcher.tsx');
+    expect(watcher).toMatch(/if \(!serverFeaturesEnabled\(\)\) return;/);
   });
 });
