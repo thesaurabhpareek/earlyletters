@@ -557,9 +557,9 @@ The founder delegated these calls to the coordinator on 15 Oct. Each is marked "
 - **Decision:** `auto/2026-10-13-integration` (the Line B fix wave merged onto the 4 Oct `develop`) is never merged. Line B's fixes reach `develop` one concern per PR, as mapped in `docs/agents/PORT_MAP_2026-10-13.md` (PR #117). The release runbook `docs/ops/RELEASE.md` lands through PR #111 (now targeting `develop`, adapted to the on-device v1.0), and the device test plan rows through their own PR (#123). The branch is kept, not deleted, so parked code can be reused.
 
 ### D-094 Plan reminders and the purchase confirmation ship in v1.0, as a courtesy (delegated by founder)
-- **Status:** Decided, 15 Oct 2026 (delegated by founder). Needs counsel: COUNSEL_PACKET C-1 to C-3 and Q37.
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Needs counsel: COUNSEL_PACKET C-1 to C-3 (on `develop`) and Q37 (added by PR #81).
 - **Decision:** v1.0 ships on-device plan reminders (local notifications in the Q-003 windows, purchaser's phones only, never through Family Sharing) and, after a new purchase, a confirmation of what was agreed with "Save a copy". They follow D-083: no price, "free trial", "free months" or "we will email you" in app copy; Apple's sheet shows the amount and Apple's receipt holds it. Reminders are a courtesy, not a guaranteed delivery: the app and the Subscription Terms say they can come late or not at all, and that Settings, Plan and Apple's receipts hold every date.
-- **Effects:** PR #121 (port of G-15). Subscription Terms (PR #81) describe reminders as a courtesy. Device test plan row S2-17 (PR #123).
+- **Effects:** PR #121 (port of G-15). Subscription Terms must describe reminders as a courtesy: requested on PR #81 (its 3.0.0 text does not say so yet). Device test plan row S2-17 (PR #123).
 
 ### D-095 No analytics SDK or consent sheet in v1.0 (delegated by founder)
 - **Status:** Decided, 15 Oct 2026 (delegated by founder). Confirms D-088's "Data Not Collected" and changes the v1.0 part of the 3 Oct analytics decision (opt-in PostHog): it returns, with consent, in v1.1.
