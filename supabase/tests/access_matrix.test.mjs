@@ -235,6 +235,8 @@ const SERVICE_ONLY = [
   `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
   // 20261015010000 (BL-334): pepper readiness for APPLY.md and ops checks.
   `select public.consent_pepper_ready()`,
+  // The invite token shape check, used inside peek_invite and accept_child_invite.
+  `select public.invite_token_well_formed('x')`,
   // 20261015020000: server config readers, the invite policy check, and code redemption (invite-redeem only).
   `select public.contributors_enabled()`, `select public.family_share_consent_required()`,
   `select public.invite_policy_checks('${A}', 'parent')`,
@@ -302,6 +304,20 @@ const covered = new Set(READS.map((r) => r[0]));
 const missing = tables.filter((t) => !covered.has(t));
 for (const t of missing) console.log(`      no matrix row: public.${t}`);
 check('[LEGAL-REQ-024] every public table and view has a row in the access matrix', missing.length === 0);
+// PR #32 DB-01, R-17 review finding 4: Supabase's default privileges grant writes on every new
+// relation, and a view that runs as its owner would skip the base table's policies. No view in
+// any schema the migrations make is writable by an API role, at table or column level.
+const writableViews = (await sys(`
+  select n.nspname || '.' || c.relname || ' (' || r.rolname || ' ' || p.priv || ')' v
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    cross join (values ('anon'::text), ('authenticated')) r(rolname)
+    cross join (values ('INSERT'::text), ('UPDATE'), ('DELETE'), ('TRUNCATE')) p(priv)
+   where c.relkind in ('v', 'm') and n.nspname in ('public', 'ops', 'insights')
+     and (has_table_privilege(r.rolname, c.oid, p.priv)
+          or (p.priv in ('INSERT', 'UPDATE') and has_any_column_privilege(r.rolname, c.oid, p.priv)))
+   order by 1`)).rows.map((x) => x.v);
+for (const v of writableViews) console.log(`      writable view: ${v}`);
+check('[DB-01] no view is writable by anon or authenticated', writableViews.length === 0);
 
 const fns = (await sys(`select p.oid, p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' sig, p.proname name,
     p.prosecdef secdef, p.prosrc src, coalesce(array_to_string(p.proconfig, ','), '') cfg,

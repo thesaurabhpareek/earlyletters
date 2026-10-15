@@ -69,7 +69,7 @@ await join(N, 'contributor', child, A);
   // Consent gate on book.update (was children_consent_gate; book_update calls it itself).
   const U = users.U;
   await sys(`insert into auth.users (id) values ($1) on conflict do nothing`, [U]);
-  await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'parent')`, [await newChild(S, 'Mira', '2025-02-02'), U]);
+  await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'parent')`, [await newChild(S, 'Asha', '2025-02-02'), U]);
   const uBook = (await sys(`select child_id from child_members where profile_id = $1`, [U])).rows[0].child_id;
   res = await push(U, [op('book.update', uBook, { nickname: 'Mi' })]);
   check('book.update without consent pauses the batch (SCCON), it is not rejected', res.paused === true && res.results.length === 0);
@@ -122,7 +122,7 @@ await join(N, 'contributor', child, A);
 
 // ── F5 / G-09: the pull digest does not reveal private writes ────────────
 {
-  const b2 = await newChild(S, 'Mira', '2025-02-02');
+  const b2 = await newChild(S, 'Asha', '2025-02-02');
   await join(P2, 'parent', b2, S);
   const first = await pull(P2);
   const book = first.books.find((b) => b.id === b2);

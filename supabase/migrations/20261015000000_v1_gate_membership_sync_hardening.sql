@@ -465,7 +465,7 @@ end;
 $$;
 
 comment on function public.sync_pull(jsonb, int) is
-  'Multi-book cursor pull (20261004100000). Digest rule (20261015000000, G-09): the real digest of what the caller may hold is computed on a first pull, on request (verify, ids, no have), when a readable row changed since the cursor, or when a row by someone else left what the caller''s role could read since the cursor; otherwise the phone''s own value is echoed. Writes the caller cannot read never change the answer.';
+  'Multi-book cursor pull (20261004100000). Digest rule (20261015000000, G-09): the real digest of what the caller may hold is computed on a first pull, on request (verify, ids, no have), when a readable row changed since the cursor, or when a row by someone else left what the caller''s role could read since the cursor; otherwise the phone''s own value is echoed. Writes the caller cannot read never change the digest or the rows. Residual (REVIEW_R17_CHECKLIST 10): cursors and row versions are database transaction ids, so their spacing reflects all write traffic in the database, the other parent''s private letters included; per-book versions are a sync ADR decision.';
 
 -- ─── 3. G-10: op receipts per person ─────────────────────────────────────
 alter table public.sync_op_receipts drop constraint sync_op_receipts_pkey;

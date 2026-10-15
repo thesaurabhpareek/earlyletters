@@ -50,7 +50,7 @@ check('the RLS helpers and the new RPCs are named in the sweep',
     .every((s) => fns.some((f) => f.schema === 'public' && f.sig === s && ok(f.sp))));
 
 // ── 2. The shadowing regression (one PGlite session) ─────────────────────
-const CHILD = await newChild(A, 'Asha', '2025-05-20');
+const CHILD = await newChild(A, 'Asha', '2025-04-12');
 await join(B, 'parent', CHILD, A);
 // The negative control: a definer function with the old, shadowable path.
 await sys(`create function public.zz_probe_shadowable() returns int language sql security definer

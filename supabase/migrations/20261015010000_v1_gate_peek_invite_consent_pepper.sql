@@ -20,7 +20,9 @@
 -- G-13  peek_invite(p_token) for "ask before joining" (review H2; BL-322 app part
 --       by S04): before accepting, returns {"inviter": <the inviter's sign-off
 --       name for that book, or null>, "role": "parent" | "contributor"}, plus
---       "joined": true when the caller already accepted this invite. Never the
+--       "joined": true when the caller accepted this invite and is still a
+--       member. A token outside the app's shape (32 to 128 URL-safe characters,
+--       invite_token_well_formed) is SCINV before any lookup. Never the
 --       child's name, ids or any book data (PRD V2 08 section 9, S02 row: "only
 --       the inviter's sign-off name before consent"). Signed-in only, works
 --       before consent, same errors as accept_child_invite (SCINV, SCCAP),
@@ -70,6 +72,16 @@ returns boolean language sql stable set search_path = pg_catalog, public, pg_tem
   select lower(coalesce(nullif(btrim(current_setting('app.contributors_enabled', true)), ''), 'off')) in ('on', 'true', '1');
 $$;
 
+-- The shape every invite token has: 32 to 128 URL-safe characters, the same rule
+-- as the app's isInviteToken (apps/mobile/src/lib/family/invite-link.logic.ts).
+-- Server-made tokens are 64 hex characters. Phones that make their own tokens
+-- (20261015020000, D5) must use at least 128 random bits; the server sees only
+-- the hash at creation, so it checks the shape when a token is used.
+create or replace function public.invite_token_well_formed(p_token text)
+returns boolean language sql immutable set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(p_token ~ '^[A-Za-z0-9_-]{32,128}$', false);
+$$;
+
 -- Same checks, in the same order, as accept_child_invite (20261005000000), but
 -- nothing is written except the rate counter, and no consent is needed: the
 -- person decides whether to join before agreeing to anything. A call that ends
@@ -84,9 +96,16 @@ declare
   v_joined boolean := false;
 begin
   perform public.rate_hit('membership');
+  -- The app's token rule (isInviteToken, invite-link.logic.ts). A failed call rolls
+  -- its counter hit back, so wrong guesses are not limited; the format floor keeps a
+  -- short, guessable token from ever matching, now that phones make tokens (D5).
+  if not public.invite_token_well_formed(p_token) then raise exception 'invite not found' using errcode = 'SCINV'; end if;
   select * into v_inv from child_invites where token_hash = sha256(convert_to(coalesce(p_token, ''), 'UTF8'));
   if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
-  if v_inv.accepted_by = v_uid then
+  -- "joined" only while the person is still a member: after leaving or an undo
+  -- (20261015020000) the invite is simply used.
+  if v_inv.accepted_by = v_uid
+     and exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = v_uid) then
     v_joined := true;
   else
     if v_inv.accepted_at is not null then raise exception 'invite already used' using errcode = 'SCINV'; end if;
@@ -128,6 +147,7 @@ $$;
 -- ─── 3. Privileges ───────────────────────────────────────────────────────
 revoke execute on function public.consent_pepper_ready() from public, anon, authenticated;
 revoke execute on function public.contributors_enabled() from public, anon, authenticated;
+revoke execute on function public.invite_token_well_formed(text) from public, anon, authenticated;
 revoke execute on function public.policy_acceptances_pseudonymise() from public, anon, authenticated;
 revoke execute on function public.peek_invite(text) from public, anon;
 grant execute on function public.peek_invite(text) to authenticated;

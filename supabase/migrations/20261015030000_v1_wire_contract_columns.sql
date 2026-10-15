@@ -447,7 +447,7 @@ end;
 $$;
 
 comment on function public.sync_pull(jsonb, int) is
-  'Multi-book cursor pull (20261004100000). Digest rule (20261015000000, G-09): the real digest of what the caller may hold is computed on a first pull, on request (verify, ids, no have), when a readable row changed since the cursor, or when a row by someone else left what the caller''s role could read since the cursor; otherwise the phone''s own value is echoed. Writes the caller cannot read never change the answer. Own rows carry the v1.0 wire-contract columns (20261015030000).';
+  'Multi-book cursor pull (20261004100000). Digest rule (20261015000000, G-09): the real digest of what the caller may hold is computed on a first pull, on request (verify, ids, no have), when a readable row changed since the cursor, or when a row by someone else left what the caller''s role could read since the cursor; otherwise the phone''s own value is echoed. Writes the caller cannot read never change the digest or the rows. Residual (REVIEW_R17_CHECKLIST 10): cursors and row versions are database transaction ids, so their spacing reflects all write traffic in the database, the other parent''s private letters included; per-book versions are a sync ADR decision. Own rows carry the v1.0 wire-contract columns (20261015030000).';
 
 -- ─── 5. sync_push: the op parser takes the new columns (F16-REQ-028) ─────
 -- From 20261015000000. Changes, all marked F16-REQ-028:

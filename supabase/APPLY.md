@@ -543,8 +543,8 @@ If you must apply by hand (an incident, DEPLOY.md "Rollback"), use the SQL Edito
 
 Read only:
 ```sql
--- a) The new names are free (expect eight nulls).
-select to_regprocedure('public.peek_invite(text)'), to_regprocedure('public.undo_parent_join(uuid, uuid)'),
+-- a) The new names are free (expect nine nulls).
+select to_regprocedure('public.peek_invite(text)'), to_regprocedure('public.invite_token_well_formed(text)'), to_regprocedure('public.undo_parent_join(uuid, uuid)'),
        to_regprocedure('public.book_update(uuid, jsonb)'), to_regprocedure('public.sync_op_claim(uuid)'),
        to_regprocedure('public.consent_pepper_ready()'), to_regprocedure('public.accept_child_invite_by_code(uuid, bytea)'),
        to_regprocedure('public.create_child_invite(uuid, uuid, text, bytea, bytea, text)'),
@@ -565,6 +565,8 @@ App compatibility (the build in TestFlight today has the switch off, so nothing 
 - A direct delete on `child_members` is refused (`42501`). The app has no such call; leaving is `leave_child(p_child, p_keep_in_book)`.
 - `sync_pull` own rows gain five keys and others' rows two; `sync_push` accepts them when present and never clears them when absent. Today's sync client ignores keys it does not know.
 - Family invites are refused (`SCINV`, detail `role_disabled`). The app creates parent invites only.
+- `peek_invite` and `accept_child_invite` refuse a token outside the app's own shape (`isInviteToken`: 32 to 128 URL-safe characters) with `SCINV`. Phones that make their own tokens (file 15) must use at least 128 random bits.
+- After someone leaves or is undone, their used token answers `SCINV` ("invite already used"); it never re-joins or answers `joined: true`.
 
 ### Step 21. After each environment: check the result
 
@@ -590,8 +592,8 @@ select n.nspname, p.oid::regprocedure, p.proconfig from pg_proc p join pg_namesp
 select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in, has_function_privilege('anon', p.oid, 'execute') anon
   from pg_proc p where p.pronamespace = 'public'::regnamespace
    and p.proname in ('peek_invite', 'undo_parent_join', 'book_update', 'sync_op_claim', 'accept_child_invite_by_code',
-                     'consent_pepper_ready', 'contributors_enabled', 'invite_policy_checks') order by 1;
--- peek_invite, undo_parent_join, book_update, sync_op_claim: true / false; the other four: false / false
+                     'consent_pepper_ready', 'contributors_enabled', 'invite_policy_checks', 'invite_token_well_formed') order by 1;
+-- peek_invite, undo_parent_join, book_update, sync_op_claim: true / false; the other five: false / false
 select public.consent_pepper_ready();                       -- as the service role: true (BL-334)
 select count(*) from public.entries where occurred_precision is null or base_direction is null;   -- 0
 ```

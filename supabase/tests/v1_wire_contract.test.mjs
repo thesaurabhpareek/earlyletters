@@ -11,7 +11,7 @@ const { A, B, C } = users;
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}')`);
 await publishPolicies();
 for (const u of [A, B, C]) await consent(u);
-const CHILD = await newChild(A, 'Asha', '2025-05-20');
+const CHILD = await newChild(A, 'Asha', '2025-04-12');
 await join(B, 'parent', CHILD, A);
 
 const push = async (u, ops) => (await one(u, `select public.sync_push($1::jsonb) r`, [JSON.stringify(ops)])).r;
