@@ -146,6 +146,15 @@ if (prof) {
   check(unwritten.length === 0, 'every eas.json profile writes EXPO_PUBLIC_SERVER_FEATURES as on or off', `eas.json profile(s) without an explicit on or off: ${unwritten.join(', ')}.`);
 }
 check(Boolean(eas.submit?.[PROFILE]), `eas.json has a "${PROFILE}" submit profile`, `eas.json has no "${PROFILE}" submit profile (\`eas submit --profile ${PROFILE}\` needs it).`);
+{
+  const ascAppId = eas.submit?.[PROFILE]?.ios?.ascAppId;
+  if (ascAppId && /^\d+$/.test(String(ascAppId))) pass(`${PROFILE} submit profile names the App Store Connect app (ios.ascAppId ${ascAppId})`);
+  else if (ascAppId) fail(`${PROFILE} submit profile ios.ascAppId is ${JSON.stringify(ascAppId)}; it is the numeric Apple ID of the app record (App Store Connect > the app > App Information).`);
+  else {
+    warn(`${PROFILE} submit profile has no ios.ascAppId. \`eas submit\` from your computer asks for the app interactively; the GitHub workflow (--non-interactive --auto-submit) needs ios.ascAppId, the numeric Apple ID from App Store Connect > the app > App Information, and an App Store Connect API key stored on EAS (unverified: check \`eas submit --help\` and the EAS submit docs). Not a secret: send it after step 2 and it goes in eas.json.`);
+    step(2, 'check', `send the .preview app record's Apple ID (App Information) for ios.ascAppId in the "${PROFILE}" submit profile, so the GitHub workflow can submit`);
+  }
+}
 check(!/(KEY|SECRET|TOKEN|PASSWORD|DSN)"\s*:/i.test(easText), 'eas.json holds no secret-looking names', 'eas.json holds a value named like a secret: project keys belong in EAS environment variables, never in this file.');
 check(!/supabase\.co|sb_publishable_|sb_secret_|eyJ[A-Za-z0-9_-]{10,}/.test(easText), 'eas.json holds no Supabase URL or key (they come from the EAS environment)', 'eas.json holds a Supabase URL or key. Remove it: the staging URL and anon key are EAS environment variables (TESTFLIGHT.md step 9), never committed.');
 
@@ -505,7 +514,19 @@ if (!founder.has(3)) step(3, 'check', 'project id not checked (the app config di
 if (!founder.has(4)) step(4, 'check', 'words from speech need the key, the bucket and a published manifest');
 step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1' : 'build 1 is optional before build 2');
 if (SERVER_ON) {
-  step(6, 'check', 'scribe-staging exists and has every migration on develop (staging from develop; TESTFLIGHT.md step 6)');
+  // D-041: the schema reaches staging only through .github/workflows/deploy-db.yml. Build 2 runs develop's app
+  // against staging, so staging needs develop's migrations, which only a manual run from develop can deliver.
+  let deployDb = '';
+  try {
+    deployDb = read(join(REPO, '.github/workflows/deploy-db.yml'));
+  } catch {
+    // Missing workflow: reported as open below.
+  }
+  if (/workflow_dispatch/.test(deployDb) && /develop/.test(deployDb)) {
+    step(6, 'check', 'scribe-staging exists and has every migration on develop: run deploy-db from develop with the approve-migration label (TESTFLIGHT.md step 6)');
+  } else {
+    step(6, 'open', '.github/workflows/deploy-db.yml cannot deploy develop to staging yet (push to main only); the S20 change "staging from develop" must merge first, or staging has none of develop\'s migrations');
+  }
   step(8, 'check', 'Supabase Apple provider client ids include the .preview bundle id');
   step(10, 'check', 'curl -sI https://<website>/.well-known/apple-app-site-association answers 200 application/json with no redirect');
   step(11, 'check', 'this run is the preflight for build 2');
