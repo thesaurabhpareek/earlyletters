@@ -61,7 +61,7 @@ describe('events', () => {
     const bad = [
       { name: 'notify_submit', result: 'someone@example.com' },
       { name: 'notify_submit', result: undefined },
-      { name: 'cta_click', mode: 'live', placement: 'Meera' },
+      { name: 'cta_click', mode: 'live', placement: 'Asha' },
       { name: 'cta_click', mode: 'beta', placement: 'header' },
       { name: 'scene_reached', id: 'https://earlyletters.com/?email=a@b.c' },
       { name: 'scene_reached', id: 42 },
@@ -150,7 +150,7 @@ describe('createTracker', () => {
 
 describe('scrubUrl', () => {
   it('keeps the path and drops the fragment and unknown query parameters', () => {
-    expect(scrubUrl('https://earlyletters.com/privacy?email=a@b.c&name=Meera#section-2')).toBe(
+    expect(scrubUrl('https://earlyletters.com/privacy?email=a@b.c&name=Asha#section-2')).toBe(
       'https://earlyletters.com/privacy',
     );
     expect(scrubUrl('https://earlyletters.com/?q=1')).toBe('https://earlyletters.com/');

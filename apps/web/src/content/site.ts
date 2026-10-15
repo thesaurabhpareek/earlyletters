@@ -7,7 +7,9 @@
  *
  * v1.0 truth only (docs/agents/BRIEF-2026-10-03.md; claims audit in docs/web/copy/BR1-audit.md):
  * no grandparents writing, no mixing two languages in one letter, no word highlighting, no print,
- * no Android, no backup promise. The child in the film is Meera (founder's choice). Papa writes;
+ * no Android, no backup promise, no "beta". Plus is $4.99 a month (1-month free trial) or $49.99 a year
+ * (2-month free trial) (D-082); it gates only keeping new letters after the first two; Read together is free.
+ * The child in the film is the fictional Asha (CLAUDE.md; real family details never appear). Papa writes;
  * Mama is the co-parent. The public name comes from packages/brand (CLAUDE.md).
  *
  * In-app strings shown inside the phone are the app's own words, copied from
@@ -24,15 +26,15 @@ const NAME = brand.name;
  * dictionary (stt_fix, the type's own example), a filler, a false start. Nothing is added.
  */
 export const sampleLetter = {
-  to: 'Meera',
+  to: 'Asha',
   from: 'Papa',
   month: 9,
   dateline: 'Month 9, Tuesday night',
   duration: '1:12',
   text:
-    'Meera, today you found the light switch. On, off, on, off. Fourteen times, I counted. Mama pretended not to notice and then laughed so hard she had to sit down. You looked at us like we were the strange ones. Maybe we are. Anyway. You are asleep now, and the house sounds different. Goodnight, little one.',
+    'Asha, today you found the light switch. On, off, on, off. Fourteen times, I counted. Mama pretended not to notice and then laughed so hard she had to sit down. You looked at us like we were the strange ones. Maybe we are. Anyway. You are asleep now, and the house sounds different. Goodnight, little one.',
   heard: [
-    { text: 'Mirror', becomes: 'Meera', kind: 'name' },
+    { text: 'Asia', becomes: 'Asha', kind: 'name' },
     { text: ', ' },
     { text: 'um, ', becomes: '', kind: 'filler' },
     {
@@ -63,13 +65,13 @@ export const site = {
 
   comingSoon: {
     line: 'A calm place to keep and treasure every milestone. The baby memory book you fill by talking, with every word kept exactly as you said it, in your voice.',
-    trust: 'Private by design. Your letters stay on your phone, and we never rewrite your words.',
+    trust: 'Private by design. No ads, we never sell your letters, and we never rewrite your words.',
     shareButton: 'Share with friends and family',
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
     shareCopied: 'Link copied',
     shareTitle: `${NAME}, the baby memory book`,
-    shareText: 'The baby memory book you fill by talking. Every word kept exactly as you said it, private on your phone.',
+    shareText: 'The baby memory book you fill by talking. Every word kept exactly as you said it, and kept private.',
   },
 
   cta: {
@@ -90,20 +92,20 @@ export const site = {
     s01: {
       label: 'Evening',
       dateline: '9:41 pm',
-      headline: 'Meera is asleep.',
+      headline: 'Asha is asleep.',
       support: 'The house is quiet for the first time today.',
     },
     s02: {
       label: 'A minute',
       headline: 'A minute is plenty.',
-      support: `Open ${NAME} and tell Meera about today. One sentence counts.`,
+      support: `Open ${NAME} and tell Asha about today. One sentence counts.`,
       /** strings.en.ts tonight.greeting.night with {name} = Papa */
       appGreeting: 'The house is quiet, Papa.',
       /** tonight.subtitle */
-      appSubtitle: 'What do you want Meera to know about today?',
+      appSubtitle: 'What do you want Asha to know about today?',
       /** tonight.promptLabel */
       appPromptLabel: 'A thought to start with',
-      appPrompt: 'What made Meera laugh today?',
+      appPrompt: 'What made Asha laugh today?',
       /** tonight.newPromptButton */
       appAnother: 'Another thought',
       appDateline: 'Month 9, Week 2, Tuesday',
@@ -117,8 +119,8 @@ export const site = {
     s03: {
       label: 'Just talk',
       headline: 'Just talk.',
-      support: 'Say it the way you would say it to Meera. Pauses are fine.',
-      appTo: 'To Meera',
+      support: 'Say it the way you would say it to Asha. Pauses are fine.',
+      appTo: 'To Asha',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
       appHint: 'Say it however it comes.',
@@ -130,7 +132,7 @@ export const site = {
       label: 'Exactly as you said it',
       headline: 'Exactly as you said it.',
       support:
-        'Transcription runs on your phone by default and only clears the ums and misheard names. We never rewrite your words.',
+        'Transcription runs on your phone and only clears the ums and misheard names. We never rewrite your words.',
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -140,15 +142,15 @@ export const site = {
     s05: {
       label: 'Your voice',
       headline: 'Your voice stays with it.',
-      support: 'The recording is kept with every letter you speak. One day Meera can hear how you sounded tonight.',
+      support: 'The recording is kept with every letter you speak. One day Asha can hear how you sounded tonight.',
       /** tonight.states.savedLetter */
       appKept: 'Signed and kept.',
     },
     s06: {
       label: 'The book',
       headline: 'A book that grows by month.',
-      support: "Each letter is filed under Meera's age that month and signed with your name. Both parents write in the same book.",
-      appTitle: "Meera's Book",
+      support: "Each letter is filed under Asha's age that month and signed with your name. Both parents write in the same book.",
+      appTitle: "Asha's Book",
       chapters: [
         { month: 'Month 7', meta: '9 letters, from Papa and Mama' },
         { month: 'Month 8', meta: '11 letters, from Papa and Mama' },
@@ -187,7 +189,7 @@ export const site = {
       label: 'Private',
       headline: 'Private by default.',
       points: [
-        'Your letters are shared only with the people you invite.',
+        'Your book is shared only with the co-parent you invite.',
         'No ads. We never sell your data.',
         'Your letters are never used to train models.',
         'Every letter you have made stays yours to export, any time.',
@@ -198,11 +200,11 @@ export const site = {
       label: 'Pricing',
       headline: 'Two letters free. Then Plus.',
       support:
-        'Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters, backs up every recording, opens Read together after the free sessions and covers every child\'s book, with the whole family adding letters. $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.',
+        'Your first two letters are free, so you can try it. After that, Plus lets you keep adding letters, with your co-parent. $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial. Nothing else needs Plus. Every letter you write stays yours to read, play and export, with or without Plus.',
     },
     s11: {
       label: 'Start tonight',
-      headline: 'Tell Meera about today.',
+      headline: 'Tell Asha about today.',
       supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will write once, when it is ready.`,
       supportLive: 'On iPhone in the US. Your first two letters are free, and a letter takes a minute.',
     },
@@ -236,11 +238,11 @@ export const site = {
     headline: 'You are on the list.',
     intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US, and we will write once more, when it is ready.`,
     letterLabel: 'What a letter looks like',
-    letterTo: 'To Meera',
+    letterTo: 'To Asha',
     letterMeta: 'Month 9, Tuesday night',
     letterFrom: 'From Papa',
     /** Must stay the opening of sampleLetter.text (checked in test/welcome-email.test.ts): the email shows only words the sample letter really holds. */
-    letterExcerpt: 'Meera, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
+    letterExcerpt: 'Asha, today you found the light switch. On, off, on, off. Fourteen times, I counted.',
     letterNote: 'A minute of talking. Every word kept exactly as it was said.',
     promisesTitle: 'What we are building',
     promises: [

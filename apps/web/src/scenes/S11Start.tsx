@@ -1,7 +1,7 @@
 'use client';
 /**
  * S11 "start": the end card and the one action. Storyboard row S11; tone night; length 1.2.
- *   0.00-0.30  The lamp light returns behind the card; "Tell Meera about today." and the line beneath.
+ *   0.00-0.30  The lamp light returns behind the card; "Tell Asha about today." and the line beneath.
  *   The action: before launch the email form; after launch the official App Store badge.
  * The card stays; this is where the persistent action and the skip link land (#start).
  */
