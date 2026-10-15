@@ -6,7 +6,7 @@ To add an agent: add it to `agents/roster.json`, copy the block below to `.claud
 ---
 name: <handle>
 description: <one sentence, under 160 characters: what this agent does and when to call it>
-model: <sonnet | opus>
+model: inherit
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch
 ---
 

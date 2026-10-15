@@ -60,7 +60,7 @@ Never copy a constant, type, colour or string into a second place. Import it.
 - If two threads need the same thing (for example store screenshots, or DNS records), the first one to claim it on the board owns it. The other one reviews it.
 
 ## 8. Repo layout rules
-- New top-level folders need a decision entry. The current ones are: `apps/`, `packages/`, `supabase/`, `packs/`, `scripts/`, `experiments/`, `docs/`, `.github/`.
+- New top-level folders need a decision entry. The current ones are: `apps/`, `packages/`, `supabase/`, `packs/`, `scripts/`, `experiments/`, `docs/`, `.github/`, and `agents/` with `.claude/` (ADR 0018, the agent harness).
 - Tests sit next to their workspace's `test/` folder, so the workspace's test runner picks them up.
 - Scratch output, screenshots and previews go in the session scratchpad, never in the repo.
 - Reports are short: files changed, test results, what needs a device, what the founder must do, requests to other owners, and facts versus assumptions.

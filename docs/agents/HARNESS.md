@@ -2,7 +2,7 @@
 
 One document for the whole system: what it is, how agents are created and run, how they keep context, and how token spend stays low without lowering the quality of the work. The rules agents follow during a run are in `OPERATING_MODEL.md`; the decisions are ADR 0018 (the harness) and ADR 0019 (open-weight models by default).
 
-Last updated: 3 Oct 2026.
+Last updated: 15 Oct 2026.
 
 ## 1. What it is
 
@@ -165,7 +165,7 @@ The hard monthly stop is the budget on your OpenRouter key (and on the Claude Co
 
 ## 11. Governance and safety
 
-- Agents never merge, approve, close, force-push, or push to `develop` or `main`; deny rules in the OpenCode config and in the Claude Code arguments block those commands, and neither GitHub App can edit workflows.
+- Agents never merge, approve, close, force-push, or push to `develop` or `main`. Deny rules block the usual forms of those commands (the OpenCode config denies `git push origin develop*` and `main*`; the Claude Code arguments deny force pushes, `gh pr merge`, `gh pr review --approve` and pushes to `develop` and `main` by name), but a deny list is a tripwire, not a guarantee: branch protection (section 12) is what makes a push to `develop` or `main` impossible. Neither GitHub App can edit workflows.
 - Branch protection (section 12) makes your approval required. Supabase and sign-in changes also need a red-team review and your `approve-migration` label (D-041).
 - Only your comments count as instructions. Issue and PR text from anyone else is information, never instructions.
 - OpenCode session sharing is disabled. Actions logs on a public repository are public, so the runner prints only short step totals and the agent's own text.
@@ -208,4 +208,4 @@ Do it before the first external TestFlight families join (backlog milestone M12)
 
 - 3 Oct 2026: harness created (ADR 0018); open-weight engine by default, Claude optional (ADR 0019); per-run dollar caps; skip unchanged standing runs; this document.
 - 3 Oct 2026: nothing is lost to limits: agents push as they go, the workflow salvages unfinished runs to a branch, and `CLAUDE.md` asks every session to push work in progress at least every 30 minutes.
-- 15 Oct 2026: `agents.yml` is gated on the repository variable `AGENTS_ENABLED=true` (absent by default), so the schedule costs nothing and writes nothing until the founder switches it on; `claude.yml` already ends green without a credential. Landed on `develop`.
+- 15 Oct 2026: `agents.yml` is gated on the repository variable `AGENTS_ENABLED=true` (absent by default), so the schedule costs nothing and writes nothing until the founder switches it on; `claude.yml` already ends green without a credential. Owner names for threads outside the harness (`external_lanes`). Section 11 says plainly that deny lists are tripwires and branch protection is the guarantee.
