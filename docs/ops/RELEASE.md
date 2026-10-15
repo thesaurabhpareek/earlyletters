@@ -1,6 +1,6 @@
 # Release train: from a merged wave to the App Store
 
-Owner: qa-e2e (writer) for the coordinator, who runs the train, and the founder, who approves every irreversible step (COORDINATION section 1). Version 1.2, 14 Oct 2026: ported to `develop` from Line B (`d1cbddb`, port map #117), marked for the on-device v1.0, and amended for the founder's release decisions D-089 to D-092 (ADR 0022) by the release-engineering thread; where this file and ADR 0022 differed, ADR 0022 is what the founder approved.
+Owner: qa-e2e (writer) for the coordinator, who runs the train, and the founder, who approves every irreversible step (COORDINATION section 1). Version 1.3, 15 Oct 2026: ported to `develop` from Line B (`d1cbddb`, port map #117), marked for the on-device v1.0, amended for the founder's release decisions D-089 to D-092 (ADR 0022) by the release-engineering thread, then revised for the `app-store` environment gate and the 15 Oct reviews; where this file and ADR 0022 differed, ADR 0022 is what the founder approved. Rows that name files, sections or test rows that exist only on `auto/2026-10-05-fixes` (Line B) say so.
 Inputs: `docs/agents/COORDINATION.md` 6, `docs/DECISIONS.md` (D-004, D-041, D-045, D-053, D-060, D-064 to D-067), `docs/ROADMAP.md` 2.1, `docs/FOUNDER_TASKS.md`, TDD 07 sections 9 to 11, `supabase/APPLY.md`, `scripts/packs/publish.ts` and ADR 0016 section 7, `docs/ops/AUTH_SETUP.md`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`, `docs/ops/APP_SIZE.md`, `docs/legal/app-store-privacy-labels.md`, `docs/store/app-store.md`, `docs/qa/DEVICE_TEST_PLAN.md` 1.1.
 
 **v1.0 is on this phone only** (PR #54): no sign-in, accounts, sync or server copy of letters. Sections and rows that describe server work (sign-in setup, database migrations, Edge Functions, the demo account) apply from v1.1, when `EXPO_PUBLIC_SERVER_FEATURES` turns on; they are kept so v1.1 does not start from scratch, and are marked **v1.1** below.
@@ -49,7 +49,7 @@ Who does what:
 | G0 pull request | every PR to `develop` or `main` | `required` (install, `npm test` with content rules, `npm run test:db`, `npm run test:functions`, typecheck incl. `apps/mobile` `tsc`) and `applied migrations unchanged` | built (F) |
 | G1 `main` | merge to `main` | G0 on the merge commit | built (F); branch protection is FT-20 |
 | G2 internal TestFlight | any build to C0 | G1, `node apps/mobile/e2e/bin/lint-flows.mjs`, DEVICE_TEST_PLAN TF-04 smoke on the SE 3 | Maestro suite not runnable yet (seams and some testIDs missing, `apps/mobile/e2e/TESTID_REQUESTS.md`); until then G2 is the manual smoke |
-| G3 external TestFlight | first C1 build, then every C1 build | G2, the C1 column of DEVICE_TEST_PLAN's ordered checklist, in particular S1-08b (hijack fix) and TF-10 (privacy manifest); staging deletion run (`docs/ops/README.md` step 7) | manual |
+| G3 external TestFlight | first C1 build, then every C1 build | G2, the C1 column of DEVICE_TEST_PLAN's ordered checklist, in particular TF-10 (privacy manifest) and TF-11 (no analytics host) once #123 merges; **v1.1:** S1-08b (hijack fix; a Line B row, G-01, parked with sign-in) and the staging deletion run (`docs/ops/README.md` step 7) | manual |
 | G4 submission | `ios-v*` tag | G3, every PRD 6 line with evidence on SE 3 and a current iPhone, kill during save 500 times, S1-17 for every listed language, section 6 checklist, no open S0 or S1 | manual |
 | G5 after release | phased release days 1 to 7 | crash-free sessions 99.8% and users 99.5% (App Store Connect metrics), no data-loss report; pause on any S0 | manual |
 
@@ -112,7 +112,7 @@ Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS
 ### 3.4 The build (from an RC tag)
 Pushing `ios-v<x.y.z>-rc.<n>` runs `.github/workflows/release-ios.yml` (BL-437): tag, version and branch checks, `npm test`, typecheck, store metadata drift, placeholder scan, a trusted signing key in `packages/api/src/keys.ts` (and a warning if `eas.json` has no `EXPO_PUBLIC_DOCS_BASE_URL`), then, after the founder approves the run in the `app-store` environment, `eas build --platform ios --profile production --non-interactive --freeze-credentials --no-wait --auto-submit`. The build runs on EAS; the upload to TestFlight follows when it finishes. Whether `--auto-submit` still submits after the CLI exits with `--no-wait` is Unverified: on the first RC, watch the build page on expo.dev for the linked submission and record what happened in `docs/release/1.0.0.md`. The checks run `npm test` and typecheck but not `test:db` or `test:functions`: v1.0 runs no server code. It needs the environment and secrets in 3.5, `owner` and `extra.eas.projectId` in `app.config.ts`, production signing credentials in EAS (sign the first production build once from a computer, 4) and `submit.production.ascAppId` (3.2).
 
-By hand only as an exception: if the workflow cannot run and the founder approves it in writing, recorded in `docs/release/<x.y.z>.md` with the reason (engineering chapter 11, REL-R05):
+By hand only as an exception: if the workflow cannot run and the founder approves it in writing, recorded in `docs/release/<x.y.z>.md` with the reason (REL-R05 in `docs/engineering/11-release-engineering.md`, which lands with PR #112; until then this file is the rule):
 ```bash
 git switch --detach ios-v1.0.0-rc.1
 cd apps/mobile
@@ -148,7 +148,7 @@ A malformed secret fails with a fixed message and is never echoed to the public 
 - **No push key.** The app schedules only local notifications (reminders and plan reminders); no remote push entitlement is configured (F: no `expo-notifications` plugin entry in `app.config.ts`; A: confirm no `aps-environment` in the built entitlements, TF-10 step (a)).
 - **Internal builds** (`development`, `preview`) are ad hoc: each iPhone is registered first (`npx eas-cli device:create`), then a new build includes it (DEVICE_TEST_PLAN P-02).
 - **App Store Connect API key for `eas submit`:** made through `eas credentials` (App Store Connect: Manage your API Key) so later submissions are non-interactive (V: Expo "Submit to the Apple App Store"); creating team keys is an Account Holder or Admin action (A). It never leaves EAS and the founder's password manager.
-- **The Sign in with Apple `.p8` key** used by `apple-token` and the purge worker is a different key with a different job (AUTH_SETUP 2.4 and 2.7, SECURITY.md 5). It is not a signing credential.
+- **The Sign in with Apple `.p8` key** used by the purge worker (and, from v1.1, by the `apple-token` Edge Function parked on Line B, G-03) is a different key with a different job (AUTH_SETUP 2.4, SECURITY.md 5; Line B's AUTH_SETUP 2.7 describes `apple-token`). It is not a signing credential.
 - **If the account later moves to an organisation** (D-004 triggers), Apple's app transfer applies; signing assets are re-created in the new team (DECISIONS D-004 point 5).
 
 ## 5. TestFlight
@@ -222,7 +222,7 @@ Tick every line in the release PR's description with the evidence file it rests 
 - [ ] The submitted build is the release candidate from `ios-v1.0.0-rc.<n>` on `release/1.0` that passed FT-39, built with the `production` profile and the pinned image (3.2); its build number is in `docs/release/1.0.0.md` (D-089).
 - [ ] App size: largest variant download under 40 MB from App Store Connect's numbers or the App Thinning Size Report (`npx tsx scripts/size/measure.ts --thinning-report ...`, `docs/ops/APP_SIZE.md`; DEVICE_TEST_PLAN TF-01).
 - [ ] The production bundle has no e2e seam strings (`grep -c e2eSeed main.jsbundle` is 0, TESTID_REQUESTS B-8) and no `example.com`.
-- [ ] **v1.1 only** (v1.0 runs no server): production Supabase has every migration through the newest the build needs (section 10), the beta or 1.0.0 policy versions, the pepper set, functions deployed (`purge-worker`, `analytics-forget`, `config`, `content`, `apple-token`).
+- [ ] **v1.1 only** (v1.0 runs no server): production Supabase has every migration through the newest the build needs (section 10), the beta or 1.0.0 policy versions, the pepper set, functions deployed (`purge-worker`, `analytics-forget`, `config`, `content`; plus `apple-token` once G-03 is ported from Line B, it is not on `develop`).
 - [ ] The public signing key in `packages/api/src/keys.ts` is the founder's real key (BL-335), and the config, manifest and content published with it are live (section 9).
 
 ## 7. Release and phased release
@@ -278,8 +278,8 @@ The founder applies live migrations by hand, staging first, in `supabase/APPLY.m
 | 5 to 7 | `20261003000000_security_and_family`, `20261003010000_children_and_entitlements`, `20261003020000_purge_batching` | steps 8 to 13 (policy versions first) | every build |
 | 8 to 11 | `20261004000000_plus_on_device_only`, `20261004100000_sync_engine`, `20261004200000_ops_deletion_worker`, `20261004300000_insights_aggregates` | steps 14 to 16 | every build |
 | 12 | `20261005000000_family_cap_language_idempotency` | steps 17 to 19 | **must be live before a fix-wave build talks to the project**: the build sends sync field group `language`, which older servers refuse (mobile-fix, BOARD 21:41) |
-| 13 | `20261005100000_db_fix_privacy_limits` | steps 20 to 22 (pepper check first) | the fix-wave build (`peek_invite` for ask-before-joining, G-02) |
-| 14 | `20261005200000_insights_differencing` | **no APPLY.md section yet** (platform-fix's text is with the coordinator) | insights only; not blocking a build |
+| 13 | `20261005100000_db_fix_privacy_limits` (**Line B only**: on `auto/2026-10-05-fixes`, not on `develop`; G-08 to G-13, parked) | Line B's APPLY.md steps 20 to 22 (pepper check first); `develop`'s APPLY.md ends at step 19 | the fix-wave build (`peek_invite` for ask-before-joining, G-02). Needs a new timestamp after PR #32's files and the `approve-migration` label when ported |
+| 14 | `20261005200000_insights_differencing` (**Line B only**, G-20, parked) | no APPLY.md section on either line (platform-fix's text is with the coordinator) | insights only; not blocking a build |
 
 Rules for a release:
 - Migrations go out **before** the build that needs them, never after; every file so far is additive for older builds (APPLY.md "App compatibility" notes).
