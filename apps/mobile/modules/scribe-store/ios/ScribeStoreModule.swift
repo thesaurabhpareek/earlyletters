@@ -308,6 +308,8 @@ enum Entitlements {
     var item: [String: Any] = [
       "productId": t.productID,
       "purchasedAt": iso.string(from: t.purchaseDate),
+      // The first purchase of this subscription: the yearly reminder's anniversary (Q-003 memo 5, G-15).
+      "originalPurchasedAt": iso.string(from: t.originalPurchaseDate),
       "ownership": t.ownershipType == .familyShared ? "familyShared" : "purchased",
       "environment": environmentName(t.environment),
       "isTrial": isFreeTrial(t),
