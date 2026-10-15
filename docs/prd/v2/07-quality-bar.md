@@ -1,6 +1,6 @@
 # 07. Quality bar: done, tests, launch checklist, beta and release
 
-Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with the R-01 re-run on engine 5, D-073, D-074, D-084, D-085, ADR 0014 to 0017 and `docs/qa/DEVICE_TEST_PLAN.md`. Revised 14 Oct 2026 after critique round 1 (M14 to M17; R5 EQ-02 to EQ-04, EQ-09, EQ-10, EQ-16, EQ-18, EQ-28, EQ-31; R3 DX-06, DX-21, DX-30; R2 AR-26; disposition in `reviews/DISPOSITION-C.md`). Dates live only in `08-delivery.md` section 2.1; this file names milestones (R1 PL-03). Replaces `docs/prd/PRD.md` 1.3 section 6 (launch checklist) and section 2.3 (launch gates), and folds in the Definition of Done from `docs/BACKLOG.md` and the test strategy in `docs/tdd/07-quality-test-strategy.md`. Budgets live in `06-nfr.md`; this file says how each one is proved and when it blocks.
+Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with the R-01 re-run on engine 5, D-073, D-074, D-084, D-085, ADR 0014 to 0017 and `docs/qa/DEVICE_TEST_PLAN.md`. Revised 14 Oct 2026 after critique round 1 (M14 to M17; R5 EQ-02 to EQ-04, EQ-09, EQ-10, EQ-16, EQ-18, EQ-28, EQ-31; R3 DX-06, DX-21, DX-30; R2 AR-26; disposition in `reviews/DISPOSITION-C.md`). Round 2 delivery edits on 15 Oct (migration timestamps at merge, the load-test line per 08 Q8, the C0 days counted on the switch-on build; `reviews/DISPOSITION-R2-delivery.md`). Dates live only in `08-delivery.md` section 2.1; this file names milestones (R1 PL-03). Replaces `docs/prd/PRD.md` 1.3 section 6 (launch checklist) and section 2.3 (launch gates), and folds in the Definition of Done from `docs/BACKLOG.md` and the test strategy in `docs/tdd/07-quality-test-strategy.md`. Budgets live in `06-nfr.md`; this file says how each one is proved and when it blocks.
 
 Twenty agent engineers build from this. If a work package cannot show the evidence below, it is not done, whatever the code looks like.
 
@@ -24,7 +24,7 @@ A work package (WP-F##-##) is one pull request a reviewer can check in under 30 
 2. App: `npm run lint -w @scribe/mobile` (`expo lint`) is clean. The accessibility and copy rules in section 2.3 become required as each lands [R].
 3. No `console.*` in Edge Functions or app code paths that run in release builds (TDD 06 section 5.3).
 4. Data map: any new or changed table, column, bucket, device store, SDK or vendor has its row in the data map in the same PR, with class, level (L1 to L4), owner and retention (BACKLOG DoD 5; DATA-REQ-001). The PR body states `Data classes touched:`.
-5. Migrations: a new file inside the WP's assigned timestamp range; never an edit to a file listed in `.github/migrations-applied.txt` (migration guard workflow; D-041). Agents never apply a migration to a remote project.
+5. Migrations: a new file; the coordinator gives it the next free timestamp at merge, not at dispatch (08 section 4; R9 R2D-15); never an edit to a file listed in `.github/migrations-applied.txt` (migration guard workflow; D-041). Agents never apply a migration to a remote project.
 
 ### 1.3 Content rules and the constitution
 
@@ -486,7 +486,7 @@ Every feature spec, F01 to F21, now has a section 7. The lines below were checke
 - [ ] [auto] Every row marked Gate in `06-nfr.md` passes in the release-candidate performance run, with the evidence file named per row.
 - [ ] [auto] App Store download size for iPhone SE 3 is under 40 MB on the release build (B13, F05-REQ-016).
 - [ ] [manual] Zero unresolved crash signatures on the release-candidate build across C1 and the device scripts, over at least 500 sessions [A] (R2 AR-26: a 99.8% rate cannot be read from a few hundred beta sessions). The 99.8% and 99.5% rates stay as the G5 post-release gate (06-nfr.md section 6).
-- [ ] [auto] Load test at 2x the 1k targets and a 4-hour soak pass in staging (BL-282).
+- [ ] [auto] Load test at 2x the 1k targets and a 4-hour soak pass in staging (BL-282). Per 08 Q8 until the founder answers at T15: a 1-hour 1x smoke replaces it unless the founder keeps the full test (R9 R2D-15).
 - [ ] [auto] `npm test`, `npm run test:db` and `npm run typecheck` pass on the release commit.
 
 ## 4. Beta on TestFlight
@@ -525,7 +525,7 @@ Source: TDD 07 section 11.3; ROADMAP week 11 (daily 20-minute triage during C1).
 ### 4.4 Exit criteria
 
 **C0 to C1** (C1 start in 08 section 2.1):
-1. 14 days of C0 use with zero open S0.
+1. 14 days of C0 use on the switch-on build (from 08 T19) with zero open S0 (R9 R2D-13).
 2. No crash signature open from the last 7 days of C0 (a rate cannot be read from 10 testers, R2 AR-26).
 3. Kill during save passed on SE 3 (500 Simulator plus 50 device, zero loss).
 4. Restore drill passed (before the first non-founder family; section 2.10).

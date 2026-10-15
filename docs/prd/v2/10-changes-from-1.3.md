@@ -83,7 +83,31 @@ V2 deletes no 1.3 ID (`_AUTHORING.md` section 1). These 20 requirement IDs from 
 | PRD-REQ-006 | Drop `safety_events` | Done: `supabase/migrations/20261002020000_data_governance.sql` dropped it (F20 section 1) |
 | PRD-REQ-008 | Claims pass in `packages/content` | Done 2 Oct (1.3 section 8); the claims registry carries it (LEGAL-REQ-044) |
 | A-NFR-009, B-NFR-006, B-NFR-010 | Provider hygiene and Apple key rotation; AX5, screen readers and web WCAG 2.2 AA; counsel review of children's data | Still bind through 1.3 (source order item 6). `06-nfr.md` sections 8 and 12 hold the shared accessibility and security budgets; a spec citation is owed [R] |
-| C-REQ-022, PRD-REQ-023 | Plus sheet content; publisher identity from `packages/brand` | Cited in `07-quality-bar.md` (launch checklist), not in a feature spec |
+| C-REQ-022, PRD-REQ-023 | Plus sheet content; publisher identity from `packages/brand` | Home rows added in round 2: C-REQ-022 in F14, PRD-REQ-023 in F21 (section 3.1) |
+
+### 3.1 IDs cited in V2 with no V2 requirement row (round 2, R9 R2D-06)
+
+On 15 Oct a script found 66 requirement IDs cited somewhere in V2 but defined in no spec's section 7. Each now has one standing.
+
+**Given a home row (35).** These still bind in v1.0 or are P1 duties a spec relies on, so each has a row in its home spec's section 7 under "Inherited requirements whose home is this spec", with the wording taken from its source, and every P0 among them has a work package and a test in section 12: F01 A-REQ-005, A-REQ-028, LEGAL-REQ-002; F02 LEGAL-REQ-026; F05 LEGAL-REQ-018, LEGAL-REQ-019; F08 LEGAL-REQ-023, DATA-REQ-047; F11 A-REQ-029, DATA-REQ-016; F14 C-REQ-022, LEGAL-REQ-046, LEGAL-REQ-047, LEGAL-REQ-053; F15 DATA-REQ-054, DATA-REQ-055 (both P1); F16 LEGAL-REQ-021, DATA-REQ-005; F17 DATA-REQ-001, DATA-REQ-004, DATA-REQ-021, DATA-REQ-027, DATA-REQ-063 (P1), DATA-REQ-064, DATA-REQ-066, LEGAL-REQ-025, LEGAL-REQ-036 (P1), LEGAL-REQ-041; F18 DATA-REQ-062; F19 LEGAL-REQ-040, LEGAL-REQ-059 (P1); F20 LEGAL-REQ-057 (P1); F21 LEGAL-REQ-042, LEGAL-REQ-058, LEGAL-REQ-060 (P1), PRD-REQ-023.
+
+**Not a v1.0 requirement (20, plus the 11 already in the table above).** Cited for history or for a later release; no V2 row, and no work package or test is owed in v1.0:
+
+| IDs | What | Where they stand |
+|---|---|---|
+| A-REQ-003, A-REQ-011 | Brand moment and intro variant switch (story intro) | v1.1 (D-043), with A-REQ-004 to A-REQ-010 above |
+| A-REQ-020 | Apple sign-in on Android | v1.1 with Android (F36) |
+| B-REQ-018 | Sealed letters | Later (F41) |
+| B-REQ-019, B-REQ-024 | Themes and templates; author and child photos | Later (F46) |
+| B-REQ-020 | Write to several children at once, sibling letters | Later; needs LEGAL-REQ-059 sign-off for child input |
+| B-REQ-023 | Per-person auto-add, thank you, "make all my letters private" | P1 in 1.3; F11-REQ-022 carries the "take all my letters out" part, not in v1.0 |
+| B-REQ-025 | Came-home date, Hindi app UI, leave letters after account deletion | P2 in 1.3; the last part needs counsel (F11 Q5) |
+| C-REQ-013, C-REQ-014 | Year One; On this day | Later (F47) |
+| C-REQ-030, C-REQ-032 | Gift a year of Plus; lifetime | Later (F43) |
+| LEGAL-REQ-004, LEGAL-REQ-020 | Consent before content goes to third-party AI; AI providers with zero retention | Bind when server transcription ships (F35, v1.1) |
+| LEGAL-REQ-005, LEGAL-REQ-010, LEGAL-REQ-035 | Web contributors: AI consent, notice at collection, rights without an account | Bind when the web page ships (F37, v1.1; legal document release tiers) |
+| LEGAL-REQ-013 | Strip metadata from photos | Binds when photos ship (F46) |
+| PRD-REQ-022 | Purchase rules from 1.3 | Superseded in part by M1, M4 and D-080: F14 holds the v1.0 purchase rules, F30 F32 item 7 holds the contributor rule, and the "no offer in a book another parent covers" rule cannot be checked without a server (F11 section 8). Cited for history |
 
 Conflict-log entries K-06, K-20, K-21, K-27, K-30, K-31, K-33, K-34, K-36 and K-40 to K-43 are also uncited by the feature specs; they record how 1.3 settled conflicts and are history, not requirements.
 

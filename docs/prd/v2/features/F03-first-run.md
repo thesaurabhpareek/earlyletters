@@ -259,11 +259,11 @@ No first-run event is sent at the time (consent comes later, K-01). Facts arrive
 
 | WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode |
 |---|---|---|---|---|---|
-| WP-F03-01 | First-run transaction, batch id, per-child signature move | `apps/mobile/src/lib/db/` migration (new; coordinator numbers it), `apps/mobile/src/lib/store.ts` first-run function | BL-111 (BL-136) | `[F03-REQ-002]` kill test; `[F03-REQ-011]` local batch | agent (mobile engineer) |
-| WP-F03-02 | Child step: per-child dates, partner link, name rules | `apps/mobile/src/app/onboarding.tsx` | WP-F03-01 (BL-033) | `[B-REQ-001]`, `[F03-REQ-001]`; AX5 by device script until the render harness WP-F00-01 merges (R5 EQ-04) | agent (mobile engineer) |
+| WP-F03-01 | First-run transaction, batch id, per-child signature move | `apps/mobile/src/lib/db/` migration (new; coordinator numbers it), `apps/mobile/src/lib/store.ts` first-run function | BL-111 (BL-136) | `[F03-REQ-002]` kill test; `[F03-REQ-011]` local batch; `[B-REQ-002]` | agent (mobile engineer) |
+| WP-F03-02 | Child step: per-child dates, partner link, name rules | `apps/mobile/src/app/onboarding.tsx` | WP-F03-01 (BL-033) | `[B-REQ-001]`, `[F03-REQ-001]`; AX5 by device script until the render harness WP-F00-01 merges (R5 EQ-04); `[B-REQ-005]` | agent (mobile engineer) |
 | WP-F03-03 | Languages step with DR-01 labels, script and variety | `apps/mobile/src/components/first-run/languages.tsx` (new), feature `copy.ts` | F05 gate-status API, F19 manifest | `[B-REQ-003]`, `[F03-REQ-003]`, `[F03-REQ-004]` | agent (mobile engineer, content) |
 | WP-F03-04 | Dictionary seeding with per-script forms; stream S08 proposed (R5 EQ-07; 08 section 3.3 assigns) | `packages/core/src/` dictionary helpers (F07 owns types) | F07 WP for `DictionaryTerm` forms | `[F03-REQ-010]` unit | agent (speech engineer) |
-| WP-F03-05 | Ready screen and download hand-off | `apps/mobile/src/app/onboarding.tsx` finish step | BL-143 | `[F03-REQ-005]`, `[F03-REQ-006]` with storage and network mocks | agent (mobile engineer) |
+| WP-F03-05 | Ready screen and download hand-off | `apps/mobile/src/app/onboarding.tsx` finish step | BL-143 | `[F03-REQ-005]`, `[F03-REQ-006]` with storage and network mocks; `[B-REQ-012]`, `[F03-REQ-007]` | agent (mobile engineer) |
 | WP-F03-06 | Invitee first run (signature, languages, reading size) | `apps/mobile/src/app/join/first-run.tsx` (new) | F11 WP-F11-06 (BL-191) | `[F03-REQ-009]` Maestro from a link | agent (mobile engineer) |
 | WP-F03-07 | 90 s budget run on SE 3 | `docs/qa/` timing script (new) | WP-F03-02 to -05, F04 save | `[F03-REQ-008]` median recorded | human (QA engineer) |
 

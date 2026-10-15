@@ -173,7 +173,7 @@ Direction: **up** may only raise, **down** may only lower, **kill** may only sto
 | `killSwitches.packDownloads` | bool, false | kill | `apps/mobile/src/lib/packs/index.ts` | Built |
 | `killSwitches.serverContent` | bool, false | kill | `apps/mobile/src/lib/remote/index.ts` | Built |
 | `killSwitches.backupUploads` | bool, false | kill | F08 backup queue **[server]** | Not built (new, R2 AR-12) |
-| `killSwitches.escrow` | bool, false | kill | F08 restore client; the `escrow` function also reads a server setting so it can be stopped without any phone **[server]** | Not built (new) |
+| `killSwitches.escrow` | bool, false | kill | F08 restore client; the `escrow` function, which runs alone in the `scribe-escrow` project (F08 6.5 G2), also reads that project's own switch on every call, so it can be stopped without any phone and without the main project [A: a changed function secret takes effect without a redeploy; checked in WP-F08-B4] **[server]** | Not built (new) |
 | `killSwitches.statusReport` | bool, false | kill | F14 status report sender **[server]** | Not built (new) |
 | `captureMaxMinutes` (F04 asks `capture_max_minutes`) | int, 30, clamp 5 to 30 | down | F04 recorder | Not built (new) |
 | `flags.listeningCopy` | Removed: F08-REQ-006 Rev (D-068) has no remote listening-copy key; the player uses a copy only when its hash matches | n/a | F08 | Not to be built |
@@ -216,6 +216,15 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | F19-REQ-024 | P0 | Every flag and kill switch is listed in the App Review notes with its reviewed variants | Given the review notes (F21), Then each key in 6.5 that the build reads appears once | Not built | 2.3.1(a) |
 | F19-REQ-025 | P0 | Per-feature build flags `capabilities.backup` and `capabilities.statusReport` | Given a build with server features on and `EXPO_PUBLIC_BACKUP` off, Then no backup UI, upload or escrow call exists in that build while sign-in, sync and co-parent work; same for the status report | Not built | R2 AR-12; 08 section 2.4 fallbacks |
 | F19-REQ-026 | P0 | Cache and refresh numbers that meet the 5-minute bar | Given `CACHE_POLICY.remoteConfig`, Then it is `public, max-age=60, stale-while-revalidate=30, stale-if-error=604800`; given the app in the foreground, Then remote config is requested at most every 2 minutes and at least every 2 minutes plus one tick | Not built (today 3600 s and 4 minutes) | R2 AR-27 |
+
+### Inherited requirements whose home is this spec (round 2)
+
+These IDs were cited in V2 with no definition row (R9 R2D-06). The text is taken from the source named in the last column; that source still governs the full wording. Each P0 row has a work package and a test in section 12.
+
+| ID | P | Requirement | Acceptance criteria | Source |
+|---|---|---|---|---|
+| LEGAL-REQ-040 | P0 | Kill switches: revoke all sessions, pause sync, pause pack downloads, and the M14 switches when their features ship | Given each switch flipped in staging, Then the effect occurs within 5 minutes and local features still work offline | `docs/legal/ENGINEERING_REQUIREMENTS.md` on `develop` LEGAL-REQ-040 |
+| LEGAL-REQ-059 | P1 | Child-collection features stay behind a `child-input` flag that is off in production without counsel's linked opinion | Given the flag registry, When CI runs, Then `child-input` flags are off in production config unless an approval link is present | `docs/legal/ENGINEERING_REQUIREMENTS.md` on `develop` LEGAL-REQ-059 |
 
 ## 8. Data, privacy and security
 
@@ -274,21 +283,21 @@ Only for what is missing or partly built.
 | WP-F19-02 | Docs base for store builds and a config test | Platform | `apps/mobile/eas.json` (or EAS environment), `apps/mobile/test/capabilities.test.ts` | WP-F19-01, host decision | `[F19-REQ-005]` | Pair (founder sets the EAS variable) |
 | WP-F19-03 | Pack host, uploads, one host name | Founder, speech agent | `apps/mobile/src/lib/models/catalog.ts` `SELF_HOST_BASE`, `docs/ops/DOMAINS.md` | BL-337 | `[F19-REQ-019]` Range 206 from an iPhone | Pair |
 | WP-F19-04 | First signed publish and deploy | Coordinator with founder's OK | `supabase/functions/*/published.ts`, `scripts/packs/remote-config.json` | WP-F19-01 to 03 | `[F19-REQ-023]`; phones accept all three | Human |
-| WP-F19-05 | L10: ignore same-version bodies, staleness rule for kill switches | Platform | `apps/mobile/src/lib/remote/documents.ts`, `__tests__/documents.test.ts` | none | `[F19-REQ-008]` | Agent |
+| WP-F19-05 | L10: ignore same-version bodies, staleness rule for kill switches | Platform | `apps/mobile/src/lib/remote/documents.ts`, `__tests__/documents.test.ts` | none | `[F19-REQ-008]`; `[F19-REQ-001]` | Agent |
 | WP-F19-06 | Vocabulary guard test | Platform | `packages/api/test/remote-config.test.ts`, `test/content.test.ts` | none | `[F19-REQ-009]` | Agent |
-| WP-F19-07 | New keys with clamps; remove reads of `readTogetherFreeSessions` from `scripts/packs/remote-config.json` | Platform | `packages/api/src/remote-config.ts`, its test, `scripts/packs/remote-config.json` | Owners of F04, F08, F17 | `[F19-REQ-013]` | Agent |
+| WP-F19-07 | New keys with clamps; remove reads of `readTogetherFreeSessions` from `scripts/packs/remote-config.json` | Platform | `packages/api/src/remote-config.ts`, its test, `scripts/packs/remote-config.json` | Owners of F04, F08, F17 | `[F19-REQ-013]`; `[F19-REQ-003]`, `[F19-REQ-010]` | Agent |
 | WP-F19-08 | Manifest `gate` field and the listing rule | Platform, speech | `packages/api/src/pack-manifest.ts`, its test, `apps/mobile/src/lib/packs/` | F05, F21 listing | `[F19-REQ-020]` | Agent |
-| WP-F19-09 | Screen slots: Tonight prompts from `usePromptLibrary`, tip and announcement slots | Mobile | `apps/mobile/src/app/(tabs)/index.tsx`, `review.tsx`, `(tabs)/book.tsx`, `settings/index.tsx` (slot lines only) | WP-F19-04 | `[F19-REQ-016]` | Agent |
+| WP-F19-09 | Screen slots: Tonight prompts from `usePromptLibrary`, tip and announcement slots | Mobile | `apps/mobile/src/app/(tabs)/index.tsx`, `review.tsx`, `(tabs)/book.tsx`, `settings/index.tsx` (slot lines only) | WP-F19-04 | `[F19-REQ-016]`; `[F19-REQ-015]` | Agent |
 | WP-F19-10 | Update card | Mobile | New `apps/mobile/src/components/content-blocks/update-card.tsx`, copy in feature `copy.ts` | none | `[F19-REQ-012]` | Agent |
-| WP-F19-11 | Full content rules in the publisher | Content | `scripts/packs/lib.ts`, `packages/content/test/rules.test.ts` (read the extra file) | none | `[F19-REQ-017]` | Agent |
+| WP-F19-11 | Full content rules in the publisher | Content | `scripts/packs/lib.ts`, `packages/content/test/rules.test.ts` (read the extra file) | none | `[F19-REQ-017]`; `[F19-REQ-014]` | Agent |
 | WP-F19-12s | `killSwitches.sync` consumer **[server]** | S03 | `apps/mobile/src/lib/sync/` | WP-F19-16 | `[F19-REQ-011]` sync row; `[F16-REQ-018]` | Agent |
 | WP-F19-12f | `killSwitches.invites` consumer **[server]** | S04 | `apps/mobile/src/lib/family/` | WP-F19-16 | `[F19-REQ-011]` invites row | Agent |
 | WP-F19-12a | `forceReauthEpoch` consumer **[server]** | S01 | `apps/mobile/src/lib/auth/` | none | `[F19-REQ-011]` epoch row; `[F02-REQ-023]` | Agent |
 | WP-F19-12b | `backupUploads` and `escrow` consumers **[server]** | S05 | `apps/mobile/src/lib/backup/`, `supabase/functions/escrow/` | WP-F19-16, WP-F08-B5a | `[F19-REQ-011]` backup rows; `[F08-REQ-041]` | Agent |
 | WP-F19-12r | `statusReport` consumer **[server]** | S06 | `apps/mobile/src/lib/billing/` | WP-F19-16 | `[F19-REQ-011]` status row | Agent |
-| WP-F19-13 | Staging kill test and local smoke under every switch | QA | `docs/qa/` script | WP-F19-04 | `[F19-REQ-006]`, `[F19-REQ-007]` | Pair (two phones) |
+| WP-F19-13 | Staging kill test and local smoke under every switch | QA | `docs/qa/` script | WP-F19-04 | `[F19-REQ-006]`, `[F19-REQ-007]`; `[LEGAL-REQ-040]` (exists in `packages/api/test/remote-config.test.ts`) | Pair (two phones) |
 | WP-F19-14 | Review-notes flag list | Release owner | F21 review notes | WP-F19-07 | `[F19-REQ-024]` | Agent |
-| WP-F19-15 | Cache and refresh numbers | S07 | `packages/api/src/standards.ts` (`CACHE_POLICY.remoteConfig`, `CLIENT_REFRESH_MS.remoteConfig`), `supabase/functions/config/serve.test.ts` | M14 capabilities ADR | `[F19-REQ-026]`; `serve.test.ts` header assertions | Agent |
+| WP-F19-15 | Cache and refresh numbers | S07 | `packages/api/src/standards.ts` (`CACHE_POLICY.remoteConfig`, `CLIENT_REFRESH_MS.remoteConfig`), `supabase/functions/config/serve.test.ts` | M14 capabilities ADR | `[F19-REQ-026]`; `serve.test.ts` header assertions; `[F19-REQ-004]`, `[F19-REQ-021]`, `[F19-REQ-022]` | Agent |
 | WP-F19-16 | New kill-switch keys in the schema; build flags `capabilities.backup` and `capabilities.statusReport` | S07 (schema), S20 (`capabilities.ts`, `eas.json`) | `packages/api/src/remote-config.ts` and test; `apps/mobile/src/lib/capabilities.ts`, `apps/mobile/eas.json` | M14 capabilities ADR | `[F19-REQ-025]`; schema test lists the three new switches | Agent |
 
 ## 13. Open questions and assumptions

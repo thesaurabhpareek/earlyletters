@@ -282,6 +282,14 @@ Status: **Built** (file), **Partly built**, or **Not built**, checked in code on
 | F18-REQ-017, F18-REQ-018, F18-REQ-019 | `supabase/functions/analytics-forget/handler.test.ts`; `apps/mobile/src/lib/account-deletion/account-deletion.test.ts` | Exist; retry-through-wipe case new |
 | F18-REQ-024, F18-REQ-025, F18-REQ-026 | Process checks in the release checklist with evidence (no repo test can prove them, R5 sample items 33 and 34) | Human |
 
+### Inherited requirements whose home is this spec (round 2)
+
+These IDs were cited in V2 with no definition row (R9 R2D-06). The text is taken from the source named in the last column; that source still governs the full wording. Each P0 row has a work package and a test in section 12.
+
+| ID | P | Requirement | Acceptance criteria | Source |
+|---|---|---|---|---|
+| DATA-REQ-062 | P0 | Telemetry retention: PostHog 12 months, set in the console and recorded in the runbook | Given the release checklist, Then the PostHog retention setting is recorded with the date | `docs/legal/DELETION_AND_EXPORT_SPEC.md` on `develop` DATA-REQ-062 |
+
 ## 8. Data, privacy and security
 
 | Data | Level (PRD 7.10) | Where | Who reads | Retention | Never |
@@ -341,18 +349,18 @@ Only for what is missing or partly built.
 
 | WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode |
 |---|---|---|---|---|---|---|
-| WP-F18-01 | No-provider state: no sheet, no switch without a key | Analytics engineer | `apps/mobile/src/lib/analytics/ask.ts`, `ask-sequencer.logic.ts` and test, `apps/mobile/src/app/settings/privacy.tsx` | none | `[F18-REQ-003]` unit tests both ways | Agent |
+| WP-F18-01 | No-provider state: no sheet, no switch without a key | Analytics engineer | `apps/mobile/src/lib/analytics/ask.ts`, `ask-sequencer.logic.ts` and test, `apps/mobile/src/app/settings/privacy.tsx` | none | `[F18-REQ-003]` unit tests both ways; `[F18-REQ-027]`, `[LEGAL-REQ-003]` (exists in `packages/analytics/test/posthog.test.ts`), `[PRD-REQ-018]` (exists in `packages/analytics/test/posthog.test.ts`) | Agent |
 | WP-F18-02 | Per-id daily cap | Analytics engineer | `packages/analytics/src/client.ts`, `validate.ts` (kind), `test/analytics.test.ts` | none | `[F18-REQ-008]` | Agent |
-| WP-F18-03 | Guard tests: no analytics keys in remote config; one-file SDK imports; ad SDK denylist | Analytics engineer, QA | `packages/api/test/remote-config.test.ts`, new `scripts/ci/sdk-guards.mjs`, CI workflow line | none | `[F18-REQ-010]`, `[F18-REQ-007]`, `[LEGAL-REQ-016]` fail on a planted import | Agent |
-| WP-F18-04 | Consent recorder registration and offline queue **[server]** | Auth owner | `apps/mobile/src/lib/auth/consent.ts`, root registration line | BL-251 | `[F18-REQ-004]` | Agent |
-| WP-F18-05 | Forget retry at launch **[server]** | Analytics engineer | `apps/mobile/src/lib/account-deletion/api.ts`, a launch hook in `lib/analytics/index.ts` | none | `[F18-REQ-019]` | Agent |
+| WP-F18-03 | Guard tests: no analytics keys in remote config; one-file SDK imports; ad SDK denylist | Analytics engineer, QA | `packages/api/test/remote-config.test.ts`, new `scripts/ci/sdk-guards.mjs`, CI workflow line | none | `[F18-REQ-010]`, `[F18-REQ-007]`, `[LEGAL-REQ-016]` fail on a planted import; `[C-REQ-034]`, `[F18-REQ-028]`, `[LEGAL-REQ-015]`, `[PRD-REQ-016]` | Agent |
+| WP-F18-04 | Consent recorder registration and offline queue **[server]** | Auth owner | `apps/mobile/src/lib/auth/consent.ts`, root registration line | BL-251 | `[F18-REQ-004]`; `[F18-REQ-002]`, `[F18-REQ-009]`, `[F18-REQ-020]` | Agent |
+| WP-F18-05 | Forget retry at launch **[server]** | Analytics engineer | `apps/mobile/src/lib/account-deletion/api.ts`, a launch hook in `lib/analytics/index.ts` | none | `[F18-REQ-019]`; `[F18-REQ-018]` | Agent |
 | WP-F18-06 | Wire or remove the 13 silent events; emitter check script | Analytics engineer with each owner | `packages/analytics/src/catalog.ts`, `scripts/analytics/emitters.mjs` (new), call sites named in TRACKING_PLAN 9 | Owners | `[F18-REQ-012]` script exits 0 | Agent |
 | WP-F18-07 | Consent copy accuracy | Content | `packages/content/src/strings.en.ts` `analyticsConsent`, `settings.privacy.analyticsHelp` | Q2, counsel | `[F18-REQ-005]`; content rules test green | Agent then counsel |
 | WP-F18-08 | Privacy manifest and label for a PostHog build | Mobile engineer, legal | `apps/mobile/app.config.ts` `PRIVACY_MANIFESTS`, `docs/legal/app-store-privacy-labels.md` | Q-005 | `[LEGAL-REQ-043]` archived `.ipa` inspected | Pair |
-| WP-F18-09 | Real-SDK contract test and container scan | QA engineer | `apps/mobile/test/analytics-contract.test.ts` (new); device script in `docs/qa/` | Release build on a device | `[F18-REQ-001]`; BL-252 | Pair (device) |
-| WP-F18-10 | Insights prompt fix (D-070) and build-state input | Analytics engineer | `docs/analytics/INSIGHTS_LOOP.md` section 6, `scripts/insights/run.ts`, `packages/analytics/src/insights/render.ts` | none | `[F18-REQ-024]`, `[F18-REQ-014]` | Agent |
-| WP-F18-11 | L12 nested k fix **[server]** | DB owner | New migration in the owner's range; `supabase/tests/insights_aggregates.test.mjs` | D-041 fence | `[F18-REQ-015]` | Agent with review label |
-| WP-F18-12 | Release checklist items: PostHog settings, ASC crash and money numbers | Founder, release owner | Release checklist doc (owner's choice of path) | none | `[F18-REQ-011]`, `[F18-REQ-025]`, `[F18-REQ-026]` evidence present | Human |
+| WP-F18-09 | Real-SDK contract test and container scan | QA engineer | `apps/mobile/test/analytics-contract.test.ts` (new); device script in `docs/qa/` | Release build on a device | `[F18-REQ-001]`; BL-252; `[LEGAL-REQ-012]` | Pair (device) |
+| WP-F18-10 | Insights prompt fix (D-070) and build-state input | Analytics engineer | `docs/analytics/INSIGHTS_LOOP.md` section 6, `scripts/insights/run.ts`, `packages/analytics/src/insights/render.ts` | none | `[F18-REQ-024]`, `[F18-REQ-014]`; `[F18-REQ-013]`, `[F18-REQ-022]` | Agent |
+| WP-F18-11 | L12 nested k fix **[server]** | DB owner | New migration in the owner's range; `supabase/tests/insights_aggregates.test.mjs` | D-041 fence | `[F18-REQ-015]`; `[F18-REQ-016]`, `[PRD-REQ-017]` | Agent with review label |
+| WP-F18-12 | Release checklist items: PostHog settings, ASC crash and money numbers | Founder, release owner | Release checklist doc (owner's choice of path) | none | `[F18-REQ-011]`, `[F18-REQ-025]`, `[F18-REQ-026]` evidence present; `[DATA-REQ-062]` | Human |
 | WP-F18-13 | Weekly schedule and read-only keys | Founder | Scheduler (outside the repo) | C1 | `[F18-REQ-023]` first real report | Human |
 | WP-F18-14 | Sentry behind consent (only if Q2 = v1.0) | Analytics engineer | `apps/mobile/src/lib/analytics/sentry.ts` (new), `app.config.ts` plugin | Q2, WP-F18-08 | `[F18-REQ-006]`, `[A-NFR-012]` | Agent |
 | WP-F18-15 | Forget without an account (if Q3 = yes) | Analytics engineer, privacy engineer | `supabase/functions/analytics-forget/`, `packages/api/src/standards.ts` entry, `privacy.tsx` row | Q3, counsel | `[F18-REQ-021]` | Agent with review label |

@@ -7,7 +7,7 @@
 | Personas | P1 Evening parent, P2 Co-parent, P6 Future reader (durability) |
 | Existing IDs | A-REQ-015, A-REQ-032, A-REQ-033, B-NFR-003, B-NFR-009, PRD-REQ-004, PRD-REQ-014, DATA-REQ-010, DATA-REQ-011, DATA-REQ-013, DATA-REQ-023, DATA-REQ-030, DATA-REQ-031, DATA-REQ-032, DATA-REQ-040 to DATA-REQ-046, LEGAL-REQ-001, LEGAL-REQ-006, LEGAL-REQ-009, LEGAL-REQ-014, LEGAL-REQ-024, LEGAL-REQ-032, LEGAL-REQ-040; K-39; D-023, D-024, D-033, D-035, D-041, D-055, D-068, D-073, D-085; PRD 7.2, 7.3, 7.4, 7.8; ADR 0004; BL-022, BL-052, BL-107, BL-111, BL-173, BL-174, BL-175, BL-177, BL-236, BL-244, BL-247, BL-282, BL-331 |
 | Depends on | F02 (account, session, re-ownership), F17 (consents), F19 (remote config kill switch `killSwitches.sync`, ADR 0016, D-068), F11 and F12 (what is shared), F08 (audio and its encrypted backup) |
-| Status | Draft V2, 3 Oct 2026. Rewritten 13 Oct 2026 after critique round 1 (R2 AR-01 to AR-03, AR-14, AR-31, AR-32; R5 EQ-20): sections 6.2, 7, 8 and 11 now describe the protocol as built in `20261004100000_sync_engine.sql` and `20261005000000`, and name the deltas as work packages |
+| Status | Draft V2, 3 Oct 2026. Rewritten 13 Oct 2026 after critique round 1 (R2 AR-01 to AR-03, AR-14, AR-31, AR-32; R5 EQ-20): sections 6.2, 7, 8 and 11 now describe the protocol as built in `20261004100000_sync_engine.sql` and `20261005000000`, and name the deltas as work packages. Revised 15 Oct 2026 after critique round 2 (R8 R2A-05, -11, -15 to -17, -23, -25; `reviews/DISPOSITION-R2-architecture.md`): held drafts on the server (6.2 I), a 15 s pull for shared books, the environment matrix, ledger kinds and drill rules |
 
 ## 1. Why
 
@@ -41,7 +41,7 @@
 |---|---|---|---|
 | Letters lost or silently changed | Zero (gate, PRD 7.5) | Chaos suite, kill-during-push 500 of 500, the two-phone conflict test (WP-F16-11), restore drill | n/a |
 | Ops never dropped | 100% reach the server or the rejected list (TDD 06 2.2) | Integration tests; L2 counts | n/a |
-| Letter on one phone visible on the co-parent's phone, app in the foreground with the book open | p95 30 s, p99 60 s (gate, Rev of PRD 7.3; section 6.2 C) | Two-client probe in the load test; two-phone script | n/a |
+| Letter on one phone visible on the co-parent's phone, both in the foreground with the shared book open; clock from save tap to row rendered | p95 30 s, p99 60 s with a 15 s pull (gate, Rev of PRD 7.3; section 6.2 C; R8 R2A-11) | Two-client probe in the load test; two-phone script | n/a |
 | New phone: book list | p95 10 s (PRD 7.3) | Device run | n/a |
 | New phone: one year of text (about 240 letters) | p95 30 s on LTE (PRD 7.3) | Device run | n/a |
 | `sync_failed` per active device per week | Under 0.5 [A] | Device analytics | Consenting users only |
@@ -97,9 +97,9 @@ Sync has no screen of its own. It shows in three places:
 1. A local write (save, edit, take out of book, delete, restore, book or prefs change) runs in one SQLite transaction that also inserts a row in the local `sync_outbox` (built, `outbox.ts`). The op holds a device-made UUIDv7 op id, a type, the target id, the field groups it changes (`changed`), and `base`: the server version (`v`) this device last saw for the letter (`entries.server_version` locally).
 2. Consecutive edits of one letter that never left the phone collapse into one op (newest snapshot, union of field groups). An op that may have reached the server is never changed again (built).
 3. A letter waiting for its words is held out of the outbox; its raw transcript is set once, later (built, `outbox.ts` header). Whether a voice-only letter may sync with an empty transcript slot is F05 Q7; the backup rule in F08 section 6.5 does not depend on the answer.
-4. The sync client runs when signed in, consented and online: after first frame, after each local write (debounced), on foreground, on network regain, and when iOS grants background time [A].
+4. The sync client runs when signed in, consented and online: after first frame, after each local write (debounced 2 s [R]), on foreground, on network regain, and when iOS grants background time [A].
 5. It sends up to 50 ops, at most 256 KB, in order, to `sync_push(p_ops jsonb)` (built; security invoker, so RLS, the consent gate and every trigger apply). Op types: `entry.upsert`, `entry.reupload`, `entry.delete`, `entry.restore`, `book.first_run`, `book.create`, `book.update`, `prefs.upsert`.
-6. The server writes a receipt for each op id before running it, applies each op in its own subtransaction and returns one result per op: `ok: true` with `dup`, `applied`, `conflict` or `missing` and the server state (`entry` with `v`, `updated_at`, `deleted_at`, `in_book`, `approval`), or `ok: false` with the SQLSTATE and, for a purged letter, `gone`. `SCCON` stops the batch with `paused` and the missing consents; a transient class (40, 53, 55, 57, 58, XX) stops it with `stopped`. No result ever carries a message or detail.
+6. The server writes a receipt for each op id before running it, through the security definer helper `sync_claim_op(op_id)` (new, R8 R2A-25); clients lose direct insert on `sync_op_receipts`, applies each op in its own subtransaction and returns one result per op: `ok: true` with `dup`, `applied`, `conflict` or `missing` and the server state (`entry` with `v`, `updated_at`, `deleted_at`, `in_book`, `approval`), or `ok: false` with the SQLSTATE and, for a purged letter, `gone`. `SCCON` stops the batch with `paused` and the missing consents; a transient class (40, 53, 55, 57, 58, XX) stops it with `stopped`. No result ever carries a message or detail.
 7. The client stores the returned `v` and server fields, marks the letter synced when no op is left, and removes the op. Delta (WP-F16-15): after an op for a letter applies, every later queued op for that letter has its `base` set to the returned `v`, because it descends from the version this device just wrote.
 
 #### B. Pull (per-book cursor), as built
@@ -112,11 +112,11 @@ Sync has no screen of its own. It shows in three places:
 7. Delta (security review M5, in BL-331): the changed-since check that decides whether to compute the digest must look only at the caller's readable rows, so a co-parent cannot learn when the other parent writes a private letter. WP-F16-04 holds the regression test.
 
 #### C. When pulls run, and the freshness bar
-After first frame, on foreground, after a successful push, after a co-parent letter push arrives while the app is in the foreground (F11; the push carries no ids, it only wakes a pull), and on Settings > Sync > Try now. While the app is in the foreground with a book open it pulls every 30 s; that is the one interval, used in the load targets too.
+After first frame, on foreground, after a successful push, after a co-parent letter push arrives while the app is in the foreground (F11; the push carries no ids, it only wakes a pull), and on Settings > Sync > Try now. While the app is in the foreground with a **shared** book open (a book with another parent), it pulls every 15 s; with a book that has only this author, every 30 s (R8 R2A-11). Those are the two intervals, used in the load targets too.
 
-The gate is therefore: a letter saved on one phone appears on the other parent's phone, foreground with the book open, within p95 30 s and p99 60 s (section 3). A phone in the background sees the letter at its next foreground. PRD 7.3's p95 5 s is not reachable without a server-to-client channel: polling cannot meet it, and a passive push runs app code only in the foreground (R2 AR-14). Realtime broadcast is Q2 for v1.1.
+The gate is therefore: a letter saved on one phone appears on the other parent's phone, both in the foreground with the shared book open and online, within p95 30 s and p99 60 s. The clock runs from the save tap on phone A to the row rendered on phone B. Why it can pass: push debounce 2 s, `sync_push` p95 800 ms, the wait for B's next pull (uniform over 0 to 15 s, so p95 14.25 s), `sync_pull` p95 300 ms and local apply under 300 ms add up to about 17.7 s when every part is at its own p95, inside the 30 s bar with room for LTE jitter (R8 R2A-11). A phone in the background sees the letter at its next foreground. PRD 7.3's p95 5 s is not reachable without a server-to-client channel: polling cannot meet it, and a passive push runs app code only in the foreground (R2 AR-14). Realtime broadcast is Q2 for v1.1.
 
-The watermark has an operating rule: one long transaction anywhere stalls every pull past it. App roles get `statement_timeout` 15 s and `idle_in_transaction_session_timeout` 30 s [R], and an alert fires when the oldest running transaction is older than 30 s (WP-F16-10, 06 section 4).
+The watermark has an operating rule: one long transaction anywhere stalls every pull past it, not only app transactions (R8 R2A-23). App roles keep the platform's default `statement_timeout` (R8 reports Supabase documents 8 s for `authenticated` [A: confirmed in WP-F16-10]; we do not loosen it) and get `idle_in_transaction_session_timeout` 30 s [R]. Server jobs that write many rows (purge batches, escrow rotation, retention, migrations that backfill) commit in batches that each finish in under 1 s. An alert fires when the oldest running transaction of any role is older than 30 s (WP-F16-10, 06 section 4).
 
 #### D. New phone
 1. Sign in (F02). Consent state is read from the server (`my_sync_gate()`, exists).
@@ -154,7 +154,9 @@ The watermark has an operating rule: one long transaction anywhere stalls every 
 
 #### F. Restore epoch, as built
 1. `sync_epochs` (built) holds one row per epoch with `started_at`, `restore_point` and `reason` (`initial`, `database_restore`, `drill`); readable by every signed-in person; written only by `sync_begin_epoch()` (service role).
-2. Restore runbook (RB-8): restore into a new project, copy the Edge Function secrets and the Storage buckets (F08 section 6.5 G), replay the purge ledger (DATA-REQ-030), call `sync_begin_epoch('database_restore', <restore point>)`, reopen.
+2. Restore runbook (RB-8): restore into a new project; set the main project's function secrets again (never an escrow secret: the escrow key lives only in `scribe-escrow`, F08 6.5 G2); copy the Storage buckets; recreate the `escrow_svc` role and update its connection string in the escrow project; replay the purge ledger for every kind it holds (DATA-REQ-030; the kinds are in step 2a); call `sync_begin_epoch('database_restore', <restore point>)`; reopen.
+2a. **Ledger kinds for the M14 build (R8 R2A-17).** `purge_ledger.entity_type` allows only `entry`, `child`, `profile` and `storage_object` today (`20261002020000_data_governance.sql`). An S02 migration adds `held_draft`, `audio_blob`, `backup_key` (a `child_keys` row), `backup_device`, `restore_request`, `push_token`, `subscription_status` and `session_seen`, and every path that deletes one of those rows writes its ledger row in the same transaction. RB-8 replays each kind. The reminder-email scheduler (F14) and the push sender (F11) check `deletion_requests` and the replayed ledger before each send, so a restored status record never emails a person who left.
+2b. **Drills (R8 R2A-16).** The quarterly drill runs in staging with synthetic Asha families and a drill-only escrow key version. When a drill must restore production data, the scratch project gets no escrow secret, is deleted within 24 hours, and the restore and the deletion each write an `ops.audit_log` row; drill projects are a row in the F17 8.4 deletion matrix and are named in the Privacy Policy.
 3. A pull with an older epoch, or with a cursor ahead of the server's transaction counter, answers `reset` with `reason` `epoch` or `cursor_ahead`. The client deletes nothing: it re-uploads every own letter the server once held (`entry.reupload` with `known_at` = the server `updated_at` it last saw) and pulls every book from the start. A re-upload applies only when the server copy is older than what the phone knew and was not edited since the epoch began; between two re-uploads the newer `known_at` wins (`entries.sync_restored_from`).
 4. Other people's letters the restored server lacks stay on the phone marked as waiting for their author for 30 days, then leave (TDD 06 6.3; co-members cannot re-upload others' letters, RLS forbids it).
 5. On a reset the backup client re-checks every recording it believes uploaded against `audio_blobs` and re-uploads missing ones (F08 section 6.5, R2 AR-08).
@@ -175,6 +177,26 @@ The watermark has an operating rule: one long transaction anywhere stalls every 
 - Settings > Sync shows one line: "All letters are in your book" (new `sync.allSent`), or "{n} not sent yet" plus the reason: offline, signed out, waiting for consent, paused by us (kill switch), or "{n} could not be sent" with View.
 - View lists rejected writes by letter date and book, with the recovery action from the C table. Rejected content and conflict copies are in export (DATA-REQ-043).
 - Copy follows VOICE: never "failed" or fear words; "safe on this phone" is true and stated.
+
+#### I. Held drafts on the server (R8 R2A-05; F14-REQ-039)
+
+This is the one definition of the server row for letters that are not in `entries` yet. The sync protocol ADR (T15) cites it; F04, F06, F08, F14, F15 and F17 point here.
+
+**What gets a row.** For a signed-in, consented author only:
+- `held_letter`: a draft whose Save was held at the Keep gate (F14 6.2 B).
+- `waiting_letter`: a voice-only letter saved before its model arrived, or whose words reached the Keep gate and were left waiting. It exists only while the built rule holds voice-only letters out of the outbox (6.2 A step 3); if F05 Q7 lets them sync as `entries` with an empty transcript, this kind is not used. **Default awaiting founder confirmation:** a `waiting_letter` never counts toward the free letters; it counts once its words exist and the author keeps it from Review (F14-REQ-037, M17).
+- `held_words`: words for a voice-only letter that is already an `entries` row on the server, left waiting at the Keep gate. Used only if F05 Q7 lets voice-only letters into `entries`.
+Drafts that were never held (a take in progress, a typed draft the author has not tried to save, a draft waiting to be read back) never get a row: they stay on the phone (F04 section 8).
+
+**Table `held_drafts` (new, S02 migration).** `id` uuid primary key: the draft id, which becomes `entries.id` when kept (built: the entry id is the draft id). `author_id`, `child_id`, `kind` (the three above), `capture_mode`, `created_at` (device capture time), `occurred_on`, `occurred_precision`, `language`, `base_direction`, `prompt_key`, `in_book_choice` (the destination the author picked when held, nullable), `raw_transcript` (nullable; once non-empty it is immutable, same trigger as `entries`), the words group `final_text`, `machine_edits`, `edit_level`, `author_edits`, `locked_spans` (they travel together, F16-REQ-011), `typed_text`, `engine_version`, `pack_ref`, `audio_kept_on_device`, `sync_xid`, `v`, `updated_at`. Review state that is only screen state (which change rows are expanded, scroll position) is not stored.
+- **Access.** RLS: select, insert, update and delete only where `author_id = auth.uid()` and the author is a parent of `child_id`. Never in `book_entries`, never in another member's pull, never readable by the other parent (F14 section 8).
+- **Consent.** The same `require_content_consent` gate as `entries`: a push without Terms and sensitive-data consent pauses with `SCCON`.
+- **Validation.** The same value-free validation trigger and size caps as `entries` (F16-REQ-020).
+- **Wire.** Ops `held.upsert` (whole row, words group by compare and set as in 6.2 E) and `held.discard`; own `held_drafts` rows arrive in the author's pull in a `held` section with the same cursor rules. `entry.upsert` for an id with a `held_drafts` row deletes that row in the same transaction, so a kept letter never exists twice.
+- **Purge.** `held.discard` deletes the row and, through `backup_discard`, the recording's `audio_blobs` row and object (F08 6.5 D5), and writes `held_draft` in `purge_ledger`. Account deletion and a sole parent's book purge delete the rows. A held draft never expires on its own (F04-REQ-027).
+- **Restore on a new phone.** Pulled rows become local drafts in the waiting row (F14-REQ-041); their recordings arrive through F08 6.5 B.
+- **Export.** The phone's own copy goes under `waiting/` (F15-REQ-018); a row not yet pulled to this phone is not in the export, and the export README says so.
+- **Data map.** L4 row in `docs/legal/DATA_CLASSIFICATION.md` and a row in `DELETION_AND_EXPORT_SPEC.md` in the same PR (DATA-REQ-001).
 
 ### 6.3 Unhappy paths and edge cases
 
@@ -210,27 +232,30 @@ The watermark has an operating rule: one long transaction anywhere stalls every 
 | F16-U26 | Clock on the phone set years ahead | Server clock wins for lifecycle; `captured_at` checked within 1 day ahead | Nothing | n/a | Unit |
 | F16-U27 | Two accounts on one phone | Refused (6.2 G) | Choice sheet | Export then remove | Integration |
 | F16-U28 | A long transaction holds the watermark | Pulls return no new rows past it; timeouts end it within 30 s; alert at 30 s | Nothing beyond normal delay | Automatic | DB test with a held transaction |
-| F16-U29 | Another account pre-inserts this person's op id (security review L1) | Today the op reports `dup` and is dropped. After BL-331: receipts keyed by (`profile_id`, `op_id`), written only inside `sync_push` | Nothing | n/a | Regression test from the review PoC F4 |
+| F16-U29 | Another account pre-inserts this person's op id (security review L1) | Today the op reports `dup` and is dropped. After BL-331: receipts keyed by (`profile_id`, `op_id`), written only by `sync_claim_op` inside `sync_push`; direct insert revoked | Nothing | n/a | Regression test from the review PoC F4 |
+| F16-U30 | Held letter, phone replaced, signed in | `held_drafts` rows pull to the new phone as waiting letters; recordings return through F08 | The waiting row | n/a | `[F16-REQ-029]` two-phone case |
+| F16-U31 | Author lets a synced held draft go while offline | `held.discard` waits in the outbox; the server row stays until it arrives; nothing else reads it | Draft gone on this phone | Automatic on reconnect | `[F16-REQ-029]` |
+| F16-U32 | The other parent pulls while the author has held drafts | No `held` section, no digest change, no timing difference for the other parent | Nothing | n/a | `[F16-REQ-008]` parity matrix row |
 
 ## 7. Requirements and acceptance criteria
 
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
 | DATA-REQ-043 | P0 | Sync conflict rules; no op silently dropped | Given a permanent SQLSTATE (`SC***`, `23***`, `42501`), Then the op moves to the rejected list and the queue continues; given a transient error, Then retry keeps order | DELETION spec |
-| DATA-REQ-043 Rev (D-023) | P0 | Same-author word edits from two devices are compare and set, not last writer wins; the losing version is kept and shown to the author | As F16-REQ-010 | D-023, R2-S16, R2 AR-02 |
+| F16-REQ-082 | P0 | Same-author word edits from two devices are compare and set, not last writer wins; the losing version is kept and shown to the author | As F16-REQ-010 | D-023, R2-S16, R2 AR-02; slice of DATA-REQ-043 (home the DATA-REQ-043 row above in this table), renamed in round 2 (R9 R2D-04) |
 | DATA-REQ-044 | P0 | Idempotent writes | Given an op retried 5 times, Then one server effect and one audit row | DELETION spec |
-| DATA-REQ-046 | P0 | Corruption detection on text | Given a forced mismatch, Then a count is reported and the row is re-downloaded | DELETION spec |
+| F16-REQ-083 | P0 | Corruption detection on text | Given a forced mismatch, Then a count is reported and the row is re-downloaded | DELETION spec; slice of DATA-REQ-046 (home F08), renamed in round 2 (R9 R2D-04) |
 | DATA-REQ-030, DATA-REQ-031 | P0, P1 | Restore with ledger replay; quarterly drill | Given a drill with two synthetic devices, Then zero letters lost on either device | DELETION spec, TDD 06 6.3 |
 | DATA-REQ-032 Rev (D-023) | P0 | Sync layer deletion: a purged or removed row reaches no device | Given a purged letter, When a fresh install of a former reader pulls, Then no row for it; given a push of its id, Then `SCDEL` detail `purged` | DELETION spec |
-| A-REQ-015 | P0 | Re-ownership in one transaction before any sync | Given a crash mid-transaction, Then nothing changed (F02) | A |
-| A-REQ-033 | P0 | Sign-out and revocation only after unsynced letters sync | Given 3 queued ops, When Sign out, Then the session stays until the queue is empty | A, F02-REQ-001 |
+| F16-REQ-080 | P0 | Re-ownership in one transaction before any sync | Given a crash mid-transaction, Then nothing changed (F02) | A; slice of A-REQ-015 (home F02), renamed in round 2 (R9 R2D-04) |
+| F16-REQ-081 | P0 | Sign-out and revocation only after unsynced letters sync | Given 3 queued ops, When Sign out, Then the session stays until the queue is empty | A, F02-REQ-001; slice of A-REQ-033 (home F02), renamed in round 2 (R9 R2D-04) |
 | B-NFR-003 Rev (D-023) | P0 | Every RLS rule has an access test and the pull RPC has a parity test | As F16-REQ-008 | B, ADR 0004 |
-| PRD-REQ-004 | P0 | Working material author-only in pull | Given another member's pull, Then no `raw_transcript`, `machine_edits`, `stt_meta`, `deleted_reason` or `language` on others' rows (`book_entries` allowlist) | PRD |
-| LEGAL-REQ-001, LEGAL-REQ-006 | P0 | No content row accepted before Terms with age and sensitive-data consent | Push returns `paused` with `SCCON` (built in triggers) | ENGINEERING_REQUIREMENTS |
-| LEGAL-REQ-032 | P0 | Deletion and removal reach every member device | Given take-out by the author, Then the reader's row is gone after one pull | ENGINEERING_REQUIREMENTS |
+| F16-REQ-085 | P0 | Working material author-only in pull | Given another member's pull, Then no `raw_transcript`, `machine_edits`, `stt_meta`, `deleted_reason` or `language` on others' rows (`book_entries` allowlist) | PRD; slice of PRD-REQ-004 (home F06), renamed in round 2 (R9 R2D-04) |
+| LEGAL-REQ-001, F16-REQ-086 | P0 | No content row accepted before Terms with age and sensitive-data consent | Push returns `paused` with `SCCON` (built in triggers) | ENGINEERING_REQUIREMENTS; slice of LEGAL-REQ-006 (home F17), renamed in round 2 (R9 R2D-04) |
+| F16-REQ-084 | P0 | Deletion and removal reach every member device | Given take-out by the author, Then the reader's row is gone after one pull | ENGINEERING_REQUIREMENTS; slice of LEGAL-REQ-032 (home F17), renamed in round 2 (R9 R2D-04) |
 | F16-REQ-001 | P0 | Local `sync_outbox`: one row per op with op id, lane, type, target, book, payload, created time; written in the same transaction as the data change | Given a kill between data write and outbox write in a fault test, Then both or neither exist | D-023, DATA-REQ-048; built |
 | F16-REQ-002 | P0, Rev | `sync_push(p_ops)` applies up to 50 ops (256 KB) per call in order, each in a subtransaction, returning a typed per-op result; `SCCON` pauses and transient classes stop the batch | Given a batch where op 3 is rejected, Then ops 1, 2, 4 to 50 apply and op 3 returns its SQLSTATE and no message | TDD 06 3.2; built |
-| F16-REQ-003 | P0, Rev | Op receipts `sync_op_receipts` keyed by (`profile_id`, `op_id`), written only inside `sync_push`; kept 30 days | Given the same op id twice from one person, Then the second returns `dup`; given another person's account inserting that op id first, Then the victim's op still applies | B15; security review L1; BL-331 |
+| F16-REQ-003 | P0, Rev (R2A-25) | Op receipts `sync_op_receipts` keyed by (`profile_id`, `op_id`), written only by the security definer helper `sync_claim_op(op_id)` called from `sync_push`; the `sync_op_receipts_own_insert` policy is dropped; kept 30 days | Given the same op id twice from one person, Then the second returns `dup`; given another person's account inserting that op id first, Then the victim's op still applies; given a client `insert` into `sync_op_receipts`, Then refused (test in WP-F16-04) | B15; security review L1; BL-331; R8 R2A-25 |
 | F16-REQ-004 | P0 | `entries.sync_xid` stamped by trigger; pull serves rows below `pg_snapshot_xmin` | Given two concurrent transactions committing out of order, Then a puller never skips the later-committed row (two-connection test) | D-023; built, two-connection proof owed (WP-F16-00) |
 | F16-REQ-005 | P0, Rev (AR-03) | `sync_pull` returns per book: own rows whole, others' rows through `book_entries` only, the digest, `repull` on an access change, `gone` books | Given the fixture families, Then each caller's pull equals the expected set exactly | D-024 Rev (D-055); built |
 | F16-REQ-006 | P0, Rev (AR-03) | Authorisation through `child_members`, `is_child_member`, `is_child_parent` and `book_entries`; no `book_access` table in v1.0 | Given a leave, Then the next pull returns the book in `gone` with `not_member` and no other person's row for it | D-055; R2 AR-03 |
@@ -244,18 +269,30 @@ The watermark has an operating rule: one long transaction anywhere stalls every 
 | F16-REQ-014 | P0, Rev (D-073) | No audio, listening copy or photo bytes in any sync request; the owner's backup uses its own ciphertext path | Network capture of the E2E suite: zero audio bodies in `sync_push` or `sync_pull` | D-073 |
 | F16-REQ-015 | P0 | Sign-out and account switch per 6.2 G | Given sign-out, Then own letters and audio remain, others' rows are gone | A-REQ-033, DATA-REQ-023 |
 | F16-REQ-016 | P0 | "Not sent yet" on letter rows and a Settings > Sync line with reason and counts | Given 3 queued ops offline, Then the row and Settings show them within 10 s | B-NFR-009, PRD 7.4 |
-| F16-REQ-017 | P0, Rev (AR-14) | Pull triggers per 6.2 C; one foreground interval of 30 s | Two-client probe, both foreground with the book open: p95 30 s, p99 60 s | PRD 7.3 Rev |
+| F16-REQ-017 | P0, Rev (AR-14, R2A-11) | Pull triggers per 6.2 C; foreground interval 15 s with a shared book open, 30 s otherwise; push debounce 2 s | Two-client probe over 200 or more letters, both foreground with the shared book open, clock from save tap on A to row rendered on B: p95 30 s, p99 60 s (p99 gated only with 1,000 or more samples, 06 section 0) | PRD 7.3 Rev; R8 R2A-11 |
 | F16-REQ-018 | P0 | Kill switch `killSwitches.sync` honoured within 5 minutes on active clients; outbox kept | Staging drill per release | D-068, ADR 0016, LEGAL-REQ-040 |
 | F16-REQ-019 | P0 | `sync_push` and `sync_pull` take an API version; the server supports the current and previous version; older builds get `SCVER` (new) and the app shows `sync.updateNeeded` | Contract test with N-1 fixtures | B15, TDD 02 6.2; not built |
 | F16-REQ-020 | P0 | Logs carry only route template, SQLSTATE, durations, counts and a random request id; results never carry a message or detail | Log canary over the E2E run finds zero Asha fixture strings, letter text or ids | LEGAL-REQ-014, BL-244 |
 | F16-REQ-021 | P0 | Rate limits inside the RPCs through `rate_hit` (security definer): `sync_push` 60 and `sync_pull` 120 per user per rolling minute; clients cannot write the counters | Given 61 pushes in a minute, Then `SCRAT`; given a client update of its own counter, Then refused | B15, security review M3; built in `20261005000000` |
 | F16-REQ-022 | P0 | The app uses only the publishable key plus the user JWT; no service key in the bundle | Secret scan of the built bundle finds none | B15, LEGAL-REQ-026 |
 | F16-REQ-023 | P0 | Rejected writes and conflict copies are kept until the user resolves them, and included in export | Given a rejected letter and a conflict copy, Then export contains both | DATA-REQ-043, LEGAL-REQ-034 |
-| F16-REQ-024 | P0 | Durable erase in a sync build (D-085) | Given Erase now on a synced letter, Then an erase op reaches the server, which purges the row and any backup object within the DELETION_AND_EXPORT_SPEC window, and no device keeps a copy after its next pull | D-085; DATA-REQ-011 |
+| F16-REQ-024 | P0, Rev (R2A-03) | Durable erase in a sync build (D-085) | Given Erase now on a synced letter, Then an erase op reaches the server, which purges the row and the backup object at the exact `audio_blobs.object_path` (F08-REQ-024) within the DELETION_AND_EXPORT_SPEC window, and no device keeps a copy after its next pull | D-085; DATA-REQ-011; R8 R2A-03 |
 | F16-REQ-025 | P0, new | Queued ops for a letter are rebased to the `v` returned for an earlier op of the same letter from the same device | Given two edits queued on one phone, When the first applies, Then the second carries the new `v` and the server reports no conflict | R2 AR-02 |
 | F16-REQ-026 | P0, new | The pull digest's changed-since check reads only the caller's readable rows | Given a co-parent pulling with a wrong `have` while the other parent writes a private letter, Then the response is the same as with no write | Security review M5; BL-331 |
-| F16-REQ-027 | P0, new | Watermark operating limits: `statement_timeout` 15 s and `idle_in_transaction_session_timeout` 30 s for app roles; alert when the oldest running transaction exceeds 30 s | Given a test transaction held for 31 s by an app role, Then it is ended and the alert row exists | R2 AR-14 |
-| F16-REQ-028 | P0, new | The v1.0 wire contract is frozen in `packages/api` with every column the server has or v1.0 specs need (nullable where not yet used): `language`, `author_edits`, `locked_spans`, `pack_ref`, `occurred_precision` | Given the contract test, Then the client types, the SQL op parser and the pull row match field for field | R2 AR-31 |
+| F16-REQ-027 | P0, Rev (R2A-23) | Watermark operating limits: app roles keep the platform `statement_timeout` default and get `idle_in_transaction_session_timeout` 30 s; purge, rotation, retention and backfill jobs commit in batches under 1 s each; alert when the oldest running transaction of any role exceeds 30 s | Given a test transaction held idle for 31 s by an app role, Then it is ended. Given a service-role transaction held for 31 s, Then the alert row exists. Given the purge worker on a 10,000-row fixture, Then no single transaction runs 1 s or longer | R2 AR-14; R8 R2A-23 |
+| F16-REQ-028 | P0, new | The v1.0 wire contract is frozen in `packages/api` with every column the server has or v1.0 specs need (nullable where not yet used): `language`, `author_edits`, `locked_spans`, `pack_ref`, `occurred_precision`, and the `held.upsert` and `held.discard` ops with the `held` pull section (6.2 I) | Given the contract test, Then the client types, the SQL op parser and the pull row match field for field | R2 AR-31; R8 R2A-05 |
+| F16-REQ-029 | P0, new | Held drafts sync per 6.2 I: author-only `held_drafts` rows with consent, validation, immutable raw transcript, compare and set on words, purge on discard and the parity row | Given a signed-in author with 2 held letters and backup on, When the phone is replaced and the author signs in on a new phone, Then both return as waiting letters with equal text and audio hashes. Given the other parent's pull, Then 0 `held_drafts` rows and an unchanged digest. Given `held.discard`, Then the row, its `audio_blobs` row and object are gone and `purge_ledger` has `held_draft`. Given a push without consent, Then `SCCON`. Given a second `raw_transcript` write once non-empty, Then `SCIMM`. Given `entry.upsert` for a held id, Then the `held_drafts` row is gone in the same transaction | R8 R2A-05; F14-REQ-039 |
+| F16-REQ-030 | P0, new | Environment matrix per section 9 is enforced in CI | Given a `testflight` or `production` build, Then the bundle carries the production Supabase URL and the production escrow public key version; given a `development` or `preview` build, Then the staging URL and the drill key; given the staging project, Then no secret holds the production escrow key (Management API check) | R8 R2A-15 |
+| F16-REQ-031 | P0, new | Every M14 deletion is ledgered and replayed (6.2 F step 2a) | Given the WP-F16-08 drill with a deleted account that had backup rows, a held draft, a push token and a status record before the restore point, When RB-8 runs, Then none of those rows exists after replay and the reminder scheduler sends that account 0 emails | R8 R2A-17 |
+
+### Inherited requirements whose home is this spec (round 2)
+
+These IDs were cited in V2 with no definition row (R9 R2D-06). The text is taken from the source named in the last column; that source still governs the full wording. Each P0 row has a work package and a test in section 12.
+
+| ID | P | Requirement | Acceptance criteria | Source |
+|---|---|---|---|---|
+| LEGAL-REQ-021 | P0 | Encryption in transit: TLS 1.2 or later, no App Transport Security exception | Given a build, When Info.plist is inspected, Then no ATS exception exists | `docs/legal/ENGINEERING_REQUIREMENTS.md` on `develop` LEGAL-REQ-021 |
+| DATA-REQ-005 | P0 | Region: the Supabase project is in us-west-1; no sync vendor (D-023); no new storage location without an inventory update | Given staging and production, Then each project region is recorded as us-west-1 in the evidence file | `docs/legal/DELETION_AND_EXPORT_SPEC.md` on `develop` DATA-REQ-005 |
 
 ## 8. Data, privacy and security
 
@@ -270,7 +307,7 @@ The watermark has an operating rule: one long transaction anywhere stalls every 
 | `sync_rate_windows` (built, unlogged) | L2 with L3 profile id | Postgres | Owner reads; `rate_hit` writes | Rolling window |
 | Cursors, digests and last sync time | L2 | Device | App | Install |
 
-What never leaves the phone in v1.0: listening copies, drafts, safety tiers, the outbox, rejected writes and conflict copies as tables. Audio leaves only as the owner's encrypted backup when on (F08). PowerSync is not used, so no sync processor holds L4 data (TDD 05 OQ-L15 is moot under D-023). Account deletion clears every server row above that references the person (F17 section 8 matrix).
+What never leaves the phone in v1.0: listening copies, drafts that were never held (6.2 I), safety tiers, the outbox, rejected writes and conflict copies as tables. Held and waiting letters of a signed-in author leave only as author-only `held_drafts` rows (6.2 I; L4, Postgres, author only, until kept, discarded or account deletion). Audio leaves only as the owner's encrypted backup when on (F08). PowerSync is not used, so no sync processor holds L4 data (TDD 05 OQ-L15 is moot under D-023). Account deletion clears every server row above that references the person (F17 section 8 matrix).
 
 ## 9. Non-functional requirements
 
@@ -297,7 +334,7 @@ Error budget: under 0.1% 5xx per endpoint class over 28 days (TDD 06 2.3). Reque
 | MAU | 1.5k | 150k | Was 2.2k / 220k |
 | Concurrent sync clients at peak (5% of MAU) | 75; test at 200 (kept) | 7.5k | Was 200 / 11k |
 | Entry writes, peak 15 min | 5 per s (test load kept) | 50 per s (kept) | Unchanged |
-| `sync_pull` calls at peak (one per 30 s per concurrent client) | 2.5 per s; test at 7 per s | 250 per s | New |
+| `sync_pull` calls at peak (one per 15 s per concurrent client with a shared book open, the worst case; 6.2 C) | 5 per s; test at 14 per s (200 clients) | 500 per s | New; doubled by R8 R2A-11 |
 | Write RPCs (invites, leave) | 1 per s | 10 per s | Was 2 / 20 |
 | Encrypted audio uploads (owner backup, steady state) | About 0.1 per s at peak [A: 40 recordings per family per month, 50% of families backing up] | About 10 per s | Was 1 / 10 (B7); F08 section 9 holds the limits |
 | First-enable upload burst | One family's whole history at once (year 1 about 480 objects, 230 MB); test 20 families enabling at once | n/a | New (R2 AR-15) |
@@ -308,7 +345,7 @@ Error budget: under 0.1% 5xx per endpoint class over 28 days (TDD 06 2.3). Reque
 | Database size (about 10 KB per letter, TDD 06 3.4) | About 3 GB | About 290 GB; about 120 GB if `stt_meta` stays on the device (Q3) | PRD said 8 GB / 150 GB |
 | Analytics events (40% consent, 150 per user per month) | About 90k per month | About 9M per month | Was 130k / 13M |
 
-Gate: load test at 2 times the 1k targets, including the first-enable burst, before public launch (BL-282); 2 times 100k before passing 25k families (PRD 7.8). Whether BL-282 runs before submission is 08 Q8.
+Gate (one position with 06 section 16; default awaiting the founder's answer to 08 Q8 at T15): before App Review submission (G4), a 1-hour run in staging at 1x the 1k peak targets, including the 20-family first-enable burst, the escrow limit test and the two-client freshness probe; section 3 budgets are read there at p95, and at p99 only where 1,000 or more samples exist. The full load test at 2 times the 1k targets with a 4-hour soak (BL-282, WP-F16-12) gates the C2 public link, paid marketing or 1,000 families, whichever comes first. 2 times 100k before passing 25k families (PRD 7.8).
 
 **Device budgets**
 
@@ -326,6 +363,18 @@ Gate: load test at 2 times the 1k targets, including the first-enable burst, bef
 | local | PGlite harness (`npm run test:db`) and the Supabase CLI stack in CI | Tests only | Asha fixtures |
 | staging | `scribe-staging` (BL-107) | CI from `develop` with the `approve-migration` label (08 section 7; R2 AR-21) | Synthetic Asha families, load data |
 | prod | `scribe-prod` | CI on a `db-v*` tag, after the founder's approval | Real families |
+| escrow | `scribe-escrow` (new, F08 6.5 G2) | No tables of ours; the only migration-like change is the `escrow` function deploy, from CI on a release tag with the founder's approval | None: one function and three secrets |
+
+**Which build talks to which project (R8 R2A-15).** On `develop` today the `testflight` profile in `apps/mobile/eas.json` uses EAS environment `preview` and channel `preview`, the same as internal preview builds, so C1 families would land wherever `preview` points. From the M14 switch-on, the matrix is [R]:
+
+| EAS profile | EAS environment | Update channel | Supabase project | Escrow public key | Email sending | Analytics |
+|---|---|---|---|---|---|---|
+| `development` | `development` | `development` | `scribe-staging` | Drill key | Only to an allowlist of test addresses | None |
+| `preview` (internal builds) | `preview` | `preview` | `scribe-staging` | Drill key | Allowlist only | Separate staging project, or none |
+| `testflight` (C1 families, real letters from T22) | `production` (change from `preview`) | `testflight` (new, so an update for internal builds never reaches families) | `scribe-prod` | Production key | On | Production project, consent-gated |
+| `production` | `production` | `production` | `scribe-prod` | Production key | On | Production project, consent-gated |
+
+A CI check enforces the matrix (F16-REQ-030); S20 owns the `eas.json` change.
 
 Rules: agents never apply a migration to a remote project; any PR touching `supabase/**` or auth needs an independent review run and the founder's `approve-migration` label (D-041). Database changes are new files only; applied files in `.github/migrations-applied.txt` are never edited. A function defined in another stream's migration is changed only by S02 (R2 AR-16).
 
@@ -352,7 +401,7 @@ Rules: agents never apply a migration to a remote project; any PR touching `supa
 **Riskiest unknowns and spikes**
 1. The watermark on hosted Supabase: `pg_current_xact_id` and `pg_snapshot_xmin` work in PGlite (tests green); a two-connection proof on a real project is owed (WP-F16-00).
 2. Background sync from Expo (BGTaskScheduler wrapper) is Unverified; v1.0 does not depend on it.
-3. Freshness without Realtime: measured in the two-client probe against the 30 s bar (6.2 C).
+3. Freshness without Realtime: measured in the two-client probe against the 30 s bar with the 15 s pull (6.2 C).
 
 **ADRs required before build** (numbers per `08-delivery.md` section 8.1: next free 0020 or later, checked against open branches; matches R2's list)
 
@@ -368,23 +417,26 @@ Status is what `develop` holds on 13 Oct 2026. All of it is v1.0 (M14); none of 
 
 | WP | Scope | Stream | Owns files or folders | Depends on | Done when | Mode | Status 13 Oct | Device |
 |---|---|---|---|---|---|---|---|---|
-| WP-F16-00 | Watermark proof on a real project | S02 with S03 | `experiments/sync-watermark/` | Staging project | Two-connection test on staging proves no skipped row; findings in PR | Pair. BL-173 | Partly built: watermark in SQL, PGlite tests green | none |
+| WP-F16-00 | Watermark proof on a real project | S02 with S03 | `experiments/sync-watermark/` | Staging project | Two-connection test on staging proves no skipped row; findings in PR; `[DATA-REQ-005]` | Pair. BL-173 | Partly built: watermark in SQL, PGlite tests green | none |
 | WP-F16-01 | Move the sync contract into `packages/api` | S07 | `packages/api/src/sync.ts` (new), its test | Sync ADR | Type tests; the app imports the contract from `packages/api`; `[F16-REQ-028]` | Agent | Not built | none |
 | WP-F16-02 | `book_access` table | none | n/a | n/a | n/a | n/a | Removed from v1.0 (D-055; R2 AR-03) | none |
-| WP-F16-03 | Server protocol | S02 | Migrations listed in section 11 | none | `[F16-REQ-002]`, `[F16-REQ-004]`, `[F16-REQ-005]`, `[F16-REQ-011]`, `[DATA-REQ-044]` | Agent, `approve-migration`. BL-173 | Built in `20261004100000` and `20261005000000`, not applied | none |
-| WP-F16-04 | Parity, leak and M5 regression suite | S02 with S19 | `supabase/tests/sync_parity.test.mjs` (new) | WP-F16-03 | `[F16-REQ-008]`, `[F16-REQ-026]` | Agent. BL-195 | Partly built: `access_matrix.test.mjs`, `sync_engine.test.mjs` | none |
+| WP-F16-03 | Server protocol | S02 | Migrations listed in section 11 | none | `[F16-REQ-002]`, `[F16-REQ-004]`, `[F16-REQ-005]`, `[F16-REQ-011]`, `[DATA-REQ-044]`; `[F16-REQ-003]`, `[F16-REQ-006]`, `[F16-REQ-007]`, `[LEGAL-REQ-001]`; `[F16-REQ-086]` | Agent, `approve-migration`. BL-173 | Built in `20261004100000` and `20261005000000`, not applied | none |
+| WP-F16-04 | Parity, leak and M5 regression suite | S02 with S19 | `supabase/tests/sync_parity.test.mjs` (new) | WP-F16-03 | `[F16-REQ-008]` (with the `held_drafts` row), `[F16-REQ-026]`, `[F16-REQ-003]` direct-insert refusal; `[DATA-REQ-032]`, `[F16-REQ-014]`, `[F16-REQ-022]`, `[LEGAL-REQ-021]`; `[F16-REQ-083]`, `[F16-REQ-085]` | Agent. BL-195 | Partly built: `access_matrix.test.mjs`, `sync_engine.test.mjs` | none |
 | WP-F16-05 | Local schema and outbox writes | S03 | `lib/db/migrations.ts`, `lib/sync/outbox.ts` | BL-111 | `[F16-REQ-001]` fault test; migrator fixtures v0 to head | Agent. BL-174 | Built | none |
-| WP-F16-06 | Push and pull client, apply, scheduler at one 30 s interval | S03 | `lib/sync/engine.ts`, `merge.ts`, `signal.ts` | WP-F16-03, WP-F16-05 | `[F16-REQ-009]`, `[F16-REQ-013]`, `[F16-REQ-017]`, kill-during-push 500 of 500 | Agent. BL-174 | Built; interval not checked against 30 s; switch off in release profiles | S1-22 two phones |
+| WP-F16-06 | Push and pull client, apply, scheduler at 15 s (shared book open) and 30 s intervals, push debounce 2 s | S03 | `lib/sync/engine.ts`, `merge.ts`, `signal.ts` | WP-F16-03, WP-F16-05 | `[F16-REQ-009]`, `[F16-REQ-013]`, `[F16-REQ-017]`, kill-during-push 500 of 500; `[F16-REQ-080]` | Agent. BL-174 | Built; interval not checked against 30 s; switch off in release profiles | S1-22 two phones |
 | WP-F16-07 | Rejected writes and Settings > Sync screen | S03 with S14 | Settings > Sync screen, `lib/sync/` status | WP-F16-06 | `[F16-REQ-016]`, `[F16-REQ-023]` | Agent | Partly built: rejected writes stored; no screen | none |
-| WP-F16-08 | Restore epoch drill, with the backup re-check | S03, founder | Runbook RB-8 (`docs/runbooks/`, request) | WP-F16-06, BL-107, WP-F08-B5a | `[F16-REQ-012]` drill passes in staging, including one escrow restore end to end (F08) | Pair. BL-247 | Partly built: client re-upload and held rows in `merge.ts`; drill not run | Staging drill |
-| WP-F16-09 | Sign-out, account switch, revocation | S01 with S03 | `lib/auth/machine.logic.ts` | WP-F16-06, WP-F02-09 | `[F16-REQ-015]`, `[A-REQ-033]` | Agent | Partly built: sign-out waits for the outbox; device check owed | S2-14 |
-| WP-F16-10 | Value-free validation, rate limits, role timeouts and the long-transaction alert | S02 | New migration; `ops-health` alert row | WP-F16-03 | `[F16-REQ-020]`, `[F16-REQ-021]`, `[F16-REQ-027]` | Agent, `approve-migration` | Partly built: `rate_hit`; timeouts and alert not built | none |
+| WP-F16-08 | Restore epoch drill, with the backup re-check | S03, founder | Runbook RB-8 (`docs/runbooks/`, request) | WP-F16-06, BL-107, WP-F08-B5a | `[F16-REQ-012]` drill passes in staging, including one escrow restore end to end with the drill key (F08); `[F16-REQ-031]` deleted-account case; `[DATA-REQ-030]`, `[DATA-REQ-031]` | Pair. BL-247 | Partly built: client re-upload and held rows in `merge.ts`; drill not run | Staging drill |
+| WP-F16-09 | Sign-out, account switch, revocation | S01 with S03 | `lib/auth/machine.logic.ts` | WP-F16-06, WP-F02-09 | `[F16-REQ-015]`, `[F16-REQ-081]` | Agent | Partly built: sign-out waits for the outbox; device check owed | S2-14 |
+| WP-F16-10 | Value-free validation, rate limits, role timeouts, batch-size rule for server jobs and the long-transaction alert for every role | S02 | New migration; `ops-health` alert row | WP-F16-03 | `[F16-REQ-020]`, `[F16-REQ-021]`, `[F16-REQ-027]` | Agent, `approve-migration` | Partly built: `rate_hit`; timeouts and alert not built | none |
 | WP-F16-11 | Chaos suite and the two-phone conflict gate | S19 with S03 | CLI stack in CI; `docs/qa/` two-phone script (request) | WP-F16-15 | Offline, kill, duplicate push, reorder; `[F16-REQ-010]` on two phones; freshness p95 30 s | Agent plus human. BL-177 | Not run | S1-22 |
 | WP-F16-12 | Load test at 2 times the 1k targets with the backup burst | S19 | k6 scripts | WP-F16-06, staging | Section 9 targets at 2x | Agent. BL-282 | Not run; 08 Q8 | none |
-| WP-F16-13 | Erase op for a synced letter (D-085) | S02 server, S03 client | `store.ts` `eraseEntry` sync branch, `lib/sync/outbox.ts`, new migration | WP-F16-06 | `[F16-REQ-024]` | Agent, `approve-migration` | Not built | none |
-| WP-F16-14 | Words compare and set, server | S02 | New migration (`sync_push` redefined by S02 only), `supabase/tests/sync_conflict.test.mjs` (new) | Sync ADR | `[F16-REQ-010]` server half: the conflicting text group is not applied, `conflict_groups` and `current` returned, other groups applied | Agent, `approve-migration` | Not built (P0 gap) | none |
-| WP-F16-15 | Conflict handling and rebase, client | S03 | `lib/sync/merge.ts`, `outbox.ts`, `types.ts`, local migration for `sync_conflicts`, conflict note component (request to S13 for the letter view slot) | WP-F16-14 contract | `[F16-REQ-010]` client half, `[F16-REQ-025]`, `[F16-REQ-023]` | Agent | Not built (P0 gap) | S1-22 |
+| WP-F16-13 | Erase op for a synced letter (D-085) | S02 server, S03 client | `store.ts` `eraseEntry` sync branch, `lib/sync/outbox.ts`, new migration | WP-F16-06 | `[F16-REQ-024]`; `[LEGAL-REQ-032]`; `[F16-REQ-084]` | Agent, `approve-migration` | Not built | none |
+| WP-F16-14 | Words compare and set, server | S02 | New migration (`sync_push` redefined by S02 only), `supabase/tests/sync_conflict.test.mjs` (new) | Sync ADR | `[F16-REQ-010]` server half: the conflicting text group is not applied, `conflict_groups` and `current` returned, other groups applied; `[F16-REQ-082]` | Agent, `approve-migration` | Not built (P0 gap) | none |
+| WP-F16-15 | Conflict handling and rebase, client | S03 | `lib/sync/merge.ts`, `outbox.ts`, `types.ts`, local migration for `sync_conflicts`, conflict note component (request to S13 for the letter view slot) | WP-F16-14 contract | `[F16-REQ-010]` client half, `[F16-REQ-025]`, `[F16-REQ-023]`; `[DATA-REQ-043]` (exists in `apps/mobile/test/sync-outbox.test.ts`) | Agent | Not built (P0 gap) | S1-22 |
 | WP-F16-16 | API version and N-1 support | S02 server, S03 client, S07 contract | `sync_push` and `sync_pull` signatures (new overloads), `packages/api/src/sync.ts` | WP-F16-01 | `[F16-REQ-019]` contract test with N-1 fixtures | Agent, `approve-migration` | Not built | none |
+| WP-F16-17 | Held drafts on the server (6.2 I): `held_drafts` table, RLS, consent and immutability triggers, `held.upsert` and `held.discard` ops, `held` pull section, the delete-on-keep rule, client apply into local drafts | S02 server, S03 client | New S02 migration; `lib/sync/outbox.ts`, `merge.ts`; `packages/api/src/sync.ts` | Sync ADR (T15), WP-F16-01, WP-F16-03 | `[F16-REQ-029]`, `[F16-REQ-028]` contract rows, `[F14-REQ-039]` two-phone case | Agent, `approve-migration` | Not built (new, R8 R2A-05; request to the delivery lane for a slot) | S1-22 two phones |
+| WP-F16-18 | Ledger kinds for M14 rows and their replay in RB-8; scheduler and push sender check deletion before each send | S02, S07 | New S02 migration; `purge-worker/`; RB-8 (request) | WP-F16-08 | `[F16-REQ-031]` | Agent, `approve-migration` | Not built (new, R8 R2A-17) | Staging drill |
+| WP-F16-19 | Environment matrix: `testflight` profile to EAS environment `production` and channel `testflight`; CI check of URLs and escrow key versions per profile | S20 | `apps/mobile/eas.json`, `.github/workflows/` | M14 capabilities ADR | `[F16-REQ-030]` | Agent | Not built (new, R8 R2A-15) | none |
 
 ## 13. Open questions and assumptions
 
@@ -401,11 +453,12 @@ Status is what `develop` holds on 13 Oct 2026. All of it is v1.0 (M14); none of 
 |---|---|---|
 | A1 | Same-author two-device word edits are rare | Server conflict count in C1 |
 | A2 | 1.5 accounts per family | Server aggregate after 8 weeks |
-| A3 | A 30 s foreground pull stays inside Supabase plan limits at 7.5k concurrent | Load test at the 100k profile before 25k families |
+| A3 | A 15 s foreground pull for shared books stays inside Supabase plan limits at 7.5k concurrent | Load test at the 100k profile before 25k families |
 
 ## 14. Sources
 
 - Decisions: `docs/prd/v2/_AUTHORING.md` (B2, B7, B15, M14, M15, M16); `docs/agents/BRIEF-2026-10-03.md` items 9, 17; `docs/DECISIONS.md` D-023, D-024, D-033, D-035, D-041, D-055, D-068, D-073, D-085; ADR `docs/adr/0004-sync-engine.md` (status note); `08-delivery.md` sections 3.3, 7, 8.1.
+- Round 2: `reviews/R8-round2-architecture-privacy.md` R2A-05, -11, -15 to -17, -23, -25; `apps/mobile/eas.json` on `origin/develop` ed16ca3 (profiles, environments, channels); `20261004100000_sync_engine.sql` lines 170 (`sync_op_receipts_own_insert`) and 477 (security invoker); `20261002020000_data_governance.sql` (`purge_ledger.entity_type`).
 - Reviews: `reviews/R2-architect.md` AR-01 to AR-03, AR-08, AR-14 to AR-16, AR-21, AR-31, AR-32, AR-37; `reviews/R5-eng-qa.md` EQ-04, EQ-20; `docs/reviews/2026-10-04-security-privacy.md` M3, M5, L1.
 - Code read 13 Oct 2026: `apps/mobile/src/lib/sync/types.ts`, `outbox.ts`, `merge.ts`, `engine.ts`; `apps/mobile/src/lib/capabilities.ts`; `apps/mobile/src/lib/store.ts`; `supabase/migrations/20261004100000_sync_engine.sql` (header, sections 1 to 6, `sync_push`), `20261005000000_family_cap_language_idempotency.sql` (header, `c_groups`); `20261002020000_data_governance.sql` (`book_entries`, `is_child_parent`); `20260930000000_scribe_core.sql` (`is_child_member`, `entry_versions`); `.github/migrations-applied.txt`.
 - Requirements: `docs/prd/PRD.md` K-39, 7.2, 7.3, 7.4, 7.5, 7.7, 7.8, 7.10; `docs/prd/A-entry-and-auth.md` A-REQ-015, -032, -033; `docs/prd/B-first-run-and-family.md` B-NFR-003, -009; `docs/legal/DELETION_AND_EXPORT_SPEC.md` DATA-REQ-010 to -016, -023, -030 to -032, -040 to -048; `docs/legal/ENGINEERING_REQUIREMENTS.md` LEGAL-REQ-001, -006, -009, -014, -024, -026, -032, -034, -040.

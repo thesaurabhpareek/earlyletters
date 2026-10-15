@@ -247,14 +247,14 @@ Streams: S13 client, S03 local schema, S02 server, S14 planner inputs (`08-deliv
 
 | WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode | Status 13 Oct |
 |---|---|---|---|---|---|---|---|
-| WP-F12-01 | Server: apply the migration that drops the Plus check | Data architect | `supabase/migrations/20261004000000_plus_on_device_only.sql` (exists) | BL-113 pack in staging | `[F12-REQ-002]`; `npm run test:db` green; applied in staging (FT-10) | Human apply. BL-213 superseded | Built; not applied |
-| WP-F12-02 | Local schema split, v7 | S03 | `apps/mobile/src/lib/db/migrations.ts`, its test | BL-111 | `[F12-REQ-004]` from v0 to head | Agent. BL-136 | Not built (schema at v5) |
+| WP-F12-01 | Server: apply the migration that drops the Plus check | Data architect | `supabase/migrations/20261004000000_plus_on_device_only.sql` (exists) | BL-113 pack in staging | `[F12-REQ-002]`; `npm run test:db` green; applied in staging (FT-10); `[PRD-REQ-015]` (exists in `apps/mobile/test/billing-plan.test.ts`) | Human apply. BL-213 superseded | Built; not applied |
+| WP-F12-02 | Local schema split, v7 | S03 | `apps/mobile/src/lib/db/migrations.ts`, its test | BL-111 | `[F12-REQ-004]` from v0 to head; `[PRD-REQ-011]` | Agent. BL-136 | Not built (schema at v5) |
 | WP-F12-03 | Removed (M2): no book gate | n/a | n/a | n/a | Removed; `[C-REQ-023]` is checked in the F14 placement tests | n/a | Removed |
-| WP-F12-04 | Switcher and Review child change | S13 | `child-switcher.tsx`, `whose-book-sheet.tsx` | WP-F12-02 | `[PRD-REQ-012]`; switch p95 300 ms | Agent. BL-034 | Partly built: both components exist; verify against PRD-REQ-012 |
-| WP-F12-05 | Per-child settings, hide, show, delete | S13 | `apps/mobile/src/app/settings/children/` | WP-F12-04 | `[PRD-REQ-013]`, `[F12-REQ-005]`, `[B-REQ-016]` | Agent. BL-035 | Partly built: `children/[id].tsx` and `new.tsx` exist; hide is book-level today |
+| WP-F12-04 | Switcher and Review child change | S13 | `child-switcher.tsx`, `whose-book-sheet.tsx` | WP-F12-02 | `[PRD-REQ-012]`; switch p95 300 ms; `[B-REQ-004]` | Agent. BL-034 | Partly built: both components exist; verify against PRD-REQ-012 |
+| WP-F12-05 | Per-child settings, hide, show, delete | S13 | `apps/mobile/src/app/settings/children/` | WP-F12-04 | `[PRD-REQ-013]`, `[F12-REQ-005]`, `[B-REQ-016]`; `[C-REQ-028]`, `[F12-REQ-003]` | Agent. BL-035 | Partly built: `children/[id].tsx` and `new.tsx` exist; hide is book-level today |
 | WP-F12-06 | Move unsynced letter; bring local letters on join | S03 move function, S04 join sheet | `apps/mobile/src/lib/db/repos/entries.ts` (move rule exists), join sheet | WP-F11-06 | `[F12-REQ-006]`, `[F12-REQ-007]` crash test | Agent | Partly built: the unsynced-only rule exists in `entries.ts`; bring-on-join not built |
-| WP-F12-07 | Hide propagation to notifications | S14 | F13 planner inputs | F13 planner | `[B-REQ-014]` two-device test | Agent | Not built |
-| WP-F12-08 | Quiet this book: menu, notification action, planner input | S13 menu, S14 planner and notification action | Book header menu (request to the F09 owner's file), `packages/core/src/reminder-plan.ts` input | WP-F12-02, WP-F13-02 | `[F12-REQ-011]` | Agent | Not built |
+| WP-F12-07 | Hide propagation to notifications | S14 | F13 planner inputs | F13 planner | `[B-REQ-014]` two-device test; `[F12-REQ-010]` | Agent | Not built |
+| WP-F12-08 | Quiet this book: menu, notification action, planner input | S13 menu, S14 planner and notification action | Book header menu (request to the F09 owner's file), `packages/core/src/reminder-plan.ts` input | WP-F12-02, WP-F13-02 | `[F12-REQ-011]`; `[F12-REQ-009]` | Agent | Not built |
 | WP-F12-09 | Per-person hide; book-change note and 72-hour undo; birthday confirm | S02 server columns (fenced), S13 client | New migration; `apps/mobile/src/app/settings/children/[id].tsx` | WP-F12-02 | `[B-REQ-014]` Rev, `[F12-REQ-012]`, `[F12-REQ-013]` two-device test | Agent | Not built |
 
 ## 13. Open questions and assumptions

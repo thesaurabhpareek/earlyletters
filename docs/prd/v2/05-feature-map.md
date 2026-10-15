@@ -1,6 +1,6 @@
 # 05. Feature map and stack rank
 
-Status: Draft V2.1, 13 Oct 2026. Revised after critique round 1 (R1 PL-01, PL-22, PL-25, PL-30, PL-32) and the founder's M15 to M17 (`_AUTHORING.md` section 3b). **Section 2 is the one source for what ships in v1.0.** Dates live only in `08-delivery.md` section 2.1; this file names milestone ids (T01 to T40) from there. `08-delivery.md` section 6.3 turns this rank into a work-package list that fits the merge budget.
+Status: Draft V2.1, 13 Oct 2026. Revised after critique round 1 (R1 PL-01, PL-22, PL-25, PL-30, PL-32) and the founder's M15 to M17 (`_AUTHORING.md` section 3b). Round 2 delivery edits on 15 Oct: the last column no longer cuts work a P0 requirement needs, and the waves follow the re-planned `08-delivery.md` (what changed and why: `reviews/DISPOSITION-R2-delivery.md`). **Section 2 is the one source for what ships in v1.0.** Dates live only in `08-delivery.md` section 2.1; this file names milestone ids (T01 to T40) from there. `08-delivery.md` section 6.3 turns this rank into a work-package list that fits the merge budget.
 
 ## 1. How features are ranked
 
@@ -19,11 +19,11 @@ Build order is different from rank: some low-ranked features (account, sync, con
 | Rank | ID | Feature | P | Why here | Gate type | Depends on | P1 extras cut from v1.0 now |
 |---|---|---|---|---|---|---|---|
 | 1 | F04 | Capture: speak or type a note or letter | P0 | The product. Jobs 2 and 3. Lost recordings are the category's most repeated complaint (R1, R2) | Core loop, durability | F19 (config), design system | WP-F04-12 widget |
-| 2 | F06 | Faithful edit and review | P0 | The constitution. What we can claim and others do not: the app shows every change the machine made and lets you undo it (04 section 4). The engine still has open English defects (R-01) | Core loop, promise | F05 | Lock a phrase, unsure marks and the engine audit (WP-F06-10, -11, -12); WP-F06-13 offered fillers. The author-layer core (WP-F06-06, -07) stays: DATA-REQ-041 needs hand edits to replay |
+| 2 | F06 | Faithful edit and review | P0 | The constitution. What we can claim and others do not: the app shows every change the machine made and lets you undo it (04 section 4). The engine still has open English defects (R-01) | Core loop, promise | F05 | WP-F06-13 offered fillers. Lock a phrase and low-confidence marks (WP-F06-10), save paths (WP-F06-11) and the engine audit (WP-F06-12) stay in v1.0: P0 requirements need them. The author-layer core (WP-F06-06, -07) stays: DATA-REQ-041 needs hand edits to replay |
 | 3 | F05 | On-device transcription and language packs | P0 | Speak-first needs text. Seven languages built; each ships only when it passes its gate (DR-01 default A, decided at T18). Positioning leads with the languages that pass (04 section 5) | Core loop | F04, F19 pack delivery | none |
-| 4 | F08 | Recordings: original, listening copy, playback, owner backup | P0 | Voice is the keepsake (job 6); the original is never altered (B6); the owner's encrypted backup is v1.0 with a recovery key we hold under logged access (D-073, M14, M15, M16) | Promise | F04, F02, F16 | none |
+| 4 | F08 | Recordings: original, listening copy, playback, owner backup | P0 | Voice is the keepsake (job 3); the original is never altered (B6); the owner's encrypted backup is v1.0 with a recovery key we hold under logged access (D-073, M14, M15, M16) | Promise | F04, F02, F16 | none |
 | 5 | F09 | The book: month chapters, Before You, cards | P0 | Where the value accumulates; ordering by the moment is a complaint elsewhere (R2 section 0 item 6) | Core loop | F03, F04 | WP-F09-11 search |
-| 6 | F17 | Settings, privacy controls, consents and deletion | P0 | Job 1. In-app deletion is mandatory (App Review 5.1.1(v)); consent records are legal duties | Promise, legal, store | F02 | WP-F17-08 app lock; WP-F17-15 delete everything on this phone |
+| 6 | F17 | Settings, privacy controls, consents and deletion | P0 | Job 1. In-app deletion is mandatory (App Review 5.1.1(v)); consent records are legal duties | Promise, legal, store | F02 | WP-F17-08 app lock (F17-REQ-015 binds only if it ships). WP-F17-15 Erase everything on this phone stays in v1.0 for DATA-REQ-024 |
 | 7 | F07 | Names and words dictionary | P0 | A misheard name loses trust fast (U4); only one competitor claims name handling (R1 F07) | Promise | F03, F05 | WP-F07-07 say the name three times |
 | 8 | F01 | Entry, 18+ gate and welcome | P0 | Small, legal, first screen anyone sees; Texas SB 2420 in force (R4); California AB 1043 in force before launch (T32) | Legal, store | none | none |
 | 9 | F03 | First run: child, signature, languages, names | P0 | Feeds F05 (languages), F07 (names), F09 (age math); only name and date required (B-REQ-001) | Core loop | F01 | none |
@@ -32,12 +32,12 @@ Build order is different from rank: some low-ranked features (account, sync, con
 | 12 | F11 | Co-parent sharing | P0 | Both parents write to one book (M14). Inside one Apple Family the payer's Plus covers both; outside it, the co-parent has their own 2 free letters, then Plus (M17, D-080). Evidence for co-parent demand is thin (1 of 287 reviews, 02 P2), so Study 3 runs in C1 | Promise, M14 | F02, F16 | WP-F11-13 QR invite |
 | 13 | F15 | Export and the PDF book | P0 | "Yours, always": every letter already made stays exportable (M1); the shutdown pledge depends on it (PRD-REQ-009, LEGAL-REQ-034) | Promise, legal | F09, F08 | none |
 | 14 | F14 | Plus: the membership | P0 | Carries the business: 2 free letters, counted once their words exist and you have seen them (M1, M17), then Plus at Keep; $4.99 and $49.99 (M3). Plan reminders on the phone and by email are legal duties (M6, M14) | Revenue, legal | F06, F04, F13, F17 | none |
-| 15 | F13 | Prompts, reminders and notifications | P0 | Prompts are the top praised feature of prompted journals; repetition the top complaint (R2 section 0 item 4). Due-date silence and the quiet window protect P3 | Habit | F03, F19 | Picking which evenings; Apple's rating request (WP-F13-13); prompts from the content block (WP-F13-09) unless a slot frees |
+| 15 | F13 | Prompts, reminders and notifications | P0 | Prompts are the top praised feature of prompted journals; repetition the top complaint (R2 section 0 item 4). Due-date silence and the quiet window protect P3 | Habit | F03, F19 | Picking which evenings; Apple's rating request (WP-F13-13). Prompts from the content block (WP-F13-09) stay in v1.0: two P0 requirements name it |
 | 16 | F12 | Multiple children | P0 | Twins and siblings at first run; every book free to start (M2). "Quiet this book" for the worst days (R3 DX-05) | Core | F03 | none (B-REQ-020 and the multi-book invite picker are already later) |
 | 17 | F19 | Server-driven content, remote config, kill switches, pack delivery | P0 | Kill switches are a legal duty (LEGAL-REQ-040); packs need delivery (B13); prompts are server-delivered (B14) | Platform | `packages/api` | none |
 | 18 | F20 | Help, support and safety resources | P0 | Static "If you are struggling" row replaces the classifier (B7); support path for beta and for loss | Trust | F17 | none |
 | 19 | F21 | App Store listing, website and legal pages | P0 | Required to ship; the listing must not be generic against "voice memory book" entrants (04 section 5) | Store, legal | all | none |
-| 20 | F18 | Analytics and the learning loop | P0 for consent, the guard and the letters-made and letters-kept events; P1 for the rest | Founder decision (D-003, B10); must never cost a feature (LEGAL-REQ-003). The business number comes from App Store Connect, not from opt-in events (03 section 4) | Learning | F17 consent | WP-F18-02, -06, -09, -10, -14, -15 (the automated loop starts on 1.0.x data) |
+| 20 | F18 | Analytics and the learning loop | P0 for consent, the guard and the letters-made and letters-kept events; P1 for the rest | Founder decision (D-003, B10); must never cost a feature (LEGAL-REQ-003). The business number comes from App Store Connect, not from opt-in events (03 section 4) | Learning | F17 consent | WP-F18-10 weekly insights run (starts on 1.0.x data; its P0 lines bind when it runs), WP-F18-14 Sentry (only if F18 Q2 says v1.0), WP-F18-15. WP-F18-02, -06 and -09 stay in v1.0: P0 requirements need them |
 | 21 | F10 | Read together | **P1** | Built with no session limit (M2). Launch users are mostly expecting or newborn parents, while Read together suits ages 2 to 5 (R1 PL-30); it ships because it is built and needs only device checks plus the skip and night-surface work (WP-F10-10), and it stays out of the first three screenshots unless C1 shows use | Value | F08, F09 | Word highlight (F34, v1.1) |
 
 ## 3. v1.1 and later, stack-ranked
@@ -71,14 +71,15 @@ Specs in `features/F30-later.md`. Order is the recommended v1.1 build order. The
 The layers stay; the calendar is `08-delivery.md` section 5. Most of L0 to L4 exists in code, so each wave is about device runs, fixes and the remaining gaps.
 
 ```
-Wave 0 (T01 to T03)   Set up: decisions logged, PR triage, claims, numbering rules
-Wave 1 (T03 to T16)   L0 guardrails: R-17 security gate, CI fence, staging from develop, harnesses;
+Wave 0 (T01 to T03)   Set up: decisions logged, PR triage, claims, numbering rules; PRD V2 on develop (T41)
+Wave 1 (T03 to W5)    L0 guardrails: R-17 security gate, CI fence, staging from develop, harnesses;
                        the five ADRs (sync, backup, status report, deletion, kill switches);
                        BL-342 plan reminders; M17 ledger; counsel delta; first build and spikes (T04, T11)
-Wave 2 (W4 to W6)     L1 to L4 server features in a build: sign-in on, sync fixes, co-parent, push,
-                       status report, backup client behind a flag (T23); C1 from T22
-Wave 3 (W7 to T28)    Backup to C1 families (T27); Google; reminder emails; last features; C1 fixes
-Wave 4 (T29 to T36)   Freeze, counsel sign-off (T30), candidate run (T33), C1 exit (T34), submit (T36)
+Wave 2 (W5 to W12)    L1 to L4 server features in a build: sign-in on, sync fixes, co-parent, push,
+                       status report, backup client behind a flag (T23); the G3 work for C1; C1 from T22
+Wave 3 (W12 to W15)   Backup to C1 families (T27); Google; reminder emails; C1 fixes
+Wave 4 (W15 to T28)   The rest of the v1.0 list (08 section 6.3 round 2 tables)
+Wave 5 (T29 to T36)   Freeze, counsel sign-off (T30), candidate run (T33), C1 exit (T34), submit (T36)
 ```
 
 ## 5. If the date slips: what is cut, and what never is

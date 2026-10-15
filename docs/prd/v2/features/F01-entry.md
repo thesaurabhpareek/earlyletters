@@ -190,6 +190,16 @@ The response object is never written to the settings table, a log, Sentry or ana
 | F01-REQ-007 | `apps/mobile/e2e/flows/E2E-01b-age-gate-yes.yaml` (no system prompt through Welcome) | Exists; assertion new |
 | F01-REQ-008 | VoiceOver script V1 (07 section 2.11) | Not run |
 
+### Inherited requirements whose home is this spec (round 2)
+
+These IDs were cited in V2 with no definition row (R9 R2D-06). The text is taken from the source named in the last column; that source still governs the full wording. Each P0 row has a work package and a test in section 12.
+
+| ID | P | Requirement | Acceptance criteria | Source |
+|---|---|---|---|---|
+| A-REQ-005 | P0 | Exits reachable, applied to the welcome screen (D-043 moved the story intro to v1.1) | Given the welcome screen at any Dynamic Type size, Then Sign in is visible without scrolling and at least 44 pt | `docs/prd/A-entry-and-auth.md` A-REQ-005 and its v1.1 table row |
+| A-REQ-028 | P0 | Invite token stored securely before any UI | Given an invite link at cold or warm start, Then the token is stored before UI and survives sign-in and an app kill | `docs/prd/A-entry-and-auth.md` A-REQ-028 |
+| LEGAL-REQ-002 | P0 | 18+ age gate, store age signals, and minors' handling | Given a fresh install, When the person takes any first action, Then the age question appears first with nothing preselected; Given under 18 by answer or store signal, Then a stop screen shows and no child, letter, recording or auth user is created | `docs/legal/ENGINEERING_REQUIREMENTS.md` on `develop` LEGAL-REQ-002 |
+
 ## 8. Data, privacy and security
 
 | Data | Level | Where | Who reads | Retention | Leaves the phone |
@@ -253,11 +263,11 @@ No F01 event is sent. Analytics consent is the third ask after the first letter 
 
 | WP | Scope | Owns files or folders | Depends on | Done when (tests that must pass) | Mode |
 |---|---|---|---|---|---|
-| WP-F01-01 | Gate hardening: confirm step after No, token deletion on a confirmed No, brand placeholder in stop copy, re-ask wording | `apps/mobile/src/lib/age-gate*.ts`, `apps/mobile/src/components/gate/` | none (BL-037) | `[F01-REQ-001]`, `[F01-REQ-002]` in `apps/mobile/test/age-gate.test.ts`; existing gate tests green | agent (mobile engineer) |
+| WP-F01-01 | Gate hardening: confirm step after No, token deletion on a confirmed No, brand placeholder in stop copy, re-ask wording | `apps/mobile/src/lib/age-gate*.ts`, `apps/mobile/src/components/gate/` | none (BL-037) | `[F01-REQ-001]`, `[F01-REQ-002]` in `apps/mobile/test/age-gate.test.ts`; existing gate tests green; `[LEGAL-REQ-002]` (exists in `apps/mobile/test/age-gate.test.ts`) | agent (mobile engineer) |
 | WP-F01-02 | Declared Age Range spike, then module | `apps/mobile/modules/age-range/`, `apps/mobile/src/lib/age-range.ts` | Xcode 26 build | `[F01-REQ-003]` spy test; sandbox matrix recorded in the PR | pair (security engineer plus human sandbox check) |
-| WP-F01-03 | `bootstrap()` and route groups; splash hides on first route layout | `apps/mobile/src/lib/bootstrap.ts` (new), `apps/mobile/src/app/_layout.tsx` (coordinator wires) | BL-111, WP-F01-01 (BL-040) | `[A-REQ-002]` airplane test; `[F01-REQ-006]` | agent (mobile engineer) |
-| WP-F01-04 | Welcome screen with three actions and notice | `apps/mobile/src/app/welcome.tsx` (new), `apps/mobile/src/app/onboarding.tsx` (remove welcome step), feature `copy.ts` | WP-F01-03 (BL-137) | `[F01-REQ-005]`, `[A-REQ-035]`; AX5 by device script until the render harness WP-F00-01 merges (R5 EQ-04); VoiceOver V1 | agent (mobile engineer, content) |
-| WP-F01-05 | Link parser and pending-token hold | `apps/mobile/src/lib/links.ts` (new) | F02 WP-F02-01 (secure store), BL-170 | `[F01-REQ-004]`; parser unit tests reject other hosts, query tokens and scheme tokens | agent (mobile engineer) |
+| WP-F01-03 | `bootstrap()` and route groups; splash hides on first route layout | `apps/mobile/src/lib/bootstrap.ts` (new), `apps/mobile/src/app/_layout.tsx` (coordinator wires) | BL-111, WP-F01-01 (BL-040) | `[A-REQ-002]` airplane test; `[F01-REQ-006]`; `[A-REQ-030]`, `[PRD-REQ-019]` (exists in `apps/mobile/test/age-gate.test.ts`) | agent (mobile engineer) |
+| WP-F01-04 | Welcome screen with three actions and notice | `apps/mobile/src/app/welcome.tsx` (new), `apps/mobile/src/app/onboarding.tsx` (remove welcome step), feature `copy.ts` | WP-F01-03 (BL-137) | `[F01-REQ-005]`, `[A-REQ-035]`; AX5 by device script until the render harness WP-F00-01 merges (R5 EQ-04); VoiceOver V1; `[F01-REQ-007]`, `[F01-REQ-008]`, `[A-REQ-005]` | agent (mobile engineer, content) |
+| WP-F01-05 | Link parser and pending-token hold | `apps/mobile/src/lib/links.ts` (new) | F02 WP-F02-01 (secure store), BL-170 | `[F01-REQ-004]`; parser unit tests reject other hosts, query tokens and scheme tokens; `[A-REQ-028]` | agent (mobile engineer) |
 | WP-F01-06 | Splash mark and associated domains | `apps/mobile/app.config.ts` (S20 owns; a request), `apps/mobile/assets/` | BL-100 domain, design mark (BL-031) | `[A-REQ-001]` screenshot diff light and dark | agent plus human device check |
 | WP-F01-07 | California AB 1043: request the OS age signal at launch, treat it as primary, block under 18, store nothing | `apps/mobile/modules/age-range/`, `apps/mobile/src/lib/age-range.ts`, `apps/mobile/test/age-range.test.ts` (new) | WP-F01-02; counsel Q4 | `[F01-REQ-010]`, `[F01-REQ-003]` spy test; sandbox matrix recorded | pair (security engineer plus human sandbox check) |
 

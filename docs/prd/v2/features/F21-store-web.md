@@ -296,6 +296,17 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | F21-REQ-027 | Coordinator record | Human |
 | F21-REQ-028 | `docs/legal/claims-v1.md` with counsel ticks; `packages/content/test/rules.test.ts` unregistered-claim case | New |
 
+### Inherited requirements whose home is this spec (round 2)
+
+These IDs were cited in V2 with no definition row (R9 R2D-06). The text is taken from the source named in the last column; that source still governs the full wording. Each P0 row has a work package and a test in section 12.
+
+| ID | P | Requirement | Acceptance criteria | Source |
+|---|---|---|---|---|
+| LEGAL-REQ-042 | P0 | Store disclosures rendered from the data map and confirmed per release | Given a release build, When the checklist runs, Then the evidence folder for that version exists and matches the rendered output | `docs/legal/ENGINEERING_REQUIREMENTS.md` on `develop` LEGAL-REQ-042 |
+| LEGAL-REQ-058 | P0 | Launch geography: United States storefront only | Given App Store Connect, When the release checklist runs, Then availability equals the United States and the evidence is saved | `docs/legal/ENGINEERING_REQUIREMENTS.md` on `develop` LEGAL-REQ-058 |
+| LEGAL-REQ-060 | P1 | No health-feature drift: no HealthKit or structured health logs without re-running the register rows | Given entitlements, When CI runs, Then no HealthKit entitlement exists | `docs/legal/ENGINEERING_REQUIREMENTS.md` on `develop` LEGAL-REQ-060 |
+| PRD-REQ-023 | P0 | Publisher identity, domain, support and privacy contacts come only from `packages/brand` | Given the repo, Then no publisher name or contact is written outside `packages/brand` | `docs/prd/PRD.md` 1.3 PRD-REQ-023 |
+
 ## 8. Data, privacy and security
 
 | Data | Level | Where | Who reads | Retention | Never |
@@ -344,18 +355,18 @@ Only for what is missing or partly built.
 | WP | Scope | Owner | Owns files or folders | Depends on | Done when | Mode |
 |---|---|---|---|---|---|---|
 | WP-F21-01 | Build-state claim set, `SHIPPING_LANGUAGES`, subtitle guard | Content | `packages/content/src/store.en.ts`, new `packages/content/src/claims.ts`, `test/rules.test.ts` | M14, FT-34 | `[F21-REQ-002]`, `[F21-REQ-003]`, `[F21-REQ-004]` | Agent |
-| WP-F21-02 | Listing copy for the chosen build state; regenerate `docs/store/app-store.md` | Content | `store.en.ts`, `docs/store/app-store.md` | WP-F21-01 | `[F21-REQ-003]`; rules test green | Agent |
+| WP-F21-02 | Listing copy for the chosen build state; regenerate `docs/store/app-store.md` | Content | `store.en.ts`, `docs/store/app-store.md` | WP-F21-01 | `[F21-REQ-003]`; rules test green; `[F21-REQ-009]`, `[F21-REQ-034]` | Agent |
 | WP-F21-03 | Notes for Review and the reviewer demo account | QA, content, founder (account) | `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 8, new `docs/store/review-notes.md` | F19 6.5; a staging or production seed of the Asha two-parent book | `[F21-REQ-006]`, `[F21-REQ-031]` | Agent, then founder |
 | WP-F21-04 | Screenshots from the release build | Content, founder | `scripts/brand/screenshots.mts` captions in `store.en.ts` | Release build | `[F21-REQ-008]` | Pair |
 | WP-F21-05 | Website prices from `pricing.ts`, claims fixed, trust promise word for word | Web | `apps/web/src/content/site.ts` (main) | none | `[F21-REQ-015]`, `[F21-REQ-016]`, `[F21-REQ-018]` | Agent |
 | WP-F21-06 | Fictional sample family on the website and the guard over `apps/web` | Web | `apps/web/src/content/site.ts`, scenes that import it, guard test | Founder Q2 | `[F21-REQ-017]` | Agent |
-| WP-F21-07 | Website copy test extended | Web | `apps/web/test/copy-rules.test.ts` | WP-F21-01 | `[F21-REQ-019]`, `[LEGAL-REQ-045]` | Agent |
-| WP-F21-08 | Legal pages for the build state; /delete-account rewrite | Legal lane, counsel | `docs/legal/*.md`, `apps/web/src/lib/legal/delete-account-copy.ts` | M14, M16, counsel (FT-33, FT-41) | `[F21-REQ-012]`, `[F21-REQ-013]`, `[F21-REQ-014]` | Agent then counsel |
-| WP-F21-09 | Privacy label for the build state and manifest | Legal lane, mobile | `docs/legal/app-store-privacy-labels.md`, `apps/mobile/app.config.ts` | F18 WP-F18-08 | `[F21-REQ-007]` | Pair |
-| WP-F21-10 | security.txt, footer line, axe in CI | Web | `apps/web/src/app/.well-known/`, footer component, CI config | none | `[F21-REQ-023]`, `[F21-REQ-026]`, `[F21-REQ-025]` | Agent |
+| WP-F21-07 | Website copy test extended | Web | `apps/web/test/copy-rules.test.ts` | WP-F21-01 | `[F21-REQ-019]`, `[LEGAL-REQ-045]`; `[F21-REQ-020]`, `[F21-REQ-021]`, `[F21-REQ-022]` | Agent |
+| WP-F21-08 | Legal pages for the build state; /delete-account rewrite | Legal lane, counsel | `docs/legal/*.md`, `apps/web/src/lib/legal/delete-account-copy.ts` | M14, M16, counsel (FT-33, FT-41) | `[F21-REQ-012]`, `[F21-REQ-013]`, `[F21-REQ-014]`; `[PRD-REQ-023]` | Agent then counsel |
+| WP-F21-09 | Privacy label for the build state and manifest | Legal lane, mobile | `docs/legal/app-store-privacy-labels.md`, `apps/mobile/app.config.ts` | F18 WP-F18-08 | `[F21-REQ-007]`; `[LEGAL-REQ-042]` | Pair |
+| WP-F21-10 | security.txt, footer line, axe in CI | Web | `apps/web/src/app/.well-known/`, footer component, CI config | none | `[F21-REQ-023]`, `[F21-REQ-026]`, `[F21-REQ-025]`; `[F21-REQ-011]` | Agent |
 | WP-F21-11 | Claims list with counsel ticks, and the content test that fails on an unregistered claim | Legal lane, content | `docs/legal/claims-v1.md` (new), `packages/content/test/rules.test.ts` | WP-F21-02, WP-F21-05 | `[F21-REQ-028]`, `[F21-REQ-032]` | Agent then counsel |
 | WP-F21-14 | Website hotfix this week, separate from launch work: prices from `pricing.ts`, the four false pricing-scene claims removed, the sample child switched to Asha, the guard added to `main` (6.6 rows 1 to 8) | Web | `apps/web/src/content/site.ts` (main), guard test | none | `[F21-REQ-030]`, `[F21-REQ-015]`, `[F21-REQ-017]` | Agent, founder merges |
-| WP-F21-12 | ASC entry: fields, rating, availability, subscriptions, export compliance, privacy answers | Founder | App Store Connect | All above | `[F21-REQ-005]`, `[F21-REQ-010]` | Human |
+| WP-F21-12 | ASC entry: fields, rating, availability, subscriptions, export compliance, privacy answers | Founder | App Store Connect | All above | `[F21-REQ-005]`, `[F21-REQ-010]`; `[F21-REQ-001]`, `[LEGAL-REQ-058]` | Human |
 | WP-F21-13 | Branch reconciliation for `apps/web` | Coordinator | Repo | none | `[F21-REQ-027]` | Human |
 
 ## 13. Open questions and assumptions

@@ -1,6 +1,6 @@
 # 06. Non-functional requirements
 
-Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with D-073, D-068 and ADR 0014 to 0017, D-084, D-085 and the code on `develop`; revised after critique round 1 for M14 to M16 and R2 AR-03, AR-11, AR-14, AR-15, AR-26, AR-27, AR-30, R4 PT-07, PT-21, R5 EQ-17, EQ-20, EQ-30: freshness, kill-switch, crash-free and server budgets that can be measured and can pass. Replaces `docs/prd/PRD.md` 1.3 section 7. Feature specs keep their own budgets in their section 9; this file holds the shared ones and the single list of gates. Where a feature budget and this file differ, this file wins until the feature spec is updated, and the difference is listed in section 17.
+Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with D-073, D-068 and ADR 0014 to 0017, D-084, D-085 and the code on `develop`; revised after critique round 1 for M14 to M16 and R2 AR-03, AR-11, AR-14, AR-15, AR-26, AR-27, AR-30, R4 PT-07, PT-21, R5 EQ-17, EQ-20, EQ-30: freshness, kill-switch, crash-free and server budgets that can be measured and can pass. Revised 15 Oct 2026 after critique round 2 (R8 R2A-11 to -14, -16, -19, -21, -22, -27, -28; `reviews/DISPOSITION-R2-architecture.md`): a freshness gate that passes by arithmetic, a G4 session rule the calendar can meet, the save budget matched to the code, one position on the security test and the load test, a battery method the tools support, and the escrow key in its own project. Replaces `docs/prd/PRD.md` 1.3 section 7. Feature specs keep their own budgets in their section 9; this file holds the shared ones and the single list of gates. Where a feature budget and this file differ, this file wins until the feature spec is updated, and the difference is listed in section 17.
 
 ## 0. How to read this file
 
@@ -8,7 +8,7 @@ Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with D-073, D-068 and AD
 - **Gate** means a launch blocker: the release candidate does not go to App Store review until the row passes (07-quality-bar.md section 5). "No" means the row is measured and watched; a miss opens an issue but does not block.
 - **Samples.** Device percentiles come from a release-candidate run of at least 200 samples per metric. A p99 is gated only where a run has 1,000 or more samples, so load tests can gate p99 and device runs gate p50, p90 or p95 (TDD 06 CR-8).
 - **Where measured.** "Perf build" means the `perf` build profile with timing markers (TDD 01; TDD 06 section 7.2). That profile and the scripted relaunch loop do not exist yet: `apps/mobile/eas.json` has `development`, `preview`, `production` and `testflight` (R5 EQ-30). S20 adds the profile and S19 the marker harness; until both land, a "Perf build" row is measured by hand with Instruments on a release build, and it gates only if `07-quality-bar.md` lists it in the device budget for that release candidate. "Lab" means a scripted run on the reference device. "Client" means at the phone, US, good LTE.
-- **Device run protocol** (R2 AR-30). Every timing, memory and battery row on a device uses one protocol: phone unplugged, brightness fixed at 50%, room temperature, `ProcessInfo.thermalState` nominal at the start, 2 minutes idle between runs. Report p90 of cold runs and, separately, p90 of the fifth back-to-back run. Battery comes from Instruments Energy Log or MetricKit, not `batteryLevel` deltas.
+- **Device run protocol** (R2 AR-30). Every timing, memory and battery row on a device uses one protocol: phone unplugged, brightness fixed at 50%, room temperature, `ProcessInfo.thermalState` nominal at the start, 2 minutes idle between runs. Report p90 of cold runs and, separately, p90 of the fifth back-to-back run. Battery method (R8 R2A-22): a scripted run of 20 letters (or the row's stated work) on the SE 3 under this protocol, phone at 100% and unplugged, with `UIDevice.batteryLevel` read before the first and after the last item (battery monitoring on); the budget is the drop divided by the number of items. The level may move in coarse steps [A: the step size is recorded in the first device run], so each row's run is long enough that its total budget is several steps (20 letters at 2% each is 40 points); a row whose total stays under three steps reports "under the measurable step" and passes. Instruments Energy Log and MetricKit are used to explain a miss, not as the gate number, because they report an impact level and daily aggregates rather than percent of battery.
 - **Labels** follow `_AUTHORING.md` section 6: [F] fact with a source, [A] assumption with a validation route, [D] founder decision, [R] recommendation. A budget marked [A] is a target we set; the first device run either confirms it or the owner proposes a new number in a pull request that edits this file.
 
 ## 1. What changed from PRD 1.3 section 7
@@ -23,7 +23,7 @@ Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with D-073, D-068 and AD
 | Kill during save | 500 iterations, zero loss | 500 Simulator plus 50 SE 3 iterations, zero loss; plus kill while recording (50 of 50 rows, 49 of 50 playable), typed kills (100) and Review kills (100 of 100) | F04-REQ-024, F04-REQ-011, F06-REQ-036 |
 | Server classes | Included store notification processing, entitlement after store success, Storage upload start, server transcription gateway, escrow unwrap, notice scheduler | Removed: store notifications, server entitlement, transcription gateway. Storage upload start and escrow unwrap return with the owner's encrypted backup (D-073; F08 section 6.5; budgets in section 4). Added: `sync_push`, `sync_pull`, public config and manifests (ADR 0017 classes). Plus usable p95 2 s after Apple's sheet closes, measured on the device | B2, D-073, B15, F16 section 9, C-NFR-002 Rev |
 | Error budget | Server 5xx under 0.1% per endpoint class per day | Under 0.1% per endpoint class over 28 days, judged only after 1,000 events | TDD 06 CR-7; F16 section 9 |
-| Crash-free source | Consenting users plus TestFlight and App Store Connect | App Store Connect and Xcode Organizer are the gate source; Sentry is for diagnosis | TDD 06 P-7 |
+| Crash-free source | Consenting users plus TestFlight and App Store Connect | App Store Connect and Xcode Organizer are the gate source; Sentry only if F18 Q2 adds it (not in `apps/mobile/package.json` on 15 Oct) | TDD 06 P-7; R8 R2A-28 |
 | Sync | Included web-page letters to pending (p95 60 s) and backed-up audio restore | Web-page letters move to v1.1 (F37). Restore of the owner's backed-up audio is v1.0 (D-073): 20 recordings in 10 minutes on Wi-Fi (F08-REQ-023) | B1, D-073 |
 | Load targets | 2.2 members per family, audio uploads, store webhooks, notice emails | Replaced by F16 section 9: 1.5 accounts per family, no store webhooks, owner backup uploads with a first-enable burst, escrow, and the D-080 status report (F14 owns its number) | B1, B2, D-073, D-080 |
 | Database size at 100k | About 150 GB | About 290 GB, or about 120 GB if `stt_meta` stays on the device | TDD 06 section 3.4; F16 Q3 |
@@ -53,7 +53,7 @@ Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with D-073, D-068 and AD
 | Metric | Budget | How measured | Gate | Source |
 |---|---|---|---|---|
 | Tap Speak to microphone live | p95 500 ms | Perf build: tap to first non-silent metering sample, 200 taps | Yes | F04-REQ-023 |
-| Local save commit, 2-minute take (row plus fsynced audio plus hash) | p95 200 ms | Perf build marker around the transaction | Yes | DATA-REQ-048; F04 section 9 |
+| Local save commit, 2-minute take (row plus a closed audio file whose size is read back plus its SHA-256) | p95 200 ms | Perf build marker around the transaction | Yes | DATA-REQ-048; F04 section 9. No fsync: `recorder.ts` on `develop` says expo-file-system has none and AVAudioRecorder closing the file hands it to the OS. The forced-reboot case in DL-01 (F04-REQ-048) is what proves survival; if it loses a file, F04 adds `F_FULLFSYNC` in the `ScribeAudio` module and this row gains it back (R8 R2A-19) |
 | Finish to Review on screen, 2-minute take | p95 400 ms | Perf build marker | No | F04 section 9 [A] |
 | Finalize a 30-minute take (about 14.4 MB) | p95 1.5 s | Perf build marker | No | F04 section 9 [A] |
 | Typed autosave | Written 500 ms after the last keystroke; immediately on `inactive` or `background` | Unit test plus typed kill run | Yes | F04-REQ-011 |
@@ -106,7 +106,7 @@ Status: Draft V2, 3 Oct 2026; reconciled on 13 Oct 2026 with D-073, D-068 and AD
 
 ## 3. Server latency by endpoint class (B15)
 
-Every endpoint in v1.0 meets all of B15: a p95 budget, an auth check, safe under retries, a rate limit, content-free logs, a request id, user JWTs only (no service key in the app), typed and versioned contracts in `packages/api` (new, WP-F16-01), one US region. Measured at the client, US, good LTE, in the load test at the section 14 loads (p99 needs 1,000 samples).
+Every endpoint in v1.0 meets all of B15: a p95 budget, an auth check, safe under retries, a rate limit, content-free logs, a request id, user JWTs only (no service key in the app), typed and versioned contracts in `packages/api` (new, WP-F16-01), one US region. Measured at the client, US, good LTE, in the G4 load run at the section 16 loads (p95 always; p99 only where 1,000 or more samples exist).
 
 | Class | Endpoints in v1.0 | p95 | p99 | Auth | Retry safety | Rate limit | Gate | Source |
 |---|---|---|---|---|---|---|---|---|
@@ -115,12 +115,12 @@ Every endpoint in v1.0 meets all of B15: a p95 budget, an auth check, safe under
 | Sync pull | `sync_pull(p_since, p_limit)` (built), up to 500 rows per call | 300 ms per page | 800 ms | User JWT; `require_user()`; others' rows only through `book_entries` and membership helpers (no `book_access` in v1.0, D-055; R2 AR-03) | Read | 120 per user per minute through `rate_hit` | Yes | F16 section 9 |
 | Read RPC | `my_sync_gate`, `policy_actions_needed`, member list | 300 ms | 800 ms | User JWT | Read | 60 per user per hour | Yes | F16 section 9; PRD 1.3 7.2 |
 | Write RPC | `create_child`, `create_first_run_children`, `create_child_invite`, `accept_child_invite`, `leave_child`, `undo_parent_join`, `delete_entry`, `restore_entry`, `record_policy_act` | 500 ms (`record_policy_act` 300 ms) | 1.2 s | User JWT | Client id, invite id or naturally idempotent | Invites 20 per parent and per book per day; deletes 120 per user per hour; children 20 per user per day | Yes | F16 section 9; F11 section 9; B-NFR-004; F02 section 9 |
-| Edge Function, light | `invite-redeem`, `apple-token`, `push-send` (new, F11), `escrow` (new, F08) | 600 ms | 1.5 s, cold start included | User JWT (`push-send` is service-only) | Invite id; token write is upsert; escrow per request id | Code entry 10 failures per device per hour, 1,000 per hour globally; escrow 3 new-device restores per account per 30 days and 20 opened keys per day (F08 6.5 C) | Yes | PRD 1.3 7.2; F11-REQ-007; F08-REQ-029 |
+| Edge Function, light | `invite-redeem`, `apple-token`, `push-send` (new, F11), `account-stop` (new, F02 and F08); `escrow` (new, F08) runs alone in the separate `scribe-escrow` project (F08 6.5 G2) | 600 ms | 1.5 s, cold start included | User JWT (`push-send` is service-only) | Invite id; token write is upsert; escrow per request id | Code entry 10 failures per device per hour, 1,000 per hour globally; escrow 3 new-device restores per account per 30 days and 20 opened keys per day (F08 6.5 C) | Yes | PRD 1.3 7.2; F11-REQ-007; F08-REQ-029 |
 | Backup write RPC | `backup_begin`, `backup_confirm`, `backup_store_key` (new, F08) | 500 ms | 1.2 s | User JWT; caller is author and a parent of the book | Entry id | 600 `backup_begin` per account per hour; 5 GB per account | Yes for backup | F08 6.5 F; R2 AR-11 |
 | Storage upload | Resumable upload of one backup object (at most 20 MB) to `entry-audio` | 2-minute letter on Wi-Fi in 10 s [A] | n/a | User JWT; insert policy needs a matching `pending` row | Resumes from the last part | Bucket object limit 20 MB | No | F08 section 9 |
 | Status report write | D-080 report (F14 owns the endpoint) | 500 ms | 1.2 s | User JWT | Per (profile, subscription reference) | F14 | Yes | R2 AR-13, AR-15; F14 |
 | Push send | `push-send` to APNs | 60 s from the letter reaching the server to the APNs request, p95 [A] | n/a | Service only | Collapse per author and book | One per author per book per 2 hours | No | F11 section 9 |
-| Email batch | Reminder emails (F14) and new-device emails (F02) through Resend | New-device email within 2 minutes p95 [A]; reminder batch of 1,000 within 1 hour [A] | n/a | Service only | Per notice id | Resend plan limits | No | F02-REQ-017; F14 |
+| Email batch | Reminder emails (F14), new-sign-in emails (F02, queued by the server when it first sees an Auth session, never by the client) and recovery-key emails (F08) through Resend | New-sign-in email within 2 minutes p95 of the session's first token [A]; reminder batch of 1,000 within 1 hour [A] | n/a | Service only | Per notice id | Resend plan limits | No | F02-REQ-017; F14 |
 | Public config and manifests | Signed remote config (D-068, ADR 0016; D-035's table is superseded), content bundle, pack manifest | 300 ms | n/a | Publishable key only | Read; ETag and long cache | CDN | Yes | B14, B15; F16 section 9 |
 | Model and pack files | Speech model, language packs | First byte 1 s [A] | n/a | None (public files, no user id, cookie or query string) | HTTP Range resume | Host limits | No | F05 section 7; D-046 |
 
@@ -134,7 +134,7 @@ Every endpoint in v1.0 meets all of B15: a p95 budget, an auth check, safe under
 
 | Metric | Budget | How measured | Gate | Source |
 |---|---|---|---|---|
-| Letter saved on one phone visible on the co-parent's phone, both in the foreground with the book open | p95 30 s, p99 60 s (Rev of PRD 7.3's p95 5 s, which polling cannot meet; R2 AR-14) | Load-test freshness probe with two synthetic clients in one book; two-phone script on device | Yes | F16-REQ-017; F16 Q2 (Realtime in v1.1) |
+| Letter saved on one phone visible on the co-parent's phone, both in the foreground with the shared book open and online; clock from the save tap on phone A to the row rendered on phone B | p95 30 s, p99 60 s (Rev of PRD 7.3's p95 5 s, which polling cannot meet; R2 AR-14). Passable by construction: with a 15 s pull for shared books, the parts at their own p95 (debounce 2 s, push 0.8 s, wait 14.25 s, pull 0.3 s, apply 0.3 s) add to about 17.7 s (R8 R2A-11) | Two-client freshness probe in the G4 load run, 200 or more letters; two-phone script on device | Yes | F16-REQ-017; F16 6.2 C; F16 Q2 (Realtime in v1.1) |
 | Same, other phone in the background | At its next foreground pull | Two-phone script | No | F16 6.2 C |
 | Hide book, delete letter, take-out, leave reach every member device | Within one sync; p95 60 s online | Load-test probe; F16-REQ-009 | Yes | B-REQ-014; LEGAL-REQ-032 |
 | New phone: book list and children visible after sign-in | p95 10 s | Lab, LTE | Yes | PRD 1.3 7.3; F11 section 9 |
@@ -145,7 +145,7 @@ Every endpoint in v1.0 meets all of B15: a p95 budget, an auth check, safe under
 | Queued ops never dropped | 100% reach the server or `rejected_writes`; 99.9% within 5 minutes of connectivity | Load scenario S4; chaos suite (WP-F16-11) | Yes | DATA-REQ-043; TDD 06 section 2.2 |
 | Data per active user per month | Under 5 MB | Network capture over a scripted month | No | F16 section 9 [A] |
 | Kill switch `killSwitches.sync` | Honoured within 5 minutes on active clients; outbox kept | Staging drill per release, with F19-REQ-026's cache numbers | Yes | F16-REQ-018; LEGAL-REQ-040; R5 EQ-17 |
-| Watermark stall | `statement_timeout` 15 s and `idle_in_transaction_session_timeout` 30 s for app roles; alert when the oldest running transaction is over 30 s | DB test with a held transaction; alert drill | Yes | F16-REQ-027; R2 AR-14 |
+| Watermark stall | App roles keep the platform `statement_timeout` default and get `idle_in_transaction_session_timeout` 30 s; purge, rotation, retention and backfill jobs commit in batches under 1 s; alert when the oldest running transaction of any role is over 30 s | DB test with a held transaction; batch test on the purge worker; alert drill | Yes | F16-REQ-027; R2 AR-14; R8 R2A-23 |
 | Word conflict between two devices of one author | Neither version lost; the author sees the note (built protocol is last writer wins today: P0 gap, WP-F16-14 and -15) | Two-phone conflict test | Yes | F16-REQ-010 |
 
 ## 5. Offline
@@ -167,7 +167,7 @@ Every endpoint in v1.0 meets all of B15: a p95 budget, an auth check, safe under
 
 | Metric | Budget | How measured | Gate | Source |
 |---|---|---|---|---|
-| Crash signatures on the release candidate (G4) | Zero unresolved crash signatures across beta C1 and the device scripts, over at least 300 sessions on the RC build [A]; every signature seen on an earlier build is fixed or explained in writing | TestFlight crash reports, Xcode Organizer, device script logs | Yes (G4) | R2 AR-26: a percentage cannot be read from a 16-day beta of a few families (one crash in about 500 sessions moves it by 0.2 points) |
+| Crash signatures on the release candidate (G4) | Zero unresolved crash signatures across beta C1 and the device scripts, over at least 300 sessions on **RC-equivalent builds** [A]; every signature seen on an earlier build is fixed or explained in writing. A build is RC-equivalent when its native fingerprint equals the RC's [A: S20 picks the `expo-updates` runtime version or an `@expo/fingerprint` hash in WP-F16-19's CI job] and its JavaScript diff from the RC touches no file outside copy and content (`packages/content/**`, feature `copy.ts`). C1 families get the freeze build at T29, so sessions accrue from 14 Dec to the C1 exit on 7 Jan: 15 families at about 2 sessions a day (R8's own rate) for 24 days is about 720, or about 500 if the two holiday weeks run at half. Device-script sessions count too. A native change after T29 restarts the count at that build; if fewer than 300 have accrued by T34, the founder records the number and decides (Q8) | TestFlight crash reports, Xcode Organizer, device script logs, the fingerprint per build | Yes (G4) | R2 AR-26: a percentage cannot be read from a short beta of a few families (one crash in about 500 sessions moves it by 0.2 points); R8 R2A-12: the RC alone gets about 90 sessions between T33 and T35 |
 | Crash-free sessions | 99.8% or more | App Store Connect and Xcode Organizer for the build (all users who share diagnostics) | Yes as the G5 post-release gate, read after 1,000 sessions; watched before that | PRD 1.3 7.5; TDD 06 P-7 |
 | Crash-free users, 7 days | 99.5% or more | Same | G5, as above | PRD 1.3 7.5 |
 | Jetsam (memory-limit) exits during transcription | 0 in 30 SE 3 runs per passed language; 0 per release in MetricKit exit reasons | Lab plus Organizer | Yes | F05 section 9; TDD 06 section 7.2 |
@@ -176,7 +176,7 @@ Every endpoint in v1.0 meets all of B15: a p95 budget, an auth check, safe under
 | Auth success per method, excluding cancels | 97% or more weekly; alert below 93% | Server auth logs, counts only | No (operating SLO) | A-NFR-013; F02-REQ-015 |
 | Unclean exits | Counted in on-device diagnostics | Local ring buffer, attached to a support request only by the user | No | TDD 06 section 5.1 |
 
-Sentry receives scrubbed crashes from consenting users only and is used for stack traces, never as the gate source (LEGAL-REQ-003; TDD 06 section 2.2).
+If F18 Q2 adds Sentry (its default is no Sentry, and it is not in `apps/mobile/package.json` on 15 Oct), Sentry receives scrubbed crashes from consenting users only and is used for stack traces, never as the gate source (LEGAL-REQ-003; TDD 06 section 2.2; R8 R2A-28).
 
 ## 7. Durability
 
@@ -196,12 +196,12 @@ Durability is an invariant, not a budget. "Letters or recordings lost or silentl
 | Sync conflicts | Two devices editing one letter offline: neither version lost; the author sees the note | Chaos suite and the two-phone test (WP-F16-11); fails on today's code by design until WP-F16-14 and -15 merge | Yes | F16-REQ-010; DATA-REQ-043 Rev |
 | Backup is never the only copy deleted without a prompt | Turning backup off or deleting the account with recordings only in backup shows the count and Bring them here first | Unit plus device | Yes for backup | F08-REQ-035; R2 AR-09 |
 | Backup restore after a database restore | The restore drill includes one escrow restore end to end and the client's re-check of uploaded objects | BL-247 drill | Yes for backup | F08-REQ-031; R2 AR-07, AR-08 |
-| Restore drill | Database restored to a scratch project with its function secrets and Storage buckets copied, ledger replayed, `sync_begin_epoch` called, two synthetic devices reconciled: zero own rows deleted locally; others' rows kept 30 days as waiting | BL-247, WP-F16-08; quarterly and before the first non-founder family | Yes | DATA-REQ-030, DATA-REQ-031; F16-REQ-012; TDD 06 section 6.3 |
+| Restore drill | In staging with synthetic Asha families: database restored to a scratch project, main-project function secrets set and Storage buckets copied, `escrow_svc` recreated and the drill escrow key used (the production escrow secret is never copied, F08 6.5 G5), every ledger kind replayed (F16 6.2 F step 2a), `sync_begin_epoch` called, two synthetic devices reconciled: zero own rows deleted locally; others' rows kept 30 days as waiting; a deleted account's backup, held-draft, push and status rows stay gone. A drill on production data deletes its scratch project within 24 hours and writes `ops.audit_log` rows for the restore and the deletion | BL-247, WP-F16-08; quarterly and before the first non-founder family | Yes | DATA-REQ-030, DATA-REQ-031; F16-REQ-012, F16-REQ-031; TDD 06 section 6.3; R8 R2A-16, R2A-17 |
 | Durability drill (device) | iCloud device backup restored to a second phone brings back letters, recordings and the Recently deleted shelf with its dates; letters past day 30 are erased at first launch with no orphan reappearing; export ZIP re-read; when the owner's backup is on, sign-in on a new phone restores every recording with equal hashes | BL-284, DEVICE_TEST_PLAN DL-03 and DL-04, every release candidate | Yes | D-033; D-073; D-085; BL-284 |
 | Server RPO and RTO | Postgres RPO 24 h (daily backup, PITR off at launch); RTO 4 h | Restore drill timing | Yes (drill) | DATA-REQ-030, DATA-REQ-031; TDD 06 section 6.1 |
 | Integrity scrub | Hashes of audio and raw text checked after update and weekly; a mismatch is shown, never silently repaired | Unit plus device | Yes | DATA-REQ-046 |
 
-**Audio durability at v1.0.** Recordings live on the author's phone in Documents, inside the iPhone's own backup (D-033); speech models, packs and listening copies are excluded from backup. D-073 and M16 add an encrypted backup of the owner's own recordings in v1.0, with a recovery key we hold under logged, rate-limited use (F08 section 6.5); it is not built. For an owner who has not turned it on, the keep-safe card points to export and the person's own device backup (C-REQ-018 Rev), and a lost phone without a device backup loses the recordings not exported (09 R-11).
+**Audio durability at v1.0.** Recordings live on the author's phone in Documents, inside the iPhone's own backup (D-033); speech models, packs and listening copies are excluded from backup. D-073 and M16 add an encrypted backup of the owner's own recordings in v1.0, with a recovery key we use only through a rate-limited recovery service that logs every use and emails the owner (F08 section 6.5); it is not built. Erasing a backed-up letter or letting a backed-up held draft go removes its backup object by exact path (F08-REQ-024, F08-REQ-043). For an owner who has not turned it on, the keep-safe card points to export and the person's own device backup (C-REQ-018 Rev), and a lost phone without a device backup loses the recordings not exported (09 R-11).
 
 ## 8. Accessibility
 
@@ -242,12 +242,12 @@ Cut order 5 (`05-feature-map.md` section 5) may move Increase Contrast variants 
 
 | Metric | Budget | How measured | Gate | Source |
 |---|---|---|---|---|
-| Transcription battery, 2-minute letter | 2% or less, averaged over 20 or more letters | Instruments Energy Log or MetricKit under the section 0 device protocol (R2 AR-30) | Yes | F05-REQ-040; TDD 06 section 7.2 |
-| Recording battery, 10-minute take | 2% or less | 10 takes, averaged | No | F04 section 9 [A] |
-| Listening copy battery | 0.5% or less per 10 audio minutes | 10 runs, averaged | No | F08 section 9 [A] |
+| Transcription battery, 2-minute letter | 2% or less, averaged over 20 or more letters | Section 0 battery method (20 letters) under the device protocol (R2 AR-30, R8 R2A-22) | Yes | F05-REQ-040; TDD 06 section 7.2 |
+| Recording battery, 10-minute take | 2% or less | Section 0 battery method, 10 takes | No | F04 section 9 [A] |
+| Listening copy battery | 0.5% or less per 10 audio minutes | Section 0 battery method, 10 runs | No | F08 section 9 [A] |
 | Listening copy job, 2-minute letter | 10 s or less | WP-F08-01, 30 runs | Yes once measured | F08 section 9 [A] |
 | Background work | None of our own except OS-granted sync time and local notifications; transcription is foreground only; no location, no polling | Code review; Energy Log | Yes | PRD 1.3 7.7; F05-REQ-013; F13 section 9 |
-| Idle drain from the app | 1% per day or less | 24 h idle, Energy Log | Yes | PRD 1.3 7.7 |
+| Idle drain from the app | 1% per day or less | 24 h idle, section 0 battery method against a control day with the app removed; Energy Log to explain a miss | Yes | PRD 1.3 7.7 |
 | Thermal | No transcription start at `critical`; pause between chunks at `serious`; 2 threads in Low Power Mode | Unit plus Instruments | Yes | F05-REQ-015 |
 | Memory while recording | Under 40 MB above idle | Instruments, 10-minute take | No | F04 section 9 [A] |
 | Idle memory after first run | Under 150 MB resident | Instruments | No | TDD 06 section 7.2 [R] |
@@ -320,20 +320,23 @@ All rows are gates unless marked. Each names the automated check that proves it;
 | Nothing leaves the phone before consent: fresh install to first letter, Keep the book and reminder prime makes zero requests to PostHog or Sentry and queues nothing on disk | E2E with proxy and container scan | LEGAL-REQ-003; PRD-REQ-016 |
 | No content row accepted before Terms with `age_attested` and sensitive-data consent | Server raises `SCCON`; consent tests | LEGAL-REQ-001, LEGAL-REQ-006; F02-REQ-010 |
 | No plaintext audio, listening copy or photo bytes in any request | Network capture of the full E2E suite: zero audio bodies with backup off; with backup on, only AES-GCM ciphertext to the `entry-audio` bucket | D-073; F08-REQ-018; F08-REQ-020; F16-REQ-014 |
-| Purchase data reaches our server only as the D-080 and D-081 status report, by allowlist (R4 PT-07): exactly the fields D-080 and D-081 name (plan, trial end, renewal date, cancelled flag, the consent facts on first report, and F14's hashed subscription reference), to one endpoint, typed in `packages/api` | A schema test fails on any extra field; CI grep and the sandbox network capture find zero receipts, JWS, transaction ids in clear, prices or `appAccountToken` in any request | B2 as amended by D-080, D-081 (M6); F14-REQ-014 |
+| Purchase data reaches our server only as the D-080 and D-081 status report, by allowlist (R4 PT-07): exactly the fields D-080 and D-081 name (plan, trial end, renewal date, cancelled flag, the consent facts on first report, F14's hashed subscription reference, and the `environment` field F14-REQ-043 requires; R8 R2A-21), to one endpoint, typed in `packages/api` | A schema test fails on any extra field; CI grep and the sandbox network capture find zero receipts, JWS, transaction ids in clear, prices or `appAccountToken` in any request | B2 as amended by D-080, D-081 (M6); F14-REQ-014 |
 | Safety tiers stay on the device; no `safety_events` table; no tier in any request or event | Migration check (the table is dropped in `20261002020000_data_governance.sql`); proxy body scan | LEGAL-REQ-015 |
 | No voiceprints, diarization or voice synthesis; `translate` false; `tdrzEnable` absent | Config lint | LEGAL-REQ-019; F05-REQ-009 |
 | Postgres never echoes content in errors | Value-free validation trigger on content tables; oversize-letter canary | F16-REQ-020; TDD 06 C-2 |
 | Rate limits enforced in RPCs and Edge Functions (section 3) | Unit and DB tests per limit | B15; F16-REQ-021 |
 | Kill switches (every `killSwitches.*` key in F19 section 6.5 and `forceReauthEpoch`) take effect within 5 minutes; local recording, reading and export keep working | Staging drill per release candidate with F19-REQ-026's cache numbers | LEGAL-REQ-040; F19-REQ-006 |
-| The escrow private key is referenced only by the `escrow` function; escrow is not deployed before BL-347 and the new-device email | Release check over `supabase/functions/**`; deploy checklist | F08-REQ-034; R4 PT-03 |
-| No outside sign-in before the security gate | F02-REQ-024 checklist signed by the founder before the build reaches anyone outside the founding family | M14; 09 R-17 |
+| The escrow private key runs only in the separate `scribe-escrow` project, alone with the `escrow` function; `escrow_svc` can execute only the four escrow functions; escrow is not deployed before BL-347 and the server-driven new-sign-in email | Management API release check over both projects, `escrow_svc` grant test, no-remote-import check, deploy checklist (F08 6.5 G3) | F08-REQ-034; R4 PT-03; R8 R2A-02 |
+| The recovery-key log is append-only, copied daily outside database backups, and each use emails the owner | Trigger test, daily-copy test, email test | F08-REQ-042; R8 R2A-01 |
+| A new Auth session always produces the new-sign-in email, whatever the client sends; data RPCs refuse a session the server has not recorded | Test with a client that never registers a device: email queued and `sync_pull` works only after the session row exists | F02-REQ-017, F02-REQ-025; R8 R2A-06 |
+| Links in security emails act only on a button press, never on load | Scanner simulation that loads the page, runs scripts and follows links: zero cancellations, zero sign-outs | F02-REQ-017, F08-REQ-042; A-REQ-023; R8 R2A-08 |
+| No outside sign-in before the security gate | F02-REQ-024 is the only checklist; 08 T16 and 09 R-17 cite it (R8 R2A-27). Signed by the founder before the build reaches anyone outside the founding family | M14; 09 R-17; F02-REQ-024 |
 | Staff access claims match what is logged | The staff-access line says only what F17 8.2 item 6 proves; database audit of service-role and dashboard sessions before C1 | F17-REQ-027; R4 PT-03 |
 | Packs and models load only after SHA-256 matches a signed manifest; a bad signature, unknown schema or lower version is rejected and the last good copy stays | Tampered, unsigned and rolled-back fixtures | F05-REQ-018; B13 |
 | Server-driven content never changes data collection or the paywall; flags only switch reviewed features | Schema test on every block type; review checklist | B14; App Review 2.3.1 (R4 section 0 item 8) |
 | Device data protection at least "complete until first user authentication" on the database and audio | Device check of file attributes | LEGAL-REQ-022; PRD 1.3 7.10 |
 | Photo location stripped | Not applicable at v1.0 (no photo capture, F46); binds when photos return | LEGAL-REQ-013 |
-| External penetration test | A scoped external test of auth and email links, RLS and pull parity, invites, escrow and deletion before App Review submission (gate); the full test before the public TestFlight link, paid marketing or 1,000 families, whichever is first | BL-313; R4 PT-21 |
+| External security test (one position, R8 R2A-13) | A scoped external test of auth and email links, the Stop page, RLS and pull parity, held drafts, invites, escrow isolation and deletion, run on staging from Mon 23 Nov to Fri 4 Dec (between T23 and T27), with two fenced fix slots in wave 3. Backup does not turn on for C1 families (T27) while a high finding on escrow or deletion is open. The report is a G4 input. The full test runs before the C2 public link, paid marketing or 1,000 families, whichever is first. Default awaiting the founder's approval of the cost at T15 (not yet quoted); if the founder declines, submission goes without an outside test and 09 records it as a risk the founder accepted | BL-313; R4 PT-21; R8 R2A-13 |
 
 ## 13. Data classification
 
@@ -342,11 +345,12 @@ The four levels and handling floors in PRD 1.3 section 7.10 stay as written, wit
 | Change | Why |
 |---|---|
 | Purchase records (`store_subscriptions`, `store_notifications`, `app_account_tokens`) leave the L3 list; the tables are dropped (F14-REQ-012). Plan state on the device is L2 local settings (F14-REQ-005) | B2 |
-| The "client-encrypted before upload" floor for L4 audio binds at v1.0 with the owner's backup (D-073): AES-256-GCM on the phone, one book key per (child, author) in the Keychain, an escrow wrap that only the `escrow` function can open, with logged and rate-limited use (F08 section 6.5, ADR 0006 as amended, LEGAL-REQ-023, M16). No photo leaves the phone | D-073 |
+| The "client-encrypted before upload" floor for L4 audio binds at v1.0 with the owner's backup (D-073): AES-256-GCM on the phone, one book key per (child, author) in the Keychain, an escrow wrap that only the `escrow` function in the separate escrow project can open, with logged, emailed and rate-limited use (F08 section 6.5, ADR 0006 as amended, LEGAL-REQ-023, M16). No photo leaves the phone | D-073 |
 | New L1 rows: speech manifest, model and pack files, `speech_assets` rows, content blocks and remote config | F05 section 8; B14 |
 | New L4 rows: listening copies, `entries.language`, author edit layer, locked spans, transcript versions; new L3 row: `entries.listening_uri` | F08 section 8; F04 section 8; F06 |
 | `sync_op_receipts` (op id, profile, 30 days) is L2 with an L3 profile id; `sync_epochs` L2; `sync_rate_windows` L2 with an L3 profile id | F16 section 8 |
-| New backup rows: `audio_blobs` (L4 secret wrapped), `child_keys` (L4 secret wrapped), `backup_devices` (L3), `escrow_unwraps` (L3), the `entry-audio` bucket (ciphertext of L4) and the Keychain items (L4 secret) | F08 section 8 |
+| New backup rows: `audio_blobs` (L4 secret wrapped), `child_keys` (L4 secret wrapped), `backup_devices` (L3), `escrow_unwraps` (L3), `restore_requests` (L3), stop-link tokens (L3, hashed), the `entry-audio` bucket (ciphertext of L4) and the Keychain items (L4 secret) | F08 section 8 |
+| New rows from round 2: `held_drafts` (L4, author only, F16 6.2 I); `account_sessions_seen` (L3, F02-REQ-025) | F16, F02 |
 
 Enforcement stays as PRD 1.3 7.10 items 1 to 9, with two notes: item 1 points at `docs/legal/data-policy.md` section 4 until BL-016 makes `docs/legal/data-map.yaml` canonical (the YAML file does not exist yet); item 6 (server-built exports expire in 7 days) has no v1.0 path because exports are built on the phone.
 
@@ -357,11 +361,11 @@ No entry text, transcript, audio, child name, language name or person id in any 
 | Signal | Who it covers | What it answers | Gate | Source |
 |---|---|---|---|---|
 | App Store Connect and Xcode Organizer (MetricKit aggregates) | Users who share diagnostics with developers | Crash rate (gate source), launch time, hangs, memory exits, battery | Gate source for section 6 | TDD 06 section 5.1 |
-| Sentry (mobile) | Consenting users only; started after first frame | Stack traces; `sendDefaultPii: false`; no `setUser`; PostgREST errors reduced to SQLSTATE and HTTP status | Scrub tests gate | LEGAL-REQ-003; TDD 06 section 5.4 |
+| Sentry (mobile), only if F18 Q2 adds it | Consenting users only; started after first frame | Stack traces; `sendDefaultPii: false`; no `setUser`; PostgREST errors reduced to SQLSTATE and HTTP status | Scrub tests gate, if Sentry ships | LEGAL-REQ-003; TDD 06 section 5.4; R8 R2A-28 |
 | PostHog | Consenting users only | Journey events from the typed catalogue, L2 only; strings capped at 40 characters | Allowlist tests gate | LEGAL-REQ-017; PRD-REQ-016 |
 | On-device diagnostics ring buffer | Everyone; stays on the phone; the user may attach it to a support request | Unclean exits, queue depth, last sync SQLSTATE, model state, request ids | No | TDD 06 section 5.1; F16 section 9 |
 | Edge Function logs | All server traffic | One typed record per request: function, version, request id, route template, outcome, status, SQLSTATE, duration, counts. No free-text message field | Logger canary test gates | TDD 06 section 5.3 |
-| Server health views and `ops-health` | All | Purge backlog, deletion requests stuck, database size, top queries, rejected writes reported, oldest running transaction (alert over 30 s), escrow unwraps per day (alert on any limit hit), backup bytes per account | No | TDD 06 section 5.5; F16-REQ-027; F08 6.5 C |
+| Server health views and `ops-health` | All | Purge backlog, deletion requests stuck, database size, top queries, rejected writes reported, oldest running transaction (alert over 30 s), escrow unwraps per day (alert on any limit hit), daily escrow-log copy written, restore requests on hold, backup bytes per account | No | TDD 06 section 5.5; F16-REQ-027; F08 6.5 C |
 | Server aggregates | Synced accounts | Accounts, books, letters, co-parent share; never purchase data | No | PRD-REQ-017 Rev; B10 |
 
 Alerts follow TDD 06 section 5.6 with the purchase and webhook rows removed (B2). The founder is the only responder in v1.0; severity 1 and 2 page the phone (TDD 06 section 2.3).
@@ -375,6 +379,7 @@ The target in 03 section 4.4 holds: run cost near $0.02 to $0.10 per family per 
 | Line at v1.0 | 1k families | 100k families | Basis |
 |---|---|---|---|
 | Supabase Pro base | $25 | $25 | [F] R3 section 6.1 |
+| Escrow project `scribe-escrow` (F08 6.5 G2) | About $25 | About $25 | 08 Q7's per-project Pro figure; F08 Q9 |
 | Supabase MAU over 100k (1.5 accounts per family, F16) | $0 | 150k MAU: 50k x $0.00325 = about $163 | [F] price R3 section 6.1; [A] MAU from F16 section 9 |
 | Supabase compute | $0 (included credit, one Micro) | Size by load test; TDD 06 estimates $200 to $400 (Unverified) | TDD 06 section 4.3 |
 | Supabase database over 8 GB | $0 (about 3 GB) | About 290 GB: about $35; about 120 GB if `stt_meta` stays on the device | TDD 06 section 3.4 |
@@ -384,8 +389,8 @@ The target in 03 section 4.4 holds: run cost near $0.02 to $0.10 per family per 
 | Sentry | $0 to $26 | $26 plus overage | [F] R3 section 6.1 |
 | Resend (auth email) | $0 (3,000 a month free) | $20 Pro or more | [F] R3 section 6.1 |
 | Vercel Pro (website, legal pages, `/j`, `/auth/confirm`) | $20 | $20 | [F] R3 section 6.1 |
-| **Total** | **About $45 to $71 a month** | **About $780 to $980 a month, including TDD 06's compute estimate** | arithmetic |
-| **Per family per month** | **About $0.05 to $0.07** | **About $0.01** | arithmetic |
+| **Total** | **About $70 to $96 a month** | **About $805 to $1,005 a month, including TDD 06's compute estimate** | arithmetic |
+| **Per family per month** | **About $0.07 to $0.10** | **About $0.01** | arithmetic |
 
 Not in v1.0 and therefore $0: server transcription (F35), shared voice playback egress (F31), RevenueCat (B2), PowerSync (D-023 decided against for v1.0). The whole table assumes server features are on, as they are for v1.0 (M14, founder, 13 Oct 2026; the release profiles still have them off on 13 Oct, `apps/mobile/src/lib/capabilities.ts`). The cost decision of 3 Oct keeps Supabase paused and free until the first real family's letters reach a server; the $25 Pro base starts that day, which M14 puts at v1.0 launch or the first outside tester who signs in (F08 section 13 Q1). Cost guardrails from TDD 06 section 4.3 apply: billing alerts at 150% of this table in every console and a monthly 15-minute review [R].
 
@@ -399,7 +404,7 @@ Replaced by F16 section 9 (recomputed without contributors, audio uploads, store
 | MAU | 1.5k | 150k | n/a |
 | Concurrent sync clients at peak (5% of MAU) | 75 | 7.5k | 200 at launch gate (kept from 1.3) |
 | Entry writes, peak sustained 15 min | 5 per s | 50 per s | 2x |
-| `sync_pull` calls at peak (one per 30 s per client) | 2.5 per s | 250 per s | 7 per s at launch gate |
+| `sync_pull` calls at peak (one per 15 s per client with a shared book open, the worst case; F16 6.2 C) | 5 per s | 500 per s | 14 per s (200 clients) in the load runs |
 | Write RPCs (invites, leave) | 1 per s | 10 per s | 2x |
 | Encrypted audio uploads, steady state | About 0.1 per s at peak [A] | About 10 per s | 2x |
 | First-enable backup burst | 20 families enabling at once, a year of recordings each (about 480 objects, 230 MB per family) | n/a | k6 scenario (R2 AR-15) |
@@ -411,7 +416,7 @@ Replaced by F16 section 9 (recomputed without contributors, audio uploads, store
 | Database size | About 3 GB | About 290 GB (about 120 GB if `stt_meta` stays on the device, F16 Q3) | n/a |
 | Analytics events (40% consent, 150 per user per month) | About 90k per month | About 9M per month | n/a |
 
-**Gates.** Every section 3 budget holds at these loads. Load test at **2 times the 1k targets** in staging before public launch, with a 4-hour soak at 1x peak (flat p95 within 10%, no growing connections) (gate; BL-282, WP-F16-12, TDD 06 G-L1). Before 10k families: 2x the 10k loads on 10k-equivalent data (TDD 06 G-L2) [R]. Before 25k families: 2x the 100k targets and an 8-hour soak (PRD 1.3 7.8; TDD 06 G-L3). Staging uses synthetic Asha families only (CLAUDE.md).
+**Gates (one position, R8 R2A-14; default awaiting the founder's answer to 08 Q8 at T15).** G4, before App Review submission: a 1-hour run in staging at **1x the 1k peak targets**, including the 20-family first-enable backup burst (the only test of the 600 per hour limit and bucket behaviour), the escrow limit test and the two-client freshness probe; every section 3 budget is read there at p95, and at p99 only where 1,000 or more samples exist. Before the C2 public link, paid marketing or 1,000 families, whichever is first: **2 times the 1k targets** with a 4-hour soak at 1x peak (flat p95 within 10%, no growing connections) (BL-282, WP-F16-12, TDD 06 G-L1). 07 G4 and 08 cite this paragraph. Before 10k families: 2x the 10k loads on 10k-equivalent data (TDD 06 G-L2) [R]. Before 25k families: 2x the 100k targets and an 8-hour soak (PRD 1.3 7.8; TDD 06 G-L3). Staging uses synthetic Asha families only (CLAUDE.md).
 
 ## 17. Feature budgets this file changes, and budgets parked for later
 
@@ -436,8 +441,10 @@ Replaced by F16 section 9 (recomputed without contributors, audio uploads, store
 | Q5 F16 Q5 and TDD 06 C-1: does the Supabase gateway log ids in paths and custom headers, and may it under the DPA? | Privacy counsel, data architect, before beta C1 | Sections 3 and 14 |
 | Q6 F18 analytics volume cap (R3 recommends about 50 events per family) | F18 owner, founder | Section 14 and 15 PostHog line |
 | Q7 Is PITR turned on at launch (about $100 a month, Unverified) to cut the 24 h RPO? | Founder (TDD 06 OQ-4) | Section 7 RPO row |
-| Q8 Minimum session count for the G4 crash-signature gate: 300 [A] | Founder with S19, from C1 numbers | Section 6 |
-| Q9 Freshness: accept p95 30 s for v1.0 and add Realtime in v1.1, or add Realtime now? Spec default: 30 s | Founder | Section 4; F16 Q2 |
+| Q8 Minimum session count for the G4 crash-signature gate: 300 on RC-equivalent builds [A]; what to do if fewer accrue by T34 | Founder with S19, from C1 numbers | Section 6 |
+| Q9 Freshness: accept p95 30 s with a 15 s pull for shared books for v1.0 and add Realtime in v1.1, or add Realtime now? Spec default: 30 s with the 15 s pull | Founder | Section 4; F16 Q2 |
+| Q10 Load gate: G4 is the 1-hour 1x run plus the burst (section 16 default), with the 2x run and soak before C2 or 1,000 families. Confirm, or keep the 2x run before submission | Founder, T15 (08 Q8) | Sections 3, 16; 07 G4 |
+| Q11 External security test: approve the cost of the scoped test on staging from 23 Nov to 4 Dec (section 12 default) | Founder, T15 | Section 12; 08; 09 |
 
 ## 19. Sources
 

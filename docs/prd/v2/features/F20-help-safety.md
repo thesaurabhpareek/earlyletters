@@ -228,6 +228,14 @@ Status: **Built** (file), **Partly built**, **Not built**, checked 13 Oct. **[se
 | F20-REQ-011, F20-REQ-013, F20-REQ-014, F20-REQ-015, F20-REQ-016 | Dry-run record, support log and C1 exit review (operations, not build tests) | Human |
 | F20-REQ-018 | `scripts/` grep in CI over `docs/support/` and `docs/ops/runbooks/` for dashboard content-table steps (new); repo search for admin tools | New |
 
+### Inherited requirements whose home is this spec (round 2)
+
+These IDs were cited in V2 with no definition row (R9 R2D-06). The text is taken from the source named in the last column; that source still governs the full wording. Each P0 row has a work package and a test in section 12.
+
+| ID | P | Requirement | Acceptance criteria | Source |
+|---|---|---|---|---|
+| LEGAL-REQ-057 | P1 | Legal process and preservation through one audited service-role script on counsel's instruction | Given a preservation run, Then the snapshot is access-restricted and an audit row records it | `docs/legal/ENGINEERING_REQUIREMENTS.md` on `develop` LEGAL-REQ-057 |
+
 ## 8. Data, privacy and security
 
 | Data | Level | Where | Who reads | Retention | Never |
@@ -274,12 +282,12 @@ Only for what is missing or partly built.
 |---|---|---|---|---|---|---|
 | WP-F20-01 | Help body lines, mail fallback sheet, tel fallback | Mobile | `apps/mobile/src/app/settings/index.tsx`, feature `copy.ts` | none | `[F20-REQ-005]`, `[F20-REQ-006]`, `[F20-REQ-007]` | Agent |
 | WP-F20-02 | Help and legal rows: How transcription works, 90-day promise | Mobile with F17 | `apps/mobile/src/app/settings/index.tsx` | F17 IA | `[F20-REQ-021]`, `[F20-REQ-008]` | Agent |
-| WP-F20-03 | One crisis resource list | Core, content | `packages/core/src/safety.ts`, `packages/content/src/strings.en.ts`, a new test | none | `[F20-REQ-004]` | Agent |
+| WP-F20-03 | One crisis resource list | Core, content | `packages/core/src/safety.ts`, `packages/content/src/strings.en.ts`, a new test | none | `[F20-REQ-004]`; `[F20-REQ-001]`, `[F20-REQ-002]` | Agent |
 | WP-F20-04 | Runbooks S-1 to S-10 and reply templates | Support lead, counsel for S-1 (billing emails), S-2, S-4, S-5, S-6, S-8, S-9 | `docs/support/runbooks/`, `docs/support/templates/` (new) | Q25, Q27 | `[F20-REQ-011]` files present; `[F20-REQ-010]`, `[F20-REQ-012]`, `[F20-REQ-017]` | Agent then counsel |
 | WP-F20-05 | Content rules over `docs/support/**` | Content | `packages/content/test/rules.test.ts` | WP-F20-04 | `[F20-REQ-010]`, `[F20-REQ-012]` tests green | Agent |
-| WP-F20-06 | Tester welcome note and TestFlight test information | Release owner, founder | `docs/support/testflight-welcome.md` (new); App Store Connect | C0 build | `[F20-REQ-015]` | Pair |
-| WP-F20-07 | Support log format and triage checklist | Support lead | `docs/support/log.md` (new, format only) | none | `[F20-REQ-013]`, `[F20-REQ-014]`, `[F20-REQ-016]` | Agent |
-| WP-F20-08 | Dry runs of S-1 to S-5, S-7, S-8, S-9; name a backup responder | Founder with support lead | Dry-run record in `docs/support/` | WP-F20-04 | `[F20-REQ-011]`: record with 8 rows and the backup's name | Human |
+| WP-F20-06 | Tester welcome note and TestFlight test information | Release owner, founder | `docs/support/testflight-welcome.md` (new); App Store Connect | C0 build | `[F20-REQ-015]`; `[F20-REQ-009]` | Pair |
+| WP-F20-07 | Support log format and triage checklist | Support lead | `docs/support/log.md` (new, format only) | none | `[F20-REQ-013]`, `[F20-REQ-014]`, `[F20-REQ-016]`; `[F20-REQ-018]` | Agent |
+| WP-F20-08 | Dry runs of S-1 to S-5, S-7, S-8, S-9; name a backup responder | Founder with support lead | Dry-run record in `docs/support/` | WP-F20-04 | `[F20-REQ-011]`: record with 8 rows and the backup's name; `[F20-REQ-003]` | Human |
 | WP-F20-09 | `privacy@`, `security@`, live `security.txt` | Founder, web | DNS; website `/.well-known/security.txt` (F21) | none | `[F20-REQ-019]` | Human then agent |
 
 ## 13. Open questions and assumptions
