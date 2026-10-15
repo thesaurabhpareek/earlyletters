@@ -21,7 +21,7 @@ Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were r
 - (15 Oct) Harness workflows pin `actions/checkout` and `actions/setup-node` by SHA; `anthropics/claude-code-action@v1` and `actions/create-github-app-token@v3` are still tag pins.
 - `claude.yml` acts only on `author_association == 'OWNER'`; `isFounderComment` in `scripts/agents/lib.mjs`. (15 Oct) Agent messages and verdicts count only from `isTrusted` authors (#39).
 - (15 Oct) Auth code lives in `apps/mobile/src/lib/auth`; `expo-secure-store` and `@supabase/supabase-js` are `apps/mobile` dependencies. BL-347 and BL-330 fixes are open PR #139 (founder merge).
-- Deep-link scheme is `scribe` (`packages/brand/index.ts:48`).
+- Deep-link scheme is `scribe` (`scheme` in `packages/brand/index.ts`).
 - PR #27 (merged 4 Oct) adds `com.apple.developer.default-data-protection` = `NSFileProtectionCompleteUntilFirstUserAuthentication` in `app.config.ts`.
 - Missing on 3 Oct: `docs/security/threat-model.md`, `security_events` table, `book_access` table. (15 Oct) `SECURITY.md` and `docs/ops/SECRETS.md` arrive with PR #35.
 

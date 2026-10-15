@@ -13,7 +13,7 @@ Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branc
 - `packages/core/tsconfig.json` has `types: []`; analytics, content and design-tokens have `types: ["node"]` (MONO-02).
 - No ESLint or Prettier config anywhere; only `apps/mobile` has a `lint` script (`expo lint`). PR #30 adds a CI lint job that skips until a root `lint` script exists.
 - (15 Oct) CI `required` job (`.github/workflows/ci.yml`) needs install, tests and content rules, `npm run test:db`, the Deno functions job and typecheck.
-- Largest files: `apps/mobile/src/lib/store.ts` (735 lines on 15 Oct; PR #29, merged 4 Oct, routes it through `lib/db` repositories), `packages/core/src/verify.ts` (498).
+- Largest files: `apps/mobile/src/lib/store.ts` (735 lines on 15 Oct; PR #29, merged 4 Oct, routes it through `lib/db` repositories), `packages/core/src/verify.ts` (582 on 15 Oct).
 - (15 Oct) `ENGINE_VERSION = 5` in `packages/core/src/pipeline.ts` (PR #28 merged with the golden corpus).
 - Seeded fuzz pattern: `packages/core/test/verify.fuzz.test.ts`, env `SCRIBE_FUZZ_SEED`.
 - Typed errors exist: `MigrationError` (`apps/mobile/src/lib/db/migrations.ts`), `TranscriberUnavailable` (`apps/mobile/src/lib/transcribe.ts`), `AudioMissingError` (`store.ts`). Untyped: `packages/core/src/age.ts:15` puts the input date in the message (gap CODE-G2).
@@ -26,7 +26,7 @@ Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branc
 ## Decisions and constraints I must respect
 - BRIEF decision 17: p95 budget, auth check, idempotency key, rate limit, request ids, content-free logs, contracts in `packages/api`.
 - BRIEF decision 1: standard over custom. Decision 16: server-driven content is schema-validated blocks only.
-- D-021 two log clocks (24 vs 12 months). D-023 outbox plus `server_seq` cursor (awaits founder). D-035 `app_config` and kill switches. D-003 Sentry only after consent.
+- D-021 two log clocks (24 vs 12 months). D-023 outbox plus `server_seq` cursor (decided by the founder on 3 Oct). D-035 `app_config` and kill switches. D-003 Sentry only after consent.
 - TDD 06 5.3 `OpsLog` schema is the logger allowlist; TDD 02 3.5 is the retry classification.
 
 ## Open threads
