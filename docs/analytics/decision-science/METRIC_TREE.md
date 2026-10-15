@@ -1,6 +1,6 @@
 # Metric tree and North Star
 
-Owner: decision scientist (`decision-science`). Status: Draft 3, 4 Oct 2026 (Draft 2 of 3 Oct plus the v1.0 on-device-only update in 3.0), for founder, PM and analytics engineer review.
+Owner: decision scientist (`decision-science`). Status: Draft 4, 15 Oct 2026 (Draft 3 of 4 Oct, re-checked against `develop` 56ec5b5: no analytics in v1.0, the D-082 membership, the beta dates), for founder, PM and analytics engineer review.
 Inputs: `docs/prd/PRD.md` 1.3 (sections 1, 3.0, 7.8), PRD A, B and C section 1 goals, C sections 8 and 9, `docs/analytics/TRACKING_PLAN.md` Draft 1, `docs/research/USER_RESEARCH.md`, `docs/agents/BRIEF-2026-10-03.md` (decisions 3, 5, 9, 10, 11, 12), `docs/DECISIONS.md` (D-003, D-030, D-036, D-045), `docs/ROADMAP.md` (M12), `docs/tdd/06-performance-reliability.md` 2.1, migrations in `supabase/migrations/`.
 
 Labels: **Fact** (from a repo document, the schema or a cited Apple page), **A** (assumption, to be replaced by observed cohorts), **Decision** (proposed here, reviewable), **Open** (needs an owner), **R-n** (a request in section 7).
@@ -14,10 +14,10 @@ There is no user data yet. Every number in this file is a target, an assumption 
 1. **North Star: Weekly keeping families (WKF)**, the tracking plan's metric with exact counting rules added (section 2). It counts families, not letters, and it counts private letters too, so it never rewards pushing words into the shared book.
 2. **Seven input metrics** map to the goals in PRD A, B and C section 1 (section 3). A parallel **business branch** covers Plus and is never an input to WKF.
 3. **v1.0 scope.** Family at launch is the co-parent only, and a recording plays only on the phone that made it (brief decisions 5 and 9). WKF and every input read at v1.0 use only that behaviour. Contributor, family-letter and hearing-others metrics are kept in a separate v1.1 section (3.5) and are not read until those features ship.
-4. **Guardrails** cover privacy, trust and fidelity, calm (no streaks, no gap counts), free-forever and paywall respect, and reliability (section 4).
+4. **Guardrails** cover privacy, trust and fidelity, calm (no streaks, no gap counts), what stays free and paywall respect, and reliability (section 4).
 5. **Consent bias** is structural, not only statistical: the analytics sheet is the third ask, so device data never contains people who stopped after one or two sessions. Every device number carries a fixed bias statement (section 5).
 6. **Before launch nothing about people is measurable.** The C1 beta (15 to 25 families, A) supports counts with wide intervals and no rate targets. TestFlight purchases run in Apple's sandbox, so no price or conversion data exists until launch (section 6).
-7. **v1.0 is on-device only (founder decision, 3 Oct, brief decision 5 as amended).** There is no sign-in, no sync and no server copy of letters, and co-parent sharing is v1.1. So the server aggregates behind WKF and most inputs (section 1) have no data at v1.0. WKF and the server-read inputs are v1.1 metrics; at v1.0 only ASC and opt-in device numbers exist, always labelled as such (3.0, update of 4 Oct).
+7. **v1.0 is on-device only (founder decision, 3 Oct, brief decision 5 as amended).** There is no sign-in, no sync and no server copy of letters, and co-parent sharing is v1.1. So the server aggregates behind WKF and most inputs (section 1) have no data at v1.0. WKF and the server-read inputs are v1.1 metrics; at v1.0 only App Store Connect numbers exist: v1.0 collects no analytics of its own (#118, decision of 15 Oct 2026; D-088 keeps the App Store label "Data Not Collected"). Device metrics are after-1.0 definitions too (3.0).
 8. **Founder decision 3 (3 Oct) removes every server purchase source.** The tracking plan and PRD-REQ-017 still name RevenueCat and a server purchase ledger. Plus totals must come from App Store Connect reports (R-3, R-9).
 
 ---
@@ -29,7 +29,7 @@ There is no user data yet. Every number in this file is a target, an assumption 
 | **ASC Sales** (App Store Connect Sales and Trends, subscription reports) | First-time App Units: the first "Get" per Apple Account; redownloads and extra devices are not counted (Fact: Apple's metric definition). Every purchase. Whether any of it depends on a user's data-sharing choice is not stated by Apple (Unverified) | Anything inside the app. Cannot be joined to our accounts (decision 3: no server of ours sees purchases) | New users, trials, conversions, Plus mix |
 | **ASC App Analytics, Xcode Organizer** | People who share analytics with developers in iOS settings (Apple's consent; TDD 06 2.1) | Our events; people who said no to Apple | Crash rate, launch time (release gate source, D-003) |
 | **Server aggregates** (BL-024, PRD-REQ-017) | Signed-in accounts that accepted the sensitive-data consent and have synced | Letters kept only on the phone: no account, or sensitive-data consent declined (K-15) | WKF, accounts, books, letters, family, retention, consent split |
-| **Device analytics** (PostHog, opt-in) | People who said yes on the analytics sheet, from that moment on | First run (always), everyone who declined or was never asked | How the product is used inside the app |
+| **Device analytics** (PostHog, opt-in; **none in v1.0**, #118, `capabilities.analytics` off in every v1.0 profile) | From the release after 1.0: people who said yes on the analytics sheet, from that moment on | First run (always), everyone who declined or was never asked | How the product is used inside the app |
 
 Rule (from TRACKING_PLAN 0.5, kept): headline numbers come from server aggregates or ASC Sales only. Device numbers explain behaviour; they never set a headline.
 
@@ -47,7 +47,7 @@ Rule (from TRACKING_PLAN 0.5, kept): headline numbers come from server aggregate
 |---|---|
 | Family | The set of `children` rows connected through `child_members` rows with `role = 'parent'` (a co-parent is `parent`). Computed inside Postgres by the aggregate job; family membership is never stored or exported (Decision). |
 | Kept letter | A `public.entries` row with `kind in ('letter', 'note')` and `deleted_at is null` when the week is computed, in a child whose `deleted_at is null`. |
-| Not counted | `kind = 'not_much'`: the one-tap "Not much today" line is a template (`notMuch.template` in `packages/content`), not the author's words. It is reported as its own weekly count, never added to WKF (Decision). |
+| Not counted | `kind = 'not_much'`: since D-084 the one-tap "Not much today" mark stores no text at all, and D-083 says it is never a letter. It is reported as its own weekly count, never added to WKF (Decision). |
 | Destination | Both count: `in_book = true` and private (`in_book = false`). Private by default is a product principle (B goal 5, B-REQ-011). A North Star that counted only book letters would reward moving private words into the shared book (Decision; differs from TRACKING_PLAN 1.1, see 2.5). |
 | Authors | At v1.0 every author is a parent: the founding parent or the co-parent (`child_members.role = 'parent'`). The app hides the contributor path in v1.0 (brief decision 5). The rule for contributor letters from v1.1 is V11-01 in section 3.5. |
 | Time | `entries.captured_at`, bucketed into ISO weeks, Monday 00:00 to Sunday 24:00 UTC (Decision, A-4). If `captured_at` is later than `created_at` (device clock ahead), use `created_at`. Never `occurred_on`: parents backdate memories on purpose ("Before You", hindsight writing, UR 3). |
@@ -63,7 +63,7 @@ Rule (from TRACKING_PLAN 0.5, kept): headline numbers come from server aggregate
 - **It measures the job.** The product is "a baby memory book families fill by talking" (PRD 1). A family keeping a letter is the value moment; opens, sessions and notifications are not.
 - **It counts families, not letters.** One family writing ten times a week adds one, not ten. That fits C goal 1 (a calm rhythm of 1 to 3 letters a week) and removes any reason to push volume.
 - **It rises with family participation.** At v1.0 a co-parent can keep a family in WKF in a week the first parent does not write. PRD 1 adds that "grandparents write too"; that path is v1.1 (brief decision 5), and then the same holds for them (V11-01).
-- **It cannot be raised by the paywall.** Writing is free forever, so Plus decisions move WKF only through real value.
+- **It is never an input to Plus, and Plus is never an input to it.** Since D-082 (founder, 4 Oct) the first 2 letters are free and keeping more needs Plus, so the paywall can lower WKF: a family that stops at the Keep sheet stops keeping. That is a real cost of the membership model, read through GR-08 and GR-09, never something to optimise WKF around.
 
 Rejected alternatives:
 
@@ -73,7 +73,7 @@ Rejected alternatives:
 | Letters added to the book | Rewards moving private words into the shared book (B goal 5) |
 | Daily or weekly active users, opens | Measures attention, not letters kept; rises with notifications |
 | Books created | A one-time act; says nothing about keeping |
-| Paying subscribers | A business number; the free-forever core is the product's promise (C goal 2) |
+| Paying subscribers | A business number; reading, playing, Read together and export stay free for every kept letter (D-082), and the North Star must not reward the gate (C goal 2) |
 | Minutes recorded | Rewards length; a short letter is a full letter |
 
 ### 2.4 Companion numbers (reported with WKF, never alone)
@@ -139,9 +139,9 @@ So, at v1.0:
 **Update, 4 Oct 2026: v1.0 is on-device only.** After Draft 2 the founder decided that v1.0 ships with no sign-in, no sync and no server copy of letters, and that co-parent sharing, sign-in and sync move together to v1.1 (brief decisions 4 and 5, as amended in PR #33). That is stronger than decision 5 as quoted above, which still allowed a co-parent at v1.0. Consequences for this document:
 
 - **Server aggregates (BL-024, PRD-REQ-017) have no data at v1.0**, because nothing leaves the phone. Every definition in sections 2 and 3 that reads `entries`, `children`, `child_members`, `child_invites` or `profiles` is a **v1.1 definition**, kept as the design for when sync ships. That includes the North Star (WKF, 2.1), its companions, IN-02 (a), IN-03, IN-04, IN-05 (server), IN-06 (a) to (c) and the cohort definitions in 3.2. FV28 and co-parent invites and acceptance (IN-06) need two phones sharing a book, so they are v1.1 as well.
-- **What exists at v1.0:** ASC Sales and App Analytics (new users, trials, conversions, crashes; section 1), and opt-in device analytics (PostHog) among people who consented. The only v1.0 reads of the input metrics are the device-side rows: IN-01 (a), IN-02 (b) is not meaningful with no sign-in, IN-05 device detail and IN-07 (a), (b), (d). IN-01 (b) cannot be computed without server counts of founding parents; use ASC App Units and device counts, labelled.
-- **No v1.0 North Star.** A device-only proxy (consenting devices with a kept letter in the week, from `letter_saved`) may be reported as "among people who opted in", with the four-part bias statement of 5.4. It is never a headline and never called WKF (the rule in section 1 stands: headlines come from server aggregates or ASC Sales only). Whether to accept a device proxy for v1.0, or to run v1.0 with ASC numbers and interviews alone, is a founder decision (Open-5 in section 8).
-- Section 6.1 reads accordingly: in the C0 and C1 columns and "After launch" for v1.0, every cell that depends on a server aggregate reads "v1.1". Plus (BZ) is unchanged, because it already comes from ASC only.
+- **What exists at v1.0:** App Store Connect only: Sales and Trends (App Units, trials, conversions, Plus mix), App Analytics (usage and retention from Apple's own opt-in sample; TDD 06 2.1) and crash rates (section 1). **v1.0 collects no analytics of its own** (#118, decision of 15 Oct 2026, delegated by the founder; `apps/mobile/src/lib/capabilities.ts` keeps `analytics` off in every v1.0 profile, and D-088 keeps the label "Data Not Collected"). So every device-side row is an after-1.0 definition too: IN-01 (a), IN-02 (b), IN-05 device detail, IN-07, BZ-01, GR-05 (a) and (c), GR-07 and GR-08's event check. No input metric has a v1.0 read.
+- **No v1.0 North Star and no device proxy.** v1.0 is read through App Store Connect numbers, support mail and beta interviews alone. This answers Open-5: with no analytics in v1.0, the device-proxy option no longer exists (#118). The rule in section 1 stands: headlines come from server aggregates or ASC Sales only.
+- Section 6.1 reads accordingly: in the C0 and C1 columns and "After launch" for v1.0, every cell that depends on a server aggregate or on device analytics reads "after 1.0". Plus (BZ-02 to BZ-06) is unchanged, because it already comes from ASC only.
 - `docs/DECISIONS.md` (D-023, D-054, D-055), the PRD and the ROADMAP on `develop` still describe co-parent and sign-in at v1.0 and have not been reconciled; this document follows the brief.
 
 ### 3.1 PRD goals to metrics
@@ -183,7 +183,7 @@ PRD.md has no goals section of its own; the goals live in section 1 of each appe
 | IN-03 | Activated writer | First-letter accounts with kept letters on 2 or more distinct UTC dates of `captured_at` in days 0 to 13 / first-letter accounts in the cohort | Server `entries.author_id`, `captured_at` | Set after first cohorts |
 | IN-04 | Active writers and retention | Active writer: account with 1 or more kept letters in the week. Week-4 retention: cohort accounts with a kept letter in days 28 to 34 / cohort size. Month-6 retention: a kept letter in days 150 to 179 / cohort size. Founding parents and joiners are reported apart | Server `entries` | Week 4: 35% or more. Month 6: 20% or more (C section 9, A) |
 | IN-05 | Letters per keeping family, by mode and place | Kept letters / WKF per week. Mode: `entries.capture_mode` (`spoken`, `typed`, `mixed`). Place: `in_book` share. Device detail among consenters: `letter_saved.prompt_kind`, `.words_bucket`, `.audio_bucket`, `.from_notification_2h`. **Device rows may include "Not much today" until R-1** | Server; device `letter_saved` | **No upward target.** The aim is a rhythm (C goal 1), not volume. Book share has no target (B goal 5) |
-| IN-06 | Family voices (v1.0: co-parent only) | (a) FV28 (2.4): at v1.0, two parents wrote. (b) Co-parent invites: books with 1 or more invites with `child_invites.role = 'parent'` created within 30 days of `children.created_at`. (c) Co-parent acceptance: those invites with `accepted_at` not null and `revoked_at` null / those invites created; device `invite_opened` to `invite_accepted{role}` (co-parent value) among consenters. At v1.0 every invite is a co-parent invite, so `invite_opened`, which has no `role`, needs none. Contributor invites, acceptance and family letters (Draft 1 IN-06(b) and (c) by contributor role, and IN-06(d)) are v1.1: V11-02, V11-03, V11-05 | Server `child_invites.role`, `created_at`, `accepted_at`, `revoked_at`; `children.created_at`. Device `invite_created{role, channel}`, `invite_opened{via}`, `invite_accepted{role}`. The device co-parent value is `co_parent` on develop (TRACKING_PLAN) and becomes `parent`, the server value, if PR #31 merges (its catalog sets `INVITE_ROLE` to `MEMBER_ROLE`) | Set after first cohorts |
+| IN-06 | Family voices (v1.0: co-parent only) | (a) FV28 (2.4): at v1.0, two parents wrote. (b) Co-parent invites: books with 1 or more invites with `child_invites.role = 'parent'` created within 30 days of `children.created_at`. (c) Co-parent acceptance: those invites with `accepted_at` not null and `revoked_at` null / those invites created; device `invite_opened` to `invite_accepted{role}` (co-parent value) among consenters. At v1.0 every invite is a co-parent invite, so `invite_opened`, which has no `role`, needs none. Contributor invites, acceptance and family letters (Draft 1 IN-06(b) and (c) by contributor role, and IN-06(d)) are v1.1: V11-02, V11-03, V11-05 | Server `child_invites.role`, `created_at`, `accepted_at`, `revoked_at`; `children.created_at`. Device `invite_created{role, channel}`, `invite_opened{via}`, `invite_accepted{role}`. The device co-parent value is `parent`, the server value: PR #31 is merged and `packages/analytics/src/catalog.ts` sets `INVITE_ROLE` to `MEMBER_ROLE` (checked 15 Oct) | Set after first cohorts |
 | IN-07 | Value moments (device only) | (a) Read together reach: ids with `read_together_started` / ids with `book_opened{member_role: parent}`, 28 days. (b) Finish rate: `read_together_ended{reason: finished}` / `read_together_ended`. (c) Moved to v1.1 as V11-06 (hearing others): no one hears another person's recording in v1.0 (decision 9). (d) Resurfacing: `resurface_opened` / `resurface_shown`, by `kind` | Device only; no server signal (TRACKING_PLAN 1.2 row 6) | Set after first cohorts |
 
 ### 3.4 Business branch: Plus (C goal 2)
@@ -193,7 +193,7 @@ Founder decision 3 (BRIEF 2026-10-03): purchases happen only in Apple's own UI. 
 | ID | Metric | Definition and source | Target (C section 9, A) |
 |---|---|---|---|
 | BZ-01 | Offer reach | Device: consenting active users with `plus_offer_viewed`, by `trigger` / consenting active founding parents, 28 days | Watch |
-| BZ-02 | Trial starts | ASC "Start Introductory Offer" (`Quantity`) by `Subscription Name` per month. The ratio to first-letter accounts is a **period ratio** (ASC trial starts in month M / server first-letter founding parents in months M-2 to M). A cohort version needs a per-account join that decision 3 rules out | 15% of first-letter users by day 90 (cohort target; the period ratio approximates it) |
+| BZ-02 | Trial starts | ASC "Start Introductory Offer" (`Quantity`) by `Subscription Name` per month. Under D-082 the offer appears when a person keeps a third letter, so the natural denominator is people who reach that gate, which ASC cannot see; the ratio below is a proxy. The ratio to first-letter accounts is a **period ratio** (ASC trial starts in month M / server first-letter founding parents in months M-2 to M). A cohort version needs a per-account join that decision 3 rules out | 15% of first-letter users by day 90 (cohort target; the period ratio approximates it) |
 | BZ-03 | Trial to paid | ASC "Paid Subscription from Introductory Offer" / "Start Introductory Offer", by `Subscription Name` and `Subscription Offer Duration`, cohorted by `Original Start Date` month | 40% or more |
 | BZ-04 | Annual share | Active paid subscriptions with the annual `Subscription Name` / all active paid subscriptions. Exact ASC report Unverified | 60% or more |
 | BZ-05 | Refund rate | Refunded / paid transactions per month. Which ASC report carries refunds is Unverified (Open-3) | Under 3% |
@@ -250,13 +250,13 @@ These rules apply to every metric here and to any metric added later (Decision, 
 6. **No metric needs content.** A question that needs words, languages, names, goals or dates is out of scope (TRACKING_PLAN 6.2). For example, transcription quality by language is not measured on the device.
 7. **Hidden books are never read as loss of a customer.** A hidden book (`children.hidden_at`, B-REQ-014) may mark a hard moment. Hide counts are reported only as totals of 10 or more, and nothing is triggered by them.
 
-### 4.4 Free forever, paywall respect and consent
+### 4.4 What stays free, paywall respect and consent
 
 | ID | Guardrail | Definition and source | Threshold |
 |---|---|---|---|
 | GR-07 | Reminder fatigue and usefulness | Fatigue: consenting parents with `reminder_schedule_set{cadence: off}` in the month / consenting parents with an earlier `reminder_schedule_set` with cadence not `off` (R-7). Usefulness: `letter_saved{from_notification_2h: true}` / `reminder_sent{type: letter_reminder}`, with the person as the unit. The numerator may include "Not much today" until R-1 | Fatigue 10% or less; usefulness 12% or more (C section 9, A) |
-| GR-08 | Paywall respect | `plus_offer_viewed` with a `trigger` outside C-REQ-023's set. QA: no offer during first run. From v1.1, when contributors ship: contributors never see an offer (D-036) | Zero |
-| GR-09 | Free forever | No experiment, flag or remote-config change may alter writing, reading, playback, export or family authors (C 4.1; charter). Checked in experiment review, not by an event | Zero |
+| GR-08 | Paywall respect | Since D-082 the one gate is keeping a third letter (`keepLetterGate`, `apps/mobile/src/lib/billing/gates.ts`). After 1.0: `plus_offer_viewed` with a `trigger` outside that gate and the Plan screen. QA, every release including v1.0: no offer during first run, and none before the third kept letter. From v1.1, when contributors ship: contributors never see an offer (D-036) | Zero |
+| GR-09 | What stays free | No experiment, flag or remote-config change may gate reading, playback, Read together, export, deleting or restoring a kept letter, or family authors (D-082; `FreeForever` in `packages/core/src/plan.ts`). The free-letter allowance (`freeLettersAllowance`, 2 under D-082) changes only with a founder decision, never as an experiment arm. Checked in experiment review, not by an event | Zero |
 | GR-10 | Consent is not optimised | The analytics and sensitive-data consent sheets are never an experiment arm. Their copy, timing and order are never tuned to raise acceptance (decision 11; LEGAL-REQ-003: declining changes nothing) | Zero |
 
 ### 4.5 Reliability
@@ -276,6 +276,8 @@ These rules apply to every metric here and to any metric added later (Decision, 
 ---
 
 ## 5. Consent bias: what it is and how to state it
+
+This section applies from the release after 1.0. v1.0 has no device analytics (#118), so there is no device number to state a bias for. App Store Connect's own usage numbers carry Apple's opt-in bias and are labelled "among people who share data with developers".
 
 ### 5.1 Why consenters differ
 
@@ -326,13 +328,13 @@ Template:
 
 The phases come from ROADMAP M12 and D-045. D-045 is recommended and needs founder OK.
 
-| Metric | Now (no users) | C0 internal (founding family, from about 9 Nov) | C1 external TestFlight (15 to 25 families, about 14 Dec to 8 Jan) | After launch |
+| Metric | Before C0 (no users) | C0 internal (founding family, from Wed 14 Oct) | C1 external TestFlight (15 to 25 families, Mon 19 to Thu 29 Oct, ROADMAP 2.1) | After launch |
 |---|---|---|---|---|
 | WKF and companions | Definitions; SQL tested on "Asha" fixtures (BL-024) | No: instrumentation QA only | Weekly top-line count if 10 or more; no trend claims | Yes; read trends after 8 weeks |
 | IN-01 First letter | No | No | Counts of `time_to_first_letter` buckets, likely under 10 (suppressed); moderated sessions instead | Yes, with 5.4 |
 | IN-02 Keep the book | No | No | Not meaningful: friendly families all sign in | Yes, as a bound |
 | IN-03 Activated writer | No | No | Families starting in the first week: count with an exact interval | Yes |
-| IN-04 Week 4 and month 6 | No | No | **No**: the beta lasts 3 weeks, so week 4 never arrives | Week 4 from about day 35; month 6 from about day 180 |
+| IN-04 Week 4 and month 6 | No | No | **No**: the beta lasts about 10 days, so week 4 never arrives | Week 4 from about day 35; month 6 from about day 180 |
 | IN-05 Letters per family | No | No | Median and range, counts | Yes |
 | IN-06 Family voices | No | No | Counts of co-parent invites and acceptances. Beta exit needs the co-parent flow done without help. ROADMAP M12 also lists grandparent flows; that criterion predates brief decision 5, which hides the contributor path in v1.0 | Yes (co-parent only until v1.1) |
 | V11-01 to V11-06 | No | No | No: the features are not in v1.0 | From v1.1 |
@@ -348,8 +350,8 @@ The phases come from ROADMAP M12 and D-045. D-045 is recommended and needs found
 **C1** limits:
 
 - The families are friendly and recruited by the founder.
-- The beta runs over the winter holidays.
-- It lasts three weeks.
+- It lasts about 10 days (ROADMAP 2.1; D-045 asked for 3 weeks).
+- In v1.0 it has no analytics and no server copy, so every C1 number comes from TestFlight crash reports, App Store Connect, interviews and the surveys.
 - The families are known to the founder, so GR-03 matters more, not less.
 
 Beta decisions use the ROADMAP M12 exit criteria and interviews, not rate targets.
@@ -368,7 +370,7 @@ How to read it. A target can be told apart from an observation only when the tar
 
 - **Intervals are wide:** 36 to 45 points near 50%, about plus or minus 20 points. For a 35% target, every count from 3 to 11 of 20 (15% to 55%) has 35% inside its interval. For example, a 50% observation cannot be told apart from 35% (10 of 20: 30% to 70%).
 - **The gap must be large.** A 60% observation does exclude 35% at all three sizes, but only just: 11 of 20 (55%) would not. At 15, 20 and 25 families the smallest counts that exclude 35% from above are 9 of 15, 12 of 20 and 14 of 25 (56% to 60%).
-- **A separate reason: the sample is not random.** The intervals assume families drawn at random from future users. C1 families are friendly, recruited by the founder and testing over the holidays (6.1). An interval that excludes a target still describes those families, not launch users.
+- **A separate reason: the sample is not random.** The intervals assume families drawn at random from future users. C1 families are friendly, recruited by the founder and testing for about 10 days (6.1). An interval that excludes a target still describes those families, not launch users.
 
 So C1 can find large problems, such as a flow nobody completes. It cannot confirm or reject a C section 9 target: most cannot be measured in C1 at all (week 4 never arrives and purchases are sandboxed, 6.1), and for the reminder targets (GR-07: 10% and 12%), every observation from 0% to 20% of parents, at all three sizes, has the target inside its interval.
 
@@ -406,7 +408,7 @@ To `analytics` unless another owner is named. Each request is content-free and L
 
 | ID | Request | Why |
 |---|---|---|
-| R-1 | Add `kind` to `letter_saved`, as an enum of `letter`, `note` and `not_much` (core `ENTRY_KINDS` after PR #31). Or document that the one-tap "Not much today" entry never fires `letter_saved` | WKF and IN-05 exclude `not_much`. Device counts cannot today, so IN-05 device detail and GR-07 usefulness are marked. No mobile code on develop fires `letter_saved` yet (checked 3 Oct), so this can be settled before the event is wired |
+| R-1 | Add `kind` to `letter_saved`, as an enum of `letter`, `note` and `not_much` (core `ENTRY_KINDS` in `packages/core/src/domain.ts`, merged in #31). Or document that the one-tap "Not much today" entry never fires `letter_saved` | WKF and IN-05 exclude `not_much`. Device counts cannot today, so IN-05 device detail and GR-07 usefulness are marked. No mobile code on develop fires `letter_saved` yet (checked 3 Oct), so this can be settled before the event is wired |
 | R-2 | Update TRACKING_PLAN 1.1 to the counting rules in 2.2 and 2.5, or record why not | One definition of the North Star |
 | R-3 | Replace RevenueCat as the Plus source with ASC reports, per founder decision 3 (BRIEF 2026-10-03). Affected places: TRACKING_PLAN 0 items 4 and 5, the 1.2 source codes and row 7, section 2 billing row, section 4 Plus row, 6.2 ("RevenueCat ids") and 8.3 (pricing test arm via RevenueCat) | No server of ours sees purchases. Per-arm conversion can come from ASC by `Subscription Name` if each arm is its own product (C section 8) |
 | R-4 | Server aggregates (BL-024; job owned by the data architect) gain: (a) WKF, MKF, growth accounting and backfilled letters per section 2; (b) FV28; (c) weekly counts of `sounds_like_me` true, false and null for spoken and mixed letters; (d) active writers, letters per active writer and week-4 retention split by analytics consent state (5.2); (e) analytics withdrawals and sensitive-data declines per week; (f) cohort tables keyed by the week of the first kept letter, split by founding parent and joiner | Inputs and guardrails in sections 2 to 5 |
@@ -433,7 +435,7 @@ To `analytics` unless another owner is named. Each request is content-free and L
 - Open-2, analytics: whether a declined analytics consent is written to `policy_acceptances`. Without it, "declined" and "never asked" cannot be told apart in 5.2.
 - Open-3, analytics: which ASC report carries refunds, and the report latency.
 - Open-4, privacy counsel: confirm that aggregate counts (no ids) may be kept after an account is deleted. This is assumed.
-- Open-5, founder: at v1.0 (on-device only) there is no server North Star. Accept a device-only proxy among opted-in people, or run v1.0 on ASC numbers and interviews alone (3.0).
+- Open-5, answered 15 Oct 2026: v1.0 runs on App Store Connect numbers and interviews alone, because v1.0 collects no analytics (#118, D-088; 3.0).
 
 **Sources opened 3 Oct 2026**
 - [Apple: Subscription events](https://developer.apple.com/help/app-store-connect/reference/subscription-events/)
@@ -450,3 +452,4 @@ To `analytics` unless another owner is named. Each request is content-free and L
 | Draft 1 | 2026-10-03 | First metric tree: WKF counting rules, seven inputs, Plus branch from ASC, eleven guardrails, consent-bias method and statement, measurability by phase, readability tables, ten requests. |
 | Draft 2 | 2026-10-03 | After red-team review: v1.0 scope note (3.0) citing brief decisions 5 and 9; contributor, family-letter and hearing-others metrics moved to a v1.1 section (3.5, V11-01 to V11-06); IN-06 is co-parent only at v1.0; 6.2 claim corrected to match its own intervals, with a 60% column and the non-random sample stated as a separate reason; device `letter_saved` rows marked "may include Not much today until R-1"; TestFlight "not charged" marked as following from the sandbox. |
 | Draft 3 | 2026-10-04 | Landing update: v1.0 on-device-only note in 3.0 and summary item 7 (server aggregates, WKF, IN-02 (a), IN-03, IN-04, IN-06 and FV28 are v1.1 definitions; v1.0 has ASC and opt-in device numbers only). No definition or target was changed. |
+| Draft 4 | 2026-10-15 | Re-checked against `develop` 56ec5b5. v1.0 collects no analytics (#118, D-088): device rows are after-1.0 definitions and Open-5 is answered (ASC and interviews only). D-082 membership: "free forever" replaced by what stays free (2.3, GR-09), GR-08 keyed to the Keep gate, a BZ-02 denominator note. Beta phases moved to ROADMAP 2.1 dates (C0 14 Oct, C1 19 to 29 Oct). Quiet-day rule cites D-084; PR #31 is merged. No target was changed. |
