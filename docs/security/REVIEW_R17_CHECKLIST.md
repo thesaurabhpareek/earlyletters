@@ -120,7 +120,7 @@ File: `20261015010000_v1_gate_peek_invite_consent_pepper.sql` (ported from `d1cb
 
 | Who | Lens | Verdict | Commits |
 |---|---|---|---|
-| Review agent (S02 PR #140) | Access rules and RLS correctness | see the PR comment | |
+| Review agent (S02 PR #140) | Access rules and RLS correctness | Ready, after the access-review fixes on `feat/db-v1-gate` (15 Oct): DB-01 reproduced on `develop` 4183844 (a co-parent could also hard-delete the other parent's letter through `book_entries`) and closed here; G-08, M5 digest, L1, grants and search_path verified by probe. Residual: transaction-id timing channel (section 10). The fixes were made by the reviewing session, so a second reviewer should read them | the access-review fix commit and its merge on `feat/db-v1-gate` |
 | Review agent (S02 PR #140) | Migration safety and idempotency | see the PR comment | |
 | Review agents (S01 PR #139) | Token and session security; privacy and the kill path | see PR #139 | |
 | Review agents (S04, S20 PRs) | per PR | pending | |
