@@ -179,9 +179,11 @@ cs = (await consentRows()).filter((c) => c.sub_ref === refConsent);
 const expectHash = createHash('sha256').update(A + 'f'.repeat(64), 'utf8').digest();
 check('[D-081] the consent record stays, pseudonymised with the same hash as policy_acceptances',
   cs.length === 1 && cs[0].profile_id === null && cs[0].pseudonymised_at !== null && Buffer.compare(Buffer.from(cs[0].subject_hash), expectHash) === 0);
+// W never accepted a policy nor bought anything, so no pseudonymise trigger has work to do
+// (policy_acceptances fails closed the same way from S02's PR #140, so a consented account would not do here).
 check('an account with no consent records deletes without the pepper', await (async () => {
   await sys(`select set_config('app.consent_pepper', '', false)`);
-  const code = await codeOf(() => sys(`delete from auth.users where id = $1`, [C]));
+  const code = await codeOf(() => sys(`delete from auth.users where id = $1`, [W]));
   return code === 'ok';
 })());
 
