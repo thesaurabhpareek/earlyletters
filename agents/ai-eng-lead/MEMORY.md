@@ -2,7 +2,7 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever. Keep it under 60 lines.
 
-Seeded on 3 Oct 2026 during the compendium drafting run. Lines marked (15 Oct) were re-checked against `develop` at `0c71ea9` (after #4 and #39 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
+Seeded on 3 Oct 2026 during the compendium drafting run. Lines marked (15 Oct) were re-checked against `develop` at `56ec5b5` (after #4, #39 and #130 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
 
 ## Current focus
 - Close the gaps in chapter 09: AIE-G7 (red-team marker trust) and AIE-G2 (no `AGENTS.md`) first; then AIE-G4 (`Done when:` on agent tasks).

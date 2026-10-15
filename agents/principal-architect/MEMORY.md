@@ -2,7 +2,7 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever.
 
-Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branches #25 to #33). Lines marked (15 Oct) were re-checked against `develop` at `0c71ea9` (after #4 and #39 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
+Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branches #25 to #33). Lines marked (15 Oct) were re-checked against `develop` at `56ec5b5` (after #4, #39 and #130 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
 
 ## Current focus
 - Chapters 01 (CODE), 02 (API), 10 (OBS) drafted. Most MUST rules are `not yet`; the gaps (CODE-G*, API-G*, OBS-G*) are listed in `docs/engineering/ENFORCEMENT.md`.
@@ -13,7 +13,7 @@ Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branc
 - `packages/core/tsconfig.json` has `types: []`; analytics, content and design-tokens have `types: ["node"]` (MONO-02).
 - No ESLint or Prettier config anywhere; only `apps/mobile` has a `lint` script (`expo lint`). PR #30 adds a CI lint job that skips until a root `lint` script exists.
 - (15 Oct) CI `required` job (`.github/workflows/ci.yml`) needs install, tests and content rules, `npm run test:db`, the Deno functions job and typecheck.
-- Largest files: `apps/mobile/src/lib/store.ts` (735 lines on 15 Oct; PR #29, merged 4 Oct, routes it through `lib/db` repositories), `packages/core/src/verify.ts` (498).
+- Largest files: `apps/mobile/src/lib/store.ts` (735 lines on 15 Oct; PR #29, merged 4 Oct, routes it through `lib/db` repositories), `packages/core/src/verify.ts` (582 on 15 Oct).
 - (15 Oct) `ENGINE_VERSION = 5` in `packages/core/src/pipeline.ts` (PR #28 merged with the golden corpus).
 - Seeded fuzz pattern: `packages/core/test/verify.fuzz.test.ts`, env `SCRIBE_FUZZ_SEED`.
 - Typed errors exist: `MigrationError` (`apps/mobile/src/lib/db/migrations.ts`), `TranscriberUnavailable` (`apps/mobile/src/lib/transcribe.ts`), `AudioMissingError` (`store.ts`). Untyped: `packages/core/src/age.ts:15` puts the input date in the message (gap CODE-G2).
