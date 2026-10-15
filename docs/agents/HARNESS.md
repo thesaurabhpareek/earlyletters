@@ -96,6 +96,8 @@ Ownership of paths is exclusive, so two agents never edit the same files for the
 
 To retire an agent, remove it from the roster and close its journal; its memory stays in git history.
 
+A backlog Owner name that belongs to a thread outside the harness (today `web lane`, the website thread of `COORDINATION.md` section 6) goes in `external_lanes.owner_names` in the roster: the dispatcher never assigns those tasks, and `check.mjs` stops warning about them.
+
 ## 7. Running and steering
 
 - **See everything:** the Agent board issue, and the newest `digest` issue each morning.
@@ -103,7 +105,8 @@ To retire an agent, remove it from the roster and close its journal; its memory 
 - **Reprioritize:** reorder `docs/BACKLOG.md`, or tell `product` on its journal.
 - **Force work:** Actions, then Agents, then Run workflow, with an agent handle and a backlog id.
 - **Ask anything in GitHub:** `@claude` in an issue or PR (needs `ANTHROPIC_API_KEY` or your own `CLAUDE_CODE_OAUTH_TOKEN`; only your mentions run it).
-- **Pause:** repository variable `AGENTS_PAUSED` set to `true`.
+- **Switch on:** repository variable `AGENTS_ENABLED` set to `true`. Until it is, `agents.yml` skips every scheduled tick before a runner starts: no minutes, no labels, no issues, no comments. Set it last, after the secrets and the App exist (section 12).
+- **Pause:** repository variable `AGENTS_PAUSED` set to `true` (the dispatcher still ticks and keeps the board current). To stop the ticks as well, remove `AGENTS_ENABLED`.
 - **Fallback lane:** the 4-hourly scheduled Claude task in your claude.ai account runs on your subscription. It can run one dispatcher assignment per run (`dispatch.mjs --local --top 1 --claim`) once you choose to switch it over. A local run has no Actions job the dispatcher can watch, so the session releases its claim when the run ends (`dispatch.mjs --local --board-only --release <handle>`); otherwise the claim lapses after the agent's timeout plus the grace period.
 
 ## 8. How context is held
@@ -174,7 +177,10 @@ The hard monthly stop is the budget on your OpenRouter key (and on the Claude Co
 2. **Agents GitHub App:** in GitHub, Settings, Developer settings, GitHub Apps, New GitHub App. Name it (for example `early-letters-agents`), set any homepage URL, turn the webhook off. Repository permissions: Contents read and write, Pull requests read and write, Issues read and write, Checks read, Actions read. Do not grant Workflows or Administration. Create it, install it on this repository only, generate a private key. Save the Client ID as the Actions variable `AGENTS_APP_CLIENT_ID` and the private key file's contents as the secret `AGENTS_APP_PRIVATE_KEY`.
 3. **Workflows on `main`:** GitHub runs scheduled workflows only from the default branch. Merge the harness PR into `develop`, then release `develop` into `main` (or merge the small companion PR that adds only the two workflow files).
 4. **Branch protection** on `develop` and `main`: the command in `.github/README.md` (required checks, 1 approval, no force pushes).
-5. **Optional:** `ANTHROPIC_API_KEY` to run some agents on Claude; `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) so `@claude` uses your own subscription.
+5. **Switch on:** repository variable `AGENTS_ENABLED` set to `true` (Settings, Secrets and variables, Actions, Variables). This is the last step: the scheduled workflow is a no-op until it exists, so merging the harness costs nothing. Delete the variable to stop every tick; `AGENTS_PAUSED=true` pauses assignments but keeps the board ticking.
+6. **Optional:** `ANTHROPIC_API_KEY` to run some agents on Claude; `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) so `@claude` uses your own subscription.
+
+The same steps, with what to check after each one, are in `docs/release/HARNESS_SETUP.md`.
 
 ## 13. Going private without losing branch protection
 
@@ -202,3 +208,4 @@ Do it before the first external TestFlight families join (backlog milestone M12)
 
 - 3 Oct 2026: harness created (ADR 0018); open-weight engine by default, Claude optional (ADR 0019); per-run dollar caps; skip unchanged standing runs; this document.
 - 3 Oct 2026: nothing is lost to limits: agents push as they go, the workflow salvages unfinished runs to a branch, and `CLAUDE.md` asks every session to push work in progress at least every 30 minutes.
+- 15 Oct 2026: `agents.yml` is gated on the repository variable `AGENTS_ENABLED=true` (absent by default), so the schedule costs nothing and writes nothing until the founder switches it on; `claude.yml` already ends green without a credential. Landed on `develop`.

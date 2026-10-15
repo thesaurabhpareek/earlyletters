@@ -4,6 +4,10 @@
   "repo": "thesaurabhpareek/earlyletters",
   "base_branch": "develop",
   "founder": "thesaurabhpareek",
+  "external_lanes": {
+    "$comment": "Backlog Owner names that belong to a thread outside this harness (docs/agents/COORDINATION.md sections 1 and 6: the website thread works in apps/web on its own). The dispatcher never assigns their tasks; check.mjs and the tests accept them as known owners.",
+    "owner_names": ["web lane"]
+  },
   "limits": {
     "$comment": "max_runs_per_day_total is the team-wide daily cap. Money is capped three ways: max_budget_usd per run (enforced by the runner), the spend limit on the provider key (OpenRouter key budget or Claude Console workspace), and this daily cap.",
     "max_runs_per_day_total": 30,

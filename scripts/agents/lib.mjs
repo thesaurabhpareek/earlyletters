@@ -42,6 +42,11 @@ export function ownerMap(roster) {
   return map;
 }
 
+/** Backlog Owner names that belong to a thread outside this harness. The dispatcher never assigns their tasks. */
+export function externalOwners(roster) {
+  return new Set((roster.external_lanes?.owner_names ?? []).map((n) => n.trim().toLowerCase()));
+}
+
 // ---------- backlog ----------
 
 const BL_RE = /\bBL-\d{3}\b/g;
@@ -85,8 +90,12 @@ function parseStatusLine(task, line) {
   task.status = task.statusText.split(/[\s(]/)[0].toLowerCase();
   const mode = body.match(/Mode:\s*([a-z]+)/i);
   task.mode = mode ? mode[1].toLowerCase() : undefined;
-  const owner = body.match(/Owner:\s*([^.]+)\./);
-  task.owners = owner ? owner[1].split(",").map((s) => s.replace(/\s*\([^)]*\)/g, "").trim().toLowerCase()).filter(Boolean) : [];
+  // The owner list ends at a period followed by a space or the end of the
+  // line, so a file name inside a parenthetical (`docs/web/TEAM.md`) does not
+  // cut it short. Parentheticals go before the split, so a comma inside one
+  // ("web lane (E3, BR2 in ...)") does not create a second owner.
+  const owner = body.match(/Owner:\s*(.+?)\.(?:\s|$)/);
+  task.owners = owner ? owner[1].replace(/\s*\([^)]*\)/g, "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean) : [];
   const dep = body.match(/Depends on:\s*([^.]+)\./);
   task.dependsOn = dep ? [...dep[1].matchAll(BL_RE)].map((m) => m[0]) : [];
   const paren = task.statusText.match(/\(([^)]*)\)/);

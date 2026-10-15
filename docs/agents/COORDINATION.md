@@ -15,6 +15,7 @@ The goal is one product with one set of patterns: no duplicate work, no conflict
 1. Read `docs/agents/BRIEF-2026-10-03.md`, this file, `docs/DECISIONS.md` and `docs/agents/BOARD.md`.
 2. Add a **claim** line to the "Active claims" table in `BOARD.md`: agent name or id, area, file globs, start time (UTC).
 3. If your globs overlap someone else's live claim, do not edit those files. Message the owner (`ListAgents`, then `SendMessage`) or note it on the board for the coordinator. Pick another slice of work meanwhile.
+4. `BOARD.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
 
 ## 3. While you work: check in, small and often
 - Every ~20 tool calls or ~30 minutes, append **at most 3 lines** under "Check-ins" in `BOARD.md`:

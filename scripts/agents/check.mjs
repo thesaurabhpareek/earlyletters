@@ -6,7 +6,7 @@
 //   node scripts/agents/check.mjs
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ROOT, loadRoster, ownerMap, parseBacklog, readText } from "./lib.mjs";
+import { ROOT, loadRoster, ownerMap, externalOwners, parseBacklog, readText } from "./lib.mjs";
 
 const CLAUDE_MODELS = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5-20251001"]);
 const OPENCODE_MODEL = /^openrouter\/[a-z0-9~-]+\/[a-z0-9.:-]+$/;
@@ -56,10 +56,11 @@ export function check(root = ROOT) {
   }
 
   const owners = ownerMap(roster);
+  const external = externalOwners(roster);
   const tasks = parseBacklog(readText(join(root, "docs", "BACKLOG.md")));
   const unknown = new Set();
   for (const t of tasks) {
-    for (const o of t.owners ?? []) if (o !== "founder" && !owners.has(o)) unknown.add(o);
+    for (const o of t.owners ?? []) if (o !== "founder" && !owners.has(o) && !external.has(o)) unknown.add(o);
   }
   for (const o of unknown) warnings.push(`backlog owner "${o}" maps to no agent; add it to an agent's backlog_owner_names`);
 
