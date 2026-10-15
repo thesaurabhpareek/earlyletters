@@ -10,22 +10,11 @@ Rules (TDD 07 2.1, CLAUDE.md privacy rules, LEGAL-REQ-014):
 - A failure gets a GitHub issue labelled `beta` and `S0` to `S3` (TDD 07 11.3); write the issue number in the row. Issues never contain letter text either.
 - Run sheets for scripted sessions live in `docs/qa/run-sheets/`; the evidence file names the run sheet it followed.
 
-## Template (copy into the new file)
+## Template
 
-```markdown
-# Device session <YYYY-MM-DD>, build <x.y.z (n)>, <device tag>
+Copy `TEMPLATE.md` (in this folder) to the new file name and fill it in during the session. It holds the session header (build, commit, server switch, build flags, backend), one row per phone with its Apple Account and iCloud Keychain state, the privacy checks before the first step, the results table, the domains each phone's App Privacy Report showed, the issues filed and the sign-off. Row IDs come from the run sheet (`AL-01.1` and on for the alpha drills, `docs/qa/run-sheets/README.md`) or from `docs/qa/DEVICE_TEST_PLAN.md` (`S1-01` and on).
 
-Tester: <initials>. Run sheet: <docs/qa/run-sheets/... or none>.
-Phone A: <tag, model, iOS, storage free>. Phone B: <tag, model, iOS, storage free, or none>.
-Builds: <EAS development | preview | TestFlight, build number, profile> per phone.
-Server switch: <off | on> (`EXPO_PUBLIC_SERVER_FEATURES` in the build's profile). Backend: <none | staging | production>.
-Apple Accounts: Phone A on <Account A>, Phone B on <Account A | Account B>. iCloud Keychain: <on | off> per phone. Sandbox testers used: <labels only>.
-Settings during the session: Dark <on/off>, text size <default/AX5>, Low Power <on/off>, network <Wi-Fi/cellular/offline>.
-
-| ID | Result (pass, fail, blocked, n/a) | Numbers | Notes and issue | Owner doc updated? |
-|---|---|---|---|---|
-| S1-01 | | | | |
-```
+S19 owns the template; any stream may add a new evidence file for its own spike or device run, and nobody edits another stream's evidence file (PRD V2 08 section 4).
 
 ## Server-on rows (M14)
 

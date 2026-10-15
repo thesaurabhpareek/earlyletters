@@ -19,8 +19,14 @@
 // LEGAL-REQ and DATA-REQ text in docs/legal is read as an outside source: an ID defined only
 // there is known, and listed as such.
 //
+// Evidence that a requirement is tested: a test title that cites the ID (any *.test.* file),
+// or a Maestro flow in apps/mobile/e2e/flows whose `tags:` list names it (the e2e flows carry
+// their requirement IDs as tags, apps/mobile/e2e/README.md section 2). Flows are listed apart
+// from test titles because they run only on a Mac with a simulator build, not in `npm test`.
+//
 // Report mode (default) never exits non-zero. --check exits 1 when an ID is defined in two
 // specs or a cited ID is defined nowhere. Whether --check blocks merges is 07 Q8 (founder).
+// --json prints the headline counts, duplicates and undefined IDs as one JSON object (for CI).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -221,6 +227,25 @@ export function testTitles(src) {
   return out;
 }
 
+/**
+ * Requirement IDs a Maestro flow names in its `tags:` list (first YAML document only, the
+ * flow's config). Line based, so it needs no YAML package: `tags:` then `  - ID` items.
+ */
+export function flowTags(src) {
+  const lines = src.split(/\r?\n/);
+  const ids = new Set();
+  let inTags = false;
+  for (const l of lines) {
+    if (/^---\s*$/.test(l)) break;
+    if (/^tags:\s*$/.test(l)) { inTags = true; continue; }
+    if (!inTags) continue;
+    const item = l.match(/^\s+-\s+["']?([^"'#]+?)["']?\s*(?:#.*)?$/);
+    if (item) { for (const id of extractIds(item[1])) ids.add(id); continue; }
+    if (/^\S/.test(l)) inTags = false;
+  }
+  return [...ids];
+}
+
 const SKIP_DIRS = new Set(['node_modules', '.git', '.expo', 'dist', 'build', 'coverage', 'ios', 'android', '.turbo']);
 
 export function walk(dir, keep, acc = []) {
@@ -317,6 +342,16 @@ export function collect({ repo, docsRoot }) {
     }
   }
 
+  // Maestro flows: requirement IDs in each flow's tags.
+  const flows = new Map();
+  for (const f of walk(path.join(repo, 'apps', 'mobile', 'e2e', 'flows'), (p) => /\.ya?ml$/.test(p))) {
+    for (const id of flowTags(read(f))) {
+      cite(id, `${rel(f)}:tags`);
+      if (!flows.has(id)) flows.set(id, new Set());
+      flows.get(id).add(rel(f));
+    }
+  }
+
   const undefinedIds = [...citations.keys()].filter((id) => !byId.has(id) && !retired.has(id) && !outside.has(id)).sort(cmpId);
   const outsideOnly = [...citations.keys()].filter((id) => !byId.has(id) && !retired.has(id) && outside.has(id)).sort(cmpId);
   const retiredCited = [...citations.keys()].filter((id) => !byId.has(id) && retired.has(id)).sort(cmpId);
@@ -334,11 +369,12 @@ export function collect({ repo, docsRoot }) {
     spec: ds[0].spec,
     wps: [...(wpsById.get(id) || [])].sort(),
     tests: [...(tests.get(id) || [])].sort(),
+    flows: [...(flows.get(id) || [])].sort(),
   })).sort((a, b) => a.spec.localeCompare(b.spec) || cmpId(a.id, b.id));
 
   return {
     layout, docsRoot: shown(docsRoot), specs: specFiles.map(shown), reqs, wps, duplicates, repeatedInSpec,
-    citations, undefinedIds, outsideOnly, retiredCited, retired, outside, tests, taggedTitles,
+    citations, undefinedIds, outsideOnly, retiredCited, retired, outside, tests, taggedTitles, flows,
   };
 }
 
@@ -359,9 +395,12 @@ export function summarize(m) {
     undefined: m.undefinedIds.length,
     p0NoWp: m.layout === 'v2' ? p0.filter((r) => !r.wps.length).length : null,
     p0NoTest: p0.filter((r) => !r.tests.length).length,
+    p0NoTestOrFlow: p0.filter((r) => !r.tests.length && !(r.flows || []).length).length,
+    p0FlowOnly: p0.filter((r) => !r.tests.length && (r.flows || []).length).length,
     idsInTests: m.tests.size,
     specIdsInTests: m.reqs.filter((r) => r.tests.length).length,
     taggedTitles: m.taggedTitles,
+    idsInFlows: m.flows ? m.flows.size : 0,
   };
 }
 
@@ -387,8 +426,11 @@ export function renderTrace(m) {
   L.push(`| IDs cited but defined nowhere (fails \`--check\`) | ${s.undefined} |`);
   if (m.layout === 'v2') L.push(`| P0 IDs with no work package | ${s.p0NoWp} |`);
   L.push(`| P0 IDs with no test title citing them | ${s.p0NoTest} |`);
+  L.push(`| P0 IDs with neither a test title nor a Maestro flow tag | ${s.p0NoTestOrFlow} |`);
+  L.push(`| P0 IDs covered only by a Maestro flow (runs on a Mac simulator, not in \`npm test\`) | ${s.p0FlowOnly} |`);
   L.push(`| Defined IDs cited by at least one test title | ${s.specIdsInTests} |`);
   L.push(`| Distinct IDs in test titles | ${s.idsInTests} (in ${s.taggedTitles} titles) |`);
+  L.push(`| Distinct IDs in Maestro flow tags | ${s.idsInFlows} |`);
   L.push('');
   L.push('Coverage gaps are reported, not failed, until launch hardening (ADR 0011). Whether `--check` blocks merges is the founder\'s call (07 Q8).');
   L.push('');
@@ -433,13 +475,14 @@ export function renderTrace(m) {
     L.push('');
     L.push(`${rs.length} IDs, ${rs.filter((r) => r.priority === 'P0').length} P0, ${tested} cited by a test title.`);
     L.push('');
-    L.push(m.layout === 'v2' ? '| Requirement | P | Work packages | Tests |' : '| Requirement | P | Tests |');
-    L.push(m.layout === 'v2' ? '|---|---|---|---|' : '|---|---|---|');
+    L.push(m.layout === 'v2' ? '| Requirement | P | Work packages | Tests | E2E flows |' : '| Requirement | P | Tests | E2E flows |');
+    L.push(m.layout === 'v2' ? '|---|---|---|---|---|' : '|---|---|---|---|');
     for (const r of rs) {
       const tests = r.tests.length ? r.tests.map((t) => `\`${t}\``).join(', ') : (r.priority === 'P0' ? 'none' : '');
+      const flows = (r.flows || []).map((f) => `\`${path.posix.basename(f)}\``).join(', ');
       L.push(m.layout === 'v2'
-        ? `| ${r.id} | ${r.priority} | ${esc(r.wps.join(', ') || (r.priority === 'P0' ? 'none' : ''))} | ${esc(tests)} |`
-        : `| ${r.id} | ${r.priority} | ${esc(tests)} |`);
+        ? `| ${r.id} | ${r.priority} | ${esc(r.wps.join(', ') || (r.priority === 'P0' ? 'none' : ''))} | ${esc(tests)} | ${esc(flows)} |`
+        : `| ${r.id} | ${r.priority} | ${esc(tests)} | ${esc(flows)} |`);
     }
     L.push('');
   }
@@ -457,11 +500,12 @@ export function renderTrace(m) {
 }
 
 function parseArgs(argv) {
-  const a = { check: false, write: true, out: null, repo: null, root: null };
+  const a = { check: false, write: true, out: null, repo: null, root: null, json: false };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--check') a.check = true;
     else if (v === '--no-write') a.write = false;
+    else if (v === '--json') a.json = true;
     else if (v === '--out') a.out = argv[++i];
     else if (v === '--repo') a.repo = argv[++i];
     else if (v === '--help' || v === '-h') a.help = true;
@@ -473,7 +517,7 @@ function parseArgs(argv) {
 
 export function main(argv = process.argv.slice(2), log = console.log) {
   const args = parseArgs(argv);
-  if (args.help) { log('node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--out <file>] [--repo <dir>]'); return 0; }
+  if (args.help) { log('node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--json] [--out <file>] [--repo <dir>]'); return 0; }
   const repo = path.resolve(args.repo || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
   const docsRoot = path.resolve(repo, args.root || (exists(path.join(repo, 'docs/prd/v2')) ? 'docs/prd/v2' : 'docs/prd'));
   const m = collect({ repo, docsRoot });
@@ -482,14 +526,26 @@ export function main(argv = process.argv.slice(2), log = console.log) {
     const out = path.resolve(repo, args.out || 'docs/TRACE.md');
     fs.writeFileSync(out, renderTrace(m) + '\n');
   }
+  const failed = m.duplicates.length > 0 || m.undefinedIds.length > 0;
+  if (args.json) {
+    log(JSON.stringify({
+      layout: m.layout,
+      docsRoot: m.docsRoot,
+      ...s,
+      duplicateIds: m.duplicates.map((d) => ({ id: d.id, at: d.at.map((x) => `${x.spec}:${x.line}`) })),
+      undefinedIds: m.undefinedIds,
+      wouldFailCheck: failed,
+    }));
+    return args.check && failed ? 1 : 0;
+  }
   log(`trace (${m.layout}, ${m.docsRoot}): ${s.defined} IDs defined (${s.p0} P0) in ${s.specs} specs` +
     (m.layout === 'v2' ? `, ${s.wps} work packages` : '') +
     `; ${s.duplicates} defined in two specs; ${s.undefined} cited but undefined; ` +
     (m.layout === 'v2' ? `${s.p0NoWp} P0 with no work package; ` : '') +
-    `${s.p0NoTest} P0 with no test title; ${s.idsInTests} IDs in ${s.taggedTitles} test titles.`);
+    `${s.p0NoTest} P0 with no test title (${s.p0NoTestOrFlow} with no test title and no e2e flow); ` +
+    `${s.idsInTests} IDs in ${s.taggedTitles} test titles; ${s.idsInFlows} IDs in Maestro flow tags.`);
   for (const d of m.duplicates) log(`  defined in two specs: ${d.id} (${d.at.map((x) => `${x.spec}:${x.line}`).join(', ')})`);
   for (const id of m.undefinedIds) log(`  undefined: ${id} (${m.citations.get(id)[0]})`);
-  const failed = m.duplicates.length > 0 || m.undefinedIds.length > 0;
   if (args.check && failed) return 1;
   if (failed) log('  report mode: not failing. Run with --check to fail on these.');
   return 0;

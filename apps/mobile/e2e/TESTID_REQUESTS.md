@@ -24,7 +24,7 @@ Fact found on 3 Oct 2026: `apps/mobile/src` has **zero** `testID` props on scree
 | `LetterCard` (`components/book/letter-card.tsx`) | no testID | `book.letter` on the card; `book.letter.waitingForWords` on the waiting line; `book.letter.private` on the private chip |
 | `ChildSwitcher`, `WhoseBookSheet` (`components/child/*`) | no testID | section 2 |
 | `PlusGate` (`components/child/plus-gate.tsx`) | no testID | section 2 |
-| `AudioPlayer` (`components/player/*`) | not checked | `player.play` on the play/pause control |
+| `AudioPlayer` (`components/player/*`) | not checked | `player.play` on the play/pause control; `player.original` on the "Original recording" `Toggle` (`audio-player.tsx`); the line under it carries the source in its id, `player.source.<state>` with state `listening` (the clearer copy plays) or `original` (added 15 Oct for E2E-17a and E2E-17b; owner S13) |
 
 ## 2. Screen ids
 
@@ -161,7 +161,7 @@ The flows pass these as Maestro `launchApp.arguments`. On iOS they arrive in `NS
 
 | Argument | Values | Effect | Used by |
 |---|---|---|---|
-| `e2eSeed` | `none` (default), `asha`, `asha-twins` | Before the first frame, seed the local store with the fictional family through `src/dev/asha-seed.ts` (it already sets `ageGate.passed`). `asha-twins` adds Avi with Asha's birthday. Never seeds when a child exists. | 04, 05, 06, 07, 08, 10, 11, 14, 15 |
+| `e2eSeed` | `none` (default), `asha`, `asha-twins`, `asha-recordings` | Before the first frame, seed the local store with the fictional family through `src/dev/asha-seed.ts` (it already sets `ageGate.passed`). `asha-twins` adds Avi with Asha's birthday. `asha-recordings` (added 15 Oct) gives Asha's book three spoken letters, each with a short fixture recording (a generated tone, never a voice) whose SHA-256 is set as `audio_sha256`, and a listening copy for each in `Application Support/listening/<id>.m4a` with its sidecar `<id>.json` (`sourceSha256` equal to the original's hash), written the way `lib/audio-enhance` writes them, so E2E-17 does not need AUSoundIsolation on a simulator. S19 owns `src/dev/**` and adds the seed data once the seam file exists. Never seeds when a child exists. | 04, 05, 06, 07, 08, 10, 11, 14, 15, 17 |
 | `e2eOffline` | `0`, `1` | Every request made through the app's fetch fails as a network error before it leaves the phone (Supabase client, packs, remote config, PostHog). iOS simulators have no airplane mode (Maestro docs: `setAirplaneMode` "is supported on Android only"), so this is the stand-in; the real radio-off check is on device (DEVICE_TEST_PLAN). | 01, 02, 03, 04, 05, 10 |
 | `e2eClockOffsetHours` | integer, may be negative | Added to `Date.now()` in one seam (`nowMs()`) used by the age gate (`lib/age-gate.ts`), Read together and reminders. | 01 |
 | `e2eConfig` | JSON | Merged over the remote config after the signed copy loads (for example `{"readTogetherFreeSessions":5}` or `{"killSwitches":{"packDownloads":true}}`). Keeps the existing rule that the free sessions value may only be raised. | 05, 06 |

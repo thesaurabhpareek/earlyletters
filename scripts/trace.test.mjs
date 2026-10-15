@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   extractIds, bracketedIds, splitRow, parseTables, sectionLines, v2Definitions, v2WorkPackages,
-  legacyDefinitions, retiredIds, testTitles, collect, summarize, renderTrace, main,
+  legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main,
 } from './trace.mjs';
 
 test('extractIds reads full IDs and shorthand after a full ID', () => {
@@ -189,6 +189,54 @@ test('report mode writes TRACE.md with the headline and is deterministic; the de
   assert.equal(fs.readFileSync(out, 'utf8'), first);
   const m = collect({ repo, docsRoot: path.join(repo, 'docs/prd/v2') });
   assert.equal(renderTrace(m) + '\n', first);
+});
+
+const FLOW = `# E2E-17a  comment that names F02-REQ-001 but is not a tag
+appId: \${APP_ID}
+name: E2E-17a Export
+tags:
+  - e2e
+  - E2E-17
+  - p0-nightly
+  - F01-REQ-001
+  - "A-REQ-001"   # quoted, with a comment
+---
+- tapOn:
+    id: "export.start"
+- assertVisible: "B-REQ-099"
+`;
+
+test('flowTags reads requirement IDs from the config tags only, not comments or commands', () => {
+  assert.deepEqual(flowTags(FLOW).sort(), ['A-REQ-001', 'F01-REQ-001']);
+  assert.deepEqual(flowTags('appId: x\n---\n- launchApp\n'), []);
+});
+
+test('collect lists Maestro flow tags apart from test titles', () => {
+  const repo = fixtureRepo();
+  fs.mkdirSync(path.join(repo, 'apps/mobile/e2e/flows'), { recursive: true });
+  fs.writeFileSync(path.join(repo, 'apps/mobile/e2e/flows/E2E-17a-export.yaml'), FLOW);
+  const m = collect({ repo, docsRoot: path.join(repo, 'docs/prd/v2') });
+  const s = summarize(m);
+  const splash = m.reqs.find((r) => r.id === 'A-REQ-001');
+  assert.deepEqual(splash.tests, []);
+  assert.deepEqual(splash.flows, ['apps/mobile/e2e/flows/E2E-17a-export.yaml']);
+  assert.equal(s.p0NoTest, 2); // a flow is not a test title: A-REQ-001 and F02-REQ-001 still count
+  assert.equal(s.p0NoTestOrFlow, 1); // F02-REQ-001 only
+  assert.equal(s.p0FlowOnly, 1);
+  assert.equal(s.idsInFlows, 2);
+  assert.ok(m.citations.get('A-REQ-001').includes('apps/mobile/e2e/flows/E2E-17a-export.yaml:tags'));
+  assert.match(renderTrace(m), /\| A-REQ-001 \| P0 \| WP-F01-01 \| none \| `E2E-17a-export\.yaml` \|/);
+});
+
+test('--json prints the headline and the failing IDs, and still fails --check', () => {
+  const repo = fixtureRepo();
+  const logs = [];
+  assert.equal(main([path.join(repo, 'docs/prd/v2'), '--repo', repo, '--no-write', '--json'], (l) => logs.push(l)), 0);
+  const j = JSON.parse(logs[0]);
+  assert.equal(j.defined, 6);
+  assert.deepEqual(j.duplicateIds.map((d) => d.id), ['A-REQ-002']);
+  assert.equal(j.wouldFailCheck, true);
+  assert.equal(main([path.join(repo, 'docs/prd/v2'), '--repo', repo, '--no-write', '--json', '--check'], () => {}), 1);
 });
 
 test('--no-write leaves the tree untouched', () => {
