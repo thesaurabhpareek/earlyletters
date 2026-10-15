@@ -27,7 +27,7 @@ describe('server features switch: off unless a build says on', () => {
   it('is off in this process (no EXPO_PUBLIC_SERVER_FEATURES), and every capability follows it', () => {
     expect(process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').not.toBe('on');
     expect(serverFeaturesEnabled()).toBe(false);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, analytics: false });
+    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, analytics: false, backup: false });
   });
 
   it('is off in every EAS build profile (eas.json)', () => {
@@ -56,8 +56,8 @@ describe('server features switch: off unless a build says on', () => {
 
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
-    // Analytics has its own switch: turning server features on does not turn it on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, analytics: false });
+    // Analytics and backup have their own switches: turning server features on turns neither on.
+    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, analytics: false, backup: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
