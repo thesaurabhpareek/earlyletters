@@ -318,7 +318,7 @@ export async function removeSpeechPack(id: SpeechModelId): Promise<void> {
   for (const lang of SPEECH_LANGUAGES) {
     if (!planFor([lang]).packs.includes(id)) continue;
     askedDownload.delete(lang);
-    clearDownloadRetry(lang); // removed on purpose: nothing downloads it again by itself
+    clearDownloadRetry(lang); // removed on purpose: the automatic retries stop (letters still waiting may ask again, as before)
   }
   refreshReady();
 }

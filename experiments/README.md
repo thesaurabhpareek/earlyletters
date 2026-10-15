@@ -10,7 +10,7 @@ Open Terminal in the repo folder and run:
 npm install
 ./experiments/setup.sh
 ```
-This builds whisper.cpp at v1.9.3 (the version the app bundles) and downloads four models (about 1.8 GB in total): base and small for quick comparisons, large-v3-turbo-q5_0 (what the app ships) and small-q5_1 (the app's model for phones under 4 GB).
+This builds whisper.cpp at v1.9.3 (the version the app bundles) and downloads four models and the voice detector (about 1.4 GB in total): base and small for quick comparisons, large-v3-turbo-q5_0 (what the app ships) and small-q5_1 (the app's model for phones under 4 GB).
 
 ## 2. Tell it your family words
 Open `experiments/config.local.json` (created by setup) and edit:

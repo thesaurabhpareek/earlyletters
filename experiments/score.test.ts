@@ -63,7 +63,7 @@ describe('scoring in every launch script (R5 4.4 E8, WP-F05-02)', () => {
     expect(normWords('أنتِ')).not.toEqual(normWords('أنت'));
   });
 
-  it('keeps accents and apostrophes: aujourd'hui is one word, si and sí are different', () => {
+  it("keeps accents and apostrophes: aujourd'hui is one word, si and sí are different", () => {
     expect(normWords("Aujourd'hui, tu as ri.")).toEqual(["aujourd'hui", 'tu', 'as', 'ri']);
     expect(wer('si vienes', 'sí vienes')).toBe(0.5);
   });
