@@ -21,9 +21,11 @@ import { SYMBOL_ASPECT, SYMBOL_PATH, SYMBOL_VIEWBOX, deviceAsset, deviceHeight, 
 const FADE = FadeIn.duration(tokens.motion.fadeMs).easing(STANDARD_EASING).reduceMotion(ReduceMotion.Never);
 
 export function QuotePair({ height = 48, aligned = true, style }: { height?: number; aligned?: boolean; style?: StyleProp<ViewStyle> }) {
-  const { scheme } = useTheme();
+  const { scheme, c } = useTheme();
   const h = deviceHeight(scheme, height);
-  const fill = deviceAsset(scheme).fill ?? '#000000';
+  // The registry asset carries its own fill (accent on paper, reversed on dark); the theme's
+  // text colour is the fallback so no colour literal lives in app code (theme-leaks test).
+  const fill = deviceAsset(scheme).fill ?? c.text;
   return (
     <Animated.View
       entering={FADE}
