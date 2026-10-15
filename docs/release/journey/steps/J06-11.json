@@ -5,7 +5,7 @@
   "title": "Kept private",
   "note": "The letter is saved outside the book. It is only on this phone and can be added later from the letter page.",
   "from": "J06-02",
-  "route": "/",
+  "route": "/review",
   "viewport": {
     "width": 402,
     "height": 874
@@ -21,19 +21,9 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months Hello, Mama. What do you want Asha to know about today? A thought to start with What food did Asha try this week? What was the face? Another thought Speak Type Not much today Tonight Book Family",
+  "text": "Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Kept just for you.",
   "lines": [
-    "Asha · 7 months",
-    "Hello, Mama.",
-    "What do you want Asha to know about today?",
-    "A thought to start with",
-    "What food did Asha try this week? What was the face?",
-    "Another thought",
-    "Speak",
-    "Type",
-    "Not much today",
-    "Tonight",
-    "Book",
-    "Family"
+    "Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Kept just for you."
   ]
 }

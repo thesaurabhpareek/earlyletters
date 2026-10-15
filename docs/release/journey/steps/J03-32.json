@@ -20,8 +20,8 @@
       "bottom": 34
     }
   },
-  "scrolls": false,
-  "text": "Asha's book Asha's birthday A birthday is a day that has already come. Choose today or earlier. Cancel Set the birthday Name and birthday Name Asha Due date October 25, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
+  "scrolls": true,
+  "text": "Asha's book Asha's birthday A birthday is a day that has already come. Choose today or earlier. Cancel Set the birthday Name and birthday Name Asha Due date October 23, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha's book Family see the letters you add to Asha's book. This starts once family can join.",
   "lines": [
     "Asha's book",
     "Asha's birthday",
@@ -32,13 +32,15 @@
     "Name",
     "Asha",
     "Due date",
-    "October 25, 2026",
+    "October 23, 2026",
     "Sign my letters to Asha as",
     "Mama",
     "Include Asha in my reminders",
     "Your reminder time is shared across your children. Messages about Asha's months and birthday follow this switch.",
     "Write this book together",
     "Coming soon",
-    "Sharing a book with a co-parent is coming in a later update."
+    "Sharing a book with a co-parent is coming in a later update.",
+    "Family can read Asha's book",
+    "Family see the letters you add to Asha's book. This starts once family can join."
   ]
 }

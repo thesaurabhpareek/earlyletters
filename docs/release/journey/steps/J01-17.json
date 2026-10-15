@@ -2,10 +2,10 @@
   "id": "J01-17",
   "journey": "first-run",
   "kind": "happy",
-  "title": "Not now is a calm answer",
-  "note": "The card says it is fine and nothing else changes. The first Review will offer the same button if words are waiting.",
+  "title": "Tonight, for the first time",
+  "note": "The home tab: a greeting with the signature name, one gentle prompt, Speak and Type side by side, and \"Not much today\" for quiet days.",
   "from": "J01-16",
-  "route": "/onboarding",
+  "route": "/",
   "viewport": {
     "width": 402,
     "height": 874
@@ -21,16 +21,19 @@
     }
   },
   "scrolls": false,
-  "text": "Back The book is open. Say one thing about Asha today. That is a letter. Get your words ready Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB. It waits for Wi-Fi, and carries on where it left off if it is interrupted. Not now. Your voice is kept either way. You can do this later in Settings, Recordings. Your voice is always kept. Write the first one",
+  "text": "Asha · 6 months and 3 weeks Good afternoon, Mama. What do you want Asha to know about today? A thought to start with Who gets the biggest smile from Asha these days? Another thought Speak Type Not much today Tonight Book Family",
   "lines": [
-    "Back",
-    "The book is open.",
-    "Say one thing about Asha today. That is a letter.",
-    "Get your words ready",
-    "Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB.",
-    "It waits for Wi-Fi, and carries on where it left off if it is interrupted.",
-    "Not now. Your voice is kept either way.",
-    "You can do this later in Settings, Recordings. Your voice is always kept.",
-    "Write the first one"
+    "Asha · 6 months and 3 weeks",
+    "Good afternoon, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "Who gets the biggest smile from Asha these days?",
+    "Another thought",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
   ]
 }
