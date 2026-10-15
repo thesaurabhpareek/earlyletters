@@ -1,10 +1,43 @@
 /**
- * Short-lived, in-memory hand-offs between the link handler and the sign-in
- * screens. Nothing here is persisted: an email address is never stored on the
- * phone (PRD A F6.2), and a sign-in token hash lives only until /verify reads
- * it once. Route params never carry either (TDD 01 3.1).
+ * Short-lived hand-offs between the link handler and the sign-in screens. An
+ * email address is never stored on the phone (PRD A F6.2), and a sign-in
+ * token hash lives in memory only until /verify reads it once. Route params
+ * never carry either (TDD 01 3.1).
+ *
+ * One thing is persisted: the time this phone last asked for a sign-in email
+ * (Keychain, this device only, no address), so an opened link is used only on
+ * the phone that asked for it (BL-347, security review H1;
+ * email-link.logic.ts). With server features off (lib/capabilities.ts) these
+ * helpers never touch the Keychain.
  */
+import { serverFeaturesEnabled } from '../capabilities';
+import { secureStorage } from '../supabase/secure-storage';
+import { decodePendingRequest, encodePendingRequest, type PendingEmailRequest } from './email-link.logic';
 import type { EmailLinkType } from './links.logic';
+
+export const PENDING_REQUEST_KEY = 'scribe.auth.pendingEmailRequest';
+
+/** Called right after Supabase accepted an email request from this phone. */
+export async function notePendingEmailRequest(now = Date.now()): Promise<void> {
+  if (!serverFeaturesEnabled()) return;
+  await secureStorage.setItem(PENDING_REQUEST_KEY, encodePendingRequest({ at: now })).catch(() => {});
+}
+
+/** Null when this phone has no unexpired request (or the Keychain cannot be read: refuse, never guess). */
+export async function readPendingEmailRequest(now = Date.now()): Promise<PendingEmailRequest | null> {
+  if (!serverFeaturesEnabled()) return null;
+  try {
+    return decodePendingRequest(await secureStorage.getItem(PENDING_REQUEST_KEY), now);
+  } catch {
+    return null;
+  }
+}
+
+/** Spent by a sign-in, and dropped by "Not my account". */
+export async function clearPendingEmailRequest(): Promise<void> {
+  if (!serverFeaturesEnabled()) return;
+  await secureStorage.removeItem(PENDING_REQUEST_KEY).catch(() => {});
+}
 
 export type SignInTrigger = 'first_letter' | 'invite' | 'invite_create' | 'sign_in' | 'settings';
 
