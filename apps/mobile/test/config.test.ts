@@ -305,6 +305,18 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
       const block = easText.slice(easText.indexOf('"testflight": {'), easText.indexOf('"submit"'));
       expect(block.match(/"EXPO_PUBLIC_SERVER_FEATURES": "(on|off)"/g)).toHaveLength(1);
     });
+
+    it('the flip, applied to a copy of eas.json, passes these same rules', () => {
+      const flipped = JSON.parse(
+        easText.replace(/("testflight": \{[\s\S]*?"EXPO_PUBLIC_SERVER_FEATURES": )"off"/, '$1"on"'),
+      ) as typeof eas;
+      expect(flipped.build.testflight.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+      expect(flipped.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+      const { env: a, ...restA } = flipped.build.testflight;
+      const { env: b, ...restB } = flipped.build.preview;
+      expect(restA).toEqual(restB);
+      expect(a).toEqual(b);
+    });
   });
 
   it('builds 1 and 2 may share the "preview" update channel only while the app has no update client', () => {

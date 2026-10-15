@@ -58,6 +58,8 @@ describe('server features switch: off unless a build says on', () => {
       // Written out as on or off in every profile, never left to a default.
       expect(eas.build[name].env?.EXPO_PUBLIC_SERVER_FEATURES, name).toBe(expected.includes(name) ? 'on' : 'off');
     }
+    expect(eas.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+    expect(eas.build.development.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
   });
 
   it('is off for local development (.env.development)', () => {

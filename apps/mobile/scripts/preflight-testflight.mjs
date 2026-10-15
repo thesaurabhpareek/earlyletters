@@ -53,8 +53,8 @@ const notes = [];
  */
 const STEPS = {
   1: 'Step 1. Apple Developer Program enrolment (FT-01)',
-  2: 'Step 2. App Store Connect: the .preview App ID, the app record and internal testers (FT-07, FT-08)',
-  3: 'Step 3. Expo account and `eas init` project id (FT-17, BL-339)',
+  2: 'Step 2. App Store Connect: the .preview App ID, the app record, testers and the API key (FT-07, FT-08)',
+  3: 'Step 3. Expo account, the project id and EXPO_TOKEN (FT-17, BL-339)',
   4: 'Step 4. Words from speech: pack signing keys and the R2 bucket packs.earlyletters.app (FT-16, D-097)',
   5: 'Step 5. Build 1: preflight, build, submit, testers',
   6: 'Step 6. Supabase staging project and its schema (FT-10)',
@@ -219,7 +219,7 @@ if (cfg) {
     step(3, 'done', `extra.eas.projectId is ${cfg.extra.eas.projectId}`);
   } else {
     warn('No extra.eas.projectId in app.config.ts. `eas init` links the Expo project, but app.config.ts is a dynamic config and the CLI may not write to it (unverified): the founder sends the id it prints and it is added to `extra` in a small PR. A non-interactive build (the GitHub workflow) cannot proceed without it.');
-    step(3, 'open', 'no extra.eas.projectId in app.config.ts: run `npx eas-cli init` and send the id it prints');
+    step(3, 'open', 'no extra.eas.projectId in app.config.ts: create the project (expo.dev, or `eas init` on your own computer) and send the id; EXPO_TOKEN as a GitHub secret');
   }
 
   // Version and build number.
@@ -255,7 +255,7 @@ function checkIcons(c) {
   }
   const scaffold = ['assets/images/icon.png', 'assets/images/adaptive-icon.png', 'assets/images/splash-icon.png'].filter((p) => existsSync(join(MOBILE, p)));
   if (scaffold.length) warn(`Expo scaffold icon file(s) still in the tree: ${scaffold.join(', ')}. Fine for TestFlight; remove before the store.`);
-  else pass('no Expo scaffold icon files left (the icons are the generated brand set, scripts/brand/icons.mjs)');
+  else pass('no Expo scaffold icon files left (the icons are the approved brand set from packages/brand)');
   if (!/assets\/brand\//.test(c.icon ?? '')) warn(`app icon ${c.icon} is not from assets/brand: it may be a scaffold or placeholder icon.`);
 }
 
@@ -312,10 +312,12 @@ function secretKind(value) {
     'no EXPO_PUBLIC_ variable in this shell holds a Supabase secret or service_role key',
     `${leaked.join('; ')}. A server key must never be in the app or in EAS build variables (both alpha profiles read the EAS "preview" environment): delete it there now, rotate it in Supabase (Project Settings > API Keys), and use the publishable (anon) key instead.`,
   );
+  if (leaked.length) step(9, 'open', leaked.join('; '));
 }
 
-// ---------------------------------------------------------------- 4b. the staging project values (server-on build only)
-if (SERVER_ON) {
+// ---------------------------------------------------------------- 4b. the staging project values
+// Build 2 always; build 1 too when the values are exported here, because it reads the same EAS environment.
+if (SERVER_ON || process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) {
   // EAS cloud builds read these from the EAS "preview" environment, which this script cannot see. If you export
   // the same values in your shell first, their shape is checked here; nothing is sent anywhere.
   const url = String(process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
@@ -348,9 +350,26 @@ if (SERVER_ON) {
     if (ok) pass(`Supabase values in this shell look right: ${url} and a publishable key (checked for shape only; the EAS "preview" environment must hold the same)`);
     step(9, ok ? 'check' : 'open', ok ? 'the values in this shell look right; confirm the EAS "preview" environment holds the same' : 'the values in this shell are wrong (see FAIL above)');
   }
+}
+if (SERVER_ON) {
   const otp = String(process.env.EXPO_PUBLIC_EMAIL_OTP_LENGTH ?? '').trim();
   unverified(`Email code length: the app expects ${otp || '6 (EXPO_PUBLIC_EMAIL_OTP_LENGTH unset)'} digits; Supabase Auth > Email > "Email OTP length" on staging must be the same number, or every typed code is refused.`);
   step(7, 'check', `Auth settings, SMTP and templates on staging; OTP length ${otp || '6'}`);
+
+  // Invite links must carry the token in the fragment (B-NFR-002): https://<site>/j#t=<token>. An app that still
+  // writes /i/<token> sends every invite opened outside the app to the website with the token in the path, and the
+  // website no longer serves /i (#144). fix/invite-link-fragment moves the app; build 2 waits for it.
+  let inviteSource = '';
+  try {
+    inviteSource = read(join(MOBILE, 'src/lib/family/invite-link.logic.ts'));
+  } catch {
+    /* reported below */
+  }
+  check(
+    /\$\{INVITE_PATH\}#t=\$\{token\}/.test(inviteSource) && !/INVITE_PATH_PREFIX\s*=\s*'\/i\/'/.test(inviteSource),
+    'invite links are /j#t=<token>: the token is in the fragment and never reaches the website (B-NFR-002)',
+    'The app still writes invite links as /i/<token>, with the token in the path where the website and its logs see it, and the website no longer serves /i. Merge fix/invite-link-fragment into develop, then develop into this branch, before building with server features on.',
+  );
 }
 
 // ---------------------------------------------------------------- 5. language packs and the speech model host
@@ -509,10 +528,10 @@ if (cfg) {
 // Apple, App Store Connect, Supabase dashboards and the live website are outside the repo, and the script
 // never goes online, so these stay "check" until the founder ticks them in docs/FOUNDER_TASKS.md.
 step(1, 'check', 'Apple Developer Program membership Active (developer.apple.com > Account)');
-step(2, 'check', 'App Store Connect record for the .preview bundle id, and the testers added');
+step(2, 'check', 'App Store Connect record for the .preview bundle id, the testers, and the API key stored in EAS for builds from GitHub Actions');
 if (!founder.has(3)) step(3, 'check', 'project id not checked (the app config did not evaluate)');
 if (!founder.has(4)) step(4, 'check', 'words from speech need the key, the bucket and a published manifest');
-step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1' : 'build 1 is optional before build 2');
+step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1; the build itself runs in GitHub Actions or on your own computer, with iOS credentials in EAS' : 'build 1 is optional before build 2');
 if (SERVER_ON) {
   // D-041: the schema reaches staging only through .github/workflows/deploy-db.yml. Build 2 runs develop's app
   // against staging, so staging needs develop's migrations, which only a manual run from develop can deliver.
@@ -523,7 +542,7 @@ if (SERVER_ON) {
     // Missing workflow: reported as open below.
   }
   if (/workflow_dispatch/.test(deployDb) && /develop/.test(deployDb)) {
-    step(6, 'check', 'scribe-staging exists and has every migration on develop: run deploy-db from develop with the approve-migration label (TESTFLIGHT.md step 6)');
+    step(6, 'check', 'scribe-staging exists and has every migration on develop: run Deploy database on develop and approve the staging deployment, then record the files it lists (TESTFLIGHT.md step 6, DEPLOY.md)');
   } else {
     step(6, 'open', '.github/workflows/deploy-db.yml cannot deploy develop to staging yet (push to main only); the S20 change "staging from develop" must merge first, or staging has none of develop\'s migrations');
   }

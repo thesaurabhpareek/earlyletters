@@ -1,6 +1,6 @@
 # Environments
 
-Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the alpha (D-106). Supersedes the 3 Oct draft on PR #35 (`docs/ops-runbooks`), which described an on-device v1.0. Decisions: D-041 (migrations reach hosted projects only through CI), D-097 (pack host), D-100 (server features on in v1.0, after the R-17 gate), D-106 (alpha against staging). Companion docs: [DEPLOY.md](DEPLOY.md), [AUTH_SETUP.md](AUTH_SETUP.md), [DOMAINS.md](DOMAINS.md), [SECURITY.md](SECURITY.md), [../release/TESTFLIGHT.md](../release/TESTFLIGHT.md).
+Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the alpha (D-106). Supersedes the 3 Oct draft on PR #35 (`docs/ops-runbooks`), which described an on-device v1.0. Decisions: D-041 (migrations reach hosted projects only through CI), D-097 (pack host), D-100 (server features on in v1.0, after the R-17 gate), D-106 (alpha against staging). Companion docs: [DEPLOY.md](../ops/DEPLOY.md), [AUTH_SETUP.md](../ops/AUTH_SETUP.md), [DOMAINS.md](../ops/DOMAINS.md), [SECURITY.md](../ops/SECURITY.md), [../release/TESTFLIGHT.md](TESTFLIGHT.md).
 
 ## Status on 15 Oct 2026
 
@@ -19,6 +19,8 @@ Every switch is written out in every profile of `apps/mobile/eas.json`; `apps/mo
 | `testflight` | **alpha build 1**, store lane after the R-17 flip | store (TestFlight) | `preview` | `<id>.preview` | preview | **off** until the R-17 gate (one-line flip, TESTFLIGHT.md) | off | off | off |
 | `preview` | **alpha build 2**, against staging | store (TestFlight) | `preview` | `<id>.preview` | preview | **on** | off | off | off |
 | `production` | the App Store app, later | store | `production` | `<id>` | production | off | off | off | off |
+
+Both alpha profiles share the update channel `preview`. Nothing uses it today (`expo-updates` is not installed); give each profile its own channel before adding over-the-air updates, or an update made for build 2 would reach build 1 with build 2's switches.
 
 `<id>` is `bundleId()` from `packages/brand` (`com.earlyletters.scribe`). An unset `EXPO_PUBLIC_APP_ENV` means development and an unknown value fails the config (`src/lib/build-env.ts`), so no build gets the production id by accident. Local `expo start` reads `apps/mobile/.env.development` (development, every switch off); personal overrides go in the git-ignored `.env.development.local`.
 
@@ -40,7 +42,9 @@ Nothing secret is in the repository. The app's project values are public by desi
 | Sign in with Apple `.p8`, Key ID, Team ID | Password manager; later the `apple-token` function's secrets | Founder, FT-07 | Downloadable once |
 | `APPLE_TEAM_ID`, `IOS_BUNDLE_ID` | Vercel project, Production environment (website) | Founder, TESTFLIGHT.md step 10 | `IOS_BUNDLE_ID` is the production id; the site adds `.preview` |
 | Pack signing keys (secret halves) | Password manager only | Founder, FT-16 | Public halves in `packages/api/src/keys.ts` |
-| `EXPO_TOKEN` | GitHub repository secret | Founder, optional | Only for `.github/workflows/testflight.yml` |
+| `EXPO_TOKEN` | GitHub repository secret | Founder, TESTFLIGHT.md step 3 | Read only by the build step of `.github/workflows/testflight.yml` |
+| iOS distribution certificate and profile, App Store Connect API key | EAS credentials for the project | Founder, TESTFLIGHT.md steps 2.6 and 5 | Builds and submits run in GitHub Actions or on the founder's computer, never in an agent sandbox |
+| `submit.<profile>.ios.ascAppId` | `apps/mobile/eas.json` | PR after step 2.4 | The app record's Apple ID; not secret |
 
 ## Matrix
 
@@ -69,7 +73,7 @@ While real letters are on `scribe-staging` (from the first build 2 sign-in until
 
 ## Universal links
 
-The website serves `/.well-known/apple-app-site-association` from `apps/web/src/app/.well-known/apple-app-site-association/route.ts` on `main`, built from `APPLE_TEAM_ID` and `IOS_BUNDLE_ID`: the app ids `<TEAMID>.<id>` and `<TEAMID>.<id>.preview`, and only the paths `/auth/confirm`, `/auth/callback` (until the app and email templates move to `/auth/confirm`), `/i/*` and `/j`. `docs/ops/well-known/apple-app-site-association` is a reference copy of what it serves. The `.dev` id and the `webcredentials` block (passkeys, AUTH_SETUP 7) are left out until something uses them. `earlyletters.app` only redirects and never serves the file.
+The website serves `/.well-known/apple-app-site-association` from `apps/web/src/app/.well-known/apple-app-site-association/route.ts` on `main`, built from `APPLE_TEAM_ID` and `IOS_BUNDLE_ID`: the app ids `<TEAMID>.<id>` and `<TEAMID>.<id>.preview`, and only the paths `/auth/confirm`, `/auth/callback` (until the app and email templates move to `/auth/confirm`) and `/j` (invites, token in the fragment as `/j#t=<token>`; the older `/i/<token>` form is no longer written, accepted or listed). `docs/ops/well-known/apple-app-site-association` is a reference copy of what it serves. The `.dev` id and the `webcredentials` block (passkeys, AUTH_SETUP 7) are left out until something uses them. `earlyletters.app` only redirects and never serves the file.
 
 ## Promotion path
 

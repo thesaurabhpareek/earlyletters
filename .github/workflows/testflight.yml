@@ -4,8 +4,16 @@
 #   preview     alpha build 2, server features on against staging (its Supabase values come from the
 #               EAS "preview" environment, never from this repository or this workflow)
 # NOTHING here has been run: it needs the founder's Expo and
-# Apple accounts, so every assumption below is UNVERIFIED until the first real run. The same thing from a
-# Mac or any computer is the two eas commands in docs/release/TESTFLIGHT.md.
+# Apple accounts, so every assumption below is UNVERIFIED until the first real run. Builds, submits and store
+# actions run here or on the founder's own computer, never in an agent sandbox (it cannot reach expo.dev or
+# App Store Connect). Further release workflows come through docs/release/AUTOMATION.md.
+#
+# What it expects, by name (nothing else; no value is ever in this repository):
+#   GitHub repository secret  EXPO_TOKEN (read only by the build step)
+#   EAS, environment preview   EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY (build 2), optional
+#                              EXPO_PUBLIC_EMAIL_OTP_LENGTH; EAS reads them on its own servers, this job never sees them
+#   EAS, credentials           the iOS distribution certificate and profile for the .preview id, and for submit an
+#                              App Store Connect API key; app.config.ts extra.eas.projectId; eas.json submit ascAppId
 #
 # One-time setup the founder does first (docs/release/TESTFLIGHT.md):
 #   1. EXPO_TOKEN repository secret (Expo account, Access tokens). It is read only by the last step.
@@ -38,6 +46,8 @@ concurrency:
 
 env:
   CI: true
+  # Pinned, the same version as release-ios.yml (PR #110); bump both together.
+  EAS_CLI_VERSION: 24.10.0
   # The inputs go through the environment, never into the script text.
   SUBMIT: ${{ inputs.submit }}
   PROFILE: ${{ inputs.profile }}
@@ -81,6 +91,6 @@ jobs:
           args=(build --platform ios --profile "$PROFILE" --non-interactive --wait)
           if [ "$SUBMIT" = "true" ]; then args+=(--auto-submit); fi
           # UNVERIFIED: eas-cli's current flags (--auto-submit uses the submit profile with the same name).
-          # Pinned to an exact release (24.8.0, published 24 Sep 2026): this step holds EXPO_TOKEN, so it never runs
-          # whatever `latest` happens to be today. Raise it deliberately, in its own PR.
-          npx --yes eas-cli@24.8.0 "${args[@]}"
+          # Pinned (EAS_CLI_VERSION above, the release #110's release-ios.yml uses too): this step holds EXPO_TOKEN,
+          # so it never runs whatever `latest` happens to be today. Raise it deliberately, in its own PR.
+          npx --yes "eas-cli@${EAS_CLI_VERSION}" "${args[@]}"
