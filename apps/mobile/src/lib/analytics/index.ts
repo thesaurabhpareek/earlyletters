@@ -34,9 +34,11 @@ import {
   type Violation,
 } from '@scribe/analytics';
 import { currentAuthUserId } from '@/lib/auth/auth-store';
+import { analyticsEnabled, capabilities, postHogKeyForBuild } from '@/lib/capabilities';
 import { deleteSetting, getSetting, listChildren, listEntriesForChild, setSetting, subscribe } from '@/lib/store';
 
-const KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '';
+// v1.0 (EXPO_PUBLIC_ANALYTICS off, lib/capabilities.ts): no key, so the provider is the no-op and PostHog is never loaded.
+const KEY = postHogKeyForBuild(analyticsEnabled(), process.env.EXPO_PUBLIC_POSTHOG_KEY);
 /** PostHog US Cloud ingestion host (users and Supabase are in the US). */
 const HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
 
@@ -127,6 +129,8 @@ function optedInSummary(surface: 'consent_sheet' | 'settings') {
 
 /** Yes on the consent sheet or the Settings toggle. */
 export async function grantAnalytics(surface: 'consent_sheet' | 'settings'): Promise<void> {
+  // No yes can be recorded in a build without analytics (v1.0): there is nothing to say yes to.
+  if (!capabilities.analytics) return;
   await analytics.grant();
   trackers.trackAnalyticsOptedIn(optedInSummary(surface));
   analytics.setChildCount(listChildren().length);
@@ -183,6 +187,8 @@ let started = false;
 export async function startAnalytics(opts: { ttfiMs?: number } = {}): Promise<void> {
   if (started) return;
   started = true;
+  // v1.0: no analytics at all, not even `app_opened` to a no-op (lib/capabilities.ts).
+  if (!capabilities.analytics) return;
   try {
     await analytics.init();
     analytics.setChildCount(listChildren().length);
