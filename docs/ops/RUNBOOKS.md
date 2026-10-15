@@ -18,10 +18,10 @@ For `scribe-staging` first, then `scribe-prod`. About two hours each.
 4. **Schema from CI, not by hand.** Add the project's connection string as `SUPABASE_DB_URL` in the matching GitHub Environment ([SECRETS.md](SECRETS.md)). Apply every migration from an empty database through RB-1. Do not copy schema from the old development project.
 5. **Database settings.** Apply the per-project settings in `supabase/APPLY.md` (step 6 consent pepper; step 11 environment settings, where still relevant after brief decision 3). A new pepper per project; never reuse one.
 6. **Scheduled jobs.** Enable Cron and schedule the purge job as in `supabase/APPLY.md` step 7.
-7. **Auth.** Providers: Sign in with Apple, email magic link, Google when it ships (brief decision 4; D-044 timing). Redirect allowlist: `https://earlyletters.com/**` and the app scheme only. Custom SMTP through Resend with this environment's key. JWT expiry and refresh settings per TDD 04 section 3.1. Anonymous sign-in stays off until the web contribution page exists (v1.1).
+7. **Auth.** Providers: Sign in with Apple, email magic link, and Google (D-054, Decided, supersedes D-044), all from the release after 1.0. Redirect allowlist: `https://earlyletters.com/**` and the app scheme only. Custom SMTP through Resend with this environment's key. JWT expiry and refresh settings per TDD 04 section 3.1. Anonymous sign-in stays off until the web contribution page exists (v1.1).
 8. **Edge Function secrets.** Set only what that environment's functions use (`supabase secrets set`).
 9. **EAS.** Set the environment's public variables with `eas env:set ... --visibility plaintext` and build secrets with `--visibility secret` ([ENVIRONMENTS.md](ENVIRONMENTS.md)).
-10. **Remote config.** Seed the config table with the bundled defaults once it exists (D-035, **Planned**).
+10. **Remote config.** There is no config table: D-068 makes remote config one signed document. Publish the environment's first signed config with `scripts/packs/publish.ts config` after the founder has created the signing key ([MODEL_HOSTING.md](MODEL_HOSTING.md)).
 11. **Verify.** Run the read-only checks in `supabase/APPLY.md` steps 4 and 10 (classification, RLS on every table, no function executable by `anon`), then the Security and Performance Advisors. Anything not on APPLY.md's expected list: stop.
 12. **Record.** Update [ENVIRONMENTS.md](ENVIRONMENTS.md) (status, project ref, region, plan) and `.github/migrations-applied.txt` in one pull request.
 
@@ -74,7 +74,7 @@ Applies the moment a secret may have been seen by anyone else: committed, pasted
 
 ## RB-5 User data deletion request
 
-In-app account deletion (with a 30-day undo) is the main path. This runbook covers requests that arrive by email to `hello@earlyletters.com` or from the static `/delete-account` page (D-042). Service levels from LEGAL-REQ-031: acknowledge within 10 days, complete within 45 days.
+**From the release after 1.0.** On-device v1.0 has no accounts (issue #127 item 1), so there is nothing on our side to delete; a v1.0 request is answered by explaining that letters live only on the phone and how to delete them there. In-app account deletion (with a 30-day undo) is the main path once accounts ship. This runbook covers requests that arrive by email to `hello@earlyletters.com` or from the static `/delete-account` page (D-042). Service levels from LEGAL-REQ-031: acknowledge within 10 days, complete within 45 days.
 
 1. **Log it** in the private support log: date received, request type, the account email's ticket reference. No letter content.
 2. **Acknowledge** within 10 days. Calm and short: we received it, what will be deleted, what is kept and why (legal records), when it will be done, how to cancel within 30 days.
@@ -82,7 +82,7 @@ In-app account deletion (with a 30-day undo) is the main path. This runbook cove
 4. **Offer the in-app path first** if they still have the app (Settings, delete account). It is faster and self-service.
 5. **Support-assisted deletion** when they cannot use the app: it must run through the same deletion job as in-app deletion (30-day undo, purge, processor deletions, audit), never ad-hoc SQL deleting rows. The audited runbook wrapper for this is **Planned** (TDD 04 3.10 `support_delete`, ROADMAP M9). The current deletion RPC accepts only app and web sources; the support source needs a decision before this path exists.
 6. **Co-parents and contributors.** If the person shares a book, the book stays for the other parent (PRD B-REQ-016); tell the requester that copies other people exported may remain (LEGAL-REQ-032).
-7. **Processors.** Within 24 hours of the hard delete, deletion calls go to PostHog, Sentry and the email provider (LEGAL-REQ-031). Apple is not our processor for purchases; we delete our own mapping only.
+7. **Processors.** Within 24 hours of the hard delete, deletion calls go to the email provider, and to PostHog and Sentry once analytics returns after 1.0 (LEGAL-REQ-031). Apple is not our processor for purchases; we delete our own mapping only.
 8. **Confirm** to the requester when the hard delete is done. Record completion date and counts only.
 
 ---
@@ -94,7 +94,7 @@ Release tag: `ios-v<major>.<minor>.<patch>` (CLAUDE.md). Beta runs on TestFlight
 **Before the first build ever**
 - `publisher.domain` in `packages/brand/index.ts` is the real domain; the bundle ID is permanent after the first upload.
 - Individual Apple Developer account active (brief decision 14); app record created in App Store Connect with the production bundle ID; App Store Connect API key in EAS credentials.
-- Subscriptions configured in App Store Connect with Family Sharing on and the agreed prices and trials (brief decision 3); Billing Grace Period per D-048.
+- Subscriptions configured in App Store Connect with Family Sharing on and the prices and trials in D-082 ($4.99 a month with a 1-month free trial, $49.99 a year with a 2-month free trial; `packages/content/src/pricing.ts` and `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` are the source); Billing Grace Period per D-048.
 
 **Every release**
 1. `develop` merged into `main`; CI green; database migrations the build needs already in production (RB-1).
@@ -102,10 +102,10 @@ Release tag: `ios-v<major>.<minor>.<patch>` (CLAUDE.md). Beta runs on TestFlight
 3. Build: `eas build --platform ios --profile production`.
 4. **Size check:** download size under 40 MB on every release build (brief decision 15). Read it from App Store Connect after processing (where it reports per-device sizes: **Unverified** exact screen); record it in the release notes. Over budget: do not ship; find what grew.
 5. Submit to TestFlight: `eas submit --platform ios --profile production`.
-6. **Internal testing** (founding family, cohort C0) on the build. Smoke test on a real device: first run, record a letter offline, sync, invite a co-parent, purchase and restore in sandbox, delete account.
+6. **Internal testing** (founding family, cohort C0) on the build. Smoke test on a real device: first run, record a letter offline, keep a third letter to reach the Plus sheet, purchase and restore in sandbox, delete and restore a letter, export. From the release after 1.0, add sync, inviting a co-parent and deleting an account.
 7. **External testing** (cohort C1, D-045) needs Beta App Review for the first build of a version (**Unverified** current rule; check App Store Connect).
 8. **Store submission.** Review notes describe every feature, including anything controlled by remote config (guideline 2.3.1(a): no hidden, dormant or undocumented features; all new features described with specificity in the Notes for Review). Privacy labels match the data map output for this version (LEGAL-REQ-042). Screenshots use the fictional Asha family only.
 9. **Release.** Prefer a phased release for automatic updates (**Unverified** current options). Tag `ios-vX.Y.Z` on the released commit.
-10. **Watch** crash-free rate and sync errors for 48 hours (opt-in telemetry only).
+10. **Watch** the crash-free rate in App Store Connect and Xcode Organizer for 48 hours (v1.0 has no analytics of its own); add sync errors from the release after 1.0.
 
-**If a release goes wrong:** the App Store has no binary rollback. Use kill switches and remote config (within what App Review saw), raise `min_supported_build` only if an old build is unsafe, ship a fix, and request an expedited review if families are affected ([INCIDENT.md](INCIDENT.md)).
+**If a release goes wrong:** the App Store has no binary rollback. Use kill switches and remote config (within what App Review saw), raise `minSupportedVersion` in the signed config only if an old build is unsafe, ship a fix, and request an expedited review if families are affected ([INCIDENT.md](INCIDENT.md)).

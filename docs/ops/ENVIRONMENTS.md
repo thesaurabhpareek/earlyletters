@@ -7,7 +7,7 @@ Owner: founder. Written 3 Oct 2026. Decision: D-041 (two Supabase projects; migr
 - The target layout below **does not exist yet.** The "Early Letters" Supabase organisation and the `scribe-staging` and `scribe-prod` projects have not been created. RB-0 in [RUNBOOKS.md](RUNBOOKS.md) creates them.
 - Until then, the existing single project is a development project only, changed by hand through `supabase/APPLY.md`. It is not promoted to production; production is built clean from the migration folder (TDD 02 section 6.1).
 - The bundle ID is derived from `publisher.domain` in `packages/brand/index.ts`, which is `earlyletters.com` on `develop` (checked 4 Oct 2026), so the production id is `com.earlyletters.scribe`. It can never change after the first App Store Connect upload.
-- **v1.0 is on-device only** (founder decision recorded in `docs/agents/BRIEF-2026-10-03.md`): no sign-in, no sync, no server copy of letters, and the build switch is off for every v1.0 profile. The Supabase rows in this document describe the server that v1.1 turns on; none of it is needed to ship v1.0. Secrets and settings for the deletion pipeline are also covered in `docs/ops/SECURITY.md`, `docs/ops/DOMAINS.md` and `docs/ops/runbooks/`.
+- **v1.0 is on-device only** (founder decision recorded in `docs/agents/BRIEF-2026-10-03.md`): no sign-in, no sync, no server copy of letters, and the build switch is off for every v1.0 profile. The Supabase rows in this document describe the server that the release after 1.0 turns on (issue #127 item 1); none of it is needed to ship v1.0. v1.0 also collects no analytics (#118). Secrets and settings for the deletion pipeline are also covered in `docs/ops/SECURITY.md`, `docs/ops/DOMAINS.md` and `docs/ops/runbooks/`.
 
 ## Matrix
 
@@ -27,9 +27,9 @@ Owner: founder. Written 3 Oct 2026. Decision: D-041 (two Supabase projects; migr
 | Universal links | None | Proposed: none until a staging host is decided | `https://earlyletters.com` (brief decision 13) |
 | URL scheme | `scribe` (from `brand.scheme`) | `scribe` | `scribe` (whether to change it before the first build is an open founder question) |
 | Email sender | None, or Supabase local inbox | Resend, staging API key | Resend, production API key, from the `earlyletters.com` domain |
-| Analytics and crashes | Off | Separate PostHog and Sentry projects, or off (proposed) | PostHog and Sentry, opt-in only (brief decision 12, D-003) |
+| Analytics and crashes | Off | Off | **Off in v1.0** (#118: `EXPO_PUBLIC_ANALYTICS` unset in every profile, `capabilities.analytics`; D-088 keeps "Data Not Collected"). Crash rates from App Store Connect and Xcode Organizer. After 1.0: PostHog and Sentry, opt-in only (brief decision 12, D-003), with separate staging projects (proposed) |
 | Speech models and packs | Local files | Staging manifest and staging pack path | Production manifest ([MODEL_HOSTING.md](MODEL_HOSTING.md)) |
-| Remote config and kill switches | Bundled defaults | Staging config; switches drilled here first | Production config (D-035) |
+| Remote config and kill switches | Bundled defaults | Staging config; switches drilled here first | Production config: one signed document (D-068, which supersedes D-035's table) |
 
 ### Bundle ID
 
@@ -38,7 +38,7 @@ Read from `apps/mobile/app.config.ts` and `packages/brand/index.ts` on 3 Oct 202
 - `<id>` is `bundleId()`: the reversed `brand.publisher.domain` plus `.scribe`.
 - Suffixes by `EXPO_PUBLIC_APP_ENV`: `development` adds `.dev`, `preview` adds `.preview`, `production` adds nothing.
 - With the current `publisher.domain = 'earlyletters.com'`, `<id>` is `com.earlyletters.scribe`. The production value is the permanent App Store identity; do not change the domain after the first upload.
-- Today an unset or unknown `EXPO_PUBLIC_APP_ENV` falls back to `production` in `app.config.ts`. Always set it explicitly per profile (it is, in `eas.json`).
+- An unset `EXPO_PUBLIC_APP_ENV` means `development`, and an unknown value is refused (`app.config.ts`, #27; checked on `develop` 15 Oct 2026). Production must be named explicitly, and only the `eas.json` `production` profile does that.
 
 ### Environment variables
 
@@ -49,9 +49,10 @@ Public build values are set per EAS environment as `plaintext`. None is a secret
 | `EXPO_PUBLIC_APP_ENV` | `development` | `development` / `preview` | `production` | Exists |
 | `EXPO_PUBLIC_SUPABASE_URL` | local CLI URL | `scribe-staging` URL | `scribe-prod` URL | Proposed |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | local key | staging publishable key | production publishable key | Proposed |
-| `EXPO_PUBLIC_POSTHOG_KEY` | unset | staging project key or unset | production project key | Proposed |
-| `EXPO_PUBLIC_SENTRY_DSN` | unset | staging DSN or unset | production DSN | Proposed |
-| `SENTRY_AUTH_TOKEN` (build only, `secret`) | unset | optional | set | Proposed |
+| `EXPO_PUBLIC_ANALYTICS` | unset | unset | unset in v1.0 (no analytics); `on` only after 1.0 | Exists |
+| `EXPO_PUBLIC_POSTHOG_KEY` | unset | staging project key or unset | unset in v1.0; production project key after 1.0 | Proposed (after 1.0) |
+| `EXPO_PUBLIC_SENTRY_DSN` | unset | staging DSN or unset | unset in v1.0; production DSN after 1.0 | Proposed (after 1.0) |
+| `SENTRY_AUTH_TOKEN` (build only, `secret`) | unset | optional | after 1.0 | Proposed (after 1.0) |
 
 Server-side values (Edge Function secrets, Auth settings, database settings) are listed in [SECRETS.md](SECRETS.md). Database settings from `supabase/APPLY.md` steps 6 and 11 apply per project as written there.
 

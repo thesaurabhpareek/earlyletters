@@ -40,10 +40,10 @@ Listed so secret scanners can allowlist them and nobody treats them as sensitive
 | `EXPO_PUBLIC_APP_ENV` | `apps/mobile/eas.json` per profile; `apps/mobile/.env.development` locally | Exists |
 | `EXPO_PUBLIC_SUPABASE_URL` | EAS env, `plaintext` | Proposed |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_...`) | EAS env, `plaintext` | Proposed |
-| `EXPO_PUBLIC_POSTHOG_KEY` (project key, ingestion only) | EAS env, `plaintext` | Proposed |
-| `EXPO_PUBLIC_SENTRY_DSN` | EAS env, `plaintext` | Proposed |
-| Pack and config manifest public keys (`MANIFEST_PUBKEY_<keyid>`) | Bundled in the app source | Proposed ([MODEL_HOSTING.md](MODEL_HOSTING.md)) |
-| Google OAuth client ids | Supabase Auth settings, app config | Proposed (Google sign-in timing: brief decision 4 versus D-044) |
+| `EXPO_PUBLIC_POSTHOG_KEY` (project key, ingestion only) | EAS env, `plaintext` | Proposed, after 1.0 (v1.0 has no analytics, #118) |
+| `EXPO_PUBLIC_SENTRY_DSN` | EAS env, `plaintext` | Proposed, after 1.0 |
+| Signed-document public keys (`TRUSTED_SIGNING_KEYS`) | `packages/api/src/keys.ts`, bundled in the app | Exists, empty until the founder runs `scripts/packs/keygen.ts` ([MODEL_HOSTING.md](MODEL_HOSTING.md)) |
+| Google OAuth client ids | Supabase Auth settings, app config | Proposed (Google sign-in per D-054, from the release after 1.0) |
 
 ### Secrets
 
@@ -64,9 +64,9 @@ Listed so secret scanners can allowlist them and nobody treats them as sensitive
 | App Store Connect API key (`.p8`, Key ID, Issuer ID) | Uploads builds, edits app metadata | EAS credentials (for `eas submit`) | Founder | Yearly | App Store Connect > Users and Access > Integrations: create, update EAS, revoke old. |
 | iOS distribution certificate and profiles | Signs release builds | EAS credentials | Founder | When Apple expires them | `eas credentials`. |
 | `EXPO_TOKEN` (robot user) | Starts EAS builds from CI | GitHub Environment secret, only when CI builds the app | Founder | 180 days | Expo dashboard > Access tokens: create for a robot user with the least role, replace, revoke old. |
-| `SENTRY_AUTH_TOKEN` | Uploads source maps at build time | EAS env, `secret` | Founder | 180 days | Sentry: create an org token scoped to releases, replace, revoke old. |
-| `POSTHOG_PERSONAL_API_KEY` | Deletes a person's events (deletion requests) | Edge Function secret (proposed) | Founder | 180 days | PostHog: create a key scoped to the one project, replace, revoke old. |
-| Manifest signing private key (`MANIFEST_SIGNING_KEY_<keyid>`) | Makes the app trust a pack, model or content manifest | Founder password manager; never CI until a decision says otherwise | Founder | Yearly; on suspicion | Generate a new key pair, ship the new public key in an app release, sign with both during overlap, retire the old key id. See [MODEL_HOSTING.md](MODEL_HOSTING.md). |
+| `SENTRY_AUTH_TOKEN` | Uploads source maps at build time | EAS env, `secret` | Founder | 180 days | Sentry: create an org token scoped to releases, replace, revoke old. After 1.0 only. |
+| `POSTHOG_PERSONAL_API_KEY` | Deletes a person's events (deletion requests) | Edge Function secret (`docs/ops/SECURITY.md` section 1) | Founder | 180 days | PostHog: create a key scoped to the one project, replace, revoke old. After 1.0 only. |
+| Signing private key (`EL_SIGNING_KEY`, with `EL_SIGNING_KEY_ID`) | Makes the app trust a pack manifest, remote config or content bundle | Founder password manager, exported only into the signing shell for `scripts/packs/publish.ts`; never the repo, CI or a server | Founder | Yearly; on suspicion | Generate a new key pair, ship the new public key in an app release, sign with both during overlap, retire the old key id. See [MODEL_HOSTING.md](MODEL_HOSTING.md). |
 | Cloudflare R2 access key (write) | Uploads packs to the bucket | Founder machine or a GitHub Environment secret for a publish job | Founder | 180 days | Cloudflare: create a token scoped to the one bucket, replace, revoke old. Only if R2 is chosen. |
 | Hugging Face token (write) | Publishes public model mirrors | Founder machine | Founder | 180 days | Hugging Face settings > Access tokens. Read-only downloads need no token. |
 | Porkbun API key | DNS changes for both domains | Not created. Make DNS changes in the dashboard. | Founder | n/a | If one is ever created: delete it after use. |
@@ -92,7 +92,7 @@ Do not create these. If one exists in any console, delete it.
 | Porkbun | `earlyletters.com`, `earlyletters.app` | Required | Registrar lock on both domains. |
 | Vercel | Website | Required | |
 | Cloudflare, Hugging Face | Pack hosting (if chosen) | Required | |
-| PostHog, Sentry | Analytics, crashes (opt-in) | Required | |
+| PostHog, Sentry | Analytics, crashes (opt-in, after 1.0) | Required | Not used by v1.0 |
 
 ## Review
 

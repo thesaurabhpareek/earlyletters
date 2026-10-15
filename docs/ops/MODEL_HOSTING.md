@@ -11,46 +11,27 @@ Owner: founder (picks the host, D-046), AI engineer. Written 3 Oct 2026. Decisio
 
 ## The manifest
 
-One manifest per environment lists every available pack and model. Proposed shape (to be fixed as a typed contract in `packages/api`, brief decision 17):
+The contract is built on `develop` (ADR 0016); this section describes it and does not redefine it. Checked against `develop` at 56ec5b5 on 15 Oct 2026.
 
-```json
-{
-  "schema": 1,
-  "manifest_version": 42,
-  "issued_at": "2026-10-03T00:00:00Z",
-  "expires_at": "2026-11-03T00:00:00Z",
-  "min_app_build": 1,
-  "packs": [
-    {
-      "id": "pt",
-      "kind": "language",
-      "version": "1.0.0",
-      "engine_version": 3,
-      "files": [
-        { "path": "f/<sha256 of rules.json>", "bytes": 48213, "sha256": "<64 hex>" },
-        { "path": "f/<sha256 of model.bin>", "bytes": 190000000, "sha256": "<64 hex>" }
-      ]
-    }
-  ],
-  "key_id": "2026a",
-  "signature": "<base64 signature over the canonical bytes of everything above>"
-}
-```
+- **Shape:** `packages/api/src/pack-manifest.ts`, schema version 1. The payload has `schemaVersion`, `version` (increases with every publish), `generatedAt` and `packs`. Each pack entry has `id` (for example `text-rules.pt`), `kind` (`speech-model`, `text-rules` or `prompts`), `language`, `version`, `url`, up to 3 `mirrors`, `bytes`, `sha256`, `fileName`, `minAppVersion` and `required`. An entry the app does not understand is skipped and counted, never fatal.
+- **Signature:** every public document (pack manifest, remote config, content bundle) is a `SignedDocument` envelope (`kind`, `keyId`, `sig`, `payload`), signed with Ed25519 over `early-letters/<kind>/v1` plus the canonical JSON of the payload (`packages/api/src/integrity.ts`, using `@noble/ed25519`). The kind prefix stops a signed config being replayed as a manifest.
+- **Keys:** the app trusts only the public keys in `packages/api/src/keys.ts`. That list is empty until the founder runs `scripts/packs/keygen.ts` and pastes the public key; while it is empty the app fails closed (installs no downloaded pack, keeps its bundled config). The private key lives in the founder's password manager and is passed to `scripts/packs/publish.ts` as `EL_SIGNING_KEY` and `EL_SIGNING_KEY_ID`, never in the repo, CI or a server ([SECRETS.md](SECRETS.md)).
+- **Publishing:** `scripts/packs/publish.ts` builds and signs; it never uploads. It writes pack files to `dist/packs/<id>/<version>/<file>` and each signed document into `supabase/functions/<fn>/published.ts`, then prints the manual upload and deploy steps.
 
-Rules:
+Rules the built code enforces:
 
-1. **Signed.** The manifest is signed with an offline private key held by the founder ([SECRETS.md](SECRETS.md), `MANIFEST_SIGNING_KEY_<keyid>`). The app bundles the public keys for the current and next `key_id`, so a key can be rotated with an app release. Algorithm proposal: Ed25519; the exact library on device must be chosen and its API checked against the installed version (not chosen yet).
-2. **SHA-256 per file.** The app hashes each file while it downloads and accepts it only if the hash and byte count match the signed manifest. A mismatch deletes the partial file and retries later; it never falls back to an unverified copy.
-3. **No rollback.** The app refuses a manifest whose `manifest_version` is lower than the last one it accepted, or whose `expires_at` has passed (it keeps using what it already has).
-4. **Compatible only.** A pack whose `engine_version` or `min_app_build` the installed app does not support is ignored, not half-loaded.
-5. **Immutable, content-addressed paths.** Every file is stored at `f/<sha256>`, named by its own hash, never by language or pack id. A file at a path never changes; a fix is a new file and therefore a new path. This lets the CDN cache forever and keeps language names out of request paths (see Download privacy below).
-6. **Same manifest machinery for server-driven content** (prompts, tips, remote config blocks; brief decision 16): signed or hashed, cached on device, and the app always works from its last good copy.
+1. **Signed.** The app checks the envelope, the key id and the kinds that key may sign before it reads the payload.
+2. **SHA-256 per file.** A pack file is trusted only when its SHA-256 and byte count match its manifest entry. A mismatch deletes the download and tries the next mirror; there is no fallback to an unverified copy (`apps/mobile/src/lib/packs/engine.ts`).
+3. **No rollback.** The app refuses a manifest whose `version` is lower than the last one it accepted. The manifest has no expiry field.
+4. **Compatible only.** An entry whose `minAppVersion` is newer than the installed app is ignored, not half-loaded.
+5. **Immutable, versioned paths.** A file at a path never changes; a fix is a new pack `version` and therefore a new path, so the CDN can cache it forever.
+6. **Same machinery for server-driven content** (remote config and content bundles; brief decision 16, D-068): signed, cached on the device, and the app always works from its last good copy.
 
 ## Download privacy
 
 A family's chosen language is personal data in our classification (L4 when tied to a person). The request for a pack must not reveal it more than necessary, so:
 
-1. **No language in the path.** Files are fetched by hash (`f/<sha256>`). Access logs show a hash, not `pt/` or `hi/`.
+1. **No language in the path (proposed change).** Built today, pack URLs are `<base>/<id>/<version>/<file>`, so an access log shows `text-rules.pt`. Proposed: have `scripts/packs/publish.ts` publish each file under a hash-named path (`<base>/f/<sha256>`) and put that in the entry's `url`; the app already accepts any https `url`, so no app change is needed. Until that lands, the host can see which language pack was fetched.
 2. **No identifiers on pack requests.** No user id, device id, auth token, cookie or per-user query parameter is sent to the pack host. Requests are anonymous `GET`s, identical for every device that picks the same language.
 3. **Minimal host logs.** Keep CDN or bucket access logging off, or at the shortest retention the host allows, and never join it with Supabase data. Record the chosen setting in the data map.
 4. **The manifest is fetched whole.** The app downloads the full manifest (all languages) and picks locally, so the manifest request reveals nothing.
@@ -75,7 +56,7 @@ Limit, stated plainly: the manifest is public, so anyone holding it can map a ha
 ## Recommendation
 
 1. R2 bucket per environment (or one bucket with `staging/` and `prod/` prefixes), public read through a custom domain, write only by the founder or a protected publish job.
-2. Manifests served from the same edge with a short cache and `ETag`; pack and model files with a long immutable cache (brief decision 17).
+2. Signed documents are served today by Edge Functions (`supabase/functions/config` and `content`, from the `published.ts` files the publish script writes) with an `ETag` and a short cache; pack and model files from the pack host with a long immutable cache (brief decision 17).
 3. Public model weights mirrored from a pinned Hugging Face revision; our own pack JSON published only by us.
 4. Add the host to the data map and the subprocessor list review: no personal data goes there, but its access logs hold IP addresses. Apply the Download privacy rules above (hash-named paths, no identifiers, minimal logs).
 5. Spike Apple-hosted Background Assets later for iOS 26+ devices, with the CDN as the fallback for everyone else. Decide only after the Expo path is proven on a real build.

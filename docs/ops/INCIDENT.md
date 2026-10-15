@@ -22,7 +22,7 @@ When unsure, pick the higher level; lowering it later is free. Recording, readin
 
 1. **Declare.** Open a private incident note (never a public issue or pull request): time, who noticed, what is known, severity. Keep a timestamped log from here.
 2. **Stop the harm.** Use the smallest switch that works:
-   - Remote config and kill switches (D-035, brief decision 16): `sync_enabled`, `invites_enabled`, `min_supported_build`, and the LEGAL-REQ-040 switches (revoke all sessions, pause signed-URL issuance, disable the AI gateway when it exists). Edge Functions read switches with a 60 s cache; clients pick them up on their next refresh and otherwise keep working from their last good copy. Target effect: within 5 minutes (LEGAL-REQ-040).
+   - Remote config and kill switches (D-068: one signed config document, brief decision 16). The contract is `packages/api/src/remote-config.ts`: `killSwitches.sync`, `.invites`, `.photos`, `.packDownloads` and `.serverContent`, plus `minSupportedVersion` and `forceReauthEpoch` (signs everyone out, one of the LEGAL-REQ-040 switches). Flip one with `npx tsx scripts/packs/publish.ts config --kill <name>`, then deploy the printed function. Clients pick it up on their next refresh and otherwise keep working from their last good copy. Target effect: within 5 minutes (LEGAL-REQ-040). The other LEGAL-REQ-040 switches (pause signed-URL issuance, disable the AI gateway) do not exist yet.
    - A switch may only turn something off or reduce what is sent. Never use remote config to start collecting data, change the paywall or enable anything App Review has not seen.
    - A leaked secret: rotate at the source now (RB-4). Rotation, not history rewriting, is the fix.
    - A bad migration: fix forward or neutralise (RB-3); do not restore a backup without reading RB-3 first, because a restore can bring back data people deleted.
@@ -31,7 +31,9 @@ When unsure, pick the higher level; lowering it later is free. Recording, readin
 4. **Scope.** Which systems, which time window, which families (ids and counts only). LEGAL-REQ-039 requires an affected-user list within one hour once its runbook exists.
 5. **Decide on communication** (below). For SEV1, call counsel.
 
-Kill switches and the remote config table are planned (D-035, ROADMAP M4 and M9), not built. Until they exist, the containment tools are secret rotation, signing-key revocation, Edge Function undeploy and an expedited app update.
+The config contract, the app's reader (`apps/mobile/src/lib/remote`) and the signing script are built. D-068 supersedes D-035's database table, which is not built. A switch works only after the founder has created the signing key (`packages/api/src/keys.ts` is empty until then) and published a signed config. Until then, the containment tools are secret rotation, signing-key revocation, Edge Function undeploy and an expedited app update.
+
+**On-device v1.0** has no sign-in, sync or server copy of letters (issue #127 item 1). Its live surfaces are the website, the signed documents and the pack host. The sign-in, sync and invite examples above apply from the release after 1.0.
 
 ## Talking to families
 

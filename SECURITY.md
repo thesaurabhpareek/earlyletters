@@ -4,14 +4,14 @@ Families trust this app with their letters, voices and their children's details.
 
 ## How to report
 
-Email **security@earlyletters.com** with:
+Email **hello@earlyletters.com** with "Security" in the subject line, and include:
 
 - what you found and where (app version and build, endpoint, or file);
 - steps to reproduce, using your own test accounts only;
 - what an attacker could do with it;
 - how you would like to be credited, if at all.
 
-> Founder setup note: the `security@` mailbox must be created before this policy is relied on. Until it exists and has been tested, `hello@earlyletters.com` is the only verified live address; reports sent there with "Security" in the subject reach the same person.
+> Founder setup note: `hello@earlyletters.com` is the only verified live address today. A dedicated `security@earlyletters.com` mailbox is proposed; switch this page to it only after it exists and has been tested.
 
 If GitHub private vulnerability reporting is enabled on this repository, you may use that instead. Please do **not** open a public issue, pull request or discussion about a vulnerability.
 
