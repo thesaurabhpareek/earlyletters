@@ -278,8 +278,8 @@ export const site = {
   authConfirm: {
     title: 'Finish signing in',
     line: 'Finish on your iPhone.',
-    body: `Open ${NAME} on the iPhone where you asked for this email, and type the code from the same email. That signs you in, or confirms your email if you are new.`,
-    onPhone: 'Already on that iPhone? Tap below, then type the code.',
+    body: `Open ${NAME} on your iPhone and type the code from the same email. That signs you in, or confirms your email if you are new.`,
+    onPhone: 'Already on your iPhone? Tap below, then type the code.',
     open: `Open ${NAME}`,
     expired: 'If the app says the code has expired, ask it for a new email.',
     notYou: 'If you did not ask for this email, you can ignore it. Nothing changes.',
