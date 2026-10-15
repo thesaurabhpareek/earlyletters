@@ -61,7 +61,7 @@ Plain Node and non-TS tools read `packages/brand/registry.json` (same data). Fil
 | Sources | `source.logo.build`, `source.logo.geometry`, `source.logo.favicon`, `source.touchpoints.build`, `source.icon.bench` |
 | Deprecated | `deprecated.logo.r1.a`, `.r1.b`, `.r2`, `.r3`, `deprecated.email.interim.source`, `.interim.bimi`, `deprecated.email.direction.a`, `.b` |
 
-### Contexts (30)
+### Contexts (31)
 A context without a status is live (its files exist). `planned` contexts have a rule and a release but no artwork yet.
 
 | Context | Uses | Rule |
@@ -70,6 +70,7 @@ A context without a status is live (its files exist). `planned` contexts have a 
 | `app.notification` | `icon.app.{40,60,58,87,80,120}` (+ `.dark`), `icon.notification.*` | iOS draws notifications with the app icon: ship the hand-tuned 40/60, 58/87 and 80/120 PNGs so iOS never downsamples the master. Monochrome slots (Android, v1.1) use the white small-cut glyph. |
 | `app.splash` | `logo.symbol.ink`, `.reversed`, `color.paper`, `color.paperDark` | Symbol alone, 96 pt, centred. |
 | `app.header` | `logo.lockup.horizontal.small.*` | 20 to 26 pt. Navigation bars keep the system title. |
+| `app.brand-device` | `logo.symbol.accent`, `logo.symbol.reversed` | The opening pair alone, 40 to 64 pt, above the heading on welcome and empty states. Accent on paper, reversed on dark. One per screen, decorative, fade only. |
 | `app.paywall` | `logo.lockup.stacked.*` | 88 to 120 pt, above Apple's subscription view. |
 | `app.settings.about` | `icon.app.180`, `.180.dark`, small lockup | Icon at 60 pt, lockup at 22 pt. |
 | `web.header` | `logo.lockup.horizontal.ink` | Inline SVG, `currentColor`, 28 px. |
