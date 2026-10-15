@@ -88,7 +88,7 @@ Collected from the five chapters on 2026-10-03, most consequential first. Each c
 | 14 | Who keeps the request log until a `privacy_requests` table exists | Founder, in the support mailbox, fields per DSR-R05 | compliance-engineer |
 | 15 | Deep-link scheme: keep `scribe` or rename before the first build (DOC-17) | Rename | security-architect |
 | 16 | Email sign-in codes: 6 or 8 digits before public launch (TDD 04 OQ-S1) | none given | security-architect |
-| 17 | Compile packages to JS with an `exports` map, or raw TS with explicit `.ts` imports for Deno (MONO-04)? Needs an ADR before the first Edge Function | ADR first | principal-architect |
+| 17 | Compile packages to JS with an `exports` map, or raw TS with explicit `.ts` imports for Deno (MONO-04)? Five Edge Function directories are on `develop` since 4 Oct and import `packages/api` as raw TS, so the ADR now records the choice already in use and whether to keep it | ADR | principal-architect |
 | 18 | Alert channel for Sev 1 and 2: Sentry alerts or a new push or SMS service | Sentry alerts | principal-architect |
 | 19 | Where scheduled data invariant checks run (pg_cron or an Edge Function) | none given | data-steward |
 | 20 | `AGENTS.md`: forbid it, or add a root `AGENTS.md` symlinked to `CLAUDE.md` so OpenCode reads the constitution | Symlink | ai-eng-lead |
