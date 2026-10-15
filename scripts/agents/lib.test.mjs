@@ -292,6 +292,11 @@ test("ledger classifies every message kind", () => {
   const c = (body, extra = {}) => classify({ body, created_at: at(1), html_url: "u", user: appBot, ...extra }, { trusted: true, source: "comment" });
   assert.equal(c("<!-- journal run:9 agent:qa -->\n**Mode:** task BL-004").detail, "task BL-004");
   assert.equal(c("<!-- receipt run:9 agent:qa cost:0.12 -->").cost_usd, 0.12);
+  // Variants develop already writes: a salvaged run and a receipt with no reported cost.
+  assert.deepEqual([c("<!-- journal run:9 agent:qa salvage -->\nsaved").kind, c("<!-- journal run:9 agent:qa salvage -->\nsaved").detail], ["journal", "salvage"]);
+  const unknown = c("<!-- receipt run:9 agent:qa cost:unknown -->");
+  assert.equal(unknown.kind, "receipt");
+  assert.equal(unknown.cost_usd, undefined);
   assert.equal(c("<!-- red-team:abc1234 -->\nVerdict: ship").verdict, "ship");
   assert.equal(c("<!-- steward:data-steward:abc1234 -->\nVerdict: fix first").agent, "data-steward");
   assert.equal(c("<!-- handoff-reply from:legal status:declined -->").status, "declined");

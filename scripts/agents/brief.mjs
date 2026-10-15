@@ -149,7 +149,7 @@ function chaptersOwnedBy(h) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((f) => /^\d\d-.*\.md$/.test(f))
-    .filter((f) => new RegExp(`^owner:\\s*${h}\\s*$`, "m").test(readText(join(dir, f))))
+    .filter((f) => new RegExp(`^owner:\\s*["']?${h}["']?\\s*$`, "m").test(readText(join(dir, f))))
     .map((f) => `docs/engineering/${f}`);
 }
 
