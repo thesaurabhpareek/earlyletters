@@ -17,10 +17,13 @@ import { brand } from '@scribe/brand';
 /**
  * 1.1.0 (15 Oct 2026; G-19, LEGAL-REQ-034; decision of 15 Oct, delegated by
  * the founder): account.json gains `consent_on_this_phone`, the choices this
- * phone holds (the 18+ answer and the usage-sharing choice). v1.0 has no
- * server, so there is no server consent history; a later version adds it as
- * its own optional field. Optional in the schema, so 1.0.0 exports still
- * validate; this version always writes it.
+ * phone holds (the 18+ answer and the usage-sharing choice). It carries no
+ * server consent history; when sign-in is on, that record is added in a later
+ * version as its own optional field. Optional in the schema, so 1.0.0 exports
+ * still validate; this version always writes it. Compatibility is one way: the
+ * 1.0.0 schema closes account.json (additionalProperties: false), so it
+ * rejects a 1.1.0 file. Validate each export against the schema it carries in
+ * schema/export-v1.schema.json (the $id names the format, not the version).
  */
 export const EXPORT_SCHEMA_VERSION = '1.1.0';
 
@@ -124,7 +127,7 @@ export interface AccountFile {
 
 /**
  * The consent choices kept on this phone (never sent anywhere; the export is
- * the person's own copy). Not a server record: v1.0 has none.
+ * the person's own copy). Not a server record.
  */
 export interface ExportPhoneConsent {
   /** The "18 or older" question on this phone was answered yes. */

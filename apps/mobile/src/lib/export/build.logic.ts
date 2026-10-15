@@ -69,7 +69,7 @@ export interface ExportSnapshot {
   signedIn: boolean;
   children: SnapshotChild[];
   entries: SnapshotEntry[];
-  /** For account.json: the consent choices this phone holds (no server record in v1.0). */
+  /** For account.json: the consent choices this phone holds (never a server record). */
   consent: ExportPhoneConsent;
 }
 
