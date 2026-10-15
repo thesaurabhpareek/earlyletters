@@ -47,7 +47,7 @@ A chapter never restates a requirement; it cites the id (`DATA-REQ-0xx`, `LEGAL-
 | Red team and founder | Every PR still gets the red-team review and the founder's merge; `supabase/**` and auth changes also need `approve-migration` (D-041) | `docs/agents/OPERATING_MODEL.md` |
 | Consistency check | `check.mjs` fails if a chapter's `owner` is not on the roster | `scripts/agents/check.mjs` |
 
-Status on 2026-10-03, counted from `ENFORCEMENT.md`: of 208 rules, 43 are enforced on `develop`, 45 are pending in open PRs or branches (mostly #26 to #32 and #39), 40 are partly enforced, review-only or covered by the rule they cite, and 80 have no check yet (chapter 11 adds 16 MUST rules, ADR 0022). The `not yet` rows are the stewards' work queue.
+Status on 2026-10-15, counted from `ENFORCEMENT.md`: of 208 rules, 43 are enforced on `develop`, 45 are pending in open PRs or branches (mostly #26 to #32 and #39), 39 are partly enforced, review-only or covered by the rule they cite, and 81 have no check yet (chapter 11 adds 16 MUST rules, ADR 0022). The `not yet` rows are the stewards' work queue.
 
 ## Changing a standard
 
@@ -96,4 +96,4 @@ Collected from the five chapters on 2026-10-03, most consequential first. Each c
 | 21 | Thresholds that move an agent to a stronger model: acceptance under 50% over 10 PRs, fix-first over 50%, or caps hit on over 20% of runs | Confirm | ai-eng-lead |
 | 22 | Backfill `Done when:` on ready agent tasks now, or as each comes up (AIE-G4) | As each comes up | ai-eng-lead |
 | 23 | Counsel pack via `legal`: which state laws apply at launch, COPPA framing for adult-written content about children, D-050, legal-hold notice, analytics on cancelled deletion | Send to counsel | compliance-engineer |
-| 24 | Team daily run cap: the roster now requests 50 runs a day against a cap of 30 (stewards add 10). Raise the cap to 40? At the harness's own estimate a typical DeepSeek run is about $0.04 | Raise to 40 | coordinator |
+| 24 | Team daily run cap: the roster now requests 51 runs a day against a cap of 30 (stewards add 10). Raise the cap to 40? At the harness's own estimate a typical DeepSeek run is about $0.04 | Raise to 40 | coordinator |
