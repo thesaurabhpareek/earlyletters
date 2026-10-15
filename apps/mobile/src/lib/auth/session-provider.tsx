@@ -121,6 +121,19 @@ function phoneHasLocalData(): boolean {
   return listChildren().length > 0 || listEntries().length > 0;
 }
 
+/**
+ * Whether a session is saved on this phone, read from the Keychain (not the in-memory state,
+ * which is still `restoring` when a link opens the app from closed). An unreadable Keychain
+ * counts as signed in: a link must never replace a session we could not see (F02-REQ-020).
+ */
+async function keychainHasSession(): Promise<boolean> {
+  try {
+    return (await secureStorage.getItem(SESSION_STORAGE_KEY)) !== null;
+  } catch {
+    return true;
+  }
+}
+
 /** The stored session's user id, read from the Keychain without touching the network. */
 async function storedUserId(): Promise<string | null> {
   try {
@@ -272,6 +285,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // (auth-js 2.117.2 _signOut removes the session on any error for scope 'local').
       }
       await forgetAppleUser();
+      // H1: a sign-out leaves no pending email request behind (ADR 0023).
+      await clearPendingEmailRequest();
       dispatch({ type: 'SIGNED_OUT' });
     })();
   }, [finishing, sb]);
@@ -307,6 +322,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
           return { ok: false, error: 'cancelled' };
         }
         remember(method);
+        // H1: any sign-in spends this phone's pending email request (ADR 0023).
+        await clearPendingEmailRequest();
         dispatch({ type: 'SIGNED_IN', userId: res, method });
         return { ok: true };
       } catch (e) {
@@ -386,7 +403,9 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         if (!sb) return { ok: false, error: 'not_available' };
         // H1 (F02-REQ-018, F02-REQ-020): refused before any request when someone is signed in
         // here or this phone did not ask for an email; otherwise only through PKCE.
-        const signedInNow = isSignedIn(stateRef.current);
+        // Both the state and the Keychain: at a cold start from the link the state is still
+        // `restoring` while a saved session waits to be read.
+        const signedInNow = isSignedIn(stateRef.current) || (await keychainHasSession());
         let started = false;
         try {
           const r = await openEmailLink(

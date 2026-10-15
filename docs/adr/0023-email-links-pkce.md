@@ -14,11 +14,11 @@ Security review H1 (`docs/reviews/2026-10-04-security-privacy.md`): anyone can r
 
 Three layers; each is enough to stop H1 on its own.
 
-1. **Pending request.** When this phone asks Supabase for an email, it writes a Keychain note (`scribe.auth.pendingEmailRequest`: the time only, never the address; `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`). An opened link is used only while an unexpired note exists (1 hour, the longest OTP life a project can set). Otherwise the app makes no request and shows "Type the code from the email on this phone instead." (F02-U11). A sign-in by link or code spends the note; "Not my account" drops it.
+1. **Pending request.** When this phone asks Supabase for an email, it writes a Keychain note (`scribe.auth.pendingEmailRequest`: the time only, never the address; `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`). An opened link is used only while an unexpired note exists (1 hour, the longest OTP life a project can set). Otherwise the app makes no request and shows "Type the code from the email on this phone instead." (F02-U11). Any sign-in (link, code, Apple, Google or passkey) spends the note; a sign-out and "Not my account" drop it.
 2. **PKCE.** The Supabase client runs `flowType: 'pkce'`. `signInWithOtp` then stores a code verifier in this phone's Keychain and sends only the challenge (V: auth-js 2.117.2 `getCodeChallengeAndMethod`, `storePKCEVerifier`). The app opens a link with `GET /auth/v1/verify?token=<hash>&type=<t>&redirect_to=<callback>`, redirects not followed (`expo/fetch` with `redirect: 'manual'`; V: `expo/ios/Fetch/NativeResponse.swift` hands back the 3xx when the mode is not `follow`), reads the auth code from `Location`, and calls `exchangeCodeForSession(code)`, which needs this phone's verifier. A link from another phone's flow fails there (`bad_code_verifier` or `pkce_code_verifier_not_found`), and a redirect that carries tokens (the implicit shape H1 used) is refused. `verifyOtp({ token_hash })` is no longer called anywhere (a test checks the source).
 3. **Claim after consent and a tap.** The auth store releases a session to the sync contract (`onSignedIn`, `currentAuthUserId`, `syncAllowed`) only once consent is complete and, when this phone's letters belong to no account yet, the person has tapped "Keep them here" on a screen showing the masked account email ("a***@example.com"). "Not my account" ends the session; nothing was claimed or queued. A phone with no books or letters skips the screen (nothing to claim); a phone already owned by any account skips it (sync stops on a mismatch and nothing moves). An unreadable store asks.
 
-And: **a link is refused while any account is signed in** on this phone (F02-U27, F02-REQ-020): "You're signed in as another account. Sign out first to use this link." A typed code keeps working on any phone (DR-13 A); it passes layer 3.
+And: **a link is refused while any account is signed in** on this phone (F02-U27, F02-REQ-020), judged from both the in-memory state and the Keychain, so a link that opens the app from closed (state still restoring) is refused too; an unreadable Keychain counts as signed in: "You're signed in as another account. Sign out first to use this link." A typed code keeps working on any phone (DR-13 A); it passes layer 3.
 
 ### Details
 
@@ -39,5 +39,6 @@ And: **a link is refused while any account is signed in** on this phone (F02-U27
 
 - A link opened on another phone, or on this phone without a request, always falls back to the code. Support copy: "Type the code from the email on this phone instead."
 - Two sends in a row: only the newest email's link works (as before for the code).
+- auth-js removes this phone's verifier after any exchange, failed or not (V: `_exchangeCodeForSession`). A link from another phone opened while this phone's request is pending therefore also spends this phone's own link; the code from the email still works. Denial of service only, accepted.
 - Device checks AUTH_SETUP 11.3 and 11.10 must pass before C1 (the U items above).
 - The 8-digit, 15-minute code rule (review M4) and the new-device sign-in email are separate work packages (S01, wave 2).

@@ -4,12 +4,13 @@
  * Every name below is listed, with who sets it, in docs/ops/SECURITY.md.
  */
 import { brand, bundleId } from '../../../packages/brand/index.ts';
+import { appleClientIds } from './lib/apple.ts';
 
 export interface AppleConfig {
   teamId: string;
   keyId: string;
   privateKeyPem: string;
-  /** Client ids a stored token may belong to: the bundle id (native iOS) and, later, the Services ID. */
+  /** Client ids a stored token may belong to: the bundle id (native iOS), APPLE_SERVICES_ID and APPLE_EXTRA_CLIENT_IDS (lib/apple.ts appleClientIds). */
   clientIds: string[];
 }
 
@@ -56,9 +57,9 @@ export function readConfig(get: EnvGetter): { config: WorkerConfig | null; missi
   const teamId = v('APPLE_TEAM_ID');
   const keyId = v('APPLE_SIGNIN_KEY_ID');
   const privateKeyPem = get('APPLE_SIGNIN_PRIVATE_KEY') ?? '';
-  const extraClients = v('APPLE_SERVICES_ID');
+  // The same list apple-token stores tokens for (lib/apple.ts appleClientIds).
   const apple: AppleConfig | null = teamId && keyId && privateKeyPem.trim()
-    ? { teamId, keyId, privateKeyPem, clientIds: [bundleId(), ...(extraClients ? [extraClients] : [])] }
+    ? { teamId, keyId, privateKeyPem, clientIds: appleClientIds(get, bundleId()) }
     : null;
 
   const budget = Number(v('PURGE_WORKER_BUDGET_MS') || '110000');

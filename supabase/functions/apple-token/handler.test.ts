@@ -158,14 +158,15 @@ Deno.test('internal builds are allowed only through APPLE_EXTRA_CLIENT_IDS, and 
   assert.deepEqual(readAppleTokenConfig((n) => env({ APPLE_EXTRA_CLIENT_IDS: `${preview}, bad id` })[n])!.clientIds, [BUNDLE, preview]);
 });
 
-Deno.test('every client id the default setup stores is one the purge worker can revoke for', () => {
-  // AUTH_SETUP 2.7: APPLE_EXTRA_CLIENT_IDS stays unset until the purge worker reads it too (request to S07).
-  const e = env({ APPLE_SERVICES_ID: 'com.earlyletters.scribe.web' });
+Deno.test('every client id apple-token stores for is one the purge worker can revoke for (one shared list)', () => {
+  // AUTH_SETUP 2.7: both read purge-worker/lib/apple.ts appleClientIds, including APPLE_EXTRA_CLIENT_IDS.
+  const e = env({ APPLE_SERVICES_ID: 'com.earlyletters.scribe.web', APPLE_EXTRA_CLIENT_IDS: `${BUNDLE}.preview, bad id` });
   const capture = readAppleTokenConfig((n) => e[n])!.clientIds;
   const worker = { ...e, PURGE_WORKER_SECRET: 'x'.repeat(64), RESEND_API_KEY: 're_test_fixture' };
   const purge = readPurgeConfig((n) => worker[n as keyof typeof worker]).config?.apple?.clientIds ?? [];
   assert.ok(purge.length > 0);
-  for (const id of capture) assert.ok(purge.includes(id), id);
+  assert.deepEqual(capture, [BUNDLE, 'com.earlyletters.scribe.web', `${BUNDLE}.preview`]);
+  assert.deepEqual(purge, capture);
   // TOKEN_KEK_V2 wraps here; the worker keeps both versions to unwrap.
   assert.deepEqual(Object.keys(readPurgeConfig((n) => worker[n as keyof typeof worker]).config?.tokenKeks ?? {}), ['1', '2']);
 });
@@ -266,4 +267,16 @@ Deno.test('helpers: Apple subjects and JWT claims', () => {
   assert.equal(jwtClaims(42), null);
   assert.equal(jwtClaims('a.!!!.c'), null);
   assert.deepEqual(jwtClaims(idToken({ sub: 'x' })), { sub: 'x' });
+});
+
+Deno.test("calls made with the person's JWT carry the anon key as apikey, never the service key", async () => {
+  const w = world({ env: env({ SUPABASE_ANON_KEY: 'anon-key' }) });
+  assert.equal((await w.handler(req({ code: CODE }))).status, 204);
+  for (const path of ['/auth/v1/user', '/rest/v1/rpc/rate_hit']) {
+    const call = w.calls.find((c) => c.url === `${SUPA}${path}`);
+    assert.ok(call, path);
+    assert.equal((call!.init.headers as Record<string, string>).apikey, 'anon-key', path);
+  }
+  const put = w.calls.find((c) => c.url === `${SUPA}/rest/v1/rpc/ops_apple_token_put`);
+  assert.equal((put!.init.headers as Record<string, string>).Authorization, 'Bearer service-key', 'the store call stays service role');
 });

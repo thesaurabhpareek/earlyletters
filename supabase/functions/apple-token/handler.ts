@@ -48,7 +48,7 @@
 import { failure, HEADER_REQUEST_ID, httpStatusFor, type ApiErrorCode } from '../../../packages/api/src/envelope.ts';
 import { bundleId } from '../../../packages/brand/index.ts';
 import { createLogger, type ErrorCode, type FunctionName, type LogSink, type Provider } from '../_shared/log/log.ts';
-import { APPLE_AUDIENCE, makeClientSecret, wrapAppleToken, type AppleKeyConfig } from '../purge-worker/lib/apple.ts';
+import { APPLE_AUDIENCE, appleClientIds, makeClientSecret, wrapAppleToken, type AppleKeyConfig } from '../purge-worker/lib/apple.ts';
 
 export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
 export type EnvGetter = (name: string) => string | undefined;
@@ -61,7 +61,6 @@ const ROUTE_RE = /\/apple-token\/v1\/?$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Apple authorization codes are opaque; this bounds the shape without assuming more. */
 const CODE_RE = /^[A-Za-z0-9._-]{16,512}$/;
-const CLIENT_RE = /^[A-Za-z0-9.-]{3,155}$/;
 const MAX_BODY = 4096;
 // Until _shared/log lists this function by name its lines say fn "unknown" (requested from S07).
 const FN = 'apple-token' as string as FunctionName;
@@ -77,10 +76,17 @@ export interface AppleTokenConfig {
   apple: AppleKeyConfig;
   /**
    * Client ids a code may be issued to: the production bundle id, then
-   * APPLE_SERVICES_ID and APPLE_EXTRA_CLIENT_IDS. The purge worker must accept
-   * the same list, or a stored token cannot be revoked (AUTH_SETUP 2.7).
+   * APPLE_SERVICES_ID and APPLE_EXTRA_CLIENT_IDS. The purge worker reads the
+   * same list (purge-worker/lib/apple.ts appleClientIds; AUTH_SETUP 2.7).
    */
   clientIds: string[];
+  /**
+   * The `apikey` for calls made with the person's own JWT (GET /auth/v1/user,
+   * rate_hit): the injected SUPABASE_ANON_KEY, so the service-role key never
+   * travels next to a user token. Falls back to the service key only where the
+   * anon key is not injected.
+   */
+  anonKey: string;
   kek: string;
   kekVersion: number;
 }
@@ -104,8 +110,9 @@ export function readAppleTokenConfig(get: EnvGetter): AppleTokenConfig | null {
     }
   }
   if (!supabaseUrl || !serviceKey || !teamId || !keyId || !privateKeyPem.trim() || !kek) return null;
-  const extra = [v('APPLE_SERVICES_ID'), ...v('APPLE_EXTRA_CLIENT_IDS').split(',')].map((s) => s.trim()).filter((s) => CLIENT_RE.test(s));
-  return { supabaseUrl, serviceKey, apple: { teamId, keyId, privateKeyPem }, clientIds: [...new Set([bundleId(), ...extra])], kek, kekVersion };
+  // One list with the purge worker (appleClientIds), so every stored token is one it can revoke.
+  const anonKey = v('SUPABASE_ANON_KEY') || serviceKey;
+  return { supabaseUrl, serviceKey, anonKey, apple: { teamId, keyId, privateKeyPem }, clientIds: appleClientIds(get, bundleId()), kek, kekVersion };
 }
 
 export interface AppleTokenOptions {
@@ -215,7 +222,7 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
     const auth = req.headers.get('authorization') ?? '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!token || token.length > 4096) return fail('unauthorized', false);
-    const userRes = await timed(fetchFn, `${cfg.supabaseUrl}/auth/v1/user`, { method: 'GET', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${token}` } }, timeoutMs);
+    const userRes = await timed(fetchFn, `${cfg.supabaseUrl}/auth/v1/user`, { method: 'GET', headers: { apikey: cfg.anonKey, Authorization: `Bearer ${token}` } }, timeoutMs);
     if (!userRes) return unavailable('auth', 0, 'network');
     if (userRes.status === 401 || userRes.status === 403 || userRes.status === 404) {
       await discard(userRes);
@@ -251,7 +258,7 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
     // The shared counter, as the caller (auth.uid() is the person). Only SCRAT refuses.
     const hit = await timed(fetchFn, `${cfg.supabaseUrl}/rest/v1/rpc/rate_hit`, {
       method: 'POST',
-      headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { apikey: cfg.anonKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ p_bucket: RATE_BUCKET }),
     }, timeoutMs);
     if (hit && !hit.ok) {

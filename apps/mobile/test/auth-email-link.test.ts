@@ -201,6 +201,20 @@ describe('[F02-REQ-018] verifyEmailLinkPkce: GET /verify without following the r
   it('the Supabase client runs the PKCE flow', () => {
     expect(readFileSync(join(APP, 'src/lib/supabase/client.ts'), 'utf8')).toMatch(/flowType: 'pkce'/);
   });
+
+  const provider = () => readFileSync(join(APP, 'src/lib/auth/session-provider.tsx'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+  it('[F02-REQ-020] the signed-in refusal also reads the Keychain, so a cold start from the link (state still restoring) is refused too', () => {
+    expect(provider()).toMatch(/signedInNow = isSignedIn\(stateRef\.current\) \|\| \(await keychainHasSession\(\)\)/);
+    // An unreadable Keychain counts as signed in.
+    expect(provider()).toMatch(/async function keychainHasSession[\s\S]*?catch \{\s*return true;/);
+  });
+
+  it('any sign-in (Apple, Google, passkey too) and every sign-out spend the pending email request', () => {
+    const src = provider();
+    expect(src).toMatch(/remember\(method\);\s*await clearPendingEmailRequest\(\);\s*dispatch\(\{ type: 'SIGNED_IN'/);
+    expect(src).toMatch(/await forgetAppleUser\(\);\s*await clearPendingEmailRequest\(\);\s*dispatch\(\{ type: 'SIGNED_OUT' \}\)/);
+  });
 });
 
 describe('[F02-REQ-019] the claim screen: who sees it', () => {

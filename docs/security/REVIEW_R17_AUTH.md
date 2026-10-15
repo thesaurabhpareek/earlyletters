@@ -42,7 +42,7 @@ On `feat/auth-v1-gate` the same case passes, with the owner unset and an empty o
 | New-device sign-in email before any recovery-key use | F02-REQ-017, F02-REQ-025; R4 PT-19; must exist before backup escrow releases a key | **later**: WP-F02-13 (S01 with S02, S07, S16), wave 2 |
 | `forceReauthEpoch` consumer | F02-REQ-023, review L3; LEGAL-REQ-040 | **later**: WP-F19-12a, wave 2 (Line B `reauth.logic.ts` is ready to port) |
 | PKCE challenge `S256` instead of `plain` | Defence in depth if a challenge ever leaked; not needed for H1 (ADR 0023) | later; needs WebCrypto digest in Hermes or a native shim (founder, ADR 0101) |
-| Purge worker accepts `APPLE_EXTRA_CLIENT_IDS` | Tokens from `.preview` builds (TestFlight preview lane) can be captured but not revoked; until then they are refused at capture and those deletions say `apple: no_token` | **other stream**: S07 |
+| Purge worker accepts `APPLE_EXTRA_CLIENT_IDS` | Done in PR #139: both functions read one list (`purge-worker/lib/apple.ts` `appleClientIds`; test "one shared list"). Still to confirm on device that the 2.4 key revokes for an internal bundle id (AUTH_SETUP 11.9) | **done** (device check open) |
 | `apple-token` in `_shared/log` `FUNCTIONS`; `appleToken` in `packages/api` `ENDPOINTS` | Log lines say `fn: unknown`; the endpoint is not in the typed contract | **other stream**: S07 |
 | Migrations `20261004200000` (`ops.apple_tokens`) and S02's `20261015000000` applied to staging and production | apple-token answers 503 without the first; the database rate limit needs the second | **founder** through `deploy-db.yml`; S02 |
 | Device rows S1-06 to S1-08 and S2-14 recorded | S01 "done when" (08-delivery 3.3) | **device**: AUTH_SETUP 11.1, 11.3, 11.9, 11.10 |
