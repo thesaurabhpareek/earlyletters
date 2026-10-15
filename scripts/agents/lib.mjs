@@ -247,4 +247,3 @@ export function standingChanged(prev, developSha, founderNoteCount) {
   if (!prev?.develop) return true;
   return prev.develop !== developSha || founderNoteCount > 0;
 }
-
