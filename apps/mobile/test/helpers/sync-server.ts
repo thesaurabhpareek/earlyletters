@@ -7,14 +7,17 @@
  *
  * Protocol v1 (docs/adr/0023-sync-protocol-v1.md) needs S02's words compare and
  * set (WP-F16-14). Until a migration defines it, `startSyncServer({ protocol: 'v1' })`
- * loads helpers/sync-v1-standin.sql: S03's request to S02 as runnable SQL. Once
- * S02's migration lands, the stand-in is skipped by itself (`standIn` reports it).
+ * loads helpers/sync-v1-standin.sql (the objects v1 adds) and applies the anchored
+ * edits in helpers/sync-v1-standin.ts to the newest real sync_push: S03's request to
+ * S02 as runnable SQL that never replaces S02's newer body. Once S02's migration
+ * lands, the stand-in is skipped by itself (`standIn` reports it).
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
 import type { RpcResult, SupabaseLike } from '../../src/lib/sync/types';
+import { patchSyncPush } from './sync-v1-standin';
 
 export interface SyncServer {
   pg: PGlite;
@@ -83,6 +86,9 @@ export async function startSyncServer(opts: { users: string[]; protocol?: 'v0' |
     );
     if (!has.rows[0].v1) {
       await pg.exec(readFileSync(join(__dirname, 'sync-v1-standin.sql'), 'utf8'));
+      // The words compare and set goes into S02's newest sync_push, never over an older copy of it.
+      const def = await pg.query<{ d: string }>("select pg_get_functiondef('public.sync_push(jsonb)'::regprocedure) as d");
+      await pg.exec(patchSyncPush(def.rows[0].d));
       standIn = true;
     }
   }
