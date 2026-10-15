@@ -18,6 +18,8 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 9 | `20261004100000_sync_engine.sql` | **Pending** | Sync engine: `sync_pull`, `sync_push`, `sync_books`, op receipts, rate windows, restore epochs, `sync_housekeeping` (step 14) |
 | 10 | `20261004200000_ops_deletion_worker.sql` | **Pending** | Schema `ops` (never exposed) and service-only functions for the purge worker, analytics-forget and the ops runbooks (step 15) |
 | 11 | `20261004300000_insights_aggregates.sql` | **Pending** | Schema `insights` (never exposed): k-anonymised weekly counts, `insights_reader` role, `public.insights_aggregates(p_weeks)` for the service role and that role only (step 16) |
+| 12 | `20261005000000_family_cap_language_idempotency.sql` | **Pending** | Two parents per book, leave and remove, letter language, idempotency keys, server rate limits (section "File 20261005000000") |
+| 13 to 16 | `20261015000000` to `20261015030000` | **Pending** | The R-17 gate: BL-331 with BL-332, `peek_invite` with BL-334, WP-F11-01, the v1.0 wire-contract columns (section "Files 13 to 16") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -25,7 +27,7 @@ Step 4 drops whatever entries SELECT policies exist, so it is correct whether or
 
 ## Before you start (10 minutes)
 
-1. On your Mac, in the repo: `npm install` then `npm run test:db`. All twelve test files must pass (`access_matrix`, `children_entitlements`, `classification`, `data_governance`, `insights_aggregates`, `ops_deletion_worker`, `perf`, `purge_batching`, `rls`, `security_family`, `sync_engine`, `sync_perf`). Do not continue if anything fails.
+1. On your Mac, in the repo: `npm install` then `npm run test:db`. Every test file must pass (20 files after files 13 to 16; `npm run test:db` lists them). Do not continue if anything fails.
 2. In the Supabase dashboard, Database > Backups: confirm a daily backup from the last 24 hours exists. If you want an exact restore point, run `supabase db dump --linked -f backup-2026-10-02.sql` (needs the Supabase CLI linked to the project). Storage files are not in database backups; nothing here touches Storage objects.
 3. Pick a quiet time. Today only founder data exists, so there is no user impact, but the app build that reads co-parent letters must switch to `book_entries` (section "App changes") before any co-parent uses it.
 
@@ -510,3 +512,122 @@ alter table public.sync_rate_windows add constraint sync_rate_windows_bucket_che
 grant insert, update, delete on public.sync_rate_windows to authenticated;   -- file 9's sync functions write it directly
 ```
 Step 1 must come first: the replaced functions call the objects step 2 drops. The rollback re-opens the client-resettable sync counter and the stale-invite path (security review H2, M3).
+
+## Files 13 to 16: the R-17 gate (15 Oct 2026, stream S02)
+
+Four files, one work package each (PRD V2 `08-delivery.md` section 6.3, S02 wave 1). They are the database half of the R-17 security gate (D-089 in PR #128; PRD V2 09 R-17): nobody outside the family signs in before they are on staging and the shared security review has passed (`docs/security/REVIEW_R17_CHECKLIST.md`). Apply them after file 12, in filename order. Each adds or replaces; none drops a table or a column that holds data.
+
+| Order | File | Work package | What it does |
+|---|---|---|---|
+| 13 | `20261015000000_v1_gate_membership_sync_hardening.sql` | BL-331 with BL-332 | Family members never read the birth date or due date from the table (column privileges, review M1); the pull digest never reveals private writes (M5); op receipts per person (L1); 20 new books a day, 300 letter deletes or restores an hour, `sync_books` in the pull bucket (M3); the reading views are read-only (PR #32 DB-01: on develop a co-parent could rewrite the other parent's letter through `book_entries`); every function's `search_path` is `pg_catalog, ..., pg_temp` (PR #51 finding 1) |
+| 14 | `20261015010000_v1_gate_peek_invite_consent_pepper.sql` | `peek_invite` with BL-334 | `peek_invite(token)`: the inviter's sign-off name and the role, before consent, nothing written (H2); the consent pepper fails closed (`55000`) |
+| 15 | `20261015020000_v1_gate_coparent_invites_undo.sql` | WP-F11-01 | Device-made invite id, token hash and code hash (new `create_child_invite` overload; the 3-argument one stays); family invites off unless `app.contributors_enabled`; second consent behind `app.family_share_consent_required`; `undo_parent_join` for 72 hours; leaving only through `leave_child`; `child_member_prefs.notify_letters`; `accept_child_invite_by_code` for the service role |
+| 16 | `20261015030000_v1_wire_contract_columns.sql` | v1.0 wire contract | `entries.occurred_precision`, `base_direction`, `author_edits`, `locked_spans`, `pack_ref` (immutable); `dictionary_terms.forms`; the sync op parser and pull rows carry them; `prefs.upsert` takes `notify_letters` |
+
+Sections 0 to 4 of file 13 and both sections of file 14 are ported from branch `auto/2026-10-05-fixes` at `d1cbddb` (file `20261005100000_db_fix_privacy_limits.sql`), as `docs/agents/PORT_MAP_2026-10-13.md` section 5 asks. If the coordinator renames the files at merge (08 section 4), use the new names below; the order does not change.
+
+Tests: `v1_gate_hardening`, `v1_gate_limits_peek_pepper`, `v1_gate_search_path`, `v1_gate_coparent`, `v1_wire_contract`, plus new rows in `access_matrix`; `npm run test:db` now runs 20 files.
+
+### How these files reach a project
+
+**Through CI, not the SQL Editor** (D-041, D-089: "migrations are applied to staging, then production, through CI"). `.github/workflows/deploy-db.yml` (PR #36) runs `supabase db push --dry-run` then `supabase db push` with the environment's database URL:
+- **Staging (`scribe-staging`)**: today the workflow runs on a push to `main` that changes `supabase/migrations/**`. PRD V2 08 section 7 moves this to a `workflow_dispatch` from `develop` with the `approve-migration` label (S20, wave 1, not built yet; this PR does not touch `.github/**`). Until S20's change lands, files 13 to 16 reach staging only when a release PR carries them to `main`.
+- **Production (`scribe-prod`)**: a `db-v*` tag on a commit on `main`, through the GitHub Environment `production` (your approval). Never before staging has run them and the checks in step 21 are green.
+- `supabase db push` applies every file the target has not recorded, in filename order, each in its own transaction. On a fresh `scribe-staging` that is files 1 to 16 in one run, so steps 17 and 20 run before the first push, against an empty project they find nothing, and the run stops at the first file that fails, leaving the later ones unapplied.
+- Known risk carried from DEPLOY.md: DB-16 (file 3 has its own `begin` / `commit`). The first `db-cli.yml` run on this PR (`supabase db reset` on the real Postgres image) is the first check outside PGlite.
+- After each environment: the run summary lists the files to add to `.github/migrations-applied.txt`; record them in a pull request (DEPLOY.md "After a deploy"). From then on the migration guard blocks any edit to them.
+
+If you must apply by hand (an incident, DEPLOY.md "Rollback"), use the SQL Editor as in step 18: `begin;`, the whole file, `commit;`, then insert its version into `supabase_migrations.schema_migrations`.
+
+### Step 20. Before files 13 to 16 (staging first, then production)
+
+Read only:
+```sql
+-- a) The new names are free (expect eight nulls).
+select to_regprocedure('public.peek_invite(text)'), to_regprocedure('public.undo_parent_join(uuid, uuid)'),
+       to_regprocedure('public.book_update(uuid, jsonb)'), to_regprocedure('public.sync_op_claim(uuid)'),
+       to_regprocedure('public.consent_pepper_ready()'), to_regprocedure('public.accept_child_invite_by_code(uuid, bytea)'),
+       to_regprocedure('public.create_child_invite(uuid, uuid, text, bytea, bytea, text)'),
+       (select attname from pg_attribute where attrelid = 'public.entries'::regclass and attname = 'pack_ref' and not attisdropped);
+-- b) Open family (contributor) invites (expect 0: no build creates them). After file 15 they cannot be accepted.
+select count(*) from public.child_invites where role = 'contributor' and accepted_at is null and revoked_at is null and expires_at > now();
+-- c) Functions in public, ops or insights owned by another role or by an extension (expect none; file 13 re-pins only ours,
+--    and the sweep test would flag the rest).
+select n.nspname, p.proname, pg_get_userbyid(p.proowner) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname in ('public', 'ops', 'insights')
+   and (p.proowner <> (select oid from pg_roles where rolname = current_user)
+        or exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e'));
+-- d) The consent pepper is set (step 6). Expect true before any account deletion runs; file 14 refuses deletions without it.
+select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32 as pepper_ready;
+```
+App compatibility (the build in TestFlight today has the switch off, so nothing calls these yet; for a switch-on build):
+- `select *` on `children` is refused (`42501`). The app names its columns (`lib/family/invites.ts` reads `name` only) and reads dates through `sync_books` and `sync_pull`. Any new client code must do the same.
+- A direct delete on `child_members` is refused (`42501`). The app has no such call; leaving is `leave_child(p_child, p_keep_in_book)`.
+- `sync_pull` own rows gain five keys and others' rows two; `sync_push` accepts them when present and never clears them when absent. Today's sync client ignores keys it does not know.
+- Family invites are refused (`SCINV`, detail `role_disabled`). The app creates parent invites only.
+
+### Step 21. After each environment: check the result
+
+```sql
+-- G-08: no API role reads the two dates from the table; names still readable.
+select has_column_privilege('authenticated', 'public.children', 'date_of_birth', 'select') dob,
+       has_column_privilege('authenticated', 'public.children', 'due_date', 'select') due,
+       has_column_privilege('authenticated', 'public.children', 'name', 'select') name;          -- false, false, true
+-- DB-01: the reading views are read-only.
+select has_table_privilege('authenticated', 'public.book_entries', 'update') upd,
+       has_table_privilege('authenticated', 'public.book_entries', 'delete') del,
+       has_table_privilege('authenticated', 'public.book_entries', 'select') sel;                -- false, false, true
+-- G-10 and F11-REQ-011: no client writes receipts or memberships.
+select has_table_privilege('authenticated', 'public.sync_op_receipts', 'insert') receipts,
+       has_table_privilege('authenticated', 'public.child_members', 'delete') leave_direct;     -- false, false
+-- search_path: every function of ours starts with pg_catalog and ends with pg_temp (expect 0 rows).
+select n.nspname, p.oid::regprocedure, p.proconfig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname in ('public', 'ops', 'insights') and p.prokind = 'f'
+   and not exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e')
+   and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c
+                    where c ~ '^search_path=(""|pg_catalog(, [a-z_]+)*, pg_temp)$');
+-- New RPCs: signed in yes, anon no.
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in, has_function_privilege('anon', p.oid, 'execute') anon
+  from pg_proc p where p.pronamespace = 'public'::regnamespace
+   and p.proname in ('peek_invite', 'undo_parent_join', 'book_update', 'sync_op_claim', 'accept_child_invite_by_code',
+                     'consent_pepper_ready', 'contributors_enabled', 'invite_policy_checks') order by 1;
+-- peek_invite, undo_parent_join, book_update, sync_op_claim: true / false; the other four: false / false
+select public.consent_pepper_ready();                       -- as the service role: true (BL-334)
+select count(*) from public.entries where occurred_precision is null or base_direction is null;   -- 0
+```
+Then repeat the classification and RLS queries from step 4 (expect 0 and 0). Supabase advisors, expected and accepted: **0029** (security definer function callable by `authenticated`) for `peek_invite`, `undo_parent_join`, `book_update` and `sync_op_claim`: each starts with `require_user()` and acts only for the caller. **0011** (mutable `search_path`) must now be clear for every function of ours; if it lists one, stop and tell S02.
+
+Then run `npm run test:db` locally against the same commit (it must stay green), and record the four file names in `.github/migrations-applied.txt` through a pull request.
+
+### Step 22. Settings for files 13 to 16
+
+None is required to apply. Each is read at call time (no migration to change it); a database setting reaches new connections only, so pooled API connections pick it up as they are recycled (Assumption, as step 19).
+- **Consent pepper** (step 6): must be set before the first account deletion; file 14 makes deletion fail closed without it. Check with `select public.consent_pepper_ready();` as the service role.
+- **Family invites** (F11 D4): off. Do not turn on in v1.0 (D-055, B1): `alter database postgres set app.contributors_enabled = 'on';` exists for the v1.1 contributor work only.
+- **Second consent at first share** (D-050): off until counsel answers. If counsel says yes: a migration adds the `family-share` row to `policy_documents` and a version, a release turns the sheet on, then `alter database postgres set app.family_share_consent_required = 'on';`.
+- **Cron**: nothing new. The hourly `scribe-sync-housekeeping` job (step 15) now trims receipts by person.
+
+### Error codes added or widened by files 13 to 16
+
+| SQLSTATE | Where | App |
+|---|---|---|
+| `SCRAT` | now also `create_child` and `create_first_run_children` (21st new book in 24 h, detail `20`), `delete_entry` and `restore_entry` (301st in an hour), `sync_books` (pull bucket), `peek_invite` and `undo_parent_join` (membership bucket). Inside `sync_push` it stops the batch (`stopped: true`, `code: SCRAT`), never rejects an op | Back off and retry; never drop the op |
+| `SCINV` detail `role_disabled` | creating, peeking at or accepting a family (contributor) invite | Not reachable from the v1.0 app; show the generic invite error |
+| `SCINV` detail `code_taken` / `token_taken` | `create_child_invite(p_invite_id, ...)`: the code or token is in use | Make a new code (or token) and retry with a new invite id |
+| `SCCID` | `create_child_invite(p_invite_id, ...)`: the id is not a device UUIDv7, or is in use by another request | Permanent; a client bug |
+| `SCCON` detail `family-share` | invite creation while `app.family_share_consent_required` is on | Show the family-share sheet; never drop the request |
+| `SCPAR` | `undo_parent_join` by anyone but the parent whose invite was used, or after 72 hours | Hide the undo row after 72 hours |
+| `SCIMM` | a different `pack_ref` on an existing letter | Permanent (reject); the client never changes it |
+| `42501` | `select *` or a date column on `children`; a direct insert, update or delete on `child_members`, `sync_op_receipts`, `book_entries` | Name columns; use the RPCs |
+| `55000` | account deletion while the consent pepper is missing (service paths only) | Ops alert; the deletion retries |
+| `23514` | a new column outside its shape (`occurred_precision`, `base_direction`, `author_edits`, `locked_spans`, `pack_ref`, `dictionary_terms.forms`) | Permanent; a client bug |
+
+### Rolling back files 13 to 16
+
+**Prefer fixing forward** with a new migration (DEPLOY.md "Rollback"). Partial switches, each on its own and each safe:
+- Device-made invite ids: `revoke execute on function public.create_child_invite(uuid, uuid, text, bytea, bytea, text) from authenticated;` (the 3-argument overload keeps working).
+- The undo: `revoke execute on function public.undo_parent_join(uuid, uuid) from authenticated;`
+- Rate limits on books and letter state: none needed in normal use (20 books a day, 300 deletes an hour). If one misfires, raise the number in a forward migration.
+- `peek_invite`: `revoke execute on function public.peek_invite(text) from authenticated;` (BL-322's sheet then cannot show the inviter; the app falls back to the generic join line).
+
+A full rollback reopens the review findings these files close (M1, M3, M5, L1, H2's server half, DB-01, the shadowable `search_path`), so it needs your decision and a new review; the gate does not pass without these files. It is, in one transaction and in reverse order: file 16 (drop the five `entries` columns and `dictionary_terms.forms` with their constraints, which erases what was synced into them; re-run `book_entries`, `entries_guard_immutable`, `sync_pull` and `sync_push` from files 4, 5 and 13), file 15 (drop `undo_parent_join`, `accept_child_invite_by_code`, the 6-argument `create_child_invite`, `invite_policy_checks`, `family_share_consent_required`, the `child_invites_live_code_idx` index and the `code_hash` and `notify_letters` columns; re-create the `child_members_leave` policy and `grant delete on public.child_members to authenticated`; re-run `create_child_invite(uuid, text, text)` and `accept_child_invite` from file 12 and `child_members_audit` from file 4; restore the audit constraint from file 5), file 14 (re-run `policy_acceptances_pseudonymise` from file 4; drop `peek_invite`, `consent_pepper_ready`, `contributors_enabled`), then file 13 (re-run `sync_pull`, `sync_push`, `sync_housekeeping` from file 12, `create_child` and `create_first_run_children` from file 8, `delete_entry` and `restore_entry` from file 5, `sync_books` from file 9, `rate_hit` from file 12; drop the `entries_unshared` trigger and function, `book_update`, `sync_op_claim`, the two `left_*_xid` columns; restore the receipts primary key to `(op_id)` after deleting duplicate op ids; `grant select on public.children to authenticated`). The `search_path` re-pin is not rolled back: it changes no behaviour and closes a hole. Test any rollback in PGlite first (`npm run test:db` on a branch with the reverse migration).

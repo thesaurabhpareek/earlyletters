@@ -923,7 +923,8 @@ grant execute on function public.book_update(uuid, jsonb) to authenticated;
 grant execute on function public.sync_op_claim(uuid) to authenticated;
 
 -- ─── 7. search_path: pg_catalog first, pg_temp last, every function ──────
--- Re-pins every function in public, ops and insights (PR #51 finding 1; review
+-- Re-pins every function in public, ops and insights that the migrations made
+-- (owned by the migration role, not part of an extension) (PR #51 finding 1; review
 -- L8). The schemas a function already named stay, in their order, between
 -- pg_catalog and pg_temp; a function with no setting gets its own schema then
 -- public. Nothing else about a function changes (body, definer, other settings).
@@ -940,6 +941,10 @@ begin
       from pg_proc p
       join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'ops', 'insights') and p.prokind = 'f'
+       -- Ours only: never an extension's function, never one another role owns
+       -- (on a hosted project an extension may live in public).
+       and not exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e')
+       and p.proowner = (select oid from pg_roles where rolname = current_user)
      order by n.nspname, p.proname
   loop
     v_parts := case when r.sp is null then array[r.nspname, 'public']

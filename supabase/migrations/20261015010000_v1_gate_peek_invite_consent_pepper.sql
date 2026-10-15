@@ -24,7 +24,9 @@
 --       child's name, ids or any book data (PRD V2 08 section 9, S02 row: "only
 --       the inviter's sign-off name before consent"). Signed-in only, works
 --       before consent, same errors as accept_child_invite (SCINV, SCCAP),
---       counts in the membership bucket.
+--       counts in the membership bucket. A family (contributor) invite is
+--       SCINV with detail role_disabled while app.contributors_enabled is off,
+--       the same answer accept gives from 20261015020000 (F11-REQ-003, D4).
 --
 -- New SQLSTATEs: none (55000 for the pepper is a standard code, service paths only).
 -- Reused: SCRAT, SCINV, SCCAP, SCANO.
@@ -60,6 +62,14 @@ returns boolean language sql stable security definer set search_path = pg_catalo
 $$;
 
 -- ─── 2. G-13: look at an invite before joining ───────────────────────────
+-- Server config read at call time (F11 D4, F11-REQ-003): family invites are off
+-- unless the setting says on. Used here and by every invite function in
+-- 20261015020000. Turn on with: alter database postgres set app.contributors_enabled = 'on';
+create or replace function public.contributors_enabled()
+returns boolean language sql stable set search_path = pg_catalog, public, pg_temp as $$
+  select lower(coalesce(nullif(btrim(current_setting('app.contributors_enabled', true)), ''), 'off')) in ('on', 'true', '1');
+$$;
+
 -- Same checks, in the same order, as accept_child_invite (20261005000000), but
 -- nothing is written except the rate counter, and no consent is needed: the
 -- person decides whether to join before agreeing to anything. A call that ends
@@ -85,6 +95,9 @@ begin
     if not public.child_is_live(v_inv.child_id) then raise exception 'invite not found' using errcode = 'SCINV'; end if;
     if exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = v_uid) then
       raise exception 'already a member of this book' using errcode = 'SCINV';
+    end if;
+    if v_inv.role = 'contributor' and not public.contributors_enabled() then
+      raise exception 'family invites are not available in this version' using errcode = 'SCINV', detail = 'role_disabled';
     end if;
     if not exists (select 1 from child_members
                     where child_id = v_inv.child_id and profile_id = v_inv.invited_by and role = 'parent') then
@@ -114,6 +127,7 @@ $$;
 
 -- ─── 3. Privileges ───────────────────────────────────────────────────────
 revoke execute on function public.consent_pepper_ready() from public, anon, authenticated;
+revoke execute on function public.contributors_enabled() from public, anon, authenticated;
 revoke execute on function public.policy_acceptances_pseudonymise() from public, anon, authenticated;
 revoke execute on function public.peek_invite(text) from public, anon;
 grant execute on function public.peek_invite(text) to authenticated;

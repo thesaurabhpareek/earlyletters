@@ -3,9 +3,10 @@
 --
 -- PENDING: not yet applied. Apply after 20261015010000_v1_gate_peek_invite_consent_pepper.sql,
 -- following supabase/APPLY.md (section "File 20261015020000"). Never edits an
--- earlier file. create_child_invite(uuid, text, text) is redefined from
--- 20261005000000 (changes marked F11-REQ-003 and F11-REQ-018); child_members_audit
--- from 20261002020000 (change marked F11-REQ-008). Everything else is new.
+-- earlier file. create_child_invite(uuid, text, text) and accept_child_invite(text)
+-- are redefined from 20261005000000 (changes marked F11-REQ-003 and F11-REQ-018);
+-- child_members_audit from 20261002020000 (change marked F11-REQ-008). Everything
+-- else is new.
 --
 -- 1. Device-made invite ids (D5, F11-REQ-002). A new overload
 --      create_child_invite(p_invite_id uuid, p_child uuid, p_role text, p_token_hash bytea,
@@ -24,8 +25,11 @@
 --    child_invites.code_hash: unique among live invites; a collision is SCINV
 --    with detail code_taken and the phone makes a new code (F11-REQ-002).
 -- 2. Contributors absent from the build, refused by the server (D4, F11-REQ-003):
---    a contributor invite is SCINV with detail role_disabled unless the database
---    setting app.contributors_enabled is on (default off). Both overloads.
+--    creating or accepting a contributor invite is SCINV with detail
+--    role_disabled unless the database setting app.contributors_enabled is on
+--    (default off; contributors_enabled() is in 20261015010000). Both create
+--    overloads, accept_child_invite (redefined from 20261005000000), accept by
+--    code, and peek_invite (20261015010000) give the same answer.
 -- 3. Second consent at first share (D-050, F11-REQ-018): when
 --    app.family_share_consent_required is on (default off), creating an invite
 --    needs a current accept of the document family-share, else SCCON with detail
@@ -76,13 +80,8 @@ alter table public.audit_events add constraint audit_events_action_check check (
   'member_join_undone'));
 
 -- ─── 1. Server config read at call time (no migration to flip) ───────────
---   alter database postgres set app.contributors_enabled = 'on';
+--   alter database postgres set app.contributors_enabled = 'on';   (contributors_enabled(), 20261015010000)
 --   alter database postgres set app.family_share_consent_required = 'on';
-create or replace function public.contributors_enabled()
-returns boolean language sql stable set search_path = pg_catalog, public, pg_temp as $$
-  select lower(coalesce(nullif(btrim(current_setting('app.contributors_enabled', true)), ''), 'off')) in ('on', 'true', '1');
-$$;
-
 create or replace function public.family_share_consent_required()
 returns boolean language sql stable set search_path = pg_catalog, public, pg_temp as $$
   select lower(coalesce(nullif(btrim(current_setting('app.family_share_consent_required', true)), ''), 'off')) in ('on', 'true', '1');
@@ -157,6 +156,53 @@ begin
   perform public.idempotency_store(v_uid, 'create_child_invite', jsonb_build_object('invite', v_id));
   perform public.audit('invite_created', 'membership', v_id, p_child, jsonb_build_object('role', p_role));
   return v_token;
+end;
+$$;
+
+-- accept_child_invite: from 20261005000000, plus the contributor switch (F11-REQ-003),
+-- checked after the same-person retry so a member who already joined still gets
+-- their book back.
+create or replace function public.accept_child_invite(p_token text)
+returns uuid language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_uid uuid := public.require_user();
+  v_hash bytea := sha256(convert_to(coalesce(p_token, ''), 'UTF8'));
+  v_child uuid;
+  v_inv child_invites%rowtype;
+begin
+  perform public.rate_hit('membership');
+  select child_id into v_child from child_invites where token_hash = v_hash;
+  if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  perform 1 from children where id = v_child for no key update;
+  select * into v_inv from child_invites where token_hash = v_hash for update;
+  if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  -- Same person retrying after a lost response: idempotent.
+  if v_inv.accepted_by = v_uid then return v_inv.child_id; end if;
+  if v_inv.accepted_at is not null then raise exception 'invite already used' using errcode = 'SCINV'; end if;
+  if v_inv.revoked_at is not null then raise exception 'invite revoked' using errcode = 'SCINV'; end if;
+  if v_inv.expires_at < now() then raise exception 'invite expired' using errcode = 'SCINV'; end if;
+  if not public.child_is_live(v_inv.child_id) then raise exception 'invite not found' using errcode = 'SCINV'; end if;
+  -- No role change through invites (covers the inviter accepting their own link).
+  if exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = v_uid) then
+    raise exception 'already a member of this book' using errcode = 'SCINV';
+  end if;
+  if v_inv.role = 'contributor' and not public.contributors_enabled() then       -- F11-REQ-003
+    raise exception 'family invites are not available in this version' using errcode = 'SCINV', detail = 'role_disabled';
+  end if;
+  if not exists (select 1 from child_members
+                  where child_id = v_inv.child_id and profile_id = v_inv.invited_by and role = 'parent') then
+    raise exception 'invite not found' using errcode = 'SCINV';
+  end if;
+  if v_inv.role = 'parent'
+     and (select count(*) from child_members where child_id = v_inv.child_id and role = 'parent') >= public.max_parents_per_book() then
+    raise exception 'this book already has the most parents allowed'
+      using errcode = 'SCCAP', detail = public.max_parents_per_book()::text;
+  end if;
+  perform public.require_content_consent();
+  insert into child_members (child_id, profile_id, role) values (v_inv.child_id, v_uid, v_inv.role);
+  update child_invites set accepted_by = v_uid, accepted_at = now() where id = v_inv.id;
+  perform public.audit('member_joined', 'membership', v_uid, v_inv.child_id, jsonb_build_object('role', v_inv.role));
+  return v_inv.child_id;
 end;
 $$;
 
@@ -270,6 +316,9 @@ begin
   if exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = p_user) then
     raise exception 'already a member of this book' using errcode = 'SCINV';
   end if;
+  if v_inv.role = 'contributor' and not public.contributors_enabled() then       -- F11-REQ-003
+    raise exception 'family invites are not available in this version' using errcode = 'SCINV', detail = 'role_disabled';
+  end if;
   if not exists (select 1 from child_members
                   where child_id = v_inv.child_id and profile_id = v_inv.invited_by and role = 'parent') then
     raise exception 'invite not found' using errcode = 'SCINV';
@@ -326,6 +375,7 @@ returns text language plpgsql security definer set search_path = pg_catalog, pub
 declare
   v_uid uuid := public.require_user();
   v_role text;
+  v_joined timestamptz;
   v_inv child_invites%rowtype;
 begin
   perform public.rate_hit('membership');
@@ -336,15 +386,16 @@ begin
   if p_member is null or p_member = v_uid then
     raise exception 'use leave_child to leave a book' using errcode = '22023';
   end if;
-  select role into v_role from child_members where child_id = p_child and profile_id = p_member;
+  select role, joined_at into v_role, v_joined from child_members where child_id = p_child and profile_id = p_member;
   if not found then
     return 'not_member';
   end if;
+  -- The invite behind the current membership is the one this person accepted last
+  -- (an earlier, undone join never counts); the window runs from this join.
   select * into v_inv from child_invites
-   where child_id = p_child and accepted_by = p_member and invited_by = v_uid
-     and accepted_at > now() - interval '72 hours'
+   where child_id = p_child and accepted_by = p_member
    order by accepted_at desc limit 1;
-  if not found then
+  if not found or v_inv.invited_by is distinct from v_uid or v_joined <= now() - interval '72 hours' then
     raise exception 'a join can be undone only by the parent who sent the invite, within 72 hours' using errcode = 'SCPAR';
   end if;
   update entries set in_book = false, approval = 'not_needed', reviewed_by = null, reviewed_at = null
@@ -362,7 +413,6 @@ drop policy if exists child_members_leave on public.child_members;
 revoke insert, update, delete, truncate on public.child_members from anon, authenticated;
 
 -- ─── 7. Privileges ───────────────────────────────────────────────────────
-revoke execute on function public.contributors_enabled() from public, anon, authenticated;
 revoke execute on function public.family_share_consent_required() from public, anon, authenticated;
 revoke execute on function public.invite_policy_checks(uuid, text) from public, anon, authenticated;
 revoke execute on function public.child_members_audit() from public, anon, authenticated;
