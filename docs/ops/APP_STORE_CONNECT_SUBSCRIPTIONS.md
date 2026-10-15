@@ -165,11 +165,11 @@ Also on the same build, not D rows: Apple's sheet and our Keep sheet at the larg
 
 1. Merge order: #138 (S07 contract and function), #145 (S20 build flags), then this PR (S06); each is a founder merge.
 2. Apply `supabase/migrations/20261016000000_subscription_status.sql` (renamed by the coordinator to the next free timestamp) to **staging** through `.github/workflows/deploy-db.yml` with the `approve-migration` label, after the earlier pending files, following its section in `supabase/APPLY.md` (sent to S02). Check in the staging SQL editor: `select public.consent_pepper_ready();` is true (an account with consent rows cannot be deleted without the pepper; the function comes with S02's #140).
-2b. Turn the server side on, in the staging SQL editor: `alter database postgres set app.status_report_enabled = 'on';` It fails closed: until this is set both RPCs answer "paused" and the phone keeps its report for later. Setting it to anything else pauses it again.
-3. Deploy the function to staging: `npx supabase functions deploy subscription-status --use-api --project-ref <staging ref>`. No secrets are needed; `KILL_SWITCHES=statusReport` in its secrets stops it.
-4. Ask S20 for a preview build with `EXPO_PUBLIC_STATUS_REPORT=on` (it is `off` in every profile today; a request in this PR). Build 1 (`testflight` profile) stays off.
-5. To read the result, in the staging SQL editor: `select environment, plan, trial_end, renewal_date, cancelled, reported_at from subscription_status;` and `select product_id, offer_type, terms_shown, shown_at from subscription_consents;`. There is no id or price to see, by design.
-6. To stop it at once: set `statusReport` true in the signed remote config (`scripts/packs/publish.ts config --kill statusReport`) and `KILL_SWITCHES=statusReport` on the function; on the database, `alter database postgres set app.status_report_enabled = 'off';` also stops direct calls.
+3. Turn the server side on, in the staging SQL editor: `alter database postgres set app.status_report_enabled = 'on';` It fails closed: until this is set both RPCs answer "paused" and the phone keeps its report for later. Setting it to anything else pauses it again.
+4. Deploy the function to staging: `npx supabase functions deploy subscription-status --use-api --project-ref <staging ref>`. No secrets are needed; `KILL_SWITCHES=statusReport` in its secrets stops it.
+5. Ask S20 for a preview build with `EXPO_PUBLIC_STATUS_REPORT=on` (it is `off` in every profile today; a request in this PR). Build 1 (`testflight` profile) stays off.
+6. To read the result, in the staging SQL editor: `select environment, plan, trial_end, renewal_date, cancelled, reported_at from subscription_status;` and `select product_id, offer_type, terms_shown, shown_at from subscription_consents;`. There is no id or price to see, by design.
+7. To stop it at once: set `statusReport` true in the signed remote config (`scripts/packs/publish.ts config --kill statusReport`) and `KILL_SWITCHES=statusReport` on the function; on the database, `alter database postgres set app.status_report_enabled = 'off';` also stops direct calls.
 
 ## Step 12. Testing on a Mac without Apple's servers (the StoreKit file)
 
