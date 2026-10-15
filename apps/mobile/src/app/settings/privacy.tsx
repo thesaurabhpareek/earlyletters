@@ -22,7 +22,8 @@ import { useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
  * - Sync and family sharing (sensitive-data consent): shown here; its owner
  *   registers the status and the change flow (lib/analytics/privacy-sources).
  * - What we never do, then the full documents.
- * v1.0: no sync and no account (lib/capabilities.ts), so the sync consent row is not shown.
+ * v1.0: no sync and no account (lib/capabilities.ts), so the sync consent row is not shown;
+ * no analytics either (capabilities.analytics, 15 Oct), so the usage switch is not shown.
  */
 export default function PrivacySettings() {
   const p = copy.settings.privacy;
@@ -50,9 +51,11 @@ export default function PrivacySettings() {
     <>
       <Stack.Screen options={{ title: p.title }} />
       <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-        <ListSection title={consentCopy.analyticsSection} footer={p.analyticsOffNote}>
-          <ToggleRow title={p.analyticsLabel} description={p.analyticsHelp} value={analytics === 'granted'} onValueChange={setAnalytics} disabled={busy} />
-        </ListSection>
+        {capabilities.analytics ? (
+          <ListSection title={consentCopy.analyticsSection} footer={p.analyticsOffNote}>
+            <ToggleRow title={p.analyticsLabel} description={p.analyticsHelp} value={analytics === 'granted'} onValueChange={setAnalytics} disabled={busy} />
+          </ListSection>
+        ) : null}
 
         {capabilities.sync ? (
           <ListSection title={consentCopy.sensitiveSection} footer={fill(p.sensitiveHelp, { child })}>
