@@ -1,21 +1,22 @@
 # Switching the agent harness on
 
-For the founder. Written 4 Oct 2026 against the harness as it stands on the `docs/engineering-compendium` branch (PRs #4, #39 and #42: 24 agents, dispatcher, handoffs, stewards). The design is in `docs/agents/HARNESS.md`; this file is the order of operations, what it costs, and what to leave off at first.
+For the founder. Written 4 Oct 2026, updated 15 Oct 2026 as the harness landed on `develop` (PR #4 at `cb8fa72`, then #39 and #42: 24 agents, dispatcher, handoffs, stewards). The design is in `docs/agents/HARNESS.md`; this file is the order of operations, what it costs, and what to leave off at first.
 
 **Marking.** Every step says whether it was checked. "Checked in code" means I read the script or workflow in this repository. "Unverified" means it depends on GitHub, OpenRouter or Anthropic behaviour or prices I could not reach from here; check it on the day.
 
-## 0. What nothing needs until you do these steps
+## 0. What runs before you do these steps: nothing
 
-Until the secrets below exist, the harness does nothing harmful and nothing costly (checked in code):
-- `agents.yml` still runs its `plan` job every 30 minutes once it is on `main`. It needs only the built-in `github.token`. It creates the labels, journal issues and the Agent board (see step 5), marks every agent "waiting for the OPENROUTER_API_KEY secret and the agents GitHub App", and starts no agent, so the `run` job is skipped.
-- `claude.yml` ends green with a notice if neither `ANTHROPIC_API_KEY` nor `CLAUDE_CODE_OAUTH_TOKEN` exists.
-- `agents-check.yml` needs no secrets.
+The harness is off by default (checked in code, 15 Oct):
+- `agents.yml` runs only while the repository variable `AGENTS_ENABLED` is exactly `true`. Until you set it (section 4, item 4), every scheduled tick and every manual "Run workflow" is skipped before a runner starts: no minutes, no labels, no issues, no comments.
+- Once `AGENTS_ENABLED` is `true` but the secrets below do not exist yet, the `plan` job runs every 30 minutes on the built-in `github.token`: it creates the labels, journal issues and the Agent board (see section 5), marks every agent "waiting for the OPENROUTER_API_KEY secret and the agents GitHub App", and starts no agent, so the `run` job is skipped. That is why the variable is the last step, not the first.
+- `claude.yml` ends green with a notice if neither `ANTHROPIC_API_KEY` nor `CLAUDE_CODE_OAUTH_TOKEN` exists. It has no schedule and runs only on your own `@claude` mentions.
+- `agents-check.yml` needs no secrets and writes nothing.
 
 ## 1. Merge order
 
-1. Merge PR #30 (CI hardening) first, after your `approve-migration` review. PR #4 will then conflict in `.github/README.md` (checked: that is the only conflicting file); ask for it to be resolved, or merge #4 first.
-2. Merge #4, then #39, then #42 into `develop`, in that order.
-3. Scheduled workflows run only from the default branch. Release `develop` into `main` (or merge a small PR that adds only `agents.yml`, `agents-check.yml` and `claude.yml`). Nothing is scheduled until then. Checked: this is stated in HARNESS.md section 12; GitHub's rule itself is unverified here.
+1. Done 15 Oct: #4 landed on `develop` (`cb8fa72`, squash) with two independent review passes recorded on the PR (D-093). #39 and #42 follow in that order, the same way; #112 (release agent, chapter 11) after #42.
+2. PR #30 (CI hardening: SHA pins, trusted-ref migration guard, the `fence` check) changes the required checks, so it is release configuration and waits for you (D-093). It is kept synced with `develop` and marked "ready, founder merge"; after it lands, re-run the branch protection command with `fence` added.
+3. Scheduled workflows run only from the default branch. Release `develop` into `main` (or merge a small PR that adds only `agents.yml`, `agents-check.yml` and `claude.yml`). Nothing is scheduled until then, and even then nothing runs until `AGENTS_ENABLED` is set (section 4, item 4). Checked: this is stated in HARNESS.md section 12; GitHub's rule itself is unverified here.
 
 ## 2. Create the OpenRouter key (about 10 minutes)
 
@@ -36,12 +37,13 @@ Until the secrets below exist, the harness does nothing harmful and nothing cost
 ## 4. Labels, branch protection, repository settings
 
 1. **Labels.** The harness creates all of them itself (checked in `scripts/agents/bootstrap.mjs`): 14 shared labels including `needs:founder`, `review:red-team-ok`, `review:changes-needed` and `approve-migration`, plus `agent:`, `from:` and `to:` labels for each of the 24 agents (86 labels in total). If you want them before the first tick, run `node scripts/agents/bootstrap.mjs --dry-run`, then without `--dry-run`, from a checkout where `gh` is logged in as you.
-2. **Branch protection** on `develop` and `main`: the command in `.github/README.md`. Required checks should include `required`, `applied migrations unchanged` and `fence` (from PR #30). That README sets 1 required approval (PR #4 changes it from 0): as sole owner you can still merge your own PRs as an administrator because "do not allow bypassing" stays off. Unverified: the exact behaviour of your own account under these settings, and whether your plan allows protection on a private repository (HARNESS.md section 13).
+2. **Branch protection** on `develop` and `main`: the command in `.github/README.md`. Required checks should include `required`, `applied migrations unchanged` and, once PR #30 lands, `fence`. That README sets 1 required approval (PR #4 changes it from 0): as sole owner you can still merge your own PRs as an administrator because "do not allow bypassing" stays off. Unverified: the exact behaviour of your own account under these settings, and whether your plan allows protection on a private repository (HARNESS.md section 13).
 3. **Settings, Actions, General:** nothing special for the agents. They open PRs with the App's own token, so no setting for "allow Actions to create PRs" is needed (checked in `agents.yml`: the App token is used for the OpenCode runs). Unverified.
+4. **Switch on, last.** Settings, Secrets and variables, Actions, Variables: add `AGENTS_ENABLED` with the value `true`. This is the only thing that makes `agents.yml` run at all (checked in code: the `plan` job has `if: vars.AGENTS_ENABLED == 'true'`, and the `run` job needs `plan`). Do it after sections 2 and 3, or the first ticks will bootstrap labels and issues and then sit "waiting for" the secrets. To stop every tick later, delete the variable; `AGENTS_PAUSED=true` (section 7) pauses assignments but keeps the board current.
 
 ## 5. First tick, in order
 
-Run it by hand before trusting the schedule: Actions, Agents, Run workflow, set `agent` to `chief-of-staff` and leave `task` empty. (The `agent` input takes a list; checked in the dispatcher.)
+With `AGENTS_ENABLED` set, run it by hand before trusting the schedule: Actions, Agents, Run workflow, set `agent` to `chief-of-staff` and leave `task` empty. (The `agent` input takes a list; checked in the dispatcher.)
 
 What happens, and which agent goes first (checked in `scripts/agents/dispatch.mjs` and `OPERATING_MODEL.md`):
 1. **Bootstrap.** Labels, 24 journal issues (label `journal`, one per agent) and the issue titled "Agent board" are created if missing.
@@ -75,7 +77,7 @@ Turn things on in this order. Each is one change.
 - **Start with a small team.** Set `daily_runs` to `0` in `agents/roster.json` for every agent except `red-team`, `qa`, `content`, `design-systems`, `product` and `chief-of-staff` (checked in code: a zero daily limit makes the dispatcher skip the agent). Those are the roles that work in `docs/` and `packages/`, not in `supabase/` or sign-in. Turn the stewards, `legal`, `marketing`, `support`, `ops` and the rest on in week two.
 - **Keep paused for `supabase/` and sign-in work** (D-041): do not unpause `security`, `sync`, `privacy`, `data-architect`, `payments` and `speech` until branch protection and the `fence` check are on and you have watched a few red-team reviews.
 - **A lower first budget.** A $20 to $50 OpenRouter key budget is a harder stop than any roster setting.
-- **Emergency stop:** set the repository variable `AGENTS_PAUSED` to `true`. The next tick starts nothing.
+- **Emergency stop:** set the repository variable `AGENTS_PAUSED` to `true`. The next tick starts nothing but still refreshes the board. To stop the ticks themselves, delete `AGENTS_ENABLED`.
 - **Optional, not needed yet:** Dependabot security updates, private repository, a self-hosted runner.
 
 ## 8. First-week checks
@@ -91,4 +93,4 @@ Turn things on in this order. Each is one change.
 - OpenRouter prices, model availability, zero-data-retention behaviour; OpenCode 1.18.34 and its model list.
 - GitHub App permission names and the scheduled-workflow default-branch rule.
 - `anthropics/claude-code-action@v1` and `actions/create-github-app-token@v3` are still pinned by tag, not commit SHA (I could not look up the SHAs); Dependabot from PR #30 will propose pins.
-- The CI result of the three agent PRs on GitHub.
+- A live tick with `AGENTS_ENABLED` set: the gate was verified by reading the workflow and parsing it, not by a run. #4's CI was green on 15 Oct (`required`, tests and content rules, database rules, Deno, typecheck, migration guard, agents-check); #39 and #42 pass the same gate before they merge.
