@@ -1,0 +1,606 @@
+{
+  "lens": "Visual and motion design lead: make the app as visual as the website without making it loud. Background treatment (lamp-light pool on warm paper, dark variant), where illustration, texture or the product's own content earns a slot, one big literary line per key screen, transition choreography, durations and easings from tokens.motion, Reduce Motion and Increase Contrast fallbacks, what must stay still, open-licence asset sourcing, and an implementation map that builds on PR #99 (Lamp, QuotePair) inside the D-065 size budget.",
+  "coverage": "WHAT I READ. CLAUDE.md; packages/content VOICE.md, BRAND.md, src/strings.en.ts (tonight, onboarding, ageGate, delete and shelf blocks); docs/brand/BRAND_SYSTEM.md; docs/design DESIGN_LANGUAGE.md, MOTION.md, CREATIVE.md, PHOTOGRAPHY.md, BENCHMARK.md (head); packages/design-tokens/src/tokens.ts; docs/ops/APP_SIZE.md and D-065; docs/legal/ENGINEERING_REQUIREMENTS.md LEGAL-REQ-002 and docs/prd/PRD.md PRD-REQ-019 and K-07 (the journey INDEX tags the gate \"A-REQ-030\", but PRD A-REQ-030 is \"Offline entry\"; the gate's real sources are PRD-REQ-019 and LEGAL-REQ-002). Mobile code on origin/develop (4183844): onboarding.tsx, (tabs)/index.tsx, listen.tsx, review.tsx, book.tsx, letter/[id].tsx, read-together.tsx, lib/motion.ts, components/ui/line-art.tsx, motion/draw-on.tsx, capture/listening-aura.tsx, resilience/plain-screen.tsx, gate/age-gate-screen.tsx, app.config.ts (fonts are embedded at build time with the expo-font plugin). PR #99 (origin/feat/mobile-calm-brand, 41783ae): lamp.tsx, lamp.logic.ts, quote-pair.tsx, tokens.atmosphere, MOTION 5k, and its before/after captures. I also looked at the older origin/feat/app-calm-integration (4 Oct), whose lamp-wash and atmosphere palette (lampGold, lampRose, lampDusk) overlap #99. Website on origin/main (69299f8): Landing.tsx, Aurora.tsx and css, ProofLetter.tsx, atmosphere/index.tsx, Motes.tsx, drawings/*, public/textures. I ran the site locally and captured it at 402 px (hero, Evening, How it works, proof letter, voice, book months with \"Filed in Month 9\", private, closing). Journey record on origin/chore/journey-refresh (b7afe42), read-only at /tmp/jr: INDEX.md, the visible text of all 147 steps, and every distinct screen, viewed one by one or as contact sheets (all first-run, gate and stop, Tonight light and dark, Listen light and dark, mic off, Review in every state, saved and private cards, Plus sheet, Write, Book empty, one letter, many letters, waiting, no words, quiet day, letter page light and dark, reading size, delete, not found, recently deleted, Read together, end and empty, Plan, Reminders, Recordings, Export, Settings, Privacy, Appearance, child settings, add a child, Family, 404, crash and launch recovery).\n\nHOW SOURCES ARE MARKED. Verified = I read the primary source today: Apple HIG Onboarding, Launching and Motion (Apple documentation JSON), the Phosphor LICENSE file on GitHub, and the website and repo code. Secondary = a search summary of a primary page I could not open (dayoneapp.com, help.pexels.com, Unsplash help centre and Medium, App Store listings). Memory (unverified) = my recollection only. Product sites (Day One, Headspace, Calm, Tinybeans, Qeepsake, Huckleberry, Things, Bear, Overcast), opendoodles.com, unsplash.com and pexels.com could not be reached from this session.\n\nIMPLEMENTATION MAP. (1) Tokens, packages/design-tokens/src/tokens.ts, after #99 merges: extend #99's `atmosphere` and do not add a second palette. Add `tone: { amber: '#F3C98B', gold: '#FFE2A8', rose: '#F08C7C', dusk: '#8076E2' }`, the website Aurora's values, named after calm-integration's lampGold, lampRose and lampDusk so that branch's lamp-wash can be retired. Add a `daypart` map keyed by the greetingKey() values and `scene` presets of { anchor, intensity, breathe } for gate, welcome, form, finish, tonight, write, book and readTogether. Extend atmosphere.test.ts so every tone at its peak keeps 4.5:1 for every text token, including under Increase Contrast. Add `type.numeral` (Literata Medium 64/64, maxScale 1.4) for month openers. Move the MOTION 5e numbers into tokens as `motion.file: { chipAtMs: 250, moveAtMs: 550, dy: 24 }`, and add `motion.pageTurn: { dx: 24 }`; both stay under sequenceMaxMs 900. Change `breathIdleMs` from 4000 to 7500 (MOTION open question 1). (2) Lamp, components/ui/lamp.tsx (#99): add `tone` (a colour for each stop, still one RadialGradient drawn once), `still` (no breath) and an animated `intensity` (withTiming over lamp.arriveMs 1200, M3 easing, ReduceMotion.Never on the fade). Mount one Lamp in the root layout behind the age gate and onboarding so it never remounts between steps. Keep one Lamp per tab screen (Tonight, Book), a still one on Write, and a still dusk pool on Read together. There is none on Listen, Review or the letter page. (3) QuotePair (#99): keep it for the gate. For welcome, add a registry context `app.welcome` that resolves to `logo.lockup.stacked.ink` and `.reversed` (packages/brand/registry.ts, then build-registry.mjs). (4) LineArt and DrawOnPath: port `lamp` (with its glow fill), `window` and `readingLamp` from apps/web/src/components/drawings. They follow the same contract: single weight, round caps, no faces. Let DrawOnPath take a stroke table of [d, length, start, end] like the web STROKES arrays, with lengths measured offline. (5) New components: components/book/book-cover.tsx, a 3:4 paper cover with the small-cut pair, the child's name in Literata and a flyleaf for the signature, built from react-native-svg and Text with no images; components/motion/card-transition.tsx, the MOTION 5f measured-rect open; components/motion/page-turn.tsx. (6) Edits: review.tsx (the file-into-month save in place of the opacity fade), book/letter-card.tsx (a gradient fade in place of the ellipsis glyph), resilience/plain-screen.tsx (fontFamily from tokens), ui/toast.tsx (a new show() replaces the toast on screen), and listening-aura.tsx (it already reads tokens.motion.breath). LIBRARIES. Already dependencies: react-native-reanimated 4.5.1 (springs, layout transitions, the CSS animations #99 uses), react-native-svg 15.15.4 (radial and linear gradients, line art), expo-haptics and expo-blur (keep blur out of transitions, MOTION 7). Not dependencies and not needed: expo-linear-gradient, @shopify/react-native-skia, lottie-react-native and Rive (MOTION 9 recommends none in v1). Skia would add several MB of native code (memory, unverified). SIZE (D-065: App Store download under 40 MB; JS assets sub-budget 3 MB, 1.4 MB used, per docs/ops/APP_SIZE.md). The eight website drawings are about 19 KB of path source in total. The optional letter-page texture is one 34.7 KB WebP. The app ships no photos: nothing in src requires apps/mobile/assets/photos, so Metro does not bundle it, and that should stay true. Phosphor is already imported one icon at a time on develop (I checked with grep), so MicrophoneSlash, WarningCircle and ArrowsClockwise cost a few KB each. Every change stays under 0.1 MB.\n\nASSET SOURCING, BY SLOT. Icons: Phosphor, MIT. Verified: the LICENSE reads \"MIT License, Copyright (c) 2020 Phosphor Icons\". Use Regular in the UI, Light at 32 pt and up, Fill only for the selected tab and active play. Line illustration (finish lamp, Read together moon, empty and error states): the product's own drawings from apps/web/src/components/drawings and apps/mobile line-art. They are in-house, so no licence question arises, and they match CREATIVE 3. Open Doodles (Pablo Stanley) is described as CC0 by Creative Bloq and several directories, and one licensing guide adds a no-competing-pack caveat. opendoodles.com was unreachable, so its licence is unverified. The set also draws people with faces in a loose sketch style, which DESIGN_LANGUAGE 9 rules out (\"No faces, no mascot\"), so it is not recommended. Texture (optional, letter page only, light mode): apps/web/public/textures/paper-v1.webp (34,698 bytes), generated in-house by apps/web/scripts/atmosphere/make_textures.py. Grain (22,012 bytes) is not needed in the app's small pools. Photography: none in the app for v1.0. Photos are for the website and social only, under the Unsplash License and the Pexels License. Neither primary page was reachable here. Search results from Unsplash's own Medium post and help centre confirm the \"compile ... to replicate a similar or competing service\" carve-out. help.pexels.com confirms: identifiable people may not be shown in a bad light, no selling unaltered copies, no implied endorsement, no redistribution on stock or wallpaper sites. PHOTOGRAPHY.md records both pages as opened on 2026-10-01. Neither licence provides model releases. Warning: stock photos of strangers' babies would feel false in a book about your own child. DESIGN_LANGUAGE 9 and PHOTOGRAPHY.md rule 2 ban them, and the ban should hold. Use light, hands, paper and objects, and above all the app's own letters. Product's own content: wherever an image would explain the product (Promise, Keep needs Plus, Export, empty Book), render the person's own letters or the book object live on the phone, never a screenshot of someone else. App Store art uses real screens only (CREATIVE 4).\n\nNOTES FOR OTHER LANES. The journey record predates #99, so welcome (J01-03), Tonight (J04) and Book (J09) should be re-shot after it merges (npm run e2e:web:journey -w @scribe/mobile). The web toggle draws a teal thumb in J11-03, J13-02 and J14-01; on iOS the native switch should use an accent track. J10-15 shows a stale \"Letter restored.\" toast after Erase now. J19-01 has no side gutter. J03-02 says \"Asha and Nila calls you\". J03-08 leaks the placeholder into a sentence. The usage-sharing sheet J04-04 is not shown in v1.0, because develop #118 turns analytics off.",
+  "principles": [
+    "One light per room, never on a voice. One lamp pool from PR #99 lights paper behind the gate, first run, Tonight and Book, and dark mode gets the website's amber on #161412. It is tinted by time of day on Tonight and by scene elsewhere, drawn once, and only its opacity breathes. It never appears where a recording is made or played (Listen, Review, letter page, Read together), so on those screens only a real signal moves. Benchmark: the website's fixed Aurora (amber to rose to dusk by scroll) on origin/main (verified: read Aurora.tsx and captured it at 402 px); HIG Motion, \"Add motion purposefully, supporting the experience without overshadowing it. Don't add motion for the sake of adding motion.\" (verified, HIG JSON).",
+    "One big literary line per key screen. Each key screen has one Literata line big enough to carry the screen: the descriptor on welcome, \"The book is open.\" on finish, the prompt on Tonight and Listen, the letter itself on Review and the letter page, a numeral on each month opener. Everything else stays in quiet Mukta. Two serif lines never compete, and two questions never stack. Benchmark: the website hero (.title clamp(58px, 12.5vw, 176px)) and its two-tone \"Meera is / asleep.\" line (verified, Landing.module.css and capture); DESIGN_LANGUAGE principle 3, \"Quiet UI, loud letters\" (repo).",
+    "First run is one room and a sequence of arrivals, not a form. The lamp lives above the gate and onboarding and never remounts. Each step's words arrive with motion.enter (8 pt rise, 280 ms, M3 easing, 30 ms stagger), with every sequence under sequenceMaxMs 900. Controls are opaque and hittable from frame one. One object, the book cover, is named, signed and opened through the steps. Benchmark: HIG Onboarding, \"design a flow that's fast, fun, and optional\", \"Teach through interactivity\", and HIG Launching, \"If you need a splash screen, consider displaying it at the beginning of your onboarding flow\" (verified, HIG JSON); Headspace and Calm hold one atmospheric background across their onboarding questions (memory, unverified).",
+    "The person's own words are the imagery. The visual weight comes from their letters (excerpts, the waiting draft, the two kept letters, the cover with the child's name) and the product's own line drawings, never from stock. No photos of children, and no stock babies anywhere. Benchmark: Day One's On This Day resurfaces your own past entries (secondary: dayoneapp.com feature page via search, not opened); DESIGN_LANGUAGE 9, \"No stock baby photos, anywhere\", and PHOTOGRAPHY.md rule 2 (repo).",
+    "Motion is the receipt and the map. A save files the letter into its month chip, a card grows into its page, and pages turn sideways in Read together, so every movement says where something went. All of it is brief, interruptible, skippable by a tap, under 900 ms (hard ceiling 2000), and commits before it animates. Benchmark: HIG Motion, \"Aim for brevity and precision in feedback animations\" and \"Let people cancel motion\" (verified); the website's \"Filed in Month 9\" card (verified); Things 3's in-place expansion (repo MOTION M13, secondary).",
+    "Stillness where people speak, read or struggle. No loops on Listen except the voice-driven aura, none on Review or the letter page, and nothing in Read together but the page turn. The crisis lines in Settings get no atmosphere, drawing or motion. The idle listening breath slows from 4 s to 7.5 s. Benchmark: HIG Motion (visionOS), \"Avoid showing objects that oscillate in a sustained way... around 0.2 Hz\" (verified; a visionOS rule applied here as a caution, since 4 s is 0.25 Hz); Calm's slowest breathing pace of 8 a minute (repo MOTION M10, secondary).",
+    "Every layer has a still twin and a plain twin. Under Reduce Motion every arrival becomes one 200 ms fade (fadeMs), drawings appear complete, the lamp holds its final state and the aura becomes a stepped ring. Under Increase Contrast and Reduce Transparency there is no lamp and no texture, just plain paper. Dark mode is tuned first and is the reference frame. Benchmark: HIG Motion, \"Make motion optional\" (verified); #99's Lamp already does this (verified, lamp.tsx).",
+    "Lean by construction. Everything is built from react-native-svg gradients and paths, Reanimated springs and CSS animations, and the website's in-house drawings and textures. Nothing new is added to the binary: no Skia, Lottie, Rive or linear-gradient package. Each change states its bytes against D-065 (download under 40 MB, JS assets under 3 MB). Benchmark: docs/ops/APP_SIZE.md and MOTION 9 (repo); HIG Onboarding, \"Don't let large downloads hinder onboarding\" (verified)."
+  ],
+  "screens": [
+    {
+      "step_ids": [
+        "J00-open",
+        "J01-01",
+        "J01-02",
+        "J02-01",
+        "J02-05"
+      ],
+      "screen": "Age question (18+ entry gate)",
+      "verdict": "redesign",
+      "problem": "The first frame of the product is a bare form: a heading, an explaining line (\"We ask everyone the same question.\") that sounds defensive and machine-made, two outline pills, and a pale filled \"Continue\" pill that looks broken while it is disabled. There is no light and no brand, and the launch splash (the quotation pair on paper, registry app.splash) cuts to a screen with nothing in that place, which is the flash HIG Launching warns about.",
+      "proposal": "Keep the question word for word: \"Are you 18 or older?\". Delete the second line and put nothing in its place. Background: the #99 Lamp, mounted in the root layout, anchor center, intensity 0.6, still (no breath). Dark mode uses the 0.16 peak on #161412. Put the QuotePair (app.brand-device) at 48 pt exactly where the splash symbol sits, so launch and gate read as one frame. The pair does not animate. The question fades in with motion.enter (8 pt, 280 ms, M3 easing) at 120 ms. Set the question in `display` (Literata 34/41), centred. Show two identical answers: \"Yes\" and \"No\" as outline pills (1 pt controlBorder, label style, 56 pt tall, one row, 12 pt gap), with no selected state and no Continue, so a tap answers (selection haptic). If counsel (register s.6 Q6) prefers a select-then-confirm step, keep Continue, but draw its disabled state as a 1 pt controlBorder outline and fill it with accent only after a choice. After Yes, the question exits (exitMs 160), the lamp rises from 0.6 to 1.0 over lamp.arriveMs 1200, and the welcome arrives in the same room. Reduce Motion: no rise, 200 ms fades, lamp static. Increase Contrast: plain paper.",
+      "benchmark": "HIG Launching: \"Design a launch screen that's nearly identical to the first screen of your app\"; HIG Onboarding: \"If you need a splash screen, consider displaying it at the beginning of your onboarding flow\" (verified, Apple documentation JSON read today). The website hero on origin/main (verified, code and capture). Equal-weight neutral age screens as in the FTC COPPA FAQ on neutral age screens (memory, unverified).",
+      "legal_or_constitution_note": "Source: PRD-REQ-019, LEGAL-REQ-002 and K-07 (not A-REQ-030, which is \"Offline entry\"). It requires a neutral question before any first-run screen, Yes and No, nothing preselected, no hint that one answer is right, and Yes stored as a boolean only. Deleting the explanatory line keeps every requirement, because the requirement is neutrality, not an explanation. Do not add any line before the answer that says who the app is for: that would hint at the right answer. The lamp and the mark are neutral, and No must not dim the room (see the stop screen)."
+    },
+    {
+      "step_ids": [
+        "J02-02",
+        "J02-03",
+        "J02-04"
+      ],
+      "screen": "Under-18 stop screen and the 24-hour way back",
+      "verdict": "keep",
+      "problem": "Calm, short and correct. The only visual question is whether answering No should change the room.",
+      "proposal": "Keep the copy and layout. The lamp stays exactly where the gate left it (0.6, still), so answering No never darkens or changes the room. Never add a drawing or mark animation here. \"I answered by mistake\" stays a secondary pill, shown only after 24 hours. Titles use Literata from tokens (embedded fonts).",
+      "benchmark": "HIG Motion: \"Add motion purposefully\" (verified).",
+      "legal_or_constitution_note": "LEGAL-REQ-002: a polite stop screen. Nothing is created and only the gate state is stored. The 24-hour anti-retry rule is unchanged."
+    },
+    {
+      "step_ids": [
+        "J01-03",
+        "J17-04"
+      ],
+      "screen": "Welcome",
+      "verdict": "redesign",
+      "problem": "In the record, a small envelope drawing sits above the product name typed in Literata, a serif descriptor, a sans body and a free line: three voices of nearly equal weight and a lot of dead space. #99 already swaps the envelope for the quotation pair and adds a centred lamp, which is the right direction, but the name is still retyped as a heading. BRAND_SYSTEM 2a says never to retype the name to stand in for the logo.",
+      "proposal": "One logo and one literary line. The logo is the stacked lockup (new registry context `app.welcome` resolving to logo.lockup.stacked.ink and .reversed) at 96 pt. If the founder prefers #99's version, keep the QuotePair at 56 pt and set the name in `title1`, not `hero`. The literary line is the descriptor in `hero` (Literata 44/50): \"The baby memory book you fill by talking.\" Below it, the body in `body` muted, \"A few words at a time, in your own voice. Kept for your child to read and hear for years.\", then \"Your first two letters are free.\" in `footnote`. Arrivals, 700 ms in total: the lamp, already lit from the gate, rises to 1.0 (arriveMs 1200, underneath everything); the lockup fades in over fadeMs 200 at 0 ms; the descriptor enters at 120 ms, the body at 150 ms and the free line at 180 ms (staggerMs 30). \"Begin the book\" is full strength from frame one. The lamp breathes (breathMs 9000, floor 0.88) only on this screen and Tonight. Tapping Begin: the content exits up 8 pt with exitMs 160, and the lamp eases to 0.5, still, for the form steps. Dark mode is the reference frame: the #99 dark capture already matches the website hero.",
+      "benchmark": "Website hero: lamp-lit night, one huge serif line, one quiet pill (verified, origin/main capture). HIG Onboarding, a splash at the start of onboarding (verified). Headspace and Calm open on one atmospheric scene with one line and one button (memory, unverified).",
+      "legal_or_constitution_note": "D-082: the free line stays. BRAND_SYSTEM: one logo per screen, wordmark as artwork only. Copy unchanged."
+    },
+    {
+      "step_ids": [
+        "J01-04"
+      ],
+      "screen": "The promise (Word for word)",
+      "verdict": "redesign",
+      "problem": "About 110 words in three cards plus a footnote, opening with three \"we\" sentences (\"We take out\", \"We never\", \"We can mishear\"). It explains before the person has said anything, reads like a help centre, and is the heaviest screen in first run.",
+      "proposal": "Show one fix instead of describing three. Hero line in `display`: \"Exactly as you said it.\" Below it, a specimen strip in the UI sans (the app's own words never sit in the letter's type, VOICE.md): the token \"um,\" with the dotted editMark underline. On arrival a 1.5 pt editMark strike draws across it (strokeDashoffset, 400 ms, M3 easing), as on the website's proof letter. Tapping it puts the word back (cross-fade out 120 ms, in 160 ms, MOTION 5d) and shows \"Put back.\" with Undo. One line under it: \"Every small fix is marked. Tap one to put it back.\" Then two icon rows (Phosphor Regular 20 pt, textMuted): Microphone, \"Your recording is kept on this phone.\", and LockSimple, \"Private by default.\" Drop the mishear card here; it already returns at the right moment in the first-time note on Review. CTA unchanged: \"That sounds right\". The root lamp sits at 0.5, still. Reduce Motion: the strike is shown complete and the change is a fade.",
+      "benchmark": "HIG Onboarding: \"Teach through interactivity\" and \"Consider providing a collection of context-specific tips instead of a single onboarding flow\" (verified). The website ProofLetter's strike-and-insert grammar (verified, ProofLetter.tsx).",
+      "legal_or_constitution_note": "The specimen only ever shows a removal and its undo, never an added word. It is app text in sans, unsigned, outside any letter card (VOICE.md, the app's own words)."
+    },
+    {
+      "step_ids": [
+        "J01-05",
+        "J01-06",
+        "J01-07",
+        "J01-08",
+        "J01-09",
+        "J01-10",
+        "J01-11",
+        "J01-12",
+        "J03-01"
+      ],
+      "screen": "Child step: who is this book for (name, birthday or due date, twins)",
+      "verdict": "redesign",
+      "problem": "A form: label, input, nickname hint, add another, a two-pill segment, a date pill, a Born today link, and \"We sort letters by Asha's month of age.\", which explains why the app asks. Then a reason line above a pale disabled Continue. The validation-in-words is good, but nothing on screen makes the child feel present.",
+      "proposal": "Introduce BookCover, the one object of first run: a 3:4 paper card (surfaceRaised, radius.lg, elevation 1, 132 x 176 pt) at the top right, with the small-cut quotation pair at its head and the child's name set live in Literata Medium (`title2`), centred, as the person types. It starts blank. The name input uses the letter face (Literata 22 pt), because it is the book's title; everything else stays Mukta. Progressive disclosure: the Birthday / Not here yet block enters (motion.enter, 280 ms) after the first character of the name, and \"Born today\" becomes a chip beside the date. Delete \"We sort letters by {child}'s month of age.\" Keep the reason lines word for word. Draw the disabled Continue as a 1 pt controlBorder outline pill. Twins: a second, smaller cover fans 12 pt behind the first, rotated 3 degrees, carrying the second name. The cover text cross-fades over 200 ms per input pause, with no per-letter motion. The lamp is still (typing is a frequent interaction). Reduce Motion: a static cover and instant text.",
+      "benchmark": "Headspace asks one thing per screen over a constant background (memory, unverified). Apple Books presents the cover as the object you open (memory, unverified). DESIGN_LANGUAGE principle 3: serif for the child's book (repo).",
+      "legal_or_constitution_note": "The name is kept exactly as typed. The 60-character message, the empty-name rule and the date limits are unchanged. Never gender the child."
+    },
+    {
+      "step_ids": [
+        "J01-13",
+        "J01-14",
+        "J03-02"
+      ],
+      "screen": "Signature step: what does {child} call you",
+      "verdict": "polish",
+      "problem": "Good bones and the best line in first run (\"Not talking yet? Pick the name you hope to hear.\"). But the \"From Mama\" preview floats alone in mid-screen, the language row adds a second topic, and the plural line is wrong for twins: \"Add what Asha and Nila calls you to continue.\"",
+      "proposal": "Move the preview onto the BookCover's flyleaf: the cover turns to its inside page (cross-fade plus an 8 pt shift on the standard spring; no 3D flip) and shows \"From Mama\" in `signature` italic 20/32 under a single hairline where a letter will go. A chip tap fills both the field and the flyleaf with a snappy cross-fade. The language row stays, below a hairline, as a quiet row. For more than one child use \"Add what {child} call you to continue.\".",
+      "benchmark": "Website letter cards signed \"From Papa\" (verified, origin/main).",
+      "legal_or_constitution_note": "Signature only, never generated: chips are suggestions the person taps."
+    },
+    {
+      "step_ids": [
+        "J01-15"
+      ],
+      "screen": "Choose a language sheet",
+      "verdict": "keep",
+      "problem": "Clear native sheet, with each language in its own script and Arabic aligned right.",
+      "proposal": "No change. Opens on the native sheet spring and adds no entrance of its own (MOTION 5i).",
+      "benchmark": "iOS language lists show each language in its own script (memory, unverified)."
+    },
+    {
+      "step_ids": [
+        "J01-16",
+        "J01-17",
+        "J03-03"
+      ],
+      "screen": "Finish: the book is open, with the speech download ask",
+      "verdict": "redesign",
+      "problem": "\"The book is open.\" is the emotional peak of setup, but it shares the screen with a five-line 575 MB download card, two buttons and two footers. After Not now, the screen says the voice is kept twice. Its drawing is the same page as the empty Book.",
+      "proposal": "Make the peak: port the website's Lamp drawing (apps/web drawings/Lamp.tsx) into LineArt as 'lamp'. It draws on over drawMs 1200, then its shade fills with warm light (glow opacity 0 to 1, 600 ms) while the screen lamp rises from 0.5 to 1.0 (arriveMs 1200): the light comes on as the book opens. The BookCover beside it opens to its first page, showing the flyleaf signature. One literary line in `hero`: \"The book is open.\", with the body \"Say one thing about {child} today. That is a letter.\" The download becomes one compact block on accentSoft, radius md: title \"Get your words ready\" (headline), one line \"A one-time 575 MB download, on Wi-Fi.\" (footnote), a secondary \"Download on Wi-Fi\" and a quiet \"Not now\". After Not now the block collapses (LinearTransition, standard spring) to one line: \"You can do this later in Settings, Recordings.\" \"Write the first one\" is full strength from frame one. Any tap completes the drawing. Reduce Motion: drawing complete, glow on, one 200 ms fade.",
+      "benchmark": "HIG Onboarding: \"Don't let large downloads hinder onboarding\" (verified). CREATIVE.md onboarding: \"a lamp switched on, a blank page, a page with one line\" (repo). The website's S01 Evening lamp (verified, code).",
+      "legal_or_constitution_note": "D-065 and D-087: nothing downloads until the person taps. The recording is always kept, so the first letter never waits on the model."
+    },
+    {
+      "step_ids": [
+        "J01-18",
+        "J04-01",
+        "J04-02",
+        "J04-03",
+        "J04-05",
+        "J06-12",
+        "J06-15",
+        "J07-05",
+        "J07-10",
+        "J18-02"
+      ],
+      "screen": "Tonight (home), including the waiting-letter card, light and dark",
+      "verdict": "redesign",
+      "problem": "Two questions stack (the subtitle \"What do you want Asha to know about today?\" and the prompt) under a caps label, \"A THOUGHT TO START WITH\": it reads like a form and like a model. The prompt sits in a white card identical to every other card, three serif lines compete (a 34 pt greeting, a 24 pt prompt), and the waiting card is generic (\"A letter is waiting to be read back.\") rather than the person's own words. On develop the room has no light; #99 adds a plain top pool.",
+      "proposal": "The lit room. Use the #99 Lamp, anchor top, with a time-of-day tone from the existing greetingKey(): earlyMorning and morning use `gold` #FFE2A8; midday and afternoon use `amber` #F3C98B; evening uses amber fading to a `rose` #F08C7C tail; night and lateNight use the rose tail at 0.85 intensity, warmer and lower. It stays one RadialGradient with a colour per stop, drawn once. The one literary line is the prompt, in `title1` (Literata 28/34) directly on the paper with no card chrome. The greeting drops to `title2` (22/28) and turns two-tone, the website's \"Meera is / asleep.\" move: \"Good evening, \" in ink and \"Mama.\" in textMuted. When a prompt is showing, remove the subtitle line and the caps label, so one question is on screen. \"Another thought\" stays a quiet text button with ArrowsClockwise; the old prompt fades out over exitMs 160 and the new one rises 8 pt over 280 ms. Waiting letter: a small letter-shaped card (surfaceRaised, radius md, elevation 1, a 3 pt accent rule on the left) showing the draft's first words in `letterBody`, two lines, fading out. A recording without words shows \"A recording, 0:42\" with the mic glyph. Tapping it opens Review. The Speak and Type twins are unchanged, equal and static. Cold launch only: dateline, greeting and prompt enter with a 30 ms stagger, under 400 ms (MOTION 5a); a warm resume moves nothing. Reduce Motion: static. Increase Contrast: no lamp.",
+      "benchmark": "Apple Journal's new-entry flow leads with a reflection prompt as an open question and a button to start (secondary: MacStories review via search). The website's two-tone headline and the Aurora's colour drift (verified). Apple Weather's backgrounds change with the time of day (memory, unverified).",
+      "legal_or_constitution_note": "Prompts are already chosen by the child's age (selectPrompt with ageMonths); never show why. The draft excerpt is the person's own words, shown as they are. No counts and no days-since."
+    },
+    {
+      "step_ids": [
+        "J08-01",
+        "J08-02",
+        "J08-04"
+      ],
+      "screen": "Tonight: Not much today, kept, and Undo",
+      "verdict": "polish",
+      "problem": "Kind and correct, but the kept state uses the green success check of a task app, which counts the day as done rather than letting it rest.",
+      "proposal": "Replace the green CheckCircle with the moon line drawing at 20 pt, drawn once (DrawOnPath, drawMs), in textMuted, and set \"Kept. Rest well.\" in textMuted rather than success green. At the same time the Tonight lamp dims from its time-of-day intensity to 70 percent over arriveMs 1200 (lights down), and Undo restores both. Reduce Motion: moon complete, lamp change instant.",
+      "benchmark": "CREATIVE.md: \"First Read together: lights going down\" (repo). HIG Motion: \"Aim for brevity and precision\" (verified).",
+      "legal_or_constitution_note": "D-084: the mark stores no words, and the app never writes a sentence for the person. No streaks and no counts."
+    },
+    {
+      "step_ids": [
+        "J04-04"
+      ],
+      "screen": "Usage-sharing ask sheet",
+      "verdict": "keep",
+      "problem": "Not shown in v1.0: develop #118 turns analytics off in every profile. The design itself (equal buttons, no guilt) is right.",
+      "proposal": "No visual change. If the sheet returns, keep \"Don't share\" and \"Share usage\" equal in weight, and keep it off Listen, Review and Read together.",
+      "benchmark": "HIG Onboarding: \"Prefer letting people experience your app ... before prompting them\" (verified).",
+      "legal_or_constitution_note": "Privacy rules: no entry text, audio or names in analytics. Off in v1.0."
+    },
+    {
+      "step_ids": [
+        "J05-01",
+        "J05-02",
+        "J05-06",
+        "J05-09",
+        "J18-06"
+      ],
+      "screen": "Listening (recording, paused, offline, long take), light and dark",
+      "verdict": "polish",
+      "problem": "Well judged: the glow follows the voice and the controls are static. But the screen shows nothing to talk to, because the prompt chosen on Tonight is gone. The clock, at 1.75x headline, is the biggest thing on screen, which turns the screen into a timer. And the 4 s idle breath is close to the 0.2 Hz band HIG warns about.",
+      "proposal": "What must stay still: everything except the aura. Add the chosen prompt at the top as the one literary line in `prompt` (Literata 24/32), textMuted, only when the person started from a prompt. The clock drops to `headline` at 1.0x, tabular figures, textMuted. Keep \"To Asha\" and the audience line. No Lamp here. Transition from Tonight: measure the Speak button's rect and grow it into the 120 pt red circle (translate plus scale on the standard spring, about 400 ms) while the modal fades in. Recording starts on the tap, not when the animation ends (MOTION principle 3). Raise breathIdleMs from 4000 to 7500. Reduce Motion: the existing stepped static ring. Dark mode stays the reference.",
+      "benchmark": "HIG Motion (visionOS): \"Avoid showing objects that oscillate in a sustained way ... around 0.2 Hz\" (verified, applied as a caution). Calm's slowest breathing pace (repo MOTION M10, secondary). Voice Memos' minimal record screen (memory, unverified).",
+      "legal_or_constitution_note": "Motion follows the voice only (MOTION principle 1). No waveform."
+    },
+    {
+      "step_ids": [
+        "J05-04"
+      ],
+      "screen": "Microphone is off",
+      "verdict": "redesign",
+      "problem": "The envelope drawing reads as mail, not as a microphone. The title \"We can't hear you yet\" opens with \"we\". The title sits mid-screen with a long empty band above the buttons.",
+      "proposal": "Replace the envelope with Phosphor MicrophoneSlash (Light, 40 pt, textMuted) in a 72 pt accentSoft circle. Title (`title2`): \"The microphone is off.\" Body: \"Turn it on in Settings, or type this one.\" Primary \"Type instead\" with PencilSimple, quiet \"Open Settings\". The prompt carries over into Write. Plain paper, no lamp; only the standard enter.",
+      "benchmark": "HIG Onboarding: \"present a permission request when people first access the specific function\" (verified). Voice Memos shows a plain explanation and a path to Settings when access is denied (memory, unverified)."
+    },
+    {
+      "step_ids": [
+        "J19-02"
+      ],
+      "screen": "Listen opened without a tap (Ready when you are)",
+      "verdict": "polish",
+      "problem": "An envelope and a Start pill. The real control, the red circle, is missing, so the screen teaches a different gesture from the one Speak uses.",
+      "proposal": "Show the red circle itself: 120 pt, recording colour, static, no aura, centred. The whole disc is the Start target, with the accessibility label \"Start\". Title \"Ready when you are\". Body \"Nothing is recording yet. Tap the red circle to start.\" Remove the envelope. The microphone is still untouched until the tap.",
+      "benchmark": "BRAND.md glossary, record control: \"the red circle ('Tap the red circle and talk')\" (repo)."
+    },
+    {
+      "step_ids": [
+        "J05-03",
+        "J05-07",
+        "J05-08"
+      ],
+      "screen": "Review while words are being written down",
+      "verdict": "polish",
+      "problem": "A white card with a small moon and \"Writing down what you said.\": the right words, but the screen looks unfinished, and \"Hear it\" in the corner is the only life on it.",
+      "proposal": "Moon drawing at 96 pt inside the card, breathing opacity from 0.85 to 1 over emptyBreathMs 8000 (MOTION 5j); it stops the moment Hear it plays. The recording length (\"0:42\") sits under the line in footnote. When the words arrive, the whole paragraph appears at once with one 200 ms fade, never word by word. Reduce Motion: a static moon.",
+      "benchmark": "Headspace keeps one living element in an empty state (repo MOTION M11, secondary).",
+      "legal_or_constitution_note": "Constitution: no typewriter reveal. Words appearing one by one would suggest the machine is writing."
+    },
+    {
+      "step_ids": [
+        "J06-01",
+        "J06-02",
+        "J06-03",
+        "J06-04",
+        "J06-05",
+        "J06-06",
+        "J06-07",
+        "J18-05"
+      ],
+      "screen": "Review with small fixes (first note, why changed, put back, undo, exactly as said), light and dark",
+      "verdict": "redesign",
+      "problem": "A settings-like stack: dateline, title, an explaining subtitle (\"We only fixed what got in the way of your words. Nothing added.\"), a beige first-time card, the letter card, a segmented control, \"2 small fixes\", fix rows, a footer note and two buttons. The letter is not the hero, and the struck words look like errors. The founder's bar, the website's proof letter, is not matched.",
+      "proposal": "Review as a letter being read. Put the letter on a sheet: surfaceRaised, radius.xl top corners, 16 pt gutters, elevation 2, with the website ProofLetter's header row in `letterDateline` caps, \"TO ASHA · MONTH 7\" on the left and \"FROM MAMA\" on the right. Marks use the website's grammar: removed words carry a 1.5 pt editMark strike in textMuted, and a repaired name shows the struck heard word followed by the kept word on an accentSoft wash (radius 4). Marks render at full opacity from the first frame (MOTION 5d). The title \"Read it back\" stays in `title1`. The subtitle lives only in the first-time note, which becomes one line above the sheet with Got it, no card: \"Each mark is a small fix. Tap one to put it back.\" The \"With small fixes / Exactly as said\" segment (44 pt pill) sits right under the sheet. The fix rows collapse behind a disclosure row, \"2 small fixes\", because every mark is tappable in the text. Tapping a mark expands the inline card under its line (as now, LinearTransition, standard spring). The footer is unchanged. No lamp. Dark: the sheet is #201D1A with a 1 px line border.",
+      "benchmark": "The website proof letter on origin/main (verified, ProofLetter.tsx and capture). Things 3's in-place expansion (repo MOTION M13, secondary). Day One shows an entry as one full sheet with metadata above it (memory, unverified).",
+      "legal_or_constitution_note": "Marks only remove or repair: the inserted text appears only where a word was misheard, as the heard word struck plus the kept word. Nothing is ever added. Every mark stays reversible, and all edits still go through verifyEdits."
+    },
+    {
+      "step_ids": [
+        "J06-08"
+      ],
+      "screen": "Review: change words",
+      "verdict": "polish",
+      "problem": "Edit mode draws a 2 pt focus-blue rectangle inside the white card, which looks like a web form field.",
+      "proposal": "Edit in place on the same sheet: no inner box; the sheet's own edge becomes a 1.5 pt accent line, and the caret appears in the letter face. \"Done\" sits in the header and in the keyboard accessory bar. The focus ring stays for Full Keyboard Access only.",
+      "benchmark": "Apple Notes and Bear edit in place without field chrome (memory, unverified).",
+      "legal_or_constitution_note": "The person's own edits are theirs and are stored as such."
+    },
+    {
+      "step_ids": [
+        "J07-03"
+      ],
+      "screen": "Review a typed letter",
+      "verdict": "polish",
+      "problem": "Clean, but it does not share the sheet language of spoken Review, and the private-letters footnote floats mid-screen.",
+      "proposal": "Use the same sheet and header row as spoken Review, without marks or a segment. Move \"Private letters stay with you. You can add them to the book later.\" to sit directly under \"Keep private\" as its footnote.",
+      "benchmark": "Website proof letter header (verified).",
+      "legal_or_constitution_note": "Typed words are kept exactly as typed, with no fixes."
+    },
+    {
+      "step_ids": [
+        "J06-09",
+        "J06-10",
+        "J06-11",
+        "J07-04",
+        "J07-07",
+        "J07-08"
+      ],
+      "screen": "Saved card: added to the book, kept private, second free letter",
+      "verdict": "redesign",
+      "problem": "After saving, the letter fades to about 10 to 15 percent opacity while the confirmation stays. The captures show ghosted text that reads as a rendering bug, and nothing shows where the letter went.",
+      "proposal": "File it into its month (MOTION 5e, built as written). Commit, play the success haptic, then animate: at 0 ms the sheet scales from 1 to 0.9 and its radius goes from xl to md on the gentle spring; at 250 ms a month chip (\"Month 7\", accentSoft, caption, with the website's lit edge: a 1 pt atmosphere.lamp border at 40 percent) fades in under it; at 550 ms the card moves down 24 pt into the chip and fades on the standard spring. \"Added to Asha's book.\" stays in the success tone, and the modal dismisses natively at about 900 ms. Text is never shown at ghost opacity: the card is either full strength or leaving. Private works the same way into a \"Private\" chip with LockSimple, with the line \"Kept just for you.\" The second free letter adds its one footnote, copy unchanged. On arrival the Book already shows the card in place, with an accentSoft wash fading over newMarkMs 1600. A tap skips everything. Reduce Motion: the chip and the line appear with a 200 ms fade, then the modal dismisses.",
+      "benchmark": "The website's \"Filed in Month 9\" card (verified, Landing S06 and capture). HIG Motion: \"Aim for brevity and precision in feedback animations\" and \"Let people cancel motion\" (verified).",
+      "legal_or_constitution_note": "Saves are instant and the animation is only the receipt (MOTION principle 3). D-082: one calm line after the second free letter, with no counter."
+    },
+    {
+      "step_ids": [
+        "J06-14",
+        "J07-09"
+      ],
+      "screen": "Keep needs Plus sheet",
+      "verdict": "redesign",
+      "problem": "A small icon in a circle, a title, two paragraphs, and a grey line saying Plus is not available. It looks like an error page, and it asks for something without showing what is already safe.",
+      "proposal": "Let the person's two kept letters be the image: two small letter cards fanned (rotated -3 and +2 degrees, offset 10 pt, radius md, elevation 1), each with its date line and first words in `letterBody`, two lines with the fade. They are rendered live on the phone, never as stock. Title in `title1`: \"Keep adding to {child}'s book\". Body: \"Your first two letters are kept, and always will be.\" Footnote: \"This one is safe on your phone until Plus is on.\" On a device the primary is \"See Plus\" and the quiet button is \"Keep it here for now\". The stacked lockup (app.paywall) belongs above Apple's subscription view, not on this sheet. The sheet opens natively; the cards rise with motion.enter.",
+      "benchmark": "HIG Onboarding: \"Prefer letting people experience your app ... before prompting them for ratings or purchases\" (verified). Apple's own subscription sheet carries the price and terms (memory, unverified).",
+      "legal_or_constitution_note": "D-082 and D-083: no price, trial length or countdown in the app's sheet. Letters are shown privately on the phone, and nothing is sent anywhere."
+    },
+    {
+      "step_ids": [
+        "J06-13"
+      ],
+      "screen": "Review with no draft (stale link)",
+      "verdict": "polish",
+      "problem": "\"Something went wrong / Your words are safe. Please try again.\" with only Close: it asks for a retry it does not offer, and the envelope reads as mail.",
+      "proposal": "Title: \"Nothing to read back here.\" No body. One primary button: \"Back to Tonight\". Static page drawing, no draw-on.",
+      "benchmark": "HIG Launching: \"Restore the previous state ... continue where they left off\" (verified)."
+    },
+    {
+      "step_ids": [
+        "J05-05",
+        "J07-01",
+        "J07-02",
+        "J07-06"
+      ],
+      "screen": "Write (empty, autosaved, picked back up)",
+      "verdict": "polish",
+      "problem": "A good page. The prompt is set as small sans, so the screen has no literary line, and the disabled Save is a pale filled pill.",
+      "proposal": "Same room as Tonight: Lamp anchor top at 0.5, still (no breath while typing). The prompt becomes the one literary line in `prompt` (Literata 24/32), textMuted. The placeholder \"Write it the way you would say it.\" stays in letterBody muted. The disabled Save is a 1 pt controlBorder outline. \"Saved on this phone\" fades in over 200 ms and stays as a status.",
+      "benchmark": "Apple Journal opens an entry under its prompt (memory, unverified)."
+    },
+    {
+      "step_ids": [
+        "J09-01",
+        "J03-04"
+      ],
+      "screen": "Book, empty",
+      "verdict": "polish",
+      "problem": "On develop: a page drawing, a heading, body and a pill, all left-aligned in the middle of the screen. #99 replaces the drawing with the quotation pair, so welcome and the empty Book share the same mark, and the person's own book is still not there.",
+      "proposal": "Show the BookCover, closed, with the child's name (160 x 214 pt, centred): the same object the person named and signed in first run. The #99 Lamp at the top is the only loop; the cover stays still. Title \"The first page is waiting.\", body \"Say one true thing about {child} today. That is how every book begins.\", CTA \"Write a letter\".",
+      "benchmark": "CREATIVE.md, Empty Book: \"An open notebook, not a missed assignment. Paper cover\" (repo). Apple Books shows books as covers on a shelf (memory, unverified).",
+      "legal_or_constitution_note": "No gap counting and no \"missed\" language."
+    },
+    {
+      "step_ids": [
+        "J09-02",
+        "J09-03",
+        "J09-04",
+        "J09-05",
+        "J11-05",
+        "J11-06",
+        "J18-03",
+        "J08-03",
+        "J08-05",
+        "J08-06"
+      ],
+      "screen": "Book with letters (one, many, waiting for words, no words, quiet days, remove a mark), light and dark",
+      "verdict": "redesign",
+      "problem": "It reads as a feed: month headings are plain titles, every card has the same weight, and the current month is a beige info box with an explaining sentence. Excerpts end in the ellipsis glyph, and a letter opens with a generic push.",
+      "proposal": "The book as pages. Each month starts with an opener: \"MONTH\" in letterDateline caps, then the numeral in the new `numeral` token (Literata Medium 64/64), then \"2 letters · From Mama\". The current month's opener is lit: a radius.lg card with a 1 pt accent edge at 40 percent and a still inner radial in atmosphere.lamp at 0.12 (the website's lit month card), labelled \"THIS MONTH\" and reading only \"Month 7 is open.\" (drop \"Whatever you add this month lands here.\"). Letter cards: end the excerpt with a fade (an SVG LinearGradient from transparent to the card colour over the last 40 percent of the final line) instead of the ellipsis glyph. The signature, duration and Private chips are unchanged. The quiet-day row is unchanged (sans, muted, unsigned). Open a letter with the measured-rect transition (MOTION 5f): the card's rect grows to full screen with translate and scale, radius md to 0, on the standard spring; content fades in from 60 percent; the list dims to 0.96. Back reverses it. The first Book view per session settles the header (opacity 0.6 to 1, y 6 to 0, gentle spring). The #99 Lamp sits at the top at 0.8. Reduce Motion: 200 ms cross-fades.",
+      "benchmark": "The website's book section with month cards and \"Filed in Month 9\" (verified). Airbnb's shared-element motion (repo MOTION M1, secondary). Apple Books chapter openers (memory, unverified).",
+      "legal_or_constitution_note": "The excerpt fade only cuts the display; the stored letter is untouched. App text (\"A quiet day\", \"No words in this one ...\") stays in the muted sans note style, never in the letter face. Counts are facts about letters that exist."
+    },
+    {
+      "step_ids": [
+        "J03-05"
+      ],
+      "screen": "Whose book? sheet",
+      "verdict": "polish",
+      "problem": "Clear, but the rows say nothing about each book.",
+      "proposal": "Add each child's month line under the name (\"Month 7\", or \"Before You\") in footnote muted. Choosing a book cross-fades the Tonight and Book content over 200 ms instead of swapping instantly.",
+      "benchmark": "HIG sheets with a native grabber (repo H3, verified earlier in BENCHMARK.md)."
+    },
+    {
+      "step_ids": [
+        "J10-01",
+        "J10-02",
+        "J10-05",
+        "J10-07",
+        "J10-09",
+        "J10-10",
+        "J18-04"
+      ],
+      "screen": "A letter, as a page (exactly as said, private, no words, light and dark)",
+      "verdict": "polish",
+      "problem": "A strong reading page, but the player is split into a pill, a full-width slider and time labels, the metadata rows and the action list compete with the letter, and nothing makes it feel like a page.",
+      "proposal": "Leave the letter itself unchanged. In light mode only, add a page treatment: the website's paper-v1.webp (34.7 KB, in-house) tiled at 4 percent behind the letter block alone, and never in dark mode, Increase Contrast or Reduce Transparency. Use one floating pill player (elevation 2, 56 pt): play button, \"Hear Mama\", time remaining, and a thin scrubber inside the pill. Collapse the two meta rows into one footnote line (Microphone icon, \"Spoken, with small fixes. Recording kept on this phone.\"). Actions stay as the grouped list. No lamp and no loops, because a voice plays here. Exactly as said cross-fades over 150 ms with its label. Large print cross-fades as now.",
+      "benchmark": "Apple Books reading view (repo S9, secondary). The Overcast and Apple Podcasts mini player is a single pill (memory, unverified)."
+    },
+    {
+      "step_ids": [
+        "J10-03",
+        "J10-04"
+      ],
+      "screen": "Reading size sheet",
+      "verdict": "keep",
+      "problem": "A native sheet with a live preview behind it, and each option set at its own size. It works.",
+      "proposal": "No change. The font size never animates and the text cross-fades over 150 ms, with a selection haptic per step (MOTION 5i).",
+      "benchmark": "Apple Books' in-reader text size controls (repo S9, secondary)."
+    },
+    {
+      "step_ids": [
+        "J10-06",
+        "J10-08"
+      ],
+      "screen": "Delete asks first, and deleted with Undo",
+      "verdict": "redesign",
+      "problem": "The confirm sheet is right. After Delete, though, the letter page becomes a blank page headed \"Letter deleted.\", and the toast says \"Letter deleted.\" again. The same words appear twice, with Undo only in the toast.",
+      "proposal": "Keep the sheet (\"Keep it\" as the primary, \"Delete letter\" quiet red). After confirming, go back to the Book: the card collapses out with LinearTransition on the standard spring (height to 0, fade over exitMs 160), and the toast \"Letter deleted.\" with Undo and Close stays until it is dismissed. Reduce Motion: a fade.",
+      "benchmark": "Mail and Photos delete in place and offer Undo (memory, unverified).",
+      "legal_or_constitution_note": "D-085: 30 days in Recently deleted, with no timer on Undo."
+    },
+    {
+      "step_ids": [
+        "J10-11"
+      ],
+      "screen": "Letter not found",
+      "verdict": "polish",
+      "problem": "\"This letter is not here anymore.\" leans towards loss language, and the drawing sits off to the left above a lot of empty space.",
+      "proposal": "Title: \"This letter is not on this phone.\" One button: \"Back to the book\". The page drawing is static and centred with the title.",
+      "legal_or_constitution_note": "Content rules: no loss language."
+    },
+    {
+      "step_ids": [
+        "J10-12",
+        "J10-13",
+        "J10-14",
+        "J10-15"
+      ],
+      "screen": "Recently deleted (restore, erase now, empty)",
+      "verdict": "polish",
+      "problem": "Excerpts are set in the UI sans although they are the person's words, and the empty state repeats the nav title as a heading. After Erase now, the stale toast \"Letter restored.\" is still on screen (J10-15), saying the opposite of what happened.",
+      "proposal": "Use one title only. Set excerpts in `letterBody` muted, two lines with the fade. \"Restore\" is a secondary pill; \"Erase now\" is destructive text with the Trash icon. A new toast always replaces the old one, and erasing shows \"Erased from this phone.\" The empty state: a static page drawing plus \"Nothing here. Letters you delete wait here for 30 days.\"",
+      "benchmark": "Photos' Recently Deleted shows dates, not countdowns (memory, unverified).",
+      "legal_or_constitution_note": "No countdown and no count; dates only."
+    },
+    {
+      "step_ids": [
+        "J11-01",
+        "J11-02",
+        "J11-03",
+        "J11-08"
+      ],
+      "screen": "Read together (letters, next, autoplay, skips quiet days)",
+      "verdict": "redesign",
+      "problem": "Calm and correct, but nothing says bedtime or turning a page: the next letter swaps instantly. The dateline \"Mama, The first weeks\" reads oddly, the autoplay switch competes with the letter, and \"1 / 5\" sits at the top like a counter.",
+      "proposal": "Lights down. Read together opens on a night page by default (dark palette: #161412 paper, #F2ECE4 ink, Large Print), whatever the app theme, with a \"Paper\" option in its Aa sheet. A voice plays here, so there is no breathing: just one still dusk pool (atmosphere.tone.dusk #8076E2 at 0.10, low on the page), drawn once. Page turn: Next moves the page 24 pt left and fades it out (exitMs 160) while the next enters from 24 pt right on the standard spring. Back reverses it, and a horizontal swipe does the same, following the finger and interruptible. The dateline becomes \"The first weeks · From Mama\". Position: replace \"1 / 5\" with a 2 pt hairline progress line under the top bar (accent at 40 percent), with VoiceOver reading \"Letter 1 of 5\". Move the autoplay row into the Aa sheet. Use the same pill player as the letter page. Reduce Motion: a 200 ms cross-fade.",
+      "benchmark": "Apple Books' default Slide page turn (repo MOTION M5, secondary). Apple Books' per-reader page themes (memory, unverified). The website ends in dusk blue (verified, Aurora.tsx).",
+      "legal_or_constitution_note": "D-059: no word highlight in v1.0, so nothing moves across the words. Quiet days are never pages."
+    },
+    {
+      "step_ids": [
+        "J11-04"
+      ],
+      "screen": "Read together: the end of the book",
+      "verdict": "polish",
+      "problem": "A beautiful line (\"That is every letter so far. More are still being written.\") on a bare page.",
+      "proposal": "Keep the copy and buttons. The moon line drawing draws on over drawMs 1200 above the line, and the dusk pool dims from 0.10 to 0.06 over arriveMs, then everything is still. Reduce Motion: the drawing is complete and the change is a fade.",
+      "benchmark": "CREATIVE.md, First Read together: \"Lights going down at bedtime ... the moon drawing\" (repo).",
+      "legal_or_constitution_note": "Legacy rule: time, not endings. \"More are still being written\" is right."
+    },
+    {
+      "step_ids": [
+        "J11-07"
+      ],
+      "screen": "Read together with no letters (stale link)",
+      "verdict": "keep",
+      "problem": "A moon drawing, a title and one line. It is right, and reached only by a stale link.",
+      "proposal": "No change beyond the night page tone, for consistency with Read together.",
+      "benchmark": "Headspace's single living element in empty states (repo MOTION M11, secondary)."
+    },
+    {
+      "step_ids": [
+        "J12-01",
+        "J12-02"
+      ],
+      "screen": "Plan (Plus) and the restore failure",
+      "verdict": "polish",
+      "problem": "The same sentence appears twice (in the card and the paragraph below), followed by a grey not-available line: it looks like a settings form about money. The restore failure is plain grey text.",
+      "proposal": "Put the stacked lockup (registry app.paywall, 88 pt) once at the top on paper. One statement in `title2`: \"Your first two letters are free. Plus lets you keep adding.\" Footnote: \"Every letter you keep stays yours to read, play and export, with or without Plus.\" The rows are unchanged. The restore failure line uses the caution colour with a WarningCircle icon (DESIGN_LANGUAGE: caution plus an icon plus words). No lamp.",
+      "benchmark": "Registry context app.paywall (repo).",
+      "legal_or_constitution_note": "D-082: no price or trial in the app. Apple handles payment."
+    },
+    {
+      "step_ids": [
+        "J13-01",
+        "J13-02",
+        "J13-03"
+      ],
+      "screen": "Reminders (off, notifications not allowed, every evening)",
+      "verdict": "polish",
+      "problem": "Clear. The notifications-off card has no icon, and in the web capture the switch has a teal thumb.",
+      "proposal": "Add WarningCircle in the caution colour to the \"Notifications are off for this app\" card. On iOS use the native switch with an accent track, and check that toggle.web matches the tokens. No illustration.",
+      "benchmark": "Apple's own Settings grouped lists (memory, unverified).",
+      "legal_or_constitution_note": "No counts and no streaks in the reminder content."
+    },
+    {
+      "step_ids": [
+        "J14-01"
+      ],
+      "screen": "Recordings",
+      "verdict": "polish",
+      "problem": "Four paragraphs, and the English row reads as a status with no visible way to download.",
+      "proposal": "Collapse the transcription paragraph to one line under the switch, \"Small fixes are marked, and you can put any back.\" Give the English row a trailing \"Download\" secondary button when the pack is not on the phone. No illustration.",
+      "legal_or_constitution_note": "Never say \"tidy\", \"cleaned\" or \"improved\". \"Word for word\" names the feature here, as VOICE.md allows."
+    },
+    {
+      "step_ids": [
+        "J15-01",
+        "J15-02",
+        "J15-03"
+      ],
+      "screen": "Export (ready, did not finish, empty book)",
+      "verdict": "polish",
+      "problem": "Text-only, so the person cannot see what they will get. The failure card has no icon, and the empty-book button is greyed out with no reason.",
+      "proposal": "Put a live thumbnail of the export's cover at the top (BookCover, closed, 96 x 128 pt, with the child's name and \"Month 1 to 7\"). The \"What is inside\" rows get 20 pt Phosphor icons (FileText, Microphone, BookOpen, Database). The failure card gets WarningCircle in caution, with the current copy. For an empty book, draw the disabled button as an outline with the line \"Nothing to export yet.\" above it.",
+      "benchmark": "Registry context export.pdf, planned for v1.0: a cover with the lockup (repo).",
+      "legal_or_constitution_note": "Never mention print: the cover thumbnail is the PDF's first page."
+    },
+    {
+      "step_ids": [
+        "J16-01",
+        "J03-06",
+        "J03-09",
+        "J16-05",
+        "J16-06"
+      ],
+      "screen": "Settings (with one or two children, struggling panel, licences)",
+      "verdict": "polish",
+      "problem": "The \"Early version\" note is the first thing on screen, as a beige warning card. \"Private by default. Never sold, never used for ads.\" appears twice. The About section is a bare version number.",
+      "proposal": "Move the early version note into About as a footnote, where VOICE.md puts it (\"one quiet 'early version, can make mistakes' note in Settings, About\"). Delete the duplicate privacy line, keeping the one under Your data. About shows the app icon at 60 pt and the small lockup at 22 pt (registry app.settings.about). The \"If you are struggling\" panel stays plain, with no drawing, lamp or motion beyond its disclosure.",
+      "benchmark": "Apple's own Settings grouped lists (memory, unverified). Registry app.settings.about (repo).",
+      "legal_or_constitution_note": "VOICE.md: repeating the privacy promise where nobody is wondering sounds anxious. The crisis lines stay unchanged and always available."
+    },
+    {
+      "step_ids": [
+        "J16-02"
+      ],
+      "screen": "Privacy",
+      "verdict": "polish",
+      "problem": "The \"What we never do\" statements are white grouped rows that look tappable but are not.",
+      "proposal": "Set the three statements as a plain list on paper, each with a 20 pt Phosphor icon in textMuted, not as rows. The switch and policy links stay as rows.",
+      "legal_or_constitution_note": "The wording of the claims is unchanged (registered in claims-registry)."
+    },
+    {
+      "step_ids": [
+        "J16-03",
+        "J16-04",
+        "J18-01"
+      ],
+      "screen": "Appearance (theme, reading size), light and dark",
+      "verdict": "polish",
+      "problem": "The sample \"Dear Asha, today you laughed at the rain.\" is a letter the app wrote, set in the letter face, which VOICE.md forbids (\"The app's own words ... never sit in the letter's type\").",
+      "proposal": "Use the first line of the person's newest letter as the sample, in letterBody at the chosen size. With no letter yet, show the glyph specimen \"Aa\" in Literata at each size. A theme change cross-fades the whole UI over 200 ms.",
+      "benchmark": "Apple Books' type settings preview the real page behind the sheet (memory, unverified).",
+      "legal_or_constitution_note": "Constitution and VOICE.md: the app never writes a sentence that looks like a letter."
+    },
+    {
+      "step_ids": [
+        "J03-07",
+        "J03-20",
+        "J03-21",
+        "J03-22",
+        "J03-23",
+        "J03-24",
+        "J03-25",
+        "J03-26",
+        "J03-27",
+        "J03-30",
+        "J03-31",
+        "J03-32",
+        "J03-33"
+      ],
+      "screen": "One child's settings (inline editors, due date offer, birthday set)",
+      "verdict": "keep",
+      "problem": "Clear, native-feeling rows with reasons in words. The due-date offer is a beige box with a centred text link, which is the right level of quiet but a weak control.",
+      "proposal": "Keep it all. Make \"Asha was born, set the birthday\" a secondary pill. Never celebrate here: no confetti and no drawing, because the outcome of a due date is not known. The \"Write this book together: Coming soon\" row is held (scope decision pending) and unchanged.",
+      "benchmark": "Apple Health's quiet, factual profile rows (memory, unverified).",
+      "legal_or_constitution_note": "No fear or loss language, and no congratulations that assume an outcome."
+    },
+    {
+      "step_ids": [
+        "J03-08"
+      ],
+      "screen": "Add a child",
+      "verdict": "polish",
+      "problem": "The placeholder leaks into a sentence: \"We sort letters by Their name's month of age.\"",
+      "proposal": "Remove that line, as in first run. Show the live BookCover as in first run, and keep the rest.",
+      "legal_or_constitution_note": "D-082 and D-083: no Plus gate here."
+    },
+    {
+      "step_ids": [
+        "J17-01",
+        "J17-02",
+        "J17-03"
+      ],
+      "screen": "Family: co-parent sharing coming soon (tab, noted, from child settings)",
+      "verdict": "keep",
+      "problem": "Held: scope decision pending (co-parent). The together drawing and layout already meet the visual bar.",
+      "proposal": "No redesign while the co-parent scope is pending. If anything changes, give it the Tonight lamp at 0.6, still, so the tab belongs to the same house.",
+      "legal_or_constitution_note": "VOICE.md: only promise what v1.0 does. Family is \"coming in a later update\"."
+    },
+    {
+      "step_ids": [
+        "J19-01"
+      ],
+      "screen": "Unknown route (404)",
+      "verdict": "polish",
+      "problem": "Layout bug: the drawing, title, body and button sit flush against the left edge with no gutter. The title opens with \"We\".",
+      "proposal": "Apply the 20 pt reading gutter (px-5) and centre the block vertically. Static page drawing. Title: \"Nothing at this link.\" Body: \"Your book is right where you left it.\" Button: \"Back to Tonight\"."
+    },
+    {
+      "step_ids": [
+        "J20-01"
+      ],
+      "screen": "A screen crashes (root error boundary)",
+      "verdict": "polish",
+      "problem": "It renders in the platform default font (Times bold on web, SF on iPhone) because PlainScreen sets no fontFamily, so the one screen that needs to feel steady looks like another app.",
+      "proposal": "Set fontFamily from tokens.fontFamily: serifMedium for the title, sans for the body and buttons. Fonts are embedded at build time by the expo-font plugin in app.config.ts, so nothing waits. Add the page line drawing as a plain react-native-svg Path from LINE_ART with token colours, static, no providers. No lamp. Copy unchanged.",
+      "benchmark": "HIG Motion: \"Add motion purposefully\" (verified). Nothing moves here.",
+      "legal_or_constitution_note": "No error text, code or stack is shown or logged."
+    },
+    {
+      "step_ids": [
+        "J20-02"
+      ],
+      "screen": "The book cannot be opened (launch recovery)",
+      "verdict": "polish",
+      "problem": "The same system-font problem as the crash screen, on the screen where trust matters most.",
+      "proposal": "The same fixes: fonts from tokens, a static page drawing, plain paper and no lamp. Copy and the two actions (\"Try again\", \"Export what's readable\") are unchanged.",
+      "legal_or_constitution_note": "Nothing is deleted or reset here, as now."
+    }
+  ]
+}
