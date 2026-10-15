@@ -31,9 +31,13 @@
  * tokens, the person's id, email or Apple user id. Log lines carry closed
  * enums and statuses only (_shared/log).
  *
- * Rate limit: 10 calls per person per hour per function instance, plus
- * Apple's own rule that a code works once and lives five minutes. A
- * database-backed counter is requested from S02 (PR body).
+ * Rate limit: 10 calls per person per hour, twice over: per function instance
+ * (memory), and in the database through `rate_hit('apple_token')` called with
+ * the person's own JWT (S02, migration 20261015000000 on feat/db-v1-gate).
+ * SCRAT from the database is a 429. Until that migration is applied the call
+ * answers "unknown bucket" or "no such function", and the instance limit
+ * alone holds (logged, never fatal). Apple's own rule still applies on top:
+ * a code works once and lives five minutes.
  *
  * Apple's token endpoint (form encoding, client secret and error shape as the
  * revoke sibling, verified 3 Oct 2026): POST form-encoded client_id,
@@ -51,6 +55,8 @@ export type EnvGetter = (name: string) => string | undefined;
 
 export const APPLE_TOKEN_URL = 'https://appleid.apple.com/auth/token';
 export const HOURLY_CALLS = 10;
+/** The database bucket (rate_hit, 10 per person per hour). */
+export const RATE_BUCKET = 'apple_token';
 const ROUTE_RE = /\/apple-token\/v1\/?$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Apple authorization codes are opaque; this bounds the shape without assuming more. */
@@ -241,6 +247,27 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
     }
     recent.push(now());
     calls.set(profileId, recent);
+
+    // The shared counter, as the caller (auth.uid() is the person). Only SCRAT refuses.
+    const hit = await timed(fetchFn, `${cfg.supabaseUrl}/rest/v1/rpc/rate_hit`, {
+      method: 'POST',
+      headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_bucket: RATE_BUCKET }),
+    }, timeoutMs);
+    if (hit && !hit.ok) {
+      let sqlstate: unknown = null;
+      try {
+        sqlstate = ((await hit.json()) as { code?: unknown })?.code;
+      } catch {
+        sqlstate = null;
+      }
+      if (sqlstate === 'SCRAT') return fail('rate_limited', true, 429, { 'Retry-After': '3600' });
+      log.warn('request.failed', { provider: 'postgrest', status: hit.status, code: 'postgrest_error' });
+    } else if (!hit) {
+      log.warn('request.failed', { provider: 'postgrest', status: 0, code: 'network' });
+    } else {
+      await discard(hit);
+    }
 
     // 2. Exchange the code with Apple.
     let secret: string;

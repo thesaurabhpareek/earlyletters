@@ -40,6 +40,9 @@ interface WorldOpts {
   putStatus?: number;
   env?: Record<string, string>;
   appleThrows?: boolean;
+  /** rate_hit('apple_token'): status and PostgREST error body. Default 204 (counted, under the limit). */
+  rateStatus?: number;
+  rateBody?: unknown;
 }
 
 function world(o: WorldOpts = {}) {
@@ -62,6 +65,10 @@ function world(o: WorldOpts = {}) {
       }), { status: o.appleStatus ?? 200 });
     }
     if (url === `${SUPA}/rest/v1/rpc/ops_apple_token_put`) return new Response(null, { status: o.putStatus ?? 204 });
+    if (url === `${SUPA}/rest/v1/rpc/rate_hit`) {
+      const status = o.rateStatus ?? 204;
+      return new Response(status === 204 ? null : JSON.stringify(o.rateBody ?? {}), { status });
+    }
     return new Response(null, { status: 404 });
   };
   const handler = makeAppleTokenHandler((n) => (o.env ?? env())[n], { fetch, logSink: (l) => lines.push(l), now: () => clock });
@@ -161,6 +168,29 @@ Deno.test('every client id the default setup stores is one the purge worker can 
   for (const id of capture) assert.ok(purge.includes(id), id);
   // TOKEN_KEK_V2 wraps here; the worker keeps both versions to unwrap.
   assert.deepEqual(Object.keys(readPurgeConfig((n) => worker[n as keyof typeof worker]).config?.tokenKeks ?? {}), ['1', '2']);
+});
+
+Deno.test('[ADR 0017 rule 4] the shared counter: rate_hit(apple_token) as the caller, before Apple; SCRAT is a 429', async () => {
+  const w = world();
+  assert.equal((await w.handler(req({ code: CODE }))).status, 204);
+  const i = w.calls.findIndex((c) => c.url === `${SUPA}/rest/v1/rpc/rate_hit`);
+  assert.ok(i >= 0 && i < w.calls.findIndex((c) => c.url === APPLE_TOKEN_URL), 'counted before Apple is asked');
+  assert.equal((w.calls[i].init.headers as Record<string, string>).Authorization, `Bearer ${CANARY.sessionJwt}`, "the person's own JWT, so auth.uid() is theirs");
+  assert.deepEqual(JSON.parse(String(w.calls[i].init.body)), { p_bucket: 'apple_token' });
+
+  const limited = world({ rateStatus: 400, rateBody: { code: 'SCRAT', message: 'too many requests' } });
+  const res = await limited.handler(req({ code: CODE }));
+  assert.equal(res.status, 429);
+  assert.equal(res.headers.get('retry-after'), '3600');
+  assert.equal(limited.calls.some((c) => c.url === APPLE_TOKEN_URL), false);
+});
+
+Deno.test('before the counter migration is applied (no function, or no apple_token bucket), the instance limit alone holds', async () => {
+  for (const o of [{ rateStatus: 404, rateBody: { code: 'PGRST202' } }, { rateStatus: 400, rateBody: { code: '22023' } }, { rateStatus: 503 }] as WorldOpts[]) {
+    const w = world(o);
+    assert.equal((await w.handler(req({ code: CODE }))).status, 204, JSON.stringify(o));
+    assert.ok(w.lines.some((l) => l.includes('"provider":"postgrest"')), 'logged, content-free');
+  }
 });
 
 Deno.test('a used or expired code is gone (410, not retried); Apple config errors and outages are 503', async () => {
