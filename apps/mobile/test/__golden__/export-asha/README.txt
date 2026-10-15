@@ -11,7 +11,7 @@ letters/    Every letter and note as a plain text file, one folder per child and
 audio/      Every recording on this phone, exactly as it was made (M4A, AAC).
             Open them in any music or video player.
 data/       entries.json: every letter, with your words exactly as heard, every small
-            tidy-up, and the final text. children.json and account.json: the books
+            fix, and the final text. children.json and account.json: the books
             and the plan on this phone.
 schema/     A description of the data files, for anyone building a reader.
 index.html  Open in any web browser to read every letter and hear every recording.

@@ -4,10 +4,9 @@
  * co-parent (new). PRD A F7, PRD B F5.
  */
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
+import { useTheme } from '@/lib/a11y';
 
 export default function InviteLayout() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />;
 }

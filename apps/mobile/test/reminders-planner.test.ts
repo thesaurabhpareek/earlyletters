@@ -414,7 +414,7 @@ describe('limits and stability', () => {
   it('joins names the way people say them', () => {
     expect(joinNames(['Asha'])).toBe('Asha');
     expect(joinNames(['Asha', 'Dev'])).toBe('Asha and Dev');
-    expect(joinNames(['Asha', 'Dev', 'Mira'])).toBe('Asha, Dev and Mira');
+    expect(joinNames(['Asha', 'Dev', 'Nina'])).toBe('Asha, Dev and Nina');
   });
 });
 

@@ -88,13 +88,13 @@ describe('trackers', () => {
     expect(spoken.properties).toMatchObject({ audio_bucket: '1_2m', machine_edit_count: 500, member_role: 'contributor', destination: 'book' });
   });
 
-  it('invites map the parent role to co_parent', async () => {
+  it('invites carry the database role value `parent` (CORE-05)', async () => {
     const { analytics, sent } = await granted();
     const t = createTrackers(analytics);
     t.trackInviteCreated({ role: 'parent', channel: 'share_sheet', shared: true, childIndex: 0 });
     t.trackInviteAccepted({ role: 'contributor' });
     const [created, accepted] = await sent();
-    expect(created.properties.role).toBe('co_parent');
+    expect(created.properties.role).toBe('parent');
     expect(accepted.properties).toMatchObject({ role: 'contributor', surface: 'app' });
   });
 
@@ -170,7 +170,7 @@ describe('trackers', () => {
     t.trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: 3000 });
     t.trackTranscriptionCompleted({ engine: 'on_device', modelId: 'speech-model.whisper-large-v3-turbo-q5_0', audioMs: 1, latencyMs: 1, outcome: 'ok' });
     t.trackBookOpened({ childIndex: 0, letters: 3, role: 'parent' });
-    t.trackReadTogetherStarted({ childIndex: 0, access: 'try', letters: 3 });
+    t.trackReadTogetherStarted({ childIndex: 0, access: 'free', letters: 3 });
     t.trackReadTogetherEnded({ reason: 'finished', durationMs: 1, lettersHeard: 1 });
     t.trackExportStarted({ letters: 3 });
     t.trackExportCompleted({ bytes: 1, durationMs: 1 });
