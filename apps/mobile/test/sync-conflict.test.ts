@@ -354,13 +354,37 @@ describe('[F16-REQ-018] the remote kill switch', () => {
     expect(calls).toEqual(['sync_push', 'sync_pull']);
   });
 
-  it('an unreadable kill-switch source never stops sync', async () => {
-    const { db } = claimed();
-    const s: SupabaseLike = { rpc: () => Promise.resolve({ data: { reset: false, epoch: 1, epoch_started_at: ctx.now, books: [], gone: [], more: false }, error: null, status: 200 }) };
+  it('a kill-switch reader that throws pauses sync (fail closed); nothing is sent and the queue keeps', async () => {
+    const { db, child } = claimed();
+    edit(db, synced(db, child, 'Stars.'), 'Stars over the garden.');
+    const calls: string[] = [];
+    const s: SupabaseLike = { rpc: (fn) => { calls.push(fn); return Promise.resolve({ data: null, error: { code: '' }, status: 0 }); } };
     const e = createSyncEngine({ db, supabase: s, userId: ME, newId: id7, now: () => NOW, random: () => 1, setTimer: () => 0, clearTimer: () => {}, isActive: () => false,
       paused: () => {
         throw new Error('config not loaded');
       } });
-    expect((await e.sync()).phase).toBe('idle');
+    expect((await e.sync()).phase).toBe('paused_server');
+    expect(calls).toEqual([]);
+    expect(e.status().pending).toBe(1);
+  });
+
+  it('a switch turned on during a cycle stops it at the next push round or pull page', async () => {
+    const { db, child } = claimed();
+    edit(db, synced(db, child, 'One.'), 'One more.');
+    let killed = false;
+    const calls: string[] = [];
+    const s: SupabaseLike = {
+      rpc: (fn, args = {}) => {
+        calls.push(fn);
+        killed = true; // the config flips while the first request is in flight
+        return Promise.resolve(fn === 'sync_push'
+          ? { data: { results: (args.p_ops as PushOp[]).map((o) => ({ op: o.op, ok: true, entry: state(o.id, '600') })), paused: false, stopped: false }, error: null, status: 200 }
+          : { data: { reset: false, epoch: 1, epoch_started_at: ctx.now, books: [], gone: [], more: false }, error: null, status: 200 });
+      },
+    };
+    const e = createSyncEngine({ db, supabase: s, userId: ME, newId: id7, now: () => NOW, random: () => 1, setTimer: () => 0, clearTimer: () => {}, isActive: () => false, paused: () => killed });
+    await e.sync();
+    expect(calls).toEqual(['sync_push']); // no pull after the switch went on
+    expect(e.status().phase).toBe('paused_server');
   });
 });

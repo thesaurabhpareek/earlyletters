@@ -19,6 +19,8 @@
  * - A quiet-day mark is exported as a row in entries.json with `final_text: ''` (the whole history
  *   stays complete) and a small letters/ file with the date and the label only. Old rows that hold
  *   the former template sentence export the same way: the sentence is not a person's words.
+ * - Other versions of the exporter's own words that the phone keeps and the letter does not show
+ *   (conflict copies, F16-REQ-023) go in data/other-versions.json, word for word, until the author picks.
  */
 import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
@@ -37,6 +39,8 @@ import {
   type EntriesFile,
   type ExportAudio,
   type ExportEntry,
+  type ExportMachineEdit,
+  type OtherVersionsFile,
 } from './schema';
 
 export interface SnapshotChild extends Child {
@@ -52,6 +56,15 @@ export interface SnapshotEntry extends Entry {
   audioSizeOnPhone: number | null;
 }
 
+/** A version of an own letter's words kept on this phone that the letter does not show (a conflict copy). */
+export interface SnapshotOtherVersion {
+  entryId: string;
+  finalText: string;
+  editLevel: string;
+  machineEdits: unknown[];
+  keptAt: string;
+}
+
 export interface ExportSnapshot {
   /** ISO instant the export was made. */
   generatedAt: string;
@@ -63,6 +76,8 @@ export interface ExportSnapshot {
   signedIn: boolean;
   children: SnapshotChild[];
   entries: SnapshotEntry[];
+  /** Conflict copies (F16-REQ-023). Absent or empty: no other-versions file. */
+  otherVersions?: SnapshotOtherVersion[];
 }
 
 export interface TextFile {
@@ -540,12 +555,37 @@ export async function dataFiles(
     memberships: snapshot.children.map((c) => ({ child_id: c.id, role: 'parent', signs_as: c.signsAs })),
   };
   const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`;
+  const files: TextFile[] = [
+    { path: 'data/children.json', text: json(childrenFile), mediaType: MEDIA.json },
+    { path: 'data/entries.json', text: json(entriesFile), mediaType: MEDIA.json },
+    { path: 'data/account.json', text: json(accountFile), mediaType: MEDIA.json },
+  ];
+  const others = snapshot.otherVersions ?? [];
+  if (others.length > 0) {
+    const otherFile: OtherVersionsFile = {
+      schema_version: EXPORT_SCHEMA_VERSION,
+      format: EXPORT_FORMAT,
+      versions: others.map((o) => ({
+        entry_id: o.entryId,
+        reason: 'conflict_copy',
+        final_text: o.finalText,
+        edit_level: o.editLevel,
+        machine_edits: o.machineEdits.map(exportEdit),
+        kept_at: o.keptAt,
+      })),
+    };
+    files.push({ path: 'data/other-versions.json', text: json(otherFile), mediaType: MEDIA.json });
+  }
   return {
-    files: [
-      { path: 'data/children.json', text: json(childrenFile), mediaType: MEDIA.json },
-      { path: 'data/entries.json', text: json(entriesFile), mediaType: MEDIA.json },
-      { path: 'data/account.json', text: json(accountFile), mediaType: MEDIA.json },
-    ],
+    files,
     audioMissing: out.filter((e) => e.audio_missing).length,
   };
+}
+
+/** One machine edit as the export writes it; a malformed stored edit keeps what it has, never throws. */
+function exportEdit(m: unknown): ExportMachineEdit {
+  const o = (m && typeof m === 'object' ? m : {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' ? v : '');
+  const int = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 0 ? v : 0);
+  return { type: str(o.type), start: int(o.start), end: int(o.end), original: str(o.original), replacement: str(o.replacement), source: str(o.source) };
 }
