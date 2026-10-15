@@ -205,7 +205,6 @@ Warm, calm, literary lightly. A kind friend, not a brand. Time and love, never e
 
 - Icon Composer `.icon` for iOS 26 (needs a Mac); then register it and point `apps/mobile/app.config.ts` at it.
 - Android adaptive icon layers (Android is v1.1).
-- Splash wiring in `app.config.ts` (expo-splash-screen needs a PNG symbol; context `app.splash` is defined).
 - Trademark clearance of the name and the mark before BIMI VMC (EMAIL_IDENTITY.md 6).
 - Point the iOS asset catalog (or the `.icon` small-size variant) at `app.notification`'s PNGs (BRD-04). Founder call: the approved rule draws the small cut at 40 px and below, so 58/60/80/87/120 use the master drawing, hand-tuned; the review suggests the small cut up to 87 px. Compare on a device before changing.
 - Planned contexts still to draw: `appstore.screenshot-frame` (v1.0), `export.pdf` (v1.0), `book.page` (v1.1), `play.feature-graphic` (v1.1); social story and cover templates.

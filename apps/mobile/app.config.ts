@@ -219,7 +219,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   },
   web: {
     output: 'single',
-    // Web preview only (e2e-web). Still the earlier mark; rebuild from registry context web.favicon.
+    // Web preview only (e2e-web). Byte copy of favicon.icon192 from registry context web.favicon
+    // (packages/brand/assets/favicon/icon-192.png); Expo derives the smaller sizes from it.
     favicon: './assets/brand/favicon.png',
   },
   plugins: [

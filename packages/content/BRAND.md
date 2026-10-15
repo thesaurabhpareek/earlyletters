@@ -53,23 +53,13 @@ Love from everyone, pressure from no one.
 
 ## Mark and app icon
 
-**The mark: Heart fold.** An envelope whose top folds into a soft heart. The flap above the fold line is the heart; the pocket below is the envelope. A letter sent with love, in one silhouette.
+**The mark: two opening quotation marks**, one large and one small, leaning together (D-071, approved by the founder on 2026-10-03 as logo round 3 `final-a`). Quotation marks say "these are your exact words", the product's promise. The pair is parent and child. Opening quotes, never closing ones: the letters are still being written. The full description, the registry of ids and contexts, clear space, minimum sizes, colour and the icon rules live in `docs/brand/BRAND_SYSTEM.md`; this section only says where the files come from.
 
-Three original concepts were drawn (`packages/brand/logo/concepts/`):
-
-| Concept | Idea | Verdict |
-| --- | --- | --- |
-| A. Open letter | An opened envelope; the page inside carries one soft wave, a voice becoming writing. | Clear, but at small sizes it reads as a generic mail icon. Kept for illustration. |
-| B. Heart fold | An envelope whose flap is a heart. | **Chosen.** |
-| C. Voice line | One continuous line: a short spoken wave that folds into an envelope. | Reads as "send mail" and loses the wave below 60 px. Kept as an illustration motif (CREATIVE section 3). |
-
-Why B:
-- **One idea, one shape.** Like the best calm apps (a single dot, a single bookmark), it is one silhouette and one cut. It survives 40 px, the tinted and themed variants, and a one-colour print.
-- **Ownable.** The heart shoulders separate it from every mail icon on a home screen; no letters of the alphabet, no blocks, no baby imagery, no wax seal.
-- **True to the product.** A letter, written with love, kept. The heart is in the fold, so it is felt before it is noticed.
-- **Warm palette.** Paper `#FBF8F3` on accent brown `#8A5A3B` for the icon; accent on paper for the splash; `#D9A47E` for dark. All from `packages/brand` colours. Terracotta was tried and rejected: it reads as another mail brand and, in our system, terracotta means "recording".
-
-Files: geometry in `scripts/brand/mark.mjs` (the single source); `node scripts/brand/icons.mjs` writes the app icons (iOS light, dark, tinted; Android adaptive and themed) and splash marks to `apps/mobile/assets/brand/`, and `mark.svg` and `app-icon.svg` to `packages/brand/logo/`. Never edit the PNGs by hand.
+- **Source of truth.** `packages/brand/registry.ts` (and the generated `registry.json`). Every touchpoint resolves its files through a context (`assetFor('app.icon')`, `assetFor('app.splash')`, `assetFor('web.favicon')`); nobody picks a brand file by name.
+- **Drawing.** `packages/brand/assets/logo/primary/` is the byte-identical rebuild of the approved mark (`node packages/brand/assets/logo/primary/source/build.mjs`), then `packages/brand/scripts/build-touchpoints.mjs` and `build-registry.mjs`.
+- **App icon.** Paper `#FBF8F3` mark on the sepia tile `#9A613C` to `#7F4F30`; `#D9A47E` on warm near-black for dark; white on black for tinted. All opaque RGB 1024, no alpha. `apps/mobile/assets/brand/icon*.png` are byte copies of the registry masters, because Expo reads only paths under the app directory.
+- **Splash.** The symbol alone, centred, 96 pt tall, ink on paper and reversed on paperDark (context `app.splash`).
+- **Earlier marks.** The heart-fold envelope that preceded round 3, and logo rounds 1 to 3, are history (D-079). Rounds 1 to 3 are registered `deprecated.*`; the heart-fold set was removed in October 2026 and lives only in git history. Nothing may use, copy or link them.
 
 ## Proof discipline
 
