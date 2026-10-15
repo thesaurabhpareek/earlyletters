@@ -106,6 +106,41 @@ for (let n = 1; n <= 15; n++) {
   if (!ids.has(id)) problems.push(`no flow for ${id}`);
 }
 
+// Report only: which ids the flows use that the app does not set yet (template
+// ids such as `language.row.${code}` match any value). Never fails the lint:
+// the request list leads the app. Run with --app to print the list.
+if (process.argv.includes('--app')) {
+  const SRC = resolve(E2E, '../src');
+  const files = [];
+  const walkDir = (d) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      if (e.isDirectory()) walkDir(join(d, e.name));
+      else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name)) files.push(join(d, e.name));
+    }
+  };
+  walkDir(SRC);
+  const appIds = [];
+  for (const f of files) {
+    const text = readFileSync(f, 'utf8');
+    for (const m of text.matchAll(/(?:testID|closeTestID|optionTestID|tabBarButtonTestID)\s*[=:]\s*\{?\s*(?:[^'"`{}]*\?\s*)?['"`]([a-z][A-Za-z0-9.${}<>_-]+)['"`]/g)) appIds.push(m[1]);
+    for (const m of text.matchAll(/['"`]((?:[a-z][A-Za-z0-9]*)(?:\.[A-Za-z0-9${}_-]+)+)['"`]/g)) if (/^(gate|tab|onboarding|tonight|listen|review|write|signIn|signInEmail|signInCode|signInVerify|consent|consentSheet|accountConfirm|book|switcher|whoseBook|letter|readTogether|plusGate|plusConfirmed|addChild|family|invite|inviteNew|settings|account|plan|language|languagePicker|storage|privacy|export|deleteAccount|reminders|player)\./.test(m[1])) appIds.push(m[1]);
+  }
+  const appRes = [...new Set(appIds)].map((t) => new RegExp('^' + t.replace(/[.*+?^()|[\]\\]/g, (c) => '\\' + c).replace(/\$\{[^}]+\}/g, '[A-Za-z0-9_.-]+') + '$'));
+  const used = new Set();
+  const collect = (path) => {
+    const docs = YAML.parseAllDocuments(readFileSync(path, 'utf8'));
+    walk(docs[1]?.toJS(), (o) => { if (typeof o.id === 'string' && !ALWAYS_OK.has(o.id)) used.add(o.id); });
+  };
+  for (const f of flows) collect(join(E2E, 'flows', f));
+  for (const f of subflows) collect(join(E2E, 'subflows', f));
+  const missing = [...used].filter((id) => {
+    if (/[()|*+?[\]]/.test(id)) return false; // regex ids are checked through their parts
+    return !appRes.some((r) => r.test(id));
+  }).sort();
+  console.log(`app check: ${used.size} ids used by flows; ${missing.length} not found in apps/mobile/src:`);
+  for (const id of missing) console.log(`  ${id}`);
+}
+
 if (problems.length) {
   console.error(problems.map((p) => `- ${p}`).join('\n'));
   console.error(`lint-flows: ${problems.length} problem(s)`);

@@ -9,6 +9,9 @@ CI, review rules and branch protection for `thesaurabhpareek/earlyletters`.
 | `workflows/security.yml` | gitleaks over the full history (config `gitleaks.toml`), and `npm audit --omit=dev --audit-level=high` through `scripts/audit-gate.mjs` with the dated ignore list `audit-ignore.json`. Also weekly on Mondays. Not part of `required`. |
 | `workflows/fence.yml` | The agent fence (D-041): fails a pull request that touches `supabase/**`, `.github/**` or auth code unless it has the `approve-migration` label. Path rules in `scripts/fence-paths.mjs`, read from the base commit; fails closed on API errors. Advisory until branch protection makes `fence` and `applied migrations unchanged` required checks: a failing check does not block a merge until then (see below). |
 | `dependabot.yml` | Weekly update pull requests into `develop`: npm (Expo and React Native packages grouped) and GitHub Actions (SHA pins). |
+| `workflows/agents.yml` | The agent team (ADR 0018, ADR 0019). Off until the repository variable `AGENTS_ENABLED` is `true`: until then every scheduled tick is skipped before a runner starts. Once on, every 30 minutes `scripts/agents/dispatch.mjs` assigns work; up to six agents run, by default OpenCode on open-weight models through OpenRouter acting as the agents GitHub App, optionally Claude Code, and open PRs into `develop`. Needs `OPENROUTER_API_KEY`, `AGENTS_APP_CLIENT_ID` and `AGENTS_APP_PRIVATE_KEY`; pause with the variable `AGENTS_PAUSED=true`. Everything else: `docs/agents/HARNESS.md`, switch-on steps in `docs/release/HARNESS_SETUP.md`. |
+| `workflows/claude.yml` | `@claude` in an issue or PR comment, for the repository owner only (`ANTHROPIC_API_KEY` or the owner's `CLAUDE_CODE_OAUTH_TOKEN`). |
+| `workflows/agents-check.yml` | Roster, charters and memory files consistent; dispatcher tests. |
 | `migrations-applied.txt` | The migrations applied to the live database. Add a line in the same PR that records applying one (see `supabase/APPLY.md`). |
 | `migration-exceptions.txt` | Reviewed exceptions to the applied-migration rule, one `file@blob-sha` per line. Today: only `20261001000000_scribe_hardening.sql`, reconciled with what was applied in commit 3730551. |
 | `scripts/migration-guard.mjs` | The guard itself. Run it locally with `node .github/scripts/migration-guard.mjs origin/develop`. Tests: `node --test .github/scripts/migration-guard.test.mjs`. |
@@ -82,7 +85,7 @@ Apply to both `main` and `develop`:
 3. Require conversation resolution before merging.
 4. Require linear history.
 5. Block force pushes and branch deletion.
-6. Approvals: GitHub never lets the author approve their own pull request. While one person owns every area, set required approvals to 0 and leave "Require review from Code Owners" off, or nothing can merge. Turn on 1 approval plus code owner review as soon as a second reviewer exists.
+6. Approvals: 1 required. Agent PRs are authored by the Claude GitHub App, so the founder can approve them; agents cannot merge without that approval. The founder's own PRs can still be merged as an administrator because "Do not allow bypassing" is off (item 7). Leave "Require review from Code Owners" off while one person owns every area.
 7. Leave "Do not allow bypassing the above settings" off for now, so the owner can recover from a broken CI. Turn it on before the first external contributor.
 
 The same settings through the API (run once per branch, replacing `BRANCH`):
@@ -96,7 +99,7 @@ gh api -X PUT repos/thesaurabhpareek/earlyletters/branches/BRANCH/protection --i
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
-    "required_approving_review_count": 0,
+    "required_approving_review_count": 1,
     "require_code_owner_reviews": false,
     "dismiss_stale_reviews": true
   },

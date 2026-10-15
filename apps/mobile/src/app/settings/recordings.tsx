@@ -1,19 +1,22 @@
+import { useState } from 'react';
 import { Alert, ScrollView } from 'react-native';
-import { ListRow, ListSection } from '@/components/ui/list-row';
+import { DEFAULT_VIEW_SETTING, viewFromSetting } from '@/components/capture/review-view.logic';
+import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
-import { listOrphanAudio } from '@/lib/store';
+import { countUnrecoverableTakes, getSetting, listOrphanAudio, setSetting } from '@/lib/store';
 import { authorSpeechLanguage } from '@/lib/models/author-language';
 import { SPEECH_MODELS, VAD_MODEL_ID, type SpeechLanguage } from '@/lib/models/catalog';
 import { speechSettingsCopy } from '@/lib/models/copy';
 import { planFor, speechPackHost } from '@/lib/models/speech-packs';
-import { removeSpeechPack, requestSpeechFor, speechDownloadHold, speechDownloadProgress, wordsState } from '@/lib/transcription-queue';
+import { removeSpeechPack, speechDownloadHold, startSpeechDownload, speechDownloadProgress, wordsState } from '@/lib/transcription-queue';
 import { languageNames } from '@/lib/transcription-queue/copy';
 import { useWordsTick } from '@/lib/transcription-queue/use-words';
 
 /**
  * Recordings (PRD C C-REQ-018): honest about where audio lives. v1.0 has no
- * backup and uploads no recordings (D-059), so this screen offers none and
- * says nothing about one arriving. Recordings the launch sweep found with no
+ * backup of our own and uploads no recordings (D-059, D-085), so this screen offers none and
+ * says nothing about one arriving. A take a kill cut off that would not play is kept and listed
+ * here (D-085). Recordings the launch sweep found with no
  * letter (before any book existed) are listed here, never deleted (TDD 01
  * 3.2.4).
  *
@@ -25,6 +28,7 @@ import { useWordsTick } from '@/lib/transcription-queue/use-words';
 export default function Recordings() {
   const r = copy.settings.recordings;
   const orphans = listOrphanAudio().length;
+  const unplayable = countUnrecoverableTakes();
   const o = pendingCopy.recordings;
   useWordsTick();
   const languages = languagesInUse();
@@ -41,16 +45,41 @@ export default function Recordings() {
         </ListSection>
       )}
 
+      {unplayable > 0 && (
+        <ListSection title={r.unplayableTitle}>
+          <ListRow title={plural(unplayable, r.unplayableOne, fill(r.unplayableMany, { count: unplayable }))} />
+        </ListSection>
+      )}
+
       <ListSection title={speechSettingsCopy.title} footer={speechSettingsCopy.footer}>
         {languages.map((lang) => (
           <SpeechRow key={lang} language={lang} />
         ))}
       </ListSection>
 
-      <ListSection title={copy.settings.help.mistakesTitle} footer={copy.settings.help.mistakes}>
-        <ListRow title={copy.settings.tidyLabel} subtitle={copy.settings.tidyHelp} />
+      <ListSection title={copy.settings.help.mistakesTitle} footer={`${copy.settings.tidyHelp} ${copy.settings.help.mistakes}`}>
+        <WordForWordSwitch />
       </ListSection>
     </ScrollView>
+  );
+}
+
+/**
+ * "Word for word" (D-086): the default for new letters. On: small fixes, marked, each one tappable and
+ * reversible. Off: new letters open as "Exactly as said". Review's own control still changes any single letter.
+ */
+function WordForWordSwitch() {
+  const [fixes, setFixes] = useState(() => viewFromSetting(getSetting(DEFAULT_VIEW_SETTING)) === 'fixes');
+  return (
+    <ToggleRow
+      title={copy.settings.tidyLabel}
+      description={fixes ? copy.settings.tidyOn : copy.settings.tidyOff}
+      value={fixes}
+      onValueChange={(on) => {
+        setFixes(on);
+        setSetting(DEFAULT_VIEW_SETTING, on ? 'fixes' : 'exact');
+      }}
+    />
   );
 }
 
@@ -111,7 +140,7 @@ function SpeechRow({ language }: { language: SpeechLanguage }) {
     <ListRow
       title={name}
       subtitle={subtitle}
-      onPress={!files ? undefined : installed ? confirmRemove : progress === null && hold === null ? () => void requestSpeechFor(language) : undefined}
+      onPress={!files ? undefined : installed ? confirmRemove : progress === null && hold === null ? () => void startSpeechDownload(language) : undefined}
       accessibilityHint={installed ? s.removeHint : s.downloadHint}
     />
   );

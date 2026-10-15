@@ -151,7 +151,7 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 ### Not mounted yet (product gaps found while writing the flows)
 - The **analytics consent sheet** (`components/consent/analytics-consent-sheet.tsx`) is not rendered by any route, and no ask sequencer exists (PRD-REQ-001: Keep the book, then reminders, then analytics, one per session). E2E-11 tests the Settings switch and keeps the sheet steps as a marked pending block. When the sheet is mounted: `consentSheet.screen`, `consentSheet.yes`, `consentSheet.no`.
 - The **reminder priming card** after the first letter (C-REQ-001) is only reachable from Settings > Reminders; Tonight never shows it.
-- There is **no Recently deleted screen**; deletion has an Undo on the letter only. E2E-08 covers Undo and notes the gap (DATA-REQ-010 30-day restore UI).
+- **Recently deleted** now exists (D-085, `settings/recently-deleted.tsx`) and so does the delete confirm sheet. E2E-08 selects them by visible text. Ids to add when the components take a `testID`: `shelf.screen`, `shelf.row`, `shelf.restore`, `shelf.erase`, `shelf.empty`, `letter.delete.confirm`, `letter.delete.keep`, `settings.recentlyDeleted`.
 
 ## 3. E2E seams (mobile owner; one new file, for example `src/lib/e2e.ts`)
 

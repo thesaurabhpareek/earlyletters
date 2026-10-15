@@ -114,7 +114,8 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
 /** What the screen shows before export starts ("What is inside" counts). */
 export function exportSummary(snapshot = exportSnapshot()): { letters: number; recordings: number; books: number } {
   return {
-    letters: snapshot.entries.length,
+    // Quiet-day marks are in the export but are never counted as letters (D-084).
+    letters: snapshot.entries.filter((e) => e.kind !== 'not_much').length,
     recordings: snapshot.entries.filter((e) => e.own && e.audioOnPhone).length,
     books: snapshot.children.length,
   };

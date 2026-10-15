@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Email chrome mock</title>
+<!-- Design reference only (B3). Real templates are D1's React Email components. 375px frames. -->
+<style>
+  @font-face { font-family: Literata; font-weight: 400 600; src: url(../../../../../node_modules/@fontsource/literata/files/literata-latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: Literata; font-weight: 500; src: url(../../../../../node_modules/@fontsource/literata/files/literata-latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: Mukta; font-weight: 400; src: url(../../../../../node_modules/@fontsource/mukta/files/mukta-latin-400-normal.woff2) format('woff2'); }
+  body { margin: 0; padding: 24px; background: #d9d4cc; font-family: system-ui; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .cap { font: 12px system-ui; color: #333; margin: 0 0 6px; }
+  .frame { width: 375px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+  .mail { padding: 32px 24px 32px; }
+  .hdr { padding-bottom: 24px; }
+  .hdr img { display: block; width: 160px; height: 28px; }
+  .alt { font: 500 20px/28px Literata, Georgia, 'Times New Roman', serif; }
+  h1 { font: 500 24px/31px Literata, Georgia, serif; margin: 0 0 16px; }
+  p { font: 400 17px/26px Mukta, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0 0 16px; }
+  .btn { display: inline-block; font: 600 17px/1 Mukta, sans-serif; padding: 16px 24px; border-radius: 999px; text-decoration: none; }
+  .sig { font: 400 18px/27px Literata, Georgia, serif; margin: 24px 0 0; }
+  .sig b { font-weight: 500; }
+  .ftr { margin-top: 32px; padding-top: 24px; border-top: 1px solid; font: 400 13px/19px Mukta, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  .ftr p { font-size: 13px; line-height: 19px; margin: 0 0 8px; }
+  .ftr a { text-decoration: underline; }
+  .name { margin-top: 16px !important; }
+  .light { background: #FBF8F3; color: #2B2722; }
+  .light .muted, .light .ftr p, .light .ftr a { color: #6B645B; }
+  .light .ftr { border-color: #E6DED3; }
+  .light .btn { background: #8A5A3B; color: #FFFFFF; }
+  .dark { background: #161412; color: #F2ECE4; }
+  .dark .ftr p, .dark .ftr a { color: #B3AA9E; }
+  .dark .ftr { border-color: #33302C; }
+  .dark .btn { background: #D9A47E; color: #1E1612; }
+  /* Gmail app forced dark: Gmail rewrites colours, does not swap images. */
+  .gmail { background: #1F1F1F; color: #E3E3E3; }
+  .gmail .ftr p, .gmail .ftr a { color: #B0B0B0; }
+  .gmail .ftr { border-color: #3A3A3A; }
+  .gmail .btn { background: #8A5A3B; color: #FFFFFF; }
+</style></head><body>
+<script>
+const frames = [
+  ['Transactional, light (Apple Mail, Gmail web)', 'light', 'logo-light.png', 't'],
+  ['Transactional, dark (Apple Mail, Outlook.com: logo swapped)', 'dark', 'logo-dark.png', 't'],
+  ['Gmail app forced dark (no swap: logo-light + halo)', 'gmail', 'logo-light.png', 't'],
+  ['Images blocked (Outlook desktop default): alt text', 'light', null, 't'],
+  ['Commercial, light (news. subdomain, not built yet)', 'light', 'logo-light.png', 'c'],
+  ['Commercial, dark', 'dark', 'logo-dark.png', 'c'],
+];
+for (const [cap, cls, img, kind] of frames) {
+  const why = kind === 't'
+    ? 'You are getting this because someone asked to sign in to Early Letters with asha.parent@example.com.'
+    : 'You are getting this because you joined the Early Letters newsletter with asha.parent@example.com.';
+  const links = kind === 't' ? ['Help', 'Privacy'] : ['Help', 'Privacy', 'Email preferences'];
+  document.write(`<div><p class="cap">${cap}</p><div class="frame ${cls}"><div class="mail">
+  <div class="hdr">${img ? `<img src="../${img}" alt="Early Letters">` : `<span class="alt">Early Letters</span>`}</div>
+  <h1>${kind === 't' ? 'Here is your sign-in link' : 'Small things worth keeping'}</h1>
+  <p>${kind === 't' ? 'Tap below to open your book. The link works once, for 1 hour.' : 'A short note from us, about once a month.'}</p>
+  ${kind === 't' ? '<a class="btn" href="#">Sign in to my book</a>' : ''}
+  <p class="sig">Warmly,<br><b>Early Letters</b></p>
+  <div class="ftr">
+    <p>${why}</p>
+    <p>Questions? Reply to this email. A person reads every one.</p>
+    ${kind === 'c' ? '<p><a href="#">Unsubscribe</a> from these emails in one tap.</p><p>{postalAddress}</p>' : ''}
+    <p>${links.map((l) => `<a href="#">${l}</a>`).join(' &middot; ')}</p>
+    <p class="name">Early Letters. Exactly as you said it.</p>
+  </div></div></div></div>`);
+}
+</script>
+</body></html>
