@@ -18,7 +18,8 @@
  *   /i/*            co-parent invites as the app on `develop` parses them (https://earlyletters.com/i/<token>).
  *                   The token is in the PATH here: when the app does not open the link (not installed, opened on a
  *                   laptop, or "Open in Safari"), the request reaches this site, the token can land in Vercel's
- *                   request logs, and the site answers 404 (it has no /i page). Kept so the alpha's invites open
+ *                   request logs. The site answers with the one static /i page (a rewrite in next.config.ts),
+ *                   which renders no token and only copies the address on a tap. Kept so the alpha's invites open
  *                   the app; remove it once invites are written as /j#t=<token> (F11, WP-F11-11).
  *   /j              co-parent invites as PRD V2 F11 writes them (/j#t=<token>); its page is WP-F11-11
  * A route file may export only route fields, so the lists stay private; route.test.ts reads them through GET.
