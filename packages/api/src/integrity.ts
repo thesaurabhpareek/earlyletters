@@ -88,6 +88,47 @@ export function verifySignedDocument(input: unknown, kind: DocumentKind, trusted
   return good ? { ok: true, doc } : { ok: false, reason: 'bad_signature' };
 }
 
+// ---------------------------------------------------------------------------
+// Versions: one document per version (security review L10, G-18)
+// ---------------------------------------------------------------------------
+
+/** SHA-256 (hex) of a payload's canonical JSON: the identity of a document's content, whoever signed it. */
+export function documentPayloadSha256(payload: unknown): string {
+  return sha256Hex(utf8ToBytes(canonicalJson(payload)));
+}
+
+export type VersionDecision =
+  /** Newer than the accepted copy (or nothing accepted yet): use it. */
+  | 'accept'
+  /** The same version with the same content: keep the copy, refresh its time. */
+  | 'unchanged'
+  /** Older than the accepted copy: refuse (a host or CDN replaying an old signed copy). */
+  | 'rollback'
+  /** The same version with different content: refuse. A publisher must raise the version for any change. */
+  | 'same_version_conflict';
+
+/**
+ * Whether a verified document replaces the accepted one. Versions are
+ * strictly increasing for any change in content: a different payload under
+ * the version already accepted is refused, so a signed document can never be
+ * swapped for another one (for example a kill switch turned back off) without
+ * a new version. A re-signature of the same payload (key rotation) is the
+ * same content and stays `unchanged`.
+ *
+ * `current.payloadSha256` null means the accepted copy's hash is unknown (a
+ * cache written by an older build): then a same-version document is refused
+ * unless the caller computed the hash; callers compute it from the cache.
+ */
+export function decideDocumentVersion(
+  current: { version: number; payloadSha256: string | null } | null,
+  next: { version: number; payloadSha256: string },
+): VersionDecision {
+  if (!current) return 'accept';
+  if (next.version > current.version) return 'accept';
+  if (next.version < current.version) return 'rollback';
+  return current.payloadSha256 !== null && current.payloadSha256 === next.payloadSha256 ? 'unchanged' : 'same_version_conflict';
+}
+
 /**
  * Signs a payload. Used by `scripts/packs` (key from env) and by tests (an
  * ephemeral key). The app never signs anything.
