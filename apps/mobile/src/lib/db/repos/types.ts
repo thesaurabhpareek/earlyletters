@@ -87,6 +87,8 @@ export interface Child {
   createdByMe?: boolean;
   /** From sync: this account's role in the book. Absent for a book only on this phone. */
   role?: 'parent' | 'contributor';
+  /** v7: present and true while "Quiet this book" is on for this person (F12-REQ-011): no prompts, reminders or notes. */
+  quiet?: boolean;
 }
 
 export interface NewChild {

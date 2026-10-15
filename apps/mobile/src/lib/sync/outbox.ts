@@ -23,6 +23,7 @@
  *   rejected_writes (code 'conflict'), never on the server, until the author picks.
  */
 import { LANGUAGE_CODES } from '@scribe/core';
+import { prefsRow } from '../db/repos/children';
 import type { SqlDb } from '../db/sql';
 import { ALL_GROUPS, type EntryData, type FieldGroup, type PushOp, type PushOpType, type WordsGroup } from './types';
 
@@ -91,13 +92,12 @@ export interface LocalEntryRow {
   base_direction: string;
 }
 
+/** A book row (book-level columns only since local schema v7; this person's choices are in child_member_prefs). */
 export interface LocalChildRow {
   id: string;
   name: string;
   birthday: string | null;
   due_date: string | null;
-  signs_as: string;
-  reminders_on: number;
   family_can_read: number;
   created_at: string;
   hidden_at: string | null;
@@ -105,6 +105,14 @@ export interface LocalChildRow {
   created_by_me: number | null;
   nickname: string | null;
   server_state: string;
+  created_by: string | null;
+  first_run_batch: string | null;
+}
+
+/** This person's prefs.upsert fields for a book, from child_member_prefs (v7). */
+export function prefsFields(db: SqlDb, childId: string): { signs_as: string; include_in_reminders: boolean } {
+  const p = prefsRow(db, childId);
+  return { signs_as: p?.signsAs ?? '', include_in_reminders: p?.remindersOn ?? true };
 }
 
 // ── Settings (same table as store.ts) ─────────────────────────────────────
@@ -373,8 +381,11 @@ export function enqueueBookCreate(db: SqlDb, childId: string, ctx: EnqueueContex
   const c = getChildRow(db, childId);
   if (!c) return;
   appendOp(db, { type: 'book.create', id: childId, data: bookCreateData(c) }, ctx, { bookId: childId });
-  db.run("UPDATE children SET server_state = 'pending', role = 'parent', created_by_me = 1 WHERE id = ?", childId);
-  enqueuePrefs(db, childId, { signs_as: c.signs_as, include_in_reminders: c.reminders_on === 1 }, ctx);
+  db.run(
+    "UPDATE children SET server_state = 'pending', role = 'parent', created_by_me = 1, created_by = COALESCE(created_by, ?) WHERE id = ?",
+    syncOwner(db), childId,
+  );
+  enqueuePrefs(db, childId, prefsFields(db, childId), ctx);
 }
 
 function coalesceOrAppend(db: SqlDb, type: 'book.update' | 'prefs.upsert', childId: string, fields: Record<string, unknown>, ctx: EnqueueContext): void {
