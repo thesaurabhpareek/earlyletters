@@ -30,9 +30,8 @@ export type StepMeta = {
 
 /**
  * Open the seeded build (fictional family Asha: see src/dev/asha-seed.ts). Same app, same screens, data filled in.
- * A phone with letters from an earlier session is asked, once, whether to share usage (the "Help us make it better?"
- * sheet appears on a tab screen 1.2 s after it opens). Unless `keepConsent`, that ask is answered "Don't share" first,
- * so later steps are not covered by it; the answer is the app's own and persists, like on a phone.
+ * v1.0 has no usage-sharing ask (EXPO_PUBLIC_ANALYTICS=off, decision of 15 Oct 2026), so nothing covers the
+ * screen. `keepConsent` is kept for the v1.1 flows, when the ask returns behind the switch.
  */
 export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-quiet' | 'asha-marks' | 'asha-plus' = 'asha', path = '/', opts: { keepConsent?: boolean } = {}) {
   const base = process.env.E2E_WEB_SEED_URL;
@@ -42,11 +41,6 @@ export async function seeded(page: Page, kind: 'asha' | 'asha-waiting' | 'asha-q
     if (path !== '/') await page.goto(`${base}${path}${path.includes('?') ? '&' : '?'}seed=${kind}`);
     return;
   }
-  const decline = page.getByRole('button', { name: "Don't share" });
-  await decline.waitFor({ timeout: 8000 });
-  await decline.click();
-  await decline.waitFor({ state: 'hidden' });
-  await page.waitForTimeout(300);
   if (path !== '/') await page.goto(`${base}${path}${path.includes('?') ? '&' : '?'}seed=${kind}`);
 }
 

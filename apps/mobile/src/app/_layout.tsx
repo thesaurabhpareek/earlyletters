@@ -19,7 +19,7 @@ import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
-import { setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
+import { PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
 import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
@@ -174,8 +174,12 @@ function Root() {
               <Stack.Screen name="letter/[id]" options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: c.accent }} />
               <Stack.Screen name="(auth)" options={{ presentation: 'modal' }} />
               <Stack.Screen name="invite" options={{ presentation: 'modal' }} />
+              {/* After a new purchase of Plus, over the Keep gate or Settings, Plan (G-15). */}
+              <Stack.Screen name="plus/confirmed" options={{ presentation: 'modal' }} />
             </Stack>
             <PendingInviteWatcher />
+            {/* A plan reminder inside the app, once per reminder, on a calm tab root (G-15). */}
+            <PlanNoticeHost />
             {/* The analytics ask: a later session after the first letter, on a tab root only (TRACKING_PLAN 9). */}
             <AnalyticsConsentAsk />
           </SessionProvider>
