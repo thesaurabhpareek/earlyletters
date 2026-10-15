@@ -4,7 +4,8 @@
 //   node scripts/agents/next-id.mjs        -> {"BL":"BL-441","D":"D-100","ADR":"0023"}
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { ROOT, loadRoster, repoSlug, ghAll, nextIds } from "./lib.mjs";
+import { ROOT, loadRoster, repoSlug, ghAll } from "./lib.mjs";
+import { nextIds } from "./hardening.mjs";
 
 const roster = loadRoster();
 const repo = repoSlug(roster);

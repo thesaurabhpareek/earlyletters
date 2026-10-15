@@ -17,15 +17,19 @@ A dispatcher (`scripts/agents/dispatch.mjs`, run by `.github/workflows/agents.ym
 |---|---|---|
 | `maintain` | One of your open PRs has failing checks, conflicts with `develop`, requested changes, a red-team "fix first", or a founder comment newer than its last commit | Fix that PR on its own branch. Nothing else. For a conflict, `git merge origin/develop` into your branch and resolve by hand; never rebase or force-push. |
 | `task` | A backlog task is ready for your role | Do that one task, per the rules in `docs/BACKLOG.md` ("How a scheduled run uses this file") and its Definition of Done. |
-| `review` | Red team only: an agent PR has no review for its latest commit, or any PR (from any thread, not only agents) that touches `supabase/`, `.github/workflows/` or auth code has none (D-041) | Review it (section 6). |
+| `review` | Red team only: an agent PR has no review for its latest commit | Review it (section 6). |
 | `standing` | Your queue is empty | Do the highest-priority standing duty in your charter that has no open PR yet; if one has an open PR of yours, continue that PR instead. |
 | `digest` | Chief of staff only, once a day | Write the founder digest (section 7). |
 
 **Before you start, check for overlap.** Other people and sessions also work here: the founder's build thread merges straight into `develop` and claims files in `docs/agents/BOARD.md` (your brief lists its live claims; never edit a file under one). List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
 
-Priority order the dispatcher uses: fix your open PRs first, then backlog tasks, then standing duties. **Team limit:** when `max_open_agent_prs` agent PRs are open (roster), nobody starts a new task or standing duty; agents only review and fix until the founder merges or closes some. Unmerged documents go stale within days while `develop` moves. An agent sits idle only when it is already running, has used its daily runs, has reached its own or the team's open-PR limit, or nothing changed since its last standing run. The board issue shows which.
+Priority order the dispatcher uses: fix your open PRs first, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting on the founder's review. The board issue shows which.
 
 **Task eligibility** (the dispatcher's reading of `docs/BACKLOG.md`): `Mode: agent`, the task's first non-founder `Owner` maps to your role (`backlog_owner_names` in the roster), every `Depends on` task is `done`, and the status is `ready`, or `blocked (...)` where every blocker named in the parentheses is a backlog id whose status is `done`. A task is taken when its id appears in an open PR branch or title, or another agent holds a live claim on it.
+
+**Added 15 Oct, from the first two weeks.**
+- **D-041 reviews for every thread.** The red team also reviews any PR, from any thread, that touches `supabase/`, `.github/workflows/` or auth code and has no red-team review of its head. It takes them oldest first and skips release merges (develop into main).
+- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until the founder merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
 
 ## 3. Memory: how you keep context between runs
 

@@ -1,7 +1,7 @@
 // Lessons of 3 to 15 Oct turned into tests. Run: node --test 'scripts/agents/*.test.mjs'
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { needsIndependentReview, nextIds } from "./lib.mjs";
+import { needsIndependentReview, nextIds } from "./hardening.mjs";
 
 test("D-041 review covers database, workflows and auth code, whoever wrote the PR", () => {
   assert.equal(needsIndependentReview(["supabase/migrations/20261004_x.sql"]), true);

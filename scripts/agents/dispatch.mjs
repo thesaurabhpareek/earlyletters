@@ -21,7 +21,7 @@ import {
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
   isFounderComment, standingChanged,
 } from "./lib.mjs";
-import { needsIndependentReview } from "./lib.mjs";
+import { needsIndependentReview } from "./hardening.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
 const argv = process.argv.slice(2);
@@ -219,6 +219,10 @@ for (const agent of roster.agents) {
     ? { mode: env.FORCE_MODE || "task", task: env.FORCE_TASK, label: `${env.FORCE_MODE || "task"} ${env.FORCE_TASK}` }
     : nextWork(agent, mine, queue);
   if (!work) { row.now = `idle: ${idleReason(agent, mine)}`; continue; }
+  if ((work.mode === "task" || work.mode === "standing") && teamOpen >= teamCap) {
+    row.now = `idle: team limit, ${teamOpen} agent PRs open (cap ${teamCap}), so reviews and fixes only`;
+    continue;
+  }
 
   const a = {
     agent: h,
@@ -265,7 +269,6 @@ function nextWork(agent, mine, queue) {
     return due ? { mode: "digest", label: "digest" } : undefined;
   }
   if (mine.length >= agent.wip_limit) return undefined;
-  if (teamOpen >= teamCap) return undefined;
   // 3. Backlog task, then standing duty, but only if something changed since
   //    this agent's last standing run (saves a run that would find nothing new).
   if (queue.length) return { mode: "task", task: queue[0].id, reason: queue[0].title, label: `task ${queue[0].id}` };
@@ -276,7 +279,6 @@ function nextWork(agent, mine, queue) {
 function idleReason(agent, mine) {
   if (agent.kind === "digest") return state.lastDigest === today ? "today's digest is done" : "digest not due yet";
   if (mine.length >= agent.wip_limit) return `waiting for founder review (${mine.length}/${agent.wip_limit} open PRs)`;
-  if (teamOpen >= teamCap) return `team limit: ${teamOpen} agent PRs open (cap ${teamCap}), so reviews and fixes only`;
   if (state.standing[agent.handle]) return "nothing changed since its last standing run";
   return "nothing to do";
 }
