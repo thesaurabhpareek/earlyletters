@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BUNDLED_READ_TOGETHER_FREE_SESSIONS, DEFAULT_REMOTE_CONFIG, effectiveFreeSessions, isKilled, KILL_SWITCH_KEYS, parseRemoteConfig } from '../src';
+import { BUNDLED_FREE_LETTERS, BUNDLED_READ_TOGETHER_FREE_SESSIONS, effectiveFreeLetters, DEFAULT_REMOTE_CONFIG, effectiveFreeSessions, isKilled, KILL_SWITCH_KEYS, parseRemoteConfig } from '../src';
 
 const base = { schemaVersion: 1, version: 5, generatedAt: '2026-10-03T12:00:00.000Z' };
 
@@ -23,7 +23,7 @@ describe('parseRemoteConfig', () => {
     if (!r.ok) return;
     expect(r.value.readTogetherFreeSessions).toBe(BUNDLED_READ_TOGETHER_FREE_SESSIONS);
     expect(r.value.minSupportedVersion).toBe('0.0.0');
-    expect(r.value.flags).toEqual({ introVariant: 'four', lockScreenNamesDefault: true });
+    expect(r.value.flags).toEqual({ introVariant: 'four', lockScreenNamesDefault: true, familyTeaser: 'coming_soon' });
     expect(r.value.killSwitches.sync).toBe(false);
     expect(r.value.killSwitches.invites).toBe(true);
   });
@@ -40,6 +40,19 @@ describe('parseRemoteConfig', () => {
     }
   });
 
+  it('[DECISION-16] the family teaser flag can only pick a reviewed variant, and no key turns server features on', () => {
+    const quiet = parseRemoteConfig({ ...base, flags: { familyTeaser: 'quiet' } });
+    expect(quiet.ok && quiet.value.flags.familyTeaser).toBe('quiet');
+    const bad = parseRemoteConfig({ ...base, flags: { familyTeaser: 'invite_now' } });
+    expect(bad.ok && bad.value.flags.familyTeaser).toBe('coming_soon');
+    // Sign-in, sync and sharing are a build-time switch (apps/mobile/src/lib/capabilities.ts):
+    // a served document that tries to turn them on is ignored key by key.
+    const sneaky = parseRemoteConfig({ ...base, serverFeatures: true, flags: { serverFeatures: true, signIn: true, coParent: true }, capabilities: { sync: true } });
+    expect(sneaky.ok).toBe(true);
+    if (!sneaky.ok) return;
+    expect(JSON.stringify(sneaky.value)).not.toMatch(/serverFeatures|signIn|coParent|capabilities/);
+  });
+
   it('rejects a document without its identity fields', () => {
     expect(parseRemoteConfig({ ...base, schemaVersion: 2 }).ok).toBe(false);
     expect(parseRemoteConfig({ ...base, version: -1 }).ok).toBe(false);
@@ -47,7 +60,24 @@ describe('parseRemoteConfig', () => {
   });
 });
 
-describe('effectiveFreeSessions', () => {
+describe('effectiveFreeLetters', () => {
+  it('[D-082] remote config can raise the free letters but never lower them below what App Review saw', () => {
+    expect(BUNDLED_FREE_LETTERS).toBe(2);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 0 })).toBe(2);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 1 })).toBe(2);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 2 })).toBe(2);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 5 })).toBe(5);
+    expect(effectiveFreeLetters({ freeLettersAllowance: 1000 })).toBe(100);
+  });
+  it('a bad value falls back to 2 without rejecting the document', () => {
+    const r = parseRemoteConfig({ ...base, freeLettersAllowance: 'lots' });
+    expect(r.ok && r.value.freeLettersAllowance).toBe(2);
+    const missing = parseRemoteConfig({ ...base, freeLettersAllowance: undefined });
+    expect(missing.ok && missing.value.freeLettersAllowance).toBe(2);
+  });
+});
+
+describe('effectiveFreeSessions (deprecated: Read together has no limit)', () => {
   it('[DECISION-16] remote config can raise the free Read together allowance but never lower it below what App Review saw', () => {
     expect(effectiveFreeSessions({ readTogetherFreeSessions: 0 })).toBe(BUNDLED_READ_TOGETHER_FREE_SESSIONS);
     expect(effectiveFreeSessions({ readTogetherFreeSessions: 1 })).toBe(BUNDLED_READ_TOGETHER_FREE_SESSIONS);

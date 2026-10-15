@@ -8,12 +8,12 @@
  * screen's owner.
  */
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
-import { billingCopy, manageSubscription, presentPlusStore, requestRefund, restorePurchases, usePlan, type PlanLine } from '@/lib/billing';
+import { billingCopy, manageSubscription, presentPlusStore, redeemOfferCode, requestRefund, restorePurchases, usePlan, type PlanLine } from '@/lib/billing';
 import { copy, fill } from '@/lib/copy';
 import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
@@ -41,12 +41,22 @@ function statusText(line: PlanLine): string {
   }
 }
 
-type Busy = null | 'store' | 'manage' | 'restore' | 'refund';
+type Busy = null | 'store' | 'redeem' | 'manage' | 'restore' | 'refund';
 
 export default function PlanSettings() {
   const plan = usePlan();
   const [busy, setBusy] = useState<Busy>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Set when Apple's offer code sheet was shown: a redeemed code arrives as an entitlement update,
+  // so Plus turning on afterwards is the redemption (D-081). A number-free event, no code is ever read.
+  const awaitingCode = useRef(false);
+
+  useEffect(() => {
+    if (plan.plusOn && awaitingCode.current) {
+      awaitingCode.current = false;
+      track('offer_code_redeemed', {});
+    }
+  }, [plan.plusOn]);
 
   const run = async (what: Exclude<Busy, null>, action: () => Promise<string | null>) => {
     if (busy) return;
@@ -98,6 +108,23 @@ export default function PlanSettings() {
                   const outcome = await presentPlusStore();
                   if (outcome !== 'busy') track('plus_offer_closed', { trigger: 'settings', outcome });
                   return outcome === 'purchased' ? billingCopy.gate.isOn : null;
+                })
+              }
+            />
+          )}
+          {!plan.plusOn && plan.storeSupport === 'available' && (
+            <ListRow
+              title={p.redeem}
+              subtitle={p.redeemHelp}
+              trailing="chevron"
+              disabled={busy !== null}
+              onPress={() =>
+                run('redeem', async () => {
+                  awaitingCode.current = true;
+                  const outcome = await redeemOfferCode();
+                  if (outcome === 'presented') return null;
+                  awaitingCode.current = false;
+                  return outcome === 'unavailable' ? p.redeemUnavailable : copy.errors.generic.body;
                 })
               }
             />

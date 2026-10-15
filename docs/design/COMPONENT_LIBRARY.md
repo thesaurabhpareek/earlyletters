@@ -82,10 +82,10 @@ apps/mobile/src/lib/                      motion.ts, haptics.ts / haptics.androi
 
 | Library | Runs in React Native? | Evidence |
 |---|---|---|
-| **Material UI** | **No. Web only.** | The "Supported platforms" page lists browsers (Edge, Firefox, Chrome, Safari) and server rendering only ([mui.com/…/supported-platforms](https://mui.com/material-ui/getting-started/supported-platforms/)). npm peers are `react-dom` and `@emotion/react` ([npm @mui/material 9.4.0](https://registry.npmjs.org/@mui/material)). |
+| **Material UI** | **No. Web only.** | The "Supported platforms" page lists browsers (Edge, Firefox, Chrome, Safari) and server rendering only ([mui.com/.../supported-platforms](https://mui.com/material-ui/getting-started/supported-platforms/)). npm peers are `react-dom` and `@emotion/react` ([npm @mui/material 9.4.0](https://registry.npmjs.org/@mui/material)). |
 | **Mantine** | **No. Web only.** | Install needs `react-dom` peer and PostCSS (`postcss-preset-mantine`) ([mantine.dev/getting-started](https://mantine.dev/getting-started/); [npm @mantine/core 9.6.3](https://registry.npmjs.org/@mantine/core)). A third-party `react-native-mantine` exists ([GitHub auronsan/react-native-mantine](https://github.com/auronsan/react-native-mantine), not opened, **Unverified**); it is not the Mantine team's work. |
 | **Ant Design** | **`antd` is web only.** A separate package, `@ant-design/react-native`, targets RN. | antd describes itself as "Enterprise-class UI designed for web applications" ([ant.design introduce](https://ant.design/docs/react/introduce)). `@ant-design/react-native` latest stable is 5.4.3 from 2025-08-11 ([npm](https://registry.npmjs.org/@ant-design/react-native)); README ([GitHub](https://github.com/ant-design/ant-design-mobile-rn)). |
-| **shadcn/ui** | **No. Web only** (Tailwind CSS + DOM primitives). Its React Native port is RNR. | shadcn docs: "This is not a component library. It is how you build your component library." Open code, edit the file ([ui.shadcn.com/docs](https://ui.shadcn.com/docs)). Expo: "Standard Tailwind CSS supports only web platform. For universal support, use … NativeWind or Uniwind" ([docs.expo.dev/guides/tailwind](https://docs.expo.dev/guides/tailwind.md)). RNR README: "Bringing shadcn/ui to React Native" ([GitHub README](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/README.md)). |
+| **shadcn/ui** | **No. Web only** (Tailwind CSS + DOM primitives). Its React Native port is RNR. | shadcn docs: "This is not a component library. It is how you build your component library." Open code, edit the file ([ui.shadcn.com/docs](https://ui.shadcn.com/docs)). Expo: "Standard Tailwind CSS supports only web platform. For universal support, use ... NativeWind or Uniwind" ([docs.expo.dev/guides/tailwind](https://docs.expo.dev/guides/tailwind.md)). RNR README: "Bringing shadcn/ui to React Native" ([GitHub README](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/README.md)). |
 
 **Plain answer:** none of the four runs in the mobile app (iOS or Android). All four are possible for the web app. We pick shadcn/ui for web because it has a real React Native sibling (RNR) with the same structure and naming, so the two apps read as one codebase.
 
@@ -95,7 +95,7 @@ Versions and licences from the npm registry `latest` endpoint, read 2026-10-01.
 
 | Candidate | Latest / license | Platforms (source) | Notes (source) |
 |---|---|---|---|
-| **React Native Reusables** | `@rn-primitives/*` 1.5.2, MIT | Native code shared by iOS and Android: component files branch only on `web` vs native (`Platform.select({ web: … })`); the one iOS-only line is `FullWindowOverlay` in `dialog.tsx` ([button.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/button.tsx), [dialog.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/dialog.tsx), [switch.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/switch.tsx)). The docs site did not render for us; an explicit "iOS and Android supported" statement is **Unverified**. | Copy-in, shadcn-style, MIT ([README](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/README.md)). Supports Nativewind and Uniwind ([installation](https://reactnativereusables.com/docs/installation), read in the first pass). |
+| **React Native Reusables** | `@rn-primitives/*` 1.5.2, MIT | Native code shared by iOS and Android: component files branch only on `web` vs native (`Platform.select({ web: ... })`); the one iOS-only line is `FullWindowOverlay` in `dialog.tsx` ([button.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/button.tsx), [dialog.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/dialog.tsx), [switch.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/switch.tsx)). The docs site did not render for us; an explicit "iOS and Android supported" statement is **Unverified**. | Copy-in, shadcn-style, MIT ([README](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/README.md)). Supports Nativewind and Uniwind ([installation](https://reactnativereusables.com/docs/installation), read in the first pass). |
 | **Uniwind** | 1.12.1, MIT; peers `react-native >=0.81`, `tailwindcss >=4` | "works with Expo, iOS, Android, tvOS and Web" ([llms.txt index](https://docs.uniwind.dev/llms.txt)); built-in `ios:` / `android:` / `web:` selectors ([platform selectors](https://docs.uniwind.dev/api/platform-select.md)) | Free tier: `group-*` "parsed but have no runtime effect" ([class-names](https://docs.uniwind.dev/class-names.md)). SDK 57 runtime **Unverified** until spike. |
 | **NativeWind** | 4.2.7, MIT (Tailwind v3); v5 RC is Tailwind v4 | "works with both Expo and framework-less React Native" ([installation](https://www.nativewind.dev/docs/getting-started/installation)) | "v4.2.7 adds Expo SDK 57 support" (same page). |
 | **HeroUI Native** | 1.0.10, Apache-2.0; peers include `@gorhom/bottom-sheet` ^5.2.9 | "We are focusing on mobile platforms (iOS and Android) at this time"; not for web ([quick start](https://heroui.com/docs/native/getting-started/quick-start)) | npm dependency, not owned source. |
@@ -111,7 +111,7 @@ Expo UI is a set of 1:1 mappings: "Components map one to one to their native cou
 
 | Our need | iOS: `@expo/ui/swift-ui` | Android: `@expo/ui/jetpack-compose` | Universal `@expo/ui`? |
 |---|---|---|---|
-| Switch | `<Toggle isOn onIsOnChange label />`, colour via `tint()` modifier ([toggle](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/toggle.md)) | `<Switch value onCheckedChange colors={{ checkedTrackColor, … }} />` ([switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/switch.md)) | **Yes**, `<Switch value onValueChange label />`, but no colour prop; colour only via platform `modifiers` ([universal switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/universal/switch.md)) |
+| Switch | `<Toggle isOn onIsOnChange label />`, colour via `tint()` modifier ([toggle](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/toggle.md)) | `<Switch value onCheckedChange colors={{ checkedTrackColor, ... }} />` ([switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/switch.md)) | **Yes**, `<Switch value onValueChange label />`, but no colour prop; colour only via platform `modifiers` ([universal switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/universal/switch.md)) |
 | Segmented control | `<Picker modifiers={[pickerStyle('segmented')]} selection onSelectionChange>` with `tag()`-ed `Text` children ([picker](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/picker.md)) | `<SingleChoiceSegmentedButtonRow>` of `<SegmentedButton selected onClick>` with `SegmentedButton.Label` ([segmentedbutton](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/segmentedbutton.md)) | **No.** Universal `Picker` has "menu and wheel appearances" only ([universal picker](https://docs.expo.dev/versions/v57.0.0/sdk/ui/universal/picker.md)) |
 | Alert | `<Alert>` with `Alert.Trigger` / `Alert.Actions` slots ([alert](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/alert.md)) | `<AlertDialog onDismissRequest>` with `.Title/.Text/.ConfirmButton/.DismissButton` slots ([alertdialog](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/alertdialog.md)) | No. We use RN `Alert.alert` instead (section 5) |
 | Long-press menu | `<ContextMenu>` "displays a menu when long-pressed" ([contextmenu](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/contextmenu.md)) | Only `<DropdownMenu>`, "displays a dropdown menu when a trigger element is pressed" ([dropdownmenu](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/dropdownmenu.md)) | No |
@@ -119,11 +119,11 @@ Expo UI is a set of 1:1 mappings: "Components map one to one to their native cou
 
 Both platforms require a `Host` wrapper ([compose usage](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose.md)). **Conclusion:** Expo UI is a good supplement on both platforms, but every use needs two files. That cost is why we keep it to three controls.
 
-**New Architecture:** "SDK 55 and later run entirely on the New Architecture… cannot be disabled" ([docs.expo.dev/guides/new-architecture](https://docs.expo.dev/guides/new-architecture.md)). Per-library New Arch support is **Unverified** beyond peer ranges; the spike (section 8) tests it.
+**New Architecture:** "SDK 55 and later run entirely on the New Architecture... cannot be disabled" ([docs.expo.dev/guides/new-architecture](https://docs.expo.dev/guides/new-architecture.md)). Per-library New Arch support is **Unverified** beyond peer ranges; the spike (section 8) tests it.
 
 ## 4. Scored comparison (Android-weighted)
 
-Score 1–5; weights sum to 100; total = Σ(score × weight) / 5. **Android parity** = the same component code renders correctly and feels acceptable on Android with no rewrite.
+Score 1 to 5; weights sum to 100; total = Σ(score × weight) / 5. **Android parity** = the same component code renders correctly and feels acceptable on Android with no rewrite.
 
 | Criterion (weight) | RNR + Uniwind | RNR + NativeWind 4 | gluestack v5 | HeroUI Native | Unistyles + own | Expo UI alone | Tamagui | RN Paper |
 |---|---|---|---|---|---|---|---|---|
@@ -162,7 +162,7 @@ Score 1–5; weights sum to 100; total = Σ(score × weight) / 5. **Android pari
 
 **Not wrapped, because it is already cross-platform in one API:**
 - `confirm()` uses React Native `Alert.alert`: native alert on iOS and Android. Android allows at most three buttons, ignores `style: 'destructive'`, and is not cancelable by tapping outside unless `{ cancelable: true }` ([reactnative.dev/docs/alert](https://reactnative.dev/docs/alert)). So the confirm label must say the action ("Delete letter"), never rely on red.
-- Native tabs: `NativeTabs.Trigger.Icon src={require(…png)}` works on both ([native tabs](https://docs.expo.dev/router/advanced/native-tabs.md)); the current template already does this.
+- Native tabs: `NativeTabs.Trigger.Icon src={require(...png)}` works on both ([native tabs](https://docs.expo.dev/router/advanced/native-tabs.md)); the current template already does this.
 - Measured-rect letter open, Read together, breathing glow: plain Reanimated, same code (MOTION 5b, 5f, 5g).
 
 **Removed from v1:** Expo UI `Alert`, `ConfirmationDialog` and `Popover` (EditUnderline now expands inline per MOTION 5d).
@@ -191,7 +191,7 @@ packages/design-tokens/
   src/tokens.ts          ← designer fills values (contract names below)
   scripts/build-css.ts   ← generates dist/tokens.css (Tailwind v4 @theme + light/dark)
   dist/tokens.css        ← imported by apps/ios/src/global.css AND apps/web/app/globals.css
-packages/ui-contract/    ← (optional later) shared TS prop types: ButtonVariant, ChipTone…
+packages/ui-contract/    ← (optional later) shared TS prop types: ButtonVariant, ChipTone...
 apps/ios/src/components/ui/*.tsx   ← RNR copies, edited
 apps/web/components/ui/*.tsx       ← shadcn copies, edited to same variant names
 ```
@@ -202,8 +202,8 @@ apps/web/components/ui/*.tsx       ← shadcn copies, edited to same variant nam
 |---|---|---|
 | colors `bg, surface, surfaceRaised, text, textMuted, accent, accentSoft, onAccent, line, focus, recording, success, caution` | `--color-bg`, `--color-surface`, `--color-surface-raised`, `--color-text`, `--color-text-muted`, `--color-accent`, `--color-accent-soft`, `--color-on-accent`, `--color-line`, `--color-focus`, `--color-recording`, `--color-success`, `--color-caution` | `bg-bg`, `bg-surface-raised`, `text-text`, `text-text-muted`, `bg-accent`, `text-on-accent`, `border-line` |
 | `space.0..12` (4pt) | Tailwind v4 `--spacing: 4px` | `p-4` = 16pt, `gap-3` = 12pt |
-| `radius.sm/md/lg/xl/pill` | `--radius-sm` … `--radius-pill` | `rounded-lg`, `rounded-pill` |
-| type styles | `--text-body`, `--text-body--line-height`, … plus `--font-letter` | `text-body`, `text-letter-body`, `font-letter` |
+| `radius.sm/md/lg/xl/pill` | `--radius-sm` ... `--radius-pill` | `rounded-lg`, `rounded-pill` |
+| type styles | `--text-body`, `--text-body--line-height`, ... plus `--font-letter` | `text-body`, `text-letter-body`, `font-letter` |
 | `elevation.0..3` | `--shadow-e1..3` (web); on iOS and Android read from `tokens.ts` directly (`boxShadow` style; Android rendering to be checked in Step 0b) | `shadow-e2` |
 | `motion.snappy/standard/gentle` | **JS only**: `tokens.motion.*` (spring configs) for Reanimated; web gets `--ease-*`/`--duration-*` | `withSpring(x, motion.gentle)` |
 
@@ -213,14 +213,14 @@ apps/web/components/ui/*.tsx       ← shadcn copies, edited to same variant nam
 ```css
 @theme {
   --spacing: 4px;
-  --radius-sm: …; --radius-pill: 999px;
+  --radius-sm: ...; --radius-pill: 999px;
   --text-body: 17px; --text-body--line-height: 22px;
-  --font-letter: "…";
+  --font-letter: "...";
 }
 @layer theme {
   :root {
-    @variant light { --color-bg: …; --color-text: …; /* all 13 */ }
-    @variant dark  { --color-bg: …; --color-text: …; }
+    @variant light { --color-bg: ...; --color-text: ...; /* all 13 */ }
+    @variant dark  { --color-bg: ...; --color-text: ...; }
   }
 }
 ```
@@ -282,7 +282,7 @@ Uniwind requires `@source` for files outside the CSS file's folder ([monorepos](
 | Risk | Likelihood / impact | Mitigation |
 |---|---|---|
 | Uniwind free has no `group-*` variants | Certain / low | Button reads `pressed` from `Pressable`; lint bans `group-` in `apps/ios`. |
-| Uniwind (1.x, one vendor) loses momentum | Low–med / med | Standard Tailwind classes; NativeWind v5 is a config swap. |
+| Uniwind (1.x, one vendor) loses momentum | Low to med / med | Standard Tailwind classes; NativeWind v5 is a config swap. |
 | RNR defaults are web-sized (h-10 = 40pt) | Certain / med | Edit every copy to `COMPONENTS.md` (min 44pt) before use. |
 | **Android wrapper files never get written, and iOS-only imports leak into screens** | Med / high | Lint ban (section 5); every `platform/` component ships a `.tsx` fallback so Android builds before its `.android.tsx` exists; the story screen shows each wrapper on both platforms. |
 | **Compose controls look Material, not like our brand** | Certain / low | Accepted: native chrome per MOTION principle 6. Colour them from tokens; our own surfaces stay identical. |
