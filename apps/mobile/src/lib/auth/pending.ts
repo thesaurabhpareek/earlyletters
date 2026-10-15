@@ -33,6 +33,20 @@ export async function readPendingEmailRequest(now = Date.now()): Promise<Pending
   }
 }
 
+/**
+ * Whether a session is saved on this phone (the Keychain, not the in-memory auth state, which is
+ * still `restoring` when a link opens the app from closed). An unreadable Keychain counts as yes:
+ * a link must never replace a session we could not see (F02-REQ-020, F02-U27).
+ */
+export async function sessionSavedOnPhone(sessionKey: string): Promise<boolean> {
+  if (!serverFeaturesEnabled()) return false;
+  try {
+    return (await secureStorage.getItem(sessionKey)) !== null;
+  } catch {
+    return true;
+  }
+}
+
 /** Spent by a sign-in, and dropped by "Not my account". */
 export async function clearPendingEmailRequest(): Promise<void> {
   if (!serverFeaturesEnabled()) return;
