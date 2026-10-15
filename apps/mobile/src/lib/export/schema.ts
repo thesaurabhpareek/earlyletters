@@ -14,7 +14,7 @@
  */
 import { brand } from '@scribe/brand';
 
-export const EXPORT_SCHEMA_VERSION = '1.0.0';
+export const EXPORT_SCHEMA_VERSION = '1.1.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -112,6 +112,29 @@ export interface AccountFile {
   memberships: { child_id: string; role: 'parent' | 'contributor'; signs_as: string }[];
 }
 
+/**
+ * 1.1.0: another version of a letter's words that this phone keeps and the
+ * letter does not show: the author's own words from a second phone's edit
+ * that the server did not take (a conflict copy, F16-REQ-023). Kept until the
+ * author picks; exported so no version of their words exists only on a phone.
+ */
+export interface ExportOtherVersion {
+  entry_id: string;
+  reason: 'conflict_copy';
+  final_text: string;
+  edit_level: string;
+  machine_edits: ExportMachineEdit[];
+  /** When this phone kept it (device time). */
+  kept_at: string;
+}
+
+/** `data/other-versions.json`, present only when there is at least one (1.1.0). */
+export interface OtherVersionsFile {
+  schema_version: string;
+  format: string;
+  versions: ExportOtherVersion[];
+}
+
 export interface ManifestFile {
   path: string;
   bytes: number;
@@ -144,7 +167,7 @@ export const exportJsonSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: `${brand.web.origin}/export-format/v1.schema.json`,
   title: `${brand.name} export, format 1`,
-  description: 'Schema for data/entries.json, data/children.json, data/account.json and manifest.json in an export.',
+  description: 'Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json (when present) and manifest.json in an export.',
   $defs: {
     audio: {
       type: 'object',
@@ -269,6 +292,30 @@ export const exportJsonSchema = {
               signatures: { type: 'array', items: { type: 'string' } },
               hidden: { type: 'boolean' },
               book_file: { type: ['string', 'null'], pattern: '^book/.+\\.pdf$' },
+            },
+          },
+        },
+      },
+    },
+    otherVersionsFile: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['schema_version', 'format', 'versions'],
+      properties: {
+        ...header,
+        versions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['entry_id', 'reason', 'final_text', 'edit_level', 'machine_edits', 'kept_at'],
+            properties: {
+              entry_id: { type: 'string', minLength: 1 },
+              reason: { enum: ['conflict_copy'] },
+              final_text: { type: 'string' },
+              edit_level: { type: 'string' },
+              machine_edits: { type: 'array', items: { $ref: '#/$defs/edit' } },
+              kept_at: { type: 'string', minLength: 10 },
             },
           },
         },

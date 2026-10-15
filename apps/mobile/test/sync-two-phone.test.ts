@@ -306,7 +306,7 @@ describe('two parents, three phones, one server (protocol v1)', () => {
   }, 60_000);
 
   it('[F16-REQ-025] two edits queued on one phone never raise a conflict, even when the first answer was lost', async () => {
-    editWords(mama, ids.papa === undefined ? ids.first : ids.first, 'You stood up by yourself today, twice.');
+    editWords(mama, ids.first, 'You stood up by yourself today, twice.');
     const lost = await mama.sync(flaky(server.serverFor(MAMA), { loseAnswer: 1, only: 'sync_push' }));
     expect(lost.phase).toBe('offline');
     editWords(mama, ids.first, 'You stood up by yourself today, twice, and laughed.');
@@ -317,6 +317,60 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect((await serverEntry(ids.first))?.final_text).toBe('You stood up by yourself today, twice, and laughed.');
     expect(mama.store.listConflicts()).toEqual([]);
   }, 60_000);
+
+  it('[F16-REQ-010] a refused push whose answer was lost: the retry still keeps this phone\'s words as a conflict copy', async () => {
+    await mama2.sync();
+    editWords(mama, ids.first, 'You pulled yourself up on the sofa.');
+    editWords(mama2, ids.first, 'You stood at the sofa and grinned.');
+    await mama.sync();
+    const lost = await mama2.sync(flaky(server.serverFor(MAMA), { loseAnswer: 1, only: 'sync_push' })); // refused, answer lost
+    expect(lost.phase).toBe('offline');
+    tick(2_000);
+    const r = await mama2.sync(); // a duplicate: the server answers the refusal again, never a rebase
+    expect(r.conflicts).toBe(1);
+    expect((await serverEntry(ids.first))?.final_text).toBe('You pulled yourself up on the sofa.');
+    expect(row(mama2, ids.first)?.final_text).toBe('You pulled yourself up on the sofa.');
+    expect(mama2.store.listConflicts(ids.first).map((c) => c.words.final_text)).toEqual(['You stood at the sofa and grinned.']);
+    mama2.relaunch();
+    tick(2_000);
+    await mama2.sync(); // later pulls never drop the copy
+    expect(mama2.store.listConflicts(ids.first).map((c) => c.words.final_text)).toEqual(['You stood at the sofa and grinned.']);
+    expect(mama2.store.resolveConflict(mama2.store.listConflicts(ids.first)[0].opId, 'theirs')).toBe(true);
+  }, 60_000);
+
+  it('[F16-REQ-010] a refused push whose answer was lost, then a second edit: the server never takes words based on a version this phone never saw', async () => {
+    editWords(mama, ids.first, 'You pulled yourself up, then sat down with a bump.');
+    editWords(mama2, ids.first, 'You stood, then sat.');
+    await mama.sync();
+    await mama2.sync(flaky(server.serverFor(MAMA), { loseAnswer: 1, only: 'sync_push' }));
+    editWords(mama2, ids.first, 'You stood, then sat, then laughed.');
+    tick(2_000);
+    const r = await mama2.sync();
+    expect(r.conflicts).toBe(1);
+    expect((await serverEntry(ids.first))?.final_text).toBe('You pulled yourself up, then sat down with a bump.');
+    expect(mama2.store.listConflicts(ids.first).map((c) => c.words.final_text)).toEqual(['You stood, then sat, then laughed.']);
+    expect(outbox(mama2)).toEqual([]); // the queued words stopped travelling
+    expect(mama2.store.resolveConflict(mama2.store.listConflicts(ids.first)[0].opId, 'theirs')).toBe(true);
+    await mama.sync();
+  }, 60_000);
+
+  it('[F16-REQ-010] the words version never falls behind a version already handed out (xid order is not commit order)', async () => {
+    if (!server.standIn) return; // S02's migration owns this rule once it lands
+    const ahead = '99999999';
+    await server.sys('alter table entries disable trigger entries_sync_xid');
+    await server.sys('update entries set sync_xid = $2::xid8 where id = $1', [ids.first, ahead]);
+    await server.sys('alter table entries enable trigger entries_sync_xid');
+    await server.sys("update entries set final_text = final_text || ' ' where id = $1", [ids.first]); // an older xid commits words later
+    const { rows } = await server.sys('select text_xid::text as t from entries where id = $1', [ids.first]);
+    expect(BigInt(rows[0].t as string) > BigInt(ahead)).toBe(true);
+    await server.sys("update entries set final_text = rtrim(final_text) where id = $1", [ids.first]);
+  }, 60_000);
+
+  it('the receipt helper is not a client RPC: nothing in public can rewrite applied_v', async () => {
+    const { rows } = await server.sys(
+      "select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like '%note_applied%'");
+    expect(rows).toEqual([]);
+  });
 
   it('[F14-REQ-036] after every sync, each phone counts only its own author\'s letters', () => {
     expect(ledgerCount(mama).present).toBe(2);
