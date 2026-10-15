@@ -15,9 +15,15 @@ import {
   INVITE_REDEEM_PATH,
   INVITE_TOKEN_RE,
   inviteErrorKindFor,
+  inviteTokenHashReference,
+  byteaHex,
   isOpenInvite,
   isWordsConflict,
-  mergeQueuedReport,
+  sendablePrefsKeys,
+  sendablePushOpTypes,
+  enqueueStatusReport,
+  PendingPurchaseSchema,
+  reportFromPending,
   parsePullResponse,
   parsePushResponse,
   parseRedeemRequest,
@@ -100,6 +106,34 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(parsePushResponse({ results: [{ op: OP, ok: false, code: 'row Asha is bad' }], paused: false, stopped: false }).ok).toBe(false);
   });
 
+  it('parses an own row exactly as S02\'s sync_pull sends it: null author layer, photo_path, prompt_library_version', () => {
+    const row = {
+      id: ASHA_ENTRY, child_id: ASHA_CHILD, author_id: '11111111-1111-4111-8111-111111111111', author_signs_as: 'Papa', kind: 'letter',
+      occurred_on: '2026-10-01', captured_at: '2026-10-15T19:00:00Z', capture_mode: 'spoken', edit_level: 'clean', prompt_key: null,
+      prompt_library_version: null, engine_version: 6, raw_transcript: 'Asha laughed', machine_edits: [], final_text: 'Asha laughed.',
+      in_book: true, sounds_like_me: null, approval: 'not_needed', photo_path: null, audio_kept_on_device: true, language: null,
+      created_at: '2026-10-15T19:00:00Z', updated_at: '2026-10-15T19:00:00Z', deleted_at: null, own: true,
+      occurred_precision: 'day', base_direction: 'ltr', author_edits: null, locked_spans: null, pack_ref: null, v: '812',
+    };
+    const r = parsePullResponse({ reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', books: [
+      { id: ASHA_CHILD, access: 'parent', repull: false, meta_hash: 'x', rows: [row], cursor: null, more: false },
+    ] });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.books![0].rows[0]).toEqual(row);
+  });
+
+  it('[DATA-REQ-043] a malformed op gets a result with op null, and the batch still parses', () => {
+    const r = parsePushResponse({ results: [{ op: null, ok: false, code: '22023' }, { op: OP, ok: true, applied: true }], paused: false, stopped: false });
+    expect(r.ok).toBe(true);
+  });
+
+  it('as built, conflict without conflict_groups is advisory, not a words conflict', () => {
+    const r = parsePushResponse({ results: [{ op: OP, ok: true, applied: true, conflict: true }], paused: false, stopped: false });
+    expect(r.ok && isWordsConflict(r.value.results[0])).toBe(false);
+    expect(sendablePushOpTypes()).not.toContain('held.upsert');
+    expect(sendablePrefsKeys()).toEqual(['signs_as', 'include_in_reminders']);
+  });
+
   it('parses a pull response with the planned held section', () => {
     const r = parsePullResponse({
       reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', books: [], gone: [],
@@ -111,8 +145,10 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
 });
 
 describe('[WP-F11-04] family contracts', () => {
-  it('[F11-REQ-026] maps SCCAP to parents_full and splits SCINV by detail only', () => {
-    expect(inviteErrorKindFor('SCCAP', '2')).toBe('parents_full');
+  it('[F11-REQ-026] maps SCCAP to book_full and splits SCINV by detail only', () => {
+    expect(inviteErrorKindFor('SCCAP', '2')).toBe('book_full');
+    expect(inviteErrorKindFor('SCCON', 'family-share')).toBe('family_share_consent');
+    expect(inviteErrorKindFor('SCCON', 'terms,sensitive-data')).toBe('consent_needed');
     expect(inviteErrorKindFor('SCINV', 'expired')).toBe('expired');
     expect(inviteErrorKindFor('SCINV', 'code_taken')).toBe('code_taken');
     expect(inviteErrorKindFor('SCINV', 'invite expired for Asha')).toBe('not_found');
@@ -127,6 +163,16 @@ describe('[WP-F11-04] family contracts', () => {
     expect(INVITE_TOKEN_RE.test('A'.repeat(43))).toBe(true);
     expect(INVITE_TOKEN_RE.test('a'.repeat(64))).toBe(true);
     expect(INVITE_TOKEN_RE.test('asha-invite-token-fixture-7f3a9c')).toBe(false);
+  });
+
+  it('[B-NFR-002] the token hash is SHA-256 of the token text as UTF-8, as the SQL hashes p_token', async () => {
+    const token = 'A'.repeat(43);
+    const h = await inviteTokenHashReference(token);
+    // Known vector: sha256 of the 43 ASCII characters, the bytes convert_to(p_token, 'UTF8') produces (not 32 decoded bytes).
+    expect(h).toBe('0f007385b6f9d4b7eeb2748605afe1a984a0a3bfa3f014d09e2a784ce9e5cd1a');
+    expect(h).toMatch(/^[0-9a-f]{64}$/);
+    await expect(inviteTokenHashReference('short')).rejects.toThrow();
+    expect(byteaHex(h)).toBe(`\\x${h}`);
   });
 
   it('[F11-REQ-007] the redeem request is strict: code, mode and a device id, nothing else', () => {
@@ -183,14 +229,27 @@ describe('[D-080] subscription status report and [D-081] consent record', () => 
     expect(parseStatusReport({ ...report, environment: 'staging' }).ok).toBe(false);
   });
 
-  it('[F14-REQ-043] the signed-out queue keeps one report per purchase, the newest status and the first consent', () => {
+  it('[F14-REQ-043] the outbox keeps one report per purchase: newest status, first consent, never another purchase\'s', () => {
     const later: StatusReport = { ...report, cancelled: true, reported_at: '2026-10-16T08:00:00.000Z', consent: undefined };
-    const merged = mergeQueuedReport(report, later);
-    expect(merged.cancelled).toBe(true);
-    expect(merged.consent).toEqual(report.consent);
-    expect(mergeQueuedReport(later, report).cancelled).toBe(true);
-    const other = { ...report, sub_ref: 'b'.repeat(64) };
-    expect(mergeQueuedReport(report, other)).toBe(other);
+    const q1 = enqueueStatusReport([report], later);
+    expect(q1).toHaveLength(1);
+    expect(q1[0].cancelled).toBe(true);
+    expect(q1[0].consent).toEqual(report.consent);
+    expect(enqueueStatusReport([later], report)[0].cancelled).toBe(true);
+    const other: StatusReport = { ...report, sub_ref: 'b'.repeat(64), consent: { ...report.consent!, product_id: 'plus.monthly' } };
+    const q2 = enqueueStatusReport([report], other);
+    expect(q2).toHaveLength(2);
+    expect(q2.map((r) => r.consent?.product_id)).toEqual(['plus.annual', 'plus.monthly']);
+  });
+
+  it('[F14-REQ-043] signed out, the consent moment waits under an opaque handle until the salt exists', () => {
+    const pending = { local_ref: '0192e000-0000-7000-8000-0000000000aa', consent: report.consent!, queued_at: '2026-10-15T19:00:00.000Z' };
+    expect(v.safeParse(PendingPurchaseSchema, pending).success).toBe(true);
+    expect(v.safeParse(PendingPurchaseSchema, { ...pending, original_transaction_id: '2000000123456789' }).success).toBe(false);
+    const { schema_version: _s, consent: _c, ...status } = report;
+    const built = reportFromPending(pending, status);
+    expect(parseStatusReport(built).ok).toBe(true);
+    expect(built.consent).toEqual(report.consent);
   });
 
   it('sub_ref is SHA-256 of the salt bytes then the transaction id (reference for the Swift side)', async () => {

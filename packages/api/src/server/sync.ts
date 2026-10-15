@@ -22,9 +22,11 @@
  *    `conflict_groups` and `current` (WP-F16-14), `held_drafts` with
  *    `held.upsert`, `held.discard` and the `held` pull section (WP-F16-17),
  *    prefs `hidden` and `quiet` (WP-F12-09).
- * A planned field is optional on the wire: an older server never sends it and
- * an older app never sends it, and the server keeps a column whose key is
- * absent (the rule `language` already follows in 20261005000000).
+ * A planned entry column is optional on the wire: an older server ignores it
+ * (`entry.upsert` reads named keys only) and keeps a column whose key is
+ * absent (the rule `language` follows in 20261005000000). Planned op types
+ * and prefs keys are not like that: the SQL refuses unknown ones with 22023,
+ * so clients send only `sendablePushOpTypes()` and `sendablePrefsKeys()`.
  *
  * Server-feature contract: imported only through `@scribe/api/server`, never
  * from the package root, so a build with EXPO_PUBLIC_SERVER_FEATURES=off never
@@ -174,7 +176,7 @@ export interface EntryData {
   child_id: string;
   kind: EntryKind;
   occurred_on: string;
-  /** Planned column (WP-F04-14). Absent: the server keeps `day`. */
+  /** Column in S02's 20261015030000 (WP-F04-14). Absent: the server keeps `day`. */
   occurred_precision?: OccurredPrecision;
   captured_at: string;
   capture_mode: CaptureMode;
@@ -184,11 +186,11 @@ export interface EntryData {
   raw_transcript: string;
   machine_edits: unknown[];
   final_text: string;
-  /** Planned column (WP-F06-07), words group. */
-  author_edits?: AuthorEdit[];
-  /** Planned column (WP-F06-07), words group. */
-  locked_spans?: LockedSpan[];
-  /** Planned column (WP-F06-07): `lang@version` of the pack used, or null when no verified pack applied (F06-REQ-011). */
+  /** Column in S02's 20261015030000 (WP-F06-07), words group; null until the author edits by hand. */
+  author_edits?: AuthorEdit[] | null;
+  /** Column in S02's 20261015030000 (WP-F06-07), words group; null until a phrase is locked. */
+  locked_spans?: LockedSpan[] | null;
+  /** Column in S02's 20261015030000 (WP-F06-07): `lang@version` of the pack used, or null when no verified pack applied (F06-REQ-011). Insert-only (SCIMM). */
   pack_ref?: string | null;
   in_book: boolean;
   sounds_like_me: boolean | null;
@@ -311,8 +313,8 @@ export const ConflictCurrentSchema = v.object({
   final_text: str,
   machine_edits: v.array(v.unknown()),
   edit_level: v.picklist(EDIT_LEVELS),
-  author_edits: v.optional(v.array(v.unknown())),
-  locked_spans: v.optional(v.array(v.unknown())),
+  author_edits: v.nullish(v.array(v.unknown())),
+  locked_spans: v.nullish(v.array(v.unknown())),
   v: str,
 });
 export type ConflictCurrent = v.InferOutput<typeof ConflictCurrentSchema>;
@@ -338,7 +340,8 @@ export const PushResultOkSchema = v.object({
 export type PushResultOk = v.InferOutput<typeof PushResultOkSchema>;
 
 export const PushResultErrSchema = v.object({
-  op: str,
+  /** Null when the op itself was malformed (no `op` key): the SQL echoes `left(o->>'op', 36)`. Match by position then. */
+  op: v.nullable(str),
   ok: v.literal(false),
   /** SQLSTATE. Never a message: it could quote a letter. */
   code: v.pipe(str, v.regex(/^[0-9A-Z]{5}$/)),
@@ -408,18 +411,22 @@ export const PulledRowSchema = v.object({
   capture_mode: v.picklist(CAPTURE_MODES),
   edit_level: v.picklist(EDIT_LEVELS),
   prompt_key: nullableStr,
+  prompt_library_version: v.nullish(v.number()),
   engine_version: v.number(),
   raw_transcript: v.optional(str),
   machine_edits: v.optional(v.array(v.unknown())),
-  author_edits: v.optional(v.array(v.unknown())),
-  locked_spans: v.optional(v.array(v.unknown())),
-  pack_ref: v.optional(nullableStr),
-  language: v.optional(nullableStr),
+  /** Null until the author edits by hand (S02 20261015030000: null or an array). */
+  author_edits: v.nullish(v.array(v.unknown())),
+  locked_spans: v.nullish(v.array(v.unknown())),
+  pack_ref: v.nullish(str),
+  language: v.nullish(str),
   base_direction: v.optional(v.picklist(BASE_DIRECTIONS)),
   final_text: str,
   in_book: v.boolean(),
   sounds_like_me: v.nullable(v.boolean()),
   approval: v.fallback(v.picklist(APPROVALS), 'not_needed'),
+  /** `{child_id}/{author_id}/{entry_id}.<ext>` or null (photos are not in v1.0; the column exists). */
+  photo_path: v.nullish(str),
   audio_kept_on_device: v.boolean(),
   created_at: str,
   updated_at: str,
@@ -548,7 +555,26 @@ export function isFieldGroupList(x: unknown): x is FieldGroup[] {
   return Array.isArray(x) && x.every((g) => (FIELD_GROUPS as readonly string[]).includes(g as string));
 }
 
-/** True when a push result is a words conflict the author must resolve (F16 6.2 E step 3). */
-export function isWordsConflict(r: PushResult): r is PushResultOk & { conflict: true } {
-  return r.ok === true && r.conflict === true && (r.conflict_groups ?? [WORDS_GROUP]).includes(WORDS_GROUP);
+/**
+ * True when a push result is a words conflict the author must resolve (F16
+ * 6.2 E step 3). Only `conflict_groups` containing `text` counts. As built
+ * today, `conflict: true` without `conflict_groups` is advisory: the op was
+ * applied by the later-arrival rule and there is nothing to resolve.
+ */
+export function isWordsConflict(r: PushResult): r is PushResultOk & { conflict: true; conflict_groups: FieldGroup[] } {
+  return r.ok === true && r.conflict === true && Array.isArray(r.conflict_groups) && r.conflict_groups.includes(WORDS_GROUP);
+}
+
+/**
+ * What a client may send today. Unknown op types and unknown prefs keys are
+ * refused by the SQL with 22023, which is permanent (DATA-REQ-043), so a
+ * planned op or key must never be sent before this list includes it.
+ * Planned entry columns are different: `entry.upsert` reads named keys only,
+ * so an older server ignores a column it does not have.
+ */
+export function sendablePushOpTypes(): PushOpType[] {
+  return PUSH_OP_TYPES.filter((t) => !PLANNED_PUSH_OP_TYPES.includes(t));
+}
+export function sendablePrefsKeys(): (typeof PREFS_KEYS)[number][] {
+  return PREFS_KEYS.filter((k) => !PLANNED_PREFS_KEYS.includes(k));
 }

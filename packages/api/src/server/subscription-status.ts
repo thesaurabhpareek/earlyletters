@@ -18,7 +18,8 @@
  * Who reports: only a phone whose transaction ownership is `purchased`;
  * Family Sharing members never report and get no billing email
  * (F14-REQ-006). A report made while signed out waits in the outbox until
- * sign-in (F14-REQ-043); `mergeQueuedReport` keeps one per purchase.
+ * sign-in (F14-REQ-043): `PendingPurchase` while there is no salt, then
+ * `enqueueStatusReport` keeps one report per purchase.
  *
  * Server-feature contract: imported only through `@scribe/api/server`.
  * Edge Functions import this file directly (Deno), so it stays a leaf module:
@@ -129,15 +130,44 @@ export function statusFingerprint(r: Pick<StatusReport, 'environment' | 'plan' |
 }
 
 /**
- * The signed-out queue keeps one report per purchase: the newer observation
- * wins, and consent facts are kept from whichever report carried them first
- * (the first purchase moment is the one D-081 records).
+ * The outbox for reports (F14-REQ-043): one report per purchase (`sub_ref`).
+ * A newer observation replaces the status; consent facts are kept from
+ * whichever report carried them first (D-081 records the purchase moment),
+ * and a report for another purchase never displaces this one.
  */
-export function mergeQueuedReport(queued: StatusReport | null, next: StatusReport): StatusReport {
-  if (!queued || queued.sub_ref !== next.sub_ref) return next;
-  const newer = Date.parse(next.reported_at) >= Date.parse(queued.reported_at) ? next : queued;
-  const consent = queued.consent ?? next.consent;
-  return consent ? { ...newer, consent } : { ...newer, consent: undefined };
+export function enqueueStatusReport(queue: readonly StatusReport[], next: StatusReport): StatusReport[] {
+  const i = queue.findIndex((q) => q.sub_ref === next.sub_ref);
+  if (i < 0) return [...queue, next];
+  const prev = queue[i];
+  const newer = Date.parse(next.reported_at) >= Date.parse(prev.reported_at) ? next : prev;
+  const consent = prev.consent ?? next.consent;
+  const merged: StatusReport = consent ? { ...newer, consent } : { ...newer, consent: undefined };
+  return queue.map((q, j) => (j === i ? merged : q));
+}
+
+/**
+ * Signed out, there is no salt yet, so no `sub_ref` can be made. What waits
+ * on the phone instead is the consent moment, keyed by an opaque handle the
+ * native store module makes (a random UUID it maps to the transaction inside
+ * Swift and the Keychain; JavaScript never sees a transaction id,
+ * F14-REQ-014). At sign-in the app fetches the salt, asks the module for the
+ * `sub_ref` and current status of each handle, attaches the consent facts and
+ * enqueues the report. Only `purchased` ownership makes a pending notice.
+ */
+export const LOCAL_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+export const PendingPurchaseSchema = v.strictObject({
+  local_ref: v.pipe(v.string(), v.regex(LOCAL_REF_RE)),
+  consent: ConsentFactsSchema,
+  queued_at: isoTime,
+});
+export type PendingPurchase = v.InferOutput<typeof PendingPurchaseSchema>;
+
+/** Builds the first report for a pending purchase once the native module has its `sub_ref` and status. */
+export function reportFromPending(
+  pending: PendingPurchase,
+  status: Omit<StatusReport, 'schema_version' | 'consent'>,
+): StatusReport {
+  return { schema_version: STATUS_REPORT_SCHEMA_VERSION, ...status, consent: pending.consent };
 }
 
 /**

@@ -69,7 +69,8 @@ export interface StoreKeyArgs {
 /** Routes below the escrow project's URL. Never in the main project (release check, F08-REQ-034). */
 export const ESCROW_ROUTES = {
   createRequest: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests' },
-  listRequests: { method: 'GET', path: '/functions/v1/escrow/v1/restore-requests' },
+  /** POST, not GET: the device id goes in the body so no install id lands in an access log. */
+  listRequests: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/pending' },
   decide: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/:id/decision' },
   release: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/:id/release' },
   cancel: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/:id/cancel' },
@@ -114,6 +115,8 @@ export type EscrowErrorDetail = (typeof ESCROW_ERROR_DETAILS)[number];
 const deviceId = v.pipe(v.string(), v.regex(UUID_RE));
 
 export const CreateRestoreRequestSchema = v.strictObject({ device_id: deviceId });
+/** Which device is asking, so the answer can set `is_this_device` and show the approval sheet only on the others (F08 6.5 C3). */
+export const ListRequestsSchema = v.strictObject({ device_id: deviceId });
 export const DecideRequestSchema = v.strictObject({ device_id: deviceId, decision: v.picklist(DECISIONS) });
 export const ReleaseRequestSchema = v.strictObject({ device_id: deviceId });
 export const CancelRequestSchema = v.strictObject({ device_id: deviceId });

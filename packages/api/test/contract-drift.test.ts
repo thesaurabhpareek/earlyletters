@@ -22,6 +22,7 @@ import {
   PLANNED_PREFS_KEYS,
   PLANNED_PUSH_OP_TYPES,
   PREFS_KEYS,
+  PulledRowSchema,
   PUSH_OP_TYPES,
 } from '../server';
 import { KILL_SWITCH_KEYS } from '../src/kill-switches';
@@ -112,6 +113,31 @@ describe('[F16-REQ-028] the sync wire contract equals the SQL parser', () => {
     expect(prefs, 'prefs.upsert allowlist not found').toBeDefined();
     for (const k of prefs!) expect(PREFS_KEYS as readonly string[], `${k} is accepted by SQL but not in the contract`).toContain(k);
     for (const k of PREFS_KEYS.filter((x) => !PLANNED_PREFS_KEYS.includes(x))) expect(prefs).toContain(k);
+  });
+});
+
+describe('[F16-REQ-028] the pull row equals what sync_pull sends on own rows, field for field', () => {
+  /** Columns S02's pending 20261015030000 adds to the own row; absent on develop until it merges. */
+  const PENDING_PULL_COLUMNS = ['occurred_precision', 'base_direction', 'author_edits', 'locked_spans', 'pack_ref'];
+  const pull = newestDefinition('sync_pull');
+  const start = pull.indexOf('case when p.author_id = v_uid then');
+  const end = pull.indexOf('else', start);
+  const ownBlock = start > 0 && end > start ? pull.slice(start, end) : '';
+  const sqlKeys = new Set([...ownBlock.matchAll(/'([a-z_]+)',\s*p\.[a-z_]+/g)].map((m) => m[1]));
+  sqlKeys.add('own');
+  sqlKeys.add('v');
+  const schemaKeys = Object.keys(PulledRowSchema.entries);
+
+  it('finds the own-row builder', () => {
+    expect(sqlKeys.size).toBeGreaterThan(20);
+  });
+
+  it('every key the SQL sends is in PulledRowSchema (nothing is stripped silently)', () => {
+    for (const k of sqlKeys) expect(schemaKeys, `${k} is sent by sync_pull but not in PulledRowSchema`).toContain(k);
+  });
+
+  it('every key in PulledRowSchema is sent by the SQL, or is a pending S02 column', () => {
+    for (const k of schemaKeys) expect(sqlKeys.has(k) || PENDING_PULL_COLUMNS.includes(k), `${k} is in the contract but sync_pull never sends it`).toBe(true);
   });
 });
 

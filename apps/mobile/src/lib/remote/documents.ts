@@ -107,6 +107,8 @@ interface CacheRecord {
   payload: unknown;
   /** The value in use when `adjust` changed it (F19-REQ-008); absent otherwise. */
   effective?: unknown;
+  /** The newest server `Date` seen on a good response (ms since epoch), for the staleness rule. */
+  serverDateMs?: number;
 }
 
 export class SignedDocumentClient<T> {
@@ -123,6 +125,13 @@ export class SignedDocumentClient<T> {
   private readonly now: () => number;
   /** The adjusted value as cached, when `adjust` changed it. */
   private effective: unknown = undefined;
+  /**
+   * The newest server `Date` seen on a good response (200 or 304). A copy
+   * held at a cache keeps its old `Date`, so staleness is judged against the
+   * newest clock we have seen, not only the response's own (F19-REQ-008:
+   * "the last good server Date").
+   */
+  private serverDateMs = 0;
 
   constructor(private readonly o: DocumentClientOptions<T>) {
     this.now = o.now ?? (() => Date.now());
@@ -151,6 +160,7 @@ export class SignedDocumentClient<T> {
       this.payloadSha256 = typeof rec.sha256 === 'string' && SHA256_HEX_RE.test(rec.sha256) ? rec.sha256 : null;
       this.etag = typeof rec.etag === 'string' ? rec.etag : null;
       this.fetchedAt = Number.isFinite(rec.fetchedAt) ? rec.fetchedAt : 0;
+      this.serverDateMs = typeof rec.serverDateMs === 'number' && Number.isFinite(rec.serverDateMs) ? rec.serverDateMs : 0;
     } catch {
       // A cache from an older app that no longer parses is dropped; the next refresh replaces it.
       this.o.storage.remove(this.cacheName);
@@ -204,8 +214,10 @@ export class SignedDocumentClient<T> {
     );
     if (decision === 'rollback' || decision === 'same_version_conflict') return decision;
     const changed = decision === 'accept';
+    this.noteServerDate(serverDate);
     if (changed) {
-      const used = this.o.adjust ? this.o.adjust(parsed.value, this.value ?? this.o.fallback, { serverDate }) : parsed.value;
+      const newest = this.serverDateMs > 0 ? new Date(this.serverDateMs).toUTCString() : null;
+      const used = this.o.adjust ? this.o.adjust(parsed.value, this.value ?? this.o.fallback, { serverDate: newest }) : parsed.value;
       this.effective = used === parsed.value ? undefined : used;
       this.value = used;
     }
@@ -214,8 +226,14 @@ export class SignedDocumentClient<T> {
     this.etag = etag;
     this.fetchedAt = this.now();
     this.persist(verified.doc.payload);
-    if (changed) for (const l of this.listeners) l(parsed.value);
+    if (changed) for (const l of this.listeners) l(this.value as T);
     return changed ? 'updated' : 'unchanged';
+  }
+
+  /** Keeps the newest valid server clock (ignores missing or unparsable dates). */
+  private noteServerDate(serverDate: string | null): void {
+    const ms = serverDate ? Date.parse(serverDate) : NaN;
+    if (Number.isFinite(ms) && ms > this.serverDateMs) this.serverDateMs = ms;
   }
 
   /** The accepted payload's hash; for a cache from an older build, computed once from the cached payload. */
@@ -236,7 +254,7 @@ export class SignedDocumentClient<T> {
   private persist(payload: unknown): void {
     const rec: CacheRecord = {
       v: 1, version: this.version, etag: this.etag, fetchedAt: this.fetchedAt, sha256: this.payloadSha256 ?? undefined, payload,
-      effective: this.effective,
+      effective: this.effective, serverDateMs: this.serverDateMs || undefined,
     };
     try {
       this.o.storage.write(this.cacheName, JSON.stringify(rec));
@@ -263,6 +281,7 @@ export class SignedDocumentClient<T> {
     }
     if (res.status === 304 && this.value !== null) {
       this.fetchedAt = this.now();
+      this.noteServerDate(res.date ?? null);
       const payload = this.cachedPayload();
       if (payload !== null) this.persist(payload);
       return 'unchanged';

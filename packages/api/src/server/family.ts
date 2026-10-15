@@ -48,8 +48,21 @@ export const INVITE_CODE_RE = /^[0-9A-HJKMNP-TV-Z]{8}$/;
  * supported build makes them.
  */
 export const INVITE_TOKEN_RE = /^(?:[A-Za-z0-9_-]{43}|[0-9a-f]{64})$/;
-/** `sha256(token)` as 64 lowercase hex, which is all the server stores. */
+/**
+ * What the server stores and compares: SHA-256 of the token's text as UTF-8
+ * (the 43 base64url characters, not the 32 raw bytes), exactly as
+ * `accept_child_invite` and `peek_invite` hash `p_token`
+ * (`sha256(convert_to(p_token, 'UTF8'))`). 64 lowercase hex.
+ * `inviteTokenHashReference` is the one implementation to match.
+ */
 export const TOKEN_HASH_RE = /^[0-9a-f]{64}$/;
+
+/** Reference for `p_token_hash` (WebCrypto: Node, Deno; the app uses expo-crypto on the same UTF-8 text). */
+export async function inviteTokenHashReference(token: string): Promise<string> {
+  if (!INVITE_TOKEN_RE.test(token)) throw new Error('invalid_token');
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)));
+  return Array.from(digest, (b) => b.toString(16).padStart(2, '0')).join('');
+}
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /**
@@ -78,8 +91,10 @@ export type InviteUnusableDetail = (typeof INVITE_UNUSABLE_DETAILS)[number];
 /** What the app does with an invite failure. S04 maps each kind to copy (`invite-errors.logic.ts`). */
 export type InviteErrorKind =
   | InviteUnusableDetail
-  /** SCCAP (F11-REQ-026): the book already has two parents. Never retried. */
-  | 'parents_full'
+  /** SCCAP (F11-REQ-026: classifySqlstate says `parents_full`, the invite kind is `book_full`). Never retried. */
+  | 'book_full'
+  /** SCCON with detail `family-share` (D-050, F11-REQ-018): show the family-share sheet, not the general consent screen. */
+  | 'family_share_consent'
   | 'not_parent'
   | 'rate_limited'
   | 'consent_needed'
@@ -94,13 +109,13 @@ export function inviteErrorKindFor(sqlstate: string | null | undefined, detail?:
     case 'SCINV':
       return (INVITE_UNUSABLE_DETAILS as readonly string[]).includes(detail ?? '') ? (detail as InviteUnusableDetail) : 'not_found';
     case 'SCCAP':
-      return 'parents_full';
+      return 'book_full';
     case 'SCPAR':
       return 'not_parent';
     case 'SCRAT':
       return 'rate_limited';
     case 'SCCON':
-      return 'consent_needed';
+      return detail === 'family-share' ? 'family_share_consent' : 'consent_needed';
     case 'SCDEL':
       return 'book_deleted';
     case '28000':

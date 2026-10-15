@@ -291,6 +291,27 @@ describe('[F19-REQ-008] kill switches from a stale copy are ignored', () => {
     expect(again.client.current().killSwitches.invites).toBe(false);
   });
 
+  it('a cached old copy with its own old Date is judged against the newest Date seen (the last good server Date)', async () => {
+    const { client, http } = setup(new Map(), { t: 1_000_000 }, true);
+    http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-15T00:00:00.000Z', true), date: 'Thu, 15 Oct 2026 00:01:00 GMT' });
+    await client.refresh(true);
+    // A CDN serves version 4, generated and dated 1 October: on its own it looks fresh.
+    http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-01T00:00:00.000Z', false), date: 'Thu, 01 Oct 2026 00:00:30 GMT' });
+    expect(await client.refresh(true)).toBe('updated');
+    expect(client.current().killSwitches.invites).toBe(true);
+  });
+
+  it('listeners get the value in use, not the stale switches', async () => {
+    const { client, http } = setup(new Map(), { t: 1_000_000 }, true);
+    http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-10T00:00:00.000Z', true), date: 'Sat, 10 Oct 2026 00:05:00 GMT' });
+    await client.refresh(true);
+    const seen: boolean[] = [];
+    client.subscribe((c) => seen.push(c.killSwitches.invites));
+    http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-01T00:00:00.000Z', false), date: 'Fri, 16 Oct 2026 00:00:00 GMT' });
+    await client.refresh(true);
+    expect(seen).toEqual([true]);
+  });
+
   it('a fresh newer copy can clear the switch', async () => {
     const { client, http } = setup(new Map(), { t: 1_000_000 }, true);
     http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-10T00:00:00.000Z', true), date: 'Sat, 10 Oct 2026 00:05:00 GMT' });

@@ -96,30 +96,44 @@ export const ENDPOINTS = {
   signIn: {
     method: 'POST', path: '/auth/v1/token', class: 'auth', auth: 'public',
     idempotency: 'safe_method', rateLimit: { limit: 30, windowSeconds: 300, per: 'ip_hash', enforcedBy: 'supabase_auth' }, status: 'live',
+  
+    capability: 'signIn',
   },
   syncPush: {
     method: 'POST', path: '/rest/v1/rpc/sync_push', class: 'sync_batch', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 60, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+  
+    killSwitch: 'sync', capability: 'sync',
   },
   syncPull: {
     method: 'POST', path: '/rest/v1/rpc/sync_pull', class: 'read_rpc', auth: 'user_jwt',
     idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 60, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+  
+    killSwitch: 'sync', capability: 'sync',
   },
   createChild: {
     method: 'POST', path: '/rest/v1/rpc/create_child', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+  
+    killSwitch: 'sync', capability: 'sync',
   },
   createInvite: {
     method: 'POST', path: '/rest/v1/rpc/create_child_invite', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'idempotency_key', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+  
+    killSwitch: 'invites', capability: 'coParent',
   },
   recordPolicyAct: {
     method: 'POST', path: '/rest/v1/rpc/record_policy_act', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'idempotency_key', rateLimit: { limit: 60, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+  
+    capability: 'signIn',
   },
   policyActionsNeeded: {
     method: 'POST', path: '/rest/v1/rpc/policy_actions_needed', class: 'read_rpc', auth: 'user_jwt',
     idempotency: 'safe_method', rateLimit: { limit: 60, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'live',
+  
+    capability: 'signIn',
   },
   syncBooks: {
     method: 'POST', path: '/rest/v1/rpc/sync_books', class: 'read_rpc', auth: 'user_jwt',
@@ -195,9 +209,11 @@ export const ENDPOINTS = {
     idempotency: 'idempotency_key', rateLimit: { limit: 3, windowSeconds: 30 * 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
     killSwitch: 'escrow', capability: 'backup',
   },
+  // Calls are limited loosely (a held request is polled on each foreground); the real unit is
+  // KEYS_OPENED_PER_DAY (20 opened keys per account per day) inside the function (F08 6.5 C8, R8 R2A-24).
   escrowRelease: {
     method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/:id/release`, class: 'escrow', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+    idempotency: 'natural_id', rateLimit: { limit: 240, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
     killSwitch: 'escrow', capability: 'backup',
   },
 } as const satisfies Record<string, EndpointSpec>;

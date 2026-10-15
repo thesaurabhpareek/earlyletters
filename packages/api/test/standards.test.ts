@@ -52,13 +52,16 @@ describe('[DECISION-17] every endpoint the app calls meets the API standard', ()
   });
 
   it('[F19-REQ-011] every server-feature endpoint names its build flag, and the M14 ones their kill switch', () => {
+    // Sign-in and consent acts have no kill switch by design (forceReauthEpoch is sign-in's lever, LEGAL-REQ-040).
+    const signInFamily = ['signIn', 'appleToken', 'recordPolicyAct', 'policyActionsNeeded'];
+    // Stepping back is never paused: cancel an invite, leave, remove a family member, undo a join (DATA-REQ-016, LEGAL-REQ-009).
+    const alwaysAvailable = ['revokeInvite', 'leaveChild', 'removeChildMember', 'undoParentJoin'];
     for (const [name, e] of entries) {
-      if (e.auth === 'public') continue;
-      if (['signIn', 'syncPush', 'syncPull', 'createChild', 'recordPolicyAct', 'policyActionsNeeded', 'createInvite'].includes(name)) continue;
+      if (e.path.startsWith('/functions/v1/config') || e.path.startsWith('/functions/v1/content') || e.class === 'pack_file') continue;
       expect(e.capability, `${name} needs a capability`).toBeDefined();
-      // Sign-in has no kill switch by design (forceReauthEpoch is its lever, LEGAL-REQ-040); apple-token belongs to sign-in.
-      if (name === 'appleToken') continue;
-      if (e.path.startsWith('/functions/') || e.path.startsWith('<escrow')) expect(e.killSwitch, `${name} needs a kill switch`).toBeDefined();
+      if (signInFamily.includes(name)) expect(e.capability).toBe('signIn');
+      else if (alwaysAvailable.includes(name)) expect(e.killSwitch, `${name} must stay available`).toBeUndefined();
+      else expect(e.killSwitch, `${name} needs a kill switch`).toBeDefined();
     }
   });
 
@@ -114,7 +117,10 @@ describe('errors', () => {
       expect(classifySqlstate(s).action).toBe('reject');
     }
     for (const s of ['SCRAT', 'SCINV', 'SCPLS', 'SCCAP', 'SCVER']) expect(classifySqlstate(s).action).toBe('tell_user');
-    for (const s of ['40001', '40P01', '57014', '08006', '53300']) expect(classifySqlstate(s).action).toBe('retry');
+    for (const s of ['40001', '40P01', '57014', '08006', '53300', '55006', '40003', 'XX000']) expect(classifySqlstate(s).action).toBe('retry');
+    // F16-U06: in a background queue SCRAT backs off; in a request the person is told.
+    expect(classifySqlstate('SCRAT', 'queue')).toEqual({ code: 'rate_limited', action: 'retry', retryable: true });
+    expect(classifySqlstate('SCRAT').action).toBe('tell_user');
     expect(classifySqlstate('SCZZZ').action).toBe('reject');
     expect(classifySqlstate('23514').action).toBe('reject');
     expect(classifySqlstate('not a code').action).toBe('reject');

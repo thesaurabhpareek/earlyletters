@@ -212,17 +212,31 @@ export const SQLSTATE_RULES: Readonly<Record<string, ErrorRule>> = {
   '55P03': rule('conflict', 'retry'),
 };
 
-/** Classes that are transient as a whole (connection, resources, operator intervention). */
-const TRANSIENT_CLASSES = new Set(['08', '53', '57', '58']);
+/**
+ * Classes that are transient as a whole. The same list `sync_push` uses to
+ * stop a batch instead of rejecting an op (F16 6.2 A step 6): 40 transaction
+ * rollback, 53 resources, 55 object state (locks), 57 operator intervention,
+ * 58 system error, XX internal; plus 08 connection. (ADR 0017 section 3 named
+ * 08, 53, 57, 58 and four exact codes; aligned with F16 on 15 Oct 2026.)
+ */
+const TRANSIENT_CLASSES = new Set(['08', '40', '53', '55', '57', '58', 'XX']);
+
+/**
+ * Where an error arrived. `request`: a call a person is waiting on (an invite,
+ * a consent act). `queue`: a background queue such as the sync outbox, where
+ * SCRAT means "back off and retry in order", never a notice (F16-U06).
+ */
+export type ErrorContext = 'request' | 'queue';
 
 /**
  * Maps a Postgres SQLSTATE to a client action. Our own `SC***` codes and
- * integrity (`23***`) errors are permanent; connection and resource classes
- * are transient; anything unknown is treated as permanent so a deterministic
- * failure never loops (the content stays on the phone either way).
+ * integrity (`23***`) errors are permanent; transient classes retry;
+ * anything unknown is treated as permanent so a deterministic failure never
+ * loops (the content stays on the phone either way).
  */
-export function classifySqlstate(sqlstate: string | null | undefined): ErrorRule {
+export function classifySqlstate(sqlstate: string | null | undefined, context: ErrorContext = 'request'): ErrorRule {
   if (!sqlstate || !/^[0-9A-Z]{5}$/.test(sqlstate)) return rule('internal', 'reject');
+  if (sqlstate === 'SCRAT' && context === 'queue') return rule('rate_limited', 'retry');
   const exact = SQLSTATE_RULES[sqlstate];
   if (exact) return exact;
   if (sqlstate.startsWith('SC')) return rule('bad_request', 'reject');
