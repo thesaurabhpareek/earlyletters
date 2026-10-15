@@ -3,7 +3,8 @@
  * ListSection, ListRow, ToggleRow (COMPONENTS 2.10, 2.11): the iOS inset-grouped list
  * (Settings, Apple Journal settings, Day One settings), drawn in paper tones.
  *
- * ListRow variants by trailing: 'chevron' (navigation), a value string, a node, or none.
+ * A pressable row always shows what it does (list-row.logic.ts showsChevron): chevron, value then
+ * chevron, or its own control (a node: switch, check). Destructive rows never get a chevron.
  * Destructive rows use the destructive role and say the action in words.
  *
  * Accessibility contract
@@ -20,7 +21,7 @@ import { Toggle } from '@/components/platform/toggle';
 import { Text } from '@/components/ui/text';
 import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
-import { DIVIDER_INSET, withDividers } from './list-row.logic';
+import { DIVIDER_INSET, showsChevron, withDividers } from './list-row.logic';
 
 export function ListSection({ title, footer, children, className }: { title?: string; footer?: string; children: React.ReactNode; className?: string }) {
   // Fragments count as one row; pass rows directly (arrays and conditionals are fine).
@@ -69,14 +70,17 @@ export type ListRowProps = {
   accessibilityHint?: string;
   /** 'link' for rows that open a web page (Privacy Policy, Terms). */
   accessibilityRole?: 'button' | 'link';
+  /** E2E id (apps/mobile/e2e/TESTID_REQUESTS.md); inert for VoiceOver. */
+  testID?: string;
 };
 
-export function ListRow({ title, subtitle, leading, trailing = 'none', value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button' }: ListRowProps) {
+export function ListRow({ title, subtitle, leading, trailing = 'none', value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button', testID }: ListRowProps) {
   const { c } = useTheme();
   const ax = useIsAccessibilitySize();
   const value = typeof trailing === 'string' && trailing !== 'chevron' && trailing !== 'none' ? trailing : (valueProp ?? null);
   const node = trailing !== 'chevron' && trailing !== 'none' && typeof trailing !== 'string' ? trailing : null;
   const label = [title, subtitle, value].filter(Boolean).join(', ');
+  const chevron = showsChevron({ pressable: !!onPress, disabled, destructive: variant === 'destructive', hasTrailingNode: node !== null, android: Platform.OS === 'android' });
 
   const body = (
     <>
@@ -95,14 +99,14 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
         ) : null}
       </View>
       {node}
-      {trailing === 'chevron' && !disabled && Platform.OS !== 'android' ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
+      {chevron ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
     </>
   );
 
   const rowClass = 'min-h-11 flex-row items-center gap-3 px-4 py-3';
   if (!onPress) {
     return (
-      <View className={rowClass} accessible accessibilityLabel={label} accessibilityState={disabled ? { disabled: true } : undefined}>
+      <View className={rowClass} accessible accessibilityLabel={label} accessibilityState={disabled ? { disabled: true } : undefined} testID={testID}>
         {body}
       </View>
     );
@@ -111,6 +115,7 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      testID={testID}
       role={accessibilityRole}
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
@@ -121,7 +126,8 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
   );
 }
 
-export function ToggleRow({ title, description, value, onValueChange, disabled }: { title: string; description?: string; value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean }) {
+/** `testID` goes on the switch itself (platform/toggle forwards it). */
+export function ToggleRow({ title, description, value, onValueChange, disabled, testID }: { title: string; description?: string; value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean; testID?: string }) {
   const ax = useIsAccessibilitySize();
   return (
     <View className={cn('min-h-11 px-4 py-3', ax ? 'gap-3' : 'flex-row items-center gap-3')}>
@@ -131,7 +137,7 @@ export function ToggleRow({ title, description, value, onValueChange, disabled }
         </Text>
         {description ? <Text variant="footnote">{description}</Text> : null}
       </View>
-      <Toggle label={title} description={description} value={value} onValueChange={onValueChange} disabled={disabled} />
+      <Toggle label={title} description={description} value={value} onValueChange={onValueChange} disabled={disabled} testID={testID} />
     </View>
   );
 }

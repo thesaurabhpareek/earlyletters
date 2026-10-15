@@ -20,8 +20,10 @@ import { layoutSpring, type Motion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf } from '@/components/child/child-store';
 import { datelineA11y, shortDateline } from './chapters';
+import { AppNote } from './app-note';
 import { bookCopy } from './copy';
 import { letterWords } from './letter-words.logic';
+import { showsSignature } from './quiet-day.logic';
 
 interface Props {
   entry: Entry;
@@ -46,11 +48,12 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
   const date = shortDateline(child, entry.occurredOn);
   const spoken = entry.captureMode !== 'typed';
   const words = letterWords(entry);
-  // No words to show (waiting for them, or nobody spoke): a quiet italic note instead of an excerpt.
-  const waiting = words !== 'words';
+  // No words to show (waiting for them, or no words in the recording): the app's own note, small and
+  // unsigned, never in the letter's type (D-084).
+  const isNote = !showsSignature(words);
   const excerpt = words === 'waiting' ? pendingCopy.book.waitingForWords : words === 'nobodySpoke' ? bookCopy.nobodySpoke : entry.finalText.replace(/\s+/g, ' ').trim();
 
-  const label = [signature, datelineA11y(child, entry.occurredOn), excerpt, entry.inBook ? null : copy.book.privateLabel, spoken ? copy.book.recordingOnPhone : null]
+  const label = [isNote ? null : signature, datelineA11y(child, entry.occurredOn), excerpt, entry.inBook ? null : copy.book.privateLabel, spoken ? copy.book.recordingOnPhone : null]
     .filter(Boolean)
     .join('. ');
 
@@ -61,14 +64,20 @@ export function LetterCard({ entry, child, entering, reduced, onPress }: Props) 
           {date}
         </Text>
 
-        <Text numberOfLines={2} variant={waiting ? 'signature' : 'letterBody'} scale={0.9} tone={waiting ? 'muted' : 'default'}>
-          {excerpt}
-        </Text>
+        {isNote ? (
+          <AppNote numberOfLines={2}>{excerpt}</AppNote>
+        ) : (
+          <Text numberOfLines={2} variant="letterBody" scale={0.9}>
+            {excerpt}
+          </Text>
+        )}
 
         <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
-          <Text variant="labelSmall" tone="muted">
-            {signature}
-          </Text>
+          {isNote ? null : (
+            <Text variant="labelSmall" tone="muted">
+              {signature}
+            </Text>
+          )}
           {!entry.inBook && <PrivateChip color={c.text} />}
           <View className="flex-1" />
           {spoken && entry.audioDurationMs ? (

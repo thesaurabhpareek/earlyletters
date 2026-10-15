@@ -10,7 +10,7 @@ Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes 
 ## Facts about this codebase (with paths)
 - `docs/ops/**` except `docs/ops/RELEASE.md` and `docs/ops/proposed/release-*` (both `release`), including `docs/ops/proposed/` for workflow changes the founder applies (the Claude GitHub App cannot edit `.github/workflows/`).
 - `scripts/**`, except `scripts/agents/**`, `scripts/trace.mjs` and `scripts/release/**`.
-- `apps/mobile/eas.json` (moved from `mobile` on 3 Oct 2026).
+- `apps/mobile/eas.json` (moved from `mobile` on 13 Oct 2026, D-090).
 - `.github/README.md` documentation.
 - Base branch is `develop`; `main` is releasable. CI: `.github/workflows/ci.yml` (`required` job) and the migration guard.
 

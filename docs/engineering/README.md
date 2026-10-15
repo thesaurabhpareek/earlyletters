@@ -47,7 +47,7 @@ A chapter never restates a requirement; it cites the id (`DATA-REQ-0xx`, `LEGAL-
 | Red team and founder | Every PR still gets the red-team review and the founder's merge; `supabase/**` and auth changes also need `approve-migration` (D-041) | `docs/agents/OPERATING_MODEL.md` |
 | Consistency check | `check.mjs` fails if a chapter's `owner` is not on the roster | `scripts/agents/check.mjs` |
 
-Status on 2026-10-15, counted from `ENFORCEMENT.md`: of 208 rules, 43 are enforced on `develop`, 45 are pending in open PRs or branches (mostly #26 to #32 and #39), 39 are partly enforced, review-only or covered by the rule they cite, and 81 have no check yet (chapter 11 adds 16 MUST rules, ADR 0022). The `not yet` rows are the stewards' work queue.
+Status on 2026-10-15 (chapter 11 added; the older rows were not re-verified, see the drift note at the top of `ENFORCEMENT.md`), counted from `ENFORCEMENT.md`: of 208 rules, 43 are enforced on `develop`, 45 are pending in open PRs or branches (mostly #26 to #32), 39 are partly enforced, review-only or covered by the rule they cite, and 81 have no check yet (chapter 11 adds 16 MUST rules, ADR 0022). The `not yet` rows are the stewards' work queue.
 
 ## Changing a standard
 
@@ -73,18 +73,18 @@ Collected from the five chapters on 2026-10-03, most consequential first. Each c
 
 | # | Decision | Recommended default | Raised by |
 |---|---|---|---|
-| 1 | Build the purge worker (PDATA-02) and device purge (PPRIV-01) before any beta family's data reaches a backend? Today the published 31, 38 and 45-day deletion promise has no executing code | Yes | compliance-engineer, data-steward |
+| 1 | Build the purge worker (PDATA-02) and device purge (PPRIV-01) before any beta family's data reaches a backend? On 15 Oct the `purge-worker` Edge Function is on `develop`, but only migration files 1 and 2 are applied live, so nothing executes the published 31, 38 and 45-day deletion promise yet | Yes | compliance-engineer, data-steward |
 | 2 | Turn on branch protection on `develop` and `main` (which on a private repo needs GitHub Pro or Team), and pause unattended agent runs and remove agent write connectors until it is on (CI-01, CI-04, PINF-01) | Yes | security-architect, ai-eng-lead |
 | 3 | When a contributor leaves or is removed, are their letters kept in the book or tombstoned? | none given | data-steward, security-architect |
 | 4 | Can one parent remove the other co-parent: yes, only the book creator, or only with both parents' agreement (WS-02)? | none given | security-architect |
 | 5 | One contract package named `packages/api` holding generated DB types, the SQLSTATE registry, typed RPC wrappers and content-block schemas (BRIEF 17 vs WS-04) | `packages/api` | principal-architect |
-| 6 | Approve the D-023 sync engine (outbox plus cursor pull) by 16 Oct, so `server_seq` and tombstone pull can be specified | Approve | data-steward |
+| 6 | Done: the founder decided D-023 (outbox push plus cursor pull on Supabase) on 3 Oct; `20261004100000_sync_engine.sql` is on `develop`, not applied. Kept so the numbering stays stable | none | data-steward |
 | 7 | Switch `entries.author_id`, `children.created_by` and the `profiles` cascade from `auth.users` to `restrict`, so a dashboard delete fails closed (DB-17) | Yes | data-steward, security-architect |
 | 8 | Sign-in at v1.0: BRIEF decision 4 lists Google; D-044 moves Google to v1.1. Chapter 05 follows D-044 | Confirm D-044 | security-architect |
 | 9 | PR size limit of 400 lines and 20 files for everyone; block the merge or only label `size:large` and require an `Exception:` line? Lower limit for agent PRs? | 400/20, label not block | principal-architect |
 | 10 | How long an old app build keeps working against the server | 180 days after its successor ships | principal-architect |
 | 11 | Claims register: one file, `docs/legal/CLAIMS.md` (WS-19) or `docs/legal/claims-registry.yaml` (LEGAL-REQ-044) | One file; pick either | compliance-engineer |
-| 12 | Set the real privacy and support address in `packages/brand/index.ts` (still a placeholder) | Before beta | compliance-engineer |
+| 12 | Confirm the privacy and support address in `packages/brand/index.ts` (a placeholder on 3 Oct; `hello@` the domain on 15 Oct) | Before beta | compliance-engineer |
 | 13 | Replace the `revenuecat` deletion step with `appstore_mapping` in a pending migration (spec v1.1.0, ADR 0013) | Yes | compliance-engineer |
 | 14 | Who keeps the request log until a `privacy_requests` table exists | Founder, in the support mailbox, fields per DSR-R05 | compliance-engineer |
 | 15 | Deep-link scheme: keep `scribe` or rename before the first build (DOC-17) | Rename | security-architect |

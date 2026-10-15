@@ -51,7 +51,7 @@ node scripts/agents/handoff.mjs reply --issue 123 --from privacy --status done -
 
 For an `rfc`, start the body with `Position: agree`, `Position: agree with changes` or `Position: object`, then reasons citing rule ids.
 
-A reply settles your part. If the sender or the founder comments again after your reply, you owe a new reply and the dispatcher will schedule you again. Another recipient's reply never reopens yours.
+A reply settles your part. If a trusted author (the sender, the founder, or any agent writing a plain comment rather than a reply) comments again after your reply, you owe a new reply and the dispatcher will schedule you again; all agents post through one App, so the dispatcher cannot tell the sender from a recipient and treats every trusted plain comment as a follow-up. Another recipient's reply never reopens yours.
 
 ## 4. Lifecycle
 

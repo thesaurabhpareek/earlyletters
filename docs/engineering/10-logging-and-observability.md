@@ -42,7 +42,7 @@ We must know when a letter fails to save, sync or purge, without ever seeing the
 
 **OBS-R07 (MUST)** Postgres keeps two separate record types: `audit_events` (product and dispute evidence, enum-only `detail`, 24 months, DATA-REQ-045) and operational logs (`ops_audit_log`, security events; 12 months) (D-021). Operational job outcomes (purge runs, worker steps) are rows with counts and codes, never object paths or content. *Why:* different purposes and clocks; object paths contain L3 ids (TDD 02 4.2 step 7). *Enforced by:* `audit_events` exists (`supabase/migrations/20261002020000_data_governance.sql`) with its tests; `ops_audit_log` not yet (DOC-11).
 
-**OBS-R08 (MUST)** Analytics events are not logs: they go only through the typed catalogue in `packages/analytics` after opt-in, and an invalid or missing required property drops the event and counts a violation. *Why:* PDATA-03: the validator stripped bad properties and still sent the event. *Enforced by:* pending PR #31.
+**OBS-R08 (MUST)** Analytics events are not logs: they go only through the typed catalogue in `packages/analytics` after opt-in, and an invalid or missing required property drops the event and counts a violation. *Why:* PDATA-03: the validator stripped bad properties and still sent the event. *Enforced by:* on develop since #31.
 
 ### Health, SLOs and alerts
 

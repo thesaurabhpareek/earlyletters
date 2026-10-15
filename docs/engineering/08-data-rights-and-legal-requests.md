@@ -19,7 +19,7 @@ I am not a lawyer. Every timeline below is an engineering reading of a source, t
 ## Principles
 
 1. **Self-serve first.** Every right a user can exercise in the app is built there; support handles only what the app cannot. *Why:* Apple 5.1.1(v) and fewer chances for a human mistake.
-2. **Verify control, not identity theatre.** We confirm the requester controls the account; we never act on an email alone for anything destructive. *Why:* a forged deletion destroys a child's letters forever.
+2. **Verify control, not identity theatre.** We confirm the requester controls the account; we never act on an email alone for anything destructive. *Why:* a forged deletion would remove letters the family meant to keep, and a purge cannot be undone.
 3. **Authors own their words.** A request reaches only the requester's own data and the books they solely parent. *Why:* DATA-REQ-012, DATA-REQ-015; the equals rule.
 4. **Every request leaves a content-free trail.** Receipt, verification, action and completion are timestamped with ids and enums only. *Why:* LEGAL-REQ-036; the trail is our proof.
 5. **Counsel decides legal process.** Engineering preserves; it never discloses, searches or notifies on its own judgment. *Why:* register CR-112, LEGAL-REQ-057.

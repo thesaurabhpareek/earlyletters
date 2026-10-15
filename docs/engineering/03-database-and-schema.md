@@ -12,7 +12,7 @@ applies_to: supabase/**, apps/mobile/src/lib/db/**, apps/mobile/src/lib/store.ts
 
 ## Purpose
 
-The database holds letters a parent can never write again. This chapter makes the schema correct by construction: every row reachable only by the people it belongs to, every write going through a path that keeps `raw_transcript` immutable and tombstones honest, and every rule proven by a test that fails loudly. It covers Postgres in Supabase and the device SQLite mirror. The API contract side (idempotency keys, error mapping, pagination) is chapter 02; the retention schedule is chapter 04; the user-facing deletion process is chapter 08.
+The database holds the letters families keep for their children. This chapter makes the schema correct by construction: every row reachable only by the people it belongs to, every write going through a path that keeps `raw_transcript` immutable and tombstones honest, and every rule proven by a test that fails loudly. It covers Postgres in Supabase and the device SQLite mirror. The API contract side (idempotency keys, error mapping, pagination) is chapter 02; the retention schedule is chapter 04; the user-facing deletion process is chapter 08.
 
 ## Principles
 
@@ -28,7 +28,7 @@ The database holds letters a parent can never write again. This chapter makes th
 
 **DB-R01 (MUST)** Tables are plural `snake_case` in `public`; primary keys are `id uuid`; foreign keys are `<singular>_id`; instants are `<verb>_at timestamptz` (UTC); calendar dates are `<noun>_on date` (or the glossary name `date_of_birth`, `due_date`). *Why:* one shape for humans, generated types and the device mirror. *Enforced by:* review (data-steward); not yet automated: proposed catalog check in `supabase/tests/structure.test.mjs` (pending PR #26 adds the file).
 
-**DB-R02 (MUST)** Closed value sets are `text` columns with a named `CHECK (col in (...))` constraint, not Postgres `create type ... as enum`, and the value list matches `packages/core/src/domain.ts`. *Why:* enum values cannot be dropped in place, and the CHECK list is what the analytics enum test parses. *Enforced by:* review today (no `create type` exists in `supabase/migrations/`); enum equality test pending PR #31 (`packages/analytics/test/domain.test.ts`).
+**DB-R02 (MUST)** Closed value sets are `text` columns with a named `CHECK (col in (...))` constraint, not Postgres `create type ... as enum`, and the value list matches `packages/core/src/domain.ts`. *Why:* enum values cannot be dropped in place, and the CHECK list is what the analytics enum test parses. *Enforced by:* review today (no `create type` exists in `supabase/migrations/`); enum equality test merged in #31 (`packages/analytics/test/domain.test.ts`).
 
 **DB-R03 (SHOULD)** Every new constraint, index and trigger has an explicit name: `<table>_<purpose>` for constraints, `<table>_<cols>_idx` for indexes. *Why:* unnamed inline checks (for example `entries.kind` in `20260930000000_scribe_core.sql:124`) get generated names that differ between environments.
 
@@ -86,7 +86,7 @@ The database holds letters a parent can never write again. This chapter makes th
 
 **DB-R24 (MUST)** Every `app.*` setting a function reads fails closed: missing or too short raises `SCCFG`, with no silent default. *Why:* the consent pepper fell back to `''` (DB-07). *Enforced by:* pending PR #32 (`[DB-07]` tests); an every-environment settings check is not yet (DB-18).
 
-**DB-R25 (MUST)** The device SQLite schema mirrors server column names and types for synced tables (`date_of_birth`, not `birthday`), changes only through versioned migrations in `apps/mobile/src/lib/db/migrations.ts`, and refuses edits to tombstoned rows. *Why:* CORE-03; a mismatch becomes a rejected write at sync time. *Enforced by:* migrator and `PRAGMA user_version` (develop); tombstone refusal pending PR #29; schema parity not yet (WS-09).
+**DB-R25 (MUST)** The device SQLite schema mirrors server column names and types for synced tables (`date_of_birth`, not `birthday`), changes only through versioned migrations in `apps/mobile/src/lib/db/migrations.ts`, and refuses edits to tombstoned rows. *Why:* CORE-03; a mismatch becomes a rejected write at sync time. *Enforced by:* migrator and `PRAGMA user_version` (develop); tombstone refusal merged in #29; schema parity not yet (WS-09).
 
 ## How to apply it
 

@@ -1,13 +1,13 @@
 import { BellSimpleIcon } from 'phosphor-react-native/src/icons/BellSimple';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MoonIcon } from 'phosphor-react-native/src/icons/Moon';
-import { Modal, View, useColorScheme } from 'react-native';
+import { Modal, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { copy } from '../copy';
 import { reminderCopy } from './copy';
+import { useTheme } from '@/lib/a11y';
 
 interface Props {
   visible: boolean;
@@ -23,7 +23,7 @@ interface Props {
  * reminders on, and only while iOS has never asked (`needsPriming()`).
  */
 export function ReminderPrimingSheet({ visible, onContinue }: Props) {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const insets = useSafeAreaInsets();
   const r = copy.onboarding.reminder;
   const p = reminderCopy.priming;

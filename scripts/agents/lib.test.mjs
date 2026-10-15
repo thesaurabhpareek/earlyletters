@@ -5,7 +5,7 @@ import { readFileSync, mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
-  ROOT, parseBacklog, eligibility, primaryOwner, takenIds, queueFor, ownerMap,
+  ROOT, parseBacklog, eligibility, primaryOwner, takenIds, queueFor, ownerMap, externalOwners,
   loadRoster, readState, writeState, standingChanged,
 } from "./lib.mjs";
 import { summarize } from "./receipt.mjs";
@@ -43,13 +43,16 @@ const FIXTURE = `
 ## M2. Next
 #### BL-130 Needs a decision
 - Status: needs-decision (D-032). Mode: agent. Owner: speech engineer.
+
+#### BL-140 Website serves brand assets
+- Status: ready. Mode: agent. Owner: web lane (E3, BR2 in \`docs/web/TEAM.md\`). Milestone: M12. Size: S.
 `;
 
 const tasks = parseBacklog(FIXTURE);
 const byId = new Map(tasks.map((t) => [t.id, t]));
 
 test("parses ids, titles, sections and status fields", () => {
-  assert.equal(tasks.length, 9);
+  assert.equal(tasks.length, 10);
   const t = byId.get("BL-112");
   assert.equal(t.title, "Fix migration: parent-only invites [Critical]");
   assert.equal(t.section, "M1. Guardrails");
@@ -67,6 +70,17 @@ test("statuses with parentheses and periods inside them parse", () => {
   assert.match(t.statusText, /remote apply is BL-015/);
   assert.equal(byId.get("BL-103").mode, "human");
   assert.deepEqual(byId.get("BL-103").owners, ["founder", "payments engineer"]);
+});
+
+test("an owner parenthetical with a comma or a file name inside it is one owner", () => {
+  const t = byId.get("BL-140");
+  assert.deepEqual(t.owners, ["web lane"]);
+  assert.equal(t.status, "ready");
+  assert.equal(t.mode, "agent");
+  // A lane outside the harness is known to check.mjs but never dispatched.
+  const roster = loadRoster();
+  assert.ok(externalOwners(roster).has("web lane"));
+  assert.equal(primaryOwner(t, ownerMap(roster)), undefined);
 });
 
 test("eligibility follows the backlog rules", () => {
@@ -116,8 +130,10 @@ test("the real backlog parses completely and every owner role maps to an agent",
   const headings = (text.match(/^#### BL-\d{3}/gm) ?? []).length;
   assert.equal(real.length, headings);
   assert.ok(real.every((t) => t.status), "every task has a status");
-  const owners = ownerMap(loadRoster());
-  const unmapped = new Set(real.flatMap((t) => t.owners ?? []).filter((o) => o !== "founder" && !owners.has(o)));
+  const roster = loadRoster();
+  const owners = ownerMap(roster);
+  const external = externalOwners(roster);
+  const unmapped = new Set(real.flatMap((t) => t.owners ?? []).filter((o) => o !== "founder" && !owners.has(o) && !external.has(o)));
   assert.deepEqual([...unmapped], []);
 });
 
@@ -276,6 +292,11 @@ test("ledger classifies every message kind", () => {
   const c = (body, extra = {}) => classify({ body, created_at: at(1), html_url: "u", user: appBot, ...extra }, { trusted: true, source: "comment" });
   assert.equal(c("<!-- journal run:9 agent:qa -->\n**Mode:** task BL-004").detail, "task BL-004");
   assert.equal(c("<!-- receipt run:9 agent:qa cost:0.12 -->").cost_usd, 0.12);
+  // Variants develop already writes: a salvaged run and a receipt with no reported cost.
+  assert.deepEqual([c("<!-- journal run:9 agent:qa salvage -->\nsaved").kind, c("<!-- journal run:9 agent:qa salvage -->\nsaved").detail], ["journal", "salvage"]);
+  const unknown = c("<!-- receipt run:9 agent:qa cost:unknown -->");
+  assert.equal(unknown.kind, "receipt");
+  assert.equal(unknown.cost_usd, undefined);
   assert.equal(c("<!-- red-team:abc1234 -->\nVerdict: ship").verdict, "ship");
   assert.equal(c("<!-- steward:data-steward:abc1234 -->\nVerdict: fix first").agent, "data-steward");
   assert.equal(c("<!-- handoff-reply from:legal status:declined -->").status, "declined");

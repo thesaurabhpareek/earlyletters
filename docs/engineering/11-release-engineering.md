@@ -74,7 +74,7 @@ A family trusts the app with words they cannot say again. A release must never l
 
 - Cutting a release and shipping a hotfix: follow `docs/ops/RELEASE.md`. Preview-lane builds: `docs/release/TESTFLIGHT.md`.
 - A PR that needs to reach a release branch: merge to `develop` first and label it `release:<major>.<minor>`; the `release` agent lists it in the release record and the coordinator cherry-picks (agents may only base PRs on `develop` today).
-- A PR that changes a screen listed in `docs/store/screenshots.json`: say so in the PR body; the release record picks it up.
+- A PR that changes a screen shown in a store screenshot: say so in the PR body; the release record's screenshot list (REL-R11) picks it up.
 
 ## Exceptions
 
@@ -89,5 +89,6 @@ A family trusts the app with words they cannot say again. A release must never l
 ## References
 
 - ADR 0022; TDD 01 3.9 and 3.10; TDD 07 9.1, 10.1, 11; TDD 10 section 3; D-041, D-045, D-060, D-066, D-068, D-089 to D-092.
+- Where the cited files are on 15 Oct 2026, until their PRs merge into `develop`: ADR 0022, D-089 to D-092 and `docs/release/1.0.0.md` in PR #108; `apps/mobile/version.json`, `apps/mobile/store.config.json` and `scripts/release/**` in PR #109 (BL-436); `.github/workflows/release-ios.yml` in PR #110 (BL-437); `docs/ops/RELEASE.md` in PR #111. This chapter should merge after them.
 - Expo app versions, runtime versions, rollouts, EAS Metadata, EAS Submit (docs.expo.dev, opened 3 Oct 2026).
 - Apple text limits, screenshot specifications, phased release, App Review Guidelines 2.1, 2.2, 2.3, 2.5.2, DPLA 3.3.1(B) (developer.apple.com, opened 3 Oct 2026).

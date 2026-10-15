@@ -1,10 +1,12 @@
 # Enforcement map
 
-Every MUST rule in the compendium and what enforces it today. Status words: **enforced** (a test, constraint, lint rule or CI job on `develop` fails when the rule is broken), **pending PR #n** (the check exists in an open PR), **review** (a steward or the red team checks it by hand), **not yet** (nothing enforces it; the gap id says what will).
+Every MUST rule in the compendium and what enforces it today. Status words: **enforced** (a test, constraint, lint rule or CI job on `develop` fails when the rule is broken), **pending PR #n** (the check exists in an open PR), **on develop** (the mechanism is merged but is not a check that fails a PR, for example a charter, a deny list or a receipt), **review** (a steward or the red team checks it by hand), **not yet** (nothing enforces it; the gap id says what will).
 
 Rules that stay `not yet` are the backlog for the stewards' standing duty 2: turn one into a real check per run, or file it as a backlog proposal for `product`. The owner of each chapter keeps its rows current in the same PR that changes a rule or adds a check.
 
 Totals across 208 rules (2026-10-15, counted from the rows below): 43 enforced, 45 pending in open PRs or branches, 39 partly enforced, review-only or covered by the rule they cite, 81 not yet. Chapter 11 (16 MUST rules, plus REL-R11 and REL-R12 as SHOULD) came with ADR 0022 (D-089).
+
+**Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above were recounted on 15 Oct only to add chapter 11, not to re-verify the older rows): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so rules and gaps that say they do not (API-R01, API-G4, DQ-R12, DSR-R07) are out of date; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
 
 ## principal-architect (chapters 01, 02, 10, 11)
 
@@ -14,12 +16,12 @@ Totals across 208 rules (2026-10-15, counted from the rows below): 43 enforced, 
 | CODE-R02 | MUST | CI PR size check | not yet | CODE-G1 |
 | CODE-R03 | MUST NOT | review; OPERATING_MODEL section 4 | enforced on develop (review only) | none |
 | CODE-R04 | MUST | review; CI `required` (`npm test`, `test:db`, typecheck) | enforced on develop | none |
-| CODE-R05 | MUST | PR template; golden test `packages/core/test/golden.test.ts` | pending PR #28 | none |
+| CODE-R05 | MUST | PR template; golden test `packages/core/test/golden.test.ts` | enforced on develop (#28) | none |
 | CODE-R07 | MUST | review; `docs/GLOSSARY.md` | not yet (WS-17 not opened) | CODE-G4 |
 | CODE-R09 | MUST | review | enforced on develop (review only) | none |
 | CODE-R10 | MUST NOT | `types: []` in package tsconfigs; ESLint `no-restricted-imports` | partly (core only); rest not yet (MONO-02, WS-12) | MONO-02 |
 | CODE-R11 | MUST NOT | ESLint `no-restricted-imports` for screens | not yet (WS-12) | MONO-01 |
-| CODE-R13 | MUST | `packages/core/src/domain.ts` plus CHECK-constraint parity test | pending PR #31 | CORE-02 |
+| CODE-R13 | MUST | `packages/core/src/domain.ts` plus CHECK-constraint parity test | enforced on develop (#31) | CORE-02 |
 | CODE-R14 | MUST | PR template; review | enforced on develop (review only) | CORE-06 |
 | CODE-R15 | MUST | review; lint rule against string throws | not yet | CORE-13 |
 | CODE-R16 | MUST NOT | review; log canary | not yet | CODE-G2 |
@@ -53,7 +55,7 @@ Totals across 208 rules (2026-10-15, counted from the rows below): 43 enforced, 
 | OBS-R05 | MUST | ESLint `no-console`; Babel strip in release | not yet | MONO-01 |
 | OBS-R06 | MUST | Sentry init after consent; `setUser` never-called test | not yet | MOB-15, BL-021 |
 | OBS-R07 | MUST | `audit_events` table and tests; `ops_audit_log` | `audit_events` on develop (pending migration 4); `ops_audit_log` not yet | DOC-11 |
-| OBS-R08 | MUST | analytics validator fails closed | pending PR #31 | PDATA-03 |
+| OBS-R08 | MUST | analytics validator fails closed | enforced on develop (#31) | PDATA-03 |
 | OBS-R09 | MUST | `ops_health` views and job | not yet | OBS-G3 (PDATA-06) |
 | OBS-R10 | MUST | E2E log canary | not yet | OBS-G4 (LEGAL-REQ-014) |
 | OBS-R11 | MUST | review; SLO measurement | not yet measured | PDATA-06 |
@@ -100,7 +102,7 @@ Gap ids defined here:
 | Rule id | Level | Enforced by | Status | Gap id |
 |---|---|---|---|---|
 | DB-R01 | MUST | review; proposed check in `structure.test.mjs` | not yet | WS-03 |
-| DB-R02 | MUST | review; `packages/analytics/test/domain.test.ts` | pending PR #31 | CORE-05 |
+| DB-R02 | MUST | review; `packages/analytics/test/domain.test.ts` | enforced on develop (#31) | CORE-05 |
 | DB-R04 | MUST | `supabase/tests/structure.test.mjs` trigger-order pin | pending PR #26 | DB-10 |
 | DB-R05 | MUST | review | enforced by review | none |
 | DB-R06 | MUST | `is_valid_client_uuid7` (children); entry check + `hardening.test.mjs` | partly on develop (pending file 6); entries pending PR #32 | DB-15 |
@@ -121,15 +123,15 @@ Gap ids defined here:
 | DB-R21 | MUST | `perf.test.mjs` seq-scan and p95 budget; full index | enforced on develop; index pending PR #32 | DB-06 |
 | DB-R23 | MUST | `server_seq` + tombstone pull | not yet | DB-08, D-023 |
 | DB-R24 | MUST | `SCCFG` tests; env settings check | pending PR #32; per-env check not yet | DB-07, DB-18 |
-| DB-R25 | MUST | migrator `user_version`; tombstone refusal; parity test | migrator on develop; refusal pending PR #29; parity not yet | CORE-03, WS-09 |
+| DB-R25 | MUST | migrator `user_version`; tombstone refusal; parity test | migrator on develop; refusal on develop (#29); parity not yet | CORE-03, WS-09 |
 | DQ-R01 | MUST | `classification.test.mjs` | enforced on develop | none |
 | DQ-R02 | MUST | `docs/legal/data-map.yaml` | not yet | PDATA-05, WS-19 |
 | DQ-R03 | MUST | `scripts/check-data-map.mjs` in CI | not yet | WS-19 |
 | DQ-R05 | MUST | CHECK constraints; API validation (chapter 02) | partly on develop | PAPI (packages/api) |
-| DQ-R06 | MUST | `validate.ts` fail-closed + tests | pending PR #31 | PDATA-03 |
+| DQ-R06 | MUST | `validate.ts` fail-closed + tests | enforced on develop (#31) | PDATA-03 |
 | DQ-R07 | MUST NOT | `SCCFG` tests; device not-null | pending PR #32; device not yet | DB-07, MOB-02 |
 | DQ-R08 | MUST | fixture tests; scheduled invariant job | fixtures on develop; schedule not yet | PDATA-06 |
-| DQ-R09 | MUST | `domain.test.ts` | pending PR #31 | CORE-05 |
+| DQ-R09 | MUST | `domain.test.ts` | enforced on develop (#31) | CORE-05 |
 | DQ-R11 | MUST | `purge_due()` + `purge_batching.test.mjs` | DB clocks on develop (pending files) | DB-13 |
 | DQ-R12 | MUST | cron + `purge-worker` + page | not yet | PDATA-02 |
 | DQ-R13 | MUST | device purge job | not yet | PPRIV-01, WS-09 |
@@ -137,7 +139,7 @@ Gap ids defined here:
 | DQ-R15 | MUST NOT | review; runbooks | not yet | WS-18 |
 | DQ-R16 | MUST | path CHECK constraints + storage policies | enforced on develop for `entry-photos` | PDATA-09 |
 | DQ-R17 | MUST | bucket from queue row | not yet | PDATA-09 |
-| DQ-R18 | MUST | `catalog.test.ts`; `schema-version.test.ts` | partly on develop; bump pending PR #31 | PDATA-10 |
+| DQ-R18 | MUST | `catalog.test.ts`; `schema-version.test.ts` | enforced on develop (#31) | PDATA-10 |
 | DQ-R19 | MUST | allowlist in `validate.ts` | enforced on develop | none |
 | DQ-R20 | MUST | review; fixture canary proposed | not yet (review only) | PDATA-01 |
 | DQ-R21 | MUST | quarterly restore drill (DATA-REQ-031) | not yet | WS-18 |
@@ -146,7 +148,7 @@ Gap ids defined here:
 
 | Rule id | Level | Enforced by | Status | Gap id |
 |---|---|---|---|---|
-| IAM-R01 | MUST | review; enum parity in `packages/core/src/domain.ts` | pending PR #31 | CORE-02 |
+| IAM-R01 | MUST | review; enum parity in `packages/core/src/domain.ts` | enforced on develop (#31) | CORE-02 |
 | IAM-R02 | MUST | review; access matrix personas | enforced on develop | |
 | IAM-R03 | MUST | `require_content_consent()`; `security_family.test.mjs` | enforced on develop (pending files; not live) | DB-03 |
 | IAM-R04 | MUST NOT | `apps/mobile/test/age-gate.test.ts`; `classification.test.mjs` | enforced on develop | |
@@ -183,13 +185,13 @@ Gap ids defined here:
 | SEC-R12 | MUST | branch protection or ruleset | not yet | CI-01, CI-04 |
 | SEC-R13 | MUST | `fence.yml` | pending PR #30 (advisory until SEC-R12) | CI-11, BL-122 |
 | SEC-R14 | MUST | `migration-guard.yml` from base ref | pending PR #30 | CI-09 |
-| SEC-R15 | MUST | `app.config.ts` entitlement; `config.test.ts` | pending PR #27 | PSEC-05, WS-20 |
+| SEC-R15 | MUST | `app.config.ts` entitlement; `config.test.ts` | enforced on develop (#27) | PSEC-05, WS-20 |
 | SEC-R16 | MUST NOT | review; config test | not yet | LEGAL-REQ-021 |
 | SEC-R17 | MUST | `+native-intent.tsx`, `links.logic.ts` test | not yet | PSEC-02, PSEC-03, WS-11, DOC-17 |
 | SEC-R18 | MUST | storage policy changes and tests | pending PR #32 | PSEC-04 |
 | SEC-R19 | MUST | review of `agents.yml`, roster; App permissions (founder setting) | not yet (not verifiable in repo) | PINF-01 |
 | SEC-R20 | MUST | GitHub App token in `agents.yml` | partial on harness branch; not yet for all engines | PINF-02 |
-| SEC-R21 | MUST | cites AIE-R22; `claude.yml` OWNER filter | pending PR #4; review | PINF-03 |
+| SEC-R21 | MUST | cites AIE-R22; `claude.yml` OWNER filter | on develop (#4); review | PINF-03 |
 | SEC-R22 | MUST | DNS records | not yet | PINF-08 |
 | SEC-R23 | MUST | `SECURITY.md`, `docs/ops/INCIDENT.md` | not yet | PINF-09, WS-18 |
 | SEC-R24 | MUST | `security_events` table and sources | not yet | LEGAL-REQ-037 |
@@ -207,14 +209,14 @@ Gap ids defined here:
 | PRIV-R08 | MUST | `require_content_consent()`, `security_family.test.mjs` | enforced on develop (repo; not live) | DB-03 |
 | PRIV-R09 | MUST | review; POLICY_VERSIONING section 9 CI | not yet | LEGAL-REQ-009 |
 | PRIV-R10 | MUST NOT | analytics canary test; `audit_events.detail` and receipt size checks; log canary; `console` lint | enforced on develop (analytics, DB checks); not yet (logs, lint) | PDATA-06, MONO-01 |
-| PRIV-R11 | MUST | `validate.ts` allowlist; fail-closed required props | enforced on develop; pending PR #31 (fail closed) | PDATA-03 |
+| PRIV-R11 | MUST | `validate.ts` allowlist; fail-closed required props | enforced on develop (fail closed since #31) | PDATA-03 |
 | PRIV-R12 | MUST | review on `package.json`; host and dependency diff | not yet (automation) | LEGAL-REQ-041 |
 | PRIV-R13 | MUST NOT | dependency denylist | not yet | LEGAL-REQ-016 |
 | PRIV-R14 | MUST NOT | `verifyEdits` and fuzz tests; provider config check | enforced on develop (verifier); not yet (provider, v1.1) | LEGAL-REQ-020 |
 | PRIV-R15 | MUST | migration drops `safety_events`; network test | enforced in repo, not live; not yet (test) | DB-03, LEGAL-REQ-015 |
 | PRIV-R16 | MUST | EXIF strip test | not yet | LEGAL-REQ-013 |
 | PRIV-R17 | MUST | claims register plus content test | not yet | PPRIV-04 (WS-10, WS-19) |
-| PRIV-R18 | MUST | privacy manifest in `app.config.ts`; render-and-compare script | pending PR #27 (manifest); not yet (script) | LEGAL-REQ-042 |
+| PRIV-R18 | MUST | privacy manifest in `app.config.ts`; render-and-compare script | manifest on develop (#27); not yet (script) | LEGAL-REQ-042 |
 | PRIV-R19 | MUST | `classification.test.mjs` L4 checks; catalogue review | enforced on develop | none |
 | PRIV-R20 | MUST NOT | `child-input` flag check | not yet | LEGAL-REQ-059, PDATA-08 |
 | DSR-R01 | MUST | review; `ops/lib/runbook.mjs` wrapper | not yet | TDD 05 7.7 |
@@ -235,25 +237,25 @@ Gap ids defined here:
 
 | Rule id | Level | Enforced by | Status (enforced on develop / pending PR #n / not yet) | Gap id |
 |---|---|---|---|---|
-| AIE-R01 | MUST | review (ai-eng-lead, red-team); brief reading order (`readingOrder()`) | pending PR #39 | AIE-G1 |
+| AIE-R01 | MUST | review (ai-eng-lead, red-team); brief reading order (`readingOrder()`) | on develop (#39) | AIE-G1 |
 | AIE-R02 | MUST NOT | `scripts/agents/check.mjs` assertion | not yet | AIE-G2 |
-| AIE-R03 | MUST | `check.mjs` size warnings (150 memory lines, 200-char description) | pending PR #4 (partial); real budgets not yet | AIE-G3 |
+| AIE-R03 | MUST | `check.mjs` size warnings (150 memory lines, 200-char description) | on develop (#4, partial); real budgets not yet | AIE-G3 |
 | AIE-R04 | MUST | review (ai-eng-lead) of instruction-file PRs | review only | none |
 | AIE-R05 | MUST | ai-eng-lead standing duty 1 | not yet (known contradictions open) | AIE-G9 |
-| AIE-R07 | MUST | red-team standing duty 3; ai-eng-lead standing duty 1 | pending PR #4 (charters) | none |
-| AIE-R08 | MUST | OPERATING_MODEL section 9; dollar and step caps `run-opencode.mjs:109-110` | pending PR #4 | none |
-| AIE-R09 | MUST | brief includes PRINCIPLES; chapters on demand | pending PR #39 | AIE-G1 |
+| AIE-R07 | MUST | red-team standing duty 3; ai-eng-lead standing duty 1 | on develop (#4, charters) | none |
+| AIE-R08 | MUST | OPERATING_MODEL section 9; dollar and step caps `run-opencode.mjs:109-110` | on develop (#4) | none |
+| AIE-R09 | MUST | brief includes PRINCIPLES; chapters on demand | on develop (#39) | AIE-G1 |
 | AIE-R11 | MUST | review (red-team, domain steward) | review only | none |
 | AIE-R12 | MUST | `product` task template; `check.mjs` warning | not yet (2 of 167 tasks comply) | AIE-G4 |
 | AIE-R13 | MUST | OPERATING_MODEL section 4; PR size check | review only; size check not yet | CODE-G1 |
 | AIE-R14 | MUST | CI `required` job (`.github/workflows/ci.yml`) | enforced on develop (suite); test quality review only | none |
 | AIE-R15 | MUST NOT | review (red-team); CI diff check on agent PRs | review only; check not yet | AIE-G5 |
-| AIE-R16 | MUST NOT | review (red-team scope check) | pending PR #4 (red-team charter) | none |
-| AIE-R17 | MUST | `verify.fuzz.test.ts` in CI; golden test; nightly random seed | fuzz enforced on develop; golden pending PR #28; nightly pending PR #36 | none |
-| AIE-R18 | MUST | deny lists `run-opencode.mjs:19-22`, `agents.yml:141`; branch protection | deny lists pending PR #4; branch protection not yet | CI-01 |
-| AIE-R19 | MUST | roster model split; dispatcher review mode; model-family check | pending PR #4; family check not yet | AIE-G6 |
+| AIE-R16 | MUST NOT | review (red-team scope check) | on develop (#4, red-team charter) | none |
+| AIE-R17 | MUST | `verify.fuzz.test.ts` in CI; golden test; nightly random seed | fuzz enforced on develop; golden enforced on develop (#28); nightly on develop (#36) | none |
+| AIE-R18 | MUST | deny lists `run-opencode.mjs:19-22`, `agents.yml:149`; branch protection | deny lists on develop (#4); branch protection not yet | CI-01 |
+| AIE-R19 | MUST | roster model split; dispatcher review mode; model-family check | on develop (#4); family check not yet | AIE-G6 |
 | AIE-R20 | MUST | `verifyEdits` and its property test; red-team constitution check | enforced on develop | none |
-| AIE-R21 | MUST | deny lists, App permissions, `fence.yml` | pending PR #4 and PR #30; fence advisory until branch protection | PINF-01, CI-11 |
-| AIE-R22 | MUST | `isFounderComment`; trusted-author and first-line marker checks (`isTrusted`, `startsWithMarker`) | pending PR #4 and PR #39 | AIE-G7 |
-| AIE-R23 | MUST | `receipt.mjs`; weekly aggregation | pending PR #4 (receipts); aggregation not yet | AIE-G8 |
-| AIE-R24 | MUST | founder approval of `agents/roster.json` (CODEOWNERS); review | pending PR #4 | none |
+| AIE-R21 | MUST | deny lists, App permissions, `fence.yml` | deny lists on develop (#4); `fence.yml` pending PR #30; fence advisory until branch protection | PINF-01, CI-11 |
+| AIE-R22 | MUST | `isFounderComment`; trusted-author and first-line marker checks (`isTrusted`, `startsWithMarker`) | on develop (#4, #39) | AIE-G7 |
+| AIE-R23 | MUST | `receipt.mjs`; weekly aggregation | on develop (#4, receipts); aggregation not yet | AIE-G8 |
+| AIE-R24 | MUST | founder approval of `agents/roster.json` (CODEOWNERS); review | on develop (#4) | none |

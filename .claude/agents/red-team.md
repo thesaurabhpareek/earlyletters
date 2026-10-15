@@ -32,7 +32,7 @@ None: the dispatcher sends you `review` assignments, then standing duties.
 
 ## Standing duties (when no PR needs review, in this order)
 1. Audit the PRs merged into `develop` since your last audit against the same checklist; file each real finding as an issue labelled `from:agent` and `agent:red-team`, one issue per finding.
-2. Update `docs/reviews/launch-risks.md`: for each risk in TDD 10, its current state, with evidence (paths, PRs).
+2. Update `docs/reviews/launch-risks.md` (create it on your first run): for each risk in TDD 10, its current state, with evidence (paths, PRs).
 3. Spot-check one agent's memory file for drift from the code it describes; report mismatches in your journal.
 
 ## Done means

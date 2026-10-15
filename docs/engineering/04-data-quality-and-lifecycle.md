@@ -20,7 +20,7 @@ We promise families that their letters are private, kept as long as they want, a
 2. **Classify before you collect.** A field ships with its level (L1 to L4) in the same PR. *Why:* handling, access and retention all follow from the level.
 3. **Fail closed at every boundary.** Invalid input is refused or dropped, never coerced or partly sent. *Why:* a stripped-but-sent event or a silently defaulted column hides the bug that matters.
 4. **Retention runs itself.** Every clock in the schedule is a job with a test, never a calendar reminder. *Why:* "someone will remember to delete it" is how promises break.
-5. **Fake families only.** Fixtures use the fictional Asha family; production data never leaves production. *Why:* real letters are irreplaceable and private.
+5. **Fake families only.** Fixtures use the fictional Asha family; production data never leaves production. *Why:* real letters are private and belong to the family.
 
 ## Rules
 
@@ -38,7 +38,7 @@ We promise families that their letters are private, kept as long as they want, a
 
 **DQ-R05 (MUST)** Every input that crosses a trust boundary (RPC arguments, Edge Function bodies, server-delivered content blocks, downloaded pack manifests) is schema-validated before use, and the server re-validates what the client already checked. Database CHECK constraints are the last line, not the only one. *Why:* the device is not trusted (chapter 03 principle 2). *Enforced by:* CHECK and length constraints in migrations (for example `entries_final_text_length`, `20260930000000_scribe_core.sql:144`); API-side validation is chapter 02 (`packages/api`, not yet built).
 
-**DQ-R06 (MUST)** The analytics validator fails closed: an unknown event, or a required property that is missing or invalid, drops the whole event and records a violation without the value. *Why:* PDATA-03, the current validator strips a bad property and still sends the event. *Enforced by:* pending PR #31 (`packages/analytics/src/validate.ts`, `test/analytics.test.ts`); on develop only unknown events and PII-like strings drop the event.
+**DQ-R06 (MUST)** The analytics validator fails closed: an unknown event, or a required property that is missing or invalid, drops the whole event and records a violation without the value. *Why:* PDATA-03, the current validator strips a bad property and still sends the event. *Enforced by:* on develop since #31 (`packages/analytics/src/validate.ts`, `test/analytics.test.ts`); on develop only unknown events and PII-like strings drop the event.
 
 **DQ-R07 (MUST NOT)** Code silently defaults a missing required value (environment setting, pepper, enum, author id). Missing is an error with a code. *Why:* DB-07 consent pepper fell back to `''`; MOB-02 stores `author_id` null locally while the server requires it. *Enforced by:* `SCCFG` tests pending PR #32 (see DB-R24); device side not yet (WS-09).
 
@@ -46,7 +46,7 @@ We promise families that their letters are private, kept as long as they want, a
 
 **DQ-R08 (MUST)** Each data invariant is written as a query that returns failing rows, and runs as a test in `supabase/tests/` and, once a scheduled job exists, against staging and production with an alert on any row. Minimum set: no orphan `entries` / `child_members` / `entry_versions`; no live entry in a deleted book; no tombstone older than 30 days that is not held; no `storage_purge_queue` row stuck past its backoff; no purged id present in a live table. *Why:* invariants that only run in CI on fixtures miss production drift; DATA-REQ-036 asks for a page on stale tombstones. *Enforced by:* fixture-level tests exist (`data_governance.test.mjs`, `purge_batching.test.mjs`); scheduled checks not yet (PDATA-06, no monitoring or `ops_health` view).
 
-**DQ-R09 (MUST)** Enum value sets are defined once in `packages/core/src/domain.ts` and imported by analytics and the device store; a test parses the migration CHECK constraints and asserts equality. *Why:* CORE-05, `CAPTURE_MODE` lacked `mixed` so `letter_saved.mode` was silently stripped. *Enforced by:* pending PR #31 (`packages/analytics/test/domain.test.ts`).
+**DQ-R09 (MUST)** Enum value sets are defined once in `packages/core/src/domain.ts` and imported by analytics and the device store; a test parses the migration CHECK constraints and asserts equality. *Why:* CORE-05, `CAPTURE_MODE` lacked `mixed` so `letter_saved.mode` was silently stripped. *Enforced by:* on develop since #31 (`packages/analytics/test/domain.test.ts`).
 
 **DQ-R10 (SHOULD)** A test compares the device schema (`apps/mobile/src/lib/db/migrations.ts`) with the server columns of synced tables and lists every difference against an allowlist. *Why:* CORE-03 (`birthday` vs `date_of_birth`). *Enforced by:* not yet: WS-09.
 
@@ -70,7 +70,7 @@ We promise families that their letters are private, kept as long as they want, a
 
 ### Analytics hygiene
 
-**DQ-R18 (MUST)** Event names are `object_action` in past tense snake_case (`letter_saved`); property names are snake_case with `_bucket` / `_count` suffixes for reductions; enum values are the DB values imported from core (`parent`, not `co_parent`); every event carries a required `schema_version` and a catalog change bumps it. *Why:* PDATA-10, CORE-05. *Enforced by:* catalog shape tests in `packages/analytics/test/catalog.test.ts` (develop); required `schema_version` and hash-forces-bump pending PR #31 (`test/schema-version.test.ts`).
+**DQ-R18 (MUST)** Event names are `object_action` in past tense snake_case (`letter_saved`); property names are snake_case with `_bucket` / `_count` suffixes for reductions; enum values are the DB values imported from core (`parent`, not `co_parent`); every event carries a required `schema_version` and a catalog change bumps it. *Why:* PDATA-10, CORE-05. *Enforced by:* catalog shape tests in `packages/analytics/test/catalog.test.ts` (develop); required `schema_version` and hash-forces-bump merged in #31 (`test/schema-version.test.ts`).
 
 **DQ-R19 (MUST)** Every analytics property is L2 and listed in the catalog; no id other than the random analytics id, no name, date, language name or text. *Why:* DATA_CLASSIFICATION rule 1.1.9 and section 4.7. *Enforced by:* the allowlist in `packages/analytics/src/validate.ts` (PII-like and over-40-character strings drop the event, develop); the content rule is chapter 07.
 
