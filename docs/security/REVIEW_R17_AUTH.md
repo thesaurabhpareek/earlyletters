@@ -5,14 +5,30 @@ Gate: PRD V2 `09-decisions-and-risks.md` R-17 and D-089 (PR #128): nobody outsid
 
 Status words: **built** (code and tests in PR #139), **device** (needs a real iPhone, AUTH_SETUP section 11), **founder** (a dashboard, secret or deploy step, AUTH_SETUP section 12), **other stream** (a request in the PR body), **later** (its own work package, not in this PR).
 
+## 0. Rows in the shared checklist
+
+The shared checklist is S02's `docs/security/REVIEW_R17_CHECKLIST.md` (PR #140, `feat/db-v1-gate`). Its S01 rows are answered by the items below; the checklist keeps its "Reviewer" column for the shared review.
+
+| Checklist row (PR #140) | Evidence here | State at PR #139 head |
+|---|---|---|
+| 2.1 H1 proof of concept fails on old code, passes on the branch | A3, section 2 | pass (both runs recorded) |
+| 2.2 PKCE; a link accepted only with a pending request from this phone | A1, A2 | built; device check 11.10 owed |
+| 2.3 Letters move only after consent and a tap on the masked-email screen | A3 | built |
+| 2.4 A link refused while another account is signed in | A4 | built (cold start included) |
+| 2.5 Email template and redirect allowlist on staging match AUTH_SETUP | AUTH_SETUP 4.6, 5.1, 6, 12 row 2 | founder step |
+| 3.1 apple-token: JWT, exchange, wrap, store, 204 with nothing echoed | A6 | built; FT-11 owed |
+| 3.2 Rate limited: `rate_hit('apple_token')` with the user's JWT | A8 | built; live once S02's `20261015000000` is applied |
+| 3.3 No code, token or user id in logs | A7 | built |
+| 3.4 Deletion revokes the token on staging | A6; AUTH_SETUP 11.9 | device and founder step owed |
+
 ## 1. Items
 
 | # | Item | Requirement | What is in PR #139 | Evidence | Status |
 |---|---|---|---|---|---|
-| A1 | An email link is used only while this phone has a pending request (Keychain note: time only, 1 hour) | F02-REQ-018; BL-347; review H1 fix bullet 2 | `lib/auth/email-link.logic.ts` (`decodePendingRequest`, `decideEmailLink`, `openEmailLink`), `lib/auth/pending.ts` | `auth-email-link.test.ts` "the pending-request note", "when an opened link may be used"; `auth-h1.test.ts` "step 3, layer 1" (no request reaches Supabase) | built |
+| A1 | An email link is used only while this phone has a pending request (Keychain note: time only, 1 hour) | F02-REQ-018; BL-347; review H1 fix bullet 2 | `lib/auth/email-link.logic.ts` (`decodePendingRequest`, `decideEmailLink`, `openEmailLink`), `lib/auth/pending.ts`; any sign-in (link, code, Apple, Google, passkey) spends the note, every sign-out drops it | `auth-email-link.test.ts` "the pending-request note", "when an opened link may be used"; `auth-h1.test.ts` "step 3, layer 1" (no request reaches Supabase) | built |
 | A2 | Email links run through PKCE; a link from another phone's flow cannot finish here; a redirect carrying tokens is refused; `verifyOtp({ token_hash })` is gone | F02-REQ-018; A-REQ-018 (link only on the phone that asked); review H1 fix bullet 1 | `lib/supabase/client.ts` (`flowType: 'pkce'`, `ensureRandomValues`), `lib/auth/email.ts` (`verifyEmailLinkPkce`: GET /verify, `redirect: 'manual'`, `exchangeCodeForSession`), ADR 0023 | `auth-email-link.test.ts` "verifyEmailLinkPkce" (6 cases, including the source check that no `token_hash` call remains); `auth-h1.test.ts` "step 3, layer 2" (fake GoTrue, wrong verifier) | built; **device** 11.10 for the three U assumptions in ADR 0023 |
 | A3 | Local letters move to an account only after consent and a tap on a screen with the masked account email; "Not my account" changes nothing | F02-REQ-019; review H1 fix bullet 3; R4 PT-20 | `lib/auth/auth-store.ts` (session released only after `canSync` and the claim), `lib/auth/account-claim.logic.ts` (`phoneHoldsAnyRow`: any book or letter row in any state, hidden ones included, so it can only err towards asking), `app/(auth)/sign-in/consent.tsx` (claim screen after consent), `lib/auth/ui.tsx` and `app/settings/account.tsx` ("Finish setting up") | `auth-h1.test.ts` "step 4" and "step 5" against the real `takeOwnership` on node:sqlite. **Fails on develop, passes here** (section 2) | built |
-| A4 | A link is refused while any account is signed in on this phone | F02-REQ-020; F02-U27 | `openEmailLink` checks before the pending note; `verify.tsx` shows the U27 words and Close | `auth-h1.test.ts` "[F02-REQ-020]"; `auth-email-link.test.ts` decision matrix | built |
+| A4 | A link is refused while any account is signed in on this phone, including at a cold start from the link (state still `restoring`) | F02-REQ-020; F02-U27 | `openEmailLink` checks before the pending note; "signed in" is the auth state OR a session saved in the Keychain (`pending.ts` `sessionSavedOnPhone`; an unreadable Keychain counts as signed in); `verify.tsx` shows the U27 words and Close | `auth-h1.test.ts` "[F02-REQ-020]"; `auth-link-signed-in.test.ts` (cold start, nothing saved, unreadable Keychain, switch off); `auth-email-link.test.ts` decision matrix | built |
 | A5 | Tokens only in Keychain-backed storage; no secret in route params, logs or analytics | F02-REQ-003; LEGAL-REQ-014 | The pending note and the PKCE verifier go through `secureStorage` (`AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`); the note holds a time only; the Apple code is never stored on the phone; the token hash stays in memory (unchanged `+native-intent`) | `auth-apple-token.test.ts` "the code is never kept on the phone"; `auth-kill-path.test.ts` (Keychain key and value) | built |
 | A6 | Apple refresh token captured at sign-in: the app posts the code once, the function stores it encrypted and answers 204 with nothing echoed | F02-REQ-004, F02-REQ-022; A-NFR-011; BL-330; review H3 | `lib/auth/apple.ts` (`captureAppleToken`, background, never blocks sign-in), `lib/auth/apple-token.logic.ts`, `supabase/functions/apple-token/**` | Deno `handler.test.ts` (15 tests: exchange, wrap and unwrap round trip, sub, aud and iss checks, client-id list equals the purge worker's, 204 with empty body, fails closed without secrets, rate limit, request validation); `auth-apple-token.test.ts` (8) | built; **founder** FT-11 (secrets, migration `20261004200000`, deploy); **device** 11.9 |
 | A7 | apple-token logs nothing it received or sent; errors carry closed codes only | LEGAL-REQ-014; ADR 0017 rules 5 to 7 | `_shared/log` only; error bodies are the envelope | Deno "canary" test over 4 paths (logs and error bodies); the shared `_shared/log/canary.test.ts` sweep forbids `console.*` in function code | built |
@@ -60,7 +76,9 @@ On `feat/auth-v1-gate` the same case passes, with the owner unset and an empty o
 
 | Who | Lens | Verdict | Date and commit |
 |---|---|---|---|
-| Review agent 1 | Token and session security | see the PR comment | |
-| Review agent 2 | Privacy and the kill path | see the PR comment | |
+| Review agent 1 (session `01StdYGY`) | Token and session security | Found four gaps and fixed them on the branch instead of returning a verdict: link refusal at cold start, pending note not spent by other sign-ins and sign-outs, capture and revocation client-id lists could differ, docs. Accepted as documented: `rate_hit` skipped on errors other than SCRAT; a foreign link spends this phone's verifier (denial of service only). Its fixes inside S01's files were kept; its purge-worker edit went to S07 as a patch | 15 Oct 2026, 5296916 and 296bc61 |
+| Review agent 2 (session `01J4KEwT`) | Privacy and the kill path | **ready**, with 2 minor findings and 5 nits, all answered in PR #139 (see the PR comment) | 15 Oct 2026, reviewed db3678c |
 | Shared R-17 review (with S02, S04, S20 items) | All of R-17 | pending | |
 | Founder | Merge (D-093: auth is founder-only) | pending | |
+
+Because review agent 1 changed code it was reviewing, it is not an independent second verdict on the final commit. A fresh independent review of the head commit is still needed before the label (08-delivery 6.2, D-041).
