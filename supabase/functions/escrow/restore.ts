@@ -3,22 +3,29 @@
  * (packages/api/src/server/recovery-key.ts, ESCROW_ROUTES createRequest and release):
  *
  *  createRequest  No open request: needs a sign-in in the last 10 minutes (step-up). Makes the
- *                 stop token and one approval code per enrolled device (sealed to that device's
- *                 key), opens the request (72 h hold with another enrolled device, 24 h without),
+ *                 stop token and one approval code per device the database names (enrolled at
+ *                 least 7 days ago; sealed to that device's key), opens the request (72 h hold
+ *                 with another recent or recently revoked device, 24 h without),
  *                 then emails the account ("A new iPhone asked") with the stop link. Release waits
  *                 until that email has gone. An open request is returned as it is (safe to repeat).
  *  release        Approved or past the hold: opens each book key in memory with the escrow
  *                 private key for its version, seals it to the requesting device, writes one log
  *                 row per key, emails the account ("We used your recovery key"), marks the request
  *                 released, and only then returns the sealed keys. If the email or the log write
- *                 fails, nothing is returned. Still holding: the hold time.
+ *                 fails, nothing is returned. Still holding: the hold time. Each opening is its own
+ *                 email (idempotency key from the opening's first log row), so a second release in
+ *                 the 24-hour window is told to the owner too.
+ *
+ * Both calls pass the access token's session id; once the stop link has signed every session out,
+ * the database refuses (28000 session_ended) though the token itself has not expired yet.
  *
  * Approving ("Yes, it's mine"), "Not me" and Stop in Settings are main-project RPCs
  * (backup_pending_requests, backup_approve_request, backup_cancel_request), because approving
  * must prove the enrolled device holds its key (the sealed code), which only the database checks.
- * Plaintext key bytes exist only inside one call's memory and are never logged or stored.
+ * Plaintext key bytes, approval codes and the stop token exist only inside one call's memory, are
+ * zeroed as soon as they are sealed or hashed, and are never logged or stored.
  */
-import { encodeBase64, encodeBase64Url, fromHex, randomBytes, sha256, toHex } from './bytes.ts';
+import { encodeBase64, encodeBase64Url, fromHex, randomBytes, sha256, toHex, UUID } from './bytes.ts';
 import type { SealedBox } from './contract.ts';
 import { SEAL_SUITE } from './contract.ts';
 import type { EscrowDb, RequestState, UnwrapRow } from './db.ts';
@@ -51,7 +58,7 @@ export type ReleaseResult =
 
 /** A refusal the handler turns into an envelope error with a closed detail. */
 export class Refusal extends Error {
-  readonly code: 'reauth_required' | 'not_found' | 'deleted' | 'gone' | 'no_address' | 'decrypt_failed' | 'unknown_key_version' | 'email';
+  readonly code: 'reauth_required' | 'session' | 'not_found' | 'deleted' | 'gone' | 'no_address' | 'decrypt_failed' | 'unknown_key_version' | 'email';
   readonly status: number;
   readonly retryable: boolean;
   readonly detail?: string;
@@ -67,11 +74,18 @@ export class Refusal extends Error {
 const DEVICE = 'an iPhone';
 const reference = (requestId: string) => `R-${requestId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 const box = (sealed: { enc: Uint8Array; ct: Uint8Array }): SealedBox => ({ suite: SEAL_SUITE, enc: encodeBase64(sealed.enc), ct: encodeBase64(sealed.ct) });
+/** The access token's auth session; a token without one is refused (Supabase always sets it). */
+const sessionOf = (user: VerifiedUser): string => {
+  const s = (user.sessionId ?? '').toLowerCase();
+  if (!UUID.test(s)) throw new Refusal('session', 401, { detail: 'session_ended' });
+  return s;
+};
 
 export async function createRequest(deps: RestoreDeps, user: VerifiedUser, deviceId: string, reqId: string): Promise<RequestView> {
   const { db, log } = deps;
   const rand = deps.random ?? randomBytes;
   if (!user.email) throw new Refusal('no_address', 409); // every use is emailed: no address, no restore
+  const session = sessionOf(user);
   const ctx = await db.context(user.sub, deviceId);
   if (ctx.deleting) throw new Refusal('deleted', 409, { detail: 'deletion_pending' });
   if (!ctx.has_keys) throw new Refusal('not_found', 404);
@@ -82,21 +96,25 @@ export async function createRequest(deps: RestoreDeps, user: VerifiedUser, devic
   // A new request, or one whose email never went out: both need a fresh sign-in.
   if (!recentSignIn(user, Math.floor(deps.now().getTime() / 1000))) throw new Refusal('reauth_required', 401, { detail: 'step_up_required' });
   const token = rand(32);
+  const tokenHash = await sha256(token);
+  const stopUrl = `${deps.stopUrl}#${encodeBase64Url(token)}`;
+  token.fill(0);
   const approvals = [];
   for (const d of ctx.enrolled) {
     const code = rand(32);
     const sealed = packV1(await seal(fromHex(d.public_key_hex), INFO.approval, aad.approval(user.sub, d.device_id), code));
     approvals.push({ device_id: d.device_id, code_hash_hex: toHex(await sha256(code)), sealed_code_hex: toHex(sealed) });
+    code.fill(0);
   }
-  const opened = await db.openRequest(user.sub, deviceId, reqId, await sha256(token), approvals);
+  const opened = await db.openRequest(user.sub, deviceId, session, reqId, tokenHash, approvals);
   if (opened.created) log.info('restore.requested', { step: 'open', counts: { devices: approvals.length } });
   if (!opened.notified && (opened.created || opened.token_replaced)) {
     const values = {
       when: when(deps.now()), device: DEVICE, holdUntil: when(new Date(opened.hold_until)),
-      stopUrl: `${deps.stopUrl}#${encodeBase64Url(token)}`, requestId: reference(opened.request_id), expiresIn: '7 days',
+      stopUrl, requestId: reference(opened.request_id), expiresIn: '7 days',
     };
     await sendOrRefuse(deps, 'backup-restore-requested', user.email, values,
-      `escrow-restore-requested:${opened.request_id}:${toHex(await sha256(token)).slice(0, 16)}`);
+      `escrow-restore-requested:${opened.request_id}:${toHex(tokenHash).slice(0, 16)}`);
     await db.setState(user.sub, opened.request_id, 'notified');
   }
   return { request_id: opened.request_id, state: opened.state as RequestView['state'], hold_until: opened.hold_until, is_this_device: true };
@@ -105,7 +123,8 @@ export async function createRequest(deps: RestoreDeps, user: VerifiedUser, devic
 export async function release(deps: RestoreDeps, user: VerifiedUser, deviceId: string, requestId: string, reqId: string): Promise<ReleaseResult> {
   const { db, log } = deps;
   if (!user.email) throw new Refusal('no_address', 409);
-  const loaded = await db.loadWraps(user.sub, deviceId, requestId);
+  const session = sessionOf(user);
+  const loaded = await db.loadWraps(user.sub, deviceId, requestId, session);
   if (loaded.state !== 'ready') {
     const s = loaded.state as RequestState;
     if (s === 'cancelled' || s === 'expired' || s === 'released') {
@@ -128,7 +147,10 @@ export async function release(deps: RestoreDeps, user: VerifiedUser, deviceId: s
       try {
         const w = unpackV1(fromHex(k.escrow_wrap_hex));
         bk = await open(sk, w.enc, INFO.bookKey, aad.bookKey(user.sub, k.child_id, k.key_version, k.escrow_key_version), w.ct);
-        if (bk.length !== 32) bk = null;
+        if (bk.length !== 32) {
+          bk.fill(0);
+          bk = null;
+        }
       } catch (e) {
         if (!(e instanceof HpkeError)) throw e;
         bk = null;
@@ -143,13 +165,13 @@ export async function release(deps: RestoreDeps, user: VerifiedUser, deviceId: s
   }
   const opened = rows.filter((r) => r.outcome === 'opened').length;
   // Log first: no sealed key leaves before its row exists (F08-REQ-042).
-  await db.recordUnwraps(user.sub, deviceId, requestId, rows, reqId);
+  const logged = await db.recordUnwraps(user.sub, deviceId, requestId, rows, reqId);
   log.info('restore.released', { step: 'unwrap', counts: { keys: rows.length, opened, failed: rows.length - opened } });
   if (!opened) throw new Refusal(loaded.keys.some((k) => !deps.keys[k.escrow_key_version]) ? 'unknown_key_version' : 'decrypt_failed', 500);
 
-  // Then the email, the record of use we cannot edit afterwards (F08 6.5 C7).
+  // Then the email, the record of use we cannot edit afterwards (F08 6.5 C7): one per opening.
   await sendOrRefuse(deps, 'backup-key-used', user.email, { when: when(deps.now()), device: DEVICE, requestId: reference(requestId) },
-    `escrow-restore-released:${requestId}`);
+    `escrow-key-used:${requestId}:${logged.opening}`);
   await db.setState(user.sub, requestId, 'released');
   return { state: 'released', request_id: requestId, keys: out };
 }

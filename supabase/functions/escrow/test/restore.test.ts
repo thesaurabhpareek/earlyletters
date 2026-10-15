@@ -8,11 +8,12 @@ import type { SealedBox } from '../contract.ts';
 import { aad, generateKeyPair, INFO, open, unpackV1 } from '../hpke.ts';
 import type { VerifiedUser } from '../jwt.ts';
 import { memoryLogger } from '../log.ts';
+import { PgError } from '../pg.ts';
 import { createRequest, Refusal, release } from '../restore.ts';
 import { ASHA, FakeDb, FakeMailer, phone } from './fakes.ts';
 
 const nowSec = () => Math.floor(Date.now() / 1000);
-const user = (over: Partial<VerifiedUser> = {}): VerifiedUser => ({ sub: ASHA.profile, email: ASHA.email, authAt: nowSec() - 60, sessionId: 's', ...over });
+const user = (over: Partial<VerifiedUser> = {}): VerifiedUser => ({ sub: ASHA.profile, email: ASHA.email, authAt: nowSec() - 60, sessionId: ASHA.session, ...over });
 
 /** What the app does: open (or get) the request, then poll release. */
 const restore = async (deps: Parameters<typeof createRequest>[0], u: VerifiedUser, device: string, rid: string) => {
@@ -100,7 +101,46 @@ Deno.test('[F08-REQ-029] [F08-REQ-042] release: the book key sealed to the reque
   assert.deepEqual(order, ['recordUnwraps', 'email', 'setState'], 'log rows, then the email, then release');
   assert.deepEqual(db.log.map((l) => l.outcome), ['opened']);
   assert.equal(mailer.sent.at(-1)!.subject, 'We used your recovery key');
-  assert.match(mailer.sent.at(-1)!.idempotencyKey, /^escrow-restore-released:/);
+  assert.match(mailer.sent.at(-1)!.idempotencyKey, /^escrow-key-used:[0-9a-f-]{36}:1$/);
+});
+
+Deno.test('[F08-REQ-042] a second release in the 24-hour window opens the keys again and is emailed again, under its own key', async () => {
+  const { escrow, db, mailer, deps } = await world();
+  const p = await phone(db, escrow.pk);
+  await restore(deps, user(), p.device, '0123456789ab');
+  db.requests[0].hold_until = Date.now() - 1000;
+  await restore(deps, user(), p.device, '0123456789ac');
+  await restore(deps, user(), p.device, '0123456789ad');
+  const used = mailer.sent.filter((m) => m.subject === 'We used your recovery key');
+  assert.equal(used.length, 2, 'every opening is told to the owner');
+  assert.notEqual(used[0].idempotencyKey, used[1].idempotencyKey, 'never folded into the first by the mail provider');
+  assert.equal(db.log.length, 2);
+});
+
+Deno.test('after the stop link signs every session out, a token still in its hour opens nothing and collects nothing', async () => {
+  const { escrow, db, deps } = await world();
+  const p = await phone(db, escrow.pk);
+  const view = await createRequest(deps, user(), p.device, '0123456789ab');
+  db.requests[0].hold_until = Date.now() - 1000;
+  db.sessions.clear();
+  await assert.rejects(() => release(deps, user(), p.device, view.request_id, '0123456789ac'), (e) => e instanceof PgError && e.detail === 'session_ended');
+  db.requests.length = 0;
+  await assert.rejects(() => createRequest(deps, user(), p.device, '0123456789ad'), (e) => e instanceof PgError && e.detail === 'session_ended');
+  assert.equal(db.log.length, 0);
+  for (const sessionId of [null, 'not-a-uuid']) {
+    await assert.rejects(() => createRequest(deps, user({ sessionId }), p.device, '0123456789ae'), (e) => e instanceof Refusal && e.code === 'session' && e.status === 401);
+  }
+});
+
+Deno.test('the stop token and approval codes are zeroed once hashed and sealed', async () => {
+  const { escrow, db, deps } = await world();
+  await phone(db, escrow.pk, { device: ASHA.oldPhone, enrolled: true });
+  const p = await phone(db, escrow.pk);
+  const made: Uint8Array[] = [];
+  const rd = { ...deps, random: (n: number) => { const b = crypto.getRandomValues(new Uint8Array(n)); made.push(b); return b; } };
+  await createRequest(rd, user(), p.device, '0123456789ab');
+  assert.equal(made.length, 2, 'one stop token, one approval code');
+  for (const b of made) assert.ok(b.every((x) => x === 0));
 });
 
 Deno.test('[F08-REQ-042] if the email fails, no key leaves the function and the request is not released', async () => {

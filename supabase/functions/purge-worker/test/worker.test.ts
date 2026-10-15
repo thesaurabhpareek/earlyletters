@@ -372,19 +372,57 @@ Deno.test('the run stops starting new work at its time budget', async () => {
 
 // ── Recording backup (20261015230000_backup_server.sql; PRD V2 F08 6.5 D, F08-REQ-024, -042) ──
 
-Deno.test('[F08-REQ-042] daily: the recovery-key log is copied to ops-ledger/escrow/<date>.jsonl with the same rows, ids only', async () => {
+const escrowRow = (id: number, at: string) => ({ id, at, reason: 'restore', outcome: 'opened', profile: CANARY.profileId, subject: null,
+  device: '0192e000-0000-7000-8000-0000000000d2', child: CANARY.childId, kv: 1, ekv: 1, restore: CANARY.requestId, req: '0123456789ab' });
+
+Deno.test('[F08-REQ-042] daily: the recovery-key log is copied to a new ops-ledger/escrow/<date>.run-<stamp>.jsonl per day, ids only', async () => {
   const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
-  const row = (id: number, at: string) => ({ id, at, reason: 'restore', outcome: 'opened', profile: CANARY.profileId, subject: null,
-    device: '0192e000-0000-7000-8000-0000000000d2', child: CANARY.childId, kv: 1, ekv: 1, restore: CANARY.requestId, req: '0123456789ab' });
-  w.escrowLog = [row(1, '2026-11-04T10:00:00.000Z'), row(2, '2026-11-04T11:00:00.000Z'), row(3, '2026-11-05T01:00:00.000Z'), row(4, '2026-09-01T00:00:00.000Z')];
+  w.escrowLog = [escrowRow(1, '2026-11-04T10:00:00.000Z'), escrowRow(2, '2026-11-04T11:00:00.000Z'), escrowRow(3, '2026-11-05T01:00:00.000Z'),
+    escrowRow(4, '2026-09-01T00:00:00.000Z')];
   w.put('ops-ledger', 'escrow/2026-08-01.jsonl');
+  w.put('ops-ledger', 'escrow/2026-08-02.run-20260803T031700Z.jsonl');
   w.put('ops-ledger', 'escrow/2026-10-01.jsonl');
+  for (const d of ['2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03']) w.put('ops-ledger', `escrow/${d}.run-x.jsonl`);
   const { log } = await run(w, testConfig(), 'daily');
-  assert.deepEqual(w.names('ops-ledger').filter((n) => n.startsWith('escrow/')), ['escrow/2026-10-01.jsonl', 'escrow/2026-11-04.jsonl', 'escrow/2026-11-05.jsonl']);
-  const lines = w.objects.get('ops-ledger')!.get('escrow/2026-11-04.jsonl')!.body!.trim().split('\n').map((l) => JSON.parse(l));
+  const mine = w.names('ops-ledger').filter((n) => n.startsWith('escrow/2026-1') && !n.includes('.run-x.'));
+  assert.deepEqual(mine, ['escrow/2026-10-01.jsonl', 'escrow/2026-11-04.run-20261105T031700Z.jsonl', 'escrow/2026-11-05.run-20261105T031700Z.jsonl']);
+  assert.ok(!w.names('ops-ledger').some((n) => n.startsWith('escrow/2026-08-')), 'files past the 60-day keep window go, whatever their name');
+  const lines = w.objects.get('ops-ledger')!.get('escrow/2026-11-04.run-20261105T031700Z.jsonl')!.body!.trim().split('\n').map((l) => JSON.parse(l));
   assert.equal(lines.length, 2, 'the same row count as the table for that day');
   assert.deepEqual(Object.keys(lines[0]).sort(), ['at', 'child', 'device', 'ekv', 'id', 'kv', 'outcome', 'profile', 'reason', 'req', 'restore', 'subject']);
   assert.deepEqual(findCanaries(log.raw.join('\n')), []);
+});
+
+Deno.test('[F08-REQ-042] daily: a later run never replaces an earlier copy, so rows a database restore dropped stay on file', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  for (const d of ['2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03']) w.put('ops-ledger', `escrow/${d}.run-x.jsonl`);
+  w.escrowLog = [escrowRow(1, '2026-11-04T10:00:00.000Z'), escrowRow(2, '2026-11-04T11:00:00.000Z')];
+  await run(w, testConfig(), 'daily');
+  const first = 'escrow/2026-11-04.run-20261105T031700Z.jsonl';
+  const before = w.objects.get('ops-ledger')!.get(first)!.body;
+  // The database is restored to before row 2, and the worker runs again an hour later.
+  w.escrowLog = [escrowRow(1, '2026-11-04T10:00:00.000Z')];
+  w.now = new Date('2026-11-05T04:17:00Z');
+  await run(w, testConfig(), 'daily');
+  assert.equal(w.objects.get('ops-ledger')!.get(first)!.body, before, 'the first copy still shows both uses of the key');
+  assert.ok(w.has('ops-ledger', 'escrow/2026-11-04.run-20261105T041700Z.jsonl'), 'the second run wrote its own file');
+  // Even a run with the very same stamp cannot replace a file: the upload never overwrites.
+  w.escrowLog = [];
+  w.escrowLog.push(escrowRow(9, '2026-11-04T12:00:00.000Z'));
+  w.now = new Date('2026-11-05T03:17:00Z');
+  await run(w, testConfig(), 'daily');
+  assert.equal(w.objects.get('ops-ledger')!.get(first)!.body, before);
+});
+
+Deno.test('[F08-REQ-042] daily: a day of the week before with no copy (the worker was down) is backfilled; a day with one is not', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  w.escrowLog = [escrowRow(1, '2026-11-01T10:00:00.000Z'), escrowRow(2, '2026-11-02T10:00:00.000Z'), escrowRow(3, '2026-10-20T10:00:00.000Z')];
+  w.put('ops-ledger', 'escrow/2026-11-02.run-20261103T031700Z.jsonl');
+  await run(w, testConfig(), 'daily');
+  const names = w.names('ops-ledger').filter((n) => n.startsWith('escrow/'));
+  assert.ok(names.includes('escrow/2026-11-01.run-20261105T031700Z.jsonl'), 'the missing day is copied');
+  assert.ok(!names.includes('escrow/2026-11-02.run-20261105T031700Z.jsonl'), 'a day that has a copy is left alone');
+  assert.ok(!names.some((n) => n.startsWith('escrow/2026-10-20')), 'only the last week is backfilled');
 });
 
 Deno.test('[F08-REQ-043] daily: the backup sweep runs once, after the ledger copies', async () => {

@@ -11,6 +11,11 @@
  * Off when ESCROW_SWITCH is not "on" (this project's switch), when app.escrow_enabled is not on
  * in the main database (SCBKO), or when the app's build flag or remote kill switch keeps the app
  * from calling at all (F08 6.5 C9).
+ *
+ * Request ids: unlike ADR 0017 point 6, this function never takes the caller's x-request-id. It
+ * makes its own for every call and returns it in the header and the envelope, so nothing a client
+ * chooses reaches the access log, the request rows or the logs; support correlates by the id the
+ * app received. The decoded private keys are zeroed when each call ends.
  */
 import { sameString, UUID } from './bytes.ts';
 import { type EscrowConfig, readConfig, switchOn, type EnvGetter } from './config.ts';
@@ -45,8 +50,7 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
 
   return async (req: Request): Promise<Response> => {
     const started = now().getTime();
-    const given = req.headers.get('x-request-id') ?? '';
-    const reqId = /^[0-9a-f]{12}$/.test(given) ? given : randomReqId();
+    const reqId = randomReqId();
     const log = makeLogger(sink, env('ESCROW_VERSION') ?? '1', reqId);
     const reply = <T>(status: number, body: Envelope<T>) => {
       log.info(status < 400 ? 'request.done' : status >= 500 ? 'request.failed' : 'request.refused', {
@@ -64,13 +68,11 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
     log.info('request.start');
     if (req.method !== 'POST') return fail(405, 'bad_request');
     if (!switchOn(env)) return fail(503, 'paused', true, undefined, 'escrow');
-    const { config } = readConfig(env);
-    if (!config) return fail(503, 'unavailable', true);
     const path = new URL(req.url).pathname.replace(/\/+$/, '');
     const releaseMatch = /\/escrow\/v1\/restore-requests\/([0-9a-f-]{36})\/release$/.exec(path);
     const route = path.endsWith('/escrow/v1/restore-requests') ? 'create'
       : releaseMatch && UUID.test(releaseMatch[1]) ? 'release'
-      : path.endsWith('/escrow/v1/rotate') && config.rotation ? 'rotate' : null;
+      : path.endsWith('/escrow/v1/rotate') ? 'rotate' : null;
     if (!route) return fail(404, 'not_found');
 
     const raw = await req.text().catch(() => '');
@@ -84,13 +86,17 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
     }
     const bearer = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
 
+    // The private keys are decoded here and zeroed in `finally`, whatever the outcome.
+    const { config } = readConfig(env);
+    if (!config) return fail(503, 'unavailable', true);
     let db: EscrowDb | null = null;
     const mailer = deps.mailer ? deps.mailer(config) : resendMailer(fetchFn, config.resendApiKey, config.mailFrom, config.replyTo);
     try {
       if (route === 'rotate') {
-        if (!config.rotation || !sameString(bearer, config.rotation.secret)) return fail(401, 'unauthorized');
+        if (!config.rotation) return fail(404, 'not_found'); // no rotate route unless a rotation is configured
+        if (!sameString(bearer, config.rotation.secret)) return fail(401, 'unauthorized');
         db = await openDatabase(config, deps);
-        const r = await rotateBatch({ db, mailer, log, keys: config.keys, now }, config.rotation.from, config.rotation.to, 50, reqId);
+        const r = await rotateBatch({ db, mailer, log, keys: config.keys, now }, config.rotation.from, config.rotation.to, reqId);
         return reply(200, { ok: true, data: r, requestId: reqId });
       }
 
@@ -107,7 +113,8 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
     } catch (e) {
       if (e instanceof JwtError) return e.code === 'unavailable' ? fail(503, 'unavailable', true) : fail(401, 'unauthorized');
       if (e instanceof Refusal) {
-        const code: EscrowErrorCode = e.code === 'reauth_required' ? 'reauth_required' : e.code === 'not_found' ? 'not_found'
+        const code: EscrowErrorCode = e.code === 'reauth_required' ? 'reauth_required' : e.code === 'session' ? 'unauthorized'
+          : e.code === 'not_found' ? 'not_found'
           : e.code === 'deleted' ? 'deleted' : e.code === 'gone' ? 'gone' : e.code === 'email' ? 'unavailable'
           : e.code === 'no_address' ? 'bad_request' : 'internal';
         if (e.status >= 500 && e.code !== 'email') await alert(config, mailer, log, e.code);
@@ -120,6 +127,7 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
           return fail(429, 'rate_limited', false, s, e.detail);
         }
         if (s === 'SCBKO') return fail(503, 'paused', true, s, 'escrow');
+        if (s === '28000' && e.detail === 'session_ended') return fail(401, 'unauthorized', false, s, 'session_ended');
         if (s === 'SCDEL') return fail(409, 'deleted', false, s, e.detail);
         if (s === 'P0002') return fail(404, 'not_found', false, s, e.detail);
         if (s === '22023' || s === 'SCIMM') return fail(400, 'bad_request', false, s);
@@ -130,6 +138,7 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
       return fail(500, 'internal', true);
     } finally {
       if (db) await db.close().catch(() => {});
+      for (const k of Object.values(config.keys)) k.fill(0);
     }
   };
 }

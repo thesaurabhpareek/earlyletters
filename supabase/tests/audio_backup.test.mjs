@@ -46,13 +46,22 @@ const bucket = (await sys(`select public, file_size_limit, allowed_mime_types fr
 check('[F08-REQ-033] entry-audio is private, holds objects up to 20 MB, ciphertext only',
   bucket && bucket.public === false && Number(bucket.file_size_limit) === 20971520
   && JSON.stringify(bucket.allowed_mime_types) === JSON.stringify(['application/octet-stream']));
-const TABLES = ['backup_devices', 'child_keys', 'audio_blobs', 'backup_usage', 'restore_requests', 'restore_approvals', 'escrow_unwraps'];
+const TABLES = ['backup_devices', 'child_keys', 'audio_blobs', 'backup_usage', 'restore_requests', 'restore_approvals', 'escrow_unwraps',
+  'escrow_rotation_notices'];
 check('every backup table has row level security on', (await sys(`select count(*)::int n from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and c.relname = any($1) and c.relrowsecurity`, [TABLES])).rows[0].n === TABLES.length);
 check('every backup table has a restrictive anonymous-session policy', (await sys(`select count(distinct tablename)::int n from pg_policies
   where schemaname = 'public' and tablename = any($1) and permissive = 'RESTRICTIVE' and qual ~ 'is_anonymous'`, [TABLES])).rows[0].n === TABLES.length);
 for (const t of TABLES) {
   check(`${t}: no client can write it directly`, await codeOf(() => as(A, `delete from ${t}`)) === '42501');
+}
+// Hosted Supabase grants every new table to service_role too (the harness mirrors that, so the
+// first check proves the default is in force); the backup tables take it back.
+const priv = async (t, p) => (await sys(`select has_table_privilege('service_role', $1, $2) v`, [`public.${t}`, p])).rows[0].v;
+check('harness: a table without its own revoke is granted to service_role, as on hosted Supabase', await priv('entries', 'delete') === true);
+for (const t of TABLES) {
+  check(`${t}: the service role has no table privilege (only the backup_svc_* functions)`,
+    !(await priv(t, 'select')) && !(await priv(t, 'insert')) && !(await priv(t, 'update')) && !(await priv(t, 'delete')));
 }
 check('the escrow wrap column is not readable by any client', await codeOf(() => as(A, `select escrow_wrap from child_keys`)) === '42501');
 check('the stop token hash is not readable by any client', await codeOf(() => as(A, `select stop_token_hash from restore_requests`)) === '42501');
@@ -157,8 +166,14 @@ const confirm = (uid, entry, sha = SHA) => one(uid, `select public.backup_confir
 const L4 = await letter(A);
 await begin(A, L4, { bytes: 500 });
 check('confirming before the object arrived is refused', await codeOf(() => confirm(A, L4)) === 'P0002');
+check('without a recorded object size, nothing is confirmed on trust (P0002 object)', await (async () => {
+  await sys(`insert into storage.objects (bucket_id, name) values ('entry-audio', $1)`, [`${CHILD}/${A}/${L4}.m4a.enc`]);
+  try { await confirm(A, L4); return false; } catch (e) { return `${e.code} ${e.detail}` === 'P0002 object'; }
+  finally { await sys(`delete from storage.objects where name = $1`, [`${CHILD}/${A}/${L4}.m4a.enc`]); }
+})());
 await sys(`alter table storage.objects add column metadata jsonb`);
 await putObject(A, `${CHILD}/${A}/${L4}.m4a.enc`);
+check('an object whose metadata has no size is not confirmed either (P0002)', await codeOf(() => confirm(A, L4)) === 'P0002');
 await sys(`update storage.objects set metadata = '{"size": 499}' where name = $1`, [`${CHILD}/${A}/${L4}.m4a.enc`]);
 check('confirming an object whose stored size differs from the reservation is refused', await codeOf(() => confirm(A, L4)) === '22023');
 await sys(`update storage.objects set metadata = '{"size": 1200}' where name = $1`, [PATH1]);
@@ -194,6 +209,21 @@ check('at most 600 new reservations an hour (SCRAT begin)', rate === 'SCRAT begi
 check('a resumed reservation never counts against the hour', (await begin(A, L4, { bytes: 500 })).created === false);
 await sys(`update backup_usage set begin_window_start = now() - interval '61 minutes' where profile_id = $1`, [A]);
 check('the hour window starts again', (await begin(A, L3)).created === true);
+// At most 20 reservations wait at once (the quota counts reserved sizes; confirm needs that size).
+const pendingNow = Number((await sys(`select count(*) n from audio_blobs where author_id = $1 and state = 'pending'`, [A])).rows[0].n);
+const FILLERS = Array.from({ length: 20 - pendingNow }, (_, i) => `0192e1ff-0000-7000-8000-${String(i + 1).padStart(12, '0')}`);
+for (const f of FILLERS) {
+  await sys(`insert into audio_blobs (entry_id, child_id, author_id, object_path, key_version, wrapped_file_key, bytes)
+             values ($1, $2, $3, $4, 1, $5, 10)`, [f, CHILD, A, `${CHILD}/${A}/${f}.m4a.enc`, FKEY]);
+}
+const L5 = await letter(A);
+const tooMany = await (async () => { try { await begin(A, L5); } catch (e) { return `${e.code} ${e.detail}`; } })();
+check('[F08-REQ-033] with 20 reservations waiting, a 21st is SCRAT pending', tooMany === 'SCRAT pending');
+check('a waiting reservation still resumes at the limit', (await begin(A, L4, { bytes: 500 })).created === false);
+await sys(`delete from audio_blobs where entry_id = any($1::uuid[])`, [FILLERS]);
+check('once uploads finish or go, reservations open again', (await begin(A, L5)).created === true);
+await as(A, `select public.backup_discard($1)`, [L5]);
+await sys(`update storage_purge_queue set done_at = now() where bucket_id = 'entry-audio'`);
 
 // ── Discard and delete all ────────────────────────────────────────────────
 const used = async (uid) => Number((await sys(`select used_bytes from backup_usage where profile_id = $1`, [uid])).rows[0].used_bytes);
@@ -205,13 +235,42 @@ check('[F08-REQ-043] the purge ledger holds audio_blob and storage_object rows f
   (await sys(`select entity_type from purge_ledger where (entity_type, entity_id) in (('audio_blob', $1), ('storage_object', $2)) order by 1`,
     [L3, `entry-audio/${CHILD}/${A}/${L3}.m4a.enc`])).rows.map((r) => r.entity_type).join(',') === 'audio_blob,storage_object');
 check('the quota gives the bytes back', (await used(A)) === before - 1000);
-check('a purged recording id is never reserved again (SCDEL purged)', await codeOf(() => begin(A, L3)) === 'SCDEL');
+const purging = await (async () => { try { await begin(A, L3); } catch (e) { return `${e.code} ${e.detail}`; } })();
+check('while the old object still waits for the purge worker, a new reservation of that path waits (55P03 purging)', purging === '55P03 purging');
+await sys(`update storage_purge_queue set done_at = now() where bucket_id = 'entry-audio' and object_path = $1`, [`${CHILD}/${A}/${L3}.m4a.enc`]);
+check('once the old object is gone, the live letter can be backed up again', (await begin(A, L3)).created === true);
+await as(A, `select public.backup_discard($1)`, [L3]);
+await sys(`update storage_purge_queue set done_at = now() where bucket_id = 'entry-audio'`);
 check('discarding someone else\'s recording does nothing', (await one(B, `select public.backup_discard($1) r`, [L1])).r.discarded === false);
 
 const confirmed = Number((await sys(`select count(*) n from audio_blobs where author_id = $1 and state = 'confirmed'`, [A])).rows[0].n);
-const wrong = await (async () => { try { await as(A, `select public.backup_delete_all($1)`, [confirmed + 1]); } catch (e) { return `${e.code} ${e.detail} ${e.hint}`; } })();
+// "Delete the backup" needs a sign-in in the last 10 minutes (amr in the JWT PostgREST passes)
+// in a session that still exists (auth.sessions; the stop link signs every session out).
+const SESS_A = '0192e1ee-0000-7000-8000-0000000000a1';
+await sys(`insert into auth.sessions (id, user_id) values ($1, $2)`, [SESS_A, A]);
+const withAmr = async (uid, ageSec, sql, params, session = SESS_A) => {
+  const claims = JSON.stringify({ sub: uid, role: 'authenticated', is_anonymous: false, session_id: session,
+    amr: [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) - ageSec }] });
+  await sys('reset role');
+  await sys(`select set_config('request.jwt.claim.sub', $1, false), set_config('request.jwt.claims', $2, false)`, [uid, claims]);
+  await sys('set role authenticated');
+  try { return await sys(sql, params); } finally {
+    await sys('reset role');
+    await sys(`select set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claims', '', false)`);
+  }
+};
+const stale = await (async () => { try { await withAmr(A, 3600, `select public.backup_delete_all($1)`, [confirmed]); } catch (e) { return `${e.code} ${e.detail}`; } })();
+check('a session whose last sign-in is older than 10 minutes cannot delete the backup (SCSTP step_up_required)', stale === 'SCSTP step_up_required');
+check('a token with no sign-in time cannot delete the backup either', await codeOf(() => as(A, `select public.backup_delete_all($1)`, [confirmed])) === 'SCSTP');
+check('a fresh sign-in whose session was signed out cannot delete the backup (SCSTP)',
+  await codeOf(() => withAmr(A, 60, `select public.backup_delete_all($1)`, [confirmed], '0192e1ee-0000-7000-8000-0000000000ff')) === 'SCSTP'
+  && await codeOf(() => withAmr(A, 60, `select public.backup_delete_all($1)`, [confirmed], null)) === 'SCSTP');
+await sys(`update auth.sessions set not_after = now() - interval '1 minute' where id = $1`, [SESS_A]);
+check('nor can one whose session has passed its end', await codeOf(() => withAmr(A, 60, `select public.backup_delete_all($1)`, [confirmed])) === 'SCSTP');
+await sys(`update auth.sessions set not_after = null where id = $1`, [SESS_A]);
+const wrong = await (async () => { try { await withAmr(A, 60, `select public.backup_delete_all($1)`, [confirmed + 1]); } catch (e) { return `${e.code} ${e.detail} ${e.hint}`; } })();
 check('[F08-REQ-035] "Delete the backup" deletes nothing unless the count matches what is backed up', wrong === `22023 count ${confirmed}`);
-const del = (await one(A, `select public.backup_delete_all($1) r`, [confirmed])).r;
+const del = (await withAmr(A, 60, `select public.backup_delete_all($1) r`, [confirmed])).rows[0].r;
 check('[F08-REQ-035] with the right count, every recording and the book key go', del.deleted_recordings >= 1 && del.deleted_keys === 1
   && (await sys(`select count(*)::int n from audio_blobs where author_id = $1`, [A])).rows[0].n === 0
   && (await sys(`select count(*)::int n from child_keys where profile_id = $1`, [A])).rows[0].n === 0);
@@ -222,6 +281,8 @@ check('turning backup on again stores the same book key as version 1, with its k
 check('the owner reads the key check (which key was escrowed), never the wrap', (await as(A, `select encode(key_check, 'hex') c from child_keys`)).rows[0].c === '3c'.repeat(16));
 const otherKey = await (async () => { try { await storeKey(A, { check: hex('3d', 16) }); } catch (e) { return `${e.code} ${e.detail}`; } })();
 check('[F08-REQ-028] the same version with another key check is another key: SCIMM key_exists', otherKey === 'SCIMM key_exists');
+await sys(`update storage_purge_queue set done_at = now() where bucket_id = 'entry-audio'`);
+check('after "Delete the backup" and turning it on again, the same recordings back up again', (await begin(A, L4, { bytes: 500 })).created === true);
 
 // ── An account being deleted stops uploads ────────────────────────────────
 await as(B, `select * from public.request_account_deletion('ios')`);

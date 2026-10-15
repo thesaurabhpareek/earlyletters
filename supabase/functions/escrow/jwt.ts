@@ -129,7 +129,7 @@ export async function verifyAccessToken(token: string, opts: { mainUrl: string; 
     sub: claims.sub,
     email: typeof claims.email === 'string' && claims.email.includes('@') ? claims.email : null,
     authAt,
-    sessionId: typeof claims.session_id === 'string' ? claims.session_id : null,
+    sessionId: typeof claims.session_id === 'string' && UUID.test(claims.session_id.toLowerCase()) ? claims.session_id.toLowerCase() : null,
   };
 }
 

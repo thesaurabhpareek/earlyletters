@@ -5,7 +5,7 @@
  * driver vendored here would be thousands of lines inside the trust boundary. This is the
  * protocol subset that job needs, and no more:
  *  - TLS is required (SSLRequest first; a server that says no is refused), with the main
- *    project's CA when given (runbook B4, ESCROW_DB_CA);
+ *    project's CA, which the configuration requires (runbook B5, ESCROW_DB_CA);
  *  - authentication is SCRAM-SHA-256 only (RFC 5802, RFC 7677); cleartext and MD5 are refused,
  *    and the server's signature is checked, so a fake server cannot pass as the database;
  *  - queries use the extended protocol with bound text parameters only, never string-built SQL;

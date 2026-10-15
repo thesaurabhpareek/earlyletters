@@ -69,7 +69,8 @@ const BDEV = uuid7();
 const BDEV2 = uuid7();
 const BHEX = (b, n) => `'\\x${b.repeat(n)}'::bytea`;
 const BPATH = `${CHILD}/${A}/${aBook}.m4a.enc`;
-await sys(`insert into backup_devices (device_id, profile_id, public_key) values ($1, $3, ${BHEX('a1', 32)}), ($2, $3, ${BHEX('a2', 32)})`, [BDEV, BDEV2, A]);
+await sys(`insert into backup_devices (device_id, profile_id, public_key, enrolled_at) values ($1, $3, ${BHEX('a1', 32)}, now() - interval '30 days'),
+  ($2, $3, ${BHEX('a2', 32)}, now() - interval '30 days')`, [BDEV, BDEV2, A]);
 await sys(`insert into child_keys (child_id, profile_id, key_version, escrow_wrap, escrow_key_version) values ($1, $2, 1, ${BHEX('01', 81)}, 1)`, [CHILD, A]);
 await sys(`insert into audio_blobs (entry_id, child_id, author_id, object_path, key_version, wrapped_file_key, bytes) values ($1, $2, $3, $4, 1, ${BHEX('cd', 60)}, 100)`, [aBook, CHILD, A, BPATH]);
 await sys(`insert into storage.objects (bucket_id, name) values ('entry-audio', $1)`, [BPATH]);
@@ -78,6 +79,7 @@ const BREQ = (await sys(`insert into restore_requests (profile_id, device_id, ho
 await sys(`insert into restore_approvals (request_id, device_id, sealed_code, code_hash) values ($1, $2, ${BHEX('5c', 80)}, sha256(${BHEX('5d', 32)}))`, [BREQ, BDEV2]);
 await sys(`insert into escrow_unwraps (profile_id, device_id, child_id, key_version, escrow_key_version, reason, outcome, restore_request_id)
   values ($1, $2, $3, 1, 1, 'restore', 'opened', $4)`, [A, BDEV, CHILD, BREQ]);
+await sys(`insert into escrow_rotation_notices (profile_id, to_version) values ($1, 2)`, [A]);
 
 const PERSONAS = ['parent', 'coparent', 'contributor', 'outsider', 'anonymous', 'anon'];
 const UID = { parent: A, coparent: B, contributor: N, outsider: C, anonymous: W };
@@ -139,6 +141,7 @@ const READS = [
   ['restore_requests', 'select 1 from restore_requests', [],                          [1, 0, 0, 0, 0, '42501']],
   ['restore_approvals', 'select 1 from restore_approvals', [],                        [1, 0, 0, 0, 0, '42501']],
   ['escrow_unwraps', 'select 1 from escrow_unwraps', [],                              [1, 0, 0, 0, 0, '42501']],
+  ['escrow_rotation_notices', 'select 1 from escrow_rotation_notices', [],            ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_keys: the escrow wrap', 'select escrow_wrap from child_keys', [],           ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: backup object', 'select 1 from storage.objects where name=$1', [BPATH],  [1, 0, 0, 0, 0, 0]],
 ];
@@ -211,7 +214,8 @@ const RPCS = [
   ['backup_begin', `select public.backup_begin('${aBook}', '${CHILD}', 100, 1, ${BHEX('cd', 60)})`, ['SCBKO', 'SCBKO', 'SCBKO', 'SCBKO', 'SCANO', '42501']],
   ['backup_confirm', `select public.backup_confirm('${aPrivate}', ${BHEX('ef', 32)})`, ['P0002', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
   ['backup_discard', `select public.backup_discard('${aBook}')`,                        ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['backup_delete_all', `select public.backup_delete_all(0)`,                           ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // backup_delete_all needs a sign-in in the last 10 minutes; these sessions carry no amr (SCSTP).
+  ['backup_delete_all', `select public.backup_delete_all(0)`,                           ['SCSTP', 'SCSTP', 'SCSTP', 'SCSTP', 'SCANO', '42501']],
   ['backup_pending_requests', `select public.backup_pending_requests('${BDEV}')`,       ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
   ['backup_approve_request', `select public.backup_approve_request('${BREQ}', '${BDEV2}', ${BHEX('5d', 32)})`, ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
   ['backup_cancel_request', `select public.backup_cancel_request('${BREQ}')`,           ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
@@ -250,12 +254,16 @@ const SERVICE_ONLY = [
   // the escrow_* functions (role escrow_svc only; its own grants are tested in audio_backup_escrow).
   `select public.backup_switch_on('backup')`, `select public.backup_escrow_key_trusted(1)`, `select public.backup_account_deleting('${A}')`,
   `select public.backup_entry_exists('${aBook}', '${A}', '${CHILD}')`, `select public.backup_forget_entry('${aBook}')`,
+  `select public.backup_session_live('${A}', '${uuid7()}')`, `select public.backup_recent_sign_in()`,
+  `select public.escrow_rotation_on(1, 2)`, `select public.escrow_approvers('${A}', '${BDEV}')`, `select public.escrow_long_hold('${A}', '${BDEV}')`,
+  `select public.escrow_require_session('${A}', '${uuid7()}')`,
   `select public.backup_svc_sweep(now(), 1)`, `select public.backup_svc_unwraps_between(now(), now(), 1)`, `select public.backup_svc_stop(${BHEX('00', 32)})`,
   `select public.escrow_require_on()`, `select public.escrow_request_context('${A}', '${BDEV}')`,
-  `select public.escrow_open_request('${A}', '${BDEV}', '0123456789ab', ${BHEX('00', 32)}, '[]')`,
-  `select public.escrow_load_wraps('${A}', '${BDEV}', '${BREQ}')`, `select public.escrow_record_unwraps('${A}', '${BDEV}', '${BREQ}', '[]', null)`,
-  `select public.escrow_set_request_state('${A}', '${BREQ}', 'notified')`, `select public.escrow_rotation_batch(1, 1)`,
+  `select public.escrow_open_request('${A}', '${BDEV}', '${uuid7()}', '0123456789ab', ${BHEX('00', 32)}, '[]')`,
+  `select public.escrow_load_wraps('${A}', '${BDEV}', '${BREQ}', '${uuid7()}')`, `select public.escrow_record_unwraps('${A}', '${BDEV}', '${BREQ}', '[]', null)`,
+  `select public.escrow_set_request_state('${A}', '${BREQ}', 'notified')`, `select public.escrow_rotation_batch(1, 2)`,
   `select public.escrow_rewrap_key('${A}', '${CHILD}', 1, 1, 2, ${BHEX('01', 81)}, null)`,
+  `select public.escrow_rotation_failed('${A}', '${CHILD}', 1, 1, 2, null)`, `select public.escrow_rotation_notices_due(2, 1)`, `select public.escrow_rotation_notice_sent('${uuid7()}', true)`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));

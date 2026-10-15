@@ -20,6 +20,7 @@ async function setup(over: Record<string, string | undefined> = {}) {
     ESCROW_DB_URL: 'postgresql://escrow_svc.ref:pw-fixture@pooler.example:5432/postgres',
     RESEND_API_KEY: 're_fixture',
     ESCROW_PRIVATE_KEY_V1: encodeBase64(escrow.sk),
+    ESCROW_DB_CA: '-----BEGIN CERTIFICATE-----\nMIIfixture\n-----END CERTIFICATE-----\n',
     ...over,
   };
   const handler = makeHandler((n) => env[n], { fetch: t.fetchFn, openDb: async () => db, mailer: () => mailer, logSink: (l) => lines.push(l) });
@@ -34,12 +35,15 @@ async function setup(over: Record<string, string | undefined> = {}) {
   return { escrow, t, db, mailer, lines, env, call };
 }
 
-Deno.test('a restore call answers in the ADR 0017 envelope and echoes a valid request id', async () => {
+Deno.test('a restore call answers in the ADR 0017 envelope, under a request id the function made (never the caller\'s)', async () => {
   const s = await setup();
   const p = await phone(s.db, s.escrow.pk);
   const r = await s.call({ device_id: p.device }, { rid: 'abcdef012345' });
   assert.equal(r.status, 200);
-  assert.equal(r.rid, 'abcdef012345');
+  assert.match(r.rid!, /^[0-9a-f]{12}$/);
+  assert.notEqual(r.rid, 'abcdef012345', 'a client-chosen id never reaches the log or the request row');
+  assert.equal(r.json.requestId, r.rid);
+  assert.notEqual(s.db.calls.find((c) => c.fn === 'openRequest')!.args[3], 'abcdef012345');
   assert.deepEqual(Object.keys(r.json).sort(), ['data', 'ok', 'requestId']);
   assert.deepEqual(Object.keys(r.json.data).sort(), ['hold_until', 'is_this_device', 'request_id', 'state']);
   assert.equal(r.json.data.state, 'requested');
@@ -64,7 +68,7 @@ Deno.test('[F08-REQ-041] the escrow project\'s own switch off: 503 paused (escro
 
 Deno.test('missing or malformed configuration fails closed', async () => {
   for (const over of [{ ESCROW_PRIVATE_KEY_V1: undefined }, { ESCROW_PRIVATE_KEY_V1: 'c2hvcnQ=' }, { ESCROW_DB_URL: 'postgresql://postgres:pw@db.example:5432/postgres' },
-    { MAIN_SUPABASE_URL: 'http://insecure.example' }, { RESEND_API_KEY: undefined }]) {
+    { MAIN_SUPABASE_URL: 'http://insecure.example' }, { RESEND_API_KEY: undefined }, { ESCROW_DB_CA: undefined }, { ESCROW_DB_CA: 'not a pem' }]) {
     const s = await setup(over);
     assert.equal((await s.call({ device_id: ASHA.newPhone })).status, 503, JSON.stringify(over));
   }
@@ -94,6 +98,31 @@ Deno.test('a bad token is 401; a stale sign-in for a new request is 401 reauth_r
   const r = await s.call({ device_id: p.device }, { token: stale });
   assert.equal(r.status, 401);
   assert.deepEqual(r.json.error, { code: 'reauth_required', retryable: false, detail: 'step_up_required' });
+});
+
+Deno.test('a token whose session the stop link ended is 401 unauthorized session_ended', async () => {
+  const s = await setup();
+  const p = await phone(s.db, s.escrow.pk);
+  s.db.sessions.clear();
+  const r = await s.call({ device_id: p.device });
+  assert.equal(r.status, 401);
+  assert.deepEqual(r.json.error, { code: 'unauthorized', retryable: false, sqlstate: '28000', detail: 'session_ended' });
+  const noSession = await s.call({ device_id: p.device }, { token: await s.t.mint({ session_id: undefined }) });
+  assert.deepEqual(noSession.json.error, { code: 'unauthorized', retryable: false, detail: 'session_ended' });
+});
+
+Deno.test('the decoded escrow private keys are zeroed when a call ends', async () => {
+  const escrow = await generateKeyPair();
+  const seen: Uint8Array[] = [];
+  const env: Record<string, string> = {
+    ESCROW_SWITCH: 'on', MAIN_SUPABASE_URL: ASHA.mainUrl, ESCROW_DB_URL: 'postgresql://escrow_svc.ref:pw-fixture@pooler.example:5432/postgres',
+    RESEND_API_KEY: 're_fixture', ESCROW_PRIVATE_KEY_V1: encodeBase64(escrow.sk), ESCROW_DB_CA: '-----BEGIN CERTIFICATE-----\nx\n-----END CERTIFICATE-----',
+  };
+  const t = await tokenMinter();
+  const handler = makeHandler((n) => env[n], { fetch: t.fetchFn, openDb: async (cfg) => { seen.push(...Object.values(cfg.keys)); return new FakeDb(); }, mailer: () => new FakeMailer(), logSink: () => {} });
+  await handler(new Request('https://escrow.example/escrow/v1/restore-requests', { method: 'POST', headers: { authorization: `Bearer ${await t.mint()}` }, body: JSON.stringify({ device_id: ASHA.newPhone }) }));
+  assert.equal(seen.length, 1);
+  assert.ok(seen[0].every((b) => b === 0));
 });
 
 Deno.test('[F08-REQ-029] over a limit: 429 rate_limited, and the founder gets one content-free alert', async () => {
@@ -133,6 +162,7 @@ Deno.test('rotation runs only with its task secret, and only while configured', 
   const r = await s.call({}, { path: '/escrow/v1/rotate', token: secret });
   assert.equal(r.status, 200);
   assert.equal(r.json.data.rewrapped, 1);
+  assert.equal(r.json.data.notices_pending, 0);
 });
 
 Deno.test('canary: no log line carries an id, an email, a token or a key, through success and failure', async () => {

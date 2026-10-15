@@ -12,7 +12,7 @@ export interface EscrowConfig {
   mainUrl: string;
   /** postgresql://escrow_svc.<ref>:<password>@<pooler host>:5432/postgres (TLS is always on). */
   dbUrl: string;
-  /** PEM of the main project's database CA (dashboard: Database settings, SSL). */
+  /** PEM of the main project's database CA (dashboard: Database settings, SSL). Required. */
   dbCaCerts: string[];
   /** ESCROW_PRIVATE_KEY_V<n>: raw 32-byte X25519 private keys by escrow key version. */
   keys: Record<number, Uint8Array>;
@@ -54,8 +54,11 @@ export function readConfig(get: EnvGetter): { config: EscrowConfig | null; probl
     else keys[n] = k;
   }
   if (!Object.keys(keys).length) problems.push('no ESCROW_PRIVATE_KEY_V<n>');
+  // Required: the pooler's certificate is checked against the main project's own CA, never
+  // against the public roots alone (runbook B4).
   const ca = get('ESCROW_DB_CA') ?? '';
   const dbCaCerts = ca.includes('BEGIN CERTIFICATE') ? [ca] : [];
+  if (!dbCaCerts.length) problems.push('ESCROW_DB_CA must be the PEM of the main database CA');
   let rotation: EscrowConfig['rotation'] = null;
   const secret = v('ESCROW_TASK_SECRET');
   if (secret) {

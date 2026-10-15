@@ -9,7 +9,7 @@
  *        open one. Safe to repeat.
  *   POST {escrow}/functions/v1/escrow/v1/restore-requests/<id>/release { "device_id": "<uuid>" }
  *     -> ReleaseResult. Poll until "released"; 410 gone with detail cancelled | expired when closed.
- *   Authorization: Bearer <the user's access token from the MAIN project>; x-request-id optional.
+ *   Authorization: Bearer <the user's access token from the MAIN project>; any x-request-id sent is ignored (the function makes its own).
  *
  * Not here (main-project RPCs, migration <ts>_backup_server.sql): pending requests with the sealed
  * approval code (backup_pending_requests), approve with the opened code (backup_approve_request),
@@ -54,6 +54,7 @@ export type EscrowErrorCode =
 /** Closed details, the subset of S07's ERROR_DETAILS this function uses. */
 export const ESCROW_ERROR_DETAILS = [
   'step_up_required', 'device_unknown', 'cancelled', 'expired', 'deletion_pending', 'limit_restores', 'limit_keys', 'escrow',
+  'session_ended',
 ] as const;
 export type EscrowErrorDetail = (typeof ESCROW_ERROR_DETAILS)[number];
 

@@ -90,6 +90,7 @@ export interface BackupSweep {
   stale_pending: number;
   expired_requests: number;
   old_requests: number;
+  old_notices: number;
   old_log_rows: number;
 }
 

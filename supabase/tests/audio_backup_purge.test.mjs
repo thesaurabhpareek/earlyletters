@@ -11,8 +11,9 @@ const hex = (byte, n) => Buffer.from(byte.repeat(n), 'hex');
 const boxOf = (b) => JSON.stringify({ suite: 'hpke-x25519-sha256-aes256gcm', enc: Buffer.from(b.repeat(32), 'hex').toString('base64'),
   ct: Buffer.from(b.repeat(48), 'hex').toString('base64') });   // stored as 0x01 || enc || ct (81 bytes)
 const PEPPER = 'pepper-for-tests-only-0123456789abcdef';
-// Supabase's storage.objects has owner columns; the harness stub does not (as in ops_deletion_worker).
-await sys(`alter table storage.objects add column owner uuid, add column owner_id text, add column created_at timestamptz not null default now()`);
+// Supabase's storage.objects has owner and metadata columns; the harness stub does not (as in ops_deletion_worker).
+await sys(`alter table storage.objects add column owner uuid, add column owner_id text, add column created_at timestamptz not null default now(),
+  add column metadata jsonb`);
 
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${S}')`);
 await publishPolicies();
@@ -46,7 +47,7 @@ const backedUp = async (author, child) => {
   const id = await letter(author, child);
   const path = (await as(author, `select public.backup_begin($1, $2, 1000, 1, $3::bytea) r`, [id, child, hex('dd', 60)])).rows[0].r.object_path;
   await as(author, `insert into storage.objects (bucket_id, name) values ('entry-audio', $1)`, [path]);
-  await sys(`update storage.objects set owner = $2::uuid, owner_id = $2 where name = $1`, [path, author]);
+  await sys(`update storage.objects set owner = $2::uuid, owner_id = $2, metadata = '{"size": 1000}' where name = $1`, [path, author]);
   await as(author, `select public.backup_confirm($1, $2::bytea)`, [id, hex('ee', 32)]);
   return { id, path };
 };
@@ -68,7 +69,7 @@ check('[F08-REQ-024] day 30: the letter\'s audio_blobs row is gone', await blobs
 check('[F08-REQ-024] day 30: its exact object_path is queued in entry-audio', await queued(l1.path));
 check('[F08-REQ-024] day 30: purge_ledger holds storage_object and audio_blob rows for it', await ledgered(l1.id, l1.path));
 check('[F08-REQ-024] and the entry row itself, as before', (await sys(`select 1 from purge_ledger where entity_type = 'entry' and entity_id = $1`, [l1.id])).rows.length === 1);
-check('a purged id can never be reserved again', await codeOf(() => as(A, `select public.backup_begin($1, $2, 1000, 1, $3::bytea)`, [l1.id, SHARED, hex('dd', 60)])) === 'SCDEL');
+check('a purged letter\'s id can never be reserved again (SCDEL purged)', await codeOf(() => as(A, `select public.backup_begin($1, $2, 1000, 1, $3::bytea)`, [l1.id, SHARED, hex('dd', 60)])) === 'SCDEL');
 
 // Any hard delete of a letter (the F16 erase op, a replayed ledger) does the same.
 const l2 = await backedUp(A, SHARED);
@@ -102,14 +103,19 @@ for (const [id, age] of [[orphanId, '31 days'], [orphanYoung, '29 days']]) {
     values ($1, $2, $3, $4, 1, $5::bytea, 10, now() - $6::interval)`, [id, SHARED, A, `${SHARED}/${A}/${id}.m4a.enc`, hex('dd', 60), age]);
 }
 const l4 = await letter(A, SHARED);
+const l5 = await letter(A, SHARED);
 await as(A, `select public.backup_begin($1, $2, 1000, 1, $3::bytea)`, [l4, SHARED, hex('dd', 60)]);
-await sys(`update audio_blobs set updated_at = now() - interval '8 days' where entry_id = $1`, [l4]);
+await as(A, `select public.backup_begin($1, $2, 1000, 1, $3::bytea)`, [l5, SHARED, hex('dd', 60)]);
+await sys(`update audio_blobs set updated_at = now() - interval '25 hours' where entry_id = $1`, [l4]);
+await sys(`update audio_blobs set updated_at = now() - interval '23 hours' where entry_id = $1`, [l5]);
 const sw = await sweep();
 check('[F08-REQ-043] the sweep purges a backup with no letter for 30 days (a crash path)', sw.orphans === 1 && await blobs('entry_id = $1', [orphanId]) === 0
   && await queued(`${SHARED}/${A}/${orphanId}.m4a.enc`));
 check('the sweep leaves a younger one alone', await blobs('entry_id = $1', [orphanYoung]) === 1);
-check('the sweep purges a reservation never confirmed in 7 days (its object, if any, goes too)', sw.stale_pending === 1 && await blobs('entry_id = $1', [l4]) === 0
+check('the sweep purges a reservation never confirmed in 24 hours (its object, if any, goes too)', sw.stale_pending === 1 && await blobs('entry_id = $1', [l4]) === 0
   && await queued(`${SHARED}/${A}/${l4}.m4a.enc`));
+check('a reservation younger than 24 hours stays (a slow upload)', await blobs('entry_id = $1', [l5]) === 1);
+await as(A, `select public.backup_discard($1)`, [l5]);
 check('users cannot run the sweep', await codeOf(() => as(A, `select public.backup_svc_sweep(now(), 1)`)) === '42501');
 
 // ── Account deletion from request to finalize (F17 8.4, F08-REQ-040 server part) ──
@@ -117,11 +123,14 @@ const keepB = await backedUp(B, SHARED);
 const a1 = await backedUp(A, SHARED);
 const DEV = uuid7();
 const DEV_NEW = uuid7();
+const SESS_A = uuid7();
 await as(A, `select public.backup_register_device($1, $2::bytea)`, [DEV, hex('a1', 32)]);
 await as(A, `select public.backup_register_device($1, $2::bytea)`, [DEV_NEW, hex('a2', 32)]);
+await sys(`update backup_devices set enrolled_at = now() - interval '30 days' where device_id = $1`, [DEV]);
+await sys(`insert into auth.sessions (id, user_id) values ($1, $2)`, [SESS_A, A]);
 await db.exec('set role escrow_svc');
-const req = (await db.query(`select public.escrow_open_request($1, $2, '0123456789ab', $3::bytea, $4::jsonb) r`,
-  [A, DEV_NEW, hex('5a', 32), JSON.stringify([{ device_id: DEV, code_hash_hex: '11'.repeat(32), sealed_code_hex: '5c'.repeat(80) }])])).rows[0].r;
+const req = (await db.query(`select public.escrow_open_request($1, $2, $3, '0123456789ab', $4::bytea, $5::jsonb) r`,
+  [A, DEV_NEW, SESS_A, hex('5a', 32), JSON.stringify([{ device_id: DEV, code_hash_hex: '11'.repeat(32), sealed_code_hex: '5c'.repeat(80) }])])).rows[0].r;
 await db.exec('reset role');
 await sys(`insert into escrow_unwraps (profile_id, device_id, child_id, key_version, escrow_key_version, reason, outcome, restore_request_id)
   values ($1, $2, $3, 1, 1, 'restore', 'opened', $4)`, [A, DEV_NEW, SHARED, req.request_id]);

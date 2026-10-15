@@ -6,7 +6,7 @@
  * Fictional family "Asha" only (CLAUDE.md).
  */
 import { encodeBase64Url, fromHex, toHex } from '../bytes.ts';
-import type { EscrowDb, LoadResult, OpenResult, RequestContext, RequestState, RotationRow, UnwrapRow } from '../db.ts';
+import type { EscrowDb, LoadResult, OpenResult, RequestContext, RequestState, RotationCursor, RotationNotice, RotationRow, UnwrapRow } from '../db.ts';
 import { aad, generateKeyPair, INFO, packV1, seal } from '../hpke.ts';
 import type { Mail, Mailer } from '../mail.ts';
 import { PgError } from '../pg.ts';
@@ -18,6 +18,7 @@ export const ASHA = {
   oldPhone: '0192e000-0000-7000-8000-0000000000d1',
   newPhone: '0192e000-0000-7000-8000-0000000000d2',
   email: 'asha@example.com',
+  session: '0192e000-0000-7000-8000-0000000000a5',
   mainUrl: 'https://main-fixture.supabase.co',
 };
 
@@ -35,11 +36,19 @@ export class FakeDb implements EscrowDb {
   requests: Req[] = [];
   log: (UnwrapRow & { request: string; profile: string })[] = [];
   rotations: { profile: string; child: string }[] = [];
+  notices: { id: string; profile: string; to: number; sent: boolean; attempts: number }[] = [];
+  /** Live auth sessions (auth.sessions); the stop link deletes them. */
+  sessions = new Set<string>([ASHA.session]);
   deleting = false;
   emails = new Map<string, string>([[ASHA.profile, ASHA.email]]);
   failOn: string | null = null;
   now = () => Date.now();
   private seq = 0;
+  private logSeq = 0;
+
+  private live(session: string) {
+    if (!this.sessions.has(session)) throw new PgError('28000', 'ended', 'session_ended');
+  }
 
   private hit(fn: string, args: unknown[]) {
     this.calls.push({ fn, args });
@@ -62,8 +71,9 @@ export class FakeDb implements EscrowDb {
     };
   }
 
-  async openRequest(profile: string, device: string, requestId: string, hash: Uint8Array, approvals: Req['approvals']): Promise<OpenResult> {
-    this.hit('openRequest', [profile, device, requestId, toHex(hash), approvals]);
+  async openRequest(profile: string, device: string, session: string, requestId: string, hash: Uint8Array, approvals: Req['approvals']): Promise<OpenResult> {
+    this.hit('openRequest', [profile, device, session, requestId, toHex(hash), approvals]);
+    this.live(session);
     const open = this.requests.find((r) => r.device === device && ['requested', 'approved'].includes(r.state));
     if (open) {
       if (!open.notified) open.tokenHash = toHex(hash);
@@ -78,8 +88,9 @@ export class FakeDb implements EscrowDb {
     return { request_id: r.id, state: r.state, hold_until: new Date(r.hold_until).toISOString(), notified: false, created: true, token_replaced: false };
   }
 
-  async loadWraps(profile: string, device: string, request: string): Promise<LoadResult> {
-    this.hit('loadWraps', [profile, device, request]);
+  async loadWraps(profile: string, device: string, request: string, session: string): Promise<LoadResult> {
+    this.hit('loadWraps', [profile, device, request, session]);
+    this.live(session);
     const r = this.requests.find((x) => x.id === request && x.profile === profile && x.device === device);
     if (!r) throw new PgError('P0002', 'request', 'request');
     if (r.state === 'cancelled' || r.state === 'expired') return { state: r.state };
@@ -91,10 +102,14 @@ export class FakeDb implements EscrowDb {
     };
   }
 
-  async recordUnwraps(profile: string, _device: string, request: string, rows: UnwrapRow[], requestId: string): Promise<number> {
+  async recordUnwraps(profile: string, _device: string, request: string, rows: UnwrapRow[], requestId: string) {
     this.hit('recordUnwraps', [profile, request, rows, requestId]);
-    for (const row of rows) this.log.push({ ...row, request, profile });
-    return rows.length;
+    const opening = this.logSeq + 1;
+    for (const row of rows) {
+      this.logSeq++;
+      this.log.push({ ...row, request, profile });
+    }
+    return { rows: rows.length, opening };
   }
 
   async setState(profile: string, request: string, event: 'notified' | 'released') {
@@ -109,20 +124,49 @@ export class FakeDb implements EscrowDb {
     return { state: r.state };
   }
 
-  async rotationBatch(from: number, limit: number): Promise<RotationRow[]> {
-    this.hit('rotationBatch', [from, limit]);
-    return this.wraps.filter((w) => w.ekv === from).slice(0, limit).map((w) => ({ profile_id: w.profile, child_id: w.child, key_version: w.kv, escrow_wrap_hex: toHex(w.wrap) }));
+  async rotationBatch(from: number, to: number, after: RotationCursor, limit: number): Promise<RotationRow[]> {
+    this.hit('rotationBatch', [from, to, after, limit]);
+    const key = (p: string, c: string, kv: number) => `${p}|${c}|${String(kv).padStart(4, '0')}`;
+    const cut = after ? key(after.profile_id, after.child_id, after.key_version) : '';
+    return this.wraps.filter((w) => w.ekv === from && key(w.profile, w.child, w.kv) > cut)
+      .sort((a, b) => key(a.profile, a.child, a.kv).localeCompare(key(b.profile, b.child, b.kv))).slice(0, limit)
+      .map((w) => ({ profile_id: w.profile, child_id: w.child, key_version: w.kv, escrow_wrap_hex: toHex(w.wrap) }));
   }
 
   async rewrapKey(profile: string, child: string, kv: number, from: number, to: number, wrap: Uint8Array) {
     this.hit('rewrapKey', [profile, child, kv, from, to]);
     const w = this.wraps.find((x) => x.profile === profile && x.child === child && x.kv === kv && x.ekv === from);
-    if (!w) return { updated: false, first_for_account: false, email: null };
-    const first = !this.wraps.some((x) => x.profile === profile && x.ekv === to);
+    if (!w) return { updated: false };
     w.wrap = wrap;
     w.ekv = to;
     this.rotations.push({ profile, child });
-    return { updated: true, first_for_account: first, email: first ? this.emails.get(profile) ?? null : null };
+    if (!this.notices.some((n) => n.profile === profile && n.to === to)) {
+      this.notices.push({ id: `0192e000-0000-7000-8000-${String(this.notices.length + 1).padStart(12, 'f')}`, profile, to, sent: false, attempts: 0 });
+    }
+    return { updated: true };
+  }
+
+  failedRotations: { profile: string; child: string; kv: number; from: number }[] = [];
+  async rotationFailed(profile: string, child: string, kv: number, from: number, to: number) {
+    this.hit('rotationFailed', [profile, child, kv, from, to]);
+    if (!this.failedRotations.some((f) => f.profile === profile && f.child === child && f.kv === kv && f.from === from)) {
+      this.failedRotations.push({ profile, child, kv, from });
+    }
+    return { recorded: true };
+  }
+
+  async rotationNoticesDue(to: number, limit: number): Promise<RotationNotice[]> {
+    this.hit('rotationNoticesDue', [to, limit]);
+    return this.notices.filter((n) => n.to === to && !n.sent && this.emails.get(n.profile)).slice(0, limit)
+      .map((n) => ({ notice_id: n.id, email: this.emails.get(n.profile)! }));
+  }
+
+  async rotationNoticeSent(notice: string, ok: boolean) {
+    this.hit('rotationNoticeSent', [notice, ok]);
+    const n = this.notices.find((x) => x.id === notice);
+    if (n && ok) n.sent = true;
+    else if (n) n.attempts++;
+    return { updated: !!n, pending: this.notices.filter((x) => x.to === n?.to && !x.sent).length };
   }
 
   async close() {
@@ -164,7 +208,7 @@ export async function tokenMinter(mainUrl = ASHA.mainUrl) {
     const now = Math.floor(Date.now() / 1000);
     const h = enc({ alg: 'ES256', kid, typ: 'JWT', ...header });
     const p = enc({ iss: `${mainUrl}/auth/v1`, aud: 'authenticated', role: 'authenticated', sub: ASHA.profile, email: ASHA.email,
-      iat: now, exp: now + 3600, amr: [{ method: 'otp', timestamp: now - 60 }], session_id: 'sess-fixture', is_anonymous: false, ...claims });
+      iat: now, exp: now + 3600, amr: [{ method: 'otp', timestamp: now - 60 }], session_id: ASHA.session, is_anonymous: false, ...claims });
     const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, pair.privateKey, new TextEncoder().encode(`${h}.${p}`)));
     return `${h}.${p}.${encodeBase64Url(sig)}`;
   };
