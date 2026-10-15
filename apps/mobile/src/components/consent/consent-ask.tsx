@@ -14,13 +14,19 @@ import { useSegments } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { analyticsAskDueNow, recordAnalyticsOffer } from '@/lib/analytics/ask';
+import { capabilities } from '@/lib/capabilities';
 import { subscribe } from '@/lib/store';
 import { AnalyticsConsentSheet } from './analytics-consent-sheet';
 
 /** Time on a calm screen before the ask appears: long enough to land, short enough to be seen. */
 const CALM_DELAY_MS = 1200;
 
+/** Nothing at all in a build without analytics (v1.0, lib/capabilities.ts): the sheet never shows. */
 export function AnalyticsConsentAsk() {
+  return capabilities.analytics ? <ConsentAskWhenDue /> : null;
+}
+
+function ConsentAskWhenDue() {
   const segments = useSegments() as string[];
   const key = segments.join('/');
   const [open, setOpen] = useState(false);
