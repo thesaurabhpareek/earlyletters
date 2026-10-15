@@ -1,0 +1,39 @@
+{
+  "id": "J10-09",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "A letter waiting for its words",
+  "note": "The page shows the app's own small, muted note instead of an empty page, with no signature under it; the recording is there.",
+  "from": "J10-01",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Saturday, October 10, 2026. Asha is 6 months and 3 weeks old. Private A recording, waiting for its words. Hear Mama 0:00 0:54 The download is about 575 MB and starts when you are on Wi-Fi. Get words ready Write the words Add to book Delete",
+  "lines": [
+    "Aa",
+    "Saturday, October 10, 2026. Asha is 6 months and 3 weeks old.",
+    "Private",
+    "A recording, waiting for its words.",
+    "Hear Mama",
+    "0:00",
+    "0:54",
+    "The download is about 575 MB and starts when you are on Wi-Fi.",
+    "Get words ready",
+    "Write the words",
+    "Add to book",
+    "Delete"
+  ]
+}

@@ -5,7 +5,9 @@
  * word-for-word spoken letters, a recording that changed after capture, a
  * private note, a recording that is not on this phone, a recording waiting
  * for its words, a family letter (not the exporter's), a Hindi letter in
- * Devanagari, an Arabic letter, Year 2, and a hidden second book.
+ * Devanagari, an Arabic letter, Year 2, and a hidden second book. Two quiet-day marks (D-084): a
+ * current one with no words, and one saved by an older build that holds the template sentence and
+ * was moved into the book (the old menu allowed it): neither is a letter, neither may print.
  */
 import { createHash } from 'node:crypto';
 import type { Edit } from '@scribe/core';
@@ -112,6 +114,17 @@ export function ashaSnapshot(): ExportSnapshot {
       entry({ id: 'e7', occurredOn: '2026-08-10', authorId: 'user-nani', authorSignsAs: 'Nani', own: false, finalText: 'Your Nani made dal and nobody ate it.', rawTranscript: 'Your Nani made dal and uh nobody ate it.', machineEdits: [filler('Your Nani made dal and uh nobody ate it.', ' uh')] }),
       entry({ id: 'e8', occurredOn: '2026-09-01', finalText: 'आशा, आज तुमने पहली बार ताली बजाई।', audioUri: 'file:///doc/audio/e8.m4a' }),
       entry({ id: 'e10', occurredOn: '2026-12-24', finalText: 'آشا، أنتِ نورُ بيتنا.', authorSignsAs: 'Mama', audioUri: 'file:///doc/audio/e10.m4a', editLevel: 'verbatim' }),
+      entry({ id: 'q1', occurredOn: '2026-10-02', kind: 'not_much', captureMode: 'typed', editLevel: 'verbatim', rawTranscript: '', finalText: '', inBook: false }),
+      entry({
+        id: 'q2',
+        occurredOn: '2026-10-03',
+        kind: 'not_much',
+        captureMode: 'typed',
+        editLevel: 'verbatim',
+        rawTranscript: 'Saturday. Not much today. Just Asha, and us, and an ordinary day.',
+        finalText: 'Saturday. Not much today. Just Asha, and us, and an ordinary day.',
+        inBook: true,
+      }),
       entry({ id: 'e9', occurredOn: '2027-03-10', captureMode: 'typed', finalText: 'One year and two days. You walked to the door and waved.', editLevel: 'verbatim' }),
       entry({ id: 'd1', childId: DEV, occurredOn: '2025-01-05', captureMode: 'typed', finalText: 'First snow.', editLevel: 'verbatim' }),
     ],

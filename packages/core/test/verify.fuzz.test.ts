@@ -12,6 +12,11 @@
  *   2. keep every negation, number, kinship word, "?" and "!" that was said
  *      once (a doubled one may legitimately lose its stumble copy).
  *
+ * A second property runs the same invariants over Devanagari, Hinglish and
+ * decomposed (NFD) Latin, with a generator that also adds, drops and swaps
+ * combining marks (vowel signs, virama, nukta, anusvara, accents) and cuts
+ * edit boundaries inside letters (CORE-01, PMOB-01).
+ *
  * No dependency: a small PRNG (mulberry32) with a fixed seed in CI. The
  * nightly job sets SCRIBE_FUZZ_SEED to a random value; a failure prints the
  * seed and the case so it can be replayed exactly.
@@ -41,6 +46,9 @@ const DICT: DictionaryTerm[] = [
   { term: 'Mumma', kind: 'family', heardAs: ['mama'] },
   { term: 'chalo', kind: 'word', heardAs: ['shallow'] },
 ];
+
+/** Devanagari terms, used by the Unicode property only (the Roman generator's sequence is unchanged). */
+const DEVANAGARI_DICT: DictionaryTerm[] = [{ term: 'आशा', kind: 'child', heardAs: ['आसा'] }];
 
 const CORPUS = [
   'Asha can walk now and she is so proud of it.',
@@ -85,7 +93,7 @@ function mulberry32(seed: number): () => number {
 
 /* ---------- the invariant's own definitions (independent of src/meaning.ts) ---------- */
 
-const lw = (s: string) => s.toLowerCase().replace(/’/g, "'");
+const lw = (s: string) => s.normalize('NFC').toLowerCase().replace(/’/g, "'");
 const wordsOf = (s: string) => tokens(s).map((t) => lw(t.word));
 
 const AGREE: string[][] = [
@@ -98,7 +106,7 @@ function agrees(a: string, b: string): boolean {
   return s.length >= 3 && (l === `${s}s` || l === `${s}es` || (s.endsWith('y') && l === `${s.slice(0, -1)}ies`));
 }
 
-const TERMS = new Set(DICT.map((d) => lw(d.term)));
+const TERMS = new Set([...DICT, ...DEVANAGARI_DICT].map((d) => lw(d.term)));
 
 const NOT_A_NAME = new Set([
   'i', 'me', 'my', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'it', 'its', 'we', 'us', 'our', 'they', 'them', 'their',
@@ -130,8 +138,9 @@ function isFaithful(raw: string[], fin: string[]): boolean {
   return go(0, 0);
 }
 
-const NEG = (w: string) => ['not', 'no', 'never', 'cannot', 'nobody', 'nothing', 'none'].includes(w) || w.endsWith("n't");
-const HEARD = new Set(DICT.flatMap((d) => d.heardAs.map(lw)));
+const NEG = (w: string) =>
+  ['not', 'no', 'never', 'cannot', 'nobody', 'nothing', 'none', 'नहीं', 'नही', 'मत', 'ना', 'न'].includes(w) || w.endsWith("n't");
+const HEARD = new Set([...DICT, ...DEVANAGARI_DICT].flatMap((d) => d.heardAs.map(lw)));
 
 function onceOnly(items: string[]): boolean {
   return new Set(items).size === items.length;
@@ -148,6 +157,8 @@ function checkInvariants(raw: string, text: string): string | null {
   const kin = (ws: string[]) => ws.filter((w) => KINSHIP.has(w) && !HEARD.has(w));
   if (onceOnly(kin(rw)) && kin(fw).join('|') !== kin(rw).join('|')) return 'kinship_changed';
   for (const mark of ['?', '!']) if (text.split(mark).length !== raw.split(mark).length) return `mood_${mark}_changed`;
+  // No combining mark may be left without its letter (an orphan vowel sign or accent).
+  if (/(^|[^\p{L}\p{N}\p{M}\u200C\u200D])\p{M}/u.test(text)) return 'orphan_mark';
   return null;
 }
 
@@ -271,7 +282,7 @@ describe('verifier property: random model edits never add or swap meaning', () =
     // Not vacuous: the generator proposes plenty, and honest repairs get through.
     expect(proposed).toBeGreaterThan(RUNS * 2);
     expect(accepted).toBeGreaterThan(RUNS / 10);
-  });
+  }, 120_000); // 10k runs through the verifier and the full pipeline: well past vitest's 5 s default.
 
   it('the invariant itself catches the TDD 03 7.1 attacks (checker sanity)', () => {
     expect(checkInvariants('I can come.', 'I cannot come.')).toBe('added_or_swapped_word');
@@ -283,5 +294,121 @@ describe('verifier property: random model edits never add or swap meaning', () =
     expect(checkInvariants('I am not sad today.', 'I am sad today.')).toBe('negation_changed');
     expect(checkInvariants('She has two teeth.', 'She has teeth.')).toBe('number_changed');
     expect(checkInvariants('Um, she has a ball.', 'She have a ball.')).toBeNull();
+  });
+});
+
+/* ---------- Unicode: Devanagari, Hinglish and NFD Latin (CORE-01) ---------- */
+
+// Fictional family only. Devanagari terms alongside the Roman ones.
+const UDICT: DictionaryTerm[] = [...DICT, ...DEVANAGARI_DICT];
+const NFD_CAFE = 'cafe\u0301';
+
+const UCORPUS = [
+  'वह खुश है।',
+  'मैं नहीं जाऊंगा।',
+  'आशा आज बहुत हँसी, बहुत।',
+  'उसे मत उठाओ, वह सो रही है।',
+  'नहीं नहीं, वह सो रही है।',
+  'थोड़ा नमक डालो ना।',
+  'ज़रा रुको, आशा आ रही है।',
+  'नानी ने गाना गाया और आशा सो गई।',
+  'आसा ने दो दाँत दिखाए!',
+  'क्या तुमने चाँद देखा?',
+  'उम, वह वह खेल रही थी।',
+  'Asha ne aaj pehli baar Mumma bola!',
+  'woh nahi soyi, bilkul nahi.',
+  'chalo, Nani ke ghar chalein na.',
+  'Ashu bahut khush hai aaj.',
+  `We went to the ${NFD_CAFE} and Asha laughed.`,
+  `the the ${NFD_CAFE} was busy but she was not.`,
+  `Mumma said "${NFD_CAFE}" twice.`,
+  'Asha met Zoe\u0308 at the park today.',
+  'Papa sang "आशा, सो जा" and she slept.',
+];
+
+/** Combining marks a hostile model might add, drop or swap. */
+const MARKS = ['\u093E', '\u093F', '\u0940', '\u0947', '\u094B', '\u0902', '\u094D', '\u093C', '\u0301', '\u0308', '\u200D'];
+
+function unicodeEdits(raw: string, rnd: () => number): Edit[] {
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)];
+  const out = fuzzEdits(raw, rnd).filter(() => rnd() < 0.5);
+  const toks = tokens(raw);
+  const n = 1 + Math.floor(rnd() * 4);
+  const mk = (type: EditType, start: number, end: number, replacement: string): Edit => ({
+    type, start, end, original: raw.slice(start, end), replacement, source: 'model',
+  });
+  for (let k = 0; k < n && toks.length; k++) {
+    const t = pick(toks);
+    const type = rnd() < 0.6 ? 'punctuation' : pick(MODEL_TYPES);
+    const inside = t.start + Math.floor(rnd() * (t.end - t.start + 1));
+    switch (Math.floor(rnd() * 7)) {
+      case 0: // insert a mark anywhere in a word
+        out.push(mk(type, inside, inside, pick(MARKS)));
+        break;
+      case 1: { // drop one mark from a word
+        const m = [...t.word.matchAll(/\p{M}/gu)];
+        if (m.length) {
+          const i = t.start + pick(m).index!;
+          out.push(mk(type, i, i + 1, ''));
+        }
+        break;
+      }
+      case 2: { // swap one mark for another (है -> हो, नहीं -> नही)
+        const m = [...t.word.matchAll(/\p{M}/gu)];
+        if (m.length) {
+          const i = t.start + pick(m).index!;
+          out.push(mk(type, i, i + 1, pick(MARKS)));
+        }
+        break;
+      }
+      case 3: // a word in another normal form, plus or minus one mark
+        out.push(mk(type, t.start, t.end, rnd() < 0.5 ? t.word.normalize('NFD') : t.word.normalize('NFC') + pick(MARKS)));
+        break;
+      case 4: // a period or space wedged at an arbitrary offset inside a word
+        out.push(mk(type, inside, inside, pick(['.', ' ', ',', '।'])));
+        break;
+      case 5: // delete a slice that starts or ends mid-word
+        out.push(mk(pick(['filler', 'repeat', 'false_start', 'punctuation'] as EditType[]), inside, Math.min(raw.length, inside + 1 + Math.floor(rnd() * 4)), ''));
+        break;
+      default: // honest: normalise one word to NFC, or end the sentence
+        if (rnd() < 0.5 && t.word !== t.word.normalize('NFC')) out.push(mk('punctuation', t.start, t.end, t.word.normalize('NFC')));
+        else if (!/[.!?।]\s*$/.test(raw)) out.push(mk('punctuation', raw.trimEnd().length, raw.trimEnd().length, '.'));
+    }
+  }
+  return out;
+}
+
+describe('verifier property: Unicode edits never change a letter or its marks', () => {
+  it(`holds for ${RUNS} generated edit lists over Devanagari, Hinglish and NFD (seed ${SEED})`, () => {
+    const rnd = mulberry32(SEED ^ 0x5eed);
+    let proposed = 0;
+    for (let run = 0; run < RUNS; run++) {
+      const raw = UCORPUS[Math.floor(rnd() * UCORPUS.length)];
+      const edits = unicodeEdits(raw, rnd);
+      proposed += edits.length;
+      const ctx = { raw, level: 'clean' as const, dictionary: UDICT, protectedSpans: protectedSpans(raw, UDICT) };
+      const v = verifyEdits(edits, ctx);
+      for (const e of v.accepted) expect(checkEdit(e, ctx), `seed ${SEED} run ${run}`).toBeNull();
+      const text = applyEdits(raw, v.accepted);
+      const broke = checkInvariants(raw, text);
+      if (broke) {
+        throw new Error(`seed ${SEED} run ${run} (unicode): ${broke}\nraw:  ${raw}\ntext: ${text}\nedits: ${JSON.stringify(v.accepted)}`);
+      }
+      const clean = faithfulClean(raw, { level: 'clean', dictionary: UDICT, modelEdits: edits });
+      const broke2 = checkInvariants(raw, clean.text);
+      if (broke2) {
+        throw new Error(`seed ${SEED} run ${run} (unicode pipeline): ${broke2}\nraw:  ${raw}\ntext: ${clean.text}\nedits: ${JSON.stringify(clean.applied)}`);
+      }
+    }
+    expect(proposed).toBeGreaterThan(RUNS * 2);
+  }, 120_000);
+
+  it('the invariant catches the CORE-01 attacks (checker sanity)', () => {
+    expect(checkInvariants('वह खुश है।', 'वह खुश हो।')).toBe('added_or_swapped_word');
+    expect(checkInvariants('मैं नहीं जाऊंगा।', 'मैं नह जाऊंगा।')).toBe('added_or_swapped_word');
+    expect(checkInvariants('मैं नहीं जाऊंगा।', 'मैं नही जाऊंगा।')).toBe('added_or_swapped_word');
+    expect(checkInvariants(`the ${NFD_CAFE}.`, 'the cafe.')).toBe('added_or_swapped_word');
+    expect(checkInvariants(`the ${NFD_CAFE}.`, 'the caf\u00e9.')).toBeNull();
+    expect(checkInvariants('वह खुश है।', 'वह खुश ह \u0948।')).not.toBeNull();
   });
 });

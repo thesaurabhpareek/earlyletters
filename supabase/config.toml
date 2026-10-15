@@ -1,0 +1,49 @@
+# Supabase CLI configuration for the local stack (`supabase start`) and CI.
+# Keys checked against the CLI source template for v2.119.0
+# (apps/cli-go/pkg/config/templates/config.toml) and parsed by that CLI
+# version on 3 Oct 2026. Anything not listed here takes the CLI default.
+# Reference: https://supabase.com/docs/guides/local-development/cli/config
+#
+# This file configures the LOCAL stack only. CI never runs `supabase config push`
+# (that needs an account access token, which POPS-04 rules out), so hosted auth
+# settings for scribe-staging and scribe-prod are set in the dashboard.
+# See docs/ops/DEPLOY.md.
+#
+# No secret values live here. Every credential is an env() reference.
+
+project_id = "scribe"
+
+[db]
+# Must match the hosted projects (`show server_version;`). 17 is the CLI
+# default for new projects; confirm once scribe-staging exists.
+major_version = 17
+
+[db.seed]
+# No seed file: test data (the fictional family "Asha") lives in supabase/tests.
+enabled = false
+
+[auth]
+enabled = true
+enable_signup = true
+# The database refuses anonymous sessions (SQLSTATE SCANO); keep them off here too.
+enable_anonymous_sign_ins = false
+
+# Sign-in (brief decision 4): Sign in with Apple, Sign in with Google, and
+# email magic link. No passwords and no forgot-password flow. The CLI has no
+# key that turns off email plus password sign-in; the app simply never offers
+# it. Locally, magic-link emails are caught by the bundled mail viewer and
+# never sent.
+[auth.email]
+enable_signup = true
+
+# Apple and Google are off until the founder has the credentials (BL-053).
+# To try them locally, export the variables below and set enabled = true.
+[auth.external.apple]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
+
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"

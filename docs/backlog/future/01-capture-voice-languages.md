@@ -169,14 +169,14 @@ Each item: problem and evidence; who and the job; solution; competitors; differe
 **Problem and evidence**
 - [F] The bar is names 95% after cleaning (ADR 0012); the prompt carries the family's spellings per chunk under a 200-token cap (ADR 0015 section 3).
 - [F] Today the dictionary is built only from the child's name, birthday and "signs as" (`dictionaryFor` in `apps/mobile/src/lib/store.ts`). `DictionaryTerm.heardAs` exists in `packages/core`, and the analytics catalogue already has `dictionary_term_added{source: review_correction}`, but no Review flow writes a taught term.
-- [F] In Devanagari, Arabic and Han there is no capital-letter signal for a name, so only taught mishearings may fix names there; मेरा ("my") sounds like Mira (ADR 0014 section 6).
+- [F] In Devanagari, Arabic and Han there is no capital-letter signal for a name, so only taught mishearings may fix names there; नीला ("blue") is also the name Neela (ADR 0014 section 6).
 - [F] B-REQ-006 (automatic terms) is P0; B-REQ-017 "say the name three times" is BL-305 in v1.1.
 - [F] Untold users praise its "ongoing glossary of people"; the name dictionary is "a visible delight" (US 3.22, 10.10). Wispr learns from edits on its servers, which we cannot copy; an on-device family dictionary is the compatible form (ADJ A4).
 
 **Who and job.** Every spoken author. Job: "Get {child}'s name, Nani's name and our words right, without me retyping them every time."
 
 **Solution [R]**
-1. After the author fixes a word by hand in Review, one quiet line: "Remember 'Mira' for next time?" Yes stores the term and the exact heard form (`heardAs`). Copy by the content owner.
+1. After the author fixes a word by hand in Review, one quiet line: "Remember 'Asha' for next time?" Yes stores the term and the exact heard form (`heardAs`). Copy by the content owner.
 2. A Names and words list per book (Settings > Children > {child}'s book): add, remove, see what was taught. Kinds already exist (child, nickname, family, place, word, self).
 3. Use: terms go into the recogniser prompt (ranked by kind then recency, under the cap); exact heard forms drive `stt_fix` through `verifyEdits` as visible, undoable edits. If the heard form is itself a common word in that language ("mirror", मेरा), it is **offered as a suggestion, never applied automatically** (the existing `soundAlikeTerms` suggest path).
 4. Child-level kinds (child, nickname, family) are shared within the book (BL-178); personal kinds stay with the author.

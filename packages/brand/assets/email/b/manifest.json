@@ -1,0 +1,20 @@
+{
+  "direction": "b",
+  "sources": {
+    "light": "packages/brand/assets/logo/b/lockup-horizontal.svg",
+    "dark": "packages/brand/assets/logo/b/lockup-horizontal-reversed.svg",
+    "avatar": "packages/brand/assets/logo/b/src/icon/app-icon.svg"
+  },
+  "displayWidthPx": 173,
+  "displayHeightPx": 32,
+  "haloPx": 0.5,
+  "alt": "Early Letters",
+  "files": {
+    "logo-light.png": "346x64",
+    "logo-light@1x.png": "173x32",
+    "logo-dark.png": "346x64",
+    "logo-dark@1x.png": "173x32",
+    "avatar-1024.png": "1024x1024"
+  },
+  "hostedAt": "https://earlyletters.com/email/ (copy the chosen direction's files to the root of /email/)"
+}
