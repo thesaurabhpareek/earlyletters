@@ -550,7 +550,7 @@ Two kinds of entry. **Founder** entries record what the founder said in this ses
 
 ## Decisions of 13 and 14 Oct 2026 (founder, in the PRD V2 session)
 
-The founder gave these answers in the PRD V2 session (`docs/prd/v2/_AUTHORING.md` section 3b, M14 to M17). On 14 Oct the founder told the coordinator to "do it for me diligently" after being shown three open defaults; D-093 records those defaults as delegated, and the founder can reopen any of them. Counsel and Apple sign-off are not delegated.
+The founder gave D-089 to D-092 in the PRD V2 session (`docs/prd/v2/_AUTHORING.md` section 3b, M14 to M17). D-093 lists three delivery defaults that are proposed, not decided: they take effect only when the founder confirms them, in this PR or in writing. Counsel and Apple sign-off are never delegated.
 
 | ID | Decision | Status | Proceed? | Date |
 |---|---|---|---|---|
@@ -558,7 +558,7 @@ The founder gave these answers in the PRD V2 session (`docs/prd/v2/_AUTHORING.md
 | D-090 | Keep the full v1.0 scope and move the date; the plan of record is PRD V2 `08-delivery.md` | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
 | D-091 | Recording backup keys are recoverable through server escrow, and the copy says so | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
 | D-092 | A free letter counts only when it is your own letter, its words exist, and you keep it from Review | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
-| D-093 | Three delivery defaults: delegated low-risk merges, free backup, voice-only counting | Delegated (founder, 14 Oct 2026) | Yes | 2026-10-14 |
+| D-093 | Three delivery defaults: low-risk merges by the coordinator, free backup, voice-only counting | Proposed; awaits founder confirmation | No, until confirmed | 2026-10-14 |
 | D-094 | PRD V2 is the product spec of record once PR #124 merges | Decided (founder, 3 and 13 Oct 2026) | Yes, on merge | 2026-10-14 |
 
 ### D-089 Server features are on in v1.0 (founder)
@@ -585,13 +585,13 @@ The founder gave these answers in the PRD V2 session (`docs/prd/v2/_AUTHORING.md
 - **Amends:** D-083 (its rule that "a voice letter kept without words" counts at once, and any counting of letters present on the device regardless of author).
 - **Owner:** payments engineer (stream S06), local store (S03).
 
-### D-093 Three delivery defaults (delegated)
-- **Status:** Delegated by the founder, 14 Oct 2026 ("do it for me diligently", after being shown these as open defaults). The founder can reopen each.
-- **Decision:**
+### D-093 Three delivery defaults (proposed)
+- **Status:** Proposed by the coordinator, 14 Oct 2026. Not in force until the founder confirms each item. Until then the founder merges every pull request, and items 2 and 3 are the spec defaults PRD V2 is written against.
+- **Proposal:**
   1. The coordinator may merge pull requests that change only docs, evidence or tests, after two independent review agents pass them. Anything touching server code, `supabase/**`, auth, payments, migrations or release configuration is merged only by the founder (D-041).
   2. Encrypted recording backup is free for everyone. Plus remains the membership that lets you keep new letters (D-082); it does not gate backup.
   3. Voice-only letters follow D-092.
-- **Owner:** coordinator; founder for reversal.
+- **Owner:** founder (confirmation); coordinator.
 
 ### D-094 PRD V2 is the product spec of record
 - **Status:** Decided (founder asked for PRD V2 on 3 Oct and chose its source order on 13 Oct). Takes effect when PR #124 merges to `develop`.
