@@ -77,19 +77,67 @@ function idleStatus(): SyncStatus {
   };
 }
 
+/** `killSwitches.sync`: whether sync must stay paused, and a way to hear when the config changes. */
+export interface SyncKillSource {
+  killed(): boolean;
+  /** Called whenever the signed remote config changes (so a lifted switch resumes sync at once). */
+  subscribe(listener: () => void): () => void;
+}
+let killSource: SyncKillSource | null = null;
+
 /**
  * `killSwitches.sync` from the signed remote config (ADR 0016; F16-REQ-018). Loaded
  * on first use, from inside a running engine only, so a build with the switch off
- * never evaluates the remote module for sync. Unreadable reads as not killed: the
- * remote client serves its cached or bundled copy, never an error.
+ * never touches the remote module for sync. Metro resolves the inline require when
+ * it bundles the app.
+ */
+function remoteKillSource(): SyncKillSource {
+  const remote = require('../remote') as typeof import('../remote');
+  return {
+    killed: () => remote.getRemoteConfig().killSwitches.sync === true,
+    subscribe: (listener) => remote.remoteConfigDoc.subscribe(() => listener()),
+  };
+}
+
+function currentKillSource(): SyncKillSource {
+  killSource ??= remoteKillSource();
+  return killSource;
+}
+
+/**
+ * Fails closed: if the switch cannot be read at all (the module did not load, or
+ * the read threw), sync stays paused and the outbox keeps every op. A kill switch
+ * that silently stops working is worse than a pause someone can see (phase
+ * `paused_server`). A stale or unsigned config is not an error: lib/remote serves
+ * its cached or bundled copy, so this never fires in a working build.
  */
 function syncKilled(): boolean {
   try {
-    const remote = require('../remote') as typeof import('../remote');
-    return remote.getRemoteConfig().killSwitches.sync === true;
+    return currentKillSource().killed();
   } catch {
-    return false;
+    return true;
   }
+}
+
+/** Wakes the engine when the config changes and sync is no longer killed. Never throws. */
+function onKillSwitchChange(listener: () => void): () => void {
+  try {
+    return currentKillSource().subscribe(() => {
+      if (!syncKilled()) listener();
+    });
+  } catch {
+    return () => {};
+  }
+}
+
+/**
+ * Tests only (vitest sets `VITEST`), like setServerFeaturesForTests: replace the
+ * kill-switch reader, or pass null to go back to the remote config. Throws anywhere else.
+ */
+export function setSyncKillSourceForTests(source: SyncKillSource | null): void {
+  const env = typeof process !== 'undefined' ? process.env : undefined;
+  if (!env?.VITEST) throw new Error('setSyncKillSourceForTests is for tests only');
+  killSource = source;
 }
 
 export function getSyncStatus(): SyncStatus {
@@ -150,6 +198,7 @@ function ensureEngine(): void {
   engine = e;
   engineUnsubs.push(e.subscribe((s) => statusListeners.forEach((l) => l(s))));
   engineUnsubs.push(e.onDrained(() => drainedListeners.forEach((l) => l())));
+  engineUnsubs.push(onKillSwitchChange(() => e.requestSync('retry')));
   if (!e.start()) mismatchUser = userId;
 }
 

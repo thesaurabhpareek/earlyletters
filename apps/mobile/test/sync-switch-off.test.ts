@@ -16,23 +16,24 @@ const spies = vi.hoisted(() => ({
   createClient: vi.fn(() => ({ auth: { startAutoRefresh: () => {}, stopAutoRefresh: () => {} }, rpc: vi.fn() })),
   addEventListener: vi.fn(() => ({ remove: vi.fn() })),
   createSyncEngine: vi.fn(),
-  remoteLoaded: vi.fn(),
+  killed: vi.fn(() => false),
+  killSubscribe: vi.fn(() => () => {}),
+  rpc: vi.fn(),
 }));
-vi.mock('@supabase/supabase-js', () => ({ createClient: spies.createClient }));
+vi.mock('@supabase/supabase-js', () => ({ createClient: (...args: unknown[]) => ({ ...(spies.createClient as (...a: unknown[]) => object)(...args), rpc: spies.rpc }) }));
 vi.mock('react-native-url-polyfill/auto', () => ({}));
 vi.mock('react-native', () => ({ AppState: { currentState: 'active', addEventListener: spies.addEventListener }, Platform: { OS: 'ios' } }));
 vi.mock('expo-constants', () => ({ default: { expoConfig: { version: '1.0.0' } } }));
-vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(3) }));
+vi.mock('expo-crypto', async () => {
+  const { randomBytes } = await import('node:crypto');
+  return { getRandomBytes: (n: number) => new Uint8Array(randomBytes(n)) };
+});
 vi.mock('../src/lib/supabase/secure-storage', () => ({ secureStorage: { getItem: vi.fn(), setItem: vi.fn(), removeItem: vi.fn() } }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {
     throw new Error('native open must not be used in tests');
   },
 }));
-vi.mock('../src/lib/remote', () => {
-  spies.remoteLoaded();
-  return { getRemoteConfig: () => ({ killSwitches: { sync: false } }) };
-});
 vi.mock('../src/lib/sync/engine', async (importOriginal) => {
   const real = await importOriginal<typeof import('../src/lib/sync/engine')>();
   spies.createSyncEngine.mockImplementation(real.createSyncEngine);
@@ -54,6 +55,8 @@ const caps = await import('../src/lib/capabilities');
 const auth = await import('../src/lib/auth/auth-store');
 const sync = await import('../src/lib/sync');
 const signal = await import('../src/lib/sync/signal');
+// The kill-switch reader the running engine consults (in the app: the signed remote config).
+sync.setSyncKillSourceForTests({ killed: spies.killed, subscribe: spies.killSubscribe });
 
 const MAMA = '11111111-1111-1111-1111-111111111111';
 let close: () => void = () => {};
@@ -89,7 +92,9 @@ const nothingWired = () => {
   expect(spies.addEventListener).not.toHaveBeenCalled();
   expect(spies.createSyncEngine).not.toHaveBeenCalled();
   expect(spies.createClient).not.toHaveBeenCalled();
-  expect(spies.remoteLoaded).not.toHaveBeenCalled();
+  expect(spies.rpc).not.toHaveBeenCalled();
+  expect(spies.killed).not.toHaveBeenCalled();
+  expect(spies.killSubscribe).not.toHaveBeenCalled();
 };
 
 /** Everything a parent does on the phone, through the store as screens call it. */
@@ -157,6 +162,59 @@ describe('[D-100] server features off: none of sync runs', () => {
     nothingWired();
     expect(queued()).toBeGreaterThanOrEqual(before); // nothing was sent, nothing was dropped
     expect(store.getChild(c)).not.toBeNull();
+    stop();
+  });
+});
+
+const settle = () => new Promise((r) => setTimeout(r, 20));
+const okRpc = (fn: string, args: Record<string, unknown> = {}) =>
+  Promise.resolve(fn === 'sync_push'
+    ? { data: { results: (args.p_ops as { op: string }[]).map((o) => ({ op: o.op, ok: true })), paused: false, stopped: false }, error: null, status: 200 }
+    : { data: { reset: false, epoch: 1, epoch_started_at: now(), books: [], gone: [], more: false }, error: null, status: 200 });
+
+describe('[F16-REQ-018] switch on, signed in: the remote kill switch through startSync', () => {
+  afterEach(() => auth.publishAuth({ status: 'signedOut' }));
+
+  it('while killSwitches.sync is on, the wired engine sends nothing and keeps the queue; lifting it resumes at once', async () => {
+    caps.setServerFeaturesForTests(true);
+    spies.rpc.mockImplementation(okRpc);
+    let killed = true;
+    let wake: () => void = () => {};
+    spies.killed.mockImplementation(() => killed);
+    spies.killSubscribe.mockImplementation(((l: () => void) => {
+      wake = l;
+      return () => {};
+    }) as never);
+    store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' });
+    const stop = sync.startSync();
+    auth.publishAuth({ status: 'ready', userId: MAMA, sync: 'on' });
+    await settle();
+    expect(spies.createSyncEngine).toHaveBeenCalledTimes(1);
+    expect(spies.killed).toHaveBeenCalled();
+    expect(spies.rpc).not.toHaveBeenCalled();
+    expect(queued()).toBeGreaterThan(0); // the first sign-in queued the book; it waits
+    expect(sync.getSyncStatus().phase).toBe('paused_server');
+
+    killed = false;
+    wake(); // the signed config changed: the switch is off again
+    await settle();
+    expect(spies.rpc.mock.calls.map((c) => c[0])).toEqual(['sync_push', 'sync_pull']);
+    expect(queued()).toBe(0);
+    stop();
+  });
+
+  it('a kill-switch reader that throws keeps sync paused (fail closed)', async () => {
+    caps.setServerFeaturesForTests(true);
+    spies.rpc.mockImplementation(okRpc);
+    spies.killed.mockImplementation(() => {
+      throw new Error('unreadable');
+    });
+    store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' });
+    const stop = sync.startSync();
+    auth.publishAuth({ status: 'ready', userId: MAMA, sync: 'on' });
+    await settle();
+    expect(spies.rpc).not.toHaveBeenCalled();
+    expect(sync.getSyncStatus().phase).toBe('paused_server');
     stop();
   });
 });

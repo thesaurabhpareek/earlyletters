@@ -57,8 +57,9 @@ export interface SyncEngineDeps {
   saveDebounceMs?: number;
   /**
    * The remote kill switch (`killSwitches.sync` in the signed remote config, F16-REQ-018;
-   * ADR 0016). While it returns true no cycle touches the network; the outbox keeps
-   * every op and local use is unchanged. Read at the start of every cycle.
+   * ADR 0016). While it returns true no request leaves; the outbox keeps every op and
+   * local use is unchanged. Read before every push round and pull page, so a cycle
+   * already running stops at the next boundary. A reader that throws counts as on.
    */
   paused?: () => boolean;
 }
@@ -96,11 +97,13 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   const setTimer = deps.setTimer ?? ((fn: () => void, ms: number) => setTimeout(fn, ms));
   const clearTimer = deps.clearTimer ?? ((h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>));
   const isActive = deps.isActive ?? (() => true);
+  /** The remote kill switch. A reader that throws pauses sync (fail closed); the outbox keeps every op. */
   const killed = (): boolean => {
+    if (!deps.paused) return false;
     try {
-      return deps.paused?.() === true;
+      return deps.paused() === true;
     } catch {
-      return false; // an unreadable config is the cached or bundled one (lib/remote); never a reason to stop
+      return true;
     }
   };
   const iso = () => new Date(now()).toISOString();
@@ -164,6 +167,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let single = false;
     let contentAccepted = false;
     for (let round = 0; round < MAX_PUSH_ROUNDS; round++) {
+      if (killed()) return 'stop';
       const batch = takeBatch(db, { now: iso(), onlyDeletes, maxOps: single ? 1 : 50 });
       if (batch.rows.length === 0) break;
       tx(() => markSent(db, batch.rows, iso()));
@@ -217,6 +221,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let resetDone = false;
     let idsRounds = 0;
     for (let page = 0; page < MAX_PULL_PAGES; page++) {
+      if (killed()) return;
       const since = buildPullRequest(db, { verify });
       const res = await call<PullResponse>('sync_pull', { p_since: since, p_limit: pageSize });
       if ('failure' in res) {
