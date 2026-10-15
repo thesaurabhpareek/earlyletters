@@ -49,10 +49,12 @@
   padding: 0 1.75rem;
   border: 1px solid color-mix(in srgb, var(--night-accent) 60%, transparent);
   border-radius: 999px;
+  background: transparent;
   color: var(--night-accent);
   font-family: var(--font-sans);
   font-size: 1.05rem;
   text-decoration: none;
+  cursor: pointer;
   transition: background-color var(--fade-ms) var(--ease-standard);
 }
 

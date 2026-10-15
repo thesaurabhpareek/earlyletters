@@ -10,22 +10,20 @@
  * Vercel project before the production build. Apple requires application/json, HTTPS and no redirect; Next adds
  * no redirect for this path.
  *
- * Paths, and only these (A-REQ-022). Matching is on the path only:
- *   /auth/confirm   the sign-in and confirm-your-email link (F02 6.3); its token is in the fragment, which never
- *                   reaches a server
+ * Paths, and only these (A-REQ-022). Every token travels in the URL fragment, which is not part of path matching
+ * and never reaches a server (B-NFR-002):
+ *   /auth/confirm   the sign-in and confirm-your-email link (F02 6.3)
  *   /auth/callback  the same link as the app and email templates on `develop` still write it; remove with the
  *                   page of the same name once they use /auth/confirm
- *   /i/*            co-parent invites as the app on `develop` parses them (https://earlyletters.com/i/<token>).
- *                   This token is in the PATH: when the app does not open the link, the request reaches the host
- *                   and can appear in its request logs, and the site has no /i page yet (a 404). Known gap,
- *                   docs/ops/AUTH_SETUP.md 5.3; the fix is F11's fragment form below plus its page (WP-F11-11)
- *   /j              co-parent invites as PRD V2 F11 writes them (/j#t=<token>, fragment); its page is WP-F11-11
+ *   /j              co-parent invites (https://earlyletters.com/j#t=<token>, PRD V2 F11; app/j/page.tsx). The
+ *                   earlier /i/<token> form put the token in the path; the app no longer writes or accepts it, so
+ *                   it is not listed and no token path ever opens the app.
  * A route file may export only route fields, so the lists stay private; route.test.ts reads them through GET.
  */
 export const dynamic = 'force-static';
 
 /** Every path the app opens, in the order the file lists them. */
-const APP_LINK_PATHS = ['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/i/*', '/j', '/j/'];
+const APP_LINK_PATHS = ['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/j', '/j/'];
 
 /** Suffixes of the app ids served: production, then the TestFlight alpha builds. */
 const SERVED_SUFFIXES = ['', '.preview'];
