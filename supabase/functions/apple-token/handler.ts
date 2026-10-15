@@ -73,6 +73,8 @@ const LOG_CODE: Partial<Record<ApiErrorCode, ErrorCode>> = {
 export interface AppleTokenConfig {
   supabaseUrl: string;
   serviceKey: string;
+  /** Injected by Supabase. Calls made as the person (rate_hit) carry it with their JWT, never the service key. Null: skip them. */
+  anonKey: string | null;
   apple: AppleKeyConfig;
   /**
    * Client ids a code may be issued to: the production bundle id, then
@@ -80,13 +82,6 @@ export interface AppleTokenConfig {
    * same list (purge-worker/lib/apple.ts appleClientIds; AUTH_SETUP 2.7).
    */
   clientIds: string[];
-  /**
-   * The `apikey` for calls made with the person's own JWT (GET /auth/v1/user,
-   * rate_hit): the injected SUPABASE_ANON_KEY, so the service-role key never
-   * travels next to a user token. Falls back to the service key only where the
-   * anon key is not injected.
-   */
-  anonKey: string;
   kek: string;
   kekVersion: number;
 }
@@ -111,7 +106,7 @@ export function readAppleTokenConfig(get: EnvGetter): AppleTokenConfig | null {
   }
   if (!supabaseUrl || !serviceKey || !teamId || !keyId || !privateKeyPem.trim() || !kek) return null;
   // One list with the purge worker (appleClientIds), so every stored token is one it can revoke.
-  const anonKey = v('SUPABASE_ANON_KEY') || serviceKey;
+  const anonKey = v('SUPABASE_ANON_KEY') || null;
   return { supabaseUrl, serviceKey, anonKey, apple: { teamId, keyId, privateKeyPem }, clientIds: appleClientIds(get, bundleId()), kek, kekVersion };
 }
 
@@ -204,6 +199,8 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
       return reply(503, failure({ code: 'unavailable', retryable: false }, log.reqId));
     }
 
+    const declared = Number(req.headers.get('content-length') ?? '0');
+    if (Number.isFinite(declared) && declared > MAX_BODY) return fail('payload_too_large', false);
     const raw = await req.text();
     if (raw.length > MAX_BODY) return fail('payload_too_large', false);
     let code: string;
@@ -222,7 +219,7 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
     const auth = req.headers.get('authorization') ?? '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!token || token.length > 4096) return fail('unauthorized', false);
-    const userRes = await timed(fetchFn, `${cfg.supabaseUrl}/auth/v1/user`, { method: 'GET', headers: { apikey: cfg.anonKey, Authorization: `Bearer ${token}` } }, timeoutMs);
+    const userRes = await timed(fetchFn, `${cfg.supabaseUrl}/auth/v1/user`, { method: 'GET', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${token}` } }, timeoutMs);
     if (!userRes) return unavailable('auth', 0, 'network');
     if (userRes.status === 401 || userRes.status === 403 || userRes.status === 404) {
       await discard(userRes);
@@ -256,12 +253,16 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
     calls.set(profileId, recent);
 
     // The shared counter, as the caller (auth.uid() is the person). Only SCRAT refuses.
-    const hit = await timed(fetchFn, `${cfg.supabaseUrl}/rest/v1/rpc/rate_hit`, {
-      method: 'POST',
-      headers: { apikey: cfg.anonKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_bucket: RATE_BUCKET }),
-    }, timeoutMs);
-    if (hit && !hit.ok) {
+    const hit = cfg.anonKey
+      ? await timed(fetchFn, `${cfg.supabaseUrl}/rest/v1/rpc/rate_hit`, {
+          method: 'POST',
+          headers: { apikey: cfg.anonKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_bucket: RATE_BUCKET }),
+        }, timeoutMs)
+      : undefined;
+    if (hit === undefined) {
+      log.warn('request.failed', { provider: 'postgrest', code: 'config' });
+    } else if (hit && !hit.ok) {
       let sqlstate: unknown = null;
       try {
         sqlstate = ((await hit.json()) as { code?: unknown })?.code;

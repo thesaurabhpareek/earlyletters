@@ -33,7 +33,8 @@ import {
   type KeyValueStorage,
   type Violation,
 } from '@scribe/analytics';
-import { currentAuthUserId } from '@/lib/auth/auth-store';
+import { getAuthSnapshot } from '@/lib/auth/auth-store';
+import { isSignedIn } from '@/lib/auth/machine.logic';
 import { analyticsEnabled, capabilities, postHogKeyForBuild } from '@/lib/capabilities';
 import { deleteSetting, getSetting, listChildren, listEntriesForChild, setSetting, subscribe } from '@/lib/store';
 
@@ -119,7 +120,8 @@ function optedInSummary(surface: 'consent_sheet' | 'settings') {
     firstLetterAt: first?.at ?? null,
     firstLetterMode: first?.mode ?? null,
     letters,
-    signedIn: currentAuthUserId() !== null,
+    // A session, released to sync or not (currentAuthUserId waits for consent and the claim screen, BL-347).
+    signedIn: isSignedIn(getAuthSnapshot()),
     // Contributors join through the web page, which is v1.1; in the app everyone is a parent at v1.0.
     role: 'parent' as const,
     // TODO(invites owner): read the "joined from an invite" app state once invites set it.

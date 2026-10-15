@@ -18,7 +18,13 @@
  * Otherwise the person confirms once per session. "Unknown" (the store could
  * not be read) counts as "letters present": asking once more is always safe,
  * claiming without asking is not.
+ *
+ * "Holds a book or a letter" means any row at all in `children` or `entries`,
+ * hidden, refused or deleted ones included (`phoneHoldsAnyRow`). That is a
+ * superset of what takeOwnership claims, so the answer can only err towards
+ * asking (review 2 of PR #139: a hidden-only book must still ask).
  */
+import type { SqlDb } from '../db/sql';
 
 export interface ClaimInput {
   /** The signed-in user, or null. */
@@ -29,6 +35,12 @@ export interface ClaimInput {
   hasLocalData: boolean | null;
   /** Users the person confirmed in this process. */
   confirmed: ReadonlySet<string>;
+}
+
+/** Any book or letter row on this phone, in any state. */
+export function phoneHoldsAnyRow(db: Pick<SqlDb, 'get'>): boolean {
+  const r = db.get<{ any_rows: number }>('SELECT (EXISTS (SELECT 1 FROM children) OR EXISTS (SELECT 1 FROM entries)) AS any_rows');
+  return !!r && Number(r.any_rows) === 1;
 }
 
 export function needsAccountClaim(input: ClaimInput): boolean {

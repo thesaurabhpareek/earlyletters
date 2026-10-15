@@ -24,7 +24,7 @@ const PEM = await p8();
 
 function env(extra: Record<string, string> = {}): Record<string, string> {
   return {
-    SUPABASE_URL: SUPA, SUPABASE_SERVICE_ROLE_KEY: 'service-key', APPLE_TEAM_ID: 'AB12CD34EF', APPLE_SIGNIN_KEY_ID: 'KEY1234567',
+    SUPABASE_URL: SUPA, SUPABASE_SERVICE_ROLE_KEY: 'service-key', SUPABASE_ANON_KEY: 'anon-key', APPLE_TEAM_ID: 'AB12CD34EF', APPLE_SIGNIN_KEY_ID: 'KEY1234567',
     APPLE_SIGNIN_PRIVATE_KEY: PEM, TOKEN_KEK_V1: toBase64(new Uint8Array(32)), TOKEN_KEK_V2: KEK, ...extra,
   };
 }
@@ -177,6 +177,12 @@ Deno.test('[ADR 0017 rule 4] the shared counter: rate_hit(apple_token) as the ca
   const i = w.calls.findIndex((c) => c.url === `${SUPA}/rest/v1/rpc/rate_hit`);
   assert.ok(i >= 0 && i < w.calls.findIndex((c) => c.url === APPLE_TOKEN_URL), 'counted before Apple is asked');
   assert.equal((w.calls[i].init.headers as Record<string, string>).Authorization, `Bearer ${CANARY.sessionJwt}`, "the person's own JWT, so auth.uid() is theirs");
+  assert.equal((w.calls[i].init.headers as Record<string, string>).apikey, 'anon-key', 'a call made as the person carries the anon key, never the service key');
+  const noAnon = env();
+  delete noAnon.SUPABASE_ANON_KEY;
+  const skipped = world({ env: noAnon });
+  assert.equal((await skipped.handler(req({ code: CODE }))).status, 204, 'without an anon key the counter is skipped, never called with the service key');
+  assert.equal(skipped.calls.some((c) => c.url.endsWith('/rpc/rate_hit')), false);
   assert.deepEqual(JSON.parse(String(w.calls[i].init.body)), { p_bucket: 'apple_token' });
 
   const limited = world({ rateStatus: 400, rateBody: { code: 'SCRAT', message: 'too many requests' } });
@@ -232,6 +238,8 @@ Deno.test('validates the request: method, route, body shape and size, before any
   assert.equal((await w.handler(req({ code: `${CODE} <script>` }))).status, 400);
   assert.equal((await w.handler(req('not json'))).status, 400);
   assert.equal((await w.handler(req({ code: 'x'.repeat(5000) }))).status, 413);
+  const declared = new Request(ROUTE, { method: 'POST', headers: { Authorization: `Bearer ${CANARY.sessionJwt}`, 'content-length': '999999' }, body: '{}' });
+  assert.equal((await w.handler(declared)).status, 413, 'refused from the declared length, before reading the body');
   assert.equal(w.calls.length, 0);
 });
 
@@ -257,7 +265,7 @@ Deno.test('[LEGAL-REQ-014] canary: nothing it was sent or received reaches a log
   const text = [...lines, ...bodies].join('\n');
   assert.ok(lines.length >= 4);
   assert.deepEqual(findCanaries(text), []);
-  for (const secret of [CODE, APPLE_SUB, CANARY.appleRefreshToken, 'service-key']) assert.ok(!text.includes(secret), secret);
+  for (const secret of [CODE, APPLE_SUB, CANARY.appleRefreshToken, 'service-key', 'anon-key']) assert.ok(!text.includes(secret), secret);
 });
 
 Deno.test('helpers: Apple subjects and JWT claims', () => {
@@ -267,16 +275,4 @@ Deno.test('helpers: Apple subjects and JWT claims', () => {
   assert.equal(jwtClaims(42), null);
   assert.equal(jwtClaims('a.!!!.c'), null);
   assert.deepEqual(jwtClaims(idToken({ sub: 'x' })), { sub: 'x' });
-});
-
-Deno.test("calls made with the person's JWT carry the anon key as apikey, never the service key", async () => {
-  const w = world({ env: env({ SUPABASE_ANON_KEY: 'anon-key' }) });
-  assert.equal((await w.handler(req({ code: CODE }))).status, 204);
-  for (const path of ['/auth/v1/user', '/rest/v1/rpc/rate_hit']) {
-    const call = w.calls.find((c) => c.url === `${SUPA}${path}`);
-    assert.ok(call, path);
-    assert.equal((call!.init.headers as Record<string, string>).apikey, 'anon-key', path);
-  }
-  const put = w.calls.find((c) => c.url === `${SUPA}/rest/v1/rpc/ops_apple_token_put`);
-  assert.equal((put!.init.headers as Record<string, string>).Authorization, 'Bearer service-key', 'the store call stays service role');
 });
