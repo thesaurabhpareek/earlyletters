@@ -14,6 +14,7 @@
  * packages/content/src/strings.en.ts (keys noted beside each).
  */
 import { brand } from '@scribe/brand';
+import { plusPricing } from './pricing';
 
 const NAME = brand.name;
 
@@ -197,8 +198,7 @@ export const site = {
     s10: {
       label: 'Pricing',
       headline: 'Two letters free. Then Plus.',
-      support:
-        'Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters, backs up every recording, opens Read together after the free sessions and covers every child\'s book, with the whole family adding letters. $3.99 a month with a 1-month free trial, or $29.99 a year with a 2-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.',
+      support: `Your first two letters are free, so you can try it. After that, Plus membership lets you keep adding letters, backs up every recording, opens Read together after the free sessions and covers every child's book, with the whole family adding letters. ${plusPricing.monthly.price} a month with a ${plusPricing.monthly.trialMonths}-month free trial, or ${plusPricing.annual.price} a year with a ${plusPricing.annual.trialMonths}-month free trial. Every letter you have made stays yours to read, play and export, even if you stop.`,
     },
     s11: {
       label: 'Start tonight',
