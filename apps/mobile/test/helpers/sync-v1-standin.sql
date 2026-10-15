@@ -13,7 +13,11 @@
 --      compare and set reads this, not sync_xid, so another phone's in_book or
 --      date change never raises a words conflict (F16 C2 stays later-arrival-wins).
 --   2. sync_op_receipts.applied_v: the version an op wrote when it first applied,
---      so a duplicate can tell the phone what to rebase on (F16-REQ-025).
+--      so a duplicate can tell the phone what to rebase on (F16-REQ-025). Only when
+--      this phone's words are the letter's words at that version: an op whose words
+--      were refused, or that met newer words, notes words_conflict instead, and a
+--      duplicate answers with conflict_groups and current again (a lost answer must
+--      never turn a refusal into a silent rebase on words the phone never saw).
 --   3. sync_push, entry.upsert with a base:
 --        server words changed since base (text_xid > base, by another transaction):
 --          - text in changed: the text group is not applied; the other groups are;
@@ -21,7 +25,13 @@
 --            words, so nothing leaks: RLS limits the row to its author);
 --          - text not in changed: everything applies; current is returned too, so
 --            the phone takes the newer words before it writes any of its own.
---        a duplicate returns applied_v from its receipt.
+--        a duplicate returns applied_v from its receipt, or, when the first answer was a
+--        refusal or carried current, conflict_groups and current (the letter's words now).
+--   4. text_xid never goes backwards against a version already handed out: xid order
+--      is not commit order, so a writer with an older xid that commits after a newer
+--      one stamps old sync_xid + 1 (still compared with >; a false note at worst).
+--   5. The receipt helper lives in sync_private, a schema the API does not expose:
+--      only sync_push calls it, never a client RPC.
 --      No base (an older app): unchanged, later arrival wins.
 -- Everything else is byte for byte the function in 20261005000000.
 
@@ -31,9 +41,14 @@ update public.entries set text_xid = sync_xid where text_xid = '0';
 create or replace function public.entries_set_text_xid()
 returns trigger language plpgsql set search_path = public, pg_catalog as $$
 begin
-  if tg_op = 'INSERT'
-     or (new.final_text, new.machine_edits, new.edit_level) is distinct from (old.final_text, old.machine_edits, old.edit_level) then
+  if tg_op = 'INSERT' then
     new.text_xid := pg_current_xact_id();
+  elsif (new.final_text, new.machine_edits, new.edit_level) is distinct from (old.final_text, old.machine_edits, old.edit_level) then
+    -- The row lock orders writers, xids do not: a transaction with an older xid can commit its words
+    -- after a newer one already answered a phone with v = old.sync_xid. Stamp past that version, so
+    -- that phone's next base still sees these words as newer (a compare never passes over them).
+    new.text_xid := case when pg_current_xact_id() > old.sync_xid then pg_current_xact_id()
+                         else ((old.sync_xid::text)::numeric + 1)::text::xid8 end;
   end if;
   return new;
 end;
@@ -43,18 +58,30 @@ create or replace trigger entries_text_xid before insert or update on public.ent
 revoke execute on function public.entries_set_text_xid() from public, anon, authenticated;
 
 alter table public.sync_op_receipts add column if not exists applied_v xid8;
+-- The op's words were refused, or it met words newer than its base: its answer carried current.
+alter table public.sync_op_receipts add column if not exists words_conflict boolean not null default false;
+alter table public.sync_op_receipts add column if not exists words_refused boolean not null default false;
 
 -- Clients cannot update receipts (20261004100000 revokes it; BL-331 moves every receipt
--- write into security definer helpers such as sync_claim_op), so the version is noted here.
-create or replace function public.sync_note_applied(p_op uuid, p_entry uuid)
+-- write into security definer helpers such as sync_claim_op), so the outcome is noted here.
+-- Not in public: PostgREST exposes public only, so no client can call it as an RPC.
+create schema if not exists sync_private;
+revoke all on schema sync_private from public, anon;
+grant usage on schema sync_private to authenticated;  -- sync_push is security invoker
+drop function if exists public.sync_note_applied(uuid, uuid);
+create or replace function sync_private.note_applied(p_op uuid, p_entry uuid, p_refused boolean, p_newer boolean)
 returns void language plpgsql security definer set search_path = public, pg_catalog as $$
 begin
-  update sync_op_receipts r set applied_v = (select e.sync_xid from entries e where e.id = p_entry and e.author_id = auth.uid())
+  update sync_op_receipts r
+     set applied_v = case when p_refused or p_newer then null
+                          else (select e.sync_xid from entries e where e.id = p_entry and e.author_id = auth.uid()) end,
+         words_conflict = p_refused or p_newer,
+         words_refused = p_refused
    where r.op_id = p_op and r.profile_id = auth.uid();
 end;
 $$;
-revoke execute on function public.sync_note_applied(uuid, uuid) from public, anon;
-grant execute on function public.sync_note_applied(uuid, uuid) to authenticated;
+revoke execute on function sync_private.note_applied(uuid, uuid, boolean, boolean) from public, anon;
+grant execute on function sync_private.note_applied(uuid, uuid, boolean, boolean) to authenticated;
 
 create or replace function public.sync_push(p_ops jsonb)
 returns jsonb language plpgsql volatile security invoker set search_path = public, pg_catalog
@@ -122,9 +149,18 @@ begin
                       'in_book', e.in_book, 'approval', e.approval))
                from entries e where e.id = v_id),
             jsonb_build_object('missing', true))
-            -- v1: what this op wrote when it first applied (rebase point for the phone's later ops).
-            || jsonb_build_object('applied_v',
-                 (select r.applied_v::text from sync_op_receipts r where r.op_id = v_op and r.profile_id = v_uid));
+            -- v1: what this op wrote when it first applied (rebase point for the phone's later ops),
+            -- or, when its first answer was a words conflict, that answer again with today's words.
+            || coalesce(
+                 (select case when r.words_conflict then
+                           case when r.words_refused then jsonb_build_object('conflict_groups', jsonb_build_array('text')) else '{}'::jsonb end
+                           || jsonb_build_object('current',
+                                (select jsonb_build_object('final_text', e.final_text, 'machine_edits', e.machine_edits,
+                                                           'edit_level', e.edit_level, 'v', e.text_xid::text)
+                                   from entries e where e.id = v_id))
+                         else jsonb_build_object('applied_v', r.applied_v::text) end
+                    from sync_op_receipts r where r.op_id = v_op and r.profile_id = v_uid),
+                 '{}'::jsonb);
         end if;
       else
         case v_type
@@ -236,7 +272,7 @@ begin
                                          'edit_level', e.edit_level, 'v', e.text_xid::text)
                  from entries e where e.id = v_id));
           end if;
-          perform public.sync_note_applied(v_op, v_id);
+          perform sync_private.note_applied(v_op, v_id, v_refused, v_newer);
 
         when 'entry.delete' then
           if exists (select 1 from entries e where e.id = v_id) then
