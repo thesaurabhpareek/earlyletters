@@ -26,7 +26,7 @@ The phone is offline-first and cannot be force-upgraded, so every server interfa
 
 ### Shape and ownership
 
-**API-R01 (MUST)** Every client-callable interface (RPC, Edge Function, Storage path pattern, public config file) has its request, response and error codes declared in the shared contract package, and the app calls it only through that package's typed wrappers. *Why:* BRIEF decision 17; hand-written calls drift. *Enforced by:* not yet: neither `packages/api` (decision 17) nor `packages/db-types` (ADR 0010, WS-04) exists (MONO-10). See open question 1.
+**API-R01 (MUST)** Every client-callable interface (RPC, Edge Function, Storage path pattern, public config file) has its request, response and error codes declared in the shared contract package, and the app calls it only through that package's typed wrappers. *Why:* BRIEF decision 17; hand-written calls drift. *Enforced by:* partly, on `develop` since 15 Oct: `packages/api` exists (semver, canonical bytes, integrity, pack manifests, remote config, content bundles, the response envelope and `standards.ts`; decision 17) and the Edge Functions use its envelope. Typed RPC wrappers and generated database types for the client's RPC calls are not in it yet, so those calls are still hand-written: API-G4 (WS-04). `packages/db-types` was never created. See open question 1.
 
 **API-R02 (MUST)** Database types used by clients are generated from the migrations in CI, never written by hand, and a drift test fails when a migration changes a column or function the package exposes. *Why:* CORE-02, CORE-03 (local schema drifted from the server). *Enforced by:* not yet: WS-04 (wave 2, depends on WS-01).
 
@@ -117,7 +117,7 @@ The founder grants exceptions, recorded as a `D-###` (standing) or `Exception: A
 
 ## Open questions
 
-1. Decision 17 names `packages/api`; ADR 0010 and WS-04 name `packages/db-types`. Recommend one package, `packages/api`, holding generated DB types, the error registry, typed RPC wrappers and content-block schemas. Founder to confirm.
+1. Decision 17 names `packages/api`; ADR 0010 and WS-04 name `packages/db-types`. `packages/api` exists on `develop` (15 Oct) with the manifest, config and content contracts. Open: whether generated DB types, the error registry and typed RPC wrappers also go in it (recommended) or in a second package. Founder to confirm.
 2. Does Supabase keep custom request headers (request id, build) in its API logs, and for how long? Unverified; decides whether API-R14 needs a body field instead.
 3. How long does an old build stay supported? Proposed: 180 days after its successor ships, enforced by `min_supported_build`.
 
