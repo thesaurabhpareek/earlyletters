@@ -13,6 +13,7 @@
 import { site } from '@/content/site';
 import { NotifyForm } from '@/components/cta/NotifyForm';
 import { ShareButton } from '@/components/site/ShareButton';
+import type { FooterLink } from '@/lib/legal/publishable';
 import { Aurora } from './Aurora';
 import { Evening } from './Evening';
 import { ProofScene } from './ProofScene';
@@ -25,7 +26,8 @@ const notifyReady = Boolean(process.env.RESEND_API_KEY?.trim() && process.env.RE
 
 const s = site.scenes;
 
-export function Landing() {
+/** `legalLinks` comes from the server page (lib/legal/links.ts): the footer's legal links after the gate. */
+export function Landing({ legalLinks }: { legalLinks: readonly FooterLink[] }) {
   return (
     <div className={styles.page}>
       <Aurora />
@@ -186,7 +188,7 @@ export function Landing() {
 
       <footer className={styles.footer}>
         <nav aria-label="Legal" className={styles.links}>
-          {site.footer.links.map((link) => (
+          {legalLinks.map((link) => (
             <a key={link.href} href={link.href}>
               {link.label}
             </a>

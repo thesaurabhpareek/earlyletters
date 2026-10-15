@@ -1,22 +1,20 @@
-/** Legal pages, the delete-account page, the 404 page and the closed lab. */
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+/**
+ * Legal pages (the document, or its holding page while the gate in src/lib/legal/publishable.ts holds it back),
+ * the delete-account page, the 404 page and the closed lab.
+ */
 import { site } from '../src/content/site';
 import { deleteAccountCopy } from '../src/lib/legal/delete-account-copy';
 import { legalCopy } from '../src/lib/legal/legal-copy';
 import { legalDocuments, legalSlugs } from '../src/lib/legal/documents';
 import { siteCopy } from '../src/lib/legal/site-copy';
 import { expect, test } from './support/fixtures';
+import { DRAFT_MARKS, expectedFooterLinks, legalExpectation, legalPagesMode } from './support/legal';
 
-/** The document's own status line, read from docs/legal (the source the page is built from). */
-function legalStatus(slug: (typeof legalSlugs)[number]): string {
-  const file = join(__dirname, '../../../docs/legal', legalDocuments[slug].file);
-  return /^status:\s*(.+)$/m.exec(readFileSync(file, 'utf8'))?.[1].trim() ?? '';
-}
-
-test.describe('legal pages', () => {
+test.describe(`legal pages (LEGAL_PAGES=${legalPagesMode()})`, () => {
   for (const slug of legalSlugs) {
-    test(`/${slug} renders the document, with one h1, a back link and the footer`, async ({ page }) => {
+    const doc = legalExpectation(slug);
+
+    test(`/${slug} answers 200 with one h1, a back link, the footer and ${doc.publishable ? 'the document' : 'the holding page'}`, async ({ page }) => {
       const response = await page.goto(`/${slug}`);
       expect(response?.status()).toBe(200);
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -26,22 +24,35 @@ test.describe('legal pages', () => {
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://earlyletters.com/${slug}`);
       await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', legalDocuments[slug].description);
       await expect(page.getByRole('link', { name: legalCopy.backHome })).toHaveAttribute('href', '/');
-      await expect(page.getByRole('navigation', { name: 'Legal' }).getByRole('link')).toHaveCount(site.footer.links.length);
-      // The document body is real, not an empty shell.
-      expect((await page.locator('main').innerText()).length).toBeGreaterThan(1500);
+      // The footer shows the legal links this mode allows: all of them, or none to a document that is held back.
+      const footer = page.getByRole('navigation', { name: 'Legal' });
+      const links = expectedFooterLinks();
+      await expect(footer.getByRole('link')).toHaveCount(links.length);
+      for (const link of links) await expect(footer.getByRole('link', { name: link.label })).toHaveAttribute('href', link.href);
+
+      if (doc.publishable) {
+        // The document body is real, not an empty shell, and the page may be indexed.
+        expect((await page.locator('main').innerText()).length).toBeGreaterThan(1500);
+        await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+      } else {
+        // The holding page: the document's name, one calm line, where to write, nothing from the draft. Not indexed.
+        expect(doc.blockers.length, 'the gate names why the document is held back').toBeGreaterThan(0);
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(doc.title);
+        await expect(page.getByText(legalCopy.holding.line)).toBeVisible();
+        await expect(page.locator('main').getByRole('link', { name: site.footer.contact })).toHaveAttribute('href', `mailto:${site.footer.contact}`);
+        await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+        expect((await page.locator('main').innerText()).length).toBeLessThan(600);
+      }
     });
 
-    test(`/${slug} is noindex while the document is a draft, and says so`, async ({ page }) => {
+    test(`/${slug} never shows a mark of a counsel draft`, async ({ page, request }) => {
+      // Both what the server sends and what a visitor reads, whichever page the gate chose.
+      const html = await (await request.get(`/${slug}`)).text();
       await page.goto(`/${slug}`);
-      const final = legalStatus(slug) === 'final';
-      const robots = page.locator('meta[name="robots"]');
-      const note = page.getByRole('note').filter({ hasText: legalCopy.finalising });
-      if (final) {
-        await expect(robots).toHaveCount(0);
-        await expect(note).toHaveCount(0);
-      } else {
-        await expect(robots).toHaveAttribute('content', /noindex/);
-        await expect(note).toBeVisible();
+      const text = await page.locator('body').innerText();
+      for (const mark of DRAFT_MARKS) {
+        expect(text, `${mark.name} in what a visitor reads on /${slug}`).not.toMatch(mark.pattern);
+        expect(html, `${mark.name} in the HTML the server sends for /${slug}`).not.toMatch(mark.pattern);
       }
     });
   }

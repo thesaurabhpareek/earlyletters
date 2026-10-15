@@ -70,6 +70,7 @@ changing any variable below means **Redeploy**, never "it will pick it up".
 | `APPLE_TEAM_ID` | Production | Plain | build | 10 characters, A-Z and 0-9. For the apple-app-site-association file. Both this and `IOS_BUNDLE_ID` must be set or the file answers 404. Verified (route code). |
 | `IOS_BUNDLE_ID` | Production | Plain | build | The app's real bundle id, exactly as in App Store Connect. Set it explicitly: `packages/brand` still has the placeholder domain `example.com`, so the brand default is wrong. The bundle id cannot change after the first upload to App Store Connect. Verified (repo). |
 | `SITE_MODE` | Optional | Plain | build | `coming-soon` shows the organised home page (`components/landing`), `film` shows the scroll film. Unset: the organised home page on Production, film on previews and locally (`src/lib/site-mode.ts`, 4 tests). To publish the film on Production set `SITE_MODE=film` and Redeploy. Verified (repo, production-like and preview-like builds). |
+| `LEGAL_PAGES` | Optional | Plain | build | How the site treats a legal document that is not yet publishable. A document is publishable only when its `docs/legal` front matter says `status: final` and its body has none of the marks of a counsel draft (placeholder tokens, counsel tags and notes, the drafting notice, the notes appendix; `src/lib/legal/publishable.ts`). `holding` (the default, also when unset): the footer keeps the link and the address shows a short holding page, noindex. `unlink`: the footer omits the link and the address still shows the holding page, never a 404. Held documents are left out of the sitemap in both modes. The build log names each held document and why. Changing it means Redeploy. Verified (unit tests and the e2e suite in both modes). |
 | `ENABLE_LAB` | **Preview only**, `1` | Plain | build | Publishes the `/lab/*` scene test pages. Leave unset in Production: they answer 404 there. Verified (`next.config.ts`). |
 | `LEGAL_DOCS_DIR` | not set | | build | Test override for the legal loader. Do not set. |
 
@@ -395,7 +396,9 @@ the rule is Inferred; the Firewall page shows it. Check afterwards with six quic
   App Store link and no `RESEND_*` keys unless you set them for Preview. To look at the `/lab` pages, set `ENABLE_LAB=1` for
   Preview and Redeploy that preview.
 - **Legal text changes** (`docs/legal/*.md`) rebuild the site, because the pages are generated from those files at build.
-  `docs/legal` is in the CI path filter for that reason. Verified (repo).
+  `docs/legal` is in the CI path filter for that reason. Verified (repo). A document is shown only once its front matter
+  says `status: final` and its body has no counsel marks; until then its address shows the holding page (`LEGAL_PAGES`
+  in section 2). The version and effective date a visitor sees come from the front matter, never from the body.
 - **Before merging anything that changes `apps/web/vercel.json`:** run in a clean checkout
   `npm ci --workspace=@scribe/web && npm run build -w @scribe/web`. Do not rely on a machine that already has `node_modules`.
 - **Dependencies:** `@vercel/analytics` ^2.0.1 (MIT) is a dependency of `@scribe/web`. Updating it is a normal pull request.

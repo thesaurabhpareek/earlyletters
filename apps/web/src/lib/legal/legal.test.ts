@@ -1,10 +1,12 @@
 /** Owner: E1 (web platform). The legal pipeline keeps the words, sanitises the output and adds only navigation. */
 import { describe, expect, it } from 'vitest';
 import { legalDocuments, legalSlugs } from './documents';
+import { splitFrontmatter } from './frontmatter';
 import { loadLegalDocument } from './load';
-import { isFinalStatus, renderMarkdown, splitFrontmatter } from './render';
+import { isFinalStatus } from './publishable';
+import { renderMarkdown } from './render';
 
-const labels = { contents: 'Contents', table: 'Table' };
+const labels = { contents: 'Contents', table: 'Table', version: 'Version', effectiveDate: 'Effective date' };
 
 describe('renderMarkdown', () => {
   it('drops scripts, raw HTML, event handlers and javascript: links', async () => {
@@ -62,13 +64,14 @@ describe('renderMarkdown', () => {
 });
 
 describe('frontmatter and status', () => {
-  it('reads the header and treats only signed-off statuses as final', () => {
-    const { data, body } = splitFrontmatter('---\ntitle: A\nstatus: draft-for-counsel\nlast_updated: 2026-10-03\n---\n\n# A\n');
-    expect(data).toMatchObject({ title: 'A', status: 'draft-for-counsel', lastUpdated: '2026-10-03' });
+  it('reads the header and treats only the status final as signed off', () => {
+    const { data, body } = splitFrontmatter('---\ntitle: A\nstatus: draft-for-counsel\nversion: 1.2.0\neffective_date: TBD\nlast_updated: 2026-10-03\n---\n\n# A\n');
+    expect(data).toMatchObject({ title: 'A', status: 'draft-for-counsel', version: '1.2.0', effectiveDate: 'TBD', lastUpdated: '2026-10-03' });
     expect(body.trim()).toBe('# A');
     expect(isFinalStatus(data.status)).toBe(false);
     expect(isFinalStatus(undefined)).toBe(false);
-    expect(isFinalStatus('Published')).toBe(true);
+    expect(isFinalStatus('Published')).toBe(false);
+    expect(isFinalStatus('final')).toBe(true);
   });
 });
 

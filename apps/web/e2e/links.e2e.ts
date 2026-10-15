@@ -69,9 +69,16 @@ test('every internal link on every page leads somewhere that exists, and every f
     }
   }
 
-  // Fragments: the element must exist on the page they point to.
+  // Fragments: the element must exist on the page they point to. A fragment into a legal document that is held back
+  // lands on its holding page, which has no sections by design (data-holding, components/site/LegalHolding.tsx); it is
+  // noted in the annotation and checked for real the day the document is published.
+  const intoHolding: string[] = [];
   for (const f of fragments) {
     await page.goto(f.path);
+    if ((await page.locator('[data-holding]').count()) > 0) {
+      intoHolding.push(`${f.from}: #${f.hash} on ${f.path}`);
+      continue;
+    }
     const found = f.hash === 'top' ? true : (await page.locator(`[id="${f.hash.replace(/"/g, '')}"]`).count()) > 0;
     if (!found) failures.push(`${f.from}: #${f.hash} does not exist on ${f.path}`);
   }
@@ -92,7 +99,7 @@ test('every internal link on every page leads somewhere that exists, and every f
   expect(seen.size).toBeGreaterThanOrEqual(PAGES.filter((p) => p.status === 200).length);
   test.info().annotations.push({
     type: 'link-check',
-    description: `${seen.size} pages, ${internalLinks} internal links, ${fragments.length} fragments, ${external.size} external (not fetched): ${[...external.keys()].join(', ') || 'none'}`,
+    description: `${seen.size} pages, ${internalLinks} internal links, ${fragments.length} fragments (${intoHolding.length} into a holding page: ${intoHolding.join('; ') || 'none'}), ${external.size} external (not fetched): ${[...external.keys()].join(', ') || 'none'}`,
   });
 });
 

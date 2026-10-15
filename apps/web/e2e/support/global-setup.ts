@@ -6,8 +6,11 @@
  *   3. `next start` on another free port, with RESEND_BASE_URL pointing at the mock.
  * It hands the two addresses to the workers through E2E_BASE_URL and E2E_MOCK_URL.
  *
- * E2E_SKIP_BUILD=1 reuses the last build (the build reads RESEND_*, SITE_MODE at build time, so only reuse a build
- * made by this setup). Build and server output go to e2e/.results/ for debugging.
+ * E2E_LEGAL_PAGES=unlink builds and tests the other legal-pages mode (LEGAL_PAGES, src/lib/legal/publishable.ts);
+ * the default is holding. The specs read the mode back from the same variable.
+ *
+ * E2E_SKIP_BUILD=1 reuses the last build (the build reads RESEND_*, SITE_MODE and LEGAL_PAGES at build time, so only
+ * reuse a build made by this setup in the same mode). Build and server output go to e2e/.results/ for debugging.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createWriteStream, existsSync, mkdirSync } from 'node:fs';
@@ -67,6 +70,8 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   const mock: MockHandle = await startMockResend();
   const sitePort = await freePort();
 
+  const legalPages = process.env.E2E_LEGAL_PAGES === 'unlink' ? 'unlink' : 'holding';
+
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     ...TEST_ENV,
@@ -74,6 +79,8 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     NEXT_TELEMETRY_DISABLED: '1',
     // The launch-day home page (the organised coming-soon page) with the sign-up form.
     SITE_MODE: 'coming-soon',
+    // How a legal document that is not publishable is treated (holding page linked, or unlinked).
+    LEGAL_PAGES: legalPages,
     // Never let a stray variable from the shell change what is built or where mail goes.
     RESEND_BASE_URL: mock.url,
   };
@@ -84,7 +91,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   if (process.env.E2E_SKIP_BUILD === '1' && existsSync(join(webDir, DIST_DIR, 'BUILD_ID'))) {
     console.log('[e2e] reusing the existing build in', DIST_DIR);
   } else {
-    console.log('[e2e] next build (coming-soon, dummy Resend credentials) ...');
+    console.log(`[e2e] next build (coming-soon, LEGAL_PAGES=${legalPages}, dummy Resend credentials) ...`);
     const build = run(['build'], env, 'build.log');
     const code = await new Promise<number | null>((res) => build.once('exit', res));
     if (code !== 0) throw new Error(`next build failed (exit ${code}); see ${join(resultsDir, 'build.log')}`);
@@ -95,7 +102,8 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   await waitForSite(url, server);
   process.env.E2E_BASE_URL = url;
   process.env.E2E_MOCK_URL = mock.url;
-  console.log(`[e2e] site ${url}, mock Resend ${mock.url}`);
+  process.env.E2E_LEGAL_PAGES = legalPages;
+  console.log(`[e2e] site ${url} (LEGAL_PAGES=${legalPages}), mock Resend ${mock.url}`);
 
   return async () => {
     if (server.pid) {
