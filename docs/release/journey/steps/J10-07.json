@@ -1,0 +1,40 @@
+{
+  "id": "J10-07",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "Keep it",
+  "note": "Choosing \"Keep it\" closes the sheet and changes nothing: the letter is still on its page.",
+  "from": "J10-06",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Aa Thursday, August 13, 2026. Asha is 5 months old. Private So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, with small fixes Recording kept on this phone Exactly as said Add to book Delete",
+  "lines": [
+    "Aa",
+    "Thursday, August 13, 2026. Asha is 5 months old.",
+    "Private",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "Hear Mama",
+    "0:00",
+    "0:42",
+    "Spoken, with small fixes",
+    "Recording kept on this phone",
+    "Exactly as said",
+    "Add to book",
+    "Delete"
+  ]
+}

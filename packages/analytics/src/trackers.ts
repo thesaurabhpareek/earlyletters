@@ -36,7 +36,7 @@ export type MemberRole = 'parent' | 'contributor';
 /** A member's role in a book: co-parents are `parent` (B section 6). */
 export type InviteRoleInput = 'parent' | 'contributor';
 
-const inviteRole = (r: InviteRoleInput) => (r === 'parent' ? 'co_parent' : 'contributor') as V<'invite_created', 'role'>;
+const inviteRole = (r: InviteRoleInput) => r as V<'invite_created', 'role'>;
 
 export interface LetterSavedInput {
   mode: 'spoken' | 'typed';
@@ -160,7 +160,7 @@ export function createTrackers(analytics: Pick<Analytics, 'track'>) {
       return track('book_opened', { child_ordinal: childOrdinal(i.childIndex), letters_bucket: lettersBucket(i.letters), member_role: i.role });
     },
 
-    trackReadTogetherStarted(i: { childIndex: number; access: 'plus' | 'try'; letters: number }): TrackResult {
+    trackReadTogetherStarted(i: { childIndex: number; access: 'plus' | 'free'; letters: number }): TrackResult {
       return track('read_together_started', { child_ordinal: childOrdinal(i.childIndex), access: i.access, letters_bucket: lettersBucket(i.letters) });
     },
 

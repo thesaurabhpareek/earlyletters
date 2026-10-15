@@ -15,6 +15,7 @@
     "@types/node": "^22"
   },
   "dependencies": {
+    "@scribe/brand": "*",
     "@scribe/core": "*"
   }
 }

@@ -124,6 +124,33 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 - **Record:** S1-13 row: counts kept, lost, duplicated.
 - **Update:** PRD 7.4 ("zero data loss in a kill-during-save test, 500 iterations, gate": note the device count and that the 500 run is still owed).
 
+### DL-01 Kill mid-record, 500 runs (D-085, DATA-REQ-048, BL-Q30). Not run: needs the founder's iPhone SE 3
+- **Steps:** Start a recording, kill the app at a random 2 to 60 s, relaunch. 500 runs. Per run record: a draft exists, the file exists, its duration is within 1 s of the elapsed time, a hash is set, it plays (tap play on Tonight or in Settings, Recordings).
+- **Expected:** zero lost. Every take that does not play is kept and listed in Settings, Recordings as "This take may not play. Export keeps the file." and is not shown on Tonight as ready (the launch sweep probes a killed take before it marks it ready, `capture/probe.ts`).
+- **Record:** DL-01 row: runs, kept, lost, unplayable rate. An unplayable rate above 0 starts the container work (record to a container that survives a kill, convert on stop); 0 keeps the probe (it is cheap) and drops that work. Also note that the probe waits up to 4 s for a file to open and treats "never loaded" as unplayable: report any playable take it wrongly listed.
+- **Update:** PRD 7.4, BL-Q30.
+
+### DL-02 Kill during save, 500 runs, random 0 to 400 ms (PRD 7.4). Not run: needs the device
+- **Steps:** Save a letter and kill at a random 0 to 400 ms; relaunch. 500 runs.
+- **Expected:** every letter exists exactly once, or is still a draft with its text and recording; zero lost, zero duplicated.
+- **Record:** DL-02 row. **Update:** PRD 7.4, BL-Q30.
+
+### DL-03 Restore drill onto a second phone (D-085, FT-39 extended, BL-284). Not run: needs two phones
+- **Steps:** Phone A holds one spoken letter, one typed letter, one letter on the Recently deleted shelf (deleted 5 days ago: change the phone date, or wait) and one backdated to day 31, plus a speech model. Back up (iCloud, and an encrypted Finder backup), restore to Phone B. Note the database folder and whether iCloud Backup is on by default.
+- **Expected:** counts equal; `raw_sha256` of every letter and the SHA-256 of every recording equal; the recording plays; the day 5 letter is on the shelf with the right "Erased on" date; the day 31 letter is erased at the first launch with no orphan recording reappearing as a draft; the speech model is absent and the app asks to download it, without a crash; Export runs.
+- **Record:** DL-03 row with the hashes (fictional letters only). If the database or recordings are not in the backup, the founder decides on an in-app encrypted export (the option the debate keeps for v1.0.x or v1.1).
+- **Update:** `docs/legal/DELETION_AND_EXPORT_SPEC.md` 2.2 (local purge), `docs/BACKLOG.md` BL-284.
+
+### DL-04 Negative restore, and the clock guard (D-085). Not run: needs the device
+- **Steps:** (a) Restore from a backup made before the last letter. (b) Delete a letter, set the phone date 40 days forward, open the app (it purges), set the date back 10 days, delete another letter and open the app; then set the date 31 days forward from the second deletion.
+- **Expected:** (a) the app opens and says nothing false (no backup claim anywhere). (b) The first letter is erased (file and row); nothing is erased while the date is earlier than the last launch; the second letter is erased once the date passes day 30 after its own deletion.
+- **Record:** DL-04 row. **Update:** `apps/mobile/test/store.shelf.test.ts` if behaviour differs.
+
+### DL-05 Delete, shelf and erase by hand (D-085)
+- **Steps:** Delete a spoken letter: the confirm shows "Keep it" as the large button. Delete it; open Settings, Recently deleted: first words, "Erased on" date, Restore, Erase now. Restore it and play the recording. Delete again, Erase now, confirm, then check Settings, Storage for the freed space and Settings, Export for "Last export".
+- **Expected:** every step as named; VoiceOver reads each shelf row as one item and the sheet title first; with Dynamic Type at the largest size nothing is cut off; Erase now removes the recording at once (storage shrinks) and the letter does not return after a relaunch; Export shows "Not exported yet", then "Last export: {date}" after the share sheet opens.
+- **Record:** DL-05 row with screenshots (fictional letters only). **Update:** journey flows J10, J15 (`docs/release/journey`).
+
 ### S1-14 Low storage and Low Power Mode (TDD 03 FM-5)
 - **Steps:** Fill the phone to under 1 GB free (large videos), start a long recording; then under 50 MB if you can. Turn Low Power Mode on and transcribe a 2-minute letter.
 - **Expected:** A warning below 1 GB before a long recording; refusal below 50 MB; auto-finish below 20 MB with the take kept; nothing fails silently. Low Power Mode slows transcription but completes.
@@ -205,6 +232,12 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Expected:** Recordings count toward the backup (they live in a backed-up directory); speech models do not (excluded through ScribeFiles `setExcludedFromBackup`, F). The full restore-to-a-new-phone drill is BL-284 at the release candidate.
 - **Record:** S1-25 row: backup size before and after the model.
 - **Update:** D-033 copy ("on this phone and in your iPhone's own backup") stays true or goes to the content owner.
+
+### S1-26 First run, downloads, links and the screen (D-087, debate Q-015; branch feat/mobile-first-run-permissions)
+- **Steps:** (a) Fresh install, first run to the end. On the last step read the "Get your words ready" card: the size, "Download on Wi-Fi", "Not now". Check Settings > Storage shows nothing downloading and, in Settings > Privacy and Security > App Privacy Report, no models host contact yet. Tap Download on Wi-Fi on Wi-Fi; then repeat on a fresh install with Not now and record a letter: Review shows "Get your words ready" with the same button. (b) On a 3 GB phone or the SE 3 compact tier read the size on the card (190 MB model plus 1 MB, not 575 MB); on Hindi read the size (574 MB until our model is hosted). (c) Fill the disk to under size plus 1 GB: the card shows the space line and no button. (d) Start a download, switch to airplane mode, then back: it resumes from where it stopped. Lock the phone and wait: record whether bytes keep arriving in the background (unverified). (e) Off Wi-Fi with the Wi-Fi wait card showing, tap "Use mobile data": only that download uses data; Settings > Storage mobile-data switch stays off. (f) From Notes or Safari open `scribe://listen`, `scribe://review?draftId=x`, `https://earlyletters.com/listen`, `https://earlyletters.com/settings/delete-account`: each opens Tonight and nothing records. `https://earlyletters.com/i/<token>` still opens the coming-soon sheet. (g) Start a letter and let auto-lock run with the screen untouched: it stays on while recording. Pause: the screen may now lock (and the take then ends and is kept). In Read together play a recording: awake while it plays, locks again when paused or finished. (h) Leave the app during a take: Review opens on return with "The recording stopped when you left the app. Everything up to then is kept." (i) First run welcome has no "I was invited"; a child's settings have no "Family can read" switch; the Family tab, the Settings row and "Tell me when it's here" still work.
+- **Expected:** Nothing downloads before the tap. Sizes come from the tier plan. Wi-Fi only, resume and the 1 GB reserve behave as before. No link opens a screen other than Tonight (or the invite landing and sign-in links). The screen is awake only while recording and while Read together audio plays.
+- **Record:** S1-26 row per sub-step a to i, with the phone and iOS version.
+- **Update:** `apps/mobile/src/lib/models/speech-consent.logic.ts` and DEBATES Q-015 if downloads do not survive a lock (the card then needs "keep the app open" copy and the keep-awake rule widens).
 
 ---
 

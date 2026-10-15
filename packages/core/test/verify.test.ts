@@ -24,7 +24,7 @@ const DICT: DictionaryTerm[] = [
   { term: 'Ashu', kind: 'nickname', heardAs: ['ah shoe'] },
   { term: 'Mumma', kind: 'family', heardAs: ['mama'] },
   { term: 'chalo', kind: 'word', heardAs: ['shallow'] },
-  { term: 'Mira', kind: 'family', heardAs: [] },
+  { term: 'Neela', kind: 'family', heardAs: [] },
 ];
 
 function edit(raw: string, type: Edit['type'], original: string, replacement: string, nth = 0, source: Edit['source'] = 'model'): Edit {
@@ -154,7 +154,7 @@ describe('meaning guards: names and pronouns only through the dictionary', () =>
   it.each([
     ['he hugged her', 'her', 'Asha'],
     ['she ran to him', 'him', 'Asha'],
-    ['then Mama came', 'Mama', 'Mira'],
+    ['then Mama came', 'Mama', 'Neela'],
     ['then Nani came', 'Nani', 'Asha'],
     ['Ashu laughed', 'Ashu', 'Asha'],
     ['two of them', 'two', 'Asha'],
@@ -166,10 +166,10 @@ describe('meaning guards: names and pronouns only through the dictionary', () =>
   it('refuses a name that does not sound like the term', () => {
     expect(verdict('Then Ashok ran.', edit('Then Ashok ran.', 'stt_fix', 'Ashok', 'Asha'))).toBe('stt_fix_not_heard_as');
     expect(verdict('Then Arya ran.', edit('Then Arya ran.', 'stt_fix', 'Arya', 'Asha'))).toBe('stt_fix_not_heard_as');
-    expect(verdict('Then Maya ran.', edit('Then Maya ran.', 'stt_fix', 'Maya', 'Mira'))).toBe('stt_fix_not_heard_as');
+    expect(verdict('Then Maya ran.', edit('Then Maya ran.', 'stt_fix', 'Maya', 'Neela'))).toBe('stt_fix_not_heard_as');
     // an ordinary word is taken as said unless the parent taught the mishearing
     expect(verdict('see the moon', edit('see the moon', 'stt_fix', 'moon', 'Mumma'))).toBe('stt_fix_not_heard_as');
-    expect(verdict('the mirror said hi', edit('the mirror said hi', 'stt_fix', 'mirror', 'Mira'))).toBe('stt_fix_not_heard_as');
+    expect(verdict('the nail broke', edit('the nail broke', 'stt_fix', 'nail', 'Neela'))).toBe('stt_fix_not_heard_as');
     // a capital that only marks a sentence start says nothing about a name
     expect(verdict('Usher ran to me', edit('Usher ran to me', 'stt_fix', 'Usher', 'Asha'))).toBe('stt_fix_not_heard_as');
   });
@@ -179,7 +179,7 @@ describe('meaning guards: names and pronouns only through the dictionary', () =>
     expect(verdict('mama laughed', edit('mama laughed', 'stt_fix', 'mama', 'Mumma'))).toBeNull(); // taught by the parent
     expect(verdict('then asha laughed', edit('then asha laughed', 'stt_fix', 'asha', 'Asha'))).toBeNull();
     expect(verdict('Then Usher ran', edit('Then Usher ran', 'stt_fix', 'Usher', 'Asha'))).toBeNull();
-    expect(verdict('then Mira said hi', edit('then Mira said hi', 'stt_fix', 'Mira', 'Mira'))).toBeNull();
+    expect(verdict('then Nila said hi', edit('then Nila said hi', 'stt_fix', 'Nila', 'Neela'))).toBeNull();
   });
 });
 
