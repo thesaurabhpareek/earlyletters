@@ -387,6 +387,20 @@ Deno.test('[F08-REQ-042] daily: the recovery-key log is copied to ops-ledger/esc
   assert.deepEqual(findCanaries(log.raw.join('\n')), []);
 });
 
+Deno.test('[F08-REQ-042] daily: a restored database never shrinks the copy; a missed day is filled in later', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  const row = (id: number, at: string) => ({ id, at, reason: 'restore', outcome: 'opened', profile: CANARY.profileId, subject: null,
+    device: '0192e000-0000-7000-8000-0000000000d2', child: CANARY.childId, kv: 1, ekv: 1, restore: CANARY.requestId, req: '0123456789ab' });
+  w.escrowLog = [row(1, '2026-11-04T10:00:00.000Z'), row(2, '2026-11-04T11:00:00.000Z')];
+  await run(w, testConfig(), 'daily');
+  // The database is restored to before row 2; a new use (row 5) and a row from 4 days ago that no run copied appear.
+  w.escrowLog = [row(1, '2026-11-04T10:00:00.000Z'), row(5, '2026-11-04T20:00:00.000Z'), row(7, '2026-11-01T09:00:00.000Z')];
+  await run(w, testConfig(), 'daily');
+  const ids = (name: string) => w.objects.get('ops-ledger')!.get(name)!.body!.trim().split('\n').map((l) => JSON.parse(l).id).sort();
+  assert.deepEqual(ids('escrow/2026-11-04.jsonl'), [1, 2, 5], 'row 2 stays in the copy after the restore dropped it');
+  assert.deepEqual(ids('escrow/2026-11-01.jsonl'), [7], 'the backfill reaches a day the last runs missed');
+});
+
 Deno.test('[F08-REQ-043] daily: the backup sweep runs once, after the ledger copies', async () => {
   const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
   await run(w, testConfig(), 'daily');

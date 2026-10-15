@@ -69,11 +69,12 @@ export interface Logger {
 
 export const randomReqId = (): string => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, '0')).join('');
 
-export function makeLogger(sink: (line: string) => void, version: string, reqId = randomReqId()): Logger {
+export function makeLogger(sink: (line: string) => void, version: string, reqId = randomReqId(), auditId?: string): Logger {
+  const audit = auditId && /^[0-9a-f]{12}$/.test(auditId) ? { audit_id: auditId } : {};
   const line = (level: 'info' | 'warn' | 'error', event: EventName, fields?: Fields) => {
     const { out, dropped } = clean(fields);
     const e = has(EVENTS, event) ? event : 'request.failed';
-    sink(JSON.stringify({ ts: new Date().toISOString(), level, fn: 'escrow', version, req_id: reqId, event: e, ...out, ...(dropped ? { dropped } : {}) }));
+    sink(JSON.stringify({ ts: new Date().toISOString(), level, fn: 'escrow', version, req_id: reqId, ...audit, event: e, ...out, ...(dropped ? { dropped } : {}) }));
   };
   return {
     reqId,

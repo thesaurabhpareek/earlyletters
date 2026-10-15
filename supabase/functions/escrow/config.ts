@@ -54,8 +54,10 @@ export function readConfig(get: EnvGetter): { config: EscrowConfig | null; probl
     else keys[n] = k;
   }
   if (!Object.keys(keys).length) problems.push('no ESCROW_PRIVATE_KEY_V<n>');
+  // Required: without the main project's database CA, TLS would trust the system store instead.
   const ca = get('ESCROW_DB_CA') ?? '';
   const dbCaCerts = ca.includes('BEGIN CERTIFICATE') ? [ca] : [];
+  if (!dbCaCerts.length) problems.push('ESCROW_DB_CA must be the PEM of the main project database CA');
   let rotation: EscrowConfig['rotation'] = null;
   const secret = v('ESCROW_TASK_SECRET');
   if (secret) {

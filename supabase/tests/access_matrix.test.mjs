@@ -69,7 +69,7 @@ const BDEV = uuid7();
 const BDEV2 = uuid7();
 const BHEX = (b, n) => `'\\x${b.repeat(n)}'::bytea`;
 const BPATH = `${CHILD}/${A}/${aBook}.m4a.enc`;
-await sys(`insert into backup_devices (device_id, profile_id, public_key) values ($1, $3, ${BHEX('a1', 32)}), ($2, $3, ${BHEX('a2', 32)})`, [BDEV, BDEV2, A]);
+await sys(`insert into backup_devices (device_id, profile_id, public_key, enrolled_at) values ($1, $3, ${BHEX('a1', 32)}, now() - interval '30 days'), ($2, $3, ${BHEX('a2', 32)}, now() - interval '30 days')`, [BDEV, BDEV2, A]);  // old enough to approve (7 days)
 await sys(`insert into child_keys (child_id, profile_id, key_version, escrow_wrap, escrow_key_version) values ($1, $2, 1, ${BHEX('01', 81)}, 1)`, [CHILD, A]);
 await sys(`insert into audio_blobs (entry_id, child_id, author_id, object_path, key_version, wrapped_file_key, bytes) values ($1, $2, $3, $4, 1, ${BHEX('cd', 60)}, 100)`, [aBook, CHILD, A, BPATH]);
 await sys(`insert into storage.objects (bucket_id, name) values ('entry-audio', $1)`, [BPATH]);
@@ -139,6 +139,7 @@ const READS = [
   ['restore_requests', 'select 1 from restore_requests', [],                          [1, 0, 0, 0, 0, '42501']],
   ['restore_approvals', 'select 1 from restore_approvals', [],                        [1, 0, 0, 0, 0, '42501']],
   ['escrow_unwraps', 'select 1 from escrow_unwraps', [],                              [1, 0, 0, 0, 0, '42501']],
+  ['escrow_rotation_notices', 'select 1 from escrow_rotation_notices', [],            ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_keys: the escrow wrap', 'select escrow_wrap from child_keys', [],           ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: backup object', 'select 1 from storage.objects where name=$1', [BPATH],  [1, 0, 0, 0, 0, 0]],
 ];
@@ -252,10 +253,12 @@ const SERVICE_ONLY = [
   `select public.backup_entry_exists('${aBook}', '${A}', '${CHILD}')`, `select public.backup_forget_entry('${aBook}')`,
   `select public.backup_svc_sweep(now(), 1)`, `select public.backup_svc_unwraps_between(now(), now(), 1)`, `select public.backup_svc_stop(${BHEX('00', 32)})`,
   `select public.escrow_require_on()`, `select public.escrow_request_context('${A}', '${BDEV}')`,
-  `select public.escrow_open_request('${A}', '${BDEV}', '0123456789ab', ${BHEX('00', 32)}, '[]')`,
+  `select public.escrow_open_request('${A}', '${BDEV}', '${BDEV}', '0123456789ab', ${BHEX('00', 32)}, '[]')`,
   `select public.escrow_load_wraps('${A}', '${BDEV}', '${BREQ}')`, `select public.escrow_record_unwraps('${A}', '${BDEV}', '${BREQ}', '[]', null)`,
   `select public.escrow_set_request_state('${A}', '${BREQ}', 'notified')`, `select public.escrow_rotation_batch(1, 1)`,
   `select public.escrow_rewrap_key('${A}', '${CHILD}', 1, 1, 2, ${BHEX('01', 81)}, null)`,
+  `select public.escrow_rotation_failed('${A}', '${CHILD}', 1, 1, null)`, `select public.escrow_rotation_pending(2, 1)`,
+  `select public.escrow_rotation_notified('${A}', 2)`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));

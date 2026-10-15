@@ -27,6 +27,10 @@ Nothing here has been run against a hosted project. Agents never apply migration
 
 The honest limit (F08 6.5 C, for the Privacy Policy): anyone holding the escrow private key (the escrow project's secret, or a paper copy) plus a copy of the main database and the bucket could open recordings offline, with no log row and no email. The controls on that path are custody (section 4), the quarterly seal check, and the release isolation check (step B9). The product copy claims only what the function proves: it logs every use and emails the owner each time.
 
+The log is append-only for every role through triggers (update, delete and truncate). A role that can switch triggers off (the table owner with `alter table ... disable trigger`, or a session allowed to set `session_replication_role = replica`) could still change rows inside the database. That is why the daily copy in `ops-ledger/escrow/` exists: each day's file only ever gains rows (it is merged by row id, never overwritten), so a row removed or a database restored to an earlier point still shows in the copy. [A: whether Supabase's `postgres` role may set `session_replication_role` is not verified; treat it as possible.]
+
+Approvals and holds (F08 6.5 C2, C3): only a phone enrolled at least 7 days before the request is sent an approval code or may approve. A phone registered more recently still counts as an enrolled device for the hold (72 hours), so a stolen session that registers a second phone of its own cannot approve its own request or shorten the hold. Opening a request also needs the caller's session to be live in `auth.sessions`, so after Stop (sign out everywhere) a stolen access token cannot open a new request.
+
 ## 2. Before the alpha (in order)
 
 Each step has a check. Stop at the first check that fails.
@@ -79,7 +83,7 @@ Download the main project's database CA: main project > Database settings > SSL 
 | `ESCROW_PRIVATE_KEY_V1` | from the key ceremony (section 3); staging uses the drill key | yes, the key |
 | `ESCROW_SWITCH` | `on` (anything else pauses the function) | no, a switch |
 | `ESCROW_DB_URL` | `postgresql://escrow_svc.<main-ref>:<password>@aws-0-us-west-1.pooler.supabase.com:5432/postgres` (session pooler) | yes |
-| `ESCROW_DB_CA` | the PEM from step B4 | no |
+| `ESCROW_DB_CA` | the PEM from step B4; required (without it the function refuses to start, so TLS never falls back to the system trust store) | no |
 | `MAIN_SUPABASE_URL` | `https://<main-ref>.supabase.co` | no |
 | `RESEND_API_KEY` | a Resend key with sending access only, restricted to the earlyletters.com domain, made for this project alone | yes |
 | `ALERT_EMAIL` | optional; defaults to the support address | no |
@@ -148,7 +152,8 @@ Quarterly: check both seals and the bag numbers against the log (F17 8.2 item 6 
 - R2. S07 adds the v2 public key to `escrow-keys.ts` and the app release makes new wraps with it.
 - R3. Main project: `alter database postgres set app.escrow_key_versions = '1,2';`
 - R4. Escrow project: add `ESCROW_PRIVATE_KEY_V2`, `ESCROW_TASK_SECRET` (`openssl rand -hex 32`), `ESCROW_ROTATE_FROM=1`, `ESCROW_ROTATE_TO=2`.
-- R5. Run batches until `remaining` is false: `curl -s -X POST https://<scribe-escrow-ref>.supabase.co/functions/v1/escrow/v1/rotate -H "authorization: Bearer $ESCROW_TASK_SECRET"`. Each batch rewraps up to 50 keys, one commit each, writes a `rotation` log row per key and sends each account one email. A non-zero `failed` means a wrap did not open: stop and read section 6.
+- R5. Run batches until `remaining` is false: `curl -s -X POST https://<scribe-escrow-ref>.supabase.co/functions/v1/escrow/v1/rotate -H "authorization: Bearer $ESCROW_TASK_SECRET"`. Each batch rewraps up to 50 keys, one commit each, writes a `rotation` log row per key, and then sends the one rotation email to every account whose key moved and has not had it yet (`escrow_rotation_notices`). A send is marked done only after it went out, so a failed send is retried by the next call; an account that already had a key on the new version (made by the app after R2) still gets its email. A non-zero `failed` means a wrap did not open: it is logged once as a `rotation` row with outcome `failed` and skipped from then on, so the run does not stall; read section 6 before going on. A non-zero `emailFailures` means Resend refused: wait and call again; `remaining` stays true until every email has gone.
+- R5b. Before R6, check that no email is owed: `select count(*) from escrow_rotation_notices where to_version = 2 and sent_at is null;` is 0, and that `select count(*) from escrow_unwraps where reason = 'rotation' and outcome = 'failed' and escrow_key_version = 1;` is 0 or each one is resolved.
 - R6. Check `select count(*) from child_keys where escrow_key_version = 1;` is 0. Then remove `ESCROW_PRIVATE_KEY_V1`, `ESCROW_TASK_SECRET` and the two `ESCROW_ROTATE_*` secrets, set `app.escrow_key_versions = '2'`, and destroy the v1 paper copies, recording it in `ops.audit_log`.
 
 ## 6. What an access-log alert means
@@ -163,7 +168,8 @@ The function emails `ALERT_EMAIL` with a subject `Escrow alert: <kind>` and no i
 | A `restore` row whose request was never released | The function opened keys but the email or release failed; nothing was delivered | Normal after a Resend outage; the phone retries. Many in a day: check Resend |
 | A row with reason `legal` | Only from the legal runbook | It must match an `ops.audit_log` legal entry with your sign-off. If not: incident |
 | An owner says "I got an email I did not expect" | Someone signed in and asked for their recordings | Ask them to tap Stop in the email or in Settings > Storage and backup. Check `restore_requests` for that account; the hold gives you 24 to 72 hours |
-| The daily file `ops-ledger/escrow/<date>.jsonl` has fewer rows than the table for that day | Rows were removed from the database outside the trigger (only a superuser can) | Incident. The file is the record that survives a database restore |
+| The table has fewer rows for a day than the daily file `ops-ledger/escrow/<date>.jsonl` | Rows were removed from the database outside the trigger, or the database was restored to an earlier point | After a planned restore: expected, the file keeps the lost rows. Otherwise: incident. The file is the record that survives a database restore; each run re-checks the last 7 days and only adds rows |
+| `SCSES` refusals | A request was opened with a session that has ended (Stop, sign out everywhere, or an expired session) | Normal right after a Stop. Many for one account: someone is still holding an old token; check `restore_requests` for that account |
 
 ## 7. Disaster recovery (F08 6.5 G5)
 A main-project database restore does not touch the escrow project or its secret. After a restore: set the `escrow_svc` password again (B3), update `ESCROW_DB_URL` in the escrow project, and replay the purge ledger as APPLY.md says. Recordings in the bucket follow the Storage restore in RB-8. The restore drill uses staging, synthetic Asha accounts and the drill key; the production key is never copied for a drill.

@@ -45,11 +45,13 @@
 --     granted to `authenticator`, so the Data API cannot become it. The escrow function in
 --     the separate project `scribe-escrow` connects as this role and nothing else does.
 --       escrow_request_context, escrow_open_request, escrow_load_wraps, escrow_record_unwraps,
---       escrow_set_request_state, escrow_rotation_batch, escrow_rewrap_key
---     F08 6.5 G2 names four functions; this file has seven because the approval codes, the
---     release invariant and key rotation each need one narrow function of their own (PR
---     body, "Deviations"). None returns or accepts a plaintext key: wraps travel sealed to the
---     escrow public key, and only the escrow function opens them, in memory.
+--       escrow_set_request_state, escrow_rotation_batch, escrow_rewrap_key,
+--       escrow_rotation_failed, escrow_rotation_pending, escrow_rotation_notified
+--     F08 6.5 G2 names four functions; this file has ten because the approval codes, the
+--     release invariant and key rotation (with its retried one email per account) each need
+--     narrow functions of their own (PR body, "Deviations"). None returns or accepts a
+--     plaintext key: wraps travel sealed to the escrow public key, and only the escrow
+--     function opens them, in memory.
 --  6. Service-role functions for the purge worker and the account-stop endpoint:
 --       backup_svc_sweep, backup_svc_unwraps_between, backup_svc_stop
 --  7. Deletion hooks (F17 8.4, F08 6.5 D4 to D7):
@@ -65,7 +67,12 @@
 -- that device holds its private key, or a stolen session could approve its own request with
 -- the old phone's device id (device ids are readable by the owner). At request time the escrow
 -- function seals a random 256-bit code to each enrolled device's public key; the device opens
--- it and sends the code back; the server compares SHA-256 hashes.
+-- it and sends the code back; the server compares SHA-256 hashes. Only a device enrolled at
+-- least 7 days before the request [R] gets a code or may approve: otherwise a stolen session
+-- could register a second device of its own, open the code sealed to it and approve at once.
+-- A younger device still counts for the hold (72 h), so registering one never shortens it.
+-- Opening a request also needs the caller's session to be live in auth.sessions, so a Stop
+-- (sign out everywhere) ends a stolen access token's ability to open a new request.
 --
 -- Release invariant: escrow_set_request_state(..., 'released') refuses unless escrow_unwraps
 -- already holds an `opened` row for that request from the last hour, so no restore can be
@@ -82,11 +89,12 @@
 -- New SQLSTATEs (request to S07 for packages/api envelope.ts):
 --   SCBKO  backup or escrow is switched off on the server      wait; retry later; never drop
 --   SCQTA  the account's backup quota is reached              tell the person (backup.quotaReached)
+--   SCSES  the caller's session has ended (escrow only)        sign in again
 -- SQLSTATE details (closed values; the ones S07's packages/api ERROR_DETAILS already lists are
 -- used as named there): SCBKO backupUploads | escrow; SCCON backup; SCDEL deletion_pending |
 -- purged; P0002 device_unknown | entry | key | object | nothing; SCRAT limit_restores |
 -- limit_keys | limit_keys_stored | devices | begin; SCIMM key_exists | revoked | a closed
--- request state; 22023 approvals | code | count | size.
+-- request state; 22023 approvals | code | count | size; SCSES session_ended.
 -- Reused: SCCON, SCDEL, SCRAT, SCIMM, SCPAR, SCANO, P0002, 22023, 42501, 55000.
 -- Tests: supabase/tests/audio_backup*.test.mjs (npm run test:db) and the rows for these objects
 -- in supabase/tests/access_matrix.test.mjs.
@@ -277,6 +285,18 @@ create index escrow_unwraps_profile_idx on public.escrow_unwraps (profile_id, oc
 create index escrow_unwraps_request_idx on public.escrow_unwraps (restore_request_id);
 create index escrow_unwraps_occurred_idx on public.escrow_unwraps (occurred_at);
 
+-- The one rotation email per account per rotation (F08 6.5 C7, G4): a row appears with the
+-- account's first rewrapped key and is marked sent only after the email went out, so a failed
+-- send is retried by the next batch instead of being lost.
+create table public.escrow_rotation_notices (
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  to_version int not null check (to_version >= 1),
+  created_at timestamptz not null default now(),
+  sent_at timestamptz,
+  primary key (profile_id, to_version)
+);
+create index escrow_rotation_notices_pending_idx on public.escrow_rotation_notices (to_version) where sent_at is null;
+
 -- ─── 3. Classification (docs/legal/DATA_CLASSIFICATION.md; rows requested from S17) ──
 comment on table public.backup_devices is 'One X25519 public key per install for sealing book keys to it (F08 6.5). Owner read; written by RPCs.';
 comment on column public.backup_devices.device_id is 'L3 random id the install made; not a hardware id';
@@ -362,6 +382,12 @@ comment on column public.escrow_unwraps.restore_request_id is 'L3 restore reques
 comment on column public.escrow_unwraps.request_id is 'L2 x-request-id of the call';
 comment on column public.escrow_unwraps.occurred_at is 'L2 when';
 
+comment on table public.escrow_rotation_notices is 'One rotation email per account per escrow key rotation (F08 6.5 C7, G4); retried until sent. No client access.';
+comment on column public.escrow_rotation_notices.profile_id is 'L3 account';
+comment on column public.escrow_rotation_notices.to_version is 'L2 escrow key version the account moved to';
+comment on column public.escrow_rotation_notices.created_at is 'L2 first key of the account rewrapped';
+comment on column public.escrow_rotation_notices.sent_at is 'L2 the rotation email went out';
+
 -- ─── 4. Row level security ───────────────────────────────────────────────
 alter table public.backup_devices enable row level security;
 alter table public.child_keys enable row level security;
@@ -370,6 +396,7 @@ alter table public.backup_usage enable row level security;
 alter table public.restore_requests enable row level security;
 alter table public.restore_approvals enable row level security;
 alter table public.escrow_unwraps enable row level security;
+alter table public.escrow_rotation_notices enable row level security;  -- no policy: no client reads it
 
 create policy backup_devices_own on public.backup_devices for select to authenticated using (profile_id = (select auth.uid()));
 create policy child_keys_own on public.child_keys for select to authenticated using (profile_id = (select auth.uid()));
@@ -399,7 +426,7 @@ create policy escrow_unwraps_no_anonymous on public.escrow_unwraps as restrictiv
 -- Clients only read, and only the columns they need: every write goes through a function.
 -- Supabase grants new tables to anon and authenticated by default; take that back first.
 revoke all on public.backup_devices, public.child_keys, public.audio_blobs, public.backup_usage,
-  public.restore_requests, public.restore_approvals, public.escrow_unwraps from anon, authenticated;
+  public.restore_requests, public.restore_approvals, public.escrow_unwraps, public.escrow_rotation_notices from anon, authenticated;
 grant select on public.backup_devices, public.audio_blobs, public.backup_usage, public.escrow_unwraps to authenticated;
 grant select (child_id, profile_id, key_version, escrow_key_version, key_check, created_at, rewrapped_at) on public.child_keys to authenticated;
 grant select (id, profile_id, device_id, state, requested_at, hold_until, notified_at, approved_by_device, approved_at,
@@ -918,7 +945,8 @@ begin
     raise exception 'this request is closed' using errcode = 'SCIMM', detail = v_req.state;
   end if;
   if not exists (select 1 from backup_devices d
-                  where d.device_id = p_device_id and d.profile_id = v_uid and d.revoked_at is null)
+                  where d.device_id = p_device_id and d.profile_id = v_uid and d.revoked_at is null
+                    and d.enrolled_at <= v_req.requested_at - interval '7 days')
      or p_device_id = v_req.device_id then
     raise exception 'device not found' using errcode = 'P0002', detail = 'device_unknown';
   end if;
@@ -976,7 +1004,8 @@ end;
 $$;
 
 -- What the escrow function needs before it opens a request: the requesting device's key and
--- every other enrolled device (unrevoked, seen in 90 days) to seal an approval code to.
+-- every other enrolled device (unrevoked, seen in 90 days, enrolled at least 7 days ago) to
+-- seal an approval code to.
 create or replace function public.escrow_request_context(p_profile uuid, p_device uuid)
 returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_dev backup_devices%rowtype;
@@ -998,19 +1027,22 @@ begin
                                            order by d.device_id)
                             from backup_devices d
                            where d.profile_id = p_profile and d.device_id <> p_device and d.revoked_at is null
-                             and d.last_seen_at > now() - interval '90 days'), '[]'::jsonb));
+                             and d.last_seen_at > now() - interval '90 days'
+                             and d.enrolled_at <= now() - interval '7 days'), '[]'::jsonb));
 end;
 $$;
 
 -- Step 1 and 2 of F08 6.5 C: one request per device, the hold (72 h with another enrolled
--- device, 24 h without), the stop token hash and one sealed approval code per enrolled device.
--- At most 3 requests per account per rolling 30 days (SCRAT restores).
-create or replace function public.escrow_open_request(p_profile uuid, p_device uuid, p_request_id text,
+-- device, 24 h without), the stop token hash and one sealed approval code per enrolled device
+-- old enough to approve (7 days). The caller's session must still be live (a Stop signs out
+-- every session). At most 3 requests per account per rolling 30 days (SCRAT restores).
+create or replace function public.escrow_open_request(p_profile uuid, p_device uuid, p_session uuid, p_request_id text,
                                                       p_stop_token_hash bytea, p_approvals jsonb)
 returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_open restore_requests%rowtype;
   v_others uuid[];
+  v_any_other boolean;
   v_given uuid[];
   v_hold interval;
   v_id uuid;
@@ -1019,6 +1051,11 @@ begin
   perform public.escrow_require_on();
   if not exists (select 1 from backup_devices where device_id = p_device and profile_id = p_profile and revoked_at is null) then
     raise exception 'device not found' using errcode = 'P0002', detail = 'device_unknown';
+  end if;
+  if p_session is null or not exists (select 1 from auth.sessions s
+                                       where s.id = p_session and s.user_id = p_profile
+                                         and (s.not_after is null or s.not_after > now())) then
+    raise exception 'this session has ended' using errcode = 'SCSES', detail = 'session_ended';
   end if;
   if public.backup_account_deleting(p_profile) then
     raise exception 'this account is being deleted' using errcode = 'SCDEL', detail = 'deletion_pending';
@@ -1051,10 +1088,14 @@ begin
      or p_request_id is null or p_request_id !~ '^[0-9a-f]{12}$' then
     raise exception 'a stop token hash and a request id are required' using errcode = '22023';
   end if;
+  -- Approvers: enrolled devices old enough to approve. Any enrolled other device sets the 72 h hold.
   select coalesce(array_agg(d.device_id order by d.device_id), '{}') into v_others
     from backup_devices d
    where d.profile_id = p_profile and d.device_id <> p_device and d.revoked_at is null
-     and d.last_seen_at > now() - interval '90 days';
+     and d.last_seen_at > now() - interval '90 days' and d.enrolled_at <= now() - interval '7 days';
+  select exists (select 1 from backup_devices d
+                  where d.profile_id = p_profile and d.device_id <> p_device and d.revoked_at is null
+                    and d.last_seen_at > now() - interval '90 days') into v_any_other;
   if p_approvals is null or jsonb_typeof(p_approvals) <> 'array' then
     raise exception 'approvals must be an array' using errcode = '22023', detail = 'approvals';
   end if;
@@ -1067,7 +1108,7 @@ begin
            or length(a ->> 'sealed_code_hex') not between 98 and 1024) then
     raise exception 'one approval code per enrolled device is required' using errcode = '22023', detail = 'approvals';
   end if;
-  v_hold := case when cardinality(v_others) > 0 then interval '72 hours' else interval '24 hours' end;
+  v_hold := case when v_any_other then interval '72 hours' else interval '24 hours' end;
   v_until := now() + v_hold;
   insert into restore_requests (profile_id, device_id, hold_until, request_id, stop_token_hash, stop_token_expires_at)
   values (p_profile, p_device, v_until, p_request_id, p_stop_token_hash, now() + interval '7 days')
@@ -1137,7 +1178,8 @@ begin
   end if;
   select count(*) into v_keys from child_keys where profile_id = p_profile;
   if v_keys + (select count(*) from escrow_unwraps
-                where profile_id = p_profile and outcome = 'opened' and occurred_at > now() - interval '24 hours') > 20 then
+                where profile_id = p_profile and reason = 'restore' and outcome = 'opened'
+                  and occurred_at > now() - interval '24 hours') > 20 then
     raise exception 'too many keys opened today' using errcode = 'SCRAT', detail = 'limit_keys';
   end if;
   return jsonb_build_object(
@@ -1226,19 +1268,23 @@ begin
   return coalesce((select jsonb_agg(jsonb_build_object('profile_id', k.profile_id, 'child_id', k.child_id, 'key_version', k.key_version,
                                                        'escrow_wrap_hex', encode(k.escrow_wrap, 'hex'))
                                     order by k.profile_id, k.child_id, k.key_version)
-                     from (select * from child_keys where escrow_key_version = p_from_version
+                     from (select * from child_keys k0 where k0.escrow_key_version = p_from_version
+                              -- a wrap that did not open is logged once and skipped, so it never stalls the run
+                              and not exists (select 1 from escrow_unwraps u
+                                               where u.profile_id = k0.profile_id and u.child_id = k0.child_id
+                                                 and u.key_version = k0.key_version and u.escrow_key_version = p_from_version
+                                                 and u.reason = 'rotation' and u.outcome = 'failed')
                             order by profile_id, child_id, key_version
                             limit greatest(least(coalesce(p_limit, 100), 200), 1)) k), '[]'::jsonb);
 end;
 $$;
 
 -- One rewrap, compare-and-set on the old version, with its `rotation` log row in the same
--- transaction. Says whether this was the account's first key moved to the new version, so the
--- function sends exactly one email per account per rotation.
+-- transaction. The account's rotation notice row (one per account per rotation) is made here;
+-- escrow_rotation_pending and escrow_rotation_notified send and retry its one email.
 create or replace function public.escrow_rewrap_key(p_profile uuid, p_child uuid, p_key_version int, p_from_version int,
                                                     p_to_version int, p_new_wrap bytea, p_request_id text)
 returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
-declare v_first boolean;
 begin
   perform public.escrow_require_on();
   if not public.backup_escrow_key_trusted(p_to_version) or p_to_version = p_from_version then
@@ -1248,18 +1294,65 @@ begin
      or (p_request_id is not null and p_request_id !~ '^[0-9a-f]{12}$') then
     raise exception 'escrow wrap must be format 1 (81 bytes)' using errcode = '22023';
   end if;
-  v_first := not exists (select 1 from child_keys where profile_id = p_profile and escrow_key_version = p_to_version);
   update child_keys set escrow_wrap = p_new_wrap, escrow_key_version = p_to_version, rewrapped_at = now()
    where profile_id = p_profile and child_id = p_child and key_version = p_key_version and escrow_key_version = p_from_version;
   if not found then
-    return jsonb_build_object('updated', false, 'first_for_account', false);
+    return jsonb_build_object('updated', false);
   end if;
   insert into escrow_unwraps (profile_id, child_id, key_version, escrow_key_version, reason, outcome, request_id)
   values (p_profile, p_child, p_key_version, p_from_version, 'rotation', 'opened', p_request_id);
-  -- The address for the one rotation email, only with the account's first rewrapped key, so the
-  -- escrow role learns an address only when it has just used that account's key.
-  return jsonb_build_object('updated', true, 'first_for_account', v_first,
-                            'email', case when v_first then (select u.email from auth.users u where u.id = p_profile) end);
+  insert into escrow_rotation_notices (profile_id, to_version) values (p_profile, p_to_version)
+  on conflict (profile_id, to_version) do nothing;
+  return jsonb_build_object('updated', true);
+end;
+$$;
+
+-- A wrap that did not open with the old key: one `rotation` row with outcome `failed`, so the
+-- attempt is on the record and escrow_rotation_batch skips it (runbook section 6 says what next).
+create or replace function public.escrow_rotation_failed(p_profile uuid, p_child uuid, p_key_version int, p_from_version int,
+                                                         p_request_id text)
+returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform public.escrow_require_on();
+  if p_request_id is not null and p_request_id !~ '^[0-9a-f]{12}$' then
+    raise exception 'bad request id' using errcode = '22023';
+  end if;
+  if not exists (select 1 from child_keys where profile_id = p_profile and child_id = p_child
+                    and key_version = p_key_version and escrow_key_version = p_from_version) then
+    return jsonb_build_object('recorded', false);
+  end if;
+  insert into escrow_unwraps (profile_id, child_id, key_version, escrow_key_version, reason, outcome, request_id)
+  select p_profile, p_child, p_key_version, p_from_version, 'rotation', 'failed', p_request_id
+   where not exists (select 1 from escrow_unwraps u where u.profile_id = p_profile and u.child_id = p_child
+                        and u.key_version = p_key_version and u.escrow_key_version = p_from_version
+                        and u.reason = 'rotation' and u.outcome = 'failed');
+  return jsonb_build_object('recorded', true);
+end;
+$$;
+
+-- Accounts whose rotation email has not gone out yet, with the address. The escrow role learns
+-- an address only for an account whose key it has just used (a notice row exists only then).
+create or replace function public.escrow_rotation_pending(p_to_version int, p_limit int default 50)
+returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform public.escrow_require_on();
+  return coalesce((select jsonb_agg(jsonb_build_object('profile_id', x.profile_id, 'email', x.email) order by x.created_at, x.profile_id)
+                     from (select n.profile_id, n.created_at, u.email
+                             from escrow_rotation_notices n join auth.users u on u.id = n.profile_id
+                            where n.to_version = p_to_version and n.sent_at is null and u.email is not null
+                            order by n.created_at, n.profile_id
+                            limit greatest(least(coalesce(p_limit, 50), 200), 1)) x), '[]'::jsonb);
+end;
+$$;
+
+-- The rotation email for this account went out.
+create or replace function public.escrow_rotation_notified(p_profile uuid, p_to_version int)
+returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform public.escrow_require_on();
+  update escrow_rotation_notices set sent_at = coalesce(sent_at, now())
+   where profile_id = p_profile and to_version = p_to_version;
+  return jsonb_build_object('notified', found);
 end;
 $$;
 
@@ -1360,10 +1453,11 @@ begin
     'public.backup_pending_requests(uuid)', 'public.backup_approve_request(uuid, uuid, bytea)',
     'public.backup_cancel_request(uuid, uuid)',
     'public.escrow_require_on()', 'public.escrow_request_context(uuid, uuid)',
-    'public.escrow_open_request(uuid, uuid, text, bytea, jsonb)', 'public.escrow_request_ready(public.restore_requests)',
+    'public.escrow_open_request(uuid, uuid, uuid, text, bytea, jsonb)', 'public.escrow_request_ready(public.restore_requests)',
     'public.escrow_load_wraps(uuid, uuid, uuid)', 'public.escrow_record_unwraps(uuid, uuid, uuid, jsonb, text)',
     'public.escrow_set_request_state(uuid, uuid, text)', 'public.escrow_rotation_batch(int, int)',
-    'public.escrow_rewrap_key(uuid, uuid, int, int, int, bytea, text)',
+    'public.escrow_rewrap_key(uuid, uuid, int, int, int, bytea, text)', 'public.escrow_rotation_failed(uuid, uuid, int, int, text)',
+    'public.escrow_rotation_pending(int, int)', 'public.escrow_rotation_notified(uuid, int)',
     'public.backup_svc_sweep(timestamptz, int)', 'public.backup_svc_unwraps_between(timestamptz, timestamptz, int)',
     'public.backup_svc_stop(bytea)']
   loop
@@ -1387,10 +1481,11 @@ begin
 
   -- The escrow role: the escrow_* entry points and nothing else.
   foreach f in array array[
-    'public.escrow_request_context(uuid, uuid)', 'public.escrow_open_request(uuid, uuid, text, bytea, jsonb)',
+    'public.escrow_request_context(uuid, uuid)', 'public.escrow_open_request(uuid, uuid, uuid, text, bytea, jsonb)',
     'public.escrow_load_wraps(uuid, uuid, uuid)', 'public.escrow_record_unwraps(uuid, uuid, uuid, jsonb, text)',
     'public.escrow_set_request_state(uuid, uuid, text)', 'public.escrow_rotation_batch(int, int)',
-    'public.escrow_rewrap_key(uuid, uuid, int, int, int, bytea, text)']
+    'public.escrow_rewrap_key(uuid, uuid, int, int, int, bytea, text)', 'public.escrow_rotation_failed(uuid, uuid, int, int, text)',
+    'public.escrow_rotation_pending(int, int)', 'public.escrow_rotation_notified(uuid, int)']
   loop
     execute format('grant execute on function %s to escrow_svc', f);
   end loop;

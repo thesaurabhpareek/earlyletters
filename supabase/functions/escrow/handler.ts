@@ -47,7 +47,10 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
     const started = now().getTime();
     const given = req.headers.get('x-request-id') ?? '';
     const reqId = /^[0-9a-f]{12}$/.test(given) ? given : randomReqId();
-    const log = makeLogger(sink, env('ESCROW_VERSION') ?? '1', reqId);
+    // What the access log and restore_requests store: always made here, never the caller's id,
+    // so nobody can choose or collide the ids on their own log rows. Log lines carry both.
+    const auditId = randomReqId();
+    const log = makeLogger(sink, env('ESCROW_VERSION') ?? '1', reqId, auditId);
     const reply = <T>(status: number, body: Envelope<T>) => {
       log.info(status < 400 ? 'request.done' : status >= 500 ? 'request.failed' : 'request.refused', {
         status, duration_ms: now().getTime() - started, ...(body.ok ? {} : { code: body.error.code as Code }),
@@ -90,7 +93,7 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
       if (route === 'rotate') {
         if (!config.rotation || !sameString(bearer, config.rotation.secret)) return fail(401, 'unauthorized');
         db = await openDatabase(config, deps);
-        const r = await rotateBatch({ db, mailer, log, keys: config.keys, now }, config.rotation.from, config.rotation.to, 50, reqId);
+        const r = await rotateBatch({ db, mailer, log, keys: config.keys, now }, config.rotation.from, config.rotation.to, 50, auditId);
         return reply(200, { ok: true, data: r, requestId: reqId });
       }
 
@@ -101,8 +104,8 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
       db = await openDatabase(config, deps);
       const rd = { db, mailer, log, keys: config.keys, stopUrl: config.stopUrl, now, random: deps.random };
       const data = route === 'create'
-        ? await createRequest(rd, user, deviceId, reqId)
-        : await release(rd, user, deviceId, releaseMatch![1], reqId);
+        ? await createRequest(rd, user, deviceId, auditId)
+        : await release(rd, user, deviceId, releaseMatch![1], auditId);
       return reply(200, { ok: true, data, requestId: reqId });
     } catch (e) {
       if (e instanceof JwtError) return e.code === 'unavailable' ? fail(503, 'unavailable', true) : fail(401, 'unauthorized');
@@ -120,6 +123,7 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
           return fail(429, 'rate_limited', false, s, e.detail);
         }
         if (s === 'SCBKO') return fail(503, 'paused', true, s, 'escrow');
+        if (s === 'SCSES') return fail(401, 'unauthorized', false, s);
         if (s === 'SCDEL') return fail(409, 'deleted', false, s, e.detail);
         if (s === 'P0002') return fail(404, 'not_found', false, s, e.detail);
         if (s === '22023' || s === 'SCIMM') return fail(400, 'bad_request', false, s);
@@ -130,6 +134,8 @@ export function makeHandler(env: EnvGetter, deps: HandlerDeps = {}) {
       return fail(500, 'internal', true);
     } finally {
       if (db) await db.close().catch(() => {});
+      // Best effort: this call's copies of the private keys do not outlive it.
+      for (const k of Object.values(config.keys)) k.fill(0);
     }
   };
 }

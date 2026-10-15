@@ -18,6 +18,7 @@ export const ASHA = {
   oldPhone: '0192e000-0000-7000-8000-0000000000d1',
   newPhone: '0192e000-0000-7000-8000-0000000000d2',
   email: 'asha@example.com',
+  session: '0192e000-0000-7000-8000-0000000000f1',
   mainUrl: 'https://main-fixture.supabase.co',
 };
 
@@ -35,6 +36,10 @@ export class FakeDb implements EscrowDb {
   requests: Req[] = [];
   log: (UnwrapRow & { request: string; profile: string })[] = [];
   rotations: { profile: string; child: string }[] = [];
+  rotationFailures: { profile: string; child: string; kv: number; from: number }[] = [];
+  notices = new Map<string, { profile: string; to: number; sent: boolean }>();
+  /** Session ids the database knows as live (auth.sessions). */
+  sessions = new Set<string>([ASHA.session]);
   deleting = false;
   emails = new Map<string, string>([[ASHA.profile, ASHA.email]]);
   failOn: string | null = null;
@@ -62,8 +67,9 @@ export class FakeDb implements EscrowDb {
     };
   }
 
-  async openRequest(profile: string, device: string, requestId: string, hash: Uint8Array, approvals: Req['approvals']): Promise<OpenResult> {
-    this.hit('openRequest', [profile, device, requestId, toHex(hash), approvals]);
+  async openRequest(profile: string, device: string, session: string, requestId: string, hash: Uint8Array, approvals: Req['approvals']): Promise<OpenResult> {
+    this.hit('openRequest', [profile, device, session, requestId, toHex(hash), approvals]);
+    if (!this.sessions.has(session)) throw new PgError('SCSES', 'session ended', 'session_ended');
     const open = this.requests.find((r) => r.device === device && ['requested', 'approved'].includes(r.state));
     if (open) {
       if (!open.notified) open.tokenHash = toHex(hash);
@@ -111,18 +117,38 @@ export class FakeDb implements EscrowDb {
 
   async rotationBatch(from: number, limit: number): Promise<RotationRow[]> {
     this.hit('rotationBatch', [from, limit]);
-    return this.wraps.filter((w) => w.ekv === from).slice(0, limit).map((w) => ({ profile_id: w.profile, child_id: w.child, key_version: w.kv, escrow_wrap_hex: toHex(w.wrap) }));
+    const failed = (w: FakeDb['wraps'][number]) => this.rotationFailures.some((f) => f.profile === w.profile && f.child === w.child && f.kv === w.kv && f.from === from);
+    return this.wraps.filter((w) => w.ekv === from && !failed(w)).slice(0, limit).map((w) => ({ profile_id: w.profile, child_id: w.child, key_version: w.kv, escrow_wrap_hex: toHex(w.wrap) }));
   }
 
   async rewrapKey(profile: string, child: string, kv: number, from: number, to: number, wrap: Uint8Array) {
     this.hit('rewrapKey', [profile, child, kv, from, to]);
     const w = this.wraps.find((x) => x.profile === profile && x.child === child && x.kv === kv && x.ekv === from);
-    if (!w) return { updated: false, first_for_account: false, email: null };
-    const first = !this.wraps.some((x) => x.profile === profile && x.ekv === to);
+    if (!w) return { updated: false };
     w.wrap = wrap;
     w.ekv = to;
     this.rotations.push({ profile, child });
-    return { updated: true, first_for_account: first, email: first ? this.emails.get(profile) ?? null : null };
+    if (!this.notices.has(`${profile}:${to}`)) this.notices.set(`${profile}:${to}`, { profile, to, sent: false });
+    return { updated: true };
+  }
+
+  async rotationFailed(profile: string, child: string, kv: number, from: number) {
+    this.hit('rotationFailed', [profile, child, kv, from]);
+    this.rotationFailures.push({ profile, child, kv, from });
+    return { recorded: true };
+  }
+
+  async rotationPending(to: number, limit: number) {
+    this.hit('rotationPending', [to, limit]);
+    return [...this.notices.values()].filter((n) => n.to === to && !n.sent && this.emails.get(n.profile))
+      .slice(0, limit).map((n) => ({ profile_id: n.profile, email: this.emails.get(n.profile)! }));
+  }
+
+  async rotationNotified(profile: string, to: number) {
+    this.hit('rotationNotified', [profile, to]);
+    const n = this.notices.get(`${profile}:${to}`);
+    if (n) n.sent = true;
+    return { notified: !!n };
   }
 
   async close() {
@@ -164,7 +190,7 @@ export async function tokenMinter(mainUrl = ASHA.mainUrl) {
     const now = Math.floor(Date.now() / 1000);
     const h = enc({ alg: 'ES256', kid, typ: 'JWT', ...header });
     const p = enc({ iss: `${mainUrl}/auth/v1`, aud: 'authenticated', role: 'authenticated', sub: ASHA.profile, email: ASHA.email,
-      iat: now, exp: now + 3600, amr: [{ method: 'otp', timestamp: now - 60 }], session_id: 'sess-fixture', is_anonymous: false, ...claims });
+      iat: now, exp: now + 3600, amr: [{ method: 'otp', timestamp: now - 60 }], session_id: ASHA.session, is_anonymous: false, ...claims });
     const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, pair.privateKey, new TextEncoder().encode(`${h}.${p}`)));
     return `${h}.${p}.${encodeBase64Url(sig)}`;
   };
