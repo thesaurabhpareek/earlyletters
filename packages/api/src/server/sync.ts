@@ -424,8 +424,8 @@ export interface BookRequest {
 export interface PullSince {
   epoch?: number;
   books: Record<string, BookRequest>;
-  /** Planned (WP-F16-17): cursor for the author's own held drafts. */
-  held?: { cursor?: string | null };
+  /** Planned (WP-F16-17): cursor and digest for the author's own held drafts (same rules as a book). */
+  held?: { cursor?: string | null; have?: Digest; verify?: boolean; ids?: boolean };
 }
 
 export interface SyncPullArgs {
@@ -487,7 +487,7 @@ export const BookMemberSchema = v.object({
    * Without it the app cannot know whom it may offer "Not your co-parent?".
    */
   undo_until: v.optional(nullableStr),
-  /** Built in sync_books (and the pull meta): whether this member's letters are added to the book without review. Parents only. */
+  /** Built in sync_books only (the pull meta does not carry it): whether this member's letters are added without review. Parents see it. */
   auto_add: v.optional(v.nullable(v.boolean())),
 });
 export type BookMember = v.InferOutput<typeof BookMemberSchema>;
@@ -585,8 +585,21 @@ export const PullResponseSchema = v.object({
   epoch_started_at: str,
   books: v.optional(v.array(PulledBookSchema)),
   gone: v.optional(v.array(GoneBookSchema)),
-  /** Planned (WP-F16-17): the author's own held drafts after the held cursor. Never present in anyone else's pull. */
-  held: v.optional(v.object({ rows: v.array(v.union([PulledHeldGoneSchema, PulledHeldSchema])), cursor: nullableStr, more: v.boolean() })),
+  /**
+   * Planned (WP-F16-17): the author's own held drafts after the held cursor,
+   * with the same cursor rules as a book (F16 6.2 I): removal is the digest
+   * (`visible`, then `ids` on a difference), so a draft purged by a book
+   * purge, the orphan sweep or a restore epoch leaves this phone too.
+   * `gone` rows are an optional fast path for discards and keeps. Never
+   * present in anyone else's pull.
+   */
+  held: v.optional(v.object({
+    rows: v.array(v.union([PulledHeldGoneSchema, PulledHeldSchema])),
+    cursor: nullableStr,
+    more: v.boolean(),
+    visible: v.optional(v.nullable(DigestSchema)),
+    ids: v.optional(v.array(str)),
+  })),
   more: v.optional(v.boolean()),
 });
 export type PullResponse = v.InferOutput<typeof PullResponseSchema>;

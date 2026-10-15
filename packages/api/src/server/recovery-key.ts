@@ -33,6 +33,30 @@ export const B64_32_RE = /^[A-Za-z0-9+/]{43}=$/;
 export const B64_RE = /^(?:[A-Za-z0-9+/]{4}){1,1366}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+/**
+ * HPKE `info` labels and `aad` builders, exactly as S05's escrow function
+ * (supabase/functions/escrow/hpke.ts, PR #151) opens them. Labels name the
+ * codename, never the product. AAD is the lowercase ids joined with '|', so
+ * a wrap cannot be moved to another row. A phone that seals with anything
+ * else stores a wrap the function can never open.
+ */
+export const SEAL_INFO = {
+  /** A book key sealed on the phone to the escrow public key (`child_keys.escrow_wrap`). */
+  bookKey: 'scribe/escrow/book-key/v1',
+  /** A book key the escrow function opened, sealed to the requesting device. */
+  release: 'scribe/escrow/release/v1',
+  /** A random approval code sealed to an enrolled device. */
+  approval: 'scribe/escrow/approval/v1',
+} as const;
+
+export const sealAad = {
+  bookKey: (profile: string, child: string, keyVersion: number, escrowKeyVersion: number) =>
+    [profile, child, keyVersion, escrowKeyVersion].join('|').toLowerCase(),
+  release: (profile: string, device: string, request: string, child: string, keyVersion: number) =>
+    [profile, device, request, child, keyVersion].join('|').toLowerCase(),
+  approval: (profile: string, device: string) => [profile, device].join('|').toLowerCase(),
+};
+
 export const SealedBoxSchema = v.strictObject({
   suite: v.literal(SEAL_SUITE),
   /** The encapsulated ephemeral X25519 public key. */
@@ -131,6 +155,16 @@ export const ESCROW_ROUTES = {
   release: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/:id/release' },
 } as const;
 
+/**
+ * Server-side switches for backup (S05 PR #151), apart from the remote
+ * config the phones read: the main project's database settings
+ * `app.backup_enabled` (uploads and key storage; SCBKO when off) and
+ * `app.escrow_enabled` (every escrow_* call), and the escrow project's own
+ * function secret `ESCROW_SWITCH` (the function runs only while it is `on`).
+ * `scripts/packs/publish.ts config` prints all three for the switches set.
+ */
+export const BACKUP_SERVER_SWITCHES = { uploads: 'app.backup_enabled', escrowDb: 'app.escrow_enabled', escrowFunction: 'ESCROW_SWITCH' } as const;
+
 /** The step-up rule: the JWT's most recent sign-in is at most this old for a new request (F08 6.5 C1). Checked only on create. */
 export const STEP_UP_MAX_AGE_SECONDS = 600;
 /** Hold when another enrolled device exists (unrevoked, seen in the last 90 days), unless it approves. */
@@ -168,6 +202,14 @@ export const ESCROW_ERROR_DETAILS = [
   'entry',
   'key',
   'object',
+  'nothing',
+  'released',
+  'count',
+  'code',
+  'size',
+  'approvals',
+  'begin',
+  'devices',
 ] as const;
 export type EscrowErrorDetail = (typeof ESCROW_ERROR_DETAILS)[number];
 
@@ -187,6 +229,15 @@ export const RestoreRequestViewSchema = v.object({
   is_this_device: v.boolean(),
 });
 export type RestoreRequestView = v.InferOutput<typeof RestoreRequestViewSchema>;
+
+/** What `createRequest` answers (the function's view of the open request it made or found). */
+export const CreateRequestResultSchema = v.object({
+  request_id: v.pipe(v.string(), v.regex(UUID_RE)),
+  state: v.picklist(['requested', 'approved']),
+  hold_until: v.string(),
+  is_this_device: v.literal(true),
+});
+export type CreateRequestResult = v.InferOutput<typeof CreateRequestResultSchema>;
 
 /** One row of `backup_pending_requests`: the view plus, on an enrolled device, the approval code sealed to it. */
 export const PendingRequestSchema = v.object({

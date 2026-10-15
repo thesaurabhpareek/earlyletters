@@ -58,9 +58,11 @@ describe('[DECISION-17] every endpoint the app calls meets the API standard', ()
     const signInFamily = ['signIn', 'appleToken', 'recordPolicyAct', 'policyActionsNeeded'];
     // Stepping back is never paused: cancel an invite, leave, remove a family member, undo a join (DATA-REQ-016, LEGAL-REQ-009).
     // Restore must never be stopped by `backupUploads`, and stopping a restore must never be stopped by `escrow`.
-    const alwaysAvailable = ['revokeInvite', 'leaveChild', 'removeChildMember', 'undoParentJoin', 'backupRegisterDevice', 'backupPendingRequests', 'backupApproveRequest', 'backupCancelRequest'];
+    const alwaysAvailable = ['revokeInvite', 'leaveChild', 'removeChildMember', 'undoParentJoin', 'backupRegisterDevice', 'backupPendingRequests', 'backupApproveRequest', 'backupCancelRequest',
+      'backupRevokeDevice', 'backupObjectDownload', 'backupDiscard', 'backupDeleteAll'];
     for (const [name, e] of entries) {
       if (e.path.startsWith('/functions/v1/config') || e.path.startsWith('/functions/v1/content') || e.class === 'pack_file') continue;
+      if (e.auth === 'public' && name === 'signIn') { expect(e.capability).toBe('signIn'); continue; }
       expect(e.capability, `${name} needs a capability`).toBeDefined();
       if (signInFamily.includes(name)) expect(e.capability).toBe('signIn');
       else if (alwaysAvailable.includes(name)) expect(e.killSwitch, `${name} must stay available`).toBeUndefined();

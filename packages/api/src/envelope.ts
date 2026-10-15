@@ -100,6 +100,7 @@ export const ERROR_DETAILS = [
   // Escrow (recovery-key.ts ESCROW_ERROR_DETAILS)
   'step_up_required', 'device_unknown', 'device_revoked', 'on_hold', 'cancelled', 'deletion_pending',
   'limit_restores', 'limit_keys', 'limit_keys_stored', 'key_exists', 'revoked', 'entry', 'key', 'object',
+  'nothing', 'released', 'count', 'code', 'size', 'approvals', 'begin', 'devices',
   // Kill switches (remote-config.ts KILL_SWITCH_KEYS), for `paused`
   'sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport',
   // invite-redeem's global brake (F11-REQ-007)

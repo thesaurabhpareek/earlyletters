@@ -202,15 +202,53 @@ export const ENDPOINTS = {
   },
   // ── Recovery key (packages/api/src/server/recovery-key.ts; S05). The escrow routes are on the scribe-escrow project. ──
   // No kill switch: restore needs a registered device too, and `backupUploads` must never stop a restore.
+  // Limits as built in S05's 20261015230000 (PR #151).
   backupRegisterDevice: {
     method: 'POST', path: '/rest/v1/rpc/backup_register_device', class: 'write_rpc', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    capability: 'backup',
+  },
+  backupRevokeDevice: {
+    method: 'POST', path: '/rest/v1/rpc/backup_revoke_device', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'client' }, status: 'planned',
     capability: 'backup',
   },
   backupStoreKey: {
     method: 'POST', path: '/rest/v1/rpc/backup_store_key', class: 'write_rpc', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
     killSwitch: 'backupUploads', capability: 'backup',
+  },
+  // 600 reservations an hour per account (F08 6.5 F, SCRAT `begin`); the 5 GB quota is SCQTA.
+  backupBegin: {
+    method: 'POST', path: '/rest/v1/rpc/backup_begin', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 600, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    killSwitch: 'backupUploads', capability: 'backup',
+  },
+  backupObjectUpload: {
+    method: 'POST', path: '/storage/v1/upload/resumable', class: 'object_transfer', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 600, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'planned',
+    killSwitch: 'backupUploads', capability: 'backup',
+  },
+  backupConfirm: {
+    method: 'POST', path: '/rest/v1/rpc/backup_confirm', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 600, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'planned',
+    killSwitch: 'backupUploads', capability: 'backup',
+  },
+  // Downloading, discarding and deleting what is backed up are never switched off (SCBKO never stops them).
+  backupObjectDownload: {
+    method: 'GET', path: '/storage/v1/object/authenticated/entry-audio/<path>', class: 'object_transfer', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 600, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'planned',
+    capability: 'backup',
+  },
+  backupDiscard: {
+    method: 'POST', path: '/rest/v1/rpc/backup_discard', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 600, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'planned',
+    capability: 'backup',
+  },
+  backupDeleteAll: {
+    method: 'POST', path: '/rest/v1/rpc/backup_delete_all', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'client' }, status: 'planned',
+    capability: 'backup',
   },
   escrowCreateRequest: {
     method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests`, class: 'escrow', auth: 'user_jwt',

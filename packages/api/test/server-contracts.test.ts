@@ -13,6 +13,10 @@ import {
   holdUntil,
   currentEscrowKey,
   newestAmrTimestamp,
+  parseEscrowKeys,
+  SEAL_INFO,
+  sealAad,
+  CreateRequestResultSchema,
   INVITE_CODE_RE,
   INVITE_REDEEM_PATH,
   INVITE_TOKEN_RE,
@@ -35,7 +39,6 @@ import {
   parseRedeemRequest,
   parseStatusReport,
   passesStepUp,
-  PENDING_INVITE_COLUMNS,
   PushPayloadSchema,
   SealedBoxSchema,
   STATUS_REPORT_PATH,
@@ -225,12 +228,11 @@ describe('[WP-F11-04] family contracts', () => {
     expect(INVITE_REDEEM_PATH).toBe(ENDPOINTS.inviteRedeem.path);
   });
 
-  it('[F11-REQ-019] pending invites never select a hash; open means not used, revoked or expired', () => {
-    expect(PENDING_INVITE_COLUMNS.join(',')).not.toMatch(/hash|token|code/);
+  it('[F11-REQ-019] pending invites come from sync_books; open means status open and not past expiry', () => {
     const now = new Date('2026-10-15T12:00:00Z');
-    expect(isOpenInvite({ accepted_at: null, revoked_at: null, expires_at: '2026-10-20T00:00:00Z' }, now)).toBe(true);
-    expect(isOpenInvite({ accepted_at: null, revoked_at: null, expires_at: '2026-10-14T00:00:00Z' }, now)).toBe(false);
-    expect(isOpenInvite({ accepted_at: '2026-10-15T00:00:00Z', revoked_at: null, expires_at: '2026-10-20T00:00:00Z' }, now)).toBe(false);
+    expect(isOpenInvite({ status: 'open', expires_at: '2026-10-20T00:00:00Z' }, now)).toBe(true);
+    expect(isOpenInvite({ status: 'open', expires_at: '2026-10-14T00:00:00Z' }, now)).toBe(false);
+    expect(isOpenInvite({ status: 'expired', expires_at: '2026-10-20T00:00:00Z' }, now)).toBe(false);
   });
 });
 
@@ -244,7 +246,7 @@ const report: StatusReport = {
   cancelled: false,
   free_period_days: 7,
   reported_at: '2026-10-15T19:00:00.000Z',
-  consent: { product_id: 'plus.annual', offer_type: 'introductory', terms_version: '1.4.0', shown_at: '2026-10-15T18:59:00.000Z' },
+  consent: { product_id: 'plus.annual', offer_type: 'introductory', terms_shown: '1.4.0', shown_at: '2026-10-15T18:59:00.000Z' },
 };
 
 describe('[D-080] subscription status report and [D-081] consent record', () => {
@@ -267,8 +269,8 @@ describe('[D-080] subscription status report and [D-081] consent record', () => 
   });
 
   it('[F14-REQ-044] an outside offer code records none_outside_app; a bad version is refused', () => {
-    expect(parseStatusReport({ ...report, consent: { ...report.consent!, offer_type: 'offer_code', terms_version: 'none_outside_app' } }).ok).toBe(true);
-    expect(parseStatusReport({ ...report, consent: { ...report.consent!, terms_version: 'latest' } }).ok).toBe(false);
+    expect(parseStatusReport({ ...report, consent: { ...report.consent!, offer_type: 'offer_code', terms_shown: 'none_outside_app' } }).ok).toBe(true);
+    expect(parseStatusReport({ ...report, consent: { ...report.consent!, terms_shown: 'latest' } }).ok).toBe(false);
     expect(parseStatusReport({ ...report, environment: 'staging' }).ok).toBe(false);
   });
 
@@ -337,15 +339,24 @@ describe('[F08 6.5] recovery-key contract', () => {
     expect(newestAmrTimestamp([])).toBeNull();
   });
 
-  it('[WP-F08-B8] no escrow key ships until the ceremony; the newest key per environment wins', () => {
-    expect(currentEscrowKey('production')).toBeNull();
-    const keys = [
-      { version: 1, publicKey: `${'A'.repeat(43)}=`, environment: 'production' as const },
-      { version: 2, publicKey: `${'B'.repeat(43)}=`, environment: 'production' as const },
-      { version: 9, publicKey: `${'C'.repeat(43)}=`, environment: 'drill' as const },
-    ];
-    expect(currentEscrowKey('production', keys)?.version).toBe(2);
-    expect(currentEscrowKey('drill', keys)?.version).toBe(9);
+  it('[WP-F08-B8] escrow keys come from the build, one environment, exactly one current; anything else fails closed', () => {
+    const k = (version: number, current: boolean, environment = 'production') => ({ version, publicKey: `${'A'.repeat(43)}=`, environment, current });
+    expect(parseEscrowKeys(undefined)).toEqual([]);
+    expect(parseEscrowKeys('not json')).toEqual([]);
+    const two = parseEscrowKeys(JSON.stringify([k(1, true), k(2, false)]));
+    expect(currentEscrowKey(two)?.version).toBe(1);
+    expect(parseEscrowKeys(JSON.stringify([k(1, true), k(2, true)]))).toEqual([]);
+    expect(parseEscrowKeys(JSON.stringify([k(1, true), k(9, false, 'drill')]))).toEqual([]);
+    expect(parseEscrowKeys(JSON.stringify([k(1, false)]))).toEqual([]);
+    expect(currentEscrowKey([])).toBeNull();
+  });
+
+  it('[F08 6.5] HPKE labels and aad match the escrow function; the create answer has its own schema', () => {
+    expect(SEAL_INFO.bookKey).toBe('scribe/escrow/book-key/v1');
+    expect(sealAad.bookKey('P', 'C', 1, 2)).toBe('p|c|1|2');
+    expect(sealAad.release('P', 'D', 'R', 'C', 3)).toBe('p|d|r|c|3');
+    const created = { request_id: '0192e000-0000-7000-8000-0000000000aa', state: 'requested', hold_until: '2026-10-18T12:00:00Z', is_this_device: true };
+    expect(v.safeParse(CreateRequestResultSchema, created).success).toBe(true);
   });
 
   it('[F08 6.5 C1] step-up: a sign-in at most 10 minutes old', () => {

@@ -332,26 +332,24 @@ export type UndoResult = (typeof UNDO_RESULTS)[number];
 // ── Member list (F11-REQ-019) ────────────────────────────────────────────
 
 /**
- * Members come from the pull (`BookMeta.members`, sync.ts). Pending invites
- * come from `child_invites`, which parents of the book may read
- * (`child_invites_select`); select exactly these columns, never `*` and
- * never `token_hash` or `code_hash`.
+ * One source for the list: `sync_books()` (sync.ts `SyncBooksResponseSchema`).
+ * Members with role, joined date, signature and `auto_add`; and, for
+ * parents, pending invites not accepted, not revoked and expired for at
+ * most 14 days, each with `status`. Do not select `child_invites` directly.
  */
-export const PENDING_INVITE_COLUMNS = ['id', 'child_id', 'role', 'signs_as', 'created_at', 'expires_at', 'accepted_at', 'revoked_at'] as const;
-
-export const PendingInviteSchema = v.object({
-  id: v.string(),
-  child_id: v.string(),
-  role: v.picklist(['parent', 'contributor']),
-  signs_as: v.nullable(v.string()),
-  created_at: v.string(),
-  expires_at: v.string(),
-  accepted_at: v.nullable(v.string()),
-  revoked_at: v.nullable(v.string()),
-});
-export type PendingInvite = v.InferOutput<typeof PendingInviteSchema>;
-
-/** Open means not accepted, not revoked and not expired at `now`. */
-export function isOpenInvite(inv: Pick<PendingInvite, 'accepted_at' | 'revoked_at' | 'expires_at'>, now: Date): boolean {
-  return inv.accepted_at === null && inv.revoked_at === null && Date.parse(inv.expires_at) > now.getTime();
+export function isOpenInvite(inv: { status: 'open' | 'expired'; expires_at: string }, now: Date): boolean {
+  return inv.status === 'open' && Date.parse(inv.expires_at) > now.getTime();
 }
+
+// ── Offline invites (F11 6.2 A step 3, F11-U14) ──────────────────────────
+
+/**
+ * A device-made invite is queued in the F16 outbox in its own lane
+ * (`membership`, not a `sync_push` op), written in the same SQLite
+ * transaction as the local invite row, and sent with `createInviteV2` when
+ * online. It is idempotent on the invite id and hashes, so a retry after a
+ * lost answer is safe, it shows "Not sent yet" like any queued op, and
+ * sign-out drains it with the rest of the outbox. Revoke and leave queue the
+ * same way (`revokeInvite`, `leaveChild`).
+ */
+export const OUTBOX_LANE_MEMBERSHIP = 'membership' as const;

@@ -21,12 +21,13 @@ export const KILL_SWITCH_KEYS = [
   /**
    * New uploads of the owner's encrypted recordings (F08 6.5 A; R2 AR-12).
    * What is backed up stays backed up and restorable; nothing local changes.
+   * On the server: `app.backup_enabled` (SCBKO while off).
    */
   'backupUploads',
   /**
    * Restores through the recovery key, on the phone and in the `escrow`
-   * function (F08 6.5 C9). The function also reads its own project's switch,
-   * so it can be stopped without any phone.
+   * function (F08 6.5 C9). On the server: `app.escrow_enabled` and the escrow
+   * project's `ESCROW_SWITCH` secret, so it can be stopped without any phone.
    */
   'escrow',
   /** The subscription status report (D-080). Phone reminders keep working (F14 6.6). */
@@ -38,10 +39,12 @@ export type KillSwitchKey = (typeof KILL_SWITCH_KEYS)[number];
 export const M14_KILL_SWITCH_KEYS: readonly KillSwitchKey[] = ['backupUploads', 'escrow', 'statusReport'];
 
 /**
- * Server side: `KILL_SWITCHES=invites,statusReport` in a function's secrets
- * stops that feature in the function itself, without a phone and without a
- * redeploy [A: a changed secret applies to the next invocation; checked on
- * the first staging deploy]. Unknown names are ignored; empty means none.
+ * Server side for our JSON functions: `KILL_SWITCHES=invites,statusReport`
+ * in the main project's function secrets stops that feature in the function
+ * itself, without a phone and without a redeploy [A: a changed secret
+ * applies to the next invocation; checked on the first staging deploy].
+ * Unknown names are ignored; empty means none. (Backup and escrow use their
+ * own server switches; see scripts/packs/lib.ts SERVER_ENFORCED_KILL_SWITCHES.)
  */
 export function parseKillSwitchList(raw: string | null | undefined): Set<KillSwitchKey> {
   const out = new Set<KillSwitchKey>();

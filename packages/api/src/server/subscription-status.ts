@@ -45,7 +45,7 @@ export type PlanPeriod = (typeof PLAN_PERIODS)[number];
 export const OFFER_TYPES = ['none', 'introductory', 'promotional', 'offer_code'] as const;
 export type OfferType = (typeof OFFER_TYPES)[number];
 
-/** `terms_version` for an offer code redeemed outside the app, where we showed no terms (F14-REQ-044). */
+/** `terms_shown` for an offer code redeemed outside the app, where we showed no terms (F14-REQ-044). */
 export const TERMS_NONE_OUTSIDE_APP = 'none_outside_app';
 /** A build-time constant from `billingCopy.store` and the Subscription Terms (F14-REQ-011), or `none_outside_app`. */
 export const TERMS_VERSION_RE = /^(?:none_outside_app|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(?:\+[0-9a-f]{8})?)$/;
@@ -61,7 +61,8 @@ const isoTime = v.pipe(v.string(), v.maxLength(40), v.isoTimestamp());
 export const ConsentFactsSchema = v.strictObject({
   product_id: v.pipe(v.string(), v.regex(PRODUCT_ID_RE)),
   offer_type: v.picklist(OFFER_TYPES),
-  terms_version: v.pipe(v.string(), v.regex(TERMS_VERSION_RE)),
+  /** The Subscription Terms version shown (F14-REQ-011), or `none_outside_app` (F14-REQ-044). Named as in F14-U43. */
+  terms_shown: v.pipe(v.string(), v.regex(TERMS_VERSION_RE)),
   /** When the terms were shown and the purchase confirmed (device clock). */
   shown_at: isoTime,
 });
@@ -95,7 +96,13 @@ export const StatusReportSchema = v.strictObject({
    * D-080 like `free_period_days`; optional until then.
    */
   subscribed_since: v.optional(v.nullable(v.pipe(v.string(), v.isoDate()))),
-  /** When the phone observed these values (device clock). The server keeps the newest per (profile, sub_ref). */
+  /**
+   * When the phone observed these values (device clock). Stored for support
+   * and used only to order this phone's own queue. The server orders
+   * reports by its own receive time (F16 C12: the server clock decides
+   * lifecycle), so a phone clock set ahead cannot freeze the status; S06's
+   * SQL refuses a `reported_at` more than a day ahead of the server (22023).
+   */
   reported_at: isoTime,
   consent: v.optional(ConsentFactsSchema),
 });

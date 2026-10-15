@@ -21,7 +21,7 @@ const report = {
   cancelled: false,
   free_period_days: 7,
   reported_at: '2026-10-15T19:00:00.000Z',
-  consent: { product_id: 'plus.annual', offer_type: 'introductory', terms_version: '1.4.0', shown_at: '2026-10-15T18:59:00.000Z' },
+  consent: { product_id: 'plus.annual', offer_type: 'introductory', terms_shown: '1.4.0', shown_at: '2026-10-15T18:59:00.000Z' },
 };
 
 function world(o: { env?: Record<string, string>; rpcStatus?: number; rpcBody?: unknown; user?: unknown; userStatus?: number } = {}) {
