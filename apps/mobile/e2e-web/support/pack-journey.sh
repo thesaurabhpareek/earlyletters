@@ -17,7 +17,7 @@ case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 
 [ -d "$J/steps" ] || { echo "pack-journey: no steps in $J; run the flows first" >&2; exit 1; }
 steps="$(find "$J/steps" -name '*.json' | wc -l | tr -d ' ')"
-shots="$(find "$J/screens" -name '*.png' 2>/dev/null | wc -l | tr -d ' ')"
+shots=0; [ -d "$J/screens" ] && shots="$(find "$J/screens" -name '*.png' | wc -l | tr -d ' ')"
 pdf=no; [ -f "$J/Early-Letters-iOS-Journey.pdf" ] && pdf=yes
 [ "$steps" -gt 0 ] || { echo "pack-journey: steps/ is empty; run the flows first" >&2; exit 1; }
 [ "$shots" -gt 0 ] || echo "pack-journey: no screenshots (run the flows with JOURNEY_SHOTS=1 to include them)" >&2
