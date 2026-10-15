@@ -420,8 +420,9 @@ begin
    where child_id = p_child and accepted_by = p_member
    order by accepted_at desc limit 1;
   if not found or v_inv.invited_by is distinct from v_uid or v_joined <= now() - interval '72 hours'
-     -- the membership was made by that invite (a re-add by support has no invite)
-     or v_inv.accepted_at < v_joined - interval '1 minute' then
+     -- the membership was made by that invite: accept writes both in one
+     -- transaction, so the times are equal (a re-add by support has no invite)
+     or v_inv.accepted_at is distinct from v_joined then
     raise exception 'a join can be undone only by the parent who sent the invite, within 72 hours' using errcode = 'SCPAR';
   end if;
   update entries set in_book = false, approval = 'not_needed', reviewed_by = null, reviewed_at = null

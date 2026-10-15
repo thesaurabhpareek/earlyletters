@@ -175,8 +175,8 @@ check('[F11-REQ-018] with the default config no act is needed', (await sys(`sele
     && (await codeOf(() => as(N, `select public.peek_invite($1)`, [T2]))) === 'SCINV');
   // A re-add by support (service role, no invite) is not undoable through the old invite.
   await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'parent')`, [BK, N]);
-  check('[F11-REQ-012] a membership made by support cannot be undone through an old invite (SCPAR)',
-    (await codeOf(() => as(C, `select public.undo_parent_join($1, $2)`, [BK, N]))) === 'SCPAR');
+  const supportUndo = await codeOf(() => as(C, `select public.undo_parent_join($1, $2)`, [BK, N]));
+  check(`[F11-REQ-012] a membership made by support cannot be undone through an old invite (${supportUndo})`, supportUndo === 'SCPAR');
   await sys(`delete from child_members where child_id = $1 and profile_id = $2`, [BK, N]);
   check('[DATA-REQ-016] the last parent cannot leave (SCLPG) and stays',
     (await codeOf(() => as(C, `select public.leave_child($1)`, [BK]))) === 'SCLPG' && (await roleOf(BK, C)) === 'parent');
