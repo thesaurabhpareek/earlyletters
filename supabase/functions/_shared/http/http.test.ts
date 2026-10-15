@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { PAUSED_RETRY_AFTER_SECONDS } from '../../../../packages/api/src/standards.ts';
 import { KILL_SWITCH_KEYS } from '../../../../packages/api/src/kill-switches.ts';
 import {
-  clientIp, codeHmac, failReply, idempotencyKeyOf, okReply, PAUSED_RETRY_AFTER, pausedReply, readBody, serverKilled, sessionOf, subjectHashes, timedRequest,
+  clientIp, codeHmac, failReply, idempotencyKeyOf, okReply, PAUSED_RETRY_AFTER, pausedReply, readBody, serverKilled, sessionOf, subjectHashes, timedRequest, unknownKillSwitches,
 } from './http.ts';
 
 Deno.test('[ADR-0017] the envelope carries the request id in the header and the body, never cached', async () => {
@@ -25,8 +25,11 @@ Deno.test('[ADR-0016] paused answers name the switch and ask for the packaged wa
   assert.deepEqual((await r.json()).error, { code: 'paused', retryable: true, detail: 'escrow' });
 });
 
-Deno.test('[ADR-0016] KILL_SWITCHES uses the remote-config vocabulary and nothing else', () => {
+Deno.test('[ADR-0016] KILL_SWITCHES uses the remote-config vocabulary, in any case, and reports typos', () => {
   const env = (v: string) => (n: string) => (n === 'KILL_SWITCHES' ? v : undefined);
+  assert.equal(serverKilled(env('StatusReport'), 'statusReport'), true);
+  assert.equal(unknownKillSwitches(env('invites, statusreprt')), 1);
+  assert.equal(unknownKillSwitches(env('invites')), 0);
   for (const k of KILL_SWITCH_KEYS) assert.equal(serverKilled(env(k), k), true, k);
   assert.equal(serverKilled(env('recording,export'), 'sync'), false);
   assert.equal(serverKilled(() => undefined, 'invites'), false);
@@ -77,7 +80,9 @@ Deno.test('client IP: exactly one configured header, never X-Forwarded-For; norm
   assert.equal(ip({ 'cf-connecting-ip': '203.0.113.7:443' }), '203.0.113.7');
   assert.equal(ip({ 'cf-connecting-ip': '[2001:db8::1]:443' }), '2001:db8:0:0::/64');
   assert.equal(ip({ 'cf-connecting-ip': 'fe80::1%en0' }), 'fe80:0:0:0::/64');
-  assert.equal(ip({ 'cf-connecting-ip': '203.0.113.7, 10.0.0.1' }), '203.0.113.7');
+  assert.equal(ip({ 'cf-connecting-ip': '198.51.100.9, 203.0.113.7' }), '', 'a list means a client value was appended to: trust none');
+  assert.equal(ip({ 'cf-connecting-ip': '::ffff:c000:201' }), '', 'hex-mapped IPv4 would make every IPv4 caller one subject');
+  assert.equal(ip({ 'cf-connecting-ip': '203.0.113.7' }, ' CF-Connecting-IP '), '203.0.113.7');
   assert.equal(ip({ 'cf-connecting-ip': '999.1.1.1' }), '');
   assert.equal(ip({ 'cf-connecting-ip': 'not an ip' }), '');
 });

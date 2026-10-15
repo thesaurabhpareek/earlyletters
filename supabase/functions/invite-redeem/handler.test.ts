@@ -150,15 +150,26 @@ Deno.test('a person the database called limited is answered from memory, without
   assert.equal(w.rpcArgs().length, before);
 });
 
-Deno.test('refused outcomes: only SCCAP, SCCON, SCDEL and SCRAT pass; SCINV reads as not_found; SCRAT is retryable', async () => {
+Deno.test('refused outcomes: only SCCAP, SCCON, SCDEL and SCRAT pass; an uncounted SCINV fails closed; SCRAT is retryable', async () => {
   const inv = await world({ rpc: { body: { outcome: 'refused', sqlstate: 'SCINV', detail: 'expired' } } });
-  assert.deepEqual((await (await inv.handler(guess(CODE))).json()).error, { code: 'invite_unusable', retryable: false, sqlstate: 'SCINV', detail: 'not_found' });
+  const r0 = await inv.handler(guess(CODE));
+  assert.equal(r0.status, 503);
+  assert.deepEqual((await r0.json()).error, { code: 'unavailable', retryable: true });
   const odd = await world({ rpc: { body: { outcome: 'refused', sqlstate: '42501' } } });
   assert.equal((await odd.handler(guess(CODE))).status, 503);
   const rat = await world({ rpc: { body: { outcome: 'refused', sqlstate: 'SCRAT' } } });
   const r = await rat.handler(guess(CODE));
   assert.equal(r.status, 429);
   assert.deepEqual((await r.json()).error, { code: 'rate_limited', retryable: true, sqlstate: 'SCRAT' });
+});
+
+Deno.test('an answer for the other mode is never passed on (no join from a peek)', async () => {
+  const w = await world({ rpc: { body: { outcome: 'accepted', child_id: CANARY.childId, role: 'parent' } } });
+  assert.equal((await w.handler(guess(CODE))).status, 503);
+  const p = await world({ rpc: { body: { outcome: 'peek', inviter: 'Papa', role: 'parent' } } });
+  assert.equal((await p.handler(req({ code: CODE, mode: 'accept', device: DEVICE }))).status, 503);
+  const long = await world({ rpc: { body: { outcome: 'peek', inviter: 'x'.repeat(81), role: 'parent' } } });
+  assert.equal((await long.handler(guess(CODE))).status, 503);
 });
 
 Deno.test('without CLIENT_IP_HEADER the IP limit is skipped and the gap is logged', async () => {

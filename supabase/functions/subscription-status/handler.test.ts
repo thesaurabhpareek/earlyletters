@@ -121,6 +121,7 @@ Deno.test('SQL errors map to the envelope: SCRAT, SCANO, 22023 idempotency confl
     [400, { code: '22023', message: 'bad date' }, 400, { code: 'bad_request', retryable: false }],
     [401, { code: 'PGRST301' }, 401, { code: 'unauthorized', retryable: false }],
     [500, { code: 'XX000' }, 503, { code: 'unavailable', retryable: true }],
+    [400, { code: 'SCKIL', details: 'statusReport' }, 503, { code: 'paused', retryable: true, detail: 'statusReport' }],
   ];
   for (const [rpcStatus, rpcBody, status, error] of cases) {
     const res = await world({ rpcStatus, rpcBody }).handler(post(report));

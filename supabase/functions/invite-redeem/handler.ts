@@ -38,7 +38,7 @@ import * as v from 'valibot';
 import { createLogger, type ErrorCode, type LogSink } from '../_shared/log/log.ts';
 import {
   bearerOf, clientIp, codeHmac, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply,
-  postgrestError, readBody, serverKilled, sessionOf, subjectHashes, timedRequest, upstreamJson, type EnvGetter, type FetchFn,
+  postgrestError, readBody, serverKilled, sessionOf, subjectHashes, timedRequest, unknownKillSwitches, upstreamJson, type EnvGetter, type FetchFn,
 } from '../_shared/http/http.ts';
 
 export const MAX_BODY_BYTES = 1_024;
@@ -94,6 +94,7 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
     try {
       if (req.method !== 'POST') return refuse('bad_request', false, { status: 405 });
       if (!ROUTE_RE.test(new URL(req.url).pathname)) return refuse('not_found', false);
+      if (unknownKillSwitches(env) > 0) log.warn('redeem.degraded', { code: 'config' });
       if (serverKilled(env, 'invites')) {
         log.warn('redeem.refused', { status: 503, code: 'killed' });
         return pausedReply('invites', id);
@@ -169,7 +170,7 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
           // On the code path every reason but `already_member` reads as `not_found`, so a guess learns nothing.
           return refuse('invite_unusable', false, { sqlstate: 'SCINV', detail: r.detail === 'already_member' ? 'already_member' : 'not_found' });
         case 'refused': {
-          if (r.sqlstate === 'SCINV' || r.sqlstate === 'P0002') return refuse('invite_unusable', false, { sqlstate: 'SCINV', detail: 'not_found' });
+          // A wrong code must come back as `unusable` (counted). An uncounted SCINV would make guessing free: fail closed.
           if (!REFUSED_OK.has(r.sqlstate)) return unavailable({ provider: 'postgrest', code: 'bad_response' });
           const rule = classifySqlstate(r.sqlstate);
           if (rule.code === 'rate_limited') return refuse('rate_limited', true, { sqlstate: 'SCRAT', headers: { 'retry-after': '3600' } });
@@ -177,9 +178,12 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
           return refuse(rule.code, rule.retryable, { sqlstate: r.sqlstate, detail });
         }
         case 'peek':
+          // An answer for the other mode is a database bug: never pass a join off as a peek, or the reverse.
+          if (mode !== 'peek') return unavailable({ provider: 'postgrest', code: 'bad_response' });
           data = { mode: 'peek', inviter: r.inviter, role: r.role, ...(r.joined ? { joined: true as const } : {}) };
           break;
         case 'accepted':
+          if (mode !== 'accept') return unavailable({ provider: 'postgrest', code: 'bad_response' });
           data = { mode: 'accept', child_id: r.child_id.toLowerCase(), role: r.role };
           break;
       }

@@ -210,6 +210,14 @@ export const ESCROW_ERROR_DETAILS = [
   'approvals',
   'begin',
   'devices',
+  /** SCRAT: the account already has 32 open upload reservations. Retry after some confirm. */
+  'pending',
+  /** SCIMM: a device cannot be revoked while another device of the account has an open restore request. */
+  'restore_open',
+  /** SCBKO: escrow is paused while a key rotation runs. */
+  'rotation',
+  /** SCSES: the session behind `p_session` has ended; sign in again. */
+  'session_ended',
 ] as const;
 export type EscrowErrorDetail = (typeof ESCROW_ERROR_DETAILS)[number];
 

@@ -101,7 +101,8 @@ export const StatusReportSchema = v.strictObject({
    * and used only to order this phone's own queue. The server orders
    * reports by its own receive time (F16 C12: the server clock decides
    * lifecycle), so a phone clock set ahead cannot freeze the status; S06's
-   * SQL refuses a `reported_at` more than a day ahead of the server (22023).
+   * SQL clamps a `reported_at` ahead of its clock to now and never refuses
+   * for it (refusing would lose the purchase's reminder and consent record).
    */
   reported_at: isoTime,
   consent: v.optional(ConsentFactsSchema),

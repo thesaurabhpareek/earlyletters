@@ -67,9 +67,26 @@ export function pausedReply(key: KillSwitchKey, requestId: string): Response {
   return failReply({ code: 'paused', retryable: true, detail: key }, requestId, 503, { 'retry-after': String(PAUSED_RETRY_AFTER) });
 }
 
-/** True when this function's `KILL_SWITCHES` secret names the switch. */
+/**
+ * True when this function's `KILL_SWITCHES` secret names the switch, in any
+ * case. A name that matches no switch is a typo that leaves a control off,
+ * so it is reported through `unknownKillSwitches` for the caller to log.
+ */
 export function serverKilled(env: EnvGetter, key: KillSwitchKey): boolean {
-  return parseKillSwitchList(env('KILL_SWITCHES')).has(key);
+  return parseKillSwitchList(normaliseKillList(env('KILL_SWITCHES'))).has(key);
+}
+
+export function unknownKillSwitches(env: EnvGetter): number {
+  const raw = (env('KILL_SWITCHES') ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+  return raw.length - parseKillSwitchList(normaliseKillList(env('KILL_SWITCHES'))).size;
+}
+
+const KILL_NAMES = ['sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport'];
+function normaliseKillList(raw: string | undefined): string {
+  return (raw ?? '').split(',').map((x) => {
+    const t = x.trim().toLowerCase();
+    return KILL_NAMES.find((n) => n.toLowerCase() === t) ?? x.trim();
+  }).join(',');
 }
 
 export type BodyResult = { ok: true; text: string } | { ok: false; reason: 'too_large' };
@@ -149,7 +166,10 @@ export async function timedRequest(fetchFn: FetchFn, url: string, init: RequestI
   try {
     const res = await fetchFn(url, { ...init, signal: ctrl.signal });
     const body = await readBody(res, maxBytes);
-    if (!body.ok) return null;
+    if (!body.ok) {
+      await res.body?.cancel().catch(() => undefined);
+      return null;
+    }
     return { status: res.status, ok: res.ok, text: body.text };
   } catch {
     return null;
@@ -257,8 +277,11 @@ export const CLIENT_IP_HEADERS = ['cf-connecting-ip', 'x-real-ip', 'fly-client-i
  * subject among every caller.
  */
 export function clientIp(req: Request, headerName: string | undefined): string {
-  if (!headerName || !(CLIENT_IP_HEADERS as readonly string[]).includes(headerName.toLowerCase())) return '';
-  let raw = (req.headers.get(headerName) ?? '').split(',')[0].trim();
+  const name = (headerName ?? '').trim().toLowerCase();
+  if (!name || !(CLIENT_IP_HEADERS as readonly string[]).includes(name)) return '';
+  let raw = (req.headers.get(name) ?? '').trim();
+  // A list means a proxy appended to (or merged) a value the client sent: trust none of it.
+  if (raw.includes(',')) return '';
   if (raw.startsWith('[')) raw = raw.slice(1, raw.indexOf(']') > 0 ? raw.indexOf(']') : undefined);
   raw = raw.replace(/%.*$/, '');
   const v4port = /^([0-9]{1,3}(?:\.[0-9]{1,3}){3}):[0-9]{1,5}$/.exec(raw);
@@ -266,7 +289,11 @@ export function clientIp(req: Request, headerName: string | undefined): string {
   const mapped = /^::ffff:([0-9]{1,3}(?:\.[0-9]{1,3}){3})$/i.exec(raw);
   if (mapped) raw = mapped[1];
   if (/^[0-9]{1,3}(\.[0-9]{1,3}){3}$/.test(raw) && raw.split('.').every((o) => Number(o) <= 255)) return raw;
-  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(':') && (raw.match(/::/g) ?? []).length <= 1) return ipv6Prefix64(raw);
+  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(':') && (raw.match(/::/g) ?? []).length <= 1) {
+    const prefix = ipv6Prefix64(raw);
+    // ::/64 holds the IPv4-mapped and -compatible ranges: one subject for every IPv4 caller. Never use it.
+    return prefix === '0:0:0:0::/64' ? '' : prefix;
+  }
   return '';
 }
 

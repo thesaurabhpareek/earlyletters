@@ -324,6 +324,29 @@ describe('[F19-REQ-008] a stale copy cannot clear a kill switch', () => {
     expect(client.current().killSwitches.invites).toBe(true);
   });
 
+  it('a cached copy that kept its origin Date is judged by Date plus Age', async () => {
+    const { client, http } = setup(new Map(), { t: NOW }, true);
+    http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-09-19T00:00:00.000Z', true), date: 'Sat, 19 Sep 2026 00:05:00 GMT' });
+    await client.refresh(true);
+    http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-01T00:00:00.000Z', false), date: 'Thu, 01 Oct 2026 00:00:00 GMT', age: 14 * 86_400 });
+    expect(await client.refresh(true)).toBe('updated');
+    expect(client.current().killSwitches.invites).toBe(true);
+  });
+
+  it('a server clock recorded far ahead of a corrected phone clock is dropped at the next start', async () => {
+    const store = new Map<string, string>();
+    const ahead = setup(store, { t: NOW + 200 * 86_400_000 }, true);
+    ahead.http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-15T00:00:00.000Z', false), date: new Date(NOW + 200 * 86_400_000).toUTCString() });
+    await ahead.client.refresh(true);
+    const fixed = setup(store, { t: NOW }, true);
+    fixed.client.current();
+    fixed.http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-15T13:00:00.000Z', true), date: 'Thu, 15 Oct 2026 13:01:00 GMT' });
+    await fixed.client.refresh(true);
+    fixed.http.queue.push({ status: 200, etag: '"v5"', body: killed(5, '2026-10-15T13:30:00.000Z', false), date: 'Thu, 15 Oct 2026 13:31:00 GMT' });
+    await fixed.client.refresh(true);
+    expect(fixed.client.current().killSwitches.invites).toBe(false);
+  });
+
   it('listeners get the value in use, not the stale switches', async () => {
     const { client, http } = setup(new Map(), { t: NOW }, true);
     http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-10T00:00:00.000Z', true), date: 'Sat, 10 Oct 2026 00:05:00 GMT' });

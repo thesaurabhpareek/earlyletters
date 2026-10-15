@@ -4,13 +4,14 @@
  * fictional Asha family only.
  */
 import { describe, expect, it } from 'vitest';
-import { ENDPOINTS, ERROR_DETAILS, failure, newRequestId } from '../src';
+import { classifySqlstate, ENDPOINTS, ERROR_DETAILS, failure, newRequestId } from '../src';
 import {
   AUTHOR_ONLY_COLUMNS,
   buildPushPayload,
   FIELD_GROUP_COLUMNS,
   FIELD_GROUPS,
   holdUntil,
+  ESCROW_ERROR_DETAILS,
   currentEscrowKey,
   newestAmrTimestamp,
   parseEscrowKeys,
@@ -389,6 +390,21 @@ describe('[F11-REQ-084] push payloads carry no content', () => {
     expect(v.safeParse(PushPayloadSchema, p).success).toBe(true);
     expect(v.safeParse(PushPayloadSchema, { ...p, child_id: ASHA_CHILD }).success).toBe(false);
     expect(buildPushPayload('restore_request', 't', 'b').aps['interruption-level']).toBe('time-sensitive');
+  });
+});
+
+describe('[F08 6.5] the S05 backup-server codes and details', () => {
+  it('SCRAT pending, SCIMM restore_open, SCBKO rotation and SCSES session_ended survive the envelope', () => {
+    const id = newRequestId();
+    for (const detail of ['pending', 'restore_open', 'rotation', 'session_ended'] as const) {
+      expect(ERROR_DETAILS).toContain(detail);
+      expect(ESCROW_ERROR_DETAILS).toContain(detail);
+      expect(failure({ code: 'conflict', retryable: false, detail }, id).error.detail).toBe(detail);
+    }
+    expect(classifySqlstate('SCSES')).toEqual({ code: 'unauthorized', action: 'reauth', retryable: true });
+    expect(classifySqlstate('SCBKO')).toEqual({ code: 'paused', action: 'retry', retryable: true });
+    expect(classifySqlstate('SCIMM').action).toBe('reject');
+    expect(classifySqlstate('SCRAT', 'queue').action).toBe('retry');
   });
 });
 

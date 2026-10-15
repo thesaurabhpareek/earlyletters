@@ -25,7 +25,11 @@
  *     one transaction: idempotency_claim (a key reused with other arguments
  *     raises 22023 with detail `idempotency`), the 30-per-hour limit (SCRAT),
  *     upsert by (profile, sub_ref) keeping the newest `reported_at`, and the
- *     consent record once per original purchase. Because any signed-in
+ *     consent record once per original purchase. It orders by the server's
+ *     receive time and clamps a `reported_at` ahead of the server clock to
+ *     now (never refuses for it: a phone clock set ahead must not lose the
+ *     report). It reads `app.status_report_enabled` and raises SCKIL while
+ *     off, so the kill switch also stops direct PostgREST calls. Because any signed-in
  *     client can call it directly, the SQL repeats this function's checks
  *     and trusts none of them: the same allowlisted keys and types as
  *     StatusReportSchema, at most 2 KiB, and it computes the fingerprint
@@ -46,7 +50,7 @@ import {
 import { createLogger, type ErrorCode, type LogSink } from '../_shared/log/log.ts';
 import {
   bearerOf, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply, postgrestError, readBody,
-  serverKilled, sessionOf, timedRequest, upstreamJson, type EnvGetter, type FetchFn,
+  serverKilled, sessionOf, timedRequest, unknownKillSwitches, upstreamJson, type EnvGetter, type FetchFn,
 } from '../_shared/http/http.ts';
 
 const REPORT_RE = /\/subscription-status\/v1\/report\/?$/;
@@ -86,6 +90,7 @@ export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (re
       task = REPORT_RE.test(path) ? 'report' : SALT_ROUTE_RE.test(path) ? 'salt' : undefined;
       if (!task) return refuse('not_found', false);
       if ((task === 'report' && req.method !== 'POST') || (task === 'salt' && req.method !== 'GET')) return refuse('bad_request', false, 405);
+      if (unknownKillSwitches(env) > 0) log.warn('status.degraded', { code: 'config', task });
       if (serverKilled(env, 'statusReport')) {
         log.warn('status.refused', { status: 503, code: 'killed', task });
         return pausedReply('statusReport', id);
@@ -133,6 +138,8 @@ export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (re
         const { sqlstate, detail } = postgrestError(res);
         if (!sqlstate || res.status >= 500) return unavailable(res.status, 'postgrest_error');
         if (sqlstate === '22023') return detail === 'idempotency' ? refuse('idempotency_conflict', false) : refuse('bad_request', false);
+        // The SQL-side switch (app.status_report_enabled, requested from S06) answers like the function's own.
+        if (sqlstate === 'SCKIL') return pausedReply('statusReport', id);
         const rule = classifySqlstate(sqlstate);
         if (rule.code === 'internal') return unavailable(res.status, 'sqlstate');
         return refuse(rule.code, rule.code === 'rate_limited' ? true : rule.retryable, httpStatusFor(rule.code),

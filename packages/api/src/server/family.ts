@@ -251,8 +251,11 @@ export const REDEEM_FAILURES_GLOBAL_HOUR = 1_000;
  * only). It must gate, look up and count in ONE transaction, so parallel
  * guesses cannot all pass the gate before a failure is recorded, and a
  * failure is committed before the answer leaves (no "uncounted but
- * revealed" path). Locking: lock the caller's own subject rows FOR UPDATE
- * (contention stays with that caller); never hold the single global row for
+ * revealed" path). Locking: take `pg_advisory_xact_lock` on each subject
+ * hash (or upsert the subject row first, then lock it): a subject with no
+ * row yet, which every subject is on a new day, must serialise too, or
+ * parallel first guesses all pass the gate. Contention stays with that
+ * caller. Never hold the single global row for
  * the transaction: read it plainly for the gate and bump it at the end with
  * one conditional `update ... set n = n + 1` (a limited caller never touches
  * it), so an attacker who is already limited cannot queue every redemption
@@ -281,13 +284,18 @@ export interface RedeemByCodeArgs {
 export const REDEEM_LIMIT_SCOPES = ['user', 'device', 'ip', 'global'] as const;
 
 export const RedeemRpcResultSchema = v.variant('outcome', [
-  v.object({ outcome: v.literal('peek'), inviter: v.nullable(v.string()), role: v.picklist(INVITE_ROLES), joined: v.optional(v.literal(true)) }),
+  v.object({ outcome: v.literal('peek'), inviter: v.nullable(v.pipe(v.string(), v.maxLength(80))), role: v.picklist(INVITE_ROLES), joined: v.optional(v.literal(true)) }),
   v.object({ outcome: v.literal('accepted'), child_id: v.pipe(v.string(), v.regex(UUID_RE)), role: v.picklist(INVITE_ROLES) }),
   /** Counted as a failure. `detail` is `already_member` or anything else, which the function reports as `not_found`. */
   v.object({ outcome: v.literal('unusable'), detail: v.optional(v.nullable(v.string())) }),
   /** Not looked up, not counted. */
   v.object({ outcome: v.literal('limited'), scope: v.picklist(REDEEM_LIMIT_SCOPES) }),
-  /** Not counted as a guess (the code was right): only SCCAP, SCCON with its detail, SCDEL, SCRAT. Anything else is a bad answer. */
+  /**
+   * Not counted as a guess (the code was right): only SCCAP, SCCON with its
+   * detail, SCDEL, SCRAT. A wrong, expired, used or revoked code is
+   * `unusable` (counted); `refused` with SCINV is a contract break and the
+   * function answers `unavailable`.
+   */
   v.object({ outcome: v.literal('refused'), sqlstate: v.pipe(v.string(), v.regex(/^[0-9A-Z]{5}$/)), detail: v.optional(v.nullable(v.string())) }),
 ]);
 export type RedeemRpcResult = v.InferOutput<typeof RedeemRpcResultSchema>;
