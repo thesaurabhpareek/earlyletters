@@ -10,8 +10,9 @@
  *
  * Sources: package-lock.json (the production set, walked by lib.mjs), `npm ls --omit=dev --all`
  * (a cross-check of that walk against npm's own), each package's LICENSE and NOTICE files in
- * node_modules, packages/design-tokens/fonts/OFL-*.txt, apps/mobile/modules/* and any licence
- * file under packs/. Needs node_modules installed (`npm ci` at the repo root).
+ * node_modules, packages/design-tokens/fonts/OFL-*.txt, apps/mobile/modules/*, any licence
+ * file under packs/, and third-party code adapted into apps/mobile/shims (VENDORED in lib.mjs).
+ * Needs node_modules installed (`npm ci` at the repo root).
  *
  * The output is deterministic: no dates, entries sorted, identical texts stored once, and
  * host-specific build binaries (lightningcss-darwin-arm64 and friends, which never ship in the
@@ -28,7 +29,10 @@ import {
   COMMAND,
   EXPECTED_LICENCES,
   OUTPUT,
+  SHIMS,
+  VENDORED,
   buildNotices,
+  creditedFiles,
   dependencyHash,
   dependencyIds,
   flattenNpmLs,
@@ -40,6 +44,7 @@ import {
   packDataEntries,
   productionPackages,
   shippedPackages,
+  vendoredEntries,
   workspaceNames,
 } from './lib.mjs';
 
@@ -111,7 +116,17 @@ const libraries = inheritNotices(
 const fonts = fontEntries(join(REPO, 'packages', 'design-tokens', 'fonts'));
 const native = nativeModuleEntries(join(REPO, 'apps', 'mobile', 'modules'));
 const data = packDataEntries(join(REPO, 'packs'));
-const entries = [...libraries, ...fonts, ...native.entries, ...data];
+const listed = new Set(VENDORED.map((v) => v.file));
+const unlisted = creditedFiles(join(REPO, SHIMS)).filter((f) => !listed.has(`${SHIMS}/${f}`));
+if (unlisted.length) fail(`${unlisted.map((f) => `${SHIMS}/${f}`).join(', ')} credit third-party code but are not in VENDORED (scripts/licences/lib.mjs). Add them, with the package whose licence file carries their notice.`);
+/** @type {ReturnType<typeof vendoredEntries>} */
+let vendored = [];
+try {
+  vendored = vendoredEntries(REPO, lock);
+} catch (e) {
+  fail(/** @type {Error} */ (e).message);
+}
+const entries = [...libraries, ...fonts, ...native.entries, ...data, ...vendored];
 const notices = buildNotices({ entries, dependencyHash: hash });
 const json = `${JSON.stringify(notices, null, 2)}\n`;
 
@@ -132,7 +147,7 @@ writeFileSync(outPath, json);
 const kb = Math.round(Buffer.byteLength(json, 'utf8') / 1024);
 const label = (/** @type {{ name: string, version?: string }} */ e) => (e.version ? `${e.name}@${e.version}` : e.name);
 console.log(`licences: ${before === json ? 'unchanged' : before === null ? 'wrote' : 'updated'} ${OUTPUT} (${kb} KB, ${notices.texts.length} distinct notice texts)`);
-console.log(`  ${entries.length} entries: ${libraries.length} npm packages, ${fonts.length} fonts, ${native.entries.length} native modules, ${data.length} data files; dependency hash ${hash.slice(0, 12)}`);
+console.log(`  ${entries.length} entries: ${libraries.length} npm packages, ${fonts.length} fonts, ${native.entries.length} native modules, ${data.length} data files, ${vendored.length} vendored; dependency hash ${hash.slice(0, 12)}`);
 console.log(`  ${notices.licences.length} licences:`);
 for (const g of notices.licences) console.log(`    ${g.id.padEnd(28)} ${String(g.entries.length).padStart(4)}  ${g.name}`);
 

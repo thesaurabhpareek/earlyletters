@@ -4,8 +4,8 @@
  * Apache and ISC ask for it. src/generated/licences.json is made by scripts/licences/generate.mjs
  * (`npm run licences:generate -w @scribe/mobile`). These tests fail when that file is missing,
  * empty or stale against package-lock.json, so a dependency change cannot ship without it being
- * regenerated. The lockfile walk itself is proved on a small synthetic lockfile. Nothing here
- * needs npm or node_modules beyond vitest.
+ * regenerated. The lockfile walk itself is proved on a small synthetic lockfile. Only the
+ * vendored-code check reads node_modules (the licence file the shim's notice comes from).
  */
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,7 +13,10 @@ import { describe, expect, it } from 'vitest';
 import {
   COMMAND,
   OUTPUT,
+  SHIMS,
+  VENDORED,
   buildNotices,
+  creditedFiles,
   dependencyHash,
   dependencyIds,
   flattenNpmLs,
@@ -24,6 +27,7 @@ import {
   productionPackages,
   resolveFrom,
   shippedPackages,
+  vendoredEntries,
   workspaceNames,
 } from '../../../scripts/licences/lib.mjs';
 import type { Notices } from '../src/lib/licences';
@@ -63,7 +67,7 @@ describe('the generated notices file (src/generated/licences.json)', () => {
       expect(g.name.length, g.id).toBeGreaterThan(0);
       expect(g.entries.length, g.id).toBeGreaterThan(0);
       for (const e of g.entries) {
-        expect(['library', 'font', 'native', 'data'], e.name).toContain(e.kind);
+        expect(['library', 'font', 'native', 'data', 'vendored'], e.name).toContain(e.kind);
         if (e.text !== null) {
           expect(Number.isInteger(e.text) && e.text >= 0 && e.text < n.texts.length, `${e.name} text index`).toBe(true);
           expect(n.texts[e.text].trim().length, `${e.name} notice`).toBeGreaterThan(20);
@@ -126,6 +130,18 @@ describe('the generated notices file (src/generated/licences.json)', () => {
       expect(e?.noticeFrom, name).toBeDefined();
     }
     for (const e of allEntries(n).filter((x) => x.noticeFrom)) expect(e.text, e.name).not.toBeNull();
+  });
+
+  it('credits third-party code adapted into shims/: every credited file is in VENDORED and in the file, with its notice', () => {
+    const listed = VENDORED.map((v) => v.file).sort();
+    expect(creditedFiles(join(REPO, SHIMS)).map((f) => `${SHIMS}/${f}`)).toEqual(listed);
+    const n = load();
+    for (const v of VENDORED) {
+      const e = allEntries(n).find((x) => x.kind === 'vendored' && x.name === v.name && x.version === v.version);
+      expect(e, `${v.file} is missing from ${OUTPUT}. Run: ${COMMAND}`).toBeDefined();
+      expect(n.licences.find((g) => g.entries.includes(e!))?.id).toBe(v.licence);
+      expect(n.texts[e!.text!], v.file).toBe(vendoredEntries(REPO, JSON.parse(readFileSync(join(REPO, 'package-lock.json'), 'utf8')), [v])[0].text);
+    }
   });
 });
 

@@ -15,7 +15,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** @typedef {'library' | 'font' | 'native' | 'data'} NoticeKind */
+/** @typedef {'library' | 'font' | 'native' | 'data' | 'vendored'} NoticeKind */
 /**
  * @typedef {object} LockPackage
  * @property {string} name     package name (aliases resolve to the real name)
@@ -32,7 +32,7 @@ import { join } from 'node:path';
  * @property {NoticeKind} kind
  * @property {string | null} licence
  * @property {string | null} text
- * @property {string} [noticeFrom]  the sibling package whose licence file the text was read from (inheritNotices)
+ * @property {string} [noticeFrom]  where the text was read from when not the entry's own folder: a sibling package (inheritNotices) or the package vendored code came from (vendoredEntries)
  */
 
 /** The workspace whose production tree ships in the app. */
@@ -41,6 +41,27 @@ export const APP_PACKAGE = '@scribe/mobile';
 /** Where the generated file lives, relative to the repo root. */
 export const OUTPUT = 'apps/mobile/src/generated/licences.json';
 export const COMMAND = 'npm run licences:generate -w @scribe/mobile';
+
+/** Folder of files Metro bundles in place of an npm package (metro.config.js). */
+export const SHIMS = 'apps/mobile/shims';
+
+/**
+ * Third-party code copied or adapted into our own files, which no lockfile lists. Each names the
+ * installed package whose licence file carries the same notice; vendoredEntries checks that the
+ * file still credits that package, version and licence and that every copyright line of that
+ * licence file is in the file's header, so the notice shipped is the one the code came with.
+ * A file in SHIMS that credits anyone and is not listed here fails the generator and the test.
+ */
+export const VENDORED = [
+  {
+    // Security review L6, G-22 (#115): 0.5.0's linear-time decoder, CommonJS, in place of 0.2.2.
+    file: `${SHIMS}/decode-uri-component.js`,
+    name: 'decode-uri-component',
+    version: '0.5.0',
+    licence: 'MIT',
+    noticeFrom: 'decode-uri-component',
+  },
+];
 
 /** Licences we expect and need not flag. Anything else is listed for the founder. */
 export const EXPECTED_LICENCES = new Set([
@@ -415,6 +436,54 @@ export function packDataEntries(packsDir) {
   return out;
 }
 
+/** A header credits third-party code: "adapted from", "copied from", "ported from", "derived from", or a copyright line. */
+const CREDIT = /\b(?:adapted|copied|ported|derived|taken) from\b|\bcopyright\s*(?:\(c\)|©|\d{4})/i;
+
+/** The leading comment of a source file, with comment markers and line breaks collapsed to single spaces. */
+function headerOf(/** @type {string} */ source) {
+  const m = /^\s*(?:(['"])use strict\1;?\s*)?(\/\*[\s\S]*?\*\/|(?:\/\/[^\n]*\n\s*)+)/.exec(source);
+  return (m?.[2] ?? '').replace(/^\s*(?:\/\*+|\*\/|\*|\/\/)/gm, ' ').replace(/\*\/\s*$/, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Files in a shims folder whose header credits someone else's code: each must be in VENDORED.
+ * @param {string} dir  absolute path
+ * @returns {string[]} file names
+ */
+export function creditedFiles(dir) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((n) => /\.(?:[cm]?js|tsx?)$/.test(n) && CREDIT.test(headerOf(readFileSync(join(dir, n), 'utf8'))))
+    .sort((a, b) => a.localeCompare(b, 'en'));
+}
+
+/**
+ * The notices for VENDORED code, each read from the installed package it names. Throws when a
+ * file is gone, no longer credits its source, or credits a copyright the licence file does not hold.
+ * @param {string} repo  absolute repo root
+ * @param {{ packages: Record<string, any> }} lock
+ * @param {typeof VENDORED} [list]
+ * @returns {NoticeInput[]}
+ */
+export function vendoredEntries(repo, lock, list = VENDORED) {
+  return list.map((v) => {
+    const path = join(repo, v.file);
+    if (!existsSync(path)) throw new Error(`${v.file} is listed in VENDORED but does not exist; remove it from scripts/licences/lib.mjs`);
+    const header = headerOf(readFileSync(path, 'utf8'));
+    for (const needed of [`${v.name} ${v.version}`, licenceName(v.licence)]) {
+      if (!header.includes(needed)) throw new Error(`${v.file} no longer credits "${needed}" in its header; update VENDORED in scripts/licences/lib.mjs`);
+    }
+    const key = resolveFrom(lock.packages, '', v.noticeFrom);
+    const text = key ? licenceText(join(repo, key)) : null;
+    if (!text) throw new Error(`${v.file}: ${v.noticeFrom} is not installed or has no licence file to read the notice from`);
+    const flat = (/** @type {string} */ s) => s.replace(/\s+/g, ' ').trim();
+    for (const line of text.split('\n').filter((l) => /^\s*copyright\b/i.test(l))) {
+      if (!flat(header).includes(flat(line))) throw new Error(`${v.file}: its header does not carry "${flat(line)}" from ${v.noticeFrom}'s licence; check the source's own LICENSE`);
+    }
+    return { name: v.name, version: v.version, kind: /** @type {const} */ ('vendored'), licence: v.licence, text, noticeFrom: v.noticeFrom };
+  });
+}
+
 /**
  * The SPDX id a licence text declares in its heading, for files that come without metadata.
  * @param {string} text
@@ -473,7 +542,7 @@ export function buildNotices({ entries, dependencyHash: hash }) {
     })),
   }));
   return {
-    $comment: `GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of ${APP_WORKSPACE}), packages/design-tokens/fonts and apps/mobile/modules. After any dependency change run: ${COMMAND}`,
+    $comment: `GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of ${APP_WORKSPACE}), packages/design-tokens/fonts, apps/mobile/modules and ${SHIMS}. After any dependency change run: ${COMMAND}`,
     dependencyHash: hash,
     licences,
     texts,

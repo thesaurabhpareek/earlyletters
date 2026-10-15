@@ -1,5 +1,5 @@
 {
-  "$comment": "GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of apps/mobile), packages/design-tokens/fonts and apps/mobile/modules. After any dependency change run: npm run licences:generate -w @scribe/mobile",
+  "$comment": "GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of apps/mobile), packages/design-tokens/fonts, apps/mobile/modules and apps/mobile/shims. After any dependency change run: npm run licences:generate -w @scribe/mobile",
   "dependencyHash": "5d3750940f77f141c4e5305692a043502d17d3bf8935eb80e193cc2aa0acfe4d",
   "licences": [
     {
@@ -1555,6 +1555,13 @@
           "version": "0.2.2",
           "kind": "library",
           "text": 78
+        },
+        {
+          "name": "decode-uri-component",
+          "version": "0.5.0",
+          "kind": "vendored",
+          "text": 78,
+          "noticeFrom": "decode-uri-component"
         },
         {
           "name": "deepmerge",

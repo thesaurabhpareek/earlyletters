@@ -7,7 +7,8 @@
  */
 import raw from '../generated/licences.json';
 
-export type NoticeKind = 'library' | 'font' | 'native' | 'data';
+/** `vendored`: third-party code adapted into our own file (shims/), credited to the package it came from. */
+export type NoticeKind = 'library' | 'font' | 'native' | 'data' | 'vendored';
 
 export interface NoticeEntry {
   name: string;
@@ -16,7 +17,7 @@ export interface NoticeEntry {
   kind: NoticeKind;
   /** Index into `Notices.texts`, or null when the package is published without a licence file. */
   text: number | null;
-  /** When the package ships no licence file: the sibling package in the same repository whose file the text was read from. */
+  /** Where the text was read from when not the entry's own folder: a sibling in the same repository, or the package vendored code came from. */
   noticeFrom?: string;
 }
 
