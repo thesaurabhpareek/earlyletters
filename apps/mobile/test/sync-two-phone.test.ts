@@ -167,6 +167,13 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     await papa.signIn();
     expect(papa.store.getChild(ASHA)).toMatchObject({ name: 'Asha', role: 'parent', createdByMe: false });
     expect(row(papa, ids.first)).toMatchObject({ final_text: 'You found your feet today.', raw_transcript: '', author_id: MAMA, language: null });
+    // With S02's wire-contract columns (20261015030000) the month precision reaches the server and the co-parent.
+    const hasPrecision = (await server.sys(
+      "select 1 from information_schema.columns where table_name = 'entries' and column_name = 'occurred_precision'")).rows.length === 1;
+    if (hasPrecision) {
+      expect((await server.sys('select occurred_precision from entries where id = $1', [ids.month])).rows[0].occurred_precision).toBe('month');
+      expect(papa.db.get('SELECT occurred_precision FROM entries WHERE id = ?', ids.month)).toEqual({ occurred_precision: 'month' });
+    }
     expect(papa.store.listMembers(ASHA).map((m) => m.id)).toEqual([MAMA]);
   }, 60_000);
 

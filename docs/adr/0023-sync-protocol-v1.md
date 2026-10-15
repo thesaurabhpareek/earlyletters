@@ -1,6 +1,6 @@
 # ADR 0023: Sync protocol v1 (outbox push, cursor pull, words compare and set)
 
-- **Status:** Proposed, 15 Oct 2026 (draft for T13; decided at T15, or the spec default in PRD V2 F16 stands). The number is the next free one after 0018 to 0022 on develop and the open merge train; the coordinator confirms it at merge.
+- **Status:** Proposed, 15 Oct 2026, revised the same day after the first review round and S02's and S07's branches (draft for T13; decided at T15, or the spec default in PRD V2 F16 stands). The number is the next free one after 0018 to 0022 on develop and the open merge train; the coordinator confirms it at merge.
 - **Deciders:** founder (D-023 is decided; this records how it is built). Architecture review: delivery lead, data and mobile review agents.
 - **Authors:** S03 (local store and sync) with S02 (database and access rules) for the server half.
 - **Supersedes:** ADR 0004 for v1.0 once accepted (D-023: outbox and cursor on expo-sqlite; PowerSync revisited at 10k families).
@@ -93,7 +93,7 @@ A held letter, or a voice-only letter waiting for words, of a signed-in, consent
 ### 10. Kill paths
 
 - **The build switch** (D-100): with `EXPO_PUBLIC_SERVER_FEATURES` off, `startSync()` wires nothing, so no listener, engine, client or request exists (`test/sync-switch-off.test.ts`). The outbox keeps any ops an earlier server-on build left, and they go when sync returns.
-- **The remote switch** `killSwitches.sync` in the signed remote config (ADR 0016; F16-REQ-018): read at the start of every cycle; while on, no request is made, the phase is `paused_server` and the outbox keeps every op. An unreadable config never stops sync (the remote client serves its cached or bundled copy).
+- **The remote switch** `killSwitches.sync` in the signed remote config (ADR 0016; F16-REQ-018): read before every push round and pull page; while on, no request is made, the phase is `paused_server` and the outbox keeps every op; a config change that lifts it wakes sync at once. If the switch cannot be read at all, sync stays paused (fail closed): a kill switch that silently stops working is worse than a visible pause. A stale config is not that case (the remote client serves its cached or bundled copy).
 
 ### 11. The free letters (M17, D-103)
 
@@ -115,9 +115,9 @@ The server never counts letters (D-080). On the phone a letter counts only when 
 
 ## Requests
 
-To S02 (server; fenced, founder merge): (1) WP-F16-14 as `apps/mobile/test/helpers/sync-v1-standin.sql` states it in runnable form: `entries.text_xid` and its trigger, the compare and set in `sync_push` with a row lock (`select ... for update`), `conflict_groups`, `current`, and `applied_v` on receipts written by a definer helper; (2) WP-F16-17 `held_drafts` with `held.upsert`, `held.discard` and the `held` pull section, per section 9; (3) WP-F04-14 `occurred_precision` and `base_direction` on `entries` and `book_entries` (`base_direction` readable by members); (4) a nullable review mark on `entries` (for example `words_reviewed_at timestamptz`, L2, author-only) so section 11 holds on every phone; (5) apply `20261005000000` and the v1 migration to staging before the alpha build.
+To S02 (server; fenced, founder merge). Read against `origin/feat/db-v1-gate` at 2e89559, whose `20261015030000` already adds `occurred_precision` and `base_direction` (WP-F04-14) and leaves the compare and set, `held_drafts` and `p_api_version` for this ADR: (1) WP-F16-14 as `apps/mobile/test/helpers/sync-v1-standin.sql` states it in runnable form: `entries.text_xid` and its trigger, the compare and set inside `sync_push` under the row lock (`select ... for update`), `conflict_groups`, `current`, and `applied_v` on receipts written by a definer helper. The stand-in wraps whichever `sync_push` the migrations define, so the two-phone test passes on develop and on that branch alike; (2) WP-F16-17 `held_drafts` with `held.upsert`, `held.discard` and the `held` pull section, per section 9 and S07's shapes; (3) a nullable review mark on `entries` (for example `words_reviewed_at timestamptz`, L2, author-only) so section 11 holds on every phone; (4) apply `20261005000000`, the gate files and the v1 migration to staging before the alpha build.
 
-To S07 (contract): put the types in `lib/sync/types.ts` into `packages/api/src/sync.ts` with the v1 fields (`conflict_groups`, `current`, `applied_v`, `language`, `occurred_precision`, `base_direction`, the held ops and section) and an API version (WP-F16-01, WP-F16-16).
+To S07 (contract). `origin/feat/platform-v1-contracts` at a16731f (`packages/api/src/server/sync.ts`) matches this record field for field (`conflict_groups`, `current`, `base`, the held ops, the `held` pull section and its `gone` rows). Requests: (1) add `applied_v` (optional string) to `PushResultOkSchema`; (2) the `base` comment says "the row's `v` above `base`": make it "the words version above `base`" per section 5, or keep `sync_xid` as the stated fallback; (3) once it merges, the app imports these types from `@scribe/api/server` (type-only, so an off build evaluates nothing) and `lib/sync/types.ts` goes (WP-F16-01).
 
 ## Open questions
 

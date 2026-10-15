@@ -131,7 +131,7 @@ function onKillSwitchChange(listener: () => void): () => void {
 }
 
 /**
- * Tests only (vitest sets `VITEST`), like setServerFeaturesForTests: replace the
+ * Tests only (vitest sets `VITEST`), like the capabilities test override: replace the
  * kill-switch reader, or pass null to go back to the remote config. Throws anywhere else.
  */
 export function setSyncKillSourceForTests(source: SyncKillSource | null): void {

@@ -330,25 +330,33 @@ function mergedLanguage(local: string | null, server: string | null | undefined)
   return wireLanguage(local) === s ? local : s;
 }
 
-/** Another person's letter: words and metadata only, never their raw transcript or edit list. */
+/**
+ * Another person's letter: words and metadata only, never their raw transcript,
+ * edit list or language. The date precision and direction are shared with members
+ * (book_entries, S02 20261015030000); a server without them leaves the defaults.
+ */
 function mergeOtherRow(db: SqlDb, row: PulledRow, owner: string | null, epoch: number, now: string): void {
   const local = getEntryRow(db, row.id);
   if (local && (local.author_id === null || local.author_id === owner)) return;
   db.run(
     `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version,
        raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at, deleted_at, synced_at,
-       child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+       child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state,
+       occurred_precision, base_direction)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'synced',
+       COALESCE(?, 'day'), COALESCE(?, 'ltr'))
      ON CONFLICT(id) DO UPDATE SET
        kind = excluded.kind, occurred_on = excluded.occurred_on, edit_level = excluded.edit_level,
        prompt_key = excluded.prompt_key, final_text = excluded.final_text, in_book = excluded.in_book,
        sounds_like_me = excluded.sounds_like_me, updated_at = excluded.updated_at, deleted_at = NULL,
        synced_at = excluded.synced_at, author_signs_as = excluded.author_signs_as, approval = excluded.approval,
        server_version = excluded.server_version, server_updated_at = excluded.server_updated_at,
-       server_epoch = excluded.server_epoch, sync_state = 'synced'`,
+       server_epoch = excluded.server_epoch, sync_state = 'synced',
+       occurred_precision = excluded.occurred_precision, base_direction = excluded.base_direction`,
     row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
     row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, now,
     row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
+    opt(row.occurred_precision), opt(row.base_direction),
   );
 }
 
