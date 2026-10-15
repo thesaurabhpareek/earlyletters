@@ -37,11 +37,15 @@ import {
   type EntriesFile,
   type ExportAudio,
   type ExportEntry,
+  type ExportConsentHistory,
+  type ExportDictionaryTerm,
   type ExportPhoneConsent,
 } from './schema';
 
 export interface SnapshotChild extends Child {
   hidden: boolean;
+  /** The exporter's role in this book (the server's member list; a book only on this phone is theirs). */
+  role: 'parent' | 'contributor';
 }
 
 export interface SnapshotEntry extends Entry {
@@ -71,6 +75,15 @@ export interface ExportSnapshot {
   entries: SnapshotEntry[];
   /** For account.json: the consent choices this phone holds (never a server record). */
   consent: ExportPhoneConsent;
+  /** For account.json (1.2.0): the server's consent record, or why it is not here. */
+  consentHistory: ExportConsentHistory;
+  /** For account.json (1.2.0): the words spelled your way, phone first, then the server's. */
+  dictionary: ExportDictionaryTerm[];
+}
+
+/** The exporter's role for the manifest: parent when they are a parent of any book here, or there are none. */
+export function exporterRole(children: readonly Pick<SnapshotChild, 'role'>[]): 'parent' | 'contributor' {
+  return children.length === 0 || children.some((c) => c.role === 'parent') ? 'parent' : 'contributor';
 }
 
 export interface TextFile {
@@ -545,8 +558,10 @@ export async function dataFiles(
     signed_in: snapshot.signedIn,
     plan: snapshot.plan,
     exported_from: 'phone',
-    memberships: snapshot.children.map((c) => ({ child_id: c.id, role: 'parent', signs_as: c.signsAs })),
+    memberships: snapshot.children.map((c) => ({ child_id: c.id, role: c.role, signs_as: c.signsAs })),
     consent_on_this_phone: snapshot.consent,
+    consent_history: snapshot.consentHistory,
+    dictionary: snapshot.dictionary,
   };
   const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`;
   return {

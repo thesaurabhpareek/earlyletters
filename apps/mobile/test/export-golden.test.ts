@@ -170,12 +170,42 @@ describe('Asha export (golden)', () => {
     expect(planExport(ashaSnapshot()).books.map((b) => b.letters)).toEqual([8, 1]);
   });
 
-  it('[LEGAL-REQ-034, G-19] account.json carries the consent choices on this phone, and no server history (schema 1.1.0)', async () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.1.0');
+  it('[LEGAL-REQ-034, G-19] account.json carries the consent choices on this phone (since 1.1.0)', async () => {
     const account = accountOf((await makeExport()).zip);
-    expect(account.schema_version).toBe('1.1.0');
     expect(account.consent_on_this_phone).toEqual({ age_confirmed: true, usage_sharing: 'not_answered' });
-    expect(Object.keys(account)).not.toContain('consent_history');
+  });
+
+  it('[LEGAL-REQ-034, BL-323] account.json carries the consent history and the spelling list (schema 1.2.0)', async () => {
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.2.0');
+    const signedOut = accountOf((await makeExport()).zip);
+    expect(signedOut.schema_version).toBe('1.2.0');
+    expect(signedOut.consent_history).toEqual({ status: 'not_signed_in', read_at: null, current: [], acts: [] });
+    expect(signedOut.dictionary.map((d) => [d.child_id, d.term, d.kind, d.source])).toEqual([
+      ['child-asha-0001', 'Asha', 'child', 'phone'],
+      ['child-asha-0001', 'Mama', 'self', 'phone'],
+      ['child-dev-0002', 'Dev', 'child', 'phone'],
+      ['child-dev-0002', 'Mama', 'self', 'phone'],
+    ]);
+    const act = {
+      id: 'a1', document: 'terms', version: '1.0.0', action: 'accept' as const, method: 'signin_sheet', surface: 'signin.terms',
+      at: '2027-01-02T03:04:05.000Z', client_recorded_at: null, app_version: '1.0.0', platform: 'ios' as const, locale: 'en-US',
+      rendered_sha256: null, context: { auth: 'apple', age_attested: true },
+    };
+    const consentHistory = { status: 'included' as const, read_at: '2027-03-15T10:00:00.000Z', current: [{ document: 'terms', version: '1.0.0', action: 'accept' as const, at: act.at }], acts: [act] };
+    const signedIn = accountOf((await makeExport({ ...ashaSnapshot(), signedIn: true, consentHistory })).zip);
+    expect(signedIn.consent_history).toEqual(consentHistory);
+  });
+
+  it('[BL-323] memberships and the manifest say the real role', async () => {
+    const snap = ashaSnapshot();
+    const mixed = { ...snap, children: snap.children.map((c, i) => ({ ...c, role: i === 0 ? ('contributor' as const) : ('parent' as const) })) };
+    const { zip } = await makeExport(mixed);
+    expect(accountOf(zip).memberships.map((m) => m.role)).toEqual(['contributor', 'parent']);
+    const manifest = JSON.parse(strFromU8(unzipSync(zip)['manifest.json'])) as Manifest;
+    expect(manifest.scope.exporter_role).toBe('parent');
+    const onlyContributor = { ...snap, children: snap.children.map((c) => ({ ...c, role: 'contributor' as const })) };
+    const m2 = JSON.parse(strFromU8(unzipSync((await makeExport(onlyContributor)).zip)['manifest.json'])) as Manifest;
+    expect(m2.scope.exporter_role).toBe('contributor');
   });
 
   it('[G-19] reads the usage choice as stored, and anything unknown as not answered', async () => {

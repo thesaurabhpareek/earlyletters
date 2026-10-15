@@ -362,6 +362,18 @@ export function listMembers(childId: string): Member[] {
   }
 }
 
+/** This phone user's role in a book, as the server last listed it (sync_books.members). A book only on this phone is theirs: parent. */
+export function myRoleIn(childId: string): 'parent' | 'contributor' {
+  const r = ctx().db.get<{ members: string | null }>('SELECT members FROM sync_books WHERE child_id = ?', childId);
+  if (!r?.members) return 'parent';
+  try {
+    const list = JSON.parse(r.members) as { role: string; is_me: boolean }[];
+    return list.find((m) => m.is_me)?.role === 'contributor' ? 'contributor' : 'parent';
+  } catch {
+    return 'parent';
+  }
+}
+
 // ── Entries ──────────────────────────────────────────────────────────────
 /**
  * Defaults for a first insert, resolved here (not in the repository): the
