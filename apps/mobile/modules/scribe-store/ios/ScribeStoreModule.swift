@@ -72,6 +72,17 @@ public class ScribeStoreModule: Module {
       }
     }
 
+    /// Apple's offer code redemption sheet (D-081: codes come from Apple, never a code system of ours).
+    /// "presented" | "unavailable" | "failed". It resolves when the sheet has been shown; a redeemed code
+    /// arrives as a Transaction through the update listener above (onEntitlementsChanged), so the caller
+    /// re-reads the entitlements afterwards. API read in Apple's documentation on 4 Oct 2026:
+    /// `@MainActor static func AppStore.presentOfferCodeRedeemSheet(in: UIWindowScene) async throws`,
+    /// iOS 16.0+ (the `(from:options:)` form replaces it from iOS 27). NOT yet run on a device: sandbox
+    /// test with an offer code (device pass S1) before the first submission.
+    AsyncFunction("presentOfferCodeRedeemSheet") { () async -> String in
+      return await ScribeStoreModule.presentOfferCodeRedeemSheet()
+    }
+
     /// Apple's refund request sheet for the person's own Plus purchase (not a
     /// Family Sharing one). "success" | "cancelled" | "none" | "unavailable" | "failed".
     AsyncFunction("beginRefundRequest") { (productIds: [String]) async -> String in
@@ -123,6 +134,22 @@ public class ScribeStoreModule: Module {
     do {
       try await AppStore.showManageSubscriptions(in: scene)
       return "shown"
+    } catch {
+      return "failed"
+    }
+  }
+
+  @MainActor
+  private static func presentOfferCodeRedeemSheet() async -> String {
+    guard #available(iOS 16.0, *) else {
+      return "unavailable"
+    }
+    guard let scene = activeWindowScene() else {
+      return "unavailable"
+    }
+    do {
+      try await AppStore.presentOfferCodeRedeemSheet(in: scene)
+      return "presented"
     } catch {
       return "failed"
     }

@@ -5,7 +5,7 @@ import { readFileSync, mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
-  ROOT, parseBacklog, eligibility, primaryOwner, takenIds, queueFor, ownerMap,
+  ROOT, parseBacklog, eligibility, primaryOwner, takenIds, queueFor, ownerMap, externalOwners,
   loadRoster, readState, writeState, standingChanged,
 } from "./lib.mjs";
 import { summarize } from "./receipt.mjs";
@@ -43,13 +43,16 @@ const FIXTURE = `
 ## M2. Next
 #### BL-130 Needs a decision
 - Status: needs-decision (D-032). Mode: agent. Owner: speech engineer.
+
+#### BL-140 Website serves brand assets
+- Status: ready. Mode: agent. Owner: web lane (E3, BR2 in \`docs/web/TEAM.md\`). Milestone: M12. Size: S.
 `;
 
 const tasks = parseBacklog(FIXTURE);
 const byId = new Map(tasks.map((t) => [t.id, t]));
 
 test("parses ids, titles, sections and status fields", () => {
-  assert.equal(tasks.length, 9);
+  assert.equal(tasks.length, 10);
   const t = byId.get("BL-112");
   assert.equal(t.title, "Fix migration: parent-only invites [Critical]");
   assert.equal(t.section, "M1. Guardrails");
@@ -67,6 +70,17 @@ test("statuses with parentheses and periods inside them parse", () => {
   assert.match(t.statusText, /remote apply is BL-015/);
   assert.equal(byId.get("BL-103").mode, "human");
   assert.deepEqual(byId.get("BL-103").owners, ["founder", "payments engineer"]);
+});
+
+test("an owner parenthetical with a comma or a file name inside it is one owner", () => {
+  const t = byId.get("BL-140");
+  assert.deepEqual(t.owners, ["web lane"]);
+  assert.equal(t.status, "ready");
+  assert.equal(t.mode, "agent");
+  // A lane outside the harness is known to check.mjs but never dispatched.
+  const roster = loadRoster();
+  assert.ok(externalOwners(roster).has("web lane"));
+  assert.equal(primaryOwner(t, ownerMap(roster)), undefined);
 });
 
 test("eligibility follows the backlog rules", () => {
@@ -116,8 +130,10 @@ test("the real backlog parses completely and every owner role maps to an agent",
   const headings = (text.match(/^#### BL-\d{3}/gm) ?? []).length;
   assert.equal(real.length, headings);
   assert.ok(real.every((t) => t.status), "every task has a status");
-  const owners = ownerMap(loadRoster());
-  const unmapped = new Set(real.flatMap((t) => t.owners ?? []).filter((o) => o !== "founder" && !owners.has(o)));
+  const roster = loadRoster();
+  const owners = ownerMap(roster);
+  const external = externalOwners(roster);
+  const unmapped = new Set(real.flatMap((t) => t.owners ?? []).filter((o) => o !== "founder" && !owners.has(o) && !external.has(o)));
   assert.deepEqual([...unmapped], []);
 });
 

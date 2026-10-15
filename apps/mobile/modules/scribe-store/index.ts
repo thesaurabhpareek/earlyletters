@@ -7,6 +7,7 @@
 import { NativeModule, requireOptionalNativeModule } from 'expo';
 import type {
   ManageOutcome,
+  OfferCodeOutcome,
   NativeEntitlementSnapshot,
   RefundOutcome,
   StoreSheetOptions,
@@ -28,6 +29,7 @@ declare class ScribeStoreNative extends NativeModule<Events> {
   presentSubscriptionStore(options: StoreSheetOptions): Promise<{ outcome: StoreSheetOutcome }>;
   showManageSubscriptions(): Promise<ManageOutcome>;
   sync(): Promise<SyncOutcome>;
+  presentOfferCodeRedeemSheet(): Promise<OfferCodeOutcome>;
   beginRefundRequest(productIds: string[]): Promise<RefundOutcome>;
 }
 
