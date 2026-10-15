@@ -211,13 +211,14 @@ try {
   }
   const consequence =
     'The build then has NO pack manifest address, so the speech model and every language pack can never download. Recordings are still kept on the phone, but the words are never written down (Review stays on "Writing down what you said", Book cards say words are waiting). Typed letters are unaffected.';
+  const runbook = 'The 15-minute fix, host and key together: docs/ops/PACKS_HOSTING.md.';
   if (value && valid && fromEas) pass(`EXPO_PUBLIC_DOCS_BASE_URL is ${value.replace(/\/+$/, '')} (eas.json testflight profile)`);
-  else if (value && valid) warn(`EXPO_PUBLIC_DOCS_BASE_URL is set only in this shell (${value}); EAS cloud builds do not read your shell. Put it in the testflight profile or an EAS "preview" environment variable. ${consequence}`);
-  else if (value) warn(`EXPO_PUBLIC_DOCS_BASE_URL "${value}" is not an https origin without a path, so src/lib/remote/base.logic.ts ignores it. ${consequence}`);
-  else warn(`EXPO_PUBLIC_DOCS_BASE_URL is not set in the testflight profile. It may be set as a plain-text EAS "preview" environment variable, which this script cannot see: check the Expo dashboard. If it is not set anywhere: ${consequence}`);
+  else if (value && valid) warn(`EXPO_PUBLIC_DOCS_BASE_URL is set only in this shell (${value}); EAS cloud builds do not read your shell. Put it in the testflight profile or an EAS "preview" environment variable. ${consequence} ${runbook}`);
+  else if (value) warn(`EXPO_PUBLIC_DOCS_BASE_URL "${value}" is not an https origin without a path, so src/lib/remote/base.logic.ts ignores it. ${consequence} ${runbook}`);
+  else warn(`EXPO_PUBLIC_DOCS_BASE_URL is not set in the testflight profile. It may be set as a plain-text EAS "preview" environment variable, which this script cannot see: check the Expo dashboard. If it is not set anywhere: ${consequence} ${runbook}`);
   if (!keySet) {
     warn(
-      'packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; FT-16 `node scripts/packs/keygen.ts`). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build.',
+      `packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; run \`node scripts/packs/keygen.mjs\` once and paste the public line). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build. ${runbook}`,
     );
   } else pass('a pack signing key is present in packages/api/src/keys.ts');
   // A host and a key are not enough: the signed manifest must have been published (scripts/packs/publish.ts) and uploaded.

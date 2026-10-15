@@ -50,6 +50,9 @@ Speech runs on the phone, but the speech model (about 575 MB) is a downloaded pa
 
 Missing either one: recordings are kept safely on the phone, but **words are never written down** (Review stays on "Writing down what you said", Book cards say words are waiting) and no language pack downloads. Typed letters are unaffected. The preflight reports both as WARN with this consequence. A TestFlight build without them is useful for typing, the Book, reading and layout, not for the spoken path.
 
+### Packs host and signing key: the runbook
+**[docs/ops/PACKS_HOSTING.md](../ops/PACKS_HOSTING.md)** does both in one sitting (about 15 minutes of work, plus DNS time if `earlyletters.app` is not on Cloudflare yet): `node scripts/packs/keygen.mjs` once, paste the public key into `packages/api/src/keys.ts`, then `npx tsx scripts/packs/publish.ts release`, `upload` and `verify`. Order matters: the public key is compiled into the app, so it must be merged **before** `eas build`; the release can be uploaded before or after the build (the app fetches it after its first frame). `publish.ts verify` checks the live host the way a phone does.
+
 ## The two commands
 ```bash
 git checkout develop && git pull
