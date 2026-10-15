@@ -74,6 +74,8 @@ const LOG_CODE: Partial<Record<ApiErrorCode, ErrorCode>> = {
 export interface AppleTokenConfig {
   supabaseUrl: string;
   serviceKey: string;
+  /** Injected by Supabase. Calls made as the person (rate_hit) carry it with their JWT, never the service key. Null: skip them. */
+  anonKey: string | null;
   apple: AppleKeyConfig;
   /**
    * Client ids a code may be issued to: the production bundle id, then
@@ -105,7 +107,8 @@ export function readAppleTokenConfig(get: EnvGetter): AppleTokenConfig | null {
   }
   if (!supabaseUrl || !serviceKey || !teamId || !keyId || !privateKeyPem.trim() || !kek) return null;
   const extra = [v('APPLE_SERVICES_ID'), ...v('APPLE_EXTRA_CLIENT_IDS').split(',')].map((s) => s.trim()).filter((s) => CLIENT_RE.test(s));
-  return { supabaseUrl, serviceKey, apple: { teamId, keyId, privateKeyPem }, clientIds: [...new Set([bundleId(), ...extra])], kek, kekVersion };
+  const anonKey = v('SUPABASE_ANON_KEY') || null;
+  return { supabaseUrl, serviceKey, anonKey, apple: { teamId, keyId, privateKeyPem }, clientIds: [...new Set([bundleId(), ...extra])], kek, kekVersion };
 }
 
 export interface AppleTokenOptions {
@@ -197,6 +200,8 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
       return reply(503, failure({ code: 'unavailable', retryable: false }, log.reqId));
     }
 
+    const declared = Number(req.headers.get('content-length') ?? '0');
+    if (Number.isFinite(declared) && declared > MAX_BODY) return fail('payload_too_large', false);
     const raw = await req.text();
     if (raw.length > MAX_BODY) return fail('payload_too_large', false);
     let code: string;
@@ -249,12 +254,16 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
     calls.set(profileId, recent);
 
     // The shared counter, as the caller (auth.uid() is the person). Only SCRAT refuses.
-    const hit = await timed(fetchFn, `${cfg.supabaseUrl}/rest/v1/rpc/rate_hit`, {
-      method: 'POST',
-      headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_bucket: RATE_BUCKET }),
-    }, timeoutMs);
-    if (hit && !hit.ok) {
+    const hit = cfg.anonKey
+      ? await timed(fetchFn, `${cfg.supabaseUrl}/rest/v1/rpc/rate_hit`, {
+          method: 'POST',
+          headers: { apikey: cfg.anonKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_bucket: RATE_BUCKET }),
+        }, timeoutMs)
+      : undefined;
+    if (hit === undefined) {
+      log.warn('request.failed', { provider: 'postgrest', code: 'config' });
+    } else if (hit && !hit.ok) {
       let sqlstate: unknown = null;
       try {
         sqlstate = ((await hit.json()) as { code?: unknown })?.code;
