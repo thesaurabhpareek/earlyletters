@@ -7,7 +7,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import appConfig from '../app.config';
-import { buildStoreConfig, FIRST_VERSION, readAppVersion, renderStoreConfig, STORE_CONFIG_PATH } from '../../../scripts/release/store-config';
+import {
+  buildStoreConfig,
+  FIRST_VERSION,
+  listingProblems,
+  productionServerFeatures,
+  readAppVersion,
+  renderStoreConfig,
+  STORE_CONFIG_PATH,
+} from '../../../scripts/release/store-config';
 import { storeListing } from '../../../packages/content/src/store.en';
 
 const APP = join(__dirname, '..');
@@ -56,5 +64,18 @@ describe('store.config.json (EAS Metadata)', () => {
 
   it('keeps the category out of Health and Medical (D-004)', () => {
     expect(buildStoreConfig(readAppVersion()).apple.categories).toEqual(['LIFESTYLE']);
+  });
+
+  it('reads the server switch from the production build profile', () => {
+    expect(['on', 'off', undefined]).toContain(productionServerFeatures());
+  });
+
+  it('refuses sharing promises while server features are off, and allows them when on (BL-440)', () => {
+    const sharing = { ...storeListing, description: 'Invite your co-parent. WRITE IT TOGETHER.' };
+    const plain = { ...storeListing, description: 'Talk for a minute. It becomes a letter.', promotionalText: 'Kept as you said it.' };
+    expect(listingProblems('off', sharing).length).toBeGreaterThanOrEqual(3);
+    expect(listingProblems(undefined, sharing).length).toBeGreaterThan(0);
+    expect(listingProblems('on', sharing)).toEqual([]);
+    expect(listingProblems('off', plain)).toEqual([]);
   });
 });
