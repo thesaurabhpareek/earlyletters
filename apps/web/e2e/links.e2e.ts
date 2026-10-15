@@ -5,6 +5,7 @@
  */
 import type { Page } from '@playwright/test';
 import { expect, test } from './support/fixtures';
+import { legalPagesMode } from './support/legal';
 import { PAGES } from './support/pages';
 
 type Link = { href: string; text: string; target: string | null; rel: string | null };
@@ -95,7 +96,9 @@ test('every internal link on every page leads somewhere that exists, and every f
   for (const [, loc] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) if (!seen.has(new URL(loc).pathname)) failures.push(`sitemap address not reached from the pages: ${loc}`);
 
   expect(failures, failures.join('\n')).toEqual([]);
-  expect(internalLinks, 'the crawl found links').toBeGreaterThan(20);
+  // Proof the crawl is wired up. LEGAL_PAGES=unlink removes the footer links to held documents from every page by
+  // design, so there the floor is one internal link per page visited (every page links home or within itself).
+  expect(internalLinks, 'the crawl found links').toBeGreaterThan(legalPagesMode() === 'unlink' ? seen.size : 20);
   expect(seen.size).toBeGreaterThanOrEqual(PAGES.filter((p) => p.status === 200).length);
   test.info().annotations.push({
     type: 'link-check',
