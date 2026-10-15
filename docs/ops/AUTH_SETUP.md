@@ -11,7 +11,7 @@ What the app expects, in one table:
 | Website (universal links) | `https://earlyletters.com` (from `packages/brand`) |
 | Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=email` |
 | Custom-scheme fallback | `scribe://auth/callback` (opens the code screen; never carries a token) |
-| Invite link | `https://earlyletters.com/j#t=<token>` (token in the fragment, B-NFR-002) |
+| Invite link | `https://earlyletters.com/i/<token>` |
 | Bundle ids | `com.earlyletters.scribe` (production), `.preview`, `.dev` (internal builds) |
 | Sender | `hello@earlyletters.com` through Resend SMTP |
 
@@ -152,8 +152,7 @@ URL: `https://earlyletters.com/.well-known/apple-app-site-association`. No file 
         "components": [
           { "/": "/auth/callback", "comment": "Email sign-in link. The token hash is in the fragment." },
           { "/": "/auth/callback/", "comment": "Same, with a trailing slash." },
-          { "/": "/j", "comment": "Co-parent invite links. The token is in the fragment (#t=)." },
-          { "/": "/j/", "comment": "Same, with a trailing slash." }
+          { "/": "/i/*", "comment": "Co-parent invite links." }
         ]
       }
     ]
@@ -186,9 +185,9 @@ When a link opens in a browser instead of the app (desktop, a mail app's own bro
 - Show: "Open Early Letters" as a link to `scribe://auth/callback` (no token in it, ever; any app can claim a custom scheme, TDD 04 3.1.6), and the line "Or type the code from the same email in the app."
 - Same page for an expired link; the app explains expiry.
 
-**`/j#t=<token>`**
-- A generic page: no child name, no photo, generic link preview tags (B-NFR-002, F11-REQ-005). It copies the whole link on a tap, then "Open the app, tap I was invited, and paste the link."
-- The token is in the fragment, so no server (Vercel included) ever receives it (B-NFR-002, TDD 04 3.4.1). This replaced the earlier `/i/<token>`, which put the token in the path where request logs could see it; no build ever shipped with `/i/`, and the app neither writes nor accepts it (`apps/mobile/src/lib/family/invite-link.logic.ts`).
+**`/i/<token>`**
+- A generic page: no child name, no photo, generic link preview tags (B-NFR-002). "Get Early Letters on the App Store", then "Already have it? Open the app, tap I was invited, and paste the link."
+- **Known gap:** the token is in the path, so Vercel request logs see it. The founder chose `/i/<token>`; TDD 04 3.4.1 prefers a fragment (`/i#t=<token>`) that servers never receive. Mitigations today: the server stores only a hash, the invite works once and lasts 7 days, and the website must not log or forward paths under `/i/`. Moving to the fragment later is a small change (the app's parser and the AASA pattern), recorded in the hand-off.
 
 ## 6. Email templates to paste
 
