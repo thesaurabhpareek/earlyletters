@@ -56,6 +56,10 @@ export interface PlanDetails {
   graceEnd: string | null;
   /** periodEnd minus 24 hours, when it will renew and the person bought it. */
   cancelBy: string | null;
+  /** Start of the current period or free trial (StoreKit purchaseDate): the trial's length for plan reminders. */
+  purchasedAt: string | null;
+  /** First purchase of this subscription: the yearly plan reminder's anniversary (G-15). */
+  originalPurchasedAt: string | null;
 }
 
 export interface PlanState {
@@ -75,6 +79,8 @@ const NO_DETAILS: PlanDetails = {
   periodEnd: null,
   graceEnd: null,
   cancelBy: null,
+  purchasedAt: null,
+  originalPurchasedAt: null,
 };
 
 /** Never read StoreKit (Expo Go, web, Android, first launch offline): Free, nothing locked. */
@@ -102,8 +108,10 @@ function transactionOf(raw: unknown): NativeTransaction | null {
   const expiresAt = isoOrUndefined(r.expiresAt);
   const purchasedAt = isoOrUndefined(r.purchasedAt);
   const revokedAt = isoOrUndefined(r.revokedAt);
+  const originalPurchasedAt = isoOrUndefined(r.originalPurchasedAt);
   if (expiresAt) tx.expiresAt = expiresAt;
   if (purchasedAt) tx.purchasedAt = purchasedAt;
+  if (originalPurchasedAt) tx.originalPurchasedAt = originalPurchasedAt;
   if (revokedAt) tx.revokedAt = revokedAt;
   return tx;
 }
@@ -234,6 +242,8 @@ export function planFromSnapshot(snap: NativeEntitlementSnapshot | null): PlanSt
         periodEnd,
         graceEnd: best.inGrace ? (best.status?.gracePeriodExpiresAt ?? null) : null,
         cancelBy,
+        purchasedAt: best.tx.purchasedAt ?? null,
+        originalPurchasedAt: best.tx.originalPurchasedAt ?? null,
       },
       checkedAt: snap.checkedAt,
     };
