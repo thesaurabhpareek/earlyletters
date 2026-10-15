@@ -45,15 +45,18 @@ describe('server features switch: off unless a build says on', () => {
     expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, analytics: false });
   });
 
-  it('is on only where flipped: the preview alpha (D-106); every other EAS profile is off (eas.json)', () => {
+  it('is on only where flipped: the preview alpha (D-106), and testflight after the R-17 flip; production and development are off (eas.json)', () => {
     const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
     const profiles = Object.keys(eas.build);
     expect(profiles).toEqual(expect.arrayContaining(['development', 'preview', 'production', 'testflight']));
+    // The R-17 flip is the testflight line alone (docs/release/TESTFLIGHT.md); this test passes either side of it.
+    const flipped = eas.build.testflight.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on';
+    const expected = flipped ? ['preview', 'testflight'] : ['preview'];
     const on = profiles.filter((name) => parseServerFeatures(eas.build[name].env?.EXPO_PUBLIC_SERVER_FEATURES));
-    expect(on).toEqual(['preview']);
+    expect(on).toEqual(expected);
     for (const name of profiles) {
       // Written out as on or off in every profile, never left to a default.
-      expect(eas.build[name].env?.EXPO_PUBLIC_SERVER_FEATURES, name).toBe(name === 'preview' ? 'on' : 'off');
+      expect(eas.build[name].env?.EXPO_PUBLIC_SERVER_FEATURES, name).toBe(expected.includes(name) ? 'on' : 'off');
     }
   });
 
