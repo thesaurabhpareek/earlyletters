@@ -8,8 +8,12 @@
  * folders for an account. A bucket listed here but not created yet is skipped,
  * so adding audio, inbox or avatars later needs no worker change.
  *
- * v1.0 (founder, 3 Oct 2026): Storage holds photos only. No audio is uploaded
- * until v1.1, so `entry-audio` and `inbox` stay absent.
+ * v1.0 (D-102, M16; 20261015230000_backup_server.sql): `entry-audio` holds the
+ * owner's encrypted recording backups. Whole books and whole people reach it by
+ * prefix through mirrorPrefixes, as built; a single erased letter, a discarded held
+ * draft or a swept orphan is queued by its exact `audio_blobs.object_path` in
+ * `entry-audio` itself (an audio_blobs delete trigger), and drained as one object
+ * (F08 6.5 D4 to D6). `inbox` stays absent until v1.1.
  */
 
 export type BucketScope =
@@ -32,12 +36,12 @@ export interface BucketSpec {
 
 export const BUCKETS: readonly BucketSpec[] = [
   { id: 'entry-photos', scope: 'child_author', level: 'L4', since: 'v1.0', note: '{child}/{author}/{entry}.{jpg|jpeg|heic|png}' },
-  { id: 'entry-audio', scope: 'child_author', level: 'L4', since: 'v1.1', note: '{child}/{author}/{entry}.m4a.enc' },
+  { id: 'entry-audio', scope: 'child_author', level: 'L4', since: 'v1.0', note: '{child}/{author}/{entry}.m4a.enc, ciphertext only (backup)' },
   { id: 'inbox', scope: 'child_author', level: 'L4', since: 'v1.1', note: '{child}/{contributor}/{entry}.enc' },
   { id: 'child-photos', scope: 'child', level: 'L4', since: 'v1.0', note: '{child}/{uuid}.{ext}; re-homed, not deleted, when the uploader leaves a surviving book' },
   { id: 'avatars', scope: 'profile', level: 'L3', since: 'P1', note: '{profile}/{uuid}.{ext}' },
   { id: 'exports', scope: 'profile', level: 'L4', since: 'P1', note: '{profile}/{export}.zip, 7 days' },
-  { id: 'ops-ledger', scope: 'system', level: 'L3', since: 'v1.0', note: 'purges/YYYY-MM-DD.jsonl, ids only, 60 days (DATA-REQ-030)' },
+  { id: 'ops-ledger', scope: 'system', level: 'L3', since: 'v1.0', note: 'purges/ and escrow/YYYY-MM-DD.jsonl, ids only, 60 days (DATA-REQ-030, F08-REQ-042)' },
 ];
 
 /** The bucket the SQL purge functions enqueue into. */

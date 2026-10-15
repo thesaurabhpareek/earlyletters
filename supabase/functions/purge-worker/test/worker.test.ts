@@ -369,3 +369,50 @@ Deno.test('the run stops starting new work at its time budget', async () => {
   assert.equal(summary.budgetHit, true);
   assert.equal(w.finalized.size, 0);
 });
+
+// ── Recording backup (20261015230000_backup_server.sql; PRD V2 F08 6.5 D, F08-REQ-024, -042) ──
+
+Deno.test('[F08-REQ-042] daily: the recovery-key log is copied to ops-ledger/escrow/<date>.jsonl with the same rows, ids only', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  const row = (id: number, at: string) => ({ id, at, reason: 'restore', outcome: 'opened', profile: CANARY.profileId, subject: null,
+    device: '0192e000-0000-7000-8000-0000000000d2', child: CANARY.childId, kv: 1, ekv: 1, restore: CANARY.requestId, req: '0123456789ab' });
+  w.escrowLog = [row(1, '2026-11-04T10:00:00.000Z'), row(2, '2026-11-04T11:00:00.000Z'), row(3, '2026-11-05T01:00:00.000Z'), row(4, '2026-09-01T00:00:00.000Z')];
+  w.put('ops-ledger', 'escrow/2026-08-01.jsonl');
+  w.put('ops-ledger', 'escrow/2026-10-01.jsonl');
+  const { log } = await run(w, testConfig(), 'daily');
+  assert.deepEqual(w.names('ops-ledger').filter((n) => n.startsWith('escrow/')), ['escrow/2026-10-01.jsonl', 'escrow/2026-11-04.jsonl', 'escrow/2026-11-05.jsonl']);
+  const lines = w.objects.get('ops-ledger')!.get('escrow/2026-11-04.jsonl')!.body!.trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(lines.length, 2, 'the same row count as the table for that day');
+  assert.deepEqual(Object.keys(lines[0]).sort(), ['at', 'child', 'device', 'ekv', 'id', 'kv', 'outcome', 'profile', 'reason', 'req', 'restore', 'subject']);
+  assert.deepEqual(findCanaries(log.raw.join('\n')), []);
+});
+
+Deno.test('[F08-REQ-043] daily: the backup sweep runs once, after the ledger copies', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  await run(w, testConfig(), 'daily');
+  assert.equal(w.backupSweepCalls, 1);
+  const order = w.rpcCalls.map((c) => c.fn).filter((f) => ['ops_ledger_between', 'backup_svc_unwraps_between', 'backup_svc_sweep'].includes(f));
+  assert.deepEqual(order.slice(-1), ['backup_svc_sweep']);
+});
+
+Deno.test('[F08-REQ-024] an erased letter\'s backup is queued by its exact path in entry-audio and removed from that bucket alone', async () => {
+  const w = new FakeWorld();
+  w.buckets.add('entry-audio');
+  const path = `${CANARY.childId}/${CANARY.profileId}/${CANARY.entryId}.m4a.enc`;
+  w.put('entry-audio', path, CANARY.profileId);
+  w.put('entry-audio', `${CANARY.childId}/${CANARY.profileId}/0192e000-0000-7000-8000-00000000e009.m4a.enc`, CANARY.profileId);
+  w.put('entry-photos', `${CANARY.childId}/${CANARY.profileId}/${CANARY.entryId}.jpg`, CANARY.profileId);
+  w.enqueue('entry-audio', path, false);
+  await run(w, testConfig());
+  assert.equal(w.has('entry-audio', path), false);
+  assert.equal(w.names('entry-audio').length, 1, 'the other recording stays');
+  assert.equal(w.names('entry-photos').length, 1, 'nothing in another bucket is touched');
+});
+
+Deno.test('[F08-REQ-040] a whole person in a book reaches entry-audio by prefix once the bucket exists', async () => {
+  const { w, uid, child } = await ashaWorld({ apple: false });
+  w.buckets.add('entry-audio');
+  w.put('entry-audio', `${child}/${uid}/${CANARY.entryId}.m4a.enc`, uid);
+  await run(w, testConfig());
+  assert.deepEqual(w.names('entry-audio'), []);
+});

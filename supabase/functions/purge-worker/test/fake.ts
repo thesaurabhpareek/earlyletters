@@ -55,6 +55,9 @@ export class FakeWorld {
   alertState = new Map<string, number | null>();
   ledger: { t: string; id: string; at: string }[] = [];
   retentionCalls = 0;
+  /** escrow_unwraps rows as backup_svc_unwraps_between returns them (20261015230000). */
+  escrowLog: Record<string, unknown>[] = [];
+  backupSweepCalls = 0;
   finalized = new Map<string, Record<string, unknown>>();
   extraResidue: { table_schema: string; table_name: string; column_name: string }[] = [];
 
@@ -311,6 +314,11 @@ export class FakeWorld {
       case 'ops_retention':
         this.retentionCalls++;
         return { audit_log: 0, forget_quota: 0 };
+      case 'backup_svc_unwraps_between':
+        return this.escrowLog.filter((r) => String(r.at) >= String(a.p_from) && String(r.at) < String(a.p_until));
+      case 'backup_svc_sweep':
+        this.backupSweepCalls++;
+        return { orphans: 1, stale_pending: 0, expired_requests: 0, old_requests: 0, old_log_rows: 0 };
       default:
         throw { status: 404, code: 'PGRST202' };
     }
