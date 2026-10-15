@@ -69,7 +69,7 @@ While real letters are on `scribe-staging` (from the first build 2 sign-in until
 
 ## Universal links
 
-The website serves `/.well-known/apple-app-site-association` from `apps/web/src/app/.well-known/apple-app-site-association/route.ts` on `main`, built from `APPLE_TEAM_ID` and `IOS_BUNDLE_ID`: the app ids `<TEAMID>.<id>` and `<TEAMID>.<id>.preview`, and only the paths `/auth/confirm`, `/auth/callback` (until the app and email templates move to `/auth/confirm`), `/i/*` and `/j`. `docs/ops/well-known/apple-app-site-association` is a reference copy of what it serves. The `.dev` id and the `webcredentials` block (passkeys, AUTH_SETUP 7) are left out until something uses them. `earlyletters.app` only redirects and never serves the file.
+The website serves `/.well-known/apple-app-site-association` from `apps/web/src/app/.well-known/apple-app-site-association/route.ts` on `main`, built from `APPLE_TEAM_ID` and `IOS_BUNDLE_ID`: the app ids `<TEAMID>.<id>` and `<TEAMID>.<id>.preview`, and only the paths `/auth/confirm`, `/auth/callback` (until the app and email templates move to `/auth/confirm`) and `/j` (invites, token in the fragment as `/j#t=<token>`; the older `/i/<token>` form is no longer written, accepted or listed). `docs/ops/well-known/apple-app-site-association` is a reference copy of what it serves. The `.dev` id and the `webcredentials` block (passkeys, AUTH_SETUP 7) are left out until something uses them. `earlyletters.app` only redirects and never serves the file.
 
 ## Promotion path
 
