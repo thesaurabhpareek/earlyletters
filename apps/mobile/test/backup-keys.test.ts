@@ -205,6 +205,74 @@ describe('[F08-REQ-028] never create a book key while the server holds one', () 
   });
 });
 
+describe('keys after review: no server key check (production today), releases, version pin', () => {
+  it('with no key check from the server, a phone that made a key and lost the race to store it never uses it', async () => {
+    const b = new FakeBackend(() => 0);
+    expect(b.serverKeyChecks).toBe(false);
+    const one = phone(b, MAMA, null);
+    const two = phone(b, MAMA, null);
+    await two.keys.serverRows();
+    await one.keys.keyFor(ASHA, { create: true });
+    expect((await two.keys.keyFor(ASHA, { create: true })).kind).toBe('waiting');
+    // On every later call too: a key made here that the server never confirmed is never trusted.
+    expect((await two.keys.keyFor(ASHA, { create: true })).kind).toBe('waiting');
+    expect(await two.keys.canOpen(ASHA, 1)).toBe(false);
+    // Escrow brings the escrowed key, and it replaces the unconfirmed one.
+    const device = await two.keys.ensureDevice();
+    const req = await b.escrowFor(MAMA).request(device.deviceId);
+    b.restores.get(req.requestId)!.state = 'approved';
+    const released = await b.escrowFor(MAMA).release(req.requestId, device.deviceId);
+    if (released.state !== 'released') throw new Error('expected a release');
+    expect(await two.keys.storeReleased(released.keys, device.deviceId, req.requestId)).toBe(1);
+    expect(await two.keys.keyFor(ASHA, { create: true })).toEqual({ kind: 'ready', version: 1 });
+    const ref = { profileId: MAMA, childId: ASHA };
+    expect(Buffer.from(await two.vault.bookKeyCheck(ref, 1, keyCheckLabel(MAMA, ASHA, 1))).equals(Buffer.from(await one.vault.bookKeyCheck(ref, 1, keyCheckLabel(MAMA, ASHA, 1))))).toBe(true);
+  });
+
+  it('the device that stored the key remembers its check, so a Keychain item replaced later is caught without the server', async () => {
+    const b = new FakeBackend(() => 0);
+    const icloud = new FakeICloud();
+    const p = phone(b, MAMA, icloud);
+    await p.keys.keyFor(ASHA, { create: true });
+    icloud.items.get(`${MAMA}:${ASHA}`)!.set(1, new Uint8Array(randomBytes(32)));
+    p.keys.refresh();
+    expect((await p.keys.keyFor(ASHA, { create: true })).kind).toBe('waiting');
+  });
+
+  it('a release never overwrites a good key that is already here, and a release that fails its check writes nothing', async () => {
+    const b = new FakeBackend(() => 0);
+    const icloud = new FakeICloud();
+    const a = phone(b, MAMA, icloud);
+    await a.keys.keyFor(ASHA, { create: true });
+    const good = new Uint8Array(icloud.items.get(`${MAMA}:${ASHA}`)!.get(1)!);
+    const device = await a.keys.ensureDevice();
+    const req = await b.escrowFor(MAMA).request(device.deviceId);
+    b.restores.get(req.requestId)!.state = 'approved';
+    // A wrong release: the server's wrap was swapped for another key (a bug, or tampering).
+    b.childKeys[0] = { ...b.childKeys[0], ...(() => {
+      const s = hpkeSeal(b.escrow.pk, escrowInfo(), escrowAad(MAMA, ASHA, 1, 1), new Uint8Array(randomBytes(32)));
+      return { enc: Buffer.from(s.enc).toString('base64'), ct: Buffer.from(s.ct).toString('base64') };
+    })() };
+    const released = await b.escrowFor(MAMA).release(req.requestId, device.deviceId);
+    if (released.state !== 'released') throw new Error('expected a release');
+    expect(await a.keys.storeReleased(released.keys, device.deviceId, req.requestId)).toBe(1); // skipped: the good key passes its check
+    expect(Buffer.from(icloud.items.get(`${MAMA}:${ASHA}`)!.get(1)!).equals(Buffer.from(good))).toBe(true);
+    // A phone whose item was replaced by a conflict, receiving that wrong release: the check refuses it.
+    icloud.items.get(`${MAMA}:${ASHA}`)!.set(1, new Uint8Array(randomBytes(32)));
+    const conflicted = new Uint8Array(icloud.items.get(`${MAMA}:${ASHA}`)!.get(1)!);
+    await expect(a.keys.storeReleased(released.keys, device.deviceId, req.requestId)).rejects.toMatchObject({ code: 'check_failed' });
+    expect(Buffer.from(icloud.items.get(`${MAMA}:${ASHA}`)!.get(1)!).equals(Buffer.from(conflicted))).toBe(true);
+  });
+
+  it('a higher key version on the server (only a direct table write could make one) is never used to encrypt', async () => {
+    const b = new FakeBackend(() => 0);
+    const p = phone(b, MAMA, null);
+    b.childKeys.push({ uid: MAMA, childId: ASHA, keyVersion: 2, escrowKeyVersion: 1, keyCheck: '', enc: '', ct: '' });
+    expect(await p.keys.keyFor(ASHA, { create: true })).toEqual({ kind: 'unavailable', reason: 'key_version' });
+    expect(await p.vault.bookKeyVersions({ profileId: MAMA, childId: ASHA })).toEqual([]);
+  });
+});
+
 describe('[F08-REQ-027] a device key pair per install', () => {
   it('is made once and registered once', async () => {
     const b = new FakeBackend(() => 0);

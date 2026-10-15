@@ -39,6 +39,11 @@ Rules:
 1. **Long-lived secrets stay native.** Book keys and the device private key never cross into JavaScript. The `ScribeKeys` module takes the Keychain service and account for every operation that needs them. JavaScript sees per-recording file keys (wiped after use), wrapped keys and public keys only. **V-code** (`modules/scribe-keys/index.ts`).
 2. **Never create a BK while the server holds one** (F08-REQ-028). A phone that sees an active `child_keys` row it cannot open waits up to 2 minutes for iCloud Keychain, then asks escrow. It makes a key only when the server has none for (child, me). A key made here whose store failed is stored again, never replaced. **V-code** (`test/backup-keys.test.ts`).
 3. **The key check settles Keychain conflicts.** Two of a person's phones racing to make version 1: the server refuses the second (`SCIMM key_exists`). If an iCloud sync conflict then replaces the item with the losing key, the key check fails and that key is never used to encrypt or decrypt; the phone recovers the right one through escrow. **V-code**. Neither server draft stores the check yet. Until one does, a phone trusts a local key of the row's version, and this conflict is caught only when a restore fails to open an object (F08-U20).
+3b. **Where a key came from decides whether it is trusted** (review of PR #150).
+    - A key this phone made is untrusted until its store succeeds. Once it does, the phone records the key's check locally (`backup.db`, this device only).
+    - A key that iCloud Keychain brought is trusted until a check says otherwise. It is recorded as verified once it opens an object from the server.
+    - A released key never overwrites a key that passes its check. It replaces a different key only when it passes the expected check, or when the local one is a key made here that the server never confirmed. The native module enforces this, so a wrong release cannot overwrite a right key across iCloud Keychain.
+    - **Encryption uses only version 1** (`ENCRYPT_KEY_VERSION`) until a rotation ADR. A higher version on the server could come only from a direct table write, and it is never used to encrypt.
 4. **Escrow public keys ship in the app**, current and next version (`packages/api/src/escrow-keys.ts`, S07; WP-F08-B8 ceremony). With none bundled the app fails closed: backup cannot be turned on. A staging build may carry the drill-only key in `EXPO_PUBLIC_ESCROW_KEY`.
 5. **Keychain service name** is `scribe.backup`, not the `earlyletters.backup` that F08 6.5 and S07's `BOOK_KEY_KEYCHAIN_SERVICE` (#138) name. CLAUDE.md keeps the public name only in `packages/brand`, and a Keychain service must never change after the first item is written (renaming it orphans every key). The codename is permanent; the brand may not be. The escrow labels already use the codename for the same reason. This must be settled before the first item is written on a family's phone (T27).
 
@@ -91,6 +96,16 @@ This is the access-log design the founder asked for. It restates F08 6.5 C and G
 
 **What the copy may claim, and the honest limit.** Provable: every use through the function writes a row and sends an email, and a daily copy sits outside backups. Not provable by any system: someone holding the escrow private key (the escrow project's secret, or a sealed paper copy) plus copies of the database and bucket could open recordings offline with no row and no email. The product copy therefore says only "We use it only through our recovery service, which logs every use and emails you each time" (`backup.sheetBody`). The Privacy Policy names the offline limit and who could do it. `test/backup-copy.test.ts` refuses "only your family", "only you can", "end-to-end" and any unscoped "every use is logged".
 
+**Residual risk, table writes** (review of PR #150): anyone who can write `child_keys` or `backup_devices` directly (not through the RPCs) can plant an escrow wrap of a key they chose, or swap a device public key. The escrow public key and the associated data are not secret. A planted key that a phone then encrypts under is readable by whoever planted it.
+
+Controls:
+- RLS denies clients every direct write to those tables (to be confirmed by a test in the S05 server half);
+- `backup_store_key` refuses a second version;
+- the client encrypts only under version 1 and never replaces a confirmed local key;
+- the escrow log and the email on every use.
+
+What remains is a database administrator, the same trust boundary as the escrow private key itself.
+
 **Residual risk** (F08-U27c, 09 R-19): an attacker who controls the inbox while the owner's only phone is lost faces only the 24-hour hold. The owner can cancel from Settings on any signed-in phone during it.
 
 ## 6. Decision: the switch
@@ -102,6 +117,8 @@ This is the access-log design the founder asked for. It restates F08 6.5 C and G
 - One small native module, `scribe-keys` (about 300 lines of Swift, CryptoKit and Security only). The binary cost is near zero: CryptoKit is a system framework (F08 section 9's "under 1 MB" budget holds; **U** until the IPA size check).
 - HPKE needs iOS 17. D-098 (PR #126) sets iOS 17 as the deployment target; until it merges, the module builds for 16.4 and reports `isSupported() == false` below 17.
 - The object format is implemented once, in TypeScript, over a 2-call native AEAD (seal and open one segment), so the Node suite exercises the exact bytes the phone writes. Cost: about 230 native calls per 15 MB recording. **U**: F08 section 9 budgets 1 s per 10 MB on the SE 3, measured in WP-F08-B1.
+- All versions of a book key share one Keychain item, and iCloud resolves conflicts per item. With version 1 only, a read-modify-write race across versions cannot happen in v1.0. The rotation ADR should move to one item per version (account `<profile>:<child>:v<n>`).
+- Swift copies book keys into `Data` and base64 strings, which it cannot wipe reliably. The decoded scope is one call.
 - The queue's state lives in its own `backup.db`, so S03's schema is unchanged. Every row can be rebuilt from the letters and `audio_blobs`. S03 may fold it into the main schema later (v11).
 - Restore writes `entries.audio_uri`, `audio_sha256` and `audio_bytes` once for a letter that came by sync with none (`attachRestoredAudio`). That rule belongs beside `rebaseAudioUri` in S03's repository (request).
 

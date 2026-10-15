@@ -89,6 +89,8 @@ export interface QueueDeps {
   source: BackupSource;
   random?: () => number;
   partBytes?: number;
+  /** True once this service was stopped (another account signed in): no new step starts. */
+  stopped?: () => boolean;
 }
 
 export const META = {
@@ -105,10 +107,11 @@ export function createUploadQueue(d: QueueDeps) {
   let onServer = new Map<string, boolean>();
   let running: Promise<StepOutcome | null> | null = null;
 
-  const keepGoing = () => !d.conditions.busy() && d.conditions.foreground() && !d.conditions.uploadsKilled();
+  const stopped = () => d.stopped?.() ?? false;
+  const keepGoing = () => !stopped() && !d.conditions.busy() && d.conditions.foreground() && !d.conditions.uploadsKilled();
 
   async function gate(): Promise<GateReason | null> {
-    if (d.db.getMeta(META.enabled) !== 'on') return 'off';
+    if (stopped() || d.db.getMeta(META.enabled) !== 'on') return 'off';
     const paused = d.db.getMeta(META.paused);
     if (paused === 'consent' || paused === 'quota') return paused;
     if (d.conditions.uploadsKilled()) return 'killed';
@@ -163,6 +166,12 @@ export function createUploadQueue(d: QueueDeps) {
       if (e.code === BACKUP_ERRORS.quota) {
         d.db.setMeta(META.paused, 'quota');
         return { kind: 'gate', reason: 'quota' };
+      }
+      // The upload refused us (an expired signed token, a session or policy change): ask backup_begin again.
+      // It is idempotent on the entry id, so the job goes back to `sealed` with no upload URL.
+      if ((job.state === 'begun' || job.state === 'uploading') && /^HTTP(400|401|403)$/.test(e.code)) {
+        d.db.updateJob(job.entryId, { state: 'sealed', objectPath: null, uploadUrl: null, uploadToken: null, uploadOffset: 0 });
+        return later(job, e.code);
       }
       // Not a parent of this book (anymore): kept on the phone, never sent.
       if (e.code === BACKUP_ERRORS.notParent) {
@@ -286,6 +295,11 @@ export function createUploadQueue(d: QueueDeps) {
       reset(job);
       return 'reset';
     }
+    // The same file key and nonce prefix over a different original would reuse nonces: check the original first.
+    if (!d.files.exists(job.audioUri) || (await d.files.sha256(job.audioUri)) !== job.audioSha256) {
+      reset(job);
+      return 'reset';
+    }
     const r = await sealInto(job, true);
     if (r === 'stopped') return 'stopped';
     if (r === 'missing' || r === 'mismatch' || r.sha256 !== job.cipherSha256) {
@@ -373,8 +387,9 @@ export function createUploadQueue(d: QueueDeps) {
       const seen = new Set<string>();
       const next = new Map<string, boolean>();
       for (const it of items) {
-        if (!it.audioSha256 || it.audioBytes == null) continue;
+        // Still on the phone, just not hashed (yet): keep its job as it is; do not start one.
         seen.add(it.entryId);
+        if (!it.audioSha256 || it.audioBytes == null) continue;
         next.set(it.entryId, it.onServer);
         const job = d.db.job(it.entryId);
         if (!job) {
@@ -405,6 +420,7 @@ export function createUploadQueue(d: QueueDeps) {
         }
         if (job.audioUri !== it.audioUri || job.source !== it.source) d.db.updateJob(job.entryId, { audioUri: it.audioUri, source: it.source });
       }
+      // The source is a local read that throws rather than answer short, so a recording missing from it is gone.
       for (const j of d.db.jobs()) {
         if (seen.has(j.entryId)) continue;
         discardTmp(j);
@@ -418,11 +434,16 @@ export function createUploadQueue(d: QueueDeps) {
      * believes confirmed but the server no longer lists goes again, and one the
      * server lists as confirmed is marked done.
      */
-    async reconcileWithServer(): Promise<void> {
+    async reconcileWithServer(opts: { force?: boolean } = {}): Promise<void> {
       const blobs = await d.server.listBlobs();
       const onServerIds = new Set(blobs.map((b) => b.entryId));
+      // An empty answer resets nothing unless forced: a whole-server restore is signalled by sync's epoch
+      // change (`force`, request to S03), not by one read that may have come back empty for another reason.
+      const resetMissing = blobs.length > 0 || opts.force === true;
       for (const j of d.db.jobs()) {
-        if (j.state === 'confirmed' && !onServerIds.has(j.entryId)) reset(j, { attempts: 0, nextAttemptAt: null });
+        if (j.state === 'confirmed' && !onServerIds.has(j.entryId)) {
+          if (resetMissing) reset(j, { attempts: 0, nextAttemptAt: null });
+        }
         else if (j.state !== 'confirmed' && j.state !== 'blocked' && onServerIds.has(j.entryId)) confirmed(j);
       }
     },

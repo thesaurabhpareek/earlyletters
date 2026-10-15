@@ -50,8 +50,22 @@ export interface KeyVault {
   unwrapFileKey(ref: BookKeyRef, version: number, wrapped: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;
   /** Seals the book key to a recipient X25519 public key (the escrow key) with HPKE base mode. */
   sealBookKey(ref: BookKeyRef, version: number, recipient: Uint8Array, info: Uint8Array, aad: Uint8Array): Promise<Sealed>;
-  /** Opens a book key sealed to this device's key and stores it under `version`. Throws on any mismatch. */
-  openBookKey(ref: BookKeyRef, version: number, sealed: Sealed, info: Uint8Array, aad: Uint8Array): Promise<void>;
+  /**
+   * Opens a book key sealed to this device's key and stores it under `version`.
+   * With `expected`, the opened key must pass that check (`check_failed`
+   * otherwise) and may then replace a different key under that version. With
+   * `replaceUntrusted`, it may replace a key this phone made that the server
+   * never confirmed. Otherwise a different key already there is never replaced
+   * (`key_exists`).
+   */
+  openBookKey(
+    ref: BookKeyRef,
+    version: number,
+    sealed: Sealed,
+    info: Uint8Array,
+    aad: Uint8Array,
+    opts: { expected: { check: Uint8Array; label: Uint8Array } | null; replaceUntrusted: boolean },
+  ): Promise<void>;
   randomBytes(n: number): Uint8Array;
 }
 

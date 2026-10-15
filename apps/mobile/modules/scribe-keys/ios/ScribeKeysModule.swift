@@ -179,12 +179,16 @@ public class ScribeKeysModule: Module {
     }
 
     /// Opens a book key the escrow function sealed to this device, and stores it under `version`.
-    /// The released key replaces any different one under that version: escrow holds the key the
-    /// server row recorded, and JavaScript checks it against the row's key check afterwards.
+    /// With an expected check (16 bytes, and its label), the opened key must pass it first, and may then
+    /// replace a different key under that version (a Keychain sync conflict). `replaceUntrusted` lets it
+    /// replace a key this phone made that the server never confirmed (JavaScript knows which). Otherwise a
+    /// different key already there is never replaced: a wrong release can never overwrite a right key,
+    /// here or, through iCloud Keychain, on the person's other devices.
     AsyncFunction("openBookKey") {
-      (service: String, account: String, version: Int, enc: Data, ct: Data, info: Data, aad: Data) throws in
+      (service: String, account: String, version: Int, enc: Data, ct: Data, info: Data, aad: Data, expectedCheck: Data, checkLabel: Data, replaceUntrusted: Bool) throws in
       guard #available(iOS 17.0, *) else { throw ScribeKeysException("ERR_SCRIBE_KEYS_UNSUPPORTED", "Needs iOS 17") }
       guard version >= 1 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "Bad key version") }
+      guard expectedCheck.isEmpty || expectedCheck.count == 16 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "Bad key check") }
       Self.lock.lock()
       defer { Self.lock.unlock() }
       guard let device = try Self.readDevice() else {
@@ -199,8 +203,19 @@ public class ScribeKeysModule: Module {
         throw ScribeKeysException("ERR_SCRIBE_KEYS_OPEN", "The key did not open")
       }
       guard bookKey.count == 32 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_OPEN", "The key did not open") }
+      if !expectedCheck.isEmpty {
+        let check = Data(HMAC<SHA256>.authenticationCode(for: checkLabel, using: SymmetricKey(data: bookKey))).prefix(16)
+        guard check == expectedCheck else { throw ScribeKeysException("ERR_SCRIBE_KEYS_CHECK", "The key did not pass its check") }
+      }
       var item = try Self.readBook(service, account)
-      item.keys[String(version)] = bookKey.base64EncodedString()
+      let encoded = bookKey.base64EncodedString()
+      if let existing = item.keys[String(version)] {
+        if existing == encoded { return }
+        if expectedCheck.isEmpty && !replaceUntrusted {
+          throw ScribeKeysException("ERR_SCRIBE_KEYS_EXISTS", "A different key of that version is here")
+        }
+      }
+      item.keys[String(version)] = encoded
       try Self.write(service: service, account: account, data: try JSONEncoder().encode(item), synchronizable: true)
     }
 

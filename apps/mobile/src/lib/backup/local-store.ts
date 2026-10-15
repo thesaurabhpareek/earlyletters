@@ -112,6 +112,9 @@ export function restoreLocal(o: RestoreLocalOptions): RestoreLocal {
       if (ok) o.changed?.();
       return ok;
     },
+    clearRestoredHash(entryId, sha256): void {
+      o.db().run('UPDATE entries SET audio_sha256 = NULL, audio_bytes = NULL WHERE id = ? AND audio_sha256 = ?', entryId, sha256);
+    },
     anyMissing(): boolean {
       const rows = o.db().all<{ audio_uri: string | null }>(
         `SELECT audio_uri FROM entries WHERE deleted_at IS NULL AND kind = 'letter' AND capture_mode IN ('spoken', 'mixed')

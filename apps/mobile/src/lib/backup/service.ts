@@ -53,8 +53,10 @@ export interface BackupView {
 export function createBackupService(d: BackupServiceDeps) {
   d.db.resetForProfile(d.profileId);
   const keys = createKeyManager({ vault: d.vault, server: d.server, meta: d.db, clock: d.clock, profileId: d.profileId, escrowKeys: d.escrowKeys });
-  const queue = createUploadQueue({ ...d, keys });
-  const restore = createRestore({ ...d, keys });
+  let stopped = false;
+  const isStopped = () => stopped;
+  const queue = createUploadQueue({ ...d, keys, stopped: isStopped });
+  const restore = createRestore({ ...d, keys, stopped: isStopped });
   let lastGate: GateReason | null = null;
   let lastRestore: RestoreKeyStatus | null = null;
 
@@ -78,8 +80,19 @@ export function createBackupService(d: BackupServiceDeps) {
    * launch, on foreground, when the store changes and when the network does.
    * Restoring is never gated by the backup switch or a plan (C-NFR-008).
    */
-  async function tick(): Promise<void> {
-    if (!d.vault.supported()) return;
+  let running: Promise<void> | null = null;
+
+  /** One pass at a time: a call while a pass runs joins it (restore and upload never overlap themselves). */
+  function tick(): Promise<void> {
+    if (running) return running;
+    running = pass().finally(() => {
+      running = null;
+    });
+    return running;
+  }
+
+  async function pass(): Promise<void> {
+    if (!d.vault.supported() || stopped) return;
     // A restore pass asks the server for its list, so it runs only while a spoken letter of mine
     // has no recording on this phone (a new phone, or one restored from a device backup).
     if (d.local.anyMissing()) {
@@ -90,7 +103,7 @@ export function createBackupService(d: BackupServiceDeps) {
         // the next tick tries again; restore never blocks the app
       }
     } else lastRestore = null;
-    if (d.db.getMeta(META.enabled) !== 'on') return;
+    if (d.db.getMeta(META.enabled) !== 'on' || stopped) return;
     try {
       await uploads();
     } catch {
@@ -103,6 +116,17 @@ export function createBackupService(d: BackupServiceDeps) {
     queue,
     restore,
     tick,
+
+    /**
+     * Another account signed in on this phone: no new step starts, the running
+     * pass ends at its next check, and then backup-tmp is swept so no plaintext
+     * of the old account's recordings stays behind.
+     */
+    async stop(): Promise<void> {
+      stopped = true;
+      await running?.catch(() => undefined);
+      queue.sweepTmp();
+    },
 
     /** Launch: sweep backup-tmp before anything runs, then work. Never throws. */
     async start(): Promise<void> {
@@ -149,6 +173,10 @@ export function createBackupService(d: BackupServiceDeps) {
       if (queue.isRunning()) return { status: { kind: 'backing_up' }, restore: lastRestore };
       if (lastGate === 'wifi' || lastGate === 'offline') return { status: { kind: 'waiting_wifi' }, restore: lastRestore };
       if (lastGate === 'killed') return { status: { kind: 'paused' }, restore: lastRestore };
+      // A recording that is retrying, or waiting for its key, is not "backed up": say it carries on later.
+      if (d.db.getMeta(META.keyState) || d.db.jobs().some((j) => j.state !== 'confirmed' && j.state !== 'blocked' && j.attempts > 0)) {
+        return { status: { kind: 'paused' }, restore: lastRestore };
+      }
       return { status: { kind: 'current', lastBackedUpAt }, restore: lastRestore };
     },
 

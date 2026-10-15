@@ -179,9 +179,18 @@ export interface ReleasedKey {
 
 /** What a poll answers: the keys; still held; or closed (a Stop, Not me, or the release window passed). */
 export type ReleaseOutcome =
-  | { state: 'released'; keys: ReleasedKey[] }
-  | { state: 'requested' | 'approved'; holdUntil: string }
+  | { state: 'released'; requestId: string; keys: ReleasedKey[] }
+  | { state: 'requested' | 'approved'; requestId: string; holdUntil: string }
   | { state: 'cancelled' | 'expired' };
+
+/**
+ * v1.0 has no key rotation: a phone encrypts only under book key version 1.
+ * A row with a higher version (which only a direct table write could make,
+ * since `backup_store_key` refuses a second version) is never used to
+ * encrypt; restore may still open an object that names it. Rotation lifts
+ * this in its own ADR.
+ */
+export const ENCRYPT_KEY_VERSION = 1;
 
 /** The `escrow` function as the client sees it. Both calls may be the same create-or-poll route. */
 export interface EscrowClient {
@@ -230,8 +239,11 @@ export function packEscrowWrap(enc: Uint8Array, ct: Uint8Array): Uint8Array {
   return concat(new Uint8Array([ESCROW_WRAP_FORMAT]), enc, ct);
 }
 
+/** A 32-byte book key seals to 48 bytes, so a format 1 wrap is exactly 81. */
+export const ESCROW_WRAP_LEN = 1 + 32 + 48;
+
 export function unpackEscrowWrap(b: Uint8Array): { enc: Uint8Array; ct: Uint8Array } {
-  if (b.length < 1 + 32 + 16 || b[0] !== ESCROW_WRAP_FORMAT) throw new BackupServerError('bad_request', false);
+  if (b.length !== ESCROW_WRAP_LEN || b[0] !== ESCROW_WRAP_FORMAT) throw new BackupServerError('bad_request', false);
   return { enc: b.slice(1, 33), ct: b.slice(33) };
 }
 

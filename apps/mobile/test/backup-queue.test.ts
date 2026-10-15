@@ -333,6 +333,17 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     expect(r.db().getMeta('paused')).toBe('quota');
   });
 
+  it('a recording that is retrying is never shown as backed up', async () => {
+    const r = rig();
+    await r.addRecording(1000);
+    r.backend.faults.set('begin', 1);
+    const q = r.make();
+    await q.drain();
+    const job = r.db().jobs()[0];
+    expect(job.attempts).toBe(1);
+    expect(job.state).not.toBe('confirmed');
+  });
+
   it('[F08-U02] a file whose hash differs from the one taken at capture is never uploaded', async () => {
     const r = rig();
     const { item } = await r.addRecording(1000);
@@ -373,6 +384,7 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
   it('[F08-REQ-031, F08-U30] after a server restore, a recording the server lost goes again', async () => {
     const r = rig();
     const { item, plain } = await r.addRecording(1000);
+    const kept = await r.addRecording(1000);
     await r.make().drain();
     const row = r.backend.blobs.get(item.entryId)!;
     r.backend.objects.delete(row.objectPath);
@@ -380,7 +392,56 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     const q = r.make();
     await q.reconcileWithServer();
     expect(r.db().job(item.entryId)!.state).toBe('queued');
+    expect(r.db().job(kept.item.entryId)!.state).toBe('confirmed');
     await q.drain();
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+  });
+
+  it('an empty answer from the server resets nothing, unless sync says the server was restored', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(1000);
+    await r.make().drain();
+    r.backend.objects.clear();
+    r.backend.blobs.clear();
+    const q = r.make();
+    await q.reconcileWithServer();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    await q.reconcileWithServer({ force: true }); // the sync epoch changed (request to S03)
+    expect(r.db().job(item.entryId)!.state).toBe('queued');
+  });
+
+  it('a recording that is briefly unhashed keeps its job and its upload', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'before:begin';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    const sha = item.audioSha256;
+    item.audioSha256 = null;
+    r.make().reconcile();
+    expect(r.db().job(item.entryId)!.state).toBe('sealed');
+    expect(r.tmpFiles()).toHaveLength(1);
+    item.audioSha256 = sha;
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+  });
+
+  it('an upload the server refuses (an expired token, a policy change) asks backup_begin again', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(3 * SEGMENT_SIZE);
+    const inner = r.backend.http;
+    let refusals = 1;
+    (r.backend as unknown as { http: HttpLike }).http = async (url, init) => {
+      if (init.method === 'PATCH' && refusals > 0) {
+        refusals -= 1;
+        return { status: 403, header: () => null };
+      }
+      return inner(url, init);
+    };
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(r.backend.requests.filter((x) => x.kind === 'begin').length).toBe(2);
     expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
   });
 });

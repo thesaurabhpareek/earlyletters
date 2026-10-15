@@ -25,6 +25,7 @@ import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { ScribeKeys, scribeKeysErrorCode } from '../../../modules/scribe-keys';
 import { getAudioMode } from '../audio-mode';
+import { APP_ENV } from '../build-env';
 import { activeTakeId } from '../capture/recorder';
 import { openNativeDb } from '../db/repos/open-native';
 import { getRemoteConfig } from '../remote';
@@ -85,7 +86,19 @@ function nativeVault(): KeyVault {
     wrapFileKey: (r, v, key, aad) => need().wrapFileKey(KEYCHAIN_SERVICE, account(r), v, key, aad),
     unwrapFileKey: (r, v, wrapped, aad) => need().unwrapFileKey(KEYCHAIN_SERVICE, account(r), v, wrapped, aad),
     sealBookKey: (r, v, recipient, info, aad) => need().sealBookKey(KEYCHAIN_SERVICE, account(r), v, recipient, info, aad),
-    openBookKey: (r, v, s, info, aad) => need().openBookKey(KEYCHAIN_SERVICE, account(r), v, s.enc, s.ct, info, aad),
+    openBookKey: (r, v, s, info, aad, o) =>
+      need().openBookKey(
+        KEYCHAIN_SERVICE,
+        account(r),
+        v,
+        s.enc,
+        s.ct,
+        info,
+        aad,
+        o.expected?.check ?? new Uint8Array(0),
+        o.expected?.label ?? new Uint8Array(0),
+        o.replaceUntrusted,
+      ),
     randomBytes: (n) => Crypto.getRandomBytes(n),
   };
 }
@@ -109,7 +122,12 @@ const nativeFiles: FileIO = {
   },
   openRead(uri): ByteSource {
     const h = new File(uri).open(FileMode.ReadOnly);
-    return { read: (n) => (n === 0 ? new Uint8Array(0) : h.readBytes(n)), close: () => h.close() };
+    // Never read past the end: the format reads one byte more on purpose, to prove the file did not grow.
+    const read = (n: number) => {
+      const left = (h.size ?? 0) - (h.offset ?? 0);
+      return n <= 0 || left <= 0 ? new Uint8Array(0) : h.readBytes(Math.min(n, left));
+    };
+    return { read, close: () => h.close() };
   },
   openWrite(uri): ByteSink {
     const f = new File(uri);
@@ -122,7 +140,8 @@ const nativeFiles: FileIO = {
     const h = new File(uri).open(FileMode.ReadOnly);
     try {
       h.offset = offset;
-      return h.readBytes(length);
+      const left = (h.size ?? 0) - offset;
+      return left <= 0 ? new Uint8Array(0) : h.readBytes(Math.min(length, left));
     } finally {
       h.close();
     }
@@ -169,7 +188,10 @@ const fromBytea = (s: string) => (s.startsWith('\\x') ? s.slice(2) : s).toLowerC
 /** [R] Neither server draft takes `p_key_check` yet; PostgREST refuses an unknown argument, so it is sent only once one does. */
 const SERVER_TAKES_KEY_CHECK = false;
 
-function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | null>): BackupServer {
+/** PostgREST pages: a hosted project returns at most `max_rows` (1000 by default) per request. */
+const PAGE_ROWS = 500;
+
+function supabaseServer(sb: SupabaseClient, profileId: string, accessToken: () => Promise<string | null>): BackupServer {
   const env = readSupabaseEnv();
   async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
     let r;
@@ -181,18 +203,36 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
     if (r.error) throw serverError(r.error, r.status);
     return r.data as T;
   }
-  async function select<T>(table: string, columns: string, confirmedOnly = false): Promise<T[]> {
-    let q = sb.from(table).select(columns);
-    if (confirmedOnly) q = q.eq('state', 'confirmed');
-    const { data, error, status } = await q;
-    if (error) throw serverError(error, status);
-    return (data ?? []) as unknown as T[];
+  /**
+   * Every row of mine, page by page, in a stable order. Filtered by owner as
+   * well as by RLS, so a policy change can never hand this phone another
+   * parent's keys or recordings. Throws on any failed page: a partial list is
+   * never returned (the queue resets confirmed jobs the server does not list).
+   */
+  async function selectAll<T>(table: string, columns: string, owner: string, order: string, confirmedOnly = false): Promise<T[]> {
+    const out: T[] = [];
+    for (let from = 0; ; from += PAGE_ROWS) {
+      let q = sb.from(table).select(columns).eq(owner, profileId);
+      if (confirmedOnly) q = q.eq('state', 'confirmed');
+      const { data, error, status } = await q.order(order).range(from, from + PAGE_ROWS - 1);
+      if (error) throw serverError(error, status);
+      const page = (data ?? []) as unknown as T[];
+      out.push(...page);
+      if (page.length < PAGE_ROWS) return out;
+    }
   }
   return {
     registerDevice: ({ deviceId, publicKey }) => rpc(BACKUP_RPC.registerDevice, { p_device: deviceId, p_public_key: bytea(b64(publicKey)) }),
     // RLS: the owner reads their own rows; every column but escrow_wrap is granted.
     listKeys: async () =>
-      (await select<{ child_id: string; key_version: number; escrow_key_version: number }>('child_keys', 'child_id, key_version, escrow_key_version')).map(
+      (
+        await selectAll<{ child_id: string; key_version: number; escrow_key_version: number }>(
+          'child_keys',
+          'child_id, key_version, escrow_key_version',
+          'profile_id',
+          'child_id',
+        )
+      ).map(
         (r) => ({ childId: r.child_id, keyVersion: r.key_version, escrowKeyVersion: r.escrow_key_version, keyCheck: null }),
       ),
     storeKey: (k) =>
@@ -219,9 +259,11 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
     },
     listBlobs: async () =>
       (
-        await select<{ entry_id: string; child_id: string; object_path: string; key_version: number; cipher_sha256: string; bytes: number }>(
+        await selectAll<{ entry_id: string; child_id: string; object_path: string; key_version: number; cipher_sha256: string; bytes: number }>(
           'audio_blobs',
           'entry_id, child_id, object_path, key_version, cipher_sha256, bytes',
+          'author_id',
+          'entry_id',
           true,
         )
       ).map((r) => ({
@@ -332,15 +374,17 @@ function escrowClient(accessToken: () => Promise<string | null>): EscrowClient {
     },
     release: async (_requestId, deviceId): Promise<ReleaseOutcome> => {
       const r = await restore(deviceId);
-      if (r.state === 'released') return { state: 'released', keys: r.keys.map(released) };
-      if (r.state === 'requested' || r.state === 'approved') return { state: r.state, holdUntil: r.holdUntil };
+      if (r.state === 'released') return { state: 'released', requestId: r.requestId, keys: r.keys.map(released) };
+      if (r.state === 'requested' || r.state === 'approved') return { state: r.state, requestId: r.requestId, holdUntil: r.holdUntil };
       return { state: r.state };
     },
   };
 }
 
-/** [R] `EXPO_PUBLIC_ESCROW_KEY` (`v<version>:<base64>`): the staging drill key in preview builds; production keys come bundled. */
+/** [R] `EXPO_PUBLIC_ESCROW_KEY` (`v<version>:<base64>`): the staging drill key, honoured only outside production builds. */
 function escrowKeys(): readonly EscrowPublicKey[] {
+  // A production build trusts only the bundled keys: an env key there would seal every new book key to it.
+  if (APP_ENV === 'production') return BUNDLED_ESCROW_KEYS;
   const m = /^v(\d+):([A-Za-z0-9+/=]{44})$/.exec((process.env.EXPO_PUBLIC_ESCROW_KEY ?? '').trim());
   if (!m) return BUNDLED_ESCROW_KEYS;
   try {
@@ -423,11 +467,12 @@ async function current(): Promise<BackupService | null> {
   if (!sb) return null;
   const s = await session(sb).catch(() => null);
   if (!s) {
-    service = null;
-    serviceFor = null;
+    await retire();
     return null;
   }
   if (service && serviceFor === s.uid) return service;
+  // Another account on this phone: the old service stops, its pass ends, and its temp files go first.
+  await retire();
   const token = async () => (await session(sb).catch(() => null))?.token ?? null;
   const vault = nativeVault();
   service = createBackupService({
@@ -435,7 +480,7 @@ async function current(): Promise<BackupService | null> {
     vault,
     aead: nativeAead,
     files: nativeFiles,
-    server: supabaseServer(sb, token),
+    server: supabaseServer(sb, s.uid, token),
     escrow: escrowClient(token),
     http,
     downloader,
@@ -448,6 +493,13 @@ async function current(): Promise<BackupService | null> {
   });
   serviceFor = s.uid;
   return service;
+}
+
+async function retire(): Promise<void> {
+  const old = service;
+  service = null;
+  serviceFor = null;
+  if (old) await old.stop();
 }
 
 function emit(): void {

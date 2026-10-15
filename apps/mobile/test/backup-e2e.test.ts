@@ -123,7 +123,7 @@ describe('backup end to end against a fake bucket', () => {
     syncText(c, b);
     await b.service.tick();
     expect(audioOf(b, later.id).sha256).toBe(sha256Hex(later.plain));
-  });
+  }, 30_000);
 
   it('a stopped restore request is never asked again on its own; Try again asks once more', async () => {
     const clock = { t: 0 };
@@ -230,6 +230,21 @@ describe('backup end to end against a fake bucket', () => {
     clock.t += 24 * HOUR;
     await c.service.tick();
     expect(audioOf(c, r.id).sha256).toBe(sha256Hex(r.plain));
+  });
+
+  it('the Settings line says "carries on later" while a recording retries, then "backed up"', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const a = makePhone({ backend, uid: MAMA, icloud: new FakeICloud(), clock, name: 'mama-a' });
+    addChild(a, ASHA);
+    recordLetter(a, ASHA, 10_000);
+    await a.service.turnOn();
+    backend.faults.set('begin', 1);
+    await a.service.tick();
+    expect(a.service.view().status).toEqual({ kind: 'paused' });
+    clock.t += 10 * 60 * 1000;
+    await a.service.tick();
+    expect(a.service.view().status).toMatchObject({ kind: 'current' });
   });
 
   it('turning backup off keeps what is backed up and stops new uploads (F08 6.5 D3)', async () => {

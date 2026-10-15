@@ -235,6 +235,99 @@ describe('[F08-REQ-023] restore on a new phone', () => {
     expect(readdirSync(b.files.tmpDir)).toEqual([]);
   });
 
+  it('overlapping passes and an opened letter never share a download: every recording comes back whole', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 4);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    // Slow downloads, so the passes really overlap.
+    const inner = backend.downloader.download;
+    backend.downloader.download = async (url, to) => {
+      await new Promise((r) => setTimeout(r, 5));
+      return inner(url, to);
+    };
+    await Promise.all([b.service.tick(), b.service.tick(), b.service.restore.restoreEntry(recs[2].id), b.service.restore.restoreEntry(recs[2].id), b.service.tick()]);
+    for (const r of recs) {
+      const audio = audioOf(b, r.id);
+      expect(audio.sha256, r.id).toBe(sha256Hex(r.plain));
+      expect(sha256Hex(readFileSync(fileURLToPath(audio.uri!)))).toBe(sha256Hex(r.plain));
+      expect(b.backupDb.restoreItem(r.id)?.state).toBe('done');
+    }
+    expect(readdirSync(b.files.tmpDir)).toEqual([]);
+  });
+
+  it('[F08-REQ-025] restore waits while a recording or playback runs, and stops between segments if one starts', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    b.cond.busy = true;
+    await b.service.tick();
+    expect(audioOf(b, recs[0].id).uri).toBeNull();
+    b.cond.busy = false;
+    // A recording starts after the download, during decryption.
+    const inner = backend.downloader.download;
+    backend.downloader.download = async (url, to) => {
+      await inner(url, to);
+      b.cond.busy = true;
+    };
+    await b.service.tick();
+    expect(audioOf(b, recs[0].id).uri).toBeNull();
+    expect(readdirSync(b.files.tmpDir)).toEqual([]); // no half-written plaintext stays
+    expect(b.backupDb.restoreItem(recs[0].id)).toBeNull(); // a pause is not a failure
+    backend.downloader.download = inner;
+    b.cond.busy = false;
+    await b.service.tick();
+    expect(audioOf(b, recs[0].id).sha256).toBe(sha256Hex(recs[0].plain));
+  });
+
+  it('a move that loses to a file already at that path takes back the hash it filled in', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 1);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    const other = fakeM4a(4000);
+    const final = b.files.documentUri(`${recs[0].id}.m4a`);
+    const move = b.files.moveNoReplace;
+    b.files.moveNoReplace = (from, to) => {
+      writeFileSync(fileURLToPath(to), other); // a file lands at the path just before the move
+      return move(from, to);
+    };
+    await b.service.tick();
+    expect(sha256Hex(readFileSync(fileURLToPath(final)))).toBe(sha256Hex(other));
+    expect(audioOf(b, recs[0].id)).toEqual({ uri: final, sha256: null });
+    expect(b.backupDb.restoreItem(recs[0].id)?.state).toBe('kept_local');
+  });
+
+  it('a stopped service (another account signed in) starts nothing more and leaves no temp files', async () => {
+    const clock = { t: 0 };
+    const backend = new FakeBackend(() => clock.t);
+    const icloud = new FakeICloud();
+    const { a, recs } = await backedUpPhone(backend, clock, icloud, 3);
+    const b = makePhone({ backend, uid: MAMA, icloud, clock, name: 'phone-b' });
+    syncText(a, b);
+    const inner = backend.downloader.download;
+    let calls = 0;
+    backend.downloader.download = async (url, to) => {
+      calls += 1;
+      if (calls === 1) void b.service.stop(); // the switch arrives mid-pass
+      return inner(url, to);
+    };
+    await b.service.tick();
+    await b.service.stop();
+    expect(calls).toBe(1);
+    await b.service.tick();
+    expect(calls).toBe(1);
+    expect(recs.filter((r) => audioOf(b, r.id).uri !== null).length).toBeLessThanOrEqual(1);
+    expect(readdirSync(b.files.tmpDir)).toEqual([]);
+  });
+
   it('deleted letters and the other parent\'s letters are not restored', async () => {
     const clock = { t: 0 };
     const backend = new FakeBackend(() => clock.t);

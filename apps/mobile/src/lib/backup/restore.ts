@@ -28,7 +28,7 @@
  */
 import { bytesToHex } from './bytes';
 import { BackupServerError, ESCROW_DETAILS, type BackupServer, type BlobRow, type EscrowClient } from './contract';
-import { HEADER_LEN, decryptBody, parseHeader, wrapAad } from './format';
+import { BackupStopped, HEADER_LEN, decryptBody, parseHeader, wrapAad } from './format';
 import type { KeyManager, BookKeyState } from './keys';
 import type { BackupDb } from './local-db';
 import type { Aead, Clock, Conditions, FileIO, KeyVault } from './ports';
@@ -51,6 +51,8 @@ export interface RestoreLocal {
    * False when the letter now has a file of its own.
    */
   attachAudio(entryId: string, uri: string, sha256: string, bytes: number): boolean;
+  /** Undoes a hash `attachAudio` filled in, when the move then lost to a file already at that path. */
+  clearRestoredHash(entryId: string, sha256: string): void;
   /** Whether any live spoken letter of mine has no recording on this phone (so a restore pass is worth a request). */
   anyMissing(): boolean;
 }
@@ -102,7 +104,7 @@ export type RestoreOutcome =
   | { kind: 'waiting_letter' }
   | { kind: 'skipped' }
   | { kind: 'key'; state: BookKeyState['kind'] }
-  | { kind: 'gate'; reason: 'offline' | 'wifi' | 'background' | 'killed' }
+  | { kind: 'gate'; reason: 'offline' | 'wifi' | 'background' | 'killed' | 'busy' | 'stopped' }
   | { kind: 'retry' }
   | { kind: 'failed' };
 
@@ -129,6 +131,8 @@ export interface RestoreDeps {
   conditions: Conditions;
   clock: Clock;
   profileId: string;
+  /** True once this service was stopped (another account signed in): no new step starts. */
+  stopped?: () => boolean;
 }
 
 /** A download tried this many times with a bad object is left "not on this phone" (F08-U20: retried once). */
@@ -144,6 +148,11 @@ const STOPPED_META = 'restoreStopped';
 
 export function createRestore(d: RestoreDeps) {
   let blobs: BlobRow[] | null = null;
+  /** One restore per letter at a time: a pass and an opened letter join the same attempt. */
+  const inflight = new Map<string, Promise<RestoreOutcome>>();
+  let attempt = 0;
+  const stopped = () => d.stopped?.() ?? false;
+  const keepGoing = () => !stopped() && !d.conditions.busy() && d.conditions.foreground() && !d.conditions.uploadsKilled();
 
   async function listBlobs(refresh = false): Promise<BlobRow[]> {
     if (!blobs || refresh) blobs = await d.server.listBlobs();
@@ -156,8 +165,11 @@ export function createRestore(d: RestoreDeps) {
   }
 
   async function networkGate(blob: BlobRow, priority: boolean): Promise<RestoreOutcome | null> {
+    if (stopped()) return { kind: 'gate', reason: 'stopped' };
     if (d.conditions.uploadsKilled()) return { kind: 'gate', reason: 'killed' };
     if (!d.conditions.foreground()) return { kind: 'gate', reason: 'background' };
+    // Never while recording, reviewing or playing (F08-REQ-025): the same rule as uploads.
+    if (d.conditions.busy()) return { kind: 'gate', reason: 'busy' };
     const net = await d.conditions.network();
     if (net === 'none') return { kind: 'gate', reason: 'offline' };
     if (net === 'wifi' || d.conditions.cellularAllowed()) return null;
@@ -171,7 +183,15 @@ export function createRestore(d: RestoreDeps) {
     return tries >= RESTORE_TRIES ? { kind: 'failed' } : { kind: 'retry' };
   }
 
-  async function restoreOne(blob: BlobRow, priority = false): Promise<RestoreOutcome> {
+  function restoreOne(blob: BlobRow, priority = false): Promise<RestoreOutcome> {
+    const running = inflight.get(blob.entryId);
+    if (running) return running;
+    const p = restoreOnce(blob, priority).finally(() => inflight.delete(blob.entryId));
+    inflight.set(blob.entryId, p);
+    return p;
+  }
+
+  async function restoreOnce(blob: BlobRow, priority: boolean): Promise<RestoreOutcome> {
     const item = d.db.restoreItem(blob.entryId);
     if (item && item.state !== 'pending') return { kind: item.state === 'done' ? 'done' : item.state === 'kept_local' ? 'kept_local' : 'failed' };
     const letter = d.local.letter(blob.entryId);
@@ -193,8 +213,9 @@ export function createRestore(d: RestoreDeps) {
     const gated = await networkGate(blob, priority);
     if (gated) return gated;
 
-    const dl = d.files.tmpUri(`${blob.entryId}.dl`);
-    const plain = d.files.tmpUri(`${blob.entryId}.restoring`);
+    attempt += 1;
+    const dl = d.files.tmpUri(`${blob.entryId}.${attempt}.dl`);
+    const plain = d.files.tmpUri(`${blob.entryId}.${attempt}.restoring`);
     const cleanup = () => {
       d.files.remove(dl);
       d.files.remove(plain);
@@ -222,12 +243,20 @@ export function createRestore(d: RestoreDeps) {
       source.read(HEADER_LEN);
       const sink = d.files.openWrite(plain);
       let result;
+      let halted = false;
       try {
-        result = await decryptBody(header, fileKey, source, sink, d.aead);
+        result = await decryptBody(header, fileKey, source, sink, d.aead, keepGoing);
+      } catch (e) {
+        if (!(e instanceof BackupStopped)) throw e;
+        halted = true;
       } finally {
         fileKey.fill(0);
         source.close();
         sink.close();
+      }
+      if (halted || !result) {
+        cleanup();
+        return { kind: 'gate', reason: stopped() ? 'stopped' : 'busy' };
       }
       const sha = await d.files.sha256(plain);
       const inner = bytesToHex(result.plainSha256);
@@ -236,6 +265,8 @@ export function createRestore(d: RestoreDeps) {
         return failOnce(blob.entryId);
       }
       d.files.remove(dl);
+      // This key opened an object the server holds: it is the escrowed key. Remember its check here.
+      await d.keys.markVerified(blob.childId, header.keyVersion);
       // Re-read: capture, sync or an iCloud restore may have brought a file while this downloaded.
       const now = d.local.letter(blob.entryId);
       const again = planRestore({ blob, letter: now, me: d.profileId, file: await localFile(now) });
@@ -247,6 +278,7 @@ export function createRestore(d: RestoreDeps) {
       // A letter that still names a file (an older container path) gets it back under the same name in
       // this container's Documents, where the launch sweep matches files by name; otherwise `<entry id>.m4a`.
       const final = d.files.documentUri(now?.audioUri ? fileNameOf(now.audioUri) : `${blob.entryId}.m4a`);
+      const filledHash = !now?.audioSha256;
       if (!d.local.attachAudio(blob.entryId, final, sha, result.plainLength)) {
         d.files.remove(plain);
         d.db.setRestoreItem(blob.entryId, 'kept_local', 0);
@@ -255,11 +287,17 @@ export function createRestore(d: RestoreDeps) {
       try {
         d.files.moveNoReplace(plain, final);
       } catch {
-        // A file appeared at that path: it wins. Ours goes.
+        // A file appeared at that path: it wins. Ours goes, and so does the hash we filled in for it.
         d.files.remove(plain);
         const there = (await d.files.sha256(final)) === sha;
+        if (!there && filledHash) d.local.clearRestoredHash(blob.entryId, sha);
         d.db.setRestoreItem(blob.entryId, there ? 'done' : 'kept_local', 0);
         return { kind: there ? 'present' : 'kept_local' };
+      }
+      // The file at its final path is the one that was checked.
+      if ((await d.files.sha256(final)) !== sha) {
+        d.db.setRestoreItem(blob.entryId, 'kept_local', 0);
+        return { kind: 'kept_local' };
       }
       d.db.setRestoreItem(blob.entryId, 'done', 0);
       return { kind: 'done' };
@@ -279,7 +317,7 @@ export function createRestore(d: RestoreDeps) {
    */
   async function escrowStep(): Promise<RestoreKeyStatus> {
     if (d.db.getMeta(STOPPED_META)) return { kind: 'stopped' };
-    if (d.conditions.escrowKilled()) return { kind: 'unavailable' };
+    if (d.conditions.escrowKilled() || stopped()) return { kind: 'unavailable' };
     try {
       const device = await d.keys.ensureDevice();
       const saved = d.db.getMeta(REQUEST_META);
@@ -297,12 +335,13 @@ export function createRestore(d: RestoreDeps) {
         d.db.setMeta(STOPPED_META, r.state);
         return { kind: 'stopped' };
       }
+      // The server names the request it answered; a different one (it replaced ours) is adopted.
       if (r.state === 'requested' || r.state === 'approved') {
-        d.db.setMeta(REQUEST_META, JSON.stringify({ requestId: req.requestId, holdUntil: r.holdUntil, polledAt: now }));
+        d.db.setMeta(REQUEST_META, JSON.stringify({ requestId: r.requestId, holdUntil: r.holdUntil, polledAt: now }));
         return { kind: 'waiting_hold', holdUntil: r.holdUntil };
       }
       if (r.state !== 'released') return { kind: 'unavailable' };
-      await d.keys.storeReleased(r.keys, device.deviceId, req.requestId);
+      await d.keys.storeReleased(r.keys, device.deviceId, r.requestId);
       d.db.deleteMeta(REQUEST_META);
       return { kind: 'ready' };
     } catch (e) {
@@ -336,6 +375,7 @@ export function createRestore(d: RestoreDeps) {
         let needEscrow = false;
         const all = [...(await listBlobs(true))].sort((a, b) => (a.entryId < b.entryId ? -1 : 1));
         for (const blob of all) {
+          if (stopped()) break;
           const r = await restoreOne(blob);
           if (r.kind === 'done') restored += 1;
           else if (r.kind === 'gate') break;

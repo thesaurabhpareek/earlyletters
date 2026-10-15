@@ -195,6 +195,8 @@ export async function decryptBody(
   source: ByteSource,
   sink: ByteSink,
   aead: Aead,
+  /** Checked between segments; false stops with BackupStopped (a recording or playback started). */
+  keepGoing?: () => boolean,
 ): Promise<DecryptResult> {
   const open = async (sealed: Uint8Array, index: number, last: boolean) => {
     try {
@@ -211,6 +213,7 @@ export async function decryptBody(
   const n = dataSegments(plainLength, header.segmentSize);
   let seen = 0;
   for (let i = 1; i <= n; i++) {
+    if (keepGoing && !keepGoing()) throw new BackupStopped();
     const want = (i < n ? header.segmentSize : plainLength - seen) + TAG_LEN;
     const sealed = source.read(want);
     if (sealed.length !== want) throw new BackupFormatError('truncated');

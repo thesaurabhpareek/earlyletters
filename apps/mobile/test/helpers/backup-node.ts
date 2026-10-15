@@ -184,10 +184,19 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
       const s = hpkeSeal(recipient, info, aad, key(r, version));
       return { enc: s.enc, ct: s.ct };
     },
-    async openBookKey(r: BookKeyRef, version: number, s: Sealed, info: Uint8Array, aad: Uint8Array) {
+    // As ScribeKeysModule.swift openBookKey: check first; never replace a different key without one.
+    async openBookKey(r: BookKeyRef, version: number, s: Sealed, info: Uint8Array, aad: Uint8Array, o: { expected: { check: Uint8Array; label: Uint8Array } | null; replaceUntrusted: boolean }) {
+      const expected = o.expected;
       if (!v.device) throw new Error('no_device');
       const bk = hpkeOpen(v.device.sk, s, info, aad);
+      if (expected) {
+        const check = createHmac('sha256', buf(bk)).update(buf(expected.label)).digest().subarray(0, 16);
+        if (!check.equals(buf(expected.check))) throw Object.assign(new Error('check_failed'), { code: 'check_failed' });
+      }
       const m = store().get(acc(r)) ?? new Map<number, Uint8Array>();
+      const existing = m.get(version);
+      if (existing && Buffer.from(existing).equals(Buffer.from(bk))) return;
+      if (existing && !expected && !o.replaceUntrusted) throw Object.assign(new Error('key_exists'), { code: 'key_exists' });
       m.set(version, bk);
       store().set(acc(r), m);
     },
@@ -294,6 +303,8 @@ export class FakeBackend {
   /** The 10-minute step-up fails (the session is older): every new request is refused. */
   stepUpRequired = false;
   releaseCalls = 0;
+  /** The proposed `child_keys.key_check` column exists (request to the S05 server). Off: production today. */
+  serverKeyChecks = false;
   /** Fault injection: fail the next n calls of this kind with no response. */
   readonly faults = new Map<string, number>();
 
@@ -334,7 +345,10 @@ export class FakeBackend {
       },
       async listKeys() {
         b.fault('listKeys');
-        return b.childKeys.filter((k) => k.uid === uid).map(({ childId, keyVersion, escrowKeyVersion, keyCheck }) => ({ childId, keyVersion, escrowKeyVersion, keyCheck }));
+        // Like production today: neither server draft stores a key check, so rows carry none unless a test asks.
+        return b.childKeys
+          .filter((k) => k.uid === uid)
+          .map(({ childId, keyVersion, escrowKeyVersion, keyCheck }) => ({ childId, keyVersion, escrowKeyVersion, keyCheck: b.serverKeyChecks ? keyCheck : null }));
       },
       async storeKey(x) {
         b.record('storeKey', x);
@@ -469,7 +483,7 @@ export class FakeBackend {
         if (!r || r.uid !== uid || r.deviceId !== deviceId) throw new BackupServerError('forbidden', false, null, 'device_unknown');
         if (r.state === 'cancelled' || r.state === 'expired') return { state: r.state };
         // Held: the answer is the hold, nothing is opened (recovery-key.ts ReleaseResult).
-        if (r.state !== 'approved' && b.now() < Date.parse(r.holdUntil)) return { state: r.state === 'requested' ? 'requested' : 'approved', holdUntil: r.holdUntil };
+        if (r.state !== 'approved' && b.now() < Date.parse(r.holdUntil)) return { state: r.state === 'requested' ? 'requested' : 'approved', requestId, holdUntil: r.holdUntil };
         const device = b.devices.get(deviceId)!;
         const out: ReleasedKey[] = [];
         for (const k of b.childKeys.filter((x) => x.uid === uid)) {
@@ -481,7 +495,7 @@ export class FakeBackend {
           b.emails.push({ uid, kind: 'key_opened' });
         }
         r.state = 'released';
-        return { state: 'released', keys: out };
+        return { state: 'released', requestId, keys: out };
       },
     };
   }

@@ -30,7 +30,19 @@ export interface ScribeKeysNative {
     info: Uint8Array,
     aad: Uint8Array,
   ): Promise<{ enc: Uint8Array; ct: Uint8Array }>;
-  openBookKey(service: string, account: string, version: number, enc: Uint8Array, ct: Uint8Array, info: Uint8Array, aad: Uint8Array): Promise<void>;
+  /** `expectedCheck` and `checkLabel` empty and `replaceUntrusted` false: never replace a different key of that version. */
+  openBookKey(
+    service: string,
+    account: string,
+    version: number,
+    enc: Uint8Array,
+    ct: Uint8Array,
+    info: Uint8Array,
+    aad: Uint8Array,
+    expectedCheck: Uint8Array,
+    checkLabel: Uint8Array,
+    replaceUntrusted: boolean,
+  ): Promise<void>;
   aesGcmSeal(key: Uint8Array, nonce: Uint8Array, plaintext: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;
   aesGcmOpen(key: Uint8Array, nonce: Uint8Array, sealed: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;
 }
@@ -43,6 +55,7 @@ export type ScribeKeysErrorCode =
   | 'ERR_SCRIBE_KEYS_NO_KEY'
   | 'ERR_SCRIBE_KEYS_NO_DEVICE'
   | 'ERR_SCRIBE_KEYS_OPEN'
+  | 'ERR_SCRIBE_KEYS_CHECK'
   | 'ERR_SCRIBE_KEYS_SEAL'
   | 'ERR_SCRIBE_KEYS_INPUT'
   | 'ERR_SCRIBE_KEYS_ITEM'
