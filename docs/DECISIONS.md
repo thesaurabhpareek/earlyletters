@@ -425,8 +425,8 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 
 ## Decisions that still need the founder (in priority order)
 
-1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). v1.1, parked (D-082, #54): v1.0 has no sync.
-2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). v1.1, parked (D-082, #54): v1.0 has no sharing.
+1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). v1.1, parked (#54, the on-device v1.0; D-085): v1.0 has no sync.
+2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). v1.1, parked (#54, the on-device v1.0; D-085): v1.0 has no sharing.
 3. **D-001 tooling** StoreKit 2 direct versus RevenueCat (ADR 0013). Override window closes when BL-213 starts (about 9 Nov).
 4. **D-030** Beta on TestFlight; no beta line in the store listing. Needed before the store listing is written (week 13).
 5. **D-004 hedge** Accept the guideline 5.1.1(ix) risk as an individual, or start an entity in parallel. Needed by 27 Nov.
