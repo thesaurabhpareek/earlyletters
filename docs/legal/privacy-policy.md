@@ -49,11 +49,11 @@ If a co-parent leaves a book, letters already on their phone or in an export sta
 
 Recording backup is free and off until you turn it on. When it is on:
 
-- Each recording is encrypted on your phone before it is uploaded. The encrypted copy is stored with Cloudflare R2.
+- Each recording is encrypted on your phone before it is uploaded. The encrypted copy is stored with Supabase.
 - The key that opens your recordings is kept on your own Apple devices, through your iCloud Keychain.
 - We also keep a sealed copy of that key, so you can get your recordings back on a new phone even if your old phone is gone. Only our recovery service can open it, and only to send the key to a phone signed in to your account.
-- Before it does, we email you and alert your other signed-in devices, then wait one day, or three days if you have another device that has not approved the request. You can stop a request from the email or from any of your devices.
-- Every use of the recovery key is logged, and we email you each time. We use it only to restore your recordings to your own phone, to replace the key, or when the law requires it. We tell you about a legal request unless the law forbids it.
+- Before it does, we email you and alert your other devices that use backup. Then we wait: one day if you have no other such device, or three days if you do. A device that has used backup for at least 7 days can approve the request sooner. You can stop a request from the email or from any of your devices.
+- Every use of the recovery key, including each release of a key to a phone, is logged, and we email you each time. We use it only to restore your recordings to your own phone, to replace the key, or when the law requires it. We tell you about a legal request unless the law forbids it.
 - We never listen to your recordings, sell them or use them to train models.
 
 Someone holding the master key behind the recovery service, together with a copy of our systems, could open the backups without the recovery service. We keep that key offline and sealed, check the seals every quarter, and let no one else hold it. If you would rather we held no copy of your recordings, leave backup off.
@@ -75,8 +75,8 @@ We never:
 
 | Company | What it does for us |
 |---|---|
-| Supabase | Our database, sign-in and server functions, including the recovery service. United States |
-| Cloudflare R2 | Stores encrypted recording backups and delivers speech packs |
+| Supabase | Our database, sign-in, file storage for encrypted recording backups, and server functions, including the recovery service. United States |
+| Cloudflare R2 | Delivers speech packs |
 | Resend | Sends our emails |
 | Vercel | Hosts our website |
 

@@ -52,7 +52,7 @@ All purposes use Apple's names. "Linked" means linked to the user's identity. Ev
 | Contacts | Contacts | No | | | | Never requested. Invites go through the system share sheet |
 | User Content | Emails or Text Messages | No | | | | |
 | User Content | Photos or Videos | No | | | | No photo feature in v1.0 |
-| User Content | Audio Data | **Yes** (changed in 1.4.0) | Yes | No | App Functionality | Recording backup, off until the owner turns it on, uploads each recording encrypted on the phone to Cloudflare R2. We hold a recovery key that can open it under logged access (Privacy Policy section 4; D-091), so we treat it as collected. Counsel to confirm (Q54) |
+| User Content | Audio Data | **Yes** (changed in 1.4.0) | Yes | No | App Functionality | Recording backup, off until the owner turns it on, uploads each recording encrypted on the phone to the private Supabase Storage bucket `entry-audio`. We hold a recovery key that can open it under logged access (Privacy Policy section 4; D-091), so we treat it as collected. Counsel to confirm (Q54) |
 | User Content | Gameplay Content, Customer Support | No | | | | Support happens by email outside the app |
 | User Content | Other User Content | **Yes** | Yes | No | App Functionality | Letter text, original transcripts and the list of fixes, names and words, child profile (name, nickname, birthday), signature, co-parent membership, letters waiting at the Keep step |
 | Browsing History, Search History | all | No | | | | In-app search runs on the local database |

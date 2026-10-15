@@ -16,8 +16,8 @@ These companies handle information for us. Each acts only on our instructions, u
 
 | Company | What it does for us | What it handles |
 |---|---|---|
-| Supabase | Database, sign-in and server functions, including the service that restores backed-up recordings | Your account, your book, your letters, your plan status and the sealed recovery keys |
-| Cloudflare R2 | Stores encrypted recording backups and delivers speech packs | Encrypted recordings, which it cannot open; your IP address when the app downloads a speech pack |
+| Supabase | Database, sign-in, file storage and server functions, including the service that restores backed-up recordings | Your account, your book, your letters, your plan status, the sealed recovery keys, and encrypted recording backups, which it cannot open |
+| Cloudflare R2 | Delivers speech packs | Your IP address and the file requested when the app downloads a speech pack |
 | Resend | Sends our emails | Your email address and the emails we send |
 | Vercel | Hosts earlyletters.com | Website visits |
 
