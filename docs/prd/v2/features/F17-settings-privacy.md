@@ -157,7 +157,7 @@ Rules:
 #### B. Privacy screen and consents
 
 1. Parent taps Privacy. The screen shows, in this order:
-   - **Share usage and crash reports**, a switch (`settings.privacy.analyticsLabel`, `analyticsHelp`, exist). Off unless the person said yes on the consent sheet or here. Toggling records `analytics` accept or withdraw with `method='settings_toggle'` and calls the F18 client (`grant()` or `revoke()`, `packages/analytics/src/client.ts`).
+   - **Share usage and crash reports**, a switch (`settings.privacy.analyticsLabel`, `analyticsHelp`, exist), shown only when `EXPO_PUBLIC_ANALYTICS` is on (F18 Q9; off in every profile on `develop`, PR #118). Off unless the person said yes on the consent sheet or here. Toggling records `analytics` accept or withdraw with `method='settings_toggle'` and calls the F18 client (`grant()` or `revoke()`, `packages/analytics/src/client.ts`).
    - **Sync and family sharing**, a switch (`sensitiveLabel`, `sensitiveHelp`, exist; help names the health category per CHD HN-4). Shown only when signed in. On means `sensitive-data` accepted.
    - **Names in notifications**, a switch (`lockScreenLabel`, exists; help `settings.privacy.lockScreenHelp`, new, owned by F13). Off by default (D-025). Same control as Settings > Reminders; one stored value.
    - **Lock with Face ID**, a switch (new `settings.privacy.lockLabel`, `lockHelp`; label says "Touch ID" or "Passcode" on devices without Face ID, from the LocalAuthentication type query). Off by default. P1 (section 4.1).
