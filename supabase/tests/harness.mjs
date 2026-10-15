@@ -29,6 +29,9 @@ export async function createDb(files, options = {}) {
     alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon;
   `);
   for (const f of files) await db.exec(readFileSync(f, 'utf8'));
+  // A configured environment has the consent pepper (APPLY.md step 6); account
+  // deletion refuses without it (BL-334). consent_pepper.test.mjs unsets it.
+  await db.exec(`select set_config('app.consent_pepper', '${randomBytes(32).toString('hex')}', false)`);
 
   let failures = 0;
   let passes = 0;

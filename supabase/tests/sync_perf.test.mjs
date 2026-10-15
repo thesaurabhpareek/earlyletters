@@ -24,7 +24,10 @@ const PUSH_SAMPLES = Number(process.env.PERF_PUSH_SAMPLES ?? 40);
 // push_50_edits 57.8. Budgets are about 3 to 4x that (machine load moves all of them
 // together); the push budgets stay well inside TDD 06's 250 ms of server time.
 const BUDGET_MS = {
-  pull_idle: 8,          // every book at its head, nothing changed (the common foreground pull)
+  // Was 8 (4x of 2.1 ms). Security review M5 (20261005000000): an idle pull now always computes the
+  // digest, the same work as pull_verify (measured 15 Oct on one machine: p50 2.2 -> 4.8 ms, p95 5.1 -> 6.6 ms),
+  // so it takes pull_verify's budget. Still far inside read_rpc 300 ms.
+  pull_idle: 20,         // every book at its head, nothing changed (the common foreground pull)
   pull_verify: 20,       // same, plus the digest of every letter the caller may hold
   pull_incremental: 20,  // five new letters since the cursor
   pull_first_page: 50,   // a new phone: the first 200 rows of a 400-letter book

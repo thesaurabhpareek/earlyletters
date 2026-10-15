@@ -89,7 +89,9 @@ async function attempt(persona, sql, params) {
 //                                                               parent  coparent contrib outsider anonymous anon
 const READS = [
   ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, 0]],
-  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, 0]],
+  // Parents only (D-039, security review M1, 20261005000000): family members read book settings through sync_pull and sync_books.
+  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 0, 0, 0, 0]],
+  ['children: birth year and due date (PoC F1)', 'select 1 from children where id=$1 and date_of_birth is not null', [CHILD], [1, 1, 0, 0, 0, 0]],
   ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, 0]],
   ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         [3, 3, 0, 0, 0, 0]],
   ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, 0]],
@@ -126,7 +128,7 @@ const WRITES = [
   ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
   ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
   ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
-  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', 'none']],
+  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'none', 'none', 'none', 'none']],
   ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-04-12')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: add self', `insert into child_members (child_id, profile_id) values ('${CHILD}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
@@ -141,6 +143,9 @@ const WRITES = [
   ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
   ['sync_rate_windows: reset own counter', `delete from sync_rate_windows where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['sync_rate_windows: lower own counter', `update sync_rate_windows set hits = 0 where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Security review L1 (20261005000000): receipts are written only by sync_op_claim().
+  ['sync_op_receipts: insert a receipt directly', `insert into sync_op_receipts (op_id, profile_id) values ('${uuid7()}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['sync_op_receipts: trim own receipts', `delete from sync_op_receipts where profile_id = auth.uid()`, ['ok', 'none', 'none', 'none', 'none', 'none']],
 ];
 
 // Plus is checked on the device only (ADR 0013, 20261004000000_plus_on_device_only.sql):
@@ -174,6 +179,10 @@ const RPCS = [
   ['leave_child', `select public.leave_child('${CHILD}')`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['remove_child_member', `select public.remove_child_member('${CHILD}', '${N}')`,      ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['rate_hit', `select public.rate_hit('membership')`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // Security review L1 (20261005000000): writes only the caller's own receipt; behaviour in security_review_regressions.test.mjs.
+  ['sync_op_claim', `select public.sync_op_claim('${uuid7()}')`,                       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // BL-322 server part (20261015000000): refuses exactly where accept_child_invite does; behaviour in peek_invite.test.mjs.
+  ['peek_invite', `select public.peek_invite('${token}')`,                              ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -201,6 +210,8 @@ const SERVICE_ONLY = [
   // Internal helpers (20261005000000): called only from security-definer functions.
   `select public.max_parents_per_book()`, `select public.request_idempotency_key()`,
   `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
+  // BL-334 (20261015000000): whether the consent pepper is usable; never its value.
+  `select public.consent_pepper_ready()`, `select public.consent_pepper_ok()`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));

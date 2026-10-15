@@ -18,6 +18,8 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 9 | `20261004100000_sync_engine.sql` | **Pending** | Sync engine: `sync_pull`, `sync_push`, `sync_books`, op receipts, rate windows, restore epochs, `sync_housekeeping` (step 14) |
 | 10 | `20261004200000_ops_deletion_worker.sql` | **Pending** | Schema `ops` (never exposed) and service-only functions for the purge worker, analytics-forget and the ops runbooks (step 15) |
 | 11 | `20261004300000_insights_aggregates.sql` | **Pending** | Schema `insights` (never exposed): k-anonymised weekly counts, `insights_reader` role, `public.insights_aggregates(p_weeks)` for the service role and that role only (step 16) |
+| 12 | `20261005000000_family_cap_language_idempotency.sql` | **Pending** | Two parents per book, leave and remove, letter language, idempotency keys, server rate limits, and the security review fixes M1, M3, M5, L1, L2 (steps 17 to 19) |
+| 13 | `20261015000000_peek_invite_consent_pepper.sql` | **Pending** | `peek_invite(token)` for the invite sheet before consent; account deletion refuses without the consent pepper (BL-334) (steps 20 to 22). The coordinator may rename its timestamp at merge; it stays after file 12 |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -25,7 +27,7 @@ Step 4 drops whatever entries SELECT policies exist, so it is correct whether or
 
 ## Before you start (10 minutes)
 
-1. On your Mac, in the repo: `npm install` then `npm run test:db`. All twelve test files must pass (`access_matrix`, `children_entitlements`, `classification`, `data_governance`, `insights_aggregates`, `ops_deletion_worker`, `perf`, `purge_batching`, `rls`, `security_family`, `sync_engine`, `sync_perf`). Do not continue if anything fails.
+1. On your Mac, in the repo: `npm install` then `npm run test:db`. Every test file must pass (18 on 15 Oct 2026: `access_matrix`, `children_entitlements`, `classification`, `consent_pepper`, `data_governance`, `db_followup_family_cap`, `db_followup_idempotency_rates`, `db_followup_language`, `insights_aggregates`, `ops_deletion_worker`, `peek_invite`, `perf`, `purge_batching`, `rls`, `security_family`, `security_review_regressions`, `sync_engine`, `sync_perf`). Do not continue if anything fails.
 2. In the Supabase dashboard, Database > Backups: confirm a daily backup from the last 24 hours exists. If you want an exact restore point, run `supabase db dump --linked -f backup-2026-10-02.sql` (needs the Supabase CLI linked to the project). Storage files are not in database backups; nothing here touches Storage objects.
 3. Pick a quiet time. Today only founder data exists, so there is no user impact, but the app build that reads co-parent letters must switch to `book_entries` (section "App changes") before any co-parent uses it.
 
@@ -389,7 +391,7 @@ Rollback: prefer fixing forward. File 9 adds tables and functions only (plus two
 
 ## File 20261005000000_family_cap_language_idempotency.sql (3 Oct 2026, db-followup)
 
-File 12. Apply after file 11 (`20261004300000_insights_aggregates.sql`), in the same way as step 9. It adds and replaces; it drops nothing that holds data. Tests: `db_followup_family_cap`, `db_followup_language`, `db_followup_idempotency_rates` (108 checks), plus new rows in `access_matrix`; `npm run test:db` now runs 15 files.
+File 12. Apply after file 11 (`20261004300000_insights_aggregates.sql`), in the same way as step 9. It adds and replaces; it drops nothing that holds data. Tests: `db_followup_family_cap`, `db_followup_language`, `db_followup_idempotency_rates` (108 checks), `security_review_regressions` (34 checks: the review's PoC F1 to F6 asserting the fix), plus new rows in `access_matrix`.
 
 What it does:
 - **Two parents per book (D-069, recommended).** `create_child_invite(p_child, 'parent', ...)` and `accept_child_invite` refuse with `SCCAP` when the book already has `app.max_parents_per_book` parents (default 2). Both lock the book row first, so two people accepting at once cannot make a third parent. A further parent is added only by support (below). Security review H2: an invite whose maker is no longer a parent of the book is refused, and a parent who leaves (any path) has their open invites revoked.
@@ -398,6 +400,10 @@ What it does:
 - **Idempotency keys** for `create_child_invite` and `record_policy_act`, read from the `idempotency-key` request header (ADR 0017 rule 3). Table `idempotency_keys` (functions only; no client access), 24 hours, trimmed by the hourly `scribe-sync-housekeeping` job (step 15). A repeat with the same key and arguments replays the first result; other arguments with the same key are `22023`. An invite repeat issues a fresh token for the same invite, because tokens are never stored.
 - **Server rate limits** (`SCRAT`): `request_account_deletion` 5 new requests and `cancel_account_deletion` 5 cancellations per person per rolling 24 h (a repeat that returns the open request, or a cancel with nothing to cancel, is free); `record_policy_act` 60 per hour and 200 per 24 h; `policy_actions_needed` 60 per hour (it is now VOLATILE because it counts); `accept_child_invite`, `leave_child`, `remove_child_member` 120 per hour together. Sync limits keep their numbers, but the counters (`sync_rate_windows`) are no longer writable by their owner (security review M3: a client could reset its own limit); they change only through `rate_hit()`.
 - **Photos** (security review L2): renaming an object can no longer move it into a book the author does not belong to, or into a deleted book.
+- **Family members read nothing from `children` directly** (security review M1, D-039; added 15 Oct). The `children_member_select` policy now allows parents only (`alter policy`, same name, nothing dropped). Family members keep the name, nickname and birthday month and day through `sync_pull` and `sync_books`, which never give them the birth year or due date. A family member's `book.update` in `sync_push` now answers `P0002` (it was `SCPAR`).
+- **The pull digest no longer reveals private writes** (security review M5; added 15 Oct). `sync_pull` always computes the `visible` digest on a book's last page instead of echoing the phone's `have` when nothing changed. Cost: an idle pull does the work of a `verify` pull (PGlite, one machine: p50 2.2 to 4.8 ms); the `pull_idle` budget in `sync_perf` moved from 8 to 20 ms, the same as `pull_verify`.
+- **Op receipts keyed by person** (security review L1, WP-F16-03 fix; added 15 Oct). `sync_op_receipts` key becomes `(profile_id, op_id)`; clients can no longer insert receipts; `sync_push` writes them through the new `sync_op_claim(uuid)` (security definer, only the caller's own receipt). Clients still read and trim their own.
+- **More rate limits** (security review M3; added 15 Oct): `sync_books` shares `sync_pull`'s 120 per minute; `delete_entry` and `restore_entry` called directly, 120 per person per hour together (bucket `letter_state`; inside `sync_push` they count under the push limit only, so a sync op is never refused for this); new books, 30 per person per rolling 24 h on every path (`create_child`, `create_first_run_children`, `sync_push` `book.create`), a retry of an existing book is free.
 
 ### Step 17. Before file 12
 
@@ -413,8 +419,13 @@ select count(*) from public.child_invites i
 select to_regclass('public.idempotency_keys'), to_regprocedure('public.leave_child(uuid, boolean)'),
        to_regprocedure('public.remove_child_member(uuid, uuid, boolean)'), to_regprocedure('public.rate_hit(text)'),
        (select attname from pg_attribute where attrelid = 'public.entries'::regclass and attname = 'language' and not attisdropped);
+-- d) Added 15 Oct. The receipt helper's name is free (expect null), and no op id is on file twice today (expect 0).
+select to_regprocedure('public.sync_op_claim(uuid)');
+select count(*) from (select op_id from public.sync_op_receipts group by op_id having count(*) > 1) x;
+-- e) Family members today (expect none in v1.0; if any, they stop reading children rows directly and keep sync_pull).
+select count(*) from public.child_members where role = 'contributor';
 ```
-App compatibility: no signature changes, so today's build keeps working. `SCCAP` is reachable only through a second co-parent invite, which the app already hides. `sync_pull` rows gain a `language` key that today's build ignores.
+App compatibility: no signature changes, so today's build keeps working. `SCCAP` is reachable only through a second co-parent invite, which the app already hides. `sync_pull` rows gain a `language` key that today's build ignores. The app reads `children` directly only for `name` when a parent makes an invite (`lib/family/invites.ts`), which parents still may. The sync client already compares the digest whatever the server sends (verified by `apps/mobile/test/sync-e2e.test.ts`, 11 tests green against this file).
 
 ### Step 18. Apply file 12
 
@@ -438,8 +449,15 @@ select has_table_privilege('authenticated', 'public.sync_rate_windows', 'select'
        has_table_privilege('authenticated', 'public.idempotency_keys', 'select') keys;   -- true, false, false
 select provolatile from pg_proc where proname = 'policy_actions_needed';         -- v
 select insights.language_mix_available();                                       -- true
+-- Added 15 Oct (M1, L1, M3):
+select qual from pg_policies where tablename = 'children' and policyname = 'children_member_select';   -- is_child_parent(id)
+select pg_get_constraintdef(oid) from pg_constraint where conname = 'sync_op_receipts_pkey';          -- PRIMARY KEY (profile_id, op_id)
+select has_table_privilege('authenticated', 'public.sync_op_receipts', 'insert') receipts_insert,
+       has_function_privilege('authenticated', 'public.sync_op_claim(uuid)', 'execute') claim,
+       has_function_privilege('anon', 'public.sync_op_claim(uuid)', 'execute') claim_anon;   -- false, true, false
+select pg_get_constraintdef(oid) from pg_constraint where conname = 'sync_rate_windows_bucket_check';   -- includes 'letter_state'
 ```
-Then repeat the classification and RLS queries from step 4 (expect 0 and 0). Advisors, expected and accepted: **0029** for `leave_child`, `remove_child_member` and `rate_hit` (each starts with `require_user()`); `idempotency_keys` has RLS on and no policy (intentional: functions only).
+Then repeat the classification and RLS queries from step 4 (expect 0 and 0). Advisors, expected and accepted: **0029** for `leave_child`, `remove_child_member`, `rate_hit` and `sync_op_claim` (each starts with `require_user()`); `idempotency_keys` has RLS on and no policy (intentional: functions only).
 
 ### Step 19. Settings for file 12
 
@@ -465,6 +483,8 @@ Then repeat the classification and RLS queries from step 4 (expect 0 and 0). Adv
 | `22023` | malformed `idempotency-key`, or a key reused with other arguments; `remove_child_member` on yourself | Permanent; a client bug |
 | `42501` | `remove_child_member` on a parent | Permanent; the app never offers it |
 | `SCINV` | also: a repeat of an invite request whose invite is closed; an invite whose maker left | As today (message says "not found" or "closed") |
+| `SCRAT` (added 15 Oct) | also `sync_books` (shares the pull limit); `delete_entry` and `restore_entry` called directly (the app sends them through `sync_push`, where they are never limited separately); a 31st new book in 24 h, including a `sync_push` `book.create` op result `{"ok": false, "code": "SCRAT"}` | Sync owner (S03): treat a `book.create` op with `SCRAT` as wait and retry after a day, not as a rejected write. Nobody reaches it in normal use |
+| `P0002` (changed 15 Oct) | a family member's `book.update` in `sync_push` (was `SCPAR`): the row is not visible to them (M1) | Permanent; v1.0 has no family members |
 
 ### Decision: a letter's language is the author's only
 
@@ -485,8 +505,8 @@ Prefer fixing forward. Partial switches, each on its own:
 - Idempotency: `create or replace function public.request_idempotency_key() returns uuid language sql stable set search_path = public, pg_catalog as $$ select null::uuid $$;` makes every call behave as before the file.
 - Leaving and removing: `revoke execute on function public.leave_child(uuid, boolean), public.remove_child_member(uuid, uuid, boolean) from authenticated;`
 
-Full rollback (tested in PGlite: afterwards the original sync, security, governance, RLS and classification suites pass, including a third parent): in one transaction,
-1. Re-run these `create or replace function` blocks from the earlier files, unchanged: `sync_pull`, `sync_push`, `sync_housekeeping` (file 9, `20261004100000`); `insights._language_counts` (file 11); `create_child_invite`, `accept_child_invite`, `request_account_deletion`, `cancel_account_deletion`, `record_policy_act`, `policy_actions_needed` (file 5, `20261003000000`), and file 5's `alter policy entry_photos_author_update` statement.
+Full rollback (tested in PGlite on 15 Oct against this file as amended: afterwards the function bodies, the policies and the receipt key match a database with files 1 to 11 only): in one transaction, after rolling back file 13 if it was applied,
+1. Re-run these `create or replace function` blocks from the earlier files, unchanged: `sync_pull`, `sync_push`, `sync_housekeeping`, `sync_books` (file 9, `20261004100000`); `insights._language_counts` (file 11); `create_child_invite`, `accept_child_invite`, `request_account_deletion`, `cancel_account_deletion`, `record_policy_act`, `policy_actions_needed`, `delete_entry`, `restore_entry` (file 5, `20261003000000`); `create_child_row` (file 8, `20261004000000`); and file 5's `alter policy entry_photos_author_update` statement.
 2. Then:
 ```sql
 drop trigger entries_language_guard on public.entries;
@@ -508,5 +528,84 @@ delete from public.sync_rate_windows where bucket not in ('pull', 'push');
 alter table public.sync_rate_windows drop constraint sync_rate_windows_bucket_check;
 alter table public.sync_rate_windows add constraint sync_rate_windows_bucket_check check (bucket in ('pull', 'push'));
 grant insert, update, delete on public.sync_rate_windows to authenticated;   -- file 9's sync functions write it directly
+-- Added 15 Oct (M1, L1):
+alter policy children_member_select on public.children using (public.is_child_member(id));
+comment on policy children_member_select on public.children is null;
+drop function public.sync_op_claim(uuid);
+delete from public.sync_op_receipts a using public.sync_op_receipts b
+ where a.op_id = b.op_id and a.profile_id > b.profile_id;   -- one receipt per op id, as file 9 expects
+alter table public.sync_op_receipts drop constraint sync_op_receipts_pkey;
+alter table public.sync_op_receipts add primary key (op_id);
+grant insert on public.sync_op_receipts to authenticated;   -- file 9's sync_push writes receipts directly
 ```
-Step 1 must come first: the replaced functions call the objects step 2 drops. The rollback re-opens the client-resettable sync counter and the stale-invite path (security review H2, M3).
+Step 1 must come first: the replaced functions call the objects step 2 drops. The rollback re-opens the client-resettable sync counter and the stale-invite path (security review H2, M3), family members' direct read of the birth year and due date (M1), the private-write signal in the pull digest (M5) and op-id squatting (L1).
+
+## File 20261015000000_peek_invite_consent_pepper.sql (15 Oct 2026, S02)
+
+File 13. Apply after file 12, in the same way as step 9. The coordinator may rename the timestamp at merge (08-delivery section 4); it must stay after file 12. It adds one RPC and one service-only check, and replaces one trigger function with the same signature. Nothing that holds data changes. Tests: `peek_invite` (23 checks), `consent_pepper` (14 checks), plus rows in `access_matrix`.
+
+What it does:
+- **`peek_invite(p_token)`** (BL-322 server part, security review H2). What the invite sheet may show before the person agrees to join: `{"role": "parent" | "contributor", "inviter_signs_as": text | null, "state": "open" | "joined"}` and nothing else. No child name, birthday, book id, member list or expiry: the child's name reaches the person only through `accept_child_invite`, which needs consent. `inviter_signs_as` is the inviter's per-book signature, else the name from their own invite, else their profile name. Signed-in people only, never consent-gated, writes nothing, shares `accept_child_invite`'s 120 per hour. It refuses exactly where `accept_child_invite` would, with the same SQLSTATE, message and detail, so peeking tells nobody more than accepting.
+- **Consent pepper fails closed** (BL-334; LEGAL-REQ-009, DATA-REQ-006). When a profile with consent records is deleted (account deletion, and the auth-user delete that cascades to it), pseudonymisation now raises `SCPEP` if `app.consent_pepper` is missing or shorter than 32 characters, instead of hashing with an empty pepper. The whole delete rolls back; the purge-worker's step fails and retries with its backoff. A profile with no consent records is never blocked. `consent_pepper_ready()` (service role only) returns whether the setting is usable, never its value.
+
+### Step 20. Before file 13
+
+Read only:
+```sql
+-- a) The pepper is set and long enough (expect true). If false, do step 6 first: after file 13,
+--    every account deletion of a person with consent records waits until it is set.
+select coalesce(char_length(current_setting('app.consent_pepper', true)), 0) >= 32;
+-- b) The new names are free (expect three nulls).
+select to_regprocedure('public.peek_invite(text)'), to_regprocedure('public.consent_pepper_ready()'),
+       to_regprocedure('public.consent_pepper_ok()');
+-- c) No account deletion is mid-execution (expect 0); if one is, let it finish first.
+select count(*) from public.deletion_requests where kind = 'account' and status = 'executing';
+```
+App compatibility: nothing changes for today's build; `peek_invite` is new and unused until BL-322 ships.
+
+### Step 21. Apply file 13
+
+SQL Editor > New query, `begin;` on the first line, the whole file, `commit;` on the last line, Run. Then:
+```sql
+insert into supabase_migrations.schema_migrations (version, name) values ('20261015000000', 'peek_invite_consent_pepper')
+on conflict do nothing;
+```
+(Use the version the coordinator gave the file if it was renamed.) Add the file name to `.github/migrations-applied.txt` in the pull request that records the apply.
+
+Check the result:
+```sql
+select public.consent_pepper_ready();                                          -- true (run as the service role or in the SQL editor)
+select p.proname, has_function_privilege('authenticated', p.oid, 'execute') signed_in, has_function_privilege('anon', p.oid, 'execute') anon
+  from pg_proc p where p.pronamespace = 'public'::regnamespace
+   and p.proname in ('peek_invite', 'consent_pepper_ready', 'consent_pepper_ok') order by 1;
+-- consent_pepper_ok: false / false; consent_pepper_ready: false / false; peek_invite: true / false
+select prosrc ~ 'SCPEP' from pg_proc where proname = 'policy_acceptances_pseudonymise';   -- true
+```
+Then the step 4 classification and RLS queries (expect 0 and 0) and step 10's anon query (expect 0). Advisors, expected and accepted: **0029** for `peek_invite` (starts with `require_user()`).
+
+### Step 22. What the founder must keep true after file 13
+
+- `app.consent_pepper` stays set to the same value forever (step 6). If it is ever missing, account deletions stop with `SCPEP` and the purge-worker alerts through its failed steps; nothing is lost, they resume once it is back.
+- The purge-worker can call `select public.consent_pepper_ready();` before an account run and skip with an alert when false (request to S07; not built).
+
+### Error codes added by file 13
+
+| SQLSTATE | Where | Who handles it |
+|---|---|---|
+| `SCINV` | `peek_invite`: same messages as `accept_child_invite` ("invite not found" for unknown token, deleted book or a maker who left; "invite already used", "invite revoked", "invite expired", "already a member of this book") | Family owner (S04): show the matching invite error before any consent step |
+| `SCCAP` | `peek_invite` of a co-parent invite to a book that already has the most parents (detail: the limit) | S04: `errors.inviteFull`, no Join button, never retried (F11-REQ-026) |
+| `SCRAT` | `peek_invite`, 121st membership call in an hour (shared with accept, leave, remove) | S04: "try again later" |
+| `SCANO`, `28000` | `peek_invite` from an anonymous session or signed out | S04: sign in first, then peek (F11-REQ-006 order: 18+ gate, sign-in, peek, consent, accept) |
+| `SCPEP` (new) | account deletion (profile delete) without a usable pepper | Purge-worker (S07): a failed step with backoff and an alert; the app never sees it |
+
+### Rolling back file 13
+
+In one transaction, in this order (the trigger function calls `consent_pepper_ok`):
+1. Re-run the `create or replace function public.policy_acceptances_pseudonymise()` block from file 4 (`20261002020000_data_governance.sql`), unchanged. This re-opens hashing with an empty pepper when the setting is missing.
+2. Then:
+```sql
+drop function public.consent_pepper_ready();
+drop function public.consent_pepper_ok();
+drop function public.peek_invite(text);
+```
+The app's invite sheet then cannot preview (BL-322 falls back to its error path).

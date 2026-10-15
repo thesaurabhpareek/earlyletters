@@ -64,6 +64,25 @@
 --        counters were writable by their owner (FOR ALL own-row policy), so a
 --        modified client could reset its own limit. Counters now change only
 --        through public.rate_hit() (security definer); clients keep read access.
+--      sync_books                shares sync_pull's 120 per minute (bucket "pull")
+--      delete_entry, restore_entry called directly: 120 per person per hour
+--        together (bucket "letter_state"); inside sync_push they are covered by
+--        sync_push's own limit and never counted twice
+--      new books (create_child, create_first_run_children, sync_push
+--        book.create): 30 per person per rolling 24 h, counted from
+--        children.created_at; a retry of an existing book is free
+-- 5. Family members read nothing from children directly (security review M1,
+--    D-039): the select policy is parents only. Family members keep the name,
+--    nickname and birthday month and day through sync_pull and sync_books,
+--    which never give them the birth year or due date.
+-- 6. sync_pull always computes the "visible" digest on a book's last page
+--    (security review M5). It used to echo the phone's "have" unless any row in
+--    the book changed, so a deliberately wrong "have" showed when someone else
+--    wrote a private letter. The digest now depends only on what the caller may
+--    read.
+-- 7. Op receipts are keyed by (profile_id, op_id) and written only through
+--    sync_op_claim() (security review L1): one person can no longer pre-insert
+--    another person's op id and make that op report "dup".
 --
 -- New SQLSTATE: SCCAP  the book already has the most parents allowed (detail:
 --   the limit). The app tells the person; never retried.
@@ -83,7 +102,7 @@ $$;
 -- when it has passed. Over the limit raises SCRAT, which rolls back the hit.
 alter table public.sync_rate_windows drop constraint if exists sync_rate_windows_bucket_check;
 alter table public.sync_rate_windows add constraint sync_rate_windows_bucket_check
-  check (bucket in ('pull', 'push', 'policy_actions', 'membership'));
+  check (bucket in ('pull', 'push', 'policy_actions', 'membership', 'letter_state'));
 -- Counters are written only by rate_hit() and sync_housekeeping(); people may read their own.
 revoke insert, update, delete, truncate on public.sync_rate_windows from anon, authenticated;
 
@@ -99,7 +118,8 @@ begin
     from (values ('pull', 120, interval '1 minute'),
                  ('push', 60, interval '1 minute'),
                  ('policy_actions', 60, interval '1 hour'),
-                 ('membership', 120, interval '1 hour')) as l(bucket, lim, win)
+                 ('membership', 120, interval '1 hour'),
+                 ('letter_state', 120, interval '1 hour')) as l(bucket, lim, win)
    where l.bucket = p_bucket;
   if not found then
     raise exception 'unknown rate bucket' using errcode = '22023';
@@ -616,7 +636,8 @@ create trigger entries_language_guard before update on public.entries
 
 -- sync_pull: unchanged from 20261004100000 except (a) the caller's own letters
 -- carry "language" (others' rows come from book_entries, which has no language
--- column), and (b) the rate window goes through rate_hit().
+-- column), (b) the rate window goes through rate_hit(), and (c) the "visible"
+-- digest is always computed (security review M5; item 6 above).
 create or replace function public.sync_pull(p_since jsonb default '{}'::jsonb, p_limit int default 200)
 returns jsonb language plpgsql volatile security definer set search_path = public, pg_catalog
   set plan_cache_mode = force_generic_plan as $$
@@ -651,7 +672,6 @@ declare
   v_more boolean;
   v_any_more boolean := false;
   v_cursor text;
-  v_check boolean;
   v_digest jsonb;
   v_book jsonb;
   v_books jsonb := '[]'::jsonb;
@@ -801,20 +821,17 @@ begin
     end if;
 
     if not v_more then
-      v_check := v_fresh or v_n > 0 or not (coalesce(v_req, '{}'::jsonb) ? 'have')
-                 or coalesce((v_req ->> 'verify')::boolean, false) or coalesce((v_req ->> 'ids')::boolean, false)
-                 or exists (select 1 from entries e
-                             where e.child_id = b.id and (e.sync_xid, e.id) > (v_after_x, v_after_i) and e.sync_xid < v_xmin);
-      if v_check then
-        select jsonb_build_object('n', count(*),
-                                  'sum', (coalesce(sum(('x' || right(replace(s.id::text, '-', ''), 12))::bit(48)::bigint), 0) % c_mod)::bigint)
-          into v_digest
-          from (select e.id from entries e where e.child_id = b.id and e.author_id = v_uid
-                union all
-                select be.id from book_entries be where be.child_id = b.id and be.author_id <> v_uid) s;
-      else
-        v_digest := v_req -> 'have';
-      end if;
+      -- Security review M5: always the real digest of what the caller may hold. It
+      -- used to echo the phone's "have" unless some row in the book changed, and
+      -- "some row" included other people's private letters, so a wrong "have"
+      -- revealed when they wrote one. The answer now depends only on the caller's
+      -- own letters and book_entries; a request's "have" is never read.
+      select jsonb_build_object('n', count(*),
+                                'sum', (coalesce(sum(('x' || right(replace(s.id::text, '-', ''), 12))::bit(48)::bigint), 0) % c_mod)::bigint)
+        into v_digest
+        from (select e.id from entries e where e.child_id = b.id and e.author_id = v_uid
+              union all
+              select be.id from book_entries be where be.child_id = b.id and be.author_id <> v_uid) s;
       v_book := v_book || jsonb_build_object('visible', v_digest);
       if coalesce((v_req ->> 'ids')::boolean, false) then
         v_book := v_book || jsonb_build_object('ids', coalesce((
@@ -923,6 +940,8 @@ begin
   end if;
 
   perform public.rate_hit('push');                -- 60 per minute per person (SCRAT)
+  -- delete_entry and restore_entry below are covered by this limit, not their own.
+  perform set_config('scribe.sync_push', 'on', true);
 
   select e.started_at into v_epoch_at from sync_epochs e order by e.epoch desc limit 1;
 
@@ -941,8 +960,8 @@ begin
       end if;
 
       -- Idempotency key first: a retry of an applied op changes nothing and reports the current state.
-      insert into sync_op_receipts (op_id, profile_id) values (v_op, v_uid) on conflict (op_id) do nothing;
-      v_new := found;
+      -- Keyed by (person, op) and written only by sync_op_claim (security review L1).
+      v_new := public.sync_op_claim(v_op);
 
       if not v_new then
         v_res := jsonb_build_object('dup', true);
@@ -1135,9 +1154,11 @@ begin
     end;
   end loop;
 
+  perform set_config('scribe.sync_push', 'off', true);
   -- Trim the caller's own old receipts (bounded; sync_housekeeping covers people who stopped syncing).
   delete from sync_op_receipts r
-   where r.op_id in (select x.op_id from sync_op_receipts x
+   where r.profile_id = v_uid
+     and r.op_id in (select x.op_id from sync_op_receipts x
                       where x.profile_id = v_uid and x.applied_at < now() - interval '30 days'
                       order by x.applied_at limit 100);
   return jsonb_build_object('results', v_results, 'paused', false, 'stopped', false);
@@ -1154,8 +1175,9 @@ declare
   v_lim int := greatest(coalesce(p_limit, 10000), 1);
 begin
   delete from sync_op_receipts r
-   where r.op_id in (select x.op_id from sync_op_receipts x where x.applied_at < p_now - interval '30 days'
-                      order by x.applied_at limit v_lim);
+   where (r.profile_id, r.op_id) in (select x.profile_id, x.op_id from sync_op_receipts x
+                                      where x.applied_at < p_now - interval '30 days'
+                                      order by x.applied_at limit v_lim);
   get diagnostics v_receipts = row_count;
   delete from sync_rate_windows where window_start < p_now - interval '1 day';
   get diagnostics v_windows = row_count;
@@ -1185,6 +1207,187 @@ language sql stable security definer set search_path = insights, public, pg_cata
    group by 1, 2
 $$;
 
+-- ─── 4b. Family members and children (security review M1, D-039) ────────
+-- Only parents read children rows. Family members get the name, nickname and the
+-- birthday's month and day from sync_pull and sync_books, never the birth year or
+-- due date (K-25: a due date is consumer health data). ALTER keeps the policy's
+-- name, so nothing is dropped. Updates by family members were already refused
+-- (children_guard, SCPAR); now they match no row.
+alter policy children_member_select on public.children using (public.is_child_parent(id));
+comment on policy children_member_select on public.children is
+  'Parents of the book only (D-039, security review M1); family members read book settings through sync_pull and sync_books.';
+
+-- ─── 4c. Op receipts keyed by person (security review L1) ────────────────
+-- Before: op_id alone was the key and clients could insert receipts, so one
+-- account could pre-insert another person's op id and that op reported "dup"
+-- and was dropped. Now the key is (person, op) and receipts are written only by
+-- sync_op_claim, inside sync_push. Clients keep reading and trimming their own.
+alter table public.sync_op_receipts drop constraint sync_op_receipts_pkey;
+alter table public.sync_op_receipts add primary key (profile_id, op_id);
+revoke insert on public.sync_op_receipts from anon, authenticated;
+
+-- True when this op is new for the caller (the receipt is written now, in the
+-- caller's transaction); false when the caller already applied it. Callable by
+-- signed-in people because sync_push runs as the caller; a direct call can only
+-- add the caller's own receipt.
+create or replace function public.sync_op_claim(p_op uuid)
+returns boolean language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+declare v_uid uuid := public.require_user();
+begin
+  if p_op is null then
+    raise exception 'op id is required' using errcode = '22023';
+  end if;
+  insert into public.sync_op_receipts (op_id, profile_id) values (p_op, v_uid)
+  on conflict (profile_id, op_id) do nothing;
+  return found;
+end;
+$$;
+
+-- ─── 4d. Rate limits on letter state, new books and sync_books (M3) ──────
+-- delete_entry and restore_entry, called directly (the app never does; it sends
+-- sync_push ops): 120 per person per hour together. Inside sync_push the push
+-- limit already applies, so they are not counted twice and a sync op is never
+-- refused for this. Otherwise unchanged from 20261003000000.
+create or replace function public.delete_entry(p_entry uuid)
+returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+declare v_uid uuid := public.require_user();
+begin
+  if current_setting('scribe.sync_push', true) is distinct from 'on' then
+    perform public.rate_hit('letter_state');
+  end if;
+  if not exists (select 1 from entries where id = p_entry and author_id = v_uid) then
+    raise exception 'entry not found' using errcode = 'P0002';
+  end if;
+  update entries set deleted_at = now(), deleted_reason = 'user' where id = p_entry and deleted_at is null;
+  return true;
+end;
+$$;
+
+create or replace function public.restore_entry(p_entry uuid)
+returns boolean language plpgsql security definer set search_path = public, pg_catalog as $$
+declare v_uid uuid := public.require_user(); v entries%rowtype;
+begin
+  if current_setting('scribe.sync_push', true) is distinct from 'on' then
+    perform public.rate_hit('letter_state');
+  end if;
+  select * into v from entries where id = p_entry for update;
+  if not found or v.author_id is distinct from v_uid then
+    raise exception 'entry not found' using errcode = 'P0002';
+  end if;
+  if v.deleted_at is null then return true; end if;
+  if v.deleted_reason = 'account_deletion' then
+    raise exception 'cancel the account deletion to restore these letters' using errcode = 'SCDEL';
+  end if;
+  if not public.child_is_live(v.child_id) then
+    raise exception 'restore the book first' using errcode = 'SCDEL';
+  end if;
+  update entries set deleted_at = null where id = p_entry;
+  return true;
+end;
+$$;
+
+-- New books: 30 per person per rolling 24 hours (SCRAT), on every path
+-- (create_child, create_first_run_children, sync_push book.create), counted from
+-- the rows themselves. A retry of a book that exists is free. Otherwise
+-- unchanged from 20261004000000.
+create or replace function public.create_child_row(p_uid uuid, p_id uuid, p_name text, p_date_of_birth date,
+                                                   p_due_date date)
+returns uuid language plpgsql security definer set search_path = public, pg_catalog as $$
+declare v_creator uuid; v_found boolean;
+begin
+  if not public.is_valid_client_uuid7(p_id) then
+    raise exception 'child id must be a UUIDv7 made on the device' using errcode = 'SCCID';
+  end if;
+  select created_by, true into v_creator, v_found from children where id = p_id;
+  if v_found then
+    -- Retry of the same create (lost response, re-sync): idempotent.
+    if v_creator = p_uid then return p_id; end if;
+    raise exception 'child id already in use' using errcode = 'SCCID';
+  end if;
+  if exists (select 1 from purge_ledger where entity_type = 'child' and entity_id = p_id::text) then
+    raise exception 'this book was deleted' using errcode = 'SCDEL';
+  end if;
+  if (select count(*) from children where created_by = p_uid and created_at > now() - interval '24 hours') >= 30 then
+    raise exception 'too many new books today' using errcode = 'SCRAT';
+  end if;
+  if p_name is null or char_length(btrim(p_name)) not between 1 and 60 then
+    raise exception 'name must be 1 to 60 characters' using errcode = '22023';
+  end if;
+  if p_date_of_birth is null and p_due_date is null then
+    raise exception 'a birthday or a due date is needed' using errcode = '22023';
+  end if;
+  if p_date_of_birth > current_date + 1 or p_date_of_birth < date '1900-01-01'
+     or p_due_date > current_date + 310 or p_due_date < current_date - 400 then
+    raise exception 'date out of range' using errcode = '22023';
+  end if;
+  insert into children (id, name, date_of_birth, due_date, created_by)
+    values (p_id, btrim(p_name), p_date_of_birth, p_due_date, p_uid);
+  insert into child_members (child_id, profile_id, role) values (p_id, p_uid, 'parent');
+  update profiles set first_run_closed_at = coalesce(first_run_closed_at, now()) where id = p_uid;
+  return p_id;
+end;
+$$;
+
+-- sync_books: shares sync_pull's limit (bucket "pull"). Otherwise unchanged from 20261004100000.
+create or replace function public.sync_books()
+returns jsonb language plpgsql volatile security definer set search_path = public, pg_catalog as $$
+declare v_uid uuid := public.require_user();
+begin
+  perform public.rate_hit('pull');                -- shares sync_pull's 120 per minute (SCRAT)
+  return jsonb_build_object(
+    'epoch', (select max(e.epoch) from sync_epochs e),
+    'first_run_open', coalesce((select p.first_run_closed_at is null from profiles p where p.id = v_uid), true),
+    'books', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', c.id,
+               'role', m.role,
+               'name', c.name,
+               'nickname', c.nickname,
+               'date_of_birth', case when m.role = 'parent' then c.date_of_birth end,
+               'birthday_md', to_char(c.date_of_birth, 'MM-DD'),
+               'due_date', case when m.role = 'parent' then c.due_date end,
+               'family_can_read', c.family_can_read,
+               'created_by_me', c.created_by is not distinct from v_uid,
+               'joined_at', m.joined_at,
+               'auto_add', m.auto_add_letters,
+               'my_signs_as', coalesce(mp.signs_as,
+                                       (select i.signs_as from child_invites i
+                                         where i.child_id = c.id and i.accepted_by = v_uid
+                                         order by i.accepted_at desc limit 1)),
+               'members', (
+                 select jsonb_agg(jsonb_build_object(
+                          'profile_id', mm.profile_id,
+                          'role', mm.role,
+                          'is_me', mm.profile_id = v_uid,
+                          'joined_at', mm.joined_at,
+                          'auto_add', case when m.role = 'parent' then mm.auto_add_letters end,
+                          'signs_as', coalesce(pp.signs_as,
+                                               (select i.signs_as from child_invites i
+                                                 where i.child_id = c.id and i.accepted_by = mm.profile_id
+                                                 order by i.accepted_at desc limit 1),
+                                               pr.signs_as))
+                          order by mm.joined_at)
+                   from child_members mm
+                   left join child_member_prefs pp on pp.child_id = mm.child_id and pp.profile_id = mm.profile_id
+                   left join profiles pr on pr.id = mm.profile_id
+                  where mm.child_id = c.id),
+               'invites', case when m.role = 'parent' then coalesce((
+                 select jsonb_agg(jsonb_build_object(
+                          'id', i.id, 'role', i.role, 'signs_as', i.signs_as,
+                          'created_at', i.created_at, 'expires_at', i.expires_at,
+                          'status', case when i.expires_at < now() then 'expired' else 'open' end)
+                          order by i.created_at desc)
+                   from child_invites i
+                  where i.child_id = c.id and i.accepted_at is null and i.revoked_at is null
+                    and i.expires_at > now() - interval '14 days'), '[]'::jsonb) end)
+             order by m.joined_at, c.id)
+        from child_members m
+        join children c on c.id = m.child_id and c.deleted_at is null
+        left join child_member_prefs mp on mp.child_id = c.id and mp.profile_id = v_uid
+       where m.profile_id = v_uid), '[]'::jsonb));
+end;
+$$;
+
 -- ─── 5. Privileges ───────────────────────────────────────────────────────
 -- Internal: helpers called only from security-definer functions, and triggers.
 revoke execute on function public.max_parents_per_book() from public, anon, authenticated;
@@ -1202,6 +1405,9 @@ revoke execute on function public.remove_child_member(uuid, uuid, boolean) from 
 grant execute on function public.rate_hit(text) to authenticated;
 grant execute on function public.leave_child(uuid, boolean) to authenticated;
 grant execute on function public.remove_child_member(uuid, uuid, boolean) to authenticated;
+-- sync_op_claim: called from sync_push, which runs as the caller; writes only the caller's own receipt.
+revoke execute on function public.sync_op_claim(uuid) from public, anon;
+grant execute on function public.sync_op_claim(uuid) to authenticated;
 
 -- ─── 6. Classification (docs/legal/DATA_CLASSIFICATION.md) ───────────────
 comment on column public.entries.language is
@@ -1213,4 +1419,6 @@ comment on column public.idempotency_keys.request_sha256 is 'L2 hash of the requ
 comment on column public.idempotency_keys.result is 'L3 ids of what the first call made (invite id or act id), never tokens or text';
 comment on column public.idempotency_keys.created_at is 'L2 system timestamp (rows live 24 hours)';
 comment on table public.sync_rate_windows is
-  'Per-person request counters for server-side rate limits (sync pull and push, policy reads, membership changes). Written only by rate_hit(); unlogged.';
+  'Per-person request counters for server-side rate limits (sync pull and push, policy reads, membership changes, direct letter delete and restore). Written only by rate_hit(); unlogged.';
+comment on table public.sync_op_receipts is
+  'Ids of applied sync ops per person, so a retried op is applied once. Key (profile_id, op_id); written only by sync_op_claim(). 30 days.';

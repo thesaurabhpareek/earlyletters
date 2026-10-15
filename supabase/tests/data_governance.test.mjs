@@ -74,7 +74,13 @@ check('users cannot read legal holds', (await as(A, 'select * from legal_holds')
 check('users cannot read the purge queue or ledger', (await as(A, 'select 1 from storage_purge_queue union all select 1 from purge_ledger')).rows.length === 0);
 
 // ── TC-09, TC-10 Children guard and last parent ───────────────────────────
-check('member cannot tombstone the book directly', await fails(() => as(N, `update children set deleted_at=now() where id='${CHILD}'`), 'SCDEL'));
+// Security review M1 (20261005000000): family members match no children row, so the update changes nothing
+// (it raised SCDEL from children_guard before; a parent still gets SCDEL, checked next).
+check('[M1] member cannot tombstone the book directly (no row visible to a family member)',
+  (await as(N, `update children set deleted_at=now() where id='${CHILD}'`)).affectedRows === 0
+  && (await sys(`select deleted_at from children where id='${CHILD}'`)).rows[0].deleted_at === null);
+check('a parent cannot tombstone the book directly either (SCDEL: use request_book_deletion)',
+  await fails(() => as(A, `update children set deleted_at=now() where id='${CHILD}'`), 'SCDEL'));
 check('contributor cannot delete the book', await fails(() => as(N, `select public.request_book_deletion('${CHILD}', 'ios')`), 'SCDEL'));
 check('sole parent cannot simply leave', await fails(() => as(S, `delete from child_members where profile_id='${S}'`), 'SCLPG'));
 
@@ -131,7 +137,9 @@ await as(B, `update children set family_can_read=true, nickname='Ashu', due_date
 check('parent changes shared book settings', (await sys(`select family_can_read from children where id='${CHILD}'`)).rows[0].family_can_read === true);
 check('[B-REQ-011] with "Family can read" on, a contributor reads in-book letters, never others\' private or pending ones',
   (await as(N, `select id from book_entries where child_id='${CHILD}' order by id`)).rows.map((r) => r.id).join() === [aBook, bBook, nBook].sort().join());
-check('contributor cannot change book settings', await fails(() => as(N, `update children set name='X' where id='${CHILD}'`), 'SCPAR'));
+check('[M1] contributor cannot change book settings (no row visible; was SCPAR)',
+  (await as(N, `update children set name='X' where id='${CHILD}'`)).affectedRows === 0
+  && (await sys(`select name from children where id='${CHILD}'`)).rows[0].name !== 'X');
 check('parent sets auto-add for a family member', (await one(A, `select public.set_member_auto_add('${CHILD}', '${N}', true) as ok`)).ok === true
   && (await sys(`select auto_add_letters from child_members where profile_id='${N}'`)).rows[0].auto_add_letters === true);
 check('contributor cannot set auto-add', await fails(() => as(N, `select public.set_member_auto_add('${CHILD}', '${N}', false)`), 'SCPAR'));

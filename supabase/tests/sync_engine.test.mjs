@@ -120,7 +120,8 @@ r = await push(B, [op('book.update', CHILD, { family_can_read: false, nickname: 
 const ch = (await sys(`select name, nickname, family_can_read from children where id=$1`, [CHILD])).rows[0];
 check('[D-023] book settings merge per field: one parent renames, the other changes another field', ch.name === 'Asha Rose' && ch.nickname === 'Ashu');
 r = await push(N, [op('book.update', CHILD, { name: 'Nani says' })]);
-check('a family member cannot change book settings (SCPAR)', r.results[0].code === 'SCPAR');
+// Security review M1 (20261005000000): family members do not see the children row, so it is "not found" (was SCPAR).
+check('[M1] a family member cannot change book settings (P0002)', r.results[0].code === 'P0002');
 r = await push(C, [op('book.update', CHILD, { name: 'x' })]);
 check('a stranger gets not found', r.results[0].code === 'P0002');
 r = await push(A, [op('book.update', CHILD, { colour: 'red' })]);
@@ -271,7 +272,8 @@ check('the digest matches what a phone computes from the id list', JSON.stringif
 const headG = (extra) => ({ epoch: withIds.epoch, books: Object.fromEntries(withIds.books.map((x) => [x.id,
   { cursor: x.cursor, access: x.access, meta: x.meta_hash, ...(x.id === CHILD ? extra : {}) }])) });
 r = await pull(A, headG({ have: { n: 1, sum: 1 } }));
-check('nothing changed and a wrong digest: echoed, not recomputed (verify asks for a real one)', book(r, CHILD).visible.n === 1);
+// Security review M5 (20261005000000): the echo let a wrong "have" reveal other people's private writes.
+check('[M5] nothing changed and a wrong digest: the real digest, never an echo', book(r, CHILD).visible.n === ids.length);
 r = await pull(A, headG({ have: { n: 1, sum: 1 }, verify: true }));
 check('verify always recomputes', book(r, CHILD).visible.n === ids.length);
 
