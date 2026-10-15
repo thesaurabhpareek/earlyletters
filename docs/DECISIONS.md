@@ -547,3 +547,53 @@ Two kinds of entry. **Founder** entries record what the founder said in this ses
 ### D-088 In-app feedback (delegated; debate Q-016 in-app-feedback)
 - **Decision:** v1.0 submission keeps "Data Not Collected" and uses the Help email row, with a content-free block (version, build, screen) added to the email. The feedback form is built behind a build switch and ships only after counsel signs the text and the founder accepts the label change to Data Collected. Text and screenshots are read by people; agents triage on structure only (screen, category, version, severity, owner) and never contact the reporter. Screenshots are taken at the tap, attached only after a preview with Remove, allowed only on settings and error screens, and travel by email, never into GitHub. The person is identified by a resettable random install id plus an optional email; never IDFA, IDFV or the analytics id. Issues live in a private repo with a machine identity (founder task). Retention: text 90 days after closing, screenshots 30.
 - **Needs outside sign-off:** counsel; creation of the private repo and mailbox (founder).
+
+## Decisions of 13 and 14 Oct 2026 (founder, in the PRD V2 session)
+
+The founder gave these answers in the PRD V2 session (`docs/prd/v2/_AUTHORING.md` section 3b, M14 to M17). On 14 Oct the founder told the coordinator to "do it for me diligently" after being shown three open defaults; D-093 records those defaults as delegated, and the founder can reopen any of them. Counsel and Apple sign-off are not delegated.
+
+| ID | Decision | Status | Proceed? | Date |
+|---|---|---|---|---|
+| D-089 | Server features are on in v1.0: sign-in, sync, co-parent sharing, encrypted recording backup, status report and reminder emails | Decided (founder, 13 Oct 2026) | Yes, after the security gate | 2026-10-13 |
+| D-090 | Keep the full v1.0 scope and move the date; the plan of record is PRD V2 `08-delivery.md` | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-091 | Recording backup keys are recoverable through server escrow, and the copy says so | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-092 | A free letter counts only when it is your own letter, its words exist, and you keep it from Review | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-093 | Three delivery defaults: delegated low-risk merges, free backup, voice-only counting | Delegated (founder, 14 Oct 2026) | Yes | 2026-10-14 |
+| D-094 | PRD V2 is the product spec of record once PR #124 merges | Decided (founder, 3 and 13 Oct 2026) | Yes, on merge | 2026-10-14 |
+
+### D-089 Server features are on in v1.0 (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
+- **Decision:** the release build profiles set `EXPO_PUBLIC_SERVER_FEATURES=on`. Sign-in, sync, co-parent sharing (at most two parents, D-069), encrypted backup of the owner's recordings (D-073) and the subscription status report with reminder emails (D-080) ship in v1.0. The switch in `apps/mobile/src/lib/capabilities.ts` stays as the kill path.
+- **Reverses:** commit c1764f9 ("v1.0 on-device only"). **Amends:** D-085 (its "amends D-073 for v1.0" clause no longer applies; backup ships), D-087 (show "I was invited" again; the Family tab is live), D-088 (the "Data Not Collected" privacy label is no longer true once accounts exist; privacy label 1.4.0 is drafted with counsel).
+- **Gate:** nobody outside the family signs in before BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322 and BL-349 merge and pass one shared security review (PRD V2 09 R-17). Migrations are applied to staging, then production, through CI. Legal pages describing a server product are live before sign-in.
+- **Owner:** founder; streams S01 to S07, S17 and S20 (PRD V2 `08-delivery.md` section 3).
+
+### D-090 Full v1.0 scope, date moves (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, after critique round 1 (options: cut to fit November; keep scope and move the date; raise review capacity). PRD V2 M15.
+- **Decision:** v1.0 keeps every P0 work package, including recording backup and co-parent sharing; only the P1 extras listed in PRD V2 `08-delivery.md` section 6.4 are cut. The date follows the merge budget. As planned on 15 Oct: submission in the week of Mon 3 May 2027, about 40% confidence (`08-delivery.md` section 2.2). This replaces ROADMAP 2.1's 2 Nov target.
+- **Owner:** founder; delivery lead.
+
+### D-091 Recoverable backup keys, honest copy (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, from two options (recoverable through escrow; end to end only). PRD V2 M16.
+- **Decision:** keep server escrow so a family can recover recordings after losing every device. Copy says recordings are encrypted, that we hold a recovery key under strict, logged access, and that recordings are never read, sold or used to train models. No copy claims "only your family's keys can open it". The escrow key runs only in a separate project and one function; custody, rotation, the access log and owner emails on each use are specified in PRD V2 F08 section 6.5 and F17.
+- **Effects:** microphone purpose string, Terms 6.2 and 12.4, Privacy Policy, Consumer Health Data notice and privacy labels change before release (counsel). ADR 0006 is amended (stream S05).
+- **Owner:** founder; S05, S16, S17.
+
+### D-092 Counting the free letters (founder)
+- **Status:** Decided by the founder, 13 Oct 2026. PRD V2 M17.
+- **Decision:** a letter counts toward the 2 free letters (D-082) only when (a) you are its author, (b) its words exist, and (c) you keep it from Review with the words on screen. The other parent's synced letters never count. A voice-only letter saved before its speech model arrives is kept safely and counts only once its words exist and you keep it from Review. The ledger still never decreases, and Erase everything still resets it.
+- **Amends:** D-083 (its rule that "a voice letter kept without words" counts at once, and any counting of letters present on the device regardless of author).
+- **Owner:** payments engineer (stream S06), local store (S03).
+
+### D-093 Three delivery defaults (delegated)
+- **Status:** Delegated by the founder, 14 Oct 2026 ("do it for me diligently", after being shown these as open defaults). The founder can reopen each.
+- **Decision:**
+  1. The coordinator may merge pull requests that change only docs, evidence or tests, after two independent review agents pass them. Anything touching server code, `supabase/**`, auth, payments, migrations or release configuration is merged only by the founder (D-041).
+  2. Encrypted recording backup is free for everyone. Plus remains the membership that lets you keep new letters (D-082); it does not gate backup.
+  3. Voice-only letters follow D-092.
+- **Owner:** coordinator; founder for reversal.
+
+### D-094 PRD V2 is the product spec of record
+- **Status:** Decided (founder asked for PRD V2 on 3 Oct and chose its source order on 13 Oct). Takes effect when PR #124 merges to `develop`.
+- **Decision:** `docs/prd/v2/` replaces `docs/prd/PRD.md` 1.3 as the requirements of record. Existing requirement IDs keep their meaning. Where V2 and a LEGAL-REQ disagree on a legal duty, counsel decides; no founder decision retires a legal duty by itself.
+- **Owner:** PM lane.
