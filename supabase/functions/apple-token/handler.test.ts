@@ -182,6 +182,10 @@ Deno.test('[ADR 0017 rule 4] the shared counter: rate_hit(apple_token) as the ca
   assert.ok(i >= 0 && i < w.calls.findIndex((c) => c.url === APPLE_TOKEN_URL), 'counted before Apple is asked');
   assert.equal((w.calls[i].init.headers as Record<string, string>).Authorization, `Bearer ${CANARY.sessionJwt}`, "the person's own JWT, so auth.uid() is theirs");
   assert.equal((w.calls[i].init.headers as Record<string, string>).apikey, 'anon-key', 'a call made as the person carries the anon key, never the service key');
+  const user = w.calls.find((c) => c.url === `${SUPA}/auth/v1/user`)!;
+  assert.equal((user.init.headers as Record<string, string>).apikey, 'anon-key', 'the session check is made as the person too (review 3, nit 3)');
+  const store = w.calls.find((c) => c.url.endsWith('/rpc/ops_apple_token_put'))!;
+  assert.equal((store.init.headers as Record<string, string>).Authorization, 'Bearer service-key', 'only the store call uses the service role');
   const noAnon = env();
   delete noAnon.SUPABASE_ANON_KEY;
   const skipped = world({ env: noAnon });

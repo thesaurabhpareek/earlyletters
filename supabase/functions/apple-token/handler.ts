@@ -74,7 +74,10 @@ const LOG_CODE: Partial<Record<ApiErrorCode, ErrorCode>> = {
 export interface AppleTokenConfig {
   supabaseUrl: string;
   serviceKey: string;
-  /** Injected by Supabase. Calls made as the person (rate_hit) carry it with their JWT, never the service key. Null: skip them. */
+  /**
+   * Injected by Supabase. Calls made as the person (the session check, rate_hit) carry it with their JWT.
+   * Null: rate_hit is skipped (never sent with the service key); the session check falls back to the service key.
+   */
   anonKey: string | null;
   apple: AppleKeyConfig;
   /**
@@ -224,7 +227,8 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
     const auth = req.headers.get('authorization') ?? '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!token || token.length > 4096) return fail('unauthorized', false);
-    const userRes = await timed(fetchFn, `${cfg.supabaseUrl}/auth/v1/user`, { method: 'GET', headers: { apikey: cfg.serviceKey, Authorization: `Bearer ${token}` } }, timeoutMs);
+    // A call made as the person: the anon key with their token (the service key only if Supabase did not inject one).
+    const userRes = await timed(fetchFn, `${cfg.supabaseUrl}/auth/v1/user`, { method: 'GET', headers: { apikey: cfg.anonKey ?? cfg.serviceKey, Authorization: `Bearer ${token}` } }, timeoutMs);
     if (!userRes) return unavailable('auth', 0, 'network');
     if (userRes.status === 401 || userRes.status === 403 || userRes.status === 404) {
       await discard(userRes);

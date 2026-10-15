@@ -91,7 +91,7 @@ Before you deploy it:
 | `APPLE_SERVICES_ID` | Optional, only with 2.3 | Codes from web or Android sign-in are refused (403) |
 | `APPLE_EXTRA_CLIENT_IDS` | **Not read yet, by either function.** Later, comma separated (for example `com.earlyletters.scribe.preview,com.earlyletters.scribe.dev`), to capture tokens from internal builds. It waits for the purge worker to read the same list, so that no token is stored that deletion cannot revoke (request to S07 in PR #139, with a ready patch). When it is read, set it only for builds whose App ID uses the Sign in with Apple key from 2.4, and confirm one test deletion revokes (11.9): if Apple refuses the client secret, the deletion step stops with an `apple_config` alert | Codes from internal builds are refused (403): those testers' deletions say `apple: no_token` |
 
-`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected by Supabase. `rate_hit` is called with the person's own token and the anon key as `apikey` (skipped, with a log line, if the anon key is missing); it is never sent with the service key.
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected by Supabase. The session check and `rate_hit` are called with the person's own token and the anon key as `apikey`; `rate_hit` is skipped, with a log line, if the anon key is missing, and is never sent with the service key. Only the store call (`ops_apple_token_put`) uses the service role.
 
 Deploy: `npx supabase functions deploy apple-token --use-api` (keep "Verify JWT" on; the function checks the session again itself). Device check: section 11, item 9.
 

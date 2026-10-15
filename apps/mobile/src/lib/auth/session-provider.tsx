@@ -197,6 +197,9 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         dispatch({ type: 'SIGNED_IN', userId: session.user.id, method: methodRef.current });
       } else if (event === 'SIGNED_OUT') {
+        // H1: a sign-out Supabase made itself (revoked elsewhere) drops the pending note too.
+        // Keychain only, so it is safe inside this callback (no Supabase call).
+        void clearPendingEmailRequest();
         dispatch({ type: 'SIGNED_OUT' });
       }
     });
@@ -288,6 +291,9 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       } catch {
         // ignore: the gate closes either way
       }
+      // Like every other sign-out: no Apple user id and no pending email note left behind.
+      await forgetAppleUser();
+      await clearPendingEmailRequest();
       onUnder18?.();
     })();
   }, [under18, sb, onUnder18]);

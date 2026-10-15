@@ -212,6 +212,9 @@ describe('[F02-REQ-018] verifyEmailLinkPkce: GET /verify without following the r
     const src = provider();
     expect(src).toMatch(/remember\(method\);\s*await clearPendingEmailRequest\(\);\s*dispatch\(\{ type: 'SIGNED_IN'/);
     expect(src).toMatch(/await forgetAppleUser\(\);\s*await clearPendingEmailRequest\(\);\s*dispatch\(\{ type: 'SIGNED_OUT' \}\)/);
+    // A sign-out Supabase makes itself, and the under-18 stop, drop it too (review 3, finding 1).
+    expect(src).toMatch(/event === 'SIGNED_OUT'\) \{\s*void clearPendingEmailRequest\(\);\s*dispatch\(\{ type: 'SIGNED_OUT' \}\)/);
+    expect(src).toMatch(/await forgetAppleUser\(\);\s*await clearPendingEmailRequest\(\);\s*onUnder18\?\.\(\);/);
   });
 });
 
