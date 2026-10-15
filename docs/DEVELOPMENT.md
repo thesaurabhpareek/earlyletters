@@ -6,7 +6,7 @@ How work moves from an idea to a build in people's hands. If this file and anoth
 
 | Branch | Role | Who may merge into it |
 |---|---|---|
-| `develop` | Integration branch and release base for the app. Always green (typecheck, tests, db tests). | Founder, after the PR checks pass |
+| `develop` | Integration branch and release base for the app. Always green (typecheck, tests, db tests). | The coordinator for app code, docs and tests, once two independent review agents pass and CI is green on the head; the founder for `supabase/**`, auth, payments, release configuration and the engine files (D-107, `docs/agents/COORDINATION.md` section 6) |
 | `main` | What is live: the website (Vercel deploys from `main`) and tagged app releases. Updated only by a release PR from `develop`, or a website hotfix. | Founder |
 | short branches | `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `test/<what>`, `qa/<what>`, `exp/<what>` | The author opens a PR into `develop` |
 
@@ -18,7 +18,7 @@ Rules:
 - Database changes ship as a new migration file. Never edit a migration that has been applied.
 
 ## Definition of Ready
-A task is ready when it has a backlog id (`docs/BACKLOG.md`, FT-## for founder steps), an owner role, a testable outcome, and no open founder decision. Founder decisions are recorded as `D-###` in `docs/DECISIONS.md` before code depends on them. Ids are never reused or renumbered.
+A task is ready when it has a backlog id (`docs/BACKLOG.md`, FT-## for founder steps), an owner role, a testable outcome, and no open founder decision. Founder decisions are recorded as `D-###` in `docs/DECISIONS.md` before code depends on them. Ids are never reused, and an id is never renumbered once its entry is on `develop`.
 
 ## Definition of Done
 A pull request merges only when all hold:
@@ -27,7 +27,7 @@ A pull request merges only when all hold:
 3. Content rules pass (fix the copy, never the test). No entry text, transcript, audio or child name in analytics, logs or crash reports.
 4. Docs updated: backlog status, decision record or ADR when a decision was made, runbook when a step changed.
 5. Screens changed: a recorded flow in `apps/mobile/e2e-web` covers it and the journey record is regenerated.
-6. The PR template is filled in; the diff was re-read by someone other than the author (a role agent or the founder).
+6. The PR template is filled in; the diff was re-read by someone other than the author: two independent review agents (D-107), and the founder for founder-only merges.
 
 ## Environments
 | | App bundle id | Backend | Purpose |
@@ -37,4 +37,4 @@ A pull request merges only when all hold:
 | production | `com.earlyletters.scribe` | production | App Store. The id is permanent once created |
 
 ## Who does what
-The role agents (`.claude/agents/`, `agents/roster.json`) pick up backlog items through the dispatcher and open PRs. A red-team review runs before the founder merges. Agents never merge, never change founder decisions, and never touch secrets. Founder-only steps (Apple, Expo, Supabase, domains, keys) live in `docs/FOUNDER_TASKS.md`.
+The role agents (`.claude/agents/`, `agents/roster.json`) pick up backlog items through the dispatcher and open PRs. Two independent review agents pass a pull request before it merges (D-107). Agents never merge, never change founder decisions, and never touch secrets. Founder-only steps (Apple, Expo, Supabase, domains, keys) live in `docs/FOUNDER_TASKS.md`.
