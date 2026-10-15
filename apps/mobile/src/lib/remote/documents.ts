@@ -9,8 +9,12 @@
  *    here is awaited at launch: refreshes run after the first frame.
  *  - Trust. A fetched document is used only if its Ed25519 signature checks
  *    out against a key that ships in the app, its payload parses, and its
- *    version is not older than the last one accepted (rollback protection).
- *    Anything else is ignored and the last good copy stays.
+ *    version is newer than the last one accepted (rollback protection). The
+ *    same version is accepted only when its payload hash is identical, so a
+ *    signed document can never be swapped for a different one under a
+ *    version already accepted (security review L10, G-18;
+ *    `decideDocumentVersion` in @scribe/api). Anything else is ignored and
+ *    the last good copy stays.
  *  - Cheap. Conditional GET with `If-None-Match`; a 304 just refreshes the
  *    timestamp. Each document has a minimum interval between fetches.
  *  - Content-free. Requests carry no user data and no credentials; failures
@@ -21,9 +25,12 @@
  * cold start inside its 30 ms bootstrap budget (TDD 01 5.3).
  */
 import {
+  decideDocumentVersion,
+  documentPayloadSha256,
   HEADER_APP_VERSION,
   HEADER_REQUEST_ID,
   newRequestId,
+  SHA256_HEX_RE,
   verifySignedDocument,
   type DocumentKind,
   type TrustedKey,
@@ -58,6 +65,8 @@ export type RefreshOutcome =
   | VerifyFailure
   | 'invalid_payload'
   | 'rollback'
+  /** The same version as the accepted copy with a different payload: refused, the accepted copy stays. */
+  | 'same_version_conflict'
   | 'not_configured';
 
 export interface DocumentClientOptions<T> {
@@ -83,12 +92,16 @@ interface CacheRecord {
   version: number;
   etag: string | null;
   fetchedAt: number;
+  /** SHA-256 of the payload's canonical JSON. Absent in caches written before G-18; then computed when first needed. */
+  sha256?: string;
   payload: unknown;
 }
 
 export class SignedDocumentClient<T> {
   private value: T | null = null;
   private version = 0;
+  /** Hash of the accepted payload; null until known (see `acceptedSha256`). */
+  private payloadSha256: string | null = null;
   private etag: string | null = null;
   private fetchedAt = 0;
   private loaded = false;
@@ -118,6 +131,8 @@ export class SignedDocumentClient<T> {
       if (!parsed.ok) throw new Error('cache_invalid');
       this.value = parsed.value;
       this.version = this.o.versionOf(parsed.value);
+      // Not hashed here: cold start stays inside its budget; the hash is computed only when a same-version copy arrives.
+      this.payloadSha256 = typeof rec.sha256 === 'string' && SHA256_HEX_RE.test(rec.sha256) ? rec.sha256 : null;
       this.etag = typeof rec.etag === 'string' ? rec.etag : null;
       this.fetchedAt = Number.isFinite(rec.fetchedAt) ? rec.fetchedAt : 0;
     } catch {
@@ -166,10 +181,16 @@ export class SignedDocumentClient<T> {
     const parsed = this.o.parse(verified.doc.payload);
     if (!parsed.ok) return 'invalid_payload';
     const version = this.o.versionOf(parsed.value);
-    if (version < this.version) return 'rollback';
-    const changed = version !== this.version || this.value === null;
+    const sha256 = documentPayloadSha256(verified.doc.payload);
+    const decision = decideDocumentVersion(
+      this.value === null ? null : { version: this.version, payloadSha256: this.acceptedSha256() },
+      { version, payloadSha256: sha256 },
+    );
+    if (decision === 'rollback' || decision === 'same_version_conflict') return decision;
+    const changed = decision === 'accept';
     this.value = parsed.value;
     this.version = version;
+    this.payloadSha256 = sha256;
     this.etag = etag;
     this.fetchedAt = this.now();
     this.persist(verified.doc.payload);
@@ -177,8 +198,23 @@ export class SignedDocumentClient<T> {
     return changed ? 'updated' : 'unchanged';
   }
 
+  /** The accepted payload's hash; for a cache from an older build, computed once from the cached payload. */
+  private acceptedSha256(): string | null {
+    if (this.payloadSha256 === null && this.value !== null) {
+      const payload = this.cachedPayload();
+      if (payload !== null) {
+        try {
+          this.payloadSha256 = documentPayloadSha256(payload);
+        } catch {
+          // Unreadable cache: unknown hash, so a same-version copy is refused and the next version replaces it.
+        }
+      }
+    }
+    return this.payloadSha256;
+  }
+
   private persist(payload: unknown): void {
-    const rec: CacheRecord = { v: 1, version: this.version, etag: this.etag, fetchedAt: this.fetchedAt, payload };
+    const rec: CacheRecord = { v: 1, version: this.version, etag: this.etag, fetchedAt: this.fetchedAt, sha256: this.payloadSha256 ?? undefined, payload };
     try {
       this.o.storage.write(this.cacheName, JSON.stringify(rec));
     } catch {

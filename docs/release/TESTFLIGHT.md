@@ -14,7 +14,7 @@ Status: 4 Oct 2026. Written for the first internal build, made from `develop`, f
 - Speaking a letter: listening, pause, finish, Review with each small fix marked, put back or "Exactly what was said", edit words, keep to the Book or keep private.
 - Typing a letter with autosaved drafts.
 - The Book by month, the letter page (original words, reading size, private, delete with undo), Read together.
-- Settings: children, reminders (local notifications), appearance (light, dark, reading size), Recordings, spoken language, storage, Export (a ZIP with every letter and recording), privacy switch for usage reports, helplines, licences, Help (email row).
+- Settings: children, reminders (local notifications), appearance (light, dark, reading size), Recordings, spoken language, storage, Export (a ZIP with every letter and recording), helplines, licences, Help (email row).
 - Plus in the app, as StoreKit 2 purchases (`plus.annual`, `plus.monthly`). Whether they load depends on the App Store Connect setup below.
 - Family tab and "Write this book together" show **coming soon**; "Tell me when it's here" stores a flag on the phone and sends nothing.
 
@@ -22,7 +22,7 @@ Status: 4 Oct 2026. Written for the first internal build, made from `develop`, f
 - **No accounts, no sign-in, no sync, no co-parent sharing, no invites, no delete-account.** The code exists but is switched off; no Supabase client is created and no sign-in or sync network call is made.
 - **No backup of our own.** A person's letters live on the phone. Safety is the iPhone or iCloud backup plus Export (D-085). The app must not claim more.
 - **No in-app feedback form.** Testers use the Help email row (see Feedback).
-- **No analytics or crash reporting reaches us:** no PostHog key is in the build. The "Help us make it better?" sheet can appear on a later session; choosing Share sends nothing here.
+- **No analytics or crash reporting at all:** `EXPO_PUBLIC_ANALYTICS=off` in every profile (decision of 15 Oct 2026; D-088 "Data Not Collected"), so there is no consent sheet, no usage switch in Settings, Privacy, and no PostHog client even if a key were set. Analytics returns with consent in v1.1.
 - No Android, no iPad layout, English interface only.
 
 ### The membership gate: what state it is in
@@ -74,7 +74,7 @@ npx eas-cli@latest submit --platform ios --profile testflight --latest
 - **eas.json**: `testflight` profile (store distribution, `EXPO_PUBLIC_APP_ENV=preview`, `EXPO_PUBLIC_SERVER_FEATURES=off`), every profile off, EAS-owned build number, submit profile, no secret-looking values.
 - **Config** (`expo config --type public`): bundle id is production id plus `.preview`, URL scheme matches `packages/brand`, microphone purpose string, no background audio, no permission besides the microphone, privacy manifest declared, `usesNonExemptEncryption: false`, version `1.0.0`, no build number in the config.
 - **Icons**: the four brand icons exist, are 1024 x 1024, the light one has no alpha; no Expo scaffold icon files.
-- **Env files** hold nothing but APP_ENV and `SERVER_FEATURES=off`; the profile sets no Supabase or analytics key.
+- **Env files** hold nothing but APP_ENV, `SERVER_FEATURES=off` and `ANALYTICS=off`; the profile sets no Supabase or analytics key.
 - **Packs**: WARN for a missing `EXPO_PUBLIC_DOCS_BASE_URL` and for an empty signing key, with the consequence above.
 - **No real family data**: runs `packages/content/test/no-real-family-data.test.ts`.
 - **Native project**: `expo prebuild --platform ios --no-install` in a temporary copy (the repo is untouched), then checks the generated Info.plist (microphone is the only usage string, no background modes, encryption flag, URL scheme), entitlements, and `PrivacyInfo.xcprivacy`. It cannot compile or sign: that is only proven by the first EAS build.
