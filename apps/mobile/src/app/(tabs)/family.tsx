@@ -9,9 +9,16 @@
  * account can sync; before that the tab shows you alone and the invite card
  * starts sign-in (PRD A F3.3a).
  *
- * v1.0 (founder, 3 Oct 2026): server features are off (lib/capabilities.ts), so the
- * tab keeps its place and shows the co-parent "coming soon" presentation instead
- * (components/family/coparent-soon.tsx). The shared view below returns with v1.1.
+ * What the tab offers follows `canDo` (packages/core/src/family-rules.ts, F11
+ * table 6.2): Invite only while the book has one parent; Leave only when
+ * another parent stays with the book (leave_child, with the two-choice sheet);
+ * Remove only for family members, never a parent (remove_child_member). A book
+ * that already has two parents (SCCAP) says so calmly instead of offering Share.
+ * Every write carries one idempotency key per user action (G-07, lib/family).
+ *
+ * Builds with server features off (lib/capabilities.ts) keep the tab's place
+ * and show the co-parent "coming soon" presentation instead
+ * (components/family/coparent-soon.tsx).
  */
 import { router, useFocusEffect, Redirect } from 'expo-router';
 import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
@@ -23,6 +30,7 @@ import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChildren } from '@/components/child/use-children';
 import { CoParentSoon } from '@/components/family/coparent-soon';
+import { LeaveSheet } from '@/components/family/leave-sheet';
 import { MemberRow } from '@/components/family/member-row';
 import { Button } from '@/components/ui/button';
 import { ListSection } from '@/components/ui/list-row';
@@ -33,8 +41,18 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { ErrorLine, useColors } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
+import { canDo, keepInBookFor, type BookState, type LeaveChoice } from '@scribe/core/src/family-rules';
 import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
-import { createCoParentInvite, listBookMembers, listPendingInvites, revokeInvite, type BookMember, type PendingInviteRow } from '@/lib/family/invites';
+import {
+  createCoParentInvite,
+  leaveBook,
+  listBookMembers,
+  listPendingInvites,
+  removeMember,
+  revokeInvite,
+  type BookMember,
+  type PendingInviteRow,
+} from '@/lib/family/invites';
 import { shareInviteLink } from '@/lib/family/share';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
@@ -74,6 +92,9 @@ function FamilyShared() {
   const [pending, setPending] = useState<PendingInviteRow[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<InviteErrorKind | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const f = familyCopy;
   const childId = active?.id ?? null;
   const client = auth.client;
@@ -104,7 +125,11 @@ function FamilyShared() {
   if (!active) return <Redirect href="/onboarding" />;
   const child = active.name;
   const coParents = members.filter((m) => m.role === 'parent' && !m.isYou);
-  const showCard = coParents.length === 0 && pending.length === 0;
+  const family = members.filter((m) => m.role === 'contributor' && !m.isYou);
+  // Before the member list loads (offline, not synced yet) the book has at least this person.
+  const book: BookState = { parents: Math.max(1, members.filter((m) => m.role === 'parent').length) };
+  const showCard = canDo('own', 'invite_coparent', book) && pending.length === 0 && error !== 'book_full';
+  const coParentName = coParents[0]?.label ?? f.members.invitedName;
 
   const invite = () => {
     haptic('tap');
@@ -126,6 +151,49 @@ function FamilyShared() {
       setBusyId(null);
       void load();
     }
+  };
+
+  const leave = async (choice: LeaveChoice) => {
+    if (!client) return;
+    setLeaving(true);
+    setError(null);
+    try {
+      await leaveBook(client, active.id, keepInBookFor(choice));
+      haptic('soft');
+      setLeaveOpen(false);
+      setNotice(fill(f.leave.left, { child }));
+    } catch (e) {
+      setLeaveOpen(false);
+      setError(inviteErrorKind(e));
+    } finally {
+      setLeaving(false);
+      void load();
+    }
+  };
+
+  const remove = (m: BookMember) => {
+    if (!client || m.role === 'parent') return; // a parent is never removed from here (F11-REQ-012)
+    const name = m.label ?? f.members.family;
+    Alert.alert(fill(f.remove.title, { name }), fill(f.remove.body, { child }), [
+      { text: f.remove.keep, style: 'cancel' },
+      {
+        text: f.remove.confirm,
+        style: 'destructive',
+        onPress: async () => {
+          setBusyId(m.profileId);
+          setError(null);
+          try {
+            await removeMember(client, active.id, m.profileId, false);
+            haptic('soft');
+          } catch (e) {
+            setError(inviteErrorKind(e));
+          } finally {
+            setBusyId(null);
+            void load();
+          }
+        },
+      },
+    ]);
   };
 
   const cancel = (row: PendingInviteRow) => {
@@ -172,6 +240,14 @@ function FamilyShared() {
                 <MemberRow signsAs={m.label ?? f.members.coParent} role={f.members.coParent} />
               </View>
             ))}
+            {family.map((m) => (
+              <View key={m.profileId} className="px-4 pb-2">
+                <MemberRow signsAs={m.label ?? f.members.family} role={f.members.family} />
+                <View className="flex-row flex-wrap gap-1 pl-12">
+                  <RowAction label={f.remove.button} icon={<XIcon size={18} color={c.accent} />} disabled={busyId !== null} onPress={() => remove(m)} />
+                </View>
+              </View>
+            ))}
             {pending.map((p) => (
               <View key={p.id} className="px-4 pb-2">
                 <MemberRow signsAs={p.signsAs ?? f.members.invitedName} role={f.members.coParent} status={f.members.invited} />
@@ -193,7 +269,12 @@ function FamilyShared() {
               <Text className="text-base leading-6 text-muted-foreground">{copy.familyTab.emptyBody}</Text>
             </View>
           )}
-          <ErrorLine message={error ? fill(f.errors[error], { child }) : null} />
+          {error === 'book_full' ? (
+            <Text className="text-base leading-6 text-foreground">{fill(f.create.fullNote, { child })}</Text>
+          ) : (
+            <ErrorLine message={error ? fill(f.errors[error], { child }) : null} />
+          )}
+          {notice ? <Text className="text-base leading-6 text-muted-foreground">{notice}</Text> : null}
         </View>
 
         {showCard && (
@@ -210,8 +291,15 @@ function FamilyShared() {
           </View>
         )}
 
+        {canDo('own', 'leave', book) && (
+          <Button variant="outline" className="self-start" onPress={() => setLeaveOpen(true)}>
+            <Text>{fill(f.leave.button, { child })}</Text>
+          </Button>
+        )}
+
         <Text className="text-sm leading-5 text-muted-foreground">{fill(f.card.privacy, { child })}</Text>
       </ScrollView>
+      <LeaveSheet open={leaveOpen} child={child} coParent={coParentName} busy={leaving} onClose={() => setLeaveOpen(false)} onLeave={(ch) => void leave(ch)} />
     </SafeAreaView>
   );
 }

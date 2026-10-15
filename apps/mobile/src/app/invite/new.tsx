@@ -7,6 +7,11 @@
  * link https://earlyletters.com/i/<token> goes straight to the share sheet
  * and is never stored or shown again. "Share again" on the Family tab makes a
  * new link and cancels the old one.
+ *
+ * One idempotency key per invite the person asks for (G-07): Share after a
+ * lost answer sends the same key, so the server keeps one invite. A book that
+ * already has two parents (SCCAP) shows "{child}'s book has two parents."
+ * instead of Share, and nothing is retried (F11-U10, F11-REQ-026).
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -21,7 +26,7 @@ import { AccountGate, Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, Sheet
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { childIndexOf, track, trackInviteCreated } from '@/lib/analytics/track';
-import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
+import { inviteErrorKind, trackedInviteReason, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import { createCoParentInvite } from '@/lib/family/invites';
 import { shareInviteLink } from '@/lib/family/share';
 import { haptic } from '@/lib/haptics';
@@ -66,7 +71,7 @@ function InviteCoParent() {
       setDone(true);
     } catch (e) {
       const kind = inviteErrorKind(e);
-      track('invite_failed', { stage: 'create', reason: kind });
+      track('invite_failed', { stage: 'create', reason: trackedInviteReason(kind) });
       setError(kind);
     } finally {
       setBusy(false);
@@ -115,11 +120,15 @@ function InviteCoParent() {
             <Text className="text-base leading-6 text-muted-foreground">{fill(k.oneBook, { child })}</Text>
             <Text className="text-base leading-6 text-muted-foreground">{k.linkNote}</Text>
           </View>
-          <ErrorLine message={error ? fill(familyCopy.errors[error], { child }) : null} />
+          {error === 'book_full' ? (
+            <Text className="text-base leading-6 text-foreground">{fill(k.fullNote, { child })}</Text>
+          ) : (
+            <ErrorLine message={error ? fill(familyCopy.errors[error], { child }) : null} />
+          )}
           {error === 'consent_needed' ? (
             <QuietButton label={familyCopy.card.finishSetup} onPress={() => router.push('/sign-in/consent')} />
           ) : null}
-          {busy ? (
+          {error === 'book_full' ? null : busy ? (
             <Busy label={k.working} />
           ) : (
             <Button size="lg" onPress={() => void share()}>

@@ -1,25 +1,37 @@
 /**
- * Co-parent invites over the server functions in migration 20261003000000
- * (PRD B F5, B-REQ-007, TDD 04 3.4.2). At launch the role is always 'parent'
- * (BRIEF decision 5); the database also supports 'contributor', which the app
- * hides.
+ * Co-parent invites and membership over the server functions (PRD B F5,
+ * B-REQ-007, TDD 04 3.4.2; F11 sections 6 and 7). At launch the role is
+ * always 'parent' (BRIEF decision 5); the database also supports
+ * 'contributor', which the app never creates (F11 D4).
  *
- * - create_child_invite(p_child, p_role, p_signs_as) returns the raw token
- *   once; only its hash is stored. Parent of a live book only, consent
- *   required, 20 per book and per parent per day (SCPAR, SCCON, SCRAT).
- * - accept_child_invite(p_token) returns the child id; retries by the same
- *   person are idempotent (SCINV for every other reason).
- * - revoke_invite(p_invite) for the inviting book's parents.
- * - child_invites is readable by parents of the book only (no token in it).
- *
- * Typed by hand until packages/api carries these contracts.
+ * The RPC calls and their contracts live in family-rpc.logic.ts (pure, tested
+ * with a fake client). This file passes the real supabase-js client, keeps one
+ * idempotency key per user action for the app session (G-07), and adds the
+ * table reads (child_invites, child_members, children).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { brand } from '@scribe/brand';
-import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 import { publishInviteAccepted } from '../auth/auth-store';
 import { idempotencyKey } from '../supabase/client';
+import { ActionKeys } from './action-key.logic';
+import {
+  acceptInviteRpc,
+  createInviteRpc,
+  leaveBookRpc,
+  peekInviteRpc,
+  removeMemberRpc,
+  revokeInviteRpc,
+  type InvitePeek,
+  type RpcClient,
+} from './family-rpc.logic';
 import { inviteUrl } from './invite-link.logic';
+
+export type { InvitePeek } from './family-rpc.logic';
+
+/** One key per user action, for this app session (action-key.logic.ts). */
+export const familyActionKeys = new ActionKeys(idempotencyKey);
+
+const rpc = (sb: SupabaseClient) => sb as unknown as RpcClient;
 
 export interface CreatedInvite {
   token: string;
@@ -39,29 +51,39 @@ export interface BookMember {
   /** What the child calls them, or their display name; null when neither is set. */
   label: string | null;
   isYou: boolean;
+  /** ISO time they joined the book. */
+  joinedAt: string | null;
 }
 
 export async function createCoParentInvite(sb: SupabaseClient, childId: string, signsAs: string | null): Promise<CreatedInvite> {
-  const s = signsAs?.trim().slice(0, 30) || null;
-  const { data, error } = await sb
-    .rpc('create_child_invite', { p_child: childId, p_role: 'parent', p_signs_as: s })
-    .setHeader(HEADER_IDEMPOTENCY_KEY, idempotencyKey());
-  if (error) throw error;
-  if (typeof data !== 'string') throw Object.assign(new Error('invite_no_token'), { code: 'P0002' });
-  return { token: data, url: inviteUrl(data, brand.web.origin) };
+  const token = await createInviteRpc(rpc(sb), familyActionKeys, childId, signsAs);
+  return { token, url: inviteUrl(token, brand.web.origin) };
 }
 
+/** What the invite says before joining (BL-322). Joins nothing. */
+export async function peekInvite(sb: SupabaseClient, token: string): Promise<InvitePeek> {
+  return peekInviteRpc(rpc(sb), token);
+}
+
+/** Joins. Only after the person tapped Join (lib/family/join.logic.ts). Never opens the book. */
 export async function acceptInvite(sb: SupabaseClient, token: string): Promise<string> {
-  const { data, error } = await sb.rpc('accept_child_invite', { p_token: token });
-  if (error) throw error;
-  if (typeof data !== 'string') throw Object.assign(new Error('invite_no_child'), { code: 'P0002' });
-  publishInviteAccepted(data);
-  return data;
+  const childId = await acceptInviteRpc(rpc(sb), familyActionKeys, token);
+  publishInviteAccepted(childId);
+  return childId;
 }
 
 export async function revokeInvite(sb: SupabaseClient, inviteId: string): Promise<void> {
-  const { error } = await sb.rpc('revoke_invite', { p_invite: inviteId });
-  if (error) throw error;
+  await revokeInviteRpc(rpc(sb), familyActionKeys, inviteId);
+}
+
+/** leave_child: any member leaves; `keepInBook` false takes their letters out (they stay theirs). */
+export async function leaveBook(sb: SupabaseClient, childId: string, keepInBook: boolean): Promise<'left' | 'not_member'> {
+  return leaveBookRpc(rpc(sb), familyActionKeys, childId, keepInBook);
+}
+
+/** remove_child_member: a parent removes a family member (never a parent). */
+export async function removeMember(sb: SupabaseClient, childId: string, memberId: string, setAside: boolean): Promise<'removed' | 'not_member'> {
+  return removeMemberRpc(rpc(sb), familyActionKeys, childId, memberId, setAside);
 }
 
 /** Open co-parent invites for a book (parents only see any). */
@@ -92,12 +114,18 @@ export async function listBookMembers(sb: SupabaseClient, childId: string, myId:
     .eq('child_id', childId)
     .order('joined_at', { ascending: true });
   if (error) throw error;
-  type Row = { profile_id: string; role: 'parent' | 'contributor'; profiles: { display_name: string | null; signs_as: string | null } | null };
+  type Row = {
+    profile_id: string;
+    role: 'parent' | 'contributor';
+    joined_at: string | null;
+    profiles: { display_name: string | null; signs_as: string | null } | null;
+  };
   return ((data ?? []) as unknown as Row[]).map((r) => ({
     profileId: r.profile_id,
     role: r.role,
     label: r.profiles?.signs_as?.trim() || r.profiles?.display_name?.trim() || null,
     isYou: r.profile_id === myId,
+    joinedAt: r.joined_at ?? null,
   }));
 }
 
