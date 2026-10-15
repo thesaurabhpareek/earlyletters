@@ -20,10 +20,12 @@
  * (development, preview, production; eas.json `environment`):
  *   EXPO_PUBLIC_APP_ENV  development | preview | production. Set in eas.json
  *                        per profile and in .env.development for local runs.
- * Anything secret (future Supabase anon key, Sentry DSN, PostHog key) goes in
- * EAS environment variables with "sensitive" or "secret" visibility, created
- * by the founder in the EAS dashboard, never in this file, eas.json or a
- * committed .env file. Nothing secret exists yet: C0 builds have no backend.
+ * Project values (EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+ * the staging project's URL and anon key for the `preview` alpha; later a Sentry
+ * DSN or PostHog key) go in EAS environment variables, created by the founder in
+ * the EAS dashboard ("sensitive" visibility), never in this file, eas.json or a
+ * committed .env file (docs/release/TESTFLIGHT.md step 9). The URL and anon key
+ * are public by design (RLS is the authority); no service key ever ships.
  *
  * Data at rest (PSEC-05, LEGAL-REQ-022(b)): the default data-protection class
  * is set explicitly to "complete until first user authentication", so the
@@ -142,10 +144,11 @@ const PRIVACY_MANIFESTS: NonNullable<NonNullable<ExpoConfig['ios']>['privacyMani
       NSPrivacyAccessedAPITypeReasons: ['E174.1'],
     },
   ],
-  // Nothing is collected off the device yet: C0 builds have no backend, no
-  // analytics and no crash reporting. Before any build that syncs or sends
-  // analytics, fill this from docs/legal/data-map.yaml (LEGAL-REQ-041) and
-  // docs/legal/app-store-privacy-labels.md 3.3.
+  // Still empty, and no longer true for every build: the `preview` alpha syncs
+  // (account email, letters, consents). Fill this from docs/legal/data-map.yaml
+  // (LEGAL-REQ-041) and docs/legal/app-store-privacy-labels.md 3.3 before any
+  // external TestFlight group or store build with server features on (BL-349,
+  // WP-F21-09). The preflight warns for a server-on profile until then.
   NSPrivacyCollectedDataTypes: [],
 };
 
@@ -159,11 +162,22 @@ function reversedGoogleClientId(clientId: string | undefined): string | null {
 const googleIosUrlScheme = reversedGoogleClientId(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 
 /**
- * Server features (sign-in, sync, co-parent sharing): the same rule as
- * src/lib/capabilities.ts, `on` only. Every eas.json profile sets `off` for v1.0
- * (founder, 3 Oct 2026). Recorded in `extra` so a build's config shows which it is.
+ * Server features (sign-in, sync, co-parent sharing) and the build flags on top of
+ * them (recording backup, the status report): the same rules as
+ * src/lib/capabilities.ts, `on` only, and a build flag needs the server switch too.
+ * In eas.json only `preview` is on (D-100, D-106); `testflight` stays off until the
+ * R-17 gate passes, `production` until submission. Recorded in `extra` so a build's config shows
+ * which it is. Read per evaluation, so one process can evaluate several profiles.
  */
-const serverFeatures = (process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').trim().toLowerCase() === 'on';
+const isOn = (raw: string | undefined) => (raw ?? '').trim().toLowerCase() === 'on';
+function capabilityFlags() {
+  const serverFeatures = isOn(process.env.EXPO_PUBLIC_SERVER_FEATURES);
+  return {
+    serverFeatures,
+    backup: serverFeatures && isOn(process.env.EXPO_PUBLIC_BACKUP),
+    statusReport: serverFeatures && isOn(process.env.EXPO_PUBLIC_STATUS_REPORT),
+  };
+}
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const APP_ENV = appEnvFromProcess();
@@ -274,7 +288,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   },
   extra: {
     appEnv: APP_ENV,
-    serverFeatures,
+    ...capabilityFlags(),
   },
   };
 };

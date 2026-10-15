@@ -1,19 +1,25 @@
 #!/usr/bin/env node
 /**
- * Preflight for the first TestFlight build of the v1.0 ON-DEVICE app (EXPO_PUBLIC_SERVER_FEATURES=off).
+ * Preflight for the two alpha TestFlight builds (D-106; docs/release/TESTFLIGHT.md):
  *
- *   npm run preflight:testflight -w @scribe/mobile
- *   npm run preflight:testflight -w @scribe/mobile -- --skip-prebuild   # skip the native-project check (about a minute)
+ *   alpha build 1, profile `testflight`: server features OFF (no accounts, nothing leaves the phone)
+ *   alpha build 2, profile `preview`:    server features ON against the staging Supabase project
  *
- * Checks everything that can be checked without an Apple or Expo account, the way the `testflight`
- * profile in eas.json will build it. It does not build, does not touch the network and needs no secrets.
- * v1.0 has no backend, so it does NOT ask for a Supabase URL or key, a Sign in with Apple key or a pack
- * signing key as requirements; where one of them would change what testers can do, it says so as a WARN.
+ *   npm run preflight:testflight -w @scribe/mobile                     # build 1 (profile testflight)
+ *   npm run preflight:alpha -w @scribe/mobile                          # build 2 (profile preview)
+ *   npm run preflight:alpha -w @scribe/mobile -- --skip-prebuild       # skip the native-project check (about a minute)
+ *
+ * Checks everything that can be checked without an Apple or Expo account, the way that eas.json profile
+ * will build it. It does not build, does not touch the network and needs no secrets. Project values
+ * (the staging URL and anon key) live in EAS environment variables, which this script cannot see; export
+ * them in your shell before running it and it checks their shape (never the service key). It ends with
+ * the founder steps from docs/release/TESTFLIGHT.md that are still open for this build, by name.
  *
  * Exit code: 1 if any FAIL, otherwise 0. WARN never fails the run: it means "the build will work, but
  * read the consequence first". UNVERIFIED means a check could not run here (it is not a pass).
  *
- * Levels: PASS, WARN, FAIL, UNVERIFIED, then the App Review notes (facts to tell the reviewer, not problems).
+ * Levels: PASS, WARN, FAIL, UNVERIFIED, then the App Review notes (facts to tell the reviewer, not problems),
+ * then the open founder steps.
  */
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
@@ -25,10 +31,47 @@ const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
 const require = createRequire(join(MOBILE, 'package.json'));
 const SKIP_PREBUILD = process.argv.includes('--skip-prebuild');
-const PROFILE = 'testflight';
+const profileArg = process.argv.indexOf('--profile');
+const PROFILE = profileArg > -1 ? String(process.argv[profileArg + 1] ?? '') : 'testflight';
+
+/** The two alpha builds (D-106). `server` is what the profile must say today; the R-17 flip changes testflight. */
+const ALPHA = {
+  testflight: { build: 'alpha build 1', server: false },
+  preview: { build: 'alpha build 2', server: true },
+};
+if (!Object.hasOwn(ALPHA, PROFILE)) {
+  console.error(`--profile must be testflight (alpha build 1) or preview (alpha build 2); got ${JSON.stringify(PROFILE)}.`);
+  process.exit(1);
+}
+const SPEC = ALPHA[PROFILE];
 
 const results = [];
 const notes = [];
+/**
+ * Founder steps (docs/release/TESTFLIGHT.md, same numbers and names). Each is `open` (seen missing here),
+ * `check` (this script cannot see it: confirm it yourself) or `done` (seen done here).
+ */
+const STEPS = {
+  1: 'Step 1. Apple Developer Program enrolment (FT-01)',
+  2: 'Step 2. App Store Connect: the .preview App ID, the app record and internal testers (FT-07, FT-08)',
+  3: 'Step 3. Expo account and `eas init` project id (FT-17, BL-339)',
+  4: 'Step 4. Words from speech: pack signing keys and the R2 bucket packs.earlyletters.app (FT-16, D-097)',
+  5: 'Step 5. Build 1: preflight, build, submit, testers',
+  6: 'Step 6. Supabase staging project and its schema (FT-10)',
+  7: 'Step 7. Supabase Auth on staging, with Resend SMTP for sign-in email (FT-12, FT-13)',
+  8: 'Step 8. Sign in with Apple: Team ID, key and the Supabase Apple provider (FT-07, FT-12)',
+  9: 'Step 9. EAS environment variables for the preview environment',
+  10: 'Step 10. Website: the AASA file and /auth/confirm live (Vercel APPLE_TEAM_ID, IOS_BUNDLE_ID)',
+  11: 'Step 11. Build 2: preflight --profile preview, build, submit, the family group only',
+  12: 'Step 12. Staging function secrets: the purge worker and the Resend key (FT-11)',
+};
+const founder = new Map();
+const step = (n, state, why) => {
+  const prev = founder.get(n);
+  // open beats check beats done: one missing thing keeps the step open.
+  const rank = { done: 0, check: 1, open: 2 };
+  if (!prev || rank[state] > rank[prev.state]) founder.set(n, { state, why });
+};
 const add = (level, msg) => results.push({ level, msg });
 const pass = (msg) => add('PASS', msg);
 const warn = (msg) => add('WARN', msg);
@@ -65,22 +108,46 @@ function parseJsonOut(r) {
 const plistKeys = (text) => [...text.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
 const plistValue = (text, key) => new RegExp(`<key>${key}</key>\\s*<(true|false)\\s*/>`).exec(text)?.[1] ?? null;
 
-// ---------------------------------------------------------------- 1. eas.json: the testflight profile
+// ---------------------------------------------------------------- 1. eas.json: the profile
 const easText = read(join(MOBILE, 'eas.json'));
 const eas = JSON.parse(easText);
 const prof = eas.build?.[PROFILE];
-check(Boolean(prof), 'eas.json has a "testflight" build profile', 'eas.json has no "testflight" build profile.');
+check(Boolean(prof), `eas.json has a "${PROFILE}" build profile (${SPEC.build})`, `eas.json has no "${PROFILE}" build profile.`);
 const profEnv = prof?.env ?? {};
+const SERVER_ON = String(profEnv.EXPO_PUBLIC_SERVER_FEATURES ?? '').trim().toLowerCase() === 'on';
 if (prof) {
-  check(prof.distribution === 'store', 'testflight profile: distribution "store" (the only kind TestFlight accepts)', `testflight profile distribution is ${JSON.stringify(prof.distribution)}; it must be "store".`);
-  check(profEnv.EXPO_PUBLIC_APP_ENV === 'preview', 'testflight profile: EXPO_PUBLIC_APP_ENV=preview (so the .preview bundle id is used)', `testflight profile EXPO_PUBLIC_APP_ENV is ${JSON.stringify(profEnv.EXPO_PUBLIC_APP_ENV)}; it must be "preview" or the permanent production id would be spent.`);
-  check(profEnv.EXPO_PUBLIC_SERVER_FEATURES === 'off', 'testflight profile: EXPO_PUBLIC_SERVER_FEATURES=off (no Supabase, sign-in, sync or co-parent)', `testflight profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(profEnv.EXPO_PUBLIC_SERVER_FEATURES)}; v1.0 requires "off".`);
+  check(prof.distribution === 'store', `${PROFILE} profile: distribution "store" (the only kind TestFlight accepts)`, `${PROFILE} profile distribution is ${JSON.stringify(prof.distribution)}; it must be "store".`);
+  check(profEnv.EXPO_PUBLIC_APP_ENV === 'preview', `${PROFILE} profile: EXPO_PUBLIC_APP_ENV=preview (so the .preview bundle id is used)`, `${PROFILE} profile EXPO_PUBLIC_APP_ENV is ${JSON.stringify(profEnv.EXPO_PUBLIC_APP_ENV)}; it must be "preview" or the permanent production id would be spent.`);
+  const sf = profEnv.EXPO_PUBLIC_SERVER_FEATURES;
+  if (PROFILE === 'preview') {
+    check(sf === 'on', 'preview profile: EXPO_PUBLIC_SERVER_FEATURES=on (alpha build 2: sign-in, sync and co-parent against staging)', `preview profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(sf)}; the preview profile is the alpha with servers and must say "on" (D-106).`);
+  } else if (sf === 'off') {
+    pass('testflight profile: EXPO_PUBLIC_SERVER_FEATURES=off (alpha build 1: no Supabase, sign-in, sync or co-parent)');
+  } else if (sf === 'on') {
+    warn('testflight profile has EXPO_PUBLIC_SERVER_FEATURES=on: that is the R-17 flip. Build it only after the R-17 security gate has passed (T16) and the founder approved the flip; until then nobody outside the family signs in (D-100).');
+  } else {
+    fail(`testflight profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(sf)}; write "off" (or "on" after the R-17 gate), never leave it to a default.`);
+  }
+  for (const [flag, what] of [
+    ['EXPO_PUBLIC_BACKUP', 'recording backup (T27, after the restore drill)'],
+    ['EXPO_PUBLIC_STATUS_REPORT', 'the subscription status report (when WP-F14-15 ships)'],
+  ]) {
+    const v = profEnv[flag];
+    if (v === 'off') pass(`${PROFILE} profile: ${flag}=off (build flag; ${what})`);
+    else if (v === 'on') warn(`${PROFILE} profile: ${flag}=on. This build flag turns on ${what}; it needs that feature merged, its kill switch consumer, and the founder's approval.`);
+    else fail(`${PROFILE} profile: ${flag} is ${JSON.stringify(v)}; write "off" explicitly (F19-REQ-025).`);
+  }
   check(prof.autoIncrement === true && eas.cli?.appVersionSource === 'remote', 'build number: EAS owns it (appVersionSource remote, autoIncrement true)', 'Build numbers are not auto-incremented by EAS: a second upload would be rejected as a duplicate build number.');
 }
-const onProfiles = Object.entries(eas.build ?? {}).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES !== 'off').map(([n]) => n);
-check(onProfiles.length === 0, 'every eas.json profile has server features off', `eas.json profile(s) without EXPO_PUBLIC_SERVER_FEATURES=off: ${onProfiles.join(', ')}.`);
-check(Boolean(eas.submit?.[PROFILE]), 'eas.json has a "testflight" submit profile', 'eas.json has no "testflight" submit profile (`eas submit --profile testflight` needs it).');
-check(!/(KEY|SECRET|TOKEN|PASSWORD|DSN)"\s*:/i.test(easText), 'eas.json holds no secret-looking values', 'eas.json holds a value named like a secret: secrets belong in EAS environment variables, never in this file.');
+{
+  const onProfiles = Object.entries(eas.build ?? {}).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
+  check(!onProfiles.includes('production'), `server features are on only in: ${onProfiles.join(', ') || 'none'} (never production before the store submission is re-planned)`, 'The production profile has EXPO_PUBLIC_SERVER_FEATURES=on. Turning the switch on in the store profile is the founder\'s call after the R-17 gate and the legal pages (D-100); put it back to "off".');
+  const unwritten = Object.entries(eas.build ?? {}).filter(([, p]) => !['on', 'off'].includes(p.env?.EXPO_PUBLIC_SERVER_FEATURES)).map(([n]) => n);
+  check(unwritten.length === 0, 'every eas.json profile writes EXPO_PUBLIC_SERVER_FEATURES as on or off', `eas.json profile(s) without an explicit on or off: ${unwritten.join(', ')}.`);
+}
+check(Boolean(eas.submit?.[PROFILE]), `eas.json has a "${PROFILE}" submit profile`, `eas.json has no "${PROFILE}" submit profile (\`eas submit --profile ${PROFILE}\` needs it).`);
+check(!/(KEY|SECRET|TOKEN|PASSWORD|DSN)"\s*:/i.test(easText), 'eas.json holds no secret-looking names', 'eas.json holds a value named like a secret: project keys belong in EAS environment variables, never in this file.');
+check(!/supabase\.co|sb_publishable_|sb_secret_|eyJ[A-Za-z0-9_-]{10,}/.test(easText), 'eas.json holds no Supabase URL or key (they come from the EAS environment)', 'eas.json holds a Supabase URL or key. Remove it: the staging URL and anon key are EAS environment variables (TESTFLIGHT.md step 9), never committed.');
 
 // ---------------------------------------------------------------- 2. app config, evaluated as the profile builds it
 const buildEnv = { ...profEnv };
@@ -106,7 +173,16 @@ if (cfg) {
   check(Boolean(prod?.ios?.bundleIdentifier) && id === `${prod.ios.bundleIdentifier}.preview`, `bundle id is the production id plus ".preview" (${prod?.ios?.bundleIdentifier}), so the permanent id is not spent`, `Bundle id "${id}" is not "<production id>.preview" (production is "${prod?.ios?.bundleIdentifier}").`);
   check(Boolean(brandScheme) && cfg.scheme === brandScheme, `URL scheme "${cfg.scheme}" matches packages/brand`, `URL scheme "${cfg.scheme}" does not match packages/brand ("${brandScheme}").`);
   check(typeof cfg.name === 'string' && cfg.name.length > 1 && cfg.slug === 'scribe', `app name "${cfg.name}", slug "${cfg.slug}"`, `Unexpected app name "${cfg.name}" or slug "${cfg.slug}".`);
-  check(cfg.extra?.appEnv === 'preview' && cfg.extra?.serverFeatures === false, 'config extra: appEnv preview, serverFeatures false', `config extra says appEnv=${cfg.extra?.appEnv}, serverFeatures=${cfg.extra?.serverFeatures}; expected preview and false.`);
+  check(
+    cfg.extra?.appEnv === 'preview' && cfg.extra?.serverFeatures === SERVER_ON,
+    `config extra: appEnv preview, serverFeatures ${SERVER_ON}`,
+    `config extra says appEnv=${cfg.extra?.appEnv}, serverFeatures=${cfg.extra?.serverFeatures}; expected preview and ${SERVER_ON}.`,
+  );
+  check(
+    cfg.extra?.backup === (SERVER_ON && profEnv.EXPO_PUBLIC_BACKUP === 'on') && cfg.extra?.statusReport === (SERVER_ON && profEnv.EXPO_PUBLIC_STATUS_REPORT === 'on'),
+    `config extra: backup ${cfg.extra?.backup}, statusReport ${cfg.extra?.statusReport} (build flags need the server switch too)`,
+    `config extra says backup=${cfg.extra?.backup}, statusReport=${cfg.extra?.statusReport}, which does not follow the profile's switches.`,
+  );
 
   // Permissions: the microphone string, and nothing else asked for.
   const audio = (cfg.plugins ?? []).find((p) => Array.isArray(p) && p[0] === 'expo-audio')?.[1] ?? {};
@@ -129,8 +205,13 @@ if (cfg) {
   else fail('Could not read the prebuild config to check usesNonExemptEncryption.');
 
   // EAS project link (the founder's Expo account owns the id; it is not a secret).
-  if (cfg.extra?.eas?.projectId) pass(`EAS project id is in the config (${cfg.extra.eas.projectId})`);
-  else warn('No extra.eas.projectId in app.config.ts. `eas init` links the Expo project, but app.config.ts is a dynamic config and the CLI may not write to it (unverified): the founder sends the id it prints and it is added to `extra` in a small PR. A non-interactive build (the GitHub workflow) cannot proceed without it.');
+  if (cfg.extra?.eas?.projectId) {
+    pass(`EAS project id is in the config (${cfg.extra.eas.projectId})`);
+    step(3, 'done', `extra.eas.projectId is ${cfg.extra.eas.projectId}`);
+  } else {
+    warn('No extra.eas.projectId in app.config.ts. `eas init` links the Expo project, but app.config.ts is a dynamic config and the CLI may not write to it (unverified): the founder sends the id it prints and it is added to `extra` in a small PR. A non-interactive build (the GitHub workflow) cannot proceed without it.');
+    step(3, 'open', 'no extra.eas.projectId in app.config.ts: run `npx eas-cli init` and send the id it prints');
+  }
 
   // Version and build number.
   check(/^\d+\.\d+\.\d+$/.test(cfg.version ?? ''), `version ${cfg.version} (source: app.config.ts)`, `Version "${cfg.version}" is not x.y.z.`);
@@ -191,9 +272,49 @@ try {
     }
   }
   check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.`);
-  const supa = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_POSTHOG_KEY'].filter((k) => profEnv[k]);
-  check(supa.length === 0, 'testflight profile sets no Supabase or analytics key (none is needed for v1.0)', `testflight profile sets ${supa.join(', ')}; v1.0 on-device needs none of these.`);
-  check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', 'testflight profile sets EXPO_PUBLIC_ANALYTICS=off (v1.0 collects no data, D-088)', 'testflight profile must set EXPO_PUBLIC_ANALYTICS to "off" for v1.0 ("Data Not Collected", D-088).');
+  const supa = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_POSTHOG_KEY'].filter((k) => profEnv[k] !== undefined);
+  check(supa.length === 0, `${PROFILE} profile names no Supabase or analytics key in eas.json (project values come from the EAS environment)`, `${PROFILE} profile sets ${supa.join(', ')} in eas.json. Remove them: they belong in EAS environment variables (TESTFLIGHT.md step 9).`);
+  check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', `${PROFILE} profile sets EXPO_PUBLIC_ANALYTICS=off (no analytics in either alpha build, D-088)`, `${PROFILE} profile must set EXPO_PUBLIC_ANALYTICS to "off".`);
+}
+
+// ---------------------------------------------------------------- 4b. the staging project values (server-on build only)
+if (SERVER_ON) {
+  // EAS cloud builds read these from the EAS "preview" environment, which this script cannot see. If you export
+  // the same values in your shell first, their shape is checked here; nothing is sent anywhere.
+  const url = String(process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
+  const key = String(process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
+  const howToSee = 'Run `npx eas-cli env:list --environment preview` to see them, or export the two values in this shell and run the preflight again.';
+  if (!url && !key) {
+    unverified(`EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY are not in this shell, so they could not be checked. A preview build without them in the EAS "preview" environment has the switch on but no project: the sign-in sheet says sign-in is not available in this build. ${howToSee}`);
+    step(9, 'check', 'the staging URL and anon key must be EAS environment variables in "preview"; not visible here');
+  } else {
+    let ok = true;
+    if (!/^https:\/\/[a-z0-9]{20}\.supabase\.co$/.test(url)) {
+      ok = false;
+      fail(`EXPO_PUBLIC_SUPABASE_URL ${url ? `"${url}"` : 'is empty'}: expected the staging Project URL, https://<20-character ref>.supabase.co, with no path.`);
+    }
+    // The publishable key, or the legacy anon JWT. Never the secret key or a service_role JWT.
+    let role = null;
+    if (/^eyJ/.test(key)) {
+      try {
+        role = JSON.parse(Buffer.from(key.split('.')[1] ?? '', 'base64url').toString('utf8')).role ?? null;
+      } catch {
+        role = 'unreadable';
+      }
+    }
+    if (/^sb_secret_/.test(key) || role === 'service_role') {
+      ok = false;
+      fail('The key in this shell is a SECRET or service_role key. It must never be in the app or in EAS build variables: delete it from the EAS "preview" environment now, rotate it in Supabase (Project Settings > API Keys), and use the publishable (anon) key instead.');
+    } else if (!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(key) && role !== 'anon') {
+      ok = false;
+      fail(`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY does not look like a publishable key (sb_publishable_...) or the legacy anon key${key ? '' : ' (it is empty)'}.`);
+    }
+    if (ok) pass(`Supabase values in this shell look right: ${url} and a publishable key (checked for shape only; the EAS "preview" environment must hold the same)`);
+    step(9, ok ? 'check' : 'open', ok ? 'the values in this shell look right; confirm the EAS "preview" environment holds the same' : 'the values in this shell are wrong (see FAIL above)');
+  }
+  const otp = String(process.env.EXPO_PUBLIC_EMAIL_OTP_LENGTH ?? '').trim();
+  unverified(`Email code length: the app expects ${otp || '6 (EXPO_PUBLIC_EMAIL_OTP_LENGTH unset)'} digits; Supabase Auth > Email > "Email OTP length" on staging must be the same number, or every typed code is refused.`);
+  step(7, 'check', `Auth settings, SMTP and templates on staging; OTP length ${otp || '6'}`);
 }
 
 // ---------------------------------------------------------------- 5. language packs and the speech model host
@@ -211,14 +332,15 @@ try {
   }
   const consequence =
     'The build then has NO pack manifest address, so the speech model and every language pack can never download. Recordings are still kept on the phone, but the words are never written down (Review stays on "Writing down what you said", Book cards say words are waiting). Typed letters are unaffected.';
-  if (value && valid && fromEas) pass(`EXPO_PUBLIC_DOCS_BASE_URL is ${value.replace(/\/+$/, '')} (eas.json testflight profile)`);
-  else if (value && valid) warn(`EXPO_PUBLIC_DOCS_BASE_URL is set only in this shell (${value}); EAS cloud builds do not read your shell. Put it in the testflight profile or an EAS "preview" environment variable. ${consequence}`);
+  if (value && valid && fromEas) pass(`EXPO_PUBLIC_DOCS_BASE_URL is ${value.replace(/\/+$/, '')} (eas.json ${PROFILE} profile)`);
+  else if (value && valid) warn(`EXPO_PUBLIC_DOCS_BASE_URL is set only in this shell (${value}); EAS cloud builds do not read your shell. Put it in the ${PROFILE} profile or an EAS "preview" environment variable. ${consequence}`);
   else if (value) warn(`EXPO_PUBLIC_DOCS_BASE_URL "${value}" is not an https origin without a path, so src/lib/remote/base.logic.ts ignores it. ${consequence}`);
-  else warn(`EXPO_PUBLIC_DOCS_BASE_URL is not set in the testflight profile. It may be set as a plain-text EAS "preview" environment variable, which this script cannot see: check the Expo dashboard. If it is not set anywhere: ${consequence}`);
+  else warn(`EXPO_PUBLIC_DOCS_BASE_URL is not set in the ${PROFILE} profile. It may be set as a plain-text EAS "preview" environment variable, which this script cannot see: check the Expo dashboard. If it is not set anywhere: ${consequence}`);
   if (!keySet) {
     warn(
       'packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; FT-16 `node scripts/packs/keygen.ts`). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build.',
     );
+    step(4, 'open', 'packages/api/src/keys.ts has no public signing key (run `npx tsx scripts/packs/keygen.ts` twice and send the public lines)');
   } else pass('a pack signing key is present in packages/api/src/keys.ts');
   // A host and a key are not enough: the signed manifest must have been published (scripts/packs/publish.ts) and uploaded.
   let manifestPublished = false;
@@ -227,9 +349,13 @@ try {
   } catch {
     /* treated as not published */
   }
-  if (!manifestPublished)
+  if (!manifestPublished) {
     warn('No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run `npx tsx scripts/packs/publish.ts all` and the upload commands it prints, or the host answers 404 and nothing downloads.');
-  else unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building.');
+    step(4, 'open', 'no signed pack manifest published to packs.earlyletters.app yet (R2 bucket, then `npx tsx scripts/packs/publish.ts all`)');
+  } else {
+    unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building.');
+    step(4, keySet ? 'check' : 'open', 'a manifest is in the repo; check the R2 bucket serves it');
+  }
 }
 
 // ---------------------------------------------------------------- 6. no real family data (CLAUDE.md privacy rule)
@@ -306,26 +432,62 @@ if (ios) {
   check(new RegExp(`<string>${cfg?.scheme ?? 'scribe'}</string>`).test(ios.plist), `generated Info.plist registers the "${cfg?.scheme}" URL scheme`, `Generated Info.plist does not register the "${cfg?.scheme}" URL scheme.`);
   const ent = plistKeys(ios.entitlements);
   check(ent.includes('com.apple.developer.default-data-protection'), 'generated entitlements: data protection (complete until first unlock)', 'Generated entitlements lack the data-protection class.');
-  if (ent.includes('com.apple.developer.applesignin')) notes.push('The build carries the Sign in with Apple entitlement (com.apple.developer.applesignin) and the expo-apple-authentication module, but v1.0 offers no sign-in screen (SERVER_FEATURES=off). If App Review asks: "Sign in is not offered in v1.0; the code and entitlement are dormant and are used from v1.1."');
+  if (ent.includes('com.apple.developer.applesignin')) {
+    notes.push(
+      SERVER_ON
+        ? 'The build carries the Sign in with Apple entitlement (com.apple.developer.applesignin) and offers Sign in with Apple and email sign-in against the staging project. The Supabase Apple provider must list the .preview bundle id as a client id (TESTFLIGHT.md step 8).'
+        : 'The build carries the Sign in with Apple entitlement (com.apple.developer.applesignin) and the expo-apple-authentication module, but this build offers no sign-in screen (SERVER_FEATURES=off). If App Review asks: "Sign in is not offered in this build; the code and entitlement are dormant."',
+    );
+  }
   if (ent.includes('com.apple.developer.associated-domains')) {
     const d = (cfg?.ios?.associatedDomains ?? []).join(', ');
-    notes.push(`The build carries the Associated Domains entitlement (${d}) for universal links (invites, email sign-in). Nothing in v1.0 acts on those links (invite and sign-in are off, and links are an allowlist that never starts recording). The website must serve the association file for it to do anything, and EAS will register the capability on the .preview App ID.`);
+    notes.push(
+      SERVER_ON
+        ? `The build carries the Associated Domains entitlement (${d}). Email sign-in links and invite links open the app only once the website serves the association file with this build's id (TESTFLIGHT.md step 10); until then they open the website and the person types the code instead.`
+        : `The build carries the Associated Domains entitlement (${d}) for universal links (invites, email sign-in). Nothing in this build acts on those links (invite and sign-in are off, and links are an allowlist that never starts recording). EAS will register the capability on the .preview App ID.`,
+    );
   }
 }
 if (cfg) {
   // Config-level notes, independent of whether prebuild ran.
-  if (cfg.ios?.usesAppleSignIn && !notes.some((n) => /Sign in with Apple/.test(n))) notes.push('Config sets ios.usesAppleSignIn (Sign in with Apple entitlement) and the expo-apple-authentication plugin; dormant in v1.0, no sign-in screen is offered.');
-  if (cfg.ios?.associatedDomains?.length && !notes.some((n) => /Associated Domains/.test(n))) notes.push(`Config sets ios.associatedDomains (${cfg.ios.associatedDomains.join(', ')}); dormant in v1.0.`);
+  const dormant = SERVER_ON ? 'used in this build (sign-in against staging)' : 'dormant in this build, no sign-in screen is offered';
+  if (cfg.ios?.usesAppleSignIn && !notes.some((n) => /Sign in with Apple/.test(n))) notes.push(`Config sets ios.usesAppleSignIn (Sign in with Apple entitlement) and the expo-apple-authentication plugin; ${dormant}.`);
+  if (cfg.ios?.associatedDomains?.length && !notes.some((n) => /Associated Domains/.test(n))) notes.push(`Config sets ios.associatedDomains (${cfg.ios.associatedDomains.join(', ')}); ${SERVER_ON ? 'needs the website association file (step 10)' : 'dormant in this build'}.`);
   const google = (cfg.plugins ?? []).some((p) => (Array.isArray(p) ? p[0] : p) === '@react-native-google-signin/google-signin');
-  if (!google) notes.push('Google sign-in is not in this build (it needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, which the profile does not set).');
-  notes.push('Server-side code is dormant behind EXPO_PUBLIC_SERVER_FEATURES=off: no Supabase client is constructed, no network call is made for sign-in or sync, and co-parent entry points show "coming soon". Analytics is switched off for v1.0 (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no usage switch, no PostHog client, and no PostHog key is in the build.');
+  if (!google) notes.push('Google sign-in is not in this build (it needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, which the profile does not set). Apple and email are enough for the alpha.');
+  if (SERVER_ON) {
+    notes.push('Server features are ON: sign-in (Apple, email link and code), sync and co-parent sharing talk to the staging Supabase project named by the EAS "preview" environment. Recording backup and the status report stay off (build flags). Analytics is off (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no PostHog client. Kill path: rebuild with EXPO_PUBLIC_SERVER_FEATURES=off and expire this build in App Store Connect (TESTFLIGHT.md "If something goes wrong").');
+    notes.push('Not for anyone outside the family until the R-17 security gate passes (D-100): put this build in the family internal group only, with automatic distribution off for every other group.');
+    const collected = cfg.ios?.privacyManifests?.NSPrivacyCollectedDataTypes ?? [];
+    if (collected.length === 0)
+      warn('The privacy manifest declares no collected data (NSPrivacyCollectedDataTypes is empty) but this build signs in and syncs. Fine for internal TestFlight [unverified]; fill it from docs/legal/data-map.yaml (BL-349, WP-F21-09) before any external group or store build.');
+  } else {
+    notes.push('Server-side code is dormant behind EXPO_PUBLIC_SERVER_FEATURES=off: no Supabase client is constructed, no network call is made for sign-in or sync, and co-parent entry points show "coming soon". Analytics is switched off (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no usage switch, no PostHog client, and no PostHog key is in the build.');
+  }
   notes.push('Plus is a StoreKit 2 in-app purchase (product ids plus.annual and plus.monthly) created under THIS App Store Connect record: the .preview record needs its own products and the Paid Apps agreement before sandbox purchases load. Review notes for guideline 3.1.2(a) belong to the production submission, not TestFlight internal testing (unverified).');
 }
+
+// ---------------------------------------------------------------- founder steps this script cannot see
+// Apple, App Store Connect, Supabase dashboards and the live website are outside the repo, and the script
+// never goes online, so these stay "check" until the founder ticks them in docs/FOUNDER_TASKS.md.
+step(1, 'check', 'Apple Developer Program membership Active (developer.apple.com > Account)');
+step(2, 'check', 'App Store Connect record for the .preview bundle id, and the testers added');
+if (!founder.has(3)) step(3, 'check', 'project id not checked (the app config did not evaluate)');
+if (!founder.has(4)) step(4, 'check', 'words from speech need the key, the bucket and a published manifest');
+step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1' : 'build 1 is optional before build 2');
+if (SERVER_ON) {
+  step(6, 'check', 'scribe-staging exists and has every migration on develop (staging from develop; TESTFLIGHT.md step 6)');
+  step(8, 'check', 'Supabase Apple provider client ids include the .preview bundle id');
+  step(10, 'check', 'curl -sI https://<website>/.well-known/apple-app-site-association answers 200 application/json with no redirect');
+  step(11, 'check', 'this run is the preflight for build 2');
+  step(12, 'check', 'before anyone tries Delete account: RESEND_API_KEY and the purge worker on staging');
+}
+const needed = SERVER_ON ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5];
 
 // ---------------------------------------------------------------- report
 const order = ['FAIL', 'WARN', 'UNVERIFIED', 'PASS'];
 const count = (l) => results.filter((r) => r.level === l).length;
-console.log('Early Letters TestFlight preflight (v1.0 on-device, profile "testflight")\n');
+console.log(`TestFlight preflight: ${SPEC.build}, profile "${PROFILE}", server features ${SERVER_ON ? 'ON (staging)' : 'OFF (on this phone only)'}\n`);
 for (const lvl of ['PASS', 'UNVERIFIED', 'WARN', 'FAIL']) {
   for (const r of results.filter((x) => x.level === lvl)) console.log(`${lvl.padEnd(10)} ${r.msg}`);
 }
@@ -333,7 +495,16 @@ if (notes.length) {
   console.log('\nApp Review notes (facts, not problems):');
   for (const n of notes) console.log(`  - ${n}`);
 }
-console.log(`\n${order.map((l) => `${count(l)} ${l.toLowerCase()}`).join(', ')}`);
+const open = needed.filter((n) => founder.get(n)?.state === 'open');
+const toCheck = needed.filter((n) => founder.get(n)?.state === 'check');
+console.log(`\nFounder steps for ${SPEC.build} (docs/release/TESTFLIGHT.md):`);
+for (const n of open) console.log(`  MISSING   ${STEPS[n]}: ${founder.get(n).why}`);
+for (const n of toCheck) console.log(`  CHECK     ${STEPS[n]}: ${founder.get(n).why}`);
+for (const n of needed.filter((x) => founder.get(x)?.state === 'done')) console.log(`  DONE      ${STEPS[n]}: ${founder.get(n).why}`);
+if (PROFILE === 'testflight') console.log('  (Steps 6 to 12 are for alpha build 2: run `npm run preflight:alpha -w @scribe/mobile`.)');
+if (open.includes(4)) console.log('  Step 4 is optional: without it the build works for typing, the Book and reading, but recordings get no words.');
+
+console.log(`\n${order.map((l) => `${count(l)} ${l.toLowerCase()}`).join(', ')}, ${open.length} founder step(s) missing, ${toCheck.length} to check by hand`);
 console.log(
   count('FAIL')
     ? 'Do not build yet: fix every FAIL above.'
