@@ -9,7 +9,7 @@ Labels: **Verified** (checked on an opened vendor page on 3 Oct 2026), **Assumpt
 
 | Domain | Serves | Mail |
 |---|---|---|
-| `earlyletters.com` | Website on Vercel (`/`, `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, later `/delete-account`), `/.well-known/` files, universal-link fallback pages `/auth/callback` and `/i/*` | Sends through Resend (`hello@`), receives at `hello@` (and the suggested `privacy@`, `security@`, `dmarc@`) |
+| `earlyletters.com` | Website on Vercel (`/`, `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, later `/delete-account`), `/.well-known/` files, universal-link fallback pages `/auth/confirm`, `/auth/callback` and `/j` | Sends through Resend (`hello@`), receives at `hello@` (and the suggested `privacy@`, `security@`, `dmarc@`) |
 | `www.earlyletters.com` | Redirect to the apex | none |
 | `send.earlyletters.com` | Nothing on the web; Resend's return-path (bounce) domain | Resend bounces only |
 | `packs.earlyletters.com` | Language and model packs CDN (decision 15) | none |
