@@ -52,14 +52,19 @@ export interface RotationRow {
 
 export interface EscrowDb {
   context(profile: string, device: string): Promise<RequestContext>;
-  openRequest(profile: string, device: string, requestId: string, stopTokenHash: Uint8Array,
+  openRequest(profile: string, device: string, session: string, requestId: string, stopTokenHash: Uint8Array,
     approvals: { device_id: string; code_hash_hex: string; sealed_code_hex: string }[]): Promise<OpenResult>;
   loadWraps(profile: string, device: string, request: string): Promise<LoadResult>;
   recordUnwraps(profile: string, device: string, request: string, rows: UnwrapRow[], requestId: string): Promise<number>;
   setState(profile: string, request: string, event: 'notified' | 'released'): Promise<{ state: RequestState }>;
   rotationBatch(from: number, limit: number): Promise<RotationRow[]>;
   rewrapKey(profile: string, child: string, keyVersion: number, from: number, to: number, wrap: Uint8Array, requestId: string):
-    Promise<{ updated: boolean; first_for_account: boolean; email: string | null }>;
+    Promise<{ updated: boolean }>;
+  /** A wrap that did not open with the old key: logged once as `failed`, then skipped by rotationBatch. */
+  rotationFailed(profile: string, child: string, keyVersion: number, from: number, requestId: string): Promise<{ recorded: boolean }>;
+  /** Accounts whose one rotation email has not gone out yet (retried until it has). */
+  rotationPending(to: number, limit: number): Promise<{ profile_id: string; email: string }[]>;
+  rotationNotified(profile: string, to: number): Promise<{ notified: boolean }>;
   close(): Promise<void>;
 }
 
@@ -73,8 +78,8 @@ export function escrowDb(c: PgConnection): EscrowDb {
   };
   return {
     context: (p, d) => call('escrow_request_context', [p, d], ['uuid', 'uuid']),
-    openRequest: (p, d, rid, hash, approvals) =>
-      call('escrow_open_request', [p, d, rid, bytea(hash), JSON.stringify(approvals)], ['uuid', 'uuid', 'text', 'bytea', 'jsonb']),
+    openRequest: (p, d, sess, rid, hash, approvals) =>
+      call('escrow_open_request', [p, d, sess, rid, bytea(hash), JSON.stringify(approvals)], ['uuid', 'uuid', 'uuid', 'text', 'bytea', 'jsonb']),
     loadWraps: (p, d, r) => call('escrow_load_wraps', [p, d, r], ['uuid', 'uuid', 'uuid']),
     recordUnwraps: (p, d, r, rows, rid) =>
       call('escrow_record_unwraps', [p, d, r, JSON.stringify(rows), rid], ['uuid', 'uuid', 'uuid', 'jsonb', 'text']),
@@ -82,6 +87,10 @@ export function escrowDb(c: PgConnection): EscrowDb {
     rotationBatch: (from, limit) => call('escrow_rotation_batch', [String(from), String(limit)], ['int', 'int']),
     rewrapKey: (p, child, kv, from, to, wrap, rid) =>
       call('escrow_rewrap_key', [p, child, String(kv), String(from), String(to), bytea(wrap), rid], ['uuid', 'uuid', 'int', 'int', 'int', 'bytea', 'text']),
+    rotationFailed: (p, child, kv, from, rid) =>
+      call('escrow_rotation_failed', [p, child, String(kv), String(from), rid], ['uuid', 'uuid', 'int', 'int', 'text']),
+    rotationPending: (to, limit) => call('escrow_rotation_pending', [String(to), String(limit)], ['int', 'int']),
+    rotationNotified: (p, to) => call('escrow_rotation_notified', [p, String(to)], ['uuid', 'int']),
     close: () => c.close(),
   };
 }

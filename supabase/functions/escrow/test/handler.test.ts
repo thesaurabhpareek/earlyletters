@@ -19,6 +19,7 @@ async function setup(over: Record<string, string | undefined> = {}) {
     MAIN_SUPABASE_URL: ASHA.mainUrl,
     ESCROW_DB_URL: 'postgresql://escrow_svc.ref:pw-fixture@pooler.example:5432/postgres',
     RESEND_API_KEY: 're_fixture',
+    ESCROW_DB_CA: '-----BEGIN CERTIFICATE-----\nZml4dHVyZQ==\n-----END CERTIFICATE-----',
     ESCROW_PRIVATE_KEY_V1: encodeBase64(escrow.sk),
     ...over,
   };
@@ -64,7 +65,8 @@ Deno.test('[F08-REQ-041] the escrow project\'s own switch off: 503 paused (escro
 
 Deno.test('missing or malformed configuration fails closed', async () => {
   for (const over of [{ ESCROW_PRIVATE_KEY_V1: undefined }, { ESCROW_PRIVATE_KEY_V1: 'c2hvcnQ=' }, { ESCROW_DB_URL: 'postgresql://postgres:pw@db.example:5432/postgres' },
-    { MAIN_SUPABASE_URL: 'http://insecure.example' }, { RESEND_API_KEY: undefined }]) {
+    { MAIN_SUPABASE_URL: 'http://insecure.example' }, { RESEND_API_KEY: undefined },
+    { ESCROW_DB_CA: undefined }, { ESCROW_DB_CA: 'not a certificate' }]) {
     const s = await setup(over);
     assert.equal((await s.call({ device_id: ASHA.newPhone })).status, 503, JSON.stringify(over));
   }
@@ -94,6 +96,35 @@ Deno.test('a bad token is 401; a stale sign-in for a new request is 401 reauth_r
   const r = await s.call({ device_id: p.device }, { token: stale });
   assert.equal(r.status, 401);
   assert.deepEqual(r.json.error, { code: 'reauth_required', retryable: false, detail: 'step_up_required' });
+});
+
+Deno.test('a session that has ended (Stop signed out everywhere) cannot open a request: 401, SCSES', async () => {
+  const s = await setup();
+  const p = await phone(s.db, s.escrow.pk);
+  s.db.sessions.clear();
+  const r = await s.call({ device_id: p.device });
+  assert.equal(r.status, 401);
+  assert.deepEqual(r.json.error, { code: 'unauthorized', retryable: false, sqlstate: 'SCSES' });
+  assert.equal(s.db.requests.length, 0);
+  const noSession = await s.t.mint({ session_id: undefined });
+  assert.equal((await s.call({ device_id: p.device }, { token: noSession })).status, 401, 'a token without a session id');
+});
+
+Deno.test('the access log stores an id made by the function, never the caller\'s x-request-id', async () => {
+  const s = await setup();
+  const p = await phone(s.db, s.escrow.pk);
+  const created = await s.call({ device_id: p.device }, { rid: 'abcdef012345' });
+  assert.equal(created.rid, 'abcdef012345', 'the caller\'s id is still echoed');
+  s.db.requests[0].hold_until = Date.now() - 1000;
+  await s.call({ device_id: p.device }, { rid: 'abcdef012345', path: `/escrow/v1/restore-requests/${created.json.data.request_id}/release` });
+  const stored = [...s.db.calls.filter((c) => c.fn === 'openRequest').map((c) => c.args[3]), ...s.db.calls.filter((c) => c.fn === 'recordUnwraps').map((c) => c.args[3])];
+  assert.equal(stored.length, 2);
+  for (const id of stored) {
+    assert.match(String(id), /^[0-9a-f]{12}$/);
+    assert.notEqual(id, 'abcdef012345');
+  }
+  const audit = s.lines.map((l) => JSON.parse(l)).filter((l) => l.req_id === 'abcdef012345').map((l) => l.audit_id);
+  assert.ok(audit.includes(stored[1]), 'log lines carry the audit id, so the two can be joined');
 });
 
 Deno.test('[F08-REQ-029] over a limit: 429 rate_limited, and the founder gets one content-free alert', async () => {

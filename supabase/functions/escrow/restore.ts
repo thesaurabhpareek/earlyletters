@@ -11,7 +11,8 @@
  *                 private key for its version, seals it to the requesting device, writes one log
  *                 row per key, emails the account ("We used your recovery key"), marks the request
  *                 released, and only then returns the sealed keys. If the email or the log write
- *                 fails, nothing is returned. Still holding: the hold time.
+ *                 fails, nothing is returned. Still holding: the hold time. A repeat within a day
+ *                 of release opens the keys again: new log rows and a new email.
  *
  * Approving ("Yes, it's mine"), "Not me" and Stop in Settings are main-project RPCs
  * (backup_pending_requests, backup_approve_request, backup_cancel_request), because approving
@@ -81,6 +82,8 @@ export async function createRequest(deps: RestoreDeps, user: VerifiedUser, devic
   }
   // A new request, or one whose email never went out: both need a fresh sign-in.
   if (!recentSignIn(user, Math.floor(deps.now().getTime() / 1000))) throw new Refusal('reauth_required', 401, { detail: 'step_up_required' });
+  // The database checks that this session is still live (a Stop signs out every session).
+  if (!user.sessionId) throw new Refusal('reauth_required', 401, { detail: 'step_up_required' });
   const token = rand(32);
   const approvals = [];
   for (const d of ctx.enrolled) {
@@ -88,7 +91,7 @@ export async function createRequest(deps: RestoreDeps, user: VerifiedUser, devic
     const sealed = packV1(await seal(fromHex(d.public_key_hex), INFO.approval, aad.approval(user.sub, d.device_id), code));
     approvals.push({ device_id: d.device_id, code_hash_hex: toHex(await sha256(code)), sealed_code_hex: toHex(sealed) });
   }
-  const opened = await db.openRequest(user.sub, deviceId, reqId, await sha256(token), approvals);
+  const opened = await db.openRequest(user.sub, deviceId, user.sessionId, reqId, await sha256(token), approvals);
   if (opened.created) log.info('restore.requested', { step: 'open', counts: { devices: approvals.length } });
   if (!opened.notified && (opened.created || opened.token_replaced)) {
     const values = {
@@ -128,7 +131,10 @@ export async function release(deps: RestoreDeps, user: VerifiedUser, deviceId: s
       try {
         const w = unpackV1(fromHex(k.escrow_wrap_hex));
         bk = await open(sk, w.enc, INFO.bookKey, aad.bookKey(user.sub, k.child_id, k.key_version, k.escrow_key_version), w.ct);
-        if (bk.length !== 32) bk = null;
+        if (bk.length !== 32) {
+          bk.fill(0);
+          bk = null;
+        }
       } catch (e) {
         if (!(e instanceof HpkeError)) throw e;
         bk = null;
@@ -147,9 +153,11 @@ export async function release(deps: RestoreDeps, user: VerifiedUser, deviceId: s
   log.info('restore.released', { step: 'unwrap', counts: { keys: rows.length, opened, failed: rows.length - opened } });
   if (!opened) throw new Refusal(loaded.keys.some((k) => !deps.keys[k.escrow_key_version]) ? 'unknown_key_version' : 'decrypt_failed', 500);
 
-  // Then the email, the record of use we cannot edit afterwards (F08 6.5 C7).
+  // Then the email, the record of use we cannot edit afterwards (F08 6.5 C7). One per call that
+  // opened keys: a repeat within the day (an app killed after release) opens them again, so it is
+  // another use and gets its own email. reqId is server-made, so a caller cannot reuse a key.
   await sendOrRefuse(deps, 'backup-key-used', user.email, { when: when(deps.now()), device: DEVICE, requestId: reference(requestId) },
-    `escrow-restore-released:${requestId}`);
+    `escrow-restore-released:${requestId}:${reqId}`);
   await db.setState(user.sub, requestId, 'released');
   return { state: 'released', request_id: requestId, keys: out };
 }

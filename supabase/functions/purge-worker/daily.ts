@@ -9,10 +9,10 @@
  * Files hold entity types, ids and times only; they are kept 60 days, longer
  * than the 7-day backup window.
  *
- * The recovery-key access log gets the same treatment (F08-REQ-042): yesterday's
- * and today's escrow_unwraps rows go to `escrow/YYYY-MM-DD.jsonl` (ids, reason,
- * outcome and times; never key bytes), so a database restore cannot quietly drop
- * a use of the key. Then the backup sweep: orphans after 30 days, unconfirmed
+ * The recovery-key access log gets the same treatment (F08-REQ-042): the last
+ * week's escrow_unwraps rows are merged into `escrow/YYYY-MM-DD.jsonl` (ids, reason,
+ * outcome and times; never key bytes), never overwritten, so a database restore
+ * cannot quietly drop a use of the key. Then the backup sweep: orphans after 30 days, unconfirmed
  * reservations after 7, restore requests past their window, log rows after 24
  * months (backup_svc_sweep; F08 6.5 D6). Daily is more often than the weekly the
  * spec asks for; each pass is bounded and idempotent.
@@ -48,20 +48,45 @@ export async function copyLedger(ctx: Ctx): Promise<{ rows: number; files: numbe
   return { rows, files };
 }
 
-/** The daily copy of the recovery-key access log (escrow_unwraps), same days and keep window. */
+/** How many past days each run re-checks, so a missed run or two is filled in later. */
+export const ESCROW_BACKFILL_DAYS = 7;
+
+/**
+ * The daily copy of the recovery-key access log (escrow_unwraps), same keep window.
+ * Never overwrites what an earlier run copied: each day's file is the union (by row id) of what
+ * it already holds and what the table holds now. So a database restored to an earlier point
+ * cannot shrink a file and drop a use of the key; the rows it lost stay in the copy. Each run
+ * re-checks the last ESCROW_BACKFILL_DAYS days, so a missed run is caught up, and writes a file
+ * only when it gains rows.
+ */
 export async function copyEscrowLog(ctx: Ctx): Promise<{ rows: number; files: number }> {
   const today = new Date(Math.floor(ctx.now().getTime() / DAY) * DAY);
   let rows = 0, files = 0;
-  for (const start of [new Date(today.getTime() - DAY), today]) {
+  for (let back = ESCROW_BACKFILL_DAYS; back >= 0; back--) {
+    const start = new Date(today.getTime() - back * DAY);
     const end = new Date(start.getTime() + DAY);
     const page = await ctx.d.escrowLogBetween(start.toISOString(), end.toISOString());
     if (!page.length) continue;
-    const body = page.map((r) => JSON.stringify({
-      id: r.id, at: r.at, reason: r.reason, outcome: r.outcome, profile: r.profile, subject: r.subject,
-      device: r.device, child: r.child, kv: r.kv, ekv: r.ekv, restore: r.restore, req: r.req,
-    })).join('\n') + '\n';
+    const existing = await ctx.c.storage.download(LEDGER_BUCKET, escrowLogName(start));
+    const lines = new Map<string, string>();
+    for (const l of (existing ?? '').split('\n')) {
+      if (!l.trim()) continue;
+      let id: unknown;
+      try { id = (JSON.parse(l) as { id?: unknown }).id; } catch { id = undefined; }
+      lines.set(id === undefined ? `line:${lines.size}` : String(id), l); // keep even a line we cannot read
+    }
+    const before = lines.size;
+    for (const r of page) {
+      if (lines.has(String(r.id))) continue;
+      lines.set(String(r.id), JSON.stringify({
+        id: r.id, at: r.at, reason: r.reason, outcome: r.outcome, profile: r.profile, subject: r.subject,
+        device: r.device, child: r.child, kv: r.kv, ekv: r.ekv, restore: r.restore, req: r.req,
+      }));
+    }
+    if (lines.size === before) continue;
+    const body = [...lines.values()].join('\n') + '\n';
     await ctx.c.storage.upload(LEDGER_BUCKET, escrowLogName(start), body, 'application/x-ndjson', true);
-    rows += page.length;
+    rows += lines.size - before;
     files++;
   }
   const names = (await ctx.c.storage.list(LEDGER_BUCKET, 'escrow', 1000, 0)).filter((e) => !e.isFolder).map((e) => e.name);

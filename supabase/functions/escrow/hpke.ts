@@ -64,8 +64,14 @@ const labeledExtract = (suite: Uint8Array, salt: Uint8Array, label: string, ikm:
 const labeledExpand = (suite: Uint8Array, prk: Uint8Array, label: string, info: Uint8Array, len: number) =>
   expand(prk, concat(i2osp(len, 2), te.encode('HPKE-v1'), suite, te.encode(label), info), len);
 
-const importPrivate = (sk: Uint8Array) =>
-  subtle.importKey('pkcs8', buf(concat(PKCS8_PREFIX, sk)), { name: 'X25519' }, false, ['deriveBits']);
+async function importPrivate(sk: Uint8Array): Promise<CryptoKey> {
+  const der = concat(PKCS8_PREFIX, sk);
+  try {
+    return await subtle.importKey('pkcs8', der.buffer as ArrayBuffer, { name: 'X25519' }, false, ['deriveBits']);
+  } finally {
+    der.fill(0); // best effort: WebCrypto keeps its own copy
+  }
+}
 const importPublic = (pk: Uint8Array) => subtle.importKey('raw', buf(pk), { name: 'X25519' }, false, []);
 async function dh(sk: Uint8Array, pk: Uint8Array): Promise<Uint8Array> {
   if (pk.length !== 32 || sk.length !== 32) throw new HpkeError('bad_key');
@@ -123,8 +129,14 @@ export async function seal(pkR: Uint8Array, info: Uint8Array, aad: Uint8Array, p
   const enc = await publicKeyOf(skE);
   const shared = await sharedSecret(await dh(skE, pkR), enc, pkR);
   const { key, nonce } = await keySchedule(aead, shared, info);
-  const ct = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv: buf(nonce), additionalData: buf(aad), tagLength: 128 }, await aesKey(key, 'encrypt'), buf(pt)));
-  return { enc, ct };
+  shared.fill(0);
+  try {
+    const ct = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv: buf(nonce), additionalData: buf(aad), tagLength: 128 }, await aesKey(key, 'encrypt'), buf(pt)));
+    return { enc, ct };
+  } finally {
+    key.fill(0);
+    if (!opts.ephemeralSk) skE.fill(0);
+  }
 }
 
 /** OpenBase. Throws HpkeError('decrypt_failed') on any authentication failure. */
@@ -139,10 +151,13 @@ export async function open(skR: Uint8Array, enc: Uint8Array, info: Uint8Array, a
     throw new HpkeError('decrypt_failed');
   }
   const { key, nonce } = await keySchedule(aead, shared, info);
+  shared.fill(0);
   try {
     return new Uint8Array(await subtle.decrypt({ name: 'AES-GCM', iv: buf(nonce), additionalData: buf(aad), tagLength: 128 }, await aesKey(key, 'decrypt'), buf(ct)));
   } catch {
     throw new HpkeError('decrypt_failed');
+  } finally {
+    key.fill(0);
   }
 }
 

@@ -4,9 +4,12 @@
  *
  * Each call takes one small batch: for every wrap still on the old version it opens the book key
  * in memory, seals it to the new escrow public key, and stores it with escrow_rewrap_key, which
- * is a compare-and-set that writes the `rotation` log row in the same transaction (each commit is
- * one row, far under 1 s, so the sync watermark is never held back). The first key moved for an
- * account sends that account its one rotation email. Call again until `remaining` is 0.
+ * is a compare-and-set that writes the `rotation` log row and the account's rotation notice in
+ * the same transaction (each commit is one row, far under 1 s, so the sync watermark is never
+ * held back). A wrap that does not open is logged once as `failed` and skipped from then on.
+ * Then the emails: every account with a notice not yet sent gets its one rotation email, and
+ * the notice is marked sent only after the send succeeded, so a failed send is retried by the
+ * next call. Call again until `remaining` is false.
  */
 import { fromHex } from './bytes.ts';
 import type { EscrowDb } from './db.ts';
@@ -44,23 +47,34 @@ export async function rotateBatch(deps: RotateDeps, from: number, to: number, li
       bk = await open(oldKey, w.enc, INFO.bookKey, aad.bookKey(row.profile_id, row.child_id, row.key_version, from), w.ct);
     } catch (e) {
       if (!(e instanceof HpkeError)) throw e;
+      await deps.db.rotationFailed(row.profile_id, row.child_id, row.key_version, from, reqId);
       res.failed++;
       continue;
     }
-    const wrap = packV1(await seal(newPk, INFO.bookKey, aad.bookKey(row.profile_id, row.child_id, row.key_version, to), bk));
-    bk.fill(0);
-    const r = await deps.db.rewrapKey(row.profile_id, row.child_id, row.key_version, from, to, wrap, reqId);
-    if (!r.updated) continue;
-    res.rewrapped++;
-    if (r.first_for_account && r.email) {
-      try {
-        await deps.mailer.send({ to: r.email, ...render('backup-key-rotated', { when: when(deps.now()) }), idempotencyKey: `escrow-rotated:${row.profile_id}:${to}` });
-        res.emails++;
-      } catch {
-        res.emailFailures++;
-      }
+    let wrap: Uint8Array;
+    try {
+      wrap = packV1(await seal(newPk, INFO.bookKey, aad.bookKey(row.profile_id, row.child_id, row.key_version, to), bk));
+    } finally {
+      bk.fill(0);
     }
+    const r = await deps.db.rewrapKey(row.profile_id, row.child_id, row.key_version, from, to, wrap, reqId);
+    if (r.updated) res.rewrapped++;
   }
+
+  // One email per account per rotation, retried until it has gone out (F08 6.5 C7).
+  const pending = await deps.db.rotationPending(to, limit);
+  for (const p of pending) {
+    try {
+      await deps.mailer.send({ to: p.email, ...render('backup-key-rotated', { when: when(deps.now()) }), idempotencyKey: `escrow-rotated:${p.profile_id}:${to}` });
+    } catch {
+      res.emailFailures++;
+      continue;
+    }
+    await deps.db.rotationNotified(p.profile_id, to);
+    res.emails++;
+  }
+  if (pending.length >= limit || res.emailFailures) res.remaining = true;
+
   deps.log.info('rotation.batch', { step: 'rotate', counts: { rows: batch.length, opened: res.rewrapped, failed: res.failed, emails: res.emails } });
   if (res.failed || res.emailFailures) deps.log.warn('rotation.failed', { step: 'rotate', counts: { failed: res.failed, emails: res.emailFailures } });
   return res;

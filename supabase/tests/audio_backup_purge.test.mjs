@@ -119,9 +119,13 @@ const DEV = uuid7();
 const DEV_NEW = uuid7();
 await as(A, `select public.backup_register_device($1, $2::bytea)`, [DEV, hex('a1', 32)]);
 await as(A, `select public.backup_register_device($1, $2::bytea)`, [DEV_NEW, hex('a2', 32)]);
+await sys(`update backup_devices set enrolled_at = now() - interval '30 days' where device_id = $1`, [DEV]);  // old enough to approve
+const SESSION = uuid7();
+await sys(`create table if not exists auth.sessions (id uuid primary key, user_id uuid not null, not_after timestamptz)`);  // Supabase's, stubbed
+await sys(`insert into auth.sessions (id, user_id) values ($1, $2)`, [SESSION, A]);
 await db.exec('set role escrow_svc');
-const req = (await db.query(`select public.escrow_open_request($1, $2, '0123456789ab', $3::bytea, $4::jsonb) r`,
-  [A, DEV_NEW, hex('5a', 32), JSON.stringify([{ device_id: DEV, code_hash_hex: '11'.repeat(32), sealed_code_hex: '5c'.repeat(80) }])])).rows[0].r;
+const req = (await db.query(`select public.escrow_open_request($1, $2, $3, '0123456789ab', $4::bytea, $5::jsonb) r`,
+  [A, DEV_NEW, SESSION, hex('5a', 32), JSON.stringify([{ device_id: DEV, code_hash_hex: '11'.repeat(32), sealed_code_hex: '5c'.repeat(80) }])])).rows[0].r;
 await db.exec('reset role');
 await sys(`insert into escrow_unwraps (profile_id, device_id, child_id, key_version, escrow_key_version, reason, outcome, restore_request_id)
   values ($1, $2, $3, 1, 1, 'restore', 'opened', $4)`, [A, DEV_NEW, SHARED, req.request_id]);

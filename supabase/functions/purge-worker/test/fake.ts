@@ -180,6 +180,10 @@ export class FakeWorld {
       const removed = prefixes.filter((n) => this.objects.get(bucket)?.delete(n));
       return json(200, removed.map((name) => ({ name })));
     }
+    if (m && method === 'GET' && m[2]) {
+      const o = this.objects.get(decodeURIComponent(m[1]))?.get(m[2].split('/').map(decodeURIComponent).join('/'));
+      return o ? new Response(o.body ?? '', { status: 200 }) : json(404, { error: 'not_found' });
+    }
     if (m && method === 'POST' && m[2]) {
       const bucket = decodeURIComponent(m[1]);
       const name = m[2].split('/').map(decodeURIComponent).join('/');

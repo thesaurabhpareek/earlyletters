@@ -12,7 +12,7 @@ import { createRequest, Refusal, release } from '../restore.ts';
 import { ASHA, FakeDb, FakeMailer, phone } from './fakes.ts';
 
 const nowSec = () => Math.floor(Date.now() / 1000);
-const user = (over: Partial<VerifiedUser> = {}): VerifiedUser => ({ sub: ASHA.profile, email: ASHA.email, authAt: nowSec() - 60, sessionId: 's', ...over });
+const user = (over: Partial<VerifiedUser> = {}): VerifiedUser => ({ sub: ASHA.profile, email: ASHA.email, authAt: nowSec() - 60, sessionId: ASHA.session, ...over });
 
 /** What the app does: open (or get) the request, then poll release. */
 const restore = async (deps: Parameters<typeof createRequest>[0], u: VerifiedUser, device: string, rid: string) => {
@@ -197,4 +197,24 @@ Deno.test('logs carry no ids, emails, tokens or key bytes', async () => {
     assert.ok(!all.includes(s), `log leaked ${s.slice(0, 8)}`);
   }
   assert.ok(log.raw.length >= 3);
+});
+
+Deno.test('[F08-REQ-042] a repeat release within the day opens the keys again: new log rows and its own email', async () => {
+  const { escrow, db, mailer, deps } = await world();
+  const p = await phone(db, escrow.pk);
+  await restore(deps, user(), p.device, '0123456789ab');
+  db.requests[0].hold_until = Date.now() - 1000;
+  await release(deps, user(), p.device, db.requests[0].id, '0123456789ac');
+  await release(deps, user(), p.device, db.requests[0].id, '0123456789ad');
+  const used = mailer.sent.filter((m) => m.subject === 'We used your recovery key');
+  assert.equal(used.length, 2);
+  assert.notEqual(used[0].idempotencyKey, used[1].idempotencyKey, 'the provider does not fold the second use into the first');
+  assert.equal(db.log.filter((l) => l.outcome === 'opened').length, 2);
+});
+
+Deno.test('a token without a session id cannot open a request', async () => {
+  const { escrow, db, deps } = await world();
+  const p = await phone(db, escrow.pk);
+  await assert.rejects(() => createRequest(deps, user({ sessionId: null }), p.device, '0123456789ab'), (e) => e instanceof Refusal && e.code === 'reauth_required');
+  assert.equal(db.requests.length, 0);
 });

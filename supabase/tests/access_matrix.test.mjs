@@ -252,10 +252,12 @@ const SERVICE_ONLY = [
   `select public.backup_entry_exists('${aBook}', '${A}', '${CHILD}')`, `select public.backup_forget_entry('${aBook}')`,
   `select public.backup_svc_sweep(now(), 1)`, `select public.backup_svc_unwraps_between(now(), now(), 1)`, `select public.backup_svc_stop(${BHEX('00', 32)})`,
   `select public.escrow_require_on()`, `select public.escrow_request_context('${A}', '${BDEV}')`,
-  `select public.escrow_open_request('${A}', '${BDEV}', '0123456789ab', ${BHEX('00', 32)}, '[]')`,
+  `select public.escrow_open_request('${A}', '${BDEV}', '${BDEV}', '0123456789ab', ${BHEX('00', 32)}, '[]')`,
   `select public.escrow_load_wraps('${A}', '${BDEV}', '${BREQ}')`, `select public.escrow_record_unwraps('${A}', '${BDEV}', '${BREQ}', '[]', null)`,
   `select public.escrow_set_request_state('${A}', '${BREQ}', 'notified')`, `select public.escrow_rotation_batch(1, 1)`,
   `select public.escrow_rewrap_key('${A}', '${CHILD}', 1, 1, 2, ${BHEX('01', 81)}, null)`,
+  `select public.escrow_rotation_failed('${A}', '${CHILD}', 1, 1, null)`, `select public.escrow_rotation_pending(2, 1)`,
+  `select public.escrow_rotation_notified('${A}', 2)`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));

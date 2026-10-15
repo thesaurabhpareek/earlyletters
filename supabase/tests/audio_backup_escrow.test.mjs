@@ -16,8 +16,9 @@ const boxOf = (b) => JSON.stringify({ suite: 'hpke-x25519-sha256-aes256gcm', enc
 const sha = (buf) => createHash('sha256').update(buf).digest();
 const PEPPER = 'pepper-for-tests-only-0123456789abcdef';
 
-// Supabase's auth.users has email; the harness stub does not (the rotation email reads it).
+// Supabase's auth.users has email and auth.sessions exists; the harness stubs neither.
 await sys(`alter table auth.users add column email text`);
+await sys(`create table if not exists auth.sessions (id uuid primary key, user_id uuid not null, not_after timestamptz)`);
 await sys(`insert into auth.users (id, email) values ('${A}', 'asha@example.com'),('${B}', 'papa@example.com'),('${C}', null),('${S}', 'nani@example.com')`);
 await publishPolicies();
 await sys(`insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at,
@@ -43,6 +44,10 @@ await reg(B, B_DEV, hex('c1', 32));
 await as(A, `select public.backup_store_key($1, 1, 1, $2::jsonb)`, [CHILD, boxOf('aa')]);
 await as(A, `select public.backup_store_key($1, 1, 1, $2::jsonb)`, [CHILD2, boxOf('ab')]);
 await as(S, `select public.backup_store_key($1, 1, 1, $2::jsonb)`, [SOLO, boxOf('ba')]);
+// These phones have been enrolled for a month: old enough to approve (7 days).
+await sys(`update backup_devices set enrolled_at = now() - interval '30 days'`);
+const SESS = Object.fromEntries([A, B, C, S].map((u) => [u, uuid7()]));
+for (const u of [A, B, C, S]) await sys(`insert into auth.sessions (id, user_id) values ($1, $2)`, [SESS[u], u]);
 
 const asRole = async (role, sql, params = []) => {
   await db.exec(`set role ${role}`);
@@ -53,18 +58,19 @@ const errOf = async (fn) => { try { await fn(); return 'ok'; } catch (e) { retur
 let reqSeq = 0;
 const rid = () => (++reqSeq).toString(16).padStart(12, '0');
 const approvalFor = (device, code) => ({ device_id: device, code_hash_hex: sha(code).toString('hex'), sealed_code_hex: '01' + 'e1'.repeat(32) + 'c7'.repeat(48) });
-const open = (profile, device, approvals, token = hex(rid().slice(-2), 32)) =>
-  esc(`select public.escrow_open_request($1, $2, $3, $4::bytea, $5::jsonb) r`, [profile, device, rid(), token, JSON.stringify(approvals)]);
+const open = (profile, device, approvals, token = hex(rid().slice(-2), 32), session = SESS[profile]) =>
+  esc(`select public.escrow_open_request($1, $2, $3, $4, $5::bytea, $6::jsonb) r`, [profile, device, session, rid(), token, JSON.stringify(approvals)]);
 const load = (profile, device, request) => esc(`select public.escrow_load_wraps($1, $2, $3) r`, [profile, device, request]);
 const record = (profile, device, request, rows) => esc(`select public.escrow_record_unwraps($1, $2, $3, $4::jsonb, $5) r`, [profile, device, request, JSON.stringify(rows), rid()]);
 const setState = (profile, request, ev) => esc(`select public.escrow_set_request_state($1, $2, $3) r`, [profile, request, ev]);
 
 // ── The escrow role reaches the escrow_* functions and nothing else (F08-REQ-034) ──
 const ESCROW_FNS = ['escrow_load_wraps', 'escrow_open_request', 'escrow_record_unwraps', 'escrow_request_context',
-  'escrow_rewrap_key', 'escrow_rotation_batch', 'escrow_set_request_state'];
+  'escrow_rewrap_key', 'escrow_rotation_batch', 'escrow_rotation_failed', 'escrow_rotation_notified', 'escrow_rotation_pending',
+  'escrow_set_request_state'];
 const callable = (await sys(`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and has_function_privilege('escrow_svc', p.oid, 'execute') order by 1`)).rows.map((r) => r.proname);
-check('[F08-REQ-034] escrow_svc can execute exactly the seven escrow_* functions in public', JSON.stringify(callable) === JSON.stringify(ESCROW_FNS)
+check('[F08-REQ-034] escrow_svc can execute exactly the ten escrow_* functions in public', JSON.stringify(callable) === JSON.stringify(ESCROW_FNS)
   || console.log(`      ${callable}`));
 const tablesReachable = (await sys(`select n.nspname || '.' || c.relname t from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where c.relkind in ('r', 'v', 'm', 'p', 'f') and n.nspname in ('public', 'ops', 'insights', 'storage', 'auth')
@@ -93,6 +99,11 @@ const ctx = await esc(`select public.escrow_request_context($1, $2) r`, [A, NEW]
 check('context: the requesting device\'s key, and the other enrolled device to seal a code to',
   ctx.device_public_key_hex === 'a2'.repeat(32) && ctx.enrolled.length === 1 && ctx.enrolled[0].device_id === OLD && ctx.has_keys === true && ctx.open_request === null);
 check('context: a device of another account is not found', await errOf(() => esc(`select public.escrow_request_context($1, $2) r`, [B, NEW])) === 'P0002 device_unknown');
+check('a session that has ended (Stop signs out everywhere) cannot open a request', await errOf(() => open(A, NEW, [], undefined, uuid7())) === 'SCSES session_ended'
+  && await errOf(() => open(A, NEW, [], undefined, SESS[B])) === 'SCSES session_ended');
+await sys(`update auth.sessions set not_after = now() - interval '1 minute' where id = $1`, [SESS[A]]);
+check('an expired session cannot open a request', await errOf(() => open(A, NEW, [])) === 'SCSES session_ended');
+await sys(`update auth.sessions set not_after = null where id = $1`, [SESS[A]]);
 check('a request must carry one approval code per enrolled device', await errOf(() => open(A, NEW, [])) === '22023 approvals'
   && await errOf(() => open(A, NEW, [approvalFor(B_DEV, hex('11', 32))])) === '22023 approvals');
 check('nobody restores an account with nothing backed up', await errOf(() => open(C, uuid7(), [])) === 'P0002 device_unknown');
@@ -178,12 +189,27 @@ const s4 = await open(S, S_NEW, []);
 check('the 30 days roll', s4.created === true);
 await setState(S, s4.request_id, 'notified');
 await sys(`update restore_requests set hold_until = now() - interval '1 minute' where id = $1`, [s4.request_id]);
+await sys(`insert into escrow_unwraps (profile_id, child_id, key_version, escrow_key_version, reason, outcome)
+  select $1, $2, 1, 1, 'rotation', 'opened' from generate_series(1, 25)`, [S, SOLO]);
+check('a key rotation does not use up the 20 keys a day a restore may open', (await load(S, S_NEW, s4.request_id)).state === 'ready');
 await sys(`insert into escrow_unwraps (profile_id, device_id, child_id, key_version, escrow_key_version, reason, outcome, restore_request_id)
   select $1, $2, $3, 1, 1, 'restore', 'opened', $4 from generate_series(1, 20)`, [S, S_NEW, SOLO, s4.request_id]);
 check('[F08-REQ-029] more than 20 opened keys a day for one account is SCRAT', await errOf(() => load(S, S_NEW, s4.request_id)) === 'SCRAT limit_keys');
 
 // ── Cancelling: owner, "Not me", stop link, revocation, deletion ──────────
 await sys(`update restore_requests set state = 'cancelled', cancelled_at = now(), cancel_source = 'owner' where profile_id = $1 and state in ('requested', 'approved')`, [S]);
+await sys(`update restore_requests set requested_at = now() - interval '31 days' where profile_id = $1`, [S]);
+const S_FRESH = uuid7();
+await reg(S, S_FRESH, hex('b3', 32));
+const sCtx = await esc(`select public.escrow_request_context($1, $2) r`, [S, S_NEW]);
+check('a device enrolled today gets no approval code', sCtx.enrolled.length === 0);
+check('a device enrolled today cannot be handed a code either', await errOf(() => open(S, S_NEW, [approvalFor(S_FRESH, hex('41', 32))])) === '22023 approvals');
+const s5 = await open(S, S_NEW, []);
+const hold5 = (await sys(`select extract(epoch from hold_until - requested_at) / 3600 h from restore_requests where id = $1`, [s5.request_id])).rows[0].h;
+check('[F08-REQ-029] registering a second device never shortens the hold: still 72 hours, with no approver', Math.round(Number(hold5)) === 72 && s5.enrolled_devices === 0);
+check('[F08-REQ-029] a device enrolled after the request was not yet 7 days old cannot approve, whatever code it sends',
+  await errOf(() => as(S, `select public.backup_approve_request($1, $2, $3::bytea)`, [s5.request_id, S_FRESH, hex('41', 32)])) === 'P0002 device_unknown');
+await as(S, `select public.backup_cancel_request($1)`, [s5.request_id]);
 await sys(`update restore_requests set requested_at = now() - interval '31 days' where profile_id = $1`, [S]);
 const A_NEW2 = uuid7();
 await reg(A, A_NEW2, hex('a3', 32));
@@ -258,11 +284,22 @@ await sys(`set app.escrow_key_versions = '1,2'`);
 const batch = await esc(`select public.escrow_rotation_batch(1, 10) r`);
 check('a rotation batch lists wraps still on the old version, without decrypting anything', batch.length >= 3 && batch.every((k) => k.escrow_wrap_hex.length === 162));
 const rewrap = (child, from = 1, to = 2) => esc(`select public.escrow_rewrap_key($1, $2, 1, $3, $4, $5::bytea, $6) r`, [A, child, from, to, wrapOf('dd'), rid()]);
+const pending = () => esc(`select public.escrow_rotation_pending(2, 50) r`);
+check('before any rewrap, no account is owed a rotation email (and no address is handed out)', (await pending()).length === 0);
 const first = await rewrap(CHILD);
-check('[F08-REQ-030] a rewrap moves one key to the new version and says it is the account\'s first (one email)', first.updated === true
-  && first.first_for_account === true && first.email === 'asha@example.com');
-const second = await rewrap(CHILD2);
-check('[F08-REQ-030] the second key of the same account is not the first (no second email, no address)', second.first_for_account === false && second.email === null);
+check('[F08-REQ-030] a rewrap moves one key to the new version', first.updated === true);
+check('[F08-REQ-030] and the account is now owed its one rotation email, with its address', JSON.stringify(await pending()) === JSON.stringify([{ profile_id: A, email: 'asha@example.com' }]));
+await rewrap(CHILD2);
+check('[F08-REQ-030] the second key of the same account owes no second email', (await pending()).length === 1);
+check('[F08-REQ-030] until the send is marked done, the email stays owed (a failed send is retried)', (await pending()).length === 1);
+await esc(`select public.escrow_rotation_notified($1, 2) r`, [A]);
+check('[F08-REQ-030] once sent, never again', (await pending()).length === 0);
+const failArgs = [B, CHILD, 1, 1, rid()];
+await esc(`select public.escrow_rotation_failed($1, $2, $3, $4, $5) r`, failArgs);
+await esc(`select public.escrow_rotation_failed($1, $2, $3, $4, $5) r`, failArgs);
+check('a wrap that would not open is logged once as a failed rotation', (await sys(`select count(*)::int n from escrow_unwraps
+  where profile_id = $1 and reason = 'rotation' and outcome = 'failed'`, [B])).rows[0].n === 1);
+check('and the next batch skips it, so it never stalls the rotation', !(await esc(`select public.escrow_rotation_batch(1, 10) r`)).some((k) => k.profile_id === B));
 check('[F08-REQ-030] compare-and-set: rewrapping from the old version again does nothing', (await rewrap(CHILD)).updated === false);
 check('[F08-REQ-030] each rewrap writes a rotation log row in the same transaction', (await sys(`select count(*)::int n from escrow_unwraps
   where profile_id = $1 and reason = 'rotation' and escrow_key_version = 1 and occurred_at > now() - interval '1 hour'`, [A])).rows[0].n === 2);
