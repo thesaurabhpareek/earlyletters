@@ -89,7 +89,7 @@ function fileState(uri: string | null | undefined): { exists: boolean; size: num
 /** D-026 settings key of the 18+ gate (lib/age-gate.ts; DATA_CLASSIFICATION 4.6). */
 const AGE_GATE_PASSED = 'ageGate.passed';
 
-/** The consent choices this phone holds. They never leave it; the export is the person's copy. */
+/** The consent choices as this phone's settings hold them (not the server's record; see ExportPhoneConsent). */
 function consentOnThisPhone(): ExportSnapshot['consent'] {
   return phoneConsent(getSetting(AGE_GATE_PASSED) === '1', getSetting(ANALYTICS_KEYS.consent));
 }

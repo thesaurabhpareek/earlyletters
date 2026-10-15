@@ -23,7 +23,9 @@ import { brand } from '@scribe/brand';
  * still validate; this version always writes it. Compatibility is one way: the
  * 1.0.0 schema closes account.json (additionalProperties: false), so it
  * rejects a 1.1.0 file. Validate each export against the schema it carries in
- * schema/export-v1.schema.json (the $id names the format, not the version).
+ * schema/export-v1.schema.json (the $id names the format major, not the
+ * version). Each v1 minor reads every earlier v1 file, so anything published
+ * at the $id URL must be the newest v1 minor.
  */
 export const EXPORT_SCHEMA_VERSION = '1.1.0';
 
@@ -126,13 +128,16 @@ export interface AccountFile {
 }
 
 /**
- * The consent choices kept on this phone (never sent anywhere; the export is
- * the person's own copy). Not a server record.
+ * The consent choices as this phone's settings hold them (`ageGate.passed`,
+ * D-026; the analytics consent setting). Not a server record: with sign-in on,
+ * the server keeps its own record of the Terms acceptance with the 18+
+ * attestation (and, with analytics on, of the usage choice), which this field
+ * does not carry.
  */
 export interface ExportPhoneConsent {
   /** The "18 or older" question on this phone was answered yes. */
   age_confirmed: boolean;
-  /** Sharing usage reports, as answered on this phone. v1.0 never asks, so it is `not_answered` unless an earlier build asked. */
+  /** Sharing usage reports, as answered on this phone. Builds with analytics off never ask, so it is `not_answered` unless an earlier answer is stored. */
   usage_sharing: 'granted' | 'denied' | 'not_answered';
 }
 
