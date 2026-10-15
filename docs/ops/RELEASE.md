@@ -35,7 +35,7 @@ Who does what:
 - `main`: always releasable; changes only through a release PR from `develop` (or a hotfix PR, 1.4) that the founder approves.
 - `develop`: integration. Each agent wave lands on `auto/<date>-<topic>` first; the coordinator runs every check and merges.
 - Human branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `docs/<what>`, `exp/<what>`. One concern per pull request.
-- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Mon 26 Oct), right after the release PR. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open for v1.0.1 and the fix waves. The branch stays for 1.0.x hotfixes.
+- `release/<major>.<minor>` (D-089): the coordinator cuts `release/1.0` from `main` at feature freeze (Mon 26 Oct), right after the release PR. It takes fixes only: merged to `develop` first, labelled `release:1.0`, then cherry-picked by the coordinator. `develop` stays open: 1.0.x fixes land there first and are cherry-picked, and v1.1 work continues. The branch stays for 1.0.x hotfixes.
 
 ### 1.2 Tags (F: CLAUDE.md, COORDINATION 6)
 - `ios-v<x.y.z>-rc.<n>` on a `release/<major>.<minor>` commit builds a release candidate: `release-ios.yml` checks that the tag, `apps/mobile/version.json` and the branch agree, runs the tests, then the EAS production build with auto-submit to TestFlight (3.4). Coordinator only: `git tag -a ios-v1.0.0-rc.1 -m "Early Letters 1.0.0 rc.1" && git push origin ios-v1.0.0-rc.1`.
@@ -100,19 +100,19 @@ Requested submit profile (A: values come from the founder after FT-08):
 ```json
 "submit": {
   "production": {
-    "ios": { "ascAppId": "<Apple ID number of the app, App Store Connect > App Information>", "appleTeamId": "<Team ID>", "groups": ["C0 family"] }
+    "ios": { "ascAppId": "<Apple ID number of the app, App Store Connect > App Information>", "appleTeamId": "<Team ID>", "groups": ["Release candidates"] }
   }
 }
 ```
-`ascAppId` and `appleTeamId` are documented `submit.production.ios` keys, and `groups` adds the build to TestFlight internal groups (V: Expo "Configure with eas.json"). Neither id is a secret, but they are written only after the founder confirms them.
+`ascAppId` and `appleTeamId` are documented `submit.production.ios` keys, and `groups` adds the build to TestFlight internal groups (V: Expo "Configure with eas.json"). On the production record that group is `Release candidates` (the founder's phones, for TF-04 and FT-39); C0 runs on the `.preview` record (5.2). Neither id is a secret, but they are written only after the founder confirms them.
 
 ### 3.3 Build variables
 Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS (FT-17), never in the repo: `npx eas-cli env:set --name <NAME> --value <value> --environment production --visibility plaintext` (V: Expo "Environment variables"), and the profile names its environment (`"environment": "production"`). For v1.0 the production build needs only `EXPO_PUBLIC_APP_ENV=production`, `EXPO_PUBLIC_SERVER_FEATURES=off` (both in `eas.json`) and `EXPO_PUBLIC_DOCS_BASE_URL` for signed packs and config (FT-16; `docs/release/TESTFLIGHT.md`). **v1.1:** AUTH_SETUP section 8 plus `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` (G-05), and `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` once FT-24 is done. The Supabase **secret** key never goes into EAS.
 
 ### 3.4 The build (from an RC tag)
-Pushing `ios-v<x.y.z>-rc.<n>` runs `.github/workflows/release-ios.yml` (BL-437): tag, version and branch checks, `npm test`, typecheck, store metadata drift, placeholder scan, then `eas build --platform ios --profile production --non-interactive --freeze-credentials --no-wait --auto-submit`. The build runs on EAS; the upload to TestFlight follows when it finishes. It needs the secrets in 3.5, `owner` and `extra.eas.projectId` in `app.config.ts`, production signing credentials in EAS (sign the first production build once from a computer, 4) and `submit.production.ascAppId` (3.2).
+Pushing `ios-v<x.y.z>-rc.<n>` runs `.github/workflows/release-ios.yml` (BL-437): tag, version and branch checks, `npm test`, typecheck, store metadata drift, placeholder scan, a trusted signing key in `packages/api/src/keys.ts` (and a warning if `eas.json` has no `EXPO_PUBLIC_DOCS_BASE_URL`), then, after the founder approves the run in the `app-store` environment, `eas build --platform ios --profile production --non-interactive --freeze-credentials --no-wait --auto-submit`. The build runs on EAS; the upload to TestFlight follows when it finishes. Whether `--auto-submit` still submits after the CLI exits with `--no-wait` is Unverified: on the first RC, watch the build page on expo.dev for the linked submission and record what happened in `docs/release/1.0.0.md`. The checks run `npm test` and typecheck but not `test:db` or `test:functions`: v1.0 runs no server code. It needs the environment and secrets in 3.5, `owner` and `extra.eas.projectId` in `app.config.ts`, production signing credentials in EAS (sign the first production build once from a computer, 4) and `submit.production.ascAppId` (3.2).
 
-The same by hand, if the workflow cannot run:
+By hand only as an exception: if the workflow cannot run and the founder approves it in writing, recorded in `docs/release/<x.y.z>.md` with the reason (engineering chapter 11, REL-R05):
 ```bash
 git switch --detach ios-v1.0.0-rc.1
 cd apps/mobile
@@ -121,15 +121,24 @@ npx eas-cli@latest submit --platform ios --latest                   # uploads to
 ```
 `eas submit` uploads the build; it shows in TestFlight after processing (V: Expo "Submit to the Apple App Store", "usually 10-15 minutes"). Record the build id, build number and commit in `docs/release/<x.y.z>.md`.
 
-Store text: `apps/mobile/store.config.json` is generated from `packages/content` (`npx tsx scripts/release/store-config.ts`, BL-436). The founder runs `release-ios.yml` by hand from the release branch with `job: metadata`, which adds the review contact from its secret and runs `eas metadata:push`. EAS Metadata cannot upload screenshots: upload them by hand (6.3).
+Build budget (D-092): EAS Free gives 15 iOS builds a month, shared by both lanes, at low priority with one build at a time. Plan about 4 RC builds in the freeze window plus one preview build per RC for C1 (ADR 0022 decision 5), and keep other preview builds that month to about 7. If queue time holds up an RC, move to Starter for that month (D-092).
 
-### 3.5 Release secrets (repository secrets; the repo is private on GitHub Free, which has no environment secrets)
-| Name | What | Used by |
+After the freeze, C1 builds come from `testflight.yml` run on the latest RC tag, so families test the RC's commit in the preview record.
+
+Store text: `apps/mobile/store.config.json` is generated from `packages/content` (`npx tsx scripts/release/store-config.ts`, BL-436). Whoever changes the source regenerates it in the same PR; the drift test in `npm test` fails otherwise. The founder runs `release-ios.yml` by hand from the release branch with `job: metadata`. The job refuses any other ref, refuses a listing that promises sharing while server features are off (BL-440), waits for the founder's approval in the `app-store` environment, adds the review contact and copyright from the secret, and runs `eas metadata:push`. GitHub shows the Run workflow button only for workflows on the default branch, so the job is available once the release PR has merged to `main` (V: GitHub docs, per the 15 Oct review). EAS Metadata cannot upload screenshots: upload them by hand (6.3).
+
+### 3.5 Release secrets and the gate (ADR 0022 decision 8; FT-20)
+The repository is public, so GitHub Free includes environments with required reviewers, environment secrets, deployment tag and branch rules, and rulesets (V: GitHub "Deployments and environments" and "About rulesets", per the 15 Oct review; `deploy-db.yml` already uses an environment).
+- Environment `app-store`: the founder is the required reviewer; deployment rules allow tag `ios-v*` and branch `release/*` only. The `build` and `metadata` jobs run in it, so each RC build and each metadata push waits for the founder's approval, and a run on any other ref never gets the secrets.
+- Rulesets: tag `ios-v*` and branch `release/*`, restricting creations, updates and deletions, with repository admins as the only bypass. The coordinator pushes tags from a founder-credential session; the agent harness's App cannot.
+- Limit: every Claude session runs on the founder's GitHub account, which is an admin. The rulesets and the approval stop the harness App and anyone without admin rights. A session on the founder's credentials is held by the written rule (COORDINATION.md) and by the founder seeing each approval request.
+
+| Name (environment secret of `app-store`) | What | Used by |
 |---|---|---|
-| `EXPO_TOKEN` | Expo robot token (FT-17); a robot token needs `owner` in app config | RC build, metadata push |
-| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","demoRequired"}`; optional `notes` overrides `storeListing.reviewNotes`; `demoUsername` and `demoPassword` only if a demo account exists | metadata push |
+| `EXPO_TOKEN` | Expo robot token used only for the store lane (FT-17); a robot token needs `owner` in app config | RC build, metadata push |
+| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","copyright"}`. `phone` is international format with a leading `+`. `copyright` becomes `apple.copyright`, for example "2026" and the publisher's legal name, which is never in code (D-004). Optional `notes` overrides `storeListing.reviewNotes`; `demoUsername`, `demoPassword` and `demoRequired` only if a demo account exists (v1.1) | metadata push |
 
-The App Store Connect API key and signing credentials stay in EAS credentials (4), never in GitHub.
+A malformed secret fails with a fixed message and is never echoed to the public log. The App Store Connect API key and signing credentials stay in EAS credentials (4), never in GitHub.
 
 ## 4. Signing with an individual developer account
 
@@ -171,7 +180,7 @@ Purchases in TestFlight run in the sandbox; subscriptions renew every day, up to
 6. Never call the build "beta" in App Store text; TestFlight's own description is fine (D-060).
 
 ### 5.4 Cohort exits
-As DEVICE_TEST_PLAN TF-09: C0 to C1 needs no open S0, crash-free sessions 99.5% or more, S1-13 passed, TF-04 green; C1 to submission needs no open S0 or S1, crash-free sessions 99.8% or more, no fidelity complaint traced to a machine edit, one co-parent pair through the invite unaided, S1-17 accepted for every listed language, size under 40 MB, section 6 complete.
+As DEVICE_TEST_PLAN TF-09: C0 to C1 needs no open S0, crash-free sessions 99.5% or more, S1-13 passed, TF-04 green; C1 to submission needs no open S0 or S1, crash-free sessions 99.8% or more, no fidelity complaint traced to a machine edit, (**v1.1:** one co-parent pair through the invite unaided), S1-17 accepted for every listed language, size under 40 MB, section 6 complete.
 
 ## 6. Submission checklist (FT-43, FT-45)
 
@@ -180,7 +189,7 @@ Tick every line in the release PR's description with the evidence file it rests 
 ### 6.1 Privacy: labels, manifest, policy
 - [ ] App Privacy answers entered from `docs/legal/app-store-privacy-labels.md` 1.2 with the Q-005 answer applied in 1.2, 1.4 and 3.3 together (legal owner and counsel, FT-33).
 - [ ] The section 5 consistency checklist in that file is complete for this exact build (no new SDK, no audio upload, no photos, no crash SDK, `child-input` flag off).
-- [ ] TF-10 passed on this build: `PrivacyInfo.xcprivacy` in the app matches labels 3.3 (built from `apps/mobile/src/lib/privacy-manifest.ts`, G-23), every listed SDK carries its own, no ITMS-91053 email after upload. Apple rejects uploads that use required-reason APIs without declared reasons (labels doc 3.1, V there).
+- [ ] TF-10 passed on this build: `PrivacyInfo.xcprivacy` in the app matches labels 3.3 (declared in `apps/mobile/app.config.ts` on `develop`; Line B's `privacy-manifest.ts` is G-23 in the port map, #117), every listed SDK carries its own, no ITMS-91053 email after upload. Apple rejects uploads that use required-reason APIs without declared reasons (labels doc 3.1, V there).
 - [ ] Privacy Policy URL in App Store Connect is `https://earlyletters.com/privacy` and serves the version the app links to; the Consumer Health Data Privacy Policy link is in the description (G-21).
 
 ### 6.2 Age rating: override to 18+
@@ -233,7 +242,7 @@ For a critical bug fix, request an expedited review (V: Apple "App Review": "fix
 
 No OTA in v1.0 (D-091, founder, 13 Oct 2026).
 
-- **v1.0 ships with no OTA JavaScript updates.** `expo-updates` is not a dependency (F: `apps/mobile/package.json`), and no `runtimeVersion` or `channel` is configured. Every code change is a new binary through this train. Reasons: TDD 07 9.1 requires the same gates for an OTA as for an external build; App Review guideline 2.5.2 forbids downloading code that changes features (V); and the founder's quality bar favours one reviewed binary per change.
+- **v1.0 ships with no OTA JavaScript updates.** `expo-updates` is not a dependency (F: `apps/mobile/package.json`), and no `runtimeVersion` is configured. `eas.json` on `develop` sets a `channel` on every profile; without `expo-updates` a channel does nothing. Every code change is a new binary through this train. Reasons: TDD 07 9.1 requires the same gates for an OTA as for an external build; App Review guideline 2.5.2 forbids downloading code that changes features (V); and the founder's quality bar favours one reviewed binary per change.
 - **What does change without a release** (decision 16, D-066, ADR 0016): signed, versioned data only: remote config and kill switches, pack manifests and language packs, prompts, tips and story cards. Never anything that changes data collection, the paywall, the 18+ gate or consent (ADR 0016 5.3). These go through section 9.
 - **If OTA is adopted later** (a decision entry first): add `expo-updates` with a `runtimeVersion` policy so an update only reaches binaries with matching native code (V: Expo "Runtime versions"); publish per channel (`production`) with a rollout percentage, starting at 10% (V: Expo "Rollouts": `eas update --rollout-percentage`, revert with `eas update:revert-update-rollout`); run G3 on the exact update bundle; never change consent, gate, paywall or data collection by OTA; sign updates (Expo code signing) (A: not configured).
 
@@ -260,7 +269,7 @@ Signed and published only by the coordinator, with the founder's OK and the foun
 Not run for v1.0: the on-device build makes no Supabase call (PR #54). This section is the plan for when server features turn on.
 
 
-The founder applies live migrations by hand, staging first, in `supabase/APPLY.md` order; each applied file is added to `.github/migrations-applied.txt` in a PR, and an applied file is never edited (F: COORDINATION 6, migration guard). D-041's "migrations only from CI on a tag" is not built, so APPLY.md is the procedure.
+The founder applies live migrations by hand, staging first, in `supabase/APPLY.md` order; each applied file is added to `.github/migrations-applied.txt` in a PR, and an applied file is never edited (F: COORDINATION 6, migration guard). D-041's "migrations only from CI on a tag" is built: `.github/workflows/deploy-db.yml` (PR #36) applies migrations to staging and, on a `db-v*` tag, to production through the `production` environment. Follow APPLY.md for anything that workflow does not cover.
 
 | Order | File | APPLY.md | Needed by |
 |---|---|---|---|
@@ -297,11 +306,11 @@ Release ios-vX.Y.Z (RC tag ios-vX.Y.Z-rc.N, build N), commit <sha> on release/X.
 - [ ] develop green (G0) and merged; release PR approved by the founder; release branch cut; RC tag pushed; record docs/release/X.Y.Z.md current
 - [ ] v1.1 and later: migrations needed by this build are live on staging and production (RELEASE 10); migrations-applied.txt updated
 - [ ] Packs, config, content published and committed if changed (RELEASE 9)
-- [ ] EAS production build from the RC tag (release-ios.yml), image sdk-57; build number recorded
+- [ ] EAS production build from the RC tag (release-ios.yml), approved in the app-store environment, image sdk-57; build number recorded
 - [ ] Store text pushed (metadata job) after BL-440; screenshots uploaded
 - [ ] Size: largest download under 40 MB (APP_SIZE)
 - [ ] TF-04 smoke on SE 3; TF-10 privacy manifest; TF-03 update over the previous build
-- [ ] DEVICE_TEST_PLAN items for this milestone: evidence file <path>
+- [ ] DEVICE_TEST_PLAN items for this milestone, including S2-17 (plan reminders, D-094) and TF-11 (no analytics host, D-095) once #123 merges: evidence file <path>
 - [ ] Submission checklist RELEASE 6.1 to 6.8 (first version and any version that changes data collection, age rating, screenshots or subscriptions)
 - [ ] Release option: manual (1.0) or phased (updates)
 - [ ] After release: tag ios-vX.Y.Z on the RC's commit; G5 watch for 7 days; DECISIONS go/no-go note (coordinator)
