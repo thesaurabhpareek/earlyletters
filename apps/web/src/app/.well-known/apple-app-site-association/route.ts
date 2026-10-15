@@ -10,12 +10,16 @@
  * Vercel project before the production build. Apple requires application/json, HTTPS and no redirect; Next adds
  * no redirect for this path.
  *
- * Paths, and only these (A-REQ-022). Tokens travel in the URL fragment, which is not part of path matching and
- * never reaches a server:
+ * Paths, and only these (A-REQ-022). On /auth and /j the token travels in the URL fragment, which is not part of
+ * path matching and never reaches a server. /i is the exception, see below:
  *   /auth/confirm   the sign-in and confirm-your-email link (F02 6.3)
  *   /auth/callback  the same link as the app and email templates on `develop` still write it; remove with the
  *                   page of the same name once they use /auth/confirm
- *   /i/*            co-parent invites as the app on `develop` parses them (https://earlyletters.com/i/<token>)
+ *   /i/*            co-parent invites as the app on `develop` parses them (https://earlyletters.com/i/<token>).
+ *                   The token is in the PATH here: when the app does not open the link (not installed, opened on a
+ *                   laptop, or "Open in Safari"), the request reaches this site, the token can land in Vercel's
+ *                   request logs, and the site answers 404 (it has no /i page). Kept so the alpha's invites open
+ *                   the app; remove it once invites are written as /j#t=<token> (F11, WP-F11-11).
  *   /j              co-parent invites as PRD V2 F11 writes them (/j#t=<token>); its page is WP-F11-11
  * A route file may export only route fields, so the lists stay private; route.test.ts reads them through GET.
  */
