@@ -8,31 +8,18 @@
  *   useIsAccessibilitySize() the same, live; drives row stacking in components
  *   useIsLargeText()         xxxLarge and above: side-by-side pairs start to stack
  *   useContrastPreference()  Increase Contrast and Reduce Transparency
+ *   useScheme()              'light' | 'dark': the ONE source of truth for the colour scheme
  *   useTheme()               colours for JS-styled parts (icons, borders), Increase Contrast applied
  */
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { AccessibilityInfo, Platform, useColorScheme, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Platform, useWindowDimensions } from 'react-native';
+import { useUniwind } from 'uniwind';
 import { tokens, type ColorScheme, type Colors } from '@scribe/design-tokens';
 import { getAudioMode } from '@/lib/audio-mode';
 
-/** React Native's iOS font-scale multipliers (RCTAccessibilityManager.mm, RN 0.86). */
-export const FONT_SCALE = {
-  large: 1, // default
-  xxxLarge: 1.353,
-  ax1: 1.786,
-  ax3: 2.643,
-  ax5: 3.571,
-} as const;
+import { isAccessibilitySize, isLargeText } from './a11y.logic';
 
-/** True at AX1 and above, Apple's definition of an accessibility text size. */
-export function isAccessibilitySize(fontScale: number): boolean {
-  return fontScale >= FONT_SCALE.ax1 - 0.001;
-}
-
-/** True at xxxLarge and above: where two labelled buttons no longer fit side by side on an SE. */
-export function isLargeText(fontScale: number): boolean {
-  return fontScale >= FONT_SCALE.xxxLarge - 0.001;
-}
+export { FONT_SCALE, isAccessibilitySize, isLargeText } from './a11y.logic';
 
 export function useFontScale(): number {
   return useWindowDimensions().fontScale || 1;
@@ -186,12 +173,24 @@ export function paletteFor(scheme: ColorScheme, highContrast: boolean): Colors {
 }
 
 /**
- * Colours for JS-styled parts (icon colours, borders drawn in style). Follows the app's
- * Appearance setting: Uniwind.setTheme() calls Appearance.setColorScheme(), so React
- * Native's useColorScheme() and the CSS theme agree (uniwind 1.12.1 config.common.js).
+ * The colour scheme the app is showing right now. Read from Uniwind (the same value that
+ * flips every class-based colour), never from React Native's useColorScheme(): on web
+ * Uniwind.setTheme() does not call Appearance.setColorScheme(), so useColorScheme() stays
+ * on the system scheme while the classes flip, and every JS-styled colour (tab bar, header,
+ * icons, the recording disc) kept its light value on a dark page. On iOS and Android
+ * setTheme() does drive Appearance, so both agree. A source-scan test
+ * (test/theme-leaks.test.ts) keeps useColorScheme() out of every other file.
+ */
+export function useScheme(): ColorScheme {
+  return useUniwind().theme === 'dark' ? 'dark' : 'light';
+}
+
+/**
+ * Colours for JS-styled parts (icon colours, borders drawn in style, navigation chrome).
+ * Always read colours from here (or from a className token), never from `tokens.light`.
  */
 export function useTheme(): { c: Colors; scheme: ColorScheme; highContrast: boolean; reduceTransparency: boolean } {
-  const scheme: ColorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const scheme = useScheme();
   const { highContrast, reduceTransparency } = useContrastPreference();
   return { c: paletteFor(scheme, highContrast), scheme, highContrast, reduceTransparency };
 }

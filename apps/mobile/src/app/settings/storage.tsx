@@ -16,6 +16,7 @@ import {
 } from '@/lib/packs';
 import { formatBytes, packsCopy as t } from '@/lib/packs/copy';
 import { getPackManifest } from '@/lib/remote';
+import { track } from '@/lib/analytics/track';
 
 /**
  * Settings > Storage (founder decision 15): what is downloaded, how big, and
@@ -134,6 +135,7 @@ export default function Storage() {
           onValueChange={(v) => {
             setCellular(v);
             setAllowCellular(v);
+            track('settings_changed', { key: 'pack_cellular' });
           }}
         />
       </ListSection>

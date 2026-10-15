@@ -45,7 +45,12 @@ check('[B-REQ-007] the role must be explicit', (await codeOf(() => as(A, `select
 check('[LEGAL-REQ-024] the old one-argument invite function is gone', (await codeOf(() => as(A, `select public.create_child_invite($1::uuid)`, [CHILD]))) === '42883');
 check('child_invites.role has no default', (await sys(`select column_default from information_schema.columns where table_name='child_invites' and column_name='role'`)).rows[0].column_default === null);
 
+// D-069 (20261005000000): this book already has two parents, so a further
+// co-parent invite is refused (SCCAP; db_followup_family_cap.test.mjs). These
+// checks need one open co-parent invite, so the setting is raised just for it.
+await sys(`select set_config('app.max_parents_per_book', '3', false)`);
 const tParent = await invite(B, CHILD, 'parent');
+await sys(`select set_config('app.max_parents_per_book', '', false)`);
 const tFamily = await invite(A, CHILD, 'contributor');
 const life = async (t) => (await sys(`select round(extract(epoch from expires_at - created_at) / 86400) d from child_invites where token_hash = sha256(convert_to($1,'UTF8'))`, [t])).rows[0].d;
 check('[K-18] co-parent invites last 7 days, family invites 14', Number(await life(tParent)) === 7 && Number(await life(tFamily)) === 14);
@@ -199,7 +204,7 @@ check('[K-08] an anonymous member reads no book, member or letter rows',
   (await asW(`select 1 from children union all select 1 from child_members union all select 1 from book_entries union all select 1 from profiles`)).rows.length === 0);
 check('[K-08] the same person with a full session reads the book', (await as(W, `select 1 from book_entries where child_id=$1`, [CHILD])).rows.length > 0);
 for (const [name, sql, params] of [
-  ['create_child', `select public.create_child('0192d000-0000-7000-8000-000000000001', 'Asha', '2025-05-20')`, []],
+  ['create_child', `select public.create_child('0192d000-0000-7000-8000-000000000001', 'Asha', '2025-04-12')`, []],
   ['create_child_invite', `select public.create_child_invite($1, 'contributor')`, [CHILD]],
   ['accept_child_invite', `select public.accept_child_invite('x')`, []],
   ['request_account_deletion', `select * from public.request_account_deletion('web')`, []],

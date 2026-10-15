@@ -19,6 +19,4 @@ export const consentCopy = {
   ],
   // settings.privacy.childFallback: fills {child} in sensitiveHelp when no book exists yet.
   childFallback: 'your child',
-  // analyticsConsent.closeLabel: accessibility label for the dimmed area behind the sheet.
-  closeLabel: 'Close without choosing',
 } as const;

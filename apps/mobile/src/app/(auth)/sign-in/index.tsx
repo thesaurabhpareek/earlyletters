@@ -14,6 +14,8 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useChildren } from '@/components/child/use-children';
 import { Text } from '@/components/ui/text';
+import { noteAskShown } from '@/lib/analytics/ask';
+import { track } from '@/lib/analytics/track';
 import { appleSignInAvailable } from '@/lib/auth/apple';
 import { authCopy } from '@/lib/auth/copy';
 import { googleSignInAvailable } from '@/lib/auth/google';
@@ -48,6 +50,12 @@ export default function SignInSheet() {
   useEffect(() => {
     if (signedInAtOpen) router.replace('/sign-in/consent');
   }, [signedInAtOpen]);
+  useEffect(() => {
+    if (signedInAtOpen) return;
+    track('auth_sheet_shown', { trigger });
+    // Keep the book after the first letter is this session's one ask (PRD-REQ-001).
+    if (trigger === 'first_letter') noteAskShown();
+  }, [trigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = async (method: AuthMethod, go: () => Promise<Outcome>) => {
     setBusy(method);
@@ -69,7 +77,14 @@ export default function SignInSheet() {
       footer={
         <>
           <Text className="text-center text-sm leading-5 text-muted-foreground">{s.privacy}</Text>
-          <QuietButton label={s.later} onPress={close} disabled={busy !== null} />
+          <QuietButton
+            label={s.later}
+            onPress={() => {
+              track('auth_deferred', { trigger });
+              close();
+            }}
+            disabled={busy !== null}
+          />
         </>
       }>
       <SheetTitle>{fill(s.titles[trigger], { child })}</SheetTitle>

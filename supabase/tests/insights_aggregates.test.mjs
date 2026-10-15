@@ -72,7 +72,7 @@ await db.exec(`
   set session_replication_role = replica;
   insert into auth.users (id) values ${users.map(([u]) => `(${u})`).join(', ')};
   insert into profiles (id, signs_as, created_at) values ${users.map(([u, at]) => `(${u}, 'Papa', ${at})`).join(', ')};
-  insert into children (id, name, date_of_birth, created_by) values ${books.map(([c, by]) => `(${c}, 'Asha', date '2025-05-20', ${by})`).join(', ')};
+  insert into children (id, name, date_of_birth, created_by) values ${books.map(([c, by]) => `(${c}, 'Asha', date '2025-04-12', ${by})`).join(', ')};
   insert into child_members (child_id, profile_id, role) values ${members.map(([c, p, r]) => `(${c}, ${p}, '${r}')`).join(', ')};
   insert into entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode, engine_version,
                        raw_transcript, final_text, machine_edits, in_book, approval, created_at)
@@ -172,23 +172,22 @@ check('cohort of 31 writers in week 1 (13 A, 15 B, 3 contributors)', r1.length =
 
 // ── 6. Language mix ─────────────────────────────────────────────────────────
 let agg = (await sys('select public.insights_aggregates(8) j')).rows[0].j;
-check('language mix reports unavailable while no server language column exists',
-  agg.language_mix.available === false && agg.language_mix.rows.length === 0);
-// Simulate the future column (owned by another migration) to prove the merge rule.
+check('language mix is available (entries.language, 20261005000000) and empty while no letter has a language',
+  agg.language_mix.available === true && agg.language_mix.rows.length === 0);
+// Fill entries.language (closed list of seven codes) to prove the merge rule.
 await db.exec(`
-  alter table public.entries add column language text;
   set session_replication_role = replica;
   update entries set language = 'en' where author_id in (select id from profiles where id::text like '00000000-0000-4000-a000-%')
     and captured_at >= ${W(1, '0 hours')};
   update entries set language = 'hi' where author_id in (${range(21, 25).map(A).join(', ')}) and captured_at >= ${W(1, '0 hours')};
   update entries set language = 'es' where author_id in (${range(1, 12).map(B).join(', ')});
   update entries set language = 'pt' where author_id in (${range(13, 15).map(B).join(', ')});
-  update entries set language = 'xx' where author_id in (${range(1, 3).map(N).join(', ')});
+  update entries set language = 'fr' where author_id in (${range(1, 3).map(N).join(', ')});
   update entries set language = 'en' where captured_at < ${W(1, '0 hours')};
   set session_replication_role = origin;
 `);
 const lm1 = await rows('language_mix', `where week = '${await weekOf(1)}' order by lang`);
-check('language mix: en 20, es 12, and hi 5 + pt 3 + unknown 3 merged into other 11',
+check('language mix: en 20, es 12, and hi 5 + pt 3 + fr 3 merged into other 11',
   JSON.stringify(lm1.map((r) => [r.lang, Number(r.families)])) === JSON.stringify([['en', 20], ['es', 12], ['other', 11]])
   || console.log(`      got ${JSON.stringify(lm1)}`));
 check('language mix: a week of 12 English families stands alone',

@@ -38,7 +38,7 @@ const book = (r, child) => r.books.find((b) => b.id === child);
 const CHILD = uuid7(Date.now() - 60000);
 const SIB = uuid7(Date.now() - 59000);
 const firstRun = op('book.first_run', id7(), { children: [
-  { id: CHILD, name: 'Asha', date_of_birth: '2025-05-20' },
+  { id: CHILD, name: 'Asha', date_of_birth: '2025-04-12' },
   { id: SIB, name: 'Nina', date_of_birth: '2026-08-01' },
 ] });
 let r = await push(A, [firstRun]);
@@ -48,7 +48,10 @@ r = await push(A, [firstRun]);
 check('a retried op is reported as a duplicate and changes nothing', r.results[0].ok && r.results[0].dup === true);
 await join(B, 'parent', CHILD, A);
 await join(N, 'contributor', CHILD, A);
+// A third parent: allowed here only by raising the D-069 setting (20261005000000, default 2).
+await sys(`select set_config('app.max_parents_per_book', '3', false)`);
 await join(V, 'parent', CHILD, A);
+await sys(`select set_config('app.max_parents_per_book', '', false)`);
 
 const letter = (id, { child = CHILD, text = 'She walked to me.', raw = 'um she walked to me', inBook = true, extra = {} } = {}) => ({
   id, child_id: child, kind: 'letter', occurred_on: '2026-09-29', captured_at: '2026-09-29T20:00:00Z', capture_mode: 'spoken',
@@ -201,7 +204,7 @@ check('own tombstones come down so the other phones learn of the delete', m.get(
 check('every row carries its version, rows come in version order', [...m.values()].every((x) => /^\d+$/.test(x.v)));
 const asha = book(pa.res, CHILD);
 check('[D-039] book settings and members come with the book; parents see the full birthday',
-  asha.meta?.name === 'Asha Rose' && asha.meta?.date_of_birth === '2025-05-20' && asha.meta?.my_signs_as === 'Mama'
+  asha.meta?.name === 'Asha Rose' && asha.meta?.date_of_birth === '2025-04-12' && asha.meta?.my_signs_as === 'Mama'
   && asha.meta?.members.length === 4 && asha.meta?.members.some((x) => x.profile_id === B && x.role === 'parent') && asha.access === 'parent');
 check('a deleted book is not listed as a live book', !pa.res.books.some((x) => x.id === SIB) && pa.res.books.some((x) => x.id === LATER));
 let pn = await pullAll(N);
@@ -209,7 +212,7 @@ check('[B-REQ-011] with "Family can read" off a family member receives only thei
   [...pn.rows.keys()].join() === n1 && book(pn.res, CHILD).access === 'contributor:own');
 const nMeta = book(pn.res, CHILD).meta;
 check('[D-039] family members get the birthday month and day only, never the year or the due date',
-  nMeta.date_of_birth === null && nMeta.birthday_md === '05-20' && nMeta.due_date === null);
+  nMeta.date_of_birth === null && nMeta.birthday_md === '04-12' && nMeta.due_date === null);
 check('a stranger has no books', (await pull(C)).books.length === 0);
 
 // ── Pull: cursors and paging ─────────────────────────────────────────────

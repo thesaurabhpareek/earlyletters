@@ -5,16 +5,17 @@
  *   behind it; text never animates its size, it cross-fades (MOTION 5i).
  * - Day One: the recording and its words in one entry; the voice comes first after the text.
  * - Apple Settings inset list for the few actions (Make private, Delete).
- * - Apple Mail / Airbnb: Delete is immediate with a persistent Undo, no confirm dialog.
+ * - Delete asks first (D-085, "Keep it" is the default), then moves the letter to Recently deleted
+ *   for 30 days; the persistent Undo stays (TDD 09 A11Y-F03).
  * Haptics: `tap` for private / book, `warning` for Delete. Nothing on open or scroll.
  */
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PencilSimpleLineIcon } from 'phosphor-react-native/src/icons/PencilSimpleLine';
 import { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,17 +24,40 @@ import { AudioPlayer } from '@/components/player/audio-player';
 import { Button, LARGE_CONTENT } from '@/components/ui/button';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { UIProvider } from '@/components/ui/provider';
+import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
-import { deleteEntry, getActiveChild, getChild, getEntry, setEntryInBook, undeleteEntry, type Entry } from '@/lib/store';
+import {
+  deleteEntry,
+  getActiveChild,
+  getChild,
+  getEntry,
+  setEntryInBook,
+  setTypedWordsForWaitingEntry,
+  subscribeTo,
+  undeleteEntry,
+  type Entry,
+} from '@/lib/store';
+import { clearReadItBack, isReadItBack } from '@/lib/read-it-back';
+import { languageFor, retryWords, startSpeechDownload } from '@/lib/transcription-queue';
+import { wordsCopy } from '@/lib/transcription-queue/copy';
+import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
+import { planFor } from '@/lib/models/speech-packs';
+import { TextField } from '@/components/ui/text-field';
 import { provenanceOf } from '@/components/book/chapters';
+import { AppNote } from '@/components/book/app-note';
+import { bookCopy } from '@/components/book/copy';
+import { letterWords } from '@/components/book/letter-words.logic';
+import { isQuietMark, showsSignature } from '@/components/book/quiet-day.logic';
+import { track } from '@/lib/analytics/track';
 import { PrivateChip } from '@/components/book/letter-card';
 import { letterDateline } from '@/lib/dates';
 import { ReadingSizeSheet } from '@/components/book/reading-size-sheet';
+import { ConfirmSheet } from '@/components/book/confirm-sheet';
 import { UndoToast } from '@/components/book/undo-toast';
 import { authorOf, getReadingSize, isOwnEntry, setReadingSize, type ReadingSize } from '@/components/child/child-store';
 
@@ -57,6 +81,25 @@ function Letter() {
   const [sizeOpen, setSizeOpen] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [deleted, setDeleted] = useState<Entry | null>(null);
+  // Words that arrived after the letter was saved and have not been read back yet (D-086).
+  const [unread, setUnread] = useState(() => isReadItBack(id));
+
+  // The page follows the store: words that arrive while it is open appear without leaving and reopening (J10-01).
+  useEffect(
+    () =>
+      subscribeTo('entries', () => {
+        setEntry((prev) => (prev === null ? prev : (getEntry(id) ?? prev)));
+        setUnread(isReadItBack(id));
+      }),
+    [id],
+  );
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // letter_opened once per open (who wrote it, relative to you, and whether it has a recording; never which letter).
+  useEffect(() => {
+    const e = getEntry(id);
+    if (e && !isQuietMark(e)) track('letter_opened', { author_relation: isOwnEntry(e) ? 'self' : 'other_parent', has_audio: !!e.audioUri });
+  }, [id]);
 
   const headerRight = () => (
     <Pressable
@@ -90,6 +133,7 @@ function Letter() {
           message={copy.settings.delete.entryToast}
           onDismiss={() => router.back()}
           onUndo={() => {
+            track('letter_deleted', { action: 'restored', destination: deleted.inBook ? 'book' : 'private' });
             undeleteEntry(deleted.id);
             setEntry(getEntry(deleted.id));
             setDeleted(null);
@@ -99,15 +143,12 @@ function Letter() {
     );
   }
 
+  // A quiet-day mark is not a letter: there is no page for it (D-084). Back to the Book.
+  if (entry && isQuietMark(entry)) return <Redirect href="/book" />;
+
   if (!entry || !child) {
-    return (
-      <View className="flex-1 items-start justify-center gap-5 bg-background px-6">
-        <Text variant="title1" asHeading>
-          {copy.reader.notFoundTitle}
-        </Text>
-        <Button size="lg" label={copy.reader.notFoundCta} onPress={() => router.back()} />
-      </View>
-    );
+    // The one state pattern. A pushed screen: the native header has the back arrow; the action goes to the book.
+    return <StateScreen kind="notFound" title={copy.reader.notFoundTitle} primary={{ label: copy.reader.notFoundCta, onPress: () => router.back() }} />;
   }
 
   const scale = tokens.readingScale[size];
@@ -116,9 +157,10 @@ function Letter() {
   const date = letterDateline(child, entry.occurredOn);
   const provenance = copy.book.provenance[provenanceOf(entry)];
   const spoken = entry.captureMode !== 'typed';
+  const typedWords = provenanceOf(entry) === 'typed'; // typed, or typed for a recording that had no words
   const own = isOwnEntry(entry);
   const canShowOriginal = own && spoken && entry.rawTranscript !== entry.finalText;
-  const waiting = entry.transcriptStatus === 'waiting';
+  const words = letterWords(entry);
   const text = showOriginal ? entry.rawTranscript : entry.finalText;
   const crossFade = FadeIn.duration(150).reduceMotion(ReduceMotion.Never);
 
@@ -131,8 +173,10 @@ function Letter() {
   };
 
   const remove = () => {
-    deleteEntry(entry.id); // tombstone; restorable
+    setConfirmOpen(false);
+    deleteEntry(entry.id); // tombstone; waits 30 days on the Recently deleted shelf
     haptic('warning');
+    track('letter_deleted', { action: 'deleted', destination: entry.inBook ? 'book' : 'private' });
     // Undo stays until the parent taps Undo, Close or Back: no timed navigation (TDD 09 A11Y-F03).
     setDeleted(entry);
   };
@@ -157,26 +201,45 @@ function Letter() {
             </Text>
           )}
           <Animated.View key={`${size}:${showOriginal}`} entering={crossFade}>
-            {waiting ? (
-              <Text variant="signature" scale={scale} tone="muted">
-                {pendingCopy.book.waitingForWords}
-              </Text>
+            {words !== 'words' && !showOriginal ? (
+              // Waiting for words, or no words in the recording: the app's note, never an empty page.
+              <AppNote scale={scale}>{words === 'waiting' ? pendingCopy.book.waitingForWords : bookCopy.nobodySpoke}</AppNote>
             ) : (
               <Text variant="letterBody" scale={scale} selectable>
                 {text}
               </Text>
             )}
           </Animated.View>
-          <Text variant="signature" scale={scale} className="self-end">
-            {signature}
-          </Text>
+          {showsSignature(words) || showOriginal ? (
+            <Text variant="signature" scale={scale} className="self-end">
+              {signature}
+            </Text>
+          ) : null}
         </Animated.View>
 
         {spoken && <AudioPlayer entryId={entry.id} />}
 
+        {own && words === 'waiting' && <WaitingCard entry={entry} />}
+        {own && words === 'nobodySpoke' && spoken && (
+          // Nobody spoke on a saved letter: the recording stays as it is; the one action is to record again.
+          <View className="gap-3">
+            <Button size="md" label={wordsCopy.waiting.recordAgainButton} onPress={() => router.push('/listen')} testID="letter.recordAgain" />
+          </View>
+        )}
+        {own && words === 'words' && unread && (
+          <ReadItBackCard
+            onRead={() => {
+              haptic('tap');
+              clearReadItBack(entry.id);
+              setUnread(false);
+            }}
+          />
+        )}
+
+        {words === 'words' && (
         <View className="gap-2 border-t border-border pt-5">
           <View className="flex-row items-center gap-2">
-            {spoken ? <MicrophoneIcon size={16} color={c.textMuted} /> : <PencilSimpleLineIcon size={16} color={c.textMuted} />}
+            {typedWords ? <PencilSimpleLineIcon size={16} color={c.textMuted} /> : <MicrophoneIcon size={16} color={c.textMuted} />}
             <Text variant="footnote">{provenance}</Text>
           </View>
           {spoken && (
@@ -190,11 +253,13 @@ function Letter() {
               variant="quiet"
               size="sm"
               className="-ml-4 self-start"
-              label={showOriginal ? copy.review.showTidiedButton : copy.review.showOriginalLink}
+              label={showOriginal ? copy.review.view.fixes : copy.review.view.exact}
               onPress={() => setShowOriginal((v) => !v)}
+              testID="letter.view"
             />
           )}
         </View>
+        )}
 
         {own && (
           <ListSection>
@@ -203,10 +268,20 @@ function Letter() {
               leading={entry.inBook ? <LockSimpleIcon size={20} color={c.text} /> : <BookOpenIcon size={20} color={c.text} />}
               onPress={toggleInBook}
             />
-            <ListRow title={copy.book.entryMenu.deleteButton} variant="destructive" leading={<TrashIcon size={20} color={c.destructive} />} onPress={remove} accessibilityHint={copy.settings.delete.entryConfirm} />
+            <ListRow title={copy.book.entryMenu.deleteButton} variant="destructive" leading={<TrashIcon size={20} color={c.destructive} />} onPress={() => setConfirmOpen(true)} accessibilityHint={copy.settings.delete.entryConfirm} />
           </ListSection>
         )}
       </ScrollView>
+
+      <ConfirmSheet
+        open={confirmOpen}
+        title={copy.settings.delete.entryTitle}
+        body={copy.settings.delete.entryBody}
+        confirmLabel={copy.settings.delete.entryConfirm}
+        keepLabel={copy.settings.delete.keepButton}
+        onKeep={() => setConfirmOpen(false)}
+        onConfirm={remove}
+      />
 
       <ReadingSizeSheet
         visible={sizeOpen}
@@ -214,9 +289,103 @@ function Letter() {
         onChange={(v) => {
           setSize(v);
           setReadingSize(v);
+          track('settings_changed', { key: 'reading_size' });
         }}
         onClose={() => setSizeOpen(false)}
       />
+    </View>
+  );
+}
+
+/**
+ * A saved letter still waiting for its words (D-086): the reason, then one primary action. The reason lines reuse
+ * the words copy ("Getting ready, 40%", Wi-Fi, space); the actions are Write the words, and Try again or Get
+ * words ready when that is what would help. The recording itself is never touched.
+ */
+function WaitingCard({ entry }: { entry: Entry }) {
+  const language = languageFor(entry.id);
+  const job = useWordsJob(entry.id);
+  const download = useSpeechDownload(job?.phase === 'waiting_for_pack' ? language : null);
+  const [writing, setWriting] = useState(false);
+  const [text, setText] = useState('');
+  const w = wordsCopy.waiting;
+
+  const failed = job?.phase === 'failed';
+  const retryable = failed && job.failure !== 'file_missing' && job.failure !== 'unsupported';
+  const packWait = job?.phase === 'waiting_for_pack';
+  const p = download.progress;
+  const reason = failed
+    ? copy.errors.transcriptionFailed.body
+    : packWait
+      ? download.hold === 'waiting_for_wifi'
+        ? wordsCopy.pack.waitingForWifi
+        : download.hold === 'no_space'
+          ? wordsCopy.pack.noSpace
+          : p !== null
+            ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
+            : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
+      : null;
+
+  if (writing) {
+    return (
+      <View className="gap-3" testID="letter.writeWords">
+        <TextField
+          variant="letter"
+          label={w.writeLabel}
+          labelHidden
+          value={text}
+          onChangeText={setText}
+          multiline
+          autoFocus
+          accessibilityHint={w.writeTitle}
+        />
+        <Button
+          size="md"
+          label={w.saveButton}
+          disabled={!text.trim()}
+          onPress={() => {
+            haptic('tap');
+            if (setTypedWordsForWaitingEntry(entry.id, text)) setWriting(false);
+          }}
+          testID="letter.writeWords.save"
+        />
+        <Button variant="quiet" size="sm" label={w.cancelButton} onPress={() => setWriting(false)} />
+      </View>
+    );
+  }
+
+  const primary = retryable ? (
+    <Button size="md" label={w.retryButton} onPress={() => retryWords(entry.id)} testID="letter.retry" />
+  ) : packWait && p === null ? (
+    <Button size="md" label={w.readyButton} onPress={() => void startSpeechDownload(language)} testID="letter.getReady" />
+  ) : null;
+
+  return (
+    <View className="gap-3" accessibilityLiveRegion="polite" testID="letter.waiting">
+      {reason && <Text variant="footnote">{reason}</Text>}
+      {primary}
+      <Button
+        size="md"
+        variant={primary ? 'secondary' : 'primary'}
+        label={w.writeButton}
+        onPress={() => setWriting(true)}
+        testID="letter.write"
+      />
+    </View>
+  );
+}
+
+/**
+ * "Words are ready. Read it back." The words arrived after the letter was saved, so they are exactly as said and
+ * nothing was fixed unread (D-086). Reading them back is the parent's step; the card then goes away.
+ */
+function ReadItBackCard({ onRead }: { onRead: () => void }) {
+  const w = wordsCopy.waiting;
+  return (
+    <View className="gap-3" accessibilityLiveRegion="polite" testID="letter.readItBack">
+      <Text variant="headline">{w.readyBody}</Text>
+      <Text variant="footnote">{w.arrivedNote}</Text>
+      <Button size="md" label={w.readItBackButton} onPress={onRead} testID="letter.readItBack.done" />
     </View>
   );
 }

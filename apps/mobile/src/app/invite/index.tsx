@@ -20,13 +20,17 @@ import { useEffect, useRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { useAuth } from '@/lib/auth/session-provider';
+import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { inviteDestination } from '@/lib/family/entry.logic';
 import { AccountGate, Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet, useColors } from '@/lib/auth/ui';
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { inviteErrorKind, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import { parseInviteInput } from '@/lib/family/invite-link.logic';
 import { acceptInvite, bookName } from '@/lib/family/invites';
+import { track } from '@/lib/analytics/track';
 import { clearPendingInvite, readPendingInvite, savePendingInvite } from '@/lib/family/pending-invite';
 import { haptic } from '@/lib/haptics';
 import { getChild, setActiveChildId, subscribe } from '@/lib/store';
@@ -35,7 +39,12 @@ const FINAL: readonly InviteErrorKind[] = ['expired', 'used', 'revoked', 'not_fo
 
 type Phase = 'loading' | 'paste' | 'ready' | 'joining' | 'joined' | 'failed';
 
-export default function JoinBook() {
+/** v1.0: server features are off, so this entry shows co-parent sharing as coming soon (lib/family/entry.logic.ts). */
+export default function JoinBookRoute() {
+  return inviteDestination('invite_join', serverFeaturesEnabled()) === 'flow' ? <JoinBook /> : <InviteComingSoon />;
+}
+
+function JoinBook() {
   const auth = useAuth();
   const c = useColors();
   const close = useCloseSheet();
@@ -51,6 +60,7 @@ export default function JoinBook() {
   useEffect(() => {
     void readPendingInvite().then((p) => {
       token.current = p?.token ?? null;
+      if (p) track('invite_opened', { via: 'link', signed_in: auth.signedIn });
       setPhase(p ? 'ready' : 'paste');
     });
   }, []);
@@ -69,6 +79,7 @@ export default function JoinBook() {
       setPhase('joined');
     } catch (e) {
       const kind = inviteErrorKind(e);
+      track('invite_failed', { stage: 'accept', reason: kind });
       if (FINAL.includes(kind)) await clearPendingInvite();
       setError(kind);
       setPhase('failed');
@@ -106,6 +117,7 @@ export default function JoinBook() {
       return;
     }
     await savePendingInvite(t);
+    track('invite_opened', { via: 'paste', signed_in: auth.signedIn });
     token.current = t;
     attempted.current = false;
     setPasteError(false);
@@ -123,7 +135,7 @@ export default function JoinBook() {
 
   if (phase === 'paste') {
     return (
-      <SheetFrame footer={<QuietButton label={a.close} onPress={close} />}>
+      <SheetFrame closeLabel={a.close}>
         <SheetTitle>{a.title}</SheetTitle>
         <SheetBody muted>{a.pasteHelp}</SheetBody>
         <View className="gap-2">
@@ -169,7 +181,7 @@ export default function JoinBook() {
   }
 
   return (
-    <SheetFrame footer={<QuietButton label={a.close} onPress={close} />}>
+    <SheetFrame closeLabel={a.close}>
       <SheetTitle>{a.title}</SheetTitle>
       <AccountGate trigger="invite" signInBody={a.signInBody}>
         {phase === 'joining' ? <Busy label={a.joining} /> : null}

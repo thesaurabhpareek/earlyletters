@@ -1,0 +1,87 @@
+# Continue with email, then the code from the same email, then the consent
+# sheets (PRD A F4, A-REQ-018; PRD-REQ-002). Starts on a screen that shows the
+# sign-in sheet (signIn.sheet). Parameters: E2E_EMAIL (a Resend test address,
+# delivered+<label>@resend.dev), OTP_SOURCE (admin or mailpit), NEW_USER,
+# SENSITIVE (agree, the default, or decline).
+appId: ${APP_ID}
+---
+- runScript:
+    file: ../scripts/lib-guard.js
+- runScript:
+    file: ../scripts/ensure-user.js
+    env:
+      E2E_EMAIL: ${E2E_EMAIL}
+      OTP_SOURCE: ${OTP_SOURCE || "admin"}
+      NEW_USER: ${NEW_USER || "0"}
+- assertVisible:
+    id: "signIn.sheet"
+- tapOn:
+    id: "signIn.email"
+- tapOn:
+    id: "signInEmail.input"
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: "signInEmail.send"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "signInCode.screen"
+    timeout: 15000
+- runScript:
+    file: ../scripts/fetch-otp.js
+    env:
+      E2E_EMAIL: ${E2E_EMAIL}
+      OTP_SOURCE: ${OTP_SOURCE || "admin"}
+- tapOn:
+    id: "signInCode.input"
+- inputText: ${output.otp}
+# The field submits at full length; tap Verify only if the screen is still there.
+- runFlow:
+    when:
+      visible:
+        id: "signInCode.verify"
+    commands:
+      - tapOn:
+          id: "signInCode.verify"
+          optional: true
+# Consent sheets, whichever my_sync_gate() asks for (AUTH_SETUP section 9).
+- extendedWaitUntil:
+    visible:
+      id: "consent.(terms|age|sensitive).*"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "consent.terms"
+    commands:
+      - tapOn:
+          id: "consent.terms.agree"
+- runFlow:
+    when:
+      visible:
+        id: "consent.age.yes"
+    commands:
+      - tapOn:
+          id: "consent.age.yes"
+- extendedWaitUntil:
+    visible:
+      id: "consent.sensitive"
+    timeout: 15000
+- runFlow:
+    when:
+      true: ${(SENSITIVE || "agree") == "agree"}
+    commands:
+      - tapOn:
+          id: "consent.sensitive.agree"
+- runFlow:
+    when:
+      true: ${(SENSITIVE || "agree") == "decline"}
+    commands:
+      - tapOn:
+          id: "consent.sensitive.decline"
+- extendedWaitUntil:
+    notVisible:
+      id: "consent.sensitive"
+    timeout: 15000
+- assertNotVisible:
+    id: "consent.failed"

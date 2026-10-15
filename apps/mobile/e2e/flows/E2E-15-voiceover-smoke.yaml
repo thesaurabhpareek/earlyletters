@@ -1,0 +1,97 @@
+# E2E-15  Accessibility smoke at the largest text size, light and dark.
+# Maestro cannot drive VoiceOver; this flow proves the automatable part: every
+# P0 control is in the accessibility tree, enabled, and reachable by scrolling at
+# AX5 (accessibility-extra-extra-extra-large), and captures screenshots of each
+# screen for a human look at truncation (fictional family only). The runner sets
+# the text size first (`bin/a11y-sizes.sh ax5`). The VoiceOver walk itself is
+# manual: DEVICE_TEST_PLAN S1-23 (script V-01 to V-10).
+# Proves (automatable part): A-NFR-005 to A-NFR-007, PRD 7.6, D-027.
+appId: ${APP_ID}
+name: E2E-15 Accessibility smoke at AX5
+tags:
+  - e2e
+  - E2E-15
+  - A-NFR-005
+  - A-NFR-006
+  - A-NFR-007
+  - D-027
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_OFFLINE: "1"
+- setDarkMode: disabled
+# Gate at AX5: both choices and Continue reachable.
+- assertVisible:
+    id: "gate.screen"
+- scrollUntilVisible:
+    element:
+      id: "gate.continue"
+    direction: DOWN
+- takeScreenshot: a11y/01-gate-ax5-light
+- runFlow: ../subflows/pass-age-gate.yaml
+# First run at AX5.
+- scrollUntilVisible:
+    element:
+      id: "onboarding.cta"
+    direction: DOWN
+- takeScreenshot: a11y/02-welcome-ax5-light
+- runFlow: ../subflows/first-run-one-child.yaml
+# Tonight: Speak and Type both reachable.
+- scrollUntilVisible:
+    element:
+      id: "tonight.speak"
+    direction: DOWN
+- assertVisible:
+    id: "tonight.speak"
+    enabled: true
+- assertVisible:
+    id: "tonight.type"
+    enabled: true
+- takeScreenshot: a11y/03-tonight-ax5-light
+# Write at AX5: the letter field and Save (letter text is never capped, D-027).
+- tapOn:
+    id: "tonight.type"
+- tapOn:
+    id: "write.input"
+- inputText: "Asha, a short line at the largest size."
+- assertVisible:
+    id: "write.save"
+    enabled: true
+- takeScreenshot: a11y/04-write-ax5-light
+- tapOn:
+    id: "write.save"
+- tapOn:
+    id: "review.save.book"
+- extendedWaitUntil:
+    visible:
+      id: "signIn.sheet"
+    timeout: 5000
+- takeScreenshot: a11y/05-keep-the-book-ax5-light
+- tapOn:
+    id: "signIn.later"
+# Book and a letter, dark.
+- setDarkMode: enabled
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "letter.text"
+- takeScreenshot: a11y/06-letter-ax5-dark
+- runFlow: ../subflows/go-back.yaml
+# Settings home: every row reachable by scrolling.
+- tapOn:
+    id: "book.settings"
+- scrollUntilVisible:
+    element:
+      id: "settings.deleteAccount"
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: "settings.version"
+    direction: DOWN
+- takeScreenshot: a11y/07-settings-ax5-dark
+- setDarkMode: disabled
+- stopApp

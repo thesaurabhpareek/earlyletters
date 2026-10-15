@@ -1,0 +1,41 @@
+# E2E-01b  18+ entry gate: after the 24 hours, the question returns with
+# nothing preselected; Yes opens first run and the gate never shows again.
+# Runs on the install E2E-01a left behind (no clearState). After this flow the
+# runner calls `bin/inspect-container.sh gate-passed` (settings hold only
+# ageGate.passed = 1: a boolean, never an age or a date; D-026).
+appId: ${APP_ID}
+name: E2E-01b 18+ gate, Yes after the window
+tags:
+  - e2e
+  - E2E-01
+  - PRD-REQ-019
+  - LEGAL-REQ-002
+---
+# E2E-01a ended by repairing the stop time to (real time - 2 h); +25 h is 27 h after it.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_CLOCK_OFFSET_HOURS: "25"
+- assertVisible:
+    id: "gate.screen"
+- assertVisible:
+    id: "gate.continue"
+    enabled: false
+- tapOn:
+    id: "gate.yes"
+- tapOn:
+    id: "gate.continue"
+    enabled: true
+- assertVisible:
+    id: "onboarding.step.welcome"
+# Relaunch with the real clock: the gate never shows again on this install.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- assertNotVisible:
+    id: "gate.screen"
+- assertVisible:
+    id: "onboarding.step.welcome"
+- stopApp

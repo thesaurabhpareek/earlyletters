@@ -1,4 +1,4 @@
-import { Row, Section } from '@/components/settings/settings-ui';
+import { ListRow, ListSection } from '@/components/ui/list-row';
 import { consentCopy } from './copy';
 
 /**
@@ -7,10 +7,10 @@ import { consentCopy } from './copy';
  */
 export function NeverList() {
   return (
-    <Section title={consentCopy.neverTitle}>
-      {consentCopy.never.map((line, i) => (
-        <Row key={line} first={i === 0} title={line} />
+    <ListSection title={consentCopy.neverTitle}>
+      {consentCopy.never.map((line) => (
+        <ListRow key={line} title={line} />
       ))}
-    </Section>
+    </ListSection>
   );
 }

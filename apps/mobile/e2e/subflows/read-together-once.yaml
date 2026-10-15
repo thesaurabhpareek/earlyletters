@@ -1,0 +1,12 @@
+# Open Read together from the Book and close it: one counted session when the
+# book is allowed (lib/read-together.ts counts on open, only on a free try).
+appId: ${APP_ID}
+---
+- tapOn:
+    id: "book.readTogether"
+- assertVisible:
+    id: "readTogether.screen"
+- tapOn:
+    id: "readTogether.close"
+- assertVisible:
+    id: "book.screen"

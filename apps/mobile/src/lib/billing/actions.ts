@@ -6,7 +6,7 @@
 import { Linking } from 'react-native';
 import { brand } from '@scribe/brand';
 import { tokens } from '@scribe/design-tokens';
-import { ScribeStore, type RefundOutcome, type StoreSheetOptions, type StoreSheetOutcome } from '../../../modules/scribe-store';
+import { ScribeStore, type OfferCodeOutcome, type RefundOutcome, type StoreSheetOptions, type StoreSheetOutcome } from '../../../modules/scribe-store';
 import { APPLE_MANAGE_SUBSCRIPTIONS_URL, APPLE_REPORT_A_PROBLEM_URL, PLUS_PRODUCT_IDS } from './config';
 import { billingCopy } from './copy';
 import { getPlan, refreshPlan, storeViewSupport } from './plan-store';
@@ -83,6 +83,26 @@ export async function manageSubscription(): Promise<void> {
     }
   }
   await refreshPlan();
+}
+
+/**
+ * Apple's offer code sheet (D-081: codes come from Apple, never a code system of ours).
+ * Resolves when the sheet has been shown. A redeemed code arrives as an entitlement
+ * update through the StoreKit listener (plan-store), so Plus turns on by itself; watch
+ * usePlan().plusOn. Needs an iOS build with the native function: an older dev client
+ * without it answers 'unavailable'.
+ */
+export async function redeemOfferCode(): Promise<OfferCodeOutcome> {
+  const store = ScribeStore;
+  if (!store || typeof store.presentOfferCodeRedeemSheet !== 'function') return 'unavailable';
+  let outcome: OfferCodeOutcome = 'failed';
+  try {
+    outcome = await store.presentOfferCodeRedeemSheet();
+  } catch {
+    outcome = 'failed';
+  }
+  await refreshPlan();
+  return outcome;
 }
 
 /** Apple's refund request sheet; Apple's web page when the sheet cannot open. */

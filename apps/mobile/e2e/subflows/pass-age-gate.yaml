@@ -1,0 +1,16 @@
+# Answer Yes on the 18+ entry gate (PRD-REQ-019). Continue is disabled until
+# a choice is made, which is how flows prove nothing is preselected.
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: "gate.screen"
+- assertVisible:
+    id: "gate.continue"
+    enabled: false
+- tapOn:
+    id: "gate.yes"
+- tapOn:
+    id: "gate.continue"
+    enabled: true
+- assertNotVisible:
+    id: "gate.screen"

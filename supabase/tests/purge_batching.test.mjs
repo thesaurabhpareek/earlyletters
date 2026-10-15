@@ -68,6 +68,6 @@ check('[X-14] an invite hash goes 90 days after revocation, even before its expi
 
 // Purged book ids cannot be recreated.
 await sys(`insert into purge_ledger (entity_type, entity_id) values ('child', '0192e000-0000-7000-8000-0000000000aa')`);
-check('[FM-08] a purged book id cannot come back', (await codeOf(() => as(B, `select public.create_child('0192e000-0000-7000-8000-0000000000aa', 'Asha', '2025-05-20')`))) === 'SCDEL');
+check('[FM-08] a purged book id cannot come back', (await codeOf(() => as(B, `select public.create_child('0192e000-0000-7000-8000-0000000000aa', 'Asha', '2025-04-12')`))) === 'SCDEL');
 
 done();

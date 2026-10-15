@@ -7,7 +7,8 @@
  * the word carries the meaning, so Android's alert ignoring red is fine).
  * Older names still work: default = primary, ghost and link = quiet.
  * Sizes: sm 44 pt, md 48 pt, lg 56 pt (primary actions), capture 64 pt (Speak / Type,
- * icon above label), icon 44 x 44.
+ * icon above label), icon 44 x 44. The minimum is set twice, as a class and as a style
+ * (BUTTON_MIN_HEIGHT), so a quiet text link is never under 44 pt on any platform.
  *
  * Accessibility contract
  * - role button; disabled and busy in accessibilityState; label = visible text (2.5.3).
@@ -127,7 +128,7 @@ function Button({
       <TextVariantContext.Provider value={labelToken(size)}>
         <AnimatedPressable
           className={cn(buttonVariants({ variant, size }), fullWidth && 'self-stretch', disabled && filled && 'bg-muted', className)}
-          style={[press.animatedStyle, style]}
+          style={[{ minHeight: BUTTON_MIN_HEIGHT[size] }, press.animatedStyle, style]}
           role="button"
           disabled={inactive}
           accessibilityLabel={accessibilityLabel ?? label}
@@ -235,4 +236,4 @@ function ButtonRow({ children, className, gap = 3 }: { children: React.ReactNode
 
 const buttonTextVariants = labelClass;
 export { Button, ButtonRow, IconButton, buttonTextVariants, buttonVariants };
-export const BUTTON_MIN_HEIGHT = { sm: tokens.target.min, md: 48, lg: tokens.target.primary, capture: tokens.target.capture } as const;
+export const BUTTON_MIN_HEIGHT = { sm: tokens.target.min, md: 48, lg: tokens.target.primary, capture: tokens.target.capture, icon: tokens.target.min } as const;

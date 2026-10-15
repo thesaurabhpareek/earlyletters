@@ -3,12 +3,12 @@ import { Stack } from 'expo-router';
 import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, ScrollView, View, useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
-import { Section } from '@/components/settings/settings-ui';
+import { AccessibilityInfo, ScrollView, View } from 'react-native';
+import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { copy } from '@/lib/copy';
+import { trackExportCompleted, trackExportFailed, trackExportStarted } from '@/lib/analytics/track';
+import { copy, fill } from '@/lib/copy';
 import {
   cleanupExports,
   ExportCancelledError,
@@ -22,6 +22,20 @@ import {
   type ExportResult,
 } from '@/lib/export';
 import { haptic } from '@/lib/haptics';
+import { dayDate, isoOf } from '@/lib/dates';
+import { getSetting, setSetting } from '@/lib/store';
+
+/** Settings key: when a copy of the book was last prepared and handed to the share sheet (D-085). */
+const LAST_EXPORT_SETTING = 'lastExportedAt';
+
+function readLastExport(): string | null {
+  try {
+    return getSetting(LAST_EXPORT_SETTING);
+  } catch {
+    return null;
+  }
+}
+import { useTheme } from '@/lib/a11y';
 
 type State =
   | { kind: 'idle' }
@@ -39,7 +53,7 @@ const KEEP_AWAKE = 'export';
  * Progress has no animation (Reduce Motion), and nothing is timed.
  */
 export default function ExportScreen() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const e = copy.settings.export;
   const s = exportCopy.screen;
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -50,6 +64,7 @@ export default function ExportScreen() {
       return null;
     }
   });
+  const [lastExport, setLastExport] = useState(readLastExport);
   const signal = useRef({ aborted: false });
   const pending = useRef<ExportResult | null>(null);
 
@@ -64,6 +79,8 @@ export default function ExportScreen() {
 
   const start = async () => {
     haptic('press');
+    const startedAt = Date.now();
+    trackExportStarted({ letters: summary?.letters ?? 0 });
     signal.current = { aborted: false };
     setState({ kind: 'running', progress: { phase: 'books', fraction: 0 } });
     void activateKeepAwakeAsync(KEEP_AWAKE).catch(() => {});
@@ -73,12 +90,19 @@ export default function ExportScreen() {
         onProgress: (progress) => setState((prev) => (prev.kind === 'running' ? { kind: 'running', progress } : prev)),
       });
       pending.current = result;
+      trackExportCompleted({ bytes: result.bytes, durationMs: Date.now() - startedAt });
       haptic('success');
       AccessibilityInfo.announceForAccessibility(e.ready);
       setState({ kind: 'ready', result });
     } catch (err) {
-      if (err instanceof ExportCancelledError) setState({ kind: 'cancelled' });
-      else setState({ kind: 'failed', reason: err instanceof ExportTooLargeError ? 'tooBig' : err instanceof ExportLowSpaceError ? 'lowSpace' : 'other' });
+      if (err instanceof ExportCancelledError) {
+        trackExportFailed({ reason: 'cancelled' });
+        setState({ kind: 'cancelled' });
+      } else {
+        const reason = err instanceof ExportTooLargeError ? 'tooBig' : err instanceof ExportLowSpaceError ? 'lowSpace' : 'other';
+        trackExportFailed({ reason: reason === 'tooBig' ? 'too_large' : reason === 'lowSpace' ? 'low_space' : 'unknown' });
+        setState({ kind: 'failed', reason });
+      }
     } finally {
       void deactivateKeepAwake(KEEP_AWAKE).catch(() => {});
     }
@@ -91,6 +115,14 @@ export default function ExportScreen() {
 
   const share = async (result: ExportResult) => {
     try {
+      // "Prepared", not "saved": the share result does not say whether the person kept the file.
+      const at = new Date().toISOString();
+      try {
+        setSetting(LAST_EXPORT_SETTING, at);
+        setLastExport(at);
+      } catch {
+        // the date is a courtesy; the export goes ahead
+      }
       await shareExport(result, e.title);
     } finally {
       pending.current = null;
@@ -111,13 +143,15 @@ export default function ExportScreen() {
         <Text className="text-sm leading-5 text-muted-foreground">{s.offlineNote}</Text>
       </View>
 
-      <Section title={s.includesTitle}>
-        {[s.includesLetters, s.includesRecordings, s.includesBook, s.includesData].map((line, i) => (
-          <View key={line} className={i === 0 ? 'px-4 py-3' : 'border-t border-border px-4 py-3'}>
-            <Text className="text-base leading-6 text-foreground">{line}</Text>
-          </View>
+      <ListSection footer={e.exportNudge}>
+        <ListRow title={lastExport ? fill(e.lastExport, { date: dayDate(isoOf(new Date(lastExport))) }) : e.neverExported} />
+      </ListSection>
+
+      <ListSection title={s.includesTitle}>
+        {[s.includesLetters, s.includesRecordings, s.includesBook, s.includesData].map((line) => (
+          <ListRow key={line} title={line} />
         ))}
-      </Section>
+      </ListSection>
 
       {(state.kind === 'idle' || state.kind === 'cancelled' || state.kind === 'shared' || state.kind === 'failed') && (
         <View className="gap-3">

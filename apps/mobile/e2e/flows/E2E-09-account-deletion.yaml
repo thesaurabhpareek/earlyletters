@@ -1,0 +1,94 @@
+# E2E-09  Account deletion: request, then cancel within the 30 days.
+# Proves: C-REQ-019 and LEGAL-REQ-029 (in-app deletion, Apple 5.1.1(v); Export is
+# offered first; a typed confirmation; a scheduled date; Cancel deletion
+# restores the account), DATA-REQ-012 (the server request row is scheduled, then
+# cancelled). The subscription notice row only shows when Plus will renew
+# (no StoreKit purchase on the simulator): DEVICE_TEST_PLAN S2-10.
+# Needs the e2e backend (TESTID_REQUESTS.md section 5) and network.
+appId: ${APP_ID}
+name: E2E-09 Account deletion request and cancel
+tags:
+  - e2e
+  - E2E-09
+  - C-REQ-019
+  - LEGAL-REQ-029
+  - DATA-REQ-012
+  - needs-backend
+env:
+  E2E_EMAIL: ${E2E_EMAIL || "delivered+e2e09@resend.dev"}
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+# Sign in from Settings, Account.
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.account"
+- tapOn:
+    id: "account.signIn"
+- runFlow:
+    file: ../subflows/sign-in-email.yaml
+    env:
+      E2E_EMAIL: ${E2E_EMAIL}
+- extendedWaitUntil:
+    visible:
+      id: "account.signedIn"
+    timeout: 15000
+- runFlow: ../subflows/go-back.yaml
+# 1. What happens: Export is the first action offered.
+- tapOn:
+    id: "settings.deleteAccount"
+- assertVisible:
+    id: "deleteAccount.screen"
+# A request left over from an interrupted earlier run: cancel it first.
+- runFlow:
+    when:
+      visible:
+        id: "deleteAccount.scheduled"
+    commands:
+      - tapOn:
+          id: "deleteAccount.cancel"
+      - extendedWaitUntil:
+          notVisible:
+            id: "deleteAccount.scheduled"
+          timeout: 15000
+- assertVisible:
+    id: "deleteAccount.exportFirst"
+- scrollUntilVisible:
+    element:
+      id: "deleteAccount.continue"
+    direction: DOWN
+- tapOn:
+    id: "deleteAccount.continue"
+# 2. Confirm with the typed word; the button stays disabled until it matches.
+- assertVisible:
+    id: "deleteAccount.confirm.button"
+    enabled: false
+- tapOn:
+    id: "deleteAccount.confirm.input"
+- inputText: "delete"
+- hideKeyboard
+- tapOn:
+    id: "deleteAccount.confirm.button"
+    enabled: true
+- extendedWaitUntil:
+    visible:
+      id: "deleteAccount.scheduled"
+    timeout: 15000
+- runScript:
+    file: ../scripts/deletion-status.js
+    env:
+      EXPECT_STATUS: "scheduled"
+# 3. Cancel deletion: back to normal, and the server row says cancelled.
+- tapOn:
+    id: "deleteAccount.cancel"
+- extendedWaitUntil:
+    notVisible:
+      id: "deleteAccount.scheduled"
+    timeout: 15000
+- runScript:
+    file: ../scripts/deletion-status.js
+    env:
+      EXPECT_STATUS: "cancelled"
+- stopApp

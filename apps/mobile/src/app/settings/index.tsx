@@ -9,6 +9,7 @@ import { brand, supportMailto } from '@scribe/brand';
 import { ListRow, ListSection, Text } from '@/components/ui';
 import { getAppearance } from '@/components/child/child-store';
 import { useTheme } from '@/lib/a11y';
+import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { remindersSummary } from '@/lib/reminders';
 import { listChildren, subscribe, type Child } from '@/lib/store';
@@ -19,6 +20,8 @@ import { licences } from '@scribe/content';
  * Rows (coordinator, 3 Oct 2026): Account, Plan, Spoken language, Reminders, Export your book,
  * Privacy, Storage, Recordings, Appearance, Delete account, Terms, Privacy Policy, Help,
  * Licences, version. "Settings, Plan" is the path the Plus legal text names.
+ * v1.0 (founder, 3 Oct 2026): no account exists (lib/capabilities.ts), so Account and
+ * Delete account are not offered; letters live on this phone and leave it only by Export.
  *
  * Help writes to the support mailbox with a fixed subject and nothing else (LEGAL-REQ-014).
  * "If you are struggling" is always here, never behind a flag (D-034). Licences and the
@@ -30,6 +33,7 @@ const ROUTES = {
   language: '/settings/language',
   reminders: '/settings/reminders',
   export: '/settings/export',
+  recentlyDeleted: '/settings/recently-deleted',
   privacy: '/settings/privacy',
   storage: '/settings/storage',
   recordings: '/settings/recordings',
@@ -85,8 +89,8 @@ export default function Settings() {
         <Text variant="subhead">{copy.settings.about.beta.body}</Text>
       </View>
 
-      <ListSection title={h.sections.account}>
-        <ListRow title={h.accountLabel} subtitle={h.accountHelp} trailing="chevron" onPress={go(ROUTES.account)} />
+      <ListSection title={capabilities.signIn ? h.sections.account : undefined}>
+        {capabilities.signIn ? <ListRow title={h.accountLabel} subtitle={h.accountHelp} trailing="chevron" onPress={go(ROUTES.account)} /> : null}
         <ListRow title={h.planLabel} subtitle={h.planHelp} trailing="chevron" onPress={go(ROUTES.plan)} />
       </ListSection>
 
@@ -104,20 +108,23 @@ export default function Settings() {
 
       <ListSection title={h.sections.writing}>
         <ListRow title={h.languageLabel} subtitle={h.languageHelp} trailing="chevron" onPress={go(ROUTES.language)} />
-        <ListRow title={h.remindersLabel} trailing={s.reminders} onPress={go(ROUTES.reminders)} />
-        <ListRow title={h.appearanceLabel} trailing={copy.settingsMore.themes[s.appearance]} onPress={go(ROUTES.appearance)} />
+        <ListRow title={h.remindersLabel} value={s.reminders} trailing="chevron" onPress={go(ROUTES.reminders)} />
+        <ListRow title={h.appearanceLabel} value={copy.settingsMore.themes[s.appearance]} trailing="chevron" onPress={go(ROUTES.appearance)} />
       </ListSection>
 
       <ListSection title={h.sections.data} footer={copy.trust.short}>
         <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
+        <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
         <ListRow title={h.recordingsLabel} trailing="chevron" onPress={go(ROUTES.recordings)} />
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
       </ListSection>
 
-      <ListSection>
-        <ListRow title={h.deleteAccountLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.deleteAccount)} />
-      </ListSection>
+      {capabilities.signIn ? (
+        <ListSection>
+          <ListRow title={h.deleteAccountLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.deleteAccount)} />
+        </ListSection>
+      ) : null}
 
       <ListSection title={h.sections.help}>
         <ListRow title={h.helpLabel} trailing={h.helpValue} accessibilityHint={brand.support.email} onPress={() => void Linking.openURL(supportMailto(h.helpSubject))} />
@@ -133,8 +140,8 @@ export default function Settings() {
           ))}
           <Text variant="footnote">{copy.struggling.emergency}</Text>
         </Disclosure>
-        <ListRow title={h.termsLabel} trailing="chevron" onPress={openWeb(brand.web.terms)} />
-        <ListRow title={h.privacyPolicyLabel} trailing="chevron" onPress={openWeb(brand.web.privacy)} />
+        <ListRow accessibilityRole="link" title={h.termsLabel} trailing="chevron" onPress={openWeb(brand.web.terms)} />
+        <ListRow accessibilityRole="link" title={h.privacyPolicyLabel} trailing="chevron" onPress={openWeb(brand.web.privacy)} />
         <Disclosure title={h.licencesLabel}>
           <Text variant="subhead">{licences.intro}</Text>
           {licences.sections.map((sec) => (

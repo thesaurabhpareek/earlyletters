@@ -8,10 +8,10 @@
  * - Headspace / Calm empty state: one breathing drawing, one plain sentence, one action.
  * Motion: the first 6 cards enter (280 ms, 30 ms stagger); nothing else moves on its own.
  */
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SectionList, View } from 'react-native';
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, Extrapolation } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,11 +20,15 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
+import { childIndexOf, trackBookOpened } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import { useMotion } from '@/lib/motion';
-import { listEntriesForChild, subscribe, todayISO, type Entry } from '@/lib/store';
+import { deleteEntry, listEntriesForChild, subscribe, todayISO, undeleteEntry, type Entry } from '@/lib/store';
 import { chapterTitle, groupChapters, monthFor, type Chapter } from '@/components/book/chapters';
 import { LetterCard } from '@/components/book/letter-card';
+import { QuietDayRow } from '@/components/book/quiet-day-row';
+import { isQuietMark } from '@/components/book/quiet-day.logic';
 import { ChildSwitcher } from '@/components/child/child-switcher';
 import { useChildren } from '@/components/child/use-children';
 
@@ -38,6 +42,7 @@ export default function Book() {
   const { children, active } = useChildren();
   const [entries, setEntries] = useState<Entry[]>([]);
   const y = useSharedValue(0);
+  const toast = useToast();
 
   useEffect(() => {
     if (!active) return;
@@ -47,6 +52,16 @@ export default function Book() {
   }, [active?.id]);
 
   const chapters = useMemo(() => (active ? groupChapters(entries, active) : []), [entries, active]);
+
+  // book_opened each time the Book tab comes into view for a book (bucketed letter count only).
+  const activeId = active?.id ?? null;
+  useFocusEffect(
+    useCallback(() => {
+      if (!activeId) return;
+      const letters = listEntriesForChild(activeId).filter((e) => e.kind !== 'not_much').length;
+      trackBookOpened({ childIndex: childIndexOf(activeId), letters, role: 'parent' });
+    }, [activeId]),
+  );
 
   const onScroll = useAnimatedScrollHandler((e) => {
     y.value = e.contentOffset.y;
@@ -63,6 +78,11 @@ export default function Book() {
   const currentMonth = monthFor(active, todayISO());
   const currentEmpty = chapters.length > 0 && chapters[0].month !== currentMonth && currentMonth !== null;
   const open = (id: string) => router.push({ pathname: '/letter/[id]', params: { id } });
+  // Remove a quiet-day mark: reversible, with Undo (COMPONENTS 2.14).
+  const removeMark = (id: string) => {
+    deleteEntry(id);
+    toast.show({ message: copy.book.quietDay.removedToast, action: { label: copy.notMuch.undo, onPress: () => undeleteEntry(id) } });
+  };
 
   // Stagger only the first 6 cards on screen (MOTION 5f).
   const indexOf = new Map<string, number>();
@@ -78,7 +98,7 @@ export default function Book() {
       <Text variant="display" asHeading={1}>
         {title}
       </Text>
-      {entries.some((e) => e.inBook) && (
+      {entries.some((e) => e.inBook && !isQuietMark(e)) && (
         <Button
           variant="secondary"
           size="sm"
@@ -144,17 +164,23 @@ export default function Book() {
               <View
                 accessible
                 accessibilityRole="header"
-                accessibilityLabel={[section.title, section.countLine, section.fromLine].join('. ')}
+                accessibilityLabel={[section.title, section.countLine, section.fromLine].filter(Boolean).join('. ')}
                 className="gap-1 px-5 pb-3 pt-8">
                 <Text variant="title1">{section.title}</Text>
-                <Text variant="footnote">
-                  {section.countLine} · {section.fromLine}
-                </Text>
+                {section.countLine ? (
+                  <Text variant="footnote">
+                    {section.countLine} · {section.fromLine}
+                  </Text>
+                ) : null}
               </View>
             )}
-            renderItem={({ item }: { item: Entry }) => (
-              <LetterCard entry={item} child={active} reduced={reduced} entering={enter(indexOf.get(item.id) ?? 99)} onPress={open} />
-            )}
+            renderItem={({ item }: { item: Entry }) =>
+              isQuietMark(item) ? (
+                <QuietDayRow entry={item} child={active} reduced={reduced} entering={enter(indexOf.get(item.id) ?? 99)} onRemove={removeMark} />
+              ) : (
+                <LetterCard entry={item} child={active} reduced={reduced} entering={enter(indexOf.get(item.id) ?? 99)} onPress={open} />
+              )
+            }
           />
           {topBar}
         </>

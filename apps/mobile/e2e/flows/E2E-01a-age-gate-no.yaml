@@ -1,0 +1,75 @@
+# E2E-01a  18+ entry gate: No, then the 24-hour stop.
+# Proves: PRD-REQ-019 (gate before any first-run screen, nothing preselected,
+# No closes the app for 24 hours, a clock set back keeps it closed), LEGAL-REQ-002,
+# A-REQ-002 (first route renders with no network; the 3 s budget itself is
+# measured on device, DEVICE_TEST_PLAN S1-03).
+# After this flow the runner calls `bin/inspect-container.sh gate-stopped`
+# (no child, letter, draft or recording; settings hold only ageGate.stoppedAt).
+# Then E2E-01b answers Yes on the same install.
+appId: ${APP_ID}
+name: E2E-01a 18+ gate, No and the 24-hour stop
+tags:
+  - e2e
+  - E2E-01
+  - PRD-REQ-019
+  - LEGAL-REQ-002
+  - A-REQ-002
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_OFFLINE: "1"
+# 1. The gate is the first and only route; nothing selected, Continue disabled.
+- assertVisible:
+    id: "gate.screen"
+- assertVisible:
+    id: "gate.continue"
+    enabled: false
+- assertNotVisible:
+    id: "onboarding.step.welcome"
+- assertNotVisible:
+    id: "tab.tonight"
+# 2. No: the stop screen, with no way to record or write and no way back yet.
+- tapOn:
+    id: "gate.no"
+- tapOn:
+    id: "gate.continue"
+    enabled: true
+- assertVisible:
+    id: "gate.stop"
+- assertNotVisible:
+    id: "gate.stop.mistake"
+- assertNotVisible:
+    id: "tonight.speak"
+- assertNotVisible:
+    id: "tonight.type"
+# 3. Relaunch: still stopped.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- assertVisible:
+    id: "gate.stop"
+# 4. 23 hours later: still stopped, and still no way back.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_CLOCK_OFFSET_HOURS: "23"
+- assertVisible:
+    id: "gate.stop"
+- assertNotVisible:
+    id: "gate.stop.mistake"
+# 5. Clock set back two hours: still stopped. This runs last because
+#    age-gate.logic.ts repairs the stored stop time to "now" when the clock is
+#    behind it, which restarts the 24 hours from (real time - 2 h).
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_CLOCK_OFFSET_HOURS: "-2"
+- assertVisible:
+    id: "gate.stop"
+- assertNotVisible:
+    id: "gate.stop.mistake"
+- stopApp

@@ -12,6 +12,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { File } from 'expo-file-system';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import { isPreviewAudioPresent } from '../../dev/preview-audio';
 import { setAudioMode } from '../audio-mode';
 import type { Entry } from '../store';
 import { clampPosition, INITIAL_INTENT, recordingAvailability, reducePlayIntent, type PlayerCommand, type PlayerEvent, type PlayIntent, type RecordingAvailability } from './player.logic';
@@ -40,6 +41,8 @@ export function availabilityOf(entry: Pick<Entry, 'captureMode' | 'audioUri'>, o
     } catch {
       exists = false;
     }
+    // Web design preview only: the seeded family's recordings count as present (src/dev/preview-audio).
+    if (!exists) exists = isPreviewAudioPresent(entry.audioUri);
   }
   return recordingAvailability({ captureMode: entry.captureMode, own, audioUri: entry.audioUri, fileExists: exists });
 }
@@ -48,7 +51,10 @@ export function useLetterPlayer(
   uri: string | null,
   opts: { fallbackDurationMs?: number | null; autoPlay?: boolean; startAt?: number; onFinish?: () => void } = {},
 ): LetterPlayer {
-  const player = useAudioPlayer(uri ? { uri } : null, { updateInterval: 250 });
+  // The web design preview's seeded recordings have no file a browser may load: show the player at rest
+  // with the saved length instead of an error. Always false on a phone (src/dev/preview-audio).
+  const playable = uri && !isPreviewAudioPresent(uri) ? uri : null;
+  const player = useAudioPlayer(playable ? { uri: playable } : null, { updateInterval: 250 });
   const status = useAudioPlayerStatus(player);
   const intent = useRef<PlayIntent>(INITIAL_INTENT);
   const [wantPlaying, setWantPlaying] = useState(false);

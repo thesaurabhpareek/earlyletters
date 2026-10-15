@@ -1,0 +1,16 @@
+# Only for EAS development builds (E2E_DEV_CLIENT=1, README section 3.2): a cold
+# start shows the dev launcher, so open the running bundler. SDK 57 accepts only
+# the legacy form {scheme}://expo-development-client/?url={manifestUrl}, and the
+# scheme defaults to exp+{slug} (slug "scribe" from packages/brand codename)
+# (Expo docs, "Development workflows", deep links for development builds).
+appId: ${APP_ID}
+---
+- openLink: ${"exp+scribe://expo-development-client/?url=" + encodeURIComponent(METRO_URL || "http://localhost:8081") + "&disableOnboarding=1"}
+- runFlow:
+    when:
+      visible:
+        text: "Open"
+    commands:
+      - tapOn: "Open"
+- waitForAnimationToEnd:
+    timeout: 15000

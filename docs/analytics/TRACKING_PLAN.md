@@ -42,8 +42,8 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | 4 | Weekly letters | Letters per active family per week; spoken versus typed; book versus private | S `weekly_keeping_families`, `letters_per_active_family`; D for `prompt_kind`, `from_notification_2h`, edit counts | `letter_saved`, `transcription_completed` | Set after first cohorts | C-REQ-034 |
 | 5 | Co-parent | Co-parent invites sent and accepted within 7 days; families with two voices | S `family_invites`, `letters_per_active_family`; D for channel | `invite_created`, `invite_accepted`, `invite_failed` | Set after first cohorts | B-REQ-007 |
 | 6 | Languages | Families by spoken-letter language; pack download success and failure by pack | S `language_mix` (once a server language column exists); D | `language_set`, `pack_download` | Pack failure under 2% of starts (Decision) | B-REQ-003, decision 15 |
-| 7 | Read together | Share of monthly active parents who start Read together; finish rate; tries used before an offer | D only | `read_together_started`, `read_together_ended`, `read_together_try_used` | Set after first cohorts | C-REQ-034 |
-| 8 | Trial to paid | Offer views to purchases (D); trials, trial to paid, annual share, refunds (ASC) | ASC for money; D for offer views | `plus_offer_viewed`, `plus_offer_closed`, `plan_changed` | Trial to paid 40% or more; annual 60% or more; refunds under 3% (C section 9) | C-REQ-034, C-REQ-023 |
+| 7 | Read together | Share of monthly active parents who start Read together; finish rate (no session limit since D-082) | D only | `read_together_started`, `read_together_ended` | Set after first cohorts | C-REQ-034 |
+| 8 | Trial to paid | Offer views to purchases (D); trials, trial to paid, annual share, refunds (ASC) | ASC for money; D for offer views | `plus_offer_viewed`, `plus_offer_closed`, `plan_changed`, `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | Trial to paid 40% or more; annual 60% or more; refunds under 3% (C section 9) | C-REQ-034, C-REQ-023 |
 | 9 | Retention | Active writers at week 4 and week 26 of their first-letter cohort | S `retention_cohorts` | `app_opened`, `letter_saved`, `book_opened` | Week 4: 35% or more; month 6: 20% or more (C section 9) | PRD-REQ-016 |
 
 ### 1.3 Guardrails
@@ -87,7 +87,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-64 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+70 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
@@ -102,7 +102,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `analytics_opted_in` | Immediately after the user says yes. Carries a one-time summary of first-run facts the app already stores, because first-run events can never be sent (K-01) | `surface` (enum: consent_sheet \| settings)<br>`days_since_install` (enum: d0 \| d1 \| d2_7 \| d8_30 \| d31_90 \| d91_plus)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus)<br>`signed_in` (bool)<br>`member_role` (enum: parent \| contributor)<br>`first_letter_mode` (enum: spoken \| typed \| none)<br>`time_to_first_letter` (enum: lt_90s \| 90s_5m \| 5_30m \| 30m_24h \| gt_24h \| unknown)<br>`came_from_invite` (bool) | PRD-REQ-016, K-01 |
+| `analytics_opted_in` | Immediately after the user says yes. Carries a one-time summary of first-run facts the app already stores, because first-run events can never be sent (K-01) | `surface` (enum: consent_sheet \| settings)<br>`days_since_install` (enum: d0 \| d1 \| d2_7 \| d8_30 \| d31_90 \| d91_plus)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus)<br>`signed_in` (bool)<br>`member_role` (enum: parent \| contributor)<br>`first_letter_mode` (enum: spoken \| typed \| mixed \| none)<br>`time_to_first_letter` (enum: lt_90s \| 90s_5m \| 5_30m \| 30m_24h \| gt_24h \| unknown)<br>`came_from_invite` (bool) | PRD-REQ-016, K-01 |
 
 #### entry
 
@@ -116,15 +116,17 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
 | `signed_out` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
 | `invite_opened` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
+| `coparent_soon_opened` | The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens) | `surface` (enum: tab \| sheet) | PRD-REQ-016 |
+| `coparent_soon_notify` | Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us) | (none) | PRD-REQ-016 |
 | `local_merge_choice` | User with local letters picks where they go at sign-in | `choice` (enum: existing \| new) | PRD-REQ-016 |
 
 #### children
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `child_added` | A child book is created | `mode` (enum: birthday \| due_date \| month_only)<br>`ordinal` (enum: first \| second \| third_plus)<br>`in_first_run` (bool)<br>`added_together` (bool) | PRD-REQ-011, PRD-REQ-015, B-REQ-004 |
-| `child_switched` | User switches the current book | `ordinal` (enum: first \| second \| third_plus)<br>`surface` (enum: tonight \| book \| review \| listen) | PRD-REQ-012 |
-| `child_setting_changed` | A per-child setting is changed (which setting only, never the value) | `key` (enum: display_name \| nickname \| date \| photo \| book_look \| family_can_read \| hidden \| deleted \| signs_as \| include_in_reminders \| pause_celebrations \| auto_add)<br>`ordinal` (enum: first \| second \| third_plus) | PRD-REQ-013 |
+| `child_added` | A child book is created | `has_date` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`in_first_run` (bool)<br>`added_together` (bool) | PRD-REQ-011, PRD-REQ-015, B-REQ-004 |
+| `child_switched` | User switches the current book | `child_ordinal` (enum: first \| second \| third_plus)<br>`surface` (enum: tonight \| book \| review \| listen) | PRD-REQ-012 |
+| `child_setting_changed` | A per-child setting is changed (which setting only, never the value) | `key` (enum: display_name \| nickname \| date \| photo \| book_look \| family_can_read \| hidden \| deleted \| signs_as \| include_in_reminders \| pause_celebrations \| auto_add)<br>`child_ordinal` (enum: first \| second \| third_plus) | PRD-REQ-013 |
 | `make_it_yours_card` | A post-first-letter "Make it yours" card is acted on | `card` (enum: goals \| words \| invite \| photo)<br>`action` (enum: opened \| completed \| skipped) | B-REQ-004, PRD-REQ-016 |
 | `goals_set` | What matters goals saved. Count only: goals are L4 (PRD 7.10), so which goals were picked is never sent | `count` (int 0 to 5) | B-NFR-001, PRD-REQ-010 |
 | `dictionary_term_added` | A Names and words term saved (kind only, never the term) | `kind` (enum: child \| nickname \| family \| word \| place \| self)<br>`source` (enum: settings \| review_correction \| onboarding) | PRD-REQ-016 |
@@ -133,10 +135,10 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `capture_started` | User starts speaking or typing a letter | `mode` (enum: spoken \| typed)<br>`source` (enum: tonight \| book \| notification \| make_it_yours \| resurface)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016, C-REQ-034 |
-| `capture_discarded` | A letter in progress is thrown away before saving | `mode` (enum: spoken \| typed)<br>`stage` (enum: listening \| review)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m) | PRD-REQ-016 |
+| `capture_started` | User starts speaking or typing a letter | `mode` (enum: spoken \| typed \| mixed)<br>`source` (enum: tonight \| book \| notification \| make_it_yours \| resurface)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016, C-REQ-034 |
+| `capture_discarded` | A letter in progress is thrown away before saving | `mode` (enum: spoken \| typed \| mixed)<br>`stage` (enum: listening \| review)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m) | PRD-REQ-016 |
 | `transcription_completed` | A spoken letter finishes transcription, hears no speech, fails, or waits for its language model | `engine` (enum: on_device \| server)<br>`model` (enum: turbo \| small \| hindi_small \| zh_turbo \| server_default \| none)<br>`audio_bucket` (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`latency_bucket` (enum: lt_5s \| 5_15s \| 15_30s \| 30_60s \| gt_60s)<br>`outcome` (enum: ok \| no_speech \| failed \| queued_for_model) | PRD-REQ-016, NFR-7.7 |
-| `letter_saved` | A letter is saved (to the book or kept private). The core activation and north-star event on device | `mode` (enum: spoken \| typed)<br>`destination` (enum: book \| private)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`words_bucket` (enum: lt_25 \| 25_99 \| 100_299 \| 300_plus)<br>`machine_edit_count` (int 0 to 500)<br>`edits_reverted_count` (int 0 to 500)<br>`edits_rejected_count`? (int 0 to 500)<br>`engine` (enum: on_device \| server \| none \| pending)<br>`from_notification_2h` (bool) | C-REQ-034, PRD-REQ-016, ADR-0008 |
+| `letter_saved` | A letter is saved (to the book or kept private). The core activation and north-star event on device | `mode` (enum: spoken \| typed \| mixed)<br>`destination` (enum: book \| private)<br>`child_ordinal` (enum: first \| second \| third_plus)<br>`member_role` (enum: parent \| contributor)<br>`prompt_kind` (enum: opening \| gap \| hard \| family \| together \| none)<br>`audio_bucket`? (enum: lt_15s \| 15_60s \| 1_2m \| 2_5m \| gt_5m)<br>`words_bucket` (enum: lt_25 \| 25_99 \| 100_299 \| 300_plus)<br>`machine_edit_count` (int 0 to 500)<br>`edits_reverted_count` (int 0 to 500)<br>`edits_rejected_count`? (int 0 to 500)<br>`engine` (enum: on_device \| server \| none \| pending)<br>`from_notification_2h` (bool) | C-REQ-034, PRD-REQ-016, ADR-0008 |
 | `review_action` | An action on the Review screen | `action` (enum: show_exactly_said \| edit_text \| say_again \| play_back \| change_child \| change_destination \| undo_all_edits) | PRD-REQ-016, PRD-REQ-012 |
 | `machine_edit_reverted` | A user undoes one machine edit (type and source only). Fidelity health signal for the constitution | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model) | PRD-REQ-016 |
 | `machine_edit_rejected` | The verifier refused machine edits for a letter: one event per edit type, source and reason, with a count. Never the text or the span | `edit_type` (enum: filler \| false_start \| repeat \| stt_fix \| punctuation \| agreement \| paragraph)<br>`source` (enum: rule \| model)<br>`reason` (enum: original_mismatch \| out_of_bounds \| overlaps_protected \| overlaps_other_edit \| type_not_allowed_at_level \| removal_only \| not_a_filler \| not_a_repeat \| false_start_not_repeated \| stt_fix_not_dictionary \| punctuation_changed_letters \| agreement_not_single_word \| agreement_stem_mismatch \| agreement_limit_per_sentence \| paragraph_not_whitespace \| inserted_content_word \| change_ceiling_exceeded \| splits_word \| removal_adds_punctuation \| changes_negation \| changes_tense \| changes_modal \| changes_word \| changes_number \| changes_sentence_type \| changes_quotes \| case_change_not_allowed \| case_change_not_sentence_start \| removes_negation \| repeat_is_emphasis \| false_start_complete_phrase \| stt_fix_protected_word \| stt_fix_not_heard_as \| not_vetted_for_language)<br>`count` (int 1 to 500) | PRD-REQ-016, B-REQ-003 |
@@ -156,20 +158,19 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `book_opened` | Book tab shown for a child | `child_ordinal` (enum: first \| second \| third_plus)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus)<br>`member_role` (enum: parent \| contributor) | PRD-REQ-016 |
 | `letter_opened` | A letter is opened to read | `author_relation` (enum: self \| other_parent \| family)<br>`has_audio` (bool) | PRD-REQ-016 |
 | `playback_started` | A recording starts playing | `surface` (enum: letter \| review \| read_together)<br>`author_relation` (enum: self \| other_parent \| family)<br>`version` (enum: listening_copy \| original) | PRD-REQ-016 |
-| `read_together_started` | Read together session starts | `child_ordinal` (enum: first \| second \| third_plus)<br>`access` (enum: plus \| try)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-016 |
+| `read_together_started` | Read together session starts | `child_ordinal` (enum: first \| second \| third_plus)<br>`access` (enum: plus \| free)<br>`letters_bucket` (enum: 0 \| 1 \| 2_4 \| 5_9 \| 10_49 \| 50_99 \| 100_364 \| 365_plus) | C-REQ-034, PRD-REQ-016 |
 | `read_together_ended` | Read together session ends | `reason` (enum: finished \| stopped \| interrupted)<br>`session_bucket` (enum: lt_1m \| 1_5m \| 5_15m \| gt_15m)<br>`letters_heard` (int 0 to 50) | PRD-REQ-016 |
-| `read_together_try_used` | A free Read together try is used (Free tier) | `n` (int 1 to 10) | C-REQ-034 |
 
 #### family
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `invite_created` | A parent creates an invite | `role` (enum: co_parent \| contributor)<br>`channel` (enum: share_sheet \| copy_link \| code)<br>`shared` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus) | B-REQ-007, B-NFR-001, PRD-REQ-014 |
-| `invite_accepted` | An invite is accepted in the app (observed). Server aggregates count every acceptance | `role` (enum: co_parent \| contributor)<br>`surface` (enum: app) | B-NFR-001 |
+| `invite_created` | A parent creates an invite | `role` (enum: parent \| contributor)<br>`channel` (enum: share_sheet \| copy_link \| code)<br>`shared` (bool)<br>`child_ordinal` (enum: first \| second \| third_plus) | B-REQ-007, B-NFR-001, PRD-REQ-014 |
+| `invite_accepted` | An invite is accepted in the app (observed). Server aggregates count every acceptance | `role` (enum: parent \| contributor)<br>`surface` (enum: app) | B-NFR-001 |
 | `invite_failed` | Creating or accepting an invite failed (the reason class only) | `stage` (enum: create \| accept)<br>`reason` (enum: expired \| used \| revoked \| already_member \| not_found \| not_parent \| rate_limited \| consent_needed \| book_deleted \| signed_out \| network \| unknown) | B-REQ-007 |
 | `family_letter_reviewed` | A parent decides on a family letter | `decision` (enum: added \| kept_aside) | B-REQ-009, B-NFR-001 |
-| `member_removed` | A parent removes a member | `role` (enum: co_parent \| contributor) | B-REQ-010 |
-| `member_left` | A member leaves a book | `role` (enum: co_parent \| contributor)<br>`letters` (enum: keep \| take_out) | B-REQ-010 |
+| `member_removed` | A parent removes a member | `role` (enum: parent \| contributor) | B-REQ-010 |
+| `member_left` | A member leaves a book | `role` (enum: parent \| contributor)<br>`letters` (enum: keep \| take_out) | B-REQ-010 |
 
 #### reminders
 
@@ -206,9 +207,14 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 
 | Event | Fires when | Properties (type: allowed values) | Serves |
 |---|---|---|---|
-| `plus_offer_viewed` | Apple's subscription store view presented | `trigger` (enum: chapter_complete \| second_child \| backup \| read_together \| themes \| settings) | C-REQ-034, C-REQ-023 |
-| `plus_offer_closed` | Apple's subscription store view closed | `trigger` (enum: chapter_complete \| second_child \| backup \| read_together \| themes \| settings)<br>`outcome` (enum: purchased \| dismissed \| unavailable) | C-REQ-034, C-NFR-002 |
+| `plus_offer_viewed` | Apple's subscription store view presented | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings) | C-REQ-034, C-REQ-023 |
+| `plus_offer_closed` | Apple's subscription store view closed | `trigger` (enum: chapter_complete \| keep_letter \| backup \| themes \| settings)<br>`outcome` (enum: purchased \| dismissed \| unavailable) | C-REQ-034, C-NFR-002 |
 | `plan_changed` | The plan StoreKit reports on this device changed state (observed; production transactions only) | `from_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`to_state` (enum: none \| trial \| active \| grace \| billing_retry \| expired \| refunded \| revoked)<br>`period` (enum: month \| year \| unknown)<br>`ownership` (enum: purchased \| family_shared \| unknown) | C-REQ-034, C-NFR-002 |
+| `free_allowance_reached` | The last free letter was kept, so the next Keep will ask for Plus (once per phone) | `allowance` (int 2 to 100) | C-REQ-034, C-REQ-023 |
+| `keep_gate_shown` | The Keep sheet asked for Plus (the letter is held on the phone) | `letters_kept` (int 0 to 1000)<br>`allowance` (int 2 to 100)<br>`lapsed` (int 0 to 1) | C-REQ-034, C-REQ-023 |
+| `letter_held` | The person chose to keep the letter on the phone for now instead of starting Plus | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
+| `plus_started_from_gate` | Plus was on after the Keep sheet (bought, restored, an Ask to Buy approval, or an offer code) | `letters_kept` (int 0 to 1000) | C-REQ-034, C-REQ-023 |
+| `offer_code_redeemed` | Apple's offer code sheet closed and Plus was on afterwards | (none) | C-REQ-034 |
 | `restore_result` | Restore purchases finished | `outcome` (enum: restored \| nothing \| cancelled \| failed \| unavailable) | C-REQ-034, C-NFR-003 |
 
 #### errors
@@ -225,7 +231,7 @@ Global properties: `schema_version` (int 1 to 1000), `child_count_bucket`? (enum
 
 | Property | Type and values | Level | Why |
 |---|---|---|---|
-| `schema_version` | int 1 to 1000 (currently 2) | L2 | Lets queries span catalogue changes |
+| `schema_version` | int 1 to 1000 (currently 5; required; a test pins the catalogue fingerprint, so a changed event needs a new version) | L2 | Lets queries span catalogue changes |
 | `child_count_bucket`? | enum: none, one, two, three_plus | L2 | K-01 asks for it as a user property; LEGAL-REQ-017 forbids person properties beyond the id. Decision: send it as an event property, which satisfies both |
 | `sample_pct`? | int 1 to 99 | L2 | Present only on sampled events, so counts can be re-weighted |
 
@@ -401,6 +407,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `auth_sheet_shown`, `auth_deferred` | `app/(auth)/sign-in/index.tsx`: on show and on Later, with `getSignInTrigger()` | auth | to wire |
 | `local_merge_choice` | sign-in re-ownership step | auth, sync | to wire |
 | `invite_opened` | `lib/family/pending-invite-watcher.tsx` | auth/family | to wire |
+| `coparent_soon_opened`, `coparent_soon_notify` | `components/family/coparent-soon.tsx`: on focus (tab or sheet) and on the Tell me tap | family | wired |
 | `invite_created`, `invite_failed` | `app/invite/new.tsx`: `trackInviteCreated({ role: 'parent', channel, shared, childIndex })`; on error `track('invite_failed', { stage, reason: inviteErrorKind(e) })` | family | to wire |
 | `member_removed`, `member_left`, `family_letter_reviewed` | family screens | family | to wire |
 | `capture_started`, `capture_discarded` | `app/listen.tsx`, `app/write.tsx` | capture (Mobile A) | to wire |
@@ -411,6 +418,7 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `reminder_prime_shown`, `reminder_prime_result`, `os_permission_result`, `reminder_sent`, `reminder_suppressed` | `lib/reminders/priming-sheet.tsx`, `scheduler.ts` | reminders | to wire |
 | `export_started`, `export_completed`, `export_failed`, `export_shared` | `app/settings/export.tsx` around `runExport` and `shareExport` | export | to wire |
 | `plus_offer_viewed`, `plus_offer_closed`, `restore_result` | around `presentPlusStore()` and `restorePurchases()` (`app/settings/plus.tsx`, gates) | payments | to wire |
+| `free_allowance_reached`, `keep_gate_shown`, `letter_held`, `plus_started_from_gate`, `offer_code_redeemed` | `app/review.tsx` (after a Keep), `components/child/plus-gate.tsx`, `app/settings/plus.tsx` (D-082, D-083; numbers only) | payments | wired |
 | `settings_changed` | appearance, reading size, names in notifications, packs on mobile data, listening copy | settings owners | to wire |
 | `moment_shown`, `resurface_*` | celebrate cards | book | to wire |
 | `error_shown`, `sync_failed` | `components/ui` toast and errors; `lib/sync/engine.ts` after retries | design, sync | to wire |
