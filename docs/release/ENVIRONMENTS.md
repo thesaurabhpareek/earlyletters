@@ -1,6 +1,6 @@
 # Environments
 
-Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the alpha (D-106). Supersedes the 3 Oct draft on PR #35 (`docs/ops-runbooks`), which described an on-device v1.0. Decisions: D-041 (migrations reach hosted projects only through CI), D-097 (pack host), D-100 (server features on in v1.0, after the R-17 gate), D-106 (alpha against staging). Companion docs: [DEPLOY.md](DEPLOY.md), [AUTH_SETUP.md](AUTH_SETUP.md), [DOMAINS.md](DOMAINS.md), [SECURITY.md](SECURITY.md), [../release/TESTFLIGHT.md](../release/TESTFLIGHT.md).
+Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the alpha (D-106). Supersedes the 3 Oct draft on PR #35 (`docs/ops-runbooks`), which described an on-device v1.0. Decisions: D-041 (migrations reach hosted projects only through CI), D-097 (pack host), D-100 (server features on in v1.0, after the R-17 gate), D-106 (alpha against staging). Companion docs: [DEPLOY.md](../ops/DEPLOY.md), [AUTH_SETUP.md](../ops/AUTH_SETUP.md), [DOMAINS.md](../ops/DOMAINS.md), [SECURITY.md](../ops/SECURITY.md), [../release/TESTFLIGHT.md](TESTFLIGHT.md).
 
 ## Status on 15 Oct 2026
 
@@ -31,7 +31,7 @@ Nothing secret is in the repository. The app's project values are public by desi
 | Value | Where | Who sets it | Notes |
 |---|---|---|---|
 | The five switches and `EXPO_PUBLIC_DOCS_BASE_URL` (`https://packs.earlyletters.app`, D-097) | `apps/mobile/eas.json`, per profile | PR (S20; flips are founder merges) | Not secret |
-| `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | EAS environment variables, environment `preview` (staging values), later `production` | Founder, TESTFLIGHT.md step 9 | Publishable (anon) key only. The `testflight` profile shares the `preview` environment; with its switch off it constructs no client |
+| `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | EAS environment variables, environment `preview` (staging values), later `production` | Founder, TESTFLIGHT.md step 9 | Publishable (anon) key only. The `testflight` profile shares the `preview` environment; with its switch off it constructs no client, but the values are inlined in its bundle, so a secret key there would ship in build 1 too (the preflight fails on one in either profile) |
 | `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | EAS environment variable, only if not 6 | Founder | Must equal Supabase's Email OTP length |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | EAS environment variables | Founder, later (FT-15) | Not in the alpha: Apple and email only |
 | `EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_SENTRY_DSN` | not set | none | Analytics is off in every profile; nothing reads them |
@@ -43,8 +43,8 @@ Nothing secret is in the repository. The app's project values are public by desi
 | `APPLE_TEAM_ID`, `IOS_BUNDLE_ID` | Vercel project, Production environment (website) | Founder, TESTFLIGHT.md step 10 | `IOS_BUNDLE_ID` is the production id; the site adds `.preview` |
 | Pack signing keys (secret halves) | Password manager only | Founder, FT-16 | Public halves in `packages/api/src/keys.ts` |
 | `EXPO_TOKEN` | GitHub repository secret | Founder, TESTFLIGHT.md step 3 | Read only by the build step of `.github/workflows/testflight.yml` |
-| iOS distribution certificate and profile, App Store Connect API key | EAS credentials for the project | Founder, TESTFLIGHT.md steps 2.5 and 5 | Builds and submits run in GitHub Actions or on the founder's computer, never in an agent sandbox |
-| `submit.<profile>.ascAppId` | `apps/mobile/eas.json` | PR after step 2 | The app record's Apple ID; not secret |
+| iOS distribution certificate and profile, App Store Connect API key | EAS credentials for the project | Founder, TESTFLIGHT.md steps 2.6 and 5 | Builds and submits run in GitHub Actions or on the founder's computer, never in an agent sandbox |
+| `submit.<profile>.ios.ascAppId` | `apps/mobile/eas.json` | PR after step 2.4 | The app record's Apple ID; not secret |
 
 ## Matrix
 
@@ -73,7 +73,7 @@ While real letters are on `scribe-staging` (from the first build 2 sign-in until
 
 ## Universal links
 
-The website serves `/.well-known/apple-app-site-association` from `apps/web/src/app/.well-known/apple-app-site-association/route.ts` on `main`, built from `APPLE_TEAM_ID` and `IOS_BUNDLE_ID`: the app ids `<TEAMID>.<id>` and `<TEAMID>.<id>.preview`, and only the paths `/auth/confirm`, `/auth/callback` (until the app and email templates move to `/auth/confirm`), `/i/*` and `/j`. `docs/ops/well-known/apple-app-site-association` is a reference copy of what it serves. The `.dev` id and the `webcredentials` block (passkeys, AUTH_SETUP 7) are left out until something uses them. `earlyletters.app` only redirects and never serves the file.
+The website serves `/.well-known/apple-app-site-association` from `apps/web/src/app/.well-known/apple-app-site-association/route.ts` on `main`, built from `APPLE_TEAM_ID` and `IOS_BUNDLE_ID`: the app ids `<TEAMID>.<id>` and `<TEAMID>.<id>.preview`, and only the paths `/auth/confirm`, `/auth/callback` (until the app and email templates move to `/auth/confirm`) and `/j` (invites, token in the fragment as `/j#t=<token>`; the older `/i/<token>` form is no longer written, accepted or listed). `docs/ops/well-known/apple-app-site-association` is a reference copy of what it serves. The `.dev` id and the `webcredentials` block (passkeys, AUTH_SETUP 7) are left out until something uses them. `earlyletters.app` only redirects and never serves the file.
 
 ## Promotion path
 
