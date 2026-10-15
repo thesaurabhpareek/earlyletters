@@ -45,7 +45,7 @@ Supabase, the local database, sync, visibility, remote config, packs hosting and
 - **Alternatives:** Apple-hosted Background Assets (iOS 26 and later only; revisit then); On-Demand Resources (legacy); Supabase Storage for models (too expensive at scale); Hugging Face as primary (no SLA).
 - **Door:** two-way: the host can change behind the signed manifest; the signing public key ships in the app, so rotating it needs an app release
 - **Reversal cost:** medium: changing the signing key needs a release; changing the host is a manifest change
-- **Revisit when:** platform: the minimum iOS becomes 26 (Apple-hosted packs); cost: Edge Function invocations for documents pass the founder's budget (the ADR estimates about $60 a month at 220k MAU)
+- **Revisit when:** platform: the minimum iOS becomes 26 (Apple-hosted packs); cost: Edge Function invocations for documents pass about $60 a month (the ADR's estimate at 220k MAU; no budget is set in any source)
 - **Review by:** on trigger
 - **Status:** proposed: the ADR header says Proposed; D-065, D-066 and D-068 adopt its pack, content and config parts; the host (F-1, F-2) is proposed as D-097 in open PR #122
 - **As built:** `apps/mobile/src/lib/packs/engine.ts`, `packages/api/src/pack-manifest.ts`, `scripts/packs/publish.ts`

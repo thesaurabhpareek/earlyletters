@@ -23,8 +23,8 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Reversal cost:** low: a build switch
 - **Revisit when:** law: counsel approves or changes `analyticsConsent.*`
 - **Review by:** on trigger
-- **Status:** amended by D-062. Code shipped ahead of the log: merged PR #118 turns analytics off in every v1.0 build profile under D-095, which is only proposed in open PR #122.
-- **As built:** `packages/analytics/src/consent.ts`, `apps/mobile/src/components/consent/analytics-consent-sheet.tsx`. Note: PR #118 (merged) turns analytics off in every v1.0 build profile through `EXPO_PUBLIC_ANALYTICS`, under D-095, which is only proposed in open PR #122.
+- **Status:** amended by D-062. Code shipped ahead of the log: merged PR #118 turns analytics off in every v1.0 build profile under D-095, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`.
+- **As built:** `packages/analytics/src/consent.ts`, `apps/mobile/src/components/consent/analytics-consent-sheet.tsx`. Note: PR #118 (merged) turns analytics off in every v1.0 build profile through `EXPO_PUBLIC_ANALYTICS`, under D-095, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`.
 
 ### D-004 Publish as an individual Apple Developer account; no LLC for now
 - **Source:** `docs/DECISIONS.md` D-004 (Decided, founder, 2026-10-03); restated as D-064 (Decided, founder, 2026-10-03)
@@ -148,10 +148,10 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Why:** not recorded in the source beyond the founder brief (decision 12)
 - **Door:** two-way: consent-gated and behind a build switch
 - **Reversal cost:** low: code and configuration
-- **Revisit when:** scale: enough consenting families for the findings to mean anything; law: counsel changes the consent reading
+- **Revisit when:** scale: no threshold is set for how many consenting families make the findings meaningful; the decision-science agent should propose one (no source names it); law: counsel changes the consent reading
 - **Review by:** on trigger
-- **Status:** in force for the log; code shipped ahead of the log: merged PR #118 keeps analytics off in every v1.0 build profile (`EXPO_PUBLIC_ANALYTICS`) under D-095, which is only proposed in open PR #122
-- **As built:** `packages/analytics/src/insights/engine.ts`, `supabase/migrations/20261004300000_insights_aggregates.sql`. Note: PR #118 (merged) keeps analytics off in every v1.0 profile under D-095, which is only proposed in open PR #122; the log still says opt-in PostHog at launch.
+- **Status:** in force for the log; code shipped ahead of the log: merged PR #118 keeps analytics off in every v1.0 build profile (`EXPO_PUBLIC_ANALYTICS`) under D-095, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`
+- **As built:** `packages/analytics/src/insights/engine.ts`, `supabase/migrations/20261004300000_insights_aggregates.sql`. Note: PR #118 (merged) keeps analytics off in every v1.0 profile under D-095, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`; the log still says opt-in PostHog at launch.
 - **Also:** BRIEF-20261003-12
 
 ### D-088 In-app feedback: v1.0 keeps "Data Not Collected"; Help email row

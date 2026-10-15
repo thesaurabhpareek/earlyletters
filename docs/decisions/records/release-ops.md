@@ -114,7 +114,7 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **Revisit when:** cost: v1.1 co-parent sharing puts real letters on a server (Supabase Pro from $25 a month the same day); cost: more than 15 iOS builds a month (EAS Starter $19); cost: more than 100 emails a day (Resend Pro $20); cost: R2 storage above 10 GB-month
 - **Review by:** 2026-11-15
 - **Status:** in force
-- **As built:** `apps/mobile/eas.json`; `agents/roster.json` (harness off unless the `AGENTS_ENABLED` variable is set, ADR 0018)
+- **As built:** `apps/mobile/eas.json`; `.github/workflows/agents.yml` (the harness runs only when the `AGENTS_ENABLED` repository variable is true, ADR 0018)
 - **Also:** the cost doc's website host (Cloudflare Pages) differs from D-063 (Vercel)
 
 ### R-012 Release engineering model: two lanes, release branch, version file, RC tags

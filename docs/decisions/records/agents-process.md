@@ -11,7 +11,7 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Reversal cost:** low
 - **Revisit when:** scale: more than about 60 open tasks; team: a second engineer joins (both from the ADR; its third trigger, more than one agent in parallel, has fired and led to ADR 0018)
 - **Review by:** on trigger
-- **Status:** amended by ADR-0018: the run protocol for work selection is superseded; the backlog format and traceability rules stay in force
+- **Status:** proposed (the ADR header says Proposed); its run protocol is superseded by ADR-0018, which keeps the backlog format and traceability rules in force
 - **As built:** `docs/BACKLOG.md`; the trace script (BL-002) is in open PR #143
 
 ### ADR-0018 Agent operating system: roster of identities, a code dispatcher, Claude Code on GitHub Actions
@@ -66,7 +66,7 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Why:** two operating models would give agents conflicting rules. The source notes a conflict of interest: the session making the call wrote #4.
 - **Door:** two-way: internal process
 - **Reversal cost:** low
-- **Revisit when:** team: the founder reviews the harness after its first weeks of runs
+- **Revisit when:** team: a PR proposes a second roster or operating model (as #76 did); cost: harness spend reaches the OpenRouter key's monthly budget (ADR 0019)
 - **Review by:** on trigger
 - **Status:** in force
 - **As built:** `agents/roster.json`, `docs/agents/OPERATING_MODEL.md`, `scripts/agents/dispatch.mjs`
@@ -88,7 +88,7 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Why:** they reduce the merge bottleneck (12 merges a week is the plan's limiting factor) and match D-082 and D-083 (#127).
 - **Door:** one-way after launch: "backup is free for everyone" becomes a pricing promise once backup ships and is advertised; the merge rule is two-way
 - **Reversal cost:** low today; medium after backup ships free
-- **Revisit when:** cost: backup storage per family passes the founder's budget; team: review agents pass a PR that later breaks main
+- **Revisit when:** cost: no backup storage budget is set (the founder should set one before backup ships); team: review agents pass a PR that later breaks main
 - **Review by:** on trigger
 - **Status:** in force: open PR #128 also records a wider merge delegation (D-107, "Widen.", 15 Oct), not merged
 - **As built:** not built (process rule; backup not in v1.0)

@@ -218,7 +218,7 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Why:** about $11k to $12k of egress at 220k installs on Supabase (TDD 03 C-8, TDD 06 P-9).
 - **Door:** two-way: the host sits behind a signed manifest
 - **Reversal cost:** low: a manifest and catalog change
-- **Revisit when:** cost: host egress or request charges pass the founder's budget; platform: Apple-hosted Background Assets become usable (minimum iOS 26)
+- **Revisit when:** cost: the pack host leaves its free tier (R2: 10 GB-month storage, 10M Class B requests a month, per ADR 0016); platform: Apple-hosted Background Assets become usable (minimum iOS 26)
 - **Review by:** on trigger
 - **Status:** in force: the host itself is not yet chosen (D-097 proposes `packs.earlyletters.app` on Cloudflare R2 in open PR #122)
 - **As built:** `apps/mobile/src/lib/models/catalog.ts`

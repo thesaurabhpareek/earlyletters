@@ -9,7 +9,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Alternatives:** expo-iap alone (we would build validation and entitlement sync); selling printed books through IAP (not allowed under 3.1.3(e)).
 - **Door:** two-way: nothing was built on RevenueCat, and print is roadmap only
 - **Reversal cost:** low: the digital half is already replaced; the print half is unbuilt
-- **Revisit when:** market: print becomes a launch (D-010); platform: Android billing needs a decision (ADR 0013 names RevenueCat as the likely Android-time option in D-001)
+- **Revisit when:** market: print becomes a launch (D-010); platform: Android billing needs a decision (D-001 keeps RevenueCat as the likely Android-time option)
 - **Review by:** on trigger
 - **Status:** amended by ADR-0013
 - **As built:** not built (no RevenueCat, no print path)
@@ -19,8 +19,8 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Decided:** Plus is two auto-renewable subscriptions in one App Store group, sold through Apple's own `SubscriptionStoreView` from a local Expo module. The entitlement is `Transaction.currentEntitlements` on the phone; restore, manage and refund are Apple's sheets. No server sees a purchase, and the server never refuses a book for Plus. Family Sharing is on for both products. Product ids `plus.monthly` and `plus.annual` carry no price.
 - **Why:** Apple renders the paywall and its disclosures, so guideline 3.1.2 rests on Apple's component; no third-party code; every API checked in Apple's documentation.
 - **Alternatives:** `expo-iap` 5.8.2 (no SubscriptionStoreView); `react-native-iap` 16.7.2 (same); `@expo/ui` SwiftUI (no StoreKit views); RevenueCat (excluded by the decision).
-- **Door:** one-way: Apple does not allow Family Sharing to be turned off once enabled, and product ids are permanent once created (source: ADR 0013 decision items 4 and 5)
-- **Reversal cost:** high: changing the product ids or Family Sharing means new products and moving live subscribers; moving to a server entitlement needs a new data flow and legal text
+- **Door:** one-way after launch: becomes one-way once the products and Family Sharing setting are created in App Store Connect (not yet; FT-01 enrolment is pending and `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` is a to-do). Apple does not allow Family Sharing to be turned off once enabled, and product ids are permanent once created (ADR 0013 decision items 4 and 5)
+- **Reversal cost:** low today; high once created: then changing the product ids or Family Sharing means new products and moving live subscribers
 - **Revisit when:** platform: a Plus feature with a server cost ships (backup upload), needing server proof of Plus; law: counsel decides auto-renewal notices or the consent record must come from us; platform: Android ships (all three from the ADR's "Revisit when")
 - **Review by:** on trigger
 - **Status:** amended by D-080; D-082 changes the prices and what Plus gates
@@ -70,7 +70,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: the windows are data (one row per counsel change), but changing a published promise needs new legal text
 - **Revisit when:** law: counsel changes any window or a state changes its auto-renewal law
 - **Review by:** 2026-12-01
-- **Status:** amended by D-080. Code shipped ahead of the log: merged PR #121 ships on-device plan reminders and a purchase confirmation under D-094, which is only proposed in open PR #122.
+- **Status:** amended by D-080. Code shipped ahead of the log: merged PR #121 ships on-device plan reminders and a purchase confirmation under D-094, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`.
 - **As built:** not built: no server sees purchases in v1.0; on-device plan reminders exist in `apps/mobile/src/lib/billing/plan-reminders.ts` (PR #121, under D-094, which is proposed in open PR #122)
 - **Also:** D-053 says these windows no longer apply to a server we do not have (DEBATES Q-003); D-080 gives the server a data source again
 
@@ -133,8 +133,8 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Source:** `docs/DECISIONS.md` D-053 (Decided, founder, 2026-10-03; supersedes D-001's server half)
 - **Decided:** StoreKit 2 with Apple's subscription screen, restore and manage sheets and `currentEntitlements`; no server sees purchases; Family Sharing on; $3.99 a month with 1 month free, $29.99 a year with 2 months free. Plus gated Read together after 3 free sessions per book, and books for more children. Server entitlement tables removed (migration 20261004000000); server code never enforces Plus.
 - **Why:** not recorded in the source beyond the founder brief (decision 3: "Apple only, out of the box")
-- **Door:** one-way: Family Sharing cannot be turned off once enabled on a subscription (ADR 0013 decision item 4)
-- **Reversal cost:** high: Family Sharing is permanent once on; prices and gates for existing subscribers are hard to change
+- **Door:** one-way after launch: becomes one-way once the products and Family Sharing setting are created in App Store Connect (not yet; FT-01 enrolment is pending). Family Sharing cannot be turned off once enabled on a subscription (ADR 0013 decision item 4)
+- **Reversal cost:** low today; high once created: Family Sharing is then permanent, and prices and gates for existing subscribers are hard to change
 - **Revisit when:** platform: a Plus feature with server cost ships; law: counsel requires server-side notices or consent records
 - **Review by:** on trigger
 - **Status:** amended by D-082; D-080 amends "no server sees purchases"
@@ -161,7 +161,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: removing it needs Privacy Policy and Terms changes and another way to meet 17602
 - **Revisit when:** law: counsel confirms Apple's own emails or local notifications meet 17602 (COUNSEL_PACKET); platform: v1.1 server release starts
 - **Review by:** on trigger
-- **Status:** parked: needs a server, which v1.0 does not have (D-085, PR #54). Code shipped ahead of the log: merged PR #121 ships on-device plan reminders in its place under D-094, which is only proposed in open PR #122
+- **Status:** parked: needs a server, which v1.0 does not have (D-085, PR #54). Code shipped ahead of the log: merged PR #121 ships on-device plan reminders in its place under D-094, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`
 - **As built:** not built; on-device reminders in `apps/mobile/src/lib/billing/plan-reminders.ts` stand in (PR #121)
 
 ### D-081 Purchase consent records (supersedes D-049)
@@ -181,7 +181,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Why:** not recorded in the source; the source gives the arithmetic (the yearly plan is about ten months' price for twelve months).
 - **Door:** one-way after launch: prices and the free allowance for existing subscribers are hard to change once people subscribe (an increase needs Apple's consent flow)
 - **Reversal cost:** medium: before launch, a price is an App Store Connect edit; after launch, existing subscribers keep their terms or must consent
-- **Revisit when:** market: competitor pricing or conversion in the C1 beta; customer: families hit the 2-letter gate before they understand the product
+- **Revisit when:** customer: C1 beta results on the 2-letter gate; no conversion threshold is set in any source, and the founder or the decision-science agent should set one before C1 starts; law: counsel answers on trial and renewal wording (D-083)
 - **Review by:** 2027-01-15
 - **Status:** in force
 - **As built:** `packages/content/src/pricing.ts`, `apps/mobile/src/lib/billing/letter-ledger.ts`, `apps/mobile/src/lib/billing/gates.ts`
