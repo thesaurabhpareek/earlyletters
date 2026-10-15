@@ -1,7 +1,9 @@
 # Release train: from a merged wave to the App Store
 
-Owner: qa-e2e (writer) for the coordinator, who runs the train, and the founder, who approves every irreversible step (COORDINATION section 1). Version 1.1, 13 Oct 2026: amended for the founder's release decisions D-089 to D-092 (ADR 0022) by the release-engineering thread; where this file and ADR 0022 differed, ADR 0022 is what the founder approved.
+Owner: qa-e2e (writer) for the coordinator, who runs the train, and the founder, who approves every irreversible step (COORDINATION section 1). Version 1.2, 14 Oct 2026: ported to `develop` from Line B (`d1cbddb`, port map #117), marked for the on-device v1.0, and amended for the founder's release decisions D-089 to D-092 (ADR 0022) by the release-engineering thread; where this file and ADR 0022 differed, ADR 0022 is what the founder approved.
 Inputs: `docs/agents/COORDINATION.md` 6, `docs/DECISIONS.md` (D-004, D-041, D-045, D-053, D-060, D-064 to D-067), `docs/ROADMAP.md` 2.1, `docs/FOUNDER_TASKS.md`, TDD 07 sections 9 to 11, `supabase/APPLY.md`, `scripts/packs/publish.ts` and ADR 0016 section 7, `docs/ops/AUTH_SETUP.md`, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`, `docs/ops/APP_SIZE.md`, `docs/legal/app-store-privacy-labels.md`, `docs/store/app-store.md`, `docs/qa/DEVICE_TEST_PLAN.md` 1.1.
+
+**v1.0 is on this phone only** (PR #54): no sign-in, accounts, sync or server copy of letters. Sections and rows that describe server work (sign-in setup, database migrations, Edge Functions, the demo account) apply from v1.1, when `EXPO_PUBLIC_SERVER_FEATURES` turns on; they are kept so v1.1 does not start from scratch, and are marked **v1.1** below.
 
 Labels: **V** verified on a vendor page on the date given (sources at the end); **A** assumption, check when you get there; **F** fact found in this repo. Apple's and Expo's screens move; if a label below differs, follow the screen and fix this file.
 
@@ -105,7 +107,7 @@ Requested submit profile (A: values come from the founder after FT-08):
 `ascAppId` and `appleTeamId` are documented `submit.production.ios` keys, and `groups` adds the build to TestFlight internal groups (V: Expo "Configure with eas.json"). Neither id is a secret, but they are written only after the founder confirms them.
 
 ### 3.3 Build variables
-Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS (FT-17), never in the repo: `npx eas-cli env:set --name <NAME> --value <value> --environment production --visibility plaintext` (V: Expo "Environment variables"), and the profile names its environment (`"environment": "production"`). The list is AUTH_SETUP section 8 plus `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` (G-05), `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` once FT-24 is done (or left out entirely if analytics is cut, ROADMAP 6). The Supabase **secret** key never goes into EAS.
+Public values only (`EXPO_PUBLIC_*`), per environment, set by the founder in EAS (FT-17), never in the repo: `npx eas-cli env:set --name <NAME> --value <value> --environment production --visibility plaintext` (V: Expo "Environment variables"), and the profile names its environment (`"environment": "production"`). For v1.0 the production build needs only `EXPO_PUBLIC_APP_ENV=production`, `EXPO_PUBLIC_SERVER_FEATURES=off` (both in `eas.json`) and `EXPO_PUBLIC_DOCS_BASE_URL` for signed packs and config (FT-16; `docs/release/TESTFLIGHT.md`). **v1.1:** AUTH_SETUP section 8 plus `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` (G-05), and `EXPO_PUBLIC_POSTHOG_KEY` and `EXPO_PUBLIC_POSTHOG_HOST` once FT-24 is done. The Supabase **secret** key never goes into EAS.
 
 ### 3.4 The build (from an RC tag)
 Pushing `ios-v<x.y.z>-rc.<n>` runs `.github/workflows/release-ios.yml` (BL-437): tag, version and branch checks, `npm test`, typecheck, store metadata drift, placeholder scan, then `eas build --platform ios --profile production --non-interactive --freeze-credentials --no-wait --auto-submit`. The build runs on EAS; the upload to TestFlight follows when it finishes. It needs the secrets in 3.5, `owner` and `extra.eas.projectId` in `app.config.ts`, production signing credentials in EAS (sign the first production build once from a computer, 4) and `submit.production.ascAppId` (3.2).
@@ -161,9 +163,9 @@ Purchases in TestFlight run in the sandbox; subscriptions renew every day, up to
 4. Tester note (first build, by email outside TestFlight): what to try, that letters stay on their phone and in their own iPhone backup, "please don't send screenshots of letters through TestFlight feedback; use Settings, Help instead", and that this build can make mistakes (D-060 in-app note). TDD 07 OQ-4 is still open: TestFlight screenshot feedback can carry letter text.
 
 ### 5.3 C1: external testing through Beta App Review (submit Thu 15 Oct, start Mon 19 Oct)
-1. Before submitting: the legal pages are live at the URLs the app links to (FT-31), the AASA file serves `/i` with the fragment pattern (AUTH_SETUP 5.2), the security fixes G-01 to G-04 are in the build and S1-08b passed, TF-10 shows a complete privacy manifest.
+1. Before submitting: the legal pages are live at the URLs the app links to (FT-31) and TF-10 shows a complete privacy manifest. **v1.1:** the AASA file serves `/i` with the fragment pattern (AUTH_SETUP 5.2), and the sign-in security fixes G-01 to G-04 are in the build with S1-08b passed.
 2. TestFlight > External Testing > new group `C1 families` (an internal group must already exist, V).
-3. Test Information: beta app description (a family memory journal you fill by talking; no health service; matches D-004 positioning), feedback email `hello@earlyletters.com`, contact details, privacy policy URL (A: asked for external testing), and the review sign-in: the demo account from 6.4 (it is the same account App Review will use later).
+3. Test Information: beta app description (a family memory journal you fill by talking; no health service; matches D-004 positioning), feedback email `hello@earlyletters.com`, contact details, and privacy policy URL (A: asked for external testing). No review sign-in for v1.0: there is no account (6.4).
 4. Add the build to the group and submit for review. At most six builds per 24 hours (V). The first build of the version gets a full review (V); plan for about a day (A; App Review generally reviews 90% of submissions within 48 hours, V: "App Review" page).
 5. When approved, invite the 15 to 25 families by email (FT-26, FT-32), never a public link before submission (D-045).
 6. Never call the build "beta" in App Store text; TestFlight's own description is fine (D-060).
@@ -211,7 +213,7 @@ Tick every line in the release PR's description with the evidence file it rests 
 - [ ] The submitted build is the release candidate from `ios-v1.0.0-rc.<n>` on `release/1.0` that passed FT-39, built with the `production` profile and the pinned image (3.2); its build number is in `docs/release/1.0.0.md` (D-089).
 - [ ] App size: largest variant download under 40 MB from App Store Connect's numbers or the App Thinning Size Report (`npx tsx scripts/size/measure.ts --thinning-report ...`, `docs/ops/APP_SIZE.md`; DEVICE_TEST_PLAN TF-01).
 - [ ] The production bundle has no e2e seam strings (`grep -c e2eSeed main.jsbundle` is 0, TESTID_REQUESTS B-8) and no `example.com`.
-- [ ] Production Supabase has every migration through the newest the build needs (section 10), the beta or 1.0.0 policy versions, the pepper set, functions deployed (`purge-worker`, `analytics-forget`, `config`, `content`, `apple-token`).
+- [ ] **v1.1 only** (v1.0 runs no server): production Supabase has every migration through the newest the build needs (section 10), the beta or 1.0.0 policy versions, the pepper set, functions deployed (`purge-worker`, `analytics-forget`, `config`, `content`, `apple-token`).
 - [ ] The public signing key in `packages/api/src/keys.ts` is the founder's real key (BL-335), and the config, manifest and content published with it are live (section 9).
 
 ## 7. Release and phased release
@@ -253,7 +255,10 @@ Signed and published only by the coordinator, with the founder's OK and the foun
 5. Staging first, then production, with one phone checking each (DEVICE_TEST_PLAN S1-16 for packs; a kill switch reaches an open app within about 5 minutes, ADR 0016 6).
 6. Kill switches available today (F: `remote-config.json`): `sync`, `invites`, `photos`, `packDownloads`, `serverContent`. `readTogetherFreeSessions` may only be raised (D-009). `forceReauthEpoch` signs everyone out once (G-06; use only for a security incident).
 
-## 10. Database migrations: apply order
+## 10. Database migrations: apply order (v1.1)
+
+Not run for v1.0: the on-device build makes no Supabase call (PR #54). This section is the plan for when server features turn on.
+
 
 The founder applies live migrations by hand, staging first, in `supabase/APPLY.md` order; each applied file is added to `.github/migrations-applied.txt` in a PR, and an applied file is never edited (F: COORDINATION 6, migration guard). D-041's "migrations only from CI on a tag" is not built, so APPLY.md is the procedure.
 
@@ -290,7 +295,7 @@ Rules for a release:
 ```markdown
 Release ios-vX.Y.Z (RC tag ios-vX.Y.Z-rc.N, build N), commit <sha> on release/X.Y
 - [ ] develop green (G0) and merged; release PR approved by the founder; release branch cut; RC tag pushed; record docs/release/X.Y.Z.md current
-- [ ] Migrations needed by this build are live on staging and production (RELEASE 10); migrations-applied.txt updated
+- [ ] v1.1 and later: migrations needed by this build are live on staging and production (RELEASE 10); migrations-applied.txt updated
 - [ ] Packs, config, content published and committed if changed (RELEASE 9)
 - [ ] EAS production build from the RC tag (release-ios.yml), image sdk-57; build number recorded
 - [ ] Store text pushed (metadata job) after BL-440; screenshots uploaded
