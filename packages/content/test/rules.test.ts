@@ -527,8 +527,19 @@ describe('brand name and v1.0 claims', () => {
     // Nothing may still claim a limit that no longer exists (D-083), or an unconditional "free, always".
     expect(offenders(plus, /free, always|first book|more children|books for more|first 3|after the first/i)).toEqual([]);
     // D-083: app copy never types a price, "free trial", "free months" or "we will email you" in the Keep gate or Plan rows.
-    const keepAndPlan = [...leaves(features.billing.keepGate, 'keepGate'), ...leaves(features.billing.plan, 'plan')];
+    // G-15 (15 Oct): the plan reminders, the in-app note and the purchase confirmation follow the same rule.
+    const keepAndPlan = [
+      ...leaves(features.billing.keepGate, 'keepGate'),
+      ...leaves(features.billing.plan, 'plan'),
+      ...leaves(features.billing.reminders, 'reminders'),
+      ...leaves(features.billing.note, 'note'),
+      ...leaves(features.billing.confirmation, 'confirmation'),
+    ];
     expect(offenders(keepAndPlan, /\$\d|free trial|free months?|we will email|we'll email|\bprice\b/i)).toEqual([]);
+    // Reminders are a courtesy (decision of 15 Oct 2026): the confirmation says so, and never promises delivery.
+    expect(features.billing.confirmation.reminders).toMatch(/^As a courtesy/);
+    expect(features.billing.confirmation.reminders).toMatch(/can come late or not at all/);
+    expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
   });
 
   it('[K-13] has no beta wording in the store listing (D-060, App Review 2.2)', () => {
