@@ -91,7 +91,7 @@ test.describe('security headers', () => {
   }
 
   test('links that carry a token never leak their address through Referer', async ({ request }) => {
-    for (const base of ['/a', '/i', '/j', '/r']) {
+    for (const base of ['/a', '/auth', '/i', '/j', '/r']) {
       const res = await request.get(`${base}/some-token`);
       expect(res.headers()['referrer-policy'], base).toBe('no-referrer');
     }

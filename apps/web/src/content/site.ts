@@ -269,6 +269,23 @@ export const site = {
     home: `Back to ${NAME}`,
   },
 
+  /**
+   * The page behind the link in a sign-in or confirm-your-email message (app/auth/confirm/page.tsx; PRD V2 F02 6.3
+   * step 3b). It shows only when the app did not open the link: on a laptop, in a mail app's own browser, or to a
+   * mail scanner. It signs nobody in and confirms nothing; the person types the code from the same email into the
+   * app. The product says "sign-in link", never anything else (F02 6.3).
+   */
+  authConfirm: {
+    title: 'Finish signing in',
+    line: 'Finish on your iPhone.',
+    body: `Open ${NAME} on the iPhone where you asked for this email, and type the code from the same email. That signs you in, or confirms your email if you are new.`,
+    onPhone: 'Already on that iPhone? Tap below, then type the code.',
+    open: `Open ${NAME}`,
+    expired: 'If the app says the code has expired, ask it for a new email.',
+    notYou: 'If you did not ask for this email, you can ignore it. Nothing changes.',
+    home: `Back to ${NAME}`,
+  },
+
   footer: {
     contact: 'hello@earlyletters.com',
     links: [

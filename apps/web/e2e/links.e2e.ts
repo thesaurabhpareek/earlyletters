@@ -2,14 +2,18 @@
  * Link check. Starting from every page (and the sitemap), follows every internal link until none are new:
  * each must answer 200 and each #fragment must exist on its target page. External links are never fetched
  * (the suite makes no outside request): they are only checked for shape (https, and noopener when they open a tab).
+ * One link is the app's own: Open on the sign-in link page, the app's scheme with no token (F02-REQ-011).
  */
 import type { Page } from '@playwright/test';
+import { brand } from '@scribe/brand';
 import { expect, test } from './support/fixtures';
 import { PAGES } from './support/pages';
 
 type Link = { href: string; text: string; target: string | null; rel: string | null };
 
 const PRIMARY = 'https://earlyletters.com';
+/** The only non-web link the site may carry: the app's "type the code" screen, with nothing after the path. */
+const APP_LINK = `${brand.scheme}://auth/callback`;
 
 async function linksOf(page: Page): Promise<Link[]> {
   return page.evaluate(() =>
@@ -50,6 +54,10 @@ test('every internal link on every page leads somewhere that exists, and every f
       }
       if (href.startsWith('mailto:')) {
         mail.add(href);
+        continue;
+      }
+      if (href.startsWith(`${brand.scheme}:`)) {
+        if (href !== APP_LINK || path.split('?')[0] !== '/auth/confirm') failures.push(`${path}: app link ${href} (only ${APP_LINK}, only on /auth/confirm)`);
         continue;
       }
       if (href.startsWith('tel:') || href.startsWith('javascript:')) {
