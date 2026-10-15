@@ -186,12 +186,14 @@ try {
       const [k, ...v] = line.split('=');
       if (k === 'EXPO_PUBLIC_APP_ENV') continue;
       if (k === 'EXPO_PUBLIC_SERVER_FEATURES' && v.join('=').trim() === 'off') continue;
+      if (k === 'EXPO_PUBLIC_ANALYTICS' && v.join('=').trim() === 'off') continue;
       bad.push(`${f}: ${k}`);
     }
   }
-  check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV and SERVER_FEATURES=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.`);
+  check(bad.length === 0, `apps/mobile/.env* files hold only APP_ENV, SERVER_FEATURES=off and ANALYTICS=off (${envFiles.join(', ') || 'none'})`, `apps/mobile/.env* holds other values (${bad.join(', ')}). They would be baked into the bundle.`);
   const supa = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_POSTHOG_KEY'].filter((k) => profEnv[k]);
   check(supa.length === 0, 'testflight profile sets no Supabase or analytics key (none is needed for v1.0)', `testflight profile sets ${supa.join(', ')}; v1.0 on-device needs none of these.`);
+  check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', 'testflight profile sets EXPO_PUBLIC_ANALYTICS=off (v1.0 collects no data, D-088)', 'testflight profile must set EXPO_PUBLIC_ANALYTICS to "off" for v1.0 ("Data Not Collected", D-088).');
 }
 
 // ---------------------------------------------------------------- 5. language packs and the speech model host
@@ -316,7 +318,7 @@ if (cfg) {
   if (cfg.ios?.associatedDomains?.length && !notes.some((n) => /Associated Domains/.test(n))) notes.push(`Config sets ios.associatedDomains (${cfg.ios.associatedDomains.join(', ')}); dormant in v1.0.`);
   const google = (cfg.plugins ?? []).some((p) => (Array.isArray(p) ? p[0] : p) === '@react-native-google-signin/google-signin');
   if (!google) notes.push('Google sign-in is not in this build (it needs EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, which the profile does not set).');
-  notes.push('Server-side code is dormant behind EXPO_PUBLIC_SERVER_FEATURES=off: no Supabase client is constructed, no network call is made for sign-in or sync, and co-parent entry points show "coming soon". Analytics is off unless a person opts in AND a PostHog key is in the build (none is).');
+  notes.push('Server-side code is dormant behind EXPO_PUBLIC_SERVER_FEATURES=off: no Supabase client is constructed, no network call is made for sign-in or sync, and co-parent entry points show "coming soon". Analytics is switched off for v1.0 (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no usage switch, no PostHog client, and no PostHog key is in the build.');
   notes.push('Plus is a StoreKit 2 in-app purchase (product ids plus.annual and plus.monthly) created under THIS App Store Connect record: the .preview record needs its own products and the Paid Apps agreement before sandbox purchases load. Review notes for guideline 3.1.2(a) belong to the production submission, not TestFlight internal testing (unverified).');
 }
 
