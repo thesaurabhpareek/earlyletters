@@ -93,6 +93,29 @@ export async function keepLetterGate(now: Date = new Date()): Promise<KeepGate> 
   return { decision, lettersKept: n, allowance };
 }
 
+/**
+ * The gate for one save from Review under M17 (D-103; F14-REQ-037, F14-REQ-038; WP-F14-20).
+ * A letter counts, and the Keep sheet can open, only at a save where the letter's words are
+ * on screen. Saving a recording with no words (the speech model is not on the phone yet,
+ * nobody spoke, or the words are still coming) never reads the ledger and never opens the
+ * sheet: it answers null, and the caller saves at once. The ledger query (S03,
+ * db/repos/ledger.ts COUNTED_LETTERS_SQL) does not count that save either; the letter counts
+ * later, at the save where its words are first on screen, which calls this with words.
+ *
+ * Call it after the recording is hashed and BEFORE saving, exactly like keepLetterGate.
+ * `wordsOnScreen` is the text the person sees in Review at that moment (final text, typed
+ * or transcribed), trimmed: empty means no words.
+ */
+export async function keepGateFor(save: { wordsOnScreen: string | null | undefined }, now: Date = new Date()): Promise<KeepGate | null> {
+  if (!hasWords(save.wordsOnScreen)) return null;
+  return keepLetterGate(now);
+}
+
+/** Words count as on screen when there is at least one letter or digit in any script. */
+export function hasWords(text: string | null | undefined): boolean {
+  return typeof text === 'string' && /[\p{L}\p{N}]/u.test(text);
+}
+
 /** Letters kept so far, for the Plan screen and analytics. 0 when the store cannot be read. */
 export async function lettersKeptNow(): Promise<number> {
   try {
