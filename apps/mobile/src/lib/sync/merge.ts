@@ -12,6 +12,7 @@
  * - raw_transcript is never changed once set.
  * - A restore never deletes anything here: see enterRestoreMode.
  */
+import { LANGUAGE_CODES } from '@scribe/core';
 import type { SqlDb } from '../db/sql';
 import {
   ALL_GROUPS,
@@ -179,6 +180,13 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
 
 const bool = (v: boolean | null | undefined) => (v === null || v === undefined ? null : v ? 1 : 0);
 
+/**
+ * An own letter's language from the server (G-26). A server without the column
+ * sends no key: the update keeps the local value ('language' in row is false).
+ */
+const pulledLanguage = (row: PulledRow): string | null =>
+  row.language && (LANGUAGE_CODES as readonly string[]).includes(row.language) ? row.language : null;
+
 function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): void {
   const local = getEntryRow(db, row.id);
   const edits = JSON.stringify(row.machine_edits ?? []);
@@ -186,11 +194,11 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
     db.run(
       `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version,
          raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at, deleted_at, synced_at,
-         child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+         child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state, language)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
       row.id, row.kind, row.occurred_on, row.captured_at, row.capture_mode, row.edit_level, row.prompt_key, row.engine_version,
       row.raw_transcript ?? '', edits, row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, row.deleted_at, now,
-      row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
+      row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch, pulledLanguage(row),
     );
     return;
   }
@@ -208,11 +216,12 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
     `UPDATE entries SET kind = ?, occurred_on = ?, edit_level = ?, prompt_key = ?, final_text = ?, machine_edits = ?,
        in_book = ?, sounds_like_me = ?, author_signs_as = ?, approval = ?, deleted_at = ?, updated_at = ?,
        raw_transcript = CASE WHEN raw_transcript = '' THEN ? ELSE raw_transcript END,
+       language = CASE WHEN ? THEN ? ELSE language END,
        sync_state = 'synced'
      WHERE id = ?`,
     row.kind, row.occurred_on, row.edit_level, row.prompt_key, row.final_text, edits,
     row.in_book ? 1 : 0, bool(row.sounds_like_me), row.author_signs_as, row.approval, row.deleted_at, now,
-    row.raw_transcript ?? '', row.id,
+    row.raw_transcript ?? '', 'language' in row ? 1 : 0, pulledLanguage(row), row.id,
   );
 }
 

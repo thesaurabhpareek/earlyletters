@@ -14,6 +14,8 @@
  *   of a tombstone are `undelete` (local Undo) and, later, a restore intent
  *   (WS-09). Reads of the audio path for the launch sweep still see them.
  * - Words of a waiting voice-only letter are set once.
+ * - occurred_precision, language and base_direction (v6) are written on
+ *   insert, like occurred_on; an unknown value is stored as the default.
  *
  * No defaults are read here: the caller passes the child and signature it
  * resolved (store.ts does that), so a repository never falls back to the
@@ -23,6 +25,7 @@ import type { Edit, EditLevel } from '@scribe/core';
 import { changes, type RepoContext } from './context';
 import type { EntrySyncState } from '../../sync/types';
 import type { CaptureMode, Entry, EntryKind } from './types';
+import { asDirection, asLanguage, asPrecision, isDirection, isLanguage, isPrecision } from './values';
 
 interface EntryRow {
   id: string;
@@ -48,11 +51,14 @@ interface EntryRow {
   transcript_status: string | null;
   sync_state: string | null;
   approval: string | null;
+  occurred_precision: string | null;
+  language: string | null;
+  base_direction: string | null;
 }
 
 const COLS = `id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version, raw_transcript,
   machine_edits, final_text, in_book, sounds_like_me, child_id, author_id, author_signs_as, audio_uri, audio_duration_ms,
-  audio_sha256, audio_bytes, transcript_status, sync_state, approval`;
+  audio_sha256, audio_bytes, transcript_status, sync_state, approval, occurred_precision, language, base_direction`;
 
 /** The row exists but is tombstoned; edits are refused until it is restored. Code only, no row content. */
 export class EntryTombstonedError extends Error {
@@ -94,6 +100,9 @@ const fromRow = (r: EntryRow): Entry => ({
   transcriptStatus: r.transcript_status === 'waiting' ? 'waiting' : null,
   syncState: (r.sync_state ?? 'local') as EntrySyncState,
   approval: r.approval,
+  occurredPrecision: asPrecision(r.occurred_precision),
+  language: asLanguage(r.language),
+  baseDirection: asDirection(r.base_direction),
 });
 
 /** Values the caller resolved for a first insert. Ignored when the row already exists. */
@@ -119,8 +128,9 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
   ctx.db.run(
     `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key,
        engine_version, raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at,
-       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms, audio_sha256, audio_bytes, transcript_status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       child_id, author_id, author_signs_as, audio_uri, audio_duration_ms, audio_sha256, audio_bytes, transcript_status,
+       occurred_precision, language, base_direction)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        final_text = excluded.final_text, machine_edits = excluded.machine_edits,
        edit_level = excluded.edit_level, in_book = excluded.in_book,
@@ -133,6 +143,8 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
     e.inBook ? 1 : 0, e.soundsLikeMe === null ? null : e.soundsLikeMe ? 1 : 0, ctx.now(),
     childForInsert, e.authorId ?? null, signsAs, e.audioUri ?? null, e.audioDurationMs ?? null,
     e.audioSha256 ?? null, e.audioBytes ?? null, e.transcriptStatus ?? null,
+    isPrecision(e.occurredPrecision) ? e.occurredPrecision : 'day', isLanguage(e.language) ? e.language : null,
+    isDirection(e.baseDirection) ? e.baseDirection : 'ltr',
     childForUpdate, childForUpdate,
   );
   if (changes(ctx.db) === 0) throw new EntryTombstonedError();
@@ -163,6 +175,16 @@ export function listWaiting({ db }: RepoContext, childId: string): Entry[] {
       childId,
     )
     .map(fromRow);
+}
+
+/** Whether this book already has a live quiet-day mark for that local date (F04: one "Not much today" per day). */
+export function hasNotMuchOn({ db }: RepoContext, childId: string, isoDate: string): boolean {
+  return (
+    db.get<{ t: number }>(
+      "SELECT 1 AS t FROM entries WHERE child_id = ? AND occurred_on = ? AND kind = 'not_much' AND deleted_at IS NULL LIMIT 1",
+      childId, isoDate,
+    ) !== null
+  );
 }
 
 /** Add to book / make private. Never touches text. False when missing or tombstoned. */

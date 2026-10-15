@@ -6,12 +6,18 @@
  * The shared enums move to @scribe/core (CORE-02, WS-06); when they land,
  * these unions become re-exports of the core ones.
  */
-import type { Edit, EditLevel } from '@scribe/core';
+import type { Edit, EditLevel, LanguageCode } from '@scribe/core';
 import type { EntrySyncState } from '../../sync/types';
 
 export type EntryKind = 'note' | 'letter' | 'not_much';
 export type CaptureMode = 'spoken' | 'typed' | 'mixed';
 export type TranscriptStatus = 'waiting' | null;
+/** How much of `occurredOn` the parent knows: the day, or only the month (backdating, F04 11.3). */
+export type OccurredPrecision = 'day' | 'month';
+/** Base text direction of a letter, set at save; never changes the words (DX-20). */
+export type BaseDirection = 'ltr' | 'rtl';
+/** The kinds a draft can become in Review. A quiet-day mark never comes from a draft. */
+export type DraftKind = 'note' | 'letter';
 
 export interface Entry {
   id: string;
@@ -49,6 +55,12 @@ export interface Entry {
   syncState?: EntrySyncState;
   /** Family review state from the server (not_needed, pending, added, set_aside); null before sync. */
   approval?: string | null;
+  /** Defaults to 'day'. On save from a draft, the draft's value is used when this is absent. */
+  occurredPrecision?: OccurredPrecision;
+  /** Spoken-letter language (v1.0 codes); null = the author's default. Syncs as field group 'language' (G-26). */
+  language?: LanguageCode | null;
+  /** Defaults to 'ltr'. On save from a draft, the draft's value is used when this is absent. */
+  baseDirection?: BaseDirection;
 }
 
 /** Single-child view of the active child (kept for existing callers). */
@@ -90,9 +102,11 @@ export interface Member {
 /**
  * recording: the mic was live when this row was last written (created when
  * recording starts); ready: audio closed and hashed, or a typed draft;
- * unrecoverable: the file is empty, kept for the parent to decide.
+ * unrecoverable: the file is empty, kept for the parent to decide;
+ * discarding: "Let it go" was confirmed; the file is removed, then the row
+ * (a kill in between leaves this state, which the launch sweep finishes).
  */
-export type DraftState = 'recording' | 'ready' | 'unrecoverable';
+export type DraftState = 'recording' | 'ready' | 'unrecoverable' | 'discarding';
 
 /** An unfinished capture. Written when recording starts, so a crash or a closed sheet loses nothing. */
 export interface Draft {
@@ -112,6 +126,14 @@ export interface Draft {
   audioBytes: number | null;
   /** Set when the launch sweep recovered this take after a kill, or re-attached a stray file. */
   recoveredAt: string | null;
+  /** Note or letter, chosen in Review (default letter). */
+  kind: DraftKind;
+  /** YYYY-MM-DD the parent picked; null = the local date of createdAt. */
+  occurredOn: string | null;
+  occurredPrecision: OccurredPrecision;
+  /** From the language chip; null = the author's default. */
+  language: LanguageCode | null;
+  baseDirection: BaseDirection;
 }
 
 export interface OrphanAudio {

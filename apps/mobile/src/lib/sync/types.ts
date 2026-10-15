@@ -36,8 +36,13 @@ export interface SupabaseLike {
 
 // ── Push ───────────────────────────────────────────────────────────────────
 
-export type FieldGroup = 'text' | 'in_book' | 'sounds_like_me' | 'occurred_on';
-export const ALL_GROUPS: readonly FieldGroup[] = ['text', 'in_book', 'sounds_like_me', 'occurred_on'];
+/**
+ * Field groups an entry.upsert may change. 'language' (G-26) needs the server's
+ * 20261005000000 migration, which adds it to sync_push's groups and applies it
+ * only when the op's data carries the `language` key.
+ */
+export type FieldGroup = 'text' | 'in_book' | 'sounds_like_me' | 'occurred_on' | 'language';
+export const ALL_GROUPS: readonly FieldGroup[] = ['text', 'in_book', 'sounds_like_me', 'occurred_on', 'language'];
 
 /** A letter as the server stores it (own letters only travel up). */
 export interface EntryData {
@@ -57,6 +62,8 @@ export interface EntryData {
   sounds_like_me: boolean | null;
   author_signs_as: string | null;
   audio_kept_on_device: boolean;
+  /** Spoken-letter language (v1.0 codes) or null; author-only on the server (L4 there, entries_language_guard). */
+  language: string | null;
   /** Re-upload only: the phone's copy is a tombstone. */
   deleted?: boolean;
 }
@@ -172,6 +179,8 @@ export interface PulledRow {
   sounds_like_me: boolean | null;
   approval: string;
   audio_kept_on_device: boolean;
+  /** Own rows only, from a server with 20261005000000; absent on other people's rows (book_entries has no language). */
+  language?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

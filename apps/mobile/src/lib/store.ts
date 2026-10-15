@@ -21,7 +21,7 @@
  * API for other screens: src/lib/README.md.
  */
 import * as Crypto from 'expo-crypto';
-import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
+import type { DictionaryTerm, Edit, EditLevel, LanguageCode } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { migrate, userVersion, type MigrationResult } from './db/migrations';
@@ -36,13 +36,16 @@ import {
   orphans,
   settings,
   uuidv7From,
+  type BaseDirection,
   type Child,
   type Draft,
+  type DraftKind,
   type DraftState,
   type Entry,
   type Family,
   type Member,
   type NewChild,
+  type OccurredPrecision,
   type OrphanAudio,
   type RepoContext,
   type Table,
@@ -65,18 +68,22 @@ import { signalOutbox } from './sync/signal';
 import { ALL_GROUPS, type FieldGroup } from './sync/types';
 
 export type {
+  BaseDirection,
   CaptureMode,
   Child,
   Draft,
+  DraftKind,
   DraftState,
   Entry,
   EntryKind,
   Family,
   Member,
   NewChild,
+  OccurredPrecision,
   OrphanAudio,
   TranscriptStatus,
 } from './db/repos';
+export { DraftValueError } from './db/repos/drafts';
 export type { Table as StoreTable } from './db/repos';
 export { AudioMissingError } from './db/repos/letters';
 export { EntryTombstonedError } from './db/repos/entries';
@@ -403,10 +410,11 @@ export function saveEntry(e: Entry): void {
 export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = true): void {
   const c = ctx();
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
-  letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
+  letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, (saved) => {
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
-    // count are written together or not at all. A quiet-day mark is not a letter and never counts.
-    if (e.kind === 'letter') ledger.recordKept(c, draftId, keychainFloor());
+    // count are written together or not at all. A quiet-day mark or a note is not a letter and never counts.
+    // `saved` carries the draft's kind (Review's kind control), so a draft set to 'note' is not counted.
+    if (saved.kind === 'letter') ledger.recordKept(c, draftId, keychainFloor());
     enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c));
   });
   bus.emit('entries', 'drafts');
@@ -421,11 +429,27 @@ export function ledgerDb(): LedgerDb {
   return {
     counts: () => {
       const c = ctx();
-      return { recorded: ledger.readState(c).n, present: ledger.countPresent(c) };
+      // present is this person's own letters with words (M17): launch never heals up from another author's rows.
+      return { recorded: ledger.readState(c).n, present: ledger.countOwnPresent(c) };
     },
     raiseTo: (n) => ledger.raiseTo(ctx(), n),
     clear: () => ledger.clear(ctx()),
   };
+}
+
+/**
+ * M17 ledger query (F14-REQ-036, for lib/billing WP-F14-20): letters kept by
+ * this person with their words present. Counts a row when it is a letter, its
+ * author is `personId` (or it has no author: made on this phone before any
+ * sign-in), it is not waiting for its words and its text is not blank.
+ * Another author's synced letters never count. Deleted letters still count.
+ * `personId` defaults to this phone's owner (`currentUserId()`); null means a
+ * local-only install, where only rows with no author count.
+ * Synchronous, one COUNT over `entries`; throws the open error
+ * like every other call here.
+ */
+export function countOwnLettersKept(personId: string | null = currentUserId()): number {
+  return ledger.countOwnKeptWithWords(ctx(), personId);
 }
 
 /**
@@ -688,6 +712,59 @@ export function setDraftTyped(id: string, text: string): void {
 
 export function setDraftChild(id: string, childId: string): void {
   drafts.setChild(ctx(), id, childId);
+}
+
+/** Note or letter (Review's kind control). False when the draft is gone. Throws DraftValueError for another value. */
+export function setDraftKind(id: string, kind: DraftKind): boolean {
+  const done = drafts.setKind(ctx(), id, kind);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/**
+ * The day the letter is about, and whether the parent knows the day or only
+ * the month. `occurredOn` null goes back to the day it was recorded. The
+ * bounds (not before birth, not in the future) are F04's backdating rules.
+ */
+export function setDraftOccurred(id: string, occurredOn: string | null, precision: OccurredPrecision = 'day'): boolean {
+  const done = drafts.setOccurred(ctx(), id, occurredOn, precision);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/** The language chip: one of the v1.0 codes, or null for the author's default. */
+export function setDraftLanguage(id: string, language: LanguageCode | null): boolean {
+  const done = drafts.setLanguage(ctx(), id, language);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/** Base direction computed at save (DX-20). Never changes the words. */
+export function setDraftBaseDirection(id: string, dir: BaseDirection): boolean {
+  return drafts.setBaseDirection(ctx(), id, dir);
+}
+
+/**
+ * "Let it go", step 1 (F04-REQ-009): mark the draft before its file is
+ * removed, so a kill in between never re-attaches the take. Then remove the
+ * file and call finishDiscard. False when the draft is gone.
+ */
+export function beginDiscard(id: string): boolean {
+  const done = drafts.beginDiscard(ctx(), id);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/** "Let it go", step 2, after the file is removed: the row goes. Idempotent. */
+export function finishDiscard(id: string): boolean {
+  const done = drafts.finishDiscard(ctx(), id);
+  if (done) bus.emit('drafts');
+  return done;
+}
+
+/** Whether a book already has a quiet-day mark on that local date (YYYY-MM-DD). */
+export function hasNotMuchOn(childId: string, isoDate: string): boolean {
+  return entries.hasNotMuchOn(ctx(), childId, isoDate);
 }
 
 /** Removes the row only. Audio files are deleted by the explicit Discard in Listen, never here. */

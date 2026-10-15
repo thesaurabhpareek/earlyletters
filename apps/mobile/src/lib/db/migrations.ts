@@ -13,6 +13,7 @@
  * Pure: no React Native imports. Tested in Node (test/migrations.test.ts).
  * New columns need a row in docs/legal/DATA_CLASSIFICATION.md 4.5 (DATA-REQ-001).
  */
+import { LANGUAGE_CODES } from '@scribe/core';
 import { enqueueEntryUpsert } from '../sync/outbox';
 import type { SqlDb } from './sql';
 
@@ -254,6 +255,43 @@ export const MIGRATIONS: Migration[] = [
       for (const { id } of marks) {
         db.run("UPDATE entries SET final_text = '', updated_at = ? WHERE id = ?", ctx.now, id);
         enqueueEntryUpsert(db, id, ['text'], ctx);
+      }
+    },
+  },
+  {
+    version: 6,
+    name: 'capture: draft kind, occurred date and precision, letter language and base direction (WP-F04-03, G-26)',
+    up(db) {
+      // F04 section 11.3. Every new column is metadata about a letter, never its words.
+      //   drafts.kind               L2  note | letter, chosen in Review (default letter)
+      //   drafts.occurred_on        L3  YYYY-MM-DD the parent picked; null = local date of created_at
+      //   *.occurred_precision      L2  day | month (a backdated letter may know only the month)
+      //   *.language                L3  v1.0 spoken-letter code (LANGUAGE_CODES); null = author default
+      //   *.base_direction          L2  ltr | rtl, set at save; never changes the words (DX-20)
+      // drafts.state gains 'discarding' (Let it go confirmed; the file goes, then the row). TEXT, no CHECK: nothing to alter.
+      addColumns(db, 'drafts', [
+        ['kind', "TEXT NOT NULL DEFAULT 'letter'"],
+        ['occurred_on', 'TEXT'],
+        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
+        ['language', 'TEXT'],
+        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
+      ]);
+      addColumns(db, 'entries', [
+        ['occurred_precision', "TEXT NOT NULL DEFAULT 'day'"],
+        ['language', 'TEXT'],
+        ['base_direction', "TEXT NOT NULL DEFAULT 'ltr'"],
+      ]);
+      // Until now a recording's language lived in settings, one key per draft or letter id
+      // (models/author-language.ts). Copy each valid one onto its row. The keys stay: their
+      // reader is not in this store, and they are cleared by it when the words are set.
+      // No upload is queued: the letter's next upload carries the language (field group 'language').
+      const prefix = 'speech.letterLanguage.';
+      const notes = db.all<{ key: string; value: string }>("SELECT key, value FROM settings WHERE key LIKE 'speech.letterLanguage.%'");
+      for (const { key, value } of notes) {
+        if (!(LANGUAGE_CODES as readonly string[]).includes(value)) continue;
+        const id = key.slice(prefix.length);
+        db.run('UPDATE drafts SET language = ? WHERE id = ? AND language IS NULL', value, id);
+        db.run('UPDATE entries SET language = ? WHERE id = ? AND language IS NULL', value, id);
       }
     },
   },

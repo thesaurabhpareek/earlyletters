@@ -5,6 +5,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { drafts, entries, letters } from '../src/lib/db/repos';
+import { DraftValueError } from '../src/lib/db/repos/drafts';
 import { EntryTombstonedError } from '../src/lib/db/repos/entries';
 import { fixture, letter, rawRow, seedChild, type Fixture } from './helpers/store-fixture';
 
@@ -285,6 +286,111 @@ describe('draft to letter (DATA-REQ-048)', () => {
   it('a voice-only letter needs a recording', () => {
     const d = { ...draft(), audioUri: null };
     expect(() => letters.voiceOnlyEntry(d, { childId: 'child-asha', authorSignsAs: 'Mama', inBook: false, engineVersion: 3, occurredOn: '2026-10-03' })).toThrow('audio_missing');
+  });
+});
+
+describe('[WP-F04-03] draft kind, date, precision, language and the discard state (local v6)', () => {
+  function draft(over: Partial<Parameters<typeof drafts.insert>[2]> = {}) {
+    const id = f.ctx.newId();
+    drafts.insert(f.ctx, id, {
+      childId: 'child-asha', captureMode: 'spoken', promptKey: null, audioUri: 'file:///Documents/recording-3.m4a', audioDurationMs: 9000,
+      audioSha256: 'c'.repeat(64), audioBytes: 9000, ...over,
+    });
+    return drafts.get(f.ctx, id)!;
+  }
+
+  it('a new draft is a letter, dated the day it was made, in the author default language, left to right', () => {
+    expect(draft()).toMatchObject({ kind: 'letter', occurredOn: null, occurredPrecision: 'day', language: null, baseDirection: 'ltr' });
+    expect(draft({ kind: 'note', language: 'hi' })).toMatchObject({ kind: 'note', language: 'hi' });
+  });
+
+  it('setters write only known values and refuse the rest by code, never echoing the value', () => {
+    const d = draft();
+    expect(drafts.setKind(f.ctx, d.id, 'note')).toBe(true);
+    expect(drafts.setOccurred(f.ctx, d.id, '2026-08-01', 'month')).toBe(true);
+    expect(drafts.setLanguage(f.ctx, d.id, 'ar')).toBe(true);
+    expect(drafts.setBaseDirection(f.ctx, d.id, 'rtl')).toBe(true);
+    expect(drafts.get(f.ctx, d.id)).toMatchObject({ kind: 'note', occurredOn: '2026-08-01', occurredPrecision: 'month', language: 'ar', baseDirection: 'rtl' });
+    expect(() => drafts.setKind(f.ctx, d.id, 'not_much' as never)).toThrow(DraftValueError);
+    expect(() => drafts.setOccurred(f.ctx, d.id, '2026-02-30')).toThrow('draft_value_invalid:occurred_on');
+    expect(() => drafts.setOccurred(f.ctx, d.id, '2026-02-01', 'year' as never)).toThrow('draft_value_invalid:occurred_precision');
+    expect(() => drafts.setLanguage(f.ctx, d.id, 'Asha' as never)).toThrow('draft_value_invalid:language');
+    // Back to the day it was recorded: the precision returns to day.
+    expect(drafts.setOccurred(f.ctx, d.id, null, 'month')).toBe(true);
+    expect(drafts.get(f.ctx, d.id)).toMatchObject({ occurredOn: null, occurredPrecision: 'day' });
+    expect(drafts.setLanguage(f.ctx, 'missing', 'en')).toBe(false);
+  });
+
+  it('[F04-REQ-009] a discard marks the row first; it leaves the list at once and goes only after the file', () => {
+    const d = draft();
+    expect(drafts.finishDiscard(f.ctx, d.id)).toBe(false); // never without the mark
+    expect(drafts.beginDiscard(f.ctx, d.id)).toBe(true);
+    expect(drafts.get(f.ctx, d.id)?.state).toBe('discarding');
+    expect(drafts.listForChild(f.ctx, 'child-asha').map((x) => x.id)).not.toContain(d.id);
+    expect(drafts.setLanguage(f.ctx, d.id, 'en')).toBe(false); // a take being let go is not edited
+    expect(drafts.audioRows(f.ctx)).toEqual([{ id: d.id, audioUri: d.audioUri, state: 'discarding' }]); // the sweep still sees it
+    expect(drafts.finishDiscard(f.ctx, d.id)).toBe(true);
+    expect(drafts.get(f.ctx, d.id)).toBeNull();
+    expect(drafts.finishDiscard(f.ctx, d.id)).toBe(false);
+  });
+
+  it('saving carries the draft\'s kind, date, precision, language and direction into the letter', () => {
+    const d = draft();
+    drafts.setKind(f.ctx, d.id, 'note');
+    drafts.setOccurred(f.ctx, d.id, '2026-07-01', 'month');
+    drafts.setLanguage(f.ctx, d.id, 'hi');
+    let saved: unknown = null;
+    letters.saveFromDraft(f.ctx, d.id, letter(), defaults, true, (e) => (saved = e));
+    const want = { kind: 'note', occurredOn: '2026-07-01', occurredPrecision: 'month', language: 'hi', baseDirection: 'ltr' };
+    expect(entries.get(f.ctx, d.id)).toMatchObject(want);
+    expect(saved).toMatchObject({ id: d.id, ...want });
+    expect(rawRow(f.db, d.id)).toMatchObject({ kind: 'note', occurred_on: '2026-07-01', occurred_precision: 'month', language: 'hi' });
+  });
+
+  it('the caller\'s explicit values win over the draft\'s; a quiet-day mark stays a mark', () => {
+    const d = draft({ language: 'hi' });
+    letters.saveFromDraft(f.ctx, d.id, letter({ language: 'en', baseDirection: 'rtl' }), defaults);
+    expect(entries.get(f.ctx, d.id)).toMatchObject({ kind: 'letter', occurredOn: '2026-10-03', language: 'en', baseDirection: 'rtl' });
+    const q = draft({ kind: 'note' });
+    letters.saveFromDraft(f.ctx, q.id, letter({ kind: 'not_much', audioUri: null }), defaults);
+    expect(entries.get(f.ctx, q.id)?.kind).toBe('not_much');
+  });
+
+  it('a voice-only letter keeps the draft\'s language and picked date', () => {
+    const d = draft({ language: 'ar' });
+    drafts.setOccurred(f.ctx, d.id, '2026-09-30');
+    const e = letters.voiceOnlyEntry(drafts.get(f.ctx, d.id)!, { childId: 'child-asha', authorSignsAs: 'Mama', inBook: false, engineVersion: 3, occurredOn: '2026-10-03' });
+    expect(e).toMatchObject({ kind: 'letter', occurredOn: '2026-09-30', occurredPrecision: 'day', language: 'ar', transcriptStatus: 'waiting' });
+  });
+
+  it('[DATA-REQ-044] [F04-REQ-036] a save retried after a kill or a double tap leaves one letter with the draft\'s fields', () => {
+    const d = draft();
+    drafts.setLanguage(f.ctx, d.id, 'es');
+    drafts.setOccurred(f.ctx, d.id, '2026-09-01', 'month');
+    letters.saveFromDraft(f.ctx, d.id, letter(), defaults);
+    // The retry no longer finds the draft and passes no language: nothing is duplicated or reset.
+    letters.saveFromDraft(f.ctx, d.id, letter(), defaults);
+    letters.saveFromDraft(f.ctx, d.id, letter(), defaults);
+    expect(f.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entries WHERE id = ?', d.id)?.n).toBe(1);
+    expect(f.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entries')?.n).toBe(1);
+    expect(entries.get(f.ctx, d.id)).toMatchObject({ language: 'es', occurredOn: '2026-09-01', occurredPrecision: 'month' });
+  });
+
+  it('an unknown stored value reads as the default, so a damaged row never hides a letter', () => {
+    const d = draft();
+    letters.saveFromDraft(f.ctx, d.id, letter(), defaults);
+    f.db.run("UPDATE entries SET language = 'xx', occurred_precision = 'decade', base_direction = 'up' WHERE id = ?", d.id);
+    expect(entries.get(f.ctx, d.id)).toMatchObject({ language: null, occurredPrecision: 'day', baseDirection: 'ltr' });
+  });
+
+  it('hasNotMuchOn finds a live quiet-day mark for that book and day only', () => {
+    entries.upsert(f.ctx, letter({ id: 'q1', kind: 'not_much', occurredOn: '2026-10-02', audioUri: null, finalText: '' }), defaults);
+    entries.upsert(f.ctx, letter({ id: 'l1', occurredOn: '2026-10-03' }), defaults);
+    expect(entries.hasNotMuchOn(f.ctx, 'child-asha', '2026-10-02')).toBe(true);
+    expect(entries.hasNotMuchOn(f.ctx, 'child-asha', '2026-10-03')).toBe(false);
+    expect(entries.hasNotMuchOn(f.ctx, 'child-ravi', '2026-10-02')).toBe(false);
+    entries.tombstone(f.ctx, 'q1');
+    expect(entries.hasNotMuchOn(f.ctx, 'child-asha', '2026-10-02')).toBe(false);
   });
 });
 

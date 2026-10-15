@@ -15,6 +15,7 @@
  * - A letter waiting for its words (transcript_status 'waiting') is held: its
  *   raw transcript is set once, later, and the server would refuse a change.
  */
+import { LANGUAGE_CODES } from '@scribe/core';
 import type { SqlDb } from '../db/sql';
 import { ALL_GROUPS, type EntryData, type FieldGroup, type PushOp, type PushOpType } from './types';
 
@@ -77,6 +78,8 @@ export interface LocalEntryRow {
   server_epoch: number | null;
   sync_state: string;
   approval: string | null;
+  /** v6. Absent only when a pre-v6 schema is read (never after migrate). */
+  language?: string | null;
 }
 
 export interface LocalChildRow {
@@ -140,6 +143,8 @@ export function entrySnapshot(r: LocalEntryRow): EntryData | null {
     sounds_like_me: r.sounds_like_me === null ? null : r.sounds_like_me === 1,
     author_signs_as: r.author_signs_as,
     audio_kept_on_device: r.audio_uri !== null,
+    // Only a v1.0 code travels (the server's check constraint); anything else goes as null, the author default.
+    language: r.language && (LANGUAGE_CODES as readonly string[]).includes(r.language) ? r.language : null,
   };
 }
 

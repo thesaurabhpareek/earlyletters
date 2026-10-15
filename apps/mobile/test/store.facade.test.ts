@@ -190,14 +190,15 @@ describe('boundaries (MOB-04)', () => {
   });
 
   it('repositories import no React Native or Expo module except the native opener', () => {
-    for (const f of ['children', 'context', 'drafts', 'entries', 'events', 'ids', 'index', 'ledger', 'letters', 'orphans', 'settings', 'types']) {
+    for (const f of ['children', 'context', 'drafts', 'entries', 'events', 'ids', 'index', 'ledger', 'letters', 'orphans', 'settings', 'types', 'values']) {
       expect(src(`db/repos/${f}.ts`), f).not.toMatch(/from ['"](react-native|expo[^'"]*)['"]/);
     }
   });
 
   it('[D-083] saveLetterFromDraft counts a kept letter in the same transaction, and only a letter', () => {
     const source = src('store.ts');
-    expect(source).toMatch(/if \(e\.kind === 'letter'\) ledger\.recordKept\(c, draftId, keychainFloor\(\)\)/);
+    // `saved` is the letter as written, with the draft's kind applied (WP-F04-03): a draft set to 'note' never counts.
+    expect(source).toMatch(/if \(saved\.kind === 'letter'\) ledger\.recordKept\(c, draftId, keychainFloor\(\)\)/);
     // The count is written inside the transaction callback, before the upload is queued.
     expect(source.indexOf('ledger.recordKept')).toBeLessThan(source.indexOf('enqueueEntryUpsert(c.db, draftId'));
   });
@@ -213,6 +214,9 @@ describe('boundaries (MOB-04)', () => {
       'setDraftAudioHash', 'setDraftChild', 'audioRows', 'rebaseAudioUri', 'reportOrphanAudio', 'reattachOrphanAudio', 'localSchemaVersion',
       'listDeleted', 'eraseEntry', 'purgeExpired', 'recordLaunch', 'countUnrecoverableTakes', 'erasesAt',
       'AudioMissingError', 'localSqlDb', 'ledgerDb', 'notifyStoreChanged', 'subscribeTo', 'openStore', 'closeStore',
+      // WP-F04-03 (local v6) and the M17 ledger query (F14-REQ-036).
+      'setDraftKind', 'setDraftOccurred', 'setDraftLanguage', 'setDraftBaseDirection', 'beginDiscard', 'finishDiscard',
+      'hasNotMuchOn', 'countOwnLettersKept', 'DraftValueError',
     ];
     for (const n of names) expect(typeof (store as Record<string, unknown>)[n], n).toBe('function');
   });

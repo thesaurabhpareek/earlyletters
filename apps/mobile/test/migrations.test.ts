@@ -138,6 +138,14 @@ describe('local database migrator', () => {
     expect(db.all("SELECT name FROM sqlite_master WHERE type = 'table'")).toEqual([]);
   });
 
+  it('[F04-REQ-036] [WP-F04-03] v6 is the capture-metadata step: draft kind, occurred date and precision, language, base direction', () => {
+    expect(MIGRATIONS[5].version).toBe(6);
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    expect(cols(db, 'drafts')).toEqual(expect.arrayContaining(['kind', 'occurred_on', 'occurred_precision', 'language', 'base_direction']));
+    expect(cols(db, 'entries')).toEqual(expect.arrayContaining(['occurred_precision', 'language', 'base_direction']));
+  });
+
   it('migrations are numbered 1..n with no gaps (append-only)', () => {
     expect(MIGRATIONS.map((m) => m.version)).toEqual(MIGRATIONS.map((_, i) => i + 1));
   });
@@ -206,5 +214,103 @@ describe('[D-084] migration 5: quiet-day marks carry no sentence', () => {
     const fresh = nodeDb().db;
     expect(migrate(fresh, ctx).to).toBe(LATEST_VERSION);
     expect(fresh.all('SELECT * FROM sync_outbox')).toEqual([]);
+  });
+});
+
+describe('[DATA-REQ-040] [WP-F04-03] v0 to head: every row survives with its counts and hashes unchanged', () => {
+  const TABLES: Record<string, string[]> = {
+    // The columns each table had at v0 on an install made before the migrator (steps 1 and 2 shape).
+    settings: ['key', 'value'],
+    children: ['id', 'name', 'birthday', 'due_date', 'signs_as', 'reminders_on', 'family_can_read', 'created_at', 'updated_at', 'hidden_at'],
+    entries: [
+      'id', 'kind', 'occurred_on', 'captured_at', 'capture_mode', 'edit_level', 'prompt_key', 'engine_version', 'raw_transcript',
+      'machine_edits', 'final_text', 'in_book', 'sounds_like_me', 'updated_at', 'deleted_at', 'synced_at', 'child_id', 'author_id',
+      'author_signs_as', 'audio_uri', 'audio_duration_ms',
+    ],
+    drafts: ['id', 'child_id', 'capture_mode', 'prompt_key', 'created_at', 'audio_uri', 'audio_duration_ms', 'raw_transcript', 'typed_text'],
+  };
+  const count = (db: SqlDb, t: string) => db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM ${t}`)!.n;
+  const tableHash = (db: SqlDb, t: string) =>
+    sha(JSON.stringify(db.all(`SELECT ${TABLES[t].join(', ')} FROM ${t} ORDER BY ${TABLES[t][0]}`)));
+
+  /** A v0 install with letters of every shape: spoken, typed, waiting words, deleted, a note, someone else's, drafts. */
+  function v0Install(db: SqlDb) {
+    preMigratorMultiChild(db);
+    db.run("DELETE FROM settings WHERE key IN ('ageAttested', 'ageAttestedAt')"); // v3 rewrites these by design (covered above)
+    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c2', 'Ravi', NULL, '2026-12-01', 'Papa', ?, ?)", NOW, NOW);
+    const add = (id: string, kind: string, mode: string, raw: string, text: string, extra: { author?: string; deleted?: boolean; audio?: string } = {}) =>
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version, raw_transcript,
+           machine_edits, final_text, in_book, sounds_like_me, updated_at, deleted_at, child_id, author_id, author_signs_as, audio_uri, audio_duration_ms)
+         VALUES (?, ?, '2026-09-20', ?, ?, 'clean', 'first-laugh', 3, ?, ?, ?, 1, 1, ?, ?, 'c1', ?, 'Mama', ?, ?)`,
+        id, kind, NOW, mode, raw, JSON.stringify([{ type: 'filler', at: 0 }]), text, NOW, extra.deleted ? NOW : null,
+        extra.author ?? null, extra.audio ?? null, extra.audio ? 31000 : null,
+      );
+    add('e-spoken', 'letter', 'spoken', 'um Asha you laughed at the the rain', 'Asha, you laughed at the rain.', { audio: 'file:///Documents/r1.m4a' });
+    add('e-typed', 'letter', 'typed', 'Asha, your first step.', 'Asha, your first step.');
+    add('e-waiting', 'letter', 'spoken', '', '', { audio: 'file:///Documents/r2.m4a' });
+    add('e-deleted', 'letter', 'typed', 'A quiet morning.', 'A quiet morning.', { deleted: true });
+    add('e-note', 'note', 'typed', 'Tired. Happy.', 'Tired. Happy.');
+    add('e-papa', 'letter', 'typed', 'From Papa.', 'From Papa.', { author: 'user-papa' });
+    db.run(
+      "INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, typed_text) VALUES ('d2', 'c2', 'typed', NULL, ?, 'Ravi, we are ready for you.')",
+      NOW,
+    );
+    // Languages noted per recording before the column existed (models/author-language.ts), one unreadable.
+    db.run("INSERT INTO settings (key, value) VALUES ('speech.letterLanguage.e-spoken', 'hi'), ('speech.letterLanguage.d1', 'es'), ('speech.letterLanguage.e-typed', 'klingon')");
+  }
+
+  it('row counts and the hash of every pre-existing column are identical after migrating to the latest version', () => {
+    const { db } = nodeDb();
+    v0Install(db);
+    expect(userVersion(db)).toBe(0);
+    const before = Object.fromEntries(Object.keys(TABLES).map((t) => [t, { n: count(db, t), hash: tableHash(db, t) }]));
+    const raw = db.all<{ id: string; raw_transcript: string }>('SELECT id, raw_transcript FROM entries ORDER BY id').map((r) => [r.id, sha(r.raw_transcript)]);
+
+    expect(migrate(db, ctx)).toEqual({ from: 0, to: LATEST_VERSION, newer: false });
+    expect(LATEST_VERSION).toBeGreaterThanOrEqual(6);
+
+    for (const t of Object.keys(TABLES)) {
+      expect({ table: t, n: count(db, t), hash: tableHash(db, t) }).toEqual({ table: t, ...before[t] });
+    }
+    expect(db.all<{ id: string; raw_transcript: string }>('SELECT id, raw_transcript FROM entries ORDER BY id').map((r) => [r.id, sha(r.raw_transcript)]))
+      .toEqual(raw);
+    expect(db.all('SELECT * FROM sync_outbox')).toEqual([]);
+  });
+
+  it('new columns take their defaults; a recording\'s noted language moves onto its row, an unknown one does not', () => {
+    const { db } = nodeDb();
+    v0Install(db);
+    migrate(db, ctx);
+    const e = (id: string) =>
+      db.get<{ occurred_precision: string; language: string | null; base_direction: string }>(
+        'SELECT occurred_precision, language, base_direction FROM entries WHERE id = ?', id,
+      );
+    expect(e('e-spoken')).toEqual({ occurred_precision: 'day', language: 'hi', base_direction: 'ltr' });
+    expect(e('e-typed')).toEqual({ occurred_precision: 'day', language: null, base_direction: 'ltr' });
+    expect(e('e-papa')?.language).toBeNull();
+    const d = (id: string) =>
+      db.get<{ kind: string; occurred_on: string | null; occurred_precision: string; language: string | null; base_direction: string; state: string }>(
+        'SELECT kind, occurred_on, occurred_precision, language, base_direction, state FROM drafts WHERE id = ?', id,
+      );
+    expect(d('d1')).toEqual({ kind: 'letter', occurred_on: null, occurred_precision: 'day', language: 'es', base_direction: 'ltr', state: 'ready' });
+    expect(d('d2')).toMatchObject({ kind: 'letter', language: null });
+    // The noted keys stay for their reader (author-language.ts clears them).
+    expect(setting(db, 'speech.letterLanguage.e-spoken')).toBe('hi');
+  });
+
+  it('v5 to v6 on a signed-in phone queues no upload (the next edit carries the language)', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx, MIGRATIONS.filter((m) => m.version <= 5));
+    db.run("INSERT INTO settings (key, value) VALUES ('sync.ownerId', 'user-mama'), ('speech.letterLanguage.l1', 'ar')");
+    db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', 'Mama', ?, ?)", NOW, NOW);
+    db.run(
+      `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits,
+         final_text, in_book, updated_at, child_id, author_id) VALUES ('l1', 'letter', '2026-09-29', ?, 'spoken', 'clean', 2, 'x', '[]', 'x', 0, ?, 'c1', 'user-mama')`,
+      NOW, NOW,
+    );
+    expect(migrate(db, ctx)).toMatchObject({ from: 5, to: LATEST_VERSION });
+    expect(db.get<{ language: string }>("SELECT language FROM entries WHERE id = 'l1'")?.language).toBe('ar');
+    expect(db.all('SELECT * FROM sync_outbox')).toEqual([]);
   });
 });

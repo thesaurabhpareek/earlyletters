@@ -474,4 +474,39 @@ describe('sync end to end (phones on node:sqlite, server SQL on PGlite)', () => 
     expect((await sys('select 1 from entry_versions where entry_id = $1 and final_text = $2', [id, old])).rows.length).toBe(1);
     expect(local(A1, id)?.sync_state).toBe('synced');
   }, 60_000);
+
+  it('[G-26] a letter\'s language goes up with it, comes down to my other phone, never to the co-parent, and a later change travels as group "language"', async () => {
+    const id = saveLetter(A1, ASHA, 'Namaste, chhoti.');
+    // The row was saved before the language was set (as an older build would): set it, as setDraftLanguage then save does.
+    A1.transaction(() => {
+      A1.run("UPDATE entries SET language = 'hi' WHERE id = ?", id);
+      enqueueEntryUpsert(A1, id, ALL_GROUPS, ctx());
+    });
+    const op = JSON.parse(A1.get<{ payload: string }>('SELECT payload FROM sync_outbox WHERE entity_id = ?', id)!.payload) as {
+      changed: string[]; data: { language: string | null };
+    };
+    expect(op.changed).toContain('language');
+    expect(op.data.language).toBe('hi');
+    expect(await engineOn(A1, A, serverFor(A)).sync()).toMatchObject({ rejected: 0 });
+    expect((await sys('select language from entries where id = $1', [id])).rows[0].language).toBe('hi');
+
+    await engineOn(A2, A, serverFor(A)).sync();
+    expect(A2.get<{ language: string | null }>('SELECT language FROM entries WHERE id = ?', id)?.language).toBe('hi');
+    await engineOn(B1, B, serverFor(B)).sync();
+    expect(B1.get<{ language: string | null; final_text: string }>('SELECT language, final_text FROM entries WHERE id = ?', id))
+      .toEqual({ language: null, final_text: 'Namaste, chhoti.' }); // others' rows carry no language
+
+    // A text-only edit leaves the server's language alone; a language change travels on its own.
+    editLetter(A1, id, 'Namaste, chhoti. You smiled.');
+    expect(await engineOn(A1, A, serverFor(A)).sync()).toMatchObject({ rejected: 0 });
+    expect((await sys('select language, final_text from entries where id = $1', [id])).rows[0]).toEqual({ language: 'hi', final_text: 'Namaste, chhoti. You smiled.' });
+    A1.transaction(() => {
+      A1.run("UPDATE entries SET language = 'en' WHERE id = ?", id);
+      enqueueEntryUpsert(A1, id, ['language'], ctx());
+    });
+    expect(await engineOn(A1, A, serverFor(A)).sync()).toMatchObject({ rejected: 0 });
+    expect((await sys('select language from entries where id = $1', [id])).rows[0].language).toBe('en');
+    await engineOn(A2, A, serverFor(A)).sync();
+    expect(A2.get<{ language: string | null }>('SELECT language FROM entries WHERE id = ?', id)?.language).toBe('en');
+  }, 60_000);
 });

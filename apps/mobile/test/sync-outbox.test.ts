@@ -9,10 +9,10 @@ import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
 import { createSyncEngine } from '../src/lib/sync/engine';
 import { classifyCallError } from '../src/lib/sync/errors';
-import { HELD_AFTER_RESTORE_MS, digestOf, dropStaleHeld, enterRestoreMode } from '../src/lib/sync/merge';
+import { HELD_AFTER_RESTORE_MS, applyPullPage, digestOf, dropStaleHeld, enterRestoreMode } from '../src/lib/sync/merge';
 import { enqueueEntryDelete, enqueueEntryRestore, enqueueEntryUpsert, pendingCount, takeBatch, writeSetting } from '../src/lib/sync/outbox';
 import { retryRefusedBook, takeOwnership } from '../src/lib/sync/ownership';
-import { ALL_GROUPS, type PushOp, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
+import { ALL_GROUPS, type PulledRow, type PushOp, type RpcResult, type SupabaseLike } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
 
 const ME = '11111111-1111-1111-1111-111111111111';
@@ -275,6 +275,59 @@ describe('sync: the local queue', () => {
     const ids = ['0199a000-0000-7000-8000-ffffffffffff', '0199a000-0000-7000-8000-000000000001'];
     expect(digestOf(ids)).toEqual({ n: 2, sum: 0 }); // (2^48 - 1 + 1) mod 2^48
     expect(digestOf([])).toEqual({ n: 0, sum: 0 });
+  });
+});
+
+describe('[G-26] sync: a letter\'s language', () => {
+  const payloads = (db: SqlDb) =>
+    db.all<{ payload: string }>('SELECT payload FROM sync_outbox WHERE type = ? ORDER BY seq', 'entry.upsert')
+      .map((r) => JSON.parse(r.payload) as PushOp & { data: { language: string | null } });
+
+  it('travels in every full upload as group "language"; an unknown stored code goes as null; coalescing keeps the group', () => {
+    const db = phone();
+    const c = book(db);
+    takeOwnership(db, ME, ctx);
+    const hi = letter(db, c, 'Namaste.', ME);
+    const odd = letter(db, c, 'Hello.', ME);
+    db.run("UPDATE entries SET language = 'hi' WHERE id = ?", hi);
+    db.run("UPDATE entries SET language = 'en-GB' WHERE id = ?", odd); // never written by the app; the server would refuse it
+    db.transaction(() => {
+      enqueueEntryUpsert(db, hi, ['text'], ctx);
+      enqueueEntryUpsert(db, hi, ['language'], ctx); // coalesced into the untouched op
+      enqueueEntryUpsert(db, odd, ALL_GROUPS, ctx);
+    });
+    const [p1, p2] = payloads(db);
+    expect(ALL_GROUPS).toContain('language');
+    expect(p1).toMatchObject({ id: hi, changed: ['text', 'language'], data: { language: 'hi' } });
+    expect(p2).toMatchObject({ id: odd, data: { language: null } });
+    expect(p2.changed).toEqual([...ALL_GROUPS]);
+  });
+
+  it('an own row pulled with a language sets it; a row from a server without the column keeps the phone\'s', () => {
+    const db = phone();
+    const c = book(db);
+    takeOwnership(db, ME, ctx);
+    const base = (id: string, extra: Partial<PulledRow> = {}): PulledRow => ({
+      id, child_id: c, author_id: ME, author_signs_as: 'Mama', kind: 'letter', occurred_on: '2026-09-29', captured_at: ctx.now,
+      capture_mode: 'typed', edit_level: 'verbatim', prompt_key: null, engine_version: 2, raw_transcript: 'Hola.', machine_edits: [],
+      final_text: 'Hola.', in_book: true, sounds_like_me: null, approval: 'not_needed', audio_kept_on_device: false,
+      created_at: ctx.now, updated_at: ctx.now, deleted_at: null, own: true, v: '100', ...extra,
+    });
+    const known = letter(db, c, 'Hola.', ME);
+    db.run("UPDATE entries SET language = 'es' WHERE id = ?", known);
+    const fresh = id7();
+    const page = (rows: PulledRow[]) => ({
+      reset: false, epoch: 1, epoch_started_at: ctx.now,
+      books: [{ id: c, access: 'a', repull: false, meta_hash: 'h', rows, cursor: '1', more: true }],
+    });
+    db.transaction(() => void applyPullPage(db, page([base(known), base(fresh, { language: 'pt' })]), ctx.now));
+    const lang = (id: string) => db.get<{ language: string | null }>('SELECT language FROM entries WHERE id = ?', id)?.language;
+    expect(lang(known)).toBe('es'); // no "language" key: an older server; the phone's value stays
+    expect(lang(fresh)).toBe('pt');
+    db.transaction(() => void applyPullPage(db, page([base(known, { language: 'fr', v: '101' })]), ctx.now));
+    expect(lang(known)).toBe('fr');
+    db.transaction(() => void applyPullPage(db, page([base(known, { language: null, v: '102' })]), ctx.now));
+    expect(lang(known)).toBeNull();
   });
 });
 
