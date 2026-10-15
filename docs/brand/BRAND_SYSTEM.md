@@ -166,6 +166,7 @@ Quiet UI, loud letters (DESIGN_LANGUAGE.md). Size EB Garamond at 1.2 times what 
 - The mark sits at 56 percent of the canvas height with its mass centre slightly below centre; do not rescale or recentre it.
 - 40 px and below use the small-cut mark (wider notch, heavier tails). Hand-tuned PNGs exist for 16 to 512, including the iOS asset catalog sizes 40, 58, 60, 80, 87 and 120: ship those with the app (context `app.notification`) so notifications, Settings and Spotlight never show a downsampled master.
 - No text, outline, shadow, badge, seasonal variant or baked corners.
+- The app ships byte copies of the three masters as `apps/mobile/assets/brand/icon.png`, `icon-dark.png` and `icon-tinted.png`, and the launch screen (context `app.splash`: the symbol alone, 96 pt tall and centred on paper or paperDark) as `splash.png` and `splash-dark.png` beside them, 480 px square for the 120 pt slot in `app.config.ts` (#130). Refresh them from the registry, never by hand; `npm run preflight:testflight -w @scribe/mobile` checks the four icons are 1024 opaque PNGs.
 - iOS 26 Liquid Glass: final sign-off is in Icon Composer on a device. The bench (`source.icon.bench`) approximates it: `node packages/brand/assets/logo/primary/source/bench.mjs` (usage in its header).
 
 ---
@@ -205,7 +206,6 @@ Warm, calm, literary lightly. A kind friend, not a brand. Time and love, never e
 
 - Icon Composer `.icon` for iOS 26 (needs a Mac); then register it and point `apps/mobile/app.config.ts` at it.
 - Android adaptive icon layers (Android is v1.1).
-- Splash wiring in `app.config.ts` (expo-splash-screen needs a PNG symbol; context `app.splash` is defined).
 - Trademark clearance of the name and the mark before BIMI VMC (EMAIL_IDENTITY.md 6).
 - Point the iOS asset catalog (or the `.icon` small-size variant) at `app.notification`'s PNGs (BRD-04). Founder call: the approved rule draws the small cut at 40 px and below, so 58/60/80/87/120 use the master drawing, hand-tuned; the review suggests the small cut up to 87 px. Compare on a device before changing.
 - Planned contexts still to draw: `appstore.screenshot-frame` (v1.0), `export.pdf` (v1.0), `book.page` (v1.1), `play.feature-graphic` (v1.1); social story and cover templates.

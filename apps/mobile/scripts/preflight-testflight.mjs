@@ -165,7 +165,7 @@ function checkIcons(c) {
   }
   const scaffold = ['assets/images/icon.png', 'assets/images/adaptive-icon.png', 'assets/images/splash-icon.png'].filter((p) => existsSync(join(MOBILE, p)));
   if (scaffold.length) warn(`Expo scaffold icon file(s) still in the tree: ${scaffold.join(', ')}. Fine for TestFlight; remove before the store.`);
-  else pass('no Expo scaffold icon files left (the icons are the generated brand set, scripts/brand/icons.mjs)');
+  else pass('no Expo scaffold icon files left (the icons are byte copies of the registry masters, packages/brand/assets/logo/primary)');
   if (!/assets\/brand\//.test(c.icon ?? '')) warn(`app icon ${c.icon} is not from assets/brand: it may be a scaffold or placeholder icon.`);
 }
 
