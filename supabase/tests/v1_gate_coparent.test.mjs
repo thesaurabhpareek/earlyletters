@@ -127,6 +127,9 @@ check('[F11-REQ-018] with the default config no act is needed', (await sys(`sele
   check('[F11-REQ-008] audit member_join_undone exists (not member_removed)',
     (await audits('member_join_undone', BK)) === 1 && (await audits('member_removed', BK)) === 0);
   check('an undo of someone already gone is not_member', (await one(C, `select public.undo_parent_join($1, $2) r`, [BK, N])).r === 'not_member');
+  check('[F11-REQ-008] the undone person cannot use the same link again: accept and peek say used (SCINV), no membership',
+    (await codeOf(() => as(N, `select public.accept_child_invite($1)`, [T]))) === 'SCINV'
+    && (await codeOf(() => as(N, `select public.peek_invite($1)`, [T]))) === 'SCINV' && (await roleOf(BK, N)) === null);
   check('the other parent never receives the removed person\'s letters', (await as(C, `select 1 from book_entries where author_id = $1`, [N])).rows.length === 0);
   // After the window.
   const T2 = '9'.repeat(64);
@@ -167,6 +170,14 @@ check('[F11-REQ-018] with the default config no act is needed', (await sys(`sele
     (await one(N, `select public.leave_child($1, false) r`, [BK])).r === 'left'
     && (await sys(`select count(*)::int n from entries where author_id = $1 and child_id = $2 and in_book`, [N, BK])).rows[0].n === 0
     && (await audits('left_book', BK)) === 1);
+  check('[F11-REQ-011] after leaving, the old link does not answer "joined": accept and peek are SCINV',
+    (await codeOf(() => as(N, `select public.accept_child_invite($1)`, [T2]))) === 'SCINV'
+    && (await codeOf(() => as(N, `select public.peek_invite($1)`, [T2]))) === 'SCINV');
+  // A re-add by support (service role, no invite) is not undoable through the old invite.
+  await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'parent')`, [BK, N]);
+  check('[F11-REQ-012] a membership made by support cannot be undone through an old invite (SCPAR)',
+    (await codeOf(() => as(C, `select public.undo_parent_join($1, $2)`, [BK, N]))) === 'SCPAR');
+  await sys(`delete from child_members where child_id = $1 and profile_id = $2`, [BK, N]);
   check('[DATA-REQ-016] the last parent cannot leave (SCLPG) and stays',
     (await codeOf(() => as(C, `select public.leave_child($1)`, [BK]))) === 'SCLPG' && (await roleOf(BK, C)) === 'parent');
 }

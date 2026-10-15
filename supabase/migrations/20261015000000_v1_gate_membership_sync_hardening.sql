@@ -1,7 +1,7 @@
 -- BL-331 with BL-332: membership and sync hardening, server rate limits (R-17 gate, D-089).
 --
 -- PENDING: not yet applied. Apply after 20261005000000_family_cap_language_idempotency.sql,
--- following supabase/APPLY.md (section "File 20261015000000"). Never edits an earlier
+-- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an earlier
 -- file; functions are redefined with CREATE OR REPLACE from their newest version
 -- (sync_pull and sync_push from 20261005000000, sync_books from 20261004100000,
 -- create_child and create_first_run_children from 20261004000000, delete_entry and
@@ -24,7 +24,10 @@
 --       column directly; sync_push's book.update now goes through
 --       book_update(p_child, p_data) because its merge reads the two columns.
 --       Effect on clients: `select *` (PostgREST select=* or no select list) on
---       children is refused with 42501; name the columns instead.
+--       children is refused with 42501; name the columns instead. One visible
+--       change: a book.update op from a family member that changes nothing was
+--       silently fine (no row matched, no trigger ran); book_update now checks
+--       consent and the parent role first, so it is SCPAR (a permanent reject).
 -- G-09  sync_pull's digest no longer reveals private activity (review M5). The
 --       old changed-since check looked at every row in the book, so a deliberately
 --       wrong "have" was echoed until someone wrote a private letter. The check now
@@ -33,7 +36,13 @@
 --       the cursor (new columns entries.left_parents_xid / left_family_xid, set by
 --       the entries_unshared trigger in the transaction that made the row
 --       unreadable: deleted, taken out of the book, withdrawn, set aside).
---       A letter that was never shared changes nothing the caller can observe.
+--       A letter that was never shared changes neither the digest nor the rows.
+--       Known residual (pre-existing since 20261004100000, found in this PR's
+--       review): the returned cursor and every row's "v" come from the
+--       database-wide transaction counter, so on a quiet database an idle pull's
+--       cursor moves when anyone writes, private letters included. Closing it
+--       changes the pull protocol (cursor at the caller's last row, or per-book
+--       versions): the sync ADR's call (S03 with S02, T15), not this file's.
 --       Removal still works: a letter that leaves the book stamps its row, so the
 --       phone gets the real digest and asks for the id list. The paragraph "The
 --       digest is computed only when something in the book changed" in
@@ -66,6 +75,17 @@
 --
 -- New SQLSTATEs: none.
 -- Reused: SCRAT, SCINV, SCCAP, SCPAR, SCCON, SCANO, P0002, 22023, 42501.
+
+-- A second run (by hand in the SQL Editor) would put back this file's sync
+-- functions over 20261015030000's; refuse it. `supabase db push` never re-runs a file.
+do $$
+begin
+  if exists (select 1 from pg_constraint where conrelid = 'public.sync_op_receipts'::regclass
+              and conname = 'sync_op_receipts_pkey' and array_length(conkey, 1) = 2) then
+    raise exception '20261015000000 is already applied' using errcode = '55000';
+  end if;
+end;
+$$;
 
 -- ─── 0. Rate buckets (G-11) ──────────────────────────────────────────────
 alter table public.sync_rate_windows drop constraint if exists sync_rate_windows_bucket_check;

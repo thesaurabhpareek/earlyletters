@@ -2,7 +2,7 @@
 -- D5, 7 and 11; D-069; 72-hour undo and device-made invite ids).
 --
 -- PENDING: not yet applied. Apply after 20261015010000_v1_gate_peek_invite_consent_pepper.sql,
--- following supabase/APPLY.md (section "File 20261015020000"). Never edits an
+-- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an
 -- earlier file. create_child_invite(uuid, text, text) and accept_child_invite(text)
 -- are redefined from 20261005000000 (changes marked F11-REQ-003 and F11-REQ-018);
 -- child_members_audit from 20261002020000 (change marked F11-REQ-008). Everything
@@ -57,6 +57,14 @@
 -- New SQLSTATE details: SCINV role_disabled, SCINV code_taken, SCINV token_taken,
 --   SCCON family-share. New audit action: member_join_undone.
 -- Reused: SCCID, SCINV, SCCAP, SCPAR, SCDEL, SCCON, SCRAT, SCANO, 22023, 42501.
+
+do $$
+begin
+  if to_regprocedure('public.undo_parent_join(uuid, uuid)') is not null then
+    raise exception '20261015020000 is already applied' using errcode = '55000';
+  end if;
+end;
+$$;
 
 -- ─── 0. Columns, constraint, audit value ─────────────────────────────────
 alter table public.child_invites add column if not exists code_hash bytea
@@ -176,8 +184,12 @@ begin
   perform 1 from children where id = v_child for no key update;
   select * into v_inv from child_invites where token_hash = v_hash for update;
   if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
-  -- Same person retrying after a lost response: idempotent.
-  if v_inv.accepted_by = v_uid then return v_inv.child_id; end if;
+  -- Same person retrying after a lost response: idempotent, but only while they are
+  -- still a member (after leave_child or an undo the invite is simply used).
+  if v_inv.accepted_by = v_uid
+     and exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = v_uid) then
+    return v_inv.child_id;
+  end if;
   if v_inv.accepted_at is not null then raise exception 'invite already used' using errcode = 'SCINV'; end if;
   if v_inv.revoked_at is not null then raise exception 'invite revoked' using errcode = 'SCINV'; end if;
   if v_inv.expires_at < now() then raise exception 'invite expired' using errcode = 'SCINV'; end if;
@@ -270,6 +282,15 @@ begin
               now() + case p_role when 'parent' then interval '7 days' else interval '14 days' end);
   exception when unique_violation then
     get stacked diagnostics v_constraint = constraint_name;
+    if v_constraint = 'child_invites_pkey' then
+      -- A concurrent retry of this request won the race: the same answer as a repeat.
+      select * into v_inv from child_invites where id = p_invite_id;
+      if v_inv.invited_by = v_uid and v_inv.child_id = p_child and v_inv.role = p_role
+         and v_inv.token_hash = p_token_hash and v_inv.code_hash is not distinct from p_code_hash then
+        return p_invite_id;
+      end if;
+      raise exception 'invite id already in use' using errcode = 'SCCID';
+    end if;
     if v_constraint = 'child_invites_live_code_idx' then
       raise exception 'this code is in use; make a new one' using errcode = 'SCINV', detail = 'code_taken';
     end if;
@@ -302,8 +323,11 @@ begin
    where code_hash = p_code_hash and accepted_at is null and revoked_at is null and expires_at > now()
    order by created_at desc limit 1;
   if not found then
-    -- The same person retrying after a lost response: idempotent.
-    select child_id into v_child from child_invites where code_hash = p_code_hash and accepted_by = p_user limit 1;
+    -- The same person retrying after a lost response, still a member: idempotent.
+    select i.child_id into v_child from child_invites i
+     where i.code_hash = p_code_hash and i.accepted_by = p_user
+       and exists (select 1 from child_members m where m.child_id = i.child_id and m.profile_id = p_user)
+     order by i.accepted_at desc limit 1;
     if found then return v_child; end if;
     raise exception 'invite not found' using errcode = 'SCINV';
   end if;
@@ -395,7 +419,9 @@ begin
   select * into v_inv from child_invites
    where child_id = p_child and accepted_by = p_member
    order by accepted_at desc limit 1;
-  if not found or v_inv.invited_by is distinct from v_uid or v_joined <= now() - interval '72 hours' then
+  if not found or v_inv.invited_by is distinct from v_uid or v_joined <= now() - interval '72 hours'
+     -- the membership was made by that invite (a re-add by support has no invite)
+     or v_inv.accepted_at < v_joined - interval '1 minute' then
     raise exception 'a join can be undone only by the parent who sent the invite, within 72 hours' using errcode = 'SCPAR';
   end if;
   update entries set in_book = false, approval = 'not_needed', reviewed_by = null, reviewed_at = null

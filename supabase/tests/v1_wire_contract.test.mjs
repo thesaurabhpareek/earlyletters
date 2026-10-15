@@ -86,7 +86,13 @@ r = await push(A, [op('entry.upsert', full, base('Habibi.', { pack_ref: 'ar@1.3.
 check('[F06-REQ-024] a different pack_ref is SCIMM (the op is rejected, the value stays)',
   r.results[0].ok === false && r.results[0].code === 'SCIMM' && (await row(full)).pack_ref === 'ar@1.2.0');
 check('nor directly', (await codeOf(() => as(A, `update entries set pack_ref = 'ar@9' where id = $1`, [full]))) === 'SCIMM');
-check('a letter saved without a pack keeps null for good', (await codeOf(() => as(A, `update entries set pack_ref = 'en@1.0.0' where id = $1`, [old]))) === 'SCIMM');
+r = await push(A, [op('entry.upsert', old, base('From an older build.', { language: undefined, pack_ref: 'en@1.0.0' }), { changed: ['text'] })]);
+check('[F06-REQ-024] a letter saved without a pack gets one once (an older letter re-cleaned by a newer app)',
+  r.results[0].ok && (await row(old)).pack_ref === 'en@1.0.0');
+check('then it is fixed too', (await codeOf(() => as(A, `update entries set pack_ref = 'en@2.0.0' where id = $1`, [old]))) === 'SCIMM'
+  && (await codeOf(() => as(A, `update entries set pack_ref = null where id = $1`, [old]))) === 'SCIMM');
+r = await push(A, [op('entry.upsert', old, base('From an older build.', { language: undefined, pack_ref: null }), { changed: ['text'] })]);
+check('an op that sends null for pack_ref keeps the stored one', r.results[0].ok && (await row(old)).pack_ref === 'en@1.0.0');
 r = await push(A, [op('entry.upsert', full, base('Habibi.', { pack_ref: 'ar@1.2.0' }), { changed: ['text'] })]);
 check(`the same pack_ref again is fine (${JSON.stringify(r.results[0].code ?? 'ok')})`, r.results[0].ok);
 

@@ -7,6 +7,7 @@
 // Ported from auto/2026-10-05-fixes d1cbddb (supabase/tests/db_fix_security_review.test.mjs).
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users, uuid7 } from './harness.mjs';
+import { readFileSync } from 'node:fs';
 
 const t = await createDb(process.argv.slice(2));
 const { check, as, sys, one, codeOf, publishPolicies, consent, newChild, invite, join, done } = t;
@@ -226,6 +227,19 @@ await join(N, 'contributor', child, A);
   check('the author\'s words are unchanged', (await sys(`select final_text from entries where id = $1`, [id])).rows[0].final_text === 'Her own words.');
   check('nor through my_policy_state', (await codeOf(() => as(B, `delete from public.my_policy_state`))) !== 'ok'
     && (await sys(`select has_table_privilege('authenticated', 'public.my_policy_state', 'delete') d`)).rows[0].d === false);
+}
+
+// ── A second run of a gate file by hand is refused (PR #140 review 2 finding 5) ─
+{
+  const gate = t.files.filter((f) => /20261015(00|01|02|03)0000_/.test(f)).sort();
+  check('(the four gate files are in this run)', gate.length === 4);
+  for (const f of gate.slice(0, 3)) {
+    check(`re-running ${f.split('/').pop()} is refused (55000) and changes nothing`,
+      (await codeOf(() => t.db.exec(readFileSync(f, 'utf8')))) === '55000');
+  }
+  check(`re-running ${gate[3].split('/').pop()} fails at its first statement`, (await codeOf(() => t.db.exec(readFileSync(gate[3], 'utf8')))) !== 'ok');
+  check('the sync functions are still the wire-contract versions after the attempts',
+    (await sys(`select prosrc ~ 'occurred_precision' ok from pg_proc where proname = 'sync_push'`)).rows[0].ok === true);
 }
 
 done();

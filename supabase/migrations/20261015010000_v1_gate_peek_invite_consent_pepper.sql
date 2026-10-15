@@ -2,7 +2,7 @@
 -- pepper fails closed), in one file (PRD V2 08-delivery.md section 6.3, S02 wave 1).
 --
 -- PENDING: not yet applied. Apply after 20261015000000_v1_gate_membership_sync_hardening.sql,
--- following supabase/APPLY.md (section "File 20261015010000"). Never edits an
+-- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an
 -- earlier file; policy_acceptances_pseudonymise is redefined from 20261002020000.
 --
 -- Both sections are ported from branch auto/2026-10-05-fixes, commit d1cbddb,
@@ -30,6 +30,14 @@
 --
 -- New SQLSTATEs: none (55000 for the pepper is a standard code, service paths only).
 -- Reused: SCRAT, SCINV, SCCAP, SCANO.
+
+do $$
+begin
+  if to_regprocedure('public.peek_invite(text)') is not null then
+    raise exception '20261015010000 is already applied' using errcode = '55000';
+  end if;
+end;
+$$;
 
 -- ─── 1. G-12: the consent pepper fails closed ────────────────────────────
 -- From 20261002020000. The hash input is unchanged (id || pepper as set), so
@@ -86,7 +94,10 @@ begin
   perform public.rate_hit('membership');
   select * into v_inv from child_invites where token_hash = sha256(convert_to(coalesce(p_token, ''), 'UTF8'));
   if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
-  if v_inv.accepted_by = v_uid then
+  -- A repeat by the person who joined, while they are still a member. Someone who
+  -- left or was undone gets "already used" like anyone else.
+  if v_inv.accepted_by = v_uid
+     and exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = v_uid) then
     v_joined := true;
   else
     if v_inv.accepted_at is not null then raise exception 'invite already used' using errcode = 'SCINV'; end if;

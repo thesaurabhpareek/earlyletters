@@ -323,6 +323,21 @@ const unguarded = fns.filter((f) => f.auth_x && rpcNames.has(f.name) && !/requir
 for (const f of unguarded) console.log(`      RPC without the anonymous guard: ${f.sig}`);
 check('[K-08] every RPC starts with require_user() or checks is_anonymous()', unguarded.length === 0);
 
+// PR #32 DB-01, PR #140 review: a view runs as its owner, so a write privilege on any
+// public view would skip the base table's policies. No view may be writable.
+const writableViews = (await sys(`select c.relname, r.rolname, p.priv from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    cross join (values ('authenticated'), ('anon')) r(rolname)
+    cross join (values ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE')) p(priv)
+   where n.nspname = 'public' and c.relkind = 'v' and has_table_privilege(r.rolname, c.oid, p.priv)
+  union all
+  select c.relname, r.rolname, 'column ' || a.attname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+    cross join (values ('authenticated'), ('anon')) r(rolname)
+   where n.nspname = 'public' and c.relkind = 'v' and (has_column_privilege(r.rolname, c.oid, a.attnum, 'UPDATE')
+         or has_column_privilege(r.rolname, c.oid, a.attnum, 'INSERT'))`)).rows;
+for (const v of writableViews) console.log(`      writable view: public.${v.relname} (${v.rolname}: ${v.priv})`);
+check('[F11-REQ-082] no public view is writable by authenticated or anon (table or column level)', writableViews.length === 0);
+
 const policies = (await sys(`select tablename, permissive, array_to_string(roles, ',') roles, coalesce(qual, '') || coalesce(with_check, '') expr
   from pg_policies where schemaname = 'public'`)).rows;
 const clientTables = [...new Set(policies.filter((p) => p.permissive === 'PERMISSIVE' && p.roles.includes('authenticated')).map((p) => p.tablename))]

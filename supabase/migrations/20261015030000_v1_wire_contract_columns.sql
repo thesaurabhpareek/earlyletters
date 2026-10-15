@@ -3,7 +3,7 @@
 -- WP-F07-04; the author-layer columns of WP-F06-07, nullable).
 --
 -- PENDING: not yet applied. Apply after 20261015020000_v1_gate_coparent_invites_undo.sql,
--- following supabase/APPLY.md (section "File 20261015030000"). Never edits an
+-- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an
 -- earlier file. Redefined from their newest version: sync_pull and sync_push
 -- (20261015000000), entries_guard_immutable (20261002020000), book_entries
 -- (20261003000000, columns appended only). Each change is marked F16-REQ-028.
@@ -22,8 +22,10 @@
 --     words group travels together, F16-REQ-011). L4, author-only.
 --   locked_spans jsonb, null or an array (F06-REQ-031). Field group text. L4,
 --     author-only.
---   pack_ref text, null or `<lang>@<version>` (F06-REQ-024). Set at insert and
---     immutable after it, like engine_version (DATA-REQ-040 Rev: SCIMM). L4
+--   pack_ref text, null or `<lang>@<version>` (F06-REQ-024). Set once: a letter
+--     saved without one (every letter before this file, or no verified pack,
+--     F06-REQ-011) may get it later; once set it never changes (DATA-REQ-040 Rev:
+--     SCIMM), and an op that sends null or omits it keeps the stored value. L4
 --     author-only, because it names the letter's language, which is L4 like
 --     entries.language (F06 section 8 lists it as L2 author-only; S17 confirms).
 --   The author-only columns stay out of book_entries, so the other parent's pull
@@ -85,8 +87,8 @@ $$;
 alter table public.dictionary_terms add column if not exists forms jsonb;
 alter table public.dictionary_terms add constraint dictionary_terms_forms_shape check (public.dictionary_forms_valid(forms));
 
--- ─── 2. pack_ref is immutable like engine_version (DATA-REQ-040 Rev) ─────
--- From 20261002020000; the only change is pack_ref in the first check.
+-- ─── 2. pack_ref is set once, then immutable (DATA-REQ-040 Rev) ──────────
+-- From 20261002020000; the only change is the pack_ref clause in the first check.
 create or replace function public.entries_guard_immutable()
 returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 declare
@@ -99,8 +101,8 @@ begin
      or new.engine_version is distinct from old.engine_version
      or new.created_at is distinct from old.created_at
      or new.raw_sha256 is distinct from old.raw_sha256
-     or new.pack_ref is distinct from old.pack_ref then
-    raise exception 'entries: raw_transcript, raw_sha256, captured_at, created_at, author_id, child_id, engine_version and pack_ref are immutable'
+     or (old.pack_ref is not null and new.pack_ref is distinct from old.pack_ref) then
+    raise exception 'entries: raw_transcript, raw_sha256, captured_at, created_at, author_id, child_id, engine_version and a set pack_ref are immutable'
       using errcode = 'SCIMM';
   end if;
 
@@ -455,9 +457,9 @@ comment on function public.sync_pull(jsonb, int) is
 --   update: occurred_precision with the occurred_on group, author_edits and
 --     locked_spans with the text group, base_direction with the text or language
 --     group, each only when the op data carries the key (an older app never
---     clears them); pack_ref is passed through only when sent, so the guard
---     refuses a different value (SCIMM) and an older app that never sends it
---     changes nothing;
+--     clears them); pack_ref fills an empty value and is otherwise passed
+--     through, so the guard refuses a different one (SCIMM); null or absent
+--     keeps the stored value;
 --   prefs.upsert: notify_letters (20261015020000).
 create or replace function public.sync_push(p_ops jsonb)
 returns jsonb language plpgsql volatile security invoker set search_path = pg_catalog, public, pg_temp
@@ -605,7 +607,7 @@ begin
                 captured_at = excluded.captured_at,
                 child_id = excluded.child_id,
                 engine_version = excluded.engine_version,
-                pack_ref = case when d ? 'pack_ref' then excluded.pack_ref else e.pack_ref end
+                pack_ref = coalesce(excluded.pack_ref, e.pack_ref)
               where (e.final_text, e.machine_edits, e.edit_level, e.in_book, e.sounds_like_me, e.occurred_on,
                      e.raw_transcript, e.captured_at, e.child_id, e.engine_version, e.language,
                      e.occurred_precision, e.base_direction, e.author_edits, e.locked_spans, e.pack_ref)
@@ -624,7 +626,7 @@ begin
                           then excluded.base_direction else e.base_direction end,
                      case when 'text' = any(v_changed) and d ? 'author_edits' then excluded.author_edits else e.author_edits end,
                      case when 'text' = any(v_changed) and d ? 'locked_spans' then excluded.locked_spans else e.locked_spans end,
-                     case when d ? 'pack_ref' then excluded.pack_ref else e.pack_ref end);
+                     coalesce(excluded.pack_ref, e.pack_ref));
             end if;
             if v_type = 'entry.reupload' then
               if v_exists and cur.deleted_at is null and v_deleted then
@@ -745,7 +747,7 @@ comment on column public.entries.author_edits is
 comment on column public.entries.locked_spans is
   'L4 spans the author kept exactly as said (F06-REQ-031), author-only: never in book_entries';
 comment on column public.entries.pack_ref is
-  'L4 language pack used to clean the letter (lang@version), immutable, author-only because it names the language';
+  'L4 language pack used to clean the letter (lang@version), set once then immutable, author-only because it names the language';
 comment on column public.book_entries.occurred_precision is 'L2 enum: day or month (entries.occurred_precision)';
 comment on column public.book_entries.base_direction is 'L2 layout enum (entries.base_direction)';
 comment on column public.dictionary_terms.forms is
