@@ -53,7 +53,7 @@ describe('apple-app-site-association', () => {
     const { appIDs, paths, body } = await served();
     expect(Object.keys(body)).toEqual(['applinks']);
     expect(appIDs).toEqual(['ABCDE12345.com.example.scribe', 'ABCDE12345.com.example.scribe.preview']);
-    expect(paths).toEqual(['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/i/*', '/j', '/j/']);
+    expect(paths).toEqual(['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/j', '/j/']);
   });
 
   it('matches paths only, and lists no catch-all, so no other page of the site opens the app', async () => {
@@ -66,7 +66,7 @@ describe('apple-app-site-association', () => {
     const { paths } = await served();
     for (const p of paths) {
       expect(['*', '/*', '/']).not.toContain(p);
-      expect(p.startsWith('/auth/') || p.startsWith('/i/') || p === '/j' || p === '/j/', p).toBe(true);
+      expect(p.startsWith('/auth/') || p === '/j' || p === '/j/', p).toBe(true);
     }
   });
 });

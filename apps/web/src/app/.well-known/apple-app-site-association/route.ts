@@ -10,24 +10,20 @@
  * Vercel project before the production build. Apple requires application/json, HTTPS and no redirect; Next adds
  * no redirect for this path.
  *
- * Paths, and only these (A-REQ-022). On /auth and /j the token travels in the URL fragment, which is not part of
- * path matching and never reaches a server. /i is the exception, see below:
+ * Paths, and only these (A-REQ-022). Every token travels in the URL fragment, which is not part of path matching
+ * and never reaches a server (B-NFR-002):
  *   /auth/confirm   the sign-in and confirm-your-email link (F02 6.3)
  *   /auth/callback  the same link as the app and email templates on `develop` still write it; remove with the
  *                   page of the same name once they use /auth/confirm
- *   /i/*            co-parent invites as the app on `develop` parses them (https://earlyletters.com/i/<token>).
- *                   The token is in the PATH here: when the app does not open the link (not installed, opened on a
- *                   laptop, or "Open in Safari"), the request reaches this site, the token can land in Vercel's
- *                   request logs. The site answers with the one static /i page (a rewrite in next.config.ts),
- *                   which renders no token and only copies the address on a tap. Kept so the alpha's invites open
- *                   the app; remove it once invites are written as /j#t=<token> (F11, WP-F11-11).
- *   /j              co-parent invites as PRD V2 F11 writes them (/j#t=<token>); its page is WP-F11-11
+ *   /j              co-parent invites (https://earlyletters.com/j#t=<token>, PRD V2 F11; app/j/page.tsx). The
+ *                   earlier /i/<token> form put the token in the path; the app no longer writes or accepts it, so
+ *                   it is not listed and no token path ever opens the app.
  * A route file may export only route fields, so the lists stay private; route.test.ts reads them through GET.
  */
 export const dynamic = 'force-static';
 
 /** Every path the app opens, in the order the file lists them. */
-const APP_LINK_PATHS = ['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/i/*', '/j', '/j/'];
+const APP_LINK_PATHS = ['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/j', '/j/'];
 
 /** Suffixes of the app ids served: production, then the TestFlight alpha builds. */
 const SERVED_SUFFIXES = ['', '.preview'];

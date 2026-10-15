@@ -92,9 +92,7 @@ const nextConfig: NextConfig = {
       // Checked before pages and files, so the lab page cannot win. The destination does not exist, so the
       // visitor sees the 404 page and the address bar keeps /lab/... .
       beforeFiles: labEnabled ? [] : [{ source: '/lab/:path*', destination: '/lab-is-not-published' }],
-      // Every invite link the app writes (/i/<token>) is the one static page at /i: no page per token, so this site
-      // never renders, caches or stores a token. The address bar keeps the link, which the page copies on a tap.
-      afterFiles: [{ source: '/i/:token', destination: '/i' }],
+      afterFiles: [],
       fallback: [],
     };
   },

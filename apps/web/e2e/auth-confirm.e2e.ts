@@ -87,7 +87,6 @@ test.describe('apple-app-site-association', () => {
       '/auth/confirm/',
       '/auth/callback',
       '/auth/callback/',
-      '/i/*',
       '/j',
       '/j/',
     ]);

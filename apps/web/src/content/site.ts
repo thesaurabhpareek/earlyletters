@@ -287,7 +287,7 @@ export const site = {
   },
 
   /**
-   * The page behind a co-parent invite link, https://earlyletters.com/i/<token> (app/i/page.tsx; PRD V2 F11 6.3
+   * The page behind a co-parent invite link, https://earlyletters.com/j#t=<token> (app/j/page.tsx; PRD V2 F11 6.3
    * step 1). It shows only when the app did not open the link: no app on this phone, a laptop, or a mail or chat
    * app's own browser. It joins nothing; the person copies the link and pastes it into the app's "I was invited".
    * No child or inviter name, because the page knows neither.
@@ -299,6 +299,7 @@ export const site = {
     copy: 'Copy the invite',
     copied: `Copied. Now open ${NAME} and tap "I was invited".`,
     copyFailed: 'This browser would not copy it. Copy the address of this page instead, then paste it in the app.',
+    missing: 'This link arrived without its invite. Ask the person who invited you to send it again, and open it on your iPhone.',
     notYou: 'If you were not expecting an invite, you can ignore it. Nothing changes.',
     home: `Back to ${NAME}`,
   },
