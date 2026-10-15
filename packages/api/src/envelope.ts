@@ -90,7 +90,7 @@ export const ERROR_CODE_SINCE: Readonly<Record<ApiErrorCode, 1 | 2>> = {
  */
 export const ERROR_DETAILS = [
   // SCINV (family.ts INVITE_UNUSABLE_DETAILS)
-  'expired', 'used', 'revoked', 'already_member', 'not_found', 'role_disabled', 'code_taken', 'closed',
+  'expired', 'used', 'revoked', 'already_member', 'not_found', 'role_disabled', 'code_taken', 'token_taken', 'closed',
   // SCCON (sync.ts CONSENT_KINDS)
   'terms', 'age', 'sensitive-data', 'family-share', 'backup',
   // SCDEL

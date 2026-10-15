@@ -56,6 +56,8 @@ describe('[DECISION-17] every endpoint the app calls meets the API standard', ()
       if (e.auth === 'public') continue;
       if (['signIn', 'syncPush', 'syncPull', 'createChild', 'recordPolicyAct', 'policyActionsNeeded', 'createInvite'].includes(name)) continue;
       expect(e.capability, `${name} needs a capability`).toBeDefined();
+      // Sign-in has no kill switch by design (forceReauthEpoch is its lever, LEGAL-REQ-040); apple-token belongs to sign-in.
+      if (name === 'appleToken') continue;
       if (e.path.startsWith('/functions/') || e.path.startsWith('<escrow')) expect(e.killSwitch, `${name} needs a kill switch`).toBeDefined();
     }
   });

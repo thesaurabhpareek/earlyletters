@@ -93,7 +93,7 @@ export const REASONS = ['account_deletion', 'device_after_deletion'] as const;
 export type Reason = (typeof REASONS)[number];
 
 /** Every function or script that logs. `config` and `content` are the platform owner's document functions. */
-export const FUNCTIONS = ['purge-worker', 'analytics-forget', 'ops-script', 'config', 'content', 'invite-redeem', 'subscription-status'] as const;
+export const FUNCTIONS = ['purge-worker', 'analytics-forget', 'ops-script', 'config', 'content', 'invite-redeem', 'subscription-status', 'apple-token'] as const;
 export type FunctionName = (typeof FUNCTIONS)[number];
 
 export interface LogFields {

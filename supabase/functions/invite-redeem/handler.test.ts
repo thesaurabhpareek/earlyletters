@@ -30,7 +30,7 @@ async function world(o: WorldOpts = {}) {
   const calls: { url: string; init: RequestInit }[] = [];
   const lines: string[] = [];
   let failures = 0;
-  const live = await codeHmac(PEPPER, o.liveCode ?? CODE);
+  const live = `\\x${await codeHmac(PEPPER, o.liveCode ?? CODE)}`;
   const fetch = async (url: string, init: RequestInit = {}) => {
     calls.push({ url, init });
     const body = init.body ? JSON.parse(String(init.body)) : {};
@@ -47,7 +47,7 @@ async function world(o: WorldOpts = {}) {
     }
     if (url.endsWith('/rpc/peek_invite_by_code')) {
       if (body.p_code_hash !== live) return new Response(JSON.stringify({ code: 'SCINV', details: 'expired', message: `invite for ${CANARY.childName} expired` }), { status: 400 });
-      return new Response(JSON.stringify({ signs_as: 'Papa', role: 'parent' }));
+      return new Response(JSON.stringify({ inviter: 'Papa', role: 'parent' }));
     }
     if (url.endsWith('/rpc/accept_child_invite_by_code')) {
       if (o.acceptError) return new Response(JSON.stringify({ code: o.acceptError.code, details: o.acceptError.details ?? null, message: CANARY.letterText }), { status: o.acceptError.status ?? 400 });
@@ -72,7 +72,7 @@ Deno.test('[F11-REQ-007] peek shows only the sign-off name; accept joins and ret
   const peek = await w.handler(req({ code: CODE, mode: 'peek', device: DEVICE }, { 'x-request-id': '0123456789ab' }));
   assert.equal(peek.status, 200);
   const p = await peek.json();
-  assert.deepEqual(p, { ok: true, data: { mode: 'peek', signs_as: 'Papa', role: 'parent' }, requestId: '0123456789ab' });
+  assert.deepEqual(p, { ok: true, data: { mode: 'peek', inviter: 'Papa', role: 'parent' }, requestId: '0123456789ab' });
   assert.equal(peek.headers.get('x-request-id'), '0123456789ab');
   assert.equal(peek.headers.get('cache-control'), 'no-store');
   const acc = await w.handler(req({ code: CODE, mode: 'accept', device: DEVICE }));
@@ -83,7 +83,7 @@ Deno.test('[F11-REQ-007] peek shows only the sign-off name; accept joins and ret
   const call = w.calls.find((c) => c.url.endsWith('accept_child_invite_by_code'))!;
   const args = JSON.parse(String(call.init.body));
   assert.equal(args.p_user, CANARY.profileId);
-  assert.equal(args.p_code_hash, await codeHmac(PEPPER, CODE));
+  assert.equal(args.p_code_hash, `\\x${await codeHmac(PEPPER, CODE)}`);
   assert.equal(String(call.init.body).includes(CODE), false, 'the code never leaves the function in clear');
 });
 

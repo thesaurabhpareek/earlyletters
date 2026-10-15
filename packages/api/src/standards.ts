@@ -126,6 +126,12 @@ export const ENDPOINTS = {
     idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 60, per: 'user', enforcedBy: 'rpc' }, status: 'live',
     killSwitch: 'sync', capability: 'sync',
   },
+  // ── Sign in with Apple refresh token capture (S01, PR #139; deletion revokes it, BL-330) ──
+  appleToken: {
+    method: 'POST', path: `/functions/v1/apple-token/${API_MAJOR}`, class: 'edge_light', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+    capability: 'signIn',
+  },
   // ── Family (packages/api/src/server/family.ts) ──
   peekInvite: {
     method: 'POST', path: '/rest/v1/rpc/peek_invite', class: 'read_rpc', auth: 'user_jwt',

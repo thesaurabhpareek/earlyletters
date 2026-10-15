@@ -9,7 +9,7 @@
  *   Authorization: Bearer <the signed-in user's access token>
  *   Idempotency-Key: <uuid> (optional: accept is idempotent for the same person)
  *   {"code": "7K3M9QXZ", "mode": "peek" | "accept", "device": "<install uuid>"}
- * 200 {ok: true, data: {mode: "peek", signs_as, role} | {mode: "accept", child_id, role}, requestId}
+ * 200 {ok: true, data: {mode: "peek", inviter, role, joined?} | {mode: "accept", child_id, role}, requestId}
  *
  * Order of checks (cheap and content-free first): route, kill switch
  * (`KILL_SWITCHES` contains `invites`), configuration (fail closed without
@@ -22,10 +22,13 @@
  *
  * SQL it calls (service role only; requested from S02 in the PR, WP-F11-01):
  *   invite_redeem_gate(p_device_hash text, p_ip_hash text) returns jsonb
- *     {"allowed": bool, "scope": "device" | "ip" | "global" | null}
- *   invite_redeem_fail(p_device_hash text, p_ip_hash text) returns void
- *   peek_invite_by_code(p_code_hash text) returns jsonb {"signs_as", "role"}
- *   accept_child_invite_by_code(p_user uuid, p_code_hash text) returns uuid
+ *     {"allowed": bool, "scope": "device" | "ip" | "global" | null}      (requested)
+ *   invite_redeem_fail(p_device_hash text, p_ip_hash text) returns void (requested)
+ *   peek_invite_by_code(p_code_hash bytea) returns jsonb, the peek_invite shape
+ *     {"inviter", "role", "joined"?}                                     (requested)
+ *   accept_child_invite_by_code(p_user uuid, p_code_hash bytea) returns uuid
+ *     (built in S02's 20261015020000)
+ * bytea travels as PostgREST text: `\x` and lowercase hex.
  * The last two raise SCINV (detail from INVITE_UNUSABLE_DETAILS), SCCAP,
  * SCCON and SCRAT exactly as `accept_child_invite` does.
  */
@@ -136,7 +139,7 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
         return refuse('rate_limited', true, { headers: { 'retry-after': '3600' } });
       }
 
-      const codeHash = await codeHmac(pepper, code);
+      const codeHash = `\\x${await codeHmac(pepper, code)}`;
       const res = mode === 'peek'
         ? await rpc('peek_invite_by_code', { p_code_hash: codeHash })
         : await rpc('accept_child_invite_by_code', { p_user: session.profileId, p_code_hash: codeHash });
@@ -159,9 +162,9 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
       let data: RedeemData;
       const value = await res.json().catch(() => null);
       if (mode === 'peek') {
-        const p = value as { signs_as?: unknown; role?: unknown } | null;
-        if (!p || (p.signs_as !== null && typeof p.signs_as !== 'string') || p.role !== 'parent') return unavailable({ provider: 'postgrest', code: 'bad_response' });
-        data = { mode: 'peek', signs_as: p.signs_as as string | null, role: 'parent' };
+        const p = value as { inviter?: unknown; role?: unknown; joined?: unknown } | null;
+        if (!p || (p.inviter !== null && typeof p.inviter !== 'string') || p.role !== 'parent') return unavailable({ provider: 'postgrest', code: 'bad_response' });
+        data = { mode: 'peek', inviter: p.inviter as string | null, role: 'parent', ...(p.joined === true ? { joined: true as const } : {}) };
       } else {
         if (typeof value !== 'string' || !UUID_RE.test(value)) return unavailable({ provider: 'postgrest', code: 'bad_response' });
         data = { mode: 'accept', child_id: value.toLowerCase(), role: 'parent' };

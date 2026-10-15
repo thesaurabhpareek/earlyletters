@@ -14,12 +14,14 @@
  * Status of each part (15 Oct 2026):
  *  - built in SQL (pending apply): every op type except `held.*`, the field
  *    groups, push results, pull books, digest, `gone`, `reset`;
- *  - planned, S02 (marked `planned` below): `p_api_version` and `SCVER`
- *    (WP-F16-16), words compare and set with `conflict_groups` and `current`
- *    (WP-F16-14), the author-layer and date-precision columns (WP-F04-14,
- *    WP-F06-07), `held_drafts` with `held.upsert`, `held.discard` and the
- *    `held` pull section (WP-F16-17), new per-person prefs (WP-F11-01,
- *    WP-F12-09).
+ *  - in S02's pending PR #140 (20261015030000): `occurred_precision`,
+ *    `base_direction`, `author_edits`, `locked_spans`, `pack_ref`, prefs
+ *    `notify_letters`;
+ *  - planned, S02 after the sync ADR (T15; marked `planned` below):
+ *    `p_api_version` and `SCVER` (WP-F16-16), words compare and set with
+ *    `conflict_groups` and `current` (WP-F16-14), `held_drafts` with
+ *    `held.upsert`, `held.discard` and the `held` pull section (WP-F16-17),
+ *    prefs `hidden` and `quiet` (WP-F12-09).
  * A planned field is optional on the wire: an older server never sends it and
  * an older app never sends it, and the server keeps a column whose key is
  * absent (the rule `language` already follows in 20261005000000).
@@ -97,13 +99,22 @@ export const FIELD_GROUP_COLUMNS: Readonly<Record<FieldGroup, readonly string[]>
 export const WORDS_GROUP: FieldGroup = 'text';
 
 /**
+ * Columns that belong to no single group: the server applies them when any
+ * of the listed groups is in `changed` (S02's 20261015030000). The letter's
+ * direction follows its words and its language (F04 11.3).
+ */
+export const SHARED_GROUP_COLUMNS: Readonly<Record<string, readonly FieldGroup[]>> = {
+  base_direction: ['text', 'language'],
+};
+
+/**
  * Columns set when the letter is first written and never changed by an
  * upsert (the server keeps its value; `raw_transcript` is immutable once
  * non-empty and `pack_ref` like `engine_version`, DATA-REQ-040 Rev).
  */
 export const INSERT_ONLY_COLUMNS = [
   'id', 'child_id', 'kind', 'captured_at', 'capture_mode', 'prompt_key', 'engine_version',
-  'raw_transcript', 'pack_ref', 'base_direction', 'audio_kept_on_device',
+  'raw_transcript', 'pack_ref', 'audio_kept_on_device',
 ] as const;
 
 /** Columns only the author ever receives (F11-REQ-085, PRD-REQ-004 Rev). A pull row for someone else never carries them. */
@@ -131,7 +142,11 @@ export const PLANNED_PUSH_OP_TYPES: readonly PushOpType[] = ['held.upsert', 'hel
 
 /** Keys `book.update` accepts (as built). */
 export const BOOK_UPDATE_KEYS = ['name', 'nickname', 'date_of_birth', 'due_date', 'family_can_read'] as const;
-/** Keys `prefs.upsert` accepts. The last three are planned (F11 `notify_letters`, F12 hidden and quiet; S02). */
+/**
+ * Keys `prefs.upsert` accepts. `notify_letters` is in S02's pending
+ * 20261015030000 (PR #140); `hidden` and `quiet` are planned (WP-F12-09).
+ * "Planned" means not on develop yet; the drift test accepts both states.
+ */
 export const PREFS_KEYS = ['signs_as', 'include_in_reminders', 'notify_letters', 'hidden', 'quiet'] as const;
 export const PLANNED_PREFS_KEYS: readonly (typeof PREFS_KEYS)[number][] = ['notify_letters', 'hidden', 'quiet'];
 
@@ -181,7 +196,7 @@ export interface EntryData {
   audio_kept_on_device: boolean;
   /** Built (20261005000000): one of the seven v1.0 language codes, or null. */
   language?: string | null;
-  /** Planned column (WP-F04-14). */
+  /** Column in S02's 20261015030000 (WP-F04-14): applied with the `text` or `language` group. */
   base_direction?: BaseDirection;
   /** `entry.reupload` only: the phone's copy is a tombstone. */
   deleted?: boolean;

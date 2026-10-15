@@ -5,10 +5,12 @@
  *
  * SQL: supabase/migrations/20261005000000_family_cap_language_idempotency.sql
  * (`create_child_invite`, `accept_child_invite`, `leave_child`,
- * `remove_child_member`), 20261003000000 (`revoke_invite`). Planned by S02:
- * `peek_invite` (G-13, BL-334), the device-made invite overload of
- * `create_child_invite` (WP-F11-01, F11 D5), `undo_parent_join` (D3) and
+ * `remove_child_member`), 20261003000000 (`revoke_invite`). From S02's v1 gate
+ * files (PR #140, pending): `peek_invite` (G-13), the device-made overload of
+ * `create_child_invite`, `undo_parent_join` (D3) and
  * `accept_child_invite_by_code` (service role only, called by `invite-redeem`).
+ * Still to come (requested from S02): `peek_invite_by_code` and SCINV details
+ * for expired, used, revoked and already_member.
  *
  * Server-feature contract: imported only through `@scribe/api/server`.
  * Edge Functions import this file directly (Deno), so it stays a leaf module:
@@ -66,6 +68,8 @@ export const INVITE_UNUSABLE_DETAILS = [
   'role_disabled',
   /** A device-made code collides with a live invite: make a new code and retry (F11-REQ-002). */
   'code_taken',
+  /** A device-made token hash collides with a live invite: make a new token and retry. */
+  'token_taken',
   /** The retry of a lost create found its invite closed: make a new one. */
   'closed',
 ] as const;
@@ -121,28 +125,34 @@ export interface CreateInviteArgsV0 {
 export type CreateInviteResultV0 = string;
 
 /**
- * Planned overload (WP-F11-01, F11 D5): the device makes the invite id
- * (UUIDv7), the 32-byte token and the code; the server stores `sha256(token)`
- * and an HMAC of the code, returns no secret, and treats a repeat with the
- * same id and hash as success. Open question for S02 and S04: where the code
- * pepper lives (Supabase Vault read by the RPC, or an Edge Function that
- * computes the HMAC); this shape sends the code over TLS either way.
+ * Overload in S02's 20261015020000 (WP-F11-01, F11 D5): the device makes the
+ * invite id (UUIDv7), the 32-byte token and the code; the server stores
+ * `sha256(token)` and the code's HMAC, returns no secret, and treats a repeat
+ * with the same id and hashes by the same person as success (SCCID for
+ * another person or other arguments). Hashes travel as PostgREST bytea text,
+ * `\\x` followed by 64 lowercase hex (`byteaHex`).
+ *
+ * Open (in the PR): the code HMAC needs the pepper, which lives only in
+ * Edge Function secrets (F11 section 8), so the phone cannot make
+ * `p_code_hash` itself. Until that is settled the app sends `p_code_hash`
+ * null (link-only invites) and codes wait for a code-registration route.
  */
 export interface CreateInviteArgs {
   p_invite_id: string;
   p_child: string;
   p_role: InviteRole;
   p_token_hash: string;
-  p_code: string;
+  p_code_hash: string | null;
   p_signs_as?: string | null;
 }
-export const CreateInviteResultSchema = v.object({
-  invite_id: v.pipe(v.string(), v.regex(UUID_RE)),
-  expires_at: v.string(),
-  /** True when this call found the invite already made by an earlier attempt. */
-  replayed: v.boolean(),
-});
-export type CreateInviteResult = v.InferOutput<typeof CreateInviteResultSchema>;
+/** The invite id (the one the device sent). */
+export type CreateInviteResult = string;
+
+/** PostgREST text form of a bytea argument: `\x` then lowercase hex. */
+export function byteaHex(hex: string): string {
+  if (!TOKEN_HASH_RE.test(hex)) throw new Error('expected 64 lowercase hex');
+  return `\\x${hex}`;
+}
 
 // ── Peek (RPC peek_invite, planned G-13) ─────────────────────────────────
 
@@ -150,14 +160,16 @@ export type CreateInviteResult = v.InferOutput<typeof CreateInviteResultSchema>;
  * Before consent, the invitee may learn only the inviter's sign-off name
  * (BL-322, security review H2): "Join {child}'s book as a parent? Invited by
  * {signsAs}". No child name, no book id, no expiry date. A used, expired,
- * revoked or unknown token answers SCINV with its detail.
+ * revoked or unknown token answers SCINV; a full book SCCAP. Built in S02's
+ * 20261015010000 (G-13); `joined` is true when the caller already accepted.
  */
 export interface PeekInviteArgs {
   p_token: string;
 }
 export const PeekInviteResultSchema = v.object({
-  signs_as: v.nullable(v.pipe(v.string(), v.maxLength(80))),
-  role: v.picklist(INVITE_ROLES),
+  inviter: v.nullable(v.pipe(v.string(), v.maxLength(80))),
+  role: v.picklist(['parent', 'contributor']),
+  joined: v.optional(v.literal(true)),
 });
 export type PeekInviteResult = v.InferOutput<typeof PeekInviteResultSchema>;
 
@@ -189,7 +201,12 @@ export const RedeemRequestSchema = v.strictObject({
 });
 export type RedeemRequest = v.InferOutput<typeof RedeemRequestSchema>;
 
-export const RedeemPeekDataSchema = v.object({ mode: v.literal('peek'), signs_as: v.nullable(v.string()), role: v.picklist(INVITE_ROLES) });
+export const RedeemPeekDataSchema = v.object({
+  mode: v.literal('peek'),
+  inviter: v.nullable(v.string()),
+  role: v.picklist(INVITE_ROLES),
+  joined: v.optional(v.literal(true)),
+});
 export const RedeemAcceptDataSchema = v.object({ mode: v.literal('accept'), child_id: v.pipe(v.string(), v.regex(UUID_RE)), role: v.picklist(INVITE_ROLES) });
 export const RedeemDataSchema = v.variant('mode', [RedeemPeekDataSchema, RedeemAcceptDataSchema]);
 export type RedeemData = v.InferOutput<typeof RedeemDataSchema>;
@@ -227,7 +244,7 @@ export interface RemoveMemberArgs {
 export const REMOVE_RESULTS = ['removed', 'not_member'] as const;
 export type RemoveResult = (typeof REMOVE_RESULTS)[number];
 
-/** `undo_parent_join(p_child, p_member)` (planned, WP-F11-01): only the inviter, within 72 hours; else SCPAR. The joiner's letters become private. */
+/** `undo_parent_join(p_child, p_member)` (S02 20261015020000): only the inviter, within 72 hours; else SCPAR. The joiner's letters leave the book. */
 export interface UndoJoinArgs {
   p_child: string;
   p_member: string;

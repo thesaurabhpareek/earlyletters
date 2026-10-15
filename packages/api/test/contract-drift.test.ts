@@ -103,10 +103,15 @@ describe('[F16-REQ-028] the sync wire contract equals the SQL parser', () => {
     expect([...groups].sort()).toEqual([...FIELD_GROUPS].sort());
   });
 
-  it('book.update and prefs.upsert keys match the SQL allowlists (planned prefs keys excepted)', () => {
-    const lists = [...push.matchAll(/x not in \(([^)]+)\)/g)].map((m) => [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]).sort());
+  it('book.update keys equal the SQL allowlist; prefs.upsert keys hold every built key and nothing unknown', () => {
+    // book.update moves into book_update() in S02's v1 gate (G-08); read both places.
+    const scope = `${push}\n${newestDefinition('book_update')}`;
+    const lists = [...scope.matchAll(/x not in \(([^)]+)\)/g)].map((m) => [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]).sort());
     expect(lists).toContainEqual([...BOOK_UPDATE_KEYS].sort());
-    expect(lists).toContainEqual(PREFS_KEYS.filter((k) => !PLANNED_PREFS_KEYS.includes(k)).sort());
+    const prefs = lists.find((l) => l.includes('signs_as') && l.includes('include_in_reminders'));
+    expect(prefs, 'prefs.upsert allowlist not found').toBeDefined();
+    for (const k of prefs!) expect(PREFS_KEYS as readonly string[], `${k} is accepted by SQL but not in the contract`).toContain(k);
+    for (const k of PREFS_KEYS.filter((x) => !PLANNED_PREFS_KEYS.includes(x))) expect(prefs).toContain(k);
   });
 });
 
