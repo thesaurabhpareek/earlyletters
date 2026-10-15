@@ -1,8 +1,9 @@
 /**
  * Public keys the app trusts for signed documents (ADR 0016).
  *
- * Empty until the founder runs `node scripts/packs/keygen.mjs` once and
- * pastes the printed public key here. While it is empty the app fails closed:
+ * Empty until the founder generates a signing key once (the packs key
+ * generator in scripts/packs: see docs/ops/PACKS_HOSTING.md) and pastes the
+ * printed public key here. While it is empty the app fails closed:
  * it installs no downloaded pack, keeps its bundled remote-config defaults and
  * shows the packaged copy. Nothing breaks; nothing unsigned is trusted.
  *
@@ -15,6 +16,6 @@
 import type { TrustedKey } from './integrity';
 
 export const TRUSTED_SIGNING_KEYS: readonly TrustedKey[] = [
-  // TODO(founder): paste the output of `node scripts/packs/keygen.mjs`, for example:
+  // TODO(founder): paste the public key line the packs key generator prints (docs/ops/PACKS_HOSTING.md), for example:
   // { keyId: 'el-2026-10', publicKey: '<44 base64 characters>', kinds: ['pack-manifest', 'remote-config', 'content-bundle'] },
 ];
