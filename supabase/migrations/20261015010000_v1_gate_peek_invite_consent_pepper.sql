@@ -2,8 +2,9 @@
 -- pepper fails closed), in one file (PRD V2 08-delivery.md section 6.3, S02 wave 1).
 --
 -- PENDING: not yet applied. Apply after 20261015000000_v1_gate_membership_sync_hardening.sql,
--- following supabase/APPLY.md (section "File 20261015010000"). Never edits an
--- earlier file; policy_acceptances_pseudonymise is redefined from 20261002020000.
+-- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an
+-- earlier file; policy_acceptances_pseudonymise is redefined from 20261002020000
+-- and ops_deletion_sla from 20261004200000.
 --
 -- Both sections are ported from branch auto/2026-10-05-fixes, commit d1cbddb,
 -- file 20261005100000_db_fix_privacy_limits.sql sections 5 and 6 (gaps G-12 and
@@ -16,7 +17,9 @@
 --       so the account deletion stops and retries instead of storing reversible
 --       hashes. consent_pepper_ready() (service role) says whether it is set,
 --       without revealing it. The founder sets the pepper in FT-10 (APPLY.md
---       step 6) before any deletion runs.
+--       step 6) before any deletion runs. ops_deletion_sla() (from
+--       20261004200000) gains consent_pepper_missing so the purge worker alerts
+--       with the cause (pepper_missing) instead of a generic retry.
 -- G-13  peek_invite(p_token) for "ask before joining" (review H2; BL-322 app part
 --       by S04): before accepting, returns {"inviter": <the inviter's sign-off
 --       name for that book, or null>, "role": "parent" | "contributor"}, plus
@@ -59,6 +62,45 @@ $$;
 create or replace function public.consent_pepper_ready()
 returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
   select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32;
+$$;
+
+-- The alert path for the fail-closed pepper. Deleting the sign-in user goes through
+-- Supabase Auth, which reports the trigger's 55000 as a generic database error, so
+-- the worker could only say "step retrying". The SLA report now names the cause:
+-- consent_pepper_missing is 1 while the pepper is not usable and an account
+-- deletion is waiting or running (the purge worker's pepper_missing alert).
+-- From 20261004200000 plus that one key.
+create or replace function public.ops_deletion_sla(p_now timestamptz default now())
+returns jsonb language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select jsonb_build_object(
+    'tombstones_overdue',
+      (select count(*) from entries e where e.deleted_at < p_now - interval '31 days' and not public.entry_is_held(e.id))
+      + (select count(*) from children c where c.deleted_at < p_now - interval '31 days' and not public.is_held('child', c.id)),
+    'requests_executing_over_24h',
+      (select count(*) from deletion_requests where status = 'executing' and executing_at < p_now - interval '24 hours'),
+    'requests_executing_over_7d',
+      (select count(*) from deletion_requests where status = 'executing' and executing_at < p_now - interval '7 days'),
+    'steps_failed',
+      (select count(*) from deletion_request_steps s join deletion_requests d on d.id = s.request_id
+        where s.status = 'failed' and d.status in ('scheduled', 'held', 'executing')),
+    'steps_retrying',
+      (select count(*) from deletion_request_steps s join deletion_requests d on d.id = s.request_id
+        where s.status = 'pending' and s.attempts >= 5 and d.status in ('scheduled', 'held', 'executing')),
+    'queue_stuck',
+      (select count(*) from storage_purge_queue where done_at is null and enqueued_at < p_now - interval '24 hours'),
+    'queue_attempts_high',
+      (select count(*) from storage_purge_queue where done_at is null and attempts >= 10),
+    'scheduled_overdue',
+      (select count(*) from deletion_requests where status = 'scheduled' and scheduled_for < p_now - interval '1 day'),
+    'holds_past_review',
+      (select count(*) from legal_holds where released_at is null and review_by < p_now::date),
+    'purge_run_age_minutes',
+      (select floor(extract(epoch from p_now - max(at)) / 60)::int from audit_events where action = 'purge_run'),
+    'consent_pepper_missing',
+      (case when not public.consent_pepper_ready()
+                 and exists (select 1 from deletion_requests
+                              where kind = 'account' and status in ('scheduled', 'held', 'executing'))
+            then 1 else 0 end));
 $$;
 
 -- ─── 2. G-13: look at an invite before joining ───────────────────────────

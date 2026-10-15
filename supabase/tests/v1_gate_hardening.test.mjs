@@ -6,6 +6,7 @@
 // 20261005000000; they are re-checked here so the PoC stays covered end to end.
 // Ported from auto/2026-10-05-fixes d1cbddb (supabase/tests/db_fix_security_review.test.mjs).
 // Fictional family "Asha" only (CLAUDE.md).
+import { readFileSync } from 'node:fs';
 import { createDb, users, uuid7 } from './harness.mjs';
 
 const t = await createDb(process.argv.slice(2));
@@ -226,6 +227,16 @@ await join(N, 'contributor', child, A);
   check('the author\'s words are unchanged', (await sys(`select final_text from entries where id = $1`, [id])).rows[0].final_text === 'Her own words.');
   check('nor through my_policy_state', (await codeOf(() => as(B, `delete from public.my_policy_state`))) !== 'ok'
     && (await sys(`select has_table_privilege('authenticated', 'public.my_policy_state', 'delete') d`)).rows[0].d === false);
+}
+
+// ── Run once: a second run stops instead of putting back older sync functions ──
+{
+  const file = process.argv.slice(2).find((f) => f.endsWith('20261015000000_v1_gate_membership_sync_hardening.sql'));
+  const before = (await sys(`select md5(pg_get_functiondef('public.sync_push(jsonb)'::regprocedure)) h`)).rows[0].h;
+  let code = 'ok';
+  try { await t.db.exec(`begin; ${readFileSync(file, 'utf8')}; commit;`); } catch (e) { code = e.code; await t.db.exec('rollback'); }
+  const after = (await sys(`select md5(pg_get_functiondef('public.sync_push(jsonb)'::regprocedure)) h`)).rows[0].h;
+  check(`a second run of 20261015000000 stops (55000) and changes nothing (${code})`, code === '55000' && before === after);
 }
 
 done();

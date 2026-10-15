@@ -2,7 +2,7 @@
 -- D5, 7 and 11; D-069; 72-hour undo and device-made invite ids).
 --
 -- PENDING: not yet applied. Apply after 20261015010000_v1_gate_peek_invite_consent_pepper.sql,
--- following supabase/APPLY.md (section "File 20261015020000"). Never edits an
+-- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an
 -- earlier file. create_child_invite(uuid, text, text) and accept_child_invite(text)
 -- are redefined from 20261005000000 (changes marked F11-REQ-003 and F11-REQ-018);
 -- child_members_audit from 20261002020000 (change marked F11-REQ-008). Everything
