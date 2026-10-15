@@ -63,7 +63,7 @@ Rules written down in the repo:
 
 - **The public name lives only in `packages/brand/index.ts`** (`CLAUDE.md`). The package description of `@scribe/design-tokens` and the Keychain item name in `apps/mobile/src/lib/billing/letter-ledger.logic.ts` also contain the name; both are noted for their owners.
 - **`core`, `api` and `analytics` are pure TypeScript with no React Native** (their `package.json` descriptions), so they run in Node tests, in Edge Functions and on the phone.
-- **`api` does not import `core`**: the free-letter numbers are mirrored in both, and a test in the mobile app pins them together (`packages/api/src/remote-config.ts`).
+- **`api` does not import `core`**: the free-letter numbers are mirrored in both (`BUNDLED_FREE_LETTERS` in `packages/api/src/remote-config.ts`, `DEFAULT_FREE_LETTERS` in `packages/core/src/plan.ts`). No test compares them: `packages/api/test/remote-config.test.ts` and `packages/core/test/plan.test.ts` each pin their own copy to 2.
 - **Every word comes from `@scribe/content`**; screens never hardcode user-facing text (`apps/mobile/src/lib/copy.ts`). Content rules are enforced by `packages/content/test/rules.test.ts` (`VOICE.md`, `BRAND.md`).
 - **Prices appear only in `packages/content/src/pricing.ts`** for public copy (website, store listing) and never in app copy ([plus-and-billing.md](plus-and-billing.md)).
 - **Edge Functions import only dependency-free modules** from `packages/api`, `packages/brand` and `packages/content`, by relative path, and deploy with `--use-api` (`supabase/functions/*/index.ts`).

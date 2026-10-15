@@ -20,7 +20,7 @@ Sign-in, sync, co-parent sharing and backup exist as code on `develop`, and ever
 | `EXPO_PUBLIC_ANALYTICS` | same file (`analyticsEnabled`, `capabilities.analytics`) | `off` in every profile | No consent sheet, no usage switch, no PostHog client, `startAnalytics()` does nothing |
 | `EXPO_PUBLIC_APP_ENV` | `apps/mobile/src/lib/build-env.ts` | `development`, `preview` or `production` per profile | Picks the bundle id suffix and whether dev shortcuts exist |
 
-Only the literal value `on` turns a switch on. Remote config has no key that can change either switch (`capabilities.ts`, `packages/api/src/remote-config.ts`). Details: [mobile-app.md](mobile-app.md).
+Only the value `on`, case-insensitive and with surrounding spaces ignored, turns a switch on (`capabilities.ts` and `app.config.ts` trim and lowercase it). Remote config has no key that can change either switch (`capabilities.ts`, `packages/api/src/remote-config.ts`). Details: [mobile-app.md](mobile-app.md).
 
 ## What runs where
 

@@ -82,11 +82,11 @@ With server features off, Settings does not offer Account or Delete account (`se
 2. `RootLayout` calls `useLaunch(useStoreReady())` (`lib/resilience/use-launch.ts`): the database is opened and migrated once. A failure renders `LaunchRecovery` (Try again, Export what is readable) and nothing is deleted.
 3. `Root` applies the appearance setting (Uniwind theme) and the navigation theme from `useTheme()`, hides the splash, and sets the native background colour.
 4. The 18+ gate (`lib/age-gate.ts`): until it passes, only `AgeGateScreen` renders, so no route or deep link is reachable.
-5. After the gate passes, on the first animation frame: `runLaunchSweep()` (`lib/capture/sweep.ts`), then `startServices()` once per process. Each service runs inside `safely()`, so one failing never stops the others:
+5. After the gate passes, on the first animation frame: `runLaunchSweep()` (`lib/capture/sweep.ts`), then `startServices()` once per process. Steps 1 to 10 each run inside `safely()`, so one failing never stops the others; step 0 is a plain call that only registers a function:
 
 | Order | Call | Module | What it does |
 |---|---|---|---|
-| 0 | `setFreeLettersAllowanceSource` | `lib/billing` | Free letters come from `effectiveFreeLetters(getRemoteConfig())` (`packages/api`) |
+| 0 | `setFreeLettersAllowanceSource` (not in `safely()`) | `lib/billing` | Registers the allowance source: free letters come from `effectiveFreeLetters(getRemoteConfig())` (`packages/api`); `gates.ts` catches a throw from it and falls back to the default |
 | 1 | `startRemote` | `lib/remote` | Loads cached signed documents and refreshes them |
 | 2 | `startPacks` | `lib/packs` | Installs pack updates when a newer manifest arrives |
 | 3 | `startTranscriptionQueue` | `lib/transcription-queue` | Registers the speech plan as a pack language resolver and runs queued jobs |

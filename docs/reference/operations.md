@@ -65,7 +65,7 @@ Names only, from `docs/ops/SECURITY.md`, `docs/ops/DEPLOY.md`, `apps/mobile/app.
 | EAS environment variables (not set in any profile) | `EXPO_PUBLIC_DOCS_BASE_URL`, `EXPO_PUBLIC_SUPABASE_URL` and key, `EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Signed documents host; server and analytics features |
 | GitHub repository secret | `EXPO_TOKEN` | `testflight.yml` |
 | GitHub Environment secrets | `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` | `deploy-db.yml` |
-| GitHub agent secrets and variables | `OPENROUTER_API_KEY`, `AGENTS_APP_CLIENT_ID`, `AGENTS_APP_PRIVATE_KEY`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`; variables `AGENTS_ENABLED`, `AGENTS_PAUSED` | `agents.yml`, `claude.yml` |
+| GitHub agent secrets and variables | Secrets `OPENROUTER_API_KEY`, `AGENTS_APP_PRIVATE_KEY`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`; repository variables `AGENTS_APP_CLIENT_ID`, `AGENTS_BOT_LOGINS`, `AGENTS_ENABLED`, `AGENTS_PAUSED` | `agents.yml`, `claude.yml`, `scripts/agents/lib.mjs` |
 | Supabase Edge Function secrets | `PURGE_WORKER_SECRET`, `RESEND_API_KEY`, `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_PROJECT_ID`, `POSTHOG_HOST`, `TOKEN_KEK` (versioned), Apple sign-in key names | `purge-worker`, `analytics-forget` |
 | Supabase Vault | `project_url`, `publishable_key`, `purge_worker_secret` | `supabase/cron/purge-worker.sql` |
 | Founder's machine only | Pack signing key and key id for `scripts/packs/publish.ts` | Signing manifests and documents |
