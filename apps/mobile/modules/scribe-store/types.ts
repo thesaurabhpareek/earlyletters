@@ -19,6 +19,8 @@ export interface NativeTransaction {
   /** ISO instant the current period or free trial ends (renews). */
   expiresAt?: string;
   purchasedAt?: string;
+  /** ISO instant of the first purchase of this subscription (its anniversary; the yearly plan reminder, G-15). */
+  originalPurchasedAt?: string;
   /** familyShared: Plus reached this person through Apple Family Sharing. */
   ownership: Ownership;
   environment: StoreEnvironment;
@@ -66,4 +68,6 @@ export interface StoreSheetOptions {
 export type StoreSheetOutcome = 'purchased' | 'dismissed' | 'busy' | 'unavailable';
 export type ManageOutcome = 'shown' | 'unavailable' | 'failed';
 export type SyncOutcome = 'synced' | 'cancelled' | 'failed';
+/** `presented`: Apple's sheet was shown. A redeemed code arrives as an entitlement update, not here. */
+export type OfferCodeOutcome = 'presented' | 'unavailable' | 'failed';
 export type RefundOutcome = 'success' | 'cancelled' | 'none' | 'unavailable' | 'failed';

@@ -15,6 +15,7 @@ The goal is one product with one set of patterns: no duplicate work, no conflict
 1. Read `docs/agents/BRIEF-2026-10-03.md`, this file, `docs/DECISIONS.md` and `docs/agents/BOARD.md`.
 2. Add a **claim** line to the "Active claims" table in `BOARD.md`: agent name or id, area, file globs, start time (UTC).
 3. If your globs overlap someone else's live claim, do not edit those files. Message the owner (`ListAgents`, then `SendMessage`) or note it on the board for the coordinator. Pick another slice of work meanwhile.
+4. `BOARD.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
 
 ## 3. While you work: check in, small and often
 - Every ~20 tool calls or ~30 minutes, append **at most 3 lines** under "Check-ins" in `BOARD.md`:
@@ -59,7 +60,7 @@ Never copy a constant, type, colour or string into a second place. Import it.
 - If two threads need the same thing (for example store screenshots, or DNS records), the first one to claim it on the board owns it. The other one reviews it.
 
 ## 8. Repo layout rules
-- New top-level folders need a decision entry. The current ones are: `apps/`, `packages/`, `supabase/`, `packs/`, `scripts/`, `experiments/`, `docs/`, `.github/`.
+- New top-level folders need a decision entry. The current ones are: `apps/`, `packages/`, `supabase/`, `packs/`, `scripts/`, `experiments/`, `docs/`, `.github/`, and `agents/` with `.claude/` (ADR 0018, the agent harness).
 - Tests sit next to their workspace's `test/` folder, so the workspace's test runner picks them up.
 - Scratch output, screenshots and previews go in the session scratchpad, never in the repo.
 - Reports are short: files changed, test results, what needs a device, what the founder must do, requests to other owners, and facts versus assumptions.

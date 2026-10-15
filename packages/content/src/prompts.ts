@@ -1,4 +1,4 @@
-// Early Letters prompt library (English).
+// Prompt library (English).
 // Hand-written prompts, picked by rules. Keys are stable: never reuse a key for new wording.
 // Placeholders: {child}. No gendered pronouns for the child.
 
@@ -107,7 +107,7 @@ export const PROMPTS: Prompt[] = [
   { key: "hard.0-3.night-shift", text: "What is the night shift like right now? Tell {child} honestly.", band: "0-3", kind: "hard" },
   { key: "hard.any.hope", text: "Even on a long day, what do you hope for {child}?", band: "any", kind: "hard" },
 
-  // Family: grandparents, aunts, uncles
+  // Family: grandparents, aunts, uncles. v1.1: shown only to contributors, who join in v1.1 (Brief decision 5).
   { key: "family.any.see-parent", text: "What do you see of {child}'s parent in {child}?", band: "any", kind: "family" },
   { key: "family.any.parent-small", text: "Tell {child} a story from when {child}'s parent was little.", band: "any", kind: "family" },
   { key: "family.any.first-meeting", text: "Tell {child} about the first time you met.", band: "any", kind: "family" },

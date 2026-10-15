@@ -72,6 +72,17 @@ public class ScribeStoreModule: Module {
       }
     }
 
+    /// Apple's offer code redemption sheet (D-081: codes come from Apple, never a code system of ours).
+    /// "presented" | "unavailable" | "failed". It resolves when the sheet has been shown; a redeemed code
+    /// arrives as a Transaction through the update listener above (onEntitlementsChanged), so the caller
+    /// re-reads the entitlements afterwards. API read in Apple's documentation on 4 Oct 2026:
+    /// `@MainActor static func AppStore.presentOfferCodeRedeemSheet(in: UIWindowScene) async throws`,
+    /// iOS 16.0+ (the `(from:options:)` form replaces it from iOS 27). NOT yet run on a device: sandbox
+    /// test with an offer code (device pass S1) before the first submission.
+    AsyncFunction("presentOfferCodeRedeemSheet") { () async -> String in
+      return await ScribeStoreModule.presentOfferCodeRedeemSheet()
+    }
+
     /// Apple's refund request sheet for the person's own Plus purchase (not a
     /// Family Sharing one). "success" | "cancelled" | "none" | "unavailable" | "failed".
     AsyncFunction("beginRefundRequest") { (productIds: [String]) async -> String in
@@ -80,6 +91,9 @@ public class ScribeStoreModule: Module {
   }
 
   private func startListening() {
+    // Called on the listener's background task. sendEvent is safe from any
+    // thread (Expo schedules it on the JavaScript runtime); the sheet is
+    // main-actor state, so that part hops to the main actor.
     listener.start { [weak self] purchased in
       self?.sendEvent("onEntitlementsChanged", ["reason": purchased ? "purchase" : "update"])
       if purchased {
@@ -95,15 +109,21 @@ public class ScribeStoreModule: Module {
     guard #available(iOS 17.0, *) else {
       return "unavailable"
     }
-    guard let presenter = appContext?.utilities?.currentViewController() else {
+    // A presenter that is on its way out, or already showing something, would
+    // refuse the presentation and never call back (review L9): say so now.
+    guard let presenter = appContext?.utilities?.currentViewController(),
+          !presenter.isBeingDismissed, presenter.presentedViewController == nil,
+          presenter.viewIfLoaded?.window != nil else {
       return "unavailable"
     }
     let content = StoreSheetContent(options)
     return await withCheckedContinuation { continuation in
       // The body runs synchronously on the caller's actor (main); say so for older toolchains.
       MainActor.assumeIsolated {
+        // OnceResume guarantees exactly one resume whatever path closes the sheet.
+        let once = OnceResume(continuation)
         StoreSheet.shared.present(content: content, from: presenter) { outcome in
-          continuation.resume(returning: outcome)
+          once.resume(outcome)
         }
       }
     }
@@ -129,6 +149,22 @@ public class ScribeStoreModule: Module {
   }
 
   @MainActor
+  private static func presentOfferCodeRedeemSheet() async -> String {
+    guard #available(iOS 16.0, *) else {
+      return "unavailable"
+    }
+    guard let scene = activeWindowScene() else {
+      return "unavailable"
+    }
+    do {
+      try await AppStore.presentOfferCodeRedeemSheet(in: scene)
+      return "presented"
+    } catch {
+      return "failed"
+    }
+  }
+
+  @MainActor
   private static func beginRefundRequest(productIds: Set<String>) async -> String {
     guard let transactionID = await Entitlements.ownPurchaseTransactionID(productIds: productIds) else {
       return "none"
@@ -145,9 +181,29 @@ public class ScribeStoreModule: Module {
   }
 }
 
+/// Resumes a checked continuation at most once (a second resume is a crash).
+/// The store sheet can close through several paths (its own dismiss, a
+/// purchase, the watchdog, the host disappearing); only the first one counts.
+final class OnceResume: @unchecked Sendable {
+  private let lock = NSLock()
+  private var continuation: CheckedContinuation<String, Never>?
+
+  init(_ continuation: CheckedContinuation<String, Never>) {
+    self.continuation = continuation
+  }
+
+  func resume(_ value: String) {
+    lock.lock()
+    let c = continuation
+    continuation = nil
+    lock.unlock()
+    c?.resume(returning: value)
+  }
+}
+
 /// Finishes every verified transaction Apple delivers and reports a change.
 /// Unverified transactions are ignored and left unfinished (Apple's sample code).
-final class TransactionListener {
+final class TransactionListener: @unchecked Sendable {
   private let lock = NSLock()
   private var task: Task<Void, Never>?
 
@@ -252,6 +308,8 @@ enum Entitlements {
     var item: [String: Any] = [
       "productId": t.productID,
       "purchasedAt": iso.string(from: t.purchaseDate),
+      // The first purchase of this subscription: the yearly reminder's anniversary (Q-003 memo 5, G-15).
+      "originalPurchasedAt": iso.string(from: t.originalPurchaseDate),
       "ownership": t.ownershipType == .familyShared ? "familyShared" : "purchased",
       "environment": environmentName(t.environment),
       "isTrial": isFreeTrial(t),

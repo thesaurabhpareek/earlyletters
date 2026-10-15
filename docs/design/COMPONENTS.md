@@ -18,11 +18,13 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 | `Card` | same | `variant` raised, flat, outlined, tinted; `padding`; `radius` md, lg, xl; `onPress` + `accessibilityLabel` | pressable card is one element; press scale 0.98 |
 | `TextField` | same | `label` (always the name), `labelHidden`, `helper`, `error`, `variant` field or letter, `trailing`, `scale` | 3:1 edge, 2 pt focus ring outside the edge, error = icon + words + announce |
 | `ChoiceGroup` | same | `label`, `options` ({value, label, description, render}), `value`, `onChange`, `layout` segmented or list | radiogroup + radio with `checked`; selected = fill + edge + check; stacks at large text; `tap` haptic |
-| `Chip`, `ChipGroup` | same | `label`, `variant` suggestion, filter, tag; `selected`, `icon`, `onPress` | 36 pt visual, 44 pt with hitSlop; selected state |
+| `Chip`, `ChipGroup` | same | `label`, `variant` suggestion, filter, tag; `selected`, `icon`, `onPress`, `role` button, radio, checkbox, `accessibilityLabel` | 36 pt visual, 44 pt with hitSlop; selected = fill + edge + check; radio and checkbox read as checked |
 | `Sheet` | same | `open`, `onClose`, `title`, `description`, `footer`, `hideClose`, `dismissible` | heading focus on open, modal for VoiceOver, escape gesture, visible Close; `dismissible={false}` for permission priming |
-| `ListSection`, `ListRow`, `ToggleRow` | same | `title`, `subtitle`, `leading`, `trailing` (chevron, value, node), `variant` destructive, `onPress` | one element per row; value stacks under title at AX |
+| `ListSection`, `ListRow`, `ToggleRow` | same | `title`, `subtitle`, `leading`, `trailing` (chevron, value, node), `variant` destructive, `onPress` | one element per row; value stacks under title at AX; a pressable row always shows a chevron, a value then chevron, or its own control (`showsChevron`) |
 | `Toast`, `ToastHost`, `useToast()` | same | `show({ message, action, durationMs, onDismiss })` | announced; with an action it never times out; swipe or Close |
 | `EmptyState` | same | `art` (envelope, envelopeOpen, moon, page), `title`, `body`, `action`, `align` | heading; drawing decorative; breath off under Reduce Motion |
+| `StateScreen`, `StateScreenView`, `InlineState` | same | `kind` empty, error, notFound, loading; `title`, `body`, `art`, `primary` ({label, onPress, icon}), `quiet` (list), `header` (StateScreen) | the one pattern for loading, empty, error and not-found (2.15a); heading first; live region polite; loading is `busy`; actions are buttons |
+| `ModalHeader`, `BackButton` | same | `ModalHeader`: `onClose`, `leading`, `title`, `closeHint`, `closeLabel`, `closeDisabled`; `BackButton`: `onPress`, `label` | the only two navigation controls a screen draws itself (2.1a); both 44 pt minimum |
 | `LineArt` | same | `name`, `width`, `wash`, `animate` | decorative |
 | `UIProvider` | same | `toastBottomOffset` | wraps GestureHandlerRootView, BottomSheetModalProvider, Increase Contrast variables, ToastHost, font loading |
 | `Toggle` | `@/components/platform/toggle` | `label`, `description`, `value`, `onValueChange` | SwiftUI Toggle on iOS, RN Switch with a 3:1 off track elsewhere |
@@ -79,7 +81,7 @@ type Author = { id: string; displayName: string; relation: string; signature: st
 ```
 
 ### 0.5 Web parity rule
-Each component file starts with a header comment: `// web: apps/web/components/ui/<name>.tsx — props parity: yes|partial (<diff>)` and `// android: same | platform/<name>.android.tsx`. Variant names never differ between platforms.
+Each component file starts with a header comment: `// web: apps/web/components/ui/<name>.tsx, props parity: yes|partial (<diff>)` and `// android: same | platform/<name>.android.tsx`. Variant names never differ between platforms.
 
 ---
 
@@ -204,11 +206,18 @@ type LetterCardProps = {
 };
 ```
 - **States:** default, pressed, syncing (small progress glyph, no layout shift), draft, pendingApproval, loading skeleton.
-- **A11y:** one element, `role="button"`, label composed as "Letter from Papa, 4 months 2 weeks. ‘Today you laughed at…’. Has voice recording, 1 minute 12." Hint: "Opens the letter." Long-press exposed as `accessibilityActions` [`share`, `edit`, `delete`] so VoiceOver users can reach them without a long-press.
+- **A11y:** one element, `role="button"`, label composed as "Letter from Papa, 4 months 2 weeks. 'Today you laughed at...'. Has voice recording, 1 minute 12." Hint: "Opens the letter." Long-press exposed as `accessibilityActions` [`share`, `edit`, `delete`] so VoiceOver users can reach them without a long-press.
 - **Haptics:** `soft` on long-press menu open.
 - **Motion:** press scale 0.98 (`snappy`). Open: **measured-rect transition** (MOTION 5f): measure the card on the UI thread, push a `transparentModal` with `animation: 'none'`, animate translate + scale and radius `md`→0 on `standard`, content fades in from 60%; dismiss reverses or fades 200ms. No shared-element API in v1. New letter after save: already in place with an `accentSoft` wash fading over `newMarkMs` (MOTION 5e). Chapter interior: first 6 cards `enter` with 30ms stagger. RM: 200ms cross-fade.
 - **Builds on:** our Card + PhotoFrame + Signature + Text; long-press through `platform/action-menu` (never Expo UI directly). Web: same composition with shadcn `Card` + `ContextMenu`.
 - **Android later:** same card and transition code (MOTION 5f is the v1 default on both). `action-menu.android.tsx` opens a `fitToContents` Sheet listing Share / Edit / Delete instead of a context menu; `accessibilityActions` unchanged. Android back and predictive back run the dismiss path.
+
+### 2.5b AppNote and QuietDayRow (the app's own words, D-084)
+The Book is a record of what people said. When the app must say something, it says it small and unsigned, and never in the letter's type.
+- **AppNote:** `components/book/app-note.tsx`. A small Info glyph and one line in the `footnote` style (sans, muted). Never serif, never italic, no "From ..." line under it. Used for a recording that is waiting for its words and for one with no words in it ("No words in this one. The recording is kept just as it is."), on the LetterCard, the letter page and Read together. Plain text for VoiceOver (the glyph is hidden). The Reading Size scale applies on the letter page and Read together.
+- **QuietDayRow:** `components/book/quiet-day-row.tsx`. "Not much today" stores a mark with no words, so the Book shows a small row, not a card: a Moon glyph, the date and "A quiet day", muted sans, unsigned, no Private chip. Minimum height 44 pt, Dynamic Type uncapped. It is not a button into a letter page. VoiceOver reads "{date}. A quiet day, kept." Long-press, or the VoiceOver action "Remove this mark", removes it with an Undo toast ("Removed.", 2.14).
+- **Rules:** a mark is hidden on a day that also has a letter. It never enters a count, a chapter line, a streak or an insight; a chapter of only marks shows no count line. It is never printed, read aloud in Read together, or moved into the book. In the export it is a row with `final_text: ''` and a small file holding the date and the label.
+- **Android later:** same components.
 
 ### 2.6 Chip
 - **Purpose:** filters (month, author), tags, and selection of one or many options.
@@ -266,7 +275,7 @@ type TextAreaProps = Omit<TextInputProps, 'style' | 'multiline'> & {
 - **Purpose:** switching views on one screen (Read / Listen; All / Notes / Letters).
 ```ts
 type SegmentedControlProps<T extends string> = {
-  segments: { value: T; label: string }[];     // 2–4 segments
+  segments: { value: T; label: string }[];     // 2 to 4 segments
   value: T; onChange: (v: T) => void;
   label: string;                               // group label for VoiceOver
 };
@@ -381,6 +390,18 @@ type EmptyStateProps = {
 - **Builds on:** Text + Button + `react-native-svg` line drawing. Web: same.
 - **Android later:** same code. Low Power check uses `expo-battery` on iOS; on Android rely on animator scale and battery saver if exposed (**Unverified**).
 
+### 2.15a StateScreen and InlineState (loading, empty, error, not found)
+Added after the QA journey critique (J05-03, J05-04, J06-13, J10-11, J11-07 and the "_journey" entry found six treatments for one job). Built on `EmptyState`; the rules are data in `state-screen.logic.ts`.
+- **Shape:** a line drawing, a heading, one plain sentence, then the way forward as a full-width 56 pt button pinned at the bottom (thumb zone), with at most quiet 44 pt options beneath it. Never red, never a spinner, never a count of what is missing.
+- **`StateScreen`:** the whole screen is the state (a stale link, a missing draft, microphone off, a crash). Content scrolls, actions stay put, so nothing clips at AX5. A modal passes `header={<ModalHeader />}`: Close lives there, top right, not as a second button. A pushed screen has the native header and its action goes forward ("Back to the book").
+- **`InlineState`:** the same words as a calm card for one region of a screen that has other content (Review while words are on their way, a failed transcription). `children` hold a progress line.
+- **`loading`:** the drawing breathes (the slowest loop we own, off under Reduce Motion) and the region is announced as busy. It never carries a primary action; a way out (Type instead) is quiet.
+- **Root:** `app/+not-found.tsx` and the root `ErrorBoundary` use it (`StateScreenView`, which reads nothing from navigation because the navigator is what crashed). The error text is never shown or logged.
+- **Copy:** no new wording. Titles and bodies come from `errors.*`, `reader.*`, `wordsCopy`, `pendingCopy` as before.
+
+### 2.1a ModalHeader and BackButton (one back/close idiom per context)
+The rule is data in `lib/navigation.logic.ts`: tab root, no control; **push** (Settings, Letter), the native header's chevron back; **flow step** (onboarding), `BackButton`, drawn like the native one; **modal** (Write, Review, Listening, Read together, invite, sign-in) and **sheet**, the word "Close" in the top right, drawn by `ModalHeader` and the Sheet header. Anything that used to sit top right (Hear it, "saved on this phone", the page counter) moves to the left. Never a Close at the top left, a circled X, or a Close at the bottom of the page. Both are Button `quiet` `sm`: 44 pt minimum, silent (no haptic).
+
 ### 2.16 Avatar / Signature
 - **Purpose:** who wrote it. A signature line ("From Papa") is a brand element (BRAND.md: "each one signed").
 - **Variants:** Avatar `sm` 28 / `md` 40 / `lg` 64; initials fallback on `accentSoft`. Signature `inline` ("From Papa" in `letterDateline`) and `signoff` (at the end of a letter, `letterBody` italic-like style, right-aligned).
@@ -404,8 +425,8 @@ type ListeningAuraProps = {
   children?: React.ReactNode;                  // centre content: mic glyph or timer
 };
 ```
-- **States:** idle (static soft disc), listening (scale 1.0–1.18 and opacity 0.18–0.40 with level; after 600ms of silence an idle breath ramps in, speech always wins), paused (frozen at 1.0, dimmed), processing (static disc; caption "Preparing…"; no decorative loop, MOTION principle 1).
-- **A11y:** decorative (`accessible={false}`). The state is conveyed by the CaptureBar button label and a live caption ("Listening… 0:42"). Reduce Motion: static 2pt ring; opacity steps 0.2/0.3/0.4 with 200ms fades, at most one change per 400ms (MOTION 5b).
+- **States:** idle (static soft disc), listening (scale 1.0 to 1.18 and opacity 0.18 to 0.40 with level; after 600ms of silence an idle breath ramps in, speech always wins), paused (frozen at 1.0, dimmed), processing (static disc; caption "Preparing..."; no decorative loop, MOTION principle 1).
+- **A11y:** decorative (`accessible={false}`). The state is conveyed by the CaptureBar button label and a live caption ("Listening... 0:42"). Reduce Motion: static 2pt ring; opacity steps 0.2/0.3/0.4 with 200ms fades, at most one change per 400ms (MOTION 5b).
 - **Haptics:** none from the aura. `press` on record start fires before the audio session activates and on stop after it ends (owned by CaptureBar).
 - **Motion:** MOTION 5b exactly: dB → `a` (floor −55, ceiling −10, gamma 0.6), asymmetric smoothing (attack 80ms, release 400ms) in `useFrameCallback` using `dt`. Colour is the `recording` terracotta (which means "listening", DESIGN_LANGUAGE section 2), never an error colour.
 - **Builds on:** Reanimated 4 + one pre-rendered 240pt radial PNG behind the 120pt mic disc (no per-frame gradient, no Skia, no `expo-linear-gradient`). Metering from the `expo-audio` recorder (`isMeteringEnabled` → `metering` dBFS, normalised in `lib/audio-level.ts`). Web: CSS radial gradient + Web Audio `AnalyserNode` (later).
@@ -446,7 +467,7 @@ type EditUnderlineProps = {
 ```
 - **Visual:** 1pt dotted underline in `textMuted` at 60% opacity, 3pt offset. No colour fill, no icon; it must be readable as plain text.
 - **States:** default, pressed (`accentSoft` background on the span), reverted (the mark is gone; the original text is shown), accepted (mark gone).
-- **A11y:** the span gets `accessibilityHint="Edited. Double tap to see what you said."` and `accessibilityActions` [`showOriginal`, `revert`]. A screen-level rotor alternative: "Review 3 edits" ListRow at the end of the letter. Inline card content: "You said: ‘…’ / We wrote: ‘…’" with `Keep` / `Use what I said`.
+- **A11y:** the span gets `accessibilityHint="Edited. Double tap to see what you said."` and `accessibilityActions` [`showOriginal`, `revert`]. A screen-level rotor alternative: "Review 3 edits" ListRow at the end of the letter. Inline card content: "You said: '...' / We wrote: '...'" with `Keep` / `Use what I said`.
 - **Haptics:** `tap` on open and on Put it back (MOTION 5d; `success` is reserved for save).
 - **Motion:** underlines render at final opacity on the first frame. Tap: an inline card expands under the line (height via `LinearTransition` on `standard`, content fades in after 80ms) showing original vs current and **Put it back**. Put it back: original cross-fades in (out 120, in 160ms), paragraph reflows on `standard`, restored span gets an `accentSoft` wash fading over 1.6s; "Put back. Undo" persists. RM: instant height, 200ms fades.
 - **Builds on:** nested RN `Text` with `onPress` + an inline expansion card (no Sheet, no Expo UI `Popover`). Web: `<span>` with `text-decoration: underline dotted` + an inline disclosure.
@@ -458,7 +479,7 @@ type EditUnderlineProps = {
 type MonthChapterHeaderProps = {
   monthIndex: number;                           // 0 = birth month
   label: string;                                // "Month 4"
-  dateRange: string;                            // "March 12 – April 11"
+  dateRange: string;                            // "March 12 to April 11"
   count: { notes: number; letters: number };
   coverPhoto?: { uri: string; blurhash?: string };
   sticky?: boolean;                             // compact sticky version in the list
@@ -512,7 +533,7 @@ type ReadTogetherPlayerProps = {
 
 ### 2.23 PhotoFrame
 - **Purpose:** photos within letters and cards. It should feel like a printed photo in a book, not a gallery tile.
-- **Variants:** `card` (top of LetterCard, 4:3), `inline` (inside a letter, natural aspect clamped 3:4–16:9), `cover` (MonthChapterHeader), `polaroid` (white mat + caption, for the book/PDF look). Multi-photo uses paging with dots.
+- **Variants:** `card` (top of LetterCard, 4:3), `inline` (inside a letter, natural aspect clamped 3:4 to 16:9), `cover` (MonthChapterHeader), `polaroid` (white mat + caption, for the book/PDF look). Multi-photo uses paging with dots.
 ```ts
 type PhotoFrameProps = {
   photos: { uri: string; blurhash?: string; alt?: string; width?: number; height?: number }[];

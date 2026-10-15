@@ -1,0 +1,30 @@
+{
+  "id": "J19-01",
+  "journey": "errors",
+  "kind": "unhappy",
+  "title": "Unknown route (404)",
+  "note": "A designed not-found screen in the product voice replaces Expo Router's \"Unmatched Route\" page. It never shows the address, and has one way back: Back to Tonight. Reached by a malformed or old link.",
+  "from": "J00-open",
+  "route": "/this-page-does-not-exist",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "We could not find that page The link may be old or mistyped. Your book is right where you left it. Back to Tonight",
+  "lines": [
+    "We could not find that page",
+    "The link may be old or mistyped. Your book is right where you left it.",
+    "Back to Tonight"
+  ]
+}
