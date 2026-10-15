@@ -297,12 +297,14 @@ export function createRestore(d: RestoreDeps) {
         d.db.setMeta(STOPPED_META, r.state);
         return { kind: 'stopped' };
       }
+      // The server answers for the device's current request; keep its id, since a release is sealed to it.
+      const requestId = r.requestId ?? req.requestId;
       if (r.state === 'requested' || r.state === 'approved') {
-        d.db.setMeta(REQUEST_META, JSON.stringify({ requestId: req.requestId, holdUntil: r.holdUntil, polledAt: now }));
+        d.db.setMeta(REQUEST_META, JSON.stringify({ requestId, holdUntil: r.holdUntil, polledAt: now }));
         return { kind: 'waiting_hold', holdUntil: r.holdUntil };
       }
       if (r.state !== 'released') return { kind: 'unavailable' };
-      await d.keys.storeReleased(r.keys, device.deviceId, req.requestId);
+      await d.keys.storeReleased(r.keys, device.deviceId, requestId);
       d.db.deleteMeta(REQUEST_META);
       return { kind: 'ready' };
     } catch (e) {

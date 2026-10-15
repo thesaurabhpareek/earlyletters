@@ -213,6 +213,7 @@ function rig() {
     addRecording,
     serverPlaintext,
     settle,
+    seals: () => seals,
     tmpFiles: () => readdirSync(files.tmpDir),
   };
 }
@@ -434,6 +435,27 @@ describe('[F08-U17] the kill path: a kill at any step resumes to one confirmed, 
     // It asked for the offset and sent only what was missing, not the whole object again.
     const sent = r.backend.requests.filter((x) => x.kind === 'tus').slice(patchesBefore);
     expect(sent.reduce((n, x) => n + x.body.length, 0)).toBe(job.cipherBytes! - 3 * PART);
+  });
+
+  it('the ciphertext was lost and the original changed since sealing: never re-encrypted under the saved key and nonce', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(5 * SEGMENT_SIZE);
+    r.kill.at = 'tus:PATCH:after';
+    r.kill.countdown = 2;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    const job = r.db().job(item.entryId)!;
+    rmSync(fileURLToPath(job.tmpUri!));
+    // Same length, different bytes: a rebuild would reuse (file key, nonce prefix) on new plaintext.
+    const changed = Buffer.from(plain);
+    changed[changed.length - 1] ^= 0xff;
+    writeFileSync(fileURLToPath(item.audioUri), changed);
+    const sealsBefore = r.seals();
+    await r.settle();
+    expect(r.seals()).toBe(sealsBefore);
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'blocked', lastError: 'hash_mismatch' });
+    expect([...r.backend.blobs.values()].filter((b) => b.entryId === item.entryId && b.state === 'confirmed')).toHaveLength(0);
   });
 
   it('the launch sweep keeps a job\'s ciphertext and removes everything else in backup-tmp', async () => {

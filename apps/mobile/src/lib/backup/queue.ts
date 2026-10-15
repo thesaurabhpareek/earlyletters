@@ -282,6 +282,13 @@ export function createUploadQueue(d: QueueDeps) {
   /** The saved ciphertext is on disk and unchanged, or is rebuilt byte for byte from what was saved. */
   async function ensureTmp(job: UploadJob): Promise<'ok' | 'reset' | 'stopped'> {
     if (job.tmpUri && d.files.exists(job.tmpUri) && (await d.files.sha256(job.tmpUri)) === job.cipherSha256) return 'ok';
+    // A rebuild reuses the saved file key and nonce prefix, so it may only ever encrypt the same
+    // original: a changed file under the same (key, nonce) would be GCM nonce reuse. Check first;
+    // a reset job goes back through `queued`, which flags a changed file and never sends it.
+    if (!d.files.exists(job.audioUri) || (await d.files.sha256(job.audioUri)) !== job.audioSha256) {
+      reset(job);
+      return 'reset';
+    }
     if (!(await d.keys.canOpen(job.childId, job.keyVersion!))) {
       reset(job);
       return 'reset';

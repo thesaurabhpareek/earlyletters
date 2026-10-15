@@ -2,7 +2,7 @@
  * Keys on the phone (WP-F08-B2; F08 6.5 key model; ADR 0023 section 2).
  *
  * - One book key (BK) per (child, author, version) in a synchronizable Keychain
- *   item keyed `<profile_id>:<child_id>`, so it reaches the author's other
+ *   item per version keyed `<profile_id>:<child_id>:v<n>`, so it reaches the author's other
  *   Apple devices through iCloud Keychain (F08-REQ-021). Two parents of one
  *   book each have their own BK; neither is ever given the other's.
  * - One X25519 device key pair per install, private key this device only
@@ -17,6 +17,14 @@
  * - A key check (HMAC under the BK, stored beside the wrap) proves the BK on
  *   this phone is the one the server escrowed. A Keychain item replaced by a
  *   sync conflict fails the check and is never used to encrypt or decrypt.
+ *   It catches accidents, not a forger: whoever writes `child_keys` can seal a
+ *   key of their own to the (public) escrow key and compute its check too.
+ * - Until the server stores the check, a key this phone made whose store was
+ *   refused (`key_exists`: another of my phones stored first) is marked
+ *   untrusted and never used; the escrowed key replaces it.
+ * - v1.0 has no rotation (the server refuses a second version), so a row above
+ *   MAX_KEY_VERSION is never adopted: a forged higher version cannot steer new
+ *   recordings onto a key someone else chose.
  */
 import { b64, bytesToBase64, equalBytes } from './bytes';
 import {
@@ -36,6 +44,9 @@ import type { BookKeyRef, Clock, DeviceKey, KeyVault } from './ports';
 /** How long a new phone waits for iCloud Keychain before asking escrow (F08 6.5 A step 4) [A]. */
 export const ICLOUD_WAIT_MS = 2 * 60 * 1000;
 
+/** The highest book key version this build uses. Rotation (a later ADR) raises it with the server. */
+export const MAX_KEY_VERSION = 1;
+
 export interface MetaStore {
   getMeta(key: string): string | null;
   setMeta(key: string, value: string): void;
@@ -50,7 +61,7 @@ export type BookKeyState =
   | { kind: 'needs_escrow' }
   /** No key exists for this book on the server, and the caller did not ask to make one (restore). */
   | { kind: 'none' }
-  | { kind: 'unavailable'; reason: 'unsupported' | 'no_escrow_key' };
+  | { kind: 'unavailable'; reason: 'unsupported' | 'no_escrow_key' | 'unknown_key_version' };
 
 export interface KeyManagerDeps {
   vault: KeyVault;
@@ -63,6 +74,8 @@ export interface KeyManagerDeps {
 }
 
 const waitKey = (childId: string) => `icloudWaitSince:${childId}`;
+/** A local key of this version that may not be the escrowed one (its store was refused and the row has no check). */
+const untrustedKey = (childId: string, v: number) => `untrustedKey:${childId}:${v}`;
 const DEVICE_REGISTERED = 'deviceRegistered';
 
 export function createKeyManager(d: KeyManagerDeps) {
@@ -84,12 +97,13 @@ export function createKeyManager(d: KeyManagerDeps) {
   /**
    * True when this phone holds `version` and it is the key the server row
    * escrowed. A row without a key check (neither server draft stores one yet)
-   * trusts a local key of that version.
+   * trusts a local key of that version, unless this phone marked it untrusted.
    */
   async function holdsChecked(childId: string, row: ChildKeyRow): Promise<boolean> {
+    if (row.keyVersion < 1 || row.keyVersion > MAX_KEY_VERSION) return false;
     const local = await d.vault.bookKeyVersions(ref(childId));
     if (!local.includes(row.keyVersion)) return false;
-    if (!row.keyCheck) return true;
+    if (!row.keyCheck) return d.meta.getMeta(untrustedKey(childId, row.keyVersion)) === null;
     const check = await d.vault.bookKeyCheck(ref(childId), row.keyVersion, label(childId, row.keyVersion));
     return equalBytes(check, b64(row.keyCheck));
   }
@@ -140,6 +154,7 @@ export function createKeyManager(d: KeyManagerDeps) {
     async keyFor(childId: string, opts: { create: boolean }): Promise<BookKeyState> {
       if (!d.vault.supported()) return { kind: 'unavailable', reason: 'unsupported' };
       let row = newestRow(await serverRows(), childId);
+      if (row && row.keyVersion > MAX_KEY_VERSION) return { kind: 'unavailable', reason: 'unknown_key_version' };
       if (row) {
         if (await holdsChecked(childId, row)) {
           d.meta.deleteMeta(waitKey(childId));
@@ -152,14 +167,14 @@ export function createKeyManager(d: KeyManagerDeps) {
       if (!escrow) return { kind: 'unavailable', reason: 'no_escrow_key' };
       // A version already on this phone with no server row: an earlier store failed, or the
       // server was restored to an earlier point (F08-U30). Store it again; never make a second.
-      const local = await d.vault.bookKeyVersions(ref(childId));
+      const local = (await d.vault.bookKeyVersions(ref(childId))).filter((v) => v <= MAX_KEY_VERSION);
       let version = local.length > 0 ? Math.max(...local) : 1;
       if (local.length === 0) {
         try {
           await d.vault.createBookKey(ref(childId), version);
         } catch (e) {
           if ((e as { code?: string }).code !== 'key_exists') throw e;
-          version = Math.max(...(await d.vault.bookKeyVersions(ref(childId))));
+          version = Math.max(1, ...(await d.vault.bookKeyVersions(ref(childId))).filter((v) => v <= MAX_KEY_VERSION));
         }
       }
       try {
@@ -168,6 +183,9 @@ export function createKeyManager(d: KeyManagerDeps) {
         if (!isKeyExists(e)) throw e;
         // Another of my devices stored this version first: theirs is the key. Ours is used only if it is the same.
         row = newestRow(await serverRows(true), childId);
+        // With no check on the row, "the same" cannot be shown: ours is probably the loser of the race
+        // (or ours, if only the response was lost). Either way it is never used until escrow settles it.
+        if (row && !row.keyCheck && row.keyVersion === version) d.meta.setMeta(untrustedKey(childId, version), '1');
         if (row && (await holdsChecked(childId, row))) return { kind: 'ready', version: row.keyVersion };
         return waitOrEscrow(childId);
       }
@@ -182,20 +200,28 @@ export function createKeyManager(d: KeyManagerDeps) {
       return row ? holdsChecked(childId, row) : false;
     },
 
-    /** Stores keys the escrow function released to this device for `requestId`, then checks each against its row. */
+    /**
+     * Stores keys the escrow function released to this device for `requestId`. A version this
+     * phone already holds and trusts is left as it is; any other is checked against its row's key
+     * check before it is written (natively), so a bad release never replaces a good key.
+     */
     async storeReleased(keys: readonly ReleasedKey[], deviceId: string, requestId: string): Promise<number> {
       const all = await serverRows(true);
       let stored = 0;
       for (const k of keys) {
         const row = all.find((r) => r.childId === k.childId && r.keyVersion === k.keyVersion);
-        if (!row) continue;
-        await d.vault.openBookKey(
-          ref(k.childId),
-          k.keyVersion,
-          { enc: b64(k.enc), ct: b64(k.ct) },
-          releaseInfo(),
-          releaseAad(d.profileId, deviceId, requestId, k.childId, k.keyVersion),
-        );
+        if (!row || row.keyVersion > MAX_KEY_VERSION) continue;
+        if (!(await holdsChecked(k.childId, row))) {
+          await d.vault.openBookKey(
+            ref(k.childId),
+            k.keyVersion,
+            { enc: b64(k.enc), ct: b64(k.ct) },
+            releaseInfo(),
+            releaseAad(d.profileId, deviceId, requestId, k.childId, k.keyVersion),
+            row.keyCheck ? { label: label(k.childId, k.keyVersion), expected: b64(row.keyCheck) } : null,
+          );
+          d.meta.deleteMeta(untrustedKey(k.childId, k.keyVersion));
+        }
         if (await holdsChecked(k.childId, row)) {
           stored += 1;
           d.meta.deleteMeta(waitKey(k.childId));

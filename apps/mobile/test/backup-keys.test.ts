@@ -83,6 +83,9 @@ describe('the bytes the escrow function opens (pinned: change them only with the
     expect(w[0]).toBe(1);
     expect(unpackEscrowWrap(w)).toEqual({ enc, ct });
     expect(() => unpackEscrowWrap(new Uint8Array([2, ...enc, ...ct]))).toThrow();
+    // Format 1 carries exactly one 32-byte key: any other length is refused.
+    expect(() => unpackEscrowWrap(w.subarray(0, 80))).toThrow();
+    expect(() => unpackEscrowWrap(new Uint8Array([...w, 0]))).toThrow();
   });
 });
 
@@ -181,6 +184,51 @@ describe('[F08-REQ-028] never create a book key while the server holds one', () 
     expect(b.childKeys).toHaveLength(1);
   });
 
+  it('the same race with no key check on the server (today): the refused key is never used, escrow settles it', async () => {
+    const b = new FakeBackend(() => 0);
+    b.returnsKeyCheck = false;
+    const one = phone(b, MAMA, null);
+    const two = phone(b, MAMA, null);
+    await two.keys.serverRows();
+    await one.keys.keyFor(ASHA, { create: true });
+    // Two made its own version 1, the server refused it, and with no check it cannot tell whose is escrowed.
+    expect((await two.keys.keyFor(ASHA, { create: true })).kind).toBe('waiting');
+    expect(await two.keys.canOpen(ASHA, 1)).toBe(false);
+    two.clock.t += ICLOUD_WAIT_MS;
+    expect(await two.keys.keyFor(ASHA, { create: true })).toEqual({ kind: 'needs_escrow' });
+    // Escrow releases the escrowed key, which replaces the refused one; now it is used.
+    const device = await two.keys.ensureDevice();
+    const req = await b.escrowFor(MAMA).request(device.deviceId);
+    b.restores.get(req.requestId)!.state = 'approved';
+    const released = await b.escrowFor(MAMA).release(req.requestId, device.deviceId);
+    if (released.state !== 'released') throw new Error('expected a release');
+    expect(await two.keys.storeReleased(released.keys, device.deviceId, req.requestId)).toBe(1);
+    expect(await two.keys.keyFor(ASHA, { create: true })).toEqual({ kind: 'ready', version: 1 });
+    const ref = { profileId: MAMA, childId: ASHA };
+    const label = keyCheckLabel(MAMA, ASHA, 1);
+    expect(equalBytes(await two.vault.bookKeyCheck(ref, 1, label), await one.vault.bookKeyCheck(ref, 1, label))).toBe(true);
+  });
+
+  it('a row above the highest version this build uses is never adopted (no rotation in v1.0)', async () => {
+    const b = new FakeBackend(() => 0);
+    const p = phone(b, MAMA, null);
+    await p.keys.keyFor(ASHA, { create: true });
+    // Someone who can write child_keys adds version 2 sealed from a key of their own to the public escrow key.
+    const forged = new Uint8Array(randomBytes(32));
+    const s = hpkeSeal(b.escrow.pk, escrowInfo(), escrowAad(MAMA, ASHA, 2, 1), forged);
+    b.childKeys.push({ uid: MAMA, childId: ASHA, keyVersion: 2, escrowKeyVersion: 1, keyCheck: null, enc: bytesToBase64(s.enc), ct: bytesToBase64(s.ct) });
+    p.keys.refresh();
+    expect(await p.keys.keyFor(ASHA, { create: true })).toEqual({ kind: 'unavailable', reason: 'unknown_key_version' });
+    expect(await p.keys.canOpen(ASHA, 2)).toBe(false);
+    const device = await p.keys.ensureDevice();
+    const req = await b.escrowFor(MAMA).request(device.deviceId);
+    b.restores.get(req.requestId)!.state = 'approved';
+    const released = await b.escrowFor(MAMA).release(req.requestId, device.deviceId);
+    if (released.state !== 'released') throw new Error('expected a release');
+    await p.keys.storeReleased(released.keys, device.deviceId, req.requestId);
+    expect(await p.vault.bookKeyVersions({ profileId: MAMA, childId: ASHA })).toEqual([1]);
+  });
+
   it('without CryptoKit support or an escrow key, backup is unavailable and nothing is made', async () => {
     const b = new FakeBackend(() => 0);
     const noEscrow = createKeyManager({
@@ -236,5 +284,39 @@ describe('[F08-REQ-027] a device key pair per install', () => {
     expect(await c.keys.storeReleased(keys, device.deviceId, req.requestId)).toBe(1);
     expect(await c.keys.canOpen(ASHA, 1)).toBe(true);
     expect(b.unwraps).toHaveLength(1);
+  });
+
+  it('a release never replaces a key this phone already holds and trusts', async () => {
+    const b = new FakeBackend(() => 0);
+    const p = phone(b, MAMA, null);
+    await p.keys.keyFor(ASHA, { create: true });
+    const ref = { profileId: MAMA, childId: ASHA };
+    const label = keyCheckLabel(MAMA, ASHA, 1);
+    const before = await p.vault.bookKeyCheck(ref, 1, label);
+    // The escrow wrap is swapped for another key (a server bug, or a forger who left the check alone).
+    const s = hpkeSeal(b.escrow.pk, escrowInfo(), escrowAad(MAMA, ASHA, 1, 1), new Uint8Array(randomBytes(32)));
+    Object.assign(b.childKeys[0], { enc: bytesToBase64(s.enc), ct: bytesToBase64(s.ct) });
+    const device = await p.keys.ensureDevice();
+    const req = await b.escrowFor(MAMA).request(device.deviceId);
+    b.restores.get(req.requestId)!.state = 'approved';
+    const released = await b.escrowFor(MAMA).release(req.requestId, device.deviceId);
+    if (released.state !== 'released') throw new Error('expected a release');
+    expect(await p.keys.storeReleased(released.keys, device.deviceId, req.requestId)).toBe(1);
+    expect(equalBytes(await p.vault.bookKeyCheck(ref, 1, label), before)).toBe(true);
+  });
+
+  it('a released key that fails its row\'s key check is refused before it is written', async () => {
+    const b = new FakeBackend(() => 0);
+    await phone(b, MAMA, null).keys.keyFor(ASHA, { create: true });
+    const s = hpkeSeal(b.escrow.pk, escrowInfo(), escrowAad(MAMA, ASHA, 1, 1), new Uint8Array(randomBytes(32)));
+    Object.assign(b.childKeys[0], { enc: bytesToBase64(s.enc), ct: bytesToBase64(s.ct) });
+    const c = phone(b, MAMA, null);
+    const device = await c.keys.ensureDevice();
+    const req = await b.escrowFor(MAMA).request(device.deviceId);
+    b.restores.get(req.requestId)!.state = 'approved';
+    const released = await b.escrowFor(MAMA).release(req.requestId, device.deviceId);
+    if (released.state !== 'released') throw new Error('expected a release');
+    await expect(c.keys.storeReleased(released.keys, device.deviceId, req.requestId)).rejects.toMatchObject({ code: 'key_check_failed' });
+    expect(await c.vault.bookKeyVersions({ profileId: MAMA, childId: ASHA })).toEqual([]);
   });
 });

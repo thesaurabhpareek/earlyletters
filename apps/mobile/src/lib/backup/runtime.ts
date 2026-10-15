@@ -6,7 +6,7 @@
  *
  * Wiring:
  * - Keys: the `ScribeKeys` module (CryptoKit, Keychain). Book key items under
- *   service `scribe.backup`, account `<profile_id>:<child_id>` (the codename,
+ *   service `scribe.backup`, account `<profile_id>:<child_id>:v<n>` (the codename,
  *   never the public name, so it never changes; ADR 0023 section 2).
  * - Files: expo-file-system; hashes by `ScribeAudio.sha256File` (streamed natively).
  * - Uploads: Supabase Storage's resumable endpoint with the user's JWT, or the
@@ -31,6 +31,7 @@ import { getRemoteConfig } from '../remote';
 import { localSqlDb, notifyStoreChanged, subscribe, uuidv7 } from '../store';
 import { errorCode, errorStatus, getSupabaseOrNull, isNetworkError } from '../supabase';
 import { readSupabaseEnv } from '../supabase/env';
+import { APP_ENV } from '../build-env';
 import { b64, bytesToBase64, bytesToHex, hexToBytes } from './bytes';
 import { FORMAT_VERSION } from './format';
 import {
@@ -39,6 +40,7 @@ import {
   BACKUP_RPC,
   BackupServerError,
   ESCROW_ROUTE,
+  objectPathFor,
   packEscrowWrap,
   unpackEscrowWrap,
   type BackupServer,
@@ -56,6 +58,7 @@ import { createBackupService, type BackupService, type BackupView } from './serv
 import type { HttpLike } from './tus';
 
 export const KEYCHAIN_SERVICE = 'scribe.backup';
+/** The base account of a book key; the native module appends `:v<n>`, one item per version. */
 const account = (r: BookKeyRef) => `${r.profileId}:${r.childId}`;
 
 // ── Keys and segments ─────────────────────────────────────────────────────
@@ -85,7 +88,14 @@ function nativeVault(): KeyVault {
     wrapFileKey: (r, v, key, aad) => need().wrapFileKey(KEYCHAIN_SERVICE, account(r), v, key, aad),
     unwrapFileKey: (r, v, wrapped, aad) => need().unwrapFileKey(KEYCHAIN_SERVICE, account(r), v, wrapped, aad),
     sealBookKey: (r, v, recipient, info, aad) => need().sealBookKey(KEYCHAIN_SERVICE, account(r), v, recipient, info, aad),
-    openBookKey: (r, v, s, info, aad) => need().openBookKey(KEYCHAIN_SERVICE, account(r), v, s.enc, s.ct, info, aad),
+    openBookKey: async (r, v, s, info, aad, check) => {
+      try {
+        await need().openBookKey(KEYCHAIN_SERVICE, account(r), v, s.enc, s.ct, info, aad, check?.label ?? new Uint8Array(0), check?.expected ?? null);
+      } catch (e) {
+        if (scribeKeysErrorCode(e) === 'ERR_SCRIBE_KEYS_CHECK') throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
+        throw e;
+      }
+    },
     randomBytes: (n) => Crypto.getRandomBytes(n),
   };
 }
@@ -169,7 +179,7 @@ const fromBytea = (s: string) => (s.startsWith('\\x') ? s.slice(2) : s).toLowerC
 /** [R] Neither server draft takes `p_key_check` yet; PostgREST refuses an unknown argument, so it is sent only once one does. */
 const SERVER_TAKES_KEY_CHECK = false;
 
-function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | null>): BackupServer {
+function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | null>, profileId: string): BackupServer {
   const env = readSupabaseEnv();
   async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
     let r;
@@ -181,18 +191,24 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
     if (r.error) throw serverError(r.error, r.status);
     return r.data as T;
   }
-  async function select<T>(table: string, columns: string, confirmedOnly = false): Promise<T[]> {
+  async function select<T>(table: string, columns: string, opts: { confirmedOnly?: boolean; profileColumn?: string } = {}): Promise<T[]> {
     let q = sb.from(table).select(columns);
-    if (confirmedOnly) q = q.eq('state', 'confirmed');
+    if (opts.profileColumn) q = q.eq(opts.profileColumn, profileId);
+    if (opts.confirmedOnly) q = q.eq('state', 'confirmed');
     const { data, error, status } = await q;
     if (error) throw serverError(error, status);
     return (data ?? []) as unknown as T[];
   }
   return {
     registerDevice: ({ deviceId, publicKey }) => rpc(BACKUP_RPC.registerDevice, { p_device: deviceId, p_public_key: bytea(b64(publicKey)) }),
-    // RLS: the owner reads their own rows; every column but escrow_wrap is granted.
+    // RLS: the owner reads their own rows; every column but escrow_wrap is granted. Filtered to me as well,
+    // so a policy that ever let a co-parent read rows could not make this phone act on their key.
     listKeys: async () =>
-      (await select<{ child_id: string; key_version: number; escrow_key_version: number }>('child_keys', 'child_id, key_version, escrow_key_version')).map(
+      (
+        await select<{ child_id: string; key_version: number; escrow_key_version: number }>('child_keys', 'child_id, key_version, escrow_key_version', {
+          profileColumn: 'profile_id',
+        })
+      ).map(
         (r) => ({ childId: r.child_id, keyVersion: r.key_version, escrowKeyVersion: r.escrow_key_version, keyCheck: null }),
       ),
     storeKey: (k) =>
@@ -222,9 +238,12 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
         await select<{ entry_id: string; child_id: string; object_path: string; key_version: number; cipher_sha256: string; bytes: number }>(
           'audio_blobs',
           'entry_id, child_id, object_path, key_version, cipher_sha256, bytes',
-          true,
+          { confirmedOnly: true },
         )
-      ).map((r) => ({
+      )
+        // Mine only, by the path the server built from the author (`<child>/<author>/<entry>.m4a.enc`).
+        .filter((r) => r.object_path === objectPathFor(r.child_id, profileId, r.entry_id))
+        .map((r) => ({
         entryId: r.entry_id,
         childId: r.child_id,
         objectPath: r.object_path,
@@ -330,17 +349,24 @@ function escrowClient(accessToken: () => Promise<string | null>): EscrowClient {
       if (r.state === 'released') return { requestId: r.requestId, state: 'released', holdUntil: new Date().toISOString() };
       throw new BackupServerError('forbidden', false, null, r.state);
     },
+    // The route answers for the device's current request, which may not be the one saved: the
+    // answer carries its id, and a release is sealed to that id (releaseAad).
     release: async (_requestId, deviceId): Promise<ReleaseOutcome> => {
       const r = await restore(deviceId);
-      if (r.state === 'released') return { state: 'released', keys: r.keys.map(released) };
-      if (r.state === 'requested' || r.state === 'approved') return { state: r.state, holdUntil: r.holdUntil };
+      if (r.state === 'released') return { state: 'released', keys: r.keys.map(released), requestId: r.requestId };
+      if (r.state === 'requested' || r.state === 'approved') return { state: r.state, holdUntil: r.holdUntil, requestId: r.requestId };
       return { state: r.state };
     },
   };
 }
 
-/** [R] `EXPO_PUBLIC_ESCROW_KEY` (`v<version>:<base64>`): the staging drill key in preview builds; production keys come bundled. */
+/**
+ * [R] `EXPO_PUBLIC_ESCROW_KEY` (`v<version>:<base64>`): the staging drill key in development and
+ * preview builds. A production build ignores it and trusts only the bundled keys, so a stray
+ * variable can never seal families' book keys to a drill key.
+ */
 function escrowKeys(): readonly EscrowPublicKey[] {
+  if (APP_ENV === 'production') return BUNDLED_ESCROW_KEYS;
   const m = /^v(\d+):([A-Za-z0-9+/=]{44})$/.exec((process.env.EXPO_PUBLIC_ESCROW_KEY ?? '').trim());
   if (!m) return BUNDLED_ESCROW_KEYS;
   try {
@@ -435,7 +461,7 @@ async function current(): Promise<BackupService | null> {
     vault,
     aead: nativeAead,
     files: nativeFiles,
-    server: supabaseServer(sb, token),
+    server: supabaseServer(sb, token, s.uid),
     escrow: escrowClient(token),
     http,
     downloader,

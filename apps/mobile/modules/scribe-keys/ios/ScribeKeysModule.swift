@@ -18,12 +18,6 @@ final class ScribeKeysException: Exception, @unchecked Sendable {
   override var reason: String { message }
 }
 
-/// Every version of one (profile, child) book key, in one synchronizable Keychain item (F08 6.5).
-private struct BookKeyItem: Codable {
-  /// Version number as a string, to the key's 32 raw bytes in base64.
-  var keys: [String: String]
-}
-
 /// This install's X25519 key pair and the random id registered with it. This device only, never synced.
 private struct DeviceItem: Codable {
   var id: String
@@ -38,7 +32,10 @@ private struct DeviceItem: Codable {
 /// - Book keys: kSecClassGenericPassword, kSecAttrSynchronizable true,
 ///   kSecAttrAccessibleAfterFirstUnlock (iCloud Keychain carries them to the
 ///   person's other devices; readable while locked after the first unlock, so an
-///   upload that started in the foreground can finish).
+///   upload that started in the foreground can finish). One item per version,
+///   account `<profile_id>:<child_id>:v<n>`, value the key's 32 raw bytes: iCloud
+///   resolves conflicts per item, so a sync can never drop one version while
+///   writing another, and creating a version is a single atomic add.
 /// - Device key: kSecAttrSynchronizable false,
 ///   kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly (never in a backup, never on
 ///   another phone, F08-REQ-027).
@@ -112,26 +109,26 @@ public class ScribeKeysModule: Module {
     AsyncFunction("bookKeyVersions") { (service: String, account: String) throws -> [Int] in
       Self.lock.lock()
       defer { Self.lock.unlock() }
-      return try Self.readBook(service, account).keys.keys.compactMap { Int($0) }.sorted()
+      return try Self.bookVersions(service, account)
     }
 
     AsyncFunction("createBookKey") { (service: String, account: String, version: Int) throws in
       guard version >= 1 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "Bad key version") }
       Self.lock.lock()
       defer { Self.lock.unlock() }
-      var item = try Self.readBook(service, account)
-      if item.keys[String(version)] != nil {
-        throw ScribeKeysException("ERR_SCRIBE_KEYS_EXISTS", "That key version already exists")
-      }
       let key = SymmetricKey(size: .bits256)
-      item.keys[String(version)] = key.withUnsafeBytes { Data($0) }.base64EncodedString()
-      try Self.write(service: service, account: account, data: try JSONEncoder().encode(item), synchronizable: true)
+      // A plain add: never replaces a version that is already here (or that iCloud brought meanwhile).
+      try key.withUnsafeBytes { raw in
+        try Self.add(service: service, account: Self.versioned(account, version), data: Data(raw), synchronizable: true)
+      }
     }
 
     AsyncFunction("deleteBookKeys") { (service: String, account: String) throws in
       Self.lock.lock()
       defer { Self.lock.unlock() }
-      try Self.delete(service: service, account: account, synchronizable: true)
+      for version in try Self.bookVersions(service, account) {
+        try Self.delete(service: service, account: Self.versioned(account, version), synchronizable: true)
+      }
     }
 
     /// HMAC-SHA256 under the book key, first 16 bytes: proves which key a server row escrowed.
@@ -173,16 +170,18 @@ public class ScribeKeysModule: Module {
         throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "Bad recipient key")
       }
       var sender = try HPKE.Sender(recipientKey: publicKey, ciphersuite: Self.suite(), info: info)
-      let raw = key.withUnsafeBytes { Data($0) }
-      let ct = try sender.seal(raw, authenticating: aad)
+      // Sealed straight from the key's own buffer: no second plain copy of the book key.
+      let ct = try key.withUnsafeBytes { raw in try sender.seal(raw, authenticating: aad) }
       return ["enc": sender.encapsulatedKey, "ct": ct]
     }
 
     /// Opens a book key the escrow function sealed to this device, and stores it under `version`.
-    /// The released key replaces any different one under that version: escrow holds the key the
-    /// server row recorded, and JavaScript checks it against the row's key check afterwards.
+    /// With `expectedCheck` (the server row's key check), the opened key is checked against it
+    /// before anything is written: a key that fails is never stored, so a bad release can never
+    /// replace a good key here or, through iCloud Keychain, on the person's other devices.
+    /// JavaScript calls this only for a version this phone lacks or cannot trust.
     AsyncFunction("openBookKey") {
-      (service: String, account: String, version: Int, enc: Data, ct: Data, info: Data, aad: Data) throws in
+      (service: String, account: String, version: Int, enc: Data, ct: Data, info: Data, aad: Data, checkLabel: Data, expectedCheck: Data?) throws in
       guard #available(iOS 17.0, *) else { throw ScribeKeysException("ERR_SCRIBE_KEYS_UNSUPPORTED", "Needs iOS 17") }
       guard version >= 1 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "Bad key version") }
       Self.lock.lock()
@@ -199,9 +198,13 @@ public class ScribeKeysModule: Module {
         throw ScribeKeysException("ERR_SCRIBE_KEYS_OPEN", "The key did not open")
       }
       guard bookKey.count == 32 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_OPEN", "The key did not open") }
-      var item = try Self.readBook(service, account)
-      item.keys[String(version)] = bookKey.base64EncodedString()
-      try Self.write(service: service, account: account, data: try JSONEncoder().encode(item), synchronizable: true)
+      if let expected = expectedCheck {
+        let check = Data(HMAC<SHA256>.authenticationCode(for: checkLabel, using: SymmetricKey(data: bookKey)).prefix(16))
+        guard Self.constantTimeEqual(check, expected) else {
+          throw ScribeKeysException("ERR_SCRIBE_KEYS_CHECK", "The key is not the one the server recorded")
+        }
+      }
+      try Self.write(service: service, account: Self.versioned(account, version), data: bookKey, synchronizable: true)
     }
 
     // ── Segments ───────────────────────────────────────────────────────────
@@ -254,17 +257,35 @@ public class ScribeKeysModule: Module {
     return data
   }
 
-  private static func write(service: String, account: String, data: Data, synchronizable: Bool) throws {
-    let q = query(service: service, account: account, synchronizable: synchronizable)
-    let attributes: [String: Any] = [
+  private static func attributes(data: Data, synchronizable: Bool) -> [String: Any] {
+    [
       kSecValueData as String: data,
       kSecAttrAccessible as String: synchronizable ? kSecAttrAccessibleAfterFirstUnlock : kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
     ]
-    var status = SecItemUpdate(q as CFDictionary, attributes as CFDictionary)
+  }
+
+  /// Update, or add when missing.
+  private static func write(service: String, account: String, data: Data, synchronizable: Bool) throws {
+    let q = query(service: service, account: account, synchronizable: synchronizable)
+    let attrs = attributes(data: data, synchronizable: synchronizable)
+    var status = SecItemUpdate(q as CFDictionary, attrs as CFDictionary)
     if status == errSecItemNotFound {
       var add = q
-      for (k, v) in attributes { add[k] = v }
+      for (k, v) in attrs { add[k] = v }
       status = SecItemAdd(add as CFDictionary, nil)
+    }
+    guard status == errSecSuccess else {
+      throw ScribeKeysException("ERR_SCRIBE_KEYS_KEYCHAIN", "Keychain write failed (\(status))")
+    }
+  }
+
+  /// Add only: `ERR_SCRIBE_KEYS_EXISTS` when the item is already there.
+  private static func add(service: String, account: String, data: Data, synchronizable: Bool) throws {
+    var add = query(service: service, account: account, synchronizable: synchronizable)
+    for (k, v) in attributes(data: data, synchronizable: synchronizable) { add[k] = v }
+    let status = SecItemAdd(add as CFDictionary, nil)
+    if status == errSecDuplicateItem {
+      throw ScribeKeysException("ERR_SCRIBE_KEYS_EXISTS", "That key version already exists")
     }
     guard status == errSecSuccess else {
       throw ScribeKeysException("ERR_SCRIBE_KEYS_KEYCHAIN", "Keychain write failed (\(status))")
@@ -278,22 +299,46 @@ public class ScribeKeysModule: Module {
     }
   }
 
-  private static func readBook(_ service: String, _ account: String) throws -> BookKeyItem {
-    guard let data = try read(service: service, account: account, synchronizable: true) else { return BookKeyItem(keys: [:]) }
-    guard let item = try? JSONDecoder().decode(BookKeyItem.self, from: data) else {
-      throw ScribeKeysException("ERR_SCRIBE_KEYS_ITEM", "The book key item could not be read")
+  /// The Keychain account of one version: `<profile_id>:<child_id>:v<n>`.
+  private static func versioned(_ account: String, _ version: Int) -> String {
+    "\(account):v\(version)"
+  }
+
+  /// Versions present for one (profile, child): every synchronizable item of the service whose account is `<account>:v<n>`.
+  private static func bookVersions(_ service: String, _ account: String) throws -> [Int] {
+    var q = query(service: service, account: account, synchronizable: true)
+    q.removeValue(forKey: kSecAttrAccount as String)
+    q[kSecReturnAttributes as String] = true
+    q[kSecMatchLimit as String] = kSecMatchLimitAll
+    var out: CFTypeRef?
+    let status = SecItemCopyMatching(q as CFDictionary, &out)
+    if status == errSecItemNotFound { return [] }
+    guard status == errSecSuccess, let items = out as? [[String: Any]] else {
+      throw ScribeKeysException("ERR_SCRIBE_KEYS_KEYCHAIN", "Keychain read failed (\(status))")
     }
-    return item
+    let prefix = "\(account):v"
+    return items
+      .compactMap { $0[kSecAttrAccount as String] as? String }
+      .filter { $0.hasPrefix(prefix) }
+      .compactMap { Int($0.dropFirst(prefix.count)) }
+      .filter { $0 >= 1 }
+      .sorted()
   }
 
   private static func lockedBookKey(_ service: String, _ account: String, _ version: Int) throws -> SymmetricKey {
     lock.lock()
     defer { lock.unlock() }
-    let item = try readBook(service, account)
-    guard let encoded = item.keys[String(version)], let raw = Data(base64Encoded: encoded), raw.count == 32 else {
+    guard version >= 1, let raw = try read(service: service, account: versioned(account, version), synchronizable: true), raw.count == 32 else {
       throw ScribeKeysException("ERR_SCRIBE_KEYS_NO_KEY", "No book key of that version on this phone")
     }
     return SymmetricKey(data: raw)
+  }
+
+  private static func constantTimeEqual(_ a: Data, _ b: Data) -> Bool {
+    guard a.count == b.count else { return false }
+    var d: UInt8 = 0
+    for (x, y) in zip(a, b) { d |= x ^ y }
+    return d == 0
   }
 
   private static func readDevice() throws -> DeviceItem? {

@@ -184,9 +184,13 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
       const s = hpkeSeal(recipient, info, aad, key(r, version));
       return { enc: s.enc, ct: s.ct };
     },
-    async openBookKey(r: BookKeyRef, version: number, s: Sealed, info: Uint8Array, aad: Uint8Array) {
+    async openBookKey(r: BookKeyRef, version: number, s: Sealed, info: Uint8Array, aad: Uint8Array, check: { label: Uint8Array; expected: Uint8Array } | null) {
       if (!v.device) throw new Error('no_device');
       const bk = hpkeOpen(v.device.sk, s, info, aad);
+      // As ScribeKeys: a key that fails the row's check is never written.
+      if (check && !createHmac('sha256', buf(bk)).update(buf(check.label)).digest().subarray(0, 16).equals(buf(check.expected))) {
+        throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
+      }
       const m = store().get(acc(r)) ?? new Map<number, Uint8Array>();
       m.set(version, bk);
       store().set(acc(r), m);
@@ -293,6 +297,8 @@ export class FakeBackend {
   quotaBytes = 5 * 1024 * 1024 * 1024;
   /** The 10-minute step-up fails (the session is older): every new request is refused. */
   stepUpRequired = false;
+  /** False: rows are read back without a key check, as both server drafts do today (runtime.ts). */
+  returnsKeyCheck = true;
   releaseCalls = 0;
   /** Fault injection: fail the next n calls of this kind with no response. */
   readonly faults = new Map<string, number>();
@@ -334,7 +340,9 @@ export class FakeBackend {
       },
       async listKeys() {
         b.fault('listKeys');
-        return b.childKeys.filter((k) => k.uid === uid).map(({ childId, keyVersion, escrowKeyVersion, keyCheck }) => ({ childId, keyVersion, escrowKeyVersion, keyCheck }));
+        return b.childKeys
+          .filter((k) => k.uid === uid)
+          .map(({ childId, keyVersion, escrowKeyVersion, keyCheck }) => ({ childId, keyVersion, escrowKeyVersion, keyCheck: b.returnsKeyCheck ? keyCheck : null }));
       },
       async storeKey(x) {
         b.record('storeKey', x);

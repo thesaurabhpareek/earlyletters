@@ -177,11 +177,14 @@ export interface ReleasedKey {
   ct: string;
 }
 
-/** What a poll answers: the keys; still held; or closed (a Stop, Not me, or the release window passed). */
+/**
+ * What a poll answers: the keys; still held; or closed (a Stop, Not me, or the release window passed).
+ * `requestId` is the request the server answered for, when it says; a release is sealed to that id.
+ */
 export type ReleaseOutcome =
-  | { state: 'released'; keys: ReleasedKey[] }
-  | { state: 'requested' | 'approved'; holdUntil: string }
-  | { state: 'cancelled' | 'expired' };
+  | { state: 'released'; keys: ReleasedKey[]; requestId?: string }
+  | { state: 'requested' | 'approved'; holdUntil: string; requestId?: string }
+  | { state: 'cancelled' | 'expired'; requestId?: string };
 
 /** The `escrow` function as the client sees it. Both calls may be the same create-or-poll route. */
 export interface EscrowClient {
@@ -225,13 +228,15 @@ export function releaseAad(profileId: string, deviceId: string, requestId: strin
 
 /** Escrow wrap format 1: 0x01 || HPKE enc (32) || ciphertext of the 32-byte book key with its tag (48) = 81 bytes. */
 export const ESCROW_WRAP_FORMAT = 1;
+export const ESCROW_WRAP_LEN = 1 + 32 + 32 + 16;
 
 export function packEscrowWrap(enc: Uint8Array, ct: Uint8Array): Uint8Array {
   return concat(new Uint8Array([ESCROW_WRAP_FORMAT]), enc, ct);
 }
 
 export function unpackEscrowWrap(b: Uint8Array): { enc: Uint8Array; ct: Uint8Array } {
-  if (b.length < 1 + 32 + 16 || b[0] !== ESCROW_WRAP_FORMAT) throw new BackupServerError('bad_request', false);
+  // Format 1 seals exactly a 32-byte book key: enc (32) and ciphertext with tag (48).
+  if (b.length !== ESCROW_WRAP_LEN || b[0] !== ESCROW_WRAP_FORMAT) throw new BackupServerError('bad_request', false);
   return { enc: b.slice(1, 33), ct: b.slice(33) };
 }
 
