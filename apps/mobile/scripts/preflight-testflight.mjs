@@ -53,8 +53,8 @@ const notes = [];
  */
 const STEPS = {
   1: 'Step 1. Apple Developer Program enrolment (FT-01)',
-  2: 'Step 2. App Store Connect: the .preview App ID, the app record and internal testers (FT-07, FT-08)',
-  3: 'Step 3. Expo account and `eas init` project id (FT-17, BL-339)',
+  2: 'Step 2. App Store Connect: the .preview App ID, the app record, testers and the API key (FT-07, FT-08)',
+  3: 'Step 3. Expo account, the project id and EXPO_TOKEN (FT-17, BL-339)',
   4: 'Step 4. Words from speech: pack signing keys and the R2 bucket packs.earlyletters.app (FT-16, D-097)',
   5: 'Step 5. Build 1: preflight, build, submit, testers',
   6: 'Step 6. Supabase staging project and its schema (FT-10)',
@@ -210,7 +210,7 @@ if (cfg) {
     step(3, 'done', `extra.eas.projectId is ${cfg.extra.eas.projectId}`);
   } else {
     warn('No extra.eas.projectId in app.config.ts. `eas init` links the Expo project, but app.config.ts is a dynamic config and the CLI may not write to it (unverified): the founder sends the id it prints and it is added to `extra` in a small PR. A non-interactive build (the GitHub workflow) cannot proceed without it.');
-    step(3, 'open', 'no extra.eas.projectId in app.config.ts: run `npx eas-cli init` and send the id it prints');
+    step(3, 'open', 'no extra.eas.projectId in app.config.ts: create the project (expo.dev, or `eas init` on your own computer) and send the id; EXPO_TOKEN as a GitHub secret');
   }
 
   // Version and build number.
@@ -277,8 +277,30 @@ try {
   check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', `${PROFILE} profile sets EXPO_PUBLIC_ANALYTICS=off (no analytics in either alpha build, D-088)`, `${PROFILE} profile must set EXPO_PUBLIC_ANALYTICS to "off".`);
 }
 
-// ---------------------------------------------------------------- 4b. the staging project values (server-on build only)
-if (SERVER_ON) {
+// ---------------------------------------------------------------- 4b. the staging project values
+/** The role claim of a JWT, or null when the value is not a JWT. Decoded locally; never sent anywhere. */
+function jwtRole(value) {
+  if (!/^eyJ/.test(value)) return null;
+  try {
+    return JSON.parse(Buffer.from(value.split('.')[1] ?? '', 'base64url').toString('utf8')).role ?? null;
+  } catch {
+    return 'unreadable';
+  }
+}
+{
+  // Both alpha profiles build in the EAS "preview" environment, so build 1 (switch off) carries the same inlined
+  // values as build 2. Any EXPO_PUBLIC_ value is baked into the bundle, so a secret under any such name is a FAIL
+  // for either profile. Only the shell is visible here; nothing is sent anywhere.
+  const secrets = Object.entries(process.env)
+    .filter(([k]) => k.startsWith('EXPO_PUBLIC_'))
+    .filter(([, v]) => /^sb_secret_/.test(String(v ?? '').trim()) || jwtRole(String(v ?? '').trim()) === 'service_role')
+    .map(([k]) => k);
+  if (secrets.length) {
+    fail(`${secrets.join(', ')} in this shell hold${secrets.length === 1 ? 's' : ''} a SECRET or service_role key. An EXPO_PUBLIC_ value is inlined into the app, and both alpha profiles read the EAS "preview" environment: delete it there now, rotate it in Supabase (Project Settings > API Keys), and use the publishable (anon) key instead.`);
+    step(9, 'open', `a secret key is in ${secrets.join(', ')}`);
+  }
+}
+if (SERVER_ON || process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) {
   // EAS cloud builds read these from the EAS "preview" environment, which this script cannot see. If you export
   // the same values in your shell first, their shape is checked here; nothing is sent anywhere.
   const url = String(process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
@@ -293,18 +315,10 @@ if (SERVER_ON) {
       ok = false;
       fail(`EXPO_PUBLIC_SUPABASE_URL ${url ? `"${url}"` : 'is empty'}: expected the staging Project URL, https://<20-character ref>.supabase.co, with no path.`);
     }
-    // The publishable key, or the legacy anon JWT. Never the secret key or a service_role JWT.
-    let role = null;
-    if (/^eyJ/.test(key)) {
-      try {
-        role = JSON.parse(Buffer.from(key.split('.')[1] ?? '', 'base64url').toString('utf8')).role ?? null;
-      } catch {
-        role = 'unreadable';
-      }
-    }
+    // The publishable key, or the legacy anon JWT. Never the secret key or a service_role JWT (FAIL above).
+    const role = jwtRole(key);
     if (/^sb_secret_/.test(key) || role === 'service_role') {
       ok = false;
-      fail('The key in this shell is a SECRET or service_role key. It must never be in the app or in EAS build variables: delete it from the EAS "preview" environment now, rotate it in Supabase (Project Settings > API Keys), and use the publishable (anon) key instead.');
     } else if (!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(key) && role !== 'anon') {
       ok = false;
       fail(`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY does not look like a publishable key (sb_publishable_...) or the legacy anon key${key ? '' : ' (it is empty)'}.`);
@@ -312,6 +326,8 @@ if (SERVER_ON) {
     if (ok) pass(`Supabase values in this shell look right: ${url} and a publishable key (checked for shape only; the EAS "preview" environment must hold the same)`);
     step(9, ok ? 'check' : 'open', ok ? 'the values in this shell look right; confirm the EAS "preview" environment holds the same' : 'the values in this shell are wrong (see FAIL above)');
   }
+}
+if (SERVER_ON) {
   const otp = String(process.env.EXPO_PUBLIC_EMAIL_OTP_LENGTH ?? '').trim();
   unverified(`Email code length: the app expects ${otp || '6 (EXPO_PUBLIC_EMAIL_OTP_LENGTH unset)'} digits; Supabase Auth > Email > "Email OTP length" on staging must be the same number, or every typed code is refused.`);
   step(7, 'check', `Auth settings, SMTP and templates on staging; OTP length ${otp || '6'}`);
@@ -471,12 +487,20 @@ if (cfg) {
 // Apple, App Store Connect, Supabase dashboards and the live website are outside the repo, and the script
 // never goes online, so these stay "check" until the founder ticks them in docs/FOUNDER_TASKS.md.
 step(1, 'check', 'Apple Developer Program membership Active (developer.apple.com > Account)');
-step(2, 'check', 'App Store Connect record for the .preview bundle id, and the testers added');
+step(2, 'check', 'App Store Connect record for the .preview bundle id, the testers, and the API key stored in EAS for builds from GitHub Actions');
 if (!founder.has(3)) step(3, 'check', 'project id not checked (the app config did not evaluate)');
 if (!founder.has(4)) step(4, 'check', 'words from speech need the key, the bucket and a published manifest');
-step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1' : 'build 1 is optional before build 2');
+step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1; the build itself runs in GitHub Actions or on your own computer, with iOS credentials in EAS' : 'build 1 is optional before build 2');
 if (SERVER_ON) {
-  step(6, 'check', 'scribe-staging exists and has every migration on develop (staging from develop; TESTFLIGHT.md step 6)');
+  let fromDevelop = false;
+  try {
+    const deploy = read(join(REPO, '.github/workflows/deploy-db.yml'));
+    fromDevelop = /workflow_dispatch/.test(deploy) && /\bdevelop\b/.test(deploy);
+  } catch {
+    /* treated as not yet */
+  }
+  if (fromDevelop) step(6, 'check', 'scribe-staging exists and the develop run of deploy-db.yml has applied every migration');
+  else step(6, 'open', ".github/workflows/deploy-db.yml cannot apply develop's migrations to staging yet (the S20 staging-from-develop PR), so build 2 has no schema");
   step(8, 'check', 'Supabase Apple provider client ids include the .preview bundle id');
   step(10, 'check', 'curl -sI https://<website>/.well-known/apple-app-site-association answers 200 application/json with no redirect');
   step(11, 'check', 'this run is the preflight for build 2');

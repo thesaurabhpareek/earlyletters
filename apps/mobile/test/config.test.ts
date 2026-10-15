@@ -221,9 +221,9 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     }
   });
 
-  it('server features are on in exactly one profile: preview, the alpha against staging', () => {
-    const on = Object.entries(eas.build).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
-    expect(on).toEqual(['preview']);
+  it('server features are on in preview (the alpha against staging), and at most also in testflight after the R-17 flip', () => {
+    const on = Object.entries(eas.build).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n).sort();
+    expect([['preview'], ['preview', 'testflight']]).toContainEqual(on);
   });
 
   describe('preview profile (alpha build 2: servers on, staging, TestFlight)', () => {
@@ -282,23 +282,36 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
       const exp = configForProfile('testflight');
       expect(exp.ios?.bundleIdentifier).toBe(`${bundleId()}.preview`);
       expect(exp.ios?.bundleIdentifier).not.toBe(bundleId());
-      expect(exp.extra?.serverFeatures).toBe(false);
+      expect(exp.extra?.serverFeatures).toBe(tf.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on');
     });
 
     it('has a submit profile', () => {
       expect(eas.submit.testflight).toBeDefined();
     });
 
-    it('the R-17 flip is one line: testflight equals preview except EXPO_PUBLIC_SERVER_FEATURES', () => {
+    it('the R-17 flip is one line: testflight equals preview except EXPO_PUBLIC_SERVER_FEATURES, before and after it', () => {
       const { env: tfEnv, ...tfRest } = tf;
       const { env: pvEnv, ...pvRest } = eas.build.preview;
       expect(tfRest).toEqual(pvRest);
       const differing = Object.keys({ ...tfEnv, ...pvEnv }).filter((k) => tfEnv?.[k] !== pvEnv?.[k]);
-      expect(differing).toEqual(['EXPO_PUBLIC_SERVER_FEATURES']);
-      expect(tfEnv?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
-      // The flip itself: the one line in apps/mobile/eas.json, inside "testflight".
+      // Before the flip: off in testflight, the only difference. After it: no difference at all.
+      if (tfEnv?.EXPO_PUBLIC_SERVER_FEATURES === 'off') expect(differing).toEqual(['EXPO_PUBLIC_SERVER_FEATURES']);
+      else expect(differing).toEqual([]);
+      // The flip itself: the one line in apps/mobile/eas.json, inside "testflight". No test changes with it.
       const block = easText.slice(easText.indexOf('"testflight": {'), easText.indexOf('"submit"'));
-      expect(block.match(/"EXPO_PUBLIC_SERVER_FEATURES": "off"/g)).toHaveLength(1);
+      expect(block.match(/"EXPO_PUBLIC_SERVER_FEATURES": "(on|off)"/g)).toHaveLength(1);
+    });
+
+    it('the flip, applied to a copy of eas.json, passes these same rules', () => {
+      const flipped = JSON.parse(
+        easText.replace(/("testflight": \{[\s\S]*?"EXPO_PUBLIC_SERVER_FEATURES": )"off"/, '$1"on"'),
+      ) as typeof eas;
+      expect(flipped.build.testflight.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+      expect(flipped.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+      const { env: a, ...restA } = flipped.build.testflight;
+      const { env: b, ...restB } = flipped.build.preview;
+      expect(restA).toEqual(restB);
+      expect(a).toEqual(b);
     });
   });
 
