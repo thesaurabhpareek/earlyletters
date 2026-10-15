@@ -10,7 +10,7 @@
  * Vercel project before the production build. Apple requires application/json, HTTPS and no redirect; Next adds
  * no redirect for this path.
  *
- * Paths, and only these (A-REQ-022). On /auth and /j the token travels in the URL fragment, which is not part of
+ * Paths the app on `develop` opens, and only these (A-REQ-022). On /auth the token travels in the URL fragment, which is not part of
  * path matching and never reaches a server. /i is the exception, see below:
  *   /auth/confirm   the sign-in and confirm-your-email link (F02 6.3)
  *   /auth/callback  the same link as the app and email templates on `develop` still write it; remove with the
@@ -21,13 +21,15 @@
  *                   request logs. The site answers with the one static /i page (a rewrite in next.config.ts),
  *                   which renders no token and only copies the address on a tap. Kept so the alpha's invites open
  *                   the app; remove it once invites are written as /j#t=<token> (F11, WP-F11-11).
- *   /j              co-parent invites as PRD V2 F11 writes them (/j#t=<token>); its page is WP-F11-11
+ * Not listed: /j. PRD V2 F11 writes invites as /j#t=<token>, but the app on `develop` has no /j handler
+ * (lib/family/invite-link.logic.ts parses /i/<token> only), so listing /j would open the app on a link it drops.
+ * /j joins this list in the same change as the app's /j parser and the /j page (WP-F11-11).
  * A route file may export only route fields, so the lists stay private; route.test.ts reads them through GET.
  */
 export const dynamic = 'force-static';
 
 /** Every path the app opens, in the order the file lists them. */
-const APP_LINK_PATHS = ['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/i/*', '/j', '/j/'];
+const APP_LINK_PATHS = ['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/i/*'];
 
 /** Suffixes of the app ids served: production, then the TestFlight alpha builds. */
 const SERVED_SUFFIXES = ['', '.preview'];

@@ -53,7 +53,14 @@ describe('apple-app-site-association', () => {
     const { appIDs, paths, body } = await served();
     expect(Object.keys(body)).toEqual(['applinks']);
     expect(appIDs).toEqual(['ABCDE12345.com.example.scribe', 'ABCDE12345.com.example.scribe.preview']);
-    expect(paths).toEqual(['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/i/*', '/j', '/j/']);
+    expect(paths).toEqual(['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/i/*']);
+  });
+
+  it('does not list /j until the app reads /j links (WP-F11-11): a listed path the app drops opens it to nothing', async () => {
+    vi.stubEnv('APPLE_TEAM_ID', 'ABCDE12345');
+    vi.stubEnv('IOS_BUNDLE_ID', 'com.example.scribe');
+    const { paths } = await served();
+    expect(paths.filter((p) => p === '/j' || p.startsWith('/j/'))).toEqual([]);
   });
 
   it('matches paths only, and lists no catch-all, so no other page of the site opens the app', async () => {
@@ -66,7 +73,7 @@ describe('apple-app-site-association', () => {
     const { paths } = await served();
     for (const p of paths) {
       expect(['*', '/*', '/']).not.toContain(p);
-      expect(p.startsWith('/auth/') || p.startsWith('/i/') || p === '/j' || p === '/j/', p).toBe(true);
+      expect(p.startsWith('/auth/') || p.startsWith('/i/'), p).toBe(true);
     }
   });
 });

@@ -88,8 +88,6 @@ test.describe('apple-app-site-association', () => {
       '/auth/callback',
       '/auth/callback/',
       '/i/*',
-      '/j',
-      '/j/',
     ]);
   });
 });
