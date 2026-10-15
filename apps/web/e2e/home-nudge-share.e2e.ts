@@ -358,8 +358,10 @@ test.describe('the Privacy link under the sign-up field', () => {
     expect(box!.y).toBeGreaterThan(field!.y + field!.height - 1);
     expect(box!.y).toBeGreaterThan(note!.y + note!.height - 1);
     expect(box!.height).toBeGreaterThanOrEqual(44);
-    // Scrolling it into view fetched nothing: no prefetch of the legal page from the home page.
-    expect(requests).toEqual([]);
+    // Scrolling it into view fetched nothing of the legal page: no document or route (RSC) prefetch. (The browser's own
+    // late favicon request can land here, so only requests for the page itself count.)
+    await page.waitForTimeout(600);
+    expect(requests.filter((u) => /\/privacy\b|[?&]_rsc=/.test(u))).toEqual([]);
     await link.click();
     await expect(page).toHaveURL(/\/privacy$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
