@@ -9,7 +9,8 @@
 // - no other platform's name (App Review 2.3.10); Apple's own Family Sharing is fine;
 // - adults only: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8);
 // - 7 spoken languages, one per letter, no mixing in one sentence (D-056, D-059);
-// - family = the co-parent only (D-055); no grandparent or web-page promise;
+// - no sharing in v1.0: the app is on-device only, with no sign-in and no account (D-085; founder, 3 and 15 Oct 2026).
+//   Co-parent sharing is v1.1 and is never promised here (BL-440); no grandparent or web-page promise either;
 // - recordings: no backup of our own in v1.0 (D-085 amends D-073); the person's own iPhone backup plus Export;
 //   no family listening and no word highlight in Read together (D-059);
 // - digital only, no printed-book promise (K-32); no health or development-tracking words (D-004);
@@ -50,14 +51,11 @@ Open the book at bedtime and hear the letters you spoke, in your own voice, with
 NOTES AND LETTERS
 Some days are a quick note. Some days are a proper letter. Both belong. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores.
 
-WRITE IT TOGETHER
-Invite your co-parent to the same book. You each sign your own letters, like "From Papa" or "From Amma", and the book holds both your voices.
-
 YOUR LANGUAGE, AS SPOKEN
 Speak your letters in English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them, in its own script, never translated. A language downloads only when you choose it, so the app stays small.
 
 PRIVATE BY DEFAULT
-${en.trust.promise} Only you and the people you invite can read your book. You can export everything or delete everything, any time, from Settings.
+${en.trust.promise} There is no account to make and no copy of your letters on our servers. You can export everything or delete everything, any time, from Settings.
 
 A BOOK FOR EACH CHILD
 Each child gets their own book, with their own months. Starting a book is free, and your first two letters are free across every book.
@@ -84,7 +82,7 @@ Privacy Policy: ${brand.web.privacy}`,
   /** Listed in Lifestyle, never Health and Fitness or Medical (D-004, guideline 5.1.1(ix) mitigation). */
   primaryCategory: 'Lifestyle',
   whatsNewV1:
-    `Hello. This is the first version of ${brand.name}. Talk or type a letter to your child, keep your voice with it, write together with your co-parent, read together at bedtime, and export your book any time.`,
+    `Hello. This is the first version of ${brand.name}. Talk or type a letter to your child, keep your voice with it, read together at bedtime, and export your book any time.`,
   screenshots,
   screenshotCaptions: screenshots.map((s) => s.caption),
 } as const;
