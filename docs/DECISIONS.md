@@ -404,10 +404,29 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 - **Decision:** the weekly insights agent writes its report and its proposals into the repo working tree only. The coordinator commits them. This resolves DEBATES Q-007 in favour of COORDINATION.md.
 - **Status:** Decided (coordinator).
 
+### D-089 Release engineering model
+- **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct). Ids chosen above D-088 (PR #91).
+- **Decision:** ADR 0022. Preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, per `docs/release/TESTFLIGHT.md`. Store lane: `release/1.0` cut from `main` at freeze (Mon 26 Oct), fixes cherry-picked from `develop`; `ios-v1.0.0-rc.<n>` tags build the production profile into the production record's internal TestFlight; the RC that passed FT-39 is submitted (FT-45); `ios-v1.0.0` is pushed after release. One version in `apps/mobile/version.json`; build numbers only from EAS. Store text generated from `packages/content` into `apps/mobile/store.config.json`.
+- **Gate (amended 15 Oct, founder):** the store-lane jobs run in the GitHub environment `app-store` (founder as required reviewer, only `ios-v*` tags and `release/*` branches, store secrets held there), with tag and branch rulesets that only admins bypass (ADR 0022 decision 8, FT-20). The 3 Oct design assumed a private repository; it is public.
+- **Effects:** COORDINATION section 6 and FT-44 (tag the RC before submission; the version tag follows release); runbook `docs/ops/RELEASE.md` (qa-e2e's release train, amended for D-089); record `docs/release/1.0.0.md`; BL-436 to BL-439.
+
+### D-090 Release team
+- **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct).
+- **Decision:** a `release` agent (Release Engineer: versions, release records, store metadata as code, the runbook) and `ops` re-chartered as Platform and Reliability Engineer (DevOps and SRE). Defined on the harness branch; until the harness runs, used in interactive sessions by handle under COORDINATION.md. A separate SRE agent after launch, once there are real users and a first Sev 1 or 2 drill.
+
+### D-091 No OTA updates in v1.0
+- **Status:** Decided (founder, 13 Oct 2026). Changes the 3 Oct recommendation to ship `expo-updates` in v1.0. Matches section 8 of qa-e2e's release train.
+- **Decision:** no `expo-updates` in v1.0. Fixes ship as PATCH builds from the release branch, with expedited review for an S0.
+- **Rationale:** v1.0 became on-device only (PR #54) and plans "Data Not Collected" (D-088). An update check on every launch is a new network destination for the data map and a privacy-label question for counsel, three weeks before submission. Revisit for v1.1, when sign-in brings a server anyway.
+
+### D-092 EAS plan
+- **Status:** Decided (founder, 13 Oct 2026; matches the cost decisions of 3 Oct).
+- **Decision:** EAS Free (15 iOS builds a month; expo.dev/pricing, 3 Oct 2026) until builds would exceed it, then Starter ($19 a month plus usage). A second trigger: Free builds queue at low priority with one concurrent build, so if queue time ever holds up a release candidate, move to Starter for that month.
+
 ## Decisions that still need the founder (in priority order)
 
-1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). Needed by 16 Oct.
-2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). Needed by 23 Oct.
+1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). v1.1, parked (#54, the on-device v1.0; D-085): v1.0 has no sync.
+2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). v1.1, parked (#54, the on-device v1.0; D-085): v1.0 has no sharing.
 3. **D-001 tooling** StoreKit 2 direct versus RevenueCat (ADR 0013). Override window closes when BL-213 starts (about 9 Nov).
 4. **D-030** Beta on TestFlight; no beta line in the store listing. Needed before the store listing is written (week 13).
 5. **D-004 hedge** Accept the guideline 5.1.1(ix) risk as an individual, or start an entity in parallel. Needed by 27 Nov.
@@ -438,6 +457,10 @@ Two founder answers given on 3 Oct (evening) change second-round entries. Where 
 | D-079 | Old logo directions archived | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
 | D-080 | The app reports subscription status only, so we can send the auto-renewal reminders | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
 | D-081 | Purchase consent records (supersedes D-049) | Decided (founder, 3 Oct 2026) | Yes | 2026-10-03 |
+| D-089 | Release engineering model (ADR 0022): preview lane for C0 and C1; store lane from `release/<major>.<minor>` cut at freeze; one version in `apps/mobile/version.json`; EAS build numbers; `ios-v<x.y.z>-rc.<n>` tags build candidates; the tested RC is the binary submitted; `ios-v<x.y.z>` on release; store text generated from `packages/content` | Decided (founder) | Yes | 2026-10-13 |
+| D-090 | Release team: a `release` agent plus `ops` as Platform and Reliability Engineer (DevOps and SRE); SRE splits out after launch | Decided (founder) | Yes | 2026-10-13 |
+| D-091 | No over-the-air updates (`expo-updates`) in v1.0; fixes ship as PATCH builds; revisit for v1.1 | Decided (founder; changes the 3 Oct recommendation) | Yes | 2026-10-13 |
+| D-092 | EAS Free plan until builds would exceed 15 iOS a month, then Starter ($19 a month plus usage) | Decided (founder) | Yes | 2026-10-13 |
 
 ### D-071 Primary mark: logo round 3 `final-a`
 - **Status:** Decided (founder, 3 Oct 2026).
