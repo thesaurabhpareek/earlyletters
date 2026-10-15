@@ -9,7 +9,7 @@ test('[J16] settings: home, privacy, appearance, help, licences, about', async (
 
   await app.getByText('Privacy', { exact: true }).first().click();
   await expect(app.getByText('What we never do', { exact: false })).toBeVisible();
-  await step('happy', 'Privacy', 'The usage-and-crash-report switch (off until the person says yes), what is never done (ads, selling data, training models), and links to the full policies.');
+  await step('happy', 'Privacy', 'No usage switch in v1.0 (it collects no data), what is never done (ads, selling data, training models), and links to the full policies.');
   await app.goBack();
 
   await app.getByText('Appearance', { exact: true }).first().click();

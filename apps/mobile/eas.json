@@ -11,7 +11,8 @@
       "environment": "development",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "development",
-        "EXPO_PUBLIC_SERVER_FEATURES": "off"
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off"
       }
     },
     "preview": {
@@ -20,7 +21,8 @@
       "environment": "preview",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview",
-        "EXPO_PUBLIC_SERVER_FEATURES": "off"
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off"
       }
     },
     "production": {
@@ -29,7 +31,8 @@
       "environment": "production",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
-        "EXPO_PUBLIC_SERVER_FEATURES": "off"
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off"
       }
     },
     "testflight": {
@@ -39,7 +42,8 @@
       "environment": "preview",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview",
-        "EXPO_PUBLIC_SERVER_FEATURES": "off"
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off"
       }
     }
   },
