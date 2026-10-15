@@ -59,6 +59,7 @@ import { releaseContexts, whisperModule } from '../models/whisper-runtime';
 import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, type Transcriber } from '../transcribe';
 import { createSampleTranscriber } from '../transcribe-sample';
 import { createWhisperTranscriber } from '../transcribe-whisper';
+import { RunInputError } from '../transcribe-run';
 import { copyForLetter } from '../audio-enhance';
 import { trackTranscriptionCompleted } from '../analytics/track';
 import { getSpokenLanguages } from '../language';
@@ -387,6 +388,7 @@ function failureOf(e: unknown): JobFailure {
   const code = scribeAudioErrorCode(e);
   if (code === 'ERR_SCRIBE_AUDIO_FILE_MISSING') return 'file_missing';
   if (code === 'ERR_SCRIBE_AUDIO_DECODE') return 'decode_failed';
+  if (e instanceof RunInputError) return 'decode_failed'; // a length the planner cannot trust (review L9)
   if (code === 'ERR_SCRIBE_AUDIO_UNSUPPORTED') return 'unsupported';
   if (e instanceof Error && e.message === 'model_load_failed') return 'model_load_failed';
   return 'transcribe_failed';
