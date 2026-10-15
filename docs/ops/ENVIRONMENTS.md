@@ -29,7 +29,7 @@ Nothing secret is in the repository. The app's project values are public by desi
 | Value | Where | Who sets it | Notes |
 |---|---|---|---|
 | The five switches and `EXPO_PUBLIC_DOCS_BASE_URL` (`https://packs.earlyletters.app`, D-097) | `apps/mobile/eas.json`, per profile | PR (S20; flips are founder merges) | Not secret |
-| `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | EAS environment variables, environment `preview` (staging values), later `production` | Founder, TESTFLIGHT.md step 9 | Publishable (anon) key only. The `testflight` profile shares the `preview` environment; with its switch off it constructs no client |
+| `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | EAS environment variables, environment `preview` (staging values), later `production` | Founder, TESTFLIGHT.md step 9 | Publishable (anon) key only. The `testflight` profile shares the `preview` environment; with its switch off it constructs no client, but the values are inlined in its bundle, so a secret key there would ship in build 1 too (the preflight fails on one in either profile) |
 | `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | EAS environment variable, only if not 6 | Founder | Must equal Supabase's Email OTP length |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | EAS environment variables | Founder, later (FT-15) | Not in the alpha: Apple and email only |
 | `EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_SENTRY_DSN` | not set | none | Analytics is off in every profile; nothing reads them |

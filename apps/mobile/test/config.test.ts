@@ -184,6 +184,8 @@ function configForProfile(name: string): ExpoConfig {
 
 describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
   const eas = easFile;
+  /** True once the founder has made the R-17 flip (TESTFLIGHT.md, "The flip"): the testflight profile's one line. */
+  const TESTFLIGHT_FLIPPED = eas.build.testflight?.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on';
 
   it('has exactly the three environment profiles and the testflight profile', () => {
     expect(Object.keys(eas.build).sort()).toEqual([...APP_ENVS, 'testflight'].sort());
@@ -221,9 +223,10 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     }
   });
 
-  it('server features are on in exactly one profile: preview, the alpha against staging', () => {
+  it('server features are on in preview, and in testflight only after the R-17 flip; never production or development', () => {
     const on = Object.entries(eas.build).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
-    expect(on).toEqual(['preview']);
+    // The flip (docs/release/TESTFLIGHT.md, "The flip") is the testflight line alone; this test passes either side of it.
+    expect(on).toEqual(TESTFLIGHT_FLIPPED ? ['preview', 'testflight'] : ['preview']);
   });
 
   describe('preview profile (alpha build 2: servers on, staging, TestFlight)', () => {
@@ -282,24 +285,36 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
       const exp = configForProfile('testflight');
       expect(exp.ios?.bundleIdentifier).toBe(`${bundleId()}.preview`);
       expect(exp.ios?.bundleIdentifier).not.toBe(bundleId());
-      expect(exp.extra?.serverFeatures).toBe(false);
+      expect(exp.extra?.serverFeatures).toBe(TESTFLIGHT_FLIPPED);
     });
 
     it('has a submit profile', () => {
       expect(eas.submit.testflight).toBeDefined();
     });
 
-    it('the R-17 flip is one line: testflight equals preview except EXPO_PUBLIC_SERVER_FEATURES', () => {
+    it('the R-17 flip is one line: testflight equals preview except EXPO_PUBLIC_SERVER_FEATURES, until the flip makes them equal', () => {
+      // Written so the flip PR changes apps/mobile/eas.json by one line and no test: before it the two profiles
+      // differ in that line only, after it in nothing. Any other difference fails either way.
       const { env: tfEnv, ...tfRest } = tf;
       const { env: pvEnv, ...pvRest } = eas.build.preview;
       expect(tfRest).toEqual(pvRest);
       const differing = Object.keys({ ...tfEnv, ...pvEnv }).filter((k) => tfEnv?.[k] !== pvEnv?.[k]);
-      expect(differing).toEqual(['EXPO_PUBLIC_SERVER_FEATURES']);
-      expect(tfEnv?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+      expect(differing).toEqual(TESTFLIGHT_FLIPPED ? [] : ['EXPO_PUBLIC_SERVER_FEATURES']);
+      expect(['on', 'off']).toContain(tfEnv?.EXPO_PUBLIC_SERVER_FEATURES);
       // The flip itself: the one line in apps/mobile/eas.json, inside "testflight".
       const block = easText.slice(easText.indexOf('"testflight": {'), easText.indexOf('"submit"'));
-      expect(block.match(/"EXPO_PUBLIC_SERVER_FEATURES": "off"/g)).toHaveLength(1);
+      expect(block.match(/"EXPO_PUBLIC_SERVER_FEATURES": "(on|off)"/g)).toHaveLength(1);
     });
+  });
+
+  it('builds 1 and 2 may share the "preview" update channel only while the app has no update client', () => {
+    // The switches are inlined at bundle time, so an over-the-air update made for build 2 (servers on) would turn
+    // servers on in build 1 if both listened on one channel. Today nothing listens: expo-updates is not installed.
+    // Adding it means giving testflight and preview their own channels first.
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as Record<string, Record<string, string> | undefined>;
+    const hasUpdates = ['dependencies', 'devDependencies'].some((k) => pkg[k]?.['expo-updates'] !== undefined);
+    const shared = eas.build.testflight.channel === eas.build.preview.channel;
+    expect(hasUpdates && shared, 'expo-updates is installed: give testflight and preview their own channels').toBe(false);
   });
 
   it('production stays off (store submission is re-planned after the alpha, D-106)', () => {

@@ -81,4 +81,6 @@ jobs:
           args=(build --platform ios --profile "$PROFILE" --non-interactive --wait)
           if [ "$SUBMIT" = "true" ]; then args+=(--auto-submit); fi
           # UNVERIFIED: eas-cli's current flags (--auto-submit uses the submit profile with the same name).
-          npx --yes eas-cli@latest "${args[@]}"
+          # Pinned to an exact release (24.8.0, published 24 Sep 2026): this step holds EXPO_TOKEN, so it never runs
+          # whatever `latest` happens to be today. Raise it deliberately, in its own PR.
+          npx --yes eas-cli@24.8.0 "${args[@]}"

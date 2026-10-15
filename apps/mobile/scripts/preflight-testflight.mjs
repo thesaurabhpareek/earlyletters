@@ -146,6 +146,15 @@ if (prof) {
   check(unwritten.length === 0, 'every eas.json profile writes EXPO_PUBLIC_SERVER_FEATURES as on or off', `eas.json profile(s) without an explicit on or off: ${unwritten.join(', ')}.`);
 }
 check(Boolean(eas.submit?.[PROFILE]), `eas.json has a "${PROFILE}" submit profile`, `eas.json has no "${PROFILE}" submit profile (\`eas submit --profile ${PROFILE}\` needs it).`);
+{
+  const ascAppId = eas.submit?.[PROFILE]?.ios?.ascAppId;
+  if (ascAppId && /^\d+$/.test(String(ascAppId))) pass(`${PROFILE} submit profile names the App Store Connect app (ios.ascAppId ${ascAppId})`);
+  else if (ascAppId) fail(`${PROFILE} submit profile ios.ascAppId is ${JSON.stringify(ascAppId)}; it is the numeric Apple ID of the app record (App Store Connect > the app > App Information).`);
+  else {
+    warn(`${PROFILE} submit profile has no ios.ascAppId. \`eas submit\` from your computer asks for the app interactively; the GitHub workflow (--non-interactive --auto-submit) needs ios.ascAppId, the numeric Apple ID from App Store Connect > the app > App Information, and an App Store Connect API key stored on EAS (unverified: check \`eas submit --help\` and the EAS submit docs). Not a secret: send it after step 2 and it goes in eas.json.`);
+    step(2, 'check', `send the .preview app record's Apple ID (App Information) for ios.ascAppId in the "${PROFILE}" submit profile, so the GitHub workflow can submit`);
+  }
+}
 check(!/(KEY|SECRET|TOKEN|PASSWORD|DSN)"\s*:/i.test(easText), 'eas.json holds no secret-looking names', 'eas.json holds a value named like a secret: project keys belong in EAS environment variables, never in this file.');
 check(!/supabase\.co|sb_publishable_|sb_secret_|eyJ[A-Za-z0-9_-]{10,}/.test(easText), 'eas.json holds no Supabase URL or key (they come from the EAS environment)', 'eas.json holds a Supabase URL or key. Remove it: the staging URL and anon key are EAS environment variables (TESTFLIGHT.md step 9), never committed.');
 
@@ -277,6 +286,34 @@ try {
   check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', `${PROFILE} profile sets EXPO_PUBLIC_ANALYTICS=off (no analytics in either alpha build, D-088)`, `${PROFILE} profile must set EXPO_PUBLIC_ANALYTICS to "off".`);
 }
 
+// ---------------------------------------------------------------- 4a. no secret key in any EXPO_PUBLIC_ value (every profile)
+// Every EXPO_PUBLIC_ value the code names is inlined into the bundle whatever the server switch says, and both alpha
+// profiles read the same EAS "preview" environment. So a secret exported here fails build 1 as well as build 2.
+/** 'secret key' or 'service_role key' when a value is one of Supabase's server keys, otherwise null. */
+function secretKind(value) {
+  if (/^sb_secret_/.test(value)) return 'secret key';
+  if (/^eyJ/.test(value)) {
+    try {
+      if (JSON.parse(Buffer.from(value.split('.')[1] ?? '', 'base64url').toString('utf8')).role === 'service_role') return 'service_role key';
+    } catch {
+      /* not a readable JWT: not this check's business */
+    }
+  }
+  return null;
+}
+{
+  const leaked = Object.entries(process.env)
+    .filter(([k]) => k.startsWith('EXPO_PUBLIC_'))
+    .map(([k, v]) => [k, secretKind(String(v ?? '').trim())])
+    .filter(([, kind]) => kind)
+    .map(([k, kind]) => `${k} holds a ${kind}`);
+  check(
+    leaked.length === 0,
+    'no EXPO_PUBLIC_ variable in this shell holds a Supabase secret or service_role key',
+    `${leaked.join('; ')}. A server key must never be in the app or in EAS build variables (both alpha profiles read the EAS "preview" environment): delete it there now, rotate it in Supabase (Project Settings > API Keys), and use the publishable (anon) key instead.`,
+  );
+}
+
 // ---------------------------------------------------------------- 4b. the staging project values (server-on build only)
 if (SERVER_ON) {
   // EAS cloud builds read these from the EAS "preview" environment, which this script cannot see. If you export
@@ -293,7 +330,7 @@ if (SERVER_ON) {
       ok = false;
       fail(`EXPO_PUBLIC_SUPABASE_URL ${url ? `"${url}"` : 'is empty'}: expected the staging Project URL, https://<20-character ref>.supabase.co, with no path.`);
     }
-    // The publishable key, or the legacy anon JWT. Never the secret key or a service_role JWT.
+    // The publishable key, or the legacy anon JWT. A secret or service_role key already failed in 4a.
     let role = null;
     if (/^eyJ/.test(key)) {
       try {
@@ -302,9 +339,8 @@ if (SERVER_ON) {
         role = 'unreadable';
       }
     }
-    if (/^sb_secret_/.test(key) || role === 'service_role') {
+    if (secretKind(key)) {
       ok = false;
-      fail('The key in this shell is a SECRET or service_role key. It must never be in the app or in EAS build variables: delete it from the EAS "preview" environment now, rotate it in Supabase (Project Settings > API Keys), and use the publishable (anon) key instead.');
     } else if (!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(key) && role !== 'anon') {
       ok = false;
       fail(`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY does not look like a publishable key (sb_publishable_...) or the legacy anon key${key ? '' : ' (it is empty)'}.`);
@@ -463,6 +499,8 @@ if (cfg) {
       warn('The privacy manifest declares no collected data (NSPrivacyCollectedDataTypes is empty) but this build signs in and syncs. Fine for internal TestFlight [unverified]; fill it from docs/legal/data-map.yaml (BL-349, WP-F21-09) before any external group or store build.');
   } else {
     notes.push('Server-side code is dormant behind EXPO_PUBLIC_SERVER_FEATURES=off: no Supabase client is constructed, no network call is made for sign-in or sync, and co-parent entry points show "coming soon". Analytics is switched off (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no usage switch, no PostHog client, and no PostHog key is in the build.');
+    if (prof?.environment === 'preview')
+      notes.push('This profile reads the same EAS "preview" environment as build 2, so the staging URL and publishable key are inlined in this bundle too. Both are public by design and unused here: with the switch off no client is constructed. A secret key in that environment would ship in this build as well (the 4a check above).');
   }
   notes.push('Plus is a StoreKit 2 in-app purchase (product ids plus.annual and plus.monthly) created under THIS App Store Connect record: the .preview record needs its own products and the Paid Apps agreement before sandbox purchases load. Review notes for guideline 3.1.2(a) belong to the production submission, not TestFlight internal testing (unverified).');
 }
@@ -476,7 +514,19 @@ if (!founder.has(3)) step(3, 'check', 'project id not checked (the app config di
 if (!founder.has(4)) step(4, 'check', 'words from speech need the key, the bucket and a published manifest');
 step(5, 'check', PROFILE === 'testflight' ? 'this run is the preflight for build 1' : 'build 1 is optional before build 2');
 if (SERVER_ON) {
-  step(6, 'check', 'scribe-staging exists and has every migration on develop (staging from develop; TESTFLIGHT.md step 6)');
+  // D-041: the schema reaches staging only through .github/workflows/deploy-db.yml. Build 2 runs develop's app
+  // against staging, so staging needs develop's migrations, which only a manual run from develop can deliver.
+  let deployDb = '';
+  try {
+    deployDb = read(join(REPO, '.github/workflows/deploy-db.yml'));
+  } catch {
+    // Missing workflow: reported as open below.
+  }
+  if (/workflow_dispatch/.test(deployDb) && /develop/.test(deployDb)) {
+    step(6, 'check', 'scribe-staging exists and has every migration on develop: run deploy-db from develop with the approve-migration label (TESTFLIGHT.md step 6)');
+  } else {
+    step(6, 'open', '.github/workflows/deploy-db.yml cannot deploy develop to staging yet (push to main only); the S20 change "staging from develop" must merge first, or staging has none of develop\'s migrations');
+  }
   step(8, 'check', 'Supabase Apple provider client ids include the .preview bundle id');
   step(10, 'check', 'curl -sI https://<website>/.well-known/apple-app-site-association answers 200 application/json with no redirect');
   step(11, 'check', 'this run is the preflight for build 2');

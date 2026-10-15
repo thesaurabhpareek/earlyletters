@@ -30,7 +30,8 @@ Each step names what it unblocks. The preflight prints the open ones by these na
 1. Certificates, Identifiers & Profiles > Identifiers: register `com.earlyletters.scribe.preview` with **Sign in with Apple** and **Associated Domains** ticked (EAS may do this at the first build when it manages credentials, *unverified*; ticking them yourself does no harm). Note your 10-character **Team ID** (Membership details): steps 8 and 10 need it.
 2. App Store Connect > Apps > New App: iOS, bundle id `com.earlyletters.scribe.preview`, a name such as "Early Letters Preview" (testers see it in TestFlight), primary language English (U.S.), any SKU. The permanent production id `com.earlyletters.scribe` is not used by either alpha build.
 3. Users and Access: add each internal tester (they need an Apple Account; give the least access the tester role allows, *unverified* role names). About 5 minutes each; they accept an email.
-4. Optional, for Plus in the sandbox: the Paid Apps agreement (FT-06) and the two products `plus.monthly` and `plus.annual` **on this .preview record** (FT-09, about 1 hour). Without them the Plan screen cannot load products; everything else works.
+4. App Store Connect > the app > App Information: copy the numeric **Apple ID** of this record and send it. It is not a secret; S20 puts it in `eas.json` as `submit.testflight.ios.ascAppId` and `submit.preview.ios.ascAppId`. `eas submit` from your computer asks for the app instead, but the GitHub workflow's non-interactive `--auto-submit` needs it, plus an App Store Connect API key stored on EAS (*unverified*; the preflight WARNs until it is in).
+5. Optional, for Plus in the sandbox: the Paid Apps agreement (FT-06) and the two products `plus.monthly` and `plus.annual` **on this .preview record** (FT-09, about 1 hour). Without them the Plan screen cannot load products; everything else works.
 *Unblocks:* the first upload (step 5) and the TestFlight groups.
 
 **Step 3. Expo account and the `eas init` project id (FT-17, BL-339).** About 20 minutes, then a one-line PR the same day.
@@ -64,14 +65,16 @@ The first build asks for your Apple sign-in and offers to create the certificate
 
 **Step 6. Supabase staging project and its schema (FT-10).** About 1.5 hours.
 1. `docs/ops/DEPLOY.md` founder steps 1 and 2: the "Early Letters" organisation (two-factor), the project `scribe-staging` in a US region, the session pooler URL as the GitHub Environment secret `SUPABASE_DB_URL_STAGING`.
-2. The schema reaches staging through CI only (D-041). Today `.github/workflows/deploy-db.yml` applies migrations to staging only from `main`, and `main` does not have `develop`'s migrations. The S20 change "staging from `develop`, by manual run with the `approve-migration` label" (PRD V2 08 section 5.2, P2) is the next S20 PR; when it merges, allow `develop` on the `staging` Environment and run it. FT-10 describes applying by hand from `supabase/APPLY.md`; that predates D-041's CI rule, so use it only as your own decision, and record what was applied.
+2. The schema reaches staging through CI only (D-041). Today `.github/workflows/deploy-db.yml` applies migrations to staging only from `main`, and `main` does not have `develop`'s migrations. The S20 change "staging from `develop`" (PRD V2 08 section 5.2, P2) is on branch `chore/staging-from-develop`: `deploy-db.yml` gains a manual run that deploys `develop` to staging, and refuses any other branch. It is a founder merge (D-041, release configuration); it must merge by **Thu 22 Oct** to leave a week for steps 7 to 11. When it merges: Settings > Environments > `staging` > Deployment branches: allow `develop` (and `main`), add yourself as a required reviewer, then Actions > Deploy database > Run workflow on `develop`. Until it merges the preflight shows step 6 as MISSING. FT-10 describes applying by hand from `supabase/APPLY.md`; that predates D-041's CI rule, so use it only as your own decision, and record what was applied.
 3. The per-project settings from `supabase/APPLY.md`: step 6 (the consent pepper, a new random value, kept in the password manager), step 7 (purge cron), step 8 (publish the beta policy versions `terms` and `sensitive-data`; until they exist every new account stops at "We couldn't finish setting up your account"), step 15. Spend cap on.
 4. **Staging now holds real family letters.** Treat it like production for access and deletion while the alpha runs (`docs/ops/ENVIRONMENTS.md`): only you have dashboard access, no load tests, no fixture resets, no restore drills against it.
 *Unblocks:* everything in build 2 that talks to a server.
 
 **Step 7. Supabase Auth on staging, with Resend SMTP for sign-in email (FT-12, FT-13).** About 2 hours. Follow `docs/ops/AUTH_SETUP.md` sections 1, 4, 5.1 and 6 on `scribe-staging`, with these alpha notes:
 - Resend (AUTH_SETUP 4.1): click and open tracking **off**; a sending-only key `supabase-auth-smtp` for Auth SMTP (4.2); email rate limit about 100 an hour (4.3).
-- Email provider (4.4): the **Email OTP length** must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (6 when unset), or every typed code is refused. Set **Email OTP expiration to 900 seconds**: the templates in `supabase/templates/` tell people the link and code last 15 minutes (`config.toml.snippet`).
+- Email provider (4.4): the **Email OTP length** must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (6 when unset), or every typed code is refused. Set **Email OTP expiration to 900 seconds**: the templates in `supabase/templates/` tell people the link and code last 15 minutes (`config.toml.snippet`), as PRD V2 A-REQ-018 Rev asks.
+- **Your call, open (FOUNDER_TASKS Q item 8, PRD V2 F02 Q2, WP-F02-14):** A-REQ-018 Rev asks for an **8-digit** code; the app and AUTH_SETUP default to 6. For 8, set the length to 8 here **and** `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` in the EAS `preview` environment (step 9) before build 2; the two must match. Either is fine for the family alpha; decide before anyone outside the family signs in.
+- AUTH_SETUP 4.4 (3600 seconds) and 5.1 ("exactly these two" redirect URLs) predate PRD V2; for staging follow this page. Updating AUTH_SETUP is a request to S01, its owner.
 - URL configuration (5.1): Site URL `https://earlyletters.com`; redirect URLs `https://earlyletters.com/auth/callback`, `https://earlyletters.com/auth/confirm` and `scribe://auth/callback`.
 - Templates (6): paste `supabase/templates/magic_link.html` and `confirmation.html` with the subjects in `supabase/templates/config.toml.snippet`. Their link is `{{ .SiteURL }}/auth/callback#token_hash=...`, the path the app on `develop` reads; the website serves the same page at `/auth/callback` and `/auth/confirm` (step 10).
 - Anonymous sign-ins off, confirm email on, sign-ups on.
@@ -118,7 +121,7 @@ Add the build to the **Family** internal group only (below).
 
 | | Needs | Optional |
 |---|---|---|
-| Build 1 | Steps 1, 2, 3, 5 | Step 4 (words from speech); Plus products (step 2.4) |
+| Build 1 | Steps 1, 2, 3, 5 | Step 4 (words from speech); Plus products (step 2.5) |
 | Build 2 | Steps 1, 2, 3, 6, 7, 8, 9, 11, and the S20 "staging from `develop`" PR for step 6 | Step 10 (links open the app; codes work without it), step 12 (before Delete account is tried), step 4, Plus products |
 
 Your hands-on time [A]: about 2.5 hours for build 1 (without step 4) and about 7 more for build 2 (with steps 10 and 12), plus Apple's identity check and DNS waits. Started by Mon 19 Oct, both builds fit before Thu 29 Oct if Apple enrolment is Active by Fri 23 Oct (T04).
@@ -127,6 +130,7 @@ Your hands-on time [A]: about 2.5 hours for build 1 (without step 4) and about 7
 
 D-100's gate: nobody outside the family signs in before the R-17 security gate passes (BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322 and BL-349 merged and reviewed together; PRD V2 09 R-17, target T16, Fri 13 Nov). So:
 - **Family:** build 2 (and build 1 if useful). Internal testers, in an internal group "Family".
+- **Legal pages (D-100):** the gate also says the legal pages describing a server product are live before sign-in. `/privacy` and `/terms` are live on the website, but whether their text covers accounts and sync is S17's and counsel's (T05, T20 publish them as drafts). Whether the family-only build 2 waits for that is your call; nobody outside the family signs in before both the R-17 gate and those pages.
 - **Invited friends:** build 1 only until the gate passes. Either an internal group "Friends" with **automatic distribution off**, adding build 1 by hand, or an external group (which needs Beta App Review of the build first, about a day, *unverified*, and gives a public link). Both builds share one App Store Connect record, so never let a group take new builds automatically.
 
 The flow for one tester:
@@ -144,19 +148,25 @@ When the gate passes and you approve it, the `testflight` profile turns on in **
 -        "EXPO_PUBLIC_SERVER_FEATURES": "off",
 +        "EXPO_PUBLIC_SERVER_FEATURES": "on",
 ```
-`apps/mobile/test/config.test.ts` holds `testflight` equal to `preview` in everything but that line, so the flip cannot carry anything else. It is a founder merge. After it, friends may get servers-on builds. `production` stays off until the store submission is re-planned (D-106).
+`apps/mobile/test/config.test.ts` holds `testflight` equal to `preview` in everything but that line, so the flip cannot carry anything else, and the tests (`config.test.ts`, `capabilities.test.ts`) pass on either side of it: the flip PR changes that one line and nothing else. It is a founder merge. After it, friends may get servers-on builds. `production` stays off until the store submission is re-planned (D-106).
 
 ## If something goes wrong (the kill path)
 
-The switch is the kill path (D-100): a build made with `EXPO_PUBLIC_SERVER_FEATURES=off` constructs no Supabase client, starts no sync and offers no sign-in (`apps/mobile/src/lib/capabilities.ts` and its tests). In order of speed:
+The switch is the kill path (D-100): a build made with `EXPO_PUBLIC_SERVER_FEATURES=off` constructs no Supabase client, starts no sync and offers no sign-in (`apps/mobile/src/lib/capabilities.ts` and its tests). Staging holds real family letters during the alpha, so first decide which case this is:
+- **Data may be exposed** (an access rule wrong, a key leaked, letters seen by the wrong person): pause the staging project first (Project Settings > General > Pause project; menu names *unverified*). That is the only step that stops reads at once: signing people out ends their refresh tokens, but an access token already issued stays valid until it expires (Supabase's default is one hour, *unverified* for this project).
+- **Something is broken but nothing is exposed:** steps 1 to 3 in order, no pause needed.
+
+In order of speed:
 1. **Stop the server side now.** Supabase staging: Authentication > turn off "Allow new users to sign up"; sign the users out (Authentication > Users) if sessions must end; pause the project as the hard stop (menu names *unverified*). Letters already on phones stay on the phones (local first); sync waits.
+   - **If a secret or service_role key was ever in the EAS "preview" environment or in a build:** rotate it in Supabase (Project Settings > API Keys) before anything else, delete it from EAS (`npx eas-cli env:list --environment preview` to see what is there), and expire every build made while it was there (step 2). Both alpha profiles read that environment, so build 1 carries it too. Rotating the publishable key also cuts off every installed build 2; that is the fastest app-side stop if pausing is not possible.
 2. **Stop the build.** App Store Connect > TestFlight > the build > Expire build: no new installs, and installed copies stop opening (*unverified*).
-3. **Ship a servers-off build** to the family: build the `testflight` profile (off) and add it to "Family".
-4. Remote kill switches do not help in the alpha: `sync` and `invites` have no consumers yet (WP-F19-12s, -12f), and no signed remote config reaches a phone before step 4's keys are in a build. Backup and the status report are not in either build (build flags off), so there is nothing to pause.
+3. **Ship a servers-off build** to the family: build the `testflight` profile while it is still off, and add it to "Family". After the flip, revert the flip line first (one line) and build that.
+4. **Tell the family and decide about staging data.** Say what happened and what was or was not exposed, in plain words. Letters synced to staging stay there until removed. If they must go, first have each person export their book (Settings > Export your book) so nothing depends on staging, then the founder removes the data or deletes the staging project. Write down what happened in `docs/ops/` before the next build.
+5. Remote kill switches do not help in the alpha: `sync` and `invites` have no consumers yet (WP-F19-12s, -12f), and no signed remote config reaches a phone before founder step 4's signing keys are in a build. Backup and the status report are not in either build (build flags off), so there is nothing to pause.
 
 ## What testers get
 
-Both builds, from `develop`: first run (the 18+ question, the promise, a child, the signature, the spoken language, asked before the speech download), Tonight (a prompt, Speak or Type, Not much today), speaking a letter with Review and Word for word, typing a letter with drafts, the Book, the letter page, Recently deleted, Read together, Settings (children, reminders, appearance, recordings, language, storage, export, helplines, licences, Help), and the membership rule (2 free letters, then Plus, D-082) with StoreKit 2 purchases if step 2.4 is done.
+Both builds, from `develop`: first run (the 18+ question, the promise, a child, the signature, the spoken language, asked before the speech download), Tonight (a prompt, Speak or Type, Not much today), speaking a letter with Review and Word for word, typing a letter with drafts, the Book, the letter page, Recently deleted, Read together, Settings (children, reminders, appearance, recordings, language, storage, export, helplines, licences, Help), and the membership rule (2 free letters, then Plus, D-082) with StoreKit 2 purchases if step 2.5 is done.
 
 Build 1 only: no accounts, no sign-in, no sync, no co-parent sharing (the Family tab shows coming soon), no delete-account.
 
@@ -183,7 +193,9 @@ If a build goes out without step 4, add: "Recording works, but the words will no
 `npm run preflight:testflight -w @scribe/mobile` (build 1) and `npm run preflight:alpha -w @scribe/mobile` (build 2); add `-- --skip-prebuild` to skip the native project (about a minute). It never builds, never goes online and needs no secret. FAIL stops (exit 1); WARN does not.
 - **eas.json:** the profile is a store build with `EXPO_PUBLIC_APP_ENV=preview`, EAS-owned build numbers and a submit profile; server features `off` in `testflight` (a WARN if the R-17 flip is in), `on` in `preview`, never on in `production`; the two build flags written as `off`; no Supabase URL or key and nothing named like a secret in the file.
 - **Config:** the `.preview` bundle id, URL scheme, microphone string, no background audio, no other permission, privacy manifest, export compliance, version, icons, and `extra` recording the switch and the build flags.
-- **Build 2 only:** if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape (and a FAIL for a secret or `service_role` key); the email code length to match in Supabase; a WARN that the privacy manifest declares no collected data although the build syncs (fine for internal TestFlight, *unverified*; BL-349 and WP-F21-09 before any external group).
+- **Both builds:** a FAIL if any `EXPO_PUBLIC_` variable exported in the shell holds a Supabase secret (`sb_secret_...`) or `service_role` key. Both profiles read the EAS "preview" environment, so export its values before either preflight to have them checked.
+- **Submit:** a WARN until the submit profile names `ios.ascAppId` (step 2.4); only the GitHub workflow needs it.
+- **Build 2 only:** step 6 is MISSING until `.github/workflows/deploy-db.yml` can deploy `develop` to staging by hand; if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape; the email code length to match in Supabase; a WARN that the privacy manifest declares no collected data although the build syncs (fine for internal TestFlight, *unverified*; BL-349 and WP-F21-09 before any external group).
 - **Packs:** the docs base, the signing key and a published manifest (step 4).
 - **No real family data** in the tree; the native project generates in a temporary copy.
 - **At the end:** the founder steps above that are missing, or that it cannot see, by number and name.
