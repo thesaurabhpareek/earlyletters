@@ -195,10 +195,11 @@ export const ENDPOINTS = {
     killSwitch: 'statusReport', capability: 'statusReport',
   },
   // ── Recovery key (packages/api/src/server/recovery-key.ts; S05). The escrow routes are on the scribe-escrow project. ──
+  // No kill switch: restore needs a registered device too, and `backupUploads` must never stop a restore.
   backupRegisterDevice: {
     method: 'POST', path: '/rest/v1/rpc/backup_register_device', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
-    killSwitch: 'backupUploads', capability: 'backup',
+    capability: 'backup',
   },
   backupStoreKey: {
     method: 'POST', path: '/rest/v1/rpc/backup_store_key', class: 'write_rpc', auth: 'user_jwt',
@@ -216,6 +217,34 @@ export const ENDPOINTS = {
     method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/:id/release`, class: 'escrow', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 240, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
     killSwitch: 'escrow', capability: 'backup',
+  },
+  escrowListRequests: {
+    method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/pending`, class: 'escrow', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 240, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+    capability: 'backup',
+  },
+  // Saying "Not me", cancelling and the Stop link must work while `escrow` is killed (they only ever stop a restore).
+  escrowDecide: {
+    method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/:id/decision`, class: 'escrow', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+    capability: 'backup',
+  },
+  escrowCancel: {
+    method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/:id/cancel`, class: 'escrow', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+    capability: 'backup',
+  },
+} as const satisfies Record<string, EndpointSpec>;
+
+/**
+ * Public, token-authenticated endpoints called from our web pages, not the
+ * app (`account-stop`, F08 6.5 C4, F02-REQ-017). The token in the body is
+ * the credential; the page posts it only on the button press.
+ */
+export const WEB_ENDPOINTS = {
+  accountStop: {
+    method: 'POST', path: `/functions/v1/account-stop/${API_MAJOR}`, class: 'edge_light', auth: 'public',
+    idempotency: 'natural_id', rateLimit: { limit: 30, windowSeconds: 3600, per: 'ip_hash', enforcedBy: 'edge_function' }, status: 'planned',
   },
 } as const satisfies Record<string, EndpointSpec>;
 
@@ -244,8 +273,11 @@ export const SERVER_ENDPOINTS = {
  *    and the result for 24 hours;
  *  - a repeat with the same key and the same arguments answers the stored
  *    result without a second effect;
- *  - the same key with other arguments is `idempotency_conflict` (422; SQL
- *    raises 22023 as built in 20261005000000);
+ *  - the same key with other arguments is `idempotency_conflict` (422). As
+ *    built, `idempotency_claim` (20261005000000) raises 22023 with no detail,
+ *    so clients see `bad_request` until S02 adds detail `idempotency`
+ *    (requested); a body that changed must take a new key, so this is
+ *    always a client bug;
  *  - a malformed key is `bad_request`; where the endpoint requires a key, a
  *    missing one is `bad_request` too;
  *  - reuse a key only to retry a call whose answer never arrived.

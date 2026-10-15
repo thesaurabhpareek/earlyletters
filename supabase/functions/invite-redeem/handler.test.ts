@@ -113,7 +113,7 @@ Deno.test('[B-NFR-004] a wrong code reads as not_found whatever the reason, and 
   for (let i = 0; i < 10; i++) {
     const res = await w.handler(guess('ZZZZZZZZ'));
     assert.equal(res.status, 409);
-    assert.deepEqual((await res.json()).error, { code: 'invite_unusable', retryable: false, detail: 'not_found' });
+    assert.deepEqual((await res.json()).error, { code: 'invite_unusable', retryable: false, sqlstate: 'SCINV', detail: 'not_found' });
   }
   const eleventh = await w.handler(guess(CODE));
   assert.equal(eleventh.status, 429);
@@ -152,13 +152,13 @@ Deno.test('a person the database called limited is answered from memory, without
 
 Deno.test('refused outcomes: only SCCAP, SCCON, SCDEL and SCRAT pass; SCINV reads as not_found; SCRAT is retryable', async () => {
   const inv = await world({ rpc: { body: { outcome: 'refused', sqlstate: 'SCINV', detail: 'expired' } } });
-  assert.deepEqual((await (await inv.handler(guess(CODE))).json()).error, { code: 'invite_unusable', retryable: false, detail: 'not_found' });
+  assert.deepEqual((await (await inv.handler(guess(CODE))).json()).error, { code: 'invite_unusable', retryable: false, sqlstate: 'SCINV', detail: 'not_found' });
   const odd = await world({ rpc: { body: { outcome: 'refused', sqlstate: '42501' } } });
   assert.equal((await odd.handler(guess(CODE))).status, 503);
   const rat = await world({ rpc: { body: { outcome: 'refused', sqlstate: 'SCRAT' } } });
   const r = await rat.handler(guess(CODE));
   assert.equal(r.status, 429);
-  assert.deepEqual((await r.json()).error, { code: 'rate_limited', retryable: true });
+  assert.deepEqual((await r.json()).error, { code: 'rate_limited', retryable: true, sqlstate: 'SCRAT' });
 });
 
 Deno.test('without CLIENT_IP_HEADER the IP limit is skipped and the gap is logged', async () => {
@@ -181,13 +181,15 @@ Deno.test('[F11-REQ-007] global brake: every code answers codes_paused and an er
 Deno.test('[F11-REQ-026] a full book answers parents_full; consent and membership keep their meaning; joined is passed on', async () => {
   const full = await world({ refusal: { sqlstate: 'SCCAP', detail: '2' } });
   const body = await (await full.handler(req({ code: CODE, mode: 'accept', device: DEVICE }))).json();
-  assert.deepEqual(body.error, { code: 'parents_full', retryable: false });
-  const consent = await world({ refusal: { sqlstate: 'SCCON', detail: 'sensitive-data' } });
+  assert.deepEqual(body.error, { code: 'parents_full', retryable: false, sqlstate: 'SCCAP' });
+  const consent = await world({ refusal: { sqlstate: 'SCCON', detail: 'terms,sensitive-data' } });
   const c = await (await consent.handler(req({ code: CODE, mode: 'accept', device: DEVICE }))).json();
-  assert.deepEqual(c.error, { code: 'consent_required', retryable: false, detail: 'sensitive-data' });
+  assert.deepEqual(c.error, { code: 'consent_required', retryable: false, sqlstate: 'SCCON', detail: 'terms' });
+  const share = await world({ refusal: { sqlstate: 'SCCON', detail: 'terms,family-share' } });
+  assert.equal((await (await share.handler(req({ code: CODE, mode: 'accept', device: DEVICE }))).json()).error.detail, 'family-share');
   const member = await world({ rpc: { body: { outcome: 'unusable', detail: 'already_member' } } });
   const m = await (await member.handler(req({ code: CODE, mode: 'accept', device: DEVICE }))).json();
-  assert.deepEqual(m.error, { code: 'invite_unusable', retryable: false, detail: 'already_member' });
+  assert.deepEqual(m.error, { code: 'invite_unusable', retryable: false, sqlstate: 'SCINV', detail: 'already_member' });
   const joined = await world({ joined: true });
   assert.deepEqual((await (await joined.handler(guess(CODE))).json()).data, { mode: 'peek', inviter: 'Papa', role: 'parent', joined: true });
 });

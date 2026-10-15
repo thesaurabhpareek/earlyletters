@@ -265,6 +265,30 @@ export function classifyHttpStatus(status: number): ErrorRule {
   return rule('internal', 'reject');
 }
 
+/**
+ * What a client does with an envelope error code, for answers from our Edge
+ * Functions (which carry a code and maybe a SQLSTATE, not only a status).
+ * Prefer `classifySqlstate(error.sqlstate)` when a SQLSTATE is present.
+ */
+export const ERROR_CODE_ACTIONS: Readonly<Record<ApiErrorCode, ErrorAction>> = {
+  bad_request: 'reject', unauthorized: 'reauth', forbidden: 'reject', not_found: 'reject', conflict: 'reject', gone: 'reject',
+  payload_too_large: 'reject', upgrade_required: 'tell_user', rate_limited: 'retry', timeout: 'retry', unavailable: 'retry',
+  internal: 'reject', network: 'retry', consent_required: 'pause_for_consent', immutable: 'reject', tombstoned: 'reject',
+  last_parent: 'reject', deleted: 'reject', not_parent: 'reject', invite_unusable: 'tell_user', plus_required: 'tell_user',
+  anonymous_refused: 'reject', parents_full: 'tell_user', paused: 'retry', idempotency_conflict: 'reject',
+  /** Ask the person to sign in again now (escrow step-up); never a silent token refresh. */
+  reauth_required: 'tell_user',
+};
+
+export function classifyErrorCode(error: Pick<ApiError, 'code' | 'sqlstate'>): ErrorRule {
+  if (error.sqlstate) {
+    const bySql = classifySqlstate(error.sqlstate);
+    if (bySql.code !== 'internal') return bySql;
+  }
+  const action = ERROR_CODE_ACTIONS[error.code] ?? 'reject';
+  return { code: error.code, action, retryable: action === 'retry' || action === 'reauth' };
+}
+
 /** HTTP status an Edge Function should answer for one of our error codes. */
 export function httpStatusFor(code: ApiErrorCode): number {
   switch (code) {
@@ -287,8 +311,9 @@ export function httpStatusFor(code: ApiErrorCode): number {
       return 409;
     case 'idempotency_conflict':
       return 422;
+    // 403, not 401: a token refresh never satisfies a step-up, which needs a fresh sign-in.
     case 'reauth_required':
-      return 401;
+      return 403;
     case 'gone':
     case 'deleted':
       return 410;

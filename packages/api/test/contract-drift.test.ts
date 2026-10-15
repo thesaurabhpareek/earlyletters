@@ -21,6 +21,7 @@ import {
   INVITE_UNUSABLE_DETAILS,
   PLANNED_PREFS_KEYS,
   PLANNED_PUSH_OP_TYPES,
+  ENTRY_DATA_KEYS,
   PREFS_KEYS,
   PulledRowSchema,
   PUSH_OP_TYPES,
@@ -139,6 +140,34 @@ describe('[F16-REQ-028] the pull row equals what sync_pull sends on own rows, fi
 
   it('every key in PulledRowSchema is sent by the SQL, or is a pending S02 column', () => {
     for (const k of schemaKeys) expect(sqlKeys.has(k) || PENDING_PULL_COLUMNS.includes(k), `${k} is in the contract but sync_pull never sends it`).toBe(true);
+  });
+});
+
+describe('[F16-REQ-028] entry.upsert data equals the keys sync_push reads; others\' rows equal book_entries', () => {
+  /** Keys in the contract that develop's SQL does not read yet (S02 PR #140 adds them). */
+  const PENDING_ENTRY_KEYS = ['occurred_precision', 'base_direction', 'author_edits', 'locked_spans', 'pack_ref'];
+  const push = newestDefinition('sync_push');
+  const start = push.indexOf("when 'entry.upsert', 'entry.reupload' then");
+  const end = push.indexOf("when 'entry.delete' then", start);
+  const branch = start > 0 && end > start ? push.slice(start, end) : '';
+  const sqlKeys = new Set([...branch.matchAll(/\bd\s*(?:->>|->|\?)\s*'([a-z_]+)'/g)].map((m) => m[1]));
+
+  it('every key the SQL reads is in EntryData, and every EntryData key is read (or pending in S02\'s file)', () => {
+    expect(sqlKeys.size).toBeGreaterThan(10);
+    for (const k of sqlKeys) expect(ENTRY_DATA_KEYS as readonly string[], `sync_push reads ${k}, EntryData lacks it`).toContain(k);
+    // `id` travels on the op (o->>'id'); the data copy is the client's own.
+    for (const k of ENTRY_DATA_KEYS.filter((x) => x !== 'id')) {
+      expect(sqlKeys.has(k) || PENDING_ENTRY_KEYS.includes(k), `EntryData has ${k}, sync_push never reads it`).toBe(true);
+    }
+  });
+
+  it('every book_entries column (what other members receive) is in PulledRowSchema', () => {
+    const view = [...all.matchAll(/create or replace view public\.book_entries[^]*?\bselect\b([^]*?)\bfrom public\.entries\b/g)].pop();
+    expect(view, 'book_entries view not found').toBeDefined();
+    const cols = [...view![1].matchAll(/\be\.([a-z_]+)/g)].map((m) => m[1]).filter((c) => c !== 'search');
+    expect(cols.length).toBeGreaterThan(10);
+    const keys = Object.keys(PulledRowSchema.entries);
+    for (const c of cols) expect(keys, `book_entries sends ${c}`).toContain(c);
   });
 });
 

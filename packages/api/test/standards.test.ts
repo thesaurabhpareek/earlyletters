@@ -22,6 +22,8 @@ import {
   IDEMPOTENCY,
   PAUSED_RETRY_AFTER_SECONDS,
   SERVER_ENDPOINTS,
+  classifyErrorCode,
+  ERROR_CODE_ACTIONS,
   type EndpointSpec,
 } from '../src';
 
@@ -46,7 +48,7 @@ describe('[DECISION-17] every endpoint the app calls meets the API standard', ()
     for (const [name, e] of entries) {
       if (e.auth === 'public' && name !== 'signIn') expect(e.method).toBe('GET');
       if (e.method === 'POST' && e.idempotency === 'safe_method') {
-        expect(['signIn', 'syncPull', 'syncBooks', 'policyActionsNeeded', 'peekInvite']).toContain(name);
+        expect(['signIn', 'syncPull', 'syncBooks', 'policyActionsNeeded', 'peekInvite', 'escrowListRequests']).toContain(name);
       }
     }
   });
@@ -55,7 +57,8 @@ describe('[DECISION-17] every endpoint the app calls meets the API standard', ()
     // Sign-in and consent acts have no kill switch by design (forceReauthEpoch is sign-in's lever, LEGAL-REQ-040).
     const signInFamily = ['signIn', 'appleToken', 'recordPolicyAct', 'policyActionsNeeded'];
     // Stepping back is never paused: cancel an invite, leave, remove a family member, undo a join (DATA-REQ-016, LEGAL-REQ-009).
-    const alwaysAvailable = ['revokeInvite', 'leaveChild', 'removeChildMember', 'undoParentJoin'];
+    // Restore must never be stopped by `backupUploads`, and stopping a restore must never be stopped by `escrow`.
+    const alwaysAvailable = ['revokeInvite', 'leaveChild', 'removeChildMember', 'undoParentJoin', 'backupRegisterDevice', 'escrowListRequests', 'escrowDecide', 'escrowCancel'];
     for (const [name, e] of entries) {
       if (e.path.startsWith('/functions/v1/config') || e.path.startsWith('/functions/v1/content') || e.class === 'pack_file') continue;
       expect(e.capability, `${name} needs a capability`).toBeDefined();
@@ -63,6 +66,15 @@ describe('[DECISION-17] every endpoint the app calls meets the API standard', ()
       else if (alwaysAvailable.includes(name)) expect(e.killSwitch, `${name} must stay available`).toBeUndefined();
       else expect(e.killSwitch, `${name} needs a kill switch`).toBeDefined();
     }
+  });
+
+  it('[F08 6.5 C1] a step-up refusal is not a 401 (a token refresh never satisfies it) and asks the person', () => {
+    expect(httpStatusFor('reauth_required')).toBe(403);
+    expect(classifyErrorCode({ code: 'reauth_required' }).action).toBe('tell_user');
+    expect(classifyErrorCode({ code: 'parents_full', sqlstate: 'SCCAP' })).toEqual({ code: 'parents_full', action: 'tell_user', retryable: false });
+    expect(classifyErrorCode({ code: 'consent_required' }).action).toBe('pause_for_consent');
+    expect(classifyErrorCode({ code: 'paused' }).action).toBe('retry');
+    for (const c of API_ERROR_CODES) expect(ERROR_CODE_ACTIONS[c]).toBeDefined();
   });
 
   it('server-only endpoints live apart from the app-callable list', () => {

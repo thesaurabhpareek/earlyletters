@@ -72,7 +72,13 @@ export interface StoreKeyArgs {
 
 // ── The escrow function (project scribe-escrow) ──────────────────────────
 
-/** Routes below the escrow project's URL. Never in the main project (release check, F08-REQ-034). */
+/**
+ * Routes below the escrow project's URL. Never in the main project (release
+ * check, F08-REQ-034). When `escrow` is killed (the function's own
+ * KILL_SWITCHES secret, or the remote switch on the phone), create and
+ * release stop; list, `not_me` decisions and cancel keep working, because
+ * they can only stop a restore. Approve while killed is answered `paused`.
+ */
 export const ESCROW_ROUTES = {
   createRequest: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests' },
   /** POST, not GET: the device id goes in the body so no install id lands in an access log. */

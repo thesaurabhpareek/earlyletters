@@ -123,6 +123,8 @@ export function inviteErrorKindFor(sqlstate: string | null | undefined, detail?:
       return 'signed_out';
     case 'P0002':
       return 'not_found';
+    case 'SCKIL':
+      return 'paused';
     default:
       return 'unknown';
   }
