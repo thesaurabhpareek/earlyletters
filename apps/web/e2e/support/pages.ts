@@ -16,5 +16,6 @@ export const PAGES: SitePage[] = [
   { name: 'unsubscribe, could not send', path: `/unsubscribe?t=${encodeURIComponent(VALID_TOKEN)}&error=1`, status: 200 },
   { name: 'unsubscribe, done', path: '/unsubscribe?done=1', status: 200 },
   { name: 'sign-in link page', path: '/auth/confirm', status: 200 },
+  { name: 'invite link page', path: '/i/e2eInviteToken0123456789abcdef', status: 200 },
   { name: '404', path: '/this-page-does-not-exist', status: 404 },
 ];
