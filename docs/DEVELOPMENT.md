@@ -14,7 +14,7 @@ Rules:
 - Every change is a pull request into `develop`. No direct pushes to `develop` or `main`.
 - One concern per pull request. Stacked PRs name their base in the description and retarget to `develop` when the base merges.
 - Website hotfix: PR into `main`, then merge `main` back into `develop` the same day so the lineages never drift again.
-- Release: PR `develop` into `main`, then tag `ios-v<major>.<minor>.<patch>` on the merge commit. App builds come from `develop` (TestFlight) or the tag (App Store).
+- Release (ADR 0022, D-089; the runbook is `docs/ops/RELEASE.md`): PR `develop` into `main`, then the coordinator cuts `release/<major>.<minor>` from `main` at freeze. Fixes merge to `develop` first and are cherry-picked onto the release branch. The version lives only in `apps/mobile/version.json`; build numbers come only from EAS. Two lanes: preview-lane TestFlight builds come from `develop` (`docs/release/TESTFLIGHT.md`); store builds come only from tags on the release branch, `ios-v<x.y.z>-rc.<n>` for a candidate and `ios-v<x.y.z>` on the candidate Apple approved, pushed after release. Tags never move.
 - Database changes ship as a new migration file. Never edit a migration that has been applied.
 
 ## Definition of Ready
