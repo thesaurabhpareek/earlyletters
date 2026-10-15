@@ -28,6 +28,8 @@ The machine may remove and repair. It may never add meaning.
 | `packs/` | Language rule packs (data, downloaded on demand) |
 | `docs/agents/` | Agent brief, coordination rules, board, debates. Read `COORDINATION.md` before working |
 
+Before reading code to learn how something works or why it was decided, start at `docs/README.md`: `docs/reference/` describes the system as built on `develop`, and `docs/decisions/` records every decision with its reasons, door type (one-way or two-way) and revisit triggers. Both are updated daily by the `reference-docs` and `decision-records` agents.
+
 ## Commands
 ```bash
 npm install            # once, at the repo root
