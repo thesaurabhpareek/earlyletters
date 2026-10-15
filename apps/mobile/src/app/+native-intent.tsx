@@ -4,8 +4,10 @@
  * secrets are taken out of the URL here and never become route params,
  * history entries or log lines (A-NFR-012, LEGAL-REQ-014).
  *
- * - https://earlyletters.com/auth/callback#token_hash=...  -> token hash kept
- *   in memory, route /sign-in/verify
+ * - https://earlyletters.com/auth/callback?rid=...#token_hash=... (or ?code=,
+ *   the PKCE shape)                                        -> kept in memory,
+ *   route /sign-in/verify, which uses it only when this phone made the request
+ *   (`rid`) and nobody is signed in here (BL-347)
  * - scribe://auth/callback (website fallback, no secret)    -> /sign-in/code
  * - https://earlyletters.com/i/<token>                      -> token to the
  *   Keychain first (A-REQ-028), route /invite
@@ -48,7 +50,10 @@ export async function redirectSystemPath({ path }: { path: string; initial: bool
     if (isCaptureRoute(path)) return TONIGHT_HREF;
     const link = classifyIncomingUrl(path, { origin: brand.web.origin, scheme: brand.scheme });
     const plan = planIncomingLink(link, { serverFeatures: serverFeaturesEnabled(), gateStopped: link.kind === 'invite' && gateStopped(), path });
-    if (plan.keepAuthLink && link.kind === 'auth-link') setPendingAuthLink({ tokenHash: link.tokenHash, type: link.type });
+    if (plan.keepAuthLink && link.kind === 'auth-link') {
+      // Kept in memory only; /sign-in/verify uses it only if this phone asked for it (BL-347).
+      setPendingAuthLink({ tokenHash: link.tokenHash, code: link.code, type: link.type, requestId: link.requestId });
+    }
     if (plan.keepInviteToken && link.kind === 'invite') await savePendingInvite(link.token);
     return plan.route;
   } catch {

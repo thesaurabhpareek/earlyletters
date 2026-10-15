@@ -13,6 +13,12 @@
  *   "Keep on this phone" records a decline; the person stays signed in and
  *   can turn sync on later in Settings, Privacy.
  *
+ * - Claim (BL-347, F02-REQ-019, F02 6.2 step 6): when this phone has
+ *   letters no account owns yet, one screen after consent: "Your letters on
+ *   this phone will be kept in the account a***@example.com", Keep them here
+ *   or This is not my account. Nothing moves and nothing uploads before the
+ *   tap; "not my account" signs out on this phone.
+ *
  * Also the "Finish setting up" target from Family and Account.
  */
 import { brand } from '@scribe/brand';
@@ -25,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { accountHasBooks } from '@/lib/auth/consent';
 import { authCopy } from '@/lib/auth/copy';
+import { linkCopy } from '@/lib/auth/link-copy';
 import type { ConsentStep } from '@/lib/auth/machine.logic';
 import { getSignInTrigger } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
@@ -45,6 +52,7 @@ export default function ConsentSteps() {
   const s = auth.state;
   const k = authCopy.consent;
   const child = active?.name ?? k.childFallback;
+  const claimNeeded = s.status === 'ready' && s.sync === 'on' && auth.claim.needed;
 
   // Done: close, unless a returning person found no book (PRD A F4 "No book here yet").
   useEffect(() => {
@@ -52,7 +60,7 @@ export default function ConsentSteps() {
       if (!switching.current) close();
       return;
     }
-    if (s.status !== 'ready') return;
+    if (s.status !== 'ready' || claimNeeded) return;
     if (getSignInTrigger() !== 'sign_in' || children.length > 0 || !auth.client || s.sync !== 'on') {
       close();
       return;
@@ -70,7 +78,7 @@ export default function ConsentSteps() {
     };
     // Runs when the state settles; close and children are stable enough for this one-shot decision.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.status]);
+  }, [s.status, claimNeeded]);
 
   const answer = async (step: ConsentStep, accepted: boolean) => {
     haptic('tap');
@@ -99,6 +107,39 @@ export default function ConsentSteps() {
             <Text>{n.startBook}</Text>
           </Button>
         </View>
+      </SheetFrame>
+    );
+  }
+
+  if (claimNeeded) {
+    const c = linkCopy.claim;
+    const email = auth.claim.maskedEmail;
+    return (
+      <SheetFrame
+        footer={
+          <>
+            <Button
+              size="lg"
+              onPress={() => {
+                haptic('tap');
+                auth.confirmClaim();
+              }}
+              disabled={busy}>
+              <Text>{c.keep}</Text>
+            </Button>
+            <QuietButton
+              label={c.notMine}
+              disabled={busy}
+              onPress={() => {
+                setBusy(true);
+                void auth.declineClaim().finally(() => setBusy(false));
+              }}
+            />
+          </>
+        }>
+        <SheetTitle>{c.title}</SheetTitle>
+        <SheetBody>{email ? fill(c.body, { email }) : c.bodyNoEmail}</SheetBody>
+        <SheetBody muted>{c.help}</SheetBody>
       </SheetFrame>
     );
   }

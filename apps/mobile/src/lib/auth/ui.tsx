@@ -215,7 +215,8 @@ export function AccountGate({
 
   if (s.status === 'checkingConsent' || s.status === 'signingOut') return <Busy label={authCopy.consent.settingUp} />;
 
-  if (s.status === 'needsConsent') {
+  // Signed in with consent done, but the letters-on-this-phone screen is not answered yet (BL-347).
+  if (s.status === 'needsConsent' || (s.status === 'ready' && s.sync === 'on' && auth.claim.needed)) {
     return (
       <View className="gap-4">
         <SheetBody muted>{g.sync.waiting}</SheetBody>

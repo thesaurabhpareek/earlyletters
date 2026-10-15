@@ -9,7 +9,7 @@ What the app expects, in one table:
 | Thing | Value |
 |---|---|
 | Website (universal links) | `https://earlyletters.com` (from `packages/brand`) |
-| Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=email` |
+| Email link | `https://earlyletters.com/auth/callback?rid=<request id>#token_hash=<hash>&type=email` (section 6; BL-347, section 12) |
 | Custom-scheme fallback | `scribe://auth/callback` (opens the code screen; never carries a token) |
 | Invite link | `https://earlyletters.com/i/<token>` |
 | Bundle ids | `com.earlyletters.scribe` (production), `.preview`, `.dev` (internal builds) |
@@ -57,7 +57,20 @@ Keys > **+**:
 - Name: `Early Letters Sign in with Apple`; tick **Sign in with Apple** > Configure > Primary App ID `com.earlyletters.scribe`.
 - Download `AuthKey_<KEYID>.p8` (Apple lets you download it **once**). Note the **Key ID**.
 - Store the `.p8`, Key ID and Team ID in your password manager. Never in the repo (`.gitignore` already ignores `*.p8`).
-- Uses: (a) the client secret for Supabase's web OAuth flow (step 2.6, only when 2.3 is used; Apple requires a new secret at least every 6 months, so set a calendar reminder); (b) the future `apple-token` Edge Function that exchanges the authorization code at sign-in and revokes Apple's token when someone deletes their account (TDD 04 3.1.1; not built yet, see the hand-off).
+- Uses: (a) the client secret for Supabase's web OAuth flow (step 2.6, only when 2.3 is used; Apple requires a new secret at least every 6 months, so set a calendar reminder); (b) the `apple-token` Edge Function, which exchanges the authorization code right after sign-in and stores Apple's refresh token encrypted (BL-330), and the purge worker, which revokes that token when someone deletes their account (TDD 04 3.1.1).
+
+#### 2.4.1 Deploy `apple-token` (FT-11; founder only)
+Built and tested (`supabase/functions/apple-token`, Deno tests with fake keys); not deployed. The app calls it once after every Apple sign-in and never waits for it, so sign-in works before it is deployed; until then each Apple user's deletion ends with `apple: no_token` and the `apple_no_token` alert.
+1. Make the key-encryption key once, on your Mac: `openssl rand -base64 32`. This is `TOKEN_KEK_V1`. Put it in the password manager. Losing it means stored Apple tokens cannot be revoked (deletion then alerts); a leak needs a new key (`TOKEN_KEK_V2`) and a re-capture at each person's next Apple sign-in.
+2. Supabase > Edge Functions > Secrets (staging first, then production), the same values the purge worker reads:
+   - `APPLE_TEAM_ID` (2.2), `APPLE_SIGNIN_KEY_ID` (2.4), `APPLE_SIGNIN_PRIVATE_KEY` (the whole `.p8` text; pasted `\n` sequences are fine), `TOKEN_KEK_V1`.
+   - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by Supabase.
+3. The migration `20261004200000_ops_deletion_worker.sql` (`ops_apple_token_put`) must be applied first (`supabase/APPLY.md` order).
+4. Deploy from the repo root with Supabase CLI 2.13.3 or later: `npx supabase functions deploy apple-token --use-api`. Keep "Verify JWT" on.
+5. Check (11.9): sign in with Apple on the phone; Supabase > Table editor > `ops.apple_tokens` has one row for that user with `key_version = 1` and `client_id = com.earlyletters.scribe`; the function log shows `request.done` with status 204 and nothing else about the person.
+6. Rotation: add `TOKEN_KEK_V2`; new captures use the highest version; keep V1 until every row is re-captured or revoked (the purge worker reads each row's own version).
+
+What the function does, in order: checks the caller's session has an Apple identity; at most 5 calls per account per 10 minutes per instance; exchanges the code at `https://appleid.apple.com/auth/token` with a 10-minute ES256 client secret for the bundle id; checks Apple's `id_token` names the same Apple user and our bundle id (otherwise revokes the new token and stores nothing); wraps the refresh token with AES-256-GCM bound to the profile id; stores it with `ops_apple_token_put`; answers 204 with no body. Nothing about the person is logged.
 
 ### 2.5 Email relay for "Hide My Email"
 Apple Developer > **Services** > Sign in with Apple for Email Communication > Configure:
@@ -132,9 +145,9 @@ Supabase > Authentication > Sign In / Providers > **Email**:
 ### 5.1 Supabase URL configuration
 Supabase > Authentication > **URL Configuration**:
 - Site URL: `https://earlyletters.com`
-- Redirect URLs (exactly these two, A-NFR-010): `https://earlyletters.com/auth/callback` and `scribe://auth/callback`
+- Redirect URLs (A-NFR-010, F02-REQ-012): `https://earlyletters.com/auth/callback`, `https://earlyletters.com/auth/callback?rid=*` and `scribe://auth/callback`
 
-The email template (section 6) builds the link itself, so these mostly guard against someone passing another redirect.
+Since BL-347 the app sends `emailRedirectTo = https://earlyletters.com/auth/callback?rid=<32 hex>` and the template (section 6) builds the link from `{{ .RedirectTo }}`, so the redirect must be accepted with its query. **Assumption:** Supabase's redirect allowlist matches `?rid=*` with its glob rules (section 11, check 11). If it does not, Supabase falls back to the Site URL, the link arrives without `rid`, and the app refuses it and shows "Type the code from the email on this phone instead". Nothing unsafe happens, but links stop working: use `https://earlyletters.com/**` instead (the F02-REQ-012 wording).
 
 ### 5.2 apple-app-site-association (the website must serve this)
 URL: `https://earlyletters.com/.well-known/apple-app-site-association`. No file extension, served as `application/json`, over HTTPS, **no redirects** (Verified: Apple "Supporting associated domains"). Replace `<TEAMID>`:
@@ -181,7 +194,7 @@ On Vercel (the website thread): put the file at `public/.well-known/apple-app-si
 When a link opens in a browser instead of the app (desktop, a mail app's own browser, the app not installed):
 
 **`/auth/callback`**
-- Must **not** verify anything on load (mail scanners open links; A-REQ-023). Never read or send the fragment to any server or analytics.
+- Must **not** verify anything on load (mail scanners open links; A-REQ-023). Never read or send the fragment or the `rid` or `code` query values to any server or analytics, and never log the query string for this path.
 - Show: "Open Early Letters" as a link to `scribe://auth/callback` (no token in it, ever; any app can claim a custom scheme, TDD 04 3.1.6), and the line "Or type the code from the same email in the app."
 - Same page for an expired link; the app explains expiry.
 
@@ -193,7 +206,9 @@ When a link opens in a browser instead of the app (desktop, a mail app's own bro
 
 Supabase > Authentication > **Emails** > Templates. Paste the same body into **Confirm signup** and **Magic Link**: a new address receives "Confirm signup", a known address receives "Magic Link", and the person should not see a difference (and nobody can tell whether an address has an account). The link uses `type=email`, which Supabase accepts for both (**Assumption**: GoTrue verifies a signup token and a magic-link token under `type=email`; test 11.3 checks both).
 
-If `packages/emails` produces branded versions of these, they replace the text below as long as they keep the contract: `{{ .Token }}`, and the link exactly `https://earlyletters.com/auth/callback#token_hash={{ .TokenHash }}&type=email`. No tracking, no images required.
+If `packages/emails` produces branded versions of these, they replace the text below as long as they keep the contract: `{{ .Token }}`, and the link exactly `{{ .RedirectTo }}#token_hash={{ .TokenHash }}&type=email`. No tracking, no images required.
+
+**BL-347 change (needed with the app build that carries it):** the link starts with `{{ .RedirectTo }}` instead of the fixed `https://earlyletters.com/auth/callback`, so it carries the `rid` of the request the phone made. The app opens a link only when that `rid` matches the request it is holding (section 12). An old template still signs in by code; its links are refused with "Type the code from the email on this phone instead". `{{ .RedirectTo }}` is a documented Supabase template variable (**Verified** 15 Oct 2026: Supabase email templates guide lists it as the redirect the client passed to `signInWithOtp`). Change `supabase/templates/magic_link.html` to match when that file lands (S01, FT-12).
 
 **Subject (both):** `Your sign-in link for Early Letters`
 
@@ -206,7 +221,7 @@ If `packages/emails` produces branded versions of these, they replace the text b
     <div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;color:#2B2722;">
       <p style="font-size:18px;line-height:1.5;margin:0 0 16px;">Here is your link to sign in to Early Letters.</p>
       <p style="margin:0 0 24px;">
-        <a href="https://earlyletters.com/auth/callback#token_hash={{ .TokenHash }}&type=email"
+        <a href="{{ .RedirectTo }}#token_hash={{ .TokenHash }}&type=email"
            style="display:inline-block;background:#8A5A3B;color:#FFFFFF;text-decoration:none;font-size:17px;font-weight:600;padding:14px 24px;border-radius:999px;">Sign in on this phone</a>
       </p>
       <p style="font-size:16px;line-height:1.5;margin:0 0 8px;">Or type this code in the app:</p>
@@ -262,6 +277,7 @@ Changing a Google id needs a new build (it changes a native URL scheme); the oth
 2. The app reads `my_sync_gate()`. If Terms are not current, it shows the Terms sheet with "By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy" and records `record_policy_act('terms', ..., context {auth, age_attested: true})`. If Terms are current without the attestation, it asks "Are you 18 or older?" once; No ends the session and shows the 18+ stop screen.
 3. Then the sensitive-data sheet ("Before your book syncs"). "Agree and sync" records an accept and sync may start. "Keep on this phone" records a decline; the person stays signed in, letters stay on the phone, and Family or Account offers "Agree and sync" later.
 4. Nothing syncs before step 3 is accepted: the app checks, and the server refuses content writes with `SCCON` anyway.
+4b. If the phone has letters that no account owns yet, one more screen: "Your letters on this phone will be kept in the account a***@example.com" with **Keep them here** and **This is not my account** (BL-347, F02-REQ-019). The letters move into the account, and sync starts, only after Keep them here. "This is not my account" signs out on this phone and nothing moves. A person who signed in with the wrong method sees an address they do not recognise here; that is the moment to sign out and use the usual method.
 5. Sign-out waits until queued letters have uploaded, then ends the session on this phone only. Local letters are never deleted by signing out.
 
 ## 10. Keys and owners
@@ -285,6 +301,35 @@ Run on a real iPhone with a preview build that has every variable from section 8
 6. **Offline:** airplane mode, cold start: the app opens signed in, records and saves letters.
 7. **Passkeys (only for section 7):** Settings > Account > Add a passkey shows Face ID and succeeds; sign out; "Use a passkey" signs back in. Supabase shows the passkey under the user.
 8. **Revocation:** iOS Settings > Apple Account > Sign in with Apple > Early Letters > Stop using. Relaunch: the app signs out after letters upload.
+9. **Apple token capture (BL-330, after 2.4.1):** a fresh Apple sign-in writes one `ops.apple_tokens` row (2.4.1 step 5). Then request account deletion for a test account: the deletion receipt says the Apple step completed, and iOS Settings > Sign in with Apple no longer lists Early Letters.
+10. **Email link rules (BL-347, device rows S1-06 to S1-08):**
+   - a. Same phone: Send, open Mail, tap the link: signs in, then Terms, consent, and (with local letters) the masked-email screen; nothing syncs before Keep them here.
+   - b. App closed in between: Send, swipe the app away, tap the link: still signs in (the request is kept in the Keychain).
+   - c. Another phone: request a link on phone A, open the email on phone B (signed out, with a letter saved): "Type the code from the email on this phone instead"; phone B stays signed out and its letter stays local. The code typed on B signs in.
+   - d. Signed in as account A, open a link sent to address B: "You're signed in as another account. Sign out first to use this link."; still account A.
+   - e. Two emails: tap the first email's link after sending a second: refused (older request); the newest email's link works.
+   - f. Supabase > Auth logs show no `/verify` call for c, d or e.
+11. **Redirect with `rid`:** in the received email, long-press the link: it starts `https://earlyletters.com/auth/callback?rid=` followed by 32 hex characters. If it starts with the bare site URL, fix 5.1.
+
+Section 11 checks 9 to 11 are new with BL-330 and BL-347 (15 Oct 2026).
+
+## 12. Email links: PKCE and when a link is accepted (ADR draft, BL-347)
+
+Draft for the ADR `08-delivery.md` section 8.1 asks S01 to write ("Email links: PKCE and when a link is accepted"). The coordinator files it under `docs/adr/` with the next free number; the founder decides. The code in this branch implements the recommendation and works under either template option.
+
+**Context.** Security review H1: a sign-in link someone else requested could sign a phone into their account, and the app then moved that phone's letters into the account and uploaded them. Supabase's token-hash link (`verifyOtp({ token_hash })`) is not tied to the phone that asked: Supabase's own PKCE guide uses it for server-side, any-browser verification (**Assumption**, to confirm on staging: GoTrue's POST `/verify` issues a session for a PKCE token hash without the code verifier).
+
+**Decision (recommended).**
+1. Client flow type `pkce` (`lib/supabase/client.ts`). Sign in sends a code challenge; the verifier sits in the Keychain with the session.
+2. Every Send records a pending request on the phone first: 16 random bytes as 32 hex characters plus the time, in the Keychain (`scribe.auth.linkRequest`), never an address or token. Its id goes in the redirect as `rid`.
+3. An opened link is used only when (a) nobody is signed in on this phone (F02-REQ-020), (b) the phone holds a pending request less than one hour old, and (c) the link's `rid` equals it (F02-REQ-018). Otherwise no request reaches Supabase and the person is offered the code. The request is spent by any successful sign-in by link or code, cleared by a failed Send and by sign-out.
+4. Local letters move to an account only after consent and a tap on the masked-email screen (F02-REQ-019). The sync layer does not see the account before that (`lib/auth/auth-store.ts`).
+5. Template option A (recommended now): `{{ .RedirectTo }}#token_hash={{ .TokenHash }}&type=email`. The link stays on our domain, opens the app as a universal link, keeps the token out of server logs (fragment), and a mail scanner that opens it uses nothing (the page never verifies). Binding is by `rid`, enforced by the app.
+6. Template option B (stronger binding, open): `{{ .ConfirmationURL }}`. Supabase verifies on the click and redirects to `.../auth/callback?rid=...&code=<auth code>`; only the install holding the verifier can exchange the code (`exchangeCodeForSession`; the app already handles this shape). Costs, unverified: mail scanners that follow links would use the token up before the person taps (A-REQ-023), the link's domain is the Supabase project, and a redirect from that domain may open Safari instead of the app.
+
+**Consequences.** A link opened on a laptop or another phone never signs in; the code in the same email does (unchanged). A person who taps an older email's link after asking for a new one types the code. An attacker's link cannot sign in a phone that did not ask, and even a signed-in session cannot move letters without the person seeing the account's masked address.
+
+**Open, for the founder or FT-04:** code length 8 and life 15 minutes (review M4; `LINK_REQUEST_TTL_MS` follows if the life drops); option B after a scanner test; whether the claim screen should also show for a person whose phone has no local letters (today: no screen, nothing to move).
 
 ## Sources (opened 3 Oct 2026)
 

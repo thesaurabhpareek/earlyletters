@@ -5,6 +5,10 @@
  *   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY (env.ts). Without them the app runs
  *   fully local and the sign-in sheet says sign-in is not available in this
  *   build; nothing throws at launch.
+ * - PKCE flow (BL-347, security review H1): signInWithOtp sends a code
+ *   challenge and keeps the verifier in the Keychain next to the session, so
+ *   a PKCE email link can be exchanged only on the phone that asked
+ *   (lib/auth/email.ts). Apple, Google and typed codes are unaffected.
  * - Session in the Keychain (secure-storage.ts), refreshed automatically
  *   while the app is in the foreground (startAutoRefreshWhileActive) and
  *   cleared by signOut. Requests use the user's JWT only (BRIEF 17).
@@ -82,6 +86,7 @@ export function getSupabaseOrNull(): SupabaseClient | null {
       persistSession: true,
       // Links are handled by the app (lib/auth/links.logic.ts), never by URL sniffing.
       detectSessionInUrl: false,
+      flowType: 'pkce',
     },
     global: { fetch: fetchWithRequestId },
   });

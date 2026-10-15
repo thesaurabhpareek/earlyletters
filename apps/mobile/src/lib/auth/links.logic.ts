@@ -2,11 +2,16 @@
  * Classifies every URL that opens the app (Expo Router's +native-intent hands
  * them here before any routing). Pure, tested in test/auth-links.test.ts.
  *
- * Sign-in email link (PRD A F5, TDD 04 3.1.3):
- *   https://earlyletters.com/auth/callback#token_hash=<hash>&type=email
+ * Sign-in email link (PRD A F5, TDD 04 3.1.3, BL-347):
+ *   https://earlyletters.com/auth/callback?rid=<request id>#token_hash=<hash>&type=email
+ *   https://earlyletters.com/auth/callback?rid=<request id>&code=<PKCE auth code>
  * The token hash travels in the fragment so the website, Vercel logs and mail
- * scanners never receive it; a query string is also accepted. The app calls
- * verifyOtp({ token_hash, type }) with it.
+ * scanners never receive it; a query string is also accepted. `rid` is the
+ * id of the request this phone made (link-guard.logic.ts): the app uses the
+ * link only when it matches. The first shape is verified with
+ * verifyOtp({ token_hash, type }); the second (Supabase's PKCE redirect,
+ * template option B in AUTH_SETUP section 4) with exchangeCodeForSession,
+ * which needs the code verifier only this install holds.
  *
  * Custom-scheme fallback: `scribe://auth/callback` opens the code screen. A
  * token hash or invite token arriving on the custom scheme is ignored, never
@@ -25,8 +30,19 @@ export const AUTH_CALLBACK_PATH = '/auth/callback';
 export type EmailLinkType = 'email' | 'magiclink' | 'signup';
 const LINK_TYPES: readonly EmailLinkType[] = ['email', 'magiclink', 'signup'];
 
+/**
+ * A sign-in link's secret part: a token hash, or a PKCE auth code (exactly one).
+ * `requestId` is the `rid` this phone put in the redirect, when present.
+ */
+export interface AuthLink {
+  tokenHash?: string;
+  code?: string;
+  type: EmailLinkType;
+  requestId?: string;
+}
+
 export type IncomingLink =
-  | { kind: 'auth-link'; tokenHash: string; type: EmailLinkType }
+  | ({ kind: 'auth-link' } & AuthLink)
   /** Open the "type the code" screen (scheme fallback, or a callback link without a usable token). */
   | { kind: 'auth-code' }
   | { kind: 'invite'; token: string }
@@ -42,9 +58,14 @@ export interface LinkConfig {
 }
 
 const TOKEN_HASH = /^[A-Za-z0-9_-]{16,256}$/;
+/** Supabase PKCE auth codes are UUIDs today; allow a little more, never other characters. */
+const AUTH_CODE = /^[A-Za-z0-9-]{16,128}$/;
+const REQUEST_ID = /^[0-9a-f]{32}$/;
 
-export function authCallbackUrl(origin: string): string {
-  return `${origin.replace(/\/+$/, '')}${AUTH_CALLBACK_PATH}`;
+/** The redirect for signInWithOtp. With a request id, the email's link carries it back (`rid`). */
+export function authCallbackUrl(origin: string, requestId?: string): string {
+  const base = `${origin.replace(/\/+$/, '')}${AUTH_CALLBACK_PATH}`;
+  return requestId && REQUEST_ID.test(requestId) ? `${base}?rid=${requestId}` : base;
 }
 
 export function classifyIncomingUrl(url: string, cfg: LinkConfig): IncomingLink {
@@ -59,8 +80,12 @@ export function classifyIncomingUrl(url: string, cfg: LinkConfig): IncomingLink 
     if (path === AUTH_CALLBACK_PATH) {
       const p = { ...u.query, ...u.fragment }; // fragment wins: that is where our template puts it
       const tokenHash = p.token_hash ?? '';
+      const code = p.code ?? '';
       const type = (p.type ?? 'email') as EmailLinkType;
-      if (TOKEN_HASH.test(tokenHash) && LINK_TYPES.includes(type)) return { kind: 'auth-link', tokenHash, type };
+      const requestId = REQUEST_ID.test(p.rid ?? '') ? p.rid : undefined;
+      const rid = requestId ? { requestId } : {};
+      if (TOKEN_HASH.test(tokenHash) && LINK_TYPES.includes(type)) return { kind: 'auth-link', tokenHash, type, ...rid };
+      if (!tokenHash && AUTH_CODE.test(code) && LINK_TYPES.includes(type)) return { kind: 'auth-link', code, type, ...rid };
       return { kind: 'auth-code' };
     }
     const token = parseInviteUrl(url, cfg.origin);

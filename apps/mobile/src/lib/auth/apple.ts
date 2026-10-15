@@ -8,14 +8,16 @@
  * The Apple user identifier is kept in the Keychain so launch can ask Apple
  * whether the credential was revoked (A-REQ-033).
  *
- * Not built here, needs an Edge Function (TDD 04 `apple-token`): exchanging
- * the authorization code for a refresh token so account deletion can revoke
- * it (A-NFR-011). See docs/ops/AUTH_SETUP.md section 2.4.
+ * After Supabase accepts the identity token, the one-time authorization code
+ * goes to the `apple-token` Edge Function (apple-token.ts, BL-330), which
+ * stores Apple's refresh token encrypted so account deletion can revoke it
+ * (A-NFR-011, Apple 5.1.1(v)). See docs/ops/AUTH_SETUP.md section 2.4.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
 import { secureStorage } from '../supabase/secure-storage';
+import { captureAppleRefreshToken } from './apple-token';
 import { makeNonce } from './nonce';
 
 const APPLE_USER_KEY = 'scribe.auth.appleUser';
@@ -48,6 +50,8 @@ export async function signInWithApple(sb: SupabaseClient): Promise<string> {
   if (error) throw error;
   const userId = data.user?.id;
   if (!userId) throw Object.assign(new Error('apple_no_user'), { code: 'bad_oauth_callback' });
+  // BL-330: the session now exists, so the function can tell whose token it stores. Never awaited by sign-in.
+  void captureAppleRefreshToken((name, options) => sb.functions.invoke(name, options), credential.authorizationCode).catch(() => 'failed');
   await secureStorage.setItem(APPLE_USER_KEY, credential.user).catch(() => {});
   const name = fullName(credential.fullName);
   if (name) await secureStorage.setItem(PENDING_NAME_KEY, name).catch(() => {});

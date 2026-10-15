@@ -4,27 +4,37 @@
  * talks to Supabase Auth, and publishes the state for non-React code
  * (auth-store.ts).
  *
+ * Claim gate (BL-347, F02-REQ-019): after a sign-in, the sync layer sees the
+ * account only once the claim is settled (claim.logic.ts): the person tapped
+ * Keep them here on the screen with the masked account email, or the phone
+ * had nothing to move. Email links are used only when this phone asked for
+ * them (link-guard.logic.ts, email.ts).
+ *
  * Launch never waits on the network (A-REQ-002, A-REQ-032): the stored
  * session is read from the Keychain, the app renders, and the consent check
  * runs in the background. Recording, reading and export never depend on any
  * of this (C-NFR-004).
  */
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import * as Crypto from 'expo-crypto';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { getSetting, setSetting } from '../store';
+import { getSetting, localSqlDb, setSetting } from '../store';
 import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } from '../supabase/client';
 import { errorCode, isNetworkError } from '../supabase/errors.logic';
 import { secureStorage } from '../supabase/secure-storage';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, takePendingAppleName } from './apple';
-import { publishAuth, onUploadsDrained, pendingUploads } from './auth-store';
+import { currentAuthUserId, publishAuth, publishClaim, onUploadsDrained, pendingUploads } from './auth-store';
+import { claimDecision, maskEmail } from './claim.logic';
 import { loadSyncGate, recordConsent as recordConsentAct, saveDisplayName } from './consent';
-import { sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLink as verifyLink } from './email';
+import { openEmailLink, sendEmailLink as sendEmail, verifyEmailCode as verifyCode } from './email';
 import { authErrorKind, codeEntryPause } from './errors.logic';
 import { signInWithGoogle } from './google';
-import type { EmailLinkType } from './links.logic';
+import { LinkRefusedError, linkRequestIdFrom, type LinkRefusal } from './link-guard.logic';
+import type { AuthLink } from './links.logic';
 import {
   authReducer,
+  authUserId,
   canSync,
   initialAuthState,
   isSignedIn,
@@ -35,9 +45,22 @@ import {
   type ConsentStep,
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
-import { clearWrongCodes, noteWrongCode, wrongCodeTimes } from './pending';
+import { clearLinkRequest, clearWrongCodes, noteWrongCode, setLinkRequestStorage, wrongCodeTimes } from './pending';
+
+// The pending email link request lives in the Keychain with the session (BL-347).
+setLinkRequestStorage(secureStorage);
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
+
+/** An opened email link: refused links say why, so the screen can offer the code (F02-U11, F02-U27). */
+export type LinkOutcome = Outcome | { ok: false; error: 'cancelled'; refused: LinkRefusal };
+
+/** The claim screen (F02 6.2 step 6): shown when `needed`, after consent. */
+export interface ClaimInfo {
+  needed: boolean;
+  /** "a***@example.com", or null when the account has no address we can show. */
+  maskedEmail: string | null;
+}
 
 export interface AccountInfo {
   email: string | null;
@@ -49,7 +72,13 @@ export interface AuthApi {
   /** False when this build has no Supabase settings: sign-in is hidden, the app is fully local. */
   configured: boolean;
   signedIn: boolean;
+  /** Consent complete and the claim settled: what screens that need the server (family, invites) check. */
   canSync: boolean;
+  claim: ClaimInfo;
+  /** Keep them here: the letters on this phone go to this account, then sync starts. */
+  confirmClaim(): void;
+  /** "This is not my account": signs out on this phone; nothing moved. */
+  declineClaim(): Promise<void>;
   lastMethod: AuthMethod | null;
   account: AccountInfo;
   signInWithApple(): Promise<Outcome>;
@@ -57,7 +86,7 @@ export interface AuthApi {
   signInWithPasskey(): Promise<Outcome>;
   sendEmailLink(email: string): Promise<Outcome>;
   verifyEmailCode(email: string, code: string): Promise<Outcome>;
-  verifyEmailLink(tokenHash: string, type: EmailLinkType): Promise<Outcome>;
+  verifyEmailLink(link: AuthLink): Promise<LinkOutcome>;
   recordConsent(step: ConsentStep, accepted: boolean): Promise<Outcome>;
   /**
    * Signed in with sync off because sensitive-data consent was declined:
@@ -76,6 +105,10 @@ export interface AuthApi {
 const AuthContext = createContext<AuthApi | null>(null);
 
 const LAST_METHOD_KEY = 'auth.lastMethod';
+/** The account the person confirmed on the claim screen on this install (a user id, never an email). */
+const CLAIM_KEY = 'auth.claimConfirmedFor';
+/** Written by lib/sync/ownership.ts takeOwnership (SYNC_SETTING.owner). Read only here. */
+const SYNC_OWNER_KEY = 'sync.ownerId';
 const GATE_TIMEOUT_MS = 10_000;
 const GATE_RECHECK_MS = 30 * 60_000;
 
@@ -101,6 +134,31 @@ async function storedUserId(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/** Books or letters no account owns yet: what re-ownership would move. Unknown counts as yes. */
+function hasUnclaimedLocalData(): boolean {
+  try {
+    const db = localSqlDb();
+    const row = db.get<{ n: number }>(
+      "SELECT (EXISTS (SELECT 1 FROM entries WHERE author_id IS NULL) OR EXISTS (SELECT 1 FROM children WHERE server_state = 'local')) AS n",
+    );
+    return !!row?.n;
+  } catch {
+    return true;
+  }
+}
+
+function readClaim(userId: string): 'settled' | 'ask' {
+  try {
+    return claimDecision({ userId, owner: getSetting(SYNC_OWNER_KEY), confirmedFor: getSetting(CLAIM_KEY), hasUnclaimedData: hasUnclaimedLocalData() });
+  } catch {
+    return 'ask';
+  }
+}
+
+function newLinkRequestId(): string {
+  return linkRequestIdFrom(Crypto.getRandomBytes(16));
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -130,12 +188,35 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   const [state, dispatch] = useReducer(authReducer, initialAuthState);
   const [lastMethod, setLastMethod] = useState<AuthMethod | null>(readLastMethod);
   const [account, setAccount] = useState<AccountInfo>({ email: null, provider: null });
+  /** The signed-in account waiting for the claim tap, or null. */
+  const [claimAsk, setClaimAsk] = useState<string | null>(null);
+  const [claimSettled, setClaimSettled] = useState<string | null>(null);
   const methodRef = useRef<AuthMethod | null>(null);
   const lastGateCheck = useRef(0);
   const stateRef = useRef(state);
   stateRef.current = state;
 
   useEffect(() => publishAuth(state), [state]);
+
+  // BL-347: a new session never claims this phone's letters by itself (F02-REQ-019).
+  const sessionUser = authUserId(state);
+  useEffect(() => {
+    if (!sessionUser) {
+      publishClaim(null);
+      setClaimAsk(null);
+      setClaimSettled(null);
+      return;
+    }
+    if (readClaim(sessionUser) === 'settled') {
+      publishClaim(sessionUser);
+      setClaimSettled(sessionUser);
+      setClaimAsk(null);
+    } else {
+      publishClaim(null);
+      setClaimSettled(null);
+      setClaimAsk(sessionUser);
+    }
+  }, [sessionUser]);
 
   // Restore from the Keychain, then listen to Supabase Auth.
   useEffect(() => {
@@ -199,7 +280,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     let alive = true;
     void appleCredentialRevoked().then(async (revoked) => {
       if (!alive || !revoked) return;
-      dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: await pendingUploads() });
+      const pending = currentAuthUserId() ? await pendingUploads() : 0;
+      dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'apple_revoked', pendingUploads: pending });
     });
     return () => {
       alive = false;
@@ -230,6 +312,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // (auth-js 2.117.2 _signOut removes the session on any error for scope 'local').
       }
       await forgetAppleUser();
+      await clearLinkRequest();
       dispatch({ type: 'SIGNED_OUT' });
     })();
   }, [finishing, sb]);
@@ -276,12 +359,36 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     [sb, remember],
   );
 
+  const claimed = sessionUser !== null && claimSettled === sessionUser;
+  const claimNeeded = sessionUser !== null && claimAsk === sessionUser;
+
+  const requestSignOut = useCallback(async (): Promise<'done' | 'waiting'> => {
+    // Unclaimed: the sync layer never ran for this account, so nothing of theirs is queued.
+    const mine = currentAuthUserId() !== null;
+    const syncing = canSync(stateRef.current) && mine;
+    const pending = mine ? await pendingUploads() : 0;
+    dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: pending });
+    return pending > 0 && syncing ? 'waiting' : 'done';
+  }, []);
+
   const api = useMemo<AuthApi>(
     () => ({
       state,
       configured: sb !== null,
       signedIn: isSignedIn(state),
-      canSync: canSync(state),
+      canSync: canSync(state) && claimed,
+      claim: { needed: claimNeeded, maskedEmail: maskEmail(account.email) },
+      confirmClaim() {
+        const user = authUserId(stateRef.current);
+        if (!user || claimAsk !== user) return;
+        setSetting(CLAIM_KEY, user);
+        publishClaim(user);
+        setClaimSettled(user);
+        setClaimAsk(null);
+      },
+      async declineClaim() {
+        await requestSignOut();
+      },
       lastMethod,
       account,
       client: sb,
@@ -294,7 +401,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         methodRef.current = 'email';
         if (stateRef.current.status !== 'awaitingCode') dispatch({ type: 'START', method: 'email' });
         try {
-          await sendEmail(sb, email);
+          await sendEmail(sb, email, { requestId: newLinkRequestId() });
           dispatch({ type: 'EMAIL_SENT', at: Date.now() });
           return { ok: true };
         } catch (e) {
@@ -327,16 +434,23 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         }
       },
 
-      async verifyEmailLink(tokenHash, type) {
+      async verifyEmailLink(link) {
         if (!sb) return { ok: false, error: 'not_available' };
-        methodRef.current = 'email';
-        if (stateRef.current.status !== 'awaitingCode') dispatch({ type: 'START', method: 'email' });
+        // Signed in here already (state, or a session still only in the Keychain at launch): refuse (F02-REQ-020).
+        const signedInUserId = authUserId(stateRef.current) ?? (await storedUserId());
+        const started = stateRef.current.status === 'signedOut';
         try {
-          const userId = await verifyLink(sb, tokenHash, type);
+          if (started) dispatch({ type: 'START', method: 'email' });
+          methodRef.current = 'email';
+          const userId = await openEmailLink(sb, link, { signedInUserId });
           remember('email');
           dispatch({ type: 'SIGNED_IN', userId, method: 'email' });
           return { ok: true };
         } catch (e) {
+          if (e instanceof LinkRefusedError) {
+            if (started) dispatch({ type: 'CANCELLED' });
+            return { ok: false, error: 'cancelled', refused: e.reason };
+          }
           const error = authErrorKind(e, 'link');
           dispatch({ type: 'FAILED', error });
           return { ok: false, error };
@@ -380,12 +494,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
 
       refreshGate: checkGate,
 
-      async signOut() {
-        const syncing = canSync(stateRef.current);
-        const pending = await pendingUploads();
-        dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'user', pendingUploads: pending });
-        return pending > 0 && syncing ? 'waiting' : 'done';
-      },
+      signOut: requestSignOut,
 
       async signOutOtherDevices() {
         if (!sb) return { ok: false, error: 'not_available' };
@@ -398,7 +507,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         }
       },
     }),
-    [state, sb, lastMethod, account, providerSignIn, remember, checkGate],
+    [state, sb, lastMethod, account, providerSignIn, remember, checkGate, claimed, claimNeeded, claimAsk, requestSignOut],
   );
 
   return <AuthContext.Provider value={api}>{children}</AuthContext.Provider>;
