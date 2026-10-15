@@ -56,6 +56,14 @@ describe('apple-app-site-association', () => {
     expect(paths).toEqual(['/auth/confirm', '/auth/confirm/', '/auth/callback', '/auth/callback/', '/j', '/j/']);
   });
 
+  it('lists no path that carries a token in the path (B-NFR-002): /i/* stays out, invites are /j#t=<token>', async () => {
+    vi.stubEnv('APPLE_TEAM_ID', 'ABCDE12345');
+    vi.stubEnv('IOS_BUNDLE_ID', 'com.example.scribe');
+    const { paths } = await served();
+    expect(paths.filter((p) => p === '/i' || p.startsWith('/i/'))).toEqual([]);
+    for (const p of paths) expect(p.includes('*'), p).toBe(false);
+  });
+
   it('matches paths only, and lists no catch-all, so no other page of the site opens the app', async () => {
     vi.stubEnv('APPLE_TEAM_ID', 'ABCDE12345');
     vi.stubEnv('IOS_BUNDLE_ID', 'com.example.scribe');
