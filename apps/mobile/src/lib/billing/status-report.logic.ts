@@ -212,9 +212,9 @@ export function planReports(items: readonly NativeStatusRef[], state: ReportStat
     if (!consented.has(key)) {
       const waiting = state.pending.find((p) => purchaseKey(p.productId, p.originalPurchasedAt) === key);
       if (waiting) {
-        consent = { product_id: item.productId, offer_type: offerTypeOf(item.offerType), terms_version: waiting.termsVersion, shown_at: waiting.shownAt };
+        consent = { product_id: item.productId, offer_type: offerTypeOf(item.offerType), terms_shown: waiting.termsVersion, shown_at: waiting.shownAt };
       } else if (item.offerType === 'offer_code') {
-        consent = { product_id: item.productId, offer_type: 'offer_code', terms_version: TERMS_NONE_OUTSIDE_APP, shown_at: item.purchasedAt ?? item.originalPurchasedAt };
+        consent = { product_id: item.productId, offer_type: 'offer_code', terms_shown: TERMS_NONE_OUTSIDE_APP, shown_at: item.purchasedAt ?? item.originalPurchasedAt };
       }
     }
     if (sent[key] === fingerprint && !consent) continue;

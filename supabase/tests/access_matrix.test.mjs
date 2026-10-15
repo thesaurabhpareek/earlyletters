@@ -179,9 +179,9 @@ const RPCS = [
   ['leave_child', `select public.leave_child('${CHILD}')`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['remove_child_member', `select public.remove_child_member('${CHILD}', '${N}')`,      ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['rate_hit', `select public.rate_hit('membership')`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  // Subscription status report (20261016000000, S06): any full account may report its own purchase; anonymous sessions never.
-  ['status_salt', `select public.status_salt()`,                                        ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['status_report_store', `select public.status_report_store('{"schema_version": 1, "sub_ref": "${'a'.repeat(64)}", "environment": "sandbox", "plan": "annual", "trial_end": null, "renewal_date": "2027-03-01T10:00:00Z", "cancelled": false, "reported_at": "2026-10-15T10:00:00Z"}'::jsonb)`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // Subscription status report (20261016000000, S06): any full account may report its own purchase; anonymous sessions never. The server switch app.status_report_enabled is unset here, so it fails closed (SCKIL); behaviour with it on is in subscription_status.test.mjs.
+  ['status_salt', `select public.status_salt()`,                                        ['SCKIL', 'SCKIL', 'SCKIL', 'SCKIL', 'SCANO', '42501']],
+  ['status_report_store', `select public.status_report_store('{"schema_version": 1, "sub_ref": "${'a'.repeat(64)}", "environment": "sandbox", "plan": "annual", "trial_end": null, "renewal_date": "2027-03-01T10:00:00Z", "cancelled": false, "reported_at": "2026-10-15T10:00:00Z"}'::jsonb)`, ['SCKIL', 'SCKIL', 'SCKIL', 'SCKIL', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -210,7 +210,7 @@ const SERVICE_ONLY = [
   `select public.max_parents_per_book()`, `select public.request_idempotency_key()`,
   `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
   // Subscription status internals and the retention purge (20261016000000, S06).
-  `select public.subscription_rate_hit('${A}', 'report')`, `select public.subscription_instant('"2026-10-15T10:00:00Z"'::jsonb, false)`,
+  `select public.subscription_rate_hit('${A}', 'report')`, `select public.subscription_report_switch()`, `select public.subscription_instant('"2026-10-15T10:00:00Z"'::jsonb, false)`,
   `select public.subscription_retention_purge(now())`,
 ];
 

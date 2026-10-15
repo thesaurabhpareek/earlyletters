@@ -37,7 +37,7 @@ const base = (ref, over = {}) => ({
   schema_version: 1, sub_ref: ref, environment: 'production', plan: 'annual',
   trial_end: iso(NOW + 60 * DAY), renewal_date: iso(NOW + 60 * DAY), cancelled: false, reported_at: iso(NOW - 60_000), ...over,
 });
-const consentFacts = (over = {}) => ({ product_id: 'plus.annual', offer_type: 'introductory', terms_version: '1.4.0+0a1b2c3d', shown_at: iso(NOW - 120_000), ...over });
+const consentFacts = (over = {}) => ({ product_id: 'plus.annual', offer_type: 'introductory', terms_shown: '1.4.0+0a1b2c3d', shown_at: iso(NOW - 120_000), ...over });
 const statusRows = (uid) => sys(`select * from subscription_status where profile_id = $1 order by first_received_at`, [uid]).then((r) => r.rows);
 const consentRows = () => sys(`select * from subscription_consents order by recorded_at`).then((r) => r.rows);
 
@@ -50,6 +50,16 @@ const cols = (await sys(`select table_name, column_name from information_schema.
   where table_schema = 'public' and table_name like 'subscription%'`)).rows;
 const purchaseLike = cols.filter((c) => /transaction|receipt|jws|signed|price|amount|card|payment|token|apple|account_token/i.test(c.column_name));
 check('[F14-REQ-014] no column can hold a receipt, transaction id, price, card or token', cols.length > 20 && purchaseLike.length === 0);
+
+// ── 1b. The server-side switch fails closed (SCKIL, detail statusReport) ──
+const switchError = async (fn) => { try { await fn(); return null; } catch (e) { return `${e.code}:${e.detail}`; } };
+check('[F19 6.5] with app.status_report_enabled unset, status_salt is paused (SCKIL statusReport)', (await switchError(() => salt(A))) === 'SCKIL:statusReport');
+check('[F19 6.5] with app.status_report_enabled unset, status_report_store is paused and stores nothing',
+  (await switchError(() => report(A, base('c'.repeat(64))))) === 'SCKIL:statusReport'
+  && (await sys(`select count(*)::int n from subscription_status`)).rows[0].n === 0);
+await sys(`select set_config('app.status_report_enabled', 'off', false)`);
+check('[F19 6.5] any value but on keeps it paused', (await switchError(() => salt(A))) === 'SCKIL:statusReport');
+await sys(`select set_config('app.status_report_enabled', 'on', false)`);
 
 // ── 2. The salt (R2 AR-13) ───────────────────────────────────────────────
 const sA = await salt(A);
@@ -73,12 +83,15 @@ check('[F14-REQ-032] the same status read again is unchanged', r.stored === 'unc
 r = await report(A, base(refA, { cancelled: true, reported_at: iso(NOW - 20_000) }), { key: randomUUID() });
 rows = await statusRows(A);
 check('[F14-REQ-033] renewal turned off is stored as cancelled', r.stored === 'updated' && rows[0].cancelled === true);
-r = await report(A, base(refA, { cancelled: false, reported_at: iso(NOW - 50_000) }), { key: randomUUID() });
+r = await report(A, base(refA, { cancelled: false, reported_at: iso(NOW - 5 * DAY) }), { key: randomUUID() });
 rows = await statusRows(A);
-check('[R2 AR-13] a late retry of an older reading changes nothing (newest reported_at wins)', r.stored === 'older' && rows[0].cancelled === true);
+check('[F16 C12] the server receive order decides: a report from a phone whose clock is behind still updates', r.stored === 'updated' && rows[0].cancelled === false);
 r = await report(A, base(refA, { reported_at: iso(NOW + 5 * DAY), cancelled: true }), { key: randomUUID() });
 rows = await statusRows(A);
-check('a phone clock running ahead never stores a reading later than the server time', r.stored === 'unchanged' && Date.parse(rows[0].reported_at) <= Date.now() + 1000);
+check('a phone clock running ahead is never refused and never stores a reading later than the server time', r.stored === 'updated' && Date.parse(rows[0].reported_at) <= Date.now() + 1000);
+check('the contract\'s older outcome is never produced', !JSON.stringify(r).includes('older'));
+r = await report(A, base(refA, { cancelled: true, subscribed_since: '2026-10-15', reported_at: iso(NOW) }), { key: randomUUID() });
+check('subscribed_since (optional, a date) is stored and counts as a change', r.stored === 'updated' && String((await statusRows(A))[0].subscribed_since).length > 0);
 
 // Two Apple Accounts on two phones for one account: two rows (F14-U44).
 const refA2 = subRef(sA, 2000000777);
@@ -120,6 +133,12 @@ const withoutReportedAt = base(refC);
 delete withoutReportedAt.reported_at;
 check('a missing reported_at is refused', (await reportCode(C, withoutReportedAt)) === '22023');
 check('free_period_days outside 1 to 366 is refused', (await reportCode(C, base(refC, { free_period_days: 400 }))) === '22023');
+check('subscribed_since with a time is refused (a date only)', (await reportCode(C, base(refC, { subscribed_since: '2025-03-01T10:00:00Z' }))) === '22023');
+check('an impossible subscribed_since is refused as 22023', (await reportCode(C, base(refC, { subscribed_since: '2025-02-30' }))) === '22023');
+const oldKeyConsent = { ...consentFacts(), terms_version: '1.4.0' };
+delete oldKeyConsent.terms_shown;
+check('consent facts under the old key terms_version are refused (the contract says terms_shown)',
+  (await reportCode(C, base(refC, { consent: oldKeyConsent }))) === '22023');
 check('nothing was stored for any refused report', (await statusRows(C)).length === 0);
 check('[K-08] status_report_store refuses an anonymous session (SCANO)', (await reportCode(W, base(refC), { anonymous: true })) === 'SCANO');
 
@@ -127,16 +146,16 @@ check('[K-08] status_report_store refuses an anonymous session (SCANO)', (await 
 const refConsent = subRef(sA, 2000000909);
 r = await report(A, base(refConsent, { consent: consentFacts() }), { key: randomUUID() });
 check('[LEGAL-REQ-049] the first report after a purchase records the consent facts', r.consent === 'recorded');
-r = await report(A, base(refConsent, { consent: consentFacts({ terms_version: 'none_outside_app' }), reported_at: iso(NOW - 10_000) }), { key: randomUUID() });
+r = await report(A, base(refConsent, { consent: consentFacts({ terms_shown: 'none_outside_app' }), reported_at: iso(NOW - 10_000) }), { key: randomUUID() });
 check('[LEGAL-REQ-049] a second report with consent facts keeps the first record', r.consent === 'already_recorded');
 let cs = await consentRows();
 check('[LEGAL-REQ-049] exactly one consent record, with product, offer type, terms version and time, and no transaction id',
-  cs.length === 1 && cs[0].product_id === 'plus.annual' && cs[0].offer_type === 'introductory' && cs[0].terms_version === '1.4.0+0a1b2c3d'
+  cs.length === 1 && cs[0].product_id === 'plus.annual' && cs[0].offer_type === 'introductory' && cs[0].terms_shown === '1.4.0+0a1b2c3d'
   && cs[0].shown_at !== null && cs[0].profile_id === A && !Object.keys(cs[0]).some((k) => /transaction|receipt|price/.test(k)));
-r = await report(B, base(subRef(sB, 2000000505), { consent: consentFacts({ product_id: 'plus.monthly', offer_type: 'offer_code', terms_version: 'none_outside_app' }) }), { key: randomUUID() });
-check('[F14-REQ-044] an offer code redeemed outside the app records terms_version none_outside_app', r.consent === 'recorded'
-  && (await consentRows()).some((c) => c.terms_version === 'none_outside_app' && c.offer_type === 'offer_code'));
-check('consent rows are append-only (an update is refused)', (await codeOf(() => sys(`update subscription_consents set terms_version = '9.9.9'`))) !== 'ok');
+r = await report(B, base(subRef(sB, 2000000505), { consent: consentFacts({ product_id: 'plus.monthly', offer_type: 'offer_code', terms_shown: 'none_outside_app' }) }), { key: randomUUID() });
+check('[F14-REQ-044] an offer code redeemed outside the app records terms_shown none_outside_app', r.consent === 'recorded'
+  && (await consentRows()).some((c) => c.terms_shown === 'none_outside_app' && c.offer_type === 'offer_code'));
+check('consent rows are append-only (an update is refused)', (await codeOf(() => sys(`update subscription_consents set terms_shown = '9.9.9'`))) !== 'ok');
 check('consent rows are append-only (a delete outside the retention purge is refused)', (await codeOf(() => sys(`delete from subscription_consents`))) !== 'ok');
 
 // ── 6. Idempotency (ADR 0017 rule 3) ─────────────────────────────────────

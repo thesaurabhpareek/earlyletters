@@ -13,9 +13,10 @@
 -- period ends, when the plan renews or ends, whether renewal is off. Plus the
 -- R2 AR-13 identity and freshness fields (`sub_ref`, `environment`,
 -- `reported_at`) from the D-080 contract in packages/api/src/server/
--- subscription-status.ts, and, on the first report after a purchase in the
--- app, the D-081 consent facts (product, offer type, Subscription Terms
--- version shown, time). Never here: receipts, signed transactions, a
+-- subscription-status.ts, the two optional fields that contract keeps open for
+-- counsel (`free_period_days`, `subscribed_since`; the app sends neither yet),
+-- and, on the first report after a purchase in the app, the D-081 consent facts
+-- (product, offer type, Subscription Terms version shown as `terms_shown`, time). Never here: receipts, signed transactions, a
 -- transaction id in clear, `appAccountToken`, prices, card or payment data.
 -- `sub_ref` is SHA-256(per-account salt || original transaction id), made on
 -- the phone by the native store module; the salt never leaves this database
@@ -27,12 +28,13 @@
 --
 -- Objects
 --   public.subscription_salts       one random 32-byte salt per account (functions only)
---   public.subscription_status      one row per (profile, sub_ref): D-080 status, newest report wins
+--   public.subscription_status      one row per (profile, sub_ref): D-080 status, the last report received wins
 --   public.subscription_consents    one row per original purchase (sub_ref): D-081 consent facts;
 --                                   append-only; pseudonymised at account deletion, kept 3 years after
 --   public.subscription_report_rates per-person counters for the two RPCs (30 per rolling hour each)
 --   public.status_salt()            RPC: the caller's salt, base64url, made on first call
---   public.status_report_store(jsonb) RPC: validate, rate limit, idempotency, upsert, consent once
+--   public.status_report_store(jsonb) RPC: switch, validate, idempotency, rate limit, upsert, consent once
+--   public.subscription_report_switch()             internal: the server-side switch
 --   public.subscription_rate_hit(uuid, text)        internal
 --   public.subscription_consents_guard()            trigger: append-only except pseudonymise and purge
 --   public.subscription_consents_pseudonymise()     trigger on profiles, before delete
@@ -49,7 +51,20 @@
 -- billing-notice record kept after deletion while Apple still bills
 -- (F14-REQ-045) is NOT built here: it waits for counsel (Q-C12).
 --
--- New SQLSTATEs: none. Reused: 28000, SCANO (require_user), SCRAT (rate),
+-- Server-side switch (fail closed, like S05's app.backup_enabled): both RPCs run
+-- only while `app.status_report_enabled` is 'on' (alter database postgres set
+-- app.status_report_enabled = 'on'); otherwise SCKIL with DETAIL 'statusReport',
+-- which the Edge Function answers as 503 paused. The phone keeps its report and
+-- retries later; nothing is lost. The function's own KILL_SWITCHES secret and the
+-- signed remote config are the other two levers (packages/api kill-switches.ts).
+--
+-- Ordering (contract: "the server orders reports by its own receive time", F16
+-- C12): the last report received for a purchase wins; `reported_at` is kept for
+-- support, clamped to the server clock, and never a reason to refuse. The
+-- contract's `older` outcome is not produced by this file.
+--
+-- New SQLSTATEs: none (SCKIL has its rule in packages/api SQLSTATE_RULES).
+-- Reused: 28000, SCANO (require_user), SCRAT (rate),
 -- 22023 (bad report; with DETAIL 'idempotency' for a reused key), 40001
 -- (idempotent request still in progress), 55000 (pepper missing at deletion).
 
@@ -77,6 +92,7 @@ create table public.subscription_status (
   renewal_date timestamptz,
   cancelled boolean not null,
   free_period_days smallint check (free_period_days between 1 and 366),
+  subscribed_since date,
   reported_at timestamptz not null,
   fingerprint text not null check (char_length(fingerprint) <= 200),
   first_received_at timestamptz not null default now(),
@@ -89,7 +105,7 @@ create index subscription_status_due_idx on public.subscription_status (renewal_
 alter table public.subscription_status enable row level security;   -- no policies: functions and the scheduler only
 revoke all on public.subscription_status from public, anon, authenticated;
 comment on table public.subscription_status is
-  'D-080 subscription status, one row per (account, sub_ref), newest reported_at wins. Status only: no receipt, transaction id, price or payment data. Emails go only for environment = production. Never read by the app.';
+  'D-080 subscription status, one row per (account, sub_ref), the last report received wins. Status only: no receipt, transaction id, price or payment data. Emails go only for environment = production. Never read by the app.';
 comment on column public.subscription_status.profile_id is 'L3 account';
 comment on column public.subscription_status.sub_ref is 'L3 salted SHA-256 of the original transaction id, made on the phone';
 comment on column public.subscription_status.environment is 'L2 StoreKit environment (production, sandbox, xcode)';
@@ -97,8 +113,9 @@ comment on column public.subscription_status.plan is 'L3 monthly or annual';
 comment on column public.subscription_status.trial_end is 'L3 end of the current free period, or null';
 comment on column public.subscription_status.renewal_date is 'L3 end of the current period (next renewal, or the end when cancelled); null after it ended';
 comment on column public.subscription_status.cancelled is 'L3 auto-renew is off';
-comment on column public.subscription_status.free_period_days is 'L3 length of the free period (optional in contract v1; the app does not send it yet)';
-comment on column public.subscription_status.reported_at is 'L2 when the phone read these values (device clock, never later than receipt)';
+comment on column public.subscription_status.free_period_days is 'L3 length of the free period (optional in contract v1, open for counsel; the app does not send it yet)';
+comment on column public.subscription_status.subscribed_since is 'L3 UTC date the subscription began, for the monthly anniversary reminder (optional in contract v1, open for counsel; the app does not send it yet)';
+comment on column public.subscription_status.reported_at is 'L2 when the phone read these values (device clock, never later than receipt); for support only';
 comment on column public.subscription_status.fingerprint is 'L3 the status fields joined, to tell a change from a repeat';
 comment on column public.subscription_status.first_received_at is 'L2 first report for this purchase';
 comment on column public.subscription_status.received_at is 'L2 last report received';
@@ -111,7 +128,7 @@ create table public.subscription_consents (
   sub_ref text not null unique check (sub_ref ~ '^[0-9a-f]{64}$'),
   product_id text not null check (product_id ~ '^[a-z0-9][a-z0-9._-]{0,99}$'),
   offer_type text not null check (offer_type in ('none', 'introductory', 'promotional', 'offer_code')),
-  terms_version text not null check (terms_version ~ '^(none_outside_app|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\+[0-9a-f]{8})?)$'),
+  terms_shown text not null check (terms_shown ~ '^(none_outside_app|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\+[0-9a-f]{8})?)$'),
   shown_at timestamptz not null,
   recorded_at timestamptz not null default now(),
   check (profile_id is not null or subject_hash is not null)
@@ -130,7 +147,7 @@ comment on column public.subscription_consents.pseudonymised_at is 'L2 retention
 comment on column public.subscription_consents.sub_ref is 'L3 salted SHA-256 of the original transaction id; unlinkable once the salt is deleted';
 comment on column public.subscription_consents.product_id is 'L3 StoreKit product id (plus.monthly or plus.annual)';
 comment on column public.subscription_consents.offer_type is 'L3 how the free period was offered';
-comment on column public.subscription_consents.terms_version is 'L2 Subscription Terms version shown in the app, or none_outside_app';
+comment on column public.subscription_consents.terms_shown is 'L2 Subscription Terms version shown in the app, or none_outside_app';
 comment on column public.subscription_consents.shown_at is 'L3 when the terms were shown and the purchase confirmed (device clock)';
 comment on column public.subscription_consents.recorded_at is 'L2 server time of the record';
 
@@ -182,6 +199,16 @@ begin
 end;
 $$;
 
+-- The server-side switch for both RPCs (fail closed: only 'on' runs).
+create or replace function public.subscription_report_switch()
+returns void language plpgsql stable set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if coalesce(current_setting('app.status_report_enabled', true), '') is distinct from 'on' then
+    raise exception 'the subscription status report is paused on this server' using errcode = 'SCKIL', detail = 'statusReport';
+  end if;
+end;
+$$;
+
 -- An ISO 8601 instant from the report, or an error the caller turns into 22023.
 -- Null stays null. Only the shape StoreKit's ISO8601DateFormatter writes
 -- (date, 'T', time, optional fraction, 'Z' or an offset) is accepted.
@@ -219,6 +246,7 @@ declare
   v_uid uuid := public.require_user();
   v_salt bytea;
 begin
+  perform public.subscription_report_switch();
   perform public.subscription_rate_hit(v_uid, 'salt');
   insert into subscription_salts (profile_id, salt)
   values (v_uid, sha256(convert_to(gen_random_uuid()::text || gen_random_uuid()::text || clock_timestamp()::text, 'UTF8')))
@@ -233,8 +261,8 @@ $$;
 -- makes and trusts none of them: the same allowlisted keys and types, at most
 -- 2 KiB, and the fingerprint computed here (statusFingerprint in packages/api is
 -- the reference). One transaction: idempotency claim, rate limit, upsert keeping
--- the newest reported_at per (profile, sub_ref), consent once per sub_ref.
--- Returns {stored: created|updated|unchanged|older, consent: recorded|already_recorded|none}.
+-- per (profile, sub_ref) in the order the server receives reports, consent once
+-- per sub_ref. Returns {stored: created|updated|unchanged, consent: recorded|already_recorded|none}.
 create or replace function public.status_report_store(p_report jsonb)
 returns jsonb language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
@@ -247,6 +275,7 @@ declare
   v_renewal timestamptz;
   v_cancelled boolean;
   v_days int;
+  v_since date;
   v_reported timestamptz;
   v_fp text;
   v_consent jsonb;
@@ -259,13 +288,14 @@ declare
   v_consent_out text := 'none';
   v_result jsonb;
 begin
+  perform public.subscription_report_switch();
   -- Shape (strict, like StatusReportSchema).
   if p_report is null or jsonb_typeof(p_report) <> 'object' or octet_length(p_report::text) > 2048 then
     raise exception 'report must be an object of at most 2 KiB' using errcode = '22023';
   end if;
   if exists (select 1 from jsonb_object_keys(p_report) k
               where k not in ('schema_version', 'sub_ref', 'environment', 'plan', 'trial_end', 'renewal_date',
-                              'cancelled', 'free_period_days', 'reported_at', 'consent')) then
+                              'cancelled', 'free_period_days', 'subscribed_since', 'reported_at', 'consent')) then
     raise exception 'report has a key outside the contract' using errcode = '22023';
   end if;
   if p_report -> 'schema_version' is distinct from '1'::jsonb then
@@ -302,6 +332,16 @@ begin
       raise exception 'free_period_days out of range' using errcode = '22023';
     end if;
   end if;
+  if p_report ? 'subscribed_since' and jsonb_typeof(p_report -> 'subscribed_since') <> 'null' then
+    if jsonb_typeof(p_report -> 'subscribed_since') <> 'string' or (p_report ->> 'subscribed_since') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
+      raise exception 'subscribed_since must be a date' using errcode = '22023';
+    end if;
+    begin
+      v_since := (p_report ->> 'subscribed_since')::date;
+    exception when invalid_datetime_format or datetime_field_overflow then
+      raise exception 'subscribed_since out of range' using errcode = '22023';
+    end;
+  end if;
   -- A free period ends no later than the period it sits in (parseStatusReport).
   if v_trial is not null and v_renewal is not null and v_trial > v_renewal + interval '1 day' then
     raise exception 'trial_end after renewal_date' using errcode = '22023';
@@ -309,18 +349,18 @@ begin
   v_consent := p_report -> 'consent';
   if v_consent is not null and jsonb_typeof(v_consent) <> 'null' then
     if jsonb_typeof(v_consent) <> 'object'
-       or exists (select 1 from jsonb_object_keys(v_consent) k where k not in ('product_id', 'offer_type', 'terms_version', 'shown_at'))
+       or exists (select 1 from jsonb_object_keys(v_consent) k where k not in ('product_id', 'offer_type', 'terms_shown', 'shown_at'))
        or jsonb_typeof(v_consent -> 'product_id') is distinct from 'string'
        or (v_consent ->> 'product_id') !~ '^[a-z0-9][a-z0-9._-]{0,99}$'
        or jsonb_typeof(v_consent -> 'offer_type') is distinct from 'string'
        or (v_consent ->> 'offer_type') not in ('none', 'introductory', 'promotional', 'offer_code')
-       or jsonb_typeof(v_consent -> 'terms_version') is distinct from 'string'
-       or (v_consent ->> 'terms_version') !~ '^(none_outside_app|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\+[0-9a-f]{8})?)$' then
+       or jsonb_typeof(v_consent -> 'terms_shown') is distinct from 'string'
+       or (v_consent ->> 'terms_shown') !~ '^(none_outside_app|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\+[0-9a-f]{8})?)$' then
       raise exception 'consent facts outside the contract' using errcode = '22023';
     end if;
     v_c_product := v_consent ->> 'product_id';
     v_c_offer := v_consent ->> 'offer_type';
-    v_c_terms := v_consent ->> 'terms_version';
+    v_c_terms := v_consent ->> 'terms_shown';
     v_c_shown := public.subscription_instant(v_consent -> 'shown_at', false);
   else
     v_consent := null;
@@ -347,19 +387,20 @@ begin
     coalesce(to_char(v_trial at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'), '-'),
     coalesce(to_char(v_renewal at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'), '-'),
     case when v_cancelled then '1' else '0' end,
-    coalesce(v_days::text, '-'));
+    coalesce(v_days::text, '-'),
+    coalesce(v_since::text, '-'));
 
   insert into subscription_status (profile_id, sub_ref, environment, plan, trial_end, renewal_date, cancelled,
-                                   free_period_days, reported_at, fingerprint)
-  values (v_uid, v_sub_ref, v_env, v_plan, v_trial, v_renewal, v_cancelled, v_days, v_reported, v_fp)
+                                   free_period_days, subscribed_since, reported_at, fingerprint)
+  values (v_uid, v_sub_ref, v_env, v_plan, v_trial, v_renewal, v_cancelled, v_days, v_since, v_reported, v_fp)
   on conflict (profile_id, sub_ref) do nothing;
   if found then
     v_stored := 'created';
   else
+    -- The server's receive order decides (contract, F16 C12): a phone clock set
+    -- ahead or behind can never freeze the status of a purchase two phones share.
     select * into v_row from subscription_status s where s.profile_id = v_uid and s.sub_ref = v_sub_ref for update;
-    if v_reported < v_row.reported_at then
-      v_stored := 'older';                            -- a late retry of an older reading changes nothing
-    elsif v_fp = v_row.fingerprint then
+    if v_fp = v_row.fingerprint then
       v_stored := 'unchanged';
       update subscription_status s set reported_at = v_reported, received_at = now()
        where s.profile_id = v_uid and s.sub_ref = v_sub_ref;
@@ -367,14 +408,14 @@ begin
       v_stored := 'updated';
       update subscription_status s
          set environment = v_env, plan = v_plan, trial_end = v_trial, renewal_date = v_renewal, cancelled = v_cancelled,
-             free_period_days = v_days, reported_at = v_reported, fingerprint = v_fp, received_at = now()
+             free_period_days = v_days, subscribed_since = v_since, reported_at = v_reported, fingerprint = v_fp, received_at = now()
        where s.profile_id = v_uid and s.sub_ref = v_sub_ref;
     end if;
   end if;
 
   -- D-081: one consent record per original purchase; the first report that carries it wins.
   if v_consent is not null then
-    insert into subscription_consents (profile_id, sub_ref, product_id, offer_type, terms_version, shown_at)
+    insert into subscription_consents (profile_id, sub_ref, product_id, offer_type, terms_shown, shown_at)
     values (v_uid, v_sub_ref, v_c_product, v_c_offer, v_c_terms, least(v_c_shown, now()))
     on conflict (sub_ref) do nothing;
     v_consent_out := case when found then 'recorded' else 'already_recorded' end;
@@ -398,9 +439,9 @@ begin
     return old;
   end if;
   if new.profile_id is null and old.profile_id is not null and new.subject_hash is not null and new.pseudonymised_at is not null
-     and (new.id, new.sub_ref, new.product_id, new.offer_type, new.terms_version, new.shown_at, new.recorded_at)
+     and (new.id, new.sub_ref, new.product_id, new.offer_type, new.terms_shown, new.shown_at, new.recorded_at)
          is not distinct from
-         (old.id, old.sub_ref, old.product_id, old.offer_type, old.terms_version, old.shown_at, old.recorded_at) then
+         (old.id, old.sub_ref, old.product_id, old.offer_type, old.terms_shown, old.shown_at, old.recorded_at) then
     return new;
   end if;
   raise exception 'subscription_consents rows are append-only';
@@ -455,6 +496,7 @@ $$;
 
 revoke execute on function public.subscription_rate_hit(uuid, text) from public, anon, authenticated;
 revoke execute on function public.subscription_instant(jsonb, boolean) from public, anon, authenticated;
+revoke execute on function public.subscription_report_switch() from public, anon, authenticated;
 revoke execute on function public.subscription_consents_guard() from public, anon, authenticated;
 revoke execute on function public.subscription_consents_pseudonymise() from public, anon, authenticated;
 revoke execute on function public.subscription_retention_purge(timestamptz) from public, anon, authenticated;
@@ -472,6 +514,6 @@ end;
 $$;
 
 comment on function public.status_salt() is
-  'D-080 / R2 AR-13: the caller''s per-account salt for sub_ref (base64url, 43 characters). 30 per person per hour (SCRAT).';
+  'D-080 / R2 AR-13: the caller''s per-account salt for sub_ref (base64url, 43 characters). 30 per person per hour (SCRAT). SCKIL while app.status_report_enabled is not on.';
 comment on function public.status_report_store(jsonb) is
-  'D-080 status report and D-081 consent facts (packages/api StatusReportSchema v1). Strict keys, at most 2 KiB, idempotency key, 30 per person per hour (SCRAT). Answers only {stored, consent}; never whether the caller is a member.';
+  'D-080 status report and D-081 consent facts (packages/api StatusReportSchema v1). Strict keys, at most 2 KiB, idempotency key, 30 per person per hour (SCRAT), SCKIL while app.status_report_enabled is not on. Answers only {stored, consent}; never whether the caller is a member.';

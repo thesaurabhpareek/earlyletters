@@ -129,7 +129,7 @@ describe('status-report.logic: when to report', () => {
       shownAt: '2026-10-29T17:59:30.000Z', queuedAt: '2026-10-29T17:59:30.000Z',
     });
     const [p] = planReports([annualTrial()], state, { owner: ASHA_MAMA, now: NOW });
-    expect(p.report.consent).toEqual({ product_id: 'plus.annual', offer_type: 'introductory', terms_version: '1.4.0+0a1b2c3d', shown_at: '2026-10-29T17:59:30.000Z' });
+    expect(p.report.consent).toEqual({ product_id: 'plus.annual', offer_type: 'introductory', terms_shown: '1.4.0+0a1b2c3d', shown_at: '2026-10-29T17:59:30.000Z' });
     state = afterStored(state, ASHA_MAMA, p, 'recorded');
     expect(state.pending).toEqual([]);
     expect(state.consented).toEqual([purchaseKey('plus.annual', '2026-10-29T17:59:00.000Z')]);
@@ -140,7 +140,7 @@ describe('status-report.logic: when to report', () => {
   it('[F14-REQ-044] an offer code with no terms shown by us records none_outside_app, once', () => {
     const code = monthlyPaid({ offerType: 'offer_code', freePeriod: true });
     const [p] = planReports([code], EMPTY_REPORT_STATE, { owner: ASHA_MAMA, now: NOW });
-    expect(p.report.consent).toMatchObject({ offer_type: 'offer_code', terms_version: 'none_outside_app' });
+    expect(p.report.consent).toMatchObject({ offer_type: 'offer_code', terms_shown: 'none_outside_app' });
     const state = afterStored(EMPTY_REPORT_STATE, ASHA_MAMA, p, 'recorded');
     expect(planReports([code], state, { owner: ASHA_MAMA, now: NOW })).toEqual([]);
   });
@@ -262,7 +262,7 @@ describe('the sender', () => {
     expect(await h.reporter.flush()).toBe('sent');
     expect(await h.reporter.flush()).toBe('nothing');
     expect(h.sent).toHaveLength(1);
-    expect(h.sent[0].report.consent?.terms_version).toMatch(/^1\.4\.0\+[0-9a-f]{8}$/);
+    expect(h.sent[0].report.consent?.terms_shown).toMatch(/^1\.4\.0\+[0-9a-f]{8}$/);
     expect(h.state().pending).toEqual([]);
   });
 
