@@ -13,7 +13,8 @@ export const exportCopy = {
     includesBook: 'A printable book for each child, by month',
     // D-074: what the machine changes is a "small fix", never a tidy-up.
     includesData: 'A data file with your words as heard, every small fix, and the final text',
-    offlineNote: 'Works without a connection. Nothing is sent anywhere.',
+    // BL-323: signed in, the export also reads your consent record from our server, so the note speaks of the file only.
+    offlineNote: 'Works without a connection. The file is made on this phone and goes only where you save or share it.',
     packing: 'Packing your letters',
     checking: 'Checking every file',
     progressA11y: 'Export progress',
@@ -78,7 +79,7 @@ export const exportCopy = {
     'data/       entries.json: every letter, with your words exactly as heard, every small',
     '            fix, and the final text. children.json: the books on this phone.', // D-074
     '            account.json: your plan, whether you were signed in, the books you belong to,',
-    '            and the choices you made on this phone (see below).',
+    '            the names we always spell your way, and your consent choices (see below).',
     'schema/     A description of the data files, for anyone building a reader.',
     'index.html  Open in any web browser to read every letter and hear every recording.',
     '            It works with no connection and no app.',
@@ -93,6 +94,14 @@ export const exportCopy = {
     'account.json says whether you answered yes to "Are you 18 or older?" on this phone,',
     'and your choice about sharing usage and crash reports ("not_answered" if you have',
     'not answered). These are the answers kept on this phone.',
+    '',
+    'YOUR CONSENT HISTORY',
+    '',
+    'When you are signed in, our server keeps a record of each time you agreed to, declined',
+    'or withdrew from our terms and privacy choices. account.json holds that record under',
+    '"consent_history" when it could be read while the export was made. If it could not,',
+    '"status" says why ("not_signed_in", "unavailable" or "different_account"), and',
+    'everything else in this export is complete.',
     '',
     'CHECKING THE FILES',
     '',
