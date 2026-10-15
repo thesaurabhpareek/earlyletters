@@ -79,7 +79,10 @@ export function productionServerFeatures(): string | undefined {
 }
 
 /** Problems that make the listing unfit to push for a build with the given server switch. Empty means shippable. */
-export function listingProblems(serverFeatures: string | undefined, listing: Listing = storeListing): string[] {
+export function listingProblems(
+  serverFeatures: string | undefined,
+  listing: { description: string; promotionalText: string; subtitle: string } = storeListing,
+): string[] {
   if (serverFeatures === 'on') return [];
   const fields: [string, string][] = [
     ['description', listing.description],
