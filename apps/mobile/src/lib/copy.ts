@@ -93,9 +93,6 @@ export const pendingCopy = {
     waitingForWords: copy.book.waitingForWords,
   },
   readTogether: {
-    plusTitle: copy.readTogether.plusGate.title,
-    plusBody: copy.readTogether.plusGate.body,
-    keepNote: copy.readTogether.plusGate.keepNote,
     emptyBody: copy.readTogether.empty,
   },
   reader: {

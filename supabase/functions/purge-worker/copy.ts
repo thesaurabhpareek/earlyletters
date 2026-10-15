@@ -1,6 +1,6 @@
 // Feature-local copy for the purge worker (brief: new strings live in a copy.ts in the
 // feature folder until the content agent moves them into packages/content).
-// The account deletion receipts themselves come from packages/content emails.en.ts.
+// The account deletion receipts themselves come from packages/content src/emails/account.en.ts.
 //
 // Content rules apply (CLAUDE.md): no em or en dashes, curly quotes, ellipsis or emoji;
 // no fear, guilt or loss language; never a child's name, a letter or anything from a book.
