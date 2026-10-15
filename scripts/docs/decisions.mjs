@@ -18,6 +18,8 @@ export const DOORS = ["one-way", "two-way", "one-way after launch"];
 export const TRIGGERS = ["scale", "market", "law", "customer", "cost", "platform", "technology", "team", "none"];
 const STATUS = /^(in force|proposed|parked|open|retired|(amended|superseded) by (\S+))/i;
 const ID = /^(D-\d{3}|ADR-\d{4}|BRIEF-\d{8}-\d+|R-\d{3})$/;
+// Only backticked text under a repository folder is checked as a path; branch names like release/1.0 are not.
+const REPO_DIRS = /^(\.github|\.claude|agents|apps|docs|experiments|packages|packs|scripts|supabase)\//;
 
 // ---------- sources ----------
 
@@ -88,7 +90,7 @@ export function validate(r, known, now = today()) {
   }
   const s = (r.fields.Status ?? "").match(STATUS);
   if (r.fields.Status && !s) p.push(`${where}: Status must be in force | proposed | parked | open | retired | amended by <ID> | superseded by <ID>`);
-  if (s?.[3] && !known.has(s[3].replace(/[.,;]$/, ""))) p.push(`${where}: Status points to ${s[3]}, which is not a known decision`);
+  if (s?.[3] && !known.has(s[3].replace(/[.,;:)]+$/, ""))) p.push(`${where}: Status points to ${s[3]}, which is not a known decision`);
   const rb = r.fields["Review by"];
   if (rb && !/^(on trigger|\d{4}-\d{2}-\d{2})/.test(rb)) p.push(`${where}: Review by must be YYYY-MM-DD or "on trigger"`);
   return p;
@@ -117,6 +119,7 @@ export function check(root = ROOT, now = today()) {
   const gone = recs.flatMap((r) =>
     [...(r.fields["As built"] ?? "").matchAll(/`([^`\s*]+\/[^`\s*]+)`/g)]
       .map((m) => m[1].replace(/[#:].*$/, ""))
+      .filter((p) => REPO_DIRS.test(p))
       .filter((p) => !existsSync(join(root, p)))
       .map((p) => `${r.id}: ${p}`),
   );
