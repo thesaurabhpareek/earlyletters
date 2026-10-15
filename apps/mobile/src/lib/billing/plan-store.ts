@@ -12,6 +12,7 @@ import { AppState } from 'react-native';
 import { ScribeStore, type NativeEntitlementSnapshot, type StoreViewSupport } from '../../../modules/scribe-store';
 import { getSetting, setSetting } from '../store';
 import { PLAN_CACHE_KEY, PLUS_PRODUCT_IDS } from './config';
+import { startPlanReminders } from './plan-reminders';
 import { EMPTY_PLAN, parsePlanCache, planFromSnapshot, sameEntitlements, sanitizeSnapshot, serializePlanCache, type PlanState } from './plan.logic';
 
 /** Rewrite the cache at least this often even when nothing changed, so its read time stays honest. */
@@ -118,10 +119,18 @@ export function startPlus(): () => void {
   const foreground = AppState.addEventListener('change', (s) => {
     if (s === 'active') void refreshPlan();
   });
+  // Plan reminders (G-15, a courtesy): re-planned on every plan change, on foreground and now.
+  let stopReminders: () => void = () => {};
+  try {
+    stopReminders = startPlanReminders({ getPlan, subscribePlan });
+  } catch {
+    // Notifications unavailable (web preview): the in-app note still works.
+  }
   void refreshPlan();
   return () => {
     changes?.remove();
     foreground.remove();
+    stopReminders();
     started = false;
   };
 }
