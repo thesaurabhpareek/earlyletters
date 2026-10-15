@@ -1,0 +1,263 @@
+/**
+ * Family contracts, version 1: invite create, peek, redeem (link and code),
+ * revoke, leave, remove, undo, member list (F11 sections 6, 7 and 11;
+ * WP-F11-04; G-17; F11-REQ-002, -004, -007, -008, -011, -019, -026).
+ *
+ * SQL: supabase/migrations/20261005000000_family_cap_language_idempotency.sql
+ * (`create_child_invite`, `accept_child_invite`, `leave_child`,
+ * `remove_child_member`), 20261003000000 (`revoke_invite`). Planned by S02:
+ * `peek_invite` (G-13, BL-334), the device-made invite overload of
+ * `create_child_invite` (WP-F11-01, F11 D5), `undo_parent_join` (D3) and
+ * `accept_child_invite_by_code` (service role only, called by `invite-redeem`).
+ *
+ * Server-feature contract: imported only through `@scribe/api/server`.
+ * Edge Functions import this file directly (Deno), so it stays a leaf module:
+ * no relative imports, no package import except `valibot`.
+ */
+import * as v from 'valibot';
+
+/** Bumped only by a breaking change, together with the route major. */
+export const FAMILY_CONTRACT_VERSION = 1;
+
+/** v1.0 creates parent invites only (B1, F11-REQ-003): the server refuses `contributor` while `contributors_enabled` is false. */
+export const INVITE_ROLES = ['parent'] as const;
+export type InviteRole = (typeof INVITE_ROLES)[number];
+
+/** Parent invites expire 7 days after creation (K-18). */
+export const INVITE_TTL_DAYS = 7;
+/** The inviter can undo a join through their own invite for 72 hours (F11 D3, F11-REQ-008). */
+export const UNDO_JOIN_WINDOW_HOURS = 72;
+/** At most two parents per book (D-069). The server's value wins; SCCAP carries it as the detail. */
+export const DEFAULT_MAX_PARENTS = 2;
+
+/**
+ * Invite code: 8 characters of Crockford base32 (about 40 bits), uppercase,
+ * no separators. Normalising what a person typed (case, dashes, O for 0,
+ * I and L for 1) is `packages/core/src/invite.ts` (S04, WP-F11-03); the wire
+ * carries only the normalised form.
+ */
+export const INVITE_CODE_LENGTH = 8;
+export const INVITE_CODE_RE = /^[0-9A-HJKMNP-TV-Z]{8}$/;
+
+/**
+ * Invite token in the link fragment (B-NFR-002). Device-made from v1.0: 32
+ * random bytes, base64url without padding (43 characters). The server-made
+ * tokens of 20261005000000 (64 lowercase hex) stay accepted until no
+ * supported build makes them.
+ */
+export const INVITE_TOKEN_RE = /^(?:[A-Za-z0-9_-]{43}|[0-9a-f]{64})$/;
+/** `sha256(token)` as 64 lowercase hex, which is all the server stores. */
+export const TOKEN_HASH_RE = /^[0-9a-f]{64}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/**
+ * Why an invite cannot be used. The server raises SCINV with one of these as
+ * the SQLSTATE detail (request to S02: today the reason is only in the
+ * message, which the app must never read). Closed set; anything else reads as
+ * `not_found`, which is also what a non-member probing an invite sees.
+ */
+export const INVITE_UNUSABLE_DETAILS = [
+  'expired',
+  'used',
+  'revoked',
+  'already_member',
+  'not_found',
+  /** The role is off (`contributors_enabled` false, F11-REQ-003). */
+  'role_disabled',
+  /** A device-made code collides with a live invite: make a new code and retry (F11-REQ-002). */
+  'code_taken',
+  /** The retry of a lost create found its invite closed: make a new one. */
+  'closed',
+] as const;
+export type InviteUnusableDetail = (typeof INVITE_UNUSABLE_DETAILS)[number];
+
+/** What the app does with an invite failure. S04 maps each kind to copy (`invite-errors.logic.ts`). */
+export type InviteErrorKind =
+  | InviteUnusableDetail
+  /** SCCAP (F11-REQ-026): the book already has two parents. Never retried. */
+  | 'parents_full'
+  | 'not_parent'
+  | 'rate_limited'
+  | 'consent_needed'
+  | 'book_deleted'
+  | 'signed_out'
+  | 'paused'
+  | 'unknown';
+
+/** Maps a SQLSTATE and its detail to an invite error kind. Pure; never reads a message. */
+export function inviteErrorKindFor(sqlstate: string | null | undefined, detail?: string | null): InviteErrorKind {
+  switch (sqlstate) {
+    case 'SCINV':
+      return (INVITE_UNUSABLE_DETAILS as readonly string[]).includes(detail ?? '') ? (detail as InviteUnusableDetail) : 'not_found';
+    case 'SCCAP':
+      return 'parents_full';
+    case 'SCPAR':
+      return 'not_parent';
+    case 'SCRAT':
+      return 'rate_limited';
+    case 'SCCON':
+      return 'consent_needed';
+    case 'SCDEL':
+      return 'book_deleted';
+    case '28000':
+    case 'SCANO':
+      return 'signed_out';
+    case 'P0002':
+      return 'not_found';
+    default:
+      return 'unknown';
+  }
+}
+
+// ── Create (RPC create_child_invite) ─────────────────────────────────────
+
+/** As built: the server makes the token and returns it once. Idempotent by the `idempotency-key` header. */
+export interface CreateInviteArgsV0 {
+  p_child: string;
+  p_role: InviteRole;
+  p_signs_as?: string | null;
+}
+/** As built: the raw token (64 hex). */
+export type CreateInviteResultV0 = string;
+
+/**
+ * Planned overload (WP-F11-01, F11 D5): the device makes the invite id
+ * (UUIDv7), the 32-byte token and the code; the server stores `sha256(token)`
+ * and an HMAC of the code, returns no secret, and treats a repeat with the
+ * same id and hash as success. Open question for S02 and S04: where the code
+ * pepper lives (Supabase Vault read by the RPC, or an Edge Function that
+ * computes the HMAC); this shape sends the code over TLS either way.
+ */
+export interface CreateInviteArgs {
+  p_invite_id: string;
+  p_child: string;
+  p_role: InviteRole;
+  p_token_hash: string;
+  p_code: string;
+  p_signs_as?: string | null;
+}
+export const CreateInviteResultSchema = v.object({
+  invite_id: v.pipe(v.string(), v.regex(UUID_RE)),
+  expires_at: v.string(),
+  /** True when this call found the invite already made by an earlier attempt. */
+  replayed: v.boolean(),
+});
+export type CreateInviteResult = v.InferOutput<typeof CreateInviteResultSchema>;
+
+// ── Peek (RPC peek_invite, planned G-13) ─────────────────────────────────
+
+/**
+ * Before consent, the invitee may learn only the inviter's sign-off name
+ * (BL-322, security review H2): "Join {child}'s book as a parent? Invited by
+ * {signsAs}". No child name, no book id, no expiry date. A used, expired,
+ * revoked or unknown token answers SCINV with its detail.
+ */
+export interface PeekInviteArgs {
+  p_token: string;
+}
+export const PeekInviteResultSchema = v.object({
+  signs_as: v.nullable(v.pipe(v.string(), v.maxLength(80))),
+  role: v.picklist(INVITE_ROLES),
+});
+export type PeekInviteResult = v.InferOutput<typeof PeekInviteResultSchema>;
+
+// ── Accept by link (RPC accept_child_invite, built) ──────────────────────
+
+export interface AcceptInviteArgs {
+  p_token: string;
+}
+/** As built: the child id. The same person accepting again gets it again (idempotent). */
+export type AcceptInviteResult = string;
+
+// ── Redeem by code (Edge Function invite-redeem, WP-F11-02) ──────────────
+
+/** `POST /functions/v1/invite-redeem/v1`. `peek` first, then `accept` after the person taps Join. */
+export const REDEEM_MODES = ['peek', 'accept'] as const;
+export type RedeemMode = (typeof REDEEM_MODES)[number];
+/** Equal to `ENDPOINTS.inviteRedeem.path` (a test pins them). */
+export const INVITE_REDEEM_PATH = '/functions/v1/invite-redeem/v1';
+
+export const RedeemRequestSchema = v.strictObject({
+  code: v.pipe(v.string(), v.regex(INVITE_CODE_RE)),
+  mode: v.picklist(REDEEM_MODES),
+  /**
+   * A random id the app keeps for this install (UUID, Keychain, this device
+   * only). Hashed with a daily salt before any count; never stored raw. It
+   * scopes the 10 failures per device per hour (B-NFR-004).
+   */
+  device: v.pipe(v.string(), v.regex(UUID_RE)),
+});
+export type RedeemRequest = v.InferOutput<typeof RedeemRequestSchema>;
+
+export const RedeemPeekDataSchema = v.object({ mode: v.literal('peek'), signs_as: v.nullable(v.string()), role: v.picklist(INVITE_ROLES) });
+export const RedeemAcceptDataSchema = v.object({ mode: v.literal('accept'), child_id: v.pipe(v.string(), v.regex(UUID_RE)), role: v.picklist(INVITE_ROLES) });
+export const RedeemDataSchema = v.variant('mode', [RedeemPeekDataSchema, RedeemAcceptDataSchema]);
+export type RedeemData = v.InferOutput<typeof RedeemDataSchema>;
+
+/** Failures per device (hashed) per rolling hour, and across the service per hour before the code path pauses (F11-REQ-007). */
+export const REDEEM_FAILURES_PER_DEVICE_HOUR = 10;
+export const REDEEM_FAILURES_GLOBAL_HOUR = 1_000;
+
+export function parseRedeemRequest(input: unknown): { ok: true; value: RedeemRequest } | { ok: false } {
+  const r = v.safeParse(RedeemRequestSchema, input);
+  return r.success ? { ok: true, value: r.output } : { ok: false };
+}
+
+// ── Revoke, leave, remove, undo ──────────────────────────────────────────
+
+/** `revoke_invite(p_invite)`: true, also when it was already closed. P0002 for a non-parent. */
+export interface RevokeInviteArgs {
+  p_invite: string;
+}
+
+/** `leave_child(p_child, p_keep_in_book)` (built). With false, own letters in that book leave it in the same transaction. SCLPG for the last parent. */
+export interface LeaveChildArgs {
+  p_child: string;
+  p_keep_in_book: boolean;
+}
+export const LEAVE_RESULTS = ['left', 'not_member'] as const;
+export type LeaveResult = (typeof LEAVE_RESULTS)[number];
+
+/** `remove_child_member(p_child, p_member, p_set_aside)` (built): family members only; a parent is never removed by the other parent (42501). */
+export interface RemoveMemberArgs {
+  p_child: string;
+  p_member: string;
+  p_set_aside: boolean;
+}
+export const REMOVE_RESULTS = ['removed', 'not_member'] as const;
+export type RemoveResult = (typeof REMOVE_RESULTS)[number];
+
+/** `undo_parent_join(p_child, p_member)` (planned, WP-F11-01): only the inviter, within 72 hours; else SCPAR. The joiner's letters become private. */
+export interface UndoJoinArgs {
+  p_child: string;
+  p_member: string;
+}
+export const UNDO_RESULTS = ['undone', 'not_member'] as const;
+export type UndoResult = (typeof UNDO_RESULTS)[number];
+
+// ── Member list (F11-REQ-019) ────────────────────────────────────────────
+
+/**
+ * Members come from the pull (`BookMeta.members`, sync.ts). Pending invites
+ * come from `child_invites`, which parents of the book may read
+ * (`child_invites_select`); select exactly these columns, never `*` and
+ * never `token_hash` or `code_hash`.
+ */
+export const PENDING_INVITE_COLUMNS = ['id', 'child_id', 'role', 'signs_as', 'created_at', 'expires_at', 'accepted_at', 'revoked_at'] as const;
+
+export const PendingInviteSchema = v.object({
+  id: v.string(),
+  child_id: v.string(),
+  role: v.picklist(['parent', 'contributor']),
+  signs_as: v.nullable(v.string()),
+  created_at: v.string(),
+  expires_at: v.string(),
+  accepted_at: v.nullable(v.string()),
+  revoked_at: v.nullable(v.string()),
+});
+export type PendingInvite = v.InferOutput<typeof PendingInviteSchema>;
+
+/** Open means not accepted, not revoked and not expired at `now`. */
+export function isOpenInvite(inv: Pick<PendingInvite, 'accepted_at' | 'revoked_at' | 'expires_at'>, now: Date): boolean {
+  return inv.accepted_at === null && inv.revoked_at === null && Date.parse(inv.expires_at) > now.getTime();
+}

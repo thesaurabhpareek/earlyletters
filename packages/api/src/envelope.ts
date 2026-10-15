@@ -28,6 +28,15 @@ export const HEADER_APP_VERSION = 'x-app-version';
 export const HEADER_DEPRECATION = 'deprecation';
 export const HEADER_SUNSET = 'sunset';
 
+/**
+ * Error codes are versioned (ADR 0017 rule 8): the list is append-only, each
+ * code records the version that added it, and a client built against an
+ * older version reads an unknown code as `internal` (the schema's fallback),
+ * which it treats as permanent, so a newer server never makes an older app
+ * loop. Removing or renaming a code is a breaking change: a new route major.
+ */
+export const API_ERROR_CODES_VERSION = 2;
+
 export const API_ERROR_CODES = [
   'bad_request',
   'unauthorized',
@@ -52,8 +61,53 @@ export const API_ERROR_CODES = [
   'invite_unusable',
   'plus_required',
   'anonymous_refused',
+  // Version 2 (15 Oct 2026, S07 platform contracts).
+  /** SCCAP: the book already has the most parents allowed (D-069, F11-REQ-026). Never retried. */
+  'parents_full',
+  /** A server-side kill switch is on (ADR 0016): local work continues; retry after `Retry-After`. */
+  'paused',
+  /** The same `idempotency-key` arrived with different arguments within its 24 hours. A client bug: never retried. */
+  'idempotency_conflict',
+  /** The action needs a sign-in in the last few minutes (escrow step-up, F08 6.5 C1). */
+  'reauth_required',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
+
+/** The error-code version that added each code. A test fails if a code has none or a v1 code changed version. */
+export const ERROR_CODE_SINCE: Readonly<Record<ApiErrorCode, 1 | 2>> = {
+  bad_request: 1, unauthorized: 1, forbidden: 1, not_found: 1, conflict: 1, gone: 1, payload_too_large: 1,
+  upgrade_required: 1, rate_limited: 1, timeout: 1, unavailable: 1, internal: 1, network: 1,
+  consent_required: 1, immutable: 1, tombstoned: 1, last_parent: 1, deleted: 1, not_parent: 1,
+  invite_unusable: 1, plus_required: 1, anonymous_refused: 1,
+  parents_full: 2, paused: 2, idempotency_conflict: 2, reauth_required: 2,
+};
+
+/**
+ * Closed detail values an error may carry, so a client can say the right
+ * calm line without ever reading a server message. The family and recovery
+ * contracts (`@scribe/api/server`) use subsets; a test pins them inside this
+ * list. Anything else is dropped by `failure()` and by the schema.
+ */
+export const ERROR_DETAILS = [
+  // SCINV (family.ts INVITE_UNUSABLE_DETAILS)
+  'expired', 'used', 'revoked', 'already_member', 'not_found', 'role_disabled', 'code_taken', 'closed',
+  // SCCON (sync.ts CONSENT_KINDS)
+  'terms', 'age', 'sensitive-data', 'family-share', 'backup',
+  // SCDEL
+  'purged',
+  // Escrow (recovery-key.ts ESCROW_ERROR_DETAILS)
+  'step_up_required', 'device_unknown', 'device_revoked', 'on_hold', 'cancelled', 'deletion_pending',
+  'limit_restores', 'limit_keys',
+  // Kill switches (remote-config.ts KILL_SWITCH_KEYS), for `paused`
+  'sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport',
+  // invite-redeem's global brake (F11-REQ-007)
+  'codes_paused',
+] as const;
+export type ErrorDetail = (typeof ERROR_DETAILS)[number];
+
+export function isErrorDetail(x: unknown): x is ErrorDetail {
+  return typeof x === 'string' && (ERROR_DETAILS as readonly string[]).includes(x);
+}
 
 /** What a client does with a failure. */
 export type ErrorAction =
@@ -72,12 +126,15 @@ export interface ApiError {
   code: ApiErrorCode;
   retryable: boolean;
   sqlstate?: string;
+  /** A closed value from ERROR_DETAILS; never free text. */
+  detail?: ErrorDetail;
 }
 
 export const ApiErrorSchema = v.object({
   code: v.fallback(v.picklist(API_ERROR_CODES), 'internal'),
   retryable: v.boolean(),
   sqlstate: v.optional(v.pipe(v.string(), v.regex(/^[0-9A-Z]{5}$/))),
+  detail: v.fallback(v.optional(v.picklist(ERROR_DETAILS)), undefined),
 });
 
 export const ApiFailureSchema = v.object({
@@ -97,6 +154,7 @@ export function success<T>(data: T, requestId: string): ApiSuccess<T> {
 export function failure(error: ApiError, requestId: string): ApiFailure {
   const out: ApiFailure = { ok: false, error: { code: error.code, retryable: error.retryable }, requestId };
   if (error.sqlstate && /^[0-9A-Z]{5}$/.test(error.sqlstate)) out.error.sqlstate = error.sqlstate;
+  if (isErrorDetail(error.detail)) out.error.detail = error.detail;
   return out;
 }
 
@@ -127,6 +185,10 @@ const rule = (code: ApiErrorCode, action: ErrorAction): ErrorRule => ({ code, ac
 
 export const SQLSTATE_RULES: Readonly<Record<string, ErrorRule>> = {
   SCCON: rule('consent_required', 'pause_for_consent'),
+  // D-069, F11-REQ-026: a full book is told, never retried.
+  SCCAP: rule('parents_full', 'tell_user'),
+  // F16-REQ-019 (planned, WP-F16-16): this build's sync API version is no longer served; `sync.updateNeeded`.
+  SCVER: rule('upgrade_required', 'tell_user'),
   SCANO: rule('anonymous_refused', 'reject'),
   '28000': rule('unauthorized', 'reauth'),
   SCRAT: rule('rate_limited', 'tell_user'),
@@ -204,7 +266,12 @@ export function httpStatusFor(code: ApiErrorCode): number {
     case 'tombstoned':
     case 'last_parent':
     case 'invite_unusable':
+    case 'parents_full':
       return 409;
+    case 'idempotency_conflict':
+      return 422;
+    case 'reauth_required':
+      return 401;
     case 'gone':
     case 'deleted':
       return 410;
@@ -221,6 +288,7 @@ export function httpStatusFor(code: ApiErrorCode): number {
       return 504;
     case 'unavailable':
     case 'network':
+    case 'paused':
       return 503;
     default:
       return 500;

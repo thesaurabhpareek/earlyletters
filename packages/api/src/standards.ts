@@ -22,8 +22,20 @@ export const ENDPOINT_CLASSES = {
   write_rpc: { p95Ms: 500, timeoutMs: 15_000, maxAttempts: 8, backoff: { baseMs: 1_000, capMs: 300_000 } },
   /** Upload batch of up to 50 ops (sync_push). */
   sync_batch: { p95Ms: 800, timeoutMs: 30_000, maxAttempts: 10, backoff: { baseMs: 1_000, capMs: 300_000 } },
-  /** Light Edge Functions (invite redeem, Apple token): cold start included. */
+  /** Light Edge Functions (invite redeem, Apple token, status report): cold start included. */
   edge_light: { p95Ms: 600, timeoutMs: 10_000, maxAttempts: 4, backoff: { baseMs: 1_000, capMs: 60_000 } },
+  /**
+   * Proposed ADR 0017 delta (R2 AR-15) [E]: the `escrow` function in its own
+   * project. User-initiated and rare (under 1 an hour at launch, F16 9), with
+   * a database round trip to the main project and an HPKE seal per key.
+   */
+  escrow: { p95Ms: 1_200, timeoutMs: 15_000, maxAttempts: 3, backoff: { baseMs: 2_000, capMs: 60_000 } },
+  /**
+   * Proposed ADR 0017 delta (R2 AR-15) [E]: one encrypted recording upload or
+   * download (about 0.5 MB a minute of audio, at most 20 MB), resumable. The
+   * budget is time to first byte acknowledged; the body runs on the timeout.
+   */
+  object_transfer: { p95Ms: 1_500, timeoutMs: 120_000, maxAttempts: 6, backoff: { baseMs: 2_000, capMs: 300_000 } },
 } as const;
 export type EndpointClass = keyof typeof ENDPOINT_CLASSES;
 
@@ -39,8 +51,8 @@ export interface RateLimit {
   /** Requests allowed per window per subject. */
   limit: number;
   windowSeconds: number;
-  /** Who the limit counts: a user id, a hashed IP (rotating salt), or the whole service. */
-  per: 'user' | 'ip_hash' | 'global';
+  /** Who the limit counts: a user id, a hashed IP or install id (daily rotating salt), or the whole service. */
+  per: 'user' | 'ip_hash' | 'device_hash' | 'global';
   /** Where it is enforced. `cdn` means the response is cached and the origin sees little traffic. */
   enforcedBy: 'cdn' | 'rpc' | 'edge_function' | 'supabase_auth' | 'client';
 }
@@ -55,6 +67,10 @@ export interface EndpointSpec {
   idempotency: 'safe_method' | 'natural_id' | 'idempotency_key';
   rateLimit: RateLimit;
   status: 'live' | 'this_change' | 'planned';
+  /** The kill switch that stops it (ADR 0016), when one does. Every server-feature endpoint names one (08 section 8.3 item 2). */
+  killSwitch?: 'sync' | 'invites' | 'photos' | 'packDownloads' | 'serverContent' | 'backupUploads' | 'escrow' | 'statusReport';
+  /** Which build flag must be on for the app to call it (capabilities.ts). Public documents need none. */
+  capability?: 'signIn' | 'sync' | 'coParent' | 'backup' | 'statusReport';
 }
 
 /** Major version segment for our own Edge Function routes. A breaking change adds /v2 and keeps /v1 until its sunset date. */
@@ -105,11 +121,122 @@ export const ENDPOINTS = {
     method: 'POST', path: '/rest/v1/rpc/policy_actions_needed', class: 'read_rpc', auth: 'user_jwt',
     idempotency: 'safe_method', rateLimit: { limit: 60, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'live',
   },
+  syncBooks: {
+    method: 'POST', path: '/rest/v1/rpc/sync_books', class: 'read_rpc', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 60, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+    killSwitch: 'sync', capability: 'sync',
+  },
+  // ── Family (packages/api/src/server/family.ts) ──
+  peekInvite: {
+    method: 'POST', path: '/rest/v1/rpc/peek_invite', class: 'read_rpc', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    killSwitch: 'invites', capability: 'coParent',
+  },
+  acceptInvite: {
+    method: 'POST', path: '/rest/v1/rpc/accept_child_invite', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+    killSwitch: 'invites', capability: 'coParent',
+  },
+  revokeInvite: {
+    method: 'POST', path: '/rest/v1/rpc/revoke_invite', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'live',
+    capability: 'coParent',
+  },
+  leaveChild: {
+    method: 'POST', path: '/rest/v1/rpc/leave_child', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+    capability: 'coParent',
+  },
+  removeChildMember: {
+    method: 'POST', path: '/rest/v1/rpc/remove_child_member', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'live',
+    capability: 'coParent',
+  },
+  undoParentJoin: {
+    method: 'POST', path: '/rest/v1/rpc/undo_parent_join', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    capability: 'coParent',
+  },
   inviteRedeem: {
-    method: 'POST', path: '/functions/v1/invite-redeem', class: 'edge_light', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'ip_hash', enforcedBy: 'edge_function' }, status: 'planned',
+    method: 'POST', path: `/functions/v1/invite-redeem/${API_MAJOR}`, class: 'edge_light', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'device_hash', enforcedBy: 'edge_function' }, status: 'this_change',
+    killSwitch: 'invites', capability: 'coParent',
+  },
+  // ── Plus status report (packages/api/src/server/subscription-status.ts; D-080) ──
+  statusReport: {
+    method: 'POST', path: `/functions/v1/subscription-status/${API_MAJOR}/report`, class: 'edge_light', auth: 'user_jwt',
+    idempotency: 'idempotency_key', rateLimit: { limit: 30, windowSeconds: 3600, per: 'user', enforcedBy: 'edge_function' }, status: 'this_change',
+    killSwitch: 'statusReport', capability: 'statusReport',
+  },
+  statusSalt: {
+    method: 'GET', path: `/functions/v1/subscription-status/${API_MAJOR}/salt`, class: 'edge_light', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 30, windowSeconds: 3600, per: 'user', enforcedBy: 'edge_function' }, status: 'this_change',
+    killSwitch: 'statusReport', capability: 'statusReport',
+  },
+  // ── Recovery key (packages/api/src/server/recovery-key.ts; S05). The escrow routes are on the scribe-escrow project. ──
+  backupRegisterDevice: {
+    method: 'POST', path: '/rest/v1/rpc/backup_register_device', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    killSwitch: 'backupUploads', capability: 'backup',
+  },
+  backupStoreKey: {
+    method: 'POST', path: '/rest/v1/rpc/backup_store_key', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    killSwitch: 'backupUploads', capability: 'backup',
+  },
+  escrowCreateRequest: {
+    method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests`, class: 'escrow', auth: 'user_jwt',
+    idempotency: 'idempotency_key', rateLimit: { limit: 3, windowSeconds: 30 * 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+    killSwitch: 'escrow', capability: 'backup',
+  },
+  escrowRelease: {
+    method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/:id/release`, class: 'escrow', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+    killSwitch: 'escrow', capability: 'backup',
   },
 } as const satisfies Record<string, EndpointSpec>;
+
+/**
+ * Server-to-server endpoints (`server_only`): cron and webhooks with their own
+ * secret. Listed so the standards hold for them too; never in ENDPOINTS, and
+ * no key for them ships in the app.
+ */
+export const SERVER_ENDPOINTS = {
+  purgeWorker: {
+    method: 'POST', path: '/functions/v1/purge-worker', class: 'edge_light', auth: 'server_only',
+    idempotency: 'idempotency_key', rateLimit: { limit: 60, windowSeconds: 3600, per: 'global', enforcedBy: 'edge_function' }, status: 'live',
+  },
+  pushSend: {
+    method: 'POST', path: `/functions/v1/push-send/${API_MAJOR}`, class: 'edge_light', auth: 'server_only',
+    idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'global', enforcedBy: 'edge_function' }, status: 'planned',
+  },
+} as const satisfies Record<string, EndpointSpec>;
+
+/**
+ * Idempotency (ADR 0017 rule 3), one rule for every RPC and Edge Function:
+ *  - inserts use the device-made UUIDv7 as the natural key (DATA-REQ-044);
+ *  - every other mutation sends `idempotency-key: <uuid>` (v7 from the
+ *    phone; lowercase hex with dashes);
+ *  - the server keeps (person, function, key) with a hash of the arguments
+ *    and the result for 24 hours;
+ *  - a repeat with the same key and the same arguments answers the stored
+ *    result without a second effect;
+ *  - the same key with other arguments is `idempotency_conflict` (422; SQL
+ *    raises 22023 as built in 20261005000000);
+ *  - a malformed key is `bad_request`; where the endpoint requires a key, a
+ *    missing one is `bad_request` too;
+ *  - reuse a key only to retry a call whose answer never arrived.
+ */
+export const IDEMPOTENCY = {
+  header: 'idempotency-key',
+  retentionHours: 24,
+  keyFormat: 'uuid',
+} as const;
+
+/** Header a 429 or a `paused` 503 carries: seconds to wait (HTTP-date is never sent, phone clocks drift). */
+export const HEADER_RETRY_AFTER = 'retry-after';
+/** How long a `paused` (kill switch) answer asks the app to wait before trying again. */
+export const PAUSED_RETRY_AFTER_SECONDS = 300;
 export type EndpointName = keyof typeof ENDPOINTS;
 
 /** Cache-Control for responses we serve. `stale-if-error` keeps the CDN answering through an origin outage. */
