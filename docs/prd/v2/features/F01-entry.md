@@ -13,7 +13,7 @@
 
 - [F] Under-18 users are not allowed at all, locally or with an account; the founder removed the local-only mode on 2 Oct (PRD.md K-07, PRD-REQ-019, D-006 via D-026).
 - [F] Texas SB 2420 is in force: the Fifth Circuit stayed the injunction on 10 June 2026 and the Supreme Court refused to vacate the stay on 6 July 2026. Utah moved to 6 May 2027, Louisiana to 1 July 2027, California AB 1043 starts 1 Jan 2027 (R4 section 4.2; R4-S44, R4-S47, R4-S49, R4-S52, R4-S53).
-- [D] Submission moves to about mid-January 2027 (M15), so v1.0 ships after AB 1043 starts. AB 1043 handling is v1.0 scope, not later (R4 PT-11).
+- [D] Submission moves to the week of Mon 3 May 2027 (M15; T36 in `08-delivery.md` section 2.1), so v1.0 ships after AB 1043 starts. AB 1043 handling is v1.0 scope, not later (R4 PT-11).
 - [F] Apple's Declared Age Range framework needs iOS 26.0, and the `isEligibleForAgeFeatures` check needs iOS 26.2; our floor is iOS 17 (R4 section 4.1, R4-S37, R4-S40; D-040). On iOS 17 to 26.1 our own question is the only check.
 - [F] No baby or letters app in R1's sample describes an in-app 18+ gate; all are rated 4+ or 9+ (R1 F01, R1-S1, R1-S3, R1-S4, R1-S20, R1-S67, R1-S2). Ours is one question on one screen with nothing else to read [R].
 - [F] Deck-of-cards tutorials gave no significant gain in task success (91% against 94%) and made apps seem harder (NN/g, UR S10). The intro is one welcome screen at v1.0; the 4-story intro moves to v1.1 F40 (D-043).

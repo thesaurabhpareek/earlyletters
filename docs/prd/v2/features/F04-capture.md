@@ -463,7 +463,7 @@ Not sent: the reason a take ended before consent, the letter language (B-NFR-001
 | Recorder session | `apps/mobile/src/lib/capture/recorder.ts` | Exists; add storage checks. Keep-awake is built in `listen.tsx`. No fsync exists: the header says expo-file-system has none and relies on AVAudioRecorder closing the file |
 | Launch sweep | `apps/mobile/src/lib/capture/sweep.ts`, `sweep.logic.ts` | Exists; add the `discarding` rule |
 | Free space reader | `apps/mobile/src/lib/capture/storage.ts` | New. Use `Paths.availableDiskSpace` from expo-file-system, which export already uses (`apps/mobile/src/lib/export/device.ts`) |
-| Keep-awake wrapper | `apps/mobile/src/lib/resilience/keep-awake.ts` (`useKeepAwakeWhile`) over `expo-keep-awake` | Built; used by `listen.tsx` and `read-together.tsx`. The 5-minute release while paused (F04-REQ-005) is not in it: it holds while paused for as long as the pause lasts |
+| Keep-awake wrapper | `apps/mobile/src/lib/resilience/keep-awake.ts` (`useKeepAwakeWhile`) over `expo-keep-awake` | Built; used by `app/listen.tsx` and `components/player/audio-player.tsx` (Read together holds the screen through the player, not from `read-together.tsx`). The 5-minute release while paused (F04-REQ-005) is not in it: it holds while paused for as long as the pause lasts |
 | Playability probe | `apps/mobile/src/lib/capture/probe.ts` | Built (D-085): a recovered take that does not load with a duration is kept, marked `unrecoverable` and listed in Settings > Recordings |
 | Quiet-day mark | `apps/mobile/src/components/book/quiet-day.logic.ts`, `quiet-day-row.tsx` | Built (D-084) |
 | Date sheet for Review | `apps/mobile/src/components/capture/date-sheet.tsx` | New; F06 places it in Review |

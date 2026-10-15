@@ -21,6 +21,7 @@
 - [D] B2 removed every server purchase table. M6 (D-080, D-081) adds a status report (plan, trial end, renewal date, cancelled flag) for one purpose: California auto-renewal reminder emails. App Store Connect (ASC) stays the source for trials, conversions, renewals and refunds (`03-goals-and-principles.md` section 4; F14).
 - [F] `packages/analytics` holds the typed catalogue (68 events, `SCHEMA_VERSION` 4), fail-closed validation, consent with a random id, a 1 MB in-memory queue, a 60 s flush and the insights engine, with 107 `it` or `test` blocks across 9 test files (`packages/analytics/src/catalog.ts`, `client.ts`, `test/`; counted 13 Oct). Tests were not run in this session (no `node_modules` in the checkout).
 - [F] The app side is wired: `startAnalytics` and `startAnalyticsObservers` run after the first frame, `useScreenViews` and `AnalyticsConsentAsk` are mounted in `apps/mobile/src/app/_layout.tsx`, and the PostHog SDK is loaded by dynamic import only after a yes (`apps/mobile/src/lib/analytics/index.ts`, `posthog-sdk.ts`). BL-250 is done. 55 of 68 events have an emitter; 13 have none (section 10).
+- [F] Since 15 Oct `develop` carries PR #118: a build switch `EXPO_PUBLIC_ANALYTICS`, off in every `eas.json` profile (`apps/mobile/src/lib/capabilities.ts` `analyticsEnabled()`), under which there is no consent sheet, no Privacy switch and no PostHog client even if a key is set. It implements D-095 of PR #122 (delegated by the founder: no analytics SDK in v1.0; it returns with consent in v1.1). This spec is written for a build with that switch on; whether v1.0 ships it on or off is Q9 (section 13). Until the founder answers, the code default (off) stands.
 - [F] Sentry is not in the app: no dependency in `apps/mobile/package.json`, no initialisation anywhere (grep, 13 Oct). The privacy label draft already answers Crash Data "No" for v1.0 (`docs/legal/app-store-privacy-labels.md` 1.3.0, section 1.2).
 - [A] About 40% of users will consent (PRD 7.8 assumption). Device numbers describe consenting users only and lean towards the engaged (`docs/analytics/TRACKING_PLAN.md` 1.4).
 
@@ -377,6 +378,7 @@ Only for what is missing or partly built.
 | Q6 Linked or Not linked (Q-005) **[Counsel]** | Counsel; 29 Oct (default Linked) | Label, manifest |
 | Q7 The seven-code `lang` property (Q-004) **[Counsel]** | Counsel; 16 Oct (default ship) | Two events |
 | Q8 PostHog billing limit value | Founder; before C1 | Volume cap |
+| Q9 Does v1.0 ship with `EXPO_PUBLIC_ANALYTICS` on (this spec, D-003, B10) or off (PR #122 D-095, built by PR #118)? Spec default until answered: off, as `develop` is built; every requirement here then binds from v1.1 or from the build that turns it on | Founder; T02 | Sections 4, 7 and 12 of this spec; F17 Privacy screen; the privacy label (F21) |
 
 | A | Assumption | How we validate |
 |---|---|---|

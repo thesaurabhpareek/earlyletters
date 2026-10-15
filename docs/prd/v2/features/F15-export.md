@@ -327,7 +327,7 @@ Status is what `develop` holds on 13 Oct 2026; "Device" names the `docs/qa/DEVIC
 | Q2 | Should the PDF include private letters if the author asks (an "Include my private letters" switch)? Spec default: never at v1.0 | Founder | 30 Oct | F15-REQ-005 |
 | Q3 | Arabic and Chinese reading fonts in the language packs (spec default) or downloaded only at export | F05 owner, design systems | 23 Oct | WP-F15-04 |
 | Q4 | Does a co-parent's export include the other parent's in-book letters as PDF pages (spec default: yes, final text only) | Founder, counsel | 30 Oct | F11 export row |
-| Q5 | Built as 1.0.0; bump to 1.1.0 only when `occurred_precision` ships (F04) | Privacy engineer | With WP-F04-03 | WP-F15-02 |
+| Q5 | Built as 1.0.0; bump to 1.1.0 only when `occurred_precision` ships (F04). PR #122 D-096 and PR #120 instead make 1.1.0 the bump that adds `consent_on_this_phone` to `account.json`; if they merge first, `occurred_precision` and `data/waiting.json` go in 1.2.0 | Privacy engineer | With WP-F04-03, after PR #120 lands or closes | WP-F15-02 |
 | Q6 | Export leaves out Recently deleted letters by design (D-085), and also consent history and dictionary terms, and writes the role as `parent` for everyone (security review L4). LEGAL-REQ-034 asks for a complete copy of the person's data. Does a letter on the shelf count? Spec default [R]: keep D-085's rule, add consent history and the real role, and say in README that letters in Recently deleted are not included | Counsel, privacy engineer | 23 Oct | `build.logic.ts`, README text |
 
 | # | Assumption | How we validate |

@@ -565,7 +565,7 @@ Source: TDD 07 section 9.1, re-pointed to V2 scope; TDD 06 FM-R18.
 
 ### 5.2 The launch gate
 
-Every item below passes before submission to App Review, now about mid-January 2027 (M15); `08-delivery.md` section 2.1 sets the week. Items 1 to 6 carry over from PRD 1.3 section 2.3; items 7 to 10 are new for V2.
+Every item below passes before submission to App Review, now the week of Mon 3 May 2027 (M15, T36); `08-delivery.md` section 2.1 sets the week. Items 1 to 6 carry over from PRD 1.3 section 2.3; items 7 to 10 are new for V2.
 
 1. Every line in section 3 passes (PRD 1.3 2.3 item 1).
 2. Every P0 LEGAL-REQ and DATA-REQ for v1.0 scope passes; v1.1 LEGAL-REQs bind the day their feature ships (PRD 1.3 2.3 items 2 and 6).

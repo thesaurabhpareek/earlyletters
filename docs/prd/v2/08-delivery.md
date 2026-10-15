@@ -43,6 +43,7 @@ Checked against `origin/develop` at ed16ca3 (13 Oct, after PRs #86, #91, #100, #
 | T04 to T08 (due Fri 16 Oct) | Cannot happen as planned: T04 needs Q1; T05 and T06 need S17 and S20 dispatched; T07 is the DR-18 answer (default (b) stands); T08 needs the Study 2 budget | Re-dated in section 2.1: T04, T05, T06 and T08 to Fri 23 Oct; T07 joins T02 on Mon 19 Oct |
 | Agents and commits | `docs/agents/COORDINATION.md` section 6 on `develop` says agents never commit, push or deploy; the coordinator integrates per wave. The 13 Oct header said "stop at a local commit", which contradicts it (R9 R2D-01) | Until the founder answers Q3, streams hand over without committing (section 9 header): each works in its own worktree, leaves changes uncommitted, and attaches the diff to its report; the coordinator runs the checks, commits on the stream's branch, opens the pull request and records the claim on `BOARD.md` |
 | Decisions log | `docs/DECISIONS.md` on `develop` still ends at D-088 (M14 to M17 not logged) | Wave 0 item 1 (section 5.1), due T41 |
+| `develop` moved after this plan was checked | Since ed16ca3, `develop` (56ec5b5, 15 Oct) merged PR #121 (plan reminders, cards and the purchase confirmation with Save a copy: the work of WP-F14-02, -06 and -07, BL-342), PR #114 (same-version different-body refusal: WP-F19-05), PR #113 (native decode guards: the WP-F05-01 clamp), PR #118 (`EXPO_PUBLIC_ANALYTICS` off in every profile, see F18 Q9), PR #4 and #39 (ADR 0018 to 0020). Section 13 keeps its 15 Oct marks | The wave 1 rows for S06, S07 and S08 are "verify first": close each with evidence if the merged code meets the WP's Done when, and the slot returns to the reserve |
 | v1.0 list | Rebuilt from section 12 of every spec (R7 R2P-01, R9 R2D-02): 229 work packages that are not built or partly built and carry a P0 requirement are now in section 6.3, 14 human or device ones are in section 10 (the WP-F08-B6 drill also has an evidence slot), and 3 P1 extras stay cut with a stated condition | Slots to the last feature merge rise from 128 to 281; submission moves to the week of Mon 3 May 2027 (section 2.2) |
 
 ## 2. The plan
@@ -558,11 +559,11 @@ What the founder may delegate (Q2b; **default (a), awaiting the founder's confir
 | S20 | PR #30 CI and fence, with `migration-guard`, `expo lint`, docs lint in `required` and the PR template headings (F); staging from `develop` (F); website hotfix on `main` (T06); BL-349 privacy manifest | 4 (2) |
 | S01 | BL-347 (F); BL-330 with `apple-token` (F) | 2 (2) |
 | S02 | BL-331 rest with BL-332 (F); `peek_invite` with BL-334, one file (F); WP-F11-01 (F); one migration with the v1.0 wire-contract columns (F) | 4 (4) |
-| S07 | WP-F19-05; WP-F11-04 family contracts; contracts as types: sync v1 wire contract, D-080 status report with the R2 AR-13 fields, recovery key; WP-F11-02 `invite-redeem` (F, only if DR-13 keeps codes) | 4 (1) |
+| S07 | WP-F19-05 (verify first: PR #114 on `develop`); WP-F11-04 family contracts; contracts as types: sync v1 wire contract, D-080 status report with the R2 AR-13 fields, recovery key; WP-F11-02 `invite-redeem` (F, only if DR-13 keeps codes) | 4 (1) |
 | S04 | BL-322 app part; WP-F11-03 | 2 |
 | S05 | WP-F08-B1 evidence; ADR 0006 amendment | 2 |
-| S06 | WP-F14-02 planner; WP-F14-20 M17 ledger; WP-F14-07 scheduling and cards; WP-F14-06 acknowledgment sheet with Save a copy | 4 |
-| S08 | WP-F05-02 gate tooling; WP-F05-01 clamp | 2 |
+| S06 | WP-F14-02 planner, WP-F14-07 scheduling and cards, WP-F14-06 acknowledgment sheet with Save a copy (all three verify first: PR #121 on `develop`, `lib/billing/plan-reminders*.ts`, `plan-notice.tsx`, `app/plus/confirmed.tsx`); WP-F14-20 M17 ledger | 4 |
+| S08 | WP-F05-02 gate tooling; WP-F05-01 clamp (verify first: PR #113 on `develop` added `isFinite` and clamp guards to `ScribeAudioModule.swift`) | 2 |
 | S09 | WP-F06-02; WP-F06-03 | 2 |
 | S15 | WP-F00-01 component harness (pair); BL-398 StateScreen | 2 |
 | S17 | COUNSEL_PACKET 1.1.0 and the delta (T05); ENGINEERING_REQUIREMENTS 1.3.0 and label 1.4.0 drafts | 2 |
@@ -715,7 +716,7 @@ D-041: unattended agent runs pause for `supabase/**` and auth code until CI and 
 
 Other changes that still need an ADR or a decision entry: a new SDK, native module or vendor (ADR 0101, ADR 0016 for size); a remote-config key that changes behaviour (ADR 0016; B14 never list); edit engine semantics (ADR 0014, founder approval); visibility of letters between parents (F11 section 8, 09 R-09); a new package or top-level folder (ADR 0010).
 
-ADR numbers: 0018 and 0019 are already used on agent branches (commit 97c2c7d); the next ADR on `develop` takes 0020 or later [R], checked against open branches first.
+ADR numbers: `develop` now carries ADR 0018, 0019 (PR #4) and 0020 (PR #39), and PR #108 claims 0022; the next ADR on `develop` takes 0021 or the next free number [R], checked against open branches first.
 
 ### 8.2 Cadence
 
@@ -924,7 +925,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F04-16 | Partly built | 2 | In 6.3, round 2 additions (waves 3 and 4, S11) |
 | WP-F04-17 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S10) |
 | WP-F04-18 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S10) |
-| WP-F05-01 | Partly built | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F05-01 | Partly built (clamp merged by PR #113 on 15 Oct; verify first) | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F05-02 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F05-03 | Partly built | 2 | In 6.3, round 2 additions (waves 3 and 4, S07) |
 | WP-F05-04 | Built | 8 | Built: verify only if a gate fails |
@@ -1047,12 +1048,12 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F13-12 | Not built | 1 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F13-13 | Not built | 0 | Cut (6.4): P1, no P0 requirement |
 | WP-F14-01 | Built | 0 | Built: verify only if a gate fails |
-| WP-F14-02 | Not built | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-02 | Not built on 15 Oct; PR #121 merged a planner (`lib/billing/plan-reminders.logic.ts`) the same day; verify first | 4 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F14-03 | Built | 1 | Built: verify only if a gate fails |
 | WP-F14-04 | Built | 3 | Built: verify only if a gate fails |
 | WP-F14-05 | Built | 7 | Built: verify only if a gate fails |
-| WP-F14-06 | Not built | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
-| WP-F14-07 | Not built | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-06 | Not built on 15 Oct; PR #121 merged `app/plus/confirmed.tsx` with Save a copy the same day; verify first | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F14-07 | Not built on 15 Oct; PR #121 merged scheduling and cards (`plan-reminders.ts`, `plan-notice.tsx`) the same day; verify first | 6 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F14-08 | Built | 4 | Built: verify only if a gate fails |
 | WP-F14-09 | Not built | 2 | In 6.3, round 2 additions (waves 3 and 4, S06) |
 | WP-F14-10 | Built | 1 | Built: verify only if a gate fails |
@@ -1139,7 +1140,7 @@ One row per work package in section 12 of F01 to F21, generated on 15 Oct 2026 f
 | WP-F19-02 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S07) |
 | WP-F19-03 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S07) |
 | WP-F19-04 | Not built | 1 | Human or device (section 10) |
-| WP-F19-05 | Not built | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
+| WP-F19-05 | Not built on 15 Oct; PR #114 merged the same-version different-body refusal (`packages/api/src/integrity.ts`, `lib/remote/documents.ts`) the same day; verify first | 2 | In 6.3 (waves 1 to 3 as of 13 Oct) |
 | WP-F19-06 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S07) |
 | WP-F19-07 | Not built | 3 | In 6.3, round 2 additions (waves 3 and 4, S07) |
 | WP-F19-08 | Not built | 1 | In 6.3, round 2 additions (waves 3 and 4, S07) |

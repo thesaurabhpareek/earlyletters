@@ -30,7 +30,7 @@
 | P1, P3 searching the App Store | A late feed, a search for "baby journal" | A thumb, 3 seconds per result | Name, subtitle and first 3 screenshots say: talk, kept exactly, your voice |
 | P4 Multilingual family | Reading the description | A language question | The seven languages named only if each ships |
 | A parent checking privacy | Before download, or after | The privacy label, /privacy | A label with no tracking section, a plain policy that matches the app |
-| App Review | Reviewing the v1.0 submission (about mid-January 2027, M15; week in `08-delivery.md` section 2.1) | Review notes, a demo account, a build | Membership explained, every flag listed, how to reach the Keep gate, sign-in, backup and the co-parent path, no hidden features |
+| App Review | Reviewing the v1.0 submission (the week of Mon 3 May 2027, M15; T36 in `08-delivery.md` section 2.1) | Review notes, a demo account, a build | Membership explained, every flag listed, how to reach the Keep gate, sign-in, backup and the co-parent path, no hidden features |
 | Counsel | Signing off before submission (FT-41) | Drafts | One set of final documents that match the build |
 
 ## 3. What we are solving

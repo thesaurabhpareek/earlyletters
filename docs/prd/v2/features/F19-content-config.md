@@ -93,7 +93,7 @@
 | First run language step, Settings > Spoken language | `ensureLanguage(lang)` asks the pack engine | Built (`apps/mobile/src/lib/packs/index.ts`) |
 | Settings > Storage | Installed packs, sizes, Stop, Try again, Remove, mobile data switch | Built (`apps/mobile/src/app/settings/storage.tsx`) |
 | Tonight, Review, Book, Settings | Tip and announcement slots | Not built (components exist, no screen renders them) |
-| Founder's laptop | `npx tsx scripts/packs/publish.ts packs|config|content|all` | Built (`scripts/packs/publish.ts`, `lib.ts`, `lib.test.ts`) |
+| Founder's laptop | `npx tsx scripts/packs/publish.ts <packs, config, content or all>` | Built (`scripts/packs/publish.ts`, `lib.ts`, `lib.test.ts`) |
 
 ### 6.2 Happy path
 
@@ -305,8 +305,8 @@ Only for what is missing or partly built.
 | Q | Who, by when | What changes |
 |---|---|---|
 | Q1 Where do documents live? With server features on (M14) the app falls back to the Supabase origin; a build with the switch off (the kill path) needs `EXPO_PUBLIC_DOCS_BASE_URL`. Supabase functions origin set as that variable too, or a Cloudflare host in front? Default [R]: the Supabase origin now, Cloudflare later with no app change | Founder; 16 Oct | WP-F19-02 |
-| Q6 Is a 2-minute foreground refresh acceptable for Edge Function invocation cost at 100k families? Spec default: yes; the alternative is the counsel-approved 10-minute bar R2 AR-27 names | Founder with counsel | Before WP-F19-15 | F19-REQ-026, LEGAL-REQ-040 |
-| Q2 Pack host and name: R2 on `packs.earlyletters.com` (moves DNS to Cloudflare) or `packs.earlyletters.app` (ADR 0016 F-1, F-2) | Founder; 16 Oct | WP-F19-03, subprocessor page |
+| Q6 Is a 2-minute foreground refresh acceptable for Edge Function invocation cost at 100k families? Spec default: yes; the alternative is the counsel-approved 10-minute bar R2 AR-27 names | Founder with counsel; before WP-F19-15 | F19-REQ-026, LEGAL-REQ-040 |
+| Q2 Pack host and name: R2 on `packs.earlyletters.com` (moves DNS to Cloudflare) or `packs.earlyletters.app` (ADR 0016 F-1, F-2). PR #122 D-097 (delegated by the founder, 15 Oct) picks `packs.earlyletters.app` on Cloudflare R2 with `earlyletters.com` DNS unmoved; it stands once that PR merges | Founder; 16 Oct (answered by D-097 if PR #122 merges) | WP-F19-03, subprocessor page |
 | Q3 Mobile data threshold 5 MB or 0 (ADR 0016 F-3) | Founder; 16 Oct | One constant |
 | Q4 Does a file name that reveals a chosen language, seen by the host with an IP, need more than a Privacy Policy line? **[Counsel]** (COUNSEL_PACKET Q12) | Counsel; 29 Oct | Mirror models to our host |
 | Q5 Is a remote language `gate` change a feature change under 2.3.1(a)? Spec default: only between states the reviewed listing names **[Counsel]** | Counsel or founder; 23 Oct | F19-REQ-020 |

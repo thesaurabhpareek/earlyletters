@@ -6,7 +6,7 @@ Status: 13 Oct 2026, revised after critique round 1 for M15 to M17. Compares `do
 
 | Area | PRD 1.3 said | V2 says | Source |
 |---|---|---|---|
-| Submission date | Mon 11 Jan 2027 (1.3 section 1) | ROADMAP 2.1 moved it to the week of Mon 2 Nov 2026. After M14 and M15 (keep the full scope, move the date), the week of Mon 11 Jan 2027 (T36) at about 50% confidence [A], set from the merge budget (`08-delivery.md` section 2) | M13, M14, M15 |
+| Submission date | Mon 11 Jan 2027 (1.3 section 1) | ROADMAP 2.1 moved it to the week of Mon 2 Nov 2026. After M14 and M15 (keep the full scope, move the date), the week of Mon 3 May 2027 (T36) at about 40% confidence [A], set from the merge budget after critique round 2 (`08-delivery.md` section 2) | M13, M14, M15 |
 | Server in v1.0 | Sync, family and Plus ledger on the server | Server features on for v1.0: sign-in, sync, co-parent, owner backup, status report and reminder emails, all kept in v1.0 when the date moved. The build switch stays as the kill path. This reverses commit c1764f9 ("v1.0 on-device only", 4 Oct) | M14, M15 |
 | Family at v1.0 | Co-parent and Family (contributor) roles in the app, approvals, per-child sharing, family-letter push (D-002, K-35) | Co-parent only. Contributors and the web page are v1.1 (F32, F37); the database keeps contributor support and the app hides it | B1 |
 | Parents per book | No cap | At most two, refused by the server | M8, D-069 |
@@ -36,7 +36,7 @@ Status: 13 Oct 2026, revised after critique round 1 for M15 to M17. Compares `do
 | Durability tests | Kill during save, 500 runs | 500 Simulator plus 50 on the SE 3; plus kill while recording, typed kills and Review kills | 06 section 1, 07 section 6 |
 | Transcription gates | Hindi plus Devanagari transcribes (1.3 section 6.2); speed Unverified, no gate | A corpus gate per language and a speed gate per passed language on the SE 3 | 06 section 1, F05 |
 | Server classes and load | Store notifications, server entitlement, AI gateway; 2.2 members per family | Those removed; `sync_push`, `sync_pull`, public config and manifests added; storage upload and escrow return with the owner backup; 1.5 accounts per family | 06 section 1, F16 section 9 |
-| Delivery | Weeks to January in ROADMAP 2.0 | 20 agent work streams with file fences; every date in one table; a merge budget of about 16 a week with review agents and delegated merge classes; a v1.0 list of 128 slots that fits it; P0 and P1 with the P1 extras cut now; device owners and hours; wave 1 dispatch briefs | `08-delivery.md`, `05-feature-map.md`, 09 R-04, M15 |
+| Delivery | Weeks to January in ROADMAP 2.0 | 20 agent work streams with file fences; every date in one table; a merge budget of 12 founder merges a week with review agents and delegated merge classes; a v1.0 list of 281 slots that fits it; P0 and P1 with the P1 extras cut now; device owners and hours; wave 1 dispatch briefs | `08-delivery.md`, `05-feature-map.md`, 09 R-04, M15 |
 | Metrics | WKF as the north star | Two headline numbers: paying families over first-time downloads from App Store Connect (no consent needed), and weekly making families; WKF reported by plan state; activation measured in the lab and C1 | `03-goals-and-principles.md` section 4; R1 PL-15 to PL-17 |
 
 ## 2. Requirement IDs added, revised and removed, per spec
