@@ -64,7 +64,7 @@ describe('HPKE base mode is RFC 9180 (the escrow seal CryptoKit and the escrow f
 });
 
 describe('the bytes the escrow function opens (pinned: change them only with the escrow function)', () => {
-  // The S05 server draft's supabase/functions/escrow/hpke.ts (INFO, aad, packV1), read on 15 Oct 2026; a scratch
+  // #151's supabase/functions/escrow/hpke.ts (INFO, aad, packV1), read on 15 Oct 2026 at 66d56a3; a scratch
   // run sealed with each side and opened with the other. A change here is a change to the escrow function too.
   const DEVICE = '072bd92d-7bff-4422-821c-e5088548ebde';
   const REQUEST = '00704c32-9aec-42d4-9f6f-6bc7ec1ed27e';
@@ -184,7 +184,27 @@ describe('[F08-REQ-028] never create a book key while the server holds one', () 
     expect(b.childKeys).toHaveLength(1);
   });
 
-  it('the same race with no key check on the server (today): the refused key is never used, escrow settles it', async () => {
+  it('a store that went through but whose answer was lost: the retry is refused (a new seal), the key check proves the key is ours', async () => {
+    const b = new FakeBackend(() => 0);
+    const real = b.serverFor(MAMA);
+    let lose = 1;
+    const server: BackupServer = {
+      ...real,
+      storeKey: async (x) => {
+        await real.storeKey(x);
+        if (lose-- > 0) throw new BackupServerError('', true);
+      },
+    };
+    const p = phone(b, MAMA, null, { t: 1_000_000 }, server);
+    await expect(p.keys.keyFor(ASHA, { create: true })).rejects.toBeInstanceOf(BackupServerError);
+    expect(b.childKeys).toHaveLength(1);
+    // The retry seals again (a fresh HPKE ephemeral key), so the server sees another wrap: SCIMM key_exists.
+    expect(await p.keys.keyFor(ASHA, { create: true })).toEqual({ kind: 'ready', version: 1 });
+    expect(b.childKeys).toHaveLength(1);
+    expect(b.requests.filter((r) => r.kind === 'escrow.request')).toHaveLength(0);
+  });
+
+  it('the same race on a row with no key check: the refused key is never used, escrow settles it', async () => {
     const b = new FakeBackend(() => 0);
     b.returnsKeyCheck = false;
     const one = phone(b, MAMA, null);

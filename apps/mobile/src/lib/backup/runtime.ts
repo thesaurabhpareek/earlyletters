@@ -32,23 +32,15 @@ import { localSqlDb, notifyStoreChanged, subscribe, uuidv7 } from '../store';
 import { errorCode, errorStatus, getSupabaseOrNull, isNetworkError } from '../supabase';
 import { readSupabaseEnv } from '../supabase/env';
 import { APP_ENV } from '../build-env';
-import { b64, bytesToBase64, bytesToHex, hexToBytes } from './bytes';
-import { FORMAT_VERSION } from './format';
+import { b64 } from './bytes';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
   BACKUP_RPC,
   BackupServerError,
-  ESCROW_ROUTE,
-  objectPathFor,
-  packEscrowWrap,
-  unpackEscrowWrap,
   type BackupServer,
   type EscrowClient,
   type EscrowPublicKey,
-  type ReleaseOutcome,
-  type ReleasedKey,
-  type RestoreRequest,
 } from './contract';
 import { BUNDLED_ESCROW_KEYS } from './escrow-keys';
 import { BACKUP_DB_FILE, openBackupDb, type BackupDb } from './local-db';
@@ -56,6 +48,19 @@ import { backupSource, restoreLocal } from './local-store';
 import type { Aead, BookKeyRef, ByteSink, ByteSource, Conditions, FileIO, KeyVault, NetworkKind } from './ports';
 import { createBackupService, type BackupService, type BackupView } from './service';
 import type { HttpLike } from './tus';
+import {
+  BLOB_COLUMNS,
+  CHILD_KEY_COLUMNS,
+  beginArgs,
+  blobRow,
+  childKeyRow,
+  confirmArgs,
+  createEscrowClient,
+  registerDeviceArgs,
+  storeKeyArgs,
+  type BlobWire,
+  type ChildKeyWire,
+} from './wire';
 
 export const KEYCHAIN_SERVICE = 'scribe.backup';
 /** The base account of a book key; the native module appends `:v<n>`, one item per version. */
@@ -172,13 +177,6 @@ function serverError(e: unknown, status?: number | null): BackupServerError {
   return new BackupServerError(code, retryable, null, detail);
 }
 
-/** Postgres bytea text for PostgREST: `\x` and lowercase hex (the S05 server draft's wire format). */
-const bytea = (b: Uint8Array) => `\\x${bytesToHex(b)}`;
-const fromBytea = (s: string) => (s.startsWith('\\x') ? s.slice(2) : s).toLowerCase();
-
-/** [R] Neither server draft takes `p_key_check` yet; PostgREST refuses an unknown argument, so it is sent only once one does. */
-const SERVER_TAKES_KEY_CHECK = false;
-
 function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | null>, profileId: string): BackupServer {
   const env = readSupabaseEnv();
   async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -200,57 +198,28 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
     return (data ?? []) as unknown as T[];
   }
   return {
-    registerDevice: ({ deviceId, publicKey }) => rpc(BACKUP_RPC.registerDevice, { p_device: deviceId, p_public_key: bytea(b64(publicKey)) }),
+    registerDevice: async (x) => {
+      await rpc(BACKUP_RPC.registerDevice, registerDeviceArgs(x));
+    },
     // RLS: the owner reads their own rows; every column but escrow_wrap is granted. Filtered to me as well,
     // so a policy that ever let a co-parent read rows could not make this phone act on their key.
-    listKeys: async () =>
-      (
-        await select<{ child_id: string; key_version: number; escrow_key_version: number }>('child_keys', 'child_id, key_version, escrow_key_version', {
-          profileColumn: 'profile_id',
-        })
-      ).map(
-        (r) => ({ childId: r.child_id, keyVersion: r.key_version, escrowKeyVersion: r.escrow_key_version, keyCheck: null }),
-      ),
-    storeKey: (k) =>
-      rpc(BACKUP_RPC.storeKey, {
-        p_child: k.childId,
-        p_key_version: k.keyVersion,
-        p_escrow_wrap: bytea(packEscrowWrap(b64(k.enc), b64(k.ct))),
-        p_escrow_key_version: k.escrowKeyVersion,
-        ...(SERVER_TAKES_KEY_CHECK ? { p_key_check: bytea(b64(k.keyCheck)) } : {}),
-      }),
+    listKeys: async () => (await select<ChildKeyWire>('child_keys', CHILD_KEY_COLUMNS, { profileColumn: 'profile_id' })).map(childKeyRow),
+    storeKey: async (k) => {
+      await rpc(BACKUP_RPC.storeKey, storeKeyArgs(k));
+    },
     begin: async (b) => {
-      const r = await rpc<{ object_path: string; state: 'pending' | 'confirmed'; upload_token?: string | null }>(BACKUP_RPC.begin, {
-        p_entry: b.entryId,
-        p_child: b.childId,
-        p_bytes: b.bytes,
-        p_key_version: b.keyVersion,
-        p_wrapped_file_key: bytea(b64(b.wrappedFileKey)),
-        p_format_version: FORMAT_VERSION,
-      });
-      return { objectPath: r.object_path, state: r.state, uploadToken: r.upload_token ?? null };
+      // The server returns no upload token (SQL cannot mint one): uploads go with the user's JWT.
+      const r = await rpc<{ object_path: string; state: 'pending' | 'confirmed' }>(BACKUP_RPC.begin, beginArgs(b));
+      return { objectPath: r.object_path, state: r.state, uploadToken: null };
     },
     confirm: async (entryId, cipherSha256) => {
-      await rpc(BACKUP_RPC.confirm, { p_entry: entryId, p_cipher_sha256: bytea(hexToBytes(cipherSha256)) });
+      await rpc(BACKUP_RPC.confirm, confirmArgs(entryId, cipherSha256));
     },
+    // RLS: the author reads their own rows; filtered to me again, by author and by the path built from it.
     listBlobs: async () =>
-      (
-        await select<{ entry_id: string; child_id: string; object_path: string; key_version: number; cipher_sha256: string; bytes: number }>(
-          'audio_blobs',
-          'entry_id, child_id, object_path, key_version, cipher_sha256, bytes',
-          { confirmedOnly: true },
-        )
-      )
-        // Mine only, by the path the server built from the author (`<child>/<author>/<entry>.m4a.enc`).
-        .filter((r) => r.object_path === objectPathFor(r.child_id, profileId, r.entry_id))
-        .map((r) => ({
-        entryId: r.entry_id,
-        childId: r.child_id,
-        objectPath: r.object_path,
-        keyVersion: r.key_version,
-        cipherSha256: fromBytea(r.cipher_sha256),
-        bytes: Number(r.bytes),
-      })),
+      (await select<BlobWire>('audio_blobs', BLOB_COLUMNS, { profileColumn: 'author_id', confirmedOnly: true }))
+        .map((r) => blobRow(r, profileId))
+        .filter((r): r is NonNullable<typeof r> => r !== null),
     recordConsent: async (action) => {
       const { data, error } = await sb
         .from('policy_versions')
@@ -301,63 +270,16 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
 
 // ── Escrow (separate project) ─────────────────────────────────────────────
 
-/** [R] `EXPO_PUBLIC_ESCROW_URL`: the `scribe-escrow` project's URL (the route below it is ESCROW_ROUTE). Unset: escrow is unavailable. */
-const ESCROW_URL = (process.env.EXPO_PUBLIC_ESCROW_URL ?? '').trim().replace(/\/+$/, '');
+/** [R] `EXPO_PUBLIC_ESCROW_URL`: the `scribe-escrow` project's URL (routes in wire.ts). Unset: escrow is unavailable. */
+const ESCROW_URL = process.env.EXPO_PUBLIC_ESCROW_URL ?? '';
 
-interface EscrowEnvelope<T> {
-  ok?: boolean;
-  data?: T;
-  error?: { code?: string; retryable?: boolean; detail?: string };
-}
-
-type RestoreData =
-  | { state: 'requested' | 'approved'; requestId: string; holdUntil: string }
-  | { state: 'released'; requestId: string; keys: { childId: string; keyVersion: number; sealedKey: string }[] }
-  | { state: 'cancelled' | 'expired'; requestId?: string };
-
-/** The S05 server draft's escrow function: one create-or-poll route, `POST .../escrow/v1/restore` with `{ deviceId }`. */
 function escrowClient(accessToken: () => Promise<string | null>): EscrowClient {
-  async function restore(deviceId: string): Promise<RestoreData> {
-    if (!/^https:\/\//.test(ESCROW_URL)) throw new BackupServerError('unavailable', false);
-    const token = await accessToken();
-    if (!token) throw new BackupServerError('unauthorized', false);
-    let res: Response;
-    try {
-      res = await fetch(`${ESCROW_URL}${ESCROW_ROUTE}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', [HEADER_IDEMPOTENCY_KEY]: uuidv7() },
-        body: JSON.stringify({ deviceId }),
-      });
-    } catch {
-      throw new BackupServerError('network', true);
-    }
-    const json = (await res.json().catch(() => null)) as EscrowEnvelope<RestoreData> | null;
-    if (!res.ok || !json?.ok || !json.data) {
-      const e = json?.error;
-      throw new BackupServerError(e?.code ?? `HTTP${res.status}`, e?.retryable ?? res.status >= 500, null, e?.detail ?? null);
-    }
-    return json.data;
-  }
-  const released = (k: { childId: string; keyVersion: number; sealedKey: string }): ReleasedKey => {
-    const { enc, ct } = unpackEscrowWrap(b64(k.sealedKey));
-    return { childId: k.childId, keyVersion: k.keyVersion, enc: bytesToBase64(enc), ct: bytesToBase64(ct) };
-  };
-  return {
-    request: async (deviceId) => {
-      const r = await restore(deviceId);
-      if (r.state === 'requested' || r.state === 'approved') return { requestId: r.requestId, state: r.state, holdUntil: r.holdUntil };
-      if (r.state === 'released') return { requestId: r.requestId, state: 'released', holdUntil: new Date().toISOString() };
-      throw new BackupServerError('forbidden', false, null, r.state);
-    },
-    // The route answers for the device's current request, which may not be the one saved: the
-    // answer carries its id, and a release is sealed to that id (releaseAad).
-    release: async (_requestId, deviceId): Promise<ReleaseOutcome> => {
-      const r = await restore(deviceId);
-      if (r.state === 'released') return { state: 'released', keys: r.keys.map(released), requestId: r.requestId };
-      if (r.state === 'requested' || r.state === 'approved') return { state: r.state, holdUntil: r.holdUntil, requestId: r.requestId };
-      return { state: r.state };
-    },
-  };
+  return createEscrowClient({
+    baseUrl: ESCROW_URL,
+    accessToken,
+    fetch: (url, init) => fetch(url, init),
+    idempotency: { header: HEADER_IDEMPOTENCY_KEY, newId: uuidv7 },
+  });
 }
 
 /**

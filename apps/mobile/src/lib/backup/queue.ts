@@ -164,6 +164,11 @@ export function createUploadQueue(d: QueueDeps) {
         d.db.setMeta(META.paused, 'quota');
         return { kind: 'gate', reason: 'quota' };
       }
+      // `SCDEL purged`: the letter was erased on the server. Its recording is never sent again.
+      if (e.code === BACKUP_ERRORS.deleted && e.detail === 'purged') {
+        d.db.updateJob(job.entryId, { state: 'blocked', lastError: 'purged' });
+        return { kind: 'blocked' };
+      }
       // Not a parent of this book (anymore): kept on the phone, never sent.
       if (e.code === BACKUP_ERRORS.notParent) {
         d.db.updateJob(job.entryId, { state: 'blocked', lastError: 'not_parent' });
@@ -335,7 +340,18 @@ export function createUploadQueue(d: QueueDeps) {
   }
 
   async function stepUploaded(job: UploadJob): Promise<StepOutcome> {
-    await d.server.confirm(job.entryId, job.cipherSha256!);
+    try {
+      await d.server.confirm(job.entryId, job.cipherSha256!);
+    } catch (e) {
+      // The server has no object at the path (`P0002 object`) or one of another size (`22023 size`):
+      // asking again would never succeed, so the recording goes again from the start, after a backoff.
+      if (e instanceof BackupServerError && ((e.code === BACKUP_ERRORS.notFound && e.detail === 'object') || (e.code === '22023' && e.detail === 'size'))) {
+        const attempts = job.attempts + 1;
+        reset(job, { attempts, lastError: `${e.code}:${e.detail}`, nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
+        return { kind: 'retry_later' };
+      }
+      throw e;
+    }
     return confirmed(job);
   }
 

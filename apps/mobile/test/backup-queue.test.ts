@@ -334,6 +334,49 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     expect(r.db().getMeta('paused')).toBe('quota');
   });
 
+  it('a letter erased on the server (SCDEL purged) is never sent and does not retry', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(1000);
+    r.backend.purged.add(item.entryId);
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'blocked', lastError: 'purged' });
+    expect(r.backend.requests.filter((x) => x.kind === 'tus')).toEqual([]);
+  });
+
+  it('the server lost the object before backup_confirm (P0002 object): sent again from the start, then confirmed', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'before:confirm';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    const path = r.db().job(item.entryId)!.objectPath!;
+    r.backend.objects.delete(path);
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'queued', lastError: 'P0002:object' });
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+  });
+
+  it('the stored object has another size than reserved (22023 size): sent again from the start, then confirmed', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'before:confirm';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    const path = r.db().job(item.entryId)!.objectPath!;
+    r.backend.objects.set(path, r.backend.objects.get(path)!.subarray(0, 100));
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'queued', lastError: '22023:size' });
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+  });
+
   it('[F08-U02] a file whose hash differs from the one taken at capture is never uploaded', async () => {
     const r = rig();
     const { item } = await r.addRecording(1000);

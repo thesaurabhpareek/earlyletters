@@ -59,7 +59,7 @@ Labels: **V** verified on a vendor page, **A** assumption the drill confirms, **
 - **Record:** B6-06 row: hold time shown, email received (yes or no), push received (yes or no).
 
 ### B6-07 Approve on phone A
-- **Needs:** the approval sheet on the enrolled phone. It is not in the first client PR: the S05 server draft seals an approval code to each enrolled device and takes it back through `backup_approve_request`. Until the sheet lands, run B6-07 as "wait out the hold" (B6-09's steps, 72 hours) and record the approval row as not run.
+- **Needs:** the approval sheet on the enrolled phone. It is not in the first client PR: the S05 server (#151) seals an approval code to each enrolled device and takes it back through `backup_approve_request`. Until the sheet lands, run B6-07 as "wait out the hold" (B6-09's steps, 72 hours) and record the approval row as not run.
 - **Steps:** On phone A, open the app and tap "Yes, it's mine".
 - **Expected:** Phone B's recordings start arriving on its next open. One `escrow_unwraps` row (reason `restore`) and one "key opened" email. All recordings play with equal hashes.
 - **Record:** B6-07 row.

@@ -297,7 +297,9 @@ export class FakeBackend {
   quotaBytes = 5 * 1024 * 1024 * 1024;
   /** The 10-minute step-up fails (the session is older): every new request is refused. */
   stepUpRequired = false;
-  /** False: rows are read back without a key check, as both server drafts do today (runtime.ts). */
+  /** Letters erased on the server (purge_ledger): `backup_begin` refuses them with SCDEL purged, as #151. */
+  readonly purged = new Set<string>();
+  /** False: rows are read back without a key check (a row stored before #151 kept one). */
   returnsKeyCheck = true;
   releaseCalls = 0;
   /** Fault injection: fail the next n calls of this kind with no response. */
@@ -348,7 +350,7 @@ export class FakeBackend {
         b.record('storeKey', x);
         b.fault('storeKey');
         b.requireConsent(uid);
-        // The S05 server draft: one key per (child, author); a second version is refused too (SCIMM key_exists).
+        // As #151: one key per (child, author); a second version is refused too (SCIMM key_exists).
         if (b.childKeys.some((k) => k.uid === uid && k.childId === x.childId)) throw new BackupServerError(BACKUP_ERRORS.immutable, false, null, 'key_exists');
         b.childKeys.push({ ...x, uid });
       },
@@ -357,6 +359,7 @@ export class FakeBackend {
         b.fault('begin');
         b.requireConsent(uid);
         if (!b.childKeys.some((k) => k.uid === uid && k.childId === x.childId && k.keyVersion === x.keyVersion)) throw new BackupServerError(BACKUP_ERRORS.notFound, false, null, 'key');
+        if (b.purged.has(x.entryId)) throw new BackupServerError(BACKUP_ERRORS.deleted, false, null, 'purged');
         if (!b.rows.get(uid)?.has(x.entryId)) throw new BackupServerError(BACKUP_ERRORS.notFound, false, null, 'entry');
         const existing = b.blobs.get(x.entryId);
         if (existing && existing.authorId !== uid) throw new BackupServerError('42501', false);
@@ -383,8 +386,11 @@ export class FakeBackend {
         const row = b.blobs.get(entryId);
         if (!row || row.authorId !== uid) throw new BackupServerError('P0002', false);
         if (row.state === 'confirmed') return;
+        // As #151: no object is P0002 object, another size is 22023 size. The hash check is the fake's own (stricter).
         const obj = b.objects.get(row.objectPath);
-        if (!obj || obj.length !== row.bytes || sha256Hex(obj) !== cipherSha256) throw new BackupServerError('22023', false);
+        if (!obj) throw new BackupServerError('P0002', false, null, 'object');
+        if (obj.length !== row.bytes) throw new BackupServerError('22023', false, null, 'size');
+        if (sha256Hex(obj) !== cipherSha256) throw new BackupServerError('22023', false);
         row.state = 'confirmed';
         row.cipherSha256 = cipherSha256;
       },

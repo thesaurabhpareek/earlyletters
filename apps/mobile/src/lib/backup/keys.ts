@@ -96,7 +96,7 @@ export function createKeyManager(d: KeyManagerDeps) {
 
   /**
    * True when this phone holds `version` and it is the key the server row
-   * escrowed. A row without a key check (neither server draft stores one yet)
+   * escrowed. A row without a key check (stored before #151 kept one)
    * trusts a local key of that version, unless this phone marked it untrusted.
    */
   async function holdsChecked(childId: string, row: ChildKeyRow): Promise<boolean> {
