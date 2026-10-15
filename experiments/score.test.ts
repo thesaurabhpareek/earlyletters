@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dictionaryAccuracy, lowConfidenceWords, scorePhrase, transcriptText, wer } from './score';
+import { align, cer, dictionaryAccuracy, errorCounts, lowConfidenceWords, metricFor, normChars, normWords, scorePhrase, transcriptText, wer } from './score';
 
 const DICT = [
   { term: 'Asha', kind: 'child' as const, heardAs: [] },
@@ -38,3 +38,47 @@ describe('scoring', () => {
     expect(lowConfidenceWords(json)).toEqual(['Asha']);
   });
 });
+
+describe('scoring in every launch script (R5 4.4 E8, WP-F05-02)', () => {
+  it('keeps Devanagari vowel signs inside the word: three words, not seven letters', () => {
+    expect(normWords('मेरी प्यारी बेटी।')).toEqual(['मेरी', 'प्यारी', 'बेटी']);
+    // daughter -> son is one word wrong, not a fragment of a letter
+    expect(wer('मेरी प्यारी बेटी', 'मेरी प्यारी बेटा')).toBeCloseTo(1 / 3);
+  });
+
+  it('scores Mandarin by character, punctuation and spaces ignored', () => {
+    expect(metricFor('zh')).toBe('cer');
+    expect(metricFor('hi')).toBe('wer');
+    expect(normChars('我今天很想你，宝贝。')).toEqual(['我', '今', '天', '很', '想', '你', '宝', '贝']);
+    expect(cer('我今天很想你，宝贝。', '我今天很想你宝贝')).toBe(0);
+    expect(cer('我今天很想你', '我明天很想你')).toBeCloseTo(1 / 6);
+    expect(errorCounts('我今天很想你', '我明天很想你', 'zh')).toEqual({ errors: 1, refUnits: 6, hypUnits: 6 });
+  });
+
+  it('compares Arabic without harakat or tatweel (Whisper writes none), and nothing else', () => {
+    expect(normWords('أنتِ حبيبتي', 'ar')).toEqual(normWords('أنت حبيبتي', 'ar'));
+    expect(normWords('جمـيل', 'ar')).toEqual(['جميل']);
+    expect(errorCounts('أنتِ نمتِ', 'أنت نمت', 'ar').errors).toBe(0);
+    // Without the Arabic fold a haraka is part of the word (the engine check needs that).
+    expect(normWords('أنتِ')).not.toEqual(normWords('أنت'));
+  });
+
+  it('keeps accents and apostrophes: aujourd'hui is one word, si and sí are different', () => {
+    expect(normWords("Aujourd'hui, tu as ri.")).toEqual(["aujourd'hui", 'tu', 'as', 'ri']);
+    expect(wer('si vienes', 'sí vienes')).toBe(0.5);
+  });
+
+  it('aligns units so script checks can follow each reference word', () => {
+    expect(align(['a', 'b', 'c'], ['a', 'x', 'c', 'd'])).toEqual([
+      { op: 'match', ref: 'a', hyp: 'a' },
+      { op: 'sub', ref: 'b', hyp: 'x' },
+      { op: 'match', ref: 'c', hyp: 'c' },
+      { op: 'ins', hyp: 'd' },
+    ]);
+  });
+
+  it('counts invented Mandarin characters on a silent clip', () => {
+    expect(scorePhrase('', '谢谢观看', '谢谢观看', [], 'zh').phantomWords).toBe(4);
+  });
+});
+

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { DictionaryTerm } from '@scribe/core';
 import {
+  DOWNLOAD_RETRY_DELAYS_MS,
   MAX_AUTO_ATTEMPTS,
   RETRY_DELAYS_MS,
+  downloadRetryDelayMs,
+  isRetryableDownloadFailure,
   initialQueue,
   languagesWaiting,
   nextJob,
@@ -192,5 +195,23 @@ describe('cleaning spoken words in their language (constitution)', () => {
     const out = cleanSpoken('', DICT, 'en');
     expect(out.text).toBe('');
     expect(out.applied).toEqual([]);
+  });
+});
+
+describe('[F05-U29] speech downloads that fail try again by themselves, further apart each time', () => {
+  it('backs off from 1 minute to 6 hours, then stays at 6 hours', () => {
+    expect(DOWNLOAD_RETRY_DELAYS_MS[0]).toBe(60_000);
+    expect(DOWNLOAD_RETRY_DELAYS_MS[DOWNLOAD_RETRY_DELAYS_MS.length - 1]).toBe(6 * 60 * 60_000);
+    const delays = [1, 2, 3, 4, 5, 6, 50].map(downloadRetryDelayMs);
+    for (let i = 1; i < delays.length; i++) expect(delays[i]).toBeGreaterThanOrEqual(delays[i - 1]);
+    expect(downloadRetryDelayMs(50)).toBe(6 * 60 * 60_000);
+    expect(downloadRetryDelayMs(0)).toBe(60_000);
+  });
+
+  it('retries what can clear without the person, never a stop, a full phone or an app that is too old', () => {
+    for (const r of ['no_manifest', 'not_in_manifest', 'download_failed', 'hash_mismatch', 'storage_error', 'downloads_paused', 'offline']) {
+      expect(isRetryableDownloadFailure(r), r).toBe(true);
+    }
+    for (const r of ['cancelled', 'no_space', 'needs_app_update', 'waiting_for_wifi']) expect(isRetryableDownloadFailure(r), r).toBe(false);
   });
 });

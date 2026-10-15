@@ -187,6 +187,37 @@ export function nextRetryAt(s: QueueState): number | null {
   return at;
 }
 
+/**
+ * A speech download that failed tries again by itself, further apart each
+ * time, while the app is open (F05-U29: 1 minute up to 6 hours). Only
+ * failures that can clear without the person: a manifest not published yet,
+ * a host error, a download that did not check out, a full volume that was
+ * freed, a pause lifted. Waiting for Wi-Fi resumes in the pack engine; no
+ * space waits for the next launch or a tap; an app that is too old and a
+ * download the person stopped never retry on their own.
+ */
+export const DOWNLOAD_RETRY_DELAYS_MS: readonly number[] = [60_000, 5 * 60_000, 30 * 60_000, 2 * 60 * 60_000, 6 * 60 * 60_000];
+
+const RETRYABLE_DOWNLOAD_FAILURES: ReadonlySet<string> = new Set([
+  'no_manifest',
+  'not_in_manifest',
+  'download_failed',
+  'hash_mismatch',
+  'storage_error',
+  'downloads_paused',
+  'offline',
+]);
+
+export function isRetryableDownloadFailure(reason: string): boolean {
+  return RETRYABLE_DOWNLOAD_FAILURES.has(reason);
+}
+
+/** Delay before automatic attempt `attempt` (1 = the first retry); the last delay repeats. */
+export function downloadRetryDelayMs(attempt: number): number {
+  const i = Math.max(0, Math.min(DOWNLOAD_RETRY_DELAYS_MS.length - 1, Math.floor(attempt) - 1));
+  return DOWNLOAD_RETRY_DELAYS_MS[i];
+}
+
 /** Languages that have jobs waiting for their packs (the runtime starts those downloads). */
 export function languagesWaiting(s: QueueState): SpeechLanguage[] {
   return [...new Set(Object.values(s.jobs).filter((j) => j.phase === 'waiting_for_pack').map((j) => j.language))].sort();

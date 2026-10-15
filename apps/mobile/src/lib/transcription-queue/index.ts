@@ -65,7 +65,19 @@ import { trackTranscriptionCompleted } from '../analytics/track';
 import { getSpokenLanguages } from '../language';
 import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
-import { initialQueue, languagesWaiting, nextJob, nextRetryAt, reduce, type Job, type JobFailure, type QueueEvent, type QueueState } from './machine';
+import {
+  downloadRetryDelayMs,
+  initialQueue,
+  isRetryableDownloadFailure,
+  languagesWaiting,
+  nextJob,
+  nextRetryAt,
+  reduce,
+  type Job,
+  type JobFailure,
+  type QueueEvent,
+  type QueueState,
+} from './machine';
 
 export type { Job, JobPhase, QueueState } from './machine';
 
@@ -144,6 +156,8 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
       dispatch({ type: 'foreground', value: true });
       syncLetters();
       refreshReady();
+      // A download retry that came due while the app was away runs now.
+      for (const [lang, retry] of downloadRetries) if (!retry.timer && speechAutoStartAllowed()) void requestSpeechFor(lang);
     } else if (s === 'background') {
       dispatch({ type: 'foreground', value: false });
       controller?.abort(); // the job goes back to the queue and starts again on return
@@ -173,6 +187,7 @@ function stopTranscriptionQueue(): void {
   stopFns = [];
   if (retryTimer) clearTimeout(retryTimer);
   retryTimer = null;
+  for (const lang of [...downloadRetries.keys()]) clearDownloadRetry(lang);
   started = false;
 }
 
@@ -219,8 +234,51 @@ export async function startSpeechDownload(language: SpeechLanguage, opts: { allo
 /** Starts the downloads a language needs. Internal: callers outside this file use startSpeechDownload (a tap) or wait for a yes. */
 export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
   askedDownload.add(language);
-  await ensureSpeechFor(language, opts).catch(() => null);
+  const r = await ensureSpeechFor(language, opts).catch(() => ({ ok: false as const, reason: 'download_failed' }));
+  if (r.ok) clearDownloadRetry(language);
+  else if (isRetryableDownloadFailure(r.reason)) scheduleDownloadRetry(language);
   refreshReady();
+}
+
+/** Automatic download retries per language (F05-U29), while the app is open and after a yes. */
+const downloadRetries = new Map<SpeechLanguage, { attempt: number; timer: ReturnType<typeof setTimeout> | null }>();
+
+function scheduleDownloadRetry(language: SpeechLanguage): void {
+  if (!started) return;
+  const prev = downloadRetries.get(language);
+  if (prev?.timer) clearTimeout(prev.timer);
+  const attempt = (prev?.attempt ?? 0) + 1;
+  const timer = setTimeout(() => {
+    const entry = downloadRetries.get(language);
+    if (entry) entry.timer = null;
+    // Only the download the person already said yes to, and only in the foreground (no background work).
+    if (!started || !state.foreground || !speechAutoStartAllowed()) return;
+    void requestSpeechFor(language);
+  }, downloadRetryDelayMs(attempt));
+  downloadRetries.set(language, { attempt, timer });
+}
+
+function clearDownloadRetry(language: SpeechLanguage): void {
+  const entry = downloadRetries.get(language);
+  if (entry?.timer) clearTimeout(entry.timer);
+  downloadRetries.delete(language);
+}
+
+/**
+ * Why a language's speech download last failed, when it did and nothing is in flight now: a pack engine code
+ * (`no_manifest`, `download_failed`, `hash_mismatch`, `needs_app_update`, ...), never content. Waiting for Wi-Fi,
+ * no space and offline are holds (`speechDownloadHold`), not failures. Review and the letter page can show
+ * `packsCopy.failures[code]` with Try again (`startSpeechDownload`) instead of a wait that never ends.
+ */
+export function speechDownloadFailure(language: SpeechLanguage): string | null {
+  if (speechDownloadHold(language) !== null || speechDownloadProgress(language) !== null) return null;
+  const host = speechPackHost();
+  for (const id of planFor([language]).packs) {
+    if (host.packPath(id)) continue;
+    const p = packProgress.get(id);
+    if (p?.phase === 'failed' && p.failure) return p.failure;
+  }
+  return null;
 }
 
 /** Download progress (0..1) for a language, or null when nothing is downloading. */
@@ -257,7 +315,11 @@ export async function removeSpeechPack(id: SpeechModelId): Promise<void> {
   await releaseContexts();
   await host.removePack(id);
   packProgress.delete(id);
-  for (const lang of SPEECH_LANGUAGES) if (planFor([lang]).packs.includes(id)) askedDownload.delete(lang);
+  for (const lang of SPEECH_LANGUAGES) {
+    if (!planFor([lang]).packs.includes(id)) continue;
+    askedDownload.delete(lang);
+    clearDownloadRetry(lang); // removed on purpose: nothing downloads it again by itself
+  }
   refreshReady();
 }
 
