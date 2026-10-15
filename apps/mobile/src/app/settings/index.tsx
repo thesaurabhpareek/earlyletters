@@ -33,6 +33,7 @@ const ROUTES = {
   language: '/settings/language',
   reminders: '/settings/reminders',
   export: '/settings/export',
+  recentlyDeleted: '/settings/recently-deleted',
   privacy: '/settings/privacy',
   storage: '/settings/storage',
   recordings: '/settings/recordings',
@@ -114,6 +115,7 @@ export default function Settings() {
       <ListSection title={h.sections.data} footer={copy.trust.short}>
         <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
+        <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
         <ListRow title={h.recordingsLabel} trailing="chevron" onPress={go(ROUTES.recordings)} />
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
       </ListSection>

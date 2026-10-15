@@ -28,13 +28,12 @@ import {
   BottomSheetView,
   type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
-import { XIcon } from 'phosphor-react-native/src/icons/X';
 import * as React from 'react';
 import { View, useWindowDimensions, type Text as RNText } from 'react-native';
 import { Easing, ReduceMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens } from '@scribe/design-tokens';
-import { IconButton } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { copy } from '@/lib/copy';
 import { useFocusOnMount, useTheme } from '@/lib/a11y';
@@ -161,7 +160,8 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
               </Text>
               {description ? <Text variant="subhead" tone="muted">{description}</Text> : null}
             </View>
-            {dismissible && !hideClose && <IconButton icon={XIcon} label={copy.common.closeButton} variant="tinted" size="sm" onPress={close} />}
+            {/* The one modal idiom (lib/navigation.logic.ts): the word "Close", top right, 44 pt. Not a circled X. */}
+            {dismissible && !hideClose && <Button variant="quiet" size="sm" className="-mr-3" label={copy.common.closeButton} onPress={close} />}
           </View>
           {children}
           {footer ? <View className="pt-2">{footer}</View> : null}

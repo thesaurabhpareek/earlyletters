@@ -18,6 +18,8 @@ letters/Asha/2026-06/2026-06-15_e5.txt
 letters/Asha/2026-07/2026-07-01_e6.txt
 letters/Asha/2026-08/2026-08-10_e7.txt
 letters/Asha/2026-09/2026-09-01_e8.txt
+letters/Asha/2026-10/2026-10-02_q1.txt
+letters/Asha/2026-10/2026-10-03_q2.txt
 letters/Asha/2026-12/2026-12-24_e10.txt
 letters/Asha/2027-03/2027-03-10_e9.txt
 letters/Dev/2025-01/2025-01-05_d1.txt

@@ -72,9 +72,8 @@ export type PlanState = (typeof PLAN_STATES)[number];
 /** Why a Plus offer was shown. Same values as `OfferTrigger` in plan.ts. */
 export const OFFER_TRIGGERS = Object.freeze([
   'chapter_complete',
-  'second_child',
+  'keep_letter',
   'backup',
-  'read_together',
   'themes',
   'settings',
 ] as const);

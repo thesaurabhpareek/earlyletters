@@ -18,3 +18,14 @@ describe('letterWords', () => {
     expect(letterWords({ captureMode: 'typed', transcriptStatus: null, finalText: '' })).toBe('words');
   });
 });
+
+describe('the nobody-spoke note (D-084)', () => {
+  it('is an app note: soft wording, no claim that nobody spoke, and no signature under it', async () => {
+    const { bookCopy } = await import('./copy');
+    const { showsSignature } = await import('./quiet-day.logic');
+    expect(bookCopy.nobodySpoke).toBe('No words in this one. The recording is kept just as it is.');
+    expect(bookCopy.nobodySpoke).not.toMatch(/nobody spoke/i);
+    expect(showsSignature(letterWords({ captureMode: 'spoken', transcriptStatus: null, finalText: '' }))).toBe(false);
+    expect(showsSignature(letterWords({ captureMode: 'spoken', transcriptStatus: null, finalText: 'You laughed today.' }))).toBe(true);
+  });
+});

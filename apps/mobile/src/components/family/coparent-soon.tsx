@@ -10,7 +10,8 @@
  * glyphs, and one optional action.
  *
  * - "Tell me when it's here" stores a day on this phone (lib/family/coming-soon.logic.ts):
- *   no network, no account, no analytics event. It turns into a quiet confirmation.
+ *   no network, no account. It turns into a quiet confirmation. Two content-free events measure the
+ *   teaser (coparent_soon_opened, coparent_soon_notify); nothing else leaves the phone.
  * - Remote config `flags.familyTeaser = 'quiet'` keeps the drawing and a plain line
  *   about this phone and drops the teaser copy. It cannot turn sharing on.
  *
@@ -35,11 +36,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Breathe } from '@/components/motion/breathe';
 import { Button } from '@/components/ui/button';
 import { LineArt } from '@/components/ui/line-art';
+import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { announce, useTheme } from '@/lib/a11y';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { hasRequestedCoParentNotify, requestCoParentNotify } from '@/lib/family/coming-soon.logic';
+import { track } from '@/lib/analytics/track';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { useRemoteConfig } from '@/lib/remote';
@@ -114,6 +117,7 @@ function NotifyAction() {
       onPress={() => {
         haptic('success');
         request();
+        track('coparent_soon_notify', {}); // content-free: no book, no child, no text
         announce(n.done);
       }}
     />
@@ -136,9 +140,14 @@ export function CoParentSoon({ presentation, childName, onClose }: CoParentSoonP
   const quiet = familyTeaser === 'quiet';
   const sheet = presentation === 'sheet';
 
+  // Content-free count of how often the teaser is seen. The tab stays mounted, so this fires each time it comes into focus.
+  useEffect(() => {
+    if (focused) track('coparent_soon_opened', { surface: sheet ? 'sheet' : 'tab' });
+  }, [focused, sheet]);
+
   const body = (
     <ScrollView
-      contentContainerClassName={sheet ? 'px-6 pb-8 pt-10' : 'px-5 pb-14 pt-4'}
+      contentContainerClassName={sheet ? 'px-6 pb-8 pt-4' : 'px-5 pb-14 pt-4'}
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}>
       {!sheet && (
@@ -187,13 +196,10 @@ export function CoParentSoon({ presentation, childName, onClose }: CoParentSoonP
     );
   }
   return (
-    <SafeAreaView edges={['bottom']} className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background">
+      {/* The modal idiom: Close, top right (lib/navigation.logic.ts). */}
+      {onClose ? <ModalHeader onClose={onClose} closeLabel={s.close} /> : null}
       {body}
-      {onClose ? (
-        <View className="border-t border-border px-6 pb-4 pt-2">
-          <Button variant="quiet" size="lg" fullWidth label={s.close} onPress={onClose} />
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 }

@@ -73,7 +73,7 @@ Files: geometry in `scripts/brand/mark.mjs` (the single source); `node scripts/b
 
 ## Proof discipline
 
-Only claim what the product does today. No user counts, rankings or testimonials until real and verifiable. The website shows the price (D-075, Brief decision 3): "$3.99 a month or $29.99 a year", with a 1-month free trial on monthly and a 2-month free trial on annual. In the app, prices come from the App Store, localized. The v1.0 scope is in docs/DECISIONS.md (3 Oct 2026); `packages/content/test/rules.test.ts` blocks the known overclaims in store and website copy.
+Only claim what the product does today. No user counts, rankings or testimonials until real and verifiable. The website shows the price (D-075, Brief decision 3): "$4.99 a month or $49.99 a year", with a 1-month free trial on monthly and a 2-month free trial on annual. In the app, prices come from the App Store, localized. The v1.0 scope is in docs/DECISIONS.md (3 Oct 2026); `packages/content/test/rules.test.ts` blocks the known overclaims in store and website copy.
 
 ## Glossary
 
@@ -91,8 +91,8 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | A month section of the book | month, "Month 4" | chapter (in copy), page | "chapter" may stay in code and design docs. |
 | The spoken audio | recording; "your voice" in headlines | voice note, audio file, clip | |
 | The words from a recording | your words; "what you said" | transcript (in app copy), caption | Legal pages may say "transcript". |
-| The edit feature (D-074) | Word for word | Lightly tidied, Tidying, tidy, tidied, cleaned up, polished, improved, corrected | Founder decision. |
-| What the machine changes | small fixes, shown as marks you can undo | edits, corrections, improvements | |
+| The edit feature (D-074, D-086) | Word for word, only where the feature is named: the promise, Settings, the store, the website | Any word that says software tidied or cleaned a letter, polished, improved, corrected | Founder decision. In review and on the letter page we say what happened ("Took out a sound") and use "Exactly as said" only when it is true. |
+| What the machine changes | small fix (each one named by what happened), shown as a mark you can undo | edits, corrections, improvements | D-086. The Review views are "With small fixes" and "Exactly as said". |
 | The untouched words | "Exactly what you said"; setting "Exactly as said" | raw transcript, original text | |
 | Record control | the red circle ("Tap the red circle and talk") | microphone button, record button, big round button | Brand review BRD-11; colour token `recording` is a UI state, never a brand fill. |
 | Listening mode | Read together (two words, capital R only) | Read Together, story mode, bedtime mode, playback | No word highlighting claims until v1.1. |
@@ -104,7 +104,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Backup | encrypted backup; "a backup is for you alone" | cloud sync (for audio), sharing | Owner only at v1.0. Family listening is v1.1. |
 | Subscription | Plus | Early Letters Plus, Book Plus, Premium, Pro | |
 | Plans (D-077) | Plus Monthly, Plus Annual | Plus Yearly, annual plan (as a name), monthly plan (as a name) | Must equal App Store display names. |
-| Prices | $3.99 a month (1 month free); $29.99 a year (2 months free) | "/mo", "per mo", "{price}" left unfilled on public pages | In the app, prices come from StoreKit. |
+| Prices | $4.99 a month (1 month free); $49.99 a year (2 months free) | "/mo", "per mo", "{price}" left unfilled on public pages | In the app, prices come from StoreKit. |
 | Languages | English, Hindi, Spanish, Mandarin Chinese, French, Arabic, Portuguese | "any language", "both in one sentence", "any mix" | Hindi-English mixing is v1.1. |
 | Apple identity | Apple Account | Apple ID, iCloud account, store account | |
 | Google identity | Google Account | Google ID, Gmail account | |
