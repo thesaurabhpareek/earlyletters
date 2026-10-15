@@ -293,7 +293,7 @@ const motion = {
   drawMs: 1200,
   /**
    * Lamp light (MOTION 5k). The pool arrives once, slowly, then drifts by a breath of
-   * opacity and scale on a very slow loop. Decorative; off under Reduce Motion; never
+   * opacity on a very slow loop. Decorative; off under Reduce Motion; never
    * on a screen that records or plays a voice (principle 1). 9 s per full cycle, like
    * the website's 8.6 s lamp swell; the swing is small enough never to read as flicker.
    * Opacity only: scaling a full-screen layer cost dropped frames in measurement (MOTION 5k).
