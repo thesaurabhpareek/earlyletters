@@ -19,6 +19,8 @@ export interface NativeTransaction {
   /** ISO instant the current period or free trial ends (renews). */
   expiresAt?: string;
   purchasedAt?: string;
+  /** ISO instant of the first purchase of this subscription (its anniversary; the yearly plan reminder, G-15). */
+  originalPurchasedAt?: string;
   /** familyShared: Plus reached this person through Apple Family Sharing. */
   ownership: Ownership;
   environment: StoreEnvironment;
