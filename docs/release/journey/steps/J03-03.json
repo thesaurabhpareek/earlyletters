@@ -20,12 +20,18 @@
       "bottom": 34
     }
   },
-  "scrolls": false,
-  "text": "Back The book is open. Say one thing about Asha and Nila today. That is a letter. Write the first one",
+  "scrolls": true,
+  "text": "Back The book is open. Say one thing about Asha and Nila today. That is a letter. Get your words ready Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB. It waits for Wi-Fi, and carries on where it left off if it is interrupted. Download on Wi-Fi Not now You can do this later in Settings, Recordings. Your voice is always kept. Write the first one",
   "lines": [
     "Back",
     "The book is open.",
     "Say one thing about Asha and Nila today. That is a letter.",
+    "Get your words ready",
+    "Your words are written down on this phone, so they stay on it. This needs a one-time download of 575 MB.",
+    "It waits for Wi-Fi, and carries on where it left off if it is interrupted.",
+    "Download on Wi-Fi",
+    "Not now",
+    "You can do this later in Settings, Recordings. Your voice is always kept.",
     "Write the first one"
   ]
 }

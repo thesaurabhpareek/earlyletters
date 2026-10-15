@@ -21,11 +21,11 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { currentUserId, getSetting, listChildren, listEntries, setSetting } from '../store';
+import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
 import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } from '../supabase/client';
 import { errorCode, isNetworkError } from '../supabase/errors.logic';
 import { secureStorage } from '../supabase/secure-storage';
-import { maskEmail } from './account-claim.logic';
+import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, takePendingAppleName } from './apple';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
 import { loadSyncGate, recordConsent as recordConsentAct, saveDisplayName } from './consent';
@@ -116,9 +116,9 @@ function accountOf(session: Session | null): AccountInfo {
   return { email, maskedEmail: maskEmail(email), provider };
 }
 
-/** Any book or letter on this phone (the claim screen is only for a phone with something to claim). */
+/** Any book or letter on this phone, in any state (the claim screen is only for a phone with something to claim). */
 function phoneHasLocalData(): boolean {
-  return listChildren().length > 0 || listEntries().length > 0;
+  return phoneHoldsAnyRow(localSqlDb());
 }
 
 /** The stored session's user id, read from the Keychain without touching the network. */

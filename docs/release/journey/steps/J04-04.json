@@ -2,8 +2,8 @@
   "id": "J04-04",
   "journey": "tonight-and-prompts",
   "kind": "happy",
-  "title": "A later session: \"Help us make it better?\"",
-  "note": "Never in the first session. On a later session with at least one letter, a calm sheet asks once whether to share which screens are opened and when something crashes, never any words, recordings or names. \"Don't share\" and \"Share usage\" are equal; closing it without choosing asks at most once more. (Shown on a tab screen only, 1.2 seconds after it opens.)",
+  "title": "A later session: no usage-sharing ask",
+  "note": "v1.0 collects no data (D-088, \"Data Not Collected\"), so the \"Help us make it better?\" sheet never appears and Settings, Privacy has no usage switch. Analytics returns with consent in v1.1.",
   "from": "J04-02",
   "route": "/",
   "viewport": {
@@ -21,14 +21,21 @@
     }
   },
   "scrolls": false,
-  "text": "Help us make it better? Close Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names. Nothing is shared unless you say yes. Saying no changes nothing else. Don't share Share usage You can change this any time in Settings, Privacy.",
+  "text": "Asha · 7 months Hello, Mama. What do you want Asha to know about today? A thought to start with What food did Asha try this week? What was the face? Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
   "lines": [
-    "Help us make it better?",
-    "Close",
-    "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
-    "Nothing is shared unless you say yes. Saying no changes nothing else.",
-    "Don't share",
-    "Share usage",
-    "You can change this any time in Settings, Privacy."
+    "Asha · 7 months",
+    "Hello, Mama.",
+    "What do you want Asha to know about today?",
+    "A thought to start with",
+    "What food did Asha try this week? What was the face?",
+    "Another thought",
+    "A letter is waiting to be read back.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
   ]
 }

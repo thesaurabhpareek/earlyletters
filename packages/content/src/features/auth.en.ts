@@ -80,7 +80,7 @@ export const authCopy = {
     help: "If this isn't your account, choose Not my account. Nothing on this phone changes.",
     keep: 'Keep them here',
     notMine: 'Not my account',
-    waiting: 'Waiting for you to keep your letters in this account',
+    waiting: 'Finish setting up to choose where your letters are kept.',
   },
 
   errors: {

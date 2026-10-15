@@ -23,6 +23,7 @@ import { authReducer, initialAuthState } from '../src/lib/auth/machine.logic';
 import { classifyIncomingUrl } from '../src/lib/auth/links.logic';
 import { pendingCount, readSetting, SYNC_SETTING } from '../src/lib/sync/outbox';
 import { takeOwnership } from '../src/lib/sync/ownership';
+import { phoneHoldsAnyRow } from '../src/lib/auth/account-claim.logic';
 import { nodeDb } from './helpers/node-db';
 
 // email.ts reaches Supabase through expo/fetch; every test here hands in its own fetch.
@@ -146,7 +147,7 @@ describe('[F02-REQ-019] H1 step 4: a session alone never claims or uploads this 
 
   it('the claim screen is pending until a tap; "Not my account" ends the session and the phone is as it was', async () => {
     const { store, claimedFor, send } = await wiredStore(db);
-    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => true });
+    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => phoneHoldsAnyRow(db) });
     send({ type: 'RESTORED', userId: null }, { type: 'SIGNED_IN', userId: ATTACKER, method: 'email' }, { type: 'GATE_LOADED', gate: CONSENTED, sensitiveDeclined: false });
     expect(store.accountClaimPending()).toBe(true);
     send({ type: 'SIGN_OUT_REQUESTED', reason: 'switch_account', pendingUploads: 0 }, { type: 'SIGNED_OUT' });
@@ -161,7 +162,7 @@ describe('[F02-REQ-019] H1 step 5: the parent\'s own account still gets the lett
   it('consent screens first, then the claim, then one takeOwnership; no account mismatch afterwards', async () => {
     const db = parentsPhone();
     const { store, claimedFor, send } = await wiredStore(db);
-    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => true });
+    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => phoneHoldsAnyRow(db) });
     // An existing account without sensitive-data consent: the consent sheet comes first (R4 PT-20).
     const needs = send({ type: 'RESTORED', userId: null }, { type: 'SIGNED_IN', userId: PARENT, method: 'apple' }, {
       type: 'GATE_LOADED',
@@ -186,11 +187,47 @@ describe('[F02-REQ-019] H1 step 5: the parent\'s own account still gets the lett
   it('a confirm for an account that is not the signed-in one does nothing', async () => {
     const db = parentsPhone();
     const { store, claimedFor, send } = await wiredStore(db);
-    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => true });
+    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => phoneHoldsAnyRow(db) });
     send({ type: 'RESTORED', userId: null }, { type: 'SIGNED_IN', userId: PARENT, method: 'apple' }, { type: 'GATE_LOADED', gate: CONSENTED, sensitiveDeclined: false });
     store.confirmAccountClaim(ATTACKER);
     expect(claimedFor).toEqual([]);
     expect(store.accountClaimPending()).toBe(true);
+  });
+});
+
+describe('[F02-REQ-019] the real "anything to claim?" reader errs towards asking', () => {
+  const empty = (): SqlDb => {
+    const { db } = nodeDb();
+    migrate(db, { now: ctx.now, newId: id7 });
+    return db;
+  };
+
+  it('a fresh phone holds nothing; a book or a letter in any state counts', () => {
+    const db = empty();
+    expect(phoneHoldsAnyRow(db)).toBe(false);
+    db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at, hidden_at) VALUES (?, 'Asha', '2025-04-12', 'Mama', ?, ?, ?)", id7(), ctx.now, ctx.now, ctx.now);
+    expect(phoneHoldsAnyRow(db)).toBe(true);
+  });
+
+  it('a phone holding only a hidden book still shows the claim screen, and nothing is claimed before the tap', async () => {
+    const db = empty();
+    const child = id7();
+    db.run("INSERT INTO children (id, name, birthday, signs_as, created_at, updated_at, hidden_at) VALUES (?, 'Asha', '2025-04-12', 'Mama', ?, ?, ?)", child, ctx.now, ctx.now, ctx.now);
+    const { store, claimedFor, send } = await wiredStore(db);
+    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => phoneHoldsAnyRow(db) });
+    send({ type: 'RESTORED', userId: null }, { type: 'SIGNED_IN', userId: ATTACKER, method: 'email' }, { type: 'GATE_LOADED', gate: CONSENTED, sensitiveDeclined: false });
+    expect(store.accountClaimPending()).toBe(true);
+    expect(claimedFor).toEqual([]);
+    expect(pendingCount(db)).toBe(0);
+  });
+
+  it('a phone with nothing on it needs no claim screen: the session is released after consent', async () => {
+    const db = empty();
+    const { store, claimedFor, send } = await wiredStore(db);
+    store.setClaimReaders({ owner: () => owner(db), hasLocalData: () => phoneHoldsAnyRow(db) });
+    send({ type: 'RESTORED', userId: null }, { type: 'SIGNED_IN', userId: PARENT, method: 'apple' }, { type: 'GATE_LOADED', gate: CONSENTED, sensitiveDeclined: false });
+    expect(store.accountClaimPending()).toBe(false);
+    expect(claimedFor).toEqual([PARENT]);
   });
 });
 
