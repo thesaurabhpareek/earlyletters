@@ -6,7 +6,7 @@ Rules that stay `not yet` are the backlog for the stewards' standing duty 2: tur
 
 Totals across 208 rules (2026-10-15, counted from the rows below): 43 enforced, 45 pending in open PRs or branches, 39 partly enforced, review-only or covered by the rule they cite, 81 not yet. Chapter 11 (16 MUST rules, plus REL-R11 and REL-R12 as SHOULD) came with ADR 0022 (D-089).
 
-**Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above were recounted on 15 Oct only to add chapter 11, not to re-verify the older rows): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so rules and gaps that say they do not (API-R01, API-G4, DQ-R12, DSR-R07) are out of date; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
+**Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above were recounted on 15 Oct only to add chapter 11, not to re-verify the older rows): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so API-R01, API-G4, DQ-R12 and DSR-R07 were rewritten on 15 Oct to say what is on `develop` and what is still missing; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
 
 ## principal-architect (chapters 01, 02, 10, 11)
 
@@ -29,7 +29,7 @@ Totals across 208 rules (2026-10-15, counted from the rows below): 43 enforced, 
 | CODE-R18 | MUST | review (principal-architect); ADR | enforced on develop (review only) | none |
 | CODE-R19 | MUST | `app_config` table and client | not yet | PDATA-08 (BL-022) |
 | CODE-R20 | MUST | typecheck `strict` in CI; ESLint and Prettier | typecheck enforced on develop; lint not yet (PR #30 job waits for WS-12, WS-16) | MONO-01 |
-| API-R01 | MUST | contract package with typed wrappers | not yet | API-G4 (MONO-10, WS-04) |
+| API-R01 | MUST | `packages/api` (manifests, config, content, envelope); typed RPC wrappers and DB types | partly on develop; wrappers and types not yet | API-G4 (WS-04) |
 | API-R02 | MUST | generated types plus drift test | not yet | WS-04 |
 | API-R03 | MUST | cites DB-R13 for views; RPC or narrow policy writes by review | see DB-R13; review | DB-01 |
 | API-R04 | MUST NOT | review (security-architect); bundle scan | review; bundle scan not yet | API-G1 |
@@ -86,7 +86,7 @@ Gap ids defined here:
 - API-G1: scan the built app bundle for `service_role` and `sb_secret` strings.
 - API-G2: idempotency key parameter and store for RPCs not keyed on a row id (`request_account_deletion`, invites, policy acts).
 - API-G3: contract compatibility test against the previous release tag.
-- API-G4: the shared contract package itself (name to be decided; see questions).
+- API-G4: typed RPC wrappers and generated database types in the contract package (`packages/api` exists on develop since 15 Oct; the wrappers and types do not).
 - API-G5: test that every `errcode = '...'` in `supabase/migrations` is in the typed registry.
 - API-G6: content-block and pack-manifest schemas in the contract package.
 - OBS-G1: request id generation on device, header propagation, echo and storage with rejected ops.
@@ -114,7 +114,7 @@ Gap ids defined here:
 | DB-R12 | MUST | `classification.test.mjs` (RLS on); allow/deny coverage by review | partly on develop | DB-18 |
 | DB-R13 | MUST | revokes + `[DB-01]` tests; `grants.test.mjs` view sweep | pending PR #32, PR #26 | DB-01 |
 | DB-R14 | MUST | revoke blocks in migrations; anon-executable sweep; sequence revoke | functions on develop; sweep pending PR #26; sequences pending PR #32 | PDB-02 |
-| DB-R15 | MUST | `access_matrix.test.mjs:262-264` (search_path pinned); order rewrite; order check | presence enforced on develop; order pending PR #32; order check not yet | DB-11 |
+| DB-R15 | MUST | `access_matrix.test.mjs:281-283` (search_path pinned); order rewrite; order check | presence enforced on develop; order pending PR #32; order check not yet | DB-11 |
 | DB-R16 | MUST | DB-R13 tests; review | pending PR #32 | DB-01 |
 | DB-R17 | MUST | `entries_guard_immutable`; `rls.test.mjs`, `data_governance.test.mjs` | enforced on develop (test harness) | none |
 | DB-R18 | MUST | `entries_guard_immutable`; `SCTMB` test | enforced on develop (server); device gap | MOB-03, WS-09 |
@@ -133,7 +133,7 @@ Gap ids defined here:
 | DQ-R08 | MUST | fixture tests; scheduled invariant job | fixtures on develop; schedule not yet | PDATA-06 |
 | DQ-R09 | MUST | `domain.test.ts` | enforced on develop (#31) | CORE-05 |
 | DQ-R11 | MUST | `purge_due()` + `purge_batching.test.mjs` | DB clocks on develop (pending files) | DB-13 |
-| DQ-R12 | MUST | cron + `purge-worker` + page | not yet | PDATA-02 |
+| DQ-R12 | MUST | `purge-worker` function and `supabase/cron/purge-worker.sql`; `purge_due()` cron; 31-day page | partly on develop (worker and cron file); `purge_due` cron and page not yet; live deploy is a founder step | PDATA-02 |
 | DQ-R13 | MUST | device purge job | not yet | PPRIV-01, WS-09 |
 | DQ-R14 | MUST | date indexes; 7-year clock or table removal | not yet | DB-13 |
 | DQ-R15 | MUST NOT | review; runbooks | not yet | WS-18 |
@@ -160,7 +160,7 @@ Gap ids defined here:
 | IAM-R10 | MUST | storage adapter test | not yet | LEGAL-REQ-026 |
 | IAM-R12 | MUST | app behaviour test | not yet | TDD 04 3.2.3 |
 | IAM-R13 | MUST | `access_matrix.test.mjs` structural checks | enforced on develop | |
-| IAM-R14 | MUST | `access_matrix.test.mjs` lines 253-266 | enforced on develop | |
+| IAM-R14 | MUST | `access_matrix.test.mjs` lines 268-286 | enforced on develop | |
 | IAM-R15 | MUST | cites DB-R13 | see DB-R13 | DB-01 |
 | IAM-R16 | MUST | review; `book_access` table | not yet | DB-08, D-024 |
 | IAM-R17 | MUST | `book_children` view; matrix cell | pending PR #32 | DB-05 |
@@ -225,7 +225,7 @@ Gap ids defined here:
 | DSR-R04 | MUST NOT | `request_book_deletion`, `delete_entry`, `child_members_guard`, `data_governance.test.mjs` | enforced on develop (repo; not live); pending PR #32 (DB-01) | DB-01, DB-17, DB-03 |
 | DSR-R05 | MUST | `privacy_requests` table | not yet | TDD 05 7.8 |
 | DSR-R06 | MUST | SQL functions plus purge worker | enforced in repo (SQL); not yet (worker) | PDATA-02 |
-| DSR-R07 | MUST | device purge; `analytics-forget`; worker | not yet | PPRIV-01, PDATA-04, PDATA-02 |
+| DSR-R07 | MUST | device launch purge (`store.ts`); `analytics-forget`; `purge-worker`; backups by age | partly on develop (launch purge, both functions); purge on sync and backups not yet | PPRIV-01, PDATA-04, PDATA-02, DQ-R21 |
 | DSR-R08 | MUST | `audit_events` and receipt checks; emails | enforced on develop (DB); not yet (emails) | PDATA-02 |
 | DSR-R09 | MUST | `SCPRG` purged-id set | pending PR #32 | DB-02 |
 | DSR-R10 | MUST | `legal_holds`, `is_held`, `purge_due`, hold test | enforced on develop (repo; not live); not yet (hold audit events, review alert) | DB-03 |
@@ -239,7 +239,7 @@ Gap ids defined here:
 |---|---|---|---|---|
 | AIE-R01 | MUST | review (ai-eng-lead, red-team); brief reading order (`readingOrder()`) | on develop (#39) | AIE-G1 |
 | AIE-R02 | MUST NOT | `scripts/agents/check.mjs` assertion | not yet | AIE-G2 |
-| AIE-R03 | MUST | `check.mjs` size warnings (150 memory lines, 200-char description) | on develop (#4, partial); real budgets not yet | AIE-G3 |
+| AIE-R03 | MUST | `check.mjs` size warnings (120 memory lines, 200-char description) | on develop (#4, partial); charter and `CLAUDE.md` budgets not yet | AIE-G3 |
 | AIE-R04 | MUST | review (ai-eng-lead) of instruction-file PRs | review only | none |
 | AIE-R05 | MUST | ai-eng-lead standing duty 1 | not yet (known contradictions open) | AIE-G9 |
 | AIE-R07 | MUST | red-team standing duty 3; ai-eng-lead standing duty 1 | on develop (#4, charters) | none |

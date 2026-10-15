@@ -16,7 +16,7 @@ Seeded on 3 Oct 2026 during the compendium drafting run. Lines marked (15 Oct) w
 - OpenCode deny list: `scripts/agents/run-opencode.mjs`; Claude Code deny list: `--disallowedTools` in `.github/workflows/agents.yml` (since 15 Oct it also names pushes to `develop` and `main`).
 - Runner caps: dollar and step caps at `run-opencode.mjs:109-110`; stops paid models that report zero cost after 5 steps (line 112).
 - Receipts (`scripts/agents/receipt.mjs`) record model, cost, turns, minutes; the OpenCode result also has `tokens` but the receipt drops them. Spend on the board sums `<!-- receipt ... cost:x -->` markers from any comment (`spendToday` in `dispatch.mjs`).
-- `check.mjs` warns at 150 memory lines (limit is 120) and 200 description chars; it requires charter `model: inherit`.
+- (15 Oct) `check.mjs` warns past 120 memory lines (the limit) and 200 description chars; it requires charter `model: inherit`.
 - (15 Oct) `docs/agents/CHARTER_TEMPLATE.md` uses `model: inherit`, matching `check.mjs` (fixed in #4).
 - No root `AGENTS.md`; `apps/mobile/AGENTS.expo.md` exists (Expo template leftover, MOB-13). OpenCode reads `AGENTS.md` before `CLAUDE.md` and uses only the first it finds.
 - Fuzz test: `packages/core/test/verify.fuzz.test.ts`, seed 20261003, (15 Oct) 10,000 runs by default (`SEED` and `RUNS`, lines 39-40). On develop.

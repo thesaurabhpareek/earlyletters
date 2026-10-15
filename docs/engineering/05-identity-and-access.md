@@ -58,7 +58,7 @@ Early Letters holds a family's spoken letters about a child: the most intimate d
 
 **IAM-R13 (MUST)** RLS on every table is DB-R12; on top of it, any table `authenticated` can reach has a restrictive policy that refuses anonymous sessions. *Enforced by:* `access_matrix.test.mjs` structural checks (enforced on `develop`).
 
-**IAM-R14 (MUST)** Every function callable by `authenticated` is listed in the access matrix, starts with `require_user()` (or checks `is_anonymous()`), and no function is executable by `anon`. *Enforced by:* `access_matrix.test.mjs` lines 253-266 (enforced on `develop`).
+**IAM-R14 (MUST)** Every function callable by `authenticated` is listed in the access matrix, starts with `require_user()` (or checks `is_anonymous()`), and no function is executable by `anon`. *Enforced by:* `access_matrix.test.mjs` lines 268 to 286 (enforced on `develop`).
 
 **IAM-R15 (MUST)** Views are read-only to clients exactly as DB-R13 states; a view is never an authorisation boundary that grants more than its base tables. *Why:* DB-01 (Critical). *Enforced by:* see DB-R13.
 
