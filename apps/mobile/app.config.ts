@@ -36,6 +36,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 type BrandModule = typeof import('../../packages/brand/index');
+
+/** Lowest supported iOS (D-098). The billing copy keeps its "needs iOS 17" fallback for safety. */
+export const IOS_DEPLOYMENT_TARGET = '17.0';
 type PermissionCopyModule = typeof import('./src/lib/permission-copy');
 
 const ROOT = typeof __dirname === 'string' ? __dirname : process.cwd();
@@ -222,6 +225,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   },
   plugins: [
     'expo-router',
+    // D-098 (15 Oct 2026, delegated by founder; DEBATES Q-002): iOS 17 or later, because Apple's
+    // subscription store view (the Plus sheet) needs it (ADR 0013). Expo SDK 57's own minimum is 16.4.
+    ['expo-build-properties', { ios: { deploymentTarget: IOS_DEPLOYMENT_TARGET } }],
     [
       'expo-splash-screen',
       {
