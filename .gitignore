@@ -47,6 +47,9 @@ yarn-error.*
 !apps/mobile/modules/*/ios/
 !apps/mobile/modules/*/android/
 
+# agent run briefs (written by scripts/agents/brief.mjs at run time)
+.agent-run/
+
 # env and secrets
 .env
 .env.*
