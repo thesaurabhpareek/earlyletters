@@ -29,7 +29,7 @@ Checked against `origin/develop` at ed16ca3 (13 Oct, after PRs #86, #91, #100, #
 | Free-letter ledger | Counts every letter on the phone, including the other parent's synced letters (R2 AR-04). M17 changes the rule; not built | [F] `apps/mobile/src/lib/db/repos/ledger.ts`; R2 |
 | Journey review backlog | M-JR: 65 tasks (5 blocker, 45 major, 15 minor) | [F] BACKLOG M-JR |
 | Open pull requests | 34, the oldest #2 (`develop` to `main`, 3 Oct) | [F] GitHub API, 13 Oct (R5) |
-| Decisions not yet logged | M14 (proposed as D-089), M15, M16 and M17 have no `docs/DECISIONS.md` entry; develop ends at D-088. D-085 amends D-073 to "no backup in v1.0", D-087 hides "I was invited", D-088 keeps the "Data Not Collected" label: M14 reverses the first two and makes the third untrue once accounts exist | [F] `docs/DECISIONS.md` on develop, read 13 Oct |
+| Decisions not yet logged | M14 (proposed as D-089; logged as D-100, since D-089 to D-092 became the release-engineering decisions of PR #108), M15, M16 and M17 have no `docs/DECISIONS.md` entry; develop ends at D-088. D-085 amends D-073 to "no backup in v1.0", D-087 hides "I was invited", D-088 keeps the "Data Not Collected" label: M14 reverses the first two and makes the third untrue once accounts exist | [F] `docs/DECISIONS.md` on develop, read 13 Oct |
 
 **What this means.** Code is ahead and much of the server half is written, but none of it has run on a phone or against a configured project. The old plan asked for about 250 work packages against about 100 merge slots (R1 PL-01, R5 EQ-24). M15 keeps backup, co-parent, sign-in and sync in v1.0, so the date moves instead of the scope. Section 6.3 is the v1.0 list; the date in section 2.2 comes from that list and the merge budget in section 6.1.
 
@@ -418,7 +418,7 @@ Streams run in parallel inside their files (section 3.3). Waves set what merges 
 ### 5.1 Wave 0: set up (T01 to T03)
 
 No feature PRs. The coordinator:
-1. Drafts `docs/DECISIONS.md` entries for M14 (proposed as D-089, with the D-085, D-087 and D-088 consequences), M15, M16 and M17 for the founder.
+1. Drafts `docs/DECISIONS.md` entries for M14 (proposed as D-089, logged as D-100, with the D-085, D-087 and D-088 consequences), M15 (D-101), M16 (D-102) and M17 (D-103) for the founder (PR #128; D-089 to D-092 are the release-engineering decisions of PR #108).
 2. Edits COORDINATION section 6 to match the founder's Q3 answer before the first dispatch (R5 EQ-11).
 3. Closes every `active` claim from 3 Oct on `BOARD.md` with a pointer to this file, writes one claim line per stream, and adds the rule that a claim older than 48 hours with no check-in lapses (R5 EQ-12).
 4. Applies the PR close rule (R5 EQ-13): close every PR whose base is not `develop` or `main`, every docs PR written for an on-device v1.0, and every agent-operating-system PR, each with one comment pointing here; keep #30, #2 and the web PRs on `main`.
