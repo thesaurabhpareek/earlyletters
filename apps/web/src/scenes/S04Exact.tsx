@@ -4,7 +4,7 @@
  *
  *   0.00-0.06  Handoff from S03: paper, the letter as heard, centred.
  *   0.06-0.18  Quiet dotted underlines appear under the three things the app will fix.
- *   0.20-0.56  The fixes, one by one: "Mirror" becomes "Meera" (a name from the family dictionary),
+ *   0.20-0.56  The fixes, one by one: "Asia" becomes "Asha" (a name from the family dictionary),
  *              "um" leaves, a false start leaves. Nothing else moves; nothing is added.
  *   0.50-0.58  Beneath the letter, the app's own words: "3 small fixes." and its trust line.
  *   0.58-0.70  The letter steps down; "Exactly as you said it." and the support line arrive above it.
