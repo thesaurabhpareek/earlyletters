@@ -13,13 +13,15 @@ Labels used below: **Verified** means checked on 3 Oct 2026 against the source o
 | Pull request | PR that changes `supabase/**` | `.github/workflows/db-cli.yml` | `supabase start`, `supabase db reset --local`, `supabase db lint --local --level error --fail-on error`, `npm run test:db` | No |
 | Nightly | 10:23 UTC daily, or by hand | `.github/workflows/nightly.yml` | Verifier fuzz with a random seed (100000 runs), then the same checks as `db-cli.yml` | No |
 | Staging | Push to `main` that changes `supabase/migrations/**` | `.github/workflows/deploy-db.yml`, job `deploy to staging` | `supabase db push --dry-run`, then `supabase db push` | `scribe-staging` |
+| Staging from `develop` | Manual run (Run workflow) on `develop` only | `.github/workflows/deploy-db.yml`, jobs `manual run is on develop`, then `deploy to staging` | The same dry run and push, after the staging Environment's required reviewer approves | `scribe-staging` |
 | Production | Push of a tag `db-v*` that points at a commit on `main` | `.github/workflows/deploy-db.yml`, job `deploy to production` | Waits for approval in the `production` Environment, then dry run, then push | `scribe-prod` |
 
 Rules the workflows enforce:
 - Every deploy job has `permissions: contents: read` and checks out without persisting credentials.
 - Each environment has its own concurrency group (`deploy-db-staging`, `deploy-db-production`) with `cancel-in-progress: false`, so a running push is never cancelled halfway.
 - The only credential is one Postgres connection URL per environment, stored as an Environment secret. There is no `SUPABASE_ACCESS_TOKEN` anywhere (POPS-04), so CI cannot create, delete, pause or reconfigure projects, and cannot run `supabase link` or `supabase config push`.
-- The production job refuses a tag whose commit is not on `main`.
+- The production job refuses a tag whose commit is not on `main`, and runs only on a tag **push**: a manual run never reaches production.
+- A manual run deploys `develop` to staging and fails on any other branch or tag.
 - After a push, the job prints (and writes to the run summary) every migration file not yet listed in `.github/migrations-applied.txt`. It never edits that file. A pull request records them (see "After a deploy").
 - The Supabase CLI is pinned to 2.119.0 in all three workflows, installed by `supabase/setup-cli` pinned to the v3.0.1 commit. Bump both deliberately.
 
@@ -59,9 +61,9 @@ Do these in order. None of them can be done by CI or by an agent.
 Settings > Environments.
 
 1. **`staging`**
-   - Deployment branches and tags: "Selected branches and tags", add branch `main`.
+   - Deployment branches and tags: "Selected branches and tags", add branches `main` and `develop`.
    - Environment secret `SUPABASE_DB_URL_STAGING` = the staging session pooler URL.
-   - No reviewers needed.
+   - Required reviewers: you, while staging holds the alpha's real letters (D-106, `docs/ops/ENVIRONMENTS.md`), so a manual run from `develop` waits for your approval. Leave "Prevent self-review" off while you are the only reviewer.
 2. **`production`**
    - Required reviewers: you. Leave "Prevent self-review" off while you are the only reviewer, or nobody can approve.
    - Deployment branches and tags: "Selected branches and tags", add a **tag** rule `db-v*`. Remove any branch rule.
@@ -102,6 +104,15 @@ Brief decision 4: Sign in with Apple, Sign in with Google, email magic link, no 
    Suggested name: `db-v<year>.<month>.<day>.<n>`. Any name starting with `db-v` triggers the job.
 7. Actions > Deploy database > the tag's run: read the dry run in staging's run, then approve the `production` deployment. The job checks the tag is on `main`, runs the dry run, then pushes.
 8. If production printed files that staging's PR did not already record, add them in a PR.
+
+## Staging from `develop` (the alpha, D-106)
+
+The alpha runs `develop`'s app against staging, so staging needs `develop`'s schema before `main` has it (PRD V2 08 section 5.2, P2). Every migration on `develop` already came through a PR that passed `db-cli.yml` and the fence with the `approve-migration` label (D-041).
+
+1. Actions > Deploy database > Run workflow, branch **`develop`**. Any other branch or tag fails at once.
+2. Approve the `staging` deployment, read the dry run, let the push finish.
+3. Record the files the run summary lists in `.github/migrations-applied.txt` by PR, the same day. From then on the migration guard keeps them unedited, which matters more here: `develop` changes faster than `main`.
+4. When those migrations later reach `main`, the push to `main` runs `deploy to staging` again and finds nothing new to apply.
 
 `supabase db push` applies every migration the target has not recorded, in file order. If a deploy is queued behind a running one, GitHub keeps one pending run per concurrency group and a newer pending run replaces the older one (**Assumed**, standard GitHub concurrency behaviour). That is harmless here: the next push applies everything pending.
 
