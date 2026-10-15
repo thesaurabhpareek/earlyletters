@@ -407,6 +407,7 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 ### D-089 Release engineering model
 - **Status:** Decided (founder, 13 Oct 2026; recommended 3 Oct). Ids chosen above D-088 (PR #91).
 - **Decision:** ADR 0022. Preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, per `docs/release/TESTFLIGHT.md`. Store lane: `release/1.0` cut from `main` at freeze (Mon 26 Oct), fixes cherry-picked from `develop`; `ios-v1.0.0-rc.<n>` tags build the production profile into the production record's internal TestFlight; the RC that passed FT-39 is submitted (FT-45); `ios-v1.0.0` is pushed after release. One version in `apps/mobile/version.json`; build numbers only from EAS. Store text generated from `packages/content` into `apps/mobile/store.config.json`.
+- **Gate (amended 15 Oct, founder):** the store-lane jobs run in the GitHub environment `app-store` (founder as required reviewer, only `ios-v*` tags and `release/*` branches, store secrets held there), with tag and branch rulesets that only admins bypass (ADR 0022 decision 8, FT-20). The 3 Oct design assumed a private repository; it is public.
 - **Effects:** COORDINATION section 6 and FT-44 (tag the RC before submission; the version tag follows release); runbook `docs/ops/RELEASE.md` (qa-e2e's release train, amended for D-089); record `docs/release/1.0.0.md`; BL-436 to BL-439.
 
 ### D-090 Release team
@@ -420,12 +421,12 @@ Remove from "Decisions that still need the founder": D-023, D-032, D-030, D-034,
 
 ### D-092 EAS plan
 - **Status:** Decided (founder, 13 Oct 2026; matches the cost decisions of 3 Oct).
-- **Decision:** EAS Free (15 iOS builds a month; expo.dev/pricing, 3 Oct 2026) until builds would exceed it, then Starter ($19 a month plus usage).
+- **Decision:** EAS Free (15 iOS builds a month; expo.dev/pricing, 3 Oct 2026) until builds would exceed it, then Starter ($19 a month plus usage). A second trigger: Free builds queue at low priority with one concurrent build, so if queue time ever holds up a release candidate, move to Starter for that month.
 
 ## Decisions that still need the founder (in priority order)
 
-1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). v1.1 (D-082, #54): v1.0 has no sync.
-2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). v1.1 (D-082, #54): v1.0 has no sharing.
+1. **D-023** Sync engine: outbox plus cursor on expo-sqlite (reverses ADR 0004). v1.1, parked (D-082, #54): v1.0 has no sync.
+2. **D-032** Shared voice in v1.0 (family hear each other's recordings, free; full backup stays Plus). v1.1, parked (D-082, #54): v1.0 has no sharing.
 3. **D-001 tooling** StoreKit 2 direct versus RevenueCat (ADR 0013). Override window closes when BL-213 starts (about 9 Nov).
 4. **D-030** Beta on TestFlight; no beta line in the store listing. Needed before the store listing is written (week 13).
 5. **D-004 hedge** Accept the guideline 5.1.1(ix) risk as an individual, or start an entity in parallel. Needed by 27 Nov.

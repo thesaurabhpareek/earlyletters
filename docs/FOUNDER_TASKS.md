@@ -221,7 +221,11 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Time: 15 minutes.
   - Cost: US $0.
   - Steps: protect `develop` and `main` requiring the CI `required` job; labels `inbox`, `bug`, `idea`, `beta`, `S0` to `S3`, `approve-migration`; keep unattended agent runs paused for `supabase/**` and auth until this is on (D-041).
-  - By: Fri 9 Oct.
+  - Release gate (ADR 0022 decision 8; free because the repository is public; about 15 more minutes, needed before the first RC on Mon 26 Oct):
+    - Settings, Environments: create `app-store`. Add yourself as required reviewer. Under deployment branches and tags, choose selected ones and add tag `ios-v*` and branch `release/*`.
+    - In `app-store`, add the environment secrets `EXPO_TOKEN` (a token used only for the store lane) and `ASC_REVIEW_CONTACT_JSON` (shape in `docs/ops/RELEASE.md` 3.5). Delete any repository secret of the same name.
+    - Settings, Rules, Rulesets: a tag ruleset for `ios-v*` and a branch ruleset for `release/*`, each restricting creations, updates and deletions, with Repository admin as the only bypass.
+  - By: Fri 9 Oct (release gate: Fri 23 Oct).
   - Blocks: BL-005, BL-122; lets scheduled agents take more of the backlog safely.
 
 ---
@@ -375,14 +379,15 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Cost: US $0.
   - Steps: feature freeze is Mon 26 Oct (coordinator). On the release candidate: device budget check on the SE 3 (BL-044); kill during save 500 times (BL-135); StoreKit D-1 to D-12 again (BL-222); the durability drill: iCloud device backup then restore to a second phone, export ZIP and re-read, sign in on a new phone and re-download text (BL-284); size under 40 MB; a staging restore drill if time allows (BL-247, `docs/ops/runbooks/restore-drill.md`). Sign the evidence with date and build number (qa-e2e's template in `docs/qa/`).
   - By: Thu 29 Oct.
-  - Blocks: FT-44.
+  - Needs: FT-44 (the RC it checks).
+  - Blocks: FT-45.
 
 - [ ] **FT-40 C1 exit review**
   - Time: 1 hour.
   - Cost: US $0.
   - Steps: check the exit criteria in FT-32; anything S0 or S1 open means no submission.
   - By: Thu 29 Oct (ROADMAP).
-  - Blocks: FT-44, FT-45.
+  - Blocks: FT-45.
 
 - [ ] **FT-41 Counsel sign-off; publish legal pages and the 1.0.0 policy versions**
   - Time: 2 hours.
@@ -405,12 +410,13 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - By: Fri 30 Oct (ROADMAP).
   - Blocks: FT-45; BL-286.
 
-- [ ] **FT-44 Approve the release**
-  - Time: 30 minutes.
+- [ ] **FT-44 Approve the release PR and the first release candidate**
+  - Time: 30 minutes, then 2 minutes per later RC.
   - Cost: US $0.
-  - Steps: approve the coordinator's release PR from `develop` to `main`; the coordinator cuts `release/1.0` and pushes `ios-v1.0.0-rc.<n>`, which builds the production binary into the production record's TestFlight (D-089, `docs/ops/RELEASE.md`). `ios-v1.0.0` itself is pushed after Apple approves and you release.
-  - By: Mon 26 Oct, the freeze day (D-089: the release branch and the first RC come from this approval, before FT-39).
-  - Blocks: FT-45.
+  - Steps: approve the coordinator's release PR from `develop` to `main`; the coordinator cuts `release/1.0` and pushes `ios-v1.0.0-rc.<n>`. Approve that run's `build` job in the `app-store` environment (FT-20), which builds the production binary into the production record's TestFlight (D-089, `docs/ops/RELEASE.md`). Do the same for each later RC. This does not approve submission: the RC is submitted only after FT-39 and FT-40 pass (FT-45). `ios-v1.0.0` itself is pushed after Apple approves and you release.
+  - By: Mon 26 Oct, the freeze day (D-089: the release branch and the first RC come from this approval, so FT-39 has a build to check).
+  - Needs: FT-20 release gate.
+  - Blocks: FT-39, FT-45.
 
 ---
 
@@ -419,6 +425,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-45 Submit for App Review**
   - Time: 30 minutes, then answer any question within a day.
   - Cost: US $0.
+  - Needs: FT-39 and FT-40 passed on this RC, FT-41, FT-43.
   - Steps: select the release-candidate build that passed FT-39 (its build number is in `docs/release/1.0.0.md`); choose **manual release** so you pick the day; submit Mon 2 Nov (Fri 6 Nov at the latest). If App Review cites guideline 5.1.1(ix) (individual publisher, sensitive information), answer the same day with the D-004 positioning and tell the coordinator: the fallback is an organisation account (entity, D-U-N-S, enrolment; 2 to 6 weeks [U]).
   - By: Mon 2 Nov (ROADMAP).
   - Blocks: release.
