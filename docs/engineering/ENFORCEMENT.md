@@ -95,7 +95,7 @@ Gap ids defined here:
 | DB-R12 | MUST | `classification.test.mjs` (RLS on); allow/deny coverage by review | partly on develop | DB-18 |
 | DB-R13 | MUST | revokes + `[DB-01]` tests; `grants.test.mjs` view sweep | pending PR #32, PR #26 | DB-01 |
 | DB-R14 | MUST | revoke blocks in migrations; anon-executable sweep; sequence revoke | functions on develop; sweep pending PR #26; sequences pending PR #32 | PDB-02 |
-| DB-R15 | MUST | `access_matrix.test.mjs:262-264` (search_path pinned); order rewrite; order check | presence enforced on develop; order pending PR #32; order check not yet | DB-11 |
+| DB-R15 | MUST | `access_matrix.test.mjs:281-283` (search_path pinned); order rewrite; order check | presence enforced on develop; order pending PR #32; order check not yet | DB-11 |
 | DB-R16 | MUST | DB-R13 tests; review | pending PR #32 | DB-01 |
 | DB-R17 | MUST | `entries_guard_immutable`; `rls.test.mjs`, `data_governance.test.mjs` | enforced on develop (test harness) | none |
 | DB-R18 | MUST | `entries_guard_immutable`; `SCTMB` test | enforced on develop (server); device gap | MOB-03, WS-09 |
@@ -141,7 +141,7 @@ Gap ids defined here:
 | IAM-R10 | MUST | storage adapter test | not yet | LEGAL-REQ-026 |
 | IAM-R12 | MUST | app behaviour test | not yet | TDD 04 3.2.3 |
 | IAM-R13 | MUST | `access_matrix.test.mjs` structural checks | enforced on develop | |
-| IAM-R14 | MUST | `access_matrix.test.mjs` lines 253-266 | enforced on develop | |
+| IAM-R14 | MUST | `access_matrix.test.mjs` lines 268-286 | enforced on develop | |
 | IAM-R15 | MUST | cites DB-R13 | see DB-R13 | DB-01 |
 | IAM-R16 | MUST | review; `book_access` table | not yet | DB-08, D-024 |
 | IAM-R17 | MUST | `book_children` view; matrix cell | pending PR #32 | DB-05 |
@@ -220,7 +220,7 @@ Gap ids defined here:
 |---|---|---|---|---|
 | AIE-R01 | MUST | review (ai-eng-lead, red-team); brief reading order (`readingOrder()`) | on develop (#39) | AIE-G1 |
 | AIE-R02 | MUST NOT | `scripts/agents/check.mjs` assertion | not yet | AIE-G2 |
-| AIE-R03 | MUST | `check.mjs` size warnings (150 memory lines, 200-char description) | on develop (#4, partial); real budgets not yet | AIE-G3 |
+| AIE-R03 | MUST | `check.mjs` size warnings (120 memory lines, 200-char description) | on develop (#4, partial); charter and `CLAUDE.md` budgets not yet | AIE-G3 |
 | AIE-R04 | MUST | review (ai-eng-lead) of instruction-file PRs | review only | none |
 | AIE-R05 | MUST | ai-eng-lead standing duty 1 | not yet (known contradictions open) | AIE-G9 |
 | AIE-R07 | MUST | red-team standing duty 3; ai-eng-lead standing duty 1 | on develop (#4, charters) | none |

@@ -31,7 +31,7 @@ Almost every line in this repo is written by an agent, mostly on open-weight mod
 
 **AIE-R02 (MUST NOT)** The repo has no `AGENTS.md` or `AGENTS.override.md` at any level unless it is a symlink to `CLAUDE.md`. *Why:* OpenCode, our default engine, reads `AGENTS.md` and then ignores `CLAUDE.md` (C2), so a stray file silently drops the constitution from every open-weight run. `apps/mobile/AGENTS.expo.md` is a template leftover (MOB-13), removed by PR #25 (merged 4 Oct). *Enforced by:* not yet: AIE-G2 (`scripts/agents/check.mjs` fails on the file).
 
-**AIE-R03 (MUST)** Every instruction file has one owner and a line budget: `CLAUDE.md` about 60 (founder), `OPERATING_MODEL.md` about 120 (founder), a charter under 90 (founder via PR), `MEMORY.md` under 120 (the agent), a chapter 120 to 220 (its steward), `PRINCIPLES.md` one page (stewards). Over budget means cut, not raise. *Why:* long files bury rules (A3, C3); HARNESS section 8 sets these limits. *Enforced by:* `check.mjs` warns past 150 memory lines and 200 description characters (merged in #4); not yet: AIE-G3 (warn at the real limits, add charter and `CLAUDE.md` checks).
+**AIE-R03 (MUST)** Every instruction file has one owner and a line budget: `CLAUDE.md` about 60 (founder), `OPERATING_MODEL.md` about 120 (founder), a charter under 90 (founder via PR), `MEMORY.md` under 120 (the agent), a chapter 120 to 220 (its steward), `PRINCIPLES.md` one page (stewards). Over budget means cut, not raise. *Why:* long files bury rules (A3, C3); HARNESS section 8 sets these limits. *Enforced by:* `check.mjs` warns past 120 memory lines and 200 description characters (merged in #4; memory limit aligned 15 Oct); not yet: AIE-G3 (add charter and `CLAUDE.md` checks).
 
 **AIE-R04 (MUST)** A rule is one sentence an agent can test against a diff, names its level, its reason and its enforcement, and cites an id (requirement, decision, finding or rule). Rules that only say "be careful" or "use good judgement" are deleted. *Why:* the right altitude is specific enough to check, general enough to last (A2). *Enforced by:* review (ai-eng-lead) of every PR under `docs/engineering/**`, `docs/agents/**`, `.claude/agents/**`.
 
@@ -112,7 +112,7 @@ Almost every line in this repo is written by an agent, mostly on open-weight mod
 |---|---|
 | AIE-G1 | Closed by PR #39 (pending): the brief reads in ladder order and includes `docs/engineering/PRINCIPLES.md` |
 | AIE-G2 | `check.mjs` fails if any `AGENTS.md` or `AGENTS.override.md` is not a symlink to `CLAUDE.md` |
-| AIE-G3 | `check.mjs` warns at the real budgets (memory 120, charter 90, `CLAUDE.md` 60) and reports always-loaded words |
+| AIE-G3 | `check.mjs` warns at the remaining budgets (charter 90, `CLAUDE.md` 60) and reports always-loaded words; memory 120 done 15 Oct |
 | AIE-G4 | `product` adds `Done when:` to every `ready` agent task; `check.mjs` warns when it is missing |
 | AIE-G5 | CI job on `agent:*` PRs flags removed `it(`/`test(`, new `.skip`/`.only`/`.todo`, and changes to fuzz run counts or golden files |
 | AIE-G6 | `check.mjs` fails if the red team shares a model maker with any worker agent |
