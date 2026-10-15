@@ -15,7 +15,8 @@ const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, s
 
 export type EmailBlock =
   | { type: 'paragraph'; text: string }
-  | { type: 'signoff'; text: string }
+  /** The closing word ("Warmly,") and, under it, who is writing. */
+  | { type: 'signoff'; text: string; name?: string }
   | { type: 'list'; title: string; items: readonly string[] }
   | { type: 'letter'; label: string; to: string; meta: string; from: string; excerpt: string; note: string };
 
@@ -49,7 +50,7 @@ function blockHtml(block: EmailBlock): string {
     case 'paragraph':
       return `<tr><td style="padding:20px 36px 0 36px;"><p class="ink" style="margin:0;font-family:${SERIF};font-size:18px;line-height:1.65;color:${c.ink};">${escapeHtml(block.text)}</p></td></tr>`;
     case 'signoff':
-      return `<tr><td style="padding:12px 36px 0 36px;"><p class="muted" style="margin:0;font-family:${SERIF};font-size:17px;line-height:1.5;color:${c.inkMuted};">${escapeHtml(block.text)}</p></td></tr>`;
+      return `<tr><td style="padding:12px 36px 0 36px;"><p class="muted" style="margin:0;font-family:${SERIF};font-size:17px;line-height:1.5;color:${c.inkMuted};">${escapeHtml(block.text)}${block.name ? `<br>${escapeHtml(block.name)}` : ''}</p></td></tr>`;
     case 'list':
       return `<tr><td style="padding:32px 36px 0 36px;">
 <p class="accent" style="margin:0 0 6px 0;font-family:${SANS};font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${c.accent};">${escapeHtml(block.title)}</p>
@@ -77,8 +78,9 @@ ${block.items
 function blockText(block: EmailBlock): string[] {
   switch (block.type) {
     case 'paragraph':
-    case 'signoff':
       return [block.text, ''];
+    case 'signoff':
+      return [block.text, ...(block.name ? [block.name] : []), ''];
     case 'list':
       return [block.title, ...block.items.map((item) => `- ${item}`), ''];
     case 'letter':

@@ -14,7 +14,21 @@ describe('renderWelcomeEmail', () => {
     expect(mail.html).toContain('<h1');
     expect(mail.html).toContain('src="https://earlyletters.com/apple-icon"');
     expect(mail.text).toContain(site.welcomeEmail.headline);
-    for (const line of site.welcomeEmail.promises) expect(mail.text).toContain(line);
+    expect(mail.text).toContain(site.welcomeEmail.closing);
+  });
+
+  it('signs off "Warmly," with the brand name under it, and has no "What we are building" list', () => {
+    expect(mail.html).toContain(`>Warmly,<br>${site.brand.name}</p>`);
+    expect(mail.text).toContain(`Warmly,\n${site.brand.name}\n`);
+    expect(mail.text).not.toContain('What we are building');
+    expect(mail.html).not.toContain('What we are building');
+    expect(mail.text).not.toMatch(/^- /m);
+  });
+
+  it('says "You are on the list" once, in the subject, and the launch sentence once', () => {
+    expect(mail.subject).toContain('You are on the list');
+    expect(mail.text.match(/you are on the list/gi) ?? []).toHaveLength(0);
+    expect(mail.text.match(/we will write once, when it is ready/g) ?? []).toHaveLength(1);
   });
 
   it('supports dark mode and carries no tracking, scripts or remote styles', () => {

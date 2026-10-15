@@ -4,6 +4,7 @@
  * "Asha" and documentation-only IP ranges (RFC 5737, RFC 3849).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { site } from '../src/content/site';
 
 const resend = vi.hoisted(() => ({
   create: vi.fn(),
@@ -487,7 +488,8 @@ describe('welcome email', () => {
     expect(payload.replyTo).toBe('hello@earlyletters.com');
     expect(String(payload.subject)).toContain('You are on the list');
     expect(String(payload.html)).toContain('<h1');
-    expect(String(payload.text)).toContain('You are on the list.');
+    expect(String(payload.text)).toContain(site.welcomeEmail.headline);
+    expect(String(payload.text)).toContain(`Warmly,\n${site.brand.name}`);
   });
 
   it('does not send for a bot (honeypot) or an invalid address', async () => {

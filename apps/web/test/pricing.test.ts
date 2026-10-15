@@ -1,7 +1,8 @@
 /**
  * The Plus prices and trial lengths on earlyletters.com come from one place, src/content/pricing.ts.
  * RULE: no string under src states a dollar amount or a free-trial length that differs from it, the old
- * prices ($3.99 a month, $29.99 a year) never come back, and the pricing sentence reads both plans from it.
+ * prices ($3.99 a month, $29.99 a year) never come back, and the two plan cards and the film's one price sentence
+ * (s10.plans, s10.summary; the home page restructure, PR #105) read both plans from it.
  * Reads every text file under src as written, and every string site.ts exports as rendered (so a template
  * that fills in the constants is checked after it is filled). If this fails, change pricing.ts, not the sentence.
  */
@@ -68,7 +69,7 @@ describe('what is being checked', () => {
   it('reads every text file under src and the rendered pricing sentence', () => {
     expect(FILES.length).toBeGreaterThan(100);
     expect(FILES.some((f) => f.endsWith(join('src', 'content', 'site.ts')))).toBe(true);
-    const sentence = RENDERED.filter((t) => t.where === 'site.ts (rendered):site.scenes.s10.support');
+    const sentence = RENDERED.filter((t) => t.where === 'site.ts (rendered):site.scenes.s10.summary');
     expect(matches(sentence, DOLLARS).map((m) => m.match)).toEqual(PRICES);
     expect(trialMentions(sentence).map((m) => asMonths(m.groups[0]))).toEqual(TRIALS);
   });
@@ -91,12 +92,22 @@ describe('every string under src, as written and as rendered', () => {
   });
 });
 
-describe('the pricing sentence (s10)', () => {
-  // RULE: each price sits next to its own trial, both read from the constants, in the founder's wording.
-  it('states both plans from the constants', () => {
-    const { monthly, annual } = plusPricing;
-    expect(siteModule.site.scenes.s10.support).toContain(
-      `${monthly.price} a month with a ${monthly.trialMonths}-month free trial, or ${annual.price} a year with a ${annual.trialMonths}-month free trial.`,
+describe('the plan cards and the price sentence (s10)', () => {
+  const { monthly, annual } = plusPricing;
+  const s10 = siteModule.site.scenes.s10;
+
+  // RULE: each card shows its own price and its own trial, both read from the constants.
+  it('the two plan cards state both plans from the constants', () => {
+    expect(s10.plans.map((p) => [p.price, p.trial])).toEqual([
+      [monthly.price, `${monthly.trialMonths}-month free trial`],
+      [annual.price, `${annual.trialMonths}-month free trial`],
+    ]);
+  });
+
+  // RULE: the film's single pricing frame says both plans, each price next to its own trial.
+  it('the price sentence states both plans from the constants', () => {
+    expect(s10.summary).toContain(
+      `Monthly ${monthly.price} with a ${monthly.trialMonths}-month free trial, or yearly ${annual.price} with a ${annual.trialMonths}-month free trial.`,
     );
   });
 });

@@ -18,6 +18,7 @@ import { Evening } from './Evening';
 import { ProofScene } from './ProofScene';
 import { HeroStage } from './scrub';
 import { Beat, PinScene, SceneText } from './PinScene';
+import { ScrollNudge } from './ScrollNudge';
 import { StoryRail } from './StoryRail';
 import styles from './Landing.module.css';
 
@@ -37,13 +38,20 @@ export function Landing() {
         </a>
       </header>
 
+      {/* First after the header, so a keyboard user who has scrolled reaches it on the first Tab. Hidden until it shows. */}
+      <ScrollNudge />
+
       <main id="top" className={styles.main}>
         <HeroStage className={`${styles.section} ${styles.hero}`} innerClassName={styles.heroInner}>
           <h1 id="hero-title" className={`${styles.title} ${styles.sheen}`}>
             {site.brand.name}
           </h1>
           <p className={styles.lead}>{site.comingSoon.line}</p>
-          <p className={styles.trust}>{site.comingSoon.trust}</p>
+          <ul className={styles.promises}>
+            {site.comingSoon.promises.map((promise) => (
+              <li key={promise}>{promise}</li>
+            ))}
+          </ul>
           <div className={styles.actions}>
             <p className={styles.pill}>{site.cta.prelaunch.eyebrow}</p>
           </div>
@@ -58,7 +66,7 @@ export function Landing() {
               {s.s02.headline}
             </h2>
           </Beat>
-          <SceneText text={s.s02.support} className={styles.sub} from={0.1} to={0.5} />
+          <SceneText text={s.s02.support} className={`${styles.sub} ${styles.subTight}`} from={0.1} to={0.5} />
           <Beat className={styles.pull} from={0.5} to={0.68}>
             <p className={styles.pullTitle}>{s.s03.headline}</p>
             <p className={styles.pullText}>{s.s03.support}</p>
@@ -77,7 +85,6 @@ export function Landing() {
             <SceneText text={s.s05.support} className={styles.sub} from={0.1} to={0.5} />
           </div>
           <Beat className={styles.years} from={0.3} to={0.5}>
-            <p className={styles.kicker}>{s.s07.dateline}</p>
             <p className={styles.yearsTitle}>{s.s07.headline}</p>
             <p className={styles.cardText}>{s.s07.support}</p>
           </Beat>
@@ -90,7 +97,14 @@ export function Landing() {
               {s.s06.headline}
             </h2>
           </Beat>
-          <SceneText text={s.s06.support} className={styles.sub} from={0.1} to={0.4} />
+          <div className={styles.shortLines}>
+            {s.s06.lines.map((line, i) => (
+              <SceneText key={line} text={line} className={styles.sub} from={0.1 + i * 0.1} to={0.22 + i * 0.1} />
+            ))}
+          </div>
+          <Beat className={styles.example} from={0.34} to={0.44}>
+            {s.s06.exampleLabel}
+          </Beat>
           <ol className={styles.timeline}>
             {s.s06.chapters.map((chapter, i) => {
               const last = i === s.s06.chapters.length - 1;
@@ -129,17 +143,17 @@ export function Landing() {
           </ul>
         </PinScene>
 
-        <PinScene vh={2.5} id="private" labelledBy="private-title">
+        <PinScene vh={2.5} id="private" labelledBy="private-title" wrapClassName={styles.split}>
           <Beat from={0.02} to={0.14}>
             <p className={styles.kicker}>{s.s09.label}</p>
-            <h2 id="private-title" className={styles.h2}>
+            <h2 id="private-title" className={`${styles.h2} ${styles.h2Compact}`}>
               {s.s09.headline}
             </h2>
           </Beat>
           <ul className={styles.points}>
             {s.s09.points.map((point, i) => (
               <li key={point}>
-                <Beat className={styles.point} from={0.2 + i * 0.1} to={0.32 + i * 0.1}>
+                <Beat className={styles.point} from={0.2 + i * 0.12} to={0.34 + i * 0.12}>
                   {point}
                 </Beat>
               </li>
@@ -147,19 +161,55 @@ export function Landing() {
           </ul>
         </PinScene>
 
-        <PinScene vh={2.4} id="price" labelledBy="price-title">
-          <Beat from={0.02} to={0.14}>
-            <p className={styles.kicker}>{s.s10.label}</p>
-            <h2 id="price-title" className={styles.h2}>
-              {s.s10.headline}
-            </h2>
+        <PinScene vh={2.4} id="price" labelledBy="price-title" wrapClassName={styles.priceGrid}>
+          <div className={styles.priceCopy}>
+            <Beat from={0.02} to={0.14}>
+              <p className={styles.kicker}>{s.s10.label}</p>
+              <h2 id="price-title" className={`${styles.h2} ${styles.h2Compact}`}>
+                {s.s10.headline}
+              </h2>
+            </Beat>
+            <SceneText text={s.s10.support} className={`${styles.sub} ${styles.subTight}`} from={0.1} to={0.3} />
+          </div>
+          <div className={styles.priceCards}>
+            <ul className={styles.plans}>
+              {s.s10.plans.map((plan, i) => (
+                <li key={plan.name}>
+                  <Beat className={styles.planCard} from={0.26 + i * 0.12} to={0.4 + i * 0.12}>
+                    <span className={styles.planName}>{plan.name}</span>
+                    <p className={styles.price}>{plan.price}</p>
+                    <p className={styles.per}>{plan.period}</p>
+                    <p className={styles.trial}>{plan.trial}</p>
+                  </Beat>
+                </li>
+              ))}
+            </ul>
+            <Beat from={0.46} to={0.58}>
+              {/* Apple's terms, in the order the research lists them: who gets the trial, what happens after it, who bills and where to cancel. */}
+              {s.s10.terms.map((line) => (
+                <p key={line} className={styles.fine}>
+                  {line}
+                </p>
+              ))}
+            </Beat>
+            <Beat from={0.52} to={0.64}>
+              <p className={styles.includesLabel}>{s.s10.includesLabel}</p>
+              <ul className={styles.includes}>
+                {s.s10.includes.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+              <p className={styles.fine}>{s.s10.free}</p>
+            </Beat>
+          </div>
+          <Beat className={`${styles.pull} ${styles.priceNote}`} from={0.6} to={0.72}>
+            <p className={styles.pullLine}>{s.s10.reassurance}</p>
           </Beat>
-          <SceneText text={s.s10.support} className={styles.sub} from={0.1} to={0.55} />
         </PinScene>
 
         <PinScene vh={2} id="early-access" labelledBy="start-title" innerClassName={styles.closing} exit={false} showOnFocus>
           <Beat from={0.02} to={0.16}>
-            <h2 id="start-title" className={`${styles.h2} ${styles.sheen}`}>
+            <h2 id="start-title" tabIndex={-1} className={`${styles.h2} ${styles.sheen}`}>
               {s.s11.headline}
             </h2>
           </Beat>

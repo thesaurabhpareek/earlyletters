@@ -1,6 +1,7 @@
 /**
  * Owner: E2 (back-end). Where a native form post lands when the address was not saved. `e` is a short reason
- * (invalid, slow, server); anything else reads as server. The words are `site.notify`. Never indexed.
+ * (invalid, slow, server); anything else reads as server. The words are `site.notify`; the title already says it
+ * did not go through, so the bodies here are the ones that do not repeat it. Never indexed.
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: site.notify.sorryTitle, robots: { ind
 export default async function SorryPage({ searchParams }: { searchParams: Promise<{ e?: string }> }) {
   const { e } = await searchParams;
   const n = site.notify;
-  const body = e === 'invalid' ? n.error : e === 'slow' ? n.rateLimited : n.server;
+  const body = e === 'invalid' ? n.sorryInvalid : e === 'slow' ? n.rateLimited : n.sorryServer;
   return (
     <main className={styles.page}>
       <h1 className={styles.line}>{n.sorryTitle}</h1>

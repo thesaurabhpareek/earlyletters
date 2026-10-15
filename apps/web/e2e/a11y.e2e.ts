@@ -96,7 +96,7 @@ test.describe('axe sees the form states too', () => {
 
     await page.getByLabel('Your email').fill(email);
     await page.getByRole('button', { name: 'Keep me informed' }).click();
-    await expect(page.getByText('Thank you, you are on the list')).toBeVisible();
+    await expect(page.getByText('You are on the list')).toBeVisible();
     violations = await runAxe(page, { skipContrast: false });
     expect(violations, describe(violations)).toEqual([]);
   });

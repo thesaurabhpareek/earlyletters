@@ -11,7 +11,7 @@ test.describe('landing (coming soon)', () => {
     // Exactly one h1, the product name. This is the coming-soon page, not the film.
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(site.brand.name);
-    await expect(page.getByText(site.comingSoon.line)).toBeVisible();
+    await expect(page.getByText(site.comingSoon.line, { exact: true })).toBeVisible();
     await expect(page.getByText(site.cta.prelaunch.eyebrow).first()).toBeVisible();
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', site.meta.description);
     // The sign-up exists because the build had the (dummy) Resend credentials.

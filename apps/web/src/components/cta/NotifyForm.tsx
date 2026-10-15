@@ -82,6 +82,10 @@ export function NotifyForm({ quiet = false }: { quiet?: boolean }) {
       <p id={hintId} className={styles.note}>
         {c.note}
       </p>
+      {/* A plain anchor, not next/link: a Link in view would prefetch /privacy, and the home page makes no request a visitor did not ask for. */}
+      <p className={styles.privacy}>
+        <a href={c.privacy.href}>{c.privacy.label}</a>
+      </p>
       <p id={statusId} className={styles.error} role="status" aria-live="polite">
         {message}
       </p>
