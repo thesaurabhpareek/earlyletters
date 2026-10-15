@@ -552,7 +552,7 @@ Two kinds of entry. **Founder** entries record what the founder said in this ses
 
 The founder gave D-100 to D-103 in the PRD V2 session (`docs/prd/v2/_AUTHORING.md` section 3b, M14 to M17). D-104 lists three delivery defaults that are proposed, not decided: they take effect only when the founder confirms them, in this PR or in writing. Counsel and Apple sign-off are never delegated.
 
-Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as D-089 to D-094 (PR #128), but PR #108 had already recorded the release-engineering decisions as D-089 to D-092 and PR #122 the 15 Oct delegated calls as D-093 to D-099, so they are D-100 to D-105 here (old to new: D-089 to D-100, D-090 to D-101, D-091 to D-102, D-092 to D-103, D-093 to D-104, D-094 to D-105). The text is unchanged; only the ids and their cross-references moved. D-106 was added by the coordinator on the same day.
+Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as D-089 to D-094 (PR #128), but PR #108 had already recorded the release-engineering decisions as D-089 to D-092 and PR #122 the 15 Oct delegated calls as D-093 to D-099, so they are D-100 to D-105 here (old to new: D-089 to D-100, D-090 to D-101, D-091 to D-102, D-092 to D-103, D-093 to D-104, D-094 to D-105). The text is unchanged; only the ids and their cross-references moved. D-106 and D-107 were added on the same day.
 
 | ID | Decision | Status | Proceed? | Date |
 |---|---|---|---|---|
@@ -563,6 +563,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-104 | Three delivery defaults: low-risk merges by the coordinator, free backup, voice-only counting | Proposed; awaits founder confirmation | No, until confirmed | 2026-10-14 |
 | D-105 | PRD V2 is the product spec of record once PR #124 merges | Decided (founder, 3 and 13 Oct 2026) | Yes, on merge | 2026-10-14 |
 | D-106 | Alpha in two weeks: option B ships as a TestFlight alpha against staging, target Thu 29 Oct 2026; submission re-planned after the alpha; review delegation widened to app code | Decided (founder, build thread, 15 Oct 2026); the delegation widening is proposed by the coordinator and awaits the founder's confirmation | Yes for the alpha; the delegation waits | 2026-10-15 |
+| D-107 | Merge delegation widened: the coordinator merges app code, docs and tests into `develop` after two independent reviews and green CI; database, auth, payments, release configuration, the engine files and production deploys stay founder merges | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -605,4 +606,17 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 ### D-106 Alpha in two weeks (founder, 15 Oct 2026)
 - **Status:** Decided by the founder in the build thread; the delegation widening is proposed by the coordinator and awaits the founder's one-word confirmation.
 - **Decision:** Option B ships as an alpha: a TestFlight build with server features on against the staging project, for the founder's family and invited friends, target Thu 29 Oct 2026. App Store submission is re-planned after the alpha. Review delegation: app code may be merged by the coordinator after two independent review agents pass it; database, auth, payments, migrations and release configuration stay founder merges, batched daily.
+- **Owner:** founder; coordinator.
+
+### D-107 Merge delegation widened (founder, 15 Oct 2026)
+- **Status:** Decided by the founder, 15 Oct 2026, about 17:00 UTC: "Widen." Confirms the delegation part of D-106 and replaces item 1 of D-104.
+- **Decision:** the coordinator may merge pull requests into `develop` that change app code (`apps/mobile`, `packages/*`, `apps/web` content and components), docs or tests, once two independent review agents pass the pull request and CI is green on its head.
+- **Founder-only merges:**
+  - `supabase/**`: database, migrations, access rules.
+  - Auth.
+  - Payments: billing, StoreKit, `packages/core/src/plan.ts`.
+  - Release configuration: `.github/**`, `apps/mobile/eas.json`, `apps/mobile/app.config.ts`.
+  - The CODEOWNERS-protected engine files: `EditType` and `packages/core/src/types.ts`, `verify.ts`, `meaning.ts`, `pipeline.ts`.
+  - Any production deploy: the website on `main`, the App Store, TestFlight external groups.
+- **Effects:** `docs/agents/COORDINATION.md` section 6 states the rule.
 - **Owner:** founder; coordinator.
