@@ -21,12 +21,12 @@ test('[J04b] a brand new book on Tonight, day 0', async ({ app, record }) => {
   await step('happy', 'Tonight on day 0', 'A new book: the dateline reads "Asha, 0 days", no waiting card, one prompt chosen for a newborn.');
 });
 
-test('[J04c] the usage-sharing ask, in a later session', async ({ app, record }) => {
+test('[J04c] no usage-sharing ask in v1.0, in a later session', async ({ app, record }) => {
   const step = journey(record, 'J04', 'tonight-and-prompts', 4, 'J04-02');
   await seeded(app, 'asha', '/', { keepConsent: true });
-  await expect(btn(app, "Don't share")).toBeVisible();
-  await step('happy', 'A later session: "Help us make it better?"', 'Never in the first session. On a later session with at least one letter, a calm sheet asks once whether to share which screens are opened and when something crashes, never any words, recordings or names. "Don\'t share" and "Share usage" are equal; closing it without choosing asks at most once more. (Shown on a tab screen only, 1.2 seconds after it opens.)');
-  await btn(app, "Don't share").click();
-  await expect(btn(app, "Don't share")).toBeHidden();
-  await step('happy', 'Declined: nothing else changes', 'Saying no ends the asking for good and changes nothing else; it can be changed in Settings, Privacy.');
+  await expect(app.getByText('A THOUGHT TO START WITH')).toBeVisible();
+  // The ask used to appear 1.2 s after a tab screen opened; wait well past that.
+  await app.waitForTimeout(3000);
+  await expect(btn(app, "Don't share")).toHaveCount(0);
+  await step('happy', 'A later session: no usage-sharing ask', 'v1.0 collects no data (D-088, "Data Not Collected"), so the "Help us make it better?" sheet never appears and Settings, Privacy has no usage switch. Analytics returns with consent in v1.1.');
 });
