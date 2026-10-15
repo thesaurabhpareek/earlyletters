@@ -103,6 +103,16 @@ const age = (u, interval) => sys(`update children set created_at = now() - $2::i
   const want = (await sys(`select encode(sha256(convert_to($1 || $2, 'UTF8')), 'hex') h`, [N, TEST_CONSENT_PEPPER])).rows[0].h;
   check('[G-12] acceptances are hashed with id || pepper (unchanged formula)', rows.length > 0 && rows.every((r) => r.h === want));
   check('consent_pepper_ready() is service only', (await codeOf(() => as(A, `select public.consent_pepper_ready()`))) === '42501');
+
+  // The alert path: the SLA report names the missing pepper while an account deletion waits.
+  const missing = async () => (await sys(`select (public.ops_deletion_sla(now()) ->> 'consent_pepper_missing')::int n`)).rows[0].n;
+  await setPepper('');
+  check('[G-12] no deletion waiting: no pepper alert', (await missing()) === 0);
+  await as(S, `select public.request_account_deletion('ios')`);
+  check('[G-12] a deletion waiting and no pepper: consent_pepper_missing is 1 (worker alert pepper_missing)', (await missing()) === 1);
+  await setPepper(TEST_CONSENT_PEPPER);
+  check('[G-12] with the pepper set the alert clears', (await missing()) === 0);
+  await as(S, `select public.cancel_account_deletion()`);
 }
 
 // ── G-13: peek_invite ────────────────────────────────────────────────────

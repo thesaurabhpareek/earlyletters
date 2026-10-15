@@ -1,7 +1,7 @@
 -- BL-331 with BL-332: membership and sync hardening, server rate limits (R-17 gate, D-089).
 --
 -- PENDING: not yet applied. Apply after 20261005000000_family_cap_language_idempotency.sql,
--- following supabase/APPLY.md (section "File 20261015000000"). Never edits an earlier
+-- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an earlier
 -- file; functions are redefined with CREATE OR REPLACE from their newest version
 -- (sync_pull and sync_push from 20261005000000, sync_books from 20261004100000,
 -- create_child and create_first_run_children from 20261004000000, delete_entry and
@@ -67,6 +67,19 @@
 -- New SQLSTATEs: none.
 -- Reused: SCRAT, SCINV, SCCAP, SCPAR, SCCON, SCANO, P0002, 22023, 42501.
 
+-- Run once. A second run would succeed and quietly put back this file's
+-- sync_pull and sync_push over the ones 20261015030000 makes, so it stops here
+-- instead (supabase db push never re-runs a recorded file; this guards the
+-- manual SQL Editor path in APPLY.md).
+do $$
+begin
+  if exists (select 1 from pg_attribute
+              where attrelid = 'public.entries'::regclass and attname = 'left_parents_xid' and not attisdropped) then
+    raise exception '20261015000000 is already applied; do not run it again' using errcode = '55000';
+  end if;
+end;
+$$;
+
 -- ─── 0. Rate buckets (G-11) ──────────────────────────────────────────────
 alter table public.sync_rate_windows drop constraint if exists sync_rate_windows_bucket_check;
 alter table public.sync_rate_windows add constraint sync_rate_windows_bucket_check
@@ -115,7 +128,11 @@ grant select (id, name, nickname, created_by, created_at, updated_at, deleted_at
 -- as a direct update by the caller: unknown field 22023, not a member P0002,
 -- consent SCCON (children_consent_gate), not a parent SCPAR (children_guard).
 -- Runs as the owner so it can compare the date columns; the triggers' client
--- checks are therefore made here explicitly.
+-- checks are therefore made here explicitly. One difference from the old
+-- in-place merge, on purpose: consent and the parent check now apply even when
+-- nothing would change (before, a no-op updated no row, so no trigger ran). A
+-- contributor's no-op book.update is now SCPAR instead of ok; it changes nothing
+-- either way, and the app never sends book.update for a contributor.
 create or replace function public.book_update(p_child uuid, p_data jsonb)
 returns void language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
