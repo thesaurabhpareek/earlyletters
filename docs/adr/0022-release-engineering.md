@@ -4,7 +4,7 @@
 - **Deciders:** founder.
 - **Builds on:** the TestFlight lane (PR #100: `docs/release/TESTFLIGHT.md`, `.github/workflows/testflight.yml`), D-041, D-060, D-065, D-066, D-068, D-083 (US storefront only), the on-device v1.0 (PR #54).
 - **Amends:** `docs/agents/COORDINATION.md` section 6 (what a release tag means); FT-44 in `docs/FOUNDER_TASKS.md` (tag the release candidate, not the final version, before submission); TDD 07 10.1 (`rc/*` branches become `release/*` branches plus RC tags).
-- **Runbook:** `docs/ops/RELEASE.md` (the release train; arrives with wave `auto/2026-10-13-integration`, amended for D-089 by branch `docs/release-train-d089`). **v1.0 record and readiness:** `docs/release/1.0.0.md`.
+- **Runbook:** `docs/ops/RELEASE.md` (qa-e2e's release train, ported from Line B and amended for D-089 in #111). **v1.0 record and readiness:** `docs/release/1.0.0.md`.
 
 ## Context
 
