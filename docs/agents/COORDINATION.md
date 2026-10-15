@@ -49,7 +49,7 @@ Never copy a constant, type, colour or string into a second place. Import it.
 ## 6. Releases: one train, no surprise publishes
 - **Agents never commit, push, deploy, publish packs or config, apply migrations, change DNS or send email to real people.**
 - **Integration happens per wave.** Agents finish and the coordinator runs all checks (`npm test`, `npm run test:db`, mobile `tsc`, the Deno tests). Green means a commit on the wave branch `auto/<date>-<topic>`, then a merge to `develop`, then push.
-- **`main`** changes only through a release PR from `develop`, approved by the founder. Tags are `ios-v<x.y.z>`. EAS builds come only from tagged commits.
+- **`main`** changes only through a release PR from `develop`, approved by the founder. Store builds come only from tagged commits: `ios-v<x.y.z>-rc.<n>` on a `release/*` branch builds a candidate; `ios-v<x.y.z>` marks the candidate that was released. Preview-lane TestFlight builds come from `develop` (`docs/release/TESTFLIGHT.md`). Details: ADR 0022, `docs/ops/RELEASE.md`.
 - **Live migrations:** the founder applies them in the order given in `supabase/APPLY.md`. Every applied file is added to `.github/migrations-applied.txt`. Applied migrations are never edited.
 - **Packs, remote config, content:** signed and published only via `scripts/packs/publish.ts` by the coordinator, with the founder's OK. Git history is the audit log.
 - **Website (other thread):** serves `docs/ops/well-known/*` and the legal pages at the URLs in `packages/brand`. Changes to those URLs or files are coordinated on the board first.
