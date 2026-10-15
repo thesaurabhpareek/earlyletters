@@ -33,7 +33,7 @@ One job, `journey`, not part of `required`. Suggested triggers: `workflow_dispat
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get install -y --no-install-recommends imagemagick python3-markdown
-          echo "PLAYWRIGHT_CHROMIUM_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")" >> "$GITHUB_ENV"
+          echo "PLAYWRIGHT_CHROMIUM_PATH=$(node -e "console.log(require('@playwright/test').chromium.executablePath())")" >> "$GITHUB_ENV"
       - name: Flows, steps and screenshots
         run: npm run e2e:web:journey -w @scribe/mobile
       - name: INDEX.md and the PDF
@@ -57,7 +57,7 @@ One job, `journey`, not part of `required`. Suggested triggers: `workflow_dispat
 
 Notes for the CI owner:
 
-- `playwright` is already a dependency of `@scribe/mobile` (it runs the flows), so `npx playwright install` picks the matching browser build. `--with-deps` installs the system libraries Chromium needs on the runner.
+- `@playwright/test` is already a dependency of `@scribe/mobile` (it runs the flows) and ships the `playwright` CLI, so `npx playwright install` picks the matching browser build. `--with-deps` installs the system libraries Chromium needs on the runner.
 - The `git diff --exit-code` step turns a stale `INDEX.md` or `steps/` into a red run rather than a silent drift: a PR that changes a screen must commit the regenerated steps and index (small text), nothing else.
 - `if: always()` on the upload keeps the Playwright HTML report (`.results/report`) when a flow fails; `if-no-files-found: error` catches a packing failure.
 - Retention: 30 days covers a review wave. The nightly run gives a fresh record every day; a release should download the run's zip and attach it to the release notes if the record is wanted for longer.
