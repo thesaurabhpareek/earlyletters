@@ -2,7 +2,7 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever.
 
-Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were re-checked against `develop` at `0c71ea9` (after #4 and #39 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
+Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were re-checked against `develop` at `56ec5b5` (after #4, #39 and #130 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
 
 ## Current focus
 - Chapters 03 (DB-R01..R25) and 04 (DQ-R01..R21) drafted 2026-10-03. Most enforcement waits on PR #32, #26 and WS-19 (#31 merged 4 Oct).
@@ -27,8 +27,8 @@ Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were r
 
 ## Decisions and constraints I must respect
 - D-041: migrations only from CI on a tag; `approve-migration` label is founder-only.
-- (15 Oct) D-023 (sync engine: outbox push plus cursor pull on Supabase) is decided (founder, 3 Oct; `docs/DECISIONS.md`), and `20261004100000_sync_engine.sql` is on `develop`, pending. D-024 `book_access` is approved but not built.
-- (15 Oct) Brief decision 3: server entitlement tables were dropped by `20261004000000_plus_on_device_only.sql` (D-053), on `develop`, pending.
+- (15 Oct) D-023 (sync engine: outbox push plus cursor pull) is decided by the founder (`docs/DECISIONS.md`, "D-023 (update)"); `20261004100000_sync_engine.sql` is pending, not applied. D-024 `book_access` is approved but not built.
+- (15 Oct) Brief decision 3 and D-053: server entitlement tables are removed by `20261004000000_plus_on_device_only.sql` (pending, not applied).
 - Fixtures use the Asha family only.
 
 ## Open threads

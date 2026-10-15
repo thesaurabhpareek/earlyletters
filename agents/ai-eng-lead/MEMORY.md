@@ -2,7 +2,7 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever. Keep it under 60 lines.
 
-Seeded on 3 Oct 2026 during the compendium drafting run. Lines marked (15 Oct) were re-checked against `develop` at `0c71ea9` (after #4 and #39 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
+Seeded on 3 Oct 2026 during the compendium drafting run. Lines marked (15 Oct) were re-checked against `develop` at `56ec5b5` (after #4, #39 and #130 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
 
 ## Current focus
 - Close the gaps in chapter 09: AIE-G7 (red-team marker trust) and AIE-G2 (no `AGENTS.md`) first; then AIE-G4 (`Done when:` on agent tasks).
@@ -19,7 +19,7 @@ Seeded on 3 Oct 2026 during the compendium drafting run. Lines marked (15 Oct) w
 - `check.mjs` warns at 150 memory lines (limit is 120) and 200 description chars; it requires charter `model: inherit`.
 - (15 Oct) `docs/agents/CHARTER_TEMPLATE.md` uses `model: inherit`, matching `check.mjs` (fixed in #4).
 - No root `AGENTS.md`; `apps/mobile/AGENTS.expo.md` exists (Expo template leftover, MOB-13). OpenCode reads `AGENTS.md` before `CLAUDE.md` and uses only the first it finds.
-- Fuzz test: `packages/core/test/verify.fuzz.test.ts`, seed 20261003, 10,000 runs by default (seed at line 39 on 15 Oct). On develop.
+- Fuzz test: `packages/core/test/verify.fuzz.test.ts`, seed 20261003, (15 Oct) 10,000 runs by default (`SEED` and `RUNS`, lines 39-40). On develop.
 - (15 Oct) Backlog: 232 tasks on `develop`, 65 `Done when:` lines, most in the M-JR block (BL-370 to BL-434, #86).
 - Always-loaded words for `mobile`: about 4,200 (`wc -w` of CLAUDE.md, OPERATING_MODEL, BRIEF, charter, memory).
 - (15 Oct) Roster: 24 agents with the five stewards from #42 (19 before); red-team on `openrouter/z-ai/glm-5.2`, everyone else on the DeepSeek default.

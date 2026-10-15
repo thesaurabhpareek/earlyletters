@@ -62,7 +62,7 @@ This chapter covers everything around identity that keeps a family's letters saf
 
 ### Device, transport and links
 
-**SEC-R15 (MUST)** The app declares the iOS default data-protection entitlement `NSFileProtectionCompleteUntilFirstUserAuthentication` explicitly, and files holding letters or audio never use a weaker class (LEGAL-REQ-022(b), PSEC-05). *Why:* explicit beats relying on Apple's Class C default staying put. *Enforced by:* pending PR #27 (`app.config.ts` constant plus `apps/mobile/test/config.test.ts`).
+**SEC-R15 (MUST)** The app declares the iOS default data-protection entitlement `NSFileProtectionCompleteUntilFirstUserAuthentication` explicitly, and files holding letters or audio never use a weaker class (LEGAL-REQ-022(b), PSEC-05). *Why:* explicit beats relying on Apple's Class C default staying put. *Enforced by:* on develop since #27 (`app.config.ts` constant plus `apps/mobile/test/config.test.ts`).
 
 **SEC-R16 (MUST NOT)** Add an App Transport Security exception or a cleartext permission (LEGAL-REQ-021). *Enforced by:* `review`; not yet: a config test asserting no `NSAppTransportSecurity` key (none exists in `app.config.ts` today).
 
