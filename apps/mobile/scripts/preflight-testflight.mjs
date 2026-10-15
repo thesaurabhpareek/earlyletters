@@ -218,6 +218,16 @@ try {
       'packages/api/src/keys.ts has no trusted signing key (TRUSTED_SIGNING_KEYS is empty; FT-16 `node scripts/packs/keygen.ts`). Even with a host set, the app fails closed: it installs no signed pack, so the speech model still cannot download. A speech-to-words test needs BOTH the host and the key in the build.',
     );
   } else pass('a pack signing key is present in packages/api/src/keys.ts');
+  // A host and a key are not enough: the signed manifest must have been published (scripts/packs/publish.ts) and uploaded.
+  let manifestPublished = false;
+  try {
+    manifestPublished = !/PACK_MANIFEST\s*:\s*string\s*\|\s*null\s*=\s*null\s*;/.test(read(join(REPO, 'supabase/functions/config/published.ts')));
+  } catch {
+    /* treated as not published */
+  }
+  if (!manifestPublished)
+    warn('No signed pack manifest has been published yet (supabase/functions/config/published.ts PACK_MANIFEST is null). Run `npx tsx scripts/packs/publish.ts all` and the upload commands it prints, or the host answers 404 and nothing downloads.');
+  else unverified('A signed pack manifest is in the repo. This script does not go online: open <docs base>/functions/v1/config/v1/packs in a browser and check it returns the same JSON before building.');
 }
 
 // ---------------------------------------------------------------- 6. no real family data (CLAUDE.md privacy rule)

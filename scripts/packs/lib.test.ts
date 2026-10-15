@@ -11,6 +11,7 @@ import {
   sha256Hex,
   verifySignedDocument,
   type TrustedKey,
+  ENDPOINTS,
 } from '../../packages/api/src/index';
 import { ENGLISH_PACK } from '../../packages/core/src/lang/index';
 import { PROMPTS } from '../../packages/content/src/prompts';
@@ -29,6 +30,9 @@ import {
   readSigningKey,
   sign,
   uploadCommands,
+  documentObjects,
+  documentUploadCommands,
+  DOCUMENT_CACHE,
 } from './lib';
 
 const key = generateSigningKey();
@@ -137,5 +141,24 @@ describe('published modules', () => {
     expect(cmd).toContain('public, max-age=31536000, immutable');
     const big = uploadCommands([{ ...es, bytes: new Uint8Array(1) , entry: es.entry, objectKey: 'speech/x.bin' }].map((f) => ({ ...f, bytes: { length: 600_000_000 } as Uint8Array })), 'b');
     expect(big[0]).toMatch(/^rclone copyto/);
+  });
+});
+
+describe('signed documents on the pack host (D-097)', () => {
+  it('puts each document at the exact path the app requests, without the query string', () => {
+    const objs = documentObjects({ remoteConfig: 'RC', packManifest: 'PM', contentEn: 'CB' });
+    expect(objs.map((o) => `/${o.objectKey}`)).toEqual([ENDPOINTS.remoteConfig.path, ENDPOINTS.packManifest.path, ENDPOINTS.contentBundle.path]);
+    expect(objs.map((o) => o.text)).toEqual(['RC', 'PM', 'CB']);
+    for (const o of objs) expect(o.objectKey).not.toMatch(/^\/|\?/);
+  });
+  it('skips documents that have never been published', () => {
+    expect(documentObjects({ remoteConfig: null, packManifest: 'PM', contentEn: null }).map((o) => o.objectKey)).toEqual(['functions/v1/config/v1/packs']);
+  });
+  it('uploads documents as JSON that is revalidated every time, never as immutable', () => {
+    const [cmd] = documentUploadCommands(documentObjects({ remoteConfig: null, packManifest: 'PM', contentEn: null }), 'early-letters-packs');
+    expect(cmd).toContain('early-letters-packs/functions/v1/config/v1/packs');
+    expect(cmd).toContain('--content-type application/json');
+    expect(cmd).toContain(`--cache-control "${DOCUMENT_CACHE}"`);
+    expect(cmd).not.toContain('immutable');
   });
 });
