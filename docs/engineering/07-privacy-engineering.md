@@ -36,7 +36,7 @@ Levels and classes: `docs/legal/DATA_CLASSIFICATION.md` (L1 to L4) and `docs/leg
 
 **PRIV-R03 (MUST)** Use data only for the purpose recorded for it in the data map. A new use of existing data (for example, using `occurred_on` for a marketing email) is a new purpose: it needs a data-map change, a check against the published policy, and counsel review if the policy does not already cover it. *Why:* purpose limitation; privacy policy section 5 lists the purposes we promised. *Enforced by:* review (compliance-engineer).
 
-**PRIV-R04 (SHOULD)** Prefer a coarse, irreversible reduction over the raw value when a feature or metric only needs the reduction (a boolean, a bucket, an ordinal). *Why:* DATA_CLASSIFICATION 1.1 rule 2. Example: `child_added.mode` sends `due_date` today (`packages/analytics/src/catalog.ts:258`); PPRIV-02 replaces it with `has_date`, pending PR #31.
+**PRIV-R04 (SHOULD)** Prefer a coarse, irreversible reduction over the raw value when a feature or metric only needs the reduction (a boolean, a bucket, an ordinal). *Why:* DATA_CLASSIFICATION 1.1 rule 2. Example: `child_added.mode` used to send `due_date`; PPRIV-02 replaced it with `has_date` (PR #31, merged 4 Oct; `packages/analytics/src/catalog.ts`).
 
 ### Consent and privacy by default
 
@@ -54,7 +54,7 @@ Levels and classes: `docs/legal/DATA_CLASSIFICATION.md` (L1 to L4) and `docs/leg
 
 **PRIV-R10 (MUST NOT)** Put L4 data (letter text, transcript, audio, photo, child name, nickname, birthday, due date, signature, dictionary term, search query, token) in any of: analytics, logs at any level, crash reports and breadcrumbs, push payloads, URL paths or query strings, email subject lines, support prefill, `audit_events.detail`, deletion receipts. *Why:* CLAUDE.md privacy rules; LEGAL-REQ-014; DATA-REQ-002, DATA-REQ-004. *Enforced by:* the canary test in `packages/analytics/test/analytics.test.ts:219` (Asha fixtures, enforced); `audit_events.detail` 512-byte object check and `deletion_requests.receipt` 2048-byte check (enforced in migration); log canary scan `not yet: PDATA-06`; `console` ban `not yet: MONO-01` (WS-12).
 
-**PRIV-R11 (MUST)** Analytics events and properties come only from the typed catalogue in `packages/analytics/src/catalog.ts`; an unknown property, a string over 40 characters, or a missing or invalid required property drops the event. *Why:* LEGAL-REQ-017, ADR 0008. *Enforced by:* `packages/analytics/src/validate.ts` (`MAX_STRING_LENGTH = 40`, enforced); fail-closed on required properties `pending PR #31` (PDATA-03).
+**PRIV-R11 (MUST)** Analytics events and properties come only from the typed catalogue in `packages/analytics/src/catalog.ts`; an unknown property, a string over 40 characters, or a missing or invalid required property drops the event. *Why:* LEGAL-REQ-017, ADR 0008. *Enforced by:* `packages/analytics/src/validate.ts` (`MAX_STRING_LENGTH = 40`, enforced); fail-closed on required properties merged in #31 (PDATA-03).
 
 ### Vendors, SDKs and on-device processing
 
@@ -72,7 +72,7 @@ Levels and classes: `docs/legal/DATA_CLASSIFICATION.md` (L1 to L4) and `docs/leg
 
 **PRIV-R17 (MUST)** Every public privacy, security or AI claim (app copy, website, store listing, emails, legal pages) has a row in the claims register (`docs/legal/CLAIMS.md`, WS-19) naming the code path and test that make it true, and its status. A claim without a passing proof is rewritten or removed before release. *Why:* PPRIV-04, LEGAL-REQ-044. *Enforced by:* `not yet: PPRIV-04` (content test for absolute claims, WS-10; `CLAIMS.md`, WS-19). Known case: `settings.backup.honestNote` in `packages/content/src/strings.en.ts:532` ("only on this phone") is inaccurate per D-033.
 
-**PRIV-R18 (MUST)** App Store privacy answers and `PrivacyInfo.xcprivacy` match the data map for every release build, and the evidence is stored per version. *Why:* LEGAL-REQ-042, LEGAL-REQ-043. *Enforced by:* manifest skeleton in `apps/mobile/app.config.ts` `pending PR #27`; render-and-compare script `not yet: LEGAL-REQ-042`; manual checklist in `app-store-privacy-labels.md` section 5.
+**PRIV-R18 (MUST)** App Store privacy answers and `PrivacyInfo.xcprivacy` match the data map for every release build, and the evidence is stored per version. *Why:* LEGAL-REQ-042, LEGAL-REQ-043. *Enforced by:* manifest skeleton in `apps/mobile/app.config.ts` merged in #27; render-and-compare script `not yet: LEGAL-REQ-042`; manual checklist in `app-store-privacy-labels.md` section 5.
 
 ### Children's data
 
@@ -100,7 +100,7 @@ log.info('entry_saved', { entry_id: e.id, kind: e.kind, words_bucket: bucket(e.w
 log.info(`saved "${e.final_text}" for ${child.name}`);
 ```
 
-**Reviewing an analytics change.** Every property is L2 and in the catalogue; no internal id other than the random analytics id; strings are enums; `SCHEMA_VERSION` bumped (pending PR #31).
+**Reviewing an analytics change.** Every property is L2 and in the catalogue; no internal id other than the random analytics id; strings are enums; `SCHEMA_VERSION` bumped (merged in #31).
 
 **Before adding a dependency.** Run the vendor checklist in `docs/legal/subprocessors.md` section 5, then BRIEF coordination rules on licences.
 

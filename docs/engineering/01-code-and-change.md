@@ -34,7 +34,7 @@ Early Letters is built mostly by agents, many on open-weight models with small c
 
 **CODE-R04 (MUST)** Every behaviour change ships with a test that fails without it; every bug fix starts with a failing test that reproduces the bug. *Why:* proves the fix and stops regressions. *Enforced by:* review; CI `required` job runs `npm test`, `npm run test:db` and typecheck (`.github/workflows/ci.yml`, enforced on develop).
 
-**CODE-R05 (MUST)** Any change to cleaning behaviour bumps `ENGINE_VERSION` in `packages/core/src/pipeline.ts` with a dated comment and updates the golden corpus. *Why:* every stored letter must be re-derivable by the engine that produced it (CORE-08). *Enforced by:* PR template checkbox (develop); golden test `packages/core/test/golden.test.ts` pending PR #28.
+**CODE-R05 (MUST)** Any change to cleaning behaviour bumps `ENGINE_VERSION` in `packages/core/src/pipeline.ts` with a dated comment and updates the golden corpus. *Why:* every stored letter must be re-derivable by the engine that produced it (CORE-08). *Enforced by:* PR template checkbox (develop); golden test `packages/core/test/golden.test.ts` merged in #28.
 
 ### Code shape
 
@@ -56,7 +56,7 @@ Early Letters is built mostly by agents, many on open-weight models with small c
 
 ### One source of truth
 
-**CODE-R13 (MUST)** Domain types and enums (`EntryKind`, `CaptureMode`, `EditLevel`, `MemberRole`, `PlanState` and the rest) are defined once in `packages/core/src/domain.ts` and imported everywhere; app, analytics and SQL never redeclare them. *Why:* hand copies drifted (`CAPTURE_MODE` lacked `mixed`, CORE-05). *Enforced by:* pending PR #31 (`domain.ts` plus `packages/analytics/test/domain.test.ts`, which parses migration CHECK constraints). Note: PR #29 `apps/mobile/src/lib/db/repos/types.ts` still declares local unions and must re-export from core once #31 merges.
+**CODE-R13 (MUST)** Domain types and enums (`EntryKind`, `CaptureMode`, `EditLevel`, `MemberRole`, `PlanState` and the rest) are defined once in `packages/core/src/domain.ts` and imported everywhere; app, analytics and SQL never redeclare them. *Why:* hand copies drifted (`CAPTURE_MODE` lacked `mixed`, CORE-05). *Enforced by:* on develop since #31 (`domain.ts` plus `packages/analytics/test/domain.test.ts`, which parses migration CHECK constraints). Note: PR #29 `apps/mobile/src/lib/db/repos/types.ts` still declares local unions and must re-export from core once #31 merges.
 
 **CODE-R14 (MUST)** A business rule has one implementation: Plus gating uses `decide()` in `packages/core/src/plan.ts`. *Why:* three copies (core, mobile `hasPlus`, SQL) diverged (CORE-06). *Enforced by:* PR template checkbox; review.
 
