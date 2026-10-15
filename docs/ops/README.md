@@ -83,4 +83,4 @@ Deno comes from npm (`npx -y deno@2.9.6`, about 40 MB on first run); no global i
 | pg_cron plus pg_net plus Vault pattern | Verified (Supabase "Scheduling Edge Functions"); `timeout_milliseconds` parameter name is an Assumption from pg_net docs |
 | `EdgeRuntime.waitUntil` keeps work running after the 202 | Assumption (Supabase background tasks); if absent the handler simply waits for the run |
 | Edge Function wall clock 150 s (Free) or 400 s (paid) | Assumption (TDD 02); the worker stops starting work at 110 s |
-| R2 custom domains need the zone on Cloudflare | Verified (Cloudflare R2 docs); matters for packs.earlyletters.com (DOMAINS.md) |
+| R2 custom domains need the zone on Cloudflare | Verified (Cloudflare R2 docs); matters for packs.earlyletters.app (D-097; DOMAINS.md section 6) |

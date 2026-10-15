@@ -2,7 +2,7 @@
  * Builds and signs packs and public documents (ADR 0016). Never uploads.
  *
  *   export EL_SIGNING_KEY=...  EL_SIGNING_KEY_ID=...     # from your password manager, never committed
- *   npx tsx scripts/packs/publish.ts packs   [--base-url https://packs.earlyletters.com] [--min-app 1.0.0]
+ *   npx tsx scripts/packs/publish.ts packs   [--base-url https://packs.earlyletters.app] [--min-app 1.0.0]
  *   npx tsx scripts/packs/publish.ts config  [--kill sync] [--unkill sync]
  *   npx tsx scripts/packs/publish.ts content
  *   npx tsx scripts/packs/publish.ts all
@@ -82,7 +82,7 @@ const steps: string[] = [];
 const out = (s: string) => process.stdout.write(`${s}\n`);
 
 if (what === 'packs' || what === 'all') {
-  const baseUrl = arg('base-url') ?? 'https://packs.earlyletters.com';
+  const baseUrl = arg('base-url') ?? 'https://packs.earlyletters.app' // D-097;
   const minAppVersion = arg('min-app') ?? '1.0.0';
   const built: BuiltFile[] = [];
   const sources = existsSync(TEXT_RULES_DIR) ? readdirSync(TEXT_RULES_DIR).filter((f) => /^[a-z]{2}\.json$/.test(f) && f !== 'en.json') : [];

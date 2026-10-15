@@ -259,6 +259,7 @@ if (SKIP_PREBUILD) {
         entitlements: read2(`${appDir}.entitlements`) ?? '',
         privacy: read2('PrivacyInfo.xcprivacy'),
         podfile: existsSync(join(iosDir, 'Podfile')),
+        podProps: existsSync(join(iosDir, 'Podfile.properties.json')) ? read(join(iosDir, 'Podfile.properties.json')) : '',
         pbxproj: readdirSync(iosDir).filter((d) => d.endsWith('.xcodeproj')).map((d) => read(join(iosDir, d, 'project.pbxproj'))).join('\n'),
       };
     }
@@ -281,6 +282,15 @@ if (ios) {
   check(!modes, 'generated Info.plist has no UIBackgroundModes', `Generated Info.plist declares background modes (${modes?.replace(/\s+/g, ' ').trim()}); LEGAL-REQ-011 says none.`);
   check(plistValue(ios.plist, 'ITSAppUsesNonExemptEncryption') === 'false', 'generated Info.plist: ITSAppUsesNonExemptEncryption = false', 'Generated Info.plist lacks ITSAppUsesNonExemptEncryption=false.');
   check(ios.privacy !== null && /NSPrivacyTracking<\/key>\s*<false\/>/.test(ios.privacy), 'generated PrivacyInfo.xcprivacy present, tracking false', 'Generated native project has no PrivacyInfo.xcprivacy, or tracking is not false.');
+  {
+    let target = null;
+    try {
+      target = JSON.parse(ios.podProps || '{}')['ios.deploymentTarget'] ?? null;
+    } catch {
+      target = null;
+    }
+    check(target === '17.0', 'generated Podfile.properties.json sets ios.deploymentTarget 17.0 (D-098)', `Generated native project has ios.deploymentTarget ${JSON.stringify(target)}; D-098 needs 17.0 (expo-build-properties in app.config.ts).`);
+  }
   check(new RegExp(`<string>${cfg?.scheme ?? 'scribe'}</string>`).test(ios.plist), `generated Info.plist registers the "${cfg?.scheme}" URL scheme`, `Generated Info.plist does not register the "${cfg?.scheme}" URL scheme.`);
   const ent = plistKeys(ios.entitlements);
   check(ent.includes('com.apple.developer.default-data-protection'), 'generated entitlements: data protection (complete until first unlock)', 'Generated entitlements lack the data-protection class.');

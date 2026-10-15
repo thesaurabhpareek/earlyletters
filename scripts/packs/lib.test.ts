@@ -35,7 +35,7 @@ const key = generateSigningKey();
 const trusted: TrustedKey[] = [{ keyId: 'el-test', publicKey: key.publicKey, kinds: ['pack-manifest', 'remote-config', 'content-bundle'] }];
 const env = { EL_SIGNING_KEY: key.secretKey, EL_SIGNING_KEY_ID: 'el-test' };
 const spanishSource = JSON.stringify({ ...structuredClone(ENGLISH_PACK), language: 'es', name: { english: 'Spanish', native: 'Español' }, version: '1.2.3' }, null, 2);
-const opts = { baseUrl: 'https://packs.earlyletters.com/', minAppVersion: '1.0.0' };
+const opts = { baseUrl: 'https://packs.earlyletters.app/', minAppVersion: '1.0.0' };
 
 describe('signing key', () => {
   it('reads a trusted key from the environment', () => {
@@ -59,7 +59,7 @@ describe('text-rules packs', () => {
     const a = buildTextRulesPack('es', spanishSource, opts);
     const b = buildTextRulesPack('es', JSON.stringify(JSON.parse(spanishSource)), opts);
     expect(a.entry).toMatchObject({ id: 'text-rules.es', kind: 'text-rules', language: 'es', version: 1_002_003, fileName: 'es.rules.json', required: true });
-    expect(a.entry.url).toBe('https://packs.earlyletters.com/text-rules.es/1002003/es.rules.json');
+    expect(a.entry.url).toBe('https://packs.earlyletters.app/text-rules.es/1002003/es.rules.json');
     expect(a.entry.sha256).toBe(sha256Hex(a.bytes));
     expect(a.entry.sha256).toBe(b.entry.sha256);
     expect(a.bytes.length).toBeLessThan(spanishSource.length);
