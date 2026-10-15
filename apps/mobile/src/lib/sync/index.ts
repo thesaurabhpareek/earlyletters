@@ -9,7 +9,14 @@
  *   syncNow()              pull to refresh (also checks the digest of every book)
  *   getSyncStatus(), subscribeSyncStatus(fn)
  *                          phase (idle, syncing, offline, paused_consent, auth,
- *                          account_mismatch), pending ops, unseen refused ops
+ *                          account_mismatch, paused_server), pending ops, unseen
+ *                          refused ops, letters with a word conflict
+ *
+ * The kill path (D-100): with EXPO_PUBLIC_SERVER_FEATURES off, startSync()
+ * returns before wiring anything, so no listener, engine, client or request
+ * exists, and the remote kill-switch source is never read
+ * (test/sync-switch-off.test.ts). With it on, `killSwitches.sync` in the signed
+ * remote config stops every push and pull within one cycle; the outbox keeps.
  *
  * The engine itself (engine.ts) is pure and tested in Node against PGlite.
  */
@@ -27,7 +34,7 @@ import { serverFeaturesEnabled } from '../capabilities';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { getSupabaseOrNull } from '../supabase/client';
 import { createSyncEngine, type SyncEngine } from './engine';
-import { SYNC_SETTING, pendingCount, readSetting, rejectedUnseenCount } from './outbox';
+import { SYNC_SETTING, conflictCount, pendingCount, readSetting, rejectedUnseenCount } from './outbox';
 import { AccountMismatchError, takeOwnership } from './ownership';
 import { onOutboxChange } from './signal';
 import type { RpcResult, SupabaseLike, SyncReport, SyncStatus } from './types';
@@ -49,15 +56,40 @@ const statusListeners = new Set<(s: SyncStatus) => void>();
 const drainedListeners = new Set<() => void>();
 let engineUnsubs: (() => void)[] = [];
 
+/** A status count that never throws (a store that cannot open reads as nothing waiting). */
+function countOr0(read: () => number): number {
+  try {
+    return read();
+  } catch {
+    return 0;
+  }
+}
+
 function idleStatus(): SyncStatus {
   const db = localSqlDb();
   return {
     phase: mismatchUser ? 'account_mismatch' : 'idle',
-    pending: pendingCount(db),
-    rejected: rejectedUnseenCount(db),
+    pending: countOr0(() => pendingCount(db)),
+    rejected: countOr0(() => rejectedUnseenCount(db)),
+    conflicts: countOr0(() => conflictCount(db)),
     lastSyncedAt: readSetting(db, SYNC_SETTING.lastSyncedAt),
     consent: readSetting(db, SYNC_SETTING.pausedFor),
   };
+}
+
+/**
+ * `killSwitches.sync` from the signed remote config (ADR 0016; F16-REQ-018). Loaded
+ * on first use, from inside a running engine only, so a build with the switch off
+ * never evaluates the remote module for sync. Unreadable reads as not killed: the
+ * remote client serves its cached or bundled copy, never an error.
+ */
+function syncKilled(): boolean {
+  try {
+    const remote = require('../remote') as typeof import('../remote');
+    return remote.getRemoteConfig().killSwitches.sync === true;
+  } catch {
+    return false;
+  }
 }
 
 export function getSyncStatus(): SyncStatus {
@@ -113,6 +145,7 @@ function ensureEngine(): void {
     newId: () => uuidv7(),
     onChange: notifyStoreChanged,
     isActive: () => AppState.currentState === 'active',
+    paused: syncKilled,
   });
   engine = e;
   engineUnsubs.push(e.subscribe((s) => statusListeners.forEach((l) => l(s))));

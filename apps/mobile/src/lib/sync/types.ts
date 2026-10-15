@@ -1,11 +1,15 @@
 /**
  * Sync wire types and the injected server surface (DECISIONS D-023; SQL in
- * supabase/migrations/20261004100000_sync_engine.sql, which documents every
- * field). Pure TypeScript: no React Native, no supabase-js import, so the
- * engine runs in Node tests against a fake or against PGlite.
+ * supabase/migrations/20261004100000_sync_engine.sql and 20261005000000, which
+ * document every field; protocol v1 in docs/adr/0023-sync-protocol-v1.md).
+ * Pure TypeScript: no React Native, no supabase-js import, so the engine runs
+ * in Node tests against a fake or against PGlite.
  *
- * These are the contracts to move into packages/api (decision 17); until the
- * platform agent adds them there, this file is their only definition.
+ * These are the contracts to move into packages/api (decision 17; S07 owns the
+ * frozen v1.0 wire contract, F16-REQ-028); until it lands there, this file is
+ * their only definition. Fields marked "v1 request" are what this client sends
+ * or reads ahead of the server: an older server ignores data keys it does not
+ * know and never sends the result fields, and the client then behaves as before.
  */
 
 // ── The server surface the engine needs ────────────────────────────────────
@@ -36,8 +40,22 @@ export interface SupabaseLike {
 
 // ── Push ───────────────────────────────────────────────────────────────────
 
-export type FieldGroup = 'text' | 'in_book' | 'sounds_like_me' | 'occurred_on';
-export const ALL_GROUPS: readonly FieldGroup[] = ['text', 'in_book', 'sounds_like_me', 'occurred_on'];
+/**
+ * Field groups an edit names in `changed` (never columns, F16-REQ-011). The words
+ * group `text` is final_text, machine_edits and edit_level, always together; it is
+ * the only group under compare and set (F16 6.2 E). `language` exists on the
+ * server since 20261005000000 (G-26); the server applies it only when the op's
+ * data carries the key.
+ */
+export type FieldGroup = 'text' | 'in_book' | 'sounds_like_me' | 'occurred_on' | 'language';
+export const ALL_GROUPS: readonly FieldGroup[] = ['text', 'in_book', 'sounds_like_me', 'occurred_on', 'language'];
+
+/** The words of a letter as one value (the compare-and-set unit). */
+export interface WordsGroup {
+  final_text: string;
+  machine_edits: unknown[];
+  edit_level: string;
+}
 
 /** A letter as the server stores it (own letters only travel up). */
 export interface EntryData {
@@ -57,6 +75,16 @@ export interface EntryData {
   sounds_like_me: boolean | null;
   author_signs_as: string | null;
   audio_kept_on_device: boolean;
+  /**
+   * Spoken-letter language, one of the server's codes (packages/core LANGUAGE_CODES),
+   * group `language`. Omitted (never null) when this phone holds no code the server
+   * accepts, so an op never clears the server's value and never fails its check.
+   */
+  language?: string;
+  /** `day` or `month`, travels with `occurred_on` (WP-F04-03; server column is WP-F04-14, v1 request). */
+  occurred_precision?: string;
+  /** `ltr` or `rtl`, layout only, travels with `text` (WP-F04-03; server column is WP-F04-14, v1 request). */
+  base_direction?: string;
   /** Re-upload only: the phone's copy is a tombstone. */
   deleted?: boolean;
 }
@@ -80,7 +108,14 @@ export interface PushOp {
   data: Record<string, unknown>;
   /** entry.upsert: the field groups this op changes (insert uses all). */
   changed?: FieldGroup[];
-  /** entry.upsert: the server version the edit was based on (conflict flag only). */
+  /**
+   * entry.upsert: the server version this phone's words descend from. Protocol v1
+   * (F16 6.2 E): the server applies `text` only when the words were not changed
+   * since `base`; otherwise it answers `conflict_groups: ['text']` with `current`.
+   * Rebased after an earlier op of the same letter applies (F16-REQ-025): the one
+   * field the outbox may rewrite after a send, because the server reads it only
+   * when it first applies the op and a duplicate ignores it.
+   */
   base?: string | null;
   /** entry.reupload: the server's updated_at this phone last saw for the letter. */
   known_at?: string;
@@ -96,12 +131,32 @@ export interface EntryState {
   approval: string;
 }
 
+/** The server's words when they changed since the op's `base` (protocol v1). The caller's own words only. */
+export interface CurrentWords extends WordsGroup {
+  /** Server version of these words. */
+  v: string;
+}
+
 export interface PushResultOk {
   op: string;
   ok: true;
   dup?: boolean;
   applied?: boolean;
+  /**
+   * Before protocol v1: `base` was stale, the op was applied anyway (last writer
+   * wins). Never read alone; a words conflict is `conflict_groups` with `text`.
+   */
   conflict?: boolean;
+  /** Protocol v1: groups the server did not apply because they changed since `base` (only `text`). */
+  conflict_groups?: FieldGroup[];
+  /**
+   * Protocol v1: the server's words, sent whenever they changed since `base` (a
+   * words conflict, or an op that did not carry words). The phone takes them
+   * unless it still has its own words queued for that letter.
+   */
+  current?: CurrentWords | null;
+  /** Protocol v1: the version this op wrote when it first applied; a duplicate rebases on it, never on `entry.v`. */
+  applied_v?: string | null;
   missing?: boolean;
   entry?: EntryState | null;
   book?: { id: string };
@@ -172,6 +227,12 @@ export interface PulledRow {
   sounds_like_me: boolean | null;
   approval: string;
   audio_kept_on_device: boolean;
+  /** Own rows only (book_entries never carries it). */
+  language?: string | null;
+  /** v1 request (WP-F04-14): absent until the server has the column. */
+  occurred_precision?: string | null;
+  /** v1 request (WP-F04-14): absent until the server has the column. */
+  base_direction?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -250,7 +311,9 @@ export type SyncPhase =
   /** The session needs a refresh (JWT expired or revoked). */
   | 'auth'
   /** A different account signed in on a phone whose letters belong to another account. */
-  | 'account_mismatch';
+  | 'account_mismatch'
+  /** Paused by us: the signed remote config's `killSwitches.sync` is on. Nothing is sent or fetched; the queue keeps. */
+  | 'paused_server';
 
 export interface SyncStatus {
   phase: SyncPhase;
@@ -258,6 +321,8 @@ export interface SyncStatus {
   pending: number;
   /** Ops the server refused for good and the person has not seen yet. */
   rejected: number;
+  /** Letters whose words changed on another phone while this phone had its own: both versions kept, the author picks. */
+  conflicts: number;
   lastSyncedAt: string | null;
   /** Missing consents when paused (terms, age, sensitive-data). */
   consent: string | null;
@@ -268,6 +333,8 @@ export type SyncReason = 'start' | 'foreground' | 'save' | 'refresh' | 'invite' 
 export interface SyncReport {
   pushed: number;
   rejected: number;
+  /** Word conflicts found (a conflict copy was kept for each). */
+  conflicts: number;
   pulled: number;
   reset: boolean;
   phase: SyncPhase;
