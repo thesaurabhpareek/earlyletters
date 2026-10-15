@@ -30,7 +30,7 @@ export interface ScribeKeysNative {
     info: Uint8Array,
     aad: Uint8Array,
   ): Promise<{ enc: Uint8Array; ct: Uint8Array }>;
-  /** `expectedCheck` and `checkLabel` empty and `replaceUntrusted` false: never replace a different key of that version. */
+  /** Refuses (`ERR_SCRIBE_KEYS_CHECK`) and writes nothing when `expectedCheck` is given and the opened key does not match it. */
   openBookKey(
     service: string,
     account: string,
@@ -39,9 +39,8 @@ export interface ScribeKeysNative {
     ct: Uint8Array,
     info: Uint8Array,
     aad: Uint8Array,
-    expectedCheck: Uint8Array,
     checkLabel: Uint8Array,
-    replaceUntrusted: boolean,
+    expectedCheck: Uint8Array | null,
   ): Promise<void>;
   aesGcmSeal(key: Uint8Array, nonce: Uint8Array, plaintext: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;
   aesGcmOpen(key: Uint8Array, nonce: Uint8Array, sealed: Uint8Array, aad: Uint8Array): Promise<Uint8Array>;

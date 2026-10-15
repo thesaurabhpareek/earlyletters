@@ -1,23 +1,13 @@
 /**
  * The server surface the backup client is written against (F08 6.5 "Server
- * objects", ADR 0024). Two drafts existed on 15 Oct and they differ; neither
- * has merged to `develop`:
+ * objects", ADR 0024): the S05 server, PR #151
+ * (`supabase/migrations/<ts>_backup_server.sql` and `supabase/functions/escrow/`),
+ * which follows S07's names in `packages/api/src/server/recovery-key.ts` (#138).
  *
- * - S07's `packages/api/src/server/recovery-key.ts` (contract v1, PR #138):
- *   `backup_register_device(p_device_id, ...)`, `backup_store_key(..., p_wrap:
- *   SealedBox)`, five `restore-requests` routes, `ReleaseResult`.
- * - The S05 server's draft (`supabase/migrations/<ts>_backup_server.sql` and
- *   `supabase/functions/escrow/`, uncommitted in its worktree, read on 15 Oct):
- *   `backup_register_device(p_device, p_public_key bytea)`, `backup_store_key(
- *   p_child, p_key_version, p_escrow_wrap bytea, p_escrow_key_version)`,
- *   `backup_begin`, `backup_confirm`, table reads for keys and blobs, one
- *   create-or-poll escrow route, and the byte labels below.
- *
- * The bytes have to match the code that opens them, so the labels, the wrap
- * format and the RPC arguments follow the S05 server draft; the wire mapping
- * lives only in runtime.ts, so following S07 instead is a change there and
- * nowhere else. The PR asks S07 and the S05 server to reconcile, and asks for
- * what neither has (the key check).
+ * The ports here are the client's own shapes. Every argument name, column and
+ * route lives in wire.ts, which test/backup-wire.test.ts checks against the
+ * server's; the byte labels below are the server's `escrow/hpke.ts` (INFO, aad,
+ * packV1), pinned in test/backup-keys.test.ts.
  */
 import { concat, utf8ToBytes } from './bytes';
 
@@ -30,7 +20,7 @@ export function objectPathFor(childId: string, authorId: string, entryId: string
   return `${childId}/${authorId}/${entryId}.m4a.enc`;
 }
 
-/** RPC names (the S05 server draft; S07 #138 has the first two). Keys and blobs are read from their tables under RLS. */
+/** RPC names (#151). Keys and blobs are read from their tables under RLS (wire.ts). */
 export const BACKUP_RPC = {
   registerDevice: 'backup_register_device',
   storeKey: 'backup_store_key',
@@ -43,7 +33,7 @@ export const BACKUP_POLICY_DOCUMENT = 'backup';
 
 /**
  * Error codes the client acts on: the SQLSTATE in `code` and, where the S05
- * server draft sets one, the `details` value PostgREST passes through.
+ * server (#151) sets one, the `details` value PostgREST passes through.
  */
 export const BACKUP_ERRORS = {
   /** No active `backup` consent act: the whole queue pauses (F08-REQ-039). */
@@ -71,10 +61,10 @@ export interface ChildKeyRow {
   keyVersion: number;
   escrowKeyVersion: number;
   /**
-   * base64 of `bookKeyCheck` (16 bytes): which key this row escrowed. Neither
-   * draft has it yet ([R] to both: a `p_key_check` argument on
-   * `backup_store_key` and a readable `key_check` column on `child_keys`).
-   * Null: the phone trusts a local key of that version (no conflict check).
+   * base64 of `bookKeyCheck` (16 bytes): which key this row escrowed
+   * (`child_keys.key_check`, sent as `p_key_check`). Null only on a row stored
+   * without one: the phone then trusts a local key of that version unless it
+   * marked it untrusted (keys.ts).
    */
   keyCheck: string | null;
 }
@@ -151,12 +141,14 @@ export interface BackupServer {
 /** HPKE base mode, DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, AES-256-GCM (S07 `SEAL_SUITE`). */
 export const SEAL_SUITE = 'hpke-x25519-sha256-aes256gcm' as const;
 
-/** The S05 server draft's one route: create a request, or poll it (safe to repeat). S07 #138 proposes five. */
-export const ESCROW_ROUTE = '/functions/v1/escrow/v1/restore';
-
 /** Escrow refusals the client acts on (error `code` or `detail`). */
 export const ESCROW_DETAILS = {
-  stopped: ['cancelled', 'expired', 'deletion_pending', 'device_revoked'],
+  /**
+   * The request is over and is never asked again on its own (only Try again asks once more).
+   * `device_unknown`: this device is not registered, or was revoked (Not me, or removed in
+   * Settings); a revoked phone must never quietly enrol a new key and ask again.
+   */
+  stopped: ['cancelled', 'expired', 'deletion_pending', 'device_unknown'],
   signInAgain: ['step_up_required', 'reauth_required'],
 } as const;
 
@@ -177,20 +169,14 @@ export interface ReleasedKey {
   ct: string;
 }
 
-/** What a poll answers: the keys; still held; or closed (a Stop, Not me, or the release window passed). */
-export type ReleaseOutcome =
-  | { state: 'released'; requestId: string; keys: ReleasedKey[] }
-  | { state: 'requested' | 'approved'; requestId: string; holdUntil: string }
-  | { state: 'cancelled' | 'expired' };
-
 /**
- * v1.0 has no key rotation: a phone encrypts only under book key version 1.
- * A row with a higher version (which only a direct table write could make,
- * since `backup_store_key` refuses a second version) is never used to
- * encrypt; restore may still open an object that names it. Rotation lifts
- * this in its own ADR.
+ * What a poll answers: the keys; still held; or closed (a Stop, Not me, or the release window passed).
+ * `requestId` is the request the server answered for, when it says; a release is sealed to that id.
  */
-export const ENCRYPT_KEY_VERSION = 1;
+export type ReleaseOutcome =
+  | { state: 'released'; keys: ReleasedKey[]; requestId?: string }
+  | { state: 'requested' | 'approved'; holdUntil: string; requestId?: string }
+  | { state: 'cancelled' | 'expired'; requestId?: string };
 
 /** The `escrow` function as the client sees it. Both calls may be the same create-or-poll route. */
 export interface EscrowClient {
@@ -206,7 +192,7 @@ export interface EscrowPublicKey {
 }
 
 // ── Labels, associated data and the wrap format (ADR 0024 section 2) ────────
-// The same bytes as the S05 server draft's `supabase/functions/escrow/hpke.ts`
+// The same bytes as the S05 server's `supabase/functions/escrow/hpke.ts` (#151)
 // (INFO, aad, packV1): the codename, never the product name; lowercase ids
 // joined with '|', so a wrap opens only as the row it was written for.
 
@@ -234,15 +220,14 @@ export function releaseAad(profileId: string, deviceId: string, requestId: strin
 
 /** Escrow wrap format 1: 0x01 || HPKE enc (32) || ciphertext of the 32-byte book key with its tag (48) = 81 bytes. */
 export const ESCROW_WRAP_FORMAT = 1;
+export const ESCROW_WRAP_LEN = 1 + 32 + 32 + 16;
 
 export function packEscrowWrap(enc: Uint8Array, ct: Uint8Array): Uint8Array {
   return concat(new Uint8Array([ESCROW_WRAP_FORMAT]), enc, ct);
 }
 
-/** A 32-byte book key seals to 48 bytes, so a format 1 wrap is exactly 81. */
-export const ESCROW_WRAP_LEN = 1 + 32 + 48;
-
 export function unpackEscrowWrap(b: Uint8Array): { enc: Uint8Array; ct: Uint8Array } {
+  // Format 1 seals exactly a 32-byte book key: enc (32) and ciphertext with tag (48).
   if (b.length !== ESCROW_WRAP_LEN || b[0] !== ESCROW_WRAP_FORMAT) throw new BackupServerError('bad_request', false);
   return { enc: b.slice(1, 33), ct: b.slice(33) };
 }

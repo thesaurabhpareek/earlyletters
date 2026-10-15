@@ -213,6 +213,7 @@ function rig() {
     addRecording,
     serverPlaintext,
     settle,
+    seals: () => seals,
     tmpFiles: () => readdirSync(files.tmpDir),
   };
 }
@@ -331,6 +332,49 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     r.backend.quotaBytes = 10;
     expect(await r.make().drain()).toEqual({ kind: 'gate', reason: 'quota' });
     expect(r.db().getMeta('paused')).toBe('quota');
+  });
+
+  it('a letter erased on the server (SCDEL purged) is never sent and does not retry', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(1000);
+    r.backend.purged.add(item.entryId);
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'blocked', lastError: 'purged' });
+    expect(r.backend.requests.filter((x) => x.kind === 'tus')).toEqual([]);
+  });
+
+  it('the server lost the object before backup_confirm (P0002 object): sent again from the start, then confirmed', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'before:confirm';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    const path = r.db().job(item.entryId)!.objectPath!;
+    r.backend.objects.delete(path);
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'queued', lastError: 'P0002:object' });
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+  });
+
+  it('the stored object has another size than reserved (22023 size): sent again from the start, then confirmed', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(3 * SEGMENT_SIZE);
+    r.kill.at = 'before:confirm';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    const path = r.db().job(item.entryId)!.objectPath!;
+    r.backend.objects.set(path, r.backend.objects.get(path)!.subarray(0, 100));
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'queued', lastError: '22023:size' });
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
   });
 
   it('a recording that is retrying is never shown as backed up', async () => {
@@ -495,6 +539,27 @@ describe('[F08-U17] the kill path: a kill at any step resumes to one confirmed, 
     // It asked for the offset and sent only what was missing, not the whole object again.
     const sent = r.backend.requests.filter((x) => x.kind === 'tus').slice(patchesBefore);
     expect(sent.reduce((n, x) => n + x.body.length, 0)).toBe(job.cipherBytes! - 3 * PART);
+  });
+
+  it('the ciphertext was lost and the original changed since sealing: never re-encrypted under the saved key and nonce', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(5 * SEGMENT_SIZE);
+    r.kill.at = 'tus:PATCH:after';
+    r.kill.countdown = 2;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    const job = r.db().job(item.entryId)!;
+    rmSync(fileURLToPath(job.tmpUri!));
+    // Same length, different bytes: a rebuild would reuse (file key, nonce prefix) on new plaintext.
+    const changed = Buffer.from(plain);
+    changed[changed.length - 1] ^= 0xff;
+    writeFileSync(fileURLToPath(item.audioUri), changed);
+    const sealsBefore = r.seals();
+    await r.settle();
+    expect(r.seals()).toBe(sealsBefore);
+    expect(r.db().job(item.entryId)!).toMatchObject({ state: 'blocked', lastError: 'hash_mismatch' });
+    expect([...r.backend.blobs.values()].filter((b) => b.entryId === item.entryId && b.state === 'confirmed')).toHaveLength(0);
   });
 
   it('the launch sweep keeps a job\'s ciphertext and removes everything else in backup-tmp', async () => {

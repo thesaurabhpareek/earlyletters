@@ -184,19 +184,14 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
       const s = hpkeSeal(recipient, info, aad, key(r, version));
       return { enc: s.enc, ct: s.ct };
     },
-    // As ScribeKeysModule.swift openBookKey: check first; never replace a different key without one.
-    async openBookKey(r: BookKeyRef, version: number, s: Sealed, info: Uint8Array, aad: Uint8Array, o: { expected: { check: Uint8Array; label: Uint8Array } | null; replaceUntrusted: boolean }) {
-      const expected = o.expected;
+    async openBookKey(r: BookKeyRef, version: number, s: Sealed, info: Uint8Array, aad: Uint8Array, check: { label: Uint8Array; expected: Uint8Array } | null) {
       if (!v.device) throw new Error('no_device');
       const bk = hpkeOpen(v.device.sk, s, info, aad);
-      if (expected) {
-        const check = createHmac('sha256', buf(bk)).update(buf(expected.label)).digest().subarray(0, 16);
-        if (!check.equals(buf(expected.check))) throw Object.assign(new Error('check_failed'), { code: 'check_failed' });
+      // As ScribeKeys: a key that fails the row's check is never written.
+      if (check && !createHmac('sha256', buf(bk)).update(buf(check.label)).digest().subarray(0, 16).equals(buf(check.expected))) {
+        throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
       }
       const m = store().get(acc(r)) ?? new Map<number, Uint8Array>();
-      const existing = m.get(version);
-      if (existing && Buffer.from(existing).equals(Buffer.from(bk))) return;
-      if (existing && !expected && !o.replaceUntrusted) throw Object.assign(new Error('key_exists'), { code: 'key_exists' });
       m.set(version, bk);
       store().set(acc(r), m);
     },
@@ -302,9 +297,11 @@ export class FakeBackend {
   quotaBytes = 5 * 1024 * 1024 * 1024;
   /** The 10-minute step-up fails (the session is older): every new request is refused. */
   stepUpRequired = false;
+  /** Letters erased on the server (purge_ledger): `backup_begin` refuses them with SCDEL purged, as #151. */
+  readonly purged = new Set<string>();
+  /** False: rows are read back without a key check (a row stored before #151 kept one). */
+  returnsKeyCheck = true;
   releaseCalls = 0;
-  /** The proposed `child_keys.key_check` column exists (request to the S05 server). Off: production today. */
-  serverKeyChecks = false;
   /** Fault injection: fail the next n calls of this kind with no response. */
   readonly faults = new Map<string, number>();
 
@@ -345,16 +342,15 @@ export class FakeBackend {
       },
       async listKeys() {
         b.fault('listKeys');
-        // Like production today: neither server draft stores a key check, so rows carry none unless a test asks.
         return b.childKeys
           .filter((k) => k.uid === uid)
-          .map(({ childId, keyVersion, escrowKeyVersion, keyCheck }) => ({ childId, keyVersion, escrowKeyVersion, keyCheck: b.serverKeyChecks ? keyCheck : null }));
+          .map(({ childId, keyVersion, escrowKeyVersion, keyCheck }) => ({ childId, keyVersion, escrowKeyVersion, keyCheck: b.returnsKeyCheck ? keyCheck : null }));
       },
       async storeKey(x) {
         b.record('storeKey', x);
         b.fault('storeKey');
         b.requireConsent(uid);
-        // The S05 server draft: one key per (child, author); a second version is refused too (SCIMM key_exists).
+        // As #151: one key per (child, author); a second version is refused too (SCIMM key_exists).
         if (b.childKeys.some((k) => k.uid === uid && k.childId === x.childId)) throw new BackupServerError(BACKUP_ERRORS.immutable, false, null, 'key_exists');
         b.childKeys.push({ ...x, uid });
       },
@@ -363,6 +359,7 @@ export class FakeBackend {
         b.fault('begin');
         b.requireConsent(uid);
         if (!b.childKeys.some((k) => k.uid === uid && k.childId === x.childId && k.keyVersion === x.keyVersion)) throw new BackupServerError(BACKUP_ERRORS.notFound, false, null, 'key');
+        if (b.purged.has(x.entryId)) throw new BackupServerError(BACKUP_ERRORS.deleted, false, null, 'purged');
         if (!b.rows.get(uid)?.has(x.entryId)) throw new BackupServerError(BACKUP_ERRORS.notFound, false, null, 'entry');
         const existing = b.blobs.get(x.entryId);
         if (existing && existing.authorId !== uid) throw new BackupServerError('42501', false);
@@ -389,8 +386,11 @@ export class FakeBackend {
         const row = b.blobs.get(entryId);
         if (!row || row.authorId !== uid) throw new BackupServerError('P0002', false);
         if (row.state === 'confirmed') return;
+        // As #151: no object is P0002 object, another size is 22023 size. The hash check is the fake's own (stricter).
         const obj = b.objects.get(row.objectPath);
-        if (!obj || obj.length !== row.bytes || sha256Hex(obj) !== cipherSha256) throw new BackupServerError('22023', false);
+        if (!obj) throw new BackupServerError('P0002', false, null, 'object');
+        if (obj.length !== row.bytes) throw new BackupServerError('22023', false, null, 'size');
+        if (sha256Hex(obj) !== cipherSha256) throw new BackupServerError('22023', false);
         row.state = 'confirmed';
         row.cipherSha256 = cipherSha256;
       },
@@ -483,7 +483,7 @@ export class FakeBackend {
         if (!r || r.uid !== uid || r.deviceId !== deviceId) throw new BackupServerError('forbidden', false, null, 'device_unknown');
         if (r.state === 'cancelled' || r.state === 'expired') return { state: r.state };
         // Held: the answer is the hold, nothing is opened (recovery-key.ts ReleaseResult).
-        if (r.state !== 'approved' && b.now() < Date.parse(r.holdUntil)) return { state: r.state === 'requested' ? 'requested' : 'approved', requestId, holdUntil: r.holdUntil };
+        if (r.state !== 'approved' && b.now() < Date.parse(r.holdUntil)) return { state: r.state === 'requested' ? 'requested' : 'approved', holdUntil: r.holdUntil };
         const device = b.devices.get(deviceId)!;
         const out: ReleasedKey[] = [];
         for (const k of b.childKeys.filter((x) => x.uid === uid)) {
@@ -495,7 +495,7 @@ export class FakeBackend {
           b.emails.push({ uid, kind: 'key_opened' });
         }
         r.state = 'released';
-        return { state: 'released', requestId, keys: out };
+        return { state: 'released', keys: out };
       },
     };
   }

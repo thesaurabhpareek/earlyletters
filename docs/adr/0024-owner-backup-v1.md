@@ -3,7 +3,7 @@
 Status: **Proposed** (draft for the coordinator, PRD V2 `08-delivery.md` T13; decided at T15 or the spec default stands). Date: 2026-10-15. Owner: S05 (encrypted recording backup).
 Amends: ADR 0006 (decision items 1 to 4). Implements: D-073, D-102 (recoverable keys through server escrow, honest copy), D-104 item 2 (free backup, default awaiting the founder).
 Spec: PRD V2 F08 section 6.5 (key model, object format, server objects, A to G), F08 section 12 (WP-F08-B2 to B5c), F17 Storage and backup row.
-Code (client half, PR `feat/backup-client`): `apps/mobile/modules/scribe-keys/`, `apps/mobile/src/lib/backup/`, `apps/mobile/src/app/settings/backup.tsx`, `packages/content/src/features/backup.en.ts`. Server half: the S05 server draft (`feat/backup-server`: `supabase/migrations/<ts>_backup_server.sql` and `supabase/functions/escrow/`, uncommitted on 15 Oct and read there). Contracts: S07's `packages/api/src/server/recovery-key.ts` (PR #138).
+Code (client half, PR `feat/backup-client`): `apps/mobile/modules/scribe-keys/`, `apps/mobile/src/lib/backup/`, `apps/mobile/src/app/settings/backup.tsx`, `packages/content/src/features/backup.en.ts`. Server half: PR #151 (`feat/backup-server`: `supabase/migrations/<ts>_backup_server.sql` and `supabase/functions/escrow/`); the client's wire to it is `lib/backup/wire.ts`, checked by `test/backup-wire.test.ts`. Contracts: S07's `packages/api/src/server/recovery-key.ts` (PR #138).
 
 Number (as of 15 Oct 2026):
 - 0018 to 0020 are on `develop` (0020 merged with #39).
@@ -27,29 +27,27 @@ ADR 0006 also named `react-native-quick-crypto` for AES-GCM. D-065 keeps the app
 | Key or object | What | Where | Who can use it |
 |---|---|---|---|
 | File key | Random 256-bit, one per recording | Wrapped (AES-256-GCM) under the book key, in the object header and in `audio_blobs.wrapped_file_key` | A device holding that book key |
-| Book key (BK) | Random 256-bit per (child, author, version) | One synchronizable Keychain item per (profile, child): service `scribe.backup`, account `<profile_id>:<child_id>`, every version inside, `kSecAttrAccessibleAfterFirstUnlock` | The author's devices (iCloud Keychain) |
+| Book key (BK) | Random 256-bit per (child, author, version) | One synchronizable Keychain item per (profile, child, version): service `scribe.backup`, account `<profile_id>:<child_id>:v<n>`, value the 32 raw bytes, `kSecAttrAccessibleAfterFirstUnlock`. One item per version because iCloud resolves conflicts per item: a sync can never drop one version while another is written, and creating a version is one atomic add | The author's devices (iCloud Keychain) |
 | Device key pair | X25519, one per install, made the first time backup or restore runs | Private key: Keychain, `...AfterFirstUnlockThisDeviceOnly`, never synced, never in a device backup. Public key and a random device id in `backup_devices` | The escrow function seals released BKs to it |
 | Escrow wrap of each BK | HPKE base mode (RFC 9180): DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, AES-256-GCM, sealed **on the phone** to the escrow public key; format 1 = `0x01` || enc (32) || ciphertext and tag (48), 81 bytes | `child_keys.escrow_wrap` (`child_id`, `profile_id`, `key_version`), with `escrow_key_version` | Only the `escrow` function in the `scribe-escrow` project |
-| Key check | HMAC-SHA256(BK, `"scribe/backup/key-check/v1|"` || profile|child|version), first 16 bytes | `child_keys.key_check` (proposed; in neither server draft yet) | Any device, to prove its local BK is the escrowed one, without the key |
+| Key check | HMAC-SHA256(BK, `"scribe/backup/key-check/v1|"` || profile|child|version), first 16 bytes | `child_keys.key_check` (#151: readable; sent as `p_key_check`) | Any device, to prove its local BK is the escrowed one, without the key |
 
-Labels and associated data (`lib/backup/contract.ts`). They are byte for byte the S05 server draft's `supabase/functions/escrow/hpke.ts`: a scratch run on 15 Oct sealed with each side and opened with the other, and `test/backup-keys.test.ts` pins the bytes. The escrow function builds the same bytes from the row it loaded, so a wrap opens only as the row it was written for.
+Labels and associated data (`lib/backup/contract.ts`). They are byte for byte #151's `supabase/functions/escrow/hpke.ts`: a scratch run on 15 Oct (against #151 at 66d56a3) sealed with each side and opened with the other, including a release refused for another request id and a check-before-write refusal, and `test/backup-keys.test.ts` pins the bytes. The escrow function builds the same bytes from the row it loaded, so a wrap opens only as the row it was written for.
 
 - Escrow seal: info = `"scribe/escrow/book-key/v1"`; aad = `"<profile>|<child>|<keyVersion>|<escrowKeyVersion>"` (lowercase).
-- Release seal (escrow to device): info = `"scribe/escrow/release/v1"`; aad = `"<profile>|<device>|<requestId>|<child>|<keyVersion>"`. A release opens only on that device, for that request.
+- Release seal (escrow to device): info = `"scribe/escrow/release/v1"`; aad = `"<profile>|<device>|<requestId>|<child>|<keyVersion>"`. A release opens only on that device, for that request. The client opens it with the request id the route answered for, not the one it saved, since the route answers for the device's current request.
+- Escrow wrap format 1 is exactly 81 bytes; any other length is refused.
 - File key wrap: aad = `"scribe/backup/v1/file-key"` || entry id || author id || key version (binary). No child id, so a move rewraps 32 bytes.
 
 Rules:
 
 1. **Long-lived secrets stay native.** Book keys and the device private key never cross into JavaScript. The `ScribeKeys` module takes the Keychain service and account for every operation that needs them. JavaScript sees per-recording file keys (wiped after use), wrapped keys and public keys only. **V-code** (`modules/scribe-keys/index.ts`).
 2. **Never create a BK while the server holds one** (F08-REQ-028). A phone that sees an active `child_keys` row it cannot open waits up to 2 minutes for iCloud Keychain, then asks escrow. It makes a key only when the server has none for (child, me). A key made here whose store failed is stored again, never replaced. **V-code** (`test/backup-keys.test.ts`).
-3. **The key check settles Keychain conflicts.** Two of a person's phones racing to make version 1: the server refuses the second (`SCIMM key_exists`). If an iCloud sync conflict then replaces the item with the losing key, the key check fails and that key is never used to encrypt or decrypt; the phone recovers the right one through escrow. **V-code**. Neither server draft stores the check yet. Until one does, a phone trusts a local key of the row's version, and this conflict is caught only when a restore fails to open an object (F08-U20).
-3b. **Where a key came from decides whether it is trusted** (review of PR #150).
-    - A key this phone made is untrusted until its store succeeds. Once it does, the phone records the key's check locally (`backup.db`, this device only).
-    - A key that iCloud Keychain brought is trusted until a check says otherwise. It is recorded as verified once it opens an object from the server.
-    - A released key never overwrites a key that passes its check. It replaces a different key only when it passes the expected check, or when the local one is a key made here that the server never confirmed. The native module enforces this, so a wrong release cannot overwrite a right key across iCloud Keychain.
-    - **Encryption uses only version 1** (`ENCRYPT_KEY_VERSION`) until a rotation ADR. A higher version on the server could come only from a direct table write, and it is never used to encrypt.
-4. **Escrow public keys ship in the app**, current and next version (`packages/api/src/escrow-keys.ts`, S07; WP-F08-B8 ceremony). With none bundled the app fails closed: backup cannot be turned on. A staging build may carry the drill-only key in `EXPO_PUBLIC_ESCROW_KEY`.
+3. **The key check settles Keychain conflicts.** Two of a person's phones racing to make version 1: the server refuses the second (`SCIMM key_exists`). If an iCloud sync conflict then replaces the item with the losing key, the key check fails and that key is never used to encrypt or decrypt; the phone recovers the right one through escrow. **V-code**. #151 stores and returns the check, and the client sends and reads it. It also settles a store whose answer was lost: the retry seals again, the server refuses it (`key_exists`), and the check shows the escrowed key is this phone's own, so no escrow is asked. **V-code** ("a store that went through but whose answer was lost"). A row stored without a check (`key_check` null) is handled conservatively: a phone whose own store was refused marks its key untrusted and never uses it until escrow releases the escrowed one; any other local key of the row's version is trusted. **V-code** ("a row with no key check"). The check must stay readable and stored for every new key before T27.
+4. **Escrow public keys ship in the app**, current and next version (`packages/api/src/escrow-keys.ts`, S07; WP-F08-B8 ceremony). With none bundled the app fails closed: backup cannot be turned on. A development or preview build may carry the drill-only key in `EXPO_PUBLIC_ESCROW_KEY`; a production build ignores it.
 5. **Keychain service name** is `scribe.backup`, not the `earlyletters.backup` that F08 6.5 and S07's `BOOK_KEY_KEYCHAIN_SERVICE` (#138) name. CLAUDE.md keeps the public name only in `packages/brand`, and a Keychain service must never change after the first item is written (renaming it orphans every key). The codename is permanent; the brand may not be. The escrow labels already use the codename for the same reason. This must be settled before the first item is written on a family's phone (T27).
+6. **A release never replaces a good key.** A released key is written only for a version this phone lacks or cannot trust, and, when the row has a key check, only after the native module has checked the opened key against it (`ERR_SCRIBE_KEYS_CHECK` otherwise; nothing is written). A bad release can therefore never overwrite a good key here or, through iCloud Keychain, on the author's other devices. **V-code**.
+7. **No rotation in v1.0.** The server refuses a second version, and the client never adopts a row above `MAX_KEY_VERSION` (1): it neither encrypts under it nor stores a release of it. A later rotation ADR raises both together. **V-code**.
 
 ## 3. Decision: the object
 
@@ -72,7 +70,7 @@ segments 1..n = the original in 64 KiB pieces; n >= 1; only the final one has la
 
 **Upload queue** (`queue.ts`; WP-F08-B5a): one job per recording, keyed by the letter's id (its draft id from capture to save), states `queued, sealed, begun, uploading, uploaded, confirmed` (and `blocked` for a file whose hash differs from capture; never uploaded). Each transition is one statement written after its work, and every state's step is safe to repeat. The Node suite kills the process at seven points (mid-encryption, around `backup_begin`, after the upload is created, mid-upload, after the last part, around `backup_confirm`) and relaunches. Every run ends with exactly one confirmed object that decrypts to the original. **V-code** (`test/backup-queue.test.ts`).
 
-- Uploads use Supabase Storage's resumable (tus) endpoint, in 6 MiB parts, with the user's JWT or the signed upload token `backup_begin` returns. `x-upsert: true`, and the Storage policy must allow it only while the caller's `audio_blobs` row is `pending`. **U** (the bucket and policy are the S05 server's).
+- Uploads use Supabase Storage's resumable (tus) endpoint, in 6 MiB parts, with the user's JWT (#151's `backup_begin` returns no upload token; SQL cannot mint one). Content type `application/octet-stream`; `x-upsert: true`, which #151's `backup_object_writable` allows only while the caller's `audio_blobs` row is `pending`. A confirm that finds no object (`P0002 object`) or another size (`22023 size`) sends the recording again from the start after a backoff; a letter erased on the server (`SCDEL purged`) is never sent. **V-code** (`test/backup-queue.test.ts`); **U** the tus path on a real Storage.
 - Gates, checked before every step and between every segment and part: the person turned it on (consent act recorded first, F08-REQ-039); foreground only; never while recording, reviewing or playing; Wi-Fi unless Use mobile data is on; the remote kill switch `backupUploads`. `SCCON` or `SCQTA` pause the whole queue. No network, no sign-in, a full quota or a kill switch only make backup wait (F08-REQ-025).
 - A recording uploads only once the server has its `entries` or `held_drafts` row (F08 6.5 A step 5). Held drafts are queued now and wait for S03's held-draft op (WP-F14-22).
 - After a server restore, a recording this phone believes confirmed but the server no longer lists goes again (F08-U30).
@@ -83,6 +81,16 @@ segments 1..n = the original in 64 KiB pieces; n >= 1; only the final one has la
 2. A local file is there: **never overwritten**. If it matches the letter's hash, it is the recording; if it differs, it is kept and flagged (F08-U02).
 3. Otherwise download, then check the ciphertext hash, the header (this entry, this author, the row's key version), every segment, and the original's hash against the decrypted file and against the letter's own hash when this phone has one. A failure is discarded and tried once more, then left "not on this phone" (F08-U20).
 4. Point the letter at its final path, then move the file there. A kill between the two leaves a letter whose file is missing, which the next run repairs. The other order would leave a stray file the launch sweep turns into a draft. The move never replaces a file.
+
+**One pass at a time, and a clean stop** (durability review of PR #150). **V-code** (`test/backup-restore.test.ts`, `test/backup-e2e.test.ts`, `test/backup-queue.test.ts`).
+- The service runs one pass at a time: a tick while a pass runs joins it. Restore also holds one download per letter, and every temporary file has its own name (`<entry>.<attempt>.dl`, `.restoring`), so two passes never share a file.
+- Restore obeys the same busy gate as upload: never while recording, reviewing or playing.
+- `stop()` (sign-out, or another account signing in) stops between segments and parts, waits for the running pass, and sweeps `backup-tmp/`; the old account's service stops before the new one starts. The kill switch `backupUploads` is a gate: the next step waits.
+- If the final move loses (a file appeared at the path meanwhile), the letter's hash that restore filled is cleared again, so the letter never claims a recording it does not have. After a move the file is hashed once more.
+- The server's blob list is read in pages of 500, ordered by creation time.
+- A Storage 400, 401 or 403 on an upload (an expired token, a policy refusal) sends the job back to begin again, not into a loop.
+- A recording whose hash is briefly unknown keeps its job. A server list that comes back empty resets nothing unless the reset is forced.
+- Settings says "paused", never "backed up", while a recording is retrying or a key is waiting.
 
 Keys for restore come from iCloud Keychain when it brings them within 2 minutes, otherwise from escrow (section 5). A restore request that was stopped (Not me, the Stop link, Stop in Settings) is never asked again on its own; only Try again asks once more.
 
@@ -100,17 +108,9 @@ This is the access-log design the founder asked for. It restates F08 6.5 C and G
 
 **What the copy may claim, and the honest limit.** Provable: every use through the function writes a row and sends an email, and a daily copy sits outside backups. Not provable by any system: someone holding the escrow private key (the escrow project's secret, or a sealed paper copy) plus copies of the database and bucket could open recordings offline with no row and no email. The product copy therefore says only "We use it only through our recovery service, which logs every use and emails you each time" (`backup.sheetBody`). The Privacy Policy names the offline limit and who could do it. `test/backup-copy.test.ts` refuses "only your family", "only you can", "end-to-end" and any unscoped "every use is logged".
 
-**Residual risk, table writes** (review of PR #150): anyone who can write `child_keys` or `backup_devices` directly (not through the RPCs) can plant an escrow wrap of a key they chose, or swap a device public key. The escrow public key and the associated data are not secret. A planted key that a phone then encrypts under is readable by whoever planted it.
-
-Controls:
-- RLS denies clients every direct write to those tables (to be confirmed by a test in the S05 server half);
-- `backup_store_key` refuses a second version;
-- the client encrypts only under version 1 and never replaces a confirmed local key;
-- the escrow log and the email on every use.
-
-What remains is a database administrator, the same trust boundary as the escrow private key itself.
-
 **Residual risk** (F08-U27c, 09 R-19): an attacker who controls the inbox while the owner's only phone is lost faces only the 24-hour hold. The owner can cancel from Settings on any signed-in phone during it.
+
+**Residual risk: whoever can write `child_keys` or `backup_devices`.** The escrow public key ships in the app and the associated data is ids, so anyone who can write a `child_keys` row can seal a key of their own choosing that escrow will open, and compute its key check too; the key check catches accidents, not a forger. A phone that then restores through escrow would encrypt new recordings under that key. The same holds for a swapped device public key in `backup_devices` (escrow would seal to the attacker). Limits today: clients hold only `select` grants on these tables (#151) and only `security definer` functions write them, rows are immutable (`SCIMM`), every release is logged and emailed, a phone never adopts a version above 1 (rule 7), and a phone that holds a trusted key never replaces it (rule 6). What would close it: rows signed by a per-author identity key held in iCloud Keychain (a later ADR, with rotation).
 
 ## 6. Decision: the switch
 
@@ -121,8 +121,6 @@ What remains is a database administrator, the same trust boundary as the escrow 
 - One small native module, `scribe-keys` (about 300 lines of Swift, CryptoKit and Security only). The binary cost is near zero: CryptoKit is a system framework (F08 section 9's "under 1 MB" budget holds; **U** until the IPA size check).
 - HPKE needs iOS 17. D-098 (PR #126) sets iOS 17 as the deployment target; until it merges, the module builds for 16.4 and reports `isSupported() == false` below 17.
 - The object format is implemented once, in TypeScript, over a 2-call native AEAD (seal and open one segment), so the Node suite exercises the exact bytes the phone writes. Cost: about 230 native calls per 15 MB recording. **U**: F08 section 9 budgets 1 s per 10 MB on the SE 3, measured in WP-F08-B1.
-- All versions of a book key share one Keychain item, and iCloud resolves conflicts per item. With version 1 only, a read-modify-write race across versions cannot happen in v1.0. The rotation ADR should move to one item per version (account `<profile>:<child>:v<n>`).
-- Swift copies book keys into `Data` and base64 strings, which it cannot wipe reliably. The decoded scope is one call.
 - The queue's state lives in its own `backup.db`, so S03's schema is unchanged. Every row can be rebuilt from the letters and `audio_blobs`. S03 may fold it into the main schema later (v11).
 - Restore writes `entries.audio_uri`, `audio_sha256` and `audio_bytes` once for a letter that came by sync with none (`attachRestoredAudio`). That rule belongs beside `rebaseAudioUri` in S03's repository (request).
 
@@ -142,11 +140,7 @@ What remains is a database administrator, the same trust boundary as the escrow 
 
 1. Accept the per-author key and the access-log design above (T15), or the F08 spec default stands, which this matches.
 2. The Keychain service name `scribe.backup` (section 2 rule 5) in place of F08's `earlyletters.backup`.
-3. S07's #138 and the S05 server draft disagree:
-   - `backup_register_device(p_device_id, ...)` versus `(p_device, p_public_key bytea)`;
-   - `backup_store_key(..., p_wrap: SealedBox)` versus `(p_child, p_key_version, p_escrow_wrap bytea, p_escrow_key_version)`;
-   - five `restore-requests` routes versus one create-or-poll `escrow/v1/restore`.
-
-   The client follows the server draft, because its bytes must open there. All wire mapping sits in `lib/backup/runtime.ts`, so following S07 instead is a change in that one file. The `child_keys.key_check` column is in neither. All of this is in the PR's requests.
+3. Settled by #151, which follows S07's names (#138): `backup_register_device(p_device_id, p_public_key)`, `backup_store_key(..., p_wrap SealedBox, p_key_check)`, and two escrow routes (`restore-requests`, then `restore-requests/:id/release`, 410 `gone` when closed). The client follows #151 (`lib/backup/wire.ts`); argument names, granted columns and answer shapes are pinned in `test/backup-wire.test.ts` and were checked against the migration text. S07 still owns the reconciliation of `recovery-key.ts` (#151's requests to S07).
+3a. #151's eight deviations from F08 6.5, carried here for acceptance as the ADR 0006 amendment (#151 body, "Deviations"): (1) approval proves possession: a 256-bit code sealed to each enrolled device, not approval by device id; (2) seven narrow escrow functions, not four; (3) more than three escrow-project secrets (Resend key, main database CA, a rotation-only secret); (4) the function imports nothing outside its folder (own logger, Postgres client, HPKE over WebCrypto); (5) the step-up reads the newest `amr[].timestamp`, not `iat` (**U** on staging); (6) log outcomes `opened` and `failed`, written before release; (7) delete hooks as triggers, not edits to S02's functions; (8) the orphan sweep runs daily. None changes a byte the phone writes or opens.
 4. Q2 (backup free or Plus): the client is built free for everyone (D-104 item 2). `packages/core/src/plan.ts` still lists `backup_upload` as gated, and nothing in the client calls that gate.
 5. Q6 (counsel): its own `backup` consent act (built) or the sensitive-data act.

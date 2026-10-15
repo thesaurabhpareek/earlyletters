@@ -6,7 +6,7 @@
  * folder except runtime.ts imports React Native or Expo.
  */
 
-/** Which book key: one per (child, author) (F08 6.5, R2 AR-05). The Keychain account is `<profileId>:<childId>`. */
+/** Which book key: one per (child, author) (F08 6.5, R2 AR-05). Each version is its own Keychain item, account `<profileId>:<childId>:v<n>`. */
 export interface BookKeyRef {
   profileId: string;
   childId: string;
@@ -27,7 +27,7 @@ export interface Sealed {
 
 /**
  * Keys that never leave native code in the app: the book keys (a synchronizable
- * Keychain item per book and author, every version inside) and this install's
+ * Keychain item per book, author and version) and this install's
  * device private key (this device only, never synced). JavaScript only ever
  * sees per-recording file keys, wrapped keys and public keys.
  */
@@ -38,7 +38,7 @@ export interface KeyVault {
   /** Makes the pair the first time; returns the existing one after that. */
   createDeviceKey(): Promise<DeviceKey>;
   deleteDeviceKey(): Promise<void>;
-  /** Versions of this book key present on this phone (from the synchronizable item). Empty when none. */
+  /** Versions of this book key present on this phone (from the synchronizable items). Empty when none. */
   bookKeyVersions(ref: BookKeyRef): Promise<number[]>;
   /** Adds a random 256-bit key under `version`. Throws `key_exists` when that version is already there. */
   createBookKey(ref: BookKeyRef, version: number): Promise<void>;
@@ -51,12 +51,9 @@ export interface KeyVault {
   /** Seals the book key to a recipient X25519 public key (the escrow key) with HPKE base mode. */
   sealBookKey(ref: BookKeyRef, version: number, recipient: Uint8Array, info: Uint8Array, aad: Uint8Array): Promise<Sealed>;
   /**
-   * Opens a book key sealed to this device's key and stores it under `version`.
-   * With `expected`, the opened key must pass that check (`check_failed`
-   * otherwise) and may then replace a different key under that version. With
-   * `replaceUntrusted`, it may replace a key this phone made that the server
-   * never confirmed. Otherwise a different key already there is never replaced
-   * (`key_exists`).
+   * Opens a book key sealed to this device's key and stores it under `version`. Throws on any
+   * mismatch. With `check`, the opened key must match `check.expected` (HMAC under it of
+   * `check.label`, 16 bytes) or nothing is written (`key_check_failed`).
    */
   openBookKey(
     ref: BookKeyRef,
@@ -64,7 +61,7 @@ export interface KeyVault {
     sealed: Sealed,
     info: Uint8Array,
     aad: Uint8Array,
-    opts: { expected: { check: Uint8Array; label: Uint8Array } | null; replaceUntrusted: boolean },
+    check: { label: Uint8Array; expected: Uint8Array } | null,
   ): Promise<void>;
   randomBytes(n: number): Uint8Array;
 }

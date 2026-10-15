@@ -167,6 +167,11 @@ export function createUploadQueue(d: QueueDeps) {
         d.db.setMeta(META.paused, 'quota');
         return { kind: 'gate', reason: 'quota' };
       }
+      // `SCDEL purged`: the letter was erased on the server. Its recording is never sent again.
+      if (e.code === BACKUP_ERRORS.deleted && e.detail === 'purged') {
+        d.db.updateJob(job.entryId, { state: 'blocked', lastError: 'purged' });
+        return { kind: 'blocked' };
+      }
       // The upload refused us (an expired signed token, a session or policy change): ask backup_begin again.
       // It is idempotent on the entry id, so the job goes back to `sealed` with no upload URL.
       if ((job.state === 'begun' || job.state === 'uploading') && /^HTTP(400|401|403)$/.test(e.code)) {
@@ -291,12 +296,14 @@ export function createUploadQueue(d: QueueDeps) {
   /** The saved ciphertext is on disk and unchanged, or is rebuilt byte for byte from what was saved. */
   async function ensureTmp(job: UploadJob): Promise<'ok' | 'reset' | 'stopped'> {
     if (job.tmpUri && d.files.exists(job.tmpUri) && (await d.files.sha256(job.tmpUri)) === job.cipherSha256) return 'ok';
-    if (!(await d.keys.canOpen(job.childId, job.keyVersion!))) {
+    // A rebuild reuses the saved file key and nonce prefix, so it may only ever encrypt the same
+    // original: a changed file under the same (key, nonce) would be GCM nonce reuse. Check first;
+    // a reset job goes back through `queued`, which flags a changed file and never sends it.
+    if (!d.files.exists(job.audioUri) || (await d.files.sha256(job.audioUri)) !== job.audioSha256) {
       reset(job);
       return 'reset';
     }
-    // The same file key and nonce prefix over a different original would reuse nonces: check the original first.
-    if (!d.files.exists(job.audioUri) || (await d.files.sha256(job.audioUri)) !== job.audioSha256) {
+    if (!(await d.keys.canOpen(job.childId, job.keyVersion!))) {
       reset(job);
       return 'reset';
     }
@@ -342,7 +349,18 @@ export function createUploadQueue(d: QueueDeps) {
   }
 
   async function stepUploaded(job: UploadJob): Promise<StepOutcome> {
-    await d.server.confirm(job.entryId, job.cipherSha256!);
+    try {
+      await d.server.confirm(job.entryId, job.cipherSha256!);
+    } catch (e) {
+      // The server has no object at the path (`P0002 object`) or one of another size (`22023 size`):
+      // asking again would never succeed, so the recording goes again from the start, after a backoff.
+      if (e instanceof BackupServerError && ((e.code === BACKUP_ERRORS.notFound && e.detail === 'object') || (e.code === '22023' && e.detail === 'size'))) {
+        const attempts = job.attempts + 1;
+        reset(job, { attempts, lastError: `${e.code}:${e.detail}`, nextAttemptAt: d.clock.now() + retryDelayMs('write_rpc', attempts, random, null) });
+        return { kind: 'retry_later' };
+      }
+      throw e;
+    }
     return confirmed(job);
   }
 
@@ -420,7 +438,6 @@ export function createUploadQueue(d: QueueDeps) {
         }
         if (job.audioUri !== it.audioUri || job.source !== it.source) d.db.updateJob(job.entryId, { audioUri: it.audioUri, source: it.source });
       }
-      // The source is a local read that throws rather than answer short, so a recording missing from it is gone.
       for (const j of d.db.jobs()) {
         if (seen.has(j.entryId)) continue;
         discardTmp(j);
