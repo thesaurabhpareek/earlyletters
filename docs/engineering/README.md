@@ -46,7 +46,7 @@ A chapter never restates a requirement; it cites the id (`DATA-REQ-0xx`, `LEGAL-
 | Red team and founder | Every PR still gets the red-team review and the founder's merge; `supabase/**` and auth changes also need `approve-migration` (D-041) | `docs/agents/OPERATING_MODEL.md` |
 | Consistency check | `check.mjs` fails if a chapter's `owner` is not on the roster | `scripts/agents/check.mjs` |
 
-Status on 2026-10-03, counted from `ENFORCEMENT.md`: of 192 rules, 42 are enforced on `develop`, 38 are pending in open PRs (mostly #26 to #32 and #39), 34 are partly enforced, review-only or covered by the rule they cite, and 78 have no check yet. The `not yet` rows are the stewards' work queue.
+Status on 2026-10-03 (not recounted since; see the drift note at the top of `ENFORCEMENT.md`), counted from `ENFORCEMENT.md`: of 192 rules, 42 are enforced on `develop`, 38 are pending in open PRs (mostly #26 to #32 and #39), 34 are partly enforced, review-only or covered by the rule they cite, and 78 have no check yet. The `not yet` rows are the stewards' work queue.
 
 ## Changing a standard
 
@@ -83,7 +83,7 @@ Collected from the five chapters on 2026-10-03, most consequential first. Each c
 | 9 | PR size limit of 400 lines and 20 files for everyone; block the merge or only label `size:large` and require an `Exception:` line? Lower limit for agent PRs? | 400/20, label not block | principal-architect |
 | 10 | How long an old app build keeps working against the server | 180 days after its successor ships | principal-architect |
 | 11 | Claims register: one file, `docs/legal/CLAIMS.md` (WS-19) or `docs/legal/claims-registry.yaml` (LEGAL-REQ-044) | One file; pick either | compliance-engineer |
-| 12 | Set the real privacy and support address in `packages/brand/index.ts` (still a placeholder) | Before beta | compliance-engineer |
+| 12 | Confirm the privacy and support address in `packages/brand/index.ts` (a placeholder on 3 Oct; `hello@` the domain on 15 Oct) | Before beta | compliance-engineer |
 | 13 | Replace the `revenuecat` deletion step with `appstore_mapping` in a pending migration (spec v1.1.0, ADR 0013) | Yes | compliance-engineer |
 | 14 | Who keeps the request log until a `privacy_requests` table exists | Founder, in the support mailbox, fields per DSR-R05 | compliance-engineer |
 | 15 | Deep-link scheme: keep `scribe` or rename before the first build (DOC-17) | Rename | security-architect |

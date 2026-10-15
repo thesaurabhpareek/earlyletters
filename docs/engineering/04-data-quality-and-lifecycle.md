@@ -20,7 +20,7 @@ We promise families that their letters are private, kept as long as they want, a
 2. **Classify before you collect.** A field ships with its level (L1 to L4) in the same PR. *Why:* handling, access and retention all follow from the level.
 3. **Fail closed at every boundary.** Invalid input is refused or dropped, never coerced or partly sent. *Why:* a stripped-but-sent event or a silently defaulted column hides the bug that matters.
 4. **Retention runs itself.** Every clock in the schedule is a job with a test, never a calendar reminder. *Why:* "someone will remember to delete it" is how promises break.
-5. **Fake families only.** Fixtures use the fictional Asha family; production data never leaves production. *Why:* real letters are irreplaceable and private.
+5. **Fake families only.** Fixtures use the fictional Asha family; production data never leaves production. *Why:* real letters are private and belong to the family.
 
 ## Rules
 

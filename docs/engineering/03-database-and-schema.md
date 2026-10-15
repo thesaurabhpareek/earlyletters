@@ -12,7 +12,7 @@ applies_to: supabase/**, apps/mobile/src/lib/db/**, apps/mobile/src/lib/store.ts
 
 ## Purpose
 
-The database holds letters a parent can never write again. This chapter makes the schema correct by construction: every row reachable only by the people it belongs to, every write going through a path that keeps `raw_transcript` immutable and tombstones honest, and every rule proven by a test that fails loudly. It covers Postgres in Supabase and the device SQLite mirror. The API contract side (idempotency keys, error mapping, pagination) is chapter 02; the retention schedule is chapter 04; the user-facing deletion process is chapter 08.
+The database holds the letters families keep for their children. This chapter makes the schema correct by construction: every row reachable only by the people it belongs to, every write going through a path that keeps `raw_transcript` immutable and tombstones honest, and every rule proven by a test that fails loudly. It covers Postgres in Supabase and the device SQLite mirror. The API contract side (idempotency keys, error mapping, pagination) is chapter 02; the retention schedule is chapter 04; the user-facing deletion process is chapter 08.
 
 ## Principles
 

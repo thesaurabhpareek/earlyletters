@@ -14,8 +14,8 @@ The harness is off by default (checked in code, 15 Oct):
 
 ## 1. Merge order
 
-1. Done 15 Oct: #4 landed on `develop` (`cb8fa72`, squash) with two independent review passes recorded on the PR (D-093). #39 and #42 follow in that order, the same way; #112 (release agent, chapter 11) after #42.
-2. PR #30 (CI hardening: SHA pins, trusted-ref migration guard, the `fence` check) changes the required checks, so it is release configuration and waits for you (D-093). It is kept synced with `develop` and marked "ready, founder merge"; after it lands, re-run the branch protection command with `fence` added.
+1. Done 15 Oct: #4 (`cb8fa72`) and #39 (`0c71ea9`) landed on `develop` (squash), each with two independent review-agent passes recorded in a PR comment (D-093). #42 follows the same way; #112 (release agent, chapter 11) after it, once the release-engineering PRs it cites (#108 to #111) have landed.
+2. PR #30 (CI hardening: SHA pins, trusted-ref migration guard, the `fence` check) changes the required checks, so it is release configuration and waits for you (D-093). It was synced with `develop` on 15 Oct (`dafb5ff`, green on `required`) and is marked "ready, founder merge"; its 4 Oct red-team label `review:changes-needed` still stands, so read that review first. After it lands, re-run the branch protection command with `fence` added.
 3. Scheduled workflows run only from the default branch. Release `develop` into `main` (or merge a small PR that adds only `agents.yml`, `agents-check.yml` and `claude.yml`). Nothing is scheduled until then, and even then nothing runs until `AGENTS_ENABLED` is set (section 4, item 4). Checked: this is stated in HARNESS.md section 12; GitHub's rule itself is unverified here.
 
 ## 2. Create the OpenRouter key (about 10 minutes)

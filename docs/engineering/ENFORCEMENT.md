@@ -6,6 +6,8 @@ Rules that stay `not yet` are the backlog for the stewards' standing duty 2: tur
 
 Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 38 pending in open PRs, 34 partly enforced, review-only or covered by the rule they cite, 78 not yet.
 
+**Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the rows below are as of 3 Oct until each owner sweeps their chapter, and the totals above are not recounted): PRs #4 and #39 merged, so rows saying `pending PR #4` or `pending PR #39` describe checks now on `develop`; PRs #28, #29 and #31 merged, so `packages/core/src/domain.ts` exists; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so rules and gaps that say they do not (API-R01, API-G4, DQ-R12, DSR-R07) are out of date; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
+
 ## principal-architect (chapters 01, 02, 10)
 
 | Rule id | Level | Enforced by | Status | Gap id |
