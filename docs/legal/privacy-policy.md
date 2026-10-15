@@ -56,7 +56,7 @@ Recording backup is free and off until you turn it on. When it is on:
 - Every use of the recovery key is logged, and we email you each time. We use it only to restore your recordings to your own phone, to replace the key, or when the law requires it. We tell you about a legal request unless the law forbids it.
 - We never listen to your recordings, sell them or use them to train models.
 
-The master key behind the recovery service is kept offline, sealed, and checked every quarter. Someone holding that key and a copy of our systems could open the backups without the recovery service, which is why so few people can reach it. If you prefer that no copy of your recordings is held by us, leave backup off.
+Someone holding the master key behind the recovery service, together with a copy of our systems, could open the backups without the recovery service. We keep that key offline and sealed, check the seals every quarter, and let no one else hold it. If you would rather we held no copy of your recordings, leave backup off.
 
 ## 5. How we use your information
 
