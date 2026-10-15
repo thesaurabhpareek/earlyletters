@@ -19,12 +19,14 @@ export function classify(item, { trusted, source }) {
   const url = item.html_url;
   const base = { at, url, trusted, author: item.user?.login };
   let m;
-  if ((m = body.match(/^\s*<!-- journal run:(\S+) agent:([a-z0-9-]+) -->/))) {
+  if ((m = body.match(/^\s*<!-- journal run:(\S+) agent:([a-z0-9-]+)( salvage)? -->/))) {
+    // salvage.mjs writes `agent:<handle> salvage` when a run stopped early.
     const mode = body.match(/\*\*Mode:\*\*\s*(.+)/)?.[1]?.trim();
-    return { ...base, kind: "journal", agent: m[2], run: m[1], detail: mode };
+    return { ...base, kind: "journal", agent: m[2], run: m[1], detail: m[3] ? "salvage" : mode };
   }
-  if ((m = body.match(/^\s*<!-- receipt run:(\S+) agent:([a-z0-9-]+) cost:([0-9.]+) -->/))) {
-    return { ...base, kind: "receipt", agent: m[2], run: m[1], cost_usd: Number(m[3]) };
+  if ((m = body.match(/^\s*<!-- receipt run:(\S+) agent:([a-z0-9-]+) cost:([0-9.]+|unknown) -->/))) {
+    // receipt.mjs writes `cost:unknown` when the engine reported no cost; the row is kept, the cost is not a number.
+    return { ...base, kind: "receipt", agent: m[2], run: m[1], cost_usd: m[3] === "unknown" ? undefined : Number(m[3]) };
   }
   if ((m = body.match(/^\s*<!-- red-team:([0-9a-f]{7,40}) -->/))) {
     return { ...base, kind: "red-team-review", agent: "red-team", sha: m[1], verdict: verdictOf(body) };
