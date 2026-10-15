@@ -112,7 +112,7 @@ Founder: A gives one control panel and DNSSEC with low effort; B keeps everythin
 
 - File: [well-known/apple-app-site-association](well-known/apple-app-site-association) is the reference copy of what the website's route serves (AUTH_SETUP 5.2). The route fills in the Team ID from the Vercel variable `APPLE_TEAM_ID`; nothing is pasted by hand.
 - Served at `https://earlyletters.com/.well-known/apple-app-site-association`, no extension, `application/json`, HTTPS, **no redirects** (Verified in AUTH_SETUP: Apple "Supporting associated domains").
-- Paths: `/auth/confirm` and `/auth/callback` (email sign-in) and `/j` (co-parent invites, `/j#t=<token>`; BL-348). In each the token is in the fragment, never sent to the server. Nothing else opens the app; the reference file is the list of record.
+- Paths: `/auth/confirm` and `/auth/callback` (email sign-in) and `/j` (co-parent invites, `/j#t=<token>`; BL-348, decided 15 Oct 2026). In each the token is in the fragment, never sent to the server. Nothing else opens the app; the reference file is the list of record.
 - The app's entitlement is `applinks:earlyletters.com` (`webcredentials:earlyletters.com` joins with passkeys, AUTH_SETUP 7). `earlyletters.app` is deliberately not associated.
 - Check what Apple's CDN sees: `curl -s https://app-site-association.cdn-apple.com/a/v1/earlyletters.com` (Apple refreshes within about a day).
 - Android (later): `/.well-known/assetlinks.json` with the release signing certificate's SHA-256. Not at v1.0.

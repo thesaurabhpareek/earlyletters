@@ -11,7 +11,7 @@ What the app expects, in one table:
 | Website (universal links) | `https://earlyletters.com` (from `packages/brand`) |
 | Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=email` (PRD V2 F02 names the path `/auth/confirm`; the website serves the same page at both) |
 | Custom-scheme fallback | `scribe://auth/callback` (opens the code screen; never carries a token) |
-| Invite link | `https://earlyletters.com/j#t=<token>`, token in the fragment (PRD V2 F11, B-NFR-002; the app writes this from `fix/invite-link-fragment` eed2855; the older `/i/<token>` form shipped in no build and is refused) |
+| Invite link | `https://earlyletters.com/j#t=<token>`, token in the fragment (PRD V2 F11, B-NFR-002; BL-348, decided 15 Oct 2026; the app writes it from PR #165; the older `/i/<token>` form shipped in no build and is refused) |
 | Bundle ids | `com.earlyletters.scribe` (production), `.preview` (TestFlight alpha builds), `.dev` (development builds; no universal links) |
 | Sender | `hello@earlyletters.com` through Resend SMTP |
 
@@ -158,7 +158,7 @@ When a link opens in a browser instead of the app (desktop, a mail app's own bro
 
 **`/j` (invites)** (PRD V2 F11 6.3 step 1, F11-U01, F11-REQ-005)
 - A generic page: no child name, no inviter name, no photo, generic link preview tags (B-NFR-002). One action: copy the whole link (a tap), then "open the app, tap I was invited, and paste". The App Store button joins when the listing exists.
-- The token is in the fragment (`/j#t=<token>`), so no request to the website carries it, the page's own included. This replaced `/i/<token>` (token in the path, so in Vercel's request logs) before any build shipped. This is BL-348's "yes": you first chose `/i/<token>`, and FT-04 item 7 asks again; PRD V2 F11 and the Privacy Policy line on tokens (servers never log them) both need the fragment. Confirm it, or say no and `/i/<token>` comes back with the policy line rewritten.
+- The token is in the fragment (`/j#t=<token>`), so no request to the website carries it, the page's own included. This replaced `/i/<token>` (token in the path, so in Vercel's request logs) before any build shipped. Decided by the founder on 15 Oct 2026 (BL-348, FT-04 item 7; PR #165): `/j#t=<token>`, and `/i/<token>` is neither written nor accepted. Privacy Policy 1.4.0 makes no claim about where tokens travel (CN-23); restoring that claim is counsel's call (COUNSEL_PACKET Q23).
 
 ## 6. Email templates to paste
 
