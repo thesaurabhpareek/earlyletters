@@ -64,6 +64,8 @@ Sources: `docs/DECISIONS.md` on `origin/develop` (D-068 to D-081) and on `origin
 | M16 | **Backup keys are recoverable, and the copy says so (founder, 13 Oct).** Keep server escrow. Copy says recordings are encrypted, we hold a recovery key under strict, logged access, and they are never read, sold or used to train models. No "only your family's keys" claim anywhere. | F08 E2E wording, mic string, legal lines | Specify the access log, who can unwrap, and how; fix every claim. |
 | M17 | **Free letters count your own letters, once their words exist and you have seen them (founder, 13 Oct).** The other parent's synced letters never count. A voice-only letter waiting for its model does not count until its words are reviewed and kept. Ledger stays never-decreasing. | Code's count of letters present on the device; DR-16 | Change F14 and the ledger spec; work packages to change the code. |
 
+Decisions log: M14 to M17 are proposed for `docs/DECISIONS.md` as D-089 to D-092 in PR #128 (D-092 amends D-083's rule that a voice letter kept without words counts at once). The three delivery defaults are D-093 in that PR, a proposal awaiting the founder; until confirmed, the founder merges every pull request.
+
 Decided since: D-023 sync engine is outbox and cursor on expo-sqlite (founder, 3 Oct). Decisions still open (cite, do not decide): the eight D-051 (main) open edges, D-033 free audio durability copy, D-004 individual-publisher hedge, D-045 beta cohorts, D-031 Hindi script default, D-050 second consent at first share (counsel), plus anything the brief creates (see B2 consequences).
 
 ## 4. Feature map and file names
