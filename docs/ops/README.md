@@ -9,6 +9,7 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 |---|---|
 | [SECURITY.md](SECURITY.md) | Every secret and who holds it, key rotation, least privilege, the Supabase settings checklist, the Sign in with Apple key for token revocation |
 | [DOMAINS.md](DOMAINS.md) | earlyletters.com and earlyletters.app at Porkbun: account security, every DNS record, DMARC plan, CAA, Vercel, packs CDN, universal links, addresses, security.txt |
+| [ENVIRONMENTS.md](ENVIRONMENTS.md) | Local, staging and production; the four build profiles and their switches; where every value lives; staging during the alpha (D-106) |
 | [well-known/](well-known/) | Files the website must serve: `apple-app-site-association`, `security.txt` |
 | [runbooks/stuck-deletion.md](runbooks/stuck-deletion.md) | An account deletion that has not finished |
 | [runbooks/purge-failing.md](runbooks/purge-failing.md) | The purge or the worker is not running, or Storage deletes fail; installing the schedule |
@@ -83,4 +84,4 @@ Deno comes from npm (`npx -y deno@2.9.6`, about 40 MB on first run); no global i
 | pg_cron plus pg_net plus Vault pattern | Verified (Supabase "Scheduling Edge Functions"); `timeout_milliseconds` parameter name is an Assumption from pg_net docs |
 | `EdgeRuntime.waitUntil` keeps work running after the 202 | Assumption (Supabase background tasks); if absent the handler simply waits for the run |
 | Edge Function wall clock 150 s (Free) or 400 s (paid) | Assumption (TDD 02); the worker stops starting work at 110 s |
-| R2 custom domains need the zone on Cloudflare | Verified (Cloudflare R2 docs); matters for packs.earlyletters.com (DOMAINS.md) |
+| R2 custom domains need the zone on Cloudflare | Verified (Cloudflare R2 docs); matters for packs.earlyletters.app (D-097; DOMAINS.md section 6) |

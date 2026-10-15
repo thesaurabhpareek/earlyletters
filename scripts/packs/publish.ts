@@ -2,7 +2,7 @@
  * Builds and signs packs and public documents (ADR 0016). Never uploads.
  *
  *   export EL_SIGNING_KEY=...  EL_SIGNING_KEY_ID=...     # from your password manager, never committed
- *   npx tsx scripts/packs/publish.ts packs   [--base-url https://packs.earlyletters.com] [--min-app 1.0.0]
+ *   npx tsx scripts/packs/publish.ts packs   [--base-url https://packs.earlyletters.app] [--min-app 1.0.0]
  *   npx tsx scripts/packs/publish.ts config  [--kill sync] [--unkill sync]
  *   npx tsx scripts/packs/publish.ts content
  *   npx tsx scripts/packs/publish.ts all
@@ -33,6 +33,8 @@ import {
   buildRemoteConfig,
   buildTextRulesPack,
   configModule,
+  documentObjects,
+  documentUploadCommands,
   contentModule,
   killSwitchSteps,
   publishedVersion,
@@ -83,7 +85,7 @@ const steps: string[] = [];
 const out = (s: string) => process.stdout.write(`${s}\n`);
 
 if (what === 'packs' || what === 'all') {
-  const baseUrl = arg('base-url') ?? 'https://packs.earlyletters.com';
+  const baseUrl = arg('base-url') ?? 'https://packs.earlyletters.app'; // D-097
   const minAppVersion = arg('min-app') ?? '1.0.0';
   const built: BuiltFile[] = [];
   const sources = existsSync(TEXT_RULES_DIR) ? readdirSync(TEXT_RULES_DIR).filter((f) => /^[a-z]{2}\.json$/.test(f) && f !== 'en.json') : [];
@@ -116,7 +118,7 @@ if (what === 'config' || what === 'all') {
 
 if (what === 'packs' || what === 'config' || what === 'all') {
   writeFileSync(CONFIG_MODULE, configModule(remoteConfigDoc, manifestDoc));
-  steps.push('Deploy the config function:', '  npx supabase functions deploy config --no-verify-jwt --use-api');
+  steps.push('Optional, only where a build reads documents from Supabase (no EXPO_PUBLIC_DOCS_BASE_URL): deploy the config function:', '  npx supabase functions deploy config --no-verify-jwt --use-api');
 }
 
 if (what === 'content' || what === 'all') {
@@ -125,7 +127,18 @@ if (what === 'content' || what === 'all') {
   bundles.en = sign('content-bundle', bundle, key, TRUSTED_SIGNING_KEYS).text;
   writeFileSync(CONTENT_MODULE, contentModule(bundles));
   out(`content bundle en v${bundle.version}: ${bundle.blocks.length} blocks`);
-  steps.push('Deploy the content function:', '  npx supabase functions deploy content --no-verify-jwt --use-api');
+  steps.push('Optional, only where a build reads documents from Supabase (no EXPO_PUBLIC_DOCS_BASE_URL): deploy the content function:', '  npx supabase functions deploy content --no-verify-jwt --use-api');
+}
+
+// D-097: the builds read signed documents from the pack host, so they go to R2 too.
+const documents = documentObjects({ remoteConfig: remoteConfigDoc, packManifest: manifestDoc, contentEn: bundles.en ?? null });
+for (const d of documents) {
+  mkdirSync(dirname(join(OUT, d.objectKey)), { recursive: true });
+  writeFileSync(join(OUT, d.objectKey), d.text);
+}
+if (documents.length) {
+  const at = steps.findIndex((s) => s.startsWith('Optional'));
+  steps.splice(at < 0 ? steps.length : at, 0, 'Upload the signed documents the app reads from https://packs.earlyletters.app (after the pack files, so the manifest never points at a missing file):', ...documentUploadCommands(documents, BUCKET).map((c) => `  ${c}`));
 }
 
 out('\nNothing was uploaded or deployed. Next steps (manual):');

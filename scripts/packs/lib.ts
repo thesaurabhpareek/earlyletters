@@ -30,11 +30,14 @@ import {
   type RemoteConfig,
   type SignedDocument,
   type TrustedKey,
+  ENDPOINTS,
 } from '../../packages/api/src/index';
 import { validatePackJson, LANGUAGE_CODES, type LanguageCode } from '../../packages/core/src/lang/index';
 import type { Prompt } from '../../packages/core/src/prompts';
 
 export const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable';
+/** Signed documents change in place, so phones and the CDN must revalidate every time (the signature, not the cache, is the trust). */
+export const DOCUMENT_CACHE = 'no-cache';
 
 // ---------------------------------------------------------------------------
 // Signing key
@@ -274,5 +277,33 @@ export function uploadCommands(files: readonly BuiltFile[], bucket: string): str
     f.bytes.length <= 300_000_000
       ? `npx wrangler r2 object put ${bucket}/${f.objectKey} --file dist/packs/${f.objectKey} --content-type ${f.contentType} --cache-control "${IMMUTABLE_CACHE}" --remote`
       : `rclone copyto dist/packs/${f.objectKey} r2:${bucket}/${f.objectKey} --header-upload "Cache-Control: ${IMMUTABLE_CACHE}"`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Signed documents on the static pack host (D-097)
+
+export interface DocumentObject {
+  objectKey: string;
+  text: string;
+}
+
+/**
+ * The signed documents at the object keys the app requests from
+ * EXPO_PUBLIC_DOCS_BASE_URL (packages/api ENDPOINTS paths without the leading
+ * slash). The query string (`?locale=en`) is not part of an R2 object key.
+ */
+export function documentObjects(docs: { remoteConfig: string | null; packManifest: string | null; contentEn: string | null }): DocumentObject[] {
+  const key = (path: string) => path.replace(/^\/+/, '');
+  const out: DocumentObject[] = [];
+  if (docs.remoteConfig) out.push({ objectKey: key(ENDPOINTS.remoteConfig.path), text: docs.remoteConfig });
+  if (docs.packManifest) out.push({ objectKey: key(ENDPOINTS.packManifest.path), text: docs.packManifest });
+  if (docs.contentEn) out.push({ objectKey: key(ENDPOINTS.contentBundle.path), text: docs.contentEn });
+  return out;
+}
+
+export function documentUploadCommands(docs: readonly DocumentObject[], bucket: string): string[] {
+  return docs.map(
+    (d) => `npx wrangler r2 object put ${bucket}/${d.objectKey} --file dist/packs/${d.objectKey} --content-type application/json --cache-control "${DOCUMENT_CACHE}" --remote`,
   );
 }

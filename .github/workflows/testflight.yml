@@ -1,5 +1,9 @@
 # Builds the iOS app in the cloud and (optionally) uploads it to TestFlight. Manual only: run it from the
-# Actions tab, on `develop` or an `ios-v*` tag. NOTHING here has been run: it needs the founder's Expo and
+# Actions tab, on `develop` or an `ios-v*` tag, for one of the two alpha profiles (D-106):
+#   testflight  alpha build 1, server features off
+#   preview     alpha build 2, server features on against staging (its Supabase values come from the
+#               EAS "preview" environment, never from this repository or this workflow)
+# NOTHING here has been run: it needs the founder's Expo and
 # Apple accounts, so every assumption below is UNVERIFIED until the first real run. The same thing from a
 # Mac or any computer is the two eas commands in docs/release/TESTFLIGHT.md.
 #
@@ -15,6 +19,11 @@ name: testflight
 on:
   workflow_dispatch:
     inputs:
+      profile:
+        description: Which alpha build (testflight is build 1, servers off; preview is build 2, servers on)
+        type: choice
+        options: [testflight, preview]
+        default: testflight
       submit:
         description: Upload to TestFlight after the build finishes
         type: boolean
@@ -29,8 +38,9 @@ concurrency:
 
 env:
   CI: true
-  # The input goes through the environment, never into the script text.
+  # The inputs go through the environment, never into the script text.
   SUBMIT: ${{ inputs.submit }}
+  PROFILE: ${{ inputs.profile }}
 
 jobs:
   build:
@@ -56,7 +66,9 @@ jobs:
 
       # Configuration only; needs no secrets. Fails the run on any FAIL, passes on WARN (read the log).
       - name: Preflight
-        run: npm run preflight:testflight -w @scribe/mobile
+        run: |
+          case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
+          npm run preflight:testflight -w @scribe/mobile -- --profile "$PROFILE"
 
       - name: Build on EAS
         working-directory: apps/mobile
@@ -65,7 +77,8 @@ jobs:
         run: |
           # Fail without printing the token, a command line that contains it, or the environment.
           if [ -z "$EXPO_TOKEN" ]; then echo "EXPO_TOKEN repository secret is not set"; exit 1; fi
-          args=(build --platform ios --profile testflight --non-interactive --wait)
+          case "$PROFILE" in testflight|preview) ;; *) echo "unknown profile"; exit 1 ;; esac
+          args=(build --platform ios --profile "$PROFILE" --non-interactive --wait)
           if [ "$SUBMIT" = "true" ]; then args+=(--auto-submit); fi
           # UNVERIFIED: eas-cli's current flags (--auto-submit uses the submit profile with the same name).
           npx --yes eas-cli@latest "${args[@]}"
