@@ -4,7 +4,7 @@
  * at launch). `/invite/new?childId=<id>` from the Family tab.
  *
  * create_child_invite(child, 'parent', signs_as) returns the token once; the
- * link https://earlyletters.com/i/<token> goes straight to the share sheet
+ * link https://earlyletters.com/j#t=<token> goes straight to the share sheet
  * and is never stored or shown again. "Share again" on the Family tab makes a
  * new link and cancels the old one.
  */
