@@ -4,6 +4,8 @@ import {
   bytesToBase64,
   canonicalJson,
   createSha256,
+  decideDocumentVersion,
+  documentPayloadSha256,
   generateSigningKey,
   sha256Hex,
   signDocument,
@@ -124,5 +126,34 @@ describe('signed documents', () => {
       const r = verifySignedDocument(junk, 'pack-manifest', trusted);
       expect(r.ok).toBe(false);
     }
+  });
+});
+
+describe('[G-18] one document per version (security review L10)', () => {
+  const a = documentPayloadSha256({ version: 7, killSwitches: { sync: true } });
+  const b = documentPayloadSha256({ version: 7, killSwitches: { sync: false } });
+
+  it('hashes canonical JSON, so key order and whitespace do not matter', () => {
+    expect(documentPayloadSha256(JSON.parse('{"b":1,"a":[1,2]}'))).toBe(documentPayloadSha256({ a: [1, 2], b: 1 }));
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(a).not.toBe(b);
+  });
+
+  it('accepts the first copy and any newer version', () => {
+    expect(decideDocumentVersion(null, { version: 1, payloadSha256: a })).toBe('accept');
+    expect(decideDocumentVersion({ version: 7, payloadSha256: a }, { version: 8, payloadSha256: b })).toBe('accept');
+  });
+
+  it('refuses an older version', () => {
+    expect(decideDocumentVersion({ version: 7, payloadSha256: a }, { version: 6, payloadSha256: a })).toBe('rollback');
+  });
+
+  it('keeps the same version only when the content is identical', () => {
+    expect(decideDocumentVersion({ version: 7, payloadSha256: a }, { version: 7, payloadSha256: a })).toBe('unchanged');
+    expect(decideDocumentVersion({ version: 7, payloadSha256: a }, { version: 7, payloadSha256: b })).toBe('same_version_conflict');
+  });
+
+  it('refuses a same-version copy when the accepted hash is unknown', () => {
+    expect(decideDocumentVersion({ version: 7, payloadSha256: null }, { version: 7, payloadSha256: a })).toBe('same_version_conflict');
   });
 });

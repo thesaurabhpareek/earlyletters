@@ -28,7 +28,8 @@ import { useMotion } from '@/lib/motion';
 
 export type ToastOptions = {
   message: string;
-  action?: { label: string; onPress: () => void };
+  /** `testID`: E2E id on the action button (for example `letter.undo`). */
+  action?: { label: string; onPress: () => void; testID?: string };
   /** Only for toasts without an action. */
   durationMs?: number;
   onDismiss?: () => void;
@@ -103,6 +104,7 @@ export function Toast({ message, action, durationMs = 4000, bottomOffset = 0, on
                 size="sm"
                 variant="secondary"
                 label={action.label}
+                testID={action.testID}
                 onPress={() => {
                   haptic('tap');
                   action.onPress();
