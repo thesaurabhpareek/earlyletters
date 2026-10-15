@@ -1,6 +1,6 @@
 # Device test plan: the first real-iPhone session and the TestFlight beta
 
-Owner: qa-e2e. Version 1.0, 3 Oct 2026. For the founder (who runs it) and the coordinator (who files the follow-ups).
+Owner: qa-e2e. Version 1.1, 15 Oct 2026 (S2-17, TF-10 and TF-11 added; S2-17 and TF-10 ported from `auto/2026-10-05-fixes`, D-093). For the founder (who runs it) and the coordinator (who files the follow-ups).
 Inputs: TDD 07 (sections 3 to 5, 11), PRD 6 and 7, ROADMAP 2.x (week 2 device spikes, C0 from 14 Oct, C1 from 19 Oct), `docs/ops/AUTH_SETUP.md` 11, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, `docs/ops/APP_SIZE.md`, ADR 0013 to 0017, TDD 03 failure modes, TDD 09, `apps/mobile/src/lib/README.md`, the agents' "needs a real device" notes.
 
 Labels: **V** verified on a vendor page on 3 Oct 2026; **A** assumption to confirm during the session; **F** fact found in the repo.
@@ -273,6 +273,22 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 
 ---
 
+### S2-17 Plan reminders and the purchase confirmation with Save a copy (G-15, D-094; BL-342; Q-003 memo section 5; LEGAL-REQ-046 to -049 as amended; PR #121)
+Needs a TestFlight build with PR #121, and a Sandbox Apple Account set to the 1-hour renewal rate (App Store Connect > Users and Access > Sandbox > the account > Subscription Renewal Rate, V). Ported from `auto/2026-10-05-fixes` (`d1cbddb`) and adapted to D-083 (no price in app copy) and D-094 (reminders are a courtesy).
+- **Steps:**
+  1. A sandbox account that never had a trial: keep two letters, then keep a third; at the Keep gate tap See Plus and buy `plus.monthly`.
+  2. On the confirmation screen (it opens over Review): read the plan, the free-until date, the cancel-by date (that date minus 24 hours), how to cancel, Apple's role, Family Sharing and the courtesy line about reminders. Tap "Save a copy": the share sheet; send it to Notes. Tap "Remind me before the free period ends" if shown: the iOS notification prompt follows only on that tap. Tap Done: back on Review; tap Keep.
+  3. Settings, Plan: the note with its date once a window is open; the "Save a copy of the terms" row.
+  4. Move the phone's date to one hour after the trial-week target (`E - 7d`), with the phone locked; then set it back.
+  5. Turn off auto-renew in Apple's Manage subscription sheet; relaunch.
+  6. Repeat 1 to 3 with `plus.annual` (2-month trial) on a second sandbox account.
+  7. A co-parent or family member who has Plus through Family Sharing: open Settings, Plan.
+  8. Turn notifications off for the app in iOS Settings; open Settings, Plan.
+- **Expected:** (2) every line present and correct, **no price and no "free trial" anywhere** (D-083), the copy in Notes reads the same, no child name and no letter text; the held letter is kept only after the Keep tap; (3) the note lists the dates; (4) one notification on the lock screen with no child name and no price, and tapping it opens Settings, Plan; a window that has passed is skipped, never sent late; (5) pending reminders are gone; (6) the annual and long-trial reminders follow the memo table (`E-18d` long trial, `E-4d 12h` trial final; `E-30d 12h` and `E-7d` renewal); (7) no reminders and no "Save a copy" for a family-shared plan; (8) the "Allow notifications" row appears, and the dates are still on the screen.
+- **Record:** S2-17 row: the dates shown versus the memo table, the notification text as seen, and whether any reminder came late or not at all (the courtesy wording in D-094 must stay true).
+- **Update:** BACKLOG BL-342 device check; FT-39 evidence; `docs/legal/memos/q-003-subscription-notices.md` known gaps if behaviour differs.
+- Note: TestFlight sandbox renews every day up to 6 times in a week, and a Sandbox Apple Account's renewal rate compresses a year to at most an hour (V: Apple, "Subscription renewal rate in TestFlight" and "Test in-app purchases"), so real-calendar reminder dates can be checked only by moving the phone's date or in the planner's unit tests (`apps/mobile/test/billing-plan-reminders.test.ts`, 52 tests over a synthetic year).
+
 ## Part 3. TestFlight beta (C0 internal from 14 Oct, C1 external from about 19 Oct; D-045)
 
 ### TF-01 App size from Apple's numbers (decision 15, D-065)
@@ -328,6 +344,19 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 - **Record:** TF-09 in the evidence file of the review day. **Update:** ROADMAP and the founder's go or no-go note in DECISIONS (coordinator).
 
 ---
+
+### TF-10 Privacy manifest in the archive (G-23, security review L7, LEGAL-REQ-043; ITMS-91053)
+#100's preflight checks the manifest in the config and in a prebuilt native project; this row checks the real archive.
+- **Steps:** On a Mac, download the first production build's `.ipa` from EAS. (a) Unzip it and open `Payload/*.app/PrivacyInfo.xcprivacy` (plist): compare with `ios.privacyManifests` in `apps/mobile/app.config.ts` and `docs/legal/app-store-privacy-labels.md`. (b) List every bundled manifest: `find Payload -name PrivacyInfo.xcprivacy`. (c) In Xcode, Window > Organizer > the archive > Generate Privacy Report (A: menu location from Apple's WWDC23 session "Get started with privacy manifests"); save the PDF outside the repo. (d) After the upload in TF-02, read App Store Connect's email for any "ITMS-91053: Missing API declaration" warning.
+- **Expected:** `NSPrivacyTracking` false, no tracking domains, every required-reason category declared in `app.config.ts`, and no collected data types (v1.0 is "Data Not Collected", D-088, D-095); every SDK Apple lists as needing a signed manifest has one; no ITMS-91053 email.
+- **Record:** TF-10 row: manifests found (count), any reason missing, the email result.
+- **Update:** `docs/legal/app-store-privacy-labels.md` (legal owner); `app.config.ts` through the mobile owner if a reason is missing.
+
+### TF-11 No analytics in the build (D-095, D-088; PR #118)
+- **Steps:** On a TestFlight build, with a proxy that shows the phone's traffic (or the Xcode network instrument), run first run, keep two letters, and close and reopen the app on three different days (move the date). Open Settings, Privacy.
+- **Expected:** no "Help us make it better?" sheet ever appears; Settings, Privacy has no usage switch; no request to any PostHog host (or any analytics host) in the traffic. The only network destinations are the docs, pack and speech model hosts, and Apple.
+- **Record:** TF-11 row: the hosts seen in the traffic.
+- **Update:** the data map and `docs/legal/app-store-privacy-labels.md` if any other host appears.
 
 ## Facts and assumptions this plan rests on
 
