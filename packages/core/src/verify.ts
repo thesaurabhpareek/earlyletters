@@ -27,8 +27,8 @@
  */
 import type { DictionaryTerm, Edit, EditLevel, EditType, RejectReason, RejectedEdit, Span } from './types';
 import { frozenSet, lettersOnly, nfc, splitsCluster, WORD_CHAR_CLASS, type Token } from './text';
-import { overlaps } from './protect';
-import { MOOD_CANON } from './meaning';
+import { overlaps, quotedSpans } from './protect';
+import { invisibleSignature, invisiblesOf, isClosedAgreementPair, MOOD_CANON, quotationMarkCount } from './meaning';
 import { ENGLISH_RULES, type LanguageRules } from './lang/engine';
 
 /** Starting values. Tune on real recordings (PRD v2 section 24, experiment 2). */
@@ -41,6 +41,40 @@ const LEVEL_TYPES: Readonly<Record<EditLevel, ReadonlySet<EditType>>> = Object.f
 });
 
 const REMOVAL_TYPES: ReadonlySet<EditType> = frozenSet<EditType>(['filler', 'repeat', 'false_start']);
+
+/**
+ * Edit types that may add, remove or move an invisible character (direction
+ * mark, joiner, zero-width space). None at v1.0 (F06-REQ-003): a type that
+ * needs to (a future script conversion, say) must be listed here on purpose,
+ * with its own test.
+ */
+const INVISIBLE_EDIT_TYPES: ReadonlySet<EditType> = frozenSet<EditType>([]);
+
+/**
+ * Edit types that may never land inside quoted speech in any quotation style
+ * (F06-REQ-006). Checked against the raw text itself, so it holds whatever
+ * spans the caller passed. Punctuation and paragraph edits are held by the
+ * letter, word and quotation-mark guards instead (French spacing inside « »).
+ */
+const QUOTE_GUARDED_TYPES: ReadonlySet<EditType> = frozenSet<EditType>(['filler', 'repeat', 'false_start', 'stt_fix', 'agreement']);
+
+/** quotedSpans and the quotation-mark count of the last raw text seen; verifyEdits checks many edits against one raw. */
+let rawMemo: { raw: string; quotes: Span[]; quoteMarks: number } | null = null;
+function rawFacts(raw: string): { quotes: Span[]; quoteMarks: number } {
+  if (rawMemo?.raw !== raw) rawMemo = { raw, quotes: quotedSpans(raw), quoteMarks: quotationMarkCount(raw) };
+  return rawMemo;
+}
+
+/**
+ * No invisible character added, removed or swapped; and in a punctuation or
+ * paragraph edit, none moved relative to the visible characters around it.
+ */
+function changesInvisible(e: Edit): boolean {
+  if (INVISIBLE_EDIT_TYPES.has(e.type)) return false;
+  if (invisiblesOf(e.original) !== invisiblesOf(e.replacement)) return true;
+  if (e.type !== 'punctuation' && e.type !== 'paragraph') return false;
+  return invisibleSignature(e.original) !== invisibleSignature(e.replacement);
+}
 
 /*
  * Single words whose immediate double is an accidental repeat (not emphasis)
@@ -306,7 +340,12 @@ function checkAgreement(e: Edit, R: LanguageRules): RejectReason | null {
   }
   const a = o[0].word;
   const b = r[0].word;
-  if (!R.isAgreementPair(a, b)) return R.classifyWordSwap(a, b);
+  // A closed table only (F06-REQ-007): the pack's listed verb and article
+  // groups. The pack's generic -s, -es, -ies inflections are never used, so
+  // a noun's number ("daughters" -> "daughter") cannot change.
+  if (!isClosedAgreementPair(a, b, R.pack?.meaning.agreementGroups ?? [], (w) => R.isKinship(w))) {
+    return R.isAgreementPair(a, b) ? 'agreement_stem_mismatch' : R.classifyWordSwap(a, b);
+  }
   if ((a[0] === a[0].toUpperCase()) !== (b[0] === b[0].toUpperCase())) return 'agreement_stem_mismatch';
   return null;
 }
@@ -385,6 +424,9 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   if (!LEVEL_TYPES[ctx.level].has(e.type)) return 'type_not_allowed_at_level';
   if (!enabledForLanguage(e.type, R)) return 'not_vetted_for_language';
 
+  // Direction marks and joiners change how a word reads without being seen (F06-REQ-003).
+  if (changesInvisible(e)) return 'changes_invisible';
+
   // No edit may start or end inside one written character: between a letter
   // and its vowel sign, after a virama, or inside a surrogate pair (CORE-01).
   if (splitsCluster(raw, e.start) || splitsCluster(raw, e.end)) return 'splits_word';
@@ -392,6 +434,8 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
   // Dictionary corrections from our own rules are allowed to land on a
   // mis-cased name; everything else must stay clear of protected spans.
   if (ctx.protectedSpans.some((p) => overlaps(p, e))) return 'overlaps_protected';
+  const facts = rawFacts(raw);
+  if (QUOTE_GUARDED_TYPES.has(e.type) && facts.quotes.some((q) => overlaps(q, e))) return 'overlaps_protected';
 
   // Only punctuation may work inside a word (sentence case is one letter);
   // its own check compares whole words. Nothing may glue two words together.
@@ -442,6 +486,10 @@ export function checkEdit(e: Edit, ctx: VerifyContext): RejectReason | null {
       break;
   }
   if (reason) return reason;
+
+  // Every Unicode quotation style, counted on the whole text so an apostrophe
+  // inside a word is told apart from a closing quote (F06-REQ-006).
+  if (quotationMarkCount(raw.slice(0, e.start) + e.replacement + raw.slice(e.end)) !== facts.quoteMarks) return 'changes_quotes';
 
   // Belt and braces for every substitution, whatever its label: the words
   // around the edit keep their negations, numbers, end marks and quotes.
