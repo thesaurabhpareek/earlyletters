@@ -277,6 +277,34 @@ try {
   check(String(profEnv.EXPO_PUBLIC_ANALYTICS ?? '').trim() === 'off', `${PROFILE} profile sets EXPO_PUBLIC_ANALYTICS=off (no analytics in either alpha build, D-088)`, `${PROFILE} profile must set EXPO_PUBLIC_ANALYTICS to "off".`);
 }
 
+// ---------------------------------------------------------------- 4a. no secret key in any EXPO_PUBLIC_ value (every profile)
+// Every EXPO_PUBLIC_ value the code names is inlined into the bundle whatever the server switch says, and both alpha
+// profiles read the same EAS "preview" environment. So a secret exported here fails build 1 as well as build 2.
+/** 'secret key' or 'service_role key' when a value is one of Supabase's server keys, otherwise null. */
+function secretKind(value) {
+  if (/^sb_secret_/.test(value)) return 'secret key';
+  if (/^eyJ/.test(value)) {
+    try {
+      if (JSON.parse(Buffer.from(value.split('.')[1] ?? '', 'base64url').toString('utf8')).role === 'service_role') return 'service_role key';
+    } catch {
+      /* not a readable JWT: not this check's business */
+    }
+  }
+  return null;
+}
+{
+  const leaked = Object.entries(process.env)
+    .filter(([k]) => k.startsWith('EXPO_PUBLIC_'))
+    .map(([k, v]) => [k, secretKind(String(v ?? '').trim())])
+    .filter(([, kind]) => kind)
+    .map(([k, kind]) => `${k} holds a ${kind}`);
+  check(
+    leaked.length === 0,
+    'no EXPO_PUBLIC_ variable in this shell holds a Supabase secret or service_role key',
+    `${leaked.join('; ')}. A server key must never be in the app or in EAS build variables (both alpha profiles read the EAS "preview" environment): delete it there now, rotate it in Supabase (Project Settings > API Keys), and use the publishable (anon) key instead.`,
+  );
+}
+
 // ---------------------------------------------------------------- 4b. the staging project values (server-on build only)
 if (SERVER_ON) {
   // EAS cloud builds read these from the EAS "preview" environment, which this script cannot see. If you export
@@ -293,7 +321,7 @@ if (SERVER_ON) {
       ok = false;
       fail(`EXPO_PUBLIC_SUPABASE_URL ${url ? `"${url}"` : 'is empty'}: expected the staging Project URL, https://<20-character ref>.supabase.co, with no path.`);
     }
-    // The publishable key, or the legacy anon JWT. Never the secret key or a service_role JWT.
+    // The publishable key, or the legacy anon JWT. A secret or service_role key already failed in 4a.
     let role = null;
     if (/^eyJ/.test(key)) {
       try {
@@ -302,9 +330,8 @@ if (SERVER_ON) {
         role = 'unreadable';
       }
     }
-    if (/^sb_secret_/.test(key) || role === 'service_role') {
+    if (secretKind(key)) {
       ok = false;
-      fail('The key in this shell is a SECRET or service_role key. It must never be in the app or in EAS build variables: delete it from the EAS "preview" environment now, rotate it in Supabase (Project Settings > API Keys), and use the publishable (anon) key instead.');
     } else if (!/^sb_publishable_[A-Za-z0-9_-]{10,}$/.test(key) && role !== 'anon') {
       ok = false;
       fail(`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY does not look like a publishable key (sb_publishable_...) or the legacy anon key${key ? '' : ' (it is empty)'}.`);
@@ -463,6 +490,8 @@ if (cfg) {
       warn('The privacy manifest declares no collected data (NSPrivacyCollectedDataTypes is empty) but this build signs in and syncs. Fine for internal TestFlight [unverified]; fill it from docs/legal/data-map.yaml (BL-349, WP-F21-09) before any external group or store build.');
   } else {
     notes.push('Server-side code is dormant behind EXPO_PUBLIC_SERVER_FEATURES=off: no Supabase client is constructed, no network call is made for sign-in or sync, and co-parent entry points show "coming soon". Analytics is switched off (EXPO_PUBLIC_ANALYTICS=off): no consent sheet, no usage switch, no PostHog client, and no PostHog key is in the build.');
+    if (prof?.environment === 'preview')
+      notes.push('This profile reads the same EAS "preview" environment as build 2, so the staging URL and publishable key are inlined in this bundle too. Both are public by design and unused here: with the switch off no client is constructed. A secret key in that environment would ship in this build as well (the 4a check above).');
   }
   notes.push('Plus is a StoreKit 2 in-app purchase (product ids plus.annual and plus.monthly) created under THIS App Store Connect record: the .preview record needs its own products and the Paid Apps agreement before sandbox purchases load. Review notes for guideline 3.1.2(a) belong to the production submission, not TestFlight internal testing (unverified).');
 }

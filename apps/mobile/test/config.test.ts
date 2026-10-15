@@ -302,6 +302,16 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     });
   });
 
+  it('builds 1 and 2 may share the "preview" update channel only while the app has no update client', () => {
+    // The switches are inlined at bundle time, so an over-the-air update made for build 2 (servers on) would turn
+    // servers on in build 1 if both listened on one channel. Today nothing listens: expo-updates is not installed.
+    // Adding it means giving testflight and preview their own channels first.
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as Record<string, Record<string, string> | undefined>;
+    const hasUpdates = ['dependencies', 'devDependencies'].some((k) => pkg[k]?.['expo-updates'] !== undefined);
+    const shared = eas.build.testflight.channel === eas.build.preview.channel;
+    expect(hasUpdates && shared, 'expo-updates is installed: give testflight and preview their own channels').toBe(false);
+  });
+
   it('production stays off (store submission is re-planned after the alpha, D-106)', () => {
     expect(eas.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
     expect(configForProfile('production').extra?.serverFeatures).toBe(false);

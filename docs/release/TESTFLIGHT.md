@@ -148,11 +148,17 @@ When the gate passes and you approve it, the `testflight` profile turns on in **
 
 ## If something goes wrong (the kill path)
 
-The switch is the kill path (D-100): a build made with `EXPO_PUBLIC_SERVER_FEATURES=off` constructs no Supabase client, starts no sync and offers no sign-in (`apps/mobile/src/lib/capabilities.ts` and its tests). In order of speed:
+The switch is the kill path (D-100): a build made with `EXPO_PUBLIC_SERVER_FEATURES=off` constructs no Supabase client, starts no sync and offers no sign-in (`apps/mobile/src/lib/capabilities.ts` and its tests). Staging holds real family letters during the alpha, so first decide which case this is:
+- **Data may be exposed** (an access rule wrong, a key leaked, letters seen by the wrong person): pause the staging project first (Project Settings > General > Pause project; menu names *unverified*). That is the only step that stops reads at once: signing people out ends their refresh tokens, but an access token already issued stays valid until it expires (Supabase's default is one hour, *unverified* for this project).
+- **Something is broken but nothing is exposed:** steps 1 to 3 in order, no pause needed.
+
+In order of speed:
 1. **Stop the server side now.** Supabase staging: Authentication > turn off "Allow new users to sign up"; sign the users out (Authentication > Users) if sessions must end; pause the project as the hard stop (menu names *unverified*). Letters already on phones stay on the phones (local first); sync waits.
+   - **If a secret or service_role key was ever in the EAS "preview" environment or in a build:** rotate it in Supabase (Project Settings > API Keys) before anything else, delete it from EAS (`npx eas-cli env:list --environment preview` to see what is there), and expire every build made while it was there (step 2). Both alpha profiles read that environment, so build 1 carries it too. Rotating the publishable key also cuts off every installed build 2; that is the fastest app-side stop if pausing is not possible.
 2. **Stop the build.** App Store Connect > TestFlight > the build > Expire build: no new installs, and installed copies stop opening (*unverified*).
 3. **Ship a servers-off build** to the family: build the `testflight` profile (off) and add it to "Family".
-4. Remote kill switches do not help in the alpha: `sync` and `invites` have no consumers yet (WP-F19-12s, -12f), and no signed remote config reaches a phone before step 4's keys are in a build. Backup and the status report are not in either build (build flags off), so there is nothing to pause.
+4. **Tell the family and decide about staging data.** Say what happened and what was or was not exposed, in plain words. Letters synced to staging stay there until removed. If they must go, first have each person export their book (Settings > Export your book) so nothing depends on staging, then the founder removes the data or deletes the staging project. Write down what happened in `docs/ops/` before the next build.
+5. Remote kill switches do not help in the alpha: `sync` and `invites` have no consumers yet (WP-F19-12s, -12f), and no signed remote config reaches a phone before step 4's keys are in a build. Backup and the status report are not in either build (build flags off), so there is nothing to pause.
 
 ## What testers get
 
@@ -183,6 +189,7 @@ If a build goes out without step 4, add: "Recording works, but the words will no
 `npm run preflight:testflight -w @scribe/mobile` (build 1) and `npm run preflight:alpha -w @scribe/mobile` (build 2); add `-- --skip-prebuild` to skip the native project (about a minute). It never builds, never goes online and needs no secret. FAIL stops (exit 1); WARN does not.
 - **eas.json:** the profile is a store build with `EXPO_PUBLIC_APP_ENV=preview`, EAS-owned build numbers and a submit profile; server features `off` in `testflight` (a WARN if the R-17 flip is in), `on` in `preview`, never on in `production`; the two build flags written as `off`; no Supabase URL or key and nothing named like a secret in the file.
 - **Config:** the `.preview` bundle id, URL scheme, microphone string, no background audio, no other permission, privacy manifest, export compliance, version, icons, and `extra` recording the switch and the build flags.
+- **Both builds:** a FAIL if any `EXPO_PUBLIC_` variable exported in the shell holds a Supabase secret (`sb_secret_...`) or `service_role` key. Both profiles read the EAS "preview" environment, so export its values before either preflight to have them checked.
 - **Build 2 only:** if you export `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the shell, their shape (and a FAIL for a secret or `service_role` key); the email code length to match in Supabase; a WARN that the privacy manifest declares no collected data although the build syncs (fine for internal TestFlight, *unverified*; BL-349 and WP-F21-09 before any external group).
 - **Packs:** the docs base, the signing key and a published manifest (step 4).
 - **No real family data** in the tree; the native project generates in a temporary copy.
