@@ -15,7 +15,7 @@ The machine may remove and repair. It may never add meaning.
 |---|---|
 | `apps/mobile` | Expo SDK 57 app: iOS first, Android later (Expo Router) |
 | `packages/core` | Faithful-edit engine, verifier, age math, prompt selection, safety tiers. Pure TS, no React Native |
-| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 104 prompts. `VOICE.md`, `BRAND.md` |
+| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 103 prompts. `VOICE.md`, `BRAND.md` |
 | `packages/design-tokens` | Colours, type, spacing, motion. One source for iOS and web |
 | `packages/brand` | Public name, store name, company, bundle ID |
 | `supabase/migrations` | Database schema and access rules |
@@ -31,7 +31,7 @@ The machine may remove and repair. It may never add meaning.
 ## Commands
 ```bash
 npm install            # once, at the repo root
-npm test               # every workspace (~1,150 tests: core, mobile, api, analytics, content, emails, tokens, experiments); Node 22+
+npm test               # every workspace with a test script: core, mobile, api, analytics, content, brand, emails, design-tokens, experiments; Node 22.5+ (node:sqlite)
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
 npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (15 files)
 npm run test:functions # Edge Functions and ops scripts (Deno via npx)
@@ -51,6 +51,15 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - No entry text, transcript, audio or child name in analytics, logs or crash reports.
 - Safety tiers stay on the device; there is no server table for them.
 - Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha". Enforced by `packages/content/test/no-real-family-data.test.ts` (stores only hashes).
+
+## Agents
+- How the harness works, end to end: `docs/agents/HARNESS.md`. The team (19 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`.
+- Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
+- Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
+
+## Saving work (every session, human or AI)
+- A usage limit can stop any session at any moment, and anything not pushed exists only in that session's workspace.
+- Commit and push work in progress at least every 30 minutes, and always before launching parallel agents: to your branch, or to `wip/<topic>` if it is not ready for a PR.
 
 ## Branches and commits
 - `main` is always releasable. Work on short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `exp/<what>` (experiments), `docs/<what>`.

@@ -18,7 +18,14 @@ const uniwindConfig = withUniwindConfig(config, {
 const uniwindResolve = uniwindConfig.resolver.resolveRequest;
 const path = require('path');
 const sqliteChannelFix = path.join(__dirname, 'web-preview', 'sqlite-worker-channel.js');
+// Every platform: expo-router > query-string 7 needs decode-uri-component 0.2.2, whose fallback for a
+// malformed link is exponential (GHSA-vcc3-ghjq-m6fr; security review L6, G-22). The fixed 0.5.0 is
+// ESM-only, so the bundle gets a CommonJS copy of its decoder instead (shims/decode-uri-component.js).
+const decodeUriComponentShim = path.join(__dirname, 'shims', 'decode-uri-component.js');
 uniwindConfig.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'decode-uri-component') {
+    return { type: 'sourceFile', filePath: decodeUriComponentShim };
+  }
   if (platform === 'web' && moduleName === './exports/InputAccessoryView' && context.originModulePath.includes('react-native-web')) {
     return context.resolveRequest(context, moduleName, platform);
   }

@@ -70,9 +70,19 @@ private extension UIColor {
 /// Presents Apple's store view in a real SwiftUI sheet. A clear, full-screen
 /// host carries the sheet so SwiftUI's own dismiss (the store view's Close
 /// button, a swipe down) works and reports back exactly once.
+///
+/// Never stuck (security review L9): if UIKit refuses the presentation (the
+/// presenter is busy or leaves the window) the completion never fires, so a
+/// watchdog checks that the host really appeared and otherwise closes with
+/// "unavailable". If anything else removes the host (a deep link dismissing
+/// every modal), the root's onDisappear closes it too. Every path goes through
+/// `tearDown`, which reports once and clears state, so the next tap works.
 @MainActor
 final class StoreSheet {
   static let shared = StoreSheet()
+
+  /// How long UIKit gets to show the host before we assume it refused.
+  private static let presentTimeout: TimeInterval = 2.0
 
   private var host: UIViewController?
   private var model: StoreSheetModel?
@@ -88,8 +98,9 @@ final class StoreSheet {
     let host = UIHostingController(rootView: StoreSheetRoot(model: model, content: content))
     host.view.backgroundColor = .clear
     host.modalPresentationStyle = .overFullScreen
-    model.onDismiss = { [weak self] outcome in
-      self?.tearDown(outcome: outcome)
+    model.onDismiss = { [weak self, weak host] outcome in
+      guard let self, let host, self.host === host else { return }
+      self.tearDown(outcome: outcome)
     }
     self.model = model
     self.host = host
@@ -97,26 +108,41 @@ final class StoreSheet {
     presenter.present(host, animated: false) {
       model.isPresented = true
     }
+    // UIKit calls the completion above only when the presentation happens.
+    // A main-actor task (not a GCD block) so the checks stay actor-isolated.
+    Task { @MainActor [weak self, weak host] in
+      try? await Task.sleep(nanoseconds: UInt64(Self.presentTimeout * 1_000_000_000))
+      guard let self, let host, self.host === host else { return }
+      if host.presentingViewController == nil && !model.isPresented {
+        self.tearDown(outcome: "unavailable")
+      }
+    }
   }
 
   /// Closes the sheet if it is open (a purchase arrived through Transaction.updates).
   func finish(outcome: String) {
     guard let model, model.isPresented else { return }
     model.outcome = outcome
-    model.isPresented = false
+    model.isPresented = false // SwiftUI's onDismiss then calls tearDown
   }
 
+  /// Idempotent: the first call reports the outcome; later calls do nothing.
   private func tearDown(outcome: String) {
-    let done = completion
+    guard let done = completion else { return }
     completion = nil
+    model?.onDismiss = nil
     model = nil
     guard let host else {
-      done?(outcome)
+      done(outcome)
       return
     }
     self.host = nil
-    host.dismiss(animated: false) {
-      done?(outcome)
+    if host.presentingViewController != nil {
+      host.dismiss(animated: false) {
+        done(outcome)
+      }
+    } else {
+      done(outcome)
     }
   }
 }
@@ -139,6 +165,9 @@ struct StoreSheetRoot: View {
       .sheet(isPresented: $model.isPresented, onDismiss: { model.onDismiss?(model.outcome) }) {
         PlusSubscriptionStore(content: content)
       }
+      // The host was removed from outside (another flow dismissed every modal):
+      // close with what we know, so the next request is not refused as busy.
+      .onDisappear { model.onDismiss?(model.outcome) }
   }
 }
 
