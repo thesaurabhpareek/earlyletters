@@ -552,7 +552,7 @@ Two kinds of entry. **Founder** entries record what the founder said in this ses
 
 The founder gave D-100 to D-103 in the PRD V2 session (`docs/prd/v2/_AUTHORING.md` section 3b, M14 to M17). D-104 lists three delivery defaults that are proposed, not decided: they take effect only when the founder confirms them, in this PR or in writing. Counsel and Apple sign-off are never delegated.
 
-Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as D-089 to D-094 (PR #128), but PR #108 had already recorded the release-engineering decisions as D-089 to D-092 and PR #122 the 15 Oct delegated calls as D-093 to D-099, so they are D-100 to D-105 here (old to new: D-089 to D-100, D-090 to D-101, D-091 to D-102, D-092 to D-103, D-093 to D-104, D-094 to D-105). The text is unchanged; only the ids and their cross-references moved. D-106 and D-107 were added on the same day.
+Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as D-089 to D-094 (PR #128), but PR #108 had already recorded the release-engineering decisions as D-089 to D-092 and PR #122 the 15 Oct delegated calls as D-093 to D-099, so they are D-100 to D-105 here (old to new: D-089 to D-100, D-090 to D-101, D-091 to D-102, D-092 to D-103, D-093 to D-104, D-094 to D-105). The text is unchanged; only the ids and their cross-references moved. D-106 to D-108 were added on the same day.
 
 | ID | Decision | Status | Proceed? | Date |
 |---|---|---|---|---|
@@ -564,6 +564,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-105 | PRD V2 is the product spec of record once PR #124 merges | Decided (founder, 3 and 13 Oct 2026) | Yes, on merge | 2026-10-14 |
 | D-106 | Alpha in two weeks: option B ships as a TestFlight alpha against staging, target Thu 29 Oct 2026; submission re-planned after the alpha; review delegation widened to app code | Decided (founder, build thread, 15 Oct 2026); the delegation widening is proposed by the coordinator and awaits the founder's confirmation | Yes for the alpha; the delegation waits | 2026-10-15 |
 | D-107 | Merge delegation widened: the coordinator merges app code, docs and tests into `develop` after two independent reviews and green CI; database, auth, payments, release configuration, the engine files and production deploys stay founder merges | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
+| D-108 | Backup recovery: a device enrolled for at least 7 days approves a restore request; F08-REQ-034 amended to the backup server as built (ten functions, nine settings) | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -620,3 +621,9 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
   - Any production deploy: the website on `main`, the App Store, TestFlight external groups.
 - **Effects:** `docs/agents/COORDINATION.md` section 6 states the rule.
 - **Owner:** founder; coordinator.
+
+### D-108 Backup recovery: device age and F08-REQ-034 (founder, 15 Oct 2026)
+- **Status:** Decided by the founder, 15 Oct 2026.
+- **Decision:** Backup recovery: a device must be enrolled for at least 7 days before it can approve a restore request. F08-REQ-034 is amended to match the backup server as built: ten functions and nine settings, not four functions and three secrets.
+- **Effects:** PR #151 (`feat/backup-server`, the S05 backup server). The F08-REQ-034 text in PRD V2 (`docs/prd/v2/features/F08-recordings.md`, PR #124) is updated to match in a follow-up.
+- **Owner:** founder; S05.
