@@ -51,7 +51,7 @@ export function workspaces(root) {
 const APPLIED = (root) =>
   new Set(read(join(root, ".github", "migrations-applied.txt")).split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#")));
 
-/** Server migrations: applied or pending, and the tables, views and functions each one creates. */
+/** Server migrations: applied or pending, and the tables, views and functions each one creates, in any schema. */
 export function migrations(root) {
   const dir = join(root, "supabase", "migrations");
   const applied = APPLIED(root);
@@ -61,13 +61,15 @@ export function migrations(root) {
     .sort()
     .map((file) => {
       const sql = read(join(dir, file)).replace(/--[^\n]*/g, "");
-      const names = (re) => [...new Set([...sql.matchAll(re)].map((m) => m[1].toLowerCase()))];
+      // Names in schema `public` are shown bare; other schemas keep their prefix (`ops.runs`).
+      const Q = String.raw`(?:"?([a-z_][a-z0-9_]*)"?\.)?"?([a-z_][a-z0-9_]*)"?`;
+      const names = (re) => [...new Set([...sql.matchAll(re)].map((m) => (m[1] && m[1].toLowerCase() !== "public" ? `${m[1]}.${m[2]}` : m[2]).toLowerCase()))];
       return {
         file,
         applied: applied.has(file),
-        tables: names(/create\s+table\s+(?:if\s+not\s+exists\s+)?(?:public\.)?"?([a-z_][a-z0-9_]*)"?\s*\(/gi),
-        views: names(/create\s+(?:or\s+replace\s+)?view\s+(?:public\.)?([a-z_][a-z0-9_]*)/gi),
-        functions: names(/create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?([a-z_][a-z0-9_]*)\s*\(/gi),
+        tables: names(new RegExp(String.raw`create\s+(?:unlogged\s+)?table\s+(?:if\s+not\s+exists\s+)?${Q}\s*\(`, "gi")),
+        views: names(new RegExp(String.raw`create\s+(?:or\s+replace\s+)?(?:materialized\s+)?view\s+(?:if\s+not\s+exists\s+)?${Q}`, "gi")),
+        functions: names(new RegExp(String.raw`create\s+(?:or\s+replace\s+)?function\s+${Q}\s*\(`, "gi")),
         definer: (sql.match(/security\s+definer/gi) ?? []).length,
       };
     });
@@ -103,12 +105,18 @@ export function workflows(root) {
     });
 }
 
-/** EAS build profiles: name, channel and APP_ENV. */
+/** EAS build profiles: name, channel, app environment and the EXPO_PUBLIC_* switches each sets. */
 export function easProfiles(root) {
   const p = join(root, "apps", "mobile", "eas.json");
   if (!existsSync(p)) return [];
   const build = JSON.parse(read(p)).build ?? {};
-  return Object.entries(build).map(([name, b]) => ({ name, channel: b.channel ?? "", appEnv: b.env?.APP_ENV ?? "", extends: b.extends ?? "" }));
+  return Object.entries(build).map(([name, b]) => {
+    const env = b.env ?? {};
+    const switches = Object.entries(env)
+      .filter(([k]) => /^EXPO_PUBLIC_/.test(k) && k !== "EXPO_PUBLIC_APP_ENV")
+      .map(([k, v]) => `${k.replace(/^EXPO_PUBLIC_/, "")}=${v}`);
+    return { name, channel: b.channel ?? "", appEnv: env.EXPO_PUBLIC_APP_ENV ?? env.APP_ENV ?? "", extends: b.extends ?? "", switches };
+  });
 }
 
 /** The agent team, from the roster. */
@@ -134,12 +142,13 @@ export const RENDERERS = {
   workspaces: (root) => table(["Workspace", "Package", "What it is"], workspaces(root).map((w) => [code(w.path), code(w.name), w.description])),
   migrations: (root) =>
     table(
-      ["File", "Live", "Creates tables", "Views", "Functions", "Definer"],
+      ["File", "Live", "Creates tables", "Views", "Functions", "`security definer` mentions"],
       migrations(root).map((m) => [code(m.file), m.applied ? "applied" : "pending", list(m.tables), list(m.views), m.functions.length, m.definer]),
     ),
   "device-tables": (root) => deviceTables(root).map((t) => `- ${code(t)}`).join("\n") || "_none found_",
   "edge-functions": (root) => edgeFunctions(root).map((f) => `- ${code(`supabase/functions/${f}`)}`).join("\n") || "_none_",
   workflows: (root) => table(["Workflow", "Name", "Runs on"], workflows(root).map((w) => [code(`.github/workflows/${w.file}`), w.name, w.triggers.join(", ")])),
-  "eas-profiles": (root) => table(["Profile", "Channel", "APP_ENV", "Extends"], easProfiles(root).map((p) => [code(p.name), p.channel, p.appEnv, p.extends])),
+  "eas-profiles": (root) =>
+    table(["Profile", "Channel", "App environment", "Extends", "Other public switches"], easProfiles(root).map((p) => [code(p.name), p.channel, p.appEnv, p.extends, p.switches.map(code).join(", ")])),
   agents: (root) => table(["Handle", "Title", "Kind", "Department"], agents(root).map((a) => [code(a.handle), a.title, a.kind, a.department])),
 };

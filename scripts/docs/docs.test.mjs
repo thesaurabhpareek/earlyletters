@@ -78,15 +78,22 @@ test("expo routes: groups and index collapse; layouts and specials are labelled"
   assert.equal(r["_shared/x.tsx"], undefined);
 });
 
-test("migrations: applied flag, tables, views, functions, definer count; comments ignored", () => {
+test("migrations: applied flag, tables in any schema, unlogged tables, views, functions; comments ignored", () => {
   const root = repo({
     ".github/migrations-applied.txt": "# header\n001_a.sql\n",
     "supabase/migrations/001_a.sql": "create table public.entries (id uuid);\n-- create table public.fake (x int);\ncreate or replace view book_entries as select 1;",
-    "supabase/migrations/002_b.sql": "create or replace function public.purge_due() returns void language sql security definer as $$ select 1 $$;",
+    "supabase/migrations/002_b.sql": "create or replace function public.purge_due() returns void language sql security definer as $$ select 1 $$;\ncreate unlogged table if not exists public.sync_rate_windows (k text);\ncreate table ops.runs (id int);\ncreate or replace function ops.health() returns int as $$ select 1 $$;\ncreate view insights.weekly as select 1;",
   });
   const [a, b] = migrations(root);
   assert.deepEqual([a.applied, a.tables, a.views], [true, ["entries"], ["book_entries"]]);
-  assert.deepEqual([b.applied, b.functions, b.definer], [false, ["purge_due"], 1]);
+  assert.deepEqual([b.applied, b.tables, b.views, b.functions, b.definer], [false, ["sync_rate_windows", "ops.runs"], ["insights.weekly"], ["purge_due", "ops.health"], 1]);
+});
+
+test("build profiles: app environment and public switches from EXPO_PUBLIC_ variables", () => {
+  const root = repo({ "apps/mobile/eas.json": JSON.stringify({ build: { preview: { channel: "preview", env: { EXPO_PUBLIC_APP_ENV: "staging", EXPO_PUBLIC_ANALYTICS: "off", SECRET_X: "nope" } } } }) });
+  const md = RENDERERS["eas-profiles"](root);
+  assert.match(md, /\| `preview` \| preview \| staging \|  \| `ANALYTICS=off` \|/);
+  assert.doesNotMatch(md, /SECRET_X/);
 });
 
 test("workflows: inline and block triggers", () => {
@@ -156,6 +163,8 @@ test("validation: door, reversal cost, triggers, status reference, review date",
   for (const re of [/missing \*\*Why/, /Door must start/, /Reversal cost must start/, /Revisit when must name/, /points to D-999/, /Review by must be/]) assert.match(p, re);
   const later = parseRecords(RECORD("D-001", { Door: "one-way after launch: once real families use it", "Revisit when": "none expected" }), "f.md")[0];
   assert.deepEqual(validate(later, known), []);
+  const amended = parseRecords(RECORD("D-001", { Status: "amended by D-002: prices changed" }), "f.md")[0];
+  assert.deepEqual(validate(amended, known), []);
 });
 
 test("decision check: missing records, Also coverage, duplicates, unknown D-ids, due reviews, index drift", () => {
@@ -195,7 +204,7 @@ test("decision check: as-built paths that no longer exist are reported", () => {
   const root = repo({
     "docs/DECISIONS.md": "| D-001 | a |\n",
     "apps/mobile/src/lib/store.ts": "",
-    "docs/decisions/records/product.md": RECORD("D-001", { "As built": "`apps/mobile/src/lib/store.ts`, `apps/mobile/src/lib/gone.ts`, `supabase/migrations/*.sql`, not built elsewhere" }),
+    "docs/decisions/records/product.md": RECORD("D-001", { "As built": "`apps/mobile/src/lib/store.ts`, `apps/mobile/src/lib/gone.ts`, `supabase/migrations/*.sql`, branch `release/1.0`, not built elsewhere" }),
   });
   assert.deepEqual(decCheck(root, "2026-10-15").gone, ["D-001: apps/mobile/src/lib/gone.ts"]);
 });
