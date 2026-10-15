@@ -1,7 +1,7 @@
 # Device test plan: the first real-iPhone session and the TestFlight beta
 
-Owner: qa-e2e. Version 1.0, 3 Oct 2026. For the founder (who runs it) and the coordinator (who files the follow-ups).
-Inputs: TDD 07 (sections 3 to 5, 11), PRD 6 and 7, ROADMAP 2.x (week 2 device spikes, C0 from 14 Oct, C1 from 19 Oct), `docs/ops/AUTH_SETUP.md` 11, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, `docs/ops/APP_SIZE.md`, ADR 0013 to 0017, TDD 03 failure modes, TDD 09, `apps/mobile/src/lib/README.md`, the agents' "needs a real device" notes.
+Owner: qa-e2e (S19 in PRD V2). Version 1.1, 15 Oct 2026 (1.0 was 3 Oct): server-on items for M14, the WP-F08-B1 backup spike, the StoreKit rows the ASC doc numbers twice, budgets brought to PRD V2 `06-nfr.md`, and run sheets. For the founder or the device operator (who runs it) and the coordinator (who files the follow-ups).
+Inputs: PRD V2 `07-quality-bar.md` section 2 and `08-delivery.md` sections 2.1 and 10 (every date is a T id there), TDD 07 (sections 3 to 5, 11), PRD 6 and 7, ROADMAP 2.x (week 2 device spikes, C0 from 14 Oct, C1 from 19 Oct), `docs/ops/AUTH_SETUP.md` 11, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, `docs/ops/APP_SIZE.md`, ADR 0013 to 0017, TDD 03 failure modes, TDD 09, `apps/mobile/src/lib/README.md`, the agents' "needs a real device" notes.
 
 Labels: **V** verified on a vendor page on 3 Oct 2026; **A** assumption to confirm during the session; **F** fact found in the repo.
 
@@ -13,6 +13,20 @@ Labels: **V** verified on a vendor page on 3 Oct 2026; **A** assumption to confi
 - Fictional family only (Asha, Avi, Mama, Papa) in letters, names, notes and screenshots. The founder's own family never appears in evidence (CLAUDE.md).
 - Maestro cannot drive a physical iPhone (V: Maestro 2.11.0, "Physical iOS devices are not yet supported"), so everything here is by hand. The simulator suite is `apps/mobile/e2e`.
 - Failures: a GitHub issue with `beta` and a severity `S0` to `S3` (TDD 07 11.3). S0 (a letter lost or changed, data exposed, anything created after an under-18 answer, consent bypassed) stops the session.
+- Scripted sessions follow a run sheet in `docs/qa/run-sheets/` (ordered steps with times). The first is `run-sheets/2026-10-30-T11-session-1.md`.
+
+### Server-on items (M14)
+
+PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14, M16). Every profile in `apps/mobile/eas.json` builds with `EXPO_PUBLIC_SERVER_FEATURES=off` today (F: 15 Oct), and a switch-off build shows "coming soon" for all of these, so they need a build made with the switch on and pointed at staging (S20 owns the per-profile switch, `08-delivery.md` S20 row). Evidence rows for them carry the extra header fields and numbers in `evidence/README.md` "Server-on rows".
+
+| Item | Needs | When (`08-delivery.md` 10.2) |
+|---|---|---|
+| S1-06, S1-07, S1-08 sign-in | Switch on; staging with P-04 and P-05 done | W2 (T11) |
+| WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
+| S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
+| S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
+| S1-09 invite links, push | Switch on; AASA on Apple's CDN; APNs key | W7 |
+| S2-14 sign out and revocation | Switch on | W14 |
 
 ### Devices
 | Tag | Device | Why | Must have |
@@ -188,8 +202,8 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 - **Update:** ADR 0015 section 5 and section 9 item 4.
 
 ### S1-20 Playback and Read together on device
-- **Steps:** Play a letter with the ring/silent switch on silent, then with AirPods. Lock the phone during playback. Read together three times in a Free book; the fourth opens the Plus gate.
-- **Expected:** Playback is audible in silent mode (playback audio session) and stops cleanly on lock, since background playback is off (F: `enableBackgroundPlayback: false`); Read together uses Large Print; the gate appears on the fourth session (D-009).
+- **Steps:** Play a letter with the ring/silent switch on silent, then with AirPods. Lock the phone during playback. Read together four times in a Free book.
+- **Expected:** Playback is audible in silent mode (playback audio session) and stops cleanly on lock, since background playback is off (F: `enableBackgroundPlayback: false`); Read together uses Large Print; the fourth and later sessions open with no gate (Read together is free with no limit: M2, D-082; this replaced the D-009 gate on 4 Oct).
 - **Record:** S1-20 row.
 - **Update:** `src/lib/README.md` (audio-mode) if the session category is wrong.
 
@@ -201,7 +215,8 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 
 ### S1-22 Two phones, one book: co-parent sync (PRD 7.3)
 - **Steps:** Mama's phone invites Papa's phone (S1-09). Mama saves a letter while both are online; time until it appears on Papa's phone. Then Mama offline: save two letters ("Not sent yet"), kill, relaunch offline (still there), go online.
-- **Expected:** p95 5 s online (10 tries); offline letters queue visibly, survive a kill and sync later; Papa never sees Mama's raw transcript (PRD-REQ-004) or her private letters.
+- **Needs:** a switch-on build on both phones and two Apple Accounts (Mama on Account A, Papa on Account B).
+- **Expected:** online, both apps in the foreground with the book open, no try over 30 s (PRD V2 `06-nfr.md` section 4: p95 30 s, p99 60 s, replacing PRD 1.3's 5 s; 10 tries are a smoke, not the p95 gate); offline letters queue visibly, survive a kill and sync later; Papa never sees Mama's raw transcript (PRD-REQ-004) or her private letters.
 - **Record:** S1-22 row: 10 timings.
 - **Update:** PRD 7.3 measured column; TDD 02.
 
@@ -239,12 +254,20 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-26 row per sub-step a to i, with the phone and iOS version.
 - **Update:** `apps/mobile/src/lib/models/speech-consent.logic.ts` and DEBATES Q-015 if downloads do not survive a lock (the card then needs "keep the app open" copy and the keep-awake rule widens).
 
+### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
+- **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
+- **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).
+- **Expected:** (a) the item appears on B within 2 minutes (F08 assumption A2) and deletion reaches both phones; (b) about 1 s or less per 10 MB on SE 3 (F08 section 9, an assumption); (c) the upload resumes without re-sending finished parts.
+- **Record:** B1-01 row in the session's evidence file with the numbers in `evidence/README.md` "Server-on rows" (WP-F08-B1). No key material, item names or tokens.
+- **Update:** F08 section 13 A2 and section 9 (through the PM lane), and the owner-backup ADR draft (T13). A failure of (a) is a stop for the per-author key design and goes to the founder and S05 the same day.
+
 ---
 
 ## Part 2. Money, account and notifications (session 2, can follow on the next days)
 
 ### S2-01 to S2-12 StoreKit and Apple's sheets
-Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, in that order, with a TestFlight build of the production profile (bundle id `com.earlyletters.scribe`; the `.dev` and `.preview` ids have no products, so use the StoreKit file for those). Map: S2-01 = D-1 (gate then Apple's sheet; neither plan selected, C-REQ-022), S2-02 = D-2 (monthly trial), S2-03 = D-3 (Read together with Plus), S2-04 = D-4 (Manage subscription), S2-05 = D-5 (Restore on a second iPhone within 10 s, C-REQ-020), S2-06 = D-6 (Family Sharing: the co-parent gets Plus, D-053), S2-07 = D-7 (refund sheet), S2-08 = D-8 (airplane mode with Plus), S2-09 = D-9 (expiry: everything keeps working, LEGAL-REQ-050), S2-10 = D-10 (AX5 and VoiceOver on the sheet), S2-11 = D-11 (dark mode), S2-12 = D-12 (iOS 16 device only if the target stays 16.4).
+Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, in that order, with a TestFlight build of the production profile (bundle id `com.earlyletters.scribe`; the `.dev` and `.preview` ids have no products, so use the StoreKit file for those). Map: S2-01 = D-1 (gate then Apple's sheet; neither plan selected, C-REQ-022), S2-02 = D-2 (monthly trial), S2-03 = D-3 (Read together with Plus), S2-04 = D-4 (Manage subscription), S2-05 = D-5 (Restore on a second iPhone within 10 s, C-REQ-020), S2-06 = D-6 (Family Sharing: the co-parent gets Plus, D-053), S2-07 = D-7 (refund sheet), S2-08 = D-8 (airplane mode with Plus), S2-09 = D-9 (expiry: everything keeps working, LEGAL-REQ-050), S2-10 = D-10 (AX5 and VoiceOver on the sheet), S2-11 = D-11 (dark mode), S2-12 = D-12 (iOS 16 device only if the target stays 16.4). The ASC table uses D-7 to D-10 twice (F: 15 Oct); the first four of those rows get their own ids here: S2-17 = the first D-7 (delete and reinstall, record whether the Keychain count survives), S2-18 = the first D-8 (iCloud restore keeps the free count), S2-19 = the first D-9 (airplane mode at the Keep sheet), S2-20 = the first D-10 (redeem an offer code). Request to S06: renumber the ASC table so each check has one id.
+- **Bundle id:** products exist only on the app record they were created on. A TestFlight build from the `testflight` profile is `com.earlyletters.scribe.preview` (F: `docs/release/TESTFLIGHT.md`), so either the products are set up on that record too, or S2-01 to S2-20 run against the StoreKit configuration file in a development build and every row says "StoreKit file, not sandbox".
 - **Record:** the evidence file (S2-01 to S2-12) and the date and build in the ASC doc's table.
 - **Update:** `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` (turn its U marks into V where the sheet confirms them); ADR 0013 "verify on device" for C-REQ-022.
 - Note (V): apps installed from TestFlight use the sandbox automatically, and subscriptions renew every day, up to 6 times in a week, whatever their length (Apple, "Testing subscriptions and In-App Purchases in TestFlight"). Billing retry needs a Sandbox Apple Account's settings.
@@ -273,7 +296,7 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 
 ---
 
-## Part 3. TestFlight beta (C0 internal from 14 Oct, C1 external from about 19 Oct; D-045)
+## Part 3. TestFlight beta (C0 internal from T10, C1 external from T22 in `08-delivery.md` 2.1; D-045)
 
 ### TF-01 App size from Apple's numbers (decision 15, D-065)
 - **Steps:** When the first production-profile build finishes processing in App Store Connect, read its download sizes per device variant (TestFlight > the build > Build Metadata, A for the label). Also produce the App Thinning Size Report (`xcodebuild -exportArchive` with `thinning` set to `<thin-for-all-variants>`, APP_SIZE 2) and run `npx tsx scripts/size/measure.ts --thinning-report "App Thinning Size Report.txt"`.
