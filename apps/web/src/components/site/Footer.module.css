@@ -1,7 +1,7 @@
 /*
  * Owner: E1 (web platform). Night-tone footer, phone first.
- * One column on a phone (name, contact, links); on a wide screen the name sits left and
- * contact and links sit right. Every link is at least 44px tall.
+ * One column on a phone (name, then links); on a wide screen the name sits left and the links right.
+ * Every link is at least 44px tall.
  */
 .footer {
   position: relative;
@@ -32,32 +32,6 @@
 .tagline {
   margin: 0.4rem 0 0;
   font-size: 0.95rem;
-}
-
-.contactLead {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.email {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--night-accent);
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  text-decoration-line: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.25em;
-  text-decoration-color: color-mix(in srgb, var(--night-accent) 45%, transparent);
-  transition: text-decoration-color var(--fade-ms) var(--ease-standard);
-}
-
-.email:hover {
-  text-decoration-color: currentColor;
 }
 
 .links {
@@ -91,30 +65,12 @@
 @media (min-width: 48em) {
   .inner {
     grid-template-columns: 1fr auto;
-    grid-template-areas:
-      'identity contact'
-      'nav nav';
-    align-items: start;
-    gap: 2.5rem 3rem;
-  }
-
-  .identity {
-    grid-area: identity;
-  }
-
-  .contact {
-    grid-area: contact;
-  }
-
-  .nav {
-    grid-area: nav;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--night-line);
+    align-items: end;
+    gap: 3rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .email,
   .link {
     transition: none;
   }

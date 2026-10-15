@@ -1,12 +1,10 @@
 /** Owner: E1 (web platform). Paper-tone frame for the legal pages: a back link home, the page, then the footer. */
 import Link from 'next/link';
 import { legalCopy } from '@/lib/legal/legal-copy';
-import { footerLinks } from '@/lib/legal/links';
 import { Footer } from './Footer';
 import styles from './Legal.module.css';
 
-export async function LegalFrame({ children }: { children: React.ReactNode }) {
-  const links = await footerLinks();
+export function LegalFrame({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className={styles.frame}>
@@ -20,7 +18,7 @@ export async function LegalFrame({ children }: { children: React.ReactNode }) {
         </header>
         <main id="main">{children}</main>
       </div>
-      <Footer links={links} />
+      <Footer />
     </>
   );
 }

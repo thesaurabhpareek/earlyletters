@@ -4,10 +4,8 @@ import { MotionConfig } from 'motion/react';
 import { scenes } from '@/scenes';
 import { CtaPill, Header, SkipLink } from '@/components/cta/Header';
 import { Footer } from '@/components/site/Footer';
-import type { FooterLink } from '@/lib/legal/publishable';
 
-/** `footerLinks` comes from the server page (lib/legal/links.ts): the legal links after the gate. */
-export function Film({ footerLinks }: { footerLinks?: readonly FooterLink[] }) {
+export function Film() {
   return (
     <MotionConfig reducedMotion="user">
       <SkipLink />
@@ -18,7 +16,7 @@ export function Film({ footerLinks }: { footerLinks?: readonly FooterLink[] }) {
         ))}
       </main>
       <CtaPill />
-      <Footer links={footerLinks} />
+      <Footer />
     </MotionConfig>
   );
 }

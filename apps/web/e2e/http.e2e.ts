@@ -1,8 +1,7 @@
 /** Things a crawler, a proxy or a browser's security model sees: robots, sitemap, redirects, headers, CSP in action. */
 import { siteOrigin } from '../src/lib/legal/origin';
-import { legalSlugs } from '../src/lib/legal/documents';
+import { legalPage, legalSlugs } from '../src/lib/legal/pages';
 import { expect, test } from './support/fixtures';
-import { legalExpectation } from './support/legal';
 
 test.describe('robots.txt and sitemap.xml', () => {
   test('robots.txt allows the site and keeps crawlers out of the lab, the API and unsubscribe', async ({ request }) => {
@@ -16,19 +15,17 @@ test.describe('robots.txt and sitemap.xml', () => {
     expect(text).toContain(`Sitemap: ${siteOrigin}/sitemap.xml`);
   });
 
-  test('sitemap.xml lists the home page, the legal documents that are publishable and delete-account, all on the primary domain', async ({ request }) => {
+  test('sitemap.xml lists the home page, /privacy and /terms, all on the primary domain, with each page date', async ({ request }) => {
     const res = await request.get('/sitemap.xml');
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toMatch(/xml/);
     const xml = await res.text();
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-    const published = legalSlugs.map(legalExpectation).filter((doc) => doc.publishable);
-    expect(locs.sort()).toEqual([siteOrigin, ...published.map((doc) => `${siteOrigin}${doc.href}`), `${siteOrigin}/delete-account`].sort());
-    expect(xml).not.toMatch(/\/lab|\/api|\/unsubscribe/);
+    expect(locs).toEqual([siteOrigin, ...legalSlugs.map((slug) => `${siteOrigin}/${slug}`)]);
+    expect(xml).not.toMatch(/\/lab|\/api|\/unsubscribe|\/health-privacy|\/subprocessors|\/delete-account/);
     // Only url and lastmod; no changefreq or priority hints.
     expect(xml).not.toMatch(/<changefreq>|<priority>/);
-    // A listed legal page carries its document's own date.
-    if (published.length) expect(xml).toMatch(/<lastmod>\d{4}-\d{2}-\d{2}/);
+    for (const slug of legalSlugs) expect(xml).toContain(`<lastmod>${legalPage(slug, {}).lastUpdated}`);
   });
 
   test('every address in the sitemap exists on this site and may be indexed', async ({ request }) => {
@@ -63,7 +60,7 @@ test.describe('domain redirects (next.config.ts redirects)', () => {
 });
 
 test.describe('security headers', () => {
-  const paths = ['/', '/privacy', '/delete-account', '/unsubscribe', '/this-page-does-not-exist', '/api/notify', '/robots.txt'];
+  const paths = ['/', '/privacy', '/terms', '/unsubscribe', '/this-page-does-not-exist', '/api/notify', '/robots.txt'];
 
   for (const path of paths) {
     test(`${path} carries the full set`, async ({ request }) => {

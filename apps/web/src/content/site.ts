@@ -274,9 +274,7 @@ export const site = {
     links: [
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },
-      { href: '/health-privacy', label: 'Consumer health data' },
-      { href: '/subprocessors', label: 'Subprocessors' },
-      { href: '/delete-account', label: 'Delete your account' },
+      { href: 'mailto:hello@earlyletters.com', label: 'Contact' },
     ],
   },
 } as const;

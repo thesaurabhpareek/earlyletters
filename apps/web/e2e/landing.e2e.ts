@@ -1,7 +1,6 @@
 /** The home page in coming-soon mode: document, link previews, icons, sections, share button. */
 import { site } from '../src/content/site';
 import { expect, test } from './support/fixtures';
-import { expectedFooterLinks } from './support/legal';
 
 test.describe('landing (coming soon)', () => {
   test('title, h1, description and the form are present', async ({ page }) => {
@@ -81,14 +80,13 @@ test.describe('landing (coming soon)', () => {
     for (const headline of [site.scenes.s02.headline, site.scenes.s05.headline, site.scenes.s06.headline, site.scenes.s08.headline, site.scenes.s09.headline, site.scenes.s10.headline, site.scenes.s11.headline]) {
       await expect(page.getByRole('heading', { level: 2, name: headline })).toBeAttached();
     }
-    // The legal links this mode allows (e2e/support/legal.ts): all of them, or none to a document that is held back.
+    // The footer: Privacy, Terms, Contact. Nothing else.
     const legal = page.getByRole('navigation', { name: 'Legal' });
-    const links = expectedFooterLinks();
-    await expect(legal.getByRole('link')).toHaveCount(links.length);
-    for (const link of links) {
+    await expect(legal.getByRole('link')).toHaveCount(site.footer.links.length);
+    for (const link of site.footer.links) {
       await expect(legal.getByRole('link', { name: link.label })).toHaveAttribute('href', link.href);
     }
-    await expect(page.getByRole('link', { name: site.footer.contact }).last()).toHaveAttribute('href', `mailto:${site.footer.contact}`);
+    await expect(legal.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', `mailto:${site.footer.contact}`);
   });
 
   test('the share button copies the plain site address when there is no share sheet', async ({ page, context, browserName }) => {

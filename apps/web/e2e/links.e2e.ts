@@ -5,7 +5,6 @@
  */
 import type { Page } from '@playwright/test';
 import { expect, test } from './support/fixtures';
-import { legalPagesMode } from './support/legal';
 import { PAGES } from './support/pages';
 
 type Link = { href: string; text: string; target: string | null; rel: string | null };
@@ -70,16 +69,9 @@ test('every internal link on every page leads somewhere that exists, and every f
     }
   }
 
-  // Fragments: the element must exist on the page they point to. A fragment into a legal document that is held back
-  // lands on its holding page, which has no sections by design (data-holding, components/site/LegalHolding.tsx); it is
-  // noted in the annotation and checked for real the day the document is published.
-  const intoHolding: string[] = [];
+  // Fragments: the element must exist on the page they point to.
   for (const f of fragments) {
     await page.goto(f.path);
-    if ((await page.locator('[data-holding]').count()) > 0) {
-      intoHolding.push(`${f.from}: #${f.hash} on ${f.path}`);
-      continue;
-    }
     const found = f.hash === 'top' ? true : (await page.locator(`[id="${f.hash.replace(/"/g, '')}"]`).count()) > 0;
     if (!found) failures.push(`${f.from}: #${f.hash} does not exist on ${f.path}`);
   }
@@ -96,13 +88,11 @@ test('every internal link on every page leads somewhere that exists, and every f
   for (const [, loc] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) if (!seen.has(new URL(loc).pathname)) failures.push(`sitemap address not reached from the pages: ${loc}`);
 
   expect(failures, failures.join('\n')).toEqual([]);
-  // Proof the crawl is wired up. LEGAL_PAGES=unlink removes the footer links to held documents from every page by
-  // design, so there the floor is one internal link per page visited (every page links home or within itself).
-  expect(internalLinks, 'the crawl found links').toBeGreaterThan(legalPagesMode() === 'unlink' ? seen.size : 20);
+  expect(internalLinks, 'the crawl found links').toBeGreaterThan(20);
   expect(seen.size).toBeGreaterThanOrEqual(PAGES.filter((p) => p.status === 200).length);
   test.info().annotations.push({
     type: 'link-check',
-    description: `${seen.size} pages, ${internalLinks} internal links, ${fragments.length} fragments (${intoHolding.length} into a holding page: ${intoHolding.join('; ') || 'none'}), ${external.size} external (not fetched): ${[...external.keys()].join(', ') || 'none'}`,
+    description: `${seen.size} pages, ${internalLinks} internal links, ${fragments.length} fragments, ${external.size} external (not fetched): ${[...external.keys()].join(', ') || 'none'}`,
   });
 });
 
