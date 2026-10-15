@@ -119,6 +119,8 @@ const DEV = uuid7();
 const DEV_NEW = uuid7();
 await as(A, `select public.backup_register_device($1, $2::bytea)`, [DEV, hex('a1', 32)]);
 await as(A, `select public.backup_register_device($1, $2::bytea)`, [DEV_NEW, hex('a2', 32)]);
+// The owner's phone has been enrolled for days (only a device enrolled 72 hours before a request may approve it).
+await sys(`update backup_devices set enrolled_at = now() - interval '5 days' where device_id = $1`, [DEV]);
 await db.exec('set role escrow_svc');
 const req = (await db.query(`select public.escrow_open_request($1, $2, '0123456789ab', $3::bytea, $4::jsonb) r`,
   [A, DEV_NEW, hex('5a', 32), JSON.stringify([{ device_id: DEV, code_hash_hex: '11'.repeat(32), sealed_code_hex: '5c'.repeat(80) }])])).rows[0].r;

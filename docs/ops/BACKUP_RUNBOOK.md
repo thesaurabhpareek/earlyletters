@@ -146,10 +146,10 @@ Quarterly: check both seals and the bag numbers against the log (F17 8.2 item 6 
 ## 5. Rotation (F08 6.5 G4, F08-REQ-030)
 - R1. Ceremony for version 2 (section 3, `keygen.ts 2`).
 - R2. S07 adds the v2 public key to `escrow-keys.ts` and the app release makes new wraps with it.
-- R3. Main project: `alter database postgres set app.escrow_key_versions = '1,2';`
+- R3. Main project: `alter database postgres set app.escrow_key_versions = '1,2';` and `alter database postgres set app.escrow_rotation_from = '1';`. Without the second setting the rotation functions refuse (SCBKO rotation), so the escrow role cannot list every account's wraps outside a rotation.
 - R4. Escrow project: add `ESCROW_PRIVATE_KEY_V2`, `ESCROW_TASK_SECRET` (`openssl rand -hex 32`), `ESCROW_ROTATE_FROM=1`, `ESCROW_ROTATE_TO=2`.
 - R5. Run batches until `remaining` is false: `curl -s -X POST https://<scribe-escrow-ref>.supabase.co/functions/v1/escrow/v1/rotate -H "authorization: Bearer $ESCROW_TASK_SECRET"`. Each batch rewraps up to 50 keys, one commit each, writes a `rotation` log row per key and sends each account one email. A non-zero `failed` means a wrap did not open: stop and read section 6.
-- R6. Check `select count(*) from child_keys where escrow_key_version = 1;` is 0. Then remove `ESCROW_PRIVATE_KEY_V1`, `ESCROW_TASK_SECRET` and the two `ESCROW_ROTATE_*` secrets, set `app.escrow_key_versions = '2'`, and destroy the v1 paper copies, recording it in `ops.audit_log`.
+- R6. Check `select count(*) from child_keys where escrow_key_version = 1;` is 0. Then remove `ESCROW_PRIVATE_KEY_V1`, `ESCROW_TASK_SECRET` and the two `ESCROW_ROTATE_*` secrets, set `app.escrow_key_versions = '2'`, run `alter database postgres reset app.escrow_rotation_from;`, and destroy the v1 paper copies, recording it in `ops.audit_log`.
 
 ## 6. What an access-log alert means
 

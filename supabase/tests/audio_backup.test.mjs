@@ -161,6 +161,8 @@ await sys(`alter table storage.objects add column metadata jsonb`);
 await putObject(A, `${CHILD}/${A}/${L4}.m4a.enc`);
 await sys(`update storage.objects set metadata = '{"size": 499}' where name = $1`, [`${CHILD}/${A}/${L4}.m4a.enc`]);
 check('confirming an object whose stored size differs from the reservation is refused', await codeOf(() => confirm(A, L4)) === '22023');
+await sys(`update storage.objects set metadata = '{}' where name = $1`, [`${CHILD}/${A}/${L4}.m4a.enc`]);
+check('confirming an object whose size Storage has not recorded is refused (fails closed)', await codeOf(() => confirm(A, L4)) === '22023');
 await sys(`update storage.objects set metadata = '{"size": 1200}' where name = $1`, [PATH1]);
 check('the owner confirms an upload', (await confirm(A, L1)).created === true);
 check('confirming again with the same hash changes nothing', (await confirm(A, L1)).created === false);
@@ -194,6 +196,16 @@ check('at most 600 new reservations an hour (SCRAT begin)', rate === 'SCRAT begi
 check('a resumed reservation never counts against the hour', (await begin(A, L4, { bytes: 500 })).created === false);
 await sys(`update backup_usage set begin_window_start = now() - interval '61 minutes' where profile_id = $1`, [A]);
 check('the hour window starts again', (await begin(A, L3)).created === true);
+// Storage cannot see an object's size, so open reservations are capped (32 x 20 MB at most outside the quota).
+await sys(`insert into audio_blobs (entry_id, child_id, author_id, object_path, key_version, wrapped_file_key, bytes)
+  select g.e, $1::uuid, $2::uuid, $1::uuid::text || '/' || $2::uuid::text || '/' || g.e::text || '.m4a.enc', 1, $3::bytea, 10
+    from (select gen_random_uuid() e from generate_series(1, 32)) g`, [CHILD, A, FKEY]);
+const L5 = await letter(A);
+const capped = await (async () => { try { await begin(A, L5); } catch (e) { return `${e.code} ${e.detail}`; } })();
+check('at most 32 reservations wait to be confirmed (SCRAT pending)', capped === 'SCRAT pending');
+check('a waiting reservation still resumes at the cap', (await begin(A, L3)).created === false);
+await sys(`delete from audio_blobs where author_id = $1 and bytes = 10`, [A]);
+check('below the cap, a new reservation is made again', (await begin(A, L5)).created === true);
 
 // ── Discard and delete all ────────────────────────────────────────────────
 const used = async (uid) => Number((await sys(`select used_bytes from backup_usage where profile_id = $1`, [uid])).rows[0].used_bytes);

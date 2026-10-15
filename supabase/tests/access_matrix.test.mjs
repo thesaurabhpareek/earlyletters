@@ -256,6 +256,8 @@ const SERVICE_ONLY = [
   `select public.escrow_load_wraps('${A}', '${BDEV}', '${BREQ}')`, `select public.escrow_record_unwraps('${A}', '${BDEV}', '${BREQ}', '[]', null)`,
   `select public.escrow_set_request_state('${A}', '${BREQ}', 'notified')`, `select public.escrow_rotation_batch(1, 1)`,
   `select public.escrow_rewrap_key('${A}', '${CHILD}', 1, 1, 2, ${BHEX('01', 81)}, null)`,
+  `select public.escrow_require_rotation(1)`, `select * from public.backup_approvers('${A}', '${BDEV}')`,
+  `select public.backup_hold_devices('${A}', '${BDEV}')`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));
@@ -353,5 +355,14 @@ for (const bucket of ['entry-photos', 'entry-audio']) {
     (await sys(`select 1 from pg_policies where schemaname='storage' and tablename='objects' and permissive='RESTRICTIVE'
       and qual ~ 'is_anonymous' and qual ~ $1`, [`'${bucket}'`])).rows.length === 1);
 }
+// The service key (held by every main-project function) reaches the backup tables only through
+// the backup_svc_* functions, never directly (F08 6.5: rows written only by the RPCs).
+const BACKUP_TABLES = ['backup_devices', 'child_keys', 'audio_blobs', 'backup_usage', 'restore_requests', 'restore_approvals', 'escrow_unwraps'];
+const svcReach = (await sys(`select t from unnest($1::text[]) t where has_table_privilege('service_role', 'public.' || t, 'select')
+  or has_table_privilege('service_role', 'public.' || t, 'insert') or has_table_privilege('service_role', 'public.' || t, 'update')
+  or has_table_privilege('service_role', 'public.' || t, 'delete')`, [BACKUP_TABLES])).rows.map((r) => r.t);
+check('service_role has no table privilege on any backup table', svcReach.length === 0 || console.log(`      ${svcReach}`));
+check('the harness gives service_role the hosted default grant (so the check above means something)',
+  (await sys(`select has_table_privilege('service_role', 'public.profiles', 'select') v`)).rows[0].v === true);
 
 done();

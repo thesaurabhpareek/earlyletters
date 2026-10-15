@@ -40,6 +40,9 @@ await reg(A, OLD, hex('a1', 32));
 await reg(A, NEW, hex('a2', 32));
 await reg(S, S_NEW, hex('b1', 32));
 await reg(B, B_DEV, hex('c1', 32));
+// The phones people already had: enrolled days ago (only a device enrolled 72 hours before a
+// request may approve it). NEW is the new iPhone, registered just now.
+await sys(`update backup_devices set enrolled_at = now() - interval '5 days' where device_id = any($1::uuid[])`, [[OLD, B_DEV]]);
 await as(A, `select public.backup_store_key($1, 1, 1, $2::jsonb)`, [CHILD, boxOf('aa')]);
 await as(A, `select public.backup_store_key($1, 1, 1, $2::jsonb)`, [CHILD2, boxOf('ab')]);
 await as(S, `select public.backup_store_key($1, 1, 1, $2::jsonb)`, [SOLO, boxOf('ba')]);
@@ -182,8 +185,48 @@ await sys(`insert into escrow_unwraps (profile_id, device_id, child_id, key_vers
   select $1, $2, $3, 1, 1, 'restore', 'opened', $4 from generate_series(1, 20)`, [S, S_NEW, SOLO, s4.request_id]);
 check('[F08-REQ-029] more than 20 opened keys a day for one account is SCRAT', await errOf(() => load(S, S_NEW, s4.request_id)) === 'SCRAT limit_keys');
 
+// ── A stolen session (F08 6.5 C3): its own devices never approve, the owner's phones stay in the loop ──
+// A week on, the new iPhone is one of Asha's enrolled phones too. Someone holding a stolen
+// session now registers two devices of their own: X to approve with, Y to ask from.
+await sys(`update backup_devices set enrolled_at = now() - interval '5 days' where device_id = $1`, [NEW]);
+const X = uuid7(); const Y = uuid7();
+await reg(A, X, hex('a4', 32));
+await reg(A, Y, hex('a5', 32));
+const ctxY = await esc(`select public.escrow_request_context($1, $2) r`, [A, Y]);
+check('a device registered less than 72 hours ago gets no approval code', JSON.stringify(ctxY.enrolled.map((d) => d.device_id).sort())
+  === JSON.stringify([NEW, OLD].sort()));
+check('a request carrying a code for that young device is refused', await errOf(() => open(A, Y,
+  [approvalFor(NEW, hex('41', 32)), approvalFor(OLD, hex('42', 32)), approvalFor(X, hex('43', 32))])) === '22023 approvals');
+const rx = await open(A, Y, [approvalFor(NEW, hex('41', 32)), approvalFor(OLD, hex('42', 32))]);
+const holdX = (await sys(`select extract(epoch from hold_until - requested_at) / 3600 h from restore_requests where id = $1`, [rx.request_id])).rows[0].h;
+check('the request holds 72 hours and only the owner\'s two phones may approve it', Math.round(Number(holdX)) === 72 && rx.approvers === 2);
+check('[F08-REQ-029] a stolen session cannot approve with a device it registered itself', await errOf(() =>
+  as(A, `select public.backup_approve_request($1, $2, $3::bytea)`, [rx.request_id, X, hex('43', 32)])) === '22023 code');
+check('while a request is open, no device but the requesting one can be revoked (SCIMM restore_open)',
+  await errOf(() => as(A, `select public.backup_revoke_device($1)`, [OLD])) === 'SCIMM restore_open'
+  && (await sys(`select revoked_at from backup_devices where device_id = $1`, [OLD])).rows[0].revoked_at === null);
+await as(A, `select public.backup_cancel_request($1)`, [rx.request_id]);
+check('after Stop, a device can be revoked', await errOf(() => as(A, `select public.backup_revoke_device($1)`, [X])) === 'ok'
+  && await errOf(() => as(A, `select public.backup_revoke_device($1)`, [Y])) === 'ok');
+await sys(`update restore_requests set requested_at = now() - interval '31 days' where profile_id = $1`, [A]);
+
 // ── Cancelling: owner, "Not me", stop link, revocation, deletion ──────────
 await sys(`update restore_requests set state = 'cancelled', cancelled_at = now(), cancel_source = 'owner' where profile_id = $1 and state in ('requested', 'approved')`, [S]);
+await sys(`update restore_requests set requested_at = now() - interval '31 days' where profile_id = $1`, [S]);
+// A phone revoked before any request (by a stolen session, say) still counts for 72 hours.
+const S_PH = uuid7();
+await reg(S, S_PH, hex('b3', 32));
+await sys(`update backup_devices set enrolled_at = now() - interval '5 days' where device_id = $1`, [S_PH]);
+await as(S, `select public.backup_revoke_device($1)`, [S_PH]);
+const s5 = await open(S, S_NEW, []);
+const hold5 = (await sys(`select extract(epoch from hold_until - requested_at) / 3600 h from restore_requests where id = $1`, [s5.request_id])).rows[0].h;
+check('a phone revoked in the last 72 hours keeps the hold at 72 hours, but gets no code', Math.round(Number(hold5)) === 72 && s5.approvers === 0);
+check('that phone still sees the request, with nothing to approve', (await one(S, `select public.backup_pending_requests($1) r`, [S_PH])).r
+  .some((r) => r.request_id === s5.request_id && r.approval === null));
+check('and can still say "Not me"', await errOf(() => as(S, `select public.backup_cancel_request($1, $2)`, [s5.request_id, S_PH])) === 'ok'
+  && (await sys(`select cancel_source s from restore_requests where id = $1`, [s5.request_id])).rows[0].s === 'enrolled_device');
+await sys(`update backup_devices set revoked_at = now() - interval '73 hours' where device_id = $1`, [S_PH]);
+check('after 72 hours a revoked phone is gone from the request flow', await errOf(() => one(S, `select public.backup_pending_requests($1) r`, [S_PH])) === 'P0002 device_unknown');
 await sys(`update restore_requests set requested_at = now() - interval '31 days' where profile_id = $1`, [S]);
 const A_NEW2 = uuid7();
 await reg(A, A_NEW2, hex('a3', 32));
@@ -255,6 +298,11 @@ check('[F17 8.4] and every other backup row of that person is gone', (await sys(
 
 // ── Rotation (F08-REQ-030) ────────────────────────────────────────────────
 await sys(`set app.escrow_key_versions = '1,2'`);
+check('outside a rotation, the escrow role cannot list wraps in bulk or rewrap (SCBKO rotation)',
+  await errOf(() => esc(`select public.escrow_rotation_batch(1, 10) r`)) === 'SCBKO rotation'
+  && await errOf(() => esc(`select public.escrow_rewrap_key($1, $2, 1, 1, 2, $3::bytea, null) r`, [A, CHILD, wrapOf('dd')])) === 'SCBKO rotation');
+await sys(`set app.escrow_rotation_from = '1'`);
+check('a rotation lists only the version it was opened for', await errOf(() => esc(`select public.escrow_rotation_batch(2, 10) r`)) === 'SCBKO rotation');
 const batch = await esc(`select public.escrow_rotation_batch(1, 10) r`);
 check('a rotation batch lists wraps still on the old version, without decrypting anything', batch.length >= 3 && batch.every((k) => k.escrow_wrap_hex.length === 162));
 const rewrap = (child, from = 1, to = 2) => esc(`select public.escrow_rewrap_key($1, $2, 1, $3, $4, $5::bytea, $6) r`, [A, child, from, to, wrapOf('dd'), rid()]);
@@ -266,7 +314,7 @@ check('[F08-REQ-030] the second key of the same account is not the first (no sec
 check('[F08-REQ-030] compare-and-set: rewrapping from the old version again does nothing', (await rewrap(CHILD)).updated === false);
 check('[F08-REQ-030] each rewrap writes a rotation log row in the same transaction', (await sys(`select count(*)::int n from escrow_unwraps
   where profile_id = $1 and reason = 'rotation' and escrow_key_version = 1 and occurred_at > now() - interval '1 hour'`, [A])).rows[0].n === 2);
-check('a rewrap to a version the server does not trust is refused', await errOf(() => rewrap(CHILD, 2, 3)) === '22023');
+check('a rewrap to a version the server does not trust is refused', await errOf(() => rewrap(CHILD, 1, 3)) === '22023');
 check('after rotation, restores read the new wraps', (await sys(`select escrow_key_version v from child_keys where profile_id = $1 and child_id = $2`, [A, CHILD])).rows[0].v === 2);
 
 // ── The daily copy holds ids and enums, never key bytes ───────────────────

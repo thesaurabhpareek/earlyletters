@@ -25,8 +25,9 @@ export async function createDb(files, options = {}) {
     -- Mirror Supabase's default privileges (TDD 02 C18): every table and view a
     -- migration creates is granted to both API roles at creation, so a
     -- migration's own revoke (for example on book_entries) is what the tests see.
-    grant usage on schema public to authenticated, anon;
-    alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon;
+    -- service_role gets the same default grant, as on hosted Supabase.
+    grant usage on schema public to authenticated, anon, service_role;
+    alter default privileges in schema public grant select, insert, update, delete on tables to authenticated, anon, service_role;
   `);
   for (const f of files) await db.exec(readFileSync(f, 'utf8'));
 
