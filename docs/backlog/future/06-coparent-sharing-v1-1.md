@@ -101,10 +101,10 @@ Added 13 Oct 2026 by the port of Line B (`docs/agents/PORT_MAP_2026-10-13.md`). 
 | G-07 | One idempotency key per user action | `lib/supabase/idempotency.logic.ts`, `test/auth-idempotency.test.ts` | PR #32's retry-safe signatures (reconcile first) |
 | G-08 to G-12, G-14 | DOB read path, private-activity digest, receipts, limits, pepper fail-closed, classification rows (M1, M5, L1, M3) | migration `20261005100000_db_fix_privacy_limits.sql`, `supabase/tests/db_fix_*.test.mjs`, `docs/legal/DATA_CLASSIFICATION.md` 4.1 | CP-03 |
 | G-17 | API contract: `parents_full`, leave, remove and peek endpoints | `packages/api/src/envelope.ts`, `standards.ts` | PR #34 |
-| G-19 | Export carries the server consent record and dictionary (LEGAL-REQ-034) | `apps/mobile/src/lib/export/*` schema 1.1.0, goldens | Founder or counsel: whether v1.0 needs the phone-only part |
+| G-19b | Export carries the server consent record and dictionary (LEGAL-REQ-034) | `apps/mobile/src/lib/export/*` (Line B's `consent_history`) | The phone-only part ships in v1.0 (D-096, PR #120); add the server record as its own field |
 | G-20 | Insights k-anonymity against differencing (review L12) | migration `20261005200000_insights_differencing.sql`, `supabase/tests/platform_fix_insights_differencing.test.mjs` | Analytics, after D-088 |
 | G-21c | Sign-in consent says "co-parent" | `packages/content/src/strings.en.ts` | CP-02 |
-| G-24 | Analytics consent sheet after first run | `app/(tabs)/_layout.tsx`, `components/consent/consent-ask.tsx` | D-088 |
+| G-24 | Analytics consent sheet after first run, and the track calls | `app/(tabs)/_layout.tsx`, `components/consent/consent-ask.tsx`, `lib/reminders/scheduler.ts` (`reminder_sent`) | D-095: off in v1.0 behind `EXPO_PUBLIC_ANALYTICS` (PR #118); turn on with consent in v1.1 |
 | G-26 | A letter's language on the row and in sync | local migration (must become v6; `develop`'s v5 is D-084) | CP-03 |
 | G-28a | Maestro flows for sign-in, invites, consent | `apps/mobile/e2e/flows/E2E-11*`, `E2E-12*`, `E2E-13*`, `subflows/sign-in-*` | CP-01, CP-02 |
 
