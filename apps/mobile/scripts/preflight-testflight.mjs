@@ -351,6 +351,21 @@ if (SERVER_ON) {
   const otp = String(process.env.EXPO_PUBLIC_EMAIL_OTP_LENGTH ?? '').trim();
   unverified(`Email code length: the app expects ${otp || '6 (EXPO_PUBLIC_EMAIL_OTP_LENGTH unset)'} digits; Supabase Auth > Email > "Email OTP length" on staging must be the same number, or every typed code is refused.`);
   step(7, 'check', `Auth settings, SMTP and templates on staging; OTP length ${otp || '6'}`);
+
+  // Invite links must carry the token in the fragment (B-NFR-002): https://<site>/j#t=<token>. An app that still
+  // writes /i/<token> sends every invite opened outside the app to the website with the token in the path, and the
+  // website no longer serves /i (#144). fix/invite-link-fragment moves the app; build 2 waits for it.
+  let inviteSource = '';
+  try {
+    inviteSource = read(join(MOBILE, 'src/lib/family/invite-link.logic.ts'));
+  } catch {
+    /* reported below */
+  }
+  check(
+    /\$\{INVITE_PATH\}#t=\$\{token\}/.test(inviteSource) && !/INVITE_PATH_PREFIX\s*=\s*'\/i\/'/.test(inviteSource),
+    'invite links are /j#t=<token>: the token is in the fragment and never reaches the website (B-NFR-002)',
+    'The app still writes invite links as /i/<token>, with the token in the path where the website and its logs see it, and the website no longer serves /i. Merge fix/invite-link-fragment into develop, then develop into this branch, before building with server features on.',
+  );
 }
 
 // ---------------------------------------------------------------- 5. language packs and the speech model host
