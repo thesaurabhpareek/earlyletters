@@ -14,6 +14,7 @@
  * packages/content/src/strings.en.ts (keys noted beside each).
  */
 import { brand } from '@scribe/brand';
+import { plusPricing } from './pricing';
 
 const NAME = brand.name;
 
@@ -25,8 +26,8 @@ const NAME = brand.name;
  * recomputes the arithmetic). Apple bills and Apple is where a person cancels.
  */
 const PLANS = [
-  { name: 'Monthly', price: '$4.99', period: 'a month', trial: '1-month free trial' },
-  { name: 'Yearly', price: '$49.99', period: 'a year', trial: '2-month free trial' },
+  { name: 'Monthly', price: plusPricing.monthly.price, period: 'a month', trial: `${plusPricing.monthly.trialMonths}-month free trial` },
+  { name: 'Yearly', price: plusPricing.annual.price, period: 'a year', trial: `${plusPricing.annual.trialMonths}-month free trial` },
 ] as const;
 
 /**
