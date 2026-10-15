@@ -21,6 +21,7 @@
  *    gated (FreeForever in packages/core).
  */
 import { NO_PLAN, planActive, type PlanView } from '@scribe/core';
+import { freePeriodDays, type FreeOfferType } from '@scribe/core/src/plan-notices';
 import type {
   NativeEntitlementSnapshot,
   NativeStatus,
@@ -56,6 +57,24 @@ export interface PlanDetails {
   graceEnd: string | null;
   /** periodEnd minus 24 hours, when it will renew and the person bought it. */
   cancelBy: string | null;
+  /**
+   * The free period running now, if any (BL-342, R4 PT-10): how it was given and how long it is.
+   * Plan reminders key on this, never on the product (F14-REQ-044). `days` is null when unknown.
+   */
+  freePeriod: { offerType: FreeOfferType | null; days: number | null } | null;
+  /** When the subscription first started (original purchase), for the yearly reminder of monthly plans. */
+  subscribedSince: string | null;
+}
+
+/**
+ * Optional fields the native module can add to a transaction (request to modules/scribe-store, BL-342):
+ * the free offer running now, and the original purchase date. Absent today; the plan falls back to
+ * the trial flag and the purchase date, which covers Apple's introductory free trial only.
+ */
+export interface TransactionOfferFields {
+  /** Set only while a FREE offer runs (StoreKit offer payment mode `freeTrial`). */
+  freeOffer?: { type: FreeOfferType; days?: number };
+  originalPurchasedAt?: string;
 }
 
 export interface PlanState {
@@ -75,6 +94,8 @@ const NO_DETAILS: PlanDetails = {
   periodEnd: null,
   graceEnd: null,
   cancelBy: null,
+  freePeriod: null,
+  subscribedSince: null,
 };
 
 /** Never read StoreKit (Expo Go, web, Android, first launch offline): Free, nothing locked. */
@@ -88,11 +109,26 @@ const STATES: ReadonlySet<string> = new Set(['subscribed', 'inGracePeriod', 'inB
 const isoOrUndefined = (v: unknown): string | undefined =>
   typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : undefined;
 
-function transactionOf(raw: unknown): NativeTransaction | null {
+const OFFER_TYPES: ReadonlySet<string> = new Set(['introductory', 'promotional', 'code']);
+
+function offerFieldsOf(r: Record<string, unknown>): TransactionOfferFields {
+  const out: TransactionOfferFields = {};
+  const o = r.freeOffer as Record<string, unknown> | undefined;
+  if (o && typeof o === 'object' && typeof o.type === 'string' && OFFER_TYPES.has(o.type)) {
+    const days = typeof o.days === 'number' && Number.isInteger(o.days) && o.days > 0 && o.days < 1000 ? o.days : undefined;
+    out.freeOffer = days === undefined ? { type: o.type as FreeOfferType } : { type: o.type as FreeOfferType, days };
+  }
+  const since = isoOrUndefined(r.originalPurchasedAt);
+  if (since) out.originalPurchasedAt = since;
+  return out;
+}
+
+function transactionOf(raw: unknown): (NativeTransaction & TransactionOfferFields) | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   if (typeof r.productId !== 'string' || !isPlusProduct(r.productId)) return null;
-  const tx: NativeTransaction = {
+  const tx: NativeTransaction & TransactionOfferFields = {
+    ...offerFieldsOf(r),
     productId: r.productId,
     ownership: r.ownership === 'familyShared' ? 'familyShared' : 'purchased',
     environment: typeof r.environment === 'string' && ENVIRONMENTS.has(r.environment) ? (r.environment as StoreEnvironment) : 'production',
@@ -217,6 +253,12 @@ export function planFromSnapshot(snap: NativeEntitlementSnapshot | null): PlanSt
       periodEnd && willAutoRenew !== false && best.tx.ownership === 'purchased' && (state === 'trial' || state === 'active')
         ? toIso(Date.parse(periodEnd) - CANCEL_LEAD_MS)
         : null;
+    const extra = best.tx as NativeTransaction & TransactionOfferFields;
+    const freePeriod = extra.freeOffer
+      ? { offerType: extra.freeOffer.type, days: extra.freeOffer.days ?? freePeriodDays(best.tx.purchasedAt, periodEnd) }
+      : best.tx.isTrial
+        ? { offerType: 'introductory' as const, days: freePeriodDays(best.tx.purchasedAt, periodEnd) }
+        : null;
     return {
       view: {
         state,
@@ -234,6 +276,8 @@ export function planFromSnapshot(snap: NativeEntitlementSnapshot | null): PlanSt
         periodEnd,
         graceEnd: best.inGrace ? (best.status?.gracePeriodExpiresAt ?? null) : null,
         cancelBy,
+        freePeriod,
+        subscribedSince: extra.originalPurchasedAt ?? null,
       },
       checkedAt: snap.checkedAt,
     };

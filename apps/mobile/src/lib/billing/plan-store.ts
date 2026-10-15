@@ -11,6 +11,7 @@
 import { AppState } from 'react-native';
 import { ScribeStore, type NativeEntitlementSnapshot, type StoreViewSupport } from '../../../modules/scribe-store';
 import { getSetting, setSetting } from '../store';
+import { configureAcknowledgmentStorage } from './acknowledgment';
 import { PLAN_CACHE_KEY, PLUS_PRODUCT_IDS } from './config';
 import { EMPTY_PLAN, parsePlanCache, planFromSnapshot, sameEntitlements, sanitizeSnapshot, serializePlanCache, type PlanState } from './plan.logic';
 
@@ -26,6 +27,7 @@ const listeners = new Set<() => void>();
 function hydrate(): void {
   if (hydrated) return;
   hydrated = true;
+  configureAcknowledgmentStorage({ get: getSetting, set: setSetting });
   try {
     snapshot = parsePlanCache(getSetting(PLAN_CACHE_KEY));
     plan = planFromSnapshot(snapshot);
@@ -119,9 +121,19 @@ export function startPlus(): () => void {
     if (s === 'active') void refreshPlan();
   });
   void refreshPlan();
+  // Plan reminders follow every plan change, the foreground and launch (BL-342). Lazy so a test or
+  // web preview that never calls startPlus never loads expo-notifications.
+  let stopReminders: (() => void) | null = null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    stopReminders = (require('./plan-reminders.native') as typeof import('./plan-reminders.native')).startPlanReminders();
+  } catch {
+    // Notifications unavailable here: the in-app card still carries every notice.
+  }
   return () => {
     changes?.remove();
     foreground.remove();
+    stopReminders?.();
     started = false;
   };
 }

@@ -7,6 +7,7 @@ import { Linking } from 'react-native';
 import { brand } from '@scribe/brand';
 import { tokens } from '@scribe/design-tokens';
 import { ScribeStore, type OfferCodeOutcome, type RefundOutcome, type StoreSheetOptions, type StoreSheetOutcome } from '../../../modules/scribe-store';
+import { requestAcknowledgment } from './acknowledgment';
 import { APPLE_MANAGE_SUBSCRIPTIONS_URL, APPLE_REPORT_A_PROBLEM_URL, PLUS_PRODUCT_IDS } from './config';
 import { billingCopy } from './copy';
 import { getPlan, refreshPlan, storeViewSupport } from './plan-store';
@@ -40,10 +41,14 @@ export async function presentPlusStore(): Promise<StoreSheetOutcome> {
   if (presenting) return 'busy';
   presenting = true;
   try {
+    const wasOn = plusOn(getPlan(), new Date().toISOString());
     const { outcome } = await ScribeStore.presentSubscriptionStore(storeSheetOptions());
     await refreshPlan();
     // A purchase can land just after the sheet closes (Ask to Buy, slow network): trust StoreKit.
-    return plusOn(getPlan(), new Date().toISOString()) ? 'purchased' : outcome;
+    const nowOn = plusOn(getPlan(), new Date().toISOString());
+    // The acknowledgment with Save a copy follows a purchase made in the app (BL-342, C-REQ-024).
+    if (nowOn && !wasOn) requestAcknowledgment();
+    return nowOn ? 'purchased' : outcome;
   } catch {
     return 'unavailable';
   } finally {

@@ -10,7 +10,9 @@
  */
 import { decideKeepLetter, freeLettersFrom, type KeepLetterDecision } from '@scribe/core';
 import { ledgerDb, listChildren, listHiddenChildren, type Child } from '../store';
-import { clearLedger, lettersKept, mirrorLedger, syncLedger } from './letter-ledger';
+import { currentAuthUserId } from '../auth/auth-store';
+import { clearLedger, configureOwnLetters, lettersKept, mirrorLedger, syncLedger } from './letter-ledger';
+import type { LedgerViewer, OwnLettersQuery } from './own-letters';
 import { getPlan } from './plan-store';
 import { isJoinedBook as joined, plusOn, type BookFacts } from './plan.logic';
 
@@ -72,6 +74,39 @@ export interface KeepGate {
   /** Letters ever kept on this account (the largest of Keychain, database and letters present). */
   lettersKept: number;
   allowance: number;
+  /**
+   * Whether this Save counts toward the free letters (M17): true only with the letter's words on
+   * screen. A Save that does not count never reads the ledger and is always allowed, so the Keep
+   * sheet cannot open on it (F14-REQ-037).
+   */
+  counts: boolean;
+}
+
+/** The person the ledger counts for: the signed-in profile, or null before sign-in. */
+export function ledgerViewer(): LedgerViewer {
+  try {
+    return { profileId: currentAuthUserId() };
+  } catch {
+    return { profileId: null };
+  }
+}
+
+/**
+ * Wire the M17 own-letters query from the local database (S03's `countOwnLettersWithWords`, see
+ * own-letters.ts for the exact contract). From then on, letters by another author never count and
+ * never raise the mirror or the Keychain (F14-REQ-036). Call once when the store opens.
+ */
+export function configureOwnLettersQuery(query: OwnLettersQuery | null): void {
+  configureOwnLetters(query, ledgerViewer);
+}
+
+export interface KeepGateOptions {
+  /**
+   * The letter's words are on screen in Review at this Save (spoken words reviewed, or typed words).
+   * false for "Save the recording" of a voice-only letter: it does not count and never gates (M17).
+   * Defaults to true, so existing callers keep today's behaviour.
+   */
+  wordsOnScreen?: boolean;
 }
 
 /**
@@ -81,8 +116,13 @@ export interface KeepGate {
  * opens the Keep sheet and returns WITHOUT saving: the draft stays exactly
  * where it is. Never throws; an unreadable ledger counts as 0, the safe side.
  */
-export async function keepLetterGate(now: Date = new Date()): Promise<KeepGate> {
+export async function keepLetterGate(now: Date = new Date(), options: KeepGateOptions = {}): Promise<KeepGate> {
   const allowance = freeLettersAllowance();
+  if (options.wordsOnScreen === false) {
+    // M17: a voice-only Save never reads the ledger, never counts and never opens the Keep sheet.
+    const plus = plusOn(getPlan(), now.toISOString());
+    return { decision: { kind: 'allow', via: plus ? 'plus_own' : 'free_letters' }, lettersKept: 0, allowance, counts: false };
+  }
   let n = 0;
   try {
     n = await syncLedger(ledgerDb());
@@ -90,7 +130,7 @@ export async function keepLetterGate(now: Date = new Date()): Promise<KeepGate> 
     n = 0;
   }
   const decision = decideKeepLetter({ now: now.toISOString(), plan: getPlan().view, lettersKept: n, allowance: allowanceNow() });
-  return { decision, lettersKept: n, allowance };
+  return { decision, lettersKept: n, allowance, counts: true };
 }
 
 /** Letters kept so far, for the Plan screen and analytics. 0 when the store cannot be read. */

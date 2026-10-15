@@ -6,10 +6,15 @@
  *
  * Route: /settings/plus. The Settings home row that opens it is wired by the
  * screen's owner.
+ *
+ * BL-342 (WP-F14-06, -07): the plan reminder card, "Your Plus terms" with Save a copy (the same
+ * text as the acknowledgment after a purchase), and the note that deleting the app or the
+ * account does not cancel Plus.
  */
 import { Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { AcknowledgmentSheet, PlanNoticeCard, PlusAcknowledgmentHost } from '@/components/plus';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
@@ -47,6 +52,7 @@ export default function PlanSettings() {
   const plan = usePlan();
   const [busy, setBusy] = useState<Busy>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [termsOpen, setTermsOpen] = useState(false);
   // Set when Apple's offer code sheet was shown: a redeemed code arrives as an entitlement update,
   // so Plus turning on afterwards is the redemption (D-081). A number-free event, no code is ever read.
   const awaitingCode = useRef(false);
@@ -78,6 +84,9 @@ export default function PlanSettings() {
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: p.title }} />
+      <PlusAcknowledgmentHost />
+      <AcknowledgmentSheet open={termsOpen} onClose={() => setTermsOpen(false)} />
+      <PlanNoticeCard showOpen={false} />
 
       <ListSection title={p.statusTitle} footer={copy.plus.promise}>
         <View accessible className="gap-1 px-4 py-3">
@@ -155,6 +164,15 @@ export default function PlanSettings() {
           />
           {ownPurchase && (
             <ListRow
+              title={p.terms}
+              subtitle={p.termsHelp}
+              trailing="chevron"
+              disabled={busy !== null}
+              onPress={() => setTermsOpen(true)}
+            />
+          )}
+          {ownPurchase && (
+            <ListRow
               title={p.refund}
               subtitle={p.refundHelp}
               trailing="chevron"
@@ -171,6 +189,11 @@ export default function PlanSettings() {
         {storeNote && (
           <Text variant="footnote" className="px-4">
             {storeNote}
+          </Text>
+        )}
+        {ownPurchase && (
+          <Text variant="footnote" className="px-4">
+            {p.deleteNote}
           </Text>
         )}
       </View>

@@ -94,5 +94,62 @@ export const billingCopy = {
     payment: 'Apple handles payment for Plus. We never see your card details.',
     needsNewerIos: 'Plus can be added on iOS 17 or later.',
     unavailable: 'Plus is not available on this device yet.',
+    // New in BL-342 (WP-F14-06). [Counsel] Q-C1, Q-C12: the delete note. No price or trial words here (D-083 test).
+    terms: 'Your Plus terms',
+    termsHelp: 'When Plus renews and how to cancel, with a copy to save.',
+    deleteNote: 'Deleting the app or your account does not cancel Plus. To stop it, use Manage subscription.',
+  },
+
+  /**
+   * Plan names (D-077) and the published price line. `{price}` is the plan's published price
+   * (F14 6.6 rule 5; CATALOG section 7), filled by lib/billing, never typed here.
+   */
+  planName: { month: 'Plus Monthly', year: 'Plus Annual' },
+  priceLine: { month: '{price} a month', year: '{price} a year' },
+
+  /**
+   * Plan reminders on the phone (BL-342, WP-F14-07; F14 6.6). Notifications and in-app cards.
+   * Transactional only: the date, the published price, the cancel-by date, how to cancel, and the
+   * "already cancelled" line (D-080). No child name, no letter text, no offer. Never says "free
+   * trial" (D-083): an offer code's free period reads the same as Apple's introductory one.
+   * [Counsel] Q-C1 and LEGAL-REQ-047: every string in this block needs counsel's sign-off (WP-F14-09).
+   * Placeholders: {name} is the plan name (`planName`), {price} the filled `priceLine`, {date}, {cancelBy}.
+   */
+  notices: {
+    trialTitle: 'Plus is free until {date}',
+    trialBody:
+      'After that, {name} is {price} and renews automatically until you cancel. To pay nothing, cancel by {cancelBy} in Settings, Plan, Manage subscription. If you have already cancelled, there is nothing to do.',
+    renewalTitle: '{name} renews on {date}',
+    renewalBody:
+      '{name} renews automatically on {date} at {price}. To stop it, cancel by {cancelBy} in Settings, Plan, Manage subscription. If you have already cancelled, there is nothing to do.',
+    anniversaryTitle: 'Your {name} plan',
+    anniversaryBody:
+      '{name} renews automatically at {price} until you cancel. To stop it, go to Settings, Plan, Manage subscription. If you have already cancelled, there is nothing to do.',
+    cardLabel: 'Plan reminder',
+    cardOpen: 'Open Plan',
+    cardDismiss: 'Got it',
+  },
+
+  /**
+   * The acknowledgment after a purchase or a free period starts (BL-342, WP-F14-06; C-REQ-024 phone half;
+   * in-app-disclosures section 3). The same text is the Plan screen's "Your Plus terms" row. Five items:
+   * the terms (renews until cancelled, the full terms), the first or next charge date, the price after,
+   * the cancel-by date, how to cancel (`store.cancel`). "Save a copy" shares this text (Mail, Files, Notes).
+   * [Counsel] Q-C4 (no trial timeline of ours beyond the dates) and 17602(a)(3): sign-off needed.
+   * Placeholders: {name} is the plan name, {price} the filled `priceLine`, {date}, {cancelBy}. The terms URL
+   * (packages/brand) follows `termsLink` on its own line.
+   */
+  ack: {
+    title: 'Your Plus terms',
+    freeUntil: '{name} is free until {date}.',
+    firstCharge: 'Your first charge is {price}, on {date}.',
+    nextCharge: '{name} is on. Your next charge is {price}, on {date}.',
+    renews: 'It renews automatically at {price} until you cancel.',
+    cancelBy: 'To avoid the next charge, cancel by {cancelBy}.',
+    termsLink: 'Subscription Terms:',
+    noDates: 'Settings, Plan shows when Plus renews and how to cancel.',
+    saveCopy: 'Save a copy',
+    saveCopyHelp: 'Keeps this text in Mail, Files or Notes.',
+    done: 'Done',
   },
 } as const;

@@ -23,6 +23,7 @@
  * sync (see lib/supabase/secure-storage.ts).
  */
 import { LEDGER_KEYCHAIN_KEY, lettersKeptFrom, parseLedger, safeCount, serializeKeychain } from './letter-ledger.logic';
+import type { LedgerViewer, OwnLettersQuery } from './own-letters';
 
 export interface LedgerStorage {
   getItem(key: string): Promise<string | null>;
@@ -41,6 +42,23 @@ export interface LedgerDb {
 }
 
 let storage: LedgerStorage | null = null;
+/**
+ * M17 (WP-F14-20): where "letters present" comes from once the database offers the own-letters
+ * query (own-letters.ts). Until it is configured, the ledger keeps the pre-M17 count of every letter
+ * on the phone (`LedgerDb.counts().present`), which is right only while every letter on the phone
+ * is this person's (no co-parent sync).
+ */
+let ownLetters: { query: OwnLettersQuery; viewer: () => LedgerViewer } | null = null;
+
+/** Wire the M17 own-letters query. `viewer` is read at each count (sign-in can change it). */
+export function configureOwnLetters(query: OwnLettersQuery | null, viewer: () => LedgerViewer = () => ({ profileId: null })): void {
+  ownLetters = query ? { query, viewer } : null;
+}
+
+/** True once the M17 query is wired: another author's letters can no longer reach the count. */
+export function ownLettersConfigured(): boolean {
+  return ownLetters !== null;
+}
 /** The Keychain count last read or written in this process. Lets the save transaction (sync) see it. */
 let floor = 0;
 
@@ -80,11 +98,24 @@ export async function raiseKeychainCount(n: number): Promise<void> {
 }
 
 function dbCounts(db: LedgerDb): { recorded: number; present: number } {
+  let recorded = 0;
+  let present = 0;
   try {
-    return db.counts();
+    const c = db.counts();
+    recorded = c.recorded;
+    present = c.present;
   } catch {
     return { recorded: 0, present: 0 };
   }
+  if (ownLetters) {
+    // M17: only this person's letters with words. Never the raw count, so another author's rows cannot heal it upward.
+    try {
+      present = safeCount(ownLetters.query.countOwnLettersWithWords(ownLetters.viewer()));
+    } catch {
+      present = 0;
+    }
+  }
+  return { recorded, present };
 }
 
 /** Letters this account has ever kept: the largest of the three sources. Never lower than what any one knew. */
