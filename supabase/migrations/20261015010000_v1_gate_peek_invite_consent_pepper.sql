@@ -3,7 +3,8 @@
 --
 -- PENDING: not yet applied. Apply after 20261015000000_v1_gate_membership_sync_hardening.sql,
 -- following supabase/APPLY.md (section "Files 13 to 16"). Never edits an
--- earlier file; policy_acceptances_pseudonymise is redefined from 20261002020000.
+-- earlier file; policy_acceptances_pseudonymise is redefined from 20261002020000
+-- and ops_deletion_sla from 20261004200000.
 --
 -- Both sections are ported from branch auto/2026-10-05-fixes, commit d1cbddb,
 -- file 20261005100000_db_fix_privacy_limits.sql sections 5 and 6 (gaps G-12 and
@@ -16,11 +17,15 @@
 --       so the account deletion stops and retries instead of storing reversible
 --       hashes. consent_pepper_ready() (service role) says whether it is set,
 --       without revealing it. The founder sets the pepper in FT-10 (APPLY.md
---       step 6) before any deletion runs.
+--       step 6) before any deletion runs. ops_deletion_sla() (from
+--       20261004200000) gains consent_pepper_missing so the purge worker alerts
+--       with the cause (pepper_missing) instead of a generic retry.
 -- G-13  peek_invite(p_token) for "ask before joining" (review H2; BL-322 app part
 --       by S04): before accepting, returns {"inviter": <the inviter's sign-off
 --       name for that book, or null>, "role": "parent" | "contributor"}, plus
---       "joined": true when the caller already accepted this invite. Never the
+--       "joined": true when the caller accepted this invite and is still a
+--       member. A token outside the app's shape (32 to 128 URL-safe characters,
+--       invite_token_well_formed) is SCINV before any lookup. Never the
 --       child's name, ids or any book data (PRD V2 08 section 9, S02 row: "only
 --       the inviter's sign-off name before consent"). Signed-in only, works
 --       before consent, same errors as accept_child_invite (SCINV, SCCAP),
@@ -31,10 +36,11 @@
 -- New SQLSTATEs: none (55000 for the pepper is a standard code, service paths only).
 -- Reused: SCRAT, SCINV, SCCAP, SCANO.
 
+-- A second run by hand is refused (`supabase db push` never re-runs a file).
 do $$
 begin
   if to_regprocedure('public.peek_invite(text)') is not null then
-    raise exception '20261015010000 is already applied' using errcode = '55000';
+    raise exception '20261015010000 is already applied; do not run it again' using errcode = '55000';
   end if;
 end;
 $$;
@@ -69,6 +75,45 @@ returns boolean language sql stable security definer set search_path = pg_catalo
   select char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32;
 $$;
 
+-- The alert path for the fail-closed pepper. Deleting the sign-in user goes through
+-- Supabase Auth, which reports the trigger's 55000 as a generic database error, so
+-- the worker could only say "step retrying". The SLA report now names the cause:
+-- consent_pepper_missing is 1 while the pepper is not usable and an account
+-- deletion is waiting or running (the purge worker's pepper_missing alert).
+-- From 20261004200000 plus that one key.
+create or replace function public.ops_deletion_sla(p_now timestamptz default now())
+returns jsonb language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select jsonb_build_object(
+    'tombstones_overdue',
+      (select count(*) from entries e where e.deleted_at < p_now - interval '31 days' and not public.entry_is_held(e.id))
+      + (select count(*) from children c where c.deleted_at < p_now - interval '31 days' and not public.is_held('child', c.id)),
+    'requests_executing_over_24h',
+      (select count(*) from deletion_requests where status = 'executing' and executing_at < p_now - interval '24 hours'),
+    'requests_executing_over_7d',
+      (select count(*) from deletion_requests where status = 'executing' and executing_at < p_now - interval '7 days'),
+    'steps_failed',
+      (select count(*) from deletion_request_steps s join deletion_requests d on d.id = s.request_id
+        where s.status = 'failed' and d.status in ('scheduled', 'held', 'executing')),
+    'steps_retrying',
+      (select count(*) from deletion_request_steps s join deletion_requests d on d.id = s.request_id
+        where s.status = 'pending' and s.attempts >= 5 and d.status in ('scheduled', 'held', 'executing')),
+    'queue_stuck',
+      (select count(*) from storage_purge_queue where done_at is null and enqueued_at < p_now - interval '24 hours'),
+    'queue_attempts_high',
+      (select count(*) from storage_purge_queue where done_at is null and attempts >= 10),
+    'scheduled_overdue',
+      (select count(*) from deletion_requests where status = 'scheduled' and scheduled_for < p_now - interval '1 day'),
+    'holds_past_review',
+      (select count(*) from legal_holds where released_at is null and review_by < p_now::date),
+    'purge_run_age_minutes',
+      (select floor(extract(epoch from p_now - max(at)) / 60)::int from audit_events where action = 'purge_run'),
+    'consent_pepper_missing',
+      (case when not public.consent_pepper_ready()
+                 and exists (select 1 from deletion_requests
+                              where kind = 'account' and status in ('scheduled', 'held', 'executing'))
+            then 1 else 0 end));
+$$;
+
 -- ─── 2. G-13: look at an invite before joining ───────────────────────────
 -- Server config read at call time (F11 D4, F11-REQ-003): family invites are off
 -- unless the setting says on. Used here and by every invite function in
@@ -76,6 +121,16 @@ $$;
 create or replace function public.contributors_enabled()
 returns boolean language sql stable set search_path = pg_catalog, public, pg_temp as $$
   select lower(coalesce(nullif(btrim(current_setting('app.contributors_enabled', true)), ''), 'off')) in ('on', 'true', '1');
+$$;
+
+-- The shape every invite token has: 32 to 128 URL-safe characters, the same rule
+-- as the app's isInviteToken (apps/mobile/src/lib/family/invite-link.logic.ts).
+-- Server-made tokens are 64 hex characters. Phones that make their own tokens
+-- (20261015020000, D5) must use at least 128 random bits; the server sees only
+-- the hash at creation, so it checks the shape when a token is used.
+create or replace function public.invite_token_well_formed(p_token text)
+returns boolean language sql immutable set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(p_token ~ '^[A-Za-z0-9_-]{32,128}$', false);
 $$;
 
 -- Same checks, in the same order, as accept_child_invite (20261005000000), but
@@ -92,10 +147,14 @@ declare
   v_joined boolean := false;
 begin
   perform public.rate_hit('membership');
+  -- The app's token rule (isInviteToken, invite-link.logic.ts). A failed call rolls
+  -- its counter hit back, so wrong guesses are not limited; the format floor keeps a
+  -- short, guessable token from ever matching, now that phones make tokens (D5).
+  if not public.invite_token_well_formed(p_token) then raise exception 'invite not found' using errcode = 'SCINV'; end if;
   select * into v_inv from child_invites where token_hash = sha256(convert_to(coalesce(p_token, ''), 'UTF8'));
   if not found then raise exception 'invite not found' using errcode = 'SCINV'; end if;
-  -- A repeat by the person who joined, while they are still a member. Someone who
-  -- left or was undone gets "already used" like anyone else.
+  -- "joined" only while the person is still a member: after leaving or an undo
+  -- (20261015020000) the invite is simply used.
   if v_inv.accepted_by = v_uid
      and exists (select 1 from child_members where child_id = v_inv.child_id and profile_id = v_uid) then
     v_joined := true;
@@ -139,6 +198,7 @@ $$;
 -- ─── 3. Privileges ───────────────────────────────────────────────────────
 revoke execute on function public.consent_pepper_ready() from public, anon, authenticated;
 revoke execute on function public.contributors_enabled() from public, anon, authenticated;
+revoke execute on function public.invite_token_well_formed(text) from public, anon, authenticated;
 revoke execute on function public.policy_acceptances_pseudonymise() from public, anon, authenticated;
 revoke execute on function public.peek_invite(text) from public, anon;
 grant execute on function public.peek_invite(text) to authenticated;

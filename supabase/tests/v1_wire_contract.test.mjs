@@ -1,7 +1,7 @@
 // The v1.0 wire-contract columns (20261015030000; F16-REQ-028, R2 AR-31, AR-32;
 // WP-F04-14; WP-F06-07 and WP-F07-04 server columns). The op parser and the pull
 // row carry every column; an older app that never sends a field never clears it;
-// the author layer stays author-only; pack_ref is immutable.
+// the author layer stays author-only; pack_ref is set once, then immutable.
 // Fictional family "Asha" only (CLAUDE.md).
 import { createDb, users, uuid7 } from './harness.mjs';
 
@@ -11,7 +11,7 @@ const { A, B, C } = users;
 await sys(`insert into auth.users values ('${A}'),('${B}'),('${C}')`);
 await publishPolicies();
 for (const u of [A, B, C]) await consent(u);
-const CHILD = await newChild(A, 'Asha', '2025-05-20');
+const CHILD = await newChild(A, 'Asha', '2025-04-12');
 await join(B, 'parent', CHILD, A);
 
 const push = async (u, ops) => (await one(u, `select public.sync_push($1::jsonb) r`, [JSON.stringify(ops)])).r;
@@ -81,18 +81,19 @@ check('with the text group they change together with the words', x.final_text ==
 await push(A, [op('entry.upsert', full, base('Habibi.', { occurred_on: '2026-02-01', occurred_precision: 'day' }), { changed: ['occurred_on'] })]);
 check('precision changes with occurred_on', (await row(full)).occurred_precision === 'day');
 
-// ── pack_ref is immutable (DATA-REQ-040 Rev) ─────────────────────────────
+// ── pack_ref is set once, then immutable (DATA-REQ-040 Rev) ──────────────
 r = await push(A, [op('entry.upsert', full, base('Habibi.', { pack_ref: 'ar@1.3.0' }), { changed: ['text'] })]);
 check('[F06-REQ-024] a different pack_ref is SCIMM (the op is rejected, the value stays)',
   r.results[0].ok === false && r.results[0].code === 'SCIMM' && (await row(full)).pack_ref === 'ar@1.2.0');
 check('nor directly', (await codeOf(() => as(A, `update entries set pack_ref = 'ar@9' where id = $1`, [full]))) === 'SCIMM');
-r = await push(A, [op('entry.upsert', old, base('From an older build.', { language: undefined, pack_ref: 'en@1.0.0' }), { changed: ['text'] })]);
-check('[F06-REQ-024] a letter saved without a pack gets one once (an older letter re-cleaned by a newer app)',
-  r.results[0].ok && (await row(old)).pack_ref === 'en@1.0.0');
-check('then it is fixed too', (await codeOf(() => as(A, `update entries set pack_ref = 'en@2.0.0' where id = $1`, [old]))) === 'SCIMM'
-  && (await codeOf(() => as(A, `update entries set pack_ref = null where id = $1`, [old]))) === 'SCIMM');
-r = await push(A, [op('entry.upsert', old, base('From an older build.', { language: undefined, pack_ref: null }), { changed: ['text'] })]);
-check('an op that sends null for pack_ref keeps the stored one', r.results[0].ok && (await row(old)).pack_ref === 'en@1.0.0');
+check('clearing a pack_ref is SCIMM too', (await codeOf(() => as(A, `update entries set pack_ref = null where id = $1`, [full]))) === 'SCIMM');
+// A letter uploaded without a pack (an older build) records one once, with its words in the same op.
+r = await push(A, [op('entry.upsert', old, base('From an older build, cleaned again.', { language: undefined, pack_ref: 'en@1.0.0' }), { changed: ['text'] })]);
+x = await row(old);
+check(`a letter without a pack records one once, words included (${JSON.stringify(r.results[0].code ?? 'ok')})`,
+  r.results[0].ok && x.pack_ref === 'en@1.0.0' && x.final_text === 'From an older build, cleaned again.');
+r = await push(A, [op('entry.upsert', old, base('From an older build, cleaned again.', { language: undefined, pack_ref: 'en@1.1.0' }), { changed: ['text'] })]);
+check('after that it is immutable (SCIMM)', r.results[0].ok === false && r.results[0].code === 'SCIMM' && (await row(old)).pack_ref === 'en@1.0.0');
 r = await push(A, [op('entry.upsert', full, base('Habibi.', { pack_ref: 'ar@1.2.0' }), { changed: ['text'] })]);
 check(`the same pack_ref again is fine (${JSON.stringify(r.results[0].code ?? 'ok')})`, r.results[0].ok);
 

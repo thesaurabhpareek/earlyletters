@@ -22,10 +22,13 @@
 --     words group travels together, F16-REQ-011). L4, author-only.
 --   locked_spans jsonb, null or an array (F06-REQ-031). Field group text. L4,
 --     author-only.
---   pack_ref text, null or `<lang>@<version>` (F06-REQ-024). Set once: a letter
---     saved without one (every letter before this file, or no verified pack,
---     F06-REQ-011) may get it later; once set it never changes (DATA-REQ-040 Rev:
---     SCIMM), and an op that sends null or omits it keeps the stored value. L4
+--   pack_ref text, null or `<lang>@<version>` (F06-REQ-024). Set once, then
+--     immutable, like engine_version (DATA-REQ-040 Rev: SCIMM). Once means at
+--     insert, or later only while it is still null: every letter uploaded
+--     before this file (or by an older build) has none, and a newer build that
+--     cleaned it with a pack must be able to record that without its whole op
+--     (words included) being refused. A different value, or clearing it, is
+--     SCIMM. L4
 --     author-only, because it names the letter's language, which is L4 like
 --     entries.language (F06 section 8 lists it as L2 author-only; S17 confirms).
 --   The author-only columns stay out of book_entries, so the other parent's pull
@@ -88,7 +91,8 @@ alter table public.dictionary_terms add column if not exists forms jsonb;
 alter table public.dictionary_terms add constraint dictionary_terms_forms_shape check (public.dictionary_forms_valid(forms));
 
 -- ─── 2. pack_ref is set once, then immutable (DATA-REQ-040 Rev) ──────────
--- From 20261002020000; the only change is the pack_ref clause in the first check.
+-- From 20261002020000; the only change is pack_ref in the first check: null to a
+-- value is allowed once, any other change is SCIMM.
 create or replace function public.entries_guard_immutable()
 returns trigger language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 declare
@@ -102,7 +106,7 @@ begin
      or new.created_at is distinct from old.created_at
      or new.raw_sha256 is distinct from old.raw_sha256
      or (old.pack_ref is not null and new.pack_ref is distinct from old.pack_ref) then
-    raise exception 'entries: raw_transcript, raw_sha256, captured_at, created_at, author_id, child_id, engine_version and a set pack_ref are immutable'
+    raise exception 'entries: raw_transcript, raw_sha256, captured_at, created_at, author_id, child_id, engine_version and pack_ref are immutable'
       using errcode = 'SCIMM';
   end if;
 
@@ -449,7 +453,7 @@ end;
 $$;
 
 comment on function public.sync_pull(jsonb, int) is
-  'Multi-book cursor pull (20261004100000). Digest rule (20261015000000, G-09): the real digest of what the caller may hold is computed on a first pull, on request (verify, ids, no have), when a readable row changed since the cursor, or when a row by someone else left what the caller''s role could read since the cursor; otherwise the phone''s own value is echoed. Writes the caller cannot read never change the answer. Own rows carry the v1.0 wire-contract columns (20261015030000).';
+  'Multi-book cursor pull (20261004100000). Digest rule (20261015000000, G-09): the real digest of what the caller may hold is computed on a first pull, on request (verify, ids, no have), when a readable row changed since the cursor, or when a row by someone else left what the caller''s role could read since the cursor; otherwise the phone''s own value is echoed. Writes the caller cannot read never change the digest or the rows. Residual (REVIEW_R17_CHECKLIST 10): cursors and row versions are database transaction ids, so their spacing reflects all write traffic in the database, the other parent''s private letters included; per-book versions are a sync ADR decision. Own rows carry the v1.0 wire-contract columns (20261015030000).';
 
 -- ─── 5. sync_push: the op parser takes the new columns (F16-REQ-028) ─────
 -- From 20261015000000. Changes, all marked F16-REQ-028:
@@ -457,9 +461,9 @@ comment on function public.sync_pull(jsonb, int) is
 --   update: occurred_precision with the occurred_on group, author_edits and
 --     locked_spans with the text group, base_direction with the text or language
 --     group, each only when the op data carries the key (an older app never
---     clears them); pack_ref fills an empty value and is otherwise passed
---     through, so the guard refuses a different one (SCIMM); null or absent
---     keeps the stored value;
+--     clears them); pack_ref is passed through only when sent, so the guard
+--     records it once on a letter that has none, refuses a different value or a
+--     clear (SCIMM), and an older app that never sends it changes nothing;
 --   prefs.upsert: notify_letters (20261015020000).
 create or replace function public.sync_push(p_ops jsonb)
 returns jsonb language plpgsql volatile security invoker set search_path = pg_catalog, public, pg_temp
@@ -607,7 +611,7 @@ begin
                 captured_at = excluded.captured_at,
                 child_id = excluded.child_id,
                 engine_version = excluded.engine_version,
-                pack_ref = coalesce(excluded.pack_ref, e.pack_ref)
+                pack_ref = case when d ? 'pack_ref' then excluded.pack_ref else e.pack_ref end
               where (e.final_text, e.machine_edits, e.edit_level, e.in_book, e.sounds_like_me, e.occurred_on,
                      e.raw_transcript, e.captured_at, e.child_id, e.engine_version, e.language,
                      e.occurred_precision, e.base_direction, e.author_edits, e.locked_spans, e.pack_ref)
@@ -626,7 +630,7 @@ begin
                           then excluded.base_direction else e.base_direction end,
                      case when 'text' = any(v_changed) and d ? 'author_edits' then excluded.author_edits else e.author_edits end,
                      case when 'text' = any(v_changed) and d ? 'locked_spans' then excluded.locked_spans else e.locked_spans end,
-                     coalesce(excluded.pack_ref, e.pack_ref));
+                     case when d ? 'pack_ref' then excluded.pack_ref else e.pack_ref end);
             end if;
             if v_type = 'entry.reupload' then
               if v_exists and cur.deleted_at is null and v_deleted then

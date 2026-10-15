@@ -24,7 +24,7 @@ const age = (u, interval) => sys(`update children set created_at = now() - $2::i
 
 // ── G-11: at most 20 new books per person per rolling 24 hours ───────────
 {
-  const first = Array.from({ length: 6 }, (_, i) => ({ id: uuid7(), name: `Asha ${i + 1}`, date_of_birth: '2025-05-20' }));
+  const first = Array.from({ length: 6 }, (_, i) => ({ id: uuid7(), name: `Asha ${i + 1}`, date_of_birth: '2025-04-12' }));
   let r = await push(A, [op('book.first_run', uuid7(), { children: first })]);
   check('[G-11] a first-run batch of 6 is accepted', r.results[0].ok && (await booksOf(A)) === 6);
   check('a replay of the same first-run batch is free', (await push(A, [op('book.first_run', uuid7(), { children: first })])).results[0].ok);
@@ -32,9 +32,9 @@ const age = (u, interval) => sys(`update children set created_at = now() - $2::i
   check('20 books in a day is allowed', (await booksOf(A)) === 20);
   const late = uuid7();
   check('[G-11] the 21st new book in 24 hours is SCRAT (create_child)',
-    (await codeOf(() => as(A, `select public.create_child($1, 'Asha', '2025-05-20')`, [late]))) === 'SCRAT');
+    (await codeOf(() => as(A, `select public.create_child($1, 'Asha', '2025-04-12')`, [late]))) === 'SCRAT');
   check('a retry of a book that already exists is never limited',
-    (await one(A, `select public.create_child($1, 'Asha 1', '2025-05-20') id`, [first[0].id])).id === first[0].id);
+    (await one(A, `select public.create_child($1, 'Asha 1', '2025-04-12') id`, [first[0].id])).id === first[0].id);
   // Inside sync_push the limit stops the batch: earlier ops are kept, the book op and the rest wait.
   const lid = uuid7();
   const before = uuid7();
@@ -48,8 +48,8 @@ const age = (u, interval) => sys(`update children set created_at = now() - $2::i
   check('[G-11] once the window has passed, the same retry succeeds with its letters', r.results.length === 2 && r.results.every((x) => x.ok)
     && (await sys(`select count(*)::int n from entries where id = $1`, [lid])).rows[0].n === 1);
   // First run counts only new books in the batch.
-  for (let i = 0; i < 17; i++) await newChild(B, `Mira ${i}`);
-  const six = Array.from({ length: 6 }, (_, i) => ({ id: uuid7(), name: `Mira b${i}`, date_of_birth: '2025-05-20' }));
+  for (let i = 0; i < 17; i++) await newChild(B, `Asha ${i}`);
+  const six = Array.from({ length: 6 }, (_, i) => ({ id: uuid7(), name: `Asha b${i}`, date_of_birth: '2025-04-12' }));
   check('[G-11] a first-run batch that would pass 20 new books today is SCRAT',
     (await codeOf(() => as(B, `select public.create_first_run_children($1::jsonb)`, [JSON.stringify(six)]))) === 'SCRAT');
   check('and nothing of it was created (all or nothing)', (await booksOf(B)) === 17);
@@ -103,11 +103,21 @@ const age = (u, interval) => sys(`update children set created_at = now() - $2::i
   const want = (await sys(`select encode(sha256(convert_to($1 || $2, 'UTF8')), 'hex') h`, [N, TEST_CONSENT_PEPPER])).rows[0].h;
   check('[G-12] acceptances are hashed with id || pepper (unchanged formula)', rows.length > 0 && rows.every((r) => r.h === want));
   check('consent_pepper_ready() is service only', (await codeOf(() => as(A, `select public.consent_pepper_ready()`))) === '42501');
+
+  // The alert path: the SLA report names the missing pepper while an account deletion waits.
+  const missing = async () => (await sys(`select (public.ops_deletion_sla(now()) ->> 'consent_pepper_missing')::int n`)).rows[0].n;
+  await setPepper('');
+  check('[G-12] no deletion waiting: no pepper alert', (await missing()) === 0);
+  await as(S, `select public.request_account_deletion('ios')`);
+  check('[G-12] a deletion waiting and no pepper: consent_pepper_missing is 1 (worker alert pepper_missing)', (await missing()) === 1);
+  await setPepper(TEST_CONSENT_PEPPER);
+  check('[G-12] with the pepper set the alert clears', (await missing()) === 0);
+  await as(S, `select public.cancel_account_deletion()`);
 }
 
 // ── G-13: peek_invite ────────────────────────────────────────────────────
 {
-  const child = await newChild(C, 'Asha', '2025-05-20');
+  const child = await newChild(C, 'Asha', '2025-04-12');
   await as(C, `insert into child_member_prefs (child_id, profile_id, signs_as) values ($1, $2, 'Mama')`, [child, C]);
   const tok = await invite(C, child, 'parent');
   const V = '99999999-9999-9999-9999-999999999999'; // signed in, no consent recorded yet
@@ -163,7 +173,7 @@ const age = (u, interval) => sys(`update children set created_at = now() - $2::i
 // ── peek_invite: the rest of the path (BL-322, review H2) ────────────────
 {
   await sys(`delete from sync_rate_windows where bucket = 'membership'`);   // the block above filled A's
-  const child = await newChild(S, 'Asha', '2025-05-20');
+  const child = await newChild(S, 'Asha', '2025-04-12');
   const tok = await invite(S, child, 'parent');
   check('the anon role cannot peek (no JWT: 42501)', (await codeOf(() => t.asAnon(`select public.peek_invite($1)`, [tok]))) === '42501');
   check('a null token is SCINV', (await codeOf(() => as(A, `select public.peek_invite(null)`))) === 'SCINV');

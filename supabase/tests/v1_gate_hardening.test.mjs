@@ -6,8 +6,8 @@
 // 20261005000000; they are re-checked here so the PoC stays covered end to end.
 // Ported from auto/2026-10-05-fixes d1cbddb (supabase/tests/db_fix_security_review.test.mjs).
 // Fictional family "Asha" only (CLAUDE.md).
-import { createDb, users, uuid7 } from './harness.mjs';
 import { readFileSync } from 'node:fs';
+import { createDb, users, uuid7 } from './harness.mjs';
 
 const t = await createDb(process.argv.slice(2));
 const { check, as, sys, one, codeOf, publishPolicies, consent, newChild, invite, join, done } = t;
@@ -70,7 +70,7 @@ await join(N, 'contributor', child, A);
   // Consent gate on book.update (was children_consent_gate; book_update calls it itself).
   const U = users.U;
   await sys(`insert into auth.users (id) values ($1) on conflict do nothing`, [U]);
-  await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'parent')`, [await newChild(S, 'Mira', '2025-02-02'), U]);
+  await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'parent')`, [await newChild(S, 'Asha', '2025-02-02'), U]);
   const uBook = (await sys(`select child_id from child_members where profile_id = $1`, [U])).rows[0].child_id;
   res = await push(U, [op('book.update', uBook, { nickname: 'Mi' })]);
   check('book.update without consent pauses the batch (SCCON), it is not rejected', res.paused === true && res.results.length === 0);
@@ -123,7 +123,7 @@ await join(N, 'contributor', child, A);
 
 // ── F5 / G-09: the pull digest does not reveal private writes ────────────
 {
-  const b2 = await newChild(S, 'Mira', '2025-02-02');
+  const b2 = await newChild(S, 'Asha', '2025-02-02');
   await join(P2, 'parent', b2, S);
   const first = await pull(P2);
   const book = first.books.find((b) => b.id === b2);
@@ -229,17 +229,24 @@ await join(N, 'contributor', child, A);
     && (await sys(`select has_table_privilege('authenticated', 'public.my_policy_state', 'delete') d`)).rows[0].d === false);
 }
 
-// ── A second run of a gate file by hand is refused (PR #140 review 2 finding 5) ─
+// ── Run once: a second run stops instead of putting back older sync functions ──
 {
-  const gate = t.files.filter((f) => /20261015(00|01|02|03)0000_/.test(f)).sort();
-  check('(the four gate files are in this run)', gate.length === 4);
-  for (const f of gate.slice(0, 3)) {
-    check(`re-running ${f.split('/').pop()} is refused (55000) and changes nothing`,
-      (await codeOf(() => t.db.exec(readFileSync(f, 'utf8')))) === '55000');
+  const file = process.argv.slice(2).find((f) => f.endsWith('20261015000000_v1_gate_membership_sync_hardening.sql'));
+  const before = (await sys(`select md5(pg_get_functiondef('public.sync_push(jsonb)'::regprocedure)) h`)).rows[0].h;
+  let code = 'ok';
+  try { await t.db.exec(`begin; ${readFileSync(file, 'utf8')}; commit;`); } catch (e) { code = e.code; await t.db.exec('rollback'); }
+  const after = (await sys(`select md5(pg_get_functiondef('public.sync_push(jsonb)'::regprocedure)) h`)).rows[0].h;
+  check(`a second run of 20261015000000 stops (55000) and changes nothing (${code})`, code === '55000' && before === after);
+  // Files 14 and 15 refuse a second run the same way; file 16 fails at its first constraint.
+  for (const name of ['20261015010000_v1_gate_peek_invite_consent_pepper.sql', '20261015020000_v1_gate_coparent_invites_undo.sql',
+                      '20261015030000_v1_wire_contract_columns.sql']) {
+    const f = process.argv.slice(2).find((x) => x.endsWith(name));
+    let c = 'ok';
+    try { await t.db.exec(`begin; ${readFileSync(f, 'utf8')}; commit;`); } catch (e) { c = e.code; await t.db.exec('rollback'); }
+    check(`a second run of ${name.slice(0, 14)} is refused (${c})`, name.startsWith('20261015030000') ? c !== 'ok' : c === '55000');
   }
-  check(`re-running ${gate[3].split('/').pop()} fails at its first statement`, (await codeOf(() => t.db.exec(readFileSync(gate[3], 'utf8')))) !== 'ok');
-  check('the sync functions are still the wire-contract versions after the attempts',
-    (await sys(`select prosrc ~ 'occurred_precision' ok from pg_proc where proname = 'sync_push'`)).rows[0].ok === true);
+  check('sync_push is still the wire-contract version after the attempts',
+    (await sys(`select md5(pg_get_functiondef('public.sync_push(jsonb)'::regprocedure)) h`)).rows[0].h === before);
 }
 
 done();

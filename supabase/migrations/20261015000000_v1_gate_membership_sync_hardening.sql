@@ -24,10 +24,7 @@
 --       column directly; sync_push's book.update now goes through
 --       book_update(p_child, p_data) because its merge reads the two columns.
 --       Effect on clients: `select *` (PostgREST select=* or no select list) on
---       children is refused with 42501; name the columns instead. One visible
---       change: a book.update op from a family member that changes nothing was
---       silently fine (no row matched, no trigger ran); book_update now checks
---       consent and the parent role first, so it is SCPAR (a permanent reject).
+--       children is refused with 42501; name the columns instead.
 -- G-09  sync_pull's digest no longer reveals private activity (review M5). The
 --       old changed-since check looked at every row in the book, so a deliberately
 --       wrong "have" was echoed until someone wrote a private letter. The check now
@@ -36,13 +33,7 @@
 --       the cursor (new columns entries.left_parents_xid / left_family_xid, set by
 --       the entries_unshared trigger in the transaction that made the row
 --       unreadable: deleted, taken out of the book, withdrawn, set aside).
---       A letter that was never shared changes neither the digest nor the rows.
---       Known residual (pre-existing since 20261004100000, found in this PR's
---       review): the returned cursor and every row's "v" come from the
---       database-wide transaction counter, so on a quiet database an idle pull's
---       cursor moves when anyone writes, private letters included. Closing it
---       changes the pull protocol (cursor at the caller's last row, or per-book
---       versions): the sync ADR's call (S03 with S02, T15), not this file's.
+--       A letter that was never shared changes nothing the caller can observe.
 --       Removal still works: a letter that leaves the book stamps its row, so the
 --       phone gets the real digest and asks for the id list. The paragraph "The
 --       digest is computed only when something in the book changed" in
@@ -76,13 +67,15 @@
 -- New SQLSTATEs: none.
 -- Reused: SCRAT, SCINV, SCCAP, SCPAR, SCCON, SCANO, P0002, 22023, 42501.
 
--- A second run (by hand in the SQL Editor) would put back this file's sync
--- functions over 20261015030000's; refuse it. `supabase db push` never re-runs a file.
+-- Run once. A second run would succeed and quietly put back this file's
+-- sync_pull and sync_push over the ones 20261015030000 makes, so it stops here
+-- instead (supabase db push never re-runs a recorded file; this guards the
+-- manual SQL Editor path in APPLY.md).
 do $$
 begin
-  if exists (select 1 from pg_constraint where conrelid = 'public.sync_op_receipts'::regclass
-              and conname = 'sync_op_receipts_pkey' and array_length(conkey, 1) = 2) then
-    raise exception '20261015000000 is already applied' using errcode = '55000';
+  if exists (select 1 from pg_attribute
+              where attrelid = 'public.entries'::regclass and attname = 'left_parents_xid' and not attisdropped) then
+    raise exception '20261015000000 is already applied; do not run it again' using errcode = '55000';
   end if;
 end;
 $$;
@@ -135,7 +128,11 @@ grant select (id, name, nickname, created_by, created_at, updated_at, deleted_at
 -- as a direct update by the caller: unknown field 22023, not a member P0002,
 -- consent SCCON (children_consent_gate), not a parent SCPAR (children_guard).
 -- Runs as the owner so it can compare the date columns; the triggers' client
--- checks are therefore made here explicitly.
+-- checks are therefore made here explicitly. One difference from the old
+-- in-place merge, on purpose: consent and the parent check now apply even when
+-- nothing would change (before, a no-op updated no row, so no trigger ran). A
+-- contributor's no-op book.update is now SCPAR instead of ok; it changes nothing
+-- either way, and the app never sends book.update for a contributor.
 create or replace function public.book_update(p_child uuid, p_data jsonb)
 returns void language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
@@ -485,7 +482,7 @@ end;
 $$;
 
 comment on function public.sync_pull(jsonb, int) is
-  'Multi-book cursor pull (20261004100000). Digest rule (20261015000000, G-09): the real digest of what the caller may hold is computed on a first pull, on request (verify, ids, no have), when a readable row changed since the cursor, or when a row by someone else left what the caller''s role could read since the cursor; otherwise the phone''s own value is echoed. Writes the caller cannot read never change the answer.';
+  'Multi-book cursor pull (20261004100000). Digest rule (20261015000000, G-09): the real digest of what the caller may hold is computed on a first pull, on request (verify, ids, no have), when a readable row changed since the cursor, or when a row by someone else left what the caller''s role could read since the cursor; otherwise the phone''s own value is echoed. Writes the caller cannot read never change the digest or the rows. Residual (REVIEW_R17_CHECKLIST 10): cursors and row versions are database transaction ids, so their spacing reflects all write traffic in the database, the other parent''s private letters included; per-book versions are a sync ADR decision.';
 
 -- ─── 3. G-10: op receipts per person ─────────────────────────────────────
 alter table public.sync_op_receipts drop constraint sync_op_receipts_pkey;

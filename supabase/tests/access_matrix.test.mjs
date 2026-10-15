@@ -235,6 +235,8 @@ const SERVICE_ONLY = [
   `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
   // 20261015010000 (BL-334): pepper readiness for APPLY.md and ops checks.
   `select public.consent_pepper_ready()`,
+  // The invite token shape check, used inside peek_invite and accept_child_invite.
+  `select public.invite_token_well_formed('x')`,
   // 20261015020000: server config readers, the invite policy check, and code redemption (invite-redeem only).
   `select public.contributors_enabled()`, `select public.family_share_consent_required()`,
   `select public.invite_policy_checks('${A}', 'parent')`,
@@ -302,6 +304,20 @@ const covered = new Set(READS.map((r) => r[0]));
 const missing = tables.filter((t) => !covered.has(t));
 for (const t of missing) console.log(`      no matrix row: public.${t}`);
 check('[LEGAL-REQ-024] every public table and view has a row in the access matrix', missing.length === 0);
+// PR #32 DB-01, R-17 review finding 4: Supabase's default privileges grant writes on every new
+// relation, and a view that runs as its owner would skip the base table's policies. No view in
+// any schema the migrations make is writable by an API role, at table or column level.
+const writableViews = (await sys(`
+  select n.nspname || '.' || c.relname || ' (' || r.rolname || ' ' || p.priv || ')' v
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    cross join (values ('anon'::text), ('authenticated')) r(rolname)
+    cross join (values ('INSERT'::text), ('UPDATE'), ('DELETE'), ('TRUNCATE')) p(priv)
+   where c.relkind in ('v', 'm') and n.nspname in ('public', 'ops', 'insights')
+     and (has_table_privilege(r.rolname, c.oid, p.priv)
+          or (p.priv in ('INSERT', 'UPDATE') and has_any_column_privilege(r.rolname, c.oid, p.priv)))
+   order by 1`)).rows.map((x) => x.v);
+for (const v of writableViews) console.log(`      writable view: ${v}`);
+check('[DB-01] no view is writable by anon or authenticated', writableViews.length === 0);
 
 const fns = (await sys(`select p.oid, p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' sig, p.proname name,
     p.prosecdef secdef, p.prosrc src, coalesce(array_to_string(p.proconfig, ','), '') cfg,
@@ -322,21 +338,6 @@ check('every security definer function pins search_path', noPath.length === 0);
 const unguarded = fns.filter((f) => f.auth_x && rpcNames.has(f.name) && !/require_user\(\)/.test(f.src) && !/is_anonymous\(\)/.test(f.src));
 for (const f of unguarded) console.log(`      RPC without the anonymous guard: ${f.sig}`);
 check('[K-08] every RPC starts with require_user() or checks is_anonymous()', unguarded.length === 0);
-
-// PR #32 DB-01, PR #140 review: a view runs as its owner, so a write privilege on any
-// public view would skip the base table's policies. No view may be writable.
-const writableViews = (await sys(`select c.relname, r.rolname, p.priv from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    cross join (values ('authenticated'), ('anon')) r(rolname)
-    cross join (values ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE')) p(priv)
-   where n.nspname = 'public' and c.relkind = 'v' and has_table_privilege(r.rolname, c.oid, p.priv)
-  union all
-  select c.relname, r.rolname, 'column ' || a.attname from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
-    cross join (values ('authenticated'), ('anon')) r(rolname)
-   where n.nspname = 'public' and c.relkind = 'v' and (has_column_privilege(r.rolname, c.oid, a.attnum, 'UPDATE')
-         or has_column_privilege(r.rolname, c.oid, a.attnum, 'INSERT'))`)).rows;
-for (const v of writableViews) console.log(`      writable view: public.${v.relname} (${v.rolname}: ${v.priv})`);
-check('[F11-REQ-082] no public view is writable by authenticated or anon (table or column level)', writableViews.length === 0);
 
 const policies = (await sys(`select tablename, permissive, array_to_string(roles, ',') roles, coalesce(qual, '') || coalesce(with_check, '') expr
   from pg_policies where schemaname = 'public'`)).rows;

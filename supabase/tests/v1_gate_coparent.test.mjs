@@ -24,7 +24,7 @@ const roleOf = async (child, uid) => (await sys(`select role from child_members 
 const audits = async (action, child) => (await sys(`select count(*)::int n from audit_events where action = $1 and child_id = $2`, [action, child])).rows[0].n;
 
 // ── F11-REQ-002: the device makes the id, the token and the code ─────────
-const BOOK = await newChild(A, 'Asha', '2025-05-20');
+const BOOK = await newChild(A, 'Asha', '2025-04-12');
 const I1 = uuid7();
 const T1 = 'a'.repeat(64);
 let r = await create(A, I1, BOOK, 'parent', T1, 'ASHA2345', 'Papa');
@@ -39,7 +39,7 @@ check('[F11-REQ-002] the database holds no token or code in clear', !dump.includ
 check('the server returns only the id (no secret in the answer)', JSON.stringify(r.rows[0]) === JSON.stringify({ id: I1 }));
 check('[F11-REQ-002] the same id with another token is SCCID', (await codeOf(() => create(A, I1, BOOK, 'parent', 'b'.repeat(64), 'ASHA2345'))) === 'SCCID');
 check('the same id with another code is SCCID', (await codeOf(() => create(A, I1, BOOK, 'parent', T1, 'ASHA9999'))) === 'SCCID');
-const SBOOK = await newChild(S, 'Asha', '2025-05-20');
+const SBOOK = await newChild(S, 'Asha', '2025-04-12');
 check('someone else\'s invite id is SCCID, without saying whose', (await codeOf(() => create(S, I1, SBOOK, 'parent', T1))) === 'SCCID');
 check('an id that is not a device UUIDv7 is SCCID', (await codeOf(() => create(A, '0b2f9e3c-5a7d-4c1e-9f00-123456789abc', BOOK, 'parent', 'c'.repeat(64)))) === 'SCCID');
 check('a token hash that is not 32 bytes is 22023',
@@ -54,6 +54,16 @@ check('a non-parent cannot create (SCPAR), a stranger neither',
   (await codeOf(() => create(C, uuid7(), BOOK, 'parent', 'e'.repeat(64)))) === 'SCPAR');
 check('the invitee accepts the device-made token with the existing accept_child_invite',
   (await one(B, `select public.accept_child_invite($1) c`, [T1])).c === BOOK && (await roleOf(BOOK, B)) === 'parent');
+// R-17 review finding 3: the server sees only the hash at creation, so it checks the
+// token's shape when it is used (the app's isInviteToken: 32 to 128 URL-safe characters).
+{
+  const SHORT = 'Asha1234';
+  await create(S, uuid7(), await newChild(S, 'Asha', '2025-04-12'), 'parent', SHORT);
+  check('a device token shorter than 32 characters never matches: accept and peek are SCINV',
+    (await codeOf(() => as(C, `select public.accept_child_invite($1)`, [SHORT]))) === 'SCINV'
+    && (await codeOf(() => as(C, `select public.peek_invite($1)`, [SHORT]))) === 'SCINV');
+  check('a token with characters outside the URL-safe set is SCINV', (await codeOf(() => as(C, `select public.peek_invite($1)`, ['a'.repeat(63) + '/']))) === 'SCINV');
+}
 check('an invite without a code is fine (the code path waits on DR-13)',
   (await codeOf(() => create(S, uuid7(), SBOOK, 'contributor', 'f'.repeat(64)))) === 'ok');
 
@@ -99,13 +109,13 @@ await sys(`insert into policy_versions (document, version, change_class, require
 await as(S, `select public.record_policy_act('family-share', '1.0.0', 'accept', 'consent_sheet', 'family.share', '1.0.0', 'ios')`);
 check('[F11-REQ-018] after the family-share accept the invite is made', (await codeOf(() => create(S, uuid7(), SBOOK, 'parent', '6'.repeat(64)))) === 'ok');
 await setting('app.family_share_consent_required', '');
-const FRESH = await newChild(A, 'Asha', '2025-05-20');
+const FRESH = await newChild(A, 'Asha', '2025-04-12');
 check('[F11-REQ-018] with the default config no act is needed', (await sys(`select public.family_share_consent_required() v`)).rows[0].v === false
   && (await codeOf(() => create(A, uuid7(), FRESH, 'parent', '7'.repeat(64)))) === 'ok');
 
 // ── F11-REQ-008: the 72-hour undo ────────────────────────────────────────
 {
-  const BK = await newChild(C, 'Asha', '2025-05-20');
+  const BK = await newChild(C, 'Asha', '2025-04-12');
   const T = '8'.repeat(64);
   await create(C, uuid7(), BK, 'parent', T);
   await as(N, `select public.accept_child_invite($1)`, [T]);
@@ -131,6 +141,11 @@ check('[F11-REQ-018] with the default config no act is needed', (await sys(`sele
     (await codeOf(() => as(N, `select public.accept_child_invite($1)`, [T]))) === 'SCINV'
     && (await codeOf(() => as(N, `select public.peek_invite($1)`, [T]))) === 'SCINV' && (await roleOf(BK, N)) === null);
   check('the other parent never receives the removed person\'s letters', (await as(C, `select 1 from book_entries where author_id = $1`, [N])).rows.length === 0);
+  // R-17 review finding 1: the used token is not a way back in, and never answers "joined".
+  check('after an undo, accepting the same token again is SCINV and adds no membership',
+    (await codeOf(() => as(N, `select public.accept_child_invite($1)`, [T]))) === 'SCINV' && (await roleOf(BK, N)) === null);
+  check('after an undo, peeking at the same token is SCINV (not joined: true)',
+    (await codeOf(() => as(N, `select public.peek_invite($1)`, [T]))) === 'SCINV');
   // After the window.
   const T2 = '9'.repeat(64);
   await create(C, uuid7(), BK, 'parent', T2);
@@ -151,6 +166,21 @@ check('[F11-REQ-018] with the default config no act is needed', (await sys(`sele
   check('undo_parent_join counts in the membership bucket (SCRAT past 120 an hour)',
     (await codeOf(() => as(C, `select public.undo_parent_join($1, $2)`, [BK, N]))) === 'SCRAT');
   await sys(`delete from sync_rate_windows where profile_id = $1`, [C]);
+
+  // R-17 review finding 5: a membership with no invite behind it (the support
+  // runbook) is never undone through an older invite of the same person.
+  {
+    const BK2 = await newChild(C, 'Asha', '2025-04-12');
+    const T4 = 'r17-support-readd-'.padEnd(64, 'x');
+    await create(C, uuid7(), BK2, 'parent', T4);
+    await as(B, `select public.accept_child_invite($1)`, [T4]);
+    await sys(`update child_invites set accepted_at = now() - interval '10 days' where token_hash = sha256(convert_to($1, 'UTF8'))`, [T4]);
+    await sys(`update child_members set joined_at = now() - interval '10 days' where child_id = $1 and profile_id = $2`, [BK2, B]);
+    await as(B, `select public.leave_child($1)`, [BK2]);
+    await sys(`insert into child_members (child_id, profile_id, role) values ($1, $2, 'parent')`, [BK2, B]);   // support re-adds B
+    check('a parent re-added by support cannot be undone through their old invite (SCPAR)',
+      (await codeOf(() => as(C, `select public.undo_parent_join($1, $2)`, [BK2, B]))) === 'SCPAR' && (await roleOf(BK2, B)) === 'parent');
+  }
 
   // ── F11-REQ-012: after the window, no client path removes a parent ────
   check('[F11-REQ-012] remove_child_member on a parent is refused (42501)',
@@ -184,7 +214,7 @@ check('[F11-REQ-018] with the default config no act is needed', (await sys(`sele
 
 // ── F11-REQ-007: code redemption is for invite-redeem (service role) only ─
 {
-  const BK = await newChild(A, 'Asha', '2025-05-20');
+  const BK = await newChild(A, 'Asha', '2025-04-12');
   const code = 'K7XQ2M9P';
   await create(A, uuid7(), BK, 'parent', 'c'.repeat(64), code);
   const hash = (await sys(`select sha256(convert_to($1, 'UTF8')) h`, [code])).rows[0].h;
