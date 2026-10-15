@@ -2,7 +2,7 @@
 
 Curated long-term memory. Update it in the same PR as your work when you learn something durable. Replace stale lines; do not append forever.
 
-Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branches #25 to #33). Lines marked (15 Oct) were re-checked against `develop` at `0c71ea9` (after #4 and #39 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
+Seeded 2026-10-03 during the compendium drafting run (develop plus open PR branches #25 to #33). Lines marked (15 Oct) were re-checked against `develop` at `56ec5b5` (after #4, #39 and #130 merged). Every other line is as of 3 Oct: re-verify it before acting on it.
 
 ## Current focus
 - Chapters 01 (CODE), 02 (API), 10 (OBS) drafted. Most MUST rules are `not yet`; the gaps (CODE-G*, API-G*, OBS-G*) are listed in `docs/engineering/ENFORCEMENT.md`.
