@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "test": "npm run test --workspaces --if-present",
+    "test:coverage": "node scripts/coverage/run.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "mobile": "npm run start -w @scribe/mobile",
     "test:db": "node supabase/tests/run.mjs",
@@ -20,6 +21,7 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.8"
+    "@electric-sql/pglite": "^0.5.8",
+    "@vitest/coverage-v8": "^3.2.7"
   }
 }

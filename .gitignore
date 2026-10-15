@@ -89,3 +89,7 @@ packages/emails/out/
 apps/mobile/e2e-web/.web-dist/
 apps/mobile/e2e-web/.results/
 apps/mobile/e2e-web/.web-dist-seed/
+
+# coverage reports (npm run test:coverage); scripts/coverage is the tooling, not a report
+coverage/
+!/scripts/coverage/
