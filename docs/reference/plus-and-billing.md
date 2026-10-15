@@ -2,7 +2,7 @@
 title: Plus and billing
 owner: reference-docs
 covers: [apps/mobile/src/lib/billing/**, apps/mobile/modules/scribe-store/**, apps/mobile/storekit/**, apps/mobile/src/app/settings/plus.tsx, apps/mobile/src/app/plus/**, packages/core/src/plan.ts, packages/content/src/pricing.ts]
-verified_at: 56ec5b5
+verified_at: d74e860
 verified_on: 2026-10-15
 ---
 
@@ -19,7 +19,7 @@ Plus is a membership sold only through the App Store, with StoreKit 2, and check
 | Capturing, typing, drafts, reading, playing, Read together, exporting and deleting are never gated; starting a book is free | `gates.ts` header, `app/read-together.tsx` header |
 | The gate runs at Keep, after the recording is on disk and hashed; on "offer" the draft stays where it is | `gates.ts` `keepLetterGate` |
 
-`decideKeepLetter` returns `allow` (`via: 'plus_own'` or `'free_letters'`) or `offer` with trigger `keep_letter`. `packages/core/src/plan.ts` also has `decide()` for other gated features (`backup_upload`, `theme_extra`); neither is offered in v1.0 because backup is parked.
+`decideKeepLetter` returns `allow` (`via: 'plus_own'` or `'free_letters'`) or `offer` with trigger `keep_letter`. `packages/core/src/plan.ts` also has `decide()` for other gated features (`backup_upload`, `theme_extra`); neither is offered while server features are off.
 
 ## How Plus is read on the phone
 

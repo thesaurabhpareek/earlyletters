@@ -2,7 +2,7 @@
 title: Speech and languages
 owner: reference-docs
 covers: [apps/mobile/src/lib/transcribe*.ts, apps/mobile/src/lib/transcription-queue/**, apps/mobile/src/lib/models/**, apps/mobile/src/lib/packs/**, apps/mobile/src/lib/language/**, apps/mobile/modules/scribe-audio/**, packages/core/src/**, packs/**, scripts/packs/**]
-verified_at: 56ec5b5
+verified_at: d74e860
 verified_on: 2026-10-15
 ---
 
@@ -91,7 +91,7 @@ Each `Edit` is expressed against the raw transcript (offsets, the exact `origina
 
 **`ENGINE_VERSION`** is `5` (`pipeline.ts`); the comment there lists what each version changed. It is stamped on every letter (`entries.engine_version`) so any letter can be re-derived with the engine that made it. Text-rules packs carry their own `engine` number, checked against `LANG_ENGINE_VERSION` (`1`) in `packages/core/src/lang/types.ts`.
 
-**Model edits.** `packages/core` contains a model-edit contract (`model-edits.ts`, `edit-provider.ts`), but the app passes no model edits: no `modelEdits` or `cleanWithProviders` call exists in `apps/mobile/src`. v1.0 fixes are rules only.
+**Model edits.** `packages/core` contains a model-edit contract (`model-edits.ts`, `edit-provider.ts`), but the app passes no model edits: no `modelEdits` or `cleanWithProviders` call exists in `apps/mobile/src`. Fixes in the app are rules only.
 
 ## What is per language
 
@@ -103,7 +103,7 @@ Each `Edit` is expressed against the raw transcript (offsets, the exact `origina
 | Filler and repeat removal (level `clean`) | English only today | `transcription-queue/clean.ts` `LANGUAGES_WITH_TIDY_RULES` |
 | Punctuation, script, normalization, meaning guards | Yes, from the text-rules pack | `packs/text-rules/*.json`, `packages/core/src/lang/` |
 | Chinese script and Portuguese spelling choice | Asked in Settings; never respells words | `app/settings/language.tsx` |
-| Interface language | English only in v1.0 | `lib/remote/index.ts` (content bundle locale `en`) |
+| Interface language | English only (decision 6, per `lib/remote/index.ts`) | `lib/remote/index.ts` (content bundle locale `en`) |
 
 Spoken languages for letters: `SPEECH_LANGUAGES` in `models/catalog.ts`. A person picks a primary plus up to two more (`lib/language/`).
 

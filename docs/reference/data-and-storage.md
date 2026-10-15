@@ -2,13 +2,13 @@
 title: Data and storage
 owner: reference-docs
 covers: [apps/mobile/src/lib/store.ts, apps/mobile/src/lib/db/**, apps/mobile/src/lib/export/**, apps/mobile/src/lib/capture/**, apps/mobile/src/lib/model-files.ts, apps/mobile/src/lib/packs/app-support.ts, apps/mobile/src/lib/supabase/secure-storage.ts, apps/mobile/src/lib/shelf-days.ts, supabase/migrations/**, .github/migrations-applied.txt]
-verified_at: 56ec5b5
+verified_at: d74e860
 verified_on: 2026-10-15
 ---
 
 # Data and storage
 
-Where every piece of data lives on the phone, how deletion and export work, and the server schema that exists but is parked. Classification levels for every column and file: [`docs/legal/DATA_CLASSIFICATION.md`](../legal/DATA_CLASSIFICATION.md). Rules for deletion and export: [`docs/legal/DELETION_AND_EXPORT_SPEC.md`](../legal/DELETION_AND_EXPORT_SPEC.md).
+Where every piece of data lives on the phone, how deletion and export work, and the server schema that exists on `develop` (only two migrations applied live; whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md))). Classification levels for every column and file: [`docs/legal/DATA_CLASSIFICATION.md`](../legal/DATA_CLASSIFICATION.md). Rules for deletion and export: [`docs/legal/DELETION_AND_EXPORT_SPEC.md`](../legal/DELETION_AND_EXPORT_SPEC.md).
 
 ## On the phone
 
@@ -22,7 +22,7 @@ Where every piece of data lives on the phone, how deletion and export work, and 
 | Hand-copied dev model | `Application Support/models` (falls back to `Documents/models` without the native module) | Excluded when the module exists | `lib/model-files.ts` |
 | Export ZIPs | App cache, deleted after the share sheet closes and by `cleanupExports()` | Not backed up | `lib/export/device.ts` |
 | Free-letter count | Keychain item `earlyletters.letters.keptEver`, mirrored in `settings` as `letters.keptEver` | Keychain item is this-device-only | `lib/billing/letter-ledger.ts`, `letter-ledger.logic.ts` |
-| Parked: sign-in session, Apple user id, pending invite | Keychain through `expo-secure-store` | This-device-only | `lib/supabase/secure-storage.ts` |
+| Server features (off in every profile): sign-in session, Apple user id, pending invite | Keychain through `expo-secure-store` | This-device-only | `lib/supabase/secure-storage.ts` |
 
 Data protection: `app.config.ts` sets the iOS default class to `NSFileProtectionCompleteUntilFirstUserAuthentication`, so files are encrypted until the first unlock after a restart. The database file itself is not encrypted by the app (DATA_CLASSIFICATION 4.5 records the SQLCipher decision as pending).
 
@@ -37,7 +37,7 @@ Opened once at launch by `openStore()` in `lib/store.ts`; `PRAGMA journal_mode =
 | 1 | baseline tables: `settings`, `entries`, `children`, `drafts` |
 | 2 | multi-child and audio columns; the legacy single `family` setting becomes the first child |
 | 3 | crash-safe capture (draft `state`, audio hash and size), voice-only letters (`transcript_status`), `orphan_audio`, age gate as a boolean |
-| 4 | sync: `sync_outbox`, `rejected_writes`, `sync_books`, server version columns (parked; empty in v1.0) |
+| 4 | sync: `sync_outbox`, `rejected_writes`, `sync_books`, server version columns (empty while `SERVER_FEATURES=off`) |
 | 5 | quiet-day marks carry no sentence (D-084): blanks `final_text` of `not_much` rows |
 
 Per-table detail is in [mobile-app.md](mobile-app.md#device-database). Rules the store enforces (`apps/mobile/src/lib/README.md`, `lib/db/repos/*`):
@@ -58,7 +58,7 @@ Per-table detail is in [mobile-app.md](mobile-app.md#device-database). Rules the
 | Hide a book | Hides the child from lists; nothing is deleted | `store.hideChild` |
 | Remove speech files | Settings, Recordings or Storage; letters and recordings stay, new recordings wait for words | `app/settings/recordings.tsx`, `app/settings/storage.tsx` |
 
-Deleted letters still count toward the free letters (D-083). The ledger exports `eraseLetterLedger()` for "Erase everything"; no screen calls it on `develop`. Account deletion (`app/settings/delete-account.tsx`, `lib/account-deletion`) is **parked** with sign-in. Reasons: D-085 in [../DECISIONS.md](../DECISIONS.md).
+Deleted letters still count toward the free letters (D-083). The ledger exports `eraseLetterLedger()` for "Erase everything"; no screen calls it on `develop`. Account deletion (`app/settings/delete-account.tsx`, `lib/account-deletion`) is a server feature, off in every build profile; whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)). Reasons: D-085 in [../DECISIONS.md](../DECISIONS.md).
 
 ## Export
 
@@ -75,12 +75,12 @@ Settings, Export (`app/settings/export.tsx`, `lib/export/`) makes one ZIP on the
 
 Recently deleted letters are left out by design (`build.logic.ts`). The ZIP is stored without compression and must stay under 4 GiB (`pack.ts` `MAX_EXPORT_BYTES`). The launch recovery screen has its own "Export what is readable" (`lib/resilience/recovery-export.ts`).
 
-## The server schema (parked)
+## The server schema
 
-Postgres migrations live in `supabase/migrations`. **Only the files listed in `.github/migrations-applied.txt` are applied to the live project**; the rest are pending, and the v1.0 app talks to none of it. Generated:
+Postgres migrations live in `supabase/migrations`. **Only the files listed in `.github/migrations-applied.txt` are applied to the live project**; the rest are pending, and an app built from any current profile talks to none of it. Generated:
 
 <!-- facts:migrations -->
-| File | Live | Creates tables | Views | Functions | Definer |
+| File | Live | Creates tables | Views | Functions | `security definer` mentions |
 |---|---|---|---|---|---|
 | `20260930000000_scribe_core.sql` | applied | `profiles`, `children`, `child_members`, `child_invites`, `entries`, `entry_versions`, `dictionary_terms`, `safety_events` |  | 8 | 6 |
 | `20261001000000_scribe_hardening.sql` | applied |  |  | 0 | 0 |
@@ -90,13 +90,13 @@ Postgres migrations live in `supabase/migrations`. **Only the files listed in `.
 | `20261003010000_children_and_entitlements.sql` | pending | `app_account_tokens`, `store_subscriptions`, `store_notifications` |  | 11 | 8 |
 | `20261003020000_purge_batching.sql` | pending |  |  | 6 | 5 |
 | `20261004000000_plus_on_device_only.sql` | pending |  |  | 4 | 4 |
-| `20261004100000_sync_engine.sql` | pending | `sync_epochs`, `sync_op_receipts` |  | 7 | 5 |
-| `20261004200000_ops_deletion_worker.sql` | pending |  |  | 24 | 24 |
-| `20261004300000_insights_aggregates.sql` | pending |  | `insights` | 1 | 4 |
-| `20261005000000_family_cap_language_idempotency.sql` | pending | `idempotency_keys` |  | 18 | 13 |
+| `20261004100000_sync_engine.sql` | pending | `sync_epochs`, `sync_op_receipts`, `sync_rate_windows` |  | 7 | 5 |
+| `20261004200000_ops_deletion_worker.sql` | pending | `ops.audit_log`, `ops.alert_state`, `ops.forget_quota`, `ops.apple_tokens` |  | 25 | 24 |
+| `20261004300000_insights_aggregates.sql` | pending |  | `insights._book_family`, `insights._letters`, `insights.weekly_keeping_families`, `insights.letters_per_active_family`, `insights.first_letter_conversion`, `insights.family_invites`, `insights.retention_cohorts`, `insights.language_mix` | 7 | 4 |
+| `20261005000000_family_cap_language_idempotency.sql` | pending | `idempotency_keys` |  | 19 | 13 |
 <!-- /facts:migrations -->
 
-Columns: `Live` is applied or pending per `migrations-applied.txt`. `Functions` and `Definer` count `create function` and `security definer` in each file. The generator reads only unqualified or `public.` names, so tables, views and functions in the `ops` and `insights` schemas show up incompletely (for example `insights` appears as a view name); see the per-file headers or DATA_CLASSIFICATION 4.1.2 and 4.1.3 for those.
+`Live` is applied or pending per `migrations-applied.txt`.
 
 ### Main tables and views
 
@@ -106,7 +106,7 @@ Columns: `Live` is applied or pending per `migrations-applied.txt`. `Functions` 
 | Letters | `entries` (immutable `raw_transcript` enforced by a trigger), `entry_versions`, `dictionary_terms`, view `book_entries` (what co-members may read; raw transcripts author-only) | `scribe_core`, `data_governance` |
 | Consent and policy | `policy_documents`, `policy_versions`, `policy_acceptances`, view `my_policy_state` | `data_governance` |
 | Deletion and retention | `deletion_requests`, `deletion_request_steps`, `legal_holds`, `storage_purge_queue`, `purge_ledger`, `audit_events` | `data_governance` |
-| Sync | `sync_epochs`, `sync_op_receipts`, `sync_rate_windows` (an unlogged table, so the generated table above misses it) | `sync_engine` |
+| Sync | `sync_epochs`, `sync_op_receipts`, `sync_rate_windows` | `sync_engine` |
 | Requests | `idempotency_keys` | `family_cap_language_idempotency` |
 | Operations | schema `ops` (service role only) | `ops_deletion_worker` |
 | Insights | schema `insights`, k-anonymised weekly views | `insights_aggregates` |

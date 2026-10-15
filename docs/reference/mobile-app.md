@@ -2,13 +2,13 @@
 title: Mobile app
 owner: reference-docs
 covers: [apps/mobile/src/**, apps/mobile/app.config.ts, apps/mobile/eas.json, apps/mobile/modules/**, apps/mobile/package.json, apps/mobile/.env.development]
-verified_at: 56ec5b5
+verified_at: d74e860
 verified_on: 2026-10-15
 ---
 
 # Mobile app (`apps/mobile`)
 
-The iOS app: Expo SDK 57, React Native 0.86, Expo Router with typed routes and the React Compiler on (`apps/mobile/app.config.ts`, `experiments`). Android is configured but ships later (D-059, comment in `app.config.ts`). The whole system: [system.md](system.md).
+The iOS app: Expo SDK 57, React Native 0.86, Expo Router with typed routes and the React Compiler on (`apps/mobile/app.config.ts`, `experiments`). Android is configured but ships later (D-059, comment in `app.config.ts`). Calm brand atmosphere (#99): Tonight and Book draw `Lamp` (`components/ui/lamp.tsx`, a decorative light pool, off under Reduce Motion), and the welcome step of onboarding shows `Lamp` and the `QuotePair` brand device (`components/ui/quote-pair.tsx`; registry context `app.brand-device` in `packages/brand/registry.ts`); the Book empty state uses the device instead of a line drawing (`components/ui/empty-state.tsx`). The whole system: [system.md](system.md).
 
 ## Screens
 
@@ -69,7 +69,7 @@ How they are presented (from the `Stack` in `src/app/_layout.tsx`):
 | `/read-together` | Full screen | One letter at a time, oldest first, plain playback |
 | `/letter/[id]` | Card with transparent header | The reading page |
 | `/plus/confirmed` | Modal | Purchase confirmation after a new Plus purchase |
-| `(auth)`, `/invite` | Modal | **Parked for v1.1.** With server features off, nothing opens them and a stale link goes home (`(auth)/_layout.tsx`, `+native-intent.tsx`) |
+| `(auth)`, `/invite` | Modal | Server features. With `SERVER_FEATURES=off` (every profile), nothing opens them and a stale link goes home (`(auth)/_layout.tsx`, `+native-intent.tsx`); whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)) |
 | `/settings/*` | Stack | Settings home and every row |
 
 With server features off, Settings does not offer Account or Delete account (`settings/index.tsx`), and the Family tab shows the co-parent "coming soon" presentation (`components/family/coparent-soon.tsx`).
@@ -127,8 +127,8 @@ Screens call these; the API for the store is in `apps/mobile/src/lib/README.md`.
 | `copy.ts`, `permission-copy.ts`, `dates.ts` | Strings from `@scribe/content`, OS purpose strings, the one date format |
 | `a11y.ts`, `motion.ts`, `haptics.ts`, `audio-mode.ts` | Accessibility, Reduce Motion, haptics vocabulary, audio session |
 | `navigation.logic.ts`, `review-layout.logic.ts`, `shelf-days.ts`, `model-files.ts`, `utils.ts` | Back and close idioms, Review layout rules, the 30-day shelf, dev model folder, class name helper |
-| `analytics/` | Opt-in analytics glue; inert in v1.0 |
-| `auth/`, `supabase/`, `sync/`, `family/`, `account-deletion/` | **Parked for v1.1.** Sign-in, the Supabase client, outbox and cursor sync, invites, account deletion. `lib/supabase/secure-storage.ts` is also used in v1.0 by the letter ledger |
+| `analytics/` | Opt-in analytics glue; inert while `ANALYTICS=off` |
+| `auth/`, `supabase/`, `sync/`, `family/`, `account-deletion/` | Server features, off in every build profile; whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)). Sign-in, the Supabase client, outbox and cursor sync, invites, account deletion. `lib/supabase/secure-storage.ts` is also used, with server features off, by the letter ledger |
 
 Pure logic files end in `.logic.ts` and are tested in Node (`apps/mobile/test`, vitest).
 
@@ -150,11 +150,11 @@ SQLite file `scribe.db` (`store.ts` `DB_FILE_NAME`), opened with `PRAGMA journal
 | Table | Holds |
 |---|---|
 | `settings` | Key and value pairs: active child, appearance, reading size, reminders, age gate, ledger mirror, plan cache, pack and speech choices |
-| `entries` | Letters: raw transcript, machine edits, final text, engine version, audio path, hash and size, kind, capture mode, edit level, in book, tombstone, transcript status, sync columns (unused in v1.0) |
-| `children` | Books: name, birthday or due date, signature, reminders, hidden, server columns (unused in v1.0) |
+| `entries` | Letters: raw transcript, machine edits, final text, engine version, audio path, hash and size, kind, capture mode, edit level, in book, tombstone, transcript status, sync columns (unused while server features are off) |
+| `children` | Books: name, birthday or due date, signature, reminders, hidden, server columns (unused while server features are off) |
 | `drafts` | Takes and typed drafts before Keep: state `recording`, `ready` or `unrecoverable`, audio path and hash, raw transcript, typed text |
 | `orphan_audio` | Recordings found with no row and no book to attach them to; listed in Settings, Recordings, never deleted |
-| `sync_outbox`, `rejected_writes`, `sync_books` | Sync queue, refused writes, per-book cursors. **Parked**; stay empty with sync off |
+| `sync_outbox`, `rejected_writes`, `sync_books` | Sync queue, refused writes, per-book cursors. Stay empty while `SERVER_FEATURES=off` |
 
 Storage, deletion and export: [data-and-storage.md](data-and-storage.md).
 
@@ -173,27 +173,20 @@ Third-party native code includes `whisper.rn`, `expo-sqlite`, `expo-audio`, `exp
 ## Build profiles and switches
 
 <!-- facts:eas-profiles -->
-| Profile | Channel | APP_ENV | Extends |
-|---|---|---|---|
-| `development` | development |  |  |
-| `preview` | preview |  |  |
-| `production` | production |  |  |
-| `testflight` | preview |  |  |
+| Profile | Channel | App environment | Extends | Other public switches |
+|---|---|---|---|---|
+| `development` | development | development |  | `SERVER_FEATURES=off`, `ANALYTICS=off` |
+| `preview` | preview | preview |  | `SERVER_FEATURES=off`, `ANALYTICS=off` |
+| `production` | production | production |  | `SERVER_FEATURES=off`, `ANALYTICS=off` |
+| `testflight` | preview | preview |  | `SERVER_FEATURES=off`, `ANALYTICS=off` |
 <!-- /facts:eas-profiles -->
 
-The facts block above leaves `APP_ENV` empty because `eas.json` sets `EXPO_PUBLIC_APP_ENV`, not `APP_ENV` (reported to the script owner). Read from `apps/mobile/eas.json`:
-
-| Profile | `EXPO_PUBLIC_APP_ENV` | `EXPO_PUBLIC_SERVER_FEATURES` | `EXPO_PUBLIC_ANALYTICS` | Distribution |
-|---|---|---|---|---|
-| `development` | development | off | off | internal, dev client |
-| `preview` | preview | off | off | internal |
-| `production` | production | off | off | not set in the file, auto increment |
-| `testflight` | preview | off | off | store, auto increment |
+Distribution, from `apps/mobile/eas.json`: `development` is an internal dev-client build, `preview` internal, `testflight` store distribution, and `production` sets none; `production` and `testflight` auto-increment the build number.
 
 - **`APP_ENV`** (`lib/build-env.ts`): unset means development, never production. `app.config.ts` refuses an unknown value and adds a bundle id suffix: `.dev` for development, `.preview` for preview, none for production. The base id comes from `packages/brand` (`bundleId()`).
 - **`devShortcutsAllowed`**: true only when the bundle is a dev bundle and `APP_ENV` is development. Every dev bypass checks it, never `__DEV__` alone.
-- **Server features and analytics**: see [system.md](system.md#v10-runs-on-the-phone-only). `app.config.ts` records `extra.serverFeatures` and `extra.appEnv` so a build shows which it is.
-- **Other `EXPO_PUBLIC_*` names read by the code**: `EXPO_PUBLIC_DOCS_BASE_URL` (signed documents host, `lib/remote`), `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (adds the Google sign-in plugin only when set, `app.config.ts`), `EXPO_PUBLIC_POSTHOG_KEY` (ignored while analytics is off), `EXPO_PUBLIC_SUPABASE_URL` (`lib/supabase`, parked). None is set in `eas.json`. Local runs read `apps/mobile/.env.development`.
+- **Server features and analytics**: see [system.md](system.md#build-switches-server-features-and-analytics-are-off). `app.config.ts` records `extra.serverFeatures` and `extra.appEnv` so a build shows which it is.
+- **Other `EXPO_PUBLIC_*` names read by the code**: `EXPO_PUBLIC_DOCS_BASE_URL` (signed documents host, `lib/remote`), `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (adds the Google sign-in plugin only when set, `app.config.ts`), `EXPO_PUBLIC_POSTHOG_KEY` (ignored while analytics is off), `EXPO_PUBLIC_SUPABASE_URL` (`lib/supabase`, server features). None is set in `eas.json`. Local runs read `apps/mobile/.env.development`.
 
 `app.config.ts` also sets the iOS data-protection class to "complete until first user authentication", the privacy manifest with no collected data types, no background audio, and the universal-link domain from `packages/brand`.
 

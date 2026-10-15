@@ -1,6 +1,6 @@
 # Documentation index
 
-Start here. This page says which document answers which question. It is kept current by the `reference-docs` agent (`.claude/agents/reference-docs.md`). Status first: v1.0 is **on-device only**; sign-in, sync, co-parent sharing and backup are parked for v1.1 (issue #127). Many older documents were written before that, so where a document and the code disagree, the [reference pages](reference/README.md) describe what the code does today.
+Start here. This page says which document answers which question. It is kept current by the `reference-docs` agent (`.claude/agents/reference-docs.md`). Status first: server code (sign-in, sync, co-parent sharing, backup) exists on `develop`, but every build profile turns server features and analytics off, and only two migrations are applied live. Whether these ship in v1.0 is an open decision ([decisions/INDEX.md](decisions/INDEX.md)). Where a document and the code disagree, the [reference pages](reference/README.md) describe what the code does today.
 
 ## How it works today (as built)
 
@@ -10,7 +10,7 @@ Start here. This page says which document answers which question. It is kept cur
 | Screens, boot, `src/lib` modules, native modules, build profiles | [reference/mobile-app.md](reference/mobile-app.md) |
 | Transcription, language packs, the faithful-edit engine and verifier | [reference/speech-and-languages.md](reference/speech-and-languages.md) |
 | Device storage, deletion, export, the server schema | [reference/data-and-storage.md](reference/data-and-storage.md) |
-| Supabase, Edge Functions, RPCs, deploys (parked) | [reference/backend.md](reference/backend.md) |
+| Supabase, Edge Functions, RPCs, deploys (off in every build profile) | [reference/backend.md](reference/backend.md) |
 | Workspaces, exports, dependency rules | [reference/packages.md](reference/packages.md) |
 | Plus, StoreKit, the free-letter ledger | [reference/plus-and-billing.md](reference/plus-and-billing.md) |
 | CI, release lanes, secrets by name, the agent harness | [reference/operations.md](reference/operations.md) |
@@ -36,7 +36,7 @@ Start here. This page says which document answers which question. It is kept cur
 | What the product must do at launch | [prd/PRD.md](prd/PRD.md) and sections [A](prd/A-entry-and-auth.md), [B](prd/B-first-run-and-family.md), [C](prd/C-habits-pricing-settings.md) |
 | The path to App Store submission | [ROADMAP.md](ROADMAP.md) |
 | The ordered v1.0 work list (BL ids) | [BACKLOG.md](BACKLOG.md) |
-| After v1.0: v1.0.1 to v1.3 | [backlog/FUTURE.md](backlog/FUTURE.md) and the six area files in [backlog/future/](backlog/future/) (co-parent sharing for v1.1 is file 06) |
+| After v1.0: v1.0.1 to v1.3 | [backlog/FUTURE.md](backlog/FUTURE.md) and the six area files in [backlog/future/](backlog/future/) (file 06 is co-parent sharing) |
 | Steps only the founder can take (FT ids) | [FOUNDER_TASKS.md](FOUNDER_TASKS.md) |
 
 ## How we work
@@ -52,7 +52,7 @@ Start here. This page says which document answers which question. It is kept cur
 | Applying migrations to the live project by hand | [../supabase/APPLY.md](../supabase/APPLY.md) |
 | CI, review rules and branch protection | [../.github/README.md](../.github/README.md) |
 | How to test on a real iPhone, and where test evidence goes | [qa/DEVICE_TEST_PLAN.md](qa/DEVICE_TEST_PLAN.md), [qa/evidence/README.md](qa/evidence/README.md) |
-| What we measure and how insights come back | [analytics/TRACKING_PLAN.md](analytics/TRACKING_PLAN.md), [analytics/INSIGHTS_LOOP.md](analytics/INSIGHTS_LOOP.md) (analytics is off in v1.0) |
+| What we measure and how insights come back | [analytics/TRACKING_PLAN.md](analytics/TRACKING_PLAN.md), [analytics/INSIGHTS_LOOP.md](analytics/INSIGHTS_LOOP.md) (analytics is off in every build profile) |
 
 ## Legal and privacy
 
@@ -92,5 +92,5 @@ Start here. This page says which document answers which question. It is kept cur
 | Question | Read |
 |---|---|
 | How to make the first TestFlight build, and what it lacks | [release/TESTFLIGHT.md](release/TESTFLIGHT.md) |
-| What the v1.0 app really looks like, screen by screen | [release/journey/INDEX.md](release/journey/INDEX.md): generated from the web end-to-end flows; 20 journeys of screenshots, step JSON, critiques and a PDF (about 350 files; do not edit by hand) |
+| What the app really looks like, screen by screen | [release/journey/INDEX.md](release/journey/INDEX.md): generated from the web end-to-end flows; 20 journeys of screenshots, step JSON, critiques and a PDF (about 350 files; do not edit by hand) |
 | Release lanes and workflows | [reference/operations.md](reference/operations.md) |

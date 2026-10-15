@@ -2,7 +2,7 @@
 title: The whole system
 owner: reference-docs
 covers: [apps/mobile/src/app/_layout.tsx, apps/mobile/src/lib/capabilities.ts, apps/mobile/src/lib/remote/**, apps/mobile/src/lib/build-env.ts, .github/migrations-applied.txt]
-verified_at: 56ec5b5
+verified_at: d74e860
 verified_on: 2026-10-15
 ---
 
@@ -10,11 +10,11 @@ verified_on: 2026-10-15
 
 Early Letters (codename `scribe`) is an iOS app, built with Expo, that lets a parent speak or type letters to a child and files them into a book by the child's month of age. This page says what runs where, how one letter travels from speaking to the book, where the data lives, and what leaves the phone. Each section links the page with the detail.
 
-## v1.0 runs on the phone only
+## Build switches: server features and analytics are off
 
-v1.0 is **on-device only**. Sign-in, sync, co-parent sharing and backup are parked for v1.1 (issue #127, 14 Oct 2026; founder decision of 3 Oct 2026 quoted in `apps/mobile/src/lib/capabilities.ts`). The code for them exists on `develop` and is switched off at build time:
+Sign-in, sync, co-parent sharing and backup exist as code on `develop`, and every build profile switches them off at build time. Whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)): issue #127 and `apps/mobile/src/lib/capabilities.ts` (founder decision of 3 Oct 2026) describe an on-device v1.0, while later open proposals record server features on in v1.0. This page describes what a build from `develop` does today.
 
-| Switch | Read in | v1.0 value | Off means |
+| Switch | Read in | Value in every `eas.json` profile | Off means |
 |---|---|---|---|
 | `EXPO_PUBLIC_SERVER_FEATURES` | `apps/mobile/src/lib/capabilities.ts` (`serverFeaturesEnabled`, `capabilities.signIn`, `.sync`, `.coParent`) | `off` in every `apps/mobile/eas.json` profile | No Supabase client is constructed, sync never starts, sign-in, Account and Delete account are not offered, the Family tab shows "coming soon" |
 | `EXPO_PUBLIC_ANALYTICS` | same file (`analyticsEnabled`, `capabilities.analytics`) | `off` in every profile | No consent sheet, no usage switch, no PostHog client, `startAnalytics()` does nothing |
@@ -24,14 +24,14 @@ Only the literal value `on` turns a switch on. Remote config has no key that can
 
 ## What runs where
 
-| Where | What | Live in v1.0? |
+| Where | What | Used by a build from `develop` today? |
 |---|---|---|
 | The phone | The Expo app in `apps/mobile`: capture, on-device transcription, the faithful-edit engine, Review, the Book, Read together, Export, reminders, Plus through StoreKit | Yes |
 | The phone | `packages/core` (engine and verifier), `packages/content` (every word), `packages/api` (contracts and signature checks), `packages/brand`, `packages/design-tokens`, bundled into the app | Yes |
 | Apple | StoreKit 2 purchases and entitlements for Plus, through the local module `apps/mobile/modules/scribe-store` | Yes |
 | A static host (CDN) | Signed remote config, pack manifest and content bundle, fetched only if the build sets `EXPO_PUBLIC_DOCS_BASE_URL` | Not set in `eas.json`; see below |
 | Hugging Face and the self host | Speech model files, at the URLs the signed pack manifest lists (`apps/mobile/src/lib/models/catalog.ts`) | Only with a signed manifest |
-| Supabase | Postgres schema in `supabase/migrations`, Edge Functions in `supabase/functions`, a purge cron | **Parked.** 12 migrations exist; only the 2 in `.github/migrations-applied.txt` are applied live. The v1.0 app makes no Supabase call |
+| Supabase | Postgres schema in `supabase/migrations`, Edge Functions in `supabase/functions`, a purge cron | Off in every build profile. 12 migrations exist; only the 2 in `.github/migrations-applied.txt` are applied live. A build from any current profile makes no Supabase call |
 | GitHub Actions | CI, database deploy pipeline, TestFlight build, the agent team | CI runs; others need founder setup |
 
 Server detail: [backend.md](backend.md). CI and release: [operations.md](operations.md).
@@ -69,7 +69,7 @@ Speech and the engine: [speech-and-languages.md](speech-and-languages.md).
 
 All of it: [data-and-storage.md](data-and-storage.md).
 
-## What leaves the phone in v1.0
+## What leaves the phone in a build from `develop`
 
 Checked by searching `apps/mobile/src` for `fetch(`, `openURL`, `openBrowserAsync` and download calls.
 
@@ -96,7 +96,7 @@ Nothing else: no analytics, no crash reporting, no Supabase, no audio upload. Re
 | Screens, boot, lib modules, native modules, build profiles | [mobile-app.md](mobile-app.md) |
 | Transcription, language packs, the engine and verifier | [speech-and-languages.md](speech-and-languages.md) |
 | Device storage, deletion, export, server schema | [data-and-storage.md](data-and-storage.md) |
-| Supabase, Edge Functions, RPCs, deploys (parked) | [backend.md](backend.md) |
+| Supabase, Edge Functions, RPCs, deploys (off in every profile) | [backend.md](backend.md) |
 | Workspaces and their dependency rules | [packages.md](packages.md) |
 | Plus, StoreKit, the free-letter ledger | [plus-and-billing.md](plus-and-billing.md) |
 | CI, release lanes, secrets by name, the agent team | [operations.md](operations.md) |

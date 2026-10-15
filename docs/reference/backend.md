@@ -1,23 +1,23 @@
 ---
-title: Backend (parked for v1.1)
+title: Backend
 owner: reference-docs
 covers: [supabase/**, packages/api/src/**, .github/workflows/deploy-db.yml, apps/mobile/src/lib/sync/**, apps/mobile/src/lib/supabase/**]
-verified_at: 56ec5b5
+verified_at: d74e860
 verified_on: 2026-10-15
 ---
 
 # Backend (Supabase)
 
-**Nothing on this page is used by the v1.0 app.** v1.0 is on-device only; sign-in, sync, co-parent sharing and backup are parked for v1.1 (issue #127, 14 Oct 2026). With `EXPO_PUBLIC_SERVER_FEATURES` off, `apps/mobile/src/lib/supabase/client.ts` returns no client and `startSync()` returns at once (`apps/mobile/src/lib/capabilities.ts`). Of the 12 migrations on `develop`, only the 2 in `.github/migrations-applied.txt` are applied to the live project. Whether any Edge Function is deployed is **unverified**: no record of a deploy was found in the repo.
+**No build profile on `develop` uses anything on this page.** Server code exists, but `EXPO_PUBLIC_SERVER_FEATURES=off` and `EXPO_PUBLIC_ANALYTICS=off` in every `eas.json` profile. Whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)). With `EXPO_PUBLIC_SERVER_FEATURES` off, `apps/mobile/src/lib/supabase/client.ts` returns no client and `startSync()` returns at once (`apps/mobile/src/lib/capabilities.ts`). Of the 12 migrations on `develop`, only the 2 in `.github/migrations-applied.txt` are applied to the live project. Whether any Edge Function is deployed is **unverified**: no record of a deploy was found in the repo.
 
-The pieces below are built and tested so v1.1 can switch them on. Reasons: ADR 0004 (sync, amended by D-023), ADR 0016 (signed documents), ADR 0017 (API standards), D-041 (two projects, CI-only migrations).
+The pieces below are built and tested so a build can switch them on. Reasons: ADR 0004 (sync, amended by D-023), ADR 0016 (signed documents), ADR 0017 (API standards), D-041 (two projects, CI-only migrations).
 
 ## Layout
 
 | Path | What |
 |---|---|
 | `supabase/config.toml` | Local CLI stack only (`project_id = "scribe"`, Postgres 17, auth with email on, Apple and Google off until credentials exist, anonymous sign-in off). No secret values: every credential is an `env()` reference. Hosted settings are set in each dashboard (`docs/ops/DEPLOY.md`) |
-| `supabase/migrations/` | Schema, row-level security, RPCs. Listed in [data-and-storage.md](data-and-storage.md#the-server-schema-parked) |
+| `supabase/migrations/` | Schema, row-level security, RPCs. Listed in [data-and-storage.md](data-and-storage.md#the-server-schema) |
 | `supabase/functions/` | Deno Edge Functions, listed below; `_shared/log` is the content-free logger and its canary test |
 | `supabase/cron/purge-worker.sql` | Not a migration: run by hand once per project to schedule the purge worker with pg_cron and pg_net, secrets in Vault |
 | `supabase/templates/` | Generated Supabase Auth email HTML; source is `packages/emails` and `packages/content/src/emails/auth.en.ts` |
@@ -41,7 +41,7 @@ The pieces below are built and tested so v1.1 can switch them on. Reasons: ADR 0
 | `purge-worker` | Body `{"task": "run" \| "daily"}` | Bearer `PURGE_WORKER_SECRET`, compared in constant time | Every 15 minutes: `purge_due` in batches, drains the Storage purge queue, deletion emails, due account deletions, SLA alert. Daily: ledger copy and ops retention (`worker.ts`, `daily.ts`) |
 | `analytics-forget` | `POST /functions/v1/analytics-forget/v1` | Signed-in user's token | Deletes PostHog persons for random analytics ids at deletion time; ids are never stored or logged (`handler.ts`) |
 
-`config` and `content` hold no user data. Their documents are signed offline by `scripts/packs/publish.ts`, which writes `published.ts` and prints the deploy commands; it runs none of them. The app fetches these documents only from `EXPO_PUBLIC_DOCS_BASE_URL` while server features are off (`apps/mobile/src/lib/remote/base.logic.ts`), so in v1.0 these two functions would be reached only if that URL pointed at them.
+`config` and `content` hold no user data. Their documents are signed offline by `scripts/packs/publish.ts`, which writes `published.ts` and prints the deploy commands; it runs none of them. The app fetches these documents only from `EXPO_PUBLIC_DOCS_BASE_URL` while server features are off (`apps/mobile/src/lib/remote/base.logic.ts`), so with server features off these two functions would be reached only if that URL pointed at them.
 
 Functions import shared code from outside `supabase/` (deployed with `--use-api`): `packages/api` (response envelope, standards), `packages/brand` and `packages/content` (purge-worker emails).
 
@@ -63,7 +63,7 @@ All in `public` unless noted; names from `create function` in `supabase/migratio
 
 Plus is not on the server: the entitlement functions and tables created in `children_and_entitlements` are dropped in `plus_on_device_only` ([plus-and-billing.md](plus-and-billing.md)). Error codes the app must handle are listed in `supabase/APPLY.md`.
 
-## The app side (parked)
+## The app side (off in every build profile)
 
 | Module | What it would do |
 |---|---|

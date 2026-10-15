@@ -2,7 +2,7 @@
 title: Packages and workspaces
 owner: reference-docs
 covers: [package.json, apps/mobile/package.json, packages/*/package.json, packages/*/src/index.ts, packages/brand/index.ts, packages/content/src/**, packages/design-tokens/**, packages/emails/**, packages/analytics/**, experiments/package.json]
-verified_at: 56ec5b5
+verified_at: d74e860
 verified_on: 2026-10-15
 ---
 
@@ -37,9 +37,9 @@ Who imports what was read from `import ... from '@scribe/...'` lines and, for Ed
 | `@scribe/api` | Pack manifest, remote config and content bundle schemas and parsers, response envelope, API standards, canonical JSON, Ed25519 and SHA-256 helpers, `TRUSTED_SIGNING_KEYS` | `apps/mobile` (`lib/remote`, `lib/packs`, root layout), Edge Functions (`envelope.ts`, `standards.ts`), `scripts/packs` |
 | `@scribe/content` | Every string: `en` (in-app strings), prompts, `storeListing`, `site`, `book`, `permissions`, `pages`, emails, onboarding stories, feature copy, and `PLUS_PRICE` for public copy | `apps/mobile`, `@scribe/emails`, `purge-worker` (email copy), `scripts/packs` (content bundle) |
 | `@scribe/brand` | `brand` (name, store name, subtitle, publisher, web addresses, support, email identity, colours, scheme, codename) and `bundleId()` | `apps/mobile` (also loaded by `app.config.ts` at config time), `@scribe/content`, `@scribe/emails`, `purge-worker` |
-| `@scribe/design-tokens` | `tokens` (colours light and dark, type, spacing, radii, elevation, motion), generated CSS (`tokens.native.css`, `tokens.web.css`), `fonts` | `apps/mobile`, `@scribe/emails` |
+| `@scribe/design-tokens` | `tokens` (colours light and dark, high contrast, `atmosphere` (the lamp colour and peak opacity per scheme, #99), type, spacing, radii, elevation, motion including `lamp`), generated CSS (`tokens.native.css`, `tokens.web.css`), `fonts` | `apps/mobile`, `@scribe/emails` |
 | `@scribe/emails` | React Email components and templates, `renderForResend`, logo attachments | No other workspace imports it; its own `packages/emails/scripts/export-supabase.ts` generates `supabase/templates`. Email copy comes from `@scribe/content` |
-| `@scribe/analytics` | Event allowlist, consent gate, `createAnalytics`, PostHog adapter, insights engine (not exported from the index) | `apps/mobile/src/lib/analytics` (inert in v1.0), `scripts/insights` |
+| `@scribe/analytics` | Event allowlist, consent gate, `createAnalytics`, PostHog adapter, insights engine (not exported from the index) | `apps/mobile/src/lib/analytics` (inert while `ANALYTICS=off`), `scripts/insights` |
 | `@scribe/mobile` | The app; exports nothing | nobody |
 
 `apps/mobile` imports `@scribe/analytics` but does not list it in `apps/mobile/package.json` dependencies; it resolves through the workspace.

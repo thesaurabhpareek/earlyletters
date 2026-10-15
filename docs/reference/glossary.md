@@ -2,13 +2,13 @@
 title: Glossary
 owner: reference-docs
 covers: [packages/core/src/domain.ts, packages/core/src/types.ts, packages/core/src/prompts.ts, packages/core/src/safety.ts]
-verified_at: 56ec5b5
+verified_at: d74e860
 verified_on: 2026-10-15
 ---
 
 # Glossary
 
-What a word means, what the code calls it, and what the person sees. Code names come from `packages/core/src/domain.ts` and `types.ts` unless noted; screen words come from `packages/content/src/strings.en.ts` unless noted. "Parked" means the code exists but is off in v1.0.
+What a word means, what the code calls it, and what the person sees. Code names come from `packages/core/src/domain.ts` and `types.ts` unless noted; screen words come from `packages/content/src/strings.en.ts` unless noted. "Off in every profile" means the code exists on `develop` but every build profile turns it off; whether these ship in v1.0 is an open decision ([register](../decisions/INDEX.md)).
 
 ## Things in the book
 
@@ -61,15 +61,15 @@ What a word means, what the code calls it, and what the person sees. Code names 
 | Signed documents | remote config, pack manifest, content bundle | Not shown | `lib/remote/`, `packages/api` |
 | Kill switch | `killSwitches` in remote config (`sync`, `invites`, `photos`, `packDownloads`, `serverContent`) | Not shown | `packages/api/src/remote-config.ts` |
 
-## People and family (parked for v1.1)
+## People and family (server features, off in every profile)
 
 | Term | Code name | On screen | Where it lives |
 |---|---|---|---|
 | Co-parent | role `parent` | "Co-parent" | `domain.ts` `MEMBER_ROLES` |
-| Family member | role `contributor` | "Family" (hidden in v1.0) | `domain.ts` |
+| Family member | role `contributor` | "Family" (hidden in current builds) | `domain.ts` |
 | Member | `child_members`, `Member` | People on the Family tab | `supabase/migrations`, `store.listMembers` |
-| Invite | `child_invites`, token link `/i/<token>` | v1.0 shows the co-parent "coming soon" presentation instead | `lib/family/`, `app/invite/` |
-| Family review | `approval`: `not_needed`, `pending`, `added`, `set_aside` | Not shown in v1.0 | `domain.ts` `APPROVALS` |
+| Invite | `child_invites`, token link `/i/<token>` | Current builds show the co-parent "coming soon" presentation instead | `lib/family/`, `app/invite/` |
+| Family review | `approval`: `not_needed`, `pending`, `added`, `set_aside` | Not shown in current builds | `domain.ts` `APPROVALS` |
 | Author | `author_id` | The person who wrote a letter | `entries` |
 
 ## Money
