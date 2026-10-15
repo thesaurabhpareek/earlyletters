@@ -523,7 +523,7 @@ if (SERVER_ON) {
     // Missing workflow: reported as open below.
   }
   if (/workflow_dispatch/.test(deployDb) && /develop/.test(deployDb)) {
-    step(6, 'check', 'scribe-staging exists and has every migration on develop: run deploy-db from develop with the approve-migration label (TESTFLIGHT.md step 6)');
+    step(6, 'check', 'scribe-staging exists and has every migration on develop: run Deploy database on develop and approve the staging deployment, then record the files it lists (TESTFLIGHT.md step 6, DEPLOY.md)');
   } else {
     step(6, 'open', '.github/workflows/deploy-db.yml cannot deploy develop to staging yet (push to main only); the S20 change "staging from develop" must merge first, or staging has none of develop\'s migrations');
   }
