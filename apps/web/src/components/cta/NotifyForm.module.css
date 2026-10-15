@@ -78,6 +78,35 @@
   line-height: 1.45;
   color: var(--night-ink-muted);
 }
+/* The one link under the field: the note's size and colour, underlined so it reads as a link without script, 44px tall. */
+.privacy {
+  margin: 0;
+  padding: 0 4px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.privacy a {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  color: var(--night-ink-muted);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: color-mix(in srgb, var(--night-ink-muted) 55%, transparent);
+}
+.privacy a:hover {
+  color: var(--night-ink);
+}
+.privacy a:focus-visible {
+  outline: 2px solid var(--night-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.quiet .privacy {
+  padding: 0;
+}
 .error {
   min-height: 1.4em;
   margin: 6px 0 0;

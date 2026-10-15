@@ -259,7 +259,8 @@ test.describe('pricing block', () => {
       await expect(lists.nth(0).locator('li')).toHaveCount(2);
       await expect(lists.nth(1).locator('li')).toHaveCount(2);
       await expect(price.getByText(site.scenes.s10.reassurance)).toBeVisible();
-      await expect(price.getByText(site.scenes.s10.fine)).toBeVisible();
+      for (const line of site.scenes.s10.terms) await expect(price.getByText(line)).toBeVisible();
+      await expect(price.getByText(site.scenes.s10.free)).toBeVisible();
       for (const p of site.scenes.s10.plans) {
         const card = lists.nth(0).locator('li').filter({ hasText: p.name });
         await expect(card).toContainText(p.price);
@@ -320,20 +321,47 @@ test.describe('no JavaScript', () => {
 test.describe('no stale claims on the page', () => {
   test.use({ reducedMotion: 'reduce' });
 
-  test('the rendered home page says nothing that is not true for v1.0', async ({ page }) => {
+  test('the rendered home page says nothing that is not true for v1.0 under option B, and says what is', async ({ page }) => {
     await page.goto('/');
     const text = ((await page.locator('body').textContent()) ?? '').replace(/\s+/g, ' ');
+    // Stale: wider family, the old Read together rule, the old prices, "only your family", "people you invite", a reminder, the old hero.
     for (const stale of [
-      /backs up/i, /back up/i, /backup/i, /whole family/i, /after the free sessions/i, /both parents/i, /same book/i,
-      /people you invite/i, /\$3\.99/, /\$29\.99/, /\$2\.50/, /treasure every milestone/i,
+      /whole family/i, /after the free sessions/i, /people you invite/i, /only your family/i, /\$3\.99/, /\$29\.99/, /\b3\.99\b/, /\b29\.99\b/, /\$2\.50/,
+      /\bremind/i, /private by design/i, /treasure every milestone/i, /runs on your phone/i,
     ]) {
       expect(text, String(stale)).not.toMatch(stale);
     }
-    expect(text).toContain('$4.99');
-    expect(text).toContain('$49.99');
-    expect(text).toContain('1-month free trial');
-    expect(text).toContain('2-month free trial');
-    expect(text).toContain(site.scenes.s10.fine);
-    expect(text).toContain(site.scenes.s06.exampleLabel);
+    // True under option B (D-089, D-091, D-093): both parents, encrypted backup with a recovery key we hold, free.
+    for (const claim of [
+      '$4.99', '$49.99', '1-month free trial', '2-month free trial',
+      'Both parents write in the same book.', 'backed up encrypted', 'recovery key under strict, logged access', 'never read, sold or used to train models',
+      site.scenes.s10.free, ...site.scenes.s10.terms, site.scenes.s06.exampleLabel, 'Private by default',
+    ]) {
+      expect(text, claim).toContain(claim);
+    }
+  });
+});
+
+test.describe('the Privacy link under the sign-up field', () => {
+  test.use({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } });
+
+  test('16. sits under the email field and its note, points at /privacy, and is a plain link that loads nothing on its own', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    const requests: string[] = [];
+    page.on('request', (r) => requests.push(r.url()));
+    const link = page.locator('form[action="/api/notify"] a[href="/privacy"]');
+    await expect(link).toHaveText(site.notify.privacy.label);
+    await link.scrollIntoViewIfNeeded();
+    await expect(link).toBeVisible();
+    const [field, note, box] = await Promise.all([page.locator('#notify-email').boundingBox(), page.locator('form[action="/api/notify"] p').first().boundingBox(), link.boundingBox()]);
+    expect(box!.y).toBeGreaterThan(field!.y + field!.height - 1);
+    expect(box!.y).toBeGreaterThan(note!.y + note!.height - 1);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    // Scrolling it into view fetched nothing: no prefetch of the legal page from the home page.
+    expect(requests).toEqual([]);
+    await link.click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   });
 });

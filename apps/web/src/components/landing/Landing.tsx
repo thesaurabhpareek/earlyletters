@@ -185,7 +185,12 @@ export function Landing() {
               ))}
             </ul>
             <Beat from={0.46} to={0.58}>
-              <p className={styles.fine}>{s.s10.fine}</p>
+              {/* Apple's terms, in the order the research lists them: who gets the trial, what happens after it, who bills and where to cancel. */}
+              {s.s10.terms.map((line) => (
+                <p key={line} className={styles.fine}>
+                  {line}
+                </p>
+              ))}
             </Beat>
             <Beat from={0.52} to={0.64}>
               <p className={styles.includesLabel}>{s.s10.includesLabel}</p>
@@ -194,6 +199,7 @@ export function Landing() {
                   <li key={item}>{item}</li>
                 ))}
               </ul>
+              <p className={styles.fine}>{s.s10.free}</p>
             </Beat>
           </div>
           <Beat className={`${styles.pull} ${styles.priceNote}`} from={0.6} to={0.72}>

@@ -26,9 +26,8 @@ export function renderWelcomeEmail(siteUrl: string, unsubscribeHref: string): We
         excerpt: w.letterExcerpt,
         note: w.letterNote,
       },
-      { type: 'list', title: w.promisesTitle, items: w.promises },
       { type: 'paragraph', text: w.closing },
-      { type: 'signoff', text: w.signoff },
+      { type: 'signoff', text: w.signoff, name: w.signoffName },
     ],
     footer: {
       lines: [w.footerLine, w.why],
