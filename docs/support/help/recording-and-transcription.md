@@ -41,7 +41,7 @@ Only these small things, and only to help the words read clearly:
 - **Fillers.** An "um" or "uh".
 - **False starts.** You began a sentence, then began again. We keep the second try.
 - **Repeats.** A word that came out twice in a row, like "the the".
-- **Names the microphone misheard.** We use the spelling from your names list.
+- **Names the microphone misheard.** We use the spellings the app knows: {child}'s name and what {child} calls you.
 - **Punctuation.** Commas, full stops and capital letters where you paused.
 - **Tiny slips of the tongue.** Like "a apple". We fix that one word and nothing around it.
 - **Paragraphs.** A long pause starts a new paragraph.
@@ -99,7 +99,9 @@ Write to us at {SUPPORT_EMAIL}. Tell us the language, and whether the trouble is
 - **The Word for word switch is built** and the old text had it backwards. `apps/mobile/src/app/settings/recordings.tsx` lines 67 to 84: on means small fixes, marked; off means new letters open Exactly as said (`settings.tidyOn` and `tidyOff`, strings lines 645 and 646). The old "choose Word for word to keep every um" would have sent people the wrong way.
 - **Quiet-day marks** (D-084, line 532; #92). "Not much today" stores a mark with no text (`notMuch`, strings lines 251 to 257); the book shows "A quiet day" (`book.quietDay`, lines 408 to 413); a long press removes it (`apps/mobile/src/components/book/quiet-day-row.tsx` line 34). Marks never count toward free letters and never appear in Read together (D-084; D-083 line 527).
 - **Editing a child's name, date and signature** (D-087; #94). `apps/mobile/src/app/settings/children/[id].tsx` lines 66 to 82: the "Name and birthday" section (`children.settings.detailsLabel`), with Name, Birthday or Due date, and "Sign my letters to {child} as". Editing writes only the child's own row (line 38). `childrenExtra.edit.signsAsNewOnly` (strings line 953): letters already written keep how they were signed. The born card: `edit.born` (lines 958 to 964), shown once the due date has passed (line 45). D-087 says saved letters, their dates and their signatures never change.
-- **Names and words is not built.** There is still no screen (`settings.dictionaryLabel` line 641 is unused in `apps/mobile/src/app/settings/`). The article no longer sends people there. Put the sentence back when BL-178 ships. Note for `content`: `review.edits.misheardName.explain` (strings line 319) says "from your words list", which a person cannot open yet.
+- **Names the microphone misheard (15 Oct):** the fix list no longer says "from your names list", because that list (Names and words) has no screen; it names the spellings set up in the book instead.
+
+**Names and words is not built.** There is still no screen (`settings.dictionaryLabel` line 641 is unused in `apps/mobile/src/app/settings/`). The article no longer sends people there. Put the sentence back when BL-178 ships. Note for `content`: `review.edits.misheardName.explain` (strings line 319) says "from your words list", which a person cannot open yet.
 
 **Built on develop and unchanged since my last check:** Speak and Type on Tonight (strings lines 186 and 187); "We could not write this one down" (line 871); "No talking in this one" (`wordsCopy.noSpeech`, words.en.ts lines 33 to 41); Settings, Spoken language with up to two more languages (`packages/content/src/features/language.en.ts` line 16); Settings, Storage removes downloads. The fix list still matches `EditType` in `packages/core/src/types.ts`, and each fix is named by what happened (`review.edits`, strings lines 304 to 339).
 

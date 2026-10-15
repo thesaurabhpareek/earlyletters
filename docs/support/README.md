@@ -12,7 +12,7 @@ These articles answer the questions parents ask most. They speak in the product'
 | [Recording and transcription](help/recording-and-transcription.md) | How speaking a letter works, quiet days, the one-time download, languages, the small slips we fix, what we never change, changing a name or birthday |
 | [Your privacy](help/privacy.md) (parts are version 1.1) | Who can read your letters, where recordings live, what we never do |
 | [Deleting and exporting](help/deleting-and-exporting.md) (parts are version 1.1) | Export everything, deleting a letter, Recently deleted, hiding a book, deleting the app, your account (version 1.1) |
-| [Plus and your Apple subscription](help/subscriptions.md) (parts are version 1.1) | Two free letters, what Plus adds, what counts as a letter, free trials, cancelling, refunds through Apple, offer codes, Family Sharing |
+| [Plus and your Apple subscription](help/subscriptions.md) | Two free letters, what Plus adds, what counts as a letter, free trials, cancelling, refunds through Apple, offer codes, Family Sharing |
 | [Writing with your co-parent](help/co-parent.md) (version 1.1) | Inviting a co-parent, what each of you sees, leaving a shared book |
 
 ## When you write to us
@@ -25,7 +25,7 @@ If things feel heavy, open Settings and tap **If you are struggling**, under Hel
 
 - Text without a mark describes the first version of the app (v1.0) as the founder has decided it.
 - "Not in this version yet" in an article means the founder has decided it is not in v1.0. Articles do not promise when it comes.
-- "Coming in version 1.1" or "(version 1.1)" marks something that needs sign-in, sync, backup to our servers or family sharing. The founder decided that v1.0 is on-device only, so those parts are not in v1.0 (brief decisions 4 and 5, as amended in PR #33). Hold marked articles and passages back when the v1.0 help centre is published.
+- "Coming in version 1.1" or "(version 1.1)" marks something that needs sign-in, sync, backup to our servers, family sharing or usage reports. A marked passage runs to the next heading, or to a line that says "End of the version 1.1 part". The founder decided that v1.0 is on-device only, so those parts are not in v1.0 (brief decisions 4 and 5, as amended in PR #33). Hold marked articles and passages back when the v1.0 help centre is published.
 - Each article ends with **Reviewer notes**, which are for the team and are removed before publishing. They say what is built on develop, what is still to build, where the article comes from, and anything that needs a decision.
 
 ## Placeholders to fill before publishing
@@ -41,13 +41,15 @@ The articles keep placeholders rather than typing these values, so `packages/bra
 
 ## Reviewer notes (remove before publishing)
 
+**Re-checked on 15 Oct 2026 against develop at 56ec5b5** for #118 (no analytics in v1.0) and #121 (plan reminders): `privacy.md` and `subscriptions.md` changed; see their notes.
+
 **Re-checked on 14 Oct 2026 against develop at ed16ca3** (the 4 Oct merges #92 to #104, #86 and the decisions D-082 to D-088 in `docs/DECISIONS.md` lines 518 to 549). What changed in the help centre:
 - **Plus is now a membership** (D-082, D-083). The subscriptions article no longer says Read together after 3 free times and books for more children. It says the first two letters are free across every book, and Plus lets you keep adding. The hold on that article is lifted. Prices come from `pricing.ts` through placeholders.
 - **Deleting** follows D-085 (confirm, Recently deleted, Erase now, Last export). v1.0 has no Delete this book, so that section now says so. Deleting the app usually leaves the free-letter count in the Keychain, and both the deletion and privacy articles say so.
 - **Recording** follows D-086 (Exactly as said, the Word for word switch), D-087 (the download asks first; editing a child's name, date and signature) and D-084 (quiet-day marks with no words). Names and words is still not built, so it is no longer named.
 - **Co-parent** (version 1.1) drops two lines from the old Plus model.
 
-**v1.0 is on-device only.** `apps/mobile/src/lib/capabilities.ts` lines 1 to 57: one build switch, off in every v1.0 profile, turns off sign-in, sync and co-parent sharing. Signing in and Writing with your co-parent are entirely version 1.1; Your privacy, Deleting and exporting and Plus have marked version 1.1 passages; Recording and transcription needs no mark. No account means v1.0 support will not get sign-in questions.
+**v1.0 is on-device only.** `apps/mobile/src/lib/capabilities.ts` lines 1 to 57: one build switch, off in every v1.0 profile, turns off sign-in, sync and co-parent sharing. Signing in and Writing with your co-parent are entirely version 1.1; Your privacy and Deleting and exporting have marked version 1.1 passages; Plus and Recording and transcription need no mark (Plus's Family Sharing section needs no Early Letters account). No account means v1.0 support will not get sign-in questions.
 
 **Changed in the 3 Oct review.** "Settings, Help, Support adds the app version and your plan" was wrong: the Help row opens an email with the subject "Help with the app" and nothing else (re-checked 14 Oct: `apps/mobile/src/app/settings/index.tsx` line 130; `supportMailto` in `packages/brand/index.ts` lines 145 to 147; LEGAL-REQ-014). "If you are struggling" is a row on Settings home in the Help and legal section, not under a Help screen, and it never hides behind a flag (index.tsx lines 27 and 129 to 141). Its lines, 988 included, and its 911 line are `struggling.resources` and `struggling.emergency` (`strings.en.ts` lines 1052 to 1069). D-088 (DECISIONS.md line 548) adds a content-free block (version, build, screen) to the Help email; it is not built yet (`supportMailto` adds only a subject), so the help centre still says the email has a subject line and nothing else.
 
@@ -60,13 +62,13 @@ The articles keep placeholders rather than typing these values, so `packages/bra
 | Plus | D-082 and D-083: two free letters, then Plus to keep adding; Apple only, on the device (D-053); Family Sharing on | PRD C (themes, Read together sessions); Subscription terms lines 18 to 33 (D-053 scope, $3.99 and $29.99); Terms 14.12 (no Family Sharing); App Review note in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` line 102 |
 | Recordings | D-059: no audio upload in v1.0 (answers D-032) | Subscription terms list encrypted backup; Privacy Policy short version and section 7 |
 | Safety | D-059: static "If you are struggling" row (answers D-034) | Privacy Policy sections 3, 5, 10 and 13 describe on-device support cards |
-| Reminders before a trial ends (open: `legal` and `product`) | D-053: no server of ours sees purchases | Subscription terms line 54 now promises in-app reminders before a trial ends and before an annual renewal. I found none built in `apps/mobile/src`. Q-003 memo, needs counsel |
+| Reminders before a trial ends (built 15 Oct, #121; counsel still reviews the wording) | D-053: no server of ours sees purchases; the reminders are local notifications on the purchaser's iPhone, a courtesy that can come late or not at all | Subscription terms line 54 promises reminders before a trial ends, before an annual renewal and once a year. #121 builds exactly those (`apps/mobile/src/lib/billing/plan-reminders.logic.ts`, `billing.en.ts` `reminders` and `confirmed`). Q-003 memo, counsel confirms |
 
 ADR 0013 and ROADMAP now agree with D-053 and D-054, so they are no longer in the table.
 
 **Price changes: settled.** Subscription terms line 60 now says existing subscribers keep their price, relying on Apple's "keep current price" choice for every change (line 88). The subscriptions article uses that wording.
 
-**Build status (develop at ed16ca3).** Built for v1.0 and described: Plus on the device through Apple with the Keep gate, the Plan screen and offer codes; export with Last export; delete with confirm and Recently deleted; quiet-day marks; the Word for word switch and the Exactly as said control; the speech download consent; editing a child's name, date and signature; Settings home with Plan, Recently deleted, Recordings, Storage and the "If you are struggling" row. Built but switched off until version 1.1: sign-in, sync, co-parent invites and account deletion. Not built: Names and words, Delete this book, Erase everything, trial and renewal reminders, the web deletion page. Nothing in these articles has been tested on a device by `support`.
+**Build status (develop at ed16ca3).** Built for v1.0 and described: Plus on the device through Apple with the Keep gate, the Plan screen and offer codes; export with Last export; delete with confirm and Recently deleted; quiet-day marks; the Word for word switch and the Exactly as said control; the speech download consent; editing a child's name, date and signature; Settings home with Plan, Recently deleted, Recordings, Storage and the "If you are struggling" row. Built but switched off until version 1.1: sign-in, sync, co-parent invites and account deletion. Built after that check (develop 56ec5b5, 15 Oct): plan reminders on the purchaser's iPhone and the purchase confirmation with Save a copy (#121); no analytics in v1.0 (#118). Not built: Names and words, Delete this book, Erase everything, the web deletion page. Nothing in these articles has been tested on a device by `support`.
 
 **Early version.** D-060: the store listing never says beta, and the app keeps "early version, can make mistakes" at the top of Settings. No article says "beta". The deleting and exporting article mentions the early-version note next to export, and that sentence goes when the founder ends the note.
 

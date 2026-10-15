@@ -5,23 +5,23 @@ Your letters are yours. Here is what happens to them, plainly.
 ## The short version
 
 - Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.
-- Your letters are private to you until you add them to {child}'s book.
+- In this version, your letters stay on your phone, private to you.
 - Your recordings stay on your phone.
 - Your words are turned into text on your phone.
-- Usage and crash reports are off until you say yes, and they never include your letters, recordings, photos or anyone's names.
+- This version of the app collects no usage or crash data of its own.
 - You can export your book and delete your own letters, any time, free.
 
 ## Who can read your letters
 
-**You.** Every letter you write, private or in the book. In this version your letters stay on your phone, so only you can read them.
+**You.** Every letter you write, private or in the book. In this version your letters stay on your phone, so only you can read them. Only you can see the words exactly as they first came out, and the small fixes made to them.
 
 > **Version 1.1.** This part describes signing in, syncing and sharing with a co-parent. It is not in this version yet.
 
-**Your co-parent.** The letters that are in {child}'s book. A letter you keep private stays with you, and you can add it to the book later.
-
-**Only you** can see the words exactly as they first came out, and the small fixes made to them. Your co-parent sees the letter as you kept it.
+**Your co-parent.** The letters that are in {child}'s book. A letter you keep private stays with you, and you can add it to the book later. Your co-parent sees each letter as you kept it, never the words as they first came out.
 
 Each child's book has its own list of people. Inviting someone to one book does not open the others.
+
+> **End of the version 1.1 part.**
 
 ## Where your letters live
 
@@ -52,6 +52,10 @@ To count your two free letters fairly, the app keeps one number: how many letter
 
 ## Usage and crash reports
 
+This version of the app collects no usage or crash data of its own, and there is no setting for it.
+
+> **Version 1.1.** This part describes optional usage and crash reports, which are not in this version yet.
+
 They help us find what is broken. They stay off until you say yes, and nothing in the app depends on them. When they are on, they say which screens you open and what happened, like "a letter was saved", and never what you wrote or said. Turn them on or off in Settings, Privacy, **Share usage and crash reports**.
 
 ## Notifications
@@ -75,7 +79,7 @@ Early Letters is for adults. A book is about a child, and the child does not use
 | Restore or erase a deleted letter | Settings, Recently deleted |
 | Delete your account (version 1.1) | Settings, Delete account |
 | Stop syncing (version 1.1) | Settings, Privacy, Sync and family sharing |
-| Turn usage and crash reports on or off | Settings, Privacy, Share usage and crash reports |
+| Turn usage and crash reports on or off (version 1.1) | Settings, Privacy, Share usage and crash reports |
 | Show or hide names in notifications | Settings, Reminders, Names in notifications |
 | Ask a privacy question, or ask for a copy, a correction or deletion | Email {PRIVACY_EMAIL} |
 
@@ -96,6 +100,8 @@ You never need to send your letters, recordings or {child}'s name to get help. W
 **Re-checked against develop at ed16ca3 (14 Oct 2026).**
 - New section "Your free letters": the letter ledger (D-083, `docs/DECISIONS.md` line 527: "The count is held on the device (Keychain, mirrored in the database) so a reinstall does not reset it; counsel confirms this is acceptable"). `apps/mobile/src/lib/billing/letter-ledger.logic.ts` lines 4 to 20: one never-decreasing number, "No identifier, no timestamp, no content, no device id"; the Keychain item is this-device-only and never in a backup, the database mirror comes back with a backup restore. Line 19: Apple does not guarantee the Keychain item survives deleting the app, hence "usually". Nothing here talks to a server (`apps/mobile/src/lib/billing/gates.ts`). Hand-off to `legal`: `docs/legal/DATA_CLASSIFICATION.md` and `docs/legal/data-policy.md` line 141 list Keychain contents as session tokens and keys only; the ledger item `earlyletters.letters.keptEver` (letter-ledger.logic.ts line 27) is not in either. PR #81 changes `data-policy.md`; I did not check whether it adds this.
 - "Your choices": the old row said "Delete a letter, a book", but v1.0 has no way to delete a book (`apps/mobile/src/app/settings/children/[id].tsx` has no delete row). Recently deleted is a Settings row (`apps/mobile/src/app/settings/index.tsx` line 118, D-085).
+
+**No analytics in v1.0 (re-checked 15 Oct 2026, develop 56ec5b5).** #118 turns analytics off in every v1.0 profile (`capabilities.analytics`; D-088 keeps the App Store label "Data Not Collected"), and `apps/mobile/src/app/settings/privacy.tsx` hides the usage switch when it is off. The short-version bullet now says so, the "Usage and crash reports" section keeps its later text under a version 1.1 mark, and the Settings row is marked. The co-parent block now ends with an explicit end line, and "Only you can see the words as they first came out" moved into the unmarked v1.0 text, because it is true in v1.0.
 
 **Version 1.1 marks (founder decision, v1.0 is on-device only).** Marked above: the co-parent paragraph, the whole sync and servers passage under "Where your letters live", and the Stop syncing and Delete account rows. At v1.0 publish, drop the marked passages. Unmarked text was checked against on-device only: letters and recordings stay on the phone, transcription is on the phone, and the "backup" mention is Apple's own iPhone backup (D-033), not ours. The short-version bullets still hold. Open for `legal`: the Privacy Policy sections that describe servers and sharing need the same v1.0 reading.
 

@@ -54,6 +54,10 @@ Plus renews on its own until you cancel. With a free trial, Apple charges you wh
 
 While Plus is on, Settings, Plan shows when your free trial ends, or when your plan renews. During a free trial it also shows the last day to cancel so you pay nothing.
 
+If you allow notifications, this iPhone also tries to remind you before a free period ends, before an annual plan renews, and once a year. It is a courtesy: a reminder can come late or not at all, so go by the dates in Settings, Plan and Apple's receipts. Reminders come only to the iPhone of the person who bought Plus, not to people sharing it through Family Sharing.
+
+Right after you start Plus, the app shows what you agreed to, with **Save a copy** to keep it in Mail, Notes or Files. You can save it again any time from Settings, Plan.
+
 ## How to cancel
 
 Cancel any time, at least 24 hours before your free trial or your current month or year ends. Plus keeps working until then.
@@ -89,11 +93,9 @@ You can check the status of your request on the same site.
 
 A refund never changes your letters or recordings. If Apple gives a refund, Plus ends. Every letter you kept stays yours to read, play and export.
 
-## Sharing Plus with your co-parent
+## Sharing Plus through Apple Family Sharing
 
-> **Version 1.1.** Co-parent sharing is not in this version yet. Plus can still be shared through Apple Family Sharing, which is Apple's feature. Whether it needs anything from Early Letters at v1.0 is for `payments` to confirm before this section is published.
-
-Plus can be shared through Apple Family Sharing. When you and your co-parent are in the same Family Sharing group, your co-parent gets Plus too, at no extra cost.
+Plus can be shared through Apple Family Sharing. When you and your co-parent are in the same Family Sharing group, your co-parent gets Plus too, at no extra cost. Family Sharing shares Plus, not your book: in this version, each person's letters stay on their own phone.
 
 **If you have not set up Family Sharing:** open the Settings app, tap your name, tap Family, then follow the steps to invite your co-parent.
 
@@ -137,7 +139,9 @@ Our Subscription terms are part of our Terms of Service. Open them from Settings
 
 ## Reviewer notes (remove before publishing)
 
-**Version 1.1 marks (founder decision, v1.0 is on-device only).** Marked above: the Sharing Plus with your co-parent section. Apple purchase, restore, cancel, refund and offer-code steps need no Early Letters account (D-053) and stay. The old hold on this article (Plus scope) is lifted: D-082 and D-083 are now on develop and the article follows them.
+**Re-checked 15 Oct 2026 (develop 56ec5b5).** Plan reminders and the purchase confirmation are built (#121: `plan-reminders.logic.ts` purchaser only and never for Family Sharing; `billing.en.ts` `reminders`, `note` and `confirmed`, including the courtesy line and Save a copy), so "When you are charged" now describes them in the app's own terms. The Family Sharing section is no longer marked version 1.1: it needs nothing from an Early Letters account (D-053, D-082 "Family Sharing on"; `plan.shared` is shown on the device), and it now says plainly that Family Sharing shares Plus, not the book.
+
+**Version 1.1 marks (founder decision, v1.0 is on-device only).** Nothing in this article is marked now; the co-parent book questions stay in `co-parent.md`. Apple purchase, restore, cancel, refund and offer-code steps need no Early Letters account (D-053) and stay. The old hold on this article (Plus scope) is lifted: D-082 and D-083 are now on develop and the article follows them.
 
 **What Plus includes (re-checked against develop at ed16ca3, 14 Oct 2026).** Every claim in "What Plus adds", "What is free", "What counts as a letter", "When you keep a third letter" and "If Plus ends" comes from these:
 - `docs/DECISIONS.md` line 522 (D-082, founder): the first 2 letters per account are free, then adding letters needs Plus; existing letters stay readable, playable and exportable; offer codes come from Apple; Family Sharing on. Line 523: D-082 supersedes the "Read together after 3 free sessions" rule of D-053 and the old prices.
@@ -169,7 +173,7 @@ Our Subscription terms are part of our Terms of Service. Open them from Settings
 
 **Hand-off to `legal`: the Subscription terms on develop are behind D-082.** `docs/legal/subscription-terms.md` lines 20 to 24 still list Read together after 3 free sessions and books for more children as Plus, and lines 30 to 33 still show $3.99 and $29.99. Line 18 says writing is "free, always". The article follows D-082 instead. PR #81 (`docs/legal-v1-finalize`) changes this file; I did not check whether it already fixes these lines.
 
-**Hand-off to `legal` and `product`: reminders.** Subscription terms line 54 now promises that the app reminds you before a free trial ends, before an annual plan renews and once a year. I found no trial or renewal reminder in `apps/mobile/src` or `packages/content/src` (search for trial and renewal reminder names). The article promises only what is built: Settings, Plan shows the trial end and the renewal date. Either the reminders get built before launch, or the terms change.
+**Reminders: built (#121, 15 Oct).** Subscription terms line 54 promises reminders before a free trial ends, before an annual plan renews and once a year; #121 builds those as local notifications on the purchaser's iPhone, worded as a courtesy. Hand-off to `legal`: counsel confirms the courtesy wording against the terms (Q-003 memo).
 
 **Price changes: settled.** The article now uses the terms' own wording (subscription-terms.md line 60, "you keep the price you already pay"), which relies on choosing "keep current price for existing subscribers" in App Store Connect for every change (line 88, memo C-9). My earlier founder question about "unless you agree" is closed by that.
 
