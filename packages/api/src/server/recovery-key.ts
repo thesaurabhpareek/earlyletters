@@ -4,8 +4,10 @@
  * (F08 6.5 A to G; M16; R2 AR-05 to AR-11; R8 R2A-01, -07 to -09, -24;
  * F11-REQ-029). Shapes only: the `escrow` function lives in its own project
  * `scribe-escrow` (F08 6.5 G2) and is S05's (WP-F08-B4); the RPCs are S05's
- * migration. Numbers here are the one copy the app, the function and the
- * tests read; F08 6.5 C is their source.
+ * migration (PR #151, 20261015230000, pending), which this file follows
+ * name for name. Numbers here are the one copy the app, the function and the
+ * tests read; F08 6.5 C is their source. bytea arguments travel as PostgREST
+ * text, `\x` and lowercase hex.
  *
  * What never crosses the wire: a plaintext book key, a file key, an escrow
  * private key, audio. The function returns each book key sealed to the
@@ -54,38 +56,79 @@ export function bookKeyKeychainAccount(profileId: string, childId: string): stri
   return `${profileId}:${childId}`;
 }
 
-// ── RPCs in the main project (S05 migration) ─────────────────────────────
+// ── RPCs in the main project (S05 migration, PR #151) ────────────────────
 
-/** `backup_register_device(p_device_id, p_public_key)`: the install's X25519 public key. Idempotent on the device id with the same key. */
+/** `backup_register_device(p_device_id uuid, p_public_key bytea)`: the install's 32-byte X25519 public key. Idempotent on the id with the same key. */
 export interface RegisterDeviceArgs {
   p_device_id: string;
+  /** `\x` and 64 hex. */
   p_public_key: string;
 }
 
-/** `backup_store_key(p_child, p_key_version, p_escrow_key_version, p_wrap)`: the book key sealed on the phone to the escrow public key. SCCON without the backup consent. */
+/**
+ * `backup_store_key(p_child, p_key_version, p_escrow_key_version, p_wrap jsonb, p_key_check bytea default null)`:
+ * the book key sealed on the phone to the escrow public key. `p_key_check`
+ * is 16 bytes of HMAC-SHA256 under the book key, so a phone can prove its
+ * local key is the escrowed one after a Keychain sync conflict (ADR 0023).
+ * SCBKO when backup is off on the server, SCCON `backup` without the consent,
+ * SCIMM `key_exists` for a second key of one version.
+ */
 export interface StoreKeyArgs {
   p_child: string;
   p_key_version: number;
   p_escrow_key_version: number;
   p_wrap: SealedBox;
+  p_key_check?: string | null;
+}
+
+/** `backup_begin(p_entry, p_child, p_bytes, p_key_version, p_wrapped_file_key bytea, p_format_version default 1)`: reserve one upload. SCQTA over the 5 GB quota. */
+export interface BeginUploadArgs {
+  p_entry: string;
+  p_child: string;
+  p_bytes: number;
+  p_key_version: number;
+  p_wrapped_file_key: string;
+  p_format_version?: number;
+}
+/** `backup_confirm(p_entry, p_cipher_sha256 bytea)`: the object is in place; 22023 `size` when its bytes differ from the reservation. */
+export interface ConfirmUploadArgs {
+  p_entry: string;
+  p_cipher_sha256: string;
+}
+
+/**
+ * Restore approvals and cancels are main-project RPCs, not escrow routes
+ * (S05 deviation 1: approval proves possession). An approving device opens
+ * `approval` (sealed to its own key, aad `<profile>|<device>`) and sends the
+ * 32-byte code back; "Not me" cancels and then signs out everywhere.
+ *   backup_pending_requests(p_device_id uuid) returns jsonb  (PendingRequest[])
+ *   backup_approve_request(p_request uuid, p_device_id uuid, p_code bytea) returns jsonb
+ *   backup_cancel_request(p_request uuid, p_device_id uuid default null) returns jsonb
+ * Never switched off: they can only stop or speed a restore the owner made.
+ */
+export interface ApproveRequestArgs {
+  p_request: string;
+  p_device_id: string;
+  p_code: string;
+}
+export interface CancelRequestArgs {
+  p_request: string;
+  p_device_id?: string | null;
 }
 
 // ── The escrow function (project scribe-escrow) ──────────────────────────
 
 /**
  * Routes below the escrow project's URL. Never in the main project (release
- * check, F08-REQ-034). When `escrow` is killed (the function's own
- * KILL_SWITCHES secret, or the remote switch on the phone), create and
- * release stop; list, `not_me` decisions and cancel keep working, because
- * they can only stop a restore. Approve while killed is answered `paused`.
+ * check, F08-REQ-034). Both stop when `escrow` is killed (the function's own
+ * switch, or the remote switch on the phone); listing, approving and
+ * cancelling are main-project RPCs above and keep working. A release of a
+ * cancelled or expired request answers 410 `gone` with detail `cancelled` or
+ * `expired`.
  */
 export const ESCROW_ROUTES = {
   createRequest: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests' },
-  /** POST, not GET: the device id goes in the body so no install id lands in an access log. */
-  listRequests: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/pending' },
-  decide: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/:id/decision' },
   release: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/:id/release' },
-  cancel: { method: 'POST', path: '/functions/v1/escrow/v1/restore-requests/:id/cancel' },
 } as const;
 
 /** The step-up rule: the JWT's most recent sign-in is at most this old for a new request (F08 6.5 C1). Checked only on create. */
@@ -107,8 +150,6 @@ export const RESTORE_STATES = ['requested', 'approved', 'released', 'cancelled',
 export type RestoreState = (typeof RESTORE_STATES)[number];
 export const CANCEL_SOURCES = ['stop_link', 'enrolled_device', 'owner', 'deletion'] as const;
 export type CancelSource = (typeof CANCEL_SOURCES)[number];
-export const DECISIONS = ['approve', 'not_me'] as const;
-export type Decision = (typeof DECISIONS)[number];
 
 /** Why a request is refused, as the SQLSTATE detail or the envelope `detail` (closed set). */
 export const ESCROW_ERROR_DETAILS = [
@@ -121,17 +162,19 @@ export const ESCROW_ERROR_DETAILS = [
   'deletion_pending',
   'limit_restores',
   'limit_keys',
+  'limit_keys_stored',
+  'key_exists',
+  'revoked',
+  'entry',
+  'key',
+  'object',
 ] as const;
 export type EscrowErrorDetail = (typeof ESCROW_ERROR_DETAILS)[number];
 
 const deviceId = v.pipe(v.string(), v.regex(UUID_RE));
 
 export const CreateRestoreRequestSchema = v.strictObject({ device_id: deviceId });
-/** Which device is asking, so the answer can set `is_this_device` and show the approval sheet only on the others (F08 6.5 C3). */
-export const ListRequestsSchema = v.strictObject({ device_id: deviceId });
-export const DecideRequestSchema = v.strictObject({ device_id: deviceId, decision: v.picklist(DECISIONS) });
 export const ReleaseRequestSchema = v.strictObject({ device_id: deviceId });
-export const CancelRequestSchema = v.strictObject({ device_id: deviceId });
 
 /** One restore request as the owner's devices see it. No child names, no device names. */
 export const RestoreRequestViewSchema = v.object({
@@ -144,6 +187,13 @@ export const RestoreRequestViewSchema = v.object({
   is_this_device: v.boolean(),
 });
 export type RestoreRequestView = v.InferOutput<typeof RestoreRequestViewSchema>;
+
+/** One row of `backup_pending_requests`: the view plus, on an enrolled device, the approval code sealed to it. */
+export const PendingRequestSchema = v.object({
+  ...RestoreRequestViewSchema.entries,
+  approval: v.nullable(SealedBoxSchema),
+});
+export type PendingRequest = v.InferOutput<typeof PendingRequestSchema>;
 
 /** One opened book key, sealed to the requesting device. */
 export const SealedBookKeySchema = v.object({
@@ -166,7 +216,22 @@ export function holdUntil(requestedAt: Date, hasOtherEnrolledDevice: boolean): D
   return new Date(requestedAt.getTime() + hours * 3_600_000);
 }
 
-/** Whether a JWT's last sign-in (`auth_time` or the session's `iat` per WP-F08-B4) passes the step-up rule at `now`. */
+/**
+ * The newest `amr[].timestamp` of a Supabase JWT: when the person last
+ * proved who they are. A token refresh does not move it (`iat` does), so
+ * step-up reads this (S05 deviation 5). [A: confirmed on staging, runbook B6.]
+ */
+export function newestAmrTimestamp(amr: unknown): number | null {
+  if (!Array.isArray(amr)) return null;
+  let best: number | null = null;
+  for (const a of amr) {
+    const t = (a as { timestamp?: unknown } | null)?.timestamp;
+    if (typeof t === 'number' && Number.isFinite(t) && (best === null || t > best)) best = t;
+  }
+  return best;
+}
+
+/** Whether the last sign-in (`newestAmrTimestamp`, seconds) passes the step-up rule at `now`. */
 export function passesStepUp(lastSignInEpochSeconds: number | null | undefined, now: Date): boolean {
   if (typeof lastSignInEpochSeconds !== 'number' || !Number.isFinite(lastSignInEpochSeconds)) return false;
   const age = now.getTime() / 1000 - lastSignInEpochSeconds;
@@ -184,19 +249,28 @@ export const AccountStopResultSchema = v.object({ cancelled_requests: v.pipe(v.n
 
 export const UNWRAP_REASONS = ['restore', 'rotation', 'legal'] as const;
 export type UnwrapReason = (typeof UNWRAP_REASONS)[number];
-export const UNWRAP_OUTCOMES = ['released', 'refused'] as const;
+/** Written before release, so a row is true even if the email then fails (S05 deviation 6). */
+export const UNWRAP_OUTCOMES = ['opened', 'failed'] as const;
 
-/** One append-only `escrow_unwraps` row per book key opened. No content, no key bytes. Owner-readable. */
+/**
+ * One append-only `escrow_unwraps` row per book key opened (S05's table).
+ * No content, no key bytes. Owner-readable. After account deletion
+ * `profile_id` is null and `subject_hash` holds the pseudonym.
+ */
 export interface EscrowUnwrapRow {
-  id: string;
-  profile_id: string;
-  device_id: string;
+  id: number;
+  profile_id: string | null;
+  device_id: string | null;
   child_id: string;
   key_version: number;
+  escrow_key_version: number;
   reason: UnwrapReason;
   outcome: (typeof UNWRAP_OUTCOMES)[number];
-  request_id: string;
-  created_at: string;
+  /** Set for `restore` only. */
+  restore_request_id: string | null;
+  /** The x-request-id of the call that opened it (12 hex). */
+  request_id: string | null;
+  occurred_at: string;
 }
 
 /**

@@ -48,7 +48,7 @@ describe('[DECISION-17] every endpoint the app calls meets the API standard', ()
     for (const [name, e] of entries) {
       if (e.auth === 'public' && name !== 'signIn') expect(e.method).toBe('GET');
       if (e.method === 'POST' && e.idempotency === 'safe_method') {
-        expect(['signIn', 'syncPull', 'syncBooks', 'policyActionsNeeded', 'peekInvite', 'escrowListRequests']).toContain(name);
+        expect(['signIn', 'syncPull', 'syncBooks', 'policyActionsNeeded', 'peekInvite', 'backupPendingRequests']).toContain(name);
       }
     }
   });
@@ -58,7 +58,7 @@ describe('[DECISION-17] every endpoint the app calls meets the API standard', ()
     const signInFamily = ['signIn', 'appleToken', 'recordPolicyAct', 'policyActionsNeeded'];
     // Stepping back is never paused: cancel an invite, leave, remove a family member, undo a join (DATA-REQ-016, LEGAL-REQ-009).
     // Restore must never be stopped by `backupUploads`, and stopping a restore must never be stopped by `escrow`.
-    const alwaysAvailable = ['revokeInvite', 'leaveChild', 'removeChildMember', 'undoParentJoin', 'backupRegisterDevice', 'escrowListRequests', 'escrowDecide', 'escrowCancel'];
+    const alwaysAvailable = ['revokeInvite', 'leaveChild', 'removeChildMember', 'undoParentJoin', 'backupRegisterDevice', 'backupPendingRequests', 'backupApproveRequest', 'backupCancelRequest'];
     for (const [name, e] of entries) {
       if (e.path.startsWith('/functions/v1/config') || e.path.startsWith('/functions/v1/content') || e.class === 'pack_file') continue;
       expect(e.capability, `${name} needs a capability`).toBeDefined();

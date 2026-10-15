@@ -95,6 +95,8 @@ export type InviteErrorKind =
   | 'book_full'
   /** SCCON with detail `family-share` (D-050, F11-REQ-018): show the family-share sheet, not the general consent screen. */
   | 'family_share_consent'
+  /** SCCID on the device-made create: this id was used by someone else or with other hashes. Make a new invite (a client bug if it repeats). */
+  | 'id_taken'
   | 'not_parent'
   | 'rate_limited'
   | 'consent_needed'
@@ -125,6 +127,8 @@ export function inviteErrorKindFor(sqlstate: string | null | undefined, detail?:
       return 'not_found';
     case 'SCKIL':
       return 'paused';
+    case 'SCCID':
+      return 'id_taken';
     default:
       return 'unknown';
   }

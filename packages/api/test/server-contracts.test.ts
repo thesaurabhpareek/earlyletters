@@ -11,6 +11,8 @@ import {
   FIELD_GROUP_COLUMNS,
   FIELD_GROUPS,
   holdUntil,
+  currentEscrowKey,
+  newestAmrTimestamp,
   INVITE_CODE_RE,
   INVITE_REDEEM_PATH,
   INVITE_TOKEN_RE,
@@ -327,6 +329,23 @@ describe('[F08 6.5] recovery-key contract', () => {
     const t = new Date('2026-10-15T12:00:00Z');
     expect(holdUntil(t, true).toISOString()).toBe('2026-10-18T12:00:00.000Z');
     expect(holdUntil(t, false).toISOString()).toBe('2026-10-16T12:00:00.000Z');
+  });
+
+  it('[F08 6.5 C1] step-up reads the newest amr timestamp, which a refresh does not move', () => {
+    expect(newestAmrTimestamp([{ method: 'otp', timestamp: 100 }, { method: 'password', timestamp: 300 }])).toBe(300);
+    expect(newestAmrTimestamp('x')).toBeNull();
+    expect(newestAmrTimestamp([])).toBeNull();
+  });
+
+  it('[WP-F08-B8] no escrow key ships until the ceremony; the newest key per environment wins', () => {
+    expect(currentEscrowKey('production')).toBeNull();
+    const keys = [
+      { version: 1, publicKey: `${'A'.repeat(43)}=`, environment: 'production' as const },
+      { version: 2, publicKey: `${'B'.repeat(43)}=`, environment: 'production' as const },
+      { version: 9, publicKey: `${'C'.repeat(43)}=`, environment: 'drill' as const },
+    ];
+    expect(currentEscrowKey('production', keys)?.version).toBe(2);
+    expect(currentEscrowKey('drill', keys)?.version).toBe(9);
   });
 
   it('[F08 6.5 C1] step-up: a sign-in at most 10 minutes old', () => {

@@ -51,6 +51,8 @@ function newestDefinition(fn: string): string {
 const PLANNED_SQLSTATES: Record<string, string> = {
   SCVER: 'F16-REQ-019, WP-F16-16 (S02): sync API version refused',
   SCKIL: 'request to S02: SQL-side kill switch for the PostgREST paths (detail: the switch name)',
+  SCBKO: 'S05 PR #151 (20261015230000, pending): backup or escrow off on the server',
+  SCQTA: 'S05 PR #151 (20261015230000, pending): backup quota reached',
 };
 
 describe('[ADR-0017] error codes equal the migrations', () => {

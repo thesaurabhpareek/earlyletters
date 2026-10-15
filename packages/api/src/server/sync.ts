@@ -354,8 +354,19 @@ export const PushResultOkSchema = v.object({
   conflict: v.optional(v.boolean()),
   /** Planned (WP-F16-14): the groups not applied, today only `["text"]`. */
   conflict_groups: v.optional(v.array(v.picklist(FIELD_GROUPS))),
-  /** Planned (WP-F16-14). */
-  current: v.optional(ConflictCurrentSchema),
+  /**
+   * Planned (WP-F16-14; S03's ADR 0023): the server's words, sent whenever
+   * they changed since `base` (a words conflict, or an op that carried no
+   * words). The phone takes them unless its own words for that letter are
+   * still queued.
+   */
+  current: v.optional(v.nullable(ConflictCurrentSchema)),
+  /**
+   * Planned (WP-F16-14; S03's ADR 0023 section 5): the words version this op
+   * wrote when it first applied. A duplicate (`dup`) answers it too, so a
+   * lost answer rebases on it, never on `entry.v`.
+   */
+  applied_v: v.optional(v.nullable(str)),
   missing: v.optional(v.boolean()),
   entry: v.optional(v.nullable(EntryStateSchema)),
   /** Planned (WP-F16-17): server state of a held draft after `held.upsert`. */

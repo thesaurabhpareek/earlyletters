@@ -157,6 +157,12 @@ export const ENDPOINTS = {
     idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'live',
     killSwitch: 'invites', capability: 'coParent',
   },
+  // The device-made overload in S02's 20261015020000 (F11 D5): idempotent on the invite id and hashes.
+  createInviteV2: {
+    method: 'POST', path: '/rest/v1/rpc/create_child_invite', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 20, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
+    killSwitch: 'invites', capability: 'coParent',
+  },
   revokeInvite: {
     method: 'POST', path: '/rest/v1/rpc/revoke_invite', class: 'write_rpc', auth: 'user_jwt',
     idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'client' }, status: 'live',
@@ -218,20 +224,21 @@ export const ENDPOINTS = {
     idempotency: 'natural_id', rateLimit: { limit: 240, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
     killSwitch: 'escrow', capability: 'backup',
   },
-  escrowListRequests: {
-    method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/pending`, class: 'escrow', auth: 'user_jwt',
-    idempotency: 'safe_method', rateLimit: { limit: 240, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+  // Listing, approving and cancelling are main-project RPCs (S05 PR #151), never stopped by `escrow`:
+  // they can only stop or speed a restore the owner made.
+  backupPendingRequests: {
+    method: 'POST', path: '/rest/v1/rpc/backup_pending_requests', class: 'read_rpc', auth: 'user_jwt',
+    idempotency: 'safe_method', rateLimit: { limit: 240, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
     capability: 'backup',
   },
-  // Saying "Not me", cancelling and the Stop link must work while `escrow` is killed (they only ever stop a restore).
-  escrowDecide: {
-    method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/:id/decision`, class: 'escrow', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+  backupApproveRequest: {
+    method: 'POST', path: '/rest/v1/rpc/backup_approve_request', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
     capability: 'backup',
   },
-  escrowCancel: {
-    method: 'POST', path: `<escrow-project>/functions/v1/escrow/${API_MAJOR}/restore-requests/:id/cancel`, class: 'escrow', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 86_400, per: 'user', enforcedBy: 'edge_function' }, status: 'planned',
+  backupCancelRequest: {
+    method: 'POST', path: '/rest/v1/rpc/backup_cancel_request', class: 'write_rpc', auth: 'user_jwt',
+    idempotency: 'natural_id', rateLimit: { limit: 60, windowSeconds: 86_400, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
     capability: 'backup',
   },
 } as const satisfies Record<string, EndpointSpec>;
