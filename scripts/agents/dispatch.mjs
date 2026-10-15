@@ -21,6 +21,7 @@ import {
   readState, writeState, repoSlug, gh, ghAll, labelNames, agentOfPR, readText, todayUTC,
   isFounderComment, standingChanged,
 } from "./lib.mjs";
+import { needsIndependentReview } from "./lib.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
 const argv = process.argv.slice(2);
@@ -160,6 +161,33 @@ const reviewTargets = openPRs
   .filter((pr) => agentOfPR(pr) && agentOfPR(pr) !== "red-team" && !pr.draft)
   .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 const sensitive = (pr) => /supabase|auth|sign-?in|migration/i.test(`${pr.title} ${pr.head.ref}`);
+// D-041: any PR (agent or not) that touches the database, workflows or auth gets
+// an independent red-team review run. Oldest first; stops at the first match, and
+// remembers each head's answer in the board state so later ticks skip the lookup.
+state.d041 ??= {};
+function firstD041Target() {
+  const heads = new Set(openPRs.map((pr) => pr.head.sha));
+  for (const sha of Object.keys(state.d041)) if (!heads.has(sha)) delete state.d041[sha];
+  // A release PR (develop into main) carries work already reviewed PR by PR, so it is skipped.
+  const pool = openPRs.filter((pr) => !agentOfPR(pr) && !pr.draft && pr.head.ref !== roster.base_branch)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  for (const pr of pool) {
+    const sha = pr.head.sha;
+    if (state.d041[sha] === undefined) {
+      const files = (ghAll(`/repos/${repo}/pulls/${pr.number}/files?per_page=100`, { allowFail: true }) ?? []).map((f) => f.filename);
+      state.d041[sha] = needsIndependentReview(files);
+    }
+    if (!state.d041[sha]) continue;
+    const reviewed = (ghAll(`/repos/${repo}/pulls/${pr.number}/reviews`, { allowFail: true }) ?? [])
+      .some((r) => (r.body ?? "").includes(`red-team:${sha}`));
+    if (!reviewed) return pr;
+  }
+  return undefined;
+}
+// Team limit: when this many agent PRs wait for review, agents only review and
+// fix; they start no new task or standing duty (open docs went stale unmerged).
+const teamOpen = openPRs.filter((pr) => agentOfPR(pr)).length;
+const teamCap = roster.limits.max_open_agent_prs ?? Infinity;
 
 // ONLY_AGENT: a comma-separated list of handles to assign; everyone else still appears on the board.
 const only = env.ONLY_AGENT ? new Set(env.ONLY_AGENT.split(",").map((s) => s.trim()).filter(Boolean)) : null;
@@ -229,7 +257,7 @@ function nextWork(agent, mine, queue) {
   // 2. Kind-specific work.
   if (agent.kind === "reviewer") {
     const candidates = reviewTargets.filter((pr) => !prFacts(pr).redTeam && !prFacts(pr).pending);
-    const pick = candidates.find(sensitive) ?? candidates[0];
+    const pick = candidates.find(sensitive) ?? firstD041Target() ?? candidates[0];
     if (pick) return { mode: "review", pr: pick.number, reason: `${agentOfPR(pick)}: ${pick.title}`, label: `review #${pick.number}` };
   }
   if (agent.kind === "digest") {
@@ -237,6 +265,7 @@ function nextWork(agent, mine, queue) {
     return due ? { mode: "digest", label: "digest" } : undefined;
   }
   if (mine.length >= agent.wip_limit) return undefined;
+  if (teamOpen >= teamCap) return undefined;
   // 3. Backlog task, then standing duty, but only if something changed since
   //    this agent's last standing run (saves a run that would find nothing new).
   if (queue.length) return { mode: "task", task: queue[0].id, reason: queue[0].title, label: `task ${queue[0].id}` };
@@ -247,6 +276,7 @@ function nextWork(agent, mine, queue) {
 function idleReason(agent, mine) {
   if (agent.kind === "digest") return state.lastDigest === today ? "today's digest is done" : "digest not due yet";
   if (mine.length >= agent.wip_limit) return `waiting for founder review (${mine.length}/${agent.wip_limit} open PRs)`;
+  if (teamOpen >= teamCap) return `team limit: ${teamOpen} agent PRs open (cap ${teamCap}), so reviews and fixes only`;
   if (state.standing[agent.handle]) return "nothing changed since its last standing run";
   return "nothing to do";
 }

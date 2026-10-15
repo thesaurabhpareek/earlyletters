@@ -9,11 +9,12 @@
     "owner_names": ["web lane"]
   },
   "limits": {
-    "$comment": "max_runs_per_day_total is the team-wide daily cap. Money is capped three ways: max_budget_usd per run (enforced by the runner), the spend limit on the provider key (OpenRouter key budget or Claude Console workspace), and this daily cap.",
+    "$comment": "max_runs_per_day_total is the team-wide daily cap. Money is capped three ways: max_budget_usd per run (enforced by the runner), the spend limit on the provider key (OpenRouter key budget or Claude Console workspace), and this daily cap. max_open_agent_prs: when this many agent PRs are open, agents only review and fix their PRs (no new tasks or standing work).",
     "max_runs_per_day_total": 30,
     "max_parallel": 6,
     "digest_hour_utc": 14,
-    "claim_grace_minutes": 20
+    "claim_grace_minutes": 20,
+    "max_open_agent_prs": 10
   },
   "engines": {
     "$comment": "opencode = OpenCode (MIT) driving open-weight models through OpenRouter; the default. claude-code = Claude Code via anthropics/claude-code-action; optional per agent. Models must be priced in the engine's model list, or the per-run spend cap cannot be enforced.",

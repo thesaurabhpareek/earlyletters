@@ -203,9 +203,20 @@ Do it before the first external TestFlight families join (backlog milestone M12)
 | A journal entry says work was saved to `agent/<handle>/wip-...` | that branch | The run stopped early; the agent's next run continues from it. |
 | Receipts show $0.00 on a paid model | the runner stops these | The model is not in OpenCode's priced list; pick a listed model. |
 | Two agents changed the backlog at once | the PRs | Only `product` reorders; others change only their own status line. |
+| Agents say "team limit" | the board header | Ten or more agent PRs are open. Merge or close some; agents only review and fix until then. |
+| Two PRs used the same BL, D or ADR number | both PRs | One author did not run `scripts/agents/next-id.mjs`. Renumber the later PR. |
+| A post shows only a file path such as `@/tmp/...` | the post | Lowercase `-f body=@file` was used. Edit the post with the file's text (capital `-F`). |
 
 ## 15. Change log
 
 - 3 Oct 2026: harness created (ADR 0018); open-weight engine by default, Claude optional (ADR 0019); per-run dollar caps; skip unchanged standing runs; this document.
 - 3 Oct 2026: nothing is lost to limits: agents push as they go, the workflow salvages unfinished runs to a branch, and `CLAUDE.md` asks every session to push work in progress at least every 30 minutes.
 - 15 Oct 2026: `agents.yml` is gated on the repository variable `AGENTS_ENABLED=true` (absent by default), so the schedule costs nothing and writes nothing until the founder switches it on; `claude.yml` already ends green without a credential. Owner names for threads outside the harness (`external_lanes`). Section 11 says plainly that deny lists are tripwires and branch protection is the guarantee.
+- 15 Oct 2026: what the first two weeks taught (3 to 15 Oct, 9 interactive waves, about 45 runs):
+  - **Reviews were worth the most.** The red team found the most valuable problems: a row-level-security bypass through `search_path`, migrations that undo each other, wrong prices in legal text, a release workflow that prints a secret, and a "private repo" premise repeated across five PRs. Most of these came from other threads' PRs. So the red team now reviews any PR that touches `supabase/`, `.github/workflows/` or auth code (D-041), whoever wrote it, oldest first, skipping release merges.
+  - **New documents went stale.** Four agent docs (CI report, two backlog PRs, a counsel pack) were overtaken by `develop` within days, because nothing merged them. A team limit (`max_open_agent_prs`, 10) now stops new tasks and standing duties while that many agent PRs are open.
+  - **Parallel ids collided.** ADR 0014 to 0017 were taken twice, and D-ids nearly were. `scripts/agents/next-id.mjs` counts `develop` and every open PR.
+  - **Usage limits cut runs short.** Agents now post a journal stub first and complete it last, so an interrupted run leaves a trace. Interactive waves stay at two or three agents.
+  - **Interactive posts came from the founder's account** and were read as founder instructions. Harness markers (receipt, journal, red-team, steward, handoff, agent) now exclude them, and every agent comment starts with `<!-- agent:<handle> -->`.
+  - **Other threads work in the same repo.** Briefs list live `BOARD.md` claims (read from `develop`) and branches pushed in the last 24 hours with no PR. The dispatcher sends an agent to fix its PR when it conflicts with `develop`. Cross-thread notes go in the Project doc `claude/Early-Letters-Coordination.md`.
+  - **Interactive sessions cannot close PRs or comment on other threads' PRs** (the session safety check refuses). Agents recommend closing in their PR body and journal, and the founder or coordinator closes.

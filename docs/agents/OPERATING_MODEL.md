@@ -17,13 +17,13 @@ A dispatcher (`scripts/agents/dispatch.mjs`, run by `.github/workflows/agents.ym
 |---|---|---|
 | `maintain` | One of your open PRs has failing checks, conflicts with `develop`, requested changes, a red-team "fix first", or a founder comment newer than its last commit | Fix that PR on its own branch. Nothing else. For a conflict, `git merge origin/develop` into your branch and resolve by hand; never rebase or force-push. |
 | `task` | A backlog task is ready for your role | Do that one task, per the rules in `docs/BACKLOG.md` ("How a scheduled run uses this file") and its Definition of Done. |
-| `review` | Red team only: an agent PR has no review for its latest commit | Review it (section 6). |
+| `review` | Red team only: an agent PR has no review for its latest commit, or any PR (from any thread, not only agents) that touches `supabase/`, `.github/workflows/` or auth code has none (D-041) | Review it (section 6). |
 | `standing` | Your queue is empty | Do the highest-priority standing duty in your charter that has no open PR yet; if one has an open PR of yours, continue that PR instead. |
 | `digest` | Chief of staff only, once a day | Write the founder digest (section 7). |
 
 **Before you start, check for overlap.** Other people and sessions also work here: the founder's build thread merges straight into `develop` and claims files in `docs/agents/BOARD.md` (your brief lists its live claims; never edit a file under one). List open PRs (`gh pr list`, or `gh api repos/<repo>/pulls?state=open` where GraphQL is blocked) and look at the paths they change. If one already covers your assignment, do not duplicate it: comment on that PR with anything useful, say so in your journal, and stop or take your next item.
 
-Priority order the dispatcher uses: fix your open PRs first, then backlog tasks, then standing duties. An agent sits idle only when it is already running, has used its daily runs, or has reached its open-PR limit and is waiting on the founder's review. The board issue shows which.
+Priority order the dispatcher uses: fix your open PRs first, then backlog tasks, then standing duties. **Team limit:** when `max_open_agent_prs` agent PRs are open (roster), nobody starts a new task or standing duty; agents only review and fix until the founder merges or closes some. Unmerged documents go stale within days while `develop` moves. An agent sits idle only when it is already running, has used its daily runs, has reached its own or the team's open-PR limit, or nothing changed since its last standing run. The board issue shows which.
 
 **Task eligibility** (the dispatcher's reading of `docs/BACKLOG.md`): `Mode: agent`, the task's first non-founder `Owner` maps to your role (`backlog_owner_names` in the roster), every `Depends on` task is `done`, and the status is `ready`, or `blocked (...)` where every blocker named in the parentheses is a backlog id whose status is `done`. A task is taken when its id appears in an open PR branch or title, or another agent holds a live claim on it.
 
@@ -37,6 +37,7 @@ Priority order the dispatcher uses: fix your open PRs first, then backlog tasks,
 ## 4. Branches, commits and pull requests
 
 - Base branch: `develop`. Never push to `develop` or `main`. Never merge, approve, close or force-push anything.
+- **New ids** (BL-###, D-###, ADR numbers): run `node scripts/agents/next-id.mjs` and use what it prints. It counts `develop` and every open PR. Picking the next number by reading `develop` alone collided three times in the first two weeks.
 - Branch: backlog work keeps the backlog rule, `<type>/<area>-bl-###-<slug>`. Other work uses `agent/<handle>/<slug>`.
 - Commit messages end with a trailer line `Agent: <handle>`.
 - PR title: `BL-###: <title>` for backlog work, `[<handle>] <title>` otherwise. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` when a decision or account step only the founder can do blocks the PR, and `approve-migration` is never yours to add.
@@ -49,7 +50,9 @@ Priority order the dispatcher uses: fix your open PRs first, then backlog tasks,
 
 ## 5. The journal entry (one per run)
 
-Post it with `gh issue comment <journal number> --body-file <file>`. Use this shape, with no other headings:
+**Post a stub first, finish it last.** Usage limits stopped several runs before they could report. As soon as you know your assignment, post a stub (the marker line, then the **Mode:** line, then `**Did:** started`). At the end, replace it with the full entry: `gh api -X PATCH repos/<repo>/issues/comments/<id> -F body=@<file>`. Use capital `-F`; a lowercase `-f body=@<file>` posts the literal path. Read the comment back and check that its first line is the marker.
+
+The full entry has this shape, with no other headings:
 
 ```
 <!-- journal run:<run id> agent:<handle> -->
@@ -77,6 +80,9 @@ The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the l
 - Never edit requirement documents (`docs/prd/`, `docs/legal/ENGINEERING_REQUIREMENTS.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md`). Propose changes in the PR body. The product agent may edit `docs/BACKLOG.md`; others change only their own task's status line, as the backlog rules say.
 - Never put real family details, the founder's personal information, or anything from the founder's private life into code, docs, issues or memory. Tests use the fictional family "Asha".
 - Mark what you verified versus what you assumed. Never invent library APIs, prices, or legal facts.
+- **Check repository facts with the API, not with docs.** Several PRs repeated "the repo is private" when it is public (`gh api repos/<repo> --jq .private`). Read plan, price and decision facts from `develop` as it is now, not from a document written before the last merge.
+- **Before you trust green tests on a PR, try a scratch merge of `develop`** (`git merge --no-commit origin/develop`, then abort). `develop` adds guard tests, so a PR can pass at its own head and still fail after merge.
+- **If a GitHub write is refused** by a permission check or the session's safety check, do not retry and do not look for another route. Put the text in your PR body or journal, and say what was not posted.
 - If you cannot finish safely, stop, explain why in your journal entry, and open a draft PR or no PR at all.
 
 ## 9. Context and token discipline
