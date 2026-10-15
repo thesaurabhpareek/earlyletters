@@ -15,11 +15,12 @@ import * as Crypto from 'expo-crypto';
 import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { STORAGE_KEYS as ANALYTICS_KEYS } from '@scribe/analytics';
 import { ENGINE_VERSION } from '@scribe/core';
 import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
-import { currentUserId, listChildren, listEntriesForChild, listHiddenChildren, type Entry } from '../store';
-import { paperFor, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
+import { currentUserId, getSetting, listChildren, listEntriesForChild, listHiddenChildren, type Entry } from '../store';
+import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
 import { verifyExport, type RandomAccess } from './verify';
@@ -85,6 +86,14 @@ function fileState(uri: string | null | undefined): { exists: boolean; size: num
   }
 }
 
+/** D-026 settings key of the 18+ gate (lib/age-gate.ts; DATA_CLASSIFICATION 4.6). */
+const AGE_GATE_PASSED = 'ageGate.passed';
+
+/** The consent choices this phone holds. They never leave it; the export is the person's copy. */
+function consentOnThisPhone(): ExportSnapshot['consent'] {
+  return phoneConsent(getSetting(AGE_GATE_PASSED) === '1', getSetting(ANALYTICS_KEYS.consent));
+}
+
 /** Everything on this phone that goes into an export: every book (hidden ones too), every letter not deleted. */
 export function exportSnapshot(now = new Date()): ExportSnapshot {
   const me = currentUserId();
@@ -108,6 +117,7 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
     signedIn: me !== null,
     children,
     entries,
+    consent: consentOnThisPhone(),
   };
 }
 
