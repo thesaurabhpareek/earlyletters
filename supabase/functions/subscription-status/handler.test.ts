@@ -24,11 +24,14 @@ const report = {
   consent: { product_id: 'plus.annual', offer_type: 'introductory', terms_version: '1.4.0', shown_at: '2026-10-15T18:59:00.000Z' },
 };
 
-function world(o: { env?: Record<string, string>; rpcStatus?: number; rpcBody?: unknown } = {}) {
+function world(o: { env?: Record<string, string>; rpcStatus?: number; rpcBody?: unknown; user?: unknown; userStatus?: number } = {}) {
   const calls: { url: string; init: RequestInit }[] = [];
   const lines: string[] = [];
   const fetch = async (url: string, init: RequestInit = {}) => {
     calls.push({ url, init });
+    if (url === `${SUPA}/auth/v1/user`) {
+      return new Response(JSON.stringify(o.user ?? { id: CANARY.profileId, email: CANARY.parentEmail, is_anonymous: false }), { status: o.userStatus ?? 200 });
+    }
     if (url.endsWith('/rpc/status_report_store')) {
       return new Response(JSON.stringify(o.rpcBody ?? { stored: 'created', consent: 'recorded' }), { status: o.rpcStatus ?? 200 });
     }
@@ -51,7 +54,7 @@ Deno.test('[F14-REQ-032] a valid report is stored through the RPC with the calle
   const res = await w.handler(post(report, { 'Idempotency-Key': KEY, 'x-request-id': '0123456789ab' }));
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { ok: true, data: { stored: 'created', consent: 'recorded' }, requestId: '0123456789ab' });
-  const call = w.calls[0];
+  const call = w.calls.find((c) => c.url.includes('/rpc/'))!;
   assert.equal(call.url, `${SUPA}/rest/v1/rpc/status_report_store`);
   const h = new Headers(call.init.headers);
   assert.equal(h.get('Authorization'), `Bearer ${CANARY.sessionJwt}`);
@@ -93,6 +96,17 @@ Deno.test('[ADR-0016] the statusReport kill switch pauses reports and salts', as
   assert.equal(w.calls.length, 0);
 });
 
+Deno.test('[F14-REQ-032] anonymous sessions are refused by the function itself, before any RPC', async () => {
+  for (const user of [{ id: CANARY.profileId, is_anonymous: true }, { id: CANARY.profileId }]) {
+    const w = world({ user });
+    assert.equal((await w.handler(post(report))).status, 403, JSON.stringify(user));
+    assert.equal((await w.handler(new Request(`${BASE}/salt`, { headers: { Authorization: 'Bearer x' } }))).status, 403);
+    assert.ok(!w.calls.some((c) => c.url.includes('/rpc/')));
+  }
+  assert.equal((await world({ userStatus: 401 }).handler(post(report))).status, 401);
+  assert.equal((await world({ userStatus: 502 }).handler(post(report))).status, 503);
+});
+
 Deno.test('[F14-REQ-043] until the SQL exists (PostgREST 404) the answer is retryable, so the phone keeps the report', async () => {
   const w = world({ rpcStatus: 404, rpcBody: { code: 'PGRST202', message: 'function not found' } });
   const res = await w.handler(post(report));
@@ -104,7 +118,8 @@ Deno.test('SQL errors map to the envelope: SCRAT, SCANO, 22023 idempotency confl
   const cases: [number, unknown, number, unknown][] = [
     [400, { code: 'SCRAT' }, 429, { code: 'rate_limited', retryable: true }],
     [400, { code: 'SCANO' }, 403, { code: 'anonymous_refused', retryable: false }],
-    [400, { code: '22023', message: 'idempotency key reused' }, 422, { code: 'idempotency_conflict', retryable: false }],
+    [400, { code: '22023', details: 'idempotency', message: 'idempotency key reused' }, 422, { code: 'idempotency_conflict', retryable: false }],
+    [400, { code: '22023', message: 'bad date' }, 400, { code: 'bad_request', retryable: false }],
     [401, { code: 'PGRST301' }, 401, { code: 'unauthorized', retryable: false }],
     [500, { code: 'XX000' }, 503, { code: 'unavailable', retryable: true }],
   ];

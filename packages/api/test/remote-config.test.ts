@@ -122,7 +122,7 @@ describe('[WP-F19-16] kill switches for the M14 features', () => {
   });
 });
 
-describe('[F19-REQ-008] a stale config cannot clear or set a kill switch', () => {
+describe('[F19-REQ-008] a stale config cannot clear a kill switch', () => {
   const lastGood = { killSwitches: { ...DEFAULT_REMOTE_CONFIG.killSwitches, invites: true } };
   const next = { ...DEFAULT_REMOTE_CONFIG, version: 10, generatedAt: '2026-10-01T00:00:00.000Z', freeLettersAllowance: 5 };
 
@@ -134,11 +134,18 @@ describe('[F19-REQ-008] a stale config cannot clear or set a kill switch', () =>
     expect(killSwitchesStale('2026-10-01T00:00:00.000Z', 'not a date')).toBe(false);
   });
 
-  it('keeps the last good switches from a stale copy and applies every other key', () => {
+  it('keeps a set switch from being cleared by a stale copy and applies every other key', () => {
     const used = withFreshKillSwitches(next, lastGood, 'Fri, 16 Oct 2026 00:00:00 GMT');
     expect(used.killSwitches.invites).toBe(true);
     expect(used.freeLettersAllowance).toBe(5);
     const fresh = withFreshKillSwitches(next, lastGood, 'Fri, 02 Oct 2026 00:00:00 GMT');
     expect(fresh.killSwitches.invites).toBe(false);
+  });
+
+  it('a stale but newer copy may still set a switch (a new install never misses a switch left on)', () => {
+    const killed = { ...next, killSwitches: { ...next.killSwitches, statusReport: true } };
+    const used = withFreshKillSwitches(killed, DEFAULT_REMOTE_CONFIG, 'Fri, 16 Oct 2026 00:00:00 GMT');
+    expect(used.killSwitches.statusReport).toBe(true);
+    expect(used.killSwitches.invites).toBe(false);
   });
 });

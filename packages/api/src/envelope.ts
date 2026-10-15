@@ -189,6 +189,9 @@ export const SQLSTATE_RULES: Readonly<Record<string, ErrorRule>> = {
   SCCAP: rule('parents_full', 'tell_user'),
   // F16-REQ-019 (planned, WP-F16-16): this build's sync API version is no longer served; `sync.updateNeeded`.
   SCVER: rule('upgrade_required', 'tell_user'),
+  // Planned (request to S02): an SQL-side kill switch, so `invites` and `sync` also stop the PostgREST paths
+  // (accept_child_invite, create_child_invite, sync_push) that no Edge Function sits in front of.
+  SCKIL: rule('paused', 'retry'),
   SCANO: rule('anonymous_refused', 'reject'),
   '28000': rule('unauthorized', 'reauth'),
   SCRAT: rule('rate_limited', 'tell_user'),

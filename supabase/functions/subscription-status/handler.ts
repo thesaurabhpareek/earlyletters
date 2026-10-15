@@ -16,12 +16,14 @@
  *   GET /functions/v1/subscription-status/v1/salt
  *   200 {ok: true, data: {salt}, requestId}   (the per-account salt for sub_ref)
  *
- * Least privilege: no service key. The function forwards the caller's JWT,
- * the idempotency key and the request id to two RPCs that act only for
- * `auth.uid()` (security definer, `require_user()`, so anonymous sessions get
- * SCANO), requested from S06:
+ * Least privilege: no service key. The function checks the session against
+ * Supabase Auth (only a full account; anonymous refused here, not left to
+ * the SQL), then forwards the caller's JWT, the idempotency key and the
+ * request id to two RPCs that act only for `auth.uid()` (security definer,
+ * `require_user()`), requested from S06:
  *   status_report_store(p_report jsonb, p_fingerprint text) returns jsonb {stored, consent}
- *     one transaction: idempotency_claim, the 30-per-hour limit (SCRAT),
+ *     one transaction: idempotency_claim (a key reused with other arguments
+ *     raises 22023 with detail `idempotency`), the 30-per-hour limit (SCRAT),
  *     upsert by (profile, sub_ref) keeping the newest `reported_at`, and the
  *     consent record once per original purchase;
  *   status_salt() returns text  (32 random bytes, base64url, made once per account)
@@ -38,8 +40,8 @@ import {
 } from '../../../packages/api/src/server/subscription-status.ts';
 import { createLogger, type ErrorCode, type LogSink } from '../_shared/log/log.ts';
 import {
-  bearerOf, discard, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply, postgrestError, readBody,
-  serverKilled, timedFetch, type EnvGetter, type FetchFn,
+  bearerOf, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply, postgrestError, readBody,
+  serverKilled, sessionOf, timedRequest, upstreamJson, type EnvGetter, type FetchFn,
 } from '../_shared/http/http.ts';
 
 const REPORT_RE = /\/subscription-status\/v1\/report\/?$/;
@@ -110,24 +112,29 @@ export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (re
         body = '{}';
       }
 
+      const session = await sessionOf(fetchFn, supabaseUrl, anonKey, token, timeoutMs);
+      if (session.kind === 'unauthorized') return refuse('unauthorized', false);
+      if (session.kind === 'anonymous') return refuse('anonymous_refused', false);
+      if (session.kind === 'unavailable') {
+        log.error('status.failed', { provider: 'auth', status: session.status, task, duration_ms: Date.now() - started });
+        return failReply({ code: 'unavailable', retryable: true }, id, 503);
+      }
+
       const fn = task === 'report' ? 'status_report_store' : 'status_salt';
-      const res = await timedFetch(fetchFn, `${supabaseUrl}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body }, timeoutMs);
+      const res = await timedRequest(fetchFn, `${supabaseUrl}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body }, timeoutMs);
       if (!res) return unavailable(0, 'network');
       if (!res.ok) {
-        if (res.status === 401) {
-          await discard(res);
-          return refuse('unauthorized', false);
-        }
-        const { sqlstate } = await postgrestError(res);
+        if (res.status === 401) return refuse('unauthorized', false);
+        const { sqlstate, detail } = postgrestError(res);
         if (!sqlstate || res.status >= 500) return unavailable(res.status, 'postgrest_error');
-        if (sqlstate === '22023') return refuse('idempotency_conflict', false);
+        if (sqlstate === '22023') return detail === 'idempotency' ? refuse('idempotency_conflict', false) : refuse('bad_request', false);
         const rule = classifySqlstate(sqlstate);
         if (rule.code === 'internal') return unavailable(res.status, 'sqlstate');
         return refuse(rule.code, rule.code === 'rate_limited' ? true : rule.retryable, httpStatusFor(rule.code),
           rule.code === 'rate_limited' ? { 'retry-after': '3600' } : undefined);
       }
 
-      const value = await res.json().catch(() => null);
+      const value = upstreamJson(res) ?? null;
       if (task === 'salt') {
         if (typeof value !== 'string' || !SALT_RE.test(value)) return unavailable(200, 'bad_response');
         log.info('salt.served', { status: 200, outcome: 'ok', task, duration_ms: Date.now() - started });

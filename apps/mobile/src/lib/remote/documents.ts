@@ -230,10 +230,15 @@ export class SignedDocumentClient<T> {
     return changed ? 'updated' : 'unchanged';
   }
 
-  /** Keeps the newest valid server clock (ignores missing or unparsable dates). */
+  /**
+   * Keeps the newest valid server clock. The header is not signed, so a date
+   * more than a day ahead of this phone's clock is ignored: one forged
+   * far-future `Date` must not make every later config look stale.
+   */
   private noteServerDate(serverDate: string | null): void {
     const ms = serverDate ? Date.parse(serverDate) : NaN;
-    if (Number.isFinite(ms) && ms > this.serverDateMs) this.serverDateMs = ms;
+    if (!Number.isFinite(ms) || ms > this.now() + 86_400_000) return;
+    if (ms > this.serverDateMs) this.serverDateMs = ms;
   }
 
   /** The accepted payload's hash; for a cache from an older build, computed once from the cached payload. */

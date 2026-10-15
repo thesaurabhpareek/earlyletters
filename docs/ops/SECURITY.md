@@ -14,7 +14,7 @@ Rules that never bend:
 
 | Name | Used by | Value | Rotate |
 |---|---|---|---|
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | both functions | Injected by Supabase automatically; do not set | With the service key (section 2) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | every function (subscription-status uses no service key) | Injected by Supabase automatically; do not set | With the service key (section 2) |
 | `PURGE_WORKER_SECRET` | purge-worker | `openssl rand -hex 32`. Same value goes in Vault as `purge_worker_secret` (1.2) | Yearly, on suspicion (2.1) |
 | `RESEND_API_KEY` | purge-worker | Resend > API Keys > Create, permission **Sending access**, domain `earlyletters.com`. A separate key from the Supabase SMTP key, so either can be revoked alone | Yearly, when anyone with access leaves |
 | `RESEND_CONTACTS` | purge-worker | Leave unset (off). v1.0 keeps no Resend contacts, so the sending-only key is enough. Set `on` and switch to a full-access key only if marketing lists ever exist | n/a |
@@ -25,6 +25,11 @@ Rules that never bend:
 | `APPLE_SIGNIN_KEY_ID` | purge-worker | 10 characters, the Sign in with Apple key (section 5) | With the key |
 | `APPLE_SIGNIN_PRIVATE_KEY` | purge-worker | Full contents of `AuthKey_<KEYID>.p8`, including the BEGIN and END lines. Literal newlines or `\n` both work | With the key |
 | `APPLE_SERVICES_ID` | purge-worker | Only if web or Android Apple sign-in is used (AUTH_SETUP 2.3); otherwise unset | n/a |
+| `APPLE_EXTRA_CLIENT_IDS` | purge-worker | Optional comma list of our other bundle ids whose Apple tokens may be revoked (for example the `.preview` build). Values that are not bundle-id shaped are ignored; the `apple_config` alert still fires for a token whose client id is not listed | n/a |
+| `SUPABASE_ANON_KEY` | invite-redeem, subscription-status | Injected by Supabase automatically; do not set. The publishable key, used as `apikey` when checking a session | With the publishable key |
+| `INVITE_CODE_PEPPER` | invite-redeem (and the code-registration route once built) | `openssl rand -base64 48` (at least 32 characters). HMAC key for invite codes; the function fails closed without it (BL-334). Never in the database or the app | Never while codes are live (stored HMACs must stay comparable); on suspicion, rotate and let open codes expire (7 days) |
+| `RATE_SUBJECT_SECRET` | invite-redeem | `openssl rand -base64 48` (at least 32 characters). HMAC key for rate-limit subjects (person, install, IP), rotated daily by construction; the function fails closed without it | On suspicion (counters only last an hour) |
+| `KILL_SWITCHES` | invite-redeem, subscription-status (main project); escrow (scribe-escrow) | Optional comma list of remote-config kill-switch names, for example `invites,statusReport`. `scripts/packs/publish.ts config` prints the exact `supabase secrets set` line. Unset means none | When the switch state changes |
 | `TOKEN_KEK_V1` | purge-worker, and the future `apple-token` function | `openssl rand -base64 32` (32 random bytes). Wraps stored Apple refresh tokens (AES-256-GCM). Losing it only means stored tokens cannot be revoked; it protects nothing else | Yearly, by adding `TOKEN_KEK_V2` (2.3) |
 | `ALERT_EMAIL` | purge-worker | Optional; default `hello@earlyletters.com`. Suggested: `security@earlyletters.com` once it exists (DOMAINS.md 7) | n/a |
 | `MAIL_FROM` | purge-worker | Optional; default `Early Letters <hello@earlyletters.com>` (built from `packages/brand`) | n/a |

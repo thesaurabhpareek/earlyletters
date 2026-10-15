@@ -185,9 +185,9 @@ export const SERVER_ENFORCED_KILL_SWITCHES = ['invites', 'statusReport', 'escrow
 
 /**
  * The manual steps that make a signed kill-switch state hold on the server
- * as well, and the reminder that a copy older than 7 days stops changing
- * switches on phones that accept it (F19-REQ-008): while any switch is on,
- * publish config again at least weekly.
+ * as well, and the reminder that a copy more than 7 days old cannot clear a
+ * switch on a phone that sees it late (F19-REQ-008): after clearing one,
+ * publish config again weekly until active phones have refreshed.
  */
 export function killSwitchSteps(killSwitches: Record<string, boolean>): string[] {
   const on = Object.entries(killSwitches).filter(([, v]) => v).map(([k]) => k).sort();
@@ -198,9 +198,10 @@ export function killSwitchSteps(killSwitches: Record<string, boolean>): string[]
     'Escrow project (scribe-escrow):',
     on.includes('escrow') ? '  npx supabase secrets set KILL_SWITCHES=escrow --project-ref <scribe-escrow ref>' : '  npx supabase secrets unset KILL_SWITCHES --project-ref <scribe-escrow ref>',
   ];
-  if (on.length) {
-    steps.push(`Switches on: ${on.join(', ')}. A config older than 7 days no longer changes switches on phones that first see it (F19-REQ-008): run "publish.ts config" again at least weekly while any switch is on.`);
-  }
+  steps.push(on.length
+    ? `Switches on: ${on.join(', ')}.`
+    : 'No switch is on.');
+  steps.push('If this publish clears a switch: a config more than 7 days old cannot clear a switch on a phone that first sees it late (F19-REQ-008), so run "publish.ts config" again each week for 4 weeks.');
   return steps;
 }
 

@@ -49,6 +49,7 @@ function newestDefinition(fn: string): string {
 /** SQLSTATEs never raised by any file yet, with the reason they are already in the contract. */
 const PLANNED_SQLSTATES: Record<string, string> = {
   SCVER: 'F16-REQ-019, WP-F16-16 (S02): sync API version refused',
+  SCKIL: 'request to S02: SQL-side kill switch for the PostgREST paths (detail: the switch name)',
 };
 
 describe('[ADR-0017] error codes equal the migrations', () => {

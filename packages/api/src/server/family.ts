@@ -209,10 +209,12 @@ export const RedeemRequestSchema = v.strictObject({
   mode: v.picklist(REDEEM_MODES),
   /**
    * A random id the app keeps for this install (UUID, Keychain, this device
-   * only). Hashed with a daily salt before any count; never stored raw. It
-   * scopes the 10 failures per device per hour (B-NFR-004).
+   * only; any case, read as lowercase). Hashed with a rotating key before any
+   * count; never stored raw. It scopes the 10 failures per device per hour
+   * (B-NFR-004). A client can invent device ids, so the person and the IP
+   * are counted too (below).
    */
-  device: v.pipe(v.string(), v.regex(UUID_RE)),
+  device: v.pipe(v.string(), v.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i), v.toLowerCase()),
 });
 export type RedeemRequest = v.InferOutput<typeof RedeemRequestSchema>;
 
@@ -226,9 +228,58 @@ export const RedeemAcceptDataSchema = v.object({ mode: v.literal('accept'), chil
 export const RedeemDataSchema = v.variant('mode', [RedeemPeekDataSchema, RedeemAcceptDataSchema]);
 export type RedeemData = v.InferOutput<typeof RedeemDataSchema>;
 
-/** Failures per device (hashed) per rolling hour, and across the service per hour before the code path pauses (F11-REQ-007). */
+/**
+ * Failure limits per rolling hour (B-NFR-004, F11-REQ-007, TDD 04 3.11):
+ * per person and per device 10; per client IP 30 (carrier NAT puts many
+ * families behind one address, so the IP limit is a backstop, not the main
+ * guard); across the service 1,000, after which every code answers
+ * `codes_paused` and links keep working.
+ */
+export const REDEEM_FAILURES_PER_USER_HOUR = 10;
 export const REDEEM_FAILURES_PER_DEVICE_HOUR = 10;
+export const REDEEM_FAILURES_PER_IP_HOUR = 30;
 export const REDEEM_FAILURES_GLOBAL_HOUR = 1_000;
+
+/**
+ * The one SQL call `invite-redeem` makes (requested from S02; service role
+ * only). It must gate, look up and count in ONE transaction, with the
+ * counter rows locked in a fixed order (global, then each subject), so
+ * parallel guesses cannot all pass the gate before a failure is recorded,
+ * and so a failure is committed before the answer leaves (no "uncounted but
+ * revealed" path). It never raises for an outcome: errors come back as data,
+ * because an exception would roll the failure count back.
+ *
+ *   invite_redeem_by_code(p_user uuid, p_mode text, p_code_hash bytea,
+ *     p_user_subjects text[], p_device_subjects text[], p_ip_subjects text[]) returns jsonb
+ *
+ * Each subjects array holds the subject's hash under the current key and,
+ * in the first hour after a key rotation, under the previous key too: count
+ * failures over all of them, record new failures under the first.
+ * `p_ip_subjects` is empty when the platform gave no trusted client address.
+ * `peek` reads `joined` for `p_user`; `accept` runs `accept_child_invite_by_code`.
+ */
+export interface RedeemByCodeArgs {
+  p_user: string;
+  p_mode: RedeemMode;
+  p_code_hash: string;
+  p_user_subjects: string[];
+  p_device_subjects: string[];
+  p_ip_subjects: string[];
+}
+
+export const REDEEM_LIMIT_SCOPES = ['user', 'device', 'ip', 'global'] as const;
+
+export const RedeemRpcResultSchema = v.variant('outcome', [
+  v.object({ outcome: v.literal('peek'), inviter: v.nullable(v.string()), role: v.picklist(INVITE_ROLES), joined: v.optional(v.literal(true)) }),
+  v.object({ outcome: v.literal('accepted'), child_id: v.pipe(v.string(), v.regex(UUID_RE)), role: v.picklist(INVITE_ROLES) }),
+  /** Counted as a failure. `detail` is `already_member` or anything else, which the function reports as `not_found`. */
+  v.object({ outcome: v.literal('unusable'), detail: v.optional(v.nullable(v.string())) }),
+  /** Not looked up, not counted. */
+  v.object({ outcome: v.literal('limited'), scope: v.picklist(REDEEM_LIMIT_SCOPES) }),
+  /** Not counted as a guess (the code was right): SCCAP, SCCON with its detail, SCDEL, SCRAT. */
+  v.object({ outcome: v.literal('refused'), sqlstate: v.pipe(v.string(), v.regex(/^[0-9A-Z]{5}$/)), detail: v.optional(v.nullable(v.string())) }),
+]);
+export type RedeemRpcResult = v.InferOutput<typeof RedeemRpcResultSchema>;
 
 export function parseRedeemRequest(input: unknown): { ok: true; value: RedeemRequest } | { ok: false } {
   const r = v.safeParse(RedeemRequestSchema, input);
