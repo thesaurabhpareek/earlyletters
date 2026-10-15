@@ -547,3 +547,41 @@ Two kinds of entry. **Founder** entries record what the founder said in this ses
 ### D-088 In-app feedback (delegated; debate Q-016 in-app-feedback)
 - **Decision:** v1.0 submission keeps "Data Not Collected" and uses the Help email row, with a content-free block (version, build, screen) added to the email. The feedback form is built behind a build switch and ships only after counsel signs the text and the founder accepts the label change to Data Collected. Text and screenshots are read by people; agents triage on structure only (screen, category, version, severity, owner) and never contact the reporter. Screenshots are taken at the tap, attached only after a preview with Remove, allowed only on settings and error screens, and travel by email, never into GitHub. The person is identified by a resettable random install id plus an optional email; never IDFA, IDFV or the analytics id. Issues live in a private repo with a machine identity (founder task). Retention: text 90 days after closing, screenshots 30.
 - **Needs outside sign-off:** counsel; creation of the private repo and mailbox (founder).
+
+## Decisions of 15 Oct 2026 (delegated by founder)
+
+The founder delegated these calls to the coordinator on 15 Oct. Each is marked "delegated by founder" and can be reversed by the founder; say so and it is reopened. Ids start after D-092, the highest on PR #108. Counsel and Apple sign-off are not delegated and are stated where they apply. Implementation PRs are named in each entry.
+
+### D-093 The 13 Oct integration branch is never merged (delegated by founder)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder).
+- **Decision:** `auto/2026-10-13-integration` (the Line B fix wave merged onto the 4 Oct `develop`) is never merged. Line B's fixes reach `develop` one concern per PR, as mapped in `docs/agents/PORT_MAP_2026-10-13.md` (PR #117). The release runbook `docs/ops/RELEASE.md` lands through PR #111 (now targeting `develop`, adapted to the on-device v1.0), and the device test plan rows through their own PR. The branch is kept, not deleted, so parked code can be reused.
+
+### D-094 Plan reminders and the purchase confirmation ship in v1.0, as a courtesy (delegated by founder)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Needs counsel: COUNSEL_PACKET C-1 to C-3 and Q37.
+- **Decision:** v1.0 ships on-device plan reminders (local notifications in the Q-003 windows, purchaser's phones only, never through Family Sharing) and, after a new purchase, a confirmation of what was agreed with "Save a copy". They follow D-083: no price, "free trial", "free months" or "we will email you" in app copy; Apple's sheet shows the amount and Apple's receipt holds it. Reminders are a courtesy, not a guaranteed delivery: the app and the Subscription Terms say they can come late or not at all, and that Settings, Plan and Apple's receipts hold every date.
+- **Effects:** PR #121 (port of G-15). Subscription Terms (PR #81) describe reminders as a courtesy. Device test plan row S2-17.
+
+### D-095 No analytics SDK or consent sheet in v1.0 (delegated by founder)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Confirms D-088's "Data Not Collected" and changes the v1.0 part of the 3 Oct analytics decision (opt-in PostHog): it returns, with consent, in v1.1.
+- **Decision:** a build switch, `EXPO_PUBLIC_ANALYTICS`, off in every v1.0 profile. Off: no consent sheet, no usage switch in Settings, Privacy, no PostHog client even if a key is set, and analytics never starts. `packages/analytics` stays.
+- **Effects:** PR #118. The App Store privacy label stays "Data Not Collected".
+
+### D-096 The export carries the consent choices on this phone (delegated by founder)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder).
+- **Decision:** the export (schema 1.1.0) adds `consent_on_this_phone` to `account.json`: the 18+ answer and the usage-sharing choice. No server consent history in v1.0, because there is no server; a later version adds it as its own field.
+- **Effects:** PR #120 (phone part of G-19, LEGAL-REQ-034).
+
+### D-097 Pack and model host: packs.earlyletters.app on Cloudflare R2 (delegated by founder; DEBATES Q-001)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Takes Q-001 option (b).
+- **Decision:** one hostname, `packs.earlyletters.app`, serves both language packs and speech models from Cloudflare R2. DNS for `earlyletters.com` stays where it is, so email DNS does not move.
+- **Effects (follow-up, not yet done):** set `EXPO_PUBLIC_DOCS_BASE_URL` for the build profiles; `apps/mobile/src/lib/models/catalog.ts` still names `models.earlyletters.com` (`SELF_HOST_BASE`) and moves to the new host; ADR 0016 and `docs/ops/MODEL_HOSTING.md` (PR #35) name it; the founder creates the R2 bucket and the `.app` DNS record (account steps).
+
+### D-098 Minimum iOS 17 (delegated by founder; DEBATES Q-002)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder).
+- **Decision:** the lowest supported version is iOS 17, because Apple's subscription store view (the Plus sheet) needs it.
+- **Effects (follow-up, not yet done):** set the iOS deployment target to 17.0 in the app config; the store listing and Help say iOS 17 or later; the "needs iOS 17" fallbacks in billing copy stay for safety.
+
+### D-099 Keep the two-parent cap, effective with v1.1 sharing (delegated by founder; confirms D-069)
+- **Status:** Decided, 15 Oct 2026 (delegated by founder). Turns D-069 from "Recommended" into decided.
+- **Decision:** at most two parents per book, enforced by the server, and either parent can see and remove family members. It takes effect with co-parent sharing in v1.1. v1.0 has no sharing, so nothing changes in v1.0.
+- **Effects:** the server check and SCCAP (`parents_full`) are parked for v1.1 with G-02 and G-17 (`docs/backlog/future/06-coparent-sharing-v1-1.md` section 5, PR #117).
