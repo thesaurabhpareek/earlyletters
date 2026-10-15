@@ -1,0 +1,147 @@
+/**
+ * subscription-status: the D-080 status report and D-081 consent record
+ * (F14 6.6; WP-F14-15c endpoint shell; contract
+ * packages/api/src/server/subscription-status.ts).
+ *
+ * Ownership: S07 wrote this shell, the validation and the tests against the
+ * contract; S06 owns the folder from here (08 section 3.3) and the SQL it
+ * calls (WP-F14-15b, S06's migration range).
+ *
+ *   POST /functions/v1/subscription-status/v1/report
+ *     Authorization: Bearer <user access token>
+ *     Idempotency-Key: <uuid>   (required)
+ *     <StatusReport JSON, strict: any other key is refused>
+ *   200 {ok: true, data: {stored, consent}, requestId}
+ *
+ *   GET /functions/v1/subscription-status/v1/salt
+ *   200 {ok: true, data: {salt}, requestId}   (the per-account salt for sub_ref)
+ *
+ * Least privilege: no service key. The function forwards the caller's JWT,
+ * the idempotency key and the request id to two RPCs that act only for
+ * `auth.uid()` (security definer, `require_user()`, so anonymous sessions get
+ * SCANO), requested from S06:
+ *   status_report_store(p_report jsonb, p_fingerprint text) returns jsonb {stored, consent}
+ *     one transaction: idempotency_claim, the 30-per-hour limit (SCRAT),
+ *     upsert by (profile, sub_ref) keeping the newest `reported_at`, and the
+ *     consent record once per original purchase;
+ *   status_salt() returns text  (32 random bytes, base64url, made once per account)
+ * Until they exist PostgREST answers 404 and this function answers
+ * `unavailable` (retryable): the phone keeps the report queued. Nothing is
+ * lost and nothing is emailed.
+ *
+ * Never logged and never stored by this function: the body, `sub_ref`, the
+ * salt, any id. The server never answers whether someone is a member (D-080).
+ */
+import { classifySqlstate, HEADER_IDEMPOTENCY_KEY, HEADER_REQUEST_ID, httpStatusFor, type ApiErrorCode } from '../../../packages/api/src/envelope.ts';
+import {
+  parseStatusReport, SALT_RE, STATUS_REPORT_MAX_BYTES, STORED_OUTCOMES, CONSENT_OUTCOMES, statusFingerprint, type StatusReportResult,
+} from '../../../packages/api/src/server/subscription-status.ts';
+import { createLogger, type ErrorCode, type LogSink } from '../_shared/log/log.ts';
+import {
+  bearerOf, discard, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply, postgrestError, readBody,
+  serverKilled, timedFetch, type EnvGetter, type FetchFn,
+} from '../_shared/http/http.ts';
+
+const REPORT_RE = /\/subscription-status\/v1\/report\/?$/;
+const SALT_ROUTE_RE = /\/subscription-status\/v1\/salt\/?$/;
+
+const LOG_CODE: Partial<Record<ApiErrorCode, ErrorCode>> = {
+  bad_request: 'invalid_input', unauthorized: 'unauthorized', anonymous_refused: 'anonymous', not_found: 'not_found',
+  payload_too_large: 'payload_too_large', rate_limited: 'rate_limited', idempotency_conflict: 'idempotency', forbidden: 'forbidden',
+};
+
+export interface StatusOptions {
+  fetch?: FetchFn;
+  logSink?: LogSink;
+  timeoutMs?: number;
+}
+
+export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (req: Request) => Promise<Response> {
+  const fetchFn: FetchFn = opts.fetch ?? ((i, init) => fetch(i, init));
+  const timeoutMs = opts.timeoutMs ?? 8_000;
+
+  return async (req: Request) => {
+    const started = Date.now();
+    const log = createLogger({ fn: 'subscription-status', version: '1', sink: opts.logSink, reqId: incomingRequestId(req) });
+    const id = log.reqId;
+    let task: 'report' | 'salt' | undefined;
+    const refuse = (code: ApiErrorCode, retryable: boolean, status = httpStatusFor(code), headers?: Record<string, string>) => {
+      log.warn('status.refused', { status, code: LOG_CODE[code] ?? 'error', task, duration_ms: Date.now() - started });
+      return failReply({ code, retryable }, id, status, headers);
+    };
+    const unavailable = (status: number, code?: ErrorCode) => {
+      log.error('status.failed', { provider: 'postgrest', status, code, task, duration_ms: Date.now() - started });
+      return failReply({ code: 'unavailable', retryable: true }, id, 503);
+    };
+
+    try {
+      const path = new URL(req.url).pathname;
+      task = REPORT_RE.test(path) ? 'report' : SALT_ROUTE_RE.test(path) ? 'salt' : undefined;
+      if (!task) return refuse('not_found', false);
+      if ((task === 'report' && req.method !== 'POST') || (task === 'salt' && req.method !== 'GET')) return refuse('bad_request', false, 405);
+      if (serverKilled(env, 'statusReport')) {
+        log.warn('status.refused', { status: 503, code: 'killed', task });
+        return pausedReply('statusReport', id);
+      }
+      const supabaseUrl = (env('SUPABASE_URL') ?? '').replace(/\/+$/, '');
+      const anonKey = env('SUPABASE_ANON_KEY') ?? '';
+      if (!supabaseUrl || !anonKey) {
+        log.error('status.failed', { code: 'config', task });
+        return failReply({ code: 'unavailable', retryable: true }, id, 503);
+      }
+      const token = bearerOf(req);
+      if (!token) return refuse('unauthorized', false);
+      const headers: Record<string, string> = {
+        apikey: anonKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', [HEADER_REQUEST_ID]: id,
+      };
+
+      let body: string;
+      if (task === 'report') {
+        const idem = idempotencyKeyOf(req, true);
+        if (!idem.ok) return refuse('bad_request', false);
+        headers[HEADER_IDEMPOTENCY_KEY] = idem.key!;
+        const raw = await readBody(req, STATUS_REPORT_MAX_BYTES);
+        if (!raw.ok) return refuse('payload_too_large', false);
+        const json = parseJson(raw.text);
+        const parsed = json.ok ? parseStatusReport(json.value) : { ok: false as const };
+        if (!parsed.ok) return refuse('bad_request', false);
+        body = JSON.stringify({ p_report: parsed.value, p_fingerprint: statusFingerprint(parsed.value) });
+      } else {
+        body = '{}';
+      }
+
+      const fn = task === 'report' ? 'status_report_store' : 'status_salt';
+      const res = await timedFetch(fetchFn, `${supabaseUrl}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body }, timeoutMs);
+      if (!res) return unavailable(0, 'network');
+      if (!res.ok) {
+        if (res.status === 401) {
+          await discard(res);
+          return refuse('unauthorized', false);
+        }
+        const { sqlstate } = await postgrestError(res);
+        if (!sqlstate || res.status >= 500) return unavailable(res.status, 'postgrest_error');
+        if (sqlstate === '22023') return refuse('idempotency_conflict', false);
+        const rule = classifySqlstate(sqlstate);
+        if (rule.code === 'internal') return unavailable(res.status, 'sqlstate');
+        return refuse(rule.code, rule.code === 'rate_limited' ? true : rule.retryable, httpStatusFor(rule.code),
+          rule.code === 'rate_limited' ? { 'retry-after': '3600' } : undefined);
+      }
+
+      const value = await res.json().catch(() => null);
+      if (task === 'salt') {
+        if (typeof value !== 'string' || !SALT_RE.test(value)) return unavailable(200, 'bad_response');
+        log.info('salt.served', { status: 200, outcome: 'ok', task, duration_ms: Date.now() - started });
+        return okReply({ salt: value }, id);
+      }
+      const r = value as Partial<StatusReportResult> | null;
+      if (!r || !(STORED_OUTCOMES as readonly string[]).includes(r.stored ?? '') || !(CONSENT_OUTCOMES as readonly string[]).includes(r.consent ?? '')) {
+        return unavailable(200, 'bad_response');
+      }
+      log.info('status.stored', { status: 200, outcome: 'ok', task, duration_ms: Date.now() - started });
+      return okReply({ stored: r.stored, consent: r.consent } as StatusReportResult, id);
+    } catch (e) {
+      log.exception('status.failed', e, { status: 500, task });
+      return failReply({ code: 'internal', retryable: true }, id, 500);
+    }
+  };
+}

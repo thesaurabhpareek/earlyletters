@@ -176,6 +176,34 @@ export interface StorySource {
   visual: string;
 }
 
+/**
+ * Kill switches that Edge Functions also enforce on the server, through the
+ * project's `KILL_SWITCHES` function secret (same names as remote config).
+ * `escrow` lives in the separate `scribe-escrow` project (F08 6.5 G2).
+ */
+export const SERVER_ENFORCED_KILL_SWITCHES = ['invites', 'statusReport', 'escrow'] as const;
+
+/**
+ * The manual steps that make a signed kill-switch state hold on the server
+ * as well, and the reminder that a copy older than 7 days stops changing
+ * switches on phones that accept it (F19-REQ-008): while any switch is on,
+ * publish config again at least weekly.
+ */
+export function killSwitchSteps(killSwitches: Record<string, boolean>): string[] {
+  const on = Object.entries(killSwitches).filter(([, v]) => v).map(([k]) => k).sort();
+  const main = on.filter((k) => k === 'invites' || k === 'statusReport');
+  const steps = [
+    'Server-side switches (main project; secrets apply to the next invocation):',
+    main.length ? `  npx supabase secrets set KILL_SWITCHES=${main.join(',')}` : '  npx supabase secrets unset KILL_SWITCHES',
+    'Escrow project (scribe-escrow):',
+    on.includes('escrow') ? '  npx supabase secrets set KILL_SWITCHES=escrow --project-ref <scribe-escrow ref>' : '  npx supabase secrets unset KILL_SWITCHES --project-ref <scribe-escrow ref>',
+  ];
+  if (on.length) {
+    steps.push(`Switches on: ${on.join(', ')}. A config older than 7 days no longer changes switches on phones that first see it (F19-REQ-008): run "publish.ts config" again at least weekly while any switch is on.`);
+  }
+  return steps;
+}
+
 export function buildContentBundle(
   input: { prompts: readonly Prompt[]; stories: readonly StorySource[]; extraBlocks?: readonly unknown[] },
   version: number,

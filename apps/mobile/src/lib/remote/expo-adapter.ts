@@ -59,7 +59,7 @@ export const fetchDocHttp: DocHttp = {
           // body discarded
         }
       }
-      return { status: res.status, etag, body };
+      return { status: res.status, etag, body, date: res.headers.get('date') };
     } finally {
       clearTimeout(timer);
     }

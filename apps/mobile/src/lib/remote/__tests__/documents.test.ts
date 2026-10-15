@@ -14,6 +14,7 @@ import {
   type PackManifest,
   type RemoteConfig,
   type TrustedKey,
+  withFreshKillSwitches,
 } from '@scribe/api';
 import { SignedDocumentClient, type DocHttp, type DocHttpResponse } from '../documents';
 
@@ -48,7 +49,7 @@ class FakeHttp implements DocHttp {
   }
 }
 
-function setup(store = new Map<string, string>(), clock = { t: 1_000_000 }) {
+function setup(store = new Map<string, string>(), clock = { t: 1_000_000 }, withStaleness = false) {
   const http = new FakeHttp();
   const client = new SignedDocumentClient<RemoteConfig>({
     kind: 'remote-config',
@@ -66,6 +67,7 @@ function setup(store = new Map<string, string>(), clock = { t: 1_000_000 }) {
     minIntervalMs: 300_000,
     timeoutMs: 5000,
     now: () => clock.t,
+    adjust: withStaleness ? (next, previous, { serverDate }) => withFreshKillSwitches(next, previous, serverDate) : undefined,
   });
   return { client, http, store, clock };
 }
@@ -259,5 +261,42 @@ describe('SignedDocumentClient', () => {
     });
     expect(await client.refresh()).toBe('not_configured');
     expect(http.calls).toEqual([]);
+  });
+});
+
+describe('[F19-REQ-008] kill switches from a stale copy are ignored', () => {
+  const killed = (version: number, generatedAt: string, invites: boolean) =>
+    signed(config(version, { generatedAt, killSwitches: { invites } }));
+
+  it('a newer copy generated more than 7 days before the server Date cannot clear a set switch', async () => {
+    const { client, http } = setup(new Map(), { t: 1_000_000 }, true);
+    http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-10T00:00:00.000Z', true), date: 'Sat, 10 Oct 2026 00:05:00 GMT' });
+    expect(await client.refresh(true)).toBe('updated');
+    expect(client.current().killSwitches.invites).toBe(true);
+    // A cache replays version 4, signed long ago, with the switch cleared: the version applies, the switch does not.
+    http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-01T00:00:00.000Z', false), date: 'Fri, 16 Oct 2026 00:00:00 GMT' });
+    expect(await client.refresh(true)).toBe('updated');
+    expect(client.current().version).toBe(4);
+    expect(client.current().killSwitches.invites).toBe(true);
+  });
+
+  it('the same rule survives a cold start (the used value is cached beside the signed payload)', async () => {
+    const store = new Map<string, string>();
+    const first = setup(store, { t: 1_000_000 }, true);
+    first.http.queue.push({ status: 200, etag: '"v5"', body: killed(5, '2026-09-01T00:00:00.000Z', true), date: 'Fri, 16 Oct 2026 00:00:00 GMT' });
+    expect(await first.client.refresh(true)).toBe('updated');
+    expect(first.client.current().killSwitches.invites).toBe(false);
+    const again = setup(store, { t: 2_000_000 }, true);
+    expect(again.client.current().version).toBe(5);
+    expect(again.client.current().killSwitches.invites).toBe(false);
+  });
+
+  it('a fresh newer copy can clear the switch', async () => {
+    const { client, http } = setup(new Map(), { t: 1_000_000 }, true);
+    http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-10T00:00:00.000Z', true), date: 'Sat, 10 Oct 2026 00:05:00 GMT' });
+    await client.refresh(true);
+    http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-15T00:00:00.000Z', false), date: 'Thu, 15 Oct 2026 00:01:00 GMT' });
+    expect(await client.refresh(true)).toBe('updated');
+    expect(client.current().killSwitches.invites).toBe(false);
   });
 });

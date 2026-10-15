@@ -48,6 +48,8 @@ export interface DocHttpResponse {
   etag: string | null;
   /** Response text for 200; null otherwise. */
   body: string | null;
+  /** The response's `Date` header (server clock), used by the kill-switch staleness rule (F19-REQ-008). */
+  date?: string | null;
 }
 
 export interface DocHttp {
@@ -85,6 +87,14 @@ export interface DocumentClientOptions<T> {
   minIntervalMs: number;
   timeoutMs: number;
   now?: () => number;
+  /**
+   * Turns a newly accepted value into the value the app uses, given the one
+   * in use before and the server's `Date`. Remote config uses it for the
+   * kill-switch staleness rule (F19-REQ-008, `withFreshKillSwitches`). The
+   * signed payload is kept unchanged for hashing; the used value is cached
+   * beside it so a cold start uses the same thing.
+   */
+  adjust?: (next: T, previous: T, ctx: { serverDate: string | null }) => T;
 }
 
 interface CacheRecord {
@@ -95,6 +105,8 @@ interface CacheRecord {
   /** SHA-256 of the payload's canonical JSON. Absent in caches written before G-18; then computed when first needed. */
   sha256?: string;
   payload: unknown;
+  /** The value in use when `adjust` changed it (F19-REQ-008); absent otherwise. */
+  effective?: unknown;
 }
 
 export class SignedDocumentClient<T> {
@@ -109,6 +121,8 @@ export class SignedDocumentClient<T> {
   private lastOutcome: RefreshOutcome | null = null;
   private readonly listeners = new Set<(value: T) => void>();
   private readonly now: () => number;
+  /** The adjusted value as cached, when `adjust` changed it. */
+  private effective: unknown = undefined;
 
   constructor(private readonly o: DocumentClientOptions<T>) {
     this.now = o.now ?? (() => Date.now());
@@ -129,7 +143,9 @@ export class SignedDocumentClient<T> {
       if (rec?.v !== 1) throw new Error('cache_version');
       const parsed = this.o.parse(rec.payload);
       if (!parsed.ok) throw new Error('cache_invalid');
-      this.value = parsed.value;
+      const effective = rec.effective === undefined ? null : this.o.parse(rec.effective);
+      this.effective = effective?.ok ? rec.effective : undefined;
+      this.value = effective?.ok ? effective.value : parsed.value;
       this.version = this.o.versionOf(parsed.value);
       // Not hashed here: cold start stays inside its budget; the hash is computed only when a same-version copy arrives.
       this.payloadSha256 = typeof rec.sha256 === 'string' && SHA256_HEX_RE.test(rec.sha256) ? rec.sha256 : null;
@@ -174,7 +190,7 @@ export class SignedDocumentClient<T> {
   }
 
   /** Accepts a document from any source (a fetch, a test, a bundled seed). Exposed for tests and scripts. */
-  accept(raw: unknown, etag: string | null): RefreshOutcome {
+  accept(raw: unknown, etag: string | null, serverDate: string | null = null): RefreshOutcome {
     this.load();
     const verified = verifySignedDocument(raw, this.o.kind, this.o.trustedKeys());
     if (!verified.ok) return verified.reason;
@@ -188,7 +204,11 @@ export class SignedDocumentClient<T> {
     );
     if (decision === 'rollback' || decision === 'same_version_conflict') return decision;
     const changed = decision === 'accept';
-    this.value = parsed.value;
+    if (changed) {
+      const used = this.o.adjust ? this.o.adjust(parsed.value, this.value ?? this.o.fallback, { serverDate }) : parsed.value;
+      this.effective = used === parsed.value ? undefined : used;
+      this.value = used;
+    }
     this.version = version;
     this.payloadSha256 = sha256;
     this.etag = etag;
@@ -214,7 +234,10 @@ export class SignedDocumentClient<T> {
   }
 
   private persist(payload: unknown): void {
-    const rec: CacheRecord = { v: 1, version: this.version, etag: this.etag, fetchedAt: this.fetchedAt, sha256: this.payloadSha256 ?? undefined, payload };
+    const rec: CacheRecord = {
+      v: 1, version: this.version, etag: this.etag, fetchedAt: this.fetchedAt, sha256: this.payloadSha256 ?? undefined, payload,
+      effective: this.effective,
+    };
     try {
       this.o.storage.write(this.cacheName, JSON.stringify(rec));
     } catch {
@@ -251,7 +274,7 @@ export class SignedDocumentClient<T> {
     } catch {
       return 'malformed';
     }
-    return this.accept(raw, res.etag);
+    return this.accept(raw, res.etag, res.date ?? null);
   }
 
   /** The cached payload as stored (re-read so a 304 refresh keeps the exact bytes we verified). */

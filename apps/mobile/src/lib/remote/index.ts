@@ -26,6 +26,7 @@ import {
   parseRemoteConfig,
   SEMVER_RE,
   TRUSTED_SIGNING_KEYS,
+  withFreshKillSwitches,
   type ContentBundle,
   type PackManifest,
   type RemoteConfig,
@@ -77,6 +78,8 @@ export const remoteConfigDoc = new SignedDocumentClient<RemoteConfig>({
   appVersion: APP_VERSION,
   minIntervalMs: CLIENT_REFRESH_MS.remoteConfig,
   timeoutMs,
+  // F19-REQ-008: a copy more than 7 days older than the server's clock cannot change a kill switch.
+  adjust: (next, previous, { serverDate }) => withFreshKillSwitches(next, previous, serverDate),
 });
 
 export const packManifestDoc = new SignedDocumentClient<PackManifest>({
