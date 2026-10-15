@@ -64,13 +64,21 @@ Deno.test('[B-NFR-004] subject hashes rotate daily, overlap in the first hour, a
   assert.equal((await codeHmac('p'.repeat(40), '7K3M9QXZ')).length, 64);
 });
 
-Deno.test('client IP: only the platform headers, never X-Forwarded-For; IPv6 by /64', () => {
-  const ip = (h: Record<string, string>) => clientIp(new Request('https://x/', { headers: h }));
+Deno.test('client IP: exactly one configured header, never X-Forwarded-For; normalised; IPv6 by /64', () => {
+  const ip = (h: Record<string, string>, name: string | undefined = 'cf-connecting-ip') => clientIp(new Request('https://x/', { headers: h }), name);
   assert.equal(ip({ 'x-forwarded-for': '203.0.113.7' }), '');
-  assert.equal(ip({ 'cf-connecting-ip': '203.0.113.7', 'x-forwarded-for': '198.51.100.1' }), '203.0.113.7');
-  assert.equal(ip({ 'x-real-ip': '203.0.113.8' }), '203.0.113.8');
+  assert.equal(ip({ 'x-forwarded-for': '203.0.113.7' }, 'x-forwarded-for'), '', 'x-forwarded-for can never be configured');
+  assert.equal(ip({ 'cf-connecting-ip': '203.0.113.7', 'x-real-ip': '198.51.100.1' }), '203.0.113.7');
+  assert.equal(ip({ 'cf-connecting-ip': '9.9.9.9', 'x-real-ip': '203.0.113.8' }, 'x-real-ip'), '203.0.113.8', 'a forged other header is ignored');
+  assert.equal(ip({ 'cf-connecting-ip': '203.0.113.7' }, ''), '', 'no header configured');
   assert.equal(ip({ 'cf-connecting-ip': '2001:db8:0:12::1' }), '2001:db8:0:12::/64');
   assert.equal(ip({ 'cf-connecting-ip': '2001:0db8:0000:0012:ffff:1:2:3' }), '2001:db8:0:12::/64');
+  assert.equal(ip({ 'cf-connecting-ip': '::ffff:203.0.113.7' }), '203.0.113.7');
+  assert.equal(ip({ 'cf-connecting-ip': '203.0.113.7:443' }), '203.0.113.7');
+  assert.equal(ip({ 'cf-connecting-ip': '[2001:db8::1]:443' }), '2001:db8:0:0::/64');
+  assert.equal(ip({ 'cf-connecting-ip': 'fe80::1%en0' }), 'fe80:0:0:0::/64');
+  assert.equal(ip({ 'cf-connecting-ip': '203.0.113.7, 10.0.0.1' }), '203.0.113.7');
+  assert.equal(ip({ 'cf-connecting-ip': '999.1.1.1' }), '');
   assert.equal(ip({ 'cf-connecting-ip': 'not an ip' }), '');
 });
 

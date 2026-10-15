@@ -242,12 +242,17 @@ export const REDEEM_FAILURES_GLOBAL_HOUR = 1_000;
 
 /**
  * The one SQL call `invite-redeem` makes (requested from S02; service role
- * only). It must gate, look up and count in ONE transaction, with the
- * counter rows locked in a fixed order (global, then each subject), so
- * parallel guesses cannot all pass the gate before a failure is recorded,
- * and so a failure is committed before the answer leaves (no "uncounted but
- * revealed" path). It never raises for an outcome: errors come back as data,
- * because an exception would roll the failure count back.
+ * only). It must gate, look up and count in ONE transaction, so parallel
+ * guesses cannot all pass the gate before a failure is recorded, and a
+ * failure is committed before the answer leaves (no "uncounted but
+ * revealed" path). Locking: lock the caller's own subject rows FOR UPDATE
+ * (contention stays with that caller); never hold the single global row for
+ * the transaction: read it plainly for the gate and bump it at the end with
+ * one conditional `update ... set n = n + 1` (a limited caller never touches
+ * it), so an attacker who is already limited cannot queue every redemption
+ * and every other PostgREST call behind one row. It never raises for an
+ * outcome: errors come back as data, because an exception would roll the
+ * failure count back.
  *
  *   invite_redeem_by_code(p_user uuid, p_mode text, p_code_hash bytea,
  *     p_user_subjects text[], p_device_subjects text[], p_ip_subjects text[]) returns jsonb
@@ -276,7 +281,7 @@ export const RedeemRpcResultSchema = v.variant('outcome', [
   v.object({ outcome: v.literal('unusable'), detail: v.optional(v.nullable(v.string())) }),
   /** Not looked up, not counted. */
   v.object({ outcome: v.literal('limited'), scope: v.picklist(REDEEM_LIMIT_SCOPES) }),
-  /** Not counted as a guess (the code was right): SCCAP, SCCON with its detail, SCDEL, SCRAT. */
+  /** Not counted as a guess (the code was right): only SCCAP, SCCON with its detail, SCDEL, SCRAT. Anything else is a bad answer. */
   v.object({ outcome: v.literal('refused'), sqlstate: v.pipe(v.string(), v.regex(/^[0-9A-Z]{5}$/)), detail: v.optional(v.nullable(v.string())) }),
 ]);
 export type RedeemRpcResult = v.InferOutput<typeof RedeemRpcResultSchema>;

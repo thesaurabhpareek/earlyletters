@@ -40,7 +40,7 @@ export const EVENTS = [
   'retention.done', 'retention.failed',
   'forget.accepted', 'forget.refused', 'forget.failed',
   'script.start', 'script.done', 'script.failed',
-  'redeem.peeked', 'redeem.accepted', 'redeem.refused', 'redeem.failed', 'redeem.brake',
+  'redeem.peeked', 'redeem.accepted', 'redeem.refused', 'redeem.failed', 'redeem.brake', 'redeem.degraded',
   'status.stored', 'status.refused', 'status.failed', 'salt.served',
 ] as const;
 export type EventName = (typeof EVENTS)[number];

@@ -177,20 +177,21 @@ export const ENDPOINTS = {
     idempotency: 'natural_id', rateLimit: { limit: 120, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'planned',
     capability: 'coParent',
   },
+  // Failures, not attempts: 10 per person and per device, 30 per IP, 1,000 global, in one RPC (family.ts RedeemByCodeArgs).
   inviteRedeem: {
     method: 'POST', path: `/functions/v1/invite-redeem/${API_MAJOR}`, class: 'edge_light', auth: 'user_jwt',
-    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'device_hash', enforcedBy: 'edge_function' }, status: 'this_change',
+    idempotency: 'natural_id', rateLimit: { limit: 10, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'this_change',
     killSwitch: 'invites', capability: 'coParent',
   },
   // ── Plus status report (packages/api/src/server/subscription-status.ts; D-080) ──
   statusReport: {
     method: 'POST', path: `/functions/v1/subscription-status/${API_MAJOR}/report`, class: 'edge_light', auth: 'user_jwt',
-    idempotency: 'idempotency_key', rateLimit: { limit: 30, windowSeconds: 3600, per: 'user', enforcedBy: 'edge_function' }, status: 'this_change',
+    idempotency: 'idempotency_key', rateLimit: { limit: 30, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'this_change',
     killSwitch: 'statusReport', capability: 'statusReport',
   },
   statusSalt: {
     method: 'GET', path: `/functions/v1/subscription-status/${API_MAJOR}/salt`, class: 'edge_light', auth: 'user_jwt',
-    idempotency: 'safe_method', rateLimit: { limit: 30, windowSeconds: 3600, per: 'user', enforcedBy: 'edge_function' }, status: 'this_change',
+    idempotency: 'safe_method', rateLimit: { limit: 30, windowSeconds: 3600, per: 'user', enforcedBy: 'rpc' }, status: 'this_change',
     killSwitch: 'statusReport', capability: 'statusReport',
   },
   // ── Recovery key (packages/api/src/server/recovery-key.ts; S05). The escrow routes are on the scribe-escrow project. ──

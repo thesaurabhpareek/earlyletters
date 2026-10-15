@@ -21,12 +21,17 @@
  * the SQL), then forwards the caller's JWT, the idempotency key and the
  * request id to two RPCs that act only for `auth.uid()` (security definer,
  * `require_user()`), requested from S06:
- *   status_report_store(p_report jsonb, p_fingerprint text) returns jsonb {stored, consent}
+ *   status_report_store(p_report jsonb) returns jsonb {stored, consent}
  *     one transaction: idempotency_claim (a key reused with other arguments
  *     raises 22023 with detail `idempotency`), the 30-per-hour limit (SCRAT),
  *     upsert by (profile, sub_ref) keeping the newest `reported_at`, and the
- *     consent record once per original purchase;
- *   status_salt() returns text  (32 random bytes, base64url, made once per account)
+ *     consent record once per original purchase. Because any signed-in
+ *     client can call it directly, the SQL repeats this function's checks
+ *     and trusts none of them: the same allowlisted keys and types as
+ *     StatusReportSchema, at most 2 KiB, and it computes the fingerprint
+ *     (`statusFingerprint` is the reference) itself;
+ *   status_salt() returns text  (32 random bytes, base64url, made once per
+ *     account; 30 per person per hour, SCRAT)
  * Until they exist PostgREST answers 404 and this function answers
  * `unavailable` (retryable): the phone keeps the report queued. Nothing is
  * lost and nothing is emailed.
@@ -36,7 +41,7 @@
  */
 import { classifySqlstate, HEADER_IDEMPOTENCY_KEY, HEADER_REQUEST_ID, httpStatusFor, type ApiErrorCode } from '../../../packages/api/src/envelope.ts';
 import {
-  parseStatusReport, SALT_RE, STATUS_REPORT_MAX_BYTES, STORED_OUTCOMES, CONSENT_OUTCOMES, statusFingerprint, type StatusReportResult,
+  parseStatusReport, SALT_RE, STATUS_REPORT_MAX_BYTES, STORED_OUTCOMES, CONSENT_OUTCOMES, type StatusReportResult,
 } from '../../../packages/api/src/server/subscription-status.ts';
 import { createLogger, type ErrorCode, type LogSink } from '../_shared/log/log.ts';
 import {
@@ -107,7 +112,7 @@ export function makeStatusHandler(env: EnvGetter, opts: StatusOptions = {}): (re
         const json = parseJson(raw.text);
         const parsed = json.ok ? parseStatusReport(json.value) : { ok: false as const };
         if (!parsed.ok) return refuse('bad_request', false);
-        body = JSON.stringify({ p_report: parsed.value, p_fingerprint: statusFingerprint(parsed.value) });
+        body = JSON.stringify({ p_report: parsed.value });
       } else {
         body = '{}';
       }

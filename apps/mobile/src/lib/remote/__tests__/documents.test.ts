@@ -68,6 +68,8 @@ function setup(store = new Map<string, string>(), clock = { t: 1_000_000 }, with
     timeoutMs: 5000,
     now: () => clock.t,
     adjust: withStaleness ? (next, previous, { serverDate }) => withFreshKillSwitches(next, previous, serverDate) : undefined,
+    adjustMaxMs: withStaleness ? 14 * 86_400_000 : undefined,
+    signedTimeOf: (c) => Date.parse(c.generatedAt),
   });
   return { client, http, store, clock };
 }
@@ -332,6 +334,33 @@ describe('[F19-REQ-008] a stale copy cannot clear a kill switch', () => {
     http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-01T00:00:00.000Z', false), date: 'Fri, 16 Oct 2026 00:00:00 GMT' });
     await client.refresh(true);
     expect(seen).toEqual([true]);
+  });
+
+  it('a switch kept on by the rule is released after the server confirms the clearing copy for 14 days', async () => {
+    const clock = { t: NOW };
+    const { client, http } = setup(new Map(), clock, true);
+    http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-01T00:00:00.000Z', true), date: 'Thu, 01 Oct 2026 00:05:00 GMT' });
+    await client.refresh(true);
+    http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-02T00:00:00.000Z', false), date: 'Thu, 15 Oct 2026 12:00:00 GMT' });
+    await client.refresh(true);
+    expect(client.current().killSwitches.invites).toBe(true);
+    clock.t = NOW + 10 * 86_400_000;
+    http.queue.push({ status: 304, etag: '"v4"', body: null, date: 'Sun, 25 Oct 2026 12:00:00 GMT' });
+    await client.refresh(true);
+    expect(client.current().killSwitches.invites).toBe(true);
+    clock.t = NOW + 15 * 86_400_000;
+    http.queue.push({ status: 304, etag: '"v4"', body: null, date: 'Fri, 30 Oct 2026 12:00:00 GMT' });
+    await client.refresh(true);
+    expect(client.current().killSwitches.invites).toBe(false);
+  });
+
+  it('a phone whose clock runs two days behind still takes real server dates near the signed time', async () => {
+    const { client, http } = setup(new Map(), { t: NOW - 2 * 86_400_000 }, true);
+    http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-15T00:00:00.000Z', true), date: 'Thu, 15 Oct 2026 14:00:00 GMT' });
+    await client.refresh(true);
+    http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-01T00:00:00.000Z', false), date: 'Thu, 15 Oct 2026 14:05:00 GMT' });
+    await client.refresh(true);
+    expect(client.current().killSwitches.invites).toBe(true);
   });
 
   it('a fresh newer copy can clear the switch', async () => {

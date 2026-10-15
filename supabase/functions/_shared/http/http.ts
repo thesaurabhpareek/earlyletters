@@ -242,20 +242,31 @@ export function codeHmac(pepper: string, code: string): Promise<string> {
   return hmacHex(pepper, code);
 }
 
+/** Header names the platform may use for the client address; which one is set is configuration, checked on staging. */
+export const CLIENT_IP_HEADERS = ['cf-connecting-ip', 'x-real-ip', 'fly-client-ip', 'true-client-ip'] as const;
+
 /**
- * The caller's address as the platform reports it, for rate limits only (it
- * is only ever hashed). Trusted sources in order: `cf-connecting-ip`, then
- * `x-real-ip`, set by the edge in front of Supabase Edge Functions [A: which
- * one the platform sets is checked on the first staging deploy]. A
- * client-supplied `x-forwarded-for` is never trusted. IPv6 is bucketed by /64,
- * because one phone can rotate inside its /64. '' when none is present: the
- * IP limit is then skipped (the person, the device and the global brake
- * still apply), never shared by every caller.
+ * The caller's address, for rate limits only (it is only ever hashed), from
+ * exactly ONE header named by the function's `CLIENT_IP_HEADER` secret: the
+ * one the platform sets and overwrites, verified on the first staging deploy
+ * [A]. Any other header, `x-forwarded-for` included, is client-controlled
+ * and never read. Normalised: brackets, ports and zone ids stripped,
+ * IPv4-mapped IPv6 unwrapped, IPv6 bucketed by /64 (one phone can rotate
+ * inside its /64). '' when the header is unset, missing or unparsable: the
+ * caller then skips the IP limit (and logs `no_address`), never sharing one
+ * subject among every caller.
  */
-export function clientIp(req: Request): string {
-  const raw = (req.headers.get('cf-connecting-ip') ?? req.headers.get('x-real-ip') ?? '').trim();
-  if (/^[0-9]{1,3}(\.[0-9]{1,3}){3}$/.test(raw)) return raw;
-  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(':')) return ipv6Prefix64(raw);
+export function clientIp(req: Request, headerName: string | undefined): string {
+  if (!headerName || !(CLIENT_IP_HEADERS as readonly string[]).includes(headerName.toLowerCase())) return '';
+  let raw = (req.headers.get(headerName) ?? '').split(',')[0].trim();
+  if (raw.startsWith('[')) raw = raw.slice(1, raw.indexOf(']') > 0 ? raw.indexOf(']') : undefined);
+  raw = raw.replace(/%.*$/, '');
+  const v4port = /^([0-9]{1,3}(?:\.[0-9]{1,3}){3}):[0-9]{1,5}$/.exec(raw);
+  if (v4port) raw = v4port[1];
+  const mapped = /^::ffff:([0-9]{1,3}(?:\.[0-9]{1,3}){3})$/i.exec(raw);
+  if (mapped) raw = mapped[1];
+  if (/^[0-9]{1,3}(\.[0-9]{1,3}){3}$/.test(raw) && raw.split('.').every((o) => Number(o) <= 255)) return raw;
+  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(':') && (raw.match(/::/g) ?? []).length <= 1) return ipv6Prefix64(raw);
   return '';
 }
 

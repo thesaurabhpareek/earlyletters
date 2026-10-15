@@ -1,0 +1,16 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:valibot@1.5.0": "1.5.0"
+  },
+  "npm": {
+    "valibot@1.5.0": {
+      "integrity": "sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:valibot@1.5.0"
+    ]
+  }
+}

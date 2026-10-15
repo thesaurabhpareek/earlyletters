@@ -62,8 +62,7 @@ Deno.test('[F14-REQ-032] a valid report is stored through the RPC with the calle
   assert.equal(h.get('idempotency-key'), KEY);
   assert.equal(h.get('x-request-id'), '0123456789ab');
   const args = JSON.parse(String(call.init.body));
-  assert.deepEqual(args.p_report, report);
-  assert.equal(args.p_fingerprint, 'sandbox|annual|2026-10-22T19:00:00.000Z|2026-10-22T19:00:00.000Z|0|7');
+  assert.deepEqual(args, { p_report: report }, 'only the validated report; the SQL computes the fingerprint itself');
 });
 
 Deno.test('[F14-REQ-014] purchase data in the body is refused before anything is called', async () => {

@@ -25,6 +25,9 @@
  * transaction as the lookup, parallel guesses cannot all pass the gate, and
  * no wrong guess is ever answered without being counted.
  *
+ * Secrets: INVITE_CODE_PEPPER, RATE_SUBJECT_SECRET, CLIENT_IP_HEADER (the one
+ * header the platform sets for the client address; unset skips the IP limit).
+ *
  * The code, the device id, the IP, the person and every id stay out of logs
  * and out of the database in clear (hashes only; the code as an HMAC with
  * the pepper, sent as PostgREST bytea text `\x<hex>`).
@@ -40,6 +43,10 @@ import {
 
 export const MAX_BODY_BYTES = 1_024;
 const ROUTE_RE = /\/invite-redeem\/v1\/?$/;
+/** SQLSTATEs the RPC may hand back as `refused` (the code was right). Anything else is a bad answer. */
+const REFUSED_OK = new Set(['SCCAP', 'SCCON', 'SCDEL', 'SCRAT']);
+/** A person the database just called `limited` is answered from memory for this long, without another RPC (per isolate). */
+export const LIMITED_MEMO_MS = 60_000;
 
 const LOG_CODE: Partial<Record<ApiErrorCode, ErrorCode>> = {
   bad_request: 'invalid_input', unauthorized: 'unauthorized', forbidden: 'forbidden', anonymous_refused: 'anonymous', not_found: 'not_found',
@@ -58,6 +65,8 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
   const fetchFn: FetchFn = opts.fetch ?? ((i, init) => fetch(i, init));
   const now = opts.now ?? (() => new Date());
   const timeoutMs = opts.timeoutMs ?? 8_000;
+  // Best-effort and per isolate: a caller who is limited keeps costing nothing but this lookup for a minute.
+  const limitedUntil = new Map<string, number>();
 
   return async (req: Request) => {
     const started = Date.now();
@@ -108,12 +117,18 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
       if (session.kind === 'unavailable') return unavailable({ provider: 'auth', status: session.status });
 
       const at = now();
-      const ip = clientIp(req);
+      const userSubjects = await subjectHashes(subjectSecret, 'user', session.profileId, at);
+      const memo = limitedUntil.get(userSubjects[0]);
+      if (memo !== undefined && memo > at.getTime()) return refuse('rate_limited', true, { headers: { 'retry-after': '3600' } });
+      if (limitedUntil.size > 10_000) limitedUntil.clear();
+      const ip = clientIp(req, env('CLIENT_IP_HEADER'));
+      // No trusted address: the IP limit is skipped for this call (person, device and global still apply). Visible in logs.
+      if (!ip) log.warn('redeem.degraded', { code: 'no_address', task });
       const args = {
         p_user: session.profileId,
         p_mode: mode,
         p_code_hash: `\\x${await codeHmac(pepper, code)}`,
-        p_user_subjects: await subjectHashes(subjectSecret, 'user', session.profileId, at),
+        p_user_subjects: userSubjects,
         p_device_subjects: await subjectHashes(subjectSecret, 'device', device, at),
         p_ip_subjects: ip ? await subjectHashes(subjectSecret, 'ip', ip, at) : [],
       };
@@ -140,14 +155,17 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
             log.error('redeem.brake', { code: 'brake', status: 429, task });
             return failReply({ code: 'rate_limited', retryable: true, detail: 'codes_paused' }, id, 429, { 'retry-after': '3600' });
           }
+          if (r.scope === 'user') limitedUntil.set(userSubjects[0], at.getTime() + LIMITED_MEMO_MS);
           return refuse('rate_limited', true, { headers: { 'retry-after': '3600' } });
         case 'unusable':
           // On the code path every reason but `already_member` reads as `not_found`, so a guess learns nothing.
           return refuse('invite_unusable', false, { detail: r.detail === 'already_member' ? 'already_member' : 'not_found' });
         case 'refused': {
+          if (r.sqlstate === 'SCINV' || r.sqlstate === 'P0002') return refuse('invite_unusable', false, { detail: 'not_found' });
+          if (!REFUSED_OK.has(r.sqlstate)) return unavailable({ provider: 'postgrest', code: 'bad_response' });
           const rule = classifySqlstate(r.sqlstate);
-          if (rule.code === 'internal') return unavailable({ provider: 'postgrest', code: 'sqlstate' });
-          return refuse(rule.code, rule.retryable, { detail: r.detail, headers: rule.code === 'rate_limited' ? { 'retry-after': '3600' } : undefined });
+          if (rule.code === 'rate_limited') return refuse('rate_limited', true, { headers: { 'retry-after': '3600' } });
+          return refuse(rule.code, rule.retryable, { detail: r.detail });
         }
         case 'peek':
           data = { mode: 'peek', inviter: r.inviter, role: r.role, ...(r.joined ? { joined: true as const } : {}) };

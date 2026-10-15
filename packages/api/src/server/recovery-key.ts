@@ -42,8 +42,14 @@ export type SealedBox = v.InferOutput<typeof SealedBoxSchema>;
 
 // ── Keys on the phone (F08 6.5 key model) ────────────────────────────────
 
-/** Keychain item for the author's book keys: synchronizable, one item per (profile, child), holding every version. */
-export const BOOK_KEY_KEYCHAIN_SERVICE = 'earlyletters.backup';
+/**
+ * The author's book keys live in one synchronizable Keychain item per
+ * (profile, child), holding every version, account `<profile_id>:<child_id>`
+ * (F08 6.5 key model). The service name is S05's to fix with the founder:
+ * F08 writes `earlyletters.backup`, while CLAUDE.md keeps the public name
+ * only in packages/brand; a Keychain service can never be renamed once keys
+ * are stored, so it is not frozen here.
+ */
 export function bookKeyKeychainAccount(profileId: string, childId: string): string {
   return `${profileId}:${childId}`;
 }

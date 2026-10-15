@@ -16,7 +16,7 @@ const SUPA = 'https://fake-project.supabase.co';
 const PEPPER = 'p'.repeat(40);
 const ENV: Record<string, string> = {
   SUPABASE_URL: SUPA, SUPABASE_ANON_KEY: 'anon-key', SUPABASE_SERVICE_ROLE_KEY: 'service-key',
-  INVITE_CODE_PEPPER: PEPPER, RATE_SUBJECT_SECRET: 's'.repeat(40),
+  INVITE_CODE_PEPPER: PEPPER, RATE_SUBJECT_SECRET: 's'.repeat(40), CLIENT_IP_HEADER: 'cf-connecting-ip',
 };
 const ROUTE = 'https://fn.local/invite-redeem/v1';
 const CODE = '7K3M9QXZ';
@@ -139,6 +139,33 @@ Deno.test('a client-supplied X-Forwarded-For is never trusted; without a trusted
   const [a, b] = w.rpcArgs().slice(1).map((x) => x.p_ip_subjects[0]);
   assert.equal(a, b, 'one IPv6 /64 is one subject');
   assert.match(a, /^[0-9a-f]{32}$/);
+});
+
+Deno.test('a person the database called limited is answered from memory, without another RPC', async () => {
+  const w = await world();
+  for (let i = 0; i < 10; i++) await w.handler(guess('ZZZZZZZZ', crypto.randomUUID()));
+  assert.equal((await w.handler(guess(CODE))).status, 429);
+  const before = w.rpcArgs().length;
+  assert.equal((await w.handler(guess(CODE, crypto.randomUUID()))).status, 429);
+  assert.equal(w.rpcArgs().length, before);
+});
+
+Deno.test('refused outcomes: only SCCAP, SCCON, SCDEL and SCRAT pass; SCINV reads as not_found; SCRAT is retryable', async () => {
+  const inv = await world({ rpc: { body: { outcome: 'refused', sqlstate: 'SCINV', detail: 'expired' } } });
+  assert.deepEqual((await (await inv.handler(guess(CODE))).json()).error, { code: 'invite_unusable', retryable: false, detail: 'not_found' });
+  const odd = await world({ rpc: { body: { outcome: 'refused', sqlstate: '42501' } } });
+  assert.equal((await odd.handler(guess(CODE))).status, 503);
+  const rat = await world({ rpc: { body: { outcome: 'refused', sqlstate: 'SCRAT' } } });
+  const r = await rat.handler(guess(CODE));
+  assert.equal(r.status, 429);
+  assert.deepEqual((await r.json()).error, { code: 'rate_limited', retryable: true });
+});
+
+Deno.test('without CLIENT_IP_HEADER the IP limit is skipped and the gap is logged', async () => {
+  const w = await world({ env: { ...ENV, CLIENT_IP_HEADER: '' } });
+  await w.handler(guess(CODE));
+  assert.deepEqual(w.rpcArgs()[0].p_ip_subjects, []);
+  assert.ok(w.lines.some((l) => JSON.parse(l).code === 'no_address'));
 });
 
 Deno.test('[F11-REQ-007] global brake: every code answers codes_paused and an error line is written', async () => {

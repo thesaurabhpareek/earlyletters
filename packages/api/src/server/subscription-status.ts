@@ -110,7 +110,7 @@ export const SALT_RE = /^[A-Za-z0-9_-]{43}$/;
 export const StatusSaltSchema = v.object({ salt: v.pipe(v.string(), v.regex(SALT_RE)) });
 export type StatusSalt = v.InferOutput<typeof StatusSaltSchema>;
 
-/** Per user per rolling hour, enforced in the function (one request per change, F14 section 9). */
+/** Per user per rolling hour, enforced in the SQL (`status_report_store`, SCRAT; one request per change, F14 section 9). */
 export const STATUS_REPORTS_PER_HOUR = 30;
 /** The body is small; anything larger is refused before parsing. */
 export const STATUS_REPORT_MAX_BYTES = 2_048;
@@ -124,7 +124,11 @@ export function parseStatusReport(input: unknown): { ok: true; value: StatusRepo
   return { ok: true, value: x };
 }
 
-/** Fields the scheduler compares to decide `unchanged` (the consent facts and `reported_at` are not status). */
+/**
+ * Fields the scheduler compares to decide `unchanged` (the consent facts and
+ * `reported_at` are not status). Reference for S06's SQL, which computes it
+ * itself: a client never supplies it.
+ */
 export function statusFingerprint(r: Pick<StatusReport, 'environment' | 'plan' | 'trial_end' | 'renewal_date' | 'cancelled' | 'free_period_days'>): string {
   return [r.environment, r.plan, r.trial_end ?? '-', r.renewal_date ?? '-', r.cancelled ? '1' : '0', r.free_period_days ?? '-'].join('|');
 }
