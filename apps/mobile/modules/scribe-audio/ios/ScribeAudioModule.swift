@@ -47,6 +47,17 @@ public class ScribeAudioModule: Module {
   private let cancelLock = NSLock()
   private var cancelled = Set<String>()
 
+  /// Longest audio one decode call may return: 20 minutes at 16 kHz (38.4 MB).
+  /// The planner asks for 28 s chunks and 5-minute VAD windows, so this only
+  /// stops a bad request from allocating gigabytes (or overflowing Int).
+  private static let maxDecodeSamples = 20 * 60 * 16_000
+
+  /// Set once voice isolation has thrown an Objective-C exception on this
+  /// device: from then on this process makes no listening copies and plays
+  /// the original (ADR 0015 risk; G-16). Guarded by `isolationLock`.
+  private static let isolationLock = NSLock()
+  private static var isolationBroken = false
+
   public func definition() -> ModuleDefinition {
     Name("ScribeAudio")
 
@@ -140,8 +151,20 @@ public class ScribeAudioModule: Module {
 
   /// Same rounding as `msToSamples` in src/lib/transcribe-plan.ts, so the
   /// buffer length always equals `chunkSampleCount` on the JavaScript side.
-  private static func samples(_ ms: Double) -> Int {
-    max(0, Int((ms * whisperRate / 1000).rounded()))
+  /// Never traps (security review L9): NaN, infinity and negative values are
+  /// 0, and anything past `maxDecodeSamples` is capped before `Int(_:)`.
+  static func samples(_ ms: Double) -> Int {
+    let value = (ms * whisperRate / 1000).rounded()
+    guard value.isFinite, value > 0 else { return 0 }
+    return value >= Double(maxDecodeSamples) ? maxDecodeSamples : Int(value)
+  }
+
+  /// A frame position for `ms` at `rate`, clamped to [0, limit]; NaN and
+  /// infinity never reach the integer conversion.
+  static func frame(_ ms: Double, rate: Double, limit: AVAudioFramePosition) -> AVAudioFramePosition {
+    let value = (ms / 1000 * rate).rounded()
+    guard value.isFinite, value > 0, limit > 0 else { return 0 }
+    return value >= Double(limit) ? limit : AVAudioFramePosition(value)
   }
 
   private static func decode(uri: String, pieces: [DecodePiece]) throws -> NativeArrayBuffer {
@@ -149,8 +172,12 @@ public class ScribeAudioModule: Module {
     guard let outFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: whisperRate, channels: 1, interleaved: true) else {
       throw ScribeAudioException("ERR_SCRIBE_AUDIO_DECODE", "Output format unavailable")
     }
-    let counts = pieces.map { (silence: samples($0.silenceBeforeMs), speech: samples(max(0, $0.srcEndMs - $0.srcStartMs))) }
+    let counts = pieces.map { (silence: samples($0.silenceBeforeMs), speech: samples($0.srcEndMs - $0.srcStartMs)) }
+    // Each count is at most maxDecodeSamples, so this sum cannot overflow for any sane piece count.
     let total = counts.reduce(0) { $0 + $1.silence + $1.speech }
+    guard total <= maxDecodeSamples else {
+      throw ScribeAudioException("ERR_SCRIBE_AUDIO_DECODE", "Requested range is too long")
+    }
     let capacity = max(1, total)
     let pointer = UnsafeMutablePointer<Int16>.allocate(capacity: capacity)
     pointer.initialize(repeating: 0, count: capacity) // inserted silence and any short read stay zero
@@ -167,9 +194,16 @@ public class ScribeAudioModule: Module {
       throw error
     }
     let raw = UnsafeMutableRawBufferPointer(start: UnsafeMutableRawPointer(pointer), count: total * MemoryLayout<Int16>.size)
-    return try NativeArrayBuffer.wrap(dataWithoutCopy: raw) {
+    do {
+      return try NativeArrayBuffer.wrap(dataWithoutCopy: raw) {
+        pointer.deinitialize(count: capacity)
+        pointer.deallocate()
+      }
+    } catch {
+      // Not wrapped, so nobody else will free it.
       pointer.deinitialize(count: capacity)
       pointer.deallocate()
+      throw ScribeAudioException("ERR_SCRIBE_AUDIO_DECODE", "Recording could not be decoded")
     }
   }
 
@@ -180,8 +214,11 @@ public class ScribeAudioModule: Module {
     guard capacity > 0 else { return }
     let inFormat = file.processingFormat
     let rate = inFormat.sampleRate
-    let start = max(0, AVAudioFramePosition((startMs / 1000 * rate).rounded()))
-    let end = min(file.length, AVAudioFramePosition((endMs / 1000 * rate).rounded()))
+    guard rate.isFinite, rate > 0 else {
+      throw ScribeAudioException("ERR_SCRIBE_AUDIO_DECODE", "Recording could not be opened")
+    }
+    let start = frame(startMs, rate: rate, limit: file.length)
+    let end = frame(endMs, rate: rate, limit: file.length)
     guard end > start else { return }
     file.framePosition = start
 
@@ -191,8 +228,9 @@ public class ScribeAudioModule: Module {
     }
     converter.downmix = true // a stereo file becomes mono; our recordings are already mono
 
-    let block = AVAudioFrameCount(max(1024, Int(rate))) // about 1 s of input per read
-    var remaining = AVAudioFrameCount(end - start)
+    let block = AVAudioFrameCount(max(1024, Int(min(rate, 192_000)))) // about 1 s of input per read
+    // end - start is at most the file length; clamp so a very long file cannot trap UInt32.
+    var remaining = AVAudioFrameCount(min(end - start, AVAudioFramePosition(UInt32.max)))
     var readError: Error?
     var written = 0
 
@@ -240,7 +278,51 @@ public class ScribeAudioModule: Module {
   // MARK: - Listening copy (system voice isolation)
 
   private static func isolationAvailable() -> Bool {
-    !AVAudioUnitComponentManager.shared().components(matching: isolationDescription).isEmpty
+    isolationLock.lock()
+    let broken = isolationBroken
+    isolationLock.unlock()
+    if broken { return false }
+    return !AVAudioUnitComponentManager.shared().components(matching: isolationDescription).isEmpty
+  }
+
+  private static func markIsolationBroken() {
+    isolationLock.lock()
+    isolationBroken = true
+    isolationLock.unlock()
+  }
+
+  /// Formats the isolation path has been built for: linear PCM float32,
+  /// non-interleaved, 1 or 2 channels, 8 to 96 kHz. AVAudioEngine raises an
+  /// Objective-C exception (which Swift cannot catch) on a format a node
+  /// refuses, so anything else gets no listening copy instead of a crash.
+  static func isolationFormatSupported(_ format: AVAudioFormat) -> Bool {
+    format.commonFormat == .pcmFormatFloat32
+      && !format.isInterleaved
+      && (1...2).contains(format.channelCount)
+      && format.sampleRate.isFinite
+      && format.sampleRate >= 8_000 && format.sampleRate <= 96_000
+  }
+
+  /// Runs AVFoundation calls that report errors by raising an Objective-C
+  /// exception (attach, connect, manual rendering, start, render). Swift
+  /// cannot catch those, so we use `EXUtilities.catchException` from
+  /// ExpoModulesCore (Objective-C @try/@catch, the same helper
+  /// expo-notifications uses), which turns it into a Swift error. No shim of
+  /// our own is needed. The block's own Swift errors are passed back out.
+  private static func guarded<T>(_ code: String, _ message: String, _ body: () throws -> T) throws -> T {
+    var result: Result<T, Error>?
+    try withoutActuallyEscaping(body) { escapable in
+      do {
+        try EXUtilities.catchException {
+          result = Result { try escapable() }
+        }
+      } catch {
+        // The NSError carries only the exception name; never logged (no content in it, but no need).
+        throw ScribeAudioException(code, message)
+      }
+    }
+    guard let result else { throw ScribeAudioException(code, message) }
+    return try result.get()
   }
 
   private func isCancelled(_ jobId: String) -> Bool {
@@ -272,6 +354,10 @@ public class ScribeAudioModule: Module {
       throw ScribeAudioException("ERR_SCRIBE_AUDIO_DECODE", "Recording could not be opened")
     }
     let format = source.processingFormat
+    // Validate before any engine call: a refused format raises an Objective-C exception.
+    guard Self.isolationFormatSupported(format), source.length > 0 else {
+      throw ScribeAudioException("ERR_SCRIBE_AUDIO_ISOLATION_UNAVAILABLE", "Voice isolation is not available for this recording")
+    }
     let part = outURL.appendingPathExtension("part")
     let fm = FileManager.default
     try? fm.removeItem(at: part)
@@ -279,26 +365,41 @@ public class ScribeAudioModule: Module {
     let engine = AVAudioEngine()
     let player = AVAudioPlayerNode()
     let isolation = AVAudioUnitEffect(audioComponentDescription: Self.isolationDescription)
-    engine.attach(player)
-    engine.attach(isolation)
-    engine.connect(player, to: isolation, format: format)
-    engine.connect(isolation, to: engine.mainMixerNode, format: format)
+    let unavailable = "ERR_SCRIBE_AUDIO_ISOLATION_UNAVAILABLE"
+    do {
+      // Graph setup: any exception here means this device's isolation unit
+      // refuses our graph. Remember it, so no later letter tries again.
+      try Self.guarded(unavailable, "Voice isolation is not available on this device") {
+        engine.attach(player)
+        engine.attach(isolation)
+        engine.connect(player, to: isolation, format: format)
+        engine.connect(isolation, to: engine.mainMixerNode, format: format)
+        try engine.enableManualRenderingMode(.offline, format: format, maximumFrameCount: 4096)
+      }
+    } catch {
+      Self.markIsolationBroken()
+      throw error
+    }
 
     var output: AVAudioFile?
     defer {
-      player.stop()
-      engine.stop()
+      // stop() on a half-built engine can raise too; never let cleanup crash.
+      try? Self.guarded("ERR_SCRIBE_AUDIO_ENHANCE", "Stop failed") {
+        player.stop()
+        engine.stop()
+      }
     }
     do {
-      try engine.enableManualRenderingMode(.offline, format: format, maximumFrameCount: 4096)
       let unit = isolation.audioUnit
-      AudioUnitSetParameter(unit, AudioUnitParameterID(kAUSoundIsolationParam_WetDryMixPercent), kAudioUnitScope_Global, 0, AudioUnitParameterValue(max(0, min(100, mix))), 0)
+      AudioUnitSetParameter(unit, AudioUnitParameterID(kAUSoundIsolationParam_WetDryMixPercent), kAudioUnitScope_Global, 0, AudioUnitParameterValue(mix.isFinite ? max(0, min(100, mix)) : 80), 0)
       if #available(iOS 18.0, *) {
         AudioUnitSetParameter(unit, AudioUnitParameterID(kAUSoundIsolationParam_SoundToIsolate), kAudioUnitScope_Global, 0, AudioUnitParameterValue(kAUSoundIsolationSoundType_HighQualityVoice), 0)
       }
-      try engine.start()
-      player.scheduleFile(source, at: nil)
-      player.play()
+      try Self.guarded(unavailable, "Voice isolation could not start") {
+        try engine.start()
+        player.scheduleFile(source, at: nil)
+        player.play()
+      }
 
       let settings: [String: Any] = [
         AVFormatIDKey: kAudioFormatMPEG4AAC,
@@ -313,8 +414,12 @@ public class ScribeAudioModule: Module {
 
       // The isolation unit delays its output; render that much extra at the
       // end and drop it at the start, so the copy lines up with the original.
-      let latency = AVAudioFramePosition((isolation.latency * format.sampleRate).rounded())
-      var skip = max(0, latency)
+      // latency is a TimeInterval reported by the unit: never trust it into Int (L9).
+      let latencyFrames = (isolation.latency * format.sampleRate).rounded()
+      let latency: AVAudioFramePosition = latencyFrames.isFinite && latencyFrames > 0
+        ? AVAudioFramePosition(min(latencyFrames, format.sampleRate * 5)) // at most 5 s
+        : 0
+      var skip = latency
       let target = source.length + max(0, latency)
       var lastReported = -1
       var stalls = 0
@@ -324,7 +429,9 @@ public class ScribeAudioModule: Module {
           throw ScribeAudioException("ERR_SCRIBE_AUDIO_CANCELLED", "Cancelled")
         }
         let frames = AVAudioFrameCount(min(AVAudioFramePosition(buffer.frameCapacity), target - engine.manualRenderingSampleTime))
-        let status = try engine.renderOffline(frames, to: buffer)
+        let status = try Self.guarded("ERR_SCRIBE_AUDIO_ENHANCE", "Render failed") {
+          try engine.renderOffline(frames, to: buffer)
+        }
         switch status {
         case .success:
           stalls = 0
