@@ -46,7 +46,7 @@ import {
   type ConsentStep,
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
-import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, wrongCodeTimes } from './pending';
+import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
 
@@ -119,19 +119,6 @@ function accountOf(session: Session | null): AccountInfo {
 /** Any book or letter on this phone, in any state (the claim screen is only for a phone with something to claim). */
 function phoneHasLocalData(): boolean {
   return phoneHoldsAnyRow(localSqlDb());
-}
-
-/**
- * Whether a session is saved on this phone, read from the Keychain (not the in-memory state,
- * which is still `restoring` when a link opens the app from closed). An unreadable Keychain
- * counts as signed in: a link must never replace a session we could not see (F02-REQ-020).
- */
-async function keychainHasSession(): Promise<boolean> {
-  try {
-    return (await secureStorage.getItem(SESSION_STORAGE_KEY)) !== null;
-  } catch {
-    return true;
-  }
 }
 
 /** The stored session's user id, read from the Keychain without touching the network. */
@@ -405,7 +392,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         // here or this phone did not ask for an email; otherwise only through PKCE.
         // Both the state and the Keychain: at a cold start from the link the state is still
         // `restoring` while a saved session waits to be read.
-        const signedInNow = isSignedIn(stateRef.current) || (await keychainHasSession());
+        const signedInNow = isSignedIn(stateRef.current) || (await sessionSavedOnPhone(SESSION_STORAGE_KEY));
         let started = false;
         try {
           const r = await openEmailLink(

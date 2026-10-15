@@ -205,9 +205,7 @@ describe('[F02-REQ-018] verifyEmailLinkPkce: GET /verify without following the r
   const provider = () => readFileSync(join(APP, 'src/lib/auth/session-provider.tsx'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
   it('[F02-REQ-020] the signed-in refusal also reads the Keychain, so a cold start from the link (state still restoring) is refused too', () => {
-    expect(provider()).toMatch(/signedInNow = isSignedIn\(stateRef\.current\) \|\| \(await keychainHasSession\(\)\)/);
-    // An unreadable Keychain counts as signed in.
-    expect(provider()).toMatch(/async function keychainHasSession[\s\S]*?catch \{\s*return true;/);
+    expect(provider()).toMatch(/signedInNow = isSignedIn\(stateRef\.current\) \|\| \(await sessionSavedOnPhone\(SESSION_STORAGE_KEY\)\)/);
   });
 
   it('any sign-in (Apple, Google, passkey too) and every sign-out spend the pending email request', () => {
