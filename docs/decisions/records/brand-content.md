@@ -45,7 +45,7 @@ The mark, brand assets, the product's name and words, prices on the website, and
 - **Reversal cost:** low
 - **Revisit when:** market: a price change (D-082 already changed it)
 - **Review by:** on trigger
-- **Status:** amended by D-082; the website now states $4.99 and $49.99 (PR #133)
+- **Status:** amended by D-082: the website now states $4.99 and $49.99 (PR #133)
 - **As built:** `packages/content/src/site.en.ts`, `packages/content/src/pricing.ts`
 
 ### D-076 Brand name only from `packages/brand`
@@ -72,7 +72,7 @@ The mark, brand assets, the product's name and words, prices on the website, and
 
 ### D-079 Old logo directions archived, not deleted
 - **Source:** `docs/DECISIONS.md` D-079 (Recommended, coordinator default, proceed: yes, 2026-10-03; answers CONSISTENCY_AUDIT F-8)
-- **Decided:** round 1 directions a and b, round 2, round 3 (except what the primary folder rebuilds), the interim email lockup and the E monogram stay in the repo as history, registered `deprecated.*`, and are not deleted. Nothing may use, copy or link them.
+- **Decided:** round 1 directions a and b, round 2, round 3 (except what `primary/` rebuilds), the interim email lockup and the E monogram stay in the repo as history, registered `deprecated.*`, and are not deleted. Nothing may use, copy or link them.
 - **Why:** not recorded in the source
 - **Door:** two-way: files in the repo
 - **Reversal cost:** low
@@ -89,5 +89,5 @@ The mark, brand assets, the product's name and words, prices on the website, and
 - **Reversal cost:** low
 - **Revisit when:** platform: server features ship (then copy follows R-002)
 - **Review by:** on trigger
-- **Status:** open: depends on R-001, which is contested; the BL-440 fix is in open PR #129 and the site copy fix in open PR #131
+- **Status:** open: depends on R-001, which is contested with R-016; the BL-440 fix is in open PR #129 and the site copy fix in open PR #131. Sources disagree on 15 Oct. On-device: issue [#127](https://github.com/thesaurabhpareek/earlyletters/issues/127) (posted 06:32 UTC), the Project doc `claude/Early-Letters-Coordination.md` (platform thread, founder quote "On-device v1.0, server in v1.1"; no time given) and [a comment on #124](https://github.com/thesaurabhpareek/earlyletters/pull/124#issuecomment-6186131701) (06:39 UTC). Option B (server features on): open PR [#128](https://github.com/thesaurabhpareek/earlyletters/pull/128) D-100 (status line: founder confirmed option B on 15 Oct), D-106 (alpha by 29 Oct) and D-107 ("Widen.", about 17:00 UTC; PR reopened 17:49 UTC), PR [#145](https://github.com/thesaurabhpareek/earlyletters/pull/145) (12:37 UTC), PR [#152](https://github.com/thesaurabhpareek/earlyletters/pull/152) (15:14 UTC), PR [#163](https://github.com/thesaurabhpareek/earlyletters/pull/163) (18:02 UTC), and the comments on [#81](https://github.com/thesaurabhpareek/earlyletters/pull/81#issuecomment-6198831573) and [#82](https://github.com/thesaurabhpareek/earlyletters/pull/82#issuecomment-6198831926) (18:02 UTC). The founder has to confirm which stands, and the coordinator has to log it.
 - **As built:** `packages/content/src/store.en.ts` and `packages/content/src/site.en.ts` still promise sharing on this branch (per the Project coordination doc)

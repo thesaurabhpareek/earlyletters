@@ -11,7 +11,7 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Reversal cost:** low
 - **Revisit when:** scale: more than about 60 open tasks; team: a second engineer joins (both from the ADR; its third trigger, more than one agent in parallel, has fired and led to ADR 0018)
 - **Review by:** on trigger
-- **Status:** amended by ADR-0018; the run protocol for work selection is superseded; the backlog format and traceability rules stay in force
+- **Status:** amended by ADR-0018: the run protocol for work selection is superseded; the backlog format and traceability rules stay in force
 - **As built:** `docs/BACKLOG.md`; the trace script (BL-002) is in open PR #143
 
 ### ADR-0018 Agent operating system: roster of identities, a code dispatcher, Claude Code on GitHub Actions

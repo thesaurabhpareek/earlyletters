@@ -119,7 +119,7 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 
 ### R-012 Release engineering model: two lanes, release branch, version file, RC tags
 - **Source:** Project doc `infra/release-engineering-plan.md` (lists D-089 as Decided, founder); open PR #108 (D-089 text, ADR 0022); comment on #108 (15 Oct 00:41 UTC): "The founder replied 'Approved' in the release-engineering thread on 14 Oct, after reviewing #108 to #112"; comment on #79 (14 Oct): "The founder approved D-089 on 13 Oct"
-- **Decided:** a preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, and a store lane (`production` profile). The branch release/1.0 is cut from `main` at freeze (Mon 26 Oct) and fixes are cherry-picked. One version in a version.json file in the app folder; build numbers from EAS. `ios-v1.0.0-rc.<n>` tags build candidates; the candidate that passes FT-39 is submitted; `ios-v1.0.0` is tagged after release. Store text generated from `packages/content`.
+- **Decided:** a preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, and a store lane (`production` profile). `release/1.0` is cut from `main` at freeze (Mon 26 Oct) and fixes are cherry-picked. One version in a version.json file in the app folder; build numbers from EAS. `ios-v1.0.0-rc.<n>` tags build candidates; the candidate that passes FT-39 is submitted; `ios-v1.0.0` is tagged after release. Store text generated from `packages/content`.
 - **Why:** not recorded in the sources read
 - **Door:** two-way: release process and tags
 - **Reversal cost:** low

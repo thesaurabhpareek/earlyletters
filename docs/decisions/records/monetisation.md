@@ -70,7 +70,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: the windows are data (one row per counsel change), but changing a published promise needs new legal text
 - **Revisit when:** law: counsel changes any window or a state changes its auto-renewal law
 - **Review by:** 2026-12-01
-- **Status:** amended by D-080
+- **Status:** amended by D-080. Code shipped ahead of the log: merged PR #121 ships on-device plan reminders and a purchase confirmation under D-094, which is only proposed in open PR #122.
 - **As built:** not built: no server sees purchases in v1.0; on-device plan reminders exist in `apps/mobile/src/lib/billing/plan-reminders.ts` (PR #121, under D-094, which is proposed in open PR #122)
 - **Also:** D-053 says these windows no longer apply to a server we do not have (DEBATES Q-003); D-080 gives the server a data source again
 
@@ -161,7 +161,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: removing it needs Privacy Policy and Terms changes and another way to meet 17602
 - **Revisit when:** law: counsel confirms Apple's own emails or local notifications meet 17602 (COUNSEL_PACKET); platform: v1.1 server release starts
 - **Review by:** on trigger
-- **Status:** parked: needs a server, which v1.0 does not have (D-085, PR #54)
+- **Status:** parked: needs a server, which v1.0 does not have (D-085, PR #54). Code shipped ahead of the log: merged PR #121 ships on-device plan reminders in its place under D-094, which is only proposed in open PR #122
 - **As built:** not built; on-device reminders in `apps/mobile/src/lib/billing/plan-reminders.ts` stand in (PR #121)
 
 ### D-081 Purchase consent records (supersedes D-049)
