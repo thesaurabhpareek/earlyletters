@@ -31,21 +31,6 @@ export interface AppleKeyConfig {
   privateKeyPem: string;
 }
 
-const CLIENT_ID_RE = /^[A-Za-z0-9.-]{3,155}$/;
-
-/**
- * The client ids Apple tokens may be captured for and revoked for: the
- * production bundle id, then APPLE_SERVICES_ID, then APPLE_EXTRA_CLIENT_IDS
- * (comma separated; internal builds). One list for both the apple-token
- * function and the purge worker, so a token is never stored for a client id
- * the worker cannot revoke for (BL-330, security review H3).
- */
-export function appleClientIds(get: (name: string) => string | undefined, bundleId: string): string[] {
-  const v = (n: string) => (get(n) ?? '').trim();
-  const extra = [v('APPLE_SERVICES_ID'), ...v('APPLE_EXTRA_CLIENT_IDS').split(',')].map((s) => s.trim()).filter((s) => CLIENT_ID_RE.test(s));
-  return [...new Set([bundleId, ...extra])];
-}
-
 const b64url = (bytes: Uint8Array): string =>
   btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const b64urlJson = (v: unknown): string => b64url(new TextEncoder().encode(JSON.stringify(v)));

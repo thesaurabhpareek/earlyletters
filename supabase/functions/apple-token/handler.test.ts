@@ -147,26 +147,30 @@ Deno.test("refuses a token for another Apple user or another client id (never st
   assert.equal(unknown.calls.length, 0);
 });
 
-Deno.test('internal builds are allowed only through APPLE_EXTRA_CLIENT_IDS, and the list is cleaned', async () => {
+Deno.test('internal builds are refused until the purge worker can revoke for them; APPLE_SERVICES_ID is accepted', async () => {
   const preview = `${BUNDLE}.preview`;
   assert.equal((await world().handler(req({ code: CODE, clientId: preview }))).status, 403, 'not listed: refused');
+  // APPLE_EXTRA_CLIENT_IDS is not read yet (the purge worker would not revoke for it; request to S07).
+  const extra = world({ env: env({ APPLE_EXTRA_CLIENT_IDS: preview }) });
+  assert.equal((await extra.handler(req({ code: CODE, clientId: preview }))).status, 403);
+  assert.equal(extra.calls.length, 0, 'refused before anyone is asked');
+  const web = 'com.earlyletters.scribe.web';
   const w = world({
-    env: env({ APPLE_EXTRA_CLIENT_IDS: `${preview}, bad id with spaces` }),
-    appleBody: { refresh_token: 'r.preview.x', id_token: idToken({ iss: 'https://appleid.apple.com', aud: preview, sub: APPLE_SUB }) },
+    env: env({ APPLE_SERVICES_ID: web }),
+    appleBody: { refresh_token: 'r.web.refresh-fixture', id_token: idToken({ iss: 'https://appleid.apple.com', aud: web, sub: APPLE_SUB }) },
   });
-  assert.equal((await w.handler(req({ code: CODE, clientId: preview }))).status, 204);
-  assert.deepEqual(readAppleTokenConfig((n) => env({ APPLE_EXTRA_CLIENT_IDS: `${preview}, bad id` })[n])!.clientIds, [BUNDLE, preview]);
+  assert.equal((await w.handler(req({ code: CODE, clientId: web }))).status, 204);
+  assert.deepEqual(readAppleTokenConfig((n) => env({ APPLE_SERVICES_ID: 'bad id with spaces' })[n])!.clientIds, [BUNDLE]);
 });
 
-Deno.test('every client id apple-token stores for is one the purge worker can revoke for (one shared list)', () => {
-  // AUTH_SETUP 2.7: both read purge-worker/lib/apple.ts appleClientIds, including APPLE_EXTRA_CLIENT_IDS.
-  const e = env({ APPLE_SERVICES_ID: 'com.earlyletters.scribe.web', APPLE_EXTRA_CLIENT_IDS: `${BUNDLE}.preview, bad id` });
+Deno.test('every client id apple-token stores for is one the purge worker can revoke for (the same list)', () => {
+  // AUTH_SETUP 2.7. When S07 lets the worker read APPLE_EXTRA_CLIENT_IDS, both sides change together and this still holds.
+  const e = env({ APPLE_SERVICES_ID: 'com.earlyletters.scribe.web', APPLE_EXTRA_CLIENT_IDS: `${BUNDLE}.preview` });
   const capture = readAppleTokenConfig((n) => e[n])!.clientIds;
   const worker = { ...e, PURGE_WORKER_SECRET: 'x'.repeat(64), RESEND_API_KEY: 're_test_fixture' };
   const purge = readPurgeConfig((n) => worker[n as keyof typeof worker]).config?.apple?.clientIds ?? [];
   assert.ok(purge.length > 0);
-  assert.deepEqual(capture, [BUNDLE, 'com.earlyletters.scribe.web', `${BUNDLE}.preview`]);
-  assert.deepEqual(purge, capture);
+  assert.deepEqual(capture, purge);
   // TOKEN_KEK_V2 wraps here; the worker keeps both versions to unwrap.
   assert.deepEqual(Object.keys(readPurgeConfig((n) => worker[n as keyof typeof worker]).config?.tokenKeks ?? {}), ['1', '2']);
 });

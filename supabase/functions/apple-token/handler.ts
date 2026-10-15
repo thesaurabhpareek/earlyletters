@@ -48,7 +48,7 @@
 import { failure, HEADER_REQUEST_ID, httpStatusFor, type ApiErrorCode } from '../../../packages/api/src/envelope.ts';
 import { bundleId } from '../../../packages/brand/index.ts';
 import { createLogger, type ErrorCode, type FunctionName, type LogSink, type Provider } from '../_shared/log/log.ts';
-import { APPLE_AUDIENCE, appleClientIds, makeClientSecret, wrapAppleToken, type AppleKeyConfig } from '../purge-worker/lib/apple.ts';
+import { APPLE_AUDIENCE, makeClientSecret, wrapAppleToken, type AppleKeyConfig } from '../purge-worker/lib/apple.ts';
 
 export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
 export type EnvGetter = (name: string) => string | undefined;
@@ -61,6 +61,7 @@ const ROUTE_RE = /\/apple-token\/v1\/?$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Apple authorization codes are opaque; this bounds the shape without assuming more. */
 const CODE_RE = /^[A-Za-z0-9._-]{16,512}$/;
+const CLIENT_RE = /^[A-Za-z0-9.-]{3,155}$/;
 const MAX_BODY = 4096;
 // Until _shared/log lists this function by name its lines say fn "unknown" (requested from S07).
 const FN = 'apple-token' as string as FunctionName;
@@ -77,9 +78,11 @@ export interface AppleTokenConfig {
   anonKey: string | null;
   apple: AppleKeyConfig;
   /**
-   * Client ids a code may be issued to: the production bundle id, then
-   * APPLE_SERVICES_ID and APPLE_EXTRA_CLIENT_IDS. The purge worker reads the
-   * same list (purge-worker/lib/apple.ts appleClientIds; AUTH_SETUP 2.7).
+   * Client ids a code may be issued to: exactly the ones the purge worker can
+   * revoke for today (purge-worker/config.ts: the production bundle id and
+   * APPLE_SERVICES_ID), so no token is ever stored that deletion cannot revoke.
+   * APPLE_EXTRA_CLIENT_IDS (internal builds) waits for the purge worker to read
+   * it too: request to S07 in PR #139 (AUTH_SETUP 2.7).
    */
   clientIds: string[];
   kek: string;
@@ -105,9 +108,11 @@ export function readAppleTokenConfig(get: EnvGetter): AppleTokenConfig | null {
     }
   }
   if (!supabaseUrl || !serviceKey || !teamId || !keyId || !privateKeyPem.trim() || !kek) return null;
-  // One list with the purge worker (appleClientIds), so every stored token is one it can revoke.
+  // The purge worker's list, no more (a test compares the two).
+  const services = v('APPLE_SERVICES_ID');
   const anonKey = v('SUPABASE_ANON_KEY') || null;
-  return { supabaseUrl, serviceKey, anonKey, apple: { teamId, keyId, privateKeyPem }, clientIds: appleClientIds(get, bundleId()), kek, kekVersion };
+  const clientIds = [...new Set([bundleId(), ...(CLIENT_RE.test(services) ? [services] : [])])];
+  return { supabaseUrl, serviceKey, anonKey, apple: { teamId, keyId, privateKeyPem }, clientIds, kek, kekVersion };
 }
 
 export interface AppleTokenOptions {
