@@ -114,7 +114,7 @@ Gap ids defined here:
 | DQ-R08 | MUST | fixture tests; scheduled invariant job | fixtures on develop; schedule not yet | PDATA-06 |
 | DQ-R09 | MUST | `domain.test.ts` | enforced on develop (#31) | CORE-05 |
 | DQ-R11 | MUST | `purge_due()` + `purge_batching.test.mjs` | DB clocks on develop (pending files) | DB-13 |
-| DQ-R12 | MUST | `purge-worker` function and `supabase/cron/purge-worker.sql`; `purge_due()` cron; 31-day page | partly on develop (worker and cron file); `purge_due` cron and page not yet; live deploy is a founder step | PDATA-02 |
+| DQ-R12 | MUST | `purge-worker` function and `supabase/cron/purge-worker.sql`; `purge_due()` cron; 31-day page | partly on develop (worker, cron file, daily SLA alert email in `alerts.ts`); `purge_due` cron and a true page not yet; live deploy is a founder step | PDATA-02 |
 | DQ-R13 | MUST | launch purge (`purgeExpired`, `store.shelf.test.ts`) | partly on develop (on-device builds); synced path not yet | PPRIV-01, WS-09 |
 | DQ-R14 | MUST | date indexes; 7-year clock or table removal | not yet | DB-13 |
 | DQ-R15 | MUST NOT | review; runbooks | not yet | WS-18 |
@@ -163,7 +163,7 @@ Gap ids defined here:
 | SEC-R09 | MUST | `dependabot.yml`; repo setting | pending PR #30; setting founder-only | CI-05 |
 | SEC-R10 | MUST | SHA pins | pending PR #30 (CI files); not yet (`agents.yml`, `agents-check.yml`, `claude.yml`) | CI-06 |
 | SEC-R11 | MUST | review | review (pattern present in PR #30) | |
-| SEC-R12 | MUST | branch protection or ruleset | not yet | CI-01, CI-04 |
+| SEC-R12 | MUST | branch protection or ruleset | not yet (decided 14 Oct, #127 item 7; founder applies the settings) | CI-01 |
 | SEC-R13 | MUST | `fence.yml` | pending PR #30 (advisory until SEC-R12) | CI-11, BL-122 |
 | SEC-R14 | MUST | `migration-guard.yml` from base ref | pending PR #30 | CI-09 |
 | SEC-R15 | MUST | `app.config.ts` entitlement; `config.test.ts` | enforced on develop (#27) | PSEC-05, WS-20 |

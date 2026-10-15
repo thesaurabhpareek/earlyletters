@@ -54,7 +54,7 @@ This chapter covers everything around identity that keeps a family's letters saf
 
 ### Repository and branch protection
 
-**SEC-R12 (MUST)** `develop` and `main` have branch protection or a ruleset: PR required, the `required` and `applied migrations unchanged` checks, one approval, linear history, no force push or deletion (`.github/README.md`). *Enforced by:* not yet: CI-01, founder-only; tied to the private-repo decision (CI-04).
+**SEC-R12 (MUST)** `develop` and `main` have branch protection or a ruleset: PR required, the `required` and `applied migrations unchanged` checks, one approval, linear history, no force push or deletion (`.github/README.md`). *Enforced by:* not yet: CI-01, founder-only. Decided 14 Oct (#127 item 7): the repository stays public, so GitHub Free includes branch protection, rulesets and environments; the founder applies them.
 
 **SEC-R13 (MUST)** A PR touching `supabase/**`, `.github/**` or a path named auth, session or sign-in needs an independent review run and the founder's `approve-migration` label (D-041, BL-122). Agents never add that label. *Enforced by:* `fence.yml`, pending PR #30; advisory until SEC-R12 makes it a required check.
 
@@ -112,7 +112,7 @@ Only the founder grants one: a `D-###` entry for standing exceptions, or the PR 
 
 ## Open questions
 
-1. Make the repository private on GitHub Pro (CI-04) so branch protection stays available (CI-01)?
+1. Resolved 14 Oct (#127 item 7): the repository stays public and gets branch protection on `develop` and `main`, rulesets for `ios-v*` tags and `release/*` branches, and an `app-store` environment (CI-01, CI-04). Applying them is a founder step.
 2. Pause scheduled unattended agent runs and remove any write connectors until SEC-R12 is on (PINF-01, workstream decision 6)?
 3. Deep-link scheme: keep `scribe` or move to the brand name before the first build (DOC-17)?
 4. Which second person, if any, holds the break-glass recovery for founder accounts (PINF-06)?

@@ -73,7 +73,7 @@ Collected from the five chapters on 2026-10-03, most consequential first. Each c
 | # | Decision | Recommended default | Raised by |
 |---|---|---|---|
 | 1 | Build the purge worker (PDATA-02) and device purge (PPRIV-01) before any beta family's data reaches a backend? On 15 Oct the `purge-worker` Edge Function is on `develop`, but only migration files 1 and 2 are applied live, so nothing executes the published 31, 38 and 45-day deletion promise yet | Yes | compliance-engineer, data-steward |
-| 2 | Turn on branch protection on `develop` and `main` (which on a private repo needs GitHub Pro or Team), and pause unattended agent runs and remove agent write connectors until it is on (CI-01, CI-04, PINF-01) | Yes | security-architect, ai-eng-lead |
+| 2 | Decided 14 Oct (#127 item 7): branch protection on `develop` and `main`, rulesets for `ios-v*` and `release/*`, an `app-store` environment; the repository is public, so GitHub Free includes them. Still yours: apply the settings, and keep unattended agent runs off (`AGENTS_ENABLED` unset) until they are on (CI-01, PINF-01) | Apply the settings | security-architect, ai-eng-lead |
 | 3 | When a contributor leaves or is removed, are their letters kept in the book or tombstoned? | none given | data-steward, security-architect |
 | 4 | Can one parent remove the other co-parent: yes, only the book creator, or only with both parents' agreement (WS-02)? | none given | security-architect |
 | 5 | One contract package named `packages/api` holding generated DB types, the SQLSTATE registry, typed RPC wrappers and content-block schemas (BRIEF 17 vs WS-04) | `packages/api` | principal-architect |
