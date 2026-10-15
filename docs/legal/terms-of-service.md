@@ -1,14 +1,14 @@
 ---
 title: Early Letters Terms of Service
-version: 1.5.0
+version: 1.6.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-03
+last_updated: 2026-10-15
 owner: founder
 applies_to: Early Letters iOS app (v1.0); Android app and other family members (later); earlyletters.com
 ---
 
-> **Drafting notice.** This document was drafted by an AI (Claude) for review by a licensed attorney. It is not legal advice and is not ready to publish. Placeholders appear in curly braces, for example {PUBLISHER_LEGAL_NAME}. Notes for counsel appear as **[COUNSEL: ...]** and must be removed before publication. Law and store rules were checked on 2 and 3 October 2026; sources are in Appendix A, open decisions in Appendix B, and every open question is numbered in `docs/legal/COUNSEL_PACKET.md`. The consumer-law review is docs/legal/memos/lawyer-1.md; the subscription-notice position for Apple-only billing is docs/legal/memos/q-003-subscription-notices.md. Published at https://earlyletters.com/terms (D-063).
+> **Draft for counsel review, not legal advice.** This document was drafted by an AI (Claude) as drafting support, for review by a licensed attorney. It is not legal advice and is not ready to publish. Version 1.6.0 describes the server-on v1.0 (M14, D-089): accounts, sync, co-parent sharing, opt-in encrypted recording backup with a recovery key we hold (D-073, D-091), the Plus membership and prices (D-082, D-092) and reminder emails (D-080, D-081); every change is in the changelog with its source. Placeholders appear in curly braces, for example {PUBLISHER_LEGAL_NAME}. Notes for counsel appear as **[COUNSEL: ...]** and must be removed before publication. Law and store rules were checked on 2 and 3 October 2026; sources are in Appendix A, open decisions in Appendix B, and every open question is numbered in `docs/legal/COUNSEL_PACKET.md`. The consumer-law review is docs/legal/memos/lawyer-1.md; the subscription-notice position for Apple-only billing is docs/legal/memos/q-003-subscription-notices.md. Published at https://earlyletters.com/terms (D-063).
 
 > **[COUNSEL NOTE FOR THE FOUNDER. Not part of the Terms; remove before publication.]** Updated 3 Oct 2026: the founder decided to publish as an individual with no LLC for now (`docs/DECISIONS.md` D-004). These Terms limit what a user can claim, but **they do not protect you personally**: with no entity, every claim is against you and your personal assets. The liability cap (Section 21) and the beta and "it can make mistakes" lines (Sections 11.5, 16.4) reduce exposure; they do not replace an entity. Recommended: price technology errors and omissions (tech E&O) plus cyber liability insurance now, and form an entity and transfer the app before scale (before the public beta link or paid marketing, 1,000 families, $2,000 a month in proceeds, the first hire, or Android). When an entity exists: sign every contract, store account and vendor agreement in its name, use its own bank account, and keep it in good standing. Counsel to confirm the individual's contact address for Section 26.1(h) and notices (a mailing address rather than a home address, where lawful), and coverage limits and exclusions for children's data.
 
@@ -20,11 +20,11 @@ This summary is here to help. The full terms below are what count.
 
 - Early Letters is for adults 18 and over. Children are who the letters are written to, not users.
 - Early Letters is an early version. Features may change or break, so please export a copy from time to time.
-- Your words and recordings are yours. We only use them to run Early Letters for you and the co-parent you invite. Your recordings stay on your phone. We never imitate your voice.
+- Your words and recordings are yours. We only use them to run Early Letters for you and the co-parent you invite. Recordings stay on your phone unless you turn on backup, which stores them encrypted with a recovery key we hold (Section 12). We never imitate your voice.
 - We never rewrite your letters. Transcription happens on your phone and only fixes microphone and grammar slips, and you can see and undo every fix. Speech recognition can still get things wrong, so please read your letters before you save them.
-- Writing, reading, playing your recordings, export and writing with your co-parent are free, always. Past letters are never put behind a payment.
-- Plus is optional. Apple sells it and renews it automatically until you cancel in your Apple Account. Apple sends its own receipts, and the app reminds you on your phone before free months end and before an annual plan renews. We never raise the price of a plan you already have.
-- Co-parents are equals. Neither can remove the other or delete the other's letters.
+- Your first 2 letters are free. After that, keeping a new letter needs Plus. Every letter you write stays yours to read, play and export, with or without Plus.
+- Plus is a membership Apple sells. It renews automatically until you cancel in your Apple Account. Apple sends its own receipts; we remind you by email and on your phone before free months end and before an annual plan renews. We never raise the price of a plan you already have.
+- Co-parents are equals. Neither can delete the other's letters, and after the first 72 hours neither can remove the other.
 - If we ever close Early Letters, we will give you at least 90 days' notice and a way to take everything with you.
 - If something goes wrong, contact us first. You can always use small claims court.
 
@@ -78,7 +78,7 @@ This summary is here to help. The full terms below are what count.
 
 4.1 **Books.** Each child has their own book. Letters are sorted by the child's month of age, or into "Before You" if written before birth.
 
-4.2 **Roles.** Today there is one role: **co-parent**. Each co-parent writes and reads the whole book. Co-parents in the same book have equal rights. When we add other family members (for example grandparents) in a later version, we will describe their role here first.
+4.2 **Roles.** Today there is one role: **co-parent**. A book has at most two co-parents. Each co-parent writes and reads the whole book. Co-parents in the same book have equal rights. When we add other family members (for example grandparents) in a later version, we will describe their role here first.
 
 4.3 **Private until you choose.** A letter is private to its author until the author chooses to add it to the child's book. Nobody can edit another person's words.
 
@@ -105,6 +105,7 @@ This summary is here to help. The full terms below are what count.
 6.1 To run the Service, we need your permission to handle Your Content. You give us a worldwide, non-exclusive, royalty-free permission to store, copy, back up, transmit, process and display Your Content **only** to:
 - operate the Service for you and the people you choose to share with;
 - turn recordings into text on your phone and apply the mechanical fixes described in Section 11;
+- if you turn on recording backup, store your recordings encrypted and restore them to you, as described in Section 12;
 - sync the text of your letters between your devices and to your co-parent;
 - make book files and exports when you ask (and, once printed books are offered, print files when you order one);
 - keep the Service secure, fix problems, and give you support when you ask for it;
@@ -116,17 +117,17 @@ This summary is here to help. The full terms below are what count.
 - We will not use it to train or improve machine learning models, ours or anyone else's.
 - We will not use your voice, or anyone's voice in your recordings, to imitate it, clone it or make a synthetic voice.
 - We will not use it in marketing without asking you separately, in writing, each time.
-- We will not read it, except when you ask us to (for example in a support request), when needed to keep the Service secure or working, or when the law requires. Your recordings stay on your phone, so we cannot listen to them.
+- We will not read it, except when you ask us to (for example in a support request), when needed to keep the Service secure or working, or when the law requires. We never listen to your recordings. If you use recording backup, we open a recording key only for the reasons in Section 12.2.
 
 6.3 **Service providers.** We use service providers to host data and run parts of the Service. They may handle Your Content only on our instructions and only for the purposes above. The Privacy Policy and our list at https://earlyletters.com/subprocessors name them. Today no recording and no letter is sent to an outside speech or AI service. If we ever offer that as an option, we will ask before any of your content is sent, and the Service will keep working if you say no.
 
 6.4 **When this permission ends.** This permission ends when Your Content is deleted from the Service, except for: copies in backups until they are cleared on our normal schedule; copies other people already exported or downloaded (Section 7); and anything we must keep by law.
 
-**[COUNSEL: The "no training" and "never imitate your voice" promises in 6.2 are hard commitments (D-061; trust copy in packages/content `trust.voice`). In v1.0 no audio leaves the phone and no third-party AI receives content (D-059), so today they are technical facts, not only policy limits. Every processor that holds letter text (Supabase) has a written no-training clause (subprocessors.md). Before any server transcription ships (v1.1, BL-304), each AI provider must be bound to match, and the Privacy Policy and these Terms change first. COUNSEL_PACKET Q16.]**
+**[COUNSEL: Changed in 1.6.0 (R4 PT-01; F08 6.5, claims table row "Terms 6.2, 12.4"; M16, D-091): the clause "Your recordings stay on your phone, so we cannot listen to them" is deleted. With opt-in backup and server escrow we hold a key that can open backed-up recordings, so "cannot" is false; the replacement states a promise ("never listen") and points to the three uses in 12.2. Confirm "never listen" reads fairly when a legal order requires us to hand over a recording (COUNSEL_PACKET Q32 (a)). The "no training" and "never imitate your voice" promises in 6.2 are hard commitments (D-061; trust copy in packages/content `trust.voice`). In v1.0 no third-party AI receives content (D-059). Every processor that holds letter text (Supabase) has a written no-training clause (subprocessors.md). Before any server transcription ships (v1.1, BL-304), each AI provider must be bound to match, and the Privacy Policy and these Terms change first. COUNSEL_PACKET Q16.]**
 
 ## 7. The permission you give your family
 
-7.1 When you add a letter to a child's book, you give the people who can read that book in the Service (today, your co-parent) a personal, non-commercial permission to read it, play its recording if it is available to them, export it, and, once printed books are offered, include it in printed books for the family, for as long as it stays in the book. Today recordings stay on the phone where they were made, so your co-parent reads your words but hears your recording only on a phone that holds it.
+7.1 When you add a letter to a child's book, you give the people who can read that book in the Service (today, your co-parent) a personal, non-commercial permission to read it, play its recording if it is available to them, export it, and, once printed books are offered, include it in printed books for the family, for as long as it stays in the book. Today your co-parent reads your words but hears your recording only on a phone that holds it. Recording backup is for you alone; it does not let your co-parent hear your recordings.
 
 7.2 Copies someone has already exported, downloaded, printed or played may stay on their devices or shelves after you take a letter out. We cannot reach those copies. Those people may keep copies they already made for personal family use, such as a printed book. Please keep this in mind before adding a letter to a shared book.
 
@@ -134,21 +135,23 @@ This summary is here to help. The full terms below are what count.
 
 ## 8. Leaving, being removed, and deleting
 
-8.1 **Leaving a book.** Anyone can leave a book at any time. You choose to leave your letters in the book (the default) or take them out. Either way, you can still read and export your own letters.
+8.1 **Leaving a book.** Anyone can leave a book at any time. You choose to leave your letters in the book or take them out; nothing is chosen for you. Either way, you can still read and export your own letters. Letters already on the other parent's phone, or in an export they made, cannot be taken back.
 
 8.2 **Removing a family member (once family members can join).** A co-parent can remove a family member from a book. Their letters already in the book stay, unless the co-parent chooses to take them out of the book. Taking letters out sets them aside; it does not delete them, and the author keeps them. A removed family member can still read and export their own letters. Recordings they already played may still be on their phone.
 
 8.3 **Deleting a book.** Only a sole co-parent can delete a whole book. If there are two co-parents, choosing delete removes only your own letters and you leave the book. A deleted book can be restored for 30 days. If a book with family members is deleted, each family member is offered a way to save a copy of their own letters for 30 days.
 
-8.4 **Deleting your account.** You can delete your account in the app at any time. We first offer you an export. Deleting your account removes your letters from our servers and from every book you wrote in, after a 30-day period in which you can change your mind. When it is done, the app offers one more export and then clears your letters and recordings from your phone. Letters other people wrote are not affected. Deleting your account does not cancel a Plus subscription; you cancel that in your Apple Account (Section 14).
+8.4 **Deleting your account.** You can delete your account in the app at any time. We first offer you an export. Deleting your account removes your letters from our servers and from every book you wrote in, after a 30-day period in which you can change your mind. When it is done, the app offers one more export and then clears your letters and recordings from your phone. If you use recording backup, the app first offers to bring back any recording that is only in the backup, and then the backup is deleted. Letters other people wrote are not affected. Deleting your account does not cancel a Plus subscription; you cancel that in your Apple Account (Section 14).
 
-8.5 **Letters already in someone's hands.** Section 7.2 applies to copies others already have.
+8.5 **Letters already in someone's hands.** Section 7.2 applies to copies others already have, including letters still on the other parent's phone before it next connects.
+
+8.6 **If you die.** **[COUNSEL DRAFT, R4 PT-17; COUNSEL_PACKET Q29. Not decided.]** If we receive proof we accept that an account holder has died, from a person with legal authority over their digital assets (such as an executor or a person named under state law), we will, on request, provide that person one export of the letters the account holder wrote and, if they used recording backup, their backed-up recordings. We will not give anyone access to the account itself. Letters already in a shared book stay readable by the other parent as long as they stay in the book. Details are in our help pages.
 
 **[COUNSEL: Section B open question 6: account deletion currently removes a co-parent's letters from the shared book, which may surprise the other parent and the child later. A "leave my letters for {child}" option is planned (B-REQ-025, P2) and would need a surviving license grant here. Also decide whether a contributor's account deletion should keep their already-added letters in the book, and how this interacts with privacy-law deletion rights.]**
 
 ## 9. If parents separate
 
-9.1 Co-parents in a book are equals. In the Service, neither can remove the other, delete the other's letters, or delete the shared book.
+9.1 Co-parents in a book are equals. In the Service, neither can delete the other's letters or delete the shared book. For 72 hours after someone joins a book through your invite, you can remove them, in case the invite reached the wrong person. After that, neither parent can remove the other in the app; Section 9.4 applies.
 
 9.2 If parents separate, each can: make their own letters private, one at a time or all at once; leave the book and keep their letters; and export their letters at any time, free.
 
@@ -202,43 +205,50 @@ This summary is here to help. The full terms below are what count.
 
 ## 12. Keeping your letters safe
 
-12.1 **Where things are kept.** Your recordings are kept on your phone, and they never leave it through us: we do not upload, back up or transcribe recordings on our servers. They leave your phone only if you export or share them yourself. When you are signed in and have agreed to sync, the text of your letters syncs to our servers so it can reach your other phones and your co-parent.
+12.1 **Where things are kept.** Your recordings are kept on your phone. We do not transcribe recordings on our servers. When you are signed in and have agreed to sync, the text of your letters syncs to our servers so it can reach your other phones and your co-parent. Recordings leave your phone only if you export or share them yourself, or if you turn on recording backup (Section 12.2).
 
-12.2 **Your phone's own backup.** If you use iCloud Backup or back up your iPhone to a computer, your phone's backup may include your recordings and letters. That backup belongs to your Apple Account and is under your control, not ours. We do not offer a separate backup of recordings today.
+12.2 **Recording backup (optional).** If you are signed in, you can turn on recording backup in Settings, Storage and backup. It is off until you turn it on, and turning it on is a separate agreement. When it is on:
+- each of your recordings is encrypted on your phone before it is uploaded, and stored on our servers only in encrypted form;
+- we keep a recovery key, so you can get your recordings back on a new phone even if you lose every phone. This means we could open your backed-up recordings;
+- we use the recovery key only through our recovery service, and only to restore your recordings to a new phone you signed in on, to replace the recovery key, or to answer a legal order we must obey. Each time the recovery service opens one of your keys, it keeps a record and we email you, unless a legal order forbids it. The Privacy Policy, Section 7, explains how the recovery key is kept, who could use it outside the recovery service, and how we guard against that;
+- backup is for you alone. Your co-parent cannot hear your backed-up recordings;
+- you can turn backup off at any time and choose whether to keep or delete what is backed up.
 
-12.3 **Export.** You can export everything at any time, free, as a file with your letters, the recordings on your phone and a book PDF. Export works on your phone without a connection.
+12.3 **Your phone's own backup.** If you use iCloud Backup or back up your iPhone to a computer, your phone's backup may include your recordings and letters. That backup belongs to your Apple Account and is under your control, not ours.
 
-12.4 **Please keep your own copy.** We work hard to keep your letters safe, but no service can promise nothing will ever go wrong. Phones are lost and broken. Because recordings stay on your phone, we cannot recover a recording from our servers if your phone and its backup are lost. Your synced letter text can come back when you sign in on a new phone. We recommend exporting from time to time and keeping the file somewhere safe.
+12.4 **Export.** You can export everything at any time, free, as a file with your letters, the recordings on your phone and a book PDF. Export works on your phone without a connection.
 
-**[COUNSEL: Founder decisions D-059 (no audio upload in v1.0; family hearing each other's recordings, backup and restore are v1.1 or later) and D-033 (recordings live in the app's backed-up folder, so the user's own iPhone backup includes them). Encrypted backup, Vault mode and the web contribution page were removed from this section in 1.5.0. When server transcription (v1.1, consented) or any audio upload ships, 12.1 changes first and the change is major under POLICY_VERSIONING 2.1 item 1.]**
+12.5 **Please keep your own copy.** We work hard to keep your letters safe, but no service can promise nothing will ever go wrong. Phones are lost and broken. Your synced letter text can come back when you sign in on a new phone. Your recordings can come back only if they are in recording backup, in your phone's own backup, or in an export you kept. We recommend exporting from time to time and keeping the file somewhere safe.
 
-## 13. Free, always
+**[COUNSEL: Rewritten in 1.6.0 (R4 PT-01; F08 6.5 claims table rows "Terms 6.2, 12.4"; D-073, M14, M16, D-091). 1.5.0 said recordings "never leave it through us: we do not upload, back up or transcribe recordings on our servers" (12.1), "We do not offer a separate backup of recordings today" (12.2) and "Because recordings stay on your phone, we cannot recover a recording from our servers" (12.4); all three are false once owner backup ships. New 12.2 describes opt-in backup and the recovery key in the words M16 allows: encrypted, a recovery key we hold, used only through the recovery service, each use logged and emailed (F08 6.5 C6, C7; F17-REQ-027). It does not say only the family's keys can open backups (M16) and does not claim every use of the key is logged; the honest limit lives in Privacy Policy section 7 (F08 6.5 C). Old 12.2 to 12.4 renumbered 12.3 to 12.5; Section 20.2 now cites 12.5. Whether backup is free or Plus is not decided (D-093 item 2 proposes free); these Terms say neither. Backup reaches users from T27 (18 Jan 2027) at the earliest; if the release build ships with `capabilities.backup` off, 12.2 must say backup is not yet available. COUNSEL_PACKET Q32.]**
 
-13.1 These parts of Early Letters are free and will stay free for as long as we operate the Service:
-- writing and recording letters, spoken or typed, with no limit;
+## 13. What stays free
+
+13.1 **Your first 2 letters.** The first 2 letters you keep are free. A letter counts when you are its author, its words exist, and you keep it from Review. Letters your co-parent writes never count toward yours. Deleting a letter does not give a free letter back.
+
+13.2 **Free for as long as we operate the Service, with or without Plus:**
+- speaking, recording and typing letters, and reviewing them;
 - reading your letters and playing their recordings;
+- Read together, and starting a book for another child;
 - exporting everything, including after a Plus plan ends;
+- deleting your letters, a book or your account, and asking for a copy of your data;
 - inviting a co-parent and writing the book together.
 
-13.2 **Past letters are never put behind a payment.** If you stop paying for Plus, every letter and recording you already made stays readable, playable and exportable, and every book you already have stays fully usable.
+13.3 **Every letter you write stays yours to read, play and export, with or without Plus.** If you never subscribe, or Plus ends later, nothing you already kept is locked, hidden or deleted. A letter you made after your free letters, while you did not have Plus, waits on your phone (and, if you are signed in, in your account where only you can see it) until you keep it with Plus or delete it. It is never lost because you did not subscribe.
 
-13.3 We will not change Section 13 for people who already use the Service. If we ever close the Service, Section 17 applies.
+13.4 We will not change Section 13 to take anything away from people who already use the Service. If we ever close the Service, Section 17 applies.
 
-**[COUNSEL: "Free forever" is a binding, advertised promise (C-REQ-017, C-NFR-008; Plus copy `billing.store.promise`: "Writing, reading, playing your recordings, export and writing with your co-parent are free, always."). 13.3 makes it non-amendable for existing users, which is deliberate but limits future options. Change in 1.5.0: earlier drafts also promised "inviting family, and family letters" free; v1.0 has co-parents only (D-055), so the promise now covers what exists. Founder to decide whether the free promise is extended to other family members when they ship, knowing 13.3 then makes it permanent (COUNSEL_PACKET Q14). Which books are free (D-007, D-008) is described in 14.1 as Plus scope, not added to this permanent list; writing free implies at least one free book. Confirm the scope "for as long as we operate the Service" is the right outer limit, and how it binds a buyer of the business (Section 27.3).]**
+**[COUNSEL: Rewritten in 1.6.0 for the membership model (M1, D-082; M2, D-083; M17, D-092; R4 PT-13; COUNSEL_PACKET Q14). 1.5.0 promised "writing and recording letters, spoken or typed, with no limit" free for as long as we operate the Service, and made Section 13 non-amendable for existing users. The founder's 4 Oct decision ends free keeping after the first 2 letters, so that promise is withdrawn here before any user is bound (pre-publication draft). 13.3 uses R4 PT-13's scoped sentence. "Playable" is claimed only for your own letters: the other parent's recordings never play on your phone in v1.0, and the other parent's letters leave the book if that parent takes them out, leaves or deletes their account (F11). 13.1 follows D-092 (own letters, words exist, kept from Review; ledger never decreases; Erase everything resets it). Whether voice-only letters waiting for their words count when first saved is D-093 item 3, proposed only (F14 Q-F5). 13.2 lists capture, Read together and extra books per M1 and M2. Confirm "free" usage meets FTC guidance (register CR-012) and that 13.4 binds an asset buyer through 17.2 and 27.3. Recording backup is not listed in 13.2 because free or Plus is not decided (D-093 item 2 proposes free); if the founder confirms free, counsel decides whether it joins 13.2 (which 13.4 then makes permanent).]**
 
 ## 14. Plus subscriptions
 
-14.1 **What Plus is.** Plus is an optional subscription. Today it adds two things:
-- **Read together** after the free sessions in each book. Each book has 3 free Read together sessions (we may offer more, never fewer).
-- **Books for more children.** Your first book is free. Books for every child you add together when you first set up the app are free too, and a book you joined as a co-parent does not count as your free book. Further books need Plus.
+14.1 **What Plus is.** Plus is a membership. With Plus you can keep new letters after your first 2 (Section 13.1). Everything in Section 13.2 stays free without it. What Plus includes is shown in the app, above Apple's subscription screen, before you subscribe. The Subscription Terms are part of these Terms.
 
-What Plus includes is shown in the app, above Apple's subscription screen, before you subscribe. The Subscription Terms are part of these Terms.
+14.2 **Prices and trials.** At launch, Plus costs US $4.99 a month with a one-month free trial, or US $49.99 a year with a two-month free trial. The price, the length of any free trial and when it ends are shown on Apple's subscription screen before you subscribe, and those are the terms that apply to you. Free trials are for new subscribers, one per person, as Apple decides. If you are not eligible, Apple shows the price without a trial. Early Letters is offered in the United States.
 
-14.2 **Prices and trials.** At launch, Plus costs US $3.99 a month with a one-month free trial, or US $29.99 a year with a two-month free trial. The price, the length of any free trial and when it ends are shown on Apple's subscription screen before you subscribe, and those are the terms that apply to you. Free trials are for new subscribers, one per person, as Apple decides. If you are not eligible, Apple shows the price without a trial. Early Letters is offered in the United States.
+14.3 **Automatic renewal.** Plus renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. Apple charges your Apple Account. By subscribing you agree to this. We keep a record of what you agreed to and when: the plan, the kind of offer, the version of the Subscription Terms you were shown, and the time.
 
-14.3 **Automatic renewal.** Plus renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. Apple charges your Apple Account. By subscribing you agree to this.
-
-14.4 **Apple handles billing.** Plus is sold through the App Store, and Apple processes every payment, renewal, cancellation and refund under its own terms. We never see or store your card details, and we do not receive your purchase records: the app checks Plus on your phone with Apple.
+14.4 **Apple handles billing.** Plus is sold through the App Store, and Apple processes every payment, renewal, cancellation and refund under its own terms. We never see or store your card details, receipts or the price you paid. The app checks Plus on your phone with Apple. If you bought Plus yourself and are signed in, the app also tells our servers your plan, when a free trial ends, when it renews and whether renewal is off, so we can send the reminders in Section 14.6. Our servers never decide whether you have Plus.
 
 14.5 **How to cancel.** You can cancel at any time, in one of these places:
 - **On your iPhone:** Settings, tap your name, Subscriptions, Early Letters, Cancel Subscription.
@@ -248,8 +258,9 @@ To avoid being charged, cancel at least 24 hours before a free trial or period e
 
 14.6 **Receipts and reminders.**
 - **From Apple.** Apple sends its own receipts and subscription messages to your Apple Account, under Apple's settings and terms.
-- **From the app, on your phone.** On an iPhone signed in to the Apple Account that subscribed, Early Letters reminds you before a free trial ends, before an annual plan renews, and once a year for every plan. Each reminder gives the date, the price after, and how to cancel. Reminders arrive as notifications if you allow them, and as a note in the app the next time you open it. Settings, Plan always shows when your free trial ends or your plan renews.
-- **What we do not do.** We do not email you about your subscription, because Apple, not us, holds your purchase. If you delete the app or turn its notifications off, you will not get our reminders, but Apple keeps billing until you cancel.
+- **From us, by email.** If you bought Plus yourself and are signed in with an email address, we email you when your plan or free trial starts, before a free trial ends, before an annual plan renews, once a year for a monthly plan, and when your plan is cancelled or ends. Each reminder gives the date, the price after, and how to cancel. Because we may not see a cancellation you made in your Apple Account until you next open the app, a reminder can arrive after you cancelled; if so, there is nothing to do.
+- **From the app, on your phone.** On an iPhone signed in to the Apple Account that subscribed, Early Letters also shows a confirmation you can save, reminds you at the same moments as notifications if you allow them, and shows a note in the app the next time you open it. Settings, Plan always shows when your free trial ends or your plan renews.
+- **If you are not signed in,** we have no email address for you, so reminders come only on your phone. If you delete the app or turn its notifications off, phone reminders stop, but Apple keeps billing until you cancel.
 
 14.7 **Refunds.** Refunds are decided by Apple. You can ask at reportaproblem.apple.com, or in Early Letters under Settings, Plan, Request a refund, which opens Apple's own refund screen. Unless the law or Apple's policy says otherwise, there are no partial refunds for unused time. A refund ends Plus for that period. It never affects your letters, recordings or books.
 
@@ -259,15 +270,17 @@ To avoid being charged, cancel at least 24 hours before a free trial or period e
 
 14.10 **No obstacles to cancelling.** We never put an offer or extra step between you and cancelling. The Manage subscription button opens Apple's screen directly.
 
-14.11 **When Plus ends.** Section 13.2 applies. All your existing books stay fully usable, including extra children's books. Creating another book, and Read together beyond the free sessions, need Plus again.
+14.11 **When Plus ends.** Section 13.3 applies. Keeping new letters needs Plus again; everything in Section 13.2 stays free.
 
-14.12 **Who Plus covers.** Plus belongs to the Apple Account that subscribed. It works on any phone signed in to that Apple Account, and Apple Family Sharing is turned on, so the people in your Apple family group get Plus too, including a co-parent in that group. A co-parent outside your Apple family group, or using a different Apple Account, needs their own subscription. Signing in to Early Letters on a phone with a different Apple Account does not bring your Plus with you.
+14.12 **Who Plus covers.** Plus belongs to the Apple Account that subscribed. It works on any phone signed in to that Apple Account, and Apple Family Sharing is turned on, so the people in your Apple family group get Plus too, including a co-parent in that group. A co-parent outside your Apple family group, or using a different Apple Account, needs their own subscription to keep new letters after their own first 2. Signing in to Early Letters on a phone with a different Apple Account does not bring your Plus with you. Only the person who bought Plus gets our reminder emails.
 
-14.13 **Gifts.** Gifts of Plus are not offered yet. If we offer them, a gift will not renew and will never be charged again.
+14.13 **Offer codes.** We may give some people an offer code, redeemed through Apple (Settings, Plan, Redeem a code, or Apple's own redemption page). A code gives the free or reduced period Apple shows when you redeem it. When a free period from a code ends, your plan renews at the normal price unless you cancel at least 24 hours before it ends. We do not run a code system of our own.
 
-14.14 **Lifetime.** We may later offer a one-time lifetime option. If we do, its terms will be shown before purchase. A lifetime purchase is a license to use Plus features for as long as we operate the Service, not ownership of software, and Section 17 applies to it.
+14.14 **Gifts.** Gifts of Plus are not offered yet. If we offer them, a gift will not renew and will never be charged again.
 
-**[COUNSEL: Rewritten in 1.5.0 for founder decision D-053 and ADR 0013: Plus is sold only through the App Store, shown with Apple's own SubscriptionStoreView, and checked on the device (`Transaction.currentEntitlements`); no server of ours sees purchases (no App Store Server Notifications, no App Store Server API, no purchase ledger). Family Sharing is on for both products and cannot be turned off. 14.1 lists only what v1.0 gates; encrypted backup, extra themes and covers were removed (D-053, D-059; App Review 3.1.2(c): the list must match the store view at every release). 14.6 implements the Q-003 position (docs/legal/memos/q-003-subscription-notices.md): Apple's receipts and price-change notices, plus on-device local notifications and an in-app card on the purchaser's phone in the D-022 windows (trial over 31 days: [E-21d, E-16d]; every trial: [E-5d, E-4d]; annual renewal: [E-31d, E-30d], the only day that satisfies both Utah's 30 to 60 days before renewal and Massachusetts' 5 to 30 days before the cancellation deadline; yearly reminder for every plan). It describes the reminders without promising day counts, because delivery depends on notifications and on the app being installed. The earlier "we tell you by email" and "we keep a record and email you a copy" promises are removed because we cannot keep them. 14.8 relies on choosing "keep current price for existing subscribers" in App Store Connect for every price change, which avoids New York's 14-day pro-rata refund route we could not perform for Apple purchases (COUNSEL_PACKET Q8, memo C-9). Billing Grace Period is 16 days (D-048). 14.12 replaces the 1.4.0 line "Family Sharing ... is not available for Plus at launch". Questions: COUNSEL_PACKET Q8 (memo C-1 to C-11). Federal: ROSCA (15 U.S.C. 8403) applies; the FTC 2024 Negative Option Rule was vacated by the Eighth Circuit in July 2025, the FTC published an ANPRM on 13 March 2026 (comments closed 13 April 2026), and the FTC rule page still shows the ANPRM as the latest step on 3 October 2026. Lifetime: California AB 2426 license disclosure on the purchase screen.]**
+14.15 **Lifetime.** We may later offer a one-time lifetime option. If we do, its terms will be shown before purchase. A lifetime purchase is a license to use Plus features for as long as we operate the Service, not ownership of software, and Section 17 applies to it.
+
+**[COUNSEL: Rewritten in 1.6.0. Membership and prices (M1, M3; D-082): 14.1, 14.2, 14.11; $4.99 and $49.99 replace $3.99 and $29.99; Read together and extra books leave Plus (M2, D-083). Status report and emails (M6; D-080, D-081; F14 6.6): 14.3 adds the consent record (D-081 effects asked to widen 14.3 to "what you agreed to and when"); 14.4 replaces "we do not receive your purchase records"; 14.6 replaces "We do not email you about your subscription" with the email schedule (acknowledgment, trial week or long trial, final trial, annual 30 and 7 days, monthly anniversary, cancelled and ended; windows in F14 6.6, kept as data in packages/core, not promised as day counts here) and the D-080 line "If you have already cancelled, there is nothing to do."; 14.12 adds that Family Sharing members get no billing email (D-080 rule). Offer codes (M5; D-052 main): new 14.13; F14 Q-C11 asks counsel to approve the conversion wording, and until answered no code with a free period over 31 days is issued (R4 PT-10). Conflict to resolve: D-082 (4 Oct) says "One membership covers the book", while D-080 and F14 6.7 edge 1 (as answered by M17, Q-F1) keep a co-parent outside the payer's Apple family on their own Plus at v1.0, because Plus is checked on each phone through StoreKit and the server never enforces it. 14.12 follows D-080 and F14; the founder should confirm, or 14.12 and the Subscription Terms change. Open for counsel (COUNSEL_PACKET Q8, R4 rank 1): unsigned buyers get phone notices only (14.6 last bullet; F14 Q-C1; R4 PT-08 (a)); billing notices after account deletion (F14 Q-C12; PT-08 (b)); renewal projection (PT-08 (c)); consent record retention (PT-09); the acknowledgment sheet under 17602(a)(3) (F14 Q-C2). The rest of the 1.5.0 note stands: Plus is sold only through the App Store with Apple's own SubscriptionStoreView; no App Store Server Notifications, no App Store Server API; 14.8 relies on "keep current price for existing subscribers"; Billing Grace Period 16 days (D-048); ROSCA applies; the FTC 2024 Negative Option Rule stays vacated (ANPRM of 13 March 2026 the latest step as of 3 October 2026); AB 2426 for any lifetime option.]**
 
 ## 15. Printed books (not offered yet)
 
@@ -291,7 +304,7 @@ Printed books are not part of Early Letters today; the Service is digital only. 
 
 16.3 If we remove or substantially reduce a Plus feature you are paying for, we will tell you in advance. You can cancel, and where Apple allows we will help you get a pro-rated refund for an annual plan.
 
-16.4 **Early version.** Early Letters is an early version (a beta). That means we are still building it: features may change, move, pause or sometimes break, it can make mistakes, and you may find bugs. Please export a copy of your letters from time to time (Section 12.3) and tell us about problems at hello@earlyletters.com. Being an early version does not change Sections 6, 11.1 to 11.3, 13 or 17.
+16.4 **Early version.** Early Letters is an early version (a beta). That means we are still building it: features may change, move, pause or sometimes break, it can make mistakes, and you may find bugs. Please export a copy of your letters from time to time (Section 12.4) and tell us about problems at hello@earlyletters.com. Being an early version does not change Sections 6, 11.1 to 11.3, 13 or 17.
 
 **[COUNSEL: Founder decisions K-13 and D-060: the beta runs on TestFlight, the store listing never says "beta", and the in-app "Early version" note (`settings` about label: "{app} is an early version, and it can make mistakes.") stays until the founder ends it. 16.4 matches that note. When it ends, 16.4 and the in-app note change together in one release. The label supports, but does not replace, the disclaimers in Section 20; it is not a defense to the binding promises listed in 16.4.]**
 
@@ -302,7 +315,7 @@ Printed books are not part of Early Letters today; the Service is digital only. 
 17.1 We are building Early Letters to last for years. If we ever decide to close the Service, or a part of it that stores your letters, we promise:
 - **At least 90 days' notice** by email and in the app before your letters become unavailable from our servers.
 - **Export keeps working.** You will be able to export all your letters, recordings and a book PDF during the notice period. Export works from your phone, so letters and recordings on your phone stay with you after we close.
-- **Anything we store for you can be downloaded** throughout the notice period, including by people whose Plus has ended. Today that is the text of your letters; if we later store recordings for you, it includes them.
+- **Anything we store for you can be downloaded** throughout the notice period, including by people whose Plus has ended. That includes the text of your letters and, if you use recording backup, your backed-up recordings, which the app brings back to your phone.
 - **No new charges.** We will stop new subscriptions and renewals when we give notice, and we will help you get a pro-rated refund of any unused part of an annual plan, where Apple allows.
 - **Open formats.** Exports use common formats (text, JSON, M4A audio, PDF) with a description of what is inside, so other tools can read them.
 
@@ -310,7 +323,7 @@ Printed books are not part of Early Letters today; the Service is digital only. 
 
 17.3 Things outside our control, such as a court order, could shorten this notice. If so, we will give you as much notice as we lawfully can.
 
-**[COUNSEL: Competitive research recommends at least 60 days (Lifecake gave 2 months). This draft commits to 90. Confirm 17.2 is enforceable against an asset buyer and what survives in insolvency; consider funding a reserve or escrow for the wind-down period. 17.1 refunds: same Apple caveat as 16.3. With Vault mode, encrypted backups can only be decrypted on the user's devices, so the download must deliver usable files through the app.]**
+**[COUNSEL: Competitive research recommends at least 60 days (Lifecake gave 2 months). This draft commits to 90. Confirm 17.2 is enforceable against an asset buyer and what survives in insolvency; consider funding a reserve or escrow for the wind-down period. 17.1 refunds: same Apple caveat as 16.3. Updated in 1.6.0: owner backup ships in v1.0 (D-073) in escrow mode only (M16; Vault mode is later, F08 Q5), so the app can bring backed-up recordings back to the phone during the notice period, and the escrow service must keep running until the notice period ends (F08 6.5 C).]**
 
 ## 18. Ending your use, and when we may suspend or end an account
 
@@ -322,7 +335,7 @@ Printed books are not part of Early Letters today; the Service is digital only. 
 
 18.4 **Your letters after suspension.** Unless the law prevents it, or the content is unlawful (for example under Section 10.3), we will let you export your own letters for at least 30 days after we end your account.
 
-18.5 **What continues.** Sections 5, 7, 8.5, 12.4, 19 to 24 and 27 continue after these Terms end.
+18.5 **What continues.** Sections 5, 7, 8.5, 12.5, 19 to 24 and 27 continue after these Terms end.
 
 ## 19. Other services
 
@@ -332,7 +345,7 @@ The Service works with services we do not control, such as Apple, Google, sign-i
 
 20.1 We work hard to make Early Letters reliable and to keep your letters safe. But the Service is provided "as is" and "as available". To the extent the law allows, we do not give promises or warranties beyond those written in these Terms, including implied warranties of merchantability, fitness for a particular purpose and non-infringement.
 
-20.2 In particular, we do not promise that: speech recognition or the small fixes in Section 11.1 will be accurate (Section 11.5); the Service, which is an early version (Section 16.4), will always be available, uninterrupted or free of errors; or any data will never be lost, especially recordings and letters you have not exported (Section 12.4).
+20.2 In particular, we do not promise that: speech recognition or the small fixes in Section 11.1 will be accurate (Section 11.5); the Service, which is an early version (Section 16.4), will always be available, uninterrupted or free of errors; or any data will never be lost, especially recordings and letters you have not exported (Section 12.5).
 
 20.3 Early Letters is a memory book. It is not medical, parenting, legal or safety advice, and letters are not a medical, legal or professional record (Section 11.5). Any prompt or resource card in the app is general information only.
 
@@ -496,7 +509,7 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 - [S10] Google Play Help, Refunds (developer can process refunds): https://support.google.com/googleplay/answer/2479637
 
 **Internal**
-- PRD Sections A, B and C (docs/prd); docs/ARCHITECTURE.md; ADR 0007 (print half only), ADR 0013 (Apple-only Plus on the device); docs/DECISIONS.md D-051 to D-070; docs/research/USER_RESEARCH.md and COMPETITIVE_RESEARCH.md; packages/core/src/types.ts (EditType); supabase/migrations.
+- PRD V2 (docs/prd/v2): `_AUTHORING.md` 3b (M1 to M17); F08 sections 6.5 and 6.7; F11; F14 sections 6.6, 6.7, 13; F17 sections 7, 8; reviews R4 and R8. docs/DECISIONS.md D-069, D-073, D-080 to D-083, D-089 to D-093 (D-093 proposed). PRD Sections A, B and C (docs/prd); docs/ARCHITECTURE.md; ADR 0007 (print half only), ADR 0013 (Apple-only Plus on the device); docs/DECISIONS.md D-051 to D-070; docs/research/USER_RESEARCH.md and COMPETITIVE_RESEARCH.md; packages/core/src/types.ts (EditType); supabase/migrations.
 
 ## Appendix B: Decisions for counsel
 
@@ -504,8 +517,9 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 2. **Custom EULA or Apple Standard EULA** (Section 26.1). Need a real support phone number either way if custom.
 3. **Auto-renewal compliance with Apple-only billing** (Section 14). Whether the state duties fall on us when Apple is merchant of record; whether on-device reminders are a compliant notice; acknowledgment without email; consent records held by Apple; whether Apple's cancel screen meets 17602(d), Colorado, Virginia and NYC. Position and questions: docs/legal/memos/q-003-subscription-notices.md (COUNSEL_PACKET Q8).
 4. **FTC status.** Rechecked 3 October 2026: the 2024 rule stays vacated; the March 2026 ANPRM is the latest step on the FTC rule page; no NPRM reported as of 24 September 2026 (secondary). ROSCA applies. Recheck at submission.
-5. **Binding promises.** Sections 6.2 (no training, no ads, no sale), 11 (faithful transcription), 13 (free forever, non-amendable), 17 (90-day shutdown notice, successor obligations). Confirm the company can keep them, including in a sale or insolvency.
-6. **Account deletion and shared books** (Section 8.4; PRD B OQ6).
+5. **Binding promises.** Sections 6.2 (no training, no ads, no sale, never listen), 11 (faithful transcription), 13 (what stays free, non-amendable; narrowed in 1.6.0 for the membership), 17 (90-day shutdown notice, successor obligations). Confirm the company can keep them, including in a sale or insolvency.
+6. **Account deletion and shared books** (Section 8.4; PRD B OQ6); **death and fiduciary access** (new Section 8.6, drafted for counsel; R4 PT-17; COUNSEL_PACKET Q29).
+15. **Recording backup and the recovery key** (Sections 6.2, 12.2; D-073, D-091; R4 PT-01, PT-02; COUNSEL_PACKET Q32): is 12.2 enough in the Terms, with the honest limit in the Privacy Policy, and does backup need its own consent act (F08 Q6)?
 7. **Children's and minors' data.** COPPA scope (adults writing about a child), Apple 5.1.4, India DPDP, GDPR Article 8, California AB 1043 and other age-assurance laws.
 8. **Court orders and safety removals** (Section 9.4), CSAM reporting (Section 10.3).
 9. **Liability cap and carve-outs** (Section 21), indemnity (Section 22).
@@ -519,6 +533,7 @@ Pages opened on 2 October 2026 unless marked otherwise. "Unverified" means relie
 
 | Version | Date | Status | Changes |
 |---|---|---|---|
+| 1.6.0 | 2026-10-15 | draft-for-counsel | Server-on v1.0 (M14, D-089). **Recordings (R4 PT-01; F08 6.5 claims table; M16, D-091):** 6.2 deletes "Your recordings stay on your phone, so we cannot listen to them" and promises we never listen, pointing to 12.2; 6.1 adds backup as a permitted use; 12.1 no longer says recordings never leave the phone; new 12.2 describes opt-in encrypted backup, the recovery key we hold, its three uses, a record and email for each use, and that it is for the owner alone (no "only your family's keys" claim; no claim that every use is logged); old 12.2 to 12.4 renumbered 12.3 to 12.5 and 12.5 drops "we cannot recover a recording from our servers"; 7.1 says backup does not let the co-parent hear recordings (D-073); 8.4 adds the only-in-backup step (F08 6.5 D); 17.1 includes backed-up recordings in the shutdown download; short version updated. **Membership (M1, M2, M3, M5, M17; D-082, D-083, D-092; R4 PT-13):** Section 13 "Free, always" replaced by "What stays free" (first 2 letters, what is always free, the scoped sentence "Every letter you write stays yours to read, play and export, with or without Plus", held letters never lost); 14.1, 14.2 ($4.99 a month with a 1-month free trial; $49.99 a year with a 2-month free trial), 14.11 rewritten; new 14.13 offer codes (D-052 main; R4 PT-10). **Status report and emails (M6; D-080, D-081):** 14.3 adds the consent record; 14.4 replaces "we do not receive your purchase records"; 14.6 replaces "We do not email you about your subscription" with the reminder emails, the "If you have already cancelled" line and phone-only reminders for unsigned buyers; 14.12 Family Sharing members get no billing email; conflict between D-082 "one membership covers the book" and D-080 flagged for the founder. **Co-parent (M8, D-069; F11):** 4.2 at most two co-parents; 8.1 no preselected leave choice (R4 PT-14) and copies cannot be taken back (PT-15); 8.5 includes copies on the other phone; 9.1 and the short version add the 72-hour undo (F11 D3, F11-REQ-008, -012). **Death:** new 8.6 drafted for counsel (R4 PT-17). Cross-references updated (16.4, 18.5, 20.2). Appendix B items 5, 6 and new 15. Pre-publication draft, no users bound; if 1.5.0 had been published, the Section 13 narrowing, the Plus scope and price changes and audio upload would each be major under POLICY_VERSIONING 2.1 items 1 and 6, and 13.3 of 1.5.0 would have barred the Section 13 change for existing users. |
 | 1.5.0 | 2026-10-03 | draft-for-counsel | Alignment with the founder decisions of 3 Oct 2026, second round (D-051 to D-070). Plus (14) rewritten for Apple-only billing checked on the device (D-053, ADR 0013): 14.1 lists only Read together after 3 free sessions per book and books for more children (encrypted backup, extra themes and covers removed); Family Sharing on (14.12); no emails from us, Apple's receipts plus on-device reminders (14.6, Q-003 memo); existing subscribers keep their price (14.8); refunds and cancellation only through Apple (14.5, 14.7); Google Play removed from v1.0 text (14.5, 26.2). No audio leaves the phone (12.1, 12.2 replaced by the user's own device backup; 12.4, 13.2, 17.1, 20.2; D-059, D-033). Sign-in is Apple, Google or email link, no passwords, passkeys where offered (3.2; D-054). Co-parent only (2.3, 4.2, 4.3, 7.1, 8.2; D-055); sealed letters marked not offered (4.4). Never imitate your voice (6.2, short version; D-061). Transcription on the phone, script-aware punctuation, typed text never rewritten, original recording never altered (11.1, 11.2; D-056 to D-058); Read together highlighting removed (11.4; D-059). Free promise scoped to co-parents (13.1). Beta wording follows the in-app "Early version" note (16.4, short version; D-060). Real URLs and hello@earlyletters.com filled (D-063). Pre-publication draft, no users bound; if 1.4.0 had been published, the Plus scope, renewal-notice and free-scope changes would be major under POLICY_VERSIONING 2.1 item 6. |
 | 1.4.0 | 2026-10-03 | draft-for-counsel | Alignment with PRD.md 1.3 (founder decisions of 3 Oct). Provider is the founder as an individual (1.1, 26.1(a) and (h), 27.8, signature block; placeholders renamed to {PUBLISHER_LEGAL_NAME} and {CONTACT_ADDRESS}); founder note on liability rewritten for an individual; Appendix B items 11 (resolved by K-38) and 13 (entity no longer a launch condition) updated. Google sign-in where offered (3.2; v1.1). Family web page marked as later (12.1, applies_to). Plus remains billed by Apple only at launch; Section 14's Google Play lines apply when Android ships. Pre-publication draft, no users bound; if published, the provider change would be major. |
 | 1.3.0 | 2026-10-02 | draft-for-counsel | Product alignment with PRD.md 1.2 (founder decisions of 2 Oct). Adults only covers every use, including pre-account use on the phone; age asked at first open (1.5, 2.1; PRD K-07). Printed books marked not offered yet; print clauses apply only once print launches (1.3, 6.1, 7.1, 15; PRD K-32). Beta end note updated (16.4 counsel note; PRD K-13). Pre-publication draft, no users bound; 2.1 would be major if 1.2.0 had been published (POLICY_VERSIONING 2.1 item 9, counsel to classify). |
