@@ -109,7 +109,7 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 - Haptic none. RM: wash jumps (DESIGN_LANGUAGE spec); scroll pages: line past 75% height jumps to 25%.
 
 ### (h) Milestones: first letter, 100 letters, first grandparent letter
-- An inline note card in the Book at that letter's place, never a modal. Line drawing (envelope, moon; `react-native-svg`) draws once via `strokeDashoffset` over 1.2 s, then text fades in: "Mira's first letter. From Papa, Month 2." / "One hundred letters for Mira." / "Nani wrote to Mira."
+- An inline note card in the Book at that letter's place, never a modal. Line drawing (envelope, moon; `react-native-svg`) draws once via `strokeDashoffset` over 1.2 s, then text fades in: "Asha's first letter. From Papa, Month 2." / "One hundred letters for Asha." / "Nani wrote to Asha."
 - Once per reader, no sound, no extra haptic (save already gave `success`), no push.
 - RM: drawing shown complete, 200 ms text fade.
 
@@ -122,6 +122,13 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 ### (j) Empty states
 - One element (moon or envelope) breathes opacity 0.85↔1 over 8 s (Calm's slowest pace, M10), only while focused and app active. Text and action static.
 - Off under RM, Low Power Mode (`expo-battery`) and Android animator scale 0.
+
+### (k) Lamp light
+- The website's lamp on the app's paper: one warm radial pool (`Lamp`, `components/ui/lamp.tsx`), on **welcome, Tonight and Book only**. Never on a screen that records or plays a voice (principle 1: continuous motion follows a real signal, and this one does not).
+- Arrives once over `tokens.motion.lamp.arriveMs` (1.2 s, M3 easing), then breathes its opacity down by 12 % and back over 9 s (`breathMs`, the site's lamp swell is 8.6 s). Opacity only, as a Reanimated CSS animation on one wrapper (native, no JS per frame; a real CSS animation on web); the gradient is drawn once and rasterised. No flicker (the site's filament flicker is not ported), no colour drift, no blur. The site's 2 % scale swell is not ported either: scaling a full-screen layer dropped frames in a headless-Chromium measurement (12 slow frames in 8 s against none with opacity alone, none under Reduce Motion).
+- Peak opacity is `tokens.atmosphere.peak` (light 10 %, dark 16 %), capped by `packages/design-tokens/test/atmosphere.test.ts` so every text colour keeps 4.5:1 on the lit paper, also under Increase Contrast.
+- Off: Reduce Motion (the final state, still), Increase Contrast (plain paper), a screen that is not focused, the app in the background.
+- Not ported from the website: grain and paper textures. A tiled image costs memory and a decode on every cold start (D-065), the web grain is dithering for large gradients that the app's small pool does not need, and the dark paper is already warm (`dark.bg` is red over green over blue). Revisit only if a device shows banding in the pool.
 
 ## 6. Haptics map
 

@@ -16,13 +16,45 @@ export const wordsCopy = {
     progress: 'Getting ready, {n}%',
     waitingForWifi: 'Getting ready when you are on Wi-Fi.',
     noSpace: 'This phone needs a little more free space first.',
+    // Shown before any download starts, so the size and the Wi-Fi rule are known first (BL-375).
+    sizeLine: 'The download is about {size} MB and starts when you are on Wi-Fi.',
     keepButton: 'Keep my voice',
     typeButton: 'Type it instead',
     keptToast: 'Your voice is kept. The words will follow.',
+    // Shown when the person has not yet said yes to the one-time download (D-087). {size} is this phone's plan.
+    askTitle: 'Get your {name} words ready',
+    askBody: 'Your voice is kept. To write down the words, this phone needs a one-time download of {size}.',
+    askButton: 'Download on Wi-Fi',
+    // The Wi-Fi wait card: one time, this download only.
+    mobileDataButton: 'Use mobile data {size}',
+    // Review, after leaving the app ended the take.
+    stoppedInBackground: 'The recording stopped when you left the app. Everything up to then is kept.',
   },
   noSpeech: {
     title: 'No talking in this one',
     body: 'The recording is kept just as it is. You can add words by typing them.',
+    // Nobody spoke: one action each, the recording itself is never touched (D-086).
+    tryAgainButton: 'Try again',
+    recordAgainButton: 'Record again',
+    typeButton: 'Type it instead',
+    keepButton: 'Keep the recording',
+  },
+  // A saved letter still waiting for its words, on the letter page (D-086). The reason lines reuse `pack.*`.
+  // Words that arrive later arrive exactly as said and are never fixed unread: the card asks for a read first.
+  waiting: {
+    writeButton: 'Write the words',
+    retryButton: 'Try again',
+    readyButton: 'Get words ready',
+    recordAgainButton: 'Record again',
+    readItBackButton: 'Read it back',
+    readyBody: 'Words are ready. Read it back.',
+    // Words arrived while the letter was closed: shown exactly as said, no fix proposed yet.
+    arrivedNote: 'These words are exactly as you said them. Nothing has been fixed.',
+    // The sheet where a person writes the words for a letter whose recording has none.
+    writeTitle: 'Write the words',
+    writeLabel: 'Words for this recording',
+    saveButton: 'Save words',
+    cancelButton: 'Not now',
   },
   unavailable: {
     title: 'Your voice is kept',

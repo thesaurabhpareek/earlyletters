@@ -123,7 +123,7 @@ describe('Asha export (golden)', () => {
     const { zip } = await makeExport();
     const entries = JSON.parse(strFromU8(unzipSync(zip)['data/entries.json'])) as EntriesFile;
     expect(entries.schema_version).toBe(EXPORT_SCHEMA_VERSION);
-    expect(entries.entries).toHaveLength(11);
+    expect(entries.entries).toHaveLength(13);
     const e2 = entries.entries.find((e) => e.id === 'e2')!;
     expect(e2.raw_transcript).toBe('Asha, um, you are four days old and the whole house is quiet.');
     expect(e2.final_text).toBe('Asha, you are four days old and the whole house is quiet.');
@@ -139,6 +139,35 @@ describe('Asha export (golden)', () => {
     expect(entries.entries.find((e) => e.id === 'd1')?.child_id).toBe('child-dev-0002');
   });
 
+  it('[D-084] quiet days: a row with no words and a date-and-label file; never in the printed book; not counted as letters', async () => {
+    renderedHtml.clear();
+    const { zip } = await makeExport();
+    const files = unzipSync(zip);
+    const entries = JSON.parse(strFromU8(files['data/entries.json'])) as EntriesFile;
+    for (const id of ['q1', 'q2']) {
+      const row = entries.entries.find((e) => e.id === id)!;
+      expect(row).toMatchObject({ kind: 'not_much', final_text: '', words: 'ready', audio: null, audio_missing: null });
+      expect(row.text_file).toMatch(/^letters\/Asha\//);
+      // The file holds the date and the label, nothing else: no author line, no words, no signature.
+      expect(strFromU8(files[row.text_file])).toMatch(/^Date: [^\n]+\n\nA quiet day\n$/);
+    }
+    // The old sentence is not exported as anyone's words; the immutable raw stays as it was stored.
+    expect(strFromU8(files['data/entries.json'])).not.toContain('"final_text": "Saturday');
+    expect(strFromU8(files['letters/Asha/2026-10/2026-10-03_q2.txt'])).not.toContain('Not much today');
+    // The browsable page shows the label and the date, unsigned.
+    const index = strFromU8(files['index.html']);
+    expect(index).toContain('<article class="mark">');
+    expect(index).toContain('A quiet day');
+    expect(index).not.toContain('Just Asha, and us');
+    // Never in the printed book, even the old row that was moved into it.
+    const asha = [...renderedHtml.values()].find((h) => h.includes('Letters to Asha'))!;
+    expect(asha).not.toContain('A quiet day');
+    expect(asha).not.toContain('Not much today');
+    expect(asha).not.toContain('ordinary day');
+    expect(asha).toContain('You laughed today. A real one.');
+    expect(planExport(ashaSnapshot()).books.map((b) => b.letters)).toEqual([8, 1]);
+  });
+
   it('[DATA-REQ-051] lists every file in the manifest and checks clean', async () => {
     const { zip, result } = await makeExport();
     const files = unzipSync(zip);
@@ -151,7 +180,7 @@ describe('Asha export (golden)', () => {
       expect(files[f.path].length, f.path).toBe(f.bytes);
     }
     expect(strFromU8(files['manifest.sha256'])).toBe(`${sha256Hex(files['manifest.json'])}  manifest.json\n`);
-    expect(manifest.counts).toEqual({ entries: 11, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
+    expect(manifest.counts).toEqual({ entries: 13, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
     const check = await verifyExport(access(zip), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
     expect(check).toEqual({ ok: true, problems: [], filesChecked: Object.keys(files).length });
   });

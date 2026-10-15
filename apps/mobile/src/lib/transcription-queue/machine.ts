@@ -143,8 +143,10 @@ export function reduce(s: QueueState, e: QueueEvent): QueueState {
     }
     case 'retry': {
       const j = s.jobs[e.id];
-      if (!j || j.phase !== 'failed') return s;
-      return put(s, { ...j, phase: waitingPhase(s, j.language), attempts: 0, retryAt: null, failure: undefined });
+      // Try again after a failure, or after "No talking in this one" (a quiet take can be listened to once more).
+      const quiet = j?.phase === 'done' && j.outcome === 'no_speech';
+      if (!j || (j.phase !== 'failed' && !quiet)) return s;
+      return put(s, { ...j, phase: waitingPhase(s, j.language), attempts: 0, retryAt: null, failure: undefined, outcome: undefined });
     }
     case 'remove': {
       if (!s.jobs[e.id]) return s;

@@ -5,6 +5,9 @@
  *
  * Source of truth for rationale: docs/design/DESIGN_LANGUAGE.md
  * Contrast ratios below were computed with the WCAG 2.x relative-luminance formula.
+ *
+ * Brand colours repeat packages/brand/index.ts (`brand.colors`, `brand.icon`) so this
+ * package stays dependency-free; test/brand-parity.test.ts fails if any value drifts.
  */
 
 /* ------------------------------------------------------------------ */
@@ -18,6 +21,7 @@ const light = {
   text: '#2B2722', // brand "ink"          14.00:1 on bg
   textMuted: '#6B645B', // brand "inkMuted"  5.51:1 on bg, 5.11:1 on surface
   accent: '#8A5A3B', // brand accent         5.50:1 on bg
+  accentDeep: '#7F4F30', // brand accentDeep: single-colour brand fills (favicon, foil); 6.47:1 on bg, never body text
   accentSoft: '#F1E6DC', // selected chips, highlight wash (text 12.07:1)
   onAccent: '#FFFFFF', // text/icons on accent  5.82:1
   line: '#E6DED3', // hairlines, dividers (decorative, never sole affordance)
@@ -45,6 +49,7 @@ const dark = {
   text: '#F2ECE4', // 15.66:1 on bg
   textMuted: '#B3AA9E', // 8.01:1 on bg
   accent: '#D9A47E', // 8.37:1 on bg
+  accentDeep: '#D9A47E', // = accentDark: on dark, single-colour brand fills use the dark accent (8.37:1)
   accentSoft: '#3A2E25', // text 11.20:1, accent 5.99:1
   onAccent: '#1E1612', // 8.11:1 on accent (dark ink on light accent)
   line: '#33302C',
@@ -80,6 +85,19 @@ const highContrast = {
     controlBorder: '#F2ECE4',
   },
 } as const satisfies Record<'light' | 'dark', Partial<Record<keyof typeof light, string>>>;
+
+/**
+ * App icon tile only (brand.icon), never UI. Default: vertical gradient tileTop to
+ * tileBottom (= accentDeep) with a paper mark; dark: warm near-black with the accentDark mark.
+ */
+const icon = {
+  tileTop: '#9A613C',
+  tileBottom: '#7F4F30',
+  mark: '#FBF8F3',
+  darkTileTop: '#2C2926',
+  darkTileBottom: '#1F1B18',
+  darkMark: '#D9A47E',
+} as const;
 
 /* ------------------------------------------------------------------ */
 /* Spacing: 4pt scale. space[n] === n * 4, except named steps beyond 8 */
@@ -273,6 +291,14 @@ const motion = {
   emptyBreathMs: 8000,
   /** Line drawings draw once (MOTION 5h). */
   drawMs: 1200,
+  /**
+   * Lamp light (MOTION 5k). The pool arrives once, slowly, then drifts by a breath of
+   * opacity on a very slow loop. Decorative; off under Reduce Motion; never
+   * on a screen that records or plays a voice (principle 1). 9 s per full cycle, like
+   * the website's 8.6 s lamp swell; the swing is small enough never to read as flicker.
+   * Opacity only: scaling a full-screen layer cost dropped frames in measurement (MOTION 5k).
+   */
+  lamp: { arriveMs: 1200, breathMs: 9000, breathOpacityMin: 0.88 },
   /** Listening glow (MOTION 5b). */
   breath: { dbFloor: -55, dbCeil: -10, gamma: 0.6, attackMs: 80, releaseMs: 400, scaleMax: 0.18, opacityMin: 0.18, opacityMax: 0.4, idleAfterMs: 600, idleScale: 0.05 },
   /** Read together word highlight (MOTION 5g). */
@@ -292,10 +318,24 @@ const stroke = { hairline: 0.5, control: 1, selected: 1.5, focus: 2, editMark: 1
 /** Focus ring for Full Keyboard Access, Switch Control and web (WCAG 2.4.7 / 2.4.13). */
 const focusRing = { width: 2, offset: 2 } as const;
 
+/**
+ * Atmosphere: the website's lamp light on the app's paper (BRAND_SYSTEM, DESIGN_LANGUAGE 11).
+ * Decorative only: never text, never the only signal. `peak` is the opacity of the lamp pool at
+ * its core, by scheme. It is capped so every text pair that can sit on the lit paper keeps 4.5:1
+ * (checked in test/atmosphere.test.ts): light is a whisper, dark gives the near-black paper its
+ * warm cast (the same amber as the site, `--lamp`).
+ */
+const atmosphere = {
+  lamp: '#F3C98B',
+  peak: { light: 0.1, dark: 0.16 },
+} as const;
+
 export const tokens = {
   light,
   dark,
   highContrast,
+  atmosphere,
+  icon,
   space,
   radius,
   type,
@@ -315,6 +355,7 @@ export type SpaceToken = keyof typeof space;
 export type RadiusToken = keyof typeof radius;
 export type TypeToken = keyof typeof type;
 export type ElevationToken = keyof typeof elevation;
+export type AtmosphereToken = keyof typeof atmosphere;
 export type MotionToken = 'snappy' | 'standard' | 'gentle';
 export type Colors = { readonly [K in ColorToken]: string };
 export type TypeStyleSpec = TypeStyle;

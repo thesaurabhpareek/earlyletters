@@ -20,7 +20,10 @@ import { useEffect, useRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { useAuth } from '@/lib/auth/session-provider';
+import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { inviteDestination } from '@/lib/family/entry.logic';
 import { AccountGate, Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet, useColors } from '@/lib/auth/ui';
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
@@ -36,7 +39,12 @@ const FINAL: readonly InviteErrorKind[] = ['expired', 'used', 'revoked', 'not_fo
 
 type Phase = 'loading' | 'paste' | 'ready' | 'joining' | 'joined' | 'failed';
 
-export default function JoinBook() {
+/** v1.0: server features are off, so this entry shows co-parent sharing as coming soon (lib/family/entry.logic.ts). */
+export default function JoinBookRoute() {
+  return inviteDestination('invite_join', serverFeaturesEnabled()) === 'flow' ? <JoinBook /> : <InviteComingSoon />;
+}
+
+function JoinBook() {
   const auth = useAuth();
   const c = useColors();
   const close = useCloseSheet();
@@ -127,7 +135,7 @@ export default function JoinBook() {
 
   if (phase === 'paste') {
     return (
-      <SheetFrame footer={<QuietButton label={a.close} onPress={close} />}>
+      <SheetFrame closeLabel={a.close}>
         <SheetTitle>{a.title}</SheetTitle>
         <SheetBody muted>{a.pasteHelp}</SheetBody>
         <View className="gap-2">
@@ -173,7 +181,7 @@ export default function JoinBook() {
   }
 
   return (
-    <SheetFrame footer={<QuietButton label={a.close} onPress={close} />}>
+    <SheetFrame closeLabel={a.close}>
       <SheetTitle>{a.title}</SheetTitle>
       <AccountGate trigger="invite" signInBody={a.signInBody}>
         {phase === 'joining' ? <Busy label={a.joining} /> : null}
