@@ -12,10 +12,10 @@
  * Scheduled: the date, Cancel deletion, and sign out of this phone.
  * Completes in-app, without email or support (Apple 5.1.1(v)).
  */
-import { Stack, router } from 'expo-router';
+import { Redirect, Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, TextInput, View, useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
+import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
+import { capabilities } from '@/lib/capabilities';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -24,9 +24,15 @@ import { manageSubscription } from '@/lib/billing';
 import { fill } from '@/lib/copy';
 import { longDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { useTheme } from '@/lib/a11y';
 
-export default function DeleteAccount() {
-  const colors = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+/** v1.0 has no account (lib/capabilities.ts): Settings offers no row, and a stale route goes back to Settings. */
+export default function DeleteAccountRoute() {
+  return capabilities.signIn ? <DeleteAccount /> : <Redirect href="/settings" />;
+}
+
+function DeleteAccount() {
+  const colors = useTheme().c;
   const d = useAccountDeletion();
   const [wanted, setWanted] = useState<'review' | 'confirm'>('review');
   const [typed, setTyped] = useState('');

@@ -66,4 +66,6 @@ export interface StoreSheetOptions {
 export type StoreSheetOutcome = 'purchased' | 'dismissed' | 'busy' | 'unavailable';
 export type ManageOutcome = 'shown' | 'unavailable' | 'failed';
 export type SyncOutcome = 'synced' | 'cancelled' | 'failed';
+/** `presented`: Apple's sheet was shown. A redeemed code arrives as an entitlement update, not here. */
+export type OfferCodeOutcome = 'presented' | 'unavailable' | 'failed';
 export type RefundOutcome = 'success' | 'cancelled' | 'none' | 'unavailable' | 'failed';

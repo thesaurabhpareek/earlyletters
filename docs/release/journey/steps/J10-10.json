@@ -1,0 +1,37 @@
+{
+  "id": "J10-10",
+  "journey": "letter-detail",
+  "kind": "unhappy",
+  "title": "A recording with no words",
+  "note": "The page shows the app's own small note instead of words, and no \"From Mama\" signature under it (the signature is only under words a person said); the recording is still there and can be kept.",
+  "from": "J10-01",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Sunday, October 11, 2026. Asha is 6 months and 4 weeks old. Private No words in this one. The recording is kept just as it is. Hear Mama 0:00 0:18 Record again Add to book Delete",
+  "lines": [
+    "Aa",
+    "Sunday, October 11, 2026. Asha is 6 months and 4 weeks old.",
+    "Private",
+    "No words in this one. The recording is kept just as it is.",
+    "Hear Mama",
+    "0:00",
+    "0:18",
+    "Record again",
+    "Add to book",
+    "Delete"
+  ]
+}

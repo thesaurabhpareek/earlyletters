@@ -128,7 +128,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-09 The two Plus products**
   - Time: 1 hour (plus the review screenshot later, from a build).
   - Cost: US $0.
-  - Steps: `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` steps 3 to 7 and 9: group `Plus`; `plus.monthly` US $3.99 with a free 1-month introductory offer; `plus.annual` US $29.99 with a free 2-month offer; both at the same level; descriptions say only what v1.0 has; **Family Sharing on** for both (cannot be undone); Billing Grace Period 16 days, all renewals, production and sandbox; United States only; three sandbox testers. Do **not** create an App Store Server Notifications URL, an In-App Purchase key or a RevenueCat account (D-053). The old `el_plus_*` ids in earlier docs are superseded.
+  - Steps: `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` steps 3 to 7 and 9: group `Plus`; `plus.monthly` US $4.99 with a free 1-month introductory offer; `plus.annual` US $49.99 with a free 2-month offer; both at the same level; descriptions say only what v1.0 has; **Family Sharing on** for both (cannot be undone); Billing Grace Period 16 days, all renewals, production and sandbox; United States only; three sandbox testers. Do **not** create an App Store Server Notifications URL, an In-App Purchase key or a RevenueCat account (D-053). The old `el_plus_*` ids in earlier docs are superseded.
   - By: Thu 8 Oct (ROADMAP).
   - Blocks: the StoreKit sandbox spike in week 2, BL-222, submission (the first subscription goes in with the app version, step 8).
 
@@ -159,7 +159,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-12 Supabase Auth: providers, SMTP, settings**
   - Time: 1.5 hours.
   - Cost: US $0.
-  - Steps: `docs/ops/AUTH_SETUP.md` in order: section 1 (sign-ups on, manual linking on, anonymous sign-ins **off**, confirm email on, JWT expiry 900 s); 2.6 (Apple provider: client IDs `com.earlyletters.scribe,com.earlyletters.scribe.preview,com.earlyletters.scribe.dev`, no secret for native); 3.4 (Google provider after FT-15: web client id first, then iOS ids, web secret, **Skip nonce check on**); 4.2 (custom SMTP: `smtp.resend.com`, port 465, user `resend`, password = the SMTP key from FT-13, sender `hello@earlyletters.com`, 60-second interval); 4.3 (email rate limit about 100 an hour for TestFlight); 4.4 (OTP expiry 3600, length 6); 5.1 (site URL `https://earlyletters.com`; redirect URLs exactly `https://earlyletters.com/auth/callback` and `scribe://auth/callback`); 6 (paste `packages/emails/supabase/magic-link.html` into both Confirm signup and Magic Link, subject `Your sign-in link for Early Letters`). Leave Passkeys and CAPTCHA off for now.
+  - Steps: `docs/ops/AUTH_SETUP.md` in order: section 1 (sign-ups on, manual linking on, anonymous sign-ins **off**, confirm email on, JWT expiry 900 s); 2.6 (Apple provider: client IDs `com.earlyletters.scribe,com.earlyletters.scribe.preview,com.earlyletters.scribe.dev`, no secret for native); 3.4 (Google provider after FT-15: web client id first, then iOS ids, web secret, **Skip nonce check on**); 4.2 (custom SMTP: `smtp.resend.com`, port 465, user `resend`, password = the SMTP key from FT-13, sender `hello@earlyletters.com`, 60-second interval); 4.3 (email rate limit about 100 an hour for TestFlight); 4.4 (OTP expiry 3600, length 6); 5.1 (site URL `https://earlyletters.com`; redirect URLs exactly `https://earlyletters.com/auth/callback` and `scribe://auth/callback`); 6 (paste `supabase/templates/magic_link.html` into both Confirm signup and Magic Link, subject `Your sign-in link for Early Letters`). Leave Passkeys and CAPTCHA off for now.
   - By: Thu 8 Oct (ROADMAP).
   - Blocks: all sign-in (AUTH_SETUP 11 device checks), C0 and C1; BL-053.
 
@@ -348,7 +348,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-36 Check the "If you are struggling" resources**
   - Time: 15 minutes.
   - Cost: US $0.
-  - Steps: confirm the 988 Lifeline and Postpartum Support International entries in `packages/content/src/strings.en.ts` (`struggling`) are current on their own sites; counsel sees the wording in the package (D-059: the classifier waits for v1.1 and a clinician).
+  - Steps: confirm the 988 Lifeline and Postpartum Support International entries in `packages/content/src/strings.en.ts` (`struggling`) are current on their own sites (988lifeline.org, postpartum.net: primary sources, not search snippets); counsel sees the wording in the package (D-059: the classifier waits for v1.1 and a clinician). Also check the 988 language options (Spanish, interpreter in other languages). Only if the pages say so, change the 988 `how` line to: "Call or text 988, any time. Press 2 for Spanish, or say your language to reach an interpreter." (D-087). If a page does not say it, leave the line as it is. Before any second storefront opens, add a verified region list to the launch checklist.
   - By: Fri 23 Oct.
   - Blocks: submission (an inaccurate support line is a trust and legal problem).
 
@@ -456,6 +456,46 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Time: 2 hours. Cost: CVL-02 reviewers about US $5,000 to $8,000 [E].
   - Steps: DEBATES Q-011 (v1.1 scope), the CVL-02 reviewer budget, the "never make a voice" constitution line (CVL-04), G-15 annual trial length; later Q-008 (Plus follows the book, by mid February 2027). Detail: `docs/backlog/FUTURE.md` section 6.
   - By: Mon 30 Nov. Blocks: v1.1 planning.
+
+## Journey review decisions (M-JR, from the 4 Oct journey critique)
+
+Product, design and quality reviewed all 116 captured steps of the v1.0 app (`docs/release/journey/critiques/`, branch `qa/journey-flows`, PR #83). Six of their findings are questions only you can answer. Nothing below is decided: each lists the facts and the options the critiques gave, and the tasks that wait. Answer each with one line in the Project doc ("FT-52: a"). The tasks are in `docs/BACKLOG.md`, section "M-JR: journey review (pre-TestFlight)". Dates are proposals [A]: C0 is Wed 14 Oct and feature freeze is Mon 26 Oct.
+
+- [ ] **FT-52 Words the app writes for the parent: "Not much today" and "nobody spoke"**
+  - Time: 15 minutes. Cost: US $0.
+  - Steps: today "Not much today" stores a sentence in the parent's voice and signs it "From Mama" (for example "Sunday. Not much today. Just Asha, and us, and an ordinary day."). It shows in the Book, on the letter page, in Read together and in export. The "A quiet recording. Nobody spoke" note is signed the same way, and Write shows a ghost "Dear Asha,". The constitution says no feature may write a person's words, and VOICE.md says never imply AI writes anything. Question: which of (a) write nothing: keep only a marker (a date and a small dot, no sentence); (b) keep a sentence but label it honestly: app voice, unsigned, never first person, visibly different from a letter (the design critique proposes muted italic on a tinted surface); (c) remove "Not much today" altogether. Also answer: does a marker, or a recording with no speech, count as one of the free letters (FT-53)?
+  - By: Wed 7 Oct [A].
+  - Blocks: BL-372 (a blocker).
+
+- [ ] **FT-53 Membership in the app (D-051): build it for v1.0, and answer the open edges**
+  - Time: 30 minutes. Cost: US $0.
+  - Steps: D-051 "Plus is membership: 2 free letters, then Plus" is on `main` only (decided 4 Oct, open edges listed in `docs/DECISIONS.md` on `main`). The app has no letter counter, no paywall at the third letter, no held-letter state and no lapsed state, and Plan, Settings and the book gate still say "free, always", "writing stays open" and "Plus is optional". The website already says "Your first two letters are free". Questions: (1) ship the allowance engine and the new copy in v1.0, yes or no; (2) edge 2, a second child's book without Plus (per account or per book); (3) edge 3, the letter in progress at the limit (the decision's recommendation: keep it on the phone, offer Plus, save when Plus starts); (4) edge 4, counting offline: on the device in v1.0?; (5) edge 5, do Read together's 3 free sessions stay, or follow the allowance; (6) edge 6, do first-run children still get a free book; (7) edge 8, what the lapsed sheet says; (8) edges 1 and 7 touch family authors and sync, and v1.0 is on the phone with co-parent only (D-053, D-055): say whether they can wait; (9) the one calm line after the second letter, and the Plan and gate wording. Also: `develop` and `main` use D-051 and D-052 for different decisions; say which numbering stands.
+  - By: Wed 7 Oct [A].
+  - Blocks: BL-373 and BL-374 (blockers), BL-407; the store listing, review notes (BL-341) and counsel's Subscription Terms read.
+
+- [ ] **FT-54 The words for the edit feature (D-074)**
+  - Time: 20 minutes. Cost: US $0.
+  - Steps: D-074 names the feature "Word for word" and says "Lightly tidied", "Tidying" and similar words leave the product. About fifteen screens still use them. `VOICE.md` already says "small fixes" for each edit, and CONSISTENCY_AUDIT F-3 proposed "With small fixes" and "Word for word" for the two views. Confirm or change the strings for: the promise screen (today "We tidy what the microphone got wrong"), the letter provenance line (today "Spoken, lightly tidied"; the critiques propose "Spoken, small slips fixed" for an edited letter and "Spoken, word for word" otherwise), the Recordings setting and its two options (today "Tidying", "Lightly tidied"), the Settings footer, the export file line ("every tidy-up"), the Review subtitle and toggle ("Show tidied version"), and the two headings that name the technology ("Writing down your words", "How transcription works"). Also: are the dotted marks in Review called "small fix" marks?
+  - By: Fri 9 Oct [A].
+  - Blocks: BL-393 (BL-356 renames the keys and is not blocked).
+
+- [ ] **FT-55 Where recordings live: D-073 backup, or on the phone only?**
+  - Time: 30 minutes. Cost: US $0 to decide; backup is new server work.
+  - Steps: D-073 (3 Oct) says encrypted backup of recordings ships in v1.0. D-053 and D-059 say no server sees purchases and no audio upload in v1.0, and the app today is on the phone only with Export as the only safety net (recordings are in the iPhone's own backup if the person uses one, D-033). The website on `main` says Plus "backs up every recording". Question: (a) v1.0 ships encrypted backup (new work, and D-059 needs amending), or (b) v1.0 is the phone, the iPhone's own backup and Export, and D-073 moves to v1.1. Then the app, website, store listing, Subscription Terms and Plan copy follow the answer. Also: do you want a new-phone note and a gentle "export now and then" nudge if the answer is (b)?
+  - By: Fri 9 Oct [A].
+  - Blocks: BL-390; the website line (a web handoff); BL-286 listing copy.
+
+- [ ] **FT-56 First-run birthday**
+  - Time: 10 minutes. Cost: US $0.
+  - Steps: the first-run date defaults to today. A parent of a 7-month-old who types a name and taps Continue gets a baby aged "0 days", and Tonight prompts, month chapters, datelines and export are then wrong (the app cannot yet correct it; BL-386 adds editing). Options: (a) no default, Continue stays off until a date is chosen; (b) default today but ask "Is Asha newborn today?" before continuing; (c) allow "I'll add it later" and run Tonight without an age. Also: siblings added in first run share one date today although D-038 allows different dates (per-child dates, or an explicit "Same birthday" switch); and whether a 0 to 6 day old reads "newborn" instead of "0 days".
+  - By: Fri 9 Oct [A].
+  - Blocks: BL-385.
+
+- [ ] **FT-57 Links that open the recorder (`scribe://listen`)**
+  - Time: 10 minutes. Cost: US $0.
+  - Steps: a link to `scribe://listen` (and /review, /write, /read-together) from Safari, Messages or another app opens that screen, and the Listen screen starts the recorder the moment it opens once microphone permission exists, with no tap. LEGAL-REQ-011 says the app never auto-starts recording. Options: (a) no external link may reach those screens (everything except invite and sign-in goes to home); (b) a link may open the screen but a tap always starts the recorder; (c) a designed exception, for example a shortcut you create yourself, which needs counsel review (LEGAL-REQ-011).
+  - By: Fri 9 Oct [A].
+  - Blocks: BL-384; the unknown-link screen BL-383 is not blocked.
 
 ## What waits on what (critical path)
 

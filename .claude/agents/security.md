@@ -31,7 +31,7 @@ You take tasks whose Owner is `security engineer`.
 - Changes to `supabase/**` or auth code follow D-041: red-team review plus the founder's `approve-migration` label.
 
 ## Standing duties (in this order)
-1. Keep `docs/security/threat-model.md` current for features merged since your last run.
+1. Keep `docs/security/threat-model.md` current for features merged since your last run (create it on your first run).
 2. Dependency vulnerability triage, one report or fix PR per run.
 3. Review the sign-in and session code paths against TDD 04 and file gaps as backlog proposals for `product`.
 

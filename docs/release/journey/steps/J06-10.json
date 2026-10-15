@@ -1,0 +1,30 @@
+{
+  "id": "J06-10",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Saved to the book",
+  "note": "The letter settles into a card with \"Added to Asha's book\". Review closes by itself or on tap.",
+  "from": "J06-09",
+  "shot": "screens/J06-10.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Added to Asha's book.",
+  "lines": [
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Added to Asha's book."
+  ]
+}

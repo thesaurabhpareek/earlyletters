@@ -247,7 +247,7 @@ export async function sendNotice(ctx: Ctx, n: NoticeWork, beforePrepare = false)
 }
 
 export async function sendRequestEmail(ctx: Ctx, w: EmailWork): Promise<void> {
-  await sendLifecycleEmail(ctx, w, 'request_email', () => deletionRequestedEmail({ scheduledFor: w.scheduled_for, reference: w.id }), `deletion-requested:${w.id}`);
+  await sendLifecycleEmail(ctx, w, 'request_email', () => deletionRequestedEmail({ scheduledFor: w.scheduled_for, reference: w.id, requestedAt: w.requested_at }), `deletion-requested:${w.id}`);
 }
 
 export async function sendCancelEmail(ctx: Ctx, w: EmailWork): Promise<void> {

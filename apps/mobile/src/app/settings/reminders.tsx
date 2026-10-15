@@ -1,8 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
-import { AppState, Linking, Platform, Pressable, ScrollView, View, useColorScheme } from 'react-native';
-import { tokens } from '@scribe/design-tokens';
-import { ChoiceGroup } from '@/components/ui/choice-group';
+import { AppState, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Chip, ChipGroup, ChoiceGroup } from '@/components/ui/choice-group';
 import { ListSection, ToggleRow } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -26,7 +25,7 @@ import {
   type ReminderPrefs,
 } from '@/lib/reminders';
 import { subscribe } from '@/lib/store';
-import { cn } from '@/lib/utils';
+import { useTheme } from '@/lib/a11y';
 
 type OnCadence = Exclude<Cadence, 'off'>;
 
@@ -38,7 +37,7 @@ type OnCadence = Exclude<Cadence, 'off'>;
  * kept and this screen offers Open Settings.
  */
 export default function Reminders() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
   const r = copy.settings.reminders;
   const s = reminderCopy.settings;
   const [prefs, setPrefs] = useState<ReminderPrefs>(readPrefs);
@@ -152,29 +151,20 @@ export default function Reminders() {
 
           {cadence !== 'everyEvening' && (
             <ListSection title={s.eveningsTitle} footer={cadence === 'weekly' ? s.eveningHelp : s.eveningsHelp}>
-              <View
-                accessibilityRole={cadence === 'weekly' ? 'radiogroup' : undefined}
-                className="flex-row flex-wrap gap-2 px-3 py-3">
-                {reminderCopy.weekdaysShort.map((label, day) => {
-                  const on = selectedDays.includes(day);
-                  return (
-                    <Pressable
-                      key={label}
-                      onPress={() => toggleDay(day)}
-                      accessibilityRole={cadence === 'weekly' ? 'radio' : 'checkbox'}
-                      accessibilityState={cadence === 'weekly' ? { selected: on } : { checked: on }}
-                      accessibilityLabel={reminderCopy.weekdays[day]}
-                      className={cn(
-                        'min-h-11 min-w-11 items-center justify-center rounded-full border px-3',
-                        on ? 'border-primary bg-primary' : 'border-border bg-background active:bg-secondary',
-                      )}>
-                      <Text maxFontSizeMultiplier={1.6} className={cn('text-base', on ? 'font-medium text-primary-foreground' : 'text-foreground')}>
-                        {label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              {/* Chip is the one selection pattern: accentSoft + accent edge + check. Solid accent is for the one primary button. */}
+              <ChipGroup label={s.eveningsTitle} className="px-4 py-3">
+                {reminderCopy.weekdaysShort.map((label, day) => (
+                  <Chip
+                    key={label}
+                    variant="filter"
+                    role={cadence === 'weekly' ? 'radio' : 'checkbox'}
+                    label={label}
+                    accessibilityLabel={reminderCopy.weekdays[day]}
+                    selected={selectedDays.includes(day)}
+                    onPress={() => toggleDay(day)}
+                  />
+                ))}
+              </ChipGroup>
             </ListSection>
           )}
 
