@@ -1,6 +1,6 @@
 # Environments
 
-Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the alpha (D-106). Supersedes the 3 Oct draft on PR #35 (`docs/ops-runbooks`), which described an on-device v1.0. Decisions: D-041 (migrations reach hosted projects only through CI), D-097 (pack host), D-100 (server features on in v1.0, after the R-17 gate), D-106 (alpha against staging). Companion docs: [DEPLOY.md](DEPLOY.md), [AUTH_SETUP.md](AUTH_SETUP.md), [DOMAINS.md](DOMAINS.md), [SECURITY.md](SECURITY.md), [../release/TESTFLIGHT.md](../release/TESTFLIGHT.md).
+Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the alpha (D-106). Supersedes the 3 Oct draft on PR #35 (`docs/ops-runbooks`), which described an on-device v1.0. Decisions: D-041 (migrations reach hosted projects only through CI), D-097 (pack host), D-100 (server features on in v1.0, after the R-17 gate), D-106 (alpha against staging). Companion docs: [DEPLOY.md](../ops/DEPLOY.md), [AUTH_SETUP.md](../ops/AUTH_SETUP.md), [DOMAINS.md](../ops/DOMAINS.md), [SECURITY.md](../ops/SECURITY.md), [../release/TESTFLIGHT.md](TESTFLIGHT.md).
 
 ## Status on 15 Oct 2026
 
