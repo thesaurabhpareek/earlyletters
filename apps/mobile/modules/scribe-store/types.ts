@@ -26,10 +26,19 @@ export interface NativeTransaction {
   environment: StoreEnvironment;
   /** In a free introductory offer (free trial). */
   isTrial: boolean;
+  /**
+   * How the current period was offered (StoreKit `offer.type`, iOS 17.2+; `offerType` before).
+   * `other` is a kind this build does not know (for example a win-back offer, which Plus does not use).
+   */
+  offerType?: NativeOfferType;
+  /** The current period is free under any offer: an introductory trial or an offer code with a free period. */
+  freePeriod?: boolean;
   isUpgraded: boolean;
   /** Set when Apple refunded it or Family Sharing access was removed. */
   revokedAt?: string;
 }
+
+export type NativeOfferType = 'none' | 'introductory' | 'promotional' | 'offer_code' | 'other';
 
 /** Product.SubscriptionInfo.RenewalState, by name. */
 export type RenewalStateName = 'subscribed' | 'inGracePeriod' | 'inBillingRetryPeriod' | 'expired' | 'revoked' | 'unknown';
@@ -39,6 +48,16 @@ export interface NativeStatus extends NativeTransaction {
   state: RenewalStateName;
   willAutoRenew?: boolean;
   gracePeriodExpiresAt?: string;
+}
+
+/**
+ * One of the person's own Plus subscriptions for the D-080 status report (WP-F14-15a), from
+ * `statusReportRefs(salt, productIds)`. Only `purchased` ownership: Family Sharing members never
+ * report (F14-REQ-006). `subRef` is hex(SHA-256(salt bytes || UTF-8 original transaction id)),
+ * made in Swift: the transaction id itself never crosses into JavaScript (F14-REQ-014).
+ */
+export interface NativeStatusRef extends NativeStatus {
+  subRef: string;
 }
 
 /** What `currentEntitlements` returns. */
