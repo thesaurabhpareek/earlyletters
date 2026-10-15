@@ -9,10 +9,10 @@ What the app expects, in one table:
 | Thing | Value |
 |---|---|
 | Website (universal links) | `https://earlyletters.com` (from `packages/brand`) |
-| Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=email` |
+| Email link | `https://earlyletters.com/auth/callback#token_hash=<hash>&type=email` (PRD V2 F02 names the path `/auth/confirm`; the website serves the same page at both) |
 | Custom-scheme fallback | `scribe://auth/callback` (opens the code screen; never carries a token) |
-| Invite link | `https://earlyletters.com/i/<token>` |
-| Bundle ids | `com.earlyletters.scribe` (production), `.preview`, `.dev` (internal builds) |
+| Invite link | `https://earlyletters.com/j#t=<token>`, token in the fragment (PRD V2 F11, B-NFR-002; the app writes this from `fix/invite-link-fragment` eed2855; the older `/i/<token>` form shipped in no build and is refused) |
+| Bundle ids | `com.earlyletters.scribe` (production), `.preview` (TestFlight alpha builds), `.dev` (development builds; no universal links) |
 | Sender | `hello@earlyletters.com` through Resend SMTP |
 
 Do the sections in order. Sections 1 to 6 are needed before anyone but you signs in. Section 7 (passkeys) can wait.
@@ -124,70 +124,41 @@ Supabase > Authentication > **Rate Limits**. After custom SMTP is on, Supabase s
 ### 4.4 Email provider
 Supabase > Authentication > Sign In / Providers > **Email**:
 - Enable Email provider: on. Confirm email: on. Secure email change: on.
-- **Email OTP expiration**: `3600` seconds (link and code live one hour, A-REQ-018).
-- **Email OTP length**: `6`. It must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (default 6). The length is configurable (6 to 10) and some projects default to 8 (Verified: dev.to write-up of GoTrue `MAILER_OTP_LENGTH`, 1 Jul 2026; check what yours shows). TDD 04 OQ-S1 recommends 8 for brute-force margin; PRD A says 6. Product call; change both together.
+- **Email OTP expiration**: `900` seconds (link and code live 15 minutes: PRD V2 F02 A-REQ-018 Rev, and the templates in `supabase/templates/` say "15 minutes", `config.toml.snippet`). Updated 15 Oct 2026 from 3600; if you ever change it, re-export the templates with the same wording (`supabase/templates/README.md`).
+- **Email OTP length**: `6` today. It must equal the app's `EXPO_PUBLIC_EMAIL_OTP_LENGTH` (default 6). The length is configurable (6 to 10) and some projects default to 8 (Verified: dev.to write-up of GoTrue `MAILER_OTP_LENGTH`, 1 Jul 2026; check what yours shows). PRD V2 A-REQ-018 Rev and TDD 04 OQ-S1 ask for **8**; that is an open founder decision (PRD V2 F02 Q2, WP-F02-14, FOUNDER_TASKS Q item 8). For 8: set it here and `EXPO_PUBLIC_EMAIL_OTP_LENGTH=8` in the EAS environment of every build that talks to this project, together.
 
 ## 5. Redirect URLs, universal links and the website
 
 ### 5.1 Supabase URL configuration
 Supabase > Authentication > **URL Configuration**:
 - Site URL: `https://earlyletters.com`
-- Redirect URLs (exactly these two, A-NFR-010): `https://earlyletters.com/auth/callback` and `scribe://auth/callback`
+- Redirect URLs (exactly these three; PRD V2 F02-REQ-012 allows only `https://earlyletters.com/**` and the brand scheme, A-NFR-010): `https://earlyletters.com/auth/callback`, `https://earlyletters.com/auth/confirm` and `scribe://auth/callback`. `/auth/confirm` is the PRD V2 path (F02 6.3); `/auth/callback` stays while the app and the templates still write it.
 
 The email template (section 6) builds the link itself, so these mostly guard against someone passing another redirect.
 
-### 5.2 apple-app-site-association (the website must serve this)
-URL: `https://earlyletters.com/.well-known/apple-app-site-association`. No file extension, served as `application/json`, over HTTPS, **no redirects** (Verified: Apple "Supporting associated domains"). Replace `<TEAMID>`:
+### 5.2 apple-app-site-association (the website serves this)
+URL: `https://earlyletters.com/.well-known/apple-app-site-association`. No file extension, served as `application/json`, over HTTPS, **no redirects** (Verified: Apple "Supporting associated domains").
 
-```json
-{
-  "applinks": {
-    "details": [
-      {
-        "appIDs": [
-          "<TEAMID>.com.earlyletters.scribe",
-          "<TEAMID>.com.earlyletters.scribe.preview",
-          "<TEAMID>.com.earlyletters.scribe.dev"
-        ],
-        "components": [
-          { "/": "/auth/callback", "comment": "Email sign-in link. The token hash is in the fragment." },
-          { "/": "/auth/callback/", "comment": "Same, with a trailing slash." },
-          { "/": "/i/*", "comment": "Co-parent invite links." }
-        ]
-      }
-    ]
-  },
-  "webcredentials": {
-    "apps": [
-      "<TEAMID>.com.earlyletters.scribe",
-      "<TEAMID>.com.earlyletters.scribe.preview",
-      "<TEAMID>.com.earlyletters.scribe.dev"
-    ]
-  }
-}
-```
+The website builds it at `next build` from `apps/web/src/app/.well-known/apple-app-site-association/route.ts`, using two Vercel environment variables: `APPLE_TEAM_ID` (Membership details) and `IOS_BUNDLE_ID=com.earlyletters.scribe` (the production id; the route adds `.preview` itself and refuses a suffixed id). With either missing or malformed it answers 404, never a half-made file. `docs/ops/well-known/apple-app-site-association` is the reference copy of what it serves; read the paths there, not here, so this page cannot drift from the file.
 
-On Vercel (the website thread): put the file at `public/.well-known/apple-app-site-association` and add a header rule so it is served as JSON:
-
-```json
-{ "headers": [ { "source": "/.well-known/apple-app-site-association", "headers": [ { "key": "Content-Type", "value": "application/json" } ] } ] }
-```
-
+- App ids: production and `.preview`. `.dev` builds are not listed: they type the code instead of opening links.
+- Paths: only the ones the app opens (A-REQ-022): the sign-in link (`/auth/confirm`, and `/auth/callback` while the app and the templates still write it) and invites (`/j`). The token always travels in the fragment, which path matching ignores and no server receives.
+- No `webcredentials` block yet: passkeys (section 7) add it when they ship.
 - `earlyletters.app` only redirects; it must not serve this file, and links on it will not open the app (by design: one link domain).
 - Apple's CDN fetches the file within 24 hours and devices recheck about weekly (Verified: Apple). Check what Apple sees at `https://app-site-association.cdn-apple.com/a/v1/earlyletters.com`.
-- The app's entitlement is `applinks:earlyletters.com` (in `app.config.ts`). `webcredentials` above is for passkeys (section 7); it is harmless before then.
+- The app's entitlement is `applinks:earlyletters.com` (in `app.config.ts`).
 
-### 5.3 The two fallback pages the website needs
-When a link opens in a browser instead of the app (desktop, a mail app's own browser, the app not installed):
+### 5.3 The fallback pages the website serves
+When a link opens in a browser instead of the app (desktop, a mail app's own browser, the app not installed). Both pages live on `main` in `apps/web`, carry no analytics or third-party script, are not indexed, and send no Referer.
 
-**`/auth/callback`**
-- Must **not** verify anything on load (mail scanners open links; A-REQ-023). Never read or send the fragment to any server or analytics.
-- Show: "Open Early Letters" as a link to `scribe://auth/callback` (no token in it, ever; any app can claim a custom scheme, TDD 04 3.1.6), and the line "Or type the code from the same email in the app."
+**`/auth/confirm` (and the same page at `/auth/callback`)** (PRD V2 F02 6.3 step 3b, F02-U09)
+- Must **not** verify anything on load, on script run or on any button (mail scanners open links; A-REQ-023). Never reads or sends the fragment anywhere.
+- Shows how to finish: type the code from the same email into the app, and an "Open Early Letters" link to `scribe://auth/callback` (no token in it, ever; any app can claim a custom scheme, TDD 04 3.1.6, F02-REQ-011).
 - Same page for an expired link; the app explains expiry.
 
-**`/i/<token>`**
-- A generic page: no child name, no photo, generic link preview tags (B-NFR-002). "Get Early Letters on the App Store", then "Already have it? Open the app, tap I was invited, and paste the link."
-- **Known gap:** the token is in the path, so Vercel request logs see it. The founder chose `/i/<token>`; TDD 04 3.4.1 prefers a fragment (`/i#t=<token>`) that servers never receive. Mitigations today: the server stores only a hash, the invite works once and lasts 7 days, and the website must not log or forward paths under `/i/`. Moving to the fragment later is a small change (the app's parser and the AASA pattern), recorded in the hand-off.
+**`/j` (invites)** (PRD V2 F11 6.3 step 1, F11-U01, F11-REQ-005)
+- A generic page: no child name, no inviter name, no photo, generic link preview tags (B-NFR-002). One action: copy the whole link (a tap), then "open the app, tap I was invited, and paste". The App Store button joins when the listing exists.
+- The token is in the fragment (`/j#t=<token>`), so no request to the website carries it, the page's own included. This replaced `/i/<token>` (token in the path, so in Vercel's request logs) before any build shipped. This is BL-348's "yes": you first chose `/i/<token>`, and FT-04 item 7 asks again; PRD V2 F11 and the Privacy Policy line on tokens (servers never log them) both need the fragment. Confirm it, or say no and `/i/<token>` comes back with the policy line rewritten.
 
 ## 6. Email templates to paste
 
@@ -211,7 +182,7 @@ If `packages/emails` produces branded versions of these, they replace the text b
       </p>
       <p style="font-size:16px;line-height:1.5;margin:0 0 8px;">Or type this code in the app:</p>
       <p style="font-size:32px;letter-spacing:6px;font-weight:600;margin:0 0 24px;">{{ .Token }}</p>
-      <p style="font-size:14px;line-height:1.5;color:#6B645B;margin:0 0 8px;">The link and the code work once, for one hour.</p>
+      <p style="font-size:14px;line-height:1.5;color:#6B645B;margin:0 0 8px;">The link and the code work once, for 15 minutes.</p>
       <p style="font-size:14px;line-height:1.5;color:#6B645B;margin:0;">If you did not ask to sign in, you can ignore this email. Nothing changes.</p>
     </div>
   </body>
@@ -279,7 +250,7 @@ Run on a real iPhone with a preview build that has every variable from section 8
 
 1. **Apple:** sign in, Terms sheet, sensitive-data sheet, back where you started. Supabase > Authentication > Users shows the Apple identity. Sign out and in again: no Terms sheet the second time.
 2. **Google:** same; then confirm Supabase shows the Google identity. If it fails with a nonce message, 3.4 "Skip nonce check" is off.
-3. **Email, both templates:** a brand-new address (Confirm signup template) and a known one (Magic Link template). For each: the link opens the app from Mail and signs in; the code typed by hand also signs in; an hour-old link shows "That link has expired"; open the link on a laptop: the page shows the code and does not sign anything in.
+3. **Email, both templates:** a brand-new address (Confirm signup template) and a known one (Magic Link template). For each: the link opens the app from Mail and signs in; the code typed by hand also signs in; a link older than 15 minutes shows "That link has expired"; open the link on a laptop: the page shows the code and does not sign anything in.
 4. **Scheme fallback:** on the laptop page, "Open Early Letters" on the phone opens the code screen.
 5. **Invite:** from Family, invite a co-parent, share to yourself in Messages, open the link on a second phone signed out: it lands on "Join the family book", sign in, consent, join. Try the same link again: "already been used". Cancel an invite and open its link: "was cancelled".
 6. **Offline:** airplane mode, cold start: the app opens signed in, records and saves letters.
