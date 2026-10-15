@@ -1,7 +1,7 @@
 # Backup restore drill on two iPhones (WP-F08-B6)
 
 Owner: S05 with S19. For the founder and the device operator, who run it. Version 0.1, 15 Oct 2026. An addition to `docs/qa/DEVICE_TEST_PLAN.md` (request to S19 to link it from Part 1 next to DL-03).
-Inputs: PRD V2 F08 section 6.5 and F08-REQ-020 to -029, -031, -035; ADR 0023 (proposed); `apps/mobile/src/lib/backup/`; the Node suite `apps/mobile/test/backup-*.test.ts`.
+Inputs: PRD V2 F08 section 6.5 and F08-REQ-020 to -029, -031, -035; ADR 0024 (proposed); `apps/mobile/src/lib/backup/`; the Node suite `apps/mobile/test/backup-*.test.ts`.
 When: round 1 at T25 (5 to 7 Jan 2027) on the first build with the backup client; round 2 at T33 on the candidate build. The alpha (D-106, 29 Oct 2026) may run a short version (B6-01 to B6-04) on staging if the escrow drill key exists.
 
 The Node suite already proves the bytes, the queue's kill path and the restore rules against a fake bucket. This drill proves what only real phones can:

@@ -1,6 +1,6 @@
 /**
  * The server surface the backup client is written against (F08 6.5 "Server
- * objects", ADR 0023). Two drafts existed on 15 Oct and they differ; neither
+ * objects", ADR 0024). Two drafts existed on 15 Oct and they differ; neither
  * has merged to `develop`:
  *
  * - S07's `packages/api/src/server/recovery-key.ts` (contract v1, PR #138):
@@ -205,7 +205,7 @@ export interface EscrowPublicKey {
   publicKey: string;
 }
 
-// ── Labels, associated data and the wrap format (ADR 0023 section 2) ────────
+// ── Labels, associated data and the wrap format (ADR 0024 section 2) ────────
 // The same bytes as the S05 server draft's `supabase/functions/escrow/hpke.ts`
 // (INFO, aad, packV1): the codename, never the product name; lowercase ids
 // joined with '|', so a wrap opens only as the row it was written for.

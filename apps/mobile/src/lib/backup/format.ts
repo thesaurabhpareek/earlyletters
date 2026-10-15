@@ -1,6 +1,6 @@
 /**
  * Backup object format, version 1 (F08 6.5 "Object format", R2 AR-08,
- * AR-33, AR-34; ADR 0023 section 3). The only definition of the bytes; the
+ * AR-33, AR-34; ADR 0024 section 3). The only definition of the bytes; the
  * escrow function never reads objects, so nothing else parses them.
  *
  *   object = header (112 bytes, in clear) || meta segment || data segments

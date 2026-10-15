@@ -1,5 +1,5 @@
 /**
- * The device surfaces backup needs, as interfaces (ADR 0023). The app
+ * The device surfaces backup needs, as interfaces (ADR 0024). The app
  * implements them with the native `ScribeKeys` module, expo-file-system and
  * expo-network (runtime.ts); Node tests implement them with node:crypto, the
  * file system and fakes (test/helpers/backup-node.ts). Nothing in this
@@ -19,7 +19,7 @@ export interface DeviceKey {
   publicKey: Uint8Array;
 }
 
-/** An HPKE base-mode seal: the encapsulated key and the ciphertext (RFC 9180; ADR 0023 section 4). */
+/** An HPKE base-mode seal: the encapsulated key and the ciphertext (RFC 9180; ADR 0024 section 4). */
 export interface Sealed {
   enc: Uint8Array;
   ct: Uint8Array;

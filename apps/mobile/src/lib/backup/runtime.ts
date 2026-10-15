@@ -7,7 +7,7 @@
  * Wiring:
  * - Keys: the `ScribeKeys` module (CryptoKit, Keychain). Book key items under
  *   service `scribe.backup`, account `<profile_id>:<child_id>` (the codename,
- *   never the public name, so it never changes; ADR 0023 section 2).
+ *   never the public name, so it never changes; ADR 0024 section 2).
  * - Files: expo-file-system; hashes by `ScribeAudio.sha256File` (streamed natively).
  * - Uploads: Supabase Storage's resumable endpoint with the user's JWT, or the
  *   signed upload token `backup_begin` returns.

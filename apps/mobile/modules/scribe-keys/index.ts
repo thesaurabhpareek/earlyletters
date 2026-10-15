@@ -1,5 +1,5 @@
 /**
- * Local Expo module `ScribeKeys` (iOS 17 and later for HPKE; ADR 0023).
+ * Local Expo module `ScribeKeys` (iOS 17 and later for HPKE; ADR 0024).
  * Optional: absent in Expo Go, on web and on Android, so callers handle null.
  * Loaded only by `src/lib/backup/runtime.ts`, which only `src/lib/backup/gate.ts`
  * loads, and only in a build with `capabilities.backup` on.

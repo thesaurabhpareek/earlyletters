@@ -1,5 +1,5 @@
 /**
- * Keys on the phone (WP-F08-B2; F08 6.5 key model; ADR 0023 section 2).
+ * Keys on the phone (WP-F08-B2; F08 6.5 key model; ADR 0024 section 2).
  *
  * - One book key (BK) per (child, author, version) in a synchronizable Keychain
  *   item keyed `<profile_id>:<child_id>`, so it reaches the author's other

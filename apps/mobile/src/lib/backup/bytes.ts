@@ -1,5 +1,5 @@
 /**
- * Byte helpers for the backup format (ADR 0023). Pure TypeScript: runs on
+ * Byte helpers for the backup format (ADR 0024). Pure TypeScript: runs on
  * Hermes and in Node tests. Base64 and hex come from @scribe/api so the app
  * keeps one implementation of each.
  */

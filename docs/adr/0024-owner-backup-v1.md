@@ -1,11 +1,15 @@
-# ADR 0023: Owner backup v1.0: a key per (child, author), a device key per install, and the recovery-key access log
+# ADR 0024: Owner backup v1.0: a key per (child, author), a device key per install, and the recovery-key access log
 
 Status: **Proposed** (draft for the coordinator, PRD V2 `08-delivery.md` T13; decided at T15 or the spec default stands). Date: 2026-10-15. Owner: S05 (encrypted recording backup).
 Amends: ADR 0006 (decision items 1 to 4). Implements: D-073, D-102 (recoverable keys through server escrow, honest copy), D-104 item 2 (free backup, default awaiting the founder).
 Spec: PRD V2 F08 section 6.5 (key model, object format, server objects, A to G), F08 section 12 (WP-F08-B2 to B5c), F17 Storage and backup row.
 Code (client half, PR `feat/backup-client`): `apps/mobile/modules/scribe-keys/`, `apps/mobile/src/lib/backup/`, `apps/mobile/src/app/settings/backup.tsx`, `packages/content/src/features/backup.en.ts`. Server half: the S05 server draft (`feat/backup-server`: `supabase/migrations/<ts>_backup_server.sql` and `supabase/functions/escrow/`, uncommitted on 15 Oct and read there). Contracts: S07's `packages/api/src/server/recovery-key.ts` (PR #138).
 
-Number: 0018 and 0019 are on `develop`; 0020, 0021 and 0022 are taken by open PRs (#39 and #42 agent communication and the engineering compendium, #108 release engineering). 0023 is the next free number on every branch of `origin` on 15 Oct 2026.
+Number (as of 15 Oct 2026):
+- 0018 to 0020 are on `develop` (0020 merged with #39).
+- 0021 and 0022 are taken by open PRs (#42 engineering compendium, #108 release engineering).
+- 0023 is used twice on unmerged branches: `feat/auth-v1-gate` (email links, PKCE) and `feat/sync-v1-alpha` (sync protocol v1).
+- 0024 is the next number free on every branch of `origin`. The coordinator renumbers at merge if needed.
 
 Evidence key as in ADR 0016: **V** verified, **V-code** read or tested in this repo, **U** unverified (a device or the server must confirm), **E** estimate.
 

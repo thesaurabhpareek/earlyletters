@@ -1,7 +1,7 @@
 /// <reference types="node" />
 /**
  * Backup object format v1 (lib/backup/format.ts; F08 6.5 "Object format";
- * ADR 0023 section 3). The original is random bytes behind a real `ftyp` box
+ * ADR 0024 section 3). The original is random bytes behind a real `ftyp` box
  * (fakeM4a), so the plaintext scan looks for what a proxy capture would.
  */
 import { randomBytes } from 'node:crypto';

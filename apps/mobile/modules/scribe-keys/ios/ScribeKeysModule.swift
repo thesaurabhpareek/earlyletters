@@ -30,7 +30,7 @@ private struct DeviceItem: Codable {
   var sk: String
 }
 
-/// Encrypted recording backup (WP-F08-B2; ADR 0023). Long-lived secrets stay here:
+/// Encrypted recording backup (WP-F08-B2; ADR 0024). Long-lived secrets stay here:
 /// book keys never leave this module except sealed (HPKE to the escrow key) and
 /// the device private key never leaves it at all. JavaScript gets wrapped keys,
 /// public keys and the per-recording file keys it encrypts segments with.
