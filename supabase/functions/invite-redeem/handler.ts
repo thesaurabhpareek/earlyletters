@@ -38,7 +38,7 @@ import * as v from 'valibot';
 import { createLogger, type ErrorCode, type LogSink } from '../_shared/log/log.ts';
 import {
   bearerOf, clientIp, codeHmac, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply,
-  postgrestError, readBody, serverKilled, sessionOf, subjectHashes, timedRequest, upstreamJson, type EnvGetter, type FetchFn,
+  postgrestError, readBody, serverKilled, sessionOf, subjectHashes, timedRequest, unknownKillSwitches, upstreamJson, type EnvGetter, type FetchFn,
 } from '../_shared/http/http.ts';
 
 export const MAX_BODY_BYTES = 1_024;
@@ -73,10 +73,18 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
     const log = createLogger({ fn: 'invite-redeem', version: '1', sink: opts.logSink, now, reqId: incomingRequestId(req) });
     const id = log.reqId;
     let task: 'peek' | 'accept' | undefined;
-    const refuse = (code: ApiErrorCode, retryable: boolean, extra: { status?: number; detail?: string | null; headers?: Record<string, string> } = {}) => {
+    const refuse = (
+      code: ApiErrorCode, retryable: boolean,
+      extra: { status?: number; detail?: string | null; sqlstate?: string; headers?: Record<string, string> } = {},
+    ) => {
       const status = extra.status ?? httpStatusFor(code);
-      log.warn('redeem.refused', { status, code: LOG_CODE[code] ?? 'error', task, duration_ms: Date.now() - started });
-      return failReply({ code, retryable, detail: isErrorDetail(extra.detail) ? extra.detail : undefined }, id, status, extra.headers);
+      log.warn('redeem.refused', { status, code: LOG_CODE[code] ?? 'error', sqlstate: extra.sqlstate, task, duration_ms: Date.now() - started });
+      return failReply({ code, retryable, sqlstate: extra.sqlstate, detail: isErrorDetail(extra.detail) ? extra.detail : undefined }, id, status, extra.headers);
+    };
+    /** SCCON details are a comma list of missing consents; the envelope carries one closed value (family-share first). */
+    const consentDetail = (d: string | null | undefined) => {
+      const parts = (d ?? '').split(',').map((x) => x.trim());
+      return parts.includes('family-share') ? 'family-share' : parts.find((x) => isErrorDetail(x)) ?? undefined;
     };
     const unavailable = (fields: { provider?: 'postgrest' | 'auth'; status?: number; code?: ErrorCode }) => {
       log.error('redeem.failed', { ...fields, task, duration_ms: Date.now() - started });
@@ -86,6 +94,7 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
     try {
       if (req.method !== 'POST') return refuse('bad_request', false, { status: 405 });
       if (!ROUTE_RE.test(new URL(req.url).pathname)) return refuse('not_found', false);
+      if (unknownKillSwitches(env) > 0) log.warn('redeem.degraded', { code: 'config' });
       if (serverKilled(env, 'invites')) {
         log.warn('redeem.refused', { status: 503, code: 'killed' });
         return pausedReply('invites', id);
@@ -159,18 +168,22 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
           return refuse('rate_limited', true, { headers: { 'retry-after': '3600' } });
         case 'unusable':
           // On the code path every reason but `already_member` reads as `not_found`, so a guess learns nothing.
-          return refuse('invite_unusable', false, { detail: r.detail === 'already_member' ? 'already_member' : 'not_found' });
+          return refuse('invite_unusable', false, { sqlstate: 'SCINV', detail: r.detail === 'already_member' ? 'already_member' : 'not_found' });
         case 'refused': {
-          if (r.sqlstate === 'SCINV' || r.sqlstate === 'P0002') return refuse('invite_unusable', false, { detail: 'not_found' });
+          // A wrong code must come back as `unusable` (counted). An uncounted SCINV would make guessing free: fail closed.
           if (!REFUSED_OK.has(r.sqlstate)) return unavailable({ provider: 'postgrest', code: 'bad_response' });
           const rule = classifySqlstate(r.sqlstate);
-          if (rule.code === 'rate_limited') return refuse('rate_limited', true, { headers: { 'retry-after': '3600' } });
-          return refuse(rule.code, rule.retryable, { detail: r.detail });
+          if (rule.code === 'rate_limited') return refuse('rate_limited', true, { sqlstate: 'SCRAT', headers: { 'retry-after': '3600' } });
+          const detail = r.sqlstate === 'SCCON' ? consentDetail(r.detail) : r.sqlstate === 'SCCAP' ? undefined : r.detail;
+          return refuse(rule.code, rule.retryable, { sqlstate: r.sqlstate, detail });
         }
         case 'peek':
+          // An answer for the other mode is a database bug: never pass a join off as a peek, or the reverse.
+          if (mode !== 'peek') return unavailable({ provider: 'postgrest', code: 'bad_response' });
           data = { mode: 'peek', inviter: r.inviter, role: r.role, ...(r.joined ? { joined: true as const } : {}) };
           break;
         case 'accepted':
+          if (mode !== 'accept') return unavailable({ provider: 'postgrest', code: 'bad_response' });
           data = { mode: 'accept', child_id: r.child_id.toLowerCase(), role: r.role };
           break;
       }

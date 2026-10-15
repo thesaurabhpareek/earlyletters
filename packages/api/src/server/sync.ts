@@ -51,6 +51,12 @@ export const SYNC_API_VERSION = 1;
 export const SYNC_API_MIN_SUPPORTED = 0;
 
 export const SYNC_PUSH_MAX_OPS = 50;
+/**
+ * Measured as the SQL measures it: `octet_length(p_ops::text)`, the UTF-8
+ * bytes of jsonb's printed form, which puts a space after every `:` and `,`.
+ * Count with `pushBatchBytes`, never with `string.length` (UTF-16 units: a
+ * Hindi letter is about three times larger in UTF-8).
+ */
 export const SYNC_PUSH_MAX_BYTES = 256 * 1024;
 export const SYNC_PULL_MAX_BOOKS = 100;
 export const SYNC_PULL_MIN_ROWS = 1;
@@ -110,14 +116,17 @@ export const SHARED_GROUP_COLUMNS: Readonly<Record<string, readonly FieldGroup[]
 };
 
 /**
- * Columns set when the letter is first written and never changed by an
- * upsert (the server keeps its value; `raw_transcript` is immutable once
- * non-empty and `pack_ref` like `engine_version`, DATA-REQ-040 Rev).
+ * Immutable on the server (`entries_guard_immutable`, DATA-REQ-040 Rev): an
+ * upsert must send the server's value; a different one rejects the WHOLE op
+ * for good with SCIMM, with its text and in_book changes. `pack_ref`: omit
+ * the key to keep the server's value (a letter made before pack_ref existed
+ * keeps null). `raw_transcript` never changes on `entries`, so a voice-only
+ * letter syncs only once its words exist (F06-REQ-030).
  */
-export const INSERT_ONLY_COLUMNS = [
-  'id', 'child_id', 'kind', 'captured_at', 'capture_mode', 'prompt_key', 'engine_version',
-  'raw_transcript', 'pack_ref', 'audio_kept_on_device',
-] as const;
+export const IMMUTABLE_COLUMNS = ['raw_transcript', 'captured_at', 'child_id', 'engine_version', 'pack_ref'] as const;
+
+/** Set when the letter is first written; an upsert's later value is ignored without an error (as built in sync_push). */
+export const INSERT_ONLY_COLUMNS = ['id', 'kind', 'capture_mode', 'prompt_key', 'author_signs_as', 'audio_kept_on_device'] as const;
 
 /** Columns only the author ever receives (F11-REQ-085, PRD-REQ-004 Rev). A pull row for someone else never carries them. */
 export const AUTHOR_ONLY_COLUMNS = [
@@ -137,10 +146,16 @@ export const PUSH_OP_TYPES = [
   'held.upsert',
   /** Planned (WP-F16-17, F08 6.5 D5): delete the held draft, its audio_blobs row and object. */
   'held.discard',
+  /**
+   * Planned (WP-F16-13, F16-REQ-024, F08 6.5 D4): Erase now for a synced
+   * letter. The server purges the row and the backup object at the exact
+   * `audio_blobs.object_path`; every device drops it at its next pull.
+   */
+  'entry.erase',
 ] as const;
 export type PushOpType = (typeof PUSH_OP_TYPES)[number];
 /** Op types the SQL parser does not have yet. The drift test allows exactly these to be missing. */
-export const PLANNED_PUSH_OP_TYPES: readonly PushOpType[] = ['held.upsert', 'held.discard'];
+export const PLANNED_PUSH_OP_TYPES: readonly PushOpType[] = ['held.upsert', 'held.discard', 'entry.erase'];
 
 /** Keys `book.update` accepts (as built). */
 export const BOOK_UPDATE_KEYS = ['name', 'nickname', 'date_of_birth', 'due_date', 'family_can_read'] as const;
@@ -203,6 +218,16 @@ export interface EntryData {
   /** `entry.reupload` only: the phone's copy is a tombstone. */
   deleted?: boolean;
 }
+
+/** Every key of EntryData, for the drift test against the keys `sync_push` reads. Kept equal to the interface by a type check. */
+export const ENTRY_DATA_KEYS = [
+  'id', 'child_id', 'kind', 'occurred_on', 'occurred_precision', 'captured_at', 'capture_mode', 'edit_level', 'prompt_key',
+  'engine_version', 'raw_transcript', 'machine_edits', 'final_text', 'author_edits', 'locked_spans', 'pack_ref', 'in_book',
+  'sounds_like_me', 'author_signs_as', 'audio_kept_on_device', 'language', 'base_direction', 'deleted',
+] as const satisfies readonly (keyof EntryData)[];
+type MissingEntryKeys = Exclude<keyof EntryData, (typeof ENTRY_DATA_KEYS)[number]>;
+const _entryKeysComplete: MissingEntryKeys extends never ? true : never = true;
+void _entryKeysComplete;
 
 /**
  * A held or waiting draft (F16 6.2 I; planned, WP-F16-17). Author-only; never
@@ -275,6 +300,7 @@ export interface HeldUpsertOp extends OpBase<'held.upsert', HeldDraftData> {
   base: string | null;
 }
 export type HeldDiscardOp = OpBase<'held.discard', Record<string, never>>;
+export type EntryEraseOp = OpBase<'entry.erase', Record<string, never>>;
 
 export type PushOp =
   | EntryUpsertOp
@@ -286,7 +312,8 @@ export type PushOp =
   | BookUpdateOp
   | PrefsUpsertOp
   | HeldUpsertOp
-  | HeldDiscardOp;
+  | HeldDiscardOp
+  | EntryEraseOp;
 
 /** RPC arguments. `p_api_version` is planned (WP-F16-16); until S02 adds the overload, omit it. */
 export interface SyncPushArgs {
@@ -327,8 +354,19 @@ export const PushResultOkSchema = v.object({
   conflict: v.optional(v.boolean()),
   /** Planned (WP-F16-14): the groups not applied, today only `["text"]`. */
   conflict_groups: v.optional(v.array(v.picklist(FIELD_GROUPS))),
-  /** Planned (WP-F16-14). */
-  current: v.optional(ConflictCurrentSchema),
+  /**
+   * Planned (WP-F16-14; S03's ADR 0023): the server's words, sent whenever
+   * they changed since `base` (a words conflict, or an op that carried no
+   * words). The phone takes them unless its own words for that letter are
+   * still queued.
+   */
+  current: v.optional(v.nullable(ConflictCurrentSchema)),
+  /**
+   * Planned (WP-F16-14; S03's ADR 0023 section 5): the words version this op
+   * wrote when it first applied. A duplicate (`dup`) answers it too, so a
+   * lost answer rebases on it, never on `entry.v`.
+   */
+  applied_v: v.optional(v.nullable(str)),
   missing: v.optional(v.boolean()),
   entry: v.optional(v.nullable(EntryStateSchema)),
   /** Planned (WP-F16-17): server state of a held draft after `held.upsert`. */
@@ -386,8 +424,8 @@ export interface BookRequest {
 export interface PullSince {
   epoch?: number;
   books: Record<string, BookRequest>;
-  /** Planned (WP-F16-17): cursor for the author's own held drafts. */
-  held?: { cursor?: string | null };
+  /** Planned (WP-F16-17): cursor and digest for the author's own held drafts (same rules as a book). */
+  held?: { cursor?: string | null; have?: Digest; verify?: boolean; ids?: boolean };
 }
 
 export interface SyncPullArgs {
@@ -442,8 +480,15 @@ export const BookMemberSchema = v.object({
   is_me: v.boolean(),
   joined_at: str,
   signs_as: nullableStr,
-  /** Planned (WP-F11-01): until when the caller may undo this member's join through the caller's own invite (F11-REQ-008), else absent. */
+  /**
+   * Requested from S02 (not in 20261015020000): until when the caller may
+   * undo this member's join, set only for a member who joined through the
+   * caller's own invite in the last 72 hours (F11-REQ-008), else absent.
+   * Without it the app cannot know whom it may offer "Not your co-parent?".
+   */
   undo_until: v.optional(nullableStr),
+  /** Built in sync_books only (the pull meta does not carry it): whether this member's letters are added without review. Parents see it. */
+  auto_add: v.optional(v.nullable(v.boolean())),
 });
 export type BookMember = v.InferOutput<typeof BookMemberSchema>;
 
@@ -515,11 +560,23 @@ export const PulledHeldSchema = v.object({
   pack_ref: nullableStr,
   audio_kept_on_device: v.boolean(),
   updated_at: str,
-  /** Tombstone for a discard made on another phone of the same author. */
-  discarded: v.optional(v.boolean()),
   v: str,
 });
 export type PulledHeld = v.InferOutput<typeof PulledHeldSchema>;
+
+/**
+ * A held draft that left the server: discarded on another phone of the same
+ * author, or kept (its `entries` row took the same id). The row itself is
+ * purged, so only these fields exist; the phone drops its local draft, or
+ * for `kept` waits for the letter in the book section.
+ */
+export const PulledHeldGoneSchema = v.object({
+  id: str,
+  gone: v.picklist(['discarded', 'kept']),
+  updated_at: str,
+  v: str,
+});
+export type PulledHeldGone = v.InferOutput<typeof PulledHeldGoneSchema>;
 
 export const PullResponseSchema = v.object({
   reset: v.boolean(),
@@ -528,11 +585,104 @@ export const PullResponseSchema = v.object({
   epoch_started_at: str,
   books: v.optional(v.array(PulledBookSchema)),
   gone: v.optional(v.array(GoneBookSchema)),
-  /** Planned (WP-F16-17): the author's own held drafts after the held cursor. Never present in anyone else's pull. */
-  held: v.optional(v.object({ rows: v.array(PulledHeldSchema), cursor: nullableStr, more: v.boolean() })),
+  /**
+   * Planned (WP-F16-17): the author's own held drafts after the held cursor,
+   * with the same cursor rules as a book (F16 6.2 I): removal is the digest
+   * (`visible`, then `ids` on a difference), so a draft purged by a book
+   * purge, the orphan sweep or a restore epoch leaves this phone too.
+   * `gone` rows are an optional fast path for discards and keeps. Never
+   * present in anyone else's pull.
+   */
+  held: v.optional(v.object({
+    rows: v.array(v.union([PulledHeldGoneSchema, PulledHeldSchema])),
+    cursor: nullableStr,
+    more: v.boolean(),
+    visible: v.optional(v.nullable(DigestSchema)),
+    ids: v.optional(v.array(str)),
+  })),
   more: v.optional(v.boolean()),
 });
 export type PullResponse = v.InferOutput<typeof PullResponseSchema>;
+
+// ── Book list (sync_books, F16 6.2 D step 2) ──────────────────────────────
+
+/**
+ * Pending invites as `sync_books` returns them to parents: not accepted, not
+ * revoked, and expired for at most 14 days. This is the one source for the
+ * member list's pending rows (F11-REQ-019); `open` decides whether Send
+ * again and Cancel show.
+ */
+export const BookInviteSchema = v.object({
+  id: str,
+  role: v.picklist(MEMBER_ROLES),
+  signs_as: nullableStr,
+  created_at: str,
+  expires_at: str,
+  status: v.picklist(['open', 'expired']),
+});
+
+export const SyncBookSchema = v.object({
+  id: str,
+  role: v.picklist(MEMBER_ROLES),
+  name: str,
+  nickname: nullableStr,
+  date_of_birth: nullableStr,
+  birthday_md: nullableStr,
+  due_date: nullableStr,
+  family_can_read: v.boolean(),
+  created_by_me: v.boolean(),
+  joined_at: str,
+  auto_add: v.nullish(v.boolean()),
+  my_signs_as: nullableStr,
+  members: v.nullable(v.array(BookMemberSchema)),
+  /** Parents only; null for family members. */
+  invites: v.nullable(v.array(BookInviteSchema)),
+});
+
+export const SyncBooksResponseSchema = v.object({
+  epoch: v.nullable(v.number()),
+  first_run_open: v.boolean(),
+  books: v.array(SyncBookSchema),
+});
+export type SyncBooksResponse = v.InferOutput<typeof SyncBooksResponseSchema>;
+
+export function parseSyncBooks(input: unknown): ParseResult<SyncBooksResponse> {
+  const r = v.safeParse(SyncBooksResponseSchema, input);
+  return r.success ? { ok: true, value: r.output } : { ok: false, reason: 'invalid' };
+}
+
+// ── Sizes ─────────────────────────────────────────────────────────────────
+
+const utf8Len = (str: string) => {
+  let n = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    if (c < 0x80) n += 1;
+    else if (c < 0x800) n += 2;
+    else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
+      n += 4;
+      i++;
+    } else n += 3;
+  }
+  return n;
+};
+
+/** UTF-8 bytes of a value as Postgres prints it as jsonb (`{"a": 1, "b": [1, 2]}`). */
+export function jsonbTextBytes(value: unknown): number {
+  if (value === null || value === undefined) return 4;
+  if (typeof value === 'boolean') return value ? 4 : 5;
+  if (typeof value === 'number') return String(value).length;
+  if (typeof value === 'string') return utf8Len(JSON.stringify(value));
+  if (Array.isArray(value)) return value.length === 0 ? 2 : 2 + value.reduce((n: number, x) => n + jsonbTextBytes(x), 0) + 2 * (value.length - 1);
+  const entries = Object.entries(value as Record<string, unknown>).filter(([, x]) => x !== undefined);
+  if (entries.length === 0) return 2;
+  return 2 + entries.reduce((n, [k, x]) => n + utf8Len(JSON.stringify(k)) + 2 + jsonbTextBytes(x), 0) + 2 * (entries.length - 1);
+}
+
+/** The size `sync_push` checks against SYNC_PUSH_MAX_BYTES. */
+export function pushBatchBytes(ops: readonly PushOp[]): number {
+  return jsonbTextBytes(ops);
+}
 
 // ── Parsers ───────────────────────────────────────────────────────────────
 

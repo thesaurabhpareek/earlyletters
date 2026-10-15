@@ -4,13 +4,20 @@
  * fictional Asha family only.
  */
 import { describe, expect, it } from 'vitest';
-import { ENDPOINTS, ERROR_DETAILS, failure, newRequestId } from '../src';
+import { classifySqlstate, ENDPOINTS, ERROR_DETAILS, failure, newRequestId } from '../src';
 import {
   AUTHOR_ONLY_COLUMNS,
   buildPushPayload,
   FIELD_GROUP_COLUMNS,
   FIELD_GROUPS,
   holdUntil,
+  ESCROW_ERROR_DETAILS,
+  currentEscrowKey,
+  newestAmrTimestamp,
+  parseEscrowKeys,
+  SEAL_INFO,
+  sealAad,
+  CreateRequestResultSchema,
   INVITE_CODE_RE,
   INVITE_REDEEM_PATH,
   INVITE_TOKEN_RE,
@@ -19,9 +26,13 @@ import {
   byteaHex,
   isOpenInvite,
   isWordsConflict,
+  parseSyncBooks,
+  pushBatchBytes,
+  PUSH_OP_TYPES,
   sendablePrefsKeys,
   sendablePushOpTypes,
   enqueueStatusReport,
+  settleQueued,
   PendingPurchaseSchema,
   reportFromPending,
   parsePullResponse,
@@ -29,7 +40,6 @@ import {
   parseRedeemRequest,
   parseStatusReport,
   passesStepUp,
-  PENDING_INVITE_COLUMNS,
   PushPayloadSchema,
   SealedBoxSchema,
   STATUS_REPORT_PATH,
@@ -134,6 +144,43 @@ describe('[F16-REQ-028] sync wire contract v1', () => {
     expect(sendablePrefsKeys()).toEqual(['signs_as', 'include_in_reminders']);
   });
 
+  it('[F16-REQ-024] the erase op is in the frozen list as planned, so no client sends it before the server has it', () => {
+    expect(PUSH_OP_TYPES).toContain('entry.erase');
+    expect(sendablePushOpTypes()).not.toContain('entry.erase');
+  });
+
+  it('[F16-REQ-029] a held tombstone carries only id, gone, updated_at and v, and the pull still parses', () => {
+    const r = parsePullResponse({
+      reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z',
+      held: { rows: [{ id: ASHA_ENTRY, gone: 'discarded', updated_at: '2026-10-15T19:00:00Z', v: '9' }], cursor: '9', more: false },
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('[F16 6.2 D] parses sync_books as built, with the pending invites parents see', () => {
+    const r = parseSyncBooks({
+      epoch: 1, first_run_open: false,
+      books: [{
+        id: ASHA_CHILD, role: 'parent', name: 'Asha', nickname: null, date_of_birth: '2026-03-01', birthday_md: '03-01', due_date: null,
+        family_can_read: false, created_by_me: true, joined_at: '2026-03-02T00:00:00Z', auto_add: true, my_signs_as: 'Papa',
+        members: [{ profile_id: '11111111-1111-4111-8111-111111111111', role: 'parent', is_me: true, joined_at: '2026-03-02T00:00:00Z', auto_add: true, signs_as: 'Papa' }],
+        invites: [{ id: '0192e000-0000-7000-8000-0000000000c1', role: 'parent', signs_as: null, created_at: '2026-10-10T00:00:00Z', expires_at: '2026-10-17T00:00:00Z', status: 'open' }],
+      }],
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('[F16-REQ-002] the batch size is counted as Postgres counts octet_length(p_ops::text), not in UTF-16 units', () => {
+    const ops = [
+      { op: OP, type: 'entry.upsert', id: ASHA_ENTRY, changed: ['text'], base: null,
+        data: { final_text: 'आशा बारिश पर हँसी।', machine_edits: [{ a: 1, b: [true, null, 2.5] }], in_book: true, empty: {}, list: [] } },
+      { op: OP, type: 'entry.delete', id: ASHA_ENTRY, data: {} },
+    ];
+    // 454: measured with PGlite 0.5.8 (`select octet_length($1::jsonb::text)`) on 15 Oct 2026; JSON.stringify gives 391 UTF-16 units.
+    expect(pushBatchBytes(ops as never)).toBe(454);
+    expect(JSON.stringify(ops).length).toBe(391);
+  });
+
   it('parses a pull response with the planned held section', () => {
     const r = parsePullResponse({
       reset: false, epoch: 1, epoch_started_at: '2026-10-01T00:00:00Z', books: [], gone: [],
@@ -182,12 +229,11 @@ describe('[WP-F11-04] family contracts', () => {
     expect(INVITE_REDEEM_PATH).toBe(ENDPOINTS.inviteRedeem.path);
   });
 
-  it('[F11-REQ-019] pending invites never select a hash; open means not used, revoked or expired', () => {
-    expect(PENDING_INVITE_COLUMNS.join(',')).not.toMatch(/hash|token|code/);
+  it('[F11-REQ-019] pending invites come from sync_books; open means status open and not past expiry', () => {
     const now = new Date('2026-10-15T12:00:00Z');
-    expect(isOpenInvite({ accepted_at: null, revoked_at: null, expires_at: '2026-10-20T00:00:00Z' }, now)).toBe(true);
-    expect(isOpenInvite({ accepted_at: null, revoked_at: null, expires_at: '2026-10-14T00:00:00Z' }, now)).toBe(false);
-    expect(isOpenInvite({ accepted_at: '2026-10-15T00:00:00Z', revoked_at: null, expires_at: '2026-10-20T00:00:00Z' }, now)).toBe(false);
+    expect(isOpenInvite({ status: 'open', expires_at: '2026-10-20T00:00:00Z' }, now)).toBe(true);
+    expect(isOpenInvite({ status: 'open', expires_at: '2026-10-14T00:00:00Z' }, now)).toBe(false);
+    expect(isOpenInvite({ status: 'expired', expires_at: '2026-10-20T00:00:00Z' }, now)).toBe(false);
   });
 });
 
@@ -201,7 +247,7 @@ const report: StatusReport = {
   cancelled: false,
   free_period_days: 7,
   reported_at: '2026-10-15T19:00:00.000Z',
-  consent: { product_id: 'plus.annual', offer_type: 'introductory', terms_version: '1.4.0', shown_at: '2026-10-15T18:59:00.000Z' },
+  consent: { product_id: 'plus.annual', offer_type: 'introductory', terms_shown: '1.4.0', shown_at: '2026-10-15T18:59:00.000Z' },
 };
 
 describe('[D-080] subscription status report and [D-081] consent record', () => {
@@ -224,22 +270,41 @@ describe('[D-080] subscription status report and [D-081] consent record', () => 
   });
 
   it('[F14-REQ-044] an outside offer code records none_outside_app; a bad version is refused', () => {
-    expect(parseStatusReport({ ...report, consent: { ...report.consent!, offer_type: 'offer_code', terms_version: 'none_outside_app' } }).ok).toBe(true);
-    expect(parseStatusReport({ ...report, consent: { ...report.consent!, terms_version: 'latest' } }).ok).toBe(false);
+    expect(parseStatusReport({ ...report, consent: { ...report.consent!, offer_type: 'offer_code', terms_shown: 'none_outside_app' } }).ok).toBe(true);
+    expect(parseStatusReport({ ...report, consent: { ...report.consent!, terms_shown: 'latest' } }).ok).toBe(false);
     expect(parseStatusReport({ ...report, environment: 'staging' }).ok).toBe(false);
   });
 
   it('[F14-REQ-043] the outbox keeps one report per purchase: newest status, first consent, never another purchase\'s', () => {
+    let n = 0;
+    const key = () => `0192e000-0000-7000-8000-${String(++n).padStart(12, '0')}`;
+    const q0 = enqueueStatusReport([], report, key);
     const later: StatusReport = { ...report, cancelled: true, reported_at: '2026-10-16T08:00:00.000Z', consent: undefined };
-    const q1 = enqueueStatusReport([report], later);
+    const q1 = enqueueStatusReport(q0, later, key);
     expect(q1).toHaveLength(1);
-    expect(q1[0].cancelled).toBe(true);
-    expect(q1[0].consent).toEqual(report.consent);
-    expect(enqueueStatusReport([later], report)[0].cancelled).toBe(true);
+    expect(q1[0].report.cancelled).toBe(true);
+    expect(q1[0].report.consent).toEqual(report.consent);
+    expect(q1[0].idempotency_key).not.toBe(q0[0].idempotency_key);
+    expect(enqueueStatusReport(q1, report, key)[0].report.cancelled).toBe(true);
+    expect(enqueueStatusReport(q1, q1[0].report, key)[0].idempotency_key).toBe(q1[0].idempotency_key);
     const other: StatusReport = { ...report, sub_ref: 'b'.repeat(64), consent: { ...report.consent!, product_id: 'plus.monthly' } };
-    const q2 = enqueueStatusReport([report], other);
-    expect(q2).toHaveLength(2);
-    expect(q2.map((r) => r.consent?.product_id)).toEqual(['plus.annual', 'plus.monthly']);
+    const q2 = enqueueStatusReport(q1, other, key);
+    expect(q2.map((r) => r.report.consent?.product_id)).toEqual(['plus.annual', 'plus.monthly']);
+  });
+
+  it('[F14-REQ-043] an answer for an old key never drops a body merged while it was in flight', () => {
+    let n = 0;
+    const key = () => `0192e000-0000-7000-8000-${String(++n).padStart(12, '0')}`;
+    const q0 = enqueueStatusReport([], report, key);
+    const sent = q0[0].idempotency_key;
+    const q1 = enqueueStatusReport(q0, { ...report, cancelled: true, reported_at: '2026-10-16T08:00:00.000Z' }, key);
+    expect(settleQueued(q1, sent)).toHaveLength(1);
+    expect(settleQueued(q1, q1[0].idempotency_key)).toHaveLength(0);
+  });
+
+  it('subscribed_since is a date only', () => {
+    expect(parseStatusReport({ ...report, subscribed_since: '2025-03-01' }).ok).toBe(true);
+    expect(parseStatusReport({ ...report, subscribed_since: '2025-03-01T10:00:00Z' }).ok).toBe(false);
   });
 
   it('[F14-REQ-043] signed out, the consent moment waits under an opaque handle until the salt exists', () => {
@@ -267,6 +332,32 @@ describe('[F08 6.5] recovery-key contract', () => {
     const t = new Date('2026-10-15T12:00:00Z');
     expect(holdUntil(t, true).toISOString()).toBe('2026-10-18T12:00:00.000Z');
     expect(holdUntil(t, false).toISOString()).toBe('2026-10-16T12:00:00.000Z');
+  });
+
+  it('[F08 6.5 C1] step-up reads the newest amr timestamp, which a refresh does not move', () => {
+    expect(newestAmrTimestamp([{ method: 'otp', timestamp: 100 }, { method: 'password', timestamp: 300 }])).toBe(300);
+    expect(newestAmrTimestamp('x')).toBeNull();
+    expect(newestAmrTimestamp([])).toBeNull();
+  });
+
+  it('[WP-F08-B8] escrow keys come from the build, one environment, exactly one current; anything else fails closed', () => {
+    const k = (version: number, current: boolean, environment = 'production') => ({ version, publicKey: `${'A'.repeat(43)}=`, environment, current });
+    expect(parseEscrowKeys(undefined)).toEqual([]);
+    expect(parseEscrowKeys('not json')).toEqual([]);
+    const two = parseEscrowKeys(JSON.stringify([k(1, true), k(2, false)]));
+    expect(currentEscrowKey(two)?.version).toBe(1);
+    expect(parseEscrowKeys(JSON.stringify([k(1, true), k(2, true)]))).toEqual([]);
+    expect(parseEscrowKeys(JSON.stringify([k(1, true), k(9, false, 'drill')]))).toEqual([]);
+    expect(parseEscrowKeys(JSON.stringify([k(1, false)]))).toEqual([]);
+    expect(currentEscrowKey([])).toBeNull();
+  });
+
+  it('[F08 6.5] HPKE labels and aad match the escrow function; the create answer has its own schema', () => {
+    expect(SEAL_INFO.bookKey).toBe('scribe/escrow/book-key/v1');
+    expect(sealAad.bookKey('P', 'C', 1, 2)).toBe('p|c|1|2');
+    expect(sealAad.release('P', 'D', 'R', 'C', 3)).toBe('p|d|r|c|3');
+    const created = { request_id: '0192e000-0000-7000-8000-0000000000aa', state: 'requested', hold_until: '2026-10-18T12:00:00Z', is_this_device: true };
+    expect(v.safeParse(CreateRequestResultSchema, created).success).toBe(true);
   });
 
   it('[F08 6.5 C1] step-up: a sign-in at most 10 minutes old', () => {
@@ -299,6 +390,21 @@ describe('[F11-REQ-084] push payloads carry no content', () => {
     expect(v.safeParse(PushPayloadSchema, p).success).toBe(true);
     expect(v.safeParse(PushPayloadSchema, { ...p, child_id: ASHA_CHILD }).success).toBe(false);
     expect(buildPushPayload('restore_request', 't', 'b').aps['interruption-level']).toBe('time-sensitive');
+  });
+});
+
+describe('[F08 6.5] the S05 backup-server codes and details', () => {
+  it('SCRAT pending, SCIMM restore_open, SCBKO rotation and SCSES session_ended survive the envelope', () => {
+    const id = newRequestId();
+    for (const detail of ['pending', 'restore_open', 'rotation', 'session_ended'] as const) {
+      expect(ERROR_DETAILS).toContain(detail);
+      expect(ESCROW_ERROR_DETAILS).toContain(detail);
+      expect(failure({ code: 'conflict', retryable: false, detail }, id).error.detail).toBe(detail);
+    }
+    expect(classifySqlstate('SCSES')).toEqual({ code: 'unauthorized', action: 'reauth', retryable: true });
+    expect(classifySqlstate('SCBKO')).toEqual({ code: 'paused', action: 'retry', retryable: true });
+    expect(classifySqlstate('SCIMM').action).toBe('reject');
+    expect(classifySqlstate('SCRAT', 'queue').action).toBe('retry');
   });
 });
 

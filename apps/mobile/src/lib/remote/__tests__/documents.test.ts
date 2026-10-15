@@ -68,7 +68,6 @@ function setup(store = new Map<string, string>(), clock = { t: 1_000_000 }, with
     timeoutMs: 5000,
     now: () => clock.t,
     adjust: withStaleness ? (next, previous, { serverDate }) => withFreshKillSwitches(next, previous, serverDate) : undefined,
-    adjustMaxMs: withStaleness ? 14 * 86_400_000 : undefined,
     signedTimeOf: (c) => Date.parse(c.generatedAt),
   });
   return { client, http, store, clock };
@@ -325,6 +324,29 @@ describe('[F19-REQ-008] a stale copy cannot clear a kill switch', () => {
     expect(client.current().killSwitches.invites).toBe(true);
   });
 
+  it('a cached copy that kept its origin Date is judged by Date plus Age', async () => {
+    const { client, http } = setup(new Map(), { t: NOW }, true);
+    http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-09-19T00:00:00.000Z', true), date: 'Sat, 19 Sep 2026 00:05:00 GMT' });
+    await client.refresh(true);
+    http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-01T00:00:00.000Z', false), date: 'Thu, 01 Oct 2026 00:00:00 GMT', age: 14 * 86_400 });
+    expect(await client.refresh(true)).toBe('updated');
+    expect(client.current().killSwitches.invites).toBe(true);
+  });
+
+  it('a server clock recorded far ahead of a corrected phone clock is dropped at the next start', async () => {
+    const store = new Map<string, string>();
+    const ahead = setup(store, { t: NOW + 200 * 86_400_000 }, true);
+    ahead.http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-15T00:00:00.000Z', false), date: new Date(NOW + 200 * 86_400_000).toUTCString() });
+    await ahead.client.refresh(true);
+    const fixed = setup(store, { t: NOW }, true);
+    fixed.client.current();
+    fixed.http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-15T13:00:00.000Z', true), date: 'Thu, 15 Oct 2026 13:01:00 GMT' });
+    await fixed.client.refresh(true);
+    fixed.http.queue.push({ status: 200, etag: '"v5"', body: killed(5, '2026-10-15T13:30:00.000Z', false), date: 'Thu, 15 Oct 2026 13:31:00 GMT' });
+    await fixed.client.refresh(true);
+    expect(fixed.client.current().killSwitches.invites).toBe(false);
+  });
+
   it('listeners get the value in use, not the stale switches', async () => {
     const { client, http } = setup(new Map(), { t: NOW }, true);
     http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-10T00:00:00.000Z', true), date: 'Sat, 10 Oct 2026 00:05:00 GMT' });
@@ -336,20 +358,18 @@ describe('[F19-REQ-008] a stale copy cannot clear a kill switch', () => {
     expect(seen).toEqual([true]);
   });
 
-  it('a switch kept on by the rule is released after the server confirms the clearing copy for 14 days', async () => {
+  it('a stale clearing copy never clears the switch, however long it is confirmed; only a fresh publish does', async () => {
     const clock = { t: NOW };
     const { client, http } = setup(new Map(), clock, true);
     http.queue.push({ status: 200, etag: '"v3"', body: killed(3, '2026-10-01T00:00:00.000Z', true), date: 'Thu, 01 Oct 2026 00:05:00 GMT' });
     await client.refresh(true);
     http.queue.push({ status: 200, etag: '"v4"', body: killed(4, '2026-10-02T00:00:00.000Z', false), date: 'Thu, 15 Oct 2026 12:00:00 GMT' });
     await client.refresh(true);
-    expect(client.current().killSwitches.invites).toBe(true);
-    clock.t = NOW + 10 * 86_400_000;
-    http.queue.push({ status: 304, etag: '"v4"', body: null, date: 'Sun, 25 Oct 2026 12:00:00 GMT' });
+    clock.t = NOW + 30 * 86_400_000;
+    http.queue.push({ status: 304, etag: '"v4"', body: null, date: 'Sat, 14 Nov 2026 12:00:00 GMT' });
     await client.refresh(true);
     expect(client.current().killSwitches.invites).toBe(true);
-    clock.t = NOW + 15 * 86_400_000;
-    http.queue.push({ status: 304, etag: '"v4"', body: null, date: 'Fri, 30 Oct 2026 12:00:00 GMT' });
+    http.queue.push({ status: 200, etag: '"v5"', body: killed(5, '2026-11-14T12:00:00.000Z', false), date: 'Sat, 14 Nov 2026 12:01:00 GMT' });
     await client.refresh(true);
     expect(client.current().killSwitches.invites).toBe(false);
   });

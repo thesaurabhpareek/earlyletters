@@ -21,7 +21,6 @@ import {
   DEFAULT_REMOTE_CONFIG,
   ENDPOINT_CLASSES,
   ENDPOINTS,
-  KILL_SWITCH_MAX_AGE_MS,
   parseContentBundle,
   parsePackManifest,
   parseRemoteConfig,
@@ -79,10 +78,9 @@ export const remoteConfigDoc = new SignedDocumentClient<RemoteConfig>({
   appVersion: APP_VERSION,
   minIntervalMs: CLIENT_REFRESH_MS.remoteConfig,
   timeoutMs,
-  // F19-REQ-008: a copy more than 7 days older than the newest server clock cannot clear a kill switch;
-  // a switch kept that way is released once the server has confirmed for 14 days that this copy is the newest.
+  // F19-REQ-008: a copy more than 7 days older than the newest server clock cannot clear a kill switch
+  // (a fresh publish clears it; scripts/packs/publish.ts says when to re-sign).
   adjust: (next, previous, { serverDate }) => withFreshKillSwitches(next, previous, serverDate),
-  adjustMaxMs: 2 * KILL_SWITCH_MAX_AGE_MS,
   signedTimeOf: (c) => Date.parse(c.generatedAt),
 });
 

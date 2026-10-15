@@ -70,6 +70,8 @@ export const API_ERROR_CODES = [
   'idempotency_conflict',
   /** The action needs a sign-in in the last few minutes (escrow step-up, F08 6.5 C1). */
   'reauth_required',
+  /** SCQTA: the account's backup space is full (F08 6.5 F, 5 GB). Tell the person (`backup.quotaReached`); never retried. */
+  'quota_full',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
@@ -79,7 +81,7 @@ export const ERROR_CODE_SINCE: Readonly<Record<ApiErrorCode, 1 | 2>> = {
   upgrade_required: 1, rate_limited: 1, timeout: 1, unavailable: 1, internal: 1, network: 1,
   consent_required: 1, immutable: 1, tombstoned: 1, last_parent: 1, deleted: 1, not_parent: 1,
   invite_unusable: 1, plus_required: 1, anonymous_refused: 1,
-  parents_full: 2, paused: 2, idempotency_conflict: 2, reauth_required: 2,
+  parents_full: 2, paused: 2, idempotency_conflict: 2, reauth_required: 2, quota_full: 2,
 };
 
 /**
@@ -97,7 +99,12 @@ export const ERROR_DETAILS = [
   'purged',
   // Escrow (recovery-key.ts ESCROW_ERROR_DETAILS)
   'step_up_required', 'device_unknown', 'device_revoked', 'on_hold', 'cancelled', 'deletion_pending',
-  'limit_restores', 'limit_keys',
+  'limit_restores', 'limit_keys', 'limit_keys_stored', 'key_exists', 'revoked', 'entry', 'key', 'object',
+  'nothing', 'released', 'count', 'code', 'size', 'approvals', 'begin', 'devices',
+  // S05 backup server (feat/backup-server, 15 Oct): SCRAT pending (32 open reservations per account),
+  // SCIMM restore_open (revoking a device while another has an open restore), SCBKO rotation
+  // (escrow key rotation guard), SCSES session_ended (the session behind p_session has ended).
+  'pending', 'restore_open', 'rotation', 'session_ended',
   // Kill switches (remote-config.ts KILL_SWITCH_KEYS), for `paused`
   'sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport',
   // invite-redeem's global brake (F11-REQ-007)
@@ -192,6 +199,12 @@ export const SQLSTATE_RULES: Readonly<Record<string, ErrorRule>> = {
   // Planned (request to S02): an SQL-side kill switch, so `invites` and `sync` also stop the PostgREST paths
   // (accept_child_invite, create_child_invite, sync_push) that no Edge Function sits in front of.
   SCKIL: rule('paused', 'retry'),
+  // S05 (PR #151): backup or escrow switched off on the server (detail backupUploads or escrow): wait, never drop.
+  SCBKO: rule('paused', 'retry'),
+  // S05 (PR #151): the backup quota is reached.
+  SCQTA: rule('quota_full', 'tell_user'),
+  // S05 (PR #151, escrow only, detail session_ended): the session that asked has ended; sign in again.
+  SCSES: rule('unauthorized', 'reauth'),
   SCANO: rule('anonymous_refused', 'reject'),
   '28000': rule('unauthorized', 'reauth'),
   SCRAT: rule('rate_limited', 'tell_user'),
@@ -265,6 +278,30 @@ export function classifyHttpStatus(status: number): ErrorRule {
   return rule('internal', 'reject');
 }
 
+/**
+ * What a client does with an envelope error code, for answers from our Edge
+ * Functions (which carry a code and maybe a SQLSTATE, not only a status).
+ * Prefer `classifySqlstate(error.sqlstate)` when a SQLSTATE is present.
+ */
+export const ERROR_CODE_ACTIONS: Readonly<Record<ApiErrorCode, ErrorAction>> = {
+  bad_request: 'reject', unauthorized: 'reauth', forbidden: 'reject', not_found: 'reject', conflict: 'reject', gone: 'reject',
+  payload_too_large: 'reject', upgrade_required: 'tell_user', rate_limited: 'retry', timeout: 'retry', unavailable: 'retry',
+  internal: 'reject', network: 'retry', consent_required: 'pause_for_consent', immutable: 'reject', tombstoned: 'reject',
+  last_parent: 'reject', deleted: 'reject', not_parent: 'reject', invite_unusable: 'tell_user', plus_required: 'tell_user',
+  anonymous_refused: 'reject', parents_full: 'tell_user', paused: 'retry', idempotency_conflict: 'reject', quota_full: 'tell_user',
+  /** Ask the person to sign in again now (escrow step-up); never a silent token refresh. */
+  reauth_required: 'tell_user',
+};
+
+export function classifyErrorCode(error: Pick<ApiError, 'code' | 'sqlstate'>): ErrorRule {
+  if (error.sqlstate) {
+    const bySql = classifySqlstate(error.sqlstate);
+    if (bySql.code !== 'internal') return bySql;
+  }
+  const action = ERROR_CODE_ACTIONS[error.code] ?? 'reject';
+  return { code: error.code, action, retryable: action === 'retry' || action === 'reauth' };
+}
+
 /** HTTP status an Edge Function should answer for one of our error codes. */
 export function httpStatusFor(code: ApiErrorCode): number {
   switch (code) {
@@ -287,12 +324,14 @@ export function httpStatusFor(code: ApiErrorCode): number {
       return 409;
     case 'idempotency_conflict':
       return 422;
+    // 403, not 401: a token refresh never satisfies a step-up, which needs a fresh sign-in.
     case 'reauth_required':
-      return 401;
+      return 403;
     case 'gone':
     case 'deleted':
       return 410;
     case 'payload_too_large':
+    case 'quota_full':
       return 413;
     case 'upgrade_required':
       return 426;

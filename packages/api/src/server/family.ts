@@ -95,6 +95,8 @@ export type InviteErrorKind =
   | 'book_full'
   /** SCCON with detail `family-share` (D-050, F11-REQ-018): show the family-share sheet, not the general consent screen. */
   | 'family_share_consent'
+  /** SCCID on the device-made create: this id was used by someone else or with other hashes. Make a new invite (a client bug if it repeats). */
+  | 'id_taken'
   | 'not_parent'
   | 'rate_limited'
   | 'consent_needed'
@@ -123,6 +125,10 @@ export function inviteErrorKindFor(sqlstate: string | null | undefined, detail?:
       return 'signed_out';
     case 'P0002':
       return 'not_found';
+    case 'SCKIL':
+      return 'paused';
+    case 'SCCID':
+      return 'id_taken';
     default:
       return 'unknown';
   }
@@ -245,8 +251,11 @@ export const REDEEM_FAILURES_GLOBAL_HOUR = 1_000;
  * only). It must gate, look up and count in ONE transaction, so parallel
  * guesses cannot all pass the gate before a failure is recorded, and a
  * failure is committed before the answer leaves (no "uncounted but
- * revealed" path). Locking: lock the caller's own subject rows FOR UPDATE
- * (contention stays with that caller); never hold the single global row for
+ * revealed" path). Locking: take `pg_advisory_xact_lock` on each subject
+ * hash (or upsert the subject row first, then lock it): a subject with no
+ * row yet, which every subject is on a new day, must serialise too, or
+ * parallel first guesses all pass the gate. Contention stays with that
+ * caller. Never hold the single global row for
  * the transaction: read it plainly for the gate and bump it at the end with
  * one conditional `update ... set n = n + 1` (a limited caller never touches
  * it), so an attacker who is already limited cannot queue every redemption
@@ -275,13 +284,18 @@ export interface RedeemByCodeArgs {
 export const REDEEM_LIMIT_SCOPES = ['user', 'device', 'ip', 'global'] as const;
 
 export const RedeemRpcResultSchema = v.variant('outcome', [
-  v.object({ outcome: v.literal('peek'), inviter: v.nullable(v.string()), role: v.picklist(INVITE_ROLES), joined: v.optional(v.literal(true)) }),
+  v.object({ outcome: v.literal('peek'), inviter: v.nullable(v.pipe(v.string(), v.maxLength(80))), role: v.picklist(INVITE_ROLES), joined: v.optional(v.literal(true)) }),
   v.object({ outcome: v.literal('accepted'), child_id: v.pipe(v.string(), v.regex(UUID_RE)), role: v.picklist(INVITE_ROLES) }),
   /** Counted as a failure. `detail` is `already_member` or anything else, which the function reports as `not_found`. */
   v.object({ outcome: v.literal('unusable'), detail: v.optional(v.nullable(v.string())) }),
   /** Not looked up, not counted. */
   v.object({ outcome: v.literal('limited'), scope: v.picklist(REDEEM_LIMIT_SCOPES) }),
-  /** Not counted as a guess (the code was right): only SCCAP, SCCON with its detail, SCDEL, SCRAT. Anything else is a bad answer. */
+  /**
+   * Not counted as a guess (the code was right): only SCCAP, SCCON with its
+   * detail, SCDEL, SCRAT. A wrong, expired, used or revoked code is
+   * `unusable` (counted); `refused` with SCINV is a contract break and the
+   * function answers `unavailable`.
+   */
   v.object({ outcome: v.literal('refused'), sqlstate: v.pipe(v.string(), v.regex(/^[0-9A-Z]{5}$/)), detail: v.optional(v.nullable(v.string())) }),
 ]);
 export type RedeemRpcResult = v.InferOutput<typeof RedeemRpcResultSchema>;
@@ -326,26 +340,24 @@ export type UndoResult = (typeof UNDO_RESULTS)[number];
 // ── Member list (F11-REQ-019) ────────────────────────────────────────────
 
 /**
- * Members come from the pull (`BookMeta.members`, sync.ts). Pending invites
- * come from `child_invites`, which parents of the book may read
- * (`child_invites_select`); select exactly these columns, never `*` and
- * never `token_hash` or `code_hash`.
+ * One source for the list: `sync_books()` (sync.ts `SyncBooksResponseSchema`).
+ * Members with role, joined date, signature and `auto_add`; and, for
+ * parents, pending invites not accepted, not revoked and expired for at
+ * most 14 days, each with `status`. Do not select `child_invites` directly.
  */
-export const PENDING_INVITE_COLUMNS = ['id', 'child_id', 'role', 'signs_as', 'created_at', 'expires_at', 'accepted_at', 'revoked_at'] as const;
-
-export const PendingInviteSchema = v.object({
-  id: v.string(),
-  child_id: v.string(),
-  role: v.picklist(['parent', 'contributor']),
-  signs_as: v.nullable(v.string()),
-  created_at: v.string(),
-  expires_at: v.string(),
-  accepted_at: v.nullable(v.string()),
-  revoked_at: v.nullable(v.string()),
-});
-export type PendingInvite = v.InferOutput<typeof PendingInviteSchema>;
-
-/** Open means not accepted, not revoked and not expired at `now`. */
-export function isOpenInvite(inv: Pick<PendingInvite, 'accepted_at' | 'revoked_at' | 'expires_at'>, now: Date): boolean {
-  return inv.accepted_at === null && inv.revoked_at === null && Date.parse(inv.expires_at) > now.getTime();
+export function isOpenInvite(inv: { status: 'open' | 'expired'; expires_at: string }, now: Date): boolean {
+  return inv.status === 'open' && Date.parse(inv.expires_at) > now.getTime();
 }
+
+// ── Offline invites (F11 6.2 A step 3, F11-U14) ──────────────────────────
+
+/**
+ * A device-made invite is queued in the F16 outbox in its own lane
+ * (`membership`, not a `sync_push` op), written in the same SQLite
+ * transaction as the local invite row, and sent with `createInviteV2` when
+ * online. It is idempotent on the invite id and hashes, so a retry after a
+ * lost answer is safe, it shows "Not sent yet" like any queued op, and
+ * sign-out drains it with the rest of the outbox. Revoke and leave queue the
+ * same way (`revokeInvite`, `leaveChild`).
+ */
+export const OUTBOX_LANE_MEMBERSHIP = 'membership' as const;

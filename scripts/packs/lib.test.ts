@@ -171,10 +171,13 @@ describe('[WP-F19-16] the remote-config signing path with the M14 kill switches'
   it('prints the server-side secret steps and the re-sign rule for clearing a switch', () => {
     const steps = killSwitchSteps({ ...source.killSwitches, invites: true, escrow: true, sync: true });
     expect(steps).toContain('  npx supabase secrets set KILL_SWITCHES=invites');
-    expect(steps.some((s) => s.includes('KILL_SWITCHES=escrow --project-ref'))).toBe(true);
+    expect(steps).toContain('  npx supabase secrets set ESCROW_SWITCH=off --project-ref <scribe-escrow ref>');
+    expect(steps).toContain("  alter database postgres set app.escrow_enabled = 'off';");
+    expect(steps).toContain("  alter database postgres set app.backup_enabled = 'on';");
     expect(steps).toContain('Switches on: escrow, invites, sync.');
     const off = killSwitchSteps(source.killSwitches);
     expect(off).toContain('  npx supabase secrets unset KILL_SWITCHES');
+    expect(off).toContain('  npx supabase secrets set ESCROW_SWITCH=on --project-ref <scribe-escrow ref>');
     expect(off.some((s) => /each week for 4 weeks/.test(s))).toBe(true);
   });
 });

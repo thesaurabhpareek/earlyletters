@@ -14,4 +14,5 @@ export * from './sync';
 export * from './family';
 export * from './subscription-status';
 export * from './recovery-key';
+export * from './escrow-keys';
 export * from './push';

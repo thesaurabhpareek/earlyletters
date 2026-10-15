@@ -59,7 +59,8 @@ export const fetchDocHttp: DocHttp = {
           // body discarded
         }
       }
-      return { status: res.status, etag, body, date: res.headers.get('date') };
+      const age = Number(res.headers.get('age') ?? '');
+      return { status: res.status, etag, body, date: res.headers.get('date'), age: Number.isFinite(age) && age >= 0 ? age : null };
     } finally {
       clearTimeout(timer);
     }

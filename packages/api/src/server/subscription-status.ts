@@ -19,7 +19,7 @@
  * Family Sharing members never report and get no billing email
  * (F14-REQ-006). A report made while signed out waits in the outbox until
  * sign-in (F14-REQ-043): `PendingPurchase` while there is no salt, then
- * `enqueueStatusReport` keeps one report per purchase.
+ * `enqueueStatusReport` keeps one report per purchase with its own key.
  *
  * Server-feature contract: imported only through `@scribe/api/server`.
  * Edge Functions import this file directly (Deno), so it stays a leaf module:
@@ -45,7 +45,7 @@ export type PlanPeriod = (typeof PLAN_PERIODS)[number];
 export const OFFER_TYPES = ['none', 'introductory', 'promotional', 'offer_code'] as const;
 export type OfferType = (typeof OFFER_TYPES)[number];
 
-/** `terms_version` for an offer code redeemed outside the app, where we showed no terms (F14-REQ-044). */
+/** `terms_shown` for an offer code redeemed outside the app, where we showed no terms (F14-REQ-044). */
 export const TERMS_NONE_OUTSIDE_APP = 'none_outside_app';
 /** A build-time constant from `billingCopy.store` and the Subscription Terms (F14-REQ-011), or `none_outside_app`. */
 export const TERMS_VERSION_RE = /^(?:none_outside_app|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(?:\+[0-9a-f]{8})?)$/;
@@ -61,7 +61,8 @@ const isoTime = v.pipe(v.string(), v.maxLength(40), v.isoTimestamp());
 export const ConsentFactsSchema = v.strictObject({
   product_id: v.pipe(v.string(), v.regex(PRODUCT_ID_RE)),
   offer_type: v.picklist(OFFER_TYPES),
-  terms_version: v.pipe(v.string(), v.regex(TERMS_VERSION_RE)),
+  /** The Subscription Terms version shown (F14-REQ-011), or `none_outside_app` (F14-REQ-044). Named as in F14-U43. */
+  terms_shown: v.pipe(v.string(), v.regex(TERMS_VERSION_RE)),
   /** When the terms were shown and the purchase confirmed (device clock). */
   shown_at: isoTime,
 });
@@ -70,10 +71,11 @@ export type ConsentFacts = v.InferOutput<typeof ConsentFactsSchema>;
 /**
  * The report. D-080's four facts (`plan`, `trial_end`, `renewal_date`,
  * `cancelled`) plus R2 AR-13's identity and freshness (`sub_ref`,
- * `environment`, `reported_at`). `free_period_days` is the one addition the
- * email windows need (trial week versus trial long key on the free period's
- * length, not on the product, F14 6.6 and F14-REQ-044); it is an open item
- * for counsel with D-080 (listed in the PR) and optional until then.
+ * `environment`, `reported_at`). Two additions the email windows need, both
+ * open items for counsel with D-080 (listed in the PR) and optional until
+ * then: `free_period_days` (trial week versus trial long key on the free
+ * period's length, not on the product, F14 6.6 and F14-REQ-044) and
+ * `subscribed_since` (the monthly plan's anniversary reminder).
  */
 export const StatusReportSchema = v.strictObject({
   schema_version: v.literal(STATUS_REPORT_SCHEMA_VERSION),
@@ -87,7 +89,21 @@ export const StatusReportSchema = v.strictObject({
   /** Auto-renew is off (`willAutoRenew` false). The scheduler skips pending trial and renewal emails (F14-REQ-033). */
   cancelled: v.boolean(),
   free_period_days: v.optional(v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(366)))),
-  /** When the phone observed these values (device clock). The server keeps the newest per (profile, sub_ref). */
+  /**
+   * The day the subscription began (UTC date, no time): the anchor for the
+   * monthly plan's yearly "anniversary-reminder" (F14 6.6), which nothing
+   * else in the report can place. A date, not an id. Open for counsel with
+   * D-080 like `free_period_days`; optional until then.
+   */
+  subscribed_since: v.optional(v.nullable(v.pipe(v.string(), v.isoDate()))),
+  /**
+   * When the phone observed these values (device clock). Stored for support
+   * and used only to order this phone's own queue. The server orders
+   * reports by its own receive time (F16 C12: the server clock decides
+   * lifecycle), so a phone clock set ahead cannot freeze the status; S06's
+   * SQL clamps a `reported_at` ahead of its clock to now and never refuses
+   * for it (refusing would lose the purchase's reminder and consent record).
+   */
   reported_at: isoTime,
   consent: v.optional(ConsentFactsSchema),
 });
@@ -129,24 +145,42 @@ export function parseStatusReport(input: unknown): { ok: true; value: StatusRepo
  * `reported_at` are not status). Reference for S06's SQL, which computes it
  * itself: a client never supplies it.
  */
-export function statusFingerprint(r: Pick<StatusReport, 'environment' | 'plan' | 'trial_end' | 'renewal_date' | 'cancelled' | 'free_period_days'>): string {
-  return [r.environment, r.plan, r.trial_end ?? '-', r.renewal_date ?? '-', r.cancelled ? '1' : '0', r.free_period_days ?? '-'].join('|');
+export function statusFingerprint(
+  r: Pick<StatusReport, 'environment' | 'plan' | 'trial_end' | 'renewal_date' | 'cancelled' | 'free_period_days' | 'subscribed_since'>,
+): string {
+  return [r.environment, r.plan, r.trial_end ?? '-', r.renewal_date ?? '-', r.cancelled ? '1' : '0', r.free_period_days ?? '-', r.subscribed_since ?? '-'].join('|');
 }
 
 /**
- * The outbox for reports (F14-REQ-043): one report per purchase (`sub_ref`).
- * A newer observation replaces the status; consent facts are kept from
- * whichever report carried them first (D-081 records the purchase moment),
- * and a report for another purchase never displaces this one.
+ * The outbox for reports (F14-REQ-043): one entry per purchase (`sub_ref`),
+ * each with the idempotency key of its exact body. A newer observation
+ * replaces the status; consent facts are kept from whichever report carried
+ * them first (D-081 records the purchase moment); a report for another
+ * purchase never displaces this one. When a merge changes the body, the
+ * entry takes a new key (`newKey`), because re-sending a changed body under
+ * the old key is a reused key with other arguments, refused for good. When
+ * an answer arrives, remove the entry only if its key is the one that was
+ * sent (`settleQueued`), so a merge made while a send was in flight is kept.
  */
-export function enqueueStatusReport(queue: readonly StatusReport[], next: StatusReport): StatusReport[] {
-  const i = queue.findIndex((q) => q.sub_ref === next.sub_ref);
-  if (i < 0) return [...queue, next];
-  const prev = queue[i];
+export interface QueuedStatusReport {
+  report: StatusReport;
+  idempotency_key: string;
+}
+
+export function enqueueStatusReport(queue: readonly QueuedStatusReport[], next: StatusReport, newKey: () => string): QueuedStatusReport[] {
+  const i = queue.findIndex((q) => q.report.sub_ref === next.sub_ref);
+  if (i < 0) return [...queue, { report: next, idempotency_key: newKey() }];
+  const prev = queue[i].report;
   const newer = Date.parse(next.reported_at) >= Date.parse(prev.reported_at) ? next : prev;
   const consent = prev.consent ?? next.consent;
   const merged: StatusReport = consent ? { ...newer, consent } : { ...newer, consent: undefined };
-  return queue.map((q, j) => (j === i ? merged : q));
+  const same = JSON.stringify(merged) === JSON.stringify(prev);
+  return queue.map((q, j) => (j === i ? (same ? q : { report: merged, idempotency_key: newKey() }) : q));
+}
+
+/** After an answer for `sentKey`: drop that entry if it still carries that key; a newer body under a new key stays queued. */
+export function settleQueued(queue: readonly QueuedStatusReport[], sentKey: string): QueuedStatusReport[] {
+  return queue.filter((q) => q.idempotency_key !== sentKey);
 }
 
 /**

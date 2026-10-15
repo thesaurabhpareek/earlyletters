@@ -50,6 +50,8 @@ export interface DocHttpResponse {
   body: string | null;
   /** The response's `Date` header (server clock), used by the kill-switch staleness rule (F19-REQ-008). */
   date?: string | null;
+  /** The response's `Age` header in seconds: how long a cache has held it. The server clock now is Date plus Age. */
+  age?: number | null;
 }
 
 export interface DocHttp {
@@ -95,14 +97,6 @@ export interface DocumentClientOptions<T> {
    * beside it so a cold start uses the same thing.
    */
   adjust?: (next: T, previous: T, ctx: { serverDate: string | null }) => T;
-  /**
-   * How long an adjusted value may outlive its version. Once the server has
-   * confirmed (304 or the same payload) that the same version is still the
-   * newest for this long, the adjustment is dropped and the signed payload
-   * applies. A kill switch kept on by the staleness rule is therefore never
-   * stuck for good when the copy that cleared it is the newest there is.
-   */
-  adjustMaxMs?: number;
   /** A signed time inside the payload (remote config: `generatedAt`), so the server-Date guard does not rest on the phone clock alone. */
   signedTimeOf?: (value: T) => number;
 }
@@ -119,8 +113,6 @@ interface CacheRecord {
   effective?: unknown;
   /** The newest server `Date` seen on a good response (ms since epoch), for the staleness rule. */
   serverDateMs?: number;
-  /** Phone time when `effective` was first used (ms since epoch). */
-  effectiveSince?: number;
 }
 
 export class SignedDocumentClient<T> {
@@ -144,7 +136,6 @@ export class SignedDocumentClient<T> {
    * "the last good server Date").
    */
   private serverDateMs = 0;
-  private effectiveSince = 0;
 
   constructor(private readonly o: DocumentClientOptions<T>) {
     this.now = o.now ?? (() => Date.now());
@@ -168,13 +159,15 @@ export class SignedDocumentClient<T> {
       const effective = rec.effective === undefined ? null : this.o.parse(rec.effective);
       this.effective = effective?.ok ? rec.effective : undefined;
       this.value = effective?.ok ? effective.value : parsed.value;
-      this.effectiveSince = this.effective !== undefined && typeof rec.effectiveSince === 'number' ? rec.effectiveSince : 0;
       this.version = this.o.versionOf(parsed.value);
       // Not hashed here: cold start stays inside its budget; the hash is computed only when a same-version copy arrives.
       this.payloadSha256 = typeof rec.sha256 === 'string' && SHA256_HEX_RE.test(rec.sha256) ? rec.sha256 : null;
       this.etag = typeof rec.etag === 'string' ? rec.etag : null;
       this.fetchedAt = Number.isFinite(rec.fetchedAt) ? rec.fetchedAt : 0;
       this.serverDateMs = typeof rec.serverDateMs === 'number' && Number.isFinite(rec.serverDateMs) ? rec.serverDateMs : 0;
+      // A clock recorded while this phone's clock was far ahead must not pin every later copy as stale.
+      const held = this.o.signedTimeOf?.(this.value);
+      if (this.serverDateMs > Math.max(this.now(), Number.isFinite(held) ? (held as number) : 0) + 86_400_000) this.serverDateMs = 0;
     } catch {
       // A cache from an older app that no longer parses is dropped; the next refresh replaces it.
       this.o.storage.remove(this.cacheName);
@@ -214,7 +207,7 @@ export class SignedDocumentClient<T> {
   }
 
   /** Accepts a document from any source (a fetch, a test, a bundled seed). Exposed for tests and scripts. */
-  accept(raw: unknown, etag: string | null, serverDate: string | null = null): RefreshOutcome {
+  accept(raw: unknown, etag: string | null, serverDate: string | null = null, ageSeconds: number | null = null): RefreshOutcome {
     this.load();
     const verified = verifySignedDocument(raw, this.o.kind, this.o.trustedKeys());
     if (!verified.ok) return verified.reason;
@@ -228,15 +221,12 @@ export class SignedDocumentClient<T> {
     );
     if (decision === 'rollback' || decision === 'same_version_conflict') return decision;
     const changed = decision === 'accept';
-    this.noteServerDate(serverDate, this.o.signedTimeOf?.(parsed.value));
+    this.noteServerDate(serverDate, this.o.signedTimeOf?.(parsed.value), ageSeconds);
     if (changed) {
       const newest = this.serverDateMs > 0 ? new Date(this.serverDateMs).toUTCString() : null;
       const used = this.o.adjust ? this.o.adjust(parsed.value, this.value ?? this.o.fallback, { serverDate: newest }) : parsed.value;
       this.effective = used === parsed.value ? undefined : used;
-      this.effectiveSince = this.effective === undefined ? 0 : this.now();
       this.value = used;
-    } else {
-      this.releaseAdjustment(parsed.value);
     }
     this.version = version;
     this.payloadSha256 = sha256;
@@ -254,22 +244,13 @@ export class SignedDocumentClient<T> {
    * every later config look stale, and a phone whose clock runs behind still
    * accepts real dates near the signed time.
    */
-  private noteServerDate(serverDate: string | null, signedMs?: number): void {
-    const ms = serverDate ? Date.parse(serverDate) : NaN;
+  private noteServerDate(serverDate: string | null, signedMs?: number, ageSeconds?: number | null): void {
+    const age = typeof ageSeconds === 'number' && Number.isFinite(ageSeconds) && ageSeconds > 0 ? Math.min(ageSeconds, 31_536_000) * 1000 : 0;
+    const ms = serverDate ? Date.parse(serverDate) + age : NaN;
     const held = this.value !== null ? this.o.signedTimeOf?.(this.value) : undefined;
     const anchor = Math.max(this.now(), Number.isFinite(signedMs) ? (signedMs as number) : 0, Number.isFinite(held) ? (held as number) : 0);
     if (!Number.isFinite(ms) || ms > anchor + 86_400_000) return;
     if (ms > this.serverDateMs) this.serverDateMs = ms;
-  }
-
-  /** Drops an adjustment the server has kept confirming for longer than `adjustMaxMs` (see the option). */
-  private releaseAdjustment(payloadValue: T): void {
-    if (this.effective === undefined || !this.o.adjustMaxMs || !this.effectiveSince) return;
-    if (this.now() - this.effectiveSince < this.o.adjustMaxMs) return;
-    this.effective = undefined;
-    this.effectiveSince = 0;
-    this.value = payloadValue;
-    for (const l of this.listeners) l(payloadValue);
   }
 
   /** The accepted payload's hash; for a cache from an older build, computed once from the cached payload. */
@@ -291,7 +272,6 @@ export class SignedDocumentClient<T> {
     const rec: CacheRecord = {
       v: 1, version: this.version, etag: this.etag, fetchedAt: this.fetchedAt, sha256: this.payloadSha256 ?? undefined, payload,
       effective: this.effective, serverDateMs: this.serverDateMs || undefined,
-      effectiveSince: this.effectiveSince || undefined,
     };
     try {
       this.o.storage.write(this.cacheName, JSON.stringify(rec));
@@ -318,13 +298,9 @@ export class SignedDocumentClient<T> {
     }
     if (res.status === 304 && this.value !== null) {
       this.fetchedAt = this.now();
-      this.noteServerDate(res.date ?? null);
+      this.noteServerDate(res.date ?? null, undefined, res.age ?? null);
       const payload = this.cachedPayload();
-      if (payload !== null) {
-        const parsed = this.o.parse(payload);
-        if (parsed.ok) this.releaseAdjustment(parsed.value);
-        this.persist(payload);
-      }
+      if (payload !== null) this.persist(payload);
       return 'unchanged';
     }
     if (res.status !== 200 || res.body === null) return 'http_error';
@@ -334,7 +310,7 @@ export class SignedDocumentClient<T> {
     } catch {
       return 'malformed';
     }
-    return this.accept(raw, res.etag, res.date ?? null);
+    return this.accept(raw, res.etag, res.date ?? null, res.age ?? null);
   }
 
   /** The cached payload as stored (re-read so a 304 refresh keeps the exact bytes we verified). */
