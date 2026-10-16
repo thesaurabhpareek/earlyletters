@@ -43,6 +43,14 @@ export const ALWAYS_EXCLUDED = [
   '**/*.golden.*',
 ];
 
+/**
+ * Instrumented runs are slower: a test near vitest's 5 s default (one that loads
+ * metro.config.js, the verifier fuzz, the tracked-files privacy guard) times out
+ * under v8 coverage on a busy machine. Every coverage config spreads this into
+ * `test`; plain `npm test` keeps each test's own timeout.
+ */
+export const INSTRUMENTED = { testTimeout: 30_000, hookTimeout: 30_000 } as const;
+
 export function coverage(opts: { include: string[]; exclude?: string[]; thresholds: Thresholds }): CoverageOptions {
   return {
     provider: 'v8',

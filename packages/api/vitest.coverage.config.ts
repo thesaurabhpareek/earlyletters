@@ -5,13 +5,14 @@
  * is not part of this denominator. Thresholds: baseline of 15 Oct 2026.
  */
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { coverage } from '../../scripts/coverage/preset';
+import { coverage, INSTRUMENTED } from '../../scripts/coverage/preset';
 import base from './vitest.config';
 
 export default mergeConfig(
   base,
   defineConfig({
     test: {
+      ...INSTRUMENTED,
       coverage: coverage({
         include: ['src/**/*.ts'],
         thresholds: { statements: 0, branches: 0, functions: 0, lines: 0 },
