@@ -59,6 +59,24 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Step helper (failures become annotations)
+        run: |
+          cat > "$RUNNER_TEMP/step.sh" <<'SH'
+          #!/usr/bin/env bash
+          # step.sh <title> <command...>: runs the command, keeps its output in $RUNNER_TEMP/<title>.log, and on
+          # failure turns the last 60 lines into one error annotation (the full log stays in the job log).
+          title="$1"; shift
+          log="$RUNNER_TEMP/${title// /-}.log"
+          "$@" 2>&1 | tee "$log"
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            tail -60 "$log" | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > "$log.tail"
+            echo "::error title=${title} failed (exit ${status})::$(cat "$log.tail")"
+          fi
+          exit "$status"
+          SH
+          chmod +x "$RUNNER_TEMP/step.sh"
+
       - name: Select Xcode ${{ env.XCODE_VERSION }}
         run: |
           set -euo pipefail
@@ -77,7 +95,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: npm ci
-        run: npm ci --no-audit --no-fund
+        run: '"$RUNNER_TEMP/step.sh" "npm ci" npm ci --no-audit --no-fund'
 
       - name: Build env from the eas.json testflight profile (server features off)
         run: |
@@ -93,17 +111,21 @@ jobs:
 
       - name: expo prebuild --platform ios --no-install
         working-directory: apps/mobile
-        run: npx expo prebuild --platform ios --no-install --clean
+        run: '"$RUNNER_TEMP/step.sh" "expo prebuild" npx expo prebuild --platform ios --no-install --clean'
 
       - name: Native project facts
         id: project
         working-directory: apps/mobile/ios
         run: |
           set -euo pipefail
-          ws=$(ls -d ./*.xcworkspace | head -1)
-          echo "workspace=${ws#./}" >> "$GITHUB_OUTPUT"
-          echo "scheme=$(basename "$ws" .xcworkspace)" >> "$GITHUB_OUTPUT"
-          echo "Workspace ${ws#./}; Podfile.properties.json:"; cat Podfile.properties.json
+          # prebuild writes <Name>.xcodeproj; pod install adds <Name>.xcworkspace next to it.
+          shopt -s nullglob
+          projects=(*.xcodeproj)
+          if [ "${#projects[@]}" -ne 1 ]; then echo "::error::expected one .xcodeproj in apps/mobile/ios, found: ${projects[*]:-none}"; ls -la; exit 1; fi
+          name="${projects[0]%.xcodeproj}"
+          echo "workspace=${name}.xcworkspace" >> "$GITHUB_OUTPUT"
+          echo "scheme=${name}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Native project::${name}.xcodeproj; Podfile.properties.json: $(tr -d '\n' < Podfile.properties.json)"
 
       - name: Restore CocoaPods
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -117,7 +139,7 @@ jobs:
 
       - name: pod install
         working-directory: apps/mobile/ios
-        run: pod install
+        run: '"$RUNNER_TEMP/step.sh" "pod install" pod install'
 
       - name: Restore DerivedData
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -157,13 +179,27 @@ jobs:
             echo "### iOS compile: $([ $status -eq 0 ] && echo succeeded || echo failed) (Xcode ${XCODE_VERSION}, scheme ${SCHEME})"
             echo
           } >> "$GITHUB_STEP_SUMMARY"
-          grep -E '^/[^:]+:[0-9]+:[0-9]+: error: ' "$log" | sort -u | head -100 | while IFS= read -r line; do
-            file="${line%%:*}"; rest="${line#*:}"; ln="${rest%%:*}"; rest="${rest#*:}"; col="${rest%%:*}"; msg="${rest#*: error: }"
-            rel="${file#"$root"}"
-            esc="${msg//%/%25}"
-            echo "::error file=${rel},line=${ln},col=${col}::${esc}"
-            echo "- \`${rel}:${ln}:${col}\`: ${msg}" >> "$GITHUB_STEP_SUMMARY"
-          done
+          errors="$RUNNER_TEMP/compile-errors.txt"
+          grep -E '^/[^:]+:[0-9]+:[0-9]+: (fatal )?error: ' "$log" | sed -e "s#^${root}##" | sort -u > "$errors" || true
+          count=$(wc -l < "$errors" | tr -d ' ')
+          # GitHub shows at most 10 error annotations per step: the first 9 go on their file and line, and one more
+          # carries the whole list, so the API (check-run annotations) always has every error.
+          n=0
+          while IFS= read -r line; do
+            n=$((n + 1)); [ "$n" -gt 9 ] && break
+            rel="${line%%:*}"; rest="${line#*:}"; ln="${rest%%:*}"; rest="${rest#*:}"; col="${rest%%:*}"; msg="${rest#*error: }"
+            echo "::error file=${rel},line=${ln},col=${col}::${msg//%/%25}"
+          done < "$errors"
+          if [ "$count" -gt 0 ]; then
+            echo "::error title=${count} compile error(s)::$(sed -e 's/%/%25/g' "$errors" | head -200 | awk 'BEGIN{ORS="%0A"} {print}')"
+            sed -e 's/^/- `/' -e 's/: \(fatal \)\{0,1\}error: /`: /' "$errors" >> "$GITHUB_STEP_SUMMARY"
+          elif [ $status -ne 0 ]; then
+            # Failed without a compiler error (a script phase, the linker, a missing file): annotate the failure section.
+            { grep -E -A 20 '^The following build commands failed' "$log"; echo '...'; tail -60 "$log"; } | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > "$RUNNER_TEMP/fail.txt"
+            echo "::error title=xcodebuild failed (exit ${status}) without a compiler error::$(cat "$RUNNER_TEMP/fail.txt")"
+          else
+            echo "::notice title=iOS compile succeeded::Xcode ${XCODE_VERSION}, scheme ${SCHEME}, $(grep -c ': warning: ' "$log" || true) warnings in total"
+          fi
           if [ $status -ne 0 ]; then
             echo "Last 150 lines of the log:"; tail -150 "$log"
           fi
