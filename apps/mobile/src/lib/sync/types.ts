@@ -97,7 +97,45 @@ export type PushOpType =
   | 'book.first_run'
   | 'book.create'
   | 'book.update'
-  | 'prefs.upsert';
+  | 'prefs.upsert'
+  /** v1 (WP-F16-17, F16 6.2 I): an author-only held or waiting draft, whole row. */
+  | 'held.upsert'
+  /** v1 (WP-F16-17): the author let a held draft go; the server deletes its row (and, F08, its backup). */
+  | 'held.discard';
+
+/** What a held_drafts row is (F16 6.2 I; S07 HELD_KINDS). */
+export type HeldKind = 'held_letter' | 'waiting_letter' | 'held_words';
+
+/**
+ * A held or waiting draft as its author sends it (S07 HeldDraftData). Only an
+ * explicit hold at the Keep gate, or a voice-only letter waiting for its words,
+ * ever becomes one: a draft that was never held never leaves the phone.
+ */
+export interface HeldDraftData {
+  id: string;
+  child_id: string;
+  kind: HeldKind;
+  capture_mode: string;
+  /** Device capture time. */
+  created_at: string;
+  occurred_on: string;
+  occurred_precision: string;
+  language: string | null;
+  base_direction: string;
+  prompt_key: string | null;
+  in_book_choice: boolean | null;
+  /** Null until words exist; immutable once non-empty. */
+  raw_transcript: string | null;
+  final_text: string | null;
+  machine_edits: unknown[] | null;
+  edit_level: string | null;
+  author_edits: null;
+  locked_spans: null;
+  typed_text: string | null;
+  engine_version: number | null;
+  pack_ref: null;
+  audio_kept_on_device: boolean;
+}
 
 export interface PushOp {
   /** Device-made UUIDv7; the server applies an op id at most once. */
@@ -159,6 +197,8 @@ export interface PushResultOk {
   applied_v?: string | null;
   missing?: boolean;
   entry?: EntryState | null;
+  /** v1 (WP-F16-17): server state of a held draft after held.upsert. */
+  held?: { id: string; v: string; updated_at: string } | null;
   book?: { id: string };
   books?: string[];
   prefs?: { child_id: string };
@@ -205,6 +245,25 @@ export interface BookRequest {
 export interface PullRequest {
   epoch?: number;
   books: Record<string, BookRequest>;
+  /** v1 (WP-F16-17): cursor for this author's own held drafts. An older server ignores the key. */
+  held?: { cursor?: string | null };
+}
+
+/** A held draft as its author pulls it (S07 PulledHeldSchema). Never in anyone else's pull. */
+export interface PulledHeld extends Omit<HeldDraftData, 'author_edits' | 'locked_spans' | 'pack_ref'> {
+  author_edits?: unknown[] | null;
+  locked_spans?: unknown[] | null;
+  pack_ref?: string | null;
+  updated_at: string;
+  v: string;
+}
+
+/** A held draft that left the server: let go on another phone, or kept (its letter took the same id). */
+export interface PulledHeldGone {
+  id: string;
+  gone: 'discarded' | 'kept';
+  updated_at: string;
+  v: string;
 }
 
 /** A letter row from the server. Others' rows never carry raw_transcript or machine_edits. */
@@ -290,6 +349,8 @@ export interface PullResponse {
   epoch_started_at: string;
   books?: PulledBook[];
   gone?: GoneBook[];
+  /** v1 (WP-F16-17): this author's own held drafts after the held cursor. */
+  held?: { rows: (PulledHeld | PulledHeldGone)[]; cursor: string | null; more: boolean };
   more?: boolean;
 }
 

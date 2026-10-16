@@ -18,6 +18,7 @@
  * - A restore never deletes anything here: see enterRestoreMode.
  */
 import { prefsRow, upsertPrefs } from '../db/repos/children';
+import { WORDS_UNREVIEWED } from '../db/repos/entries';
 import type { SqlDb } from '../db/sql';
 import {
   ALL_GROUPS,
@@ -30,6 +31,8 @@ import {
   type PullResponse,
   type PushOp,
   type PushResponse,
+  type PulledHeld,
+  type PulledHeldGone,
   type PushResultOk,
   type WordsGroup,
 } from './types';
@@ -38,8 +41,10 @@ import {
   addConflictCopy,
   appendOp,
   enqueueEntryUpsert,
+  enqueueHeldDraft,
   entrySnapshot,
   getChildRow,
+  getDraftRow,
   getEntryRow,
   hasPendingOps,
   listConflictCopies,
@@ -50,10 +55,12 @@ import {
   rejectOp,
   removeOp,
   sameWords,
+  settleHeldAnswer,
   syncOwner,
   wireLanguage,
   wordsOf,
   writeSetting,
+  type HeldAnswer,
   type EnqueueContext,
   type LocalEntryRow,
   type OutboxRow,
@@ -213,6 +220,12 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
           if (s) applyEntryState(db, s, epoch, ctx.now);
         }
         refreshEntryState(db, row.entity_id);
+      } else if (row.type === 'held.upsert') {
+        // The row is on the server now (author-only), or its words met another phone's first.
+        if (settleHeldAnswer(db, row.op_id, row.entity_id, r as HeldAnswer, ctx.now)) conflicts++;
+      } else if (row.type === 'held.discard') {
+        db.run('UPDATE drafts SET held_v = NULL WHERE id = ?', row.entity_id);
+        db.run('UPDATE entries SET held_v = NULL WHERE id = ?', row.entity_id);
       } else if (row.type === 'book.create') {
         db.run("UPDATE children SET server_state = 'synced' WHERE id = ? AND server_state IN ('pending', 'local', 'refused')", row.entity_id);
       } else if (row.type === 'book.first_run') {
@@ -272,7 +285,17 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
   const local = getEntryRow(db, row.id);
   const edits = JSON.stringify(row.machine_edits ?? []);
   if (!local) {
-    db.run(
+    insertOwnRow(db, row, edits, epoch, now);
+    // A letter this author kept on another phone from a draft this phone also holds: the letter takes the
+    // draft's recording, if this phone has it, and the draft goes (a kept letter never exists twice).
+    adoptHeldDraft(db, row.id);
+    return;
+  }
+  mergeExistingOwnRow(db, row, local, edits, epoch, now);
+}
+
+function insertOwnRow(db: SqlDb, row: PulledRow, edits: string, epoch: number, now: string): void {
+  db.run(
       `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version,
          raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at, deleted_at, synced_at,
          child_id, author_id, author_signs_as, approval, server_version, server_updated_at, server_epoch, sync_state,
@@ -282,10 +305,106 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
       row.raw_transcript ?? '', edits, row.final_text, row.in_book ? 1 : 0, bool(row.sounds_like_me), now, row.deleted_at, now,
       row.child_id, row.author_id, row.author_signs_as, row.approval, row.v, row.updated_at, epoch,
       opt(row.language), opt(row.occurred_precision), opt(row.base_direction),
-    );
-    return;
+  );
+}
+
+/**
+ * A letter that arrived for an id this phone holds as a draft (the author kept it on another phone):
+ * the letter takes the draft's recording when it has none, and the draft row goes. The recording file
+ * itself is never deleted here.
+ */
+function adoptHeldDraft(db: SqlDb, id: string): void {
+  const d = getDraftRow(db, id);
+  if (!d) return;
+  db.run(
+    `UPDATE entries SET audio_uri = COALESCE(audio_uri, ?),
+       audio_duration_ms = COALESCE(audio_duration_ms, (SELECT audio_duration_ms FROM drafts WHERE id = ?)),
+       audio_sha256 = COALESCE(audio_sha256, (SELECT audio_sha256 FROM drafts WHERE id = ?)),
+       audio_bytes = COALESCE(audio_bytes, (SELECT audio_bytes FROM drafts WHERE id = ?))
+     WHERE id = ?`,
+    d.audio_uri, id, id, id, id,
+  );
+  db.run("DELETE FROM sync_outbox WHERE entity_id = ? AND type IN ('held.upsert', 'held.discard') AND sent_at IS NULL AND attempts = 0", id);
+  db.run('DELETE FROM drafts WHERE id = ?', id);
+}
+
+// ── Held drafts in the pull (F16 6.2 I; S07 PulledHeld, PulledHeldGone) ─────
+/**
+ * This author's own held drafts (no one else's ever arrive). New ones become a
+ * local draft in the waiting row, or for a waiting letter a local letter waiting
+ * for its words (F14-REQ-041); their recordings come back through the owner's
+ * backup (F08 6.5 B), never through sync. A draft with ops still queued keeps its
+ * own values (the queued op is the later writer). Nothing is ever deleted here:
+ * a draft let go elsewhere is marked `discarding` (the launch sweep finishes it,
+ * F04-REQ-004), a waiting letter let go elsewhere goes to Recently deleted.
+ */
+function applyHeldRows(db: SqlDb, rows: (PulledHeld | PulledHeldGone)[], owner: string | null, now: string): number {
+  let n = 0;
+  for (const h of rows) {
+    n++;
+    const pending = hasPendingOps(db, h.id);
+    const draft = getDraftRow(db, h.id);
+    const entry = getEntryRow(db, h.id);
+    if ('gone' in h) {
+      if (h.gone === 'kept') {
+        if (entry) {
+          db.run('UPDATE entries SET held_v = NULL WHERE id = ?', h.id);
+          adoptHeldDraft(db, h.id);
+        }
+        continue; // the letter itself arrives in its book
+      }
+      if (pending) continue;
+      if (draft) db.run("UPDATE drafts SET state = 'discarding', held_v = NULL WHERE id = ? AND state <> 'recording'", h.id);
+      if (entry && entry.transcript_status === 'waiting' && entry.deleted_at === null) {
+        db.run('UPDATE entries SET deleted_at = ?, updated_at = ?, held_v = NULL WHERE id = ?', now, now, h.id);
+      }
+      continue;
+    }
+    if (entry) {
+      if (entry.transcript_status === 'waiting') db.run('UPDATE entries SET held_v = ? WHERE id = ?', h.v, h.id);
+      continue; // the letter row is what this phone shows
+    }
+    if (draft) {
+      db.run('UPDATE drafts SET held_v = ? WHERE id = ?', h.v, h.id);
+      if (pending) continue;
+      db.run(
+        `UPDATE drafts SET child_id = ?, occurred_on = ?, occurred_precision = ?, language = COALESCE(?, language),
+           base_direction = ?, prompt_key = ?, in_book_choice = ?, typed_text = ?,
+           raw_transcript = COALESCE(raw_transcript, ?), held_kind = ?
+         WHERE id = ?`,
+        h.child_id, h.occurred_on, h.occurred_precision, h.language, h.base_direction, h.prompt_key,
+        h.in_book_choice === null ? null : h.in_book_choice ? 1 : 0, h.typed_text, h.raw_transcript, h.kind, h.id,
+      );
+      continue;
+    }
+    if (h.kind === 'waiting_letter') {
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, prompt_key, engine_version,
+           raw_transcript, machine_edits, final_text, in_book, sounds_like_me, updated_at, child_id, author_id,
+           author_signs_as, audio_uri, transcript_status, sync_state, language, occurred_precision, base_direction, held_v)
+         VALUES (?, 'letter', ?, ?, ?, 'verbatim', ?, ?, '', '[]', '', ?, NULL, ?, ?, ?,
+           (SELECT signs_as FROM child_member_prefs WHERE child_id = ?), NULL, 'waiting', 'local', ?, ?, ?, ?)`,
+        h.id, h.occurred_on, h.created_at, h.capture_mode, h.prompt_key, h.engine_version ?? 0,
+        h.in_book_choice ? 1 : 0, now, h.child_id, owner, h.child_id, h.language, h.occurred_precision, h.base_direction, h.v,
+      );
+    } else {
+      db.run(
+        `INSERT INTO drafts (id, child_id, capture_mode, prompt_key, created_at, audio_uri, audio_duration_ms, raw_transcript, typed_text,
+           state, occurred_on, occurred_precision, language, base_direction, held_kind, in_book_choice, held_v)
+         VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, 'ready', ?, ?, ?, ?, ?, ?, ?)`,
+        h.id, h.child_id, h.capture_mode, h.prompt_key, h.created_at, h.raw_transcript, h.typed_text,
+        h.occurred_on, h.occurred_precision, h.language, h.base_direction, h.kind,
+        h.in_book_choice === null ? null : h.in_book_choice ? 1 : 0, h.v,
+      );
+    }
   }
+  return n;
+}
+
+function mergeExistingOwnRow(db: SqlDb, row: PulledRow, local: LocalEntryRow, edits: string, epoch: number, now: string): void {
   if (local.author_id !== null && local.author_id !== row.author_id) return;
+  // The letter now exists on the server: any held row it had is gone there.
+  if (local.held_v) db.run('UPDATE entries SET held_v = NULL WHERE id = ?', row.id);
   db.run(
     'UPDATE entries SET server_version = ?, server_updated_at = ?, server_epoch = ?, synced_at = ?, author_id = ? WHERE id = ?',
     row.v, row.updated_at, epoch, now, row.author_id, row.id,
@@ -305,6 +424,9 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
     `UPDATE entries SET kind = ?, occurred_on = ?, edit_level = ?, prompt_key = ?, final_text = ?, machine_edits = ?,
        in_book = ?, sounds_like_me = ?, author_signs_as = ?, approval = ?, deleted_at = ?, updated_at = ?,
        raw_transcript = CASE WHEN raw_transcript = '' THEN ? ELSE raw_transcript END,
+       -- A letter that waited here for its words got them on another phone (v8): they wait for this
+       -- author's review here too, and count only once kept (M17; the server has no review mark yet).
+       transcript_status = CASE WHEN transcript_status = 'waiting' AND ? <> '' THEN '${WORDS_UNREVIEWED}' ELSE transcript_status END,
        language = ?,
        occurred_precision = COALESCE(?, occurred_precision),
        base_direction = COALESCE(?, base_direction),
@@ -312,6 +434,7 @@ function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): voi
      WHERE id = ?`,
     row.kind, row.occurred_on, row.edit_level, row.prompt_key, row.final_text, edits,
     row.in_book ? 1 : 0, bool(row.sounds_like_me), row.author_signs_as, row.approval, row.deleted_at, now,
+    row.raw_transcript ?? '',
     row.raw_transcript ?? '',
     mergedLanguage(local.language, row.language),
     opt(row.occurred_precision), opt(row.base_direction),
@@ -467,6 +590,13 @@ export function applyPullPage(db: SqlDb, res: PullResponse, now: string): PullOu
       wantIds = wantIds || differs;
     }
   }
+  if (res.held) {
+    pulled += applyHeldRows(db, res.held.rows ?? [], owner, now);
+    writeSetting(db, SYNC_SETTING.heldCursor, res.held.cursor);
+  }
+  // Held ops go only to a server that holds held drafts (an older one has no held section).
+  const heldServer = res.held ? '1' : null;
+  if (readSetting(db, SYNC_SETTING.heldServer) !== heldServer) writeSetting(db, SYNC_SETTING.heldServer, heldServer);
   for (const g of res.gone ?? []) {
     mergeRows(db, g.rows, owner, epoch, now);
     pulled += g.rows.length;
@@ -487,7 +617,7 @@ function closeBook(db: SqlDb, g: GoneBook, owner: string | null): void {
 }
 
 /** The p_since request for the next pull. */
-export function buildPullRequest(db: SqlDb, opts: { verify: boolean }): { epoch?: number; books: Record<string, unknown> } {
+export function buildPullRequest(db: SqlDb, opts: { verify: boolean }): { epoch?: number; books: Record<string, unknown>; held?: { cursor: string | null } } {
   const epoch = currentEpoch(db);
   const books: Record<string, unknown> = {};
   const rows = db.all<{ child_id: string; cursor: string | null; access: string | null; meta_hash: string | null; want_ids: number }>(
@@ -503,7 +633,9 @@ export function buildPullRequest(db: SqlDb, opts: { verify: boolean }): { epoch?
     if (r.want_ids) req.ids = true;
     books[r.child_id] = req;
   }
-  return epoch === null ? { books } : { epoch, books };
+  // v1: this author's own held drafts (an older server ignores the key).
+  const held = { cursor: readSetting(db, SYNC_SETTING.heldCursor) };
+  return epoch === null ? { books, held } : { epoch, books, held };
 }
 
 // ── Restore (TDD 06 P-1) ──────────────────────────────────────────────────
@@ -553,6 +685,14 @@ export function enterRestoreMode(db: SqlDb, res: PullResponse, ctx: EnqueueConte
     owner ?? '',
   );
   db.run('UPDATE sync_books SET cursor = NULL, access = NULL, meta_hash = NULL, want_ids = 0');
+  // Held drafts the server once held go up again (an upsert is idempotent), then are pulled from the start.
+  for (const d of db.all<{ id: string }>('SELECT id FROM drafts WHERE held_kind IS NOT NULL AND held_v IS NOT NULL')) {
+    enqueueHeldDraft(db, d.id, ctx);
+  }
+  for (const w of db.all<{ id: string }>("SELECT id FROM entries WHERE transcript_status = 'waiting' AND held_v IS NOT NULL AND deleted_at IS NULL")) {
+    enqueueEntryUpsert(db, w.id, ALL_GROUPS, ctx);
+  }
+  writeSetting(db, SYNC_SETTING.heldCursor, null);
   return queued;
 }
 

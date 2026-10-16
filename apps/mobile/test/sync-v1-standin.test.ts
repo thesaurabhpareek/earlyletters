@@ -8,7 +8,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { patchSyncPush, SYNC_PUSH_V1_EDITS } from './helpers/sync-v1-standin';
+import { patchSyncPush, SYNC_PUSH_HELD_EDITS, SYNC_PUSH_V1_EDITS } from './helpers/sync-v1-standin';
 
 const MIGRATIONS = resolve(__dirname, '../../../supabase/migrations');
 
@@ -56,5 +56,15 @@ describe('sync v1 stand-in (request to S02, WP-F16-14)', () => {
     if (text.includes('conflict_groups')) return;
     expect(() => patchSyncPush(text.replace('  v_conflict boolean;\n', ''))).toThrow(/two flags for the words outcome/);
     expect(() => patchSyncPush(`${text}\n  v_conflict boolean;\n`)).toThrow(/found 2 times/);
+  });
+
+  it('held drafts (WP-F16-17): two branches and the duplicate answer go into the same sync_push, each anchor once', () => {
+    const { file, text } = newestSyncPush();
+    if (text.includes("'held.upsert'")) return; // S02's migration carries held drafts: the stand-in is not loaded
+    const v1 = text.includes('conflict_groups') ? text : patchSyncPush(text);
+    const out = patchSyncPush(v1, SYNC_PUSH_HELD_EDITS);
+    for (const e of SYNC_PUSH_HELD_EDITS) expect(out, `${file}: ${e.why}`).toContain(e.becomes.trim());
+    expect(out.indexOf("when 'held.upsert'")).toBeLessThan(out.indexOf("raise exception 'unknown op type'"));
+    expect(v1.split('\n').filter((l) => !out.includes(l))).toEqual([]); // nothing of the v1 body is lost
   });
 });

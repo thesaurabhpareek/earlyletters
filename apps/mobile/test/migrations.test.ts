@@ -246,7 +246,7 @@ describe('[WP-F04-03] migration 6: draft kind, occurred date and precision, lett
 
 describe('[WP-F04-03] every earlier schema migrates to head with row counts and content hashes unchanged', () => {
   const upTo = (version: number) => MIGRATIONS.filter((m) => m.version <= version);
-  const TABLES = ['settings', 'entries', 'children', 'drafts', 'orphan_audio', 'sync_outbox', 'rejected_writes', 'sync_books'];
+  const TABLES = ['settings', 'entries', 'children', 'drafts', 'orphan_audio', 'sync_outbox', 'rejected_writes', 'sync_books', 'child_member_prefs'];
   const exists = (db: SqlDb, t: string) => db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name = ?", t)!.n === 1;
 
   /**
@@ -286,9 +286,16 @@ describe('[WP-F04-03] every earlier schema migrates to head with row counts and 
       );
       return;
     }
-    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);
-    db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at, hidden_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', 'Amma', ?, ?, ?)", NOW, NOW, NOW);
-    db.run("UPDATE children SET reminders_on = 0 WHERE id = 'c2'");
+    if (version >= 7) {
+      // v7 holds a person's choices for a book in child_member_prefs.
+      db.run("INSERT INTO children (id, name, birthday, due_date, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, ?, ?)", NOW, NOW);
+      db.run("INSERT INTO children (id, name, birthday, due_date, created_at, updated_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', ?, ?)", NOW, NOW);
+      db.run("INSERT INTO child_member_prefs (child_id, signs_as, reminders_on, hidden_at, updated_at) VALUES ('c1', 'Mama', 1, NULL, ?), ('c2', 'Amma', 0, ?, ?)", NOW, NOW, NOW);
+    } else {
+      db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at) VALUES ('c1', 'Asha', '2026-03-01', NULL, 'Mama', ?, ?)", NOW, NOW);
+      db.run("INSERT INTO children (id, name, birthday, due_date, signs_as, created_at, updated_at, hidden_at) VALUES ('c2', 'Ravi', NULL, '2027-01-10', 'Amma', ?, ?, ?)", NOW, NOW, NOW);
+      db.run("UPDATE children SET reminders_on = 0 WHERE id = 'c2'");
+    }
     const audio = version >= 3 ? ", audio_sha256, audio_bytes, transcript_status" : '';
     const audioVals = version >= 3 ? ", ?, 48000, NULL" : '';
     for (const [id, child, text] of [['e1', 'c1', 'Asha, you laughed at the rain today.'], ['e2', 'c1', 'Two teeth.'], ['e3', 'c2', 'Hello, little one.']]) {

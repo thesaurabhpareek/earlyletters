@@ -377,4 +377,172 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect(ledgerCount(mama2).present).toBe(2); // the same author's letters, pulled to a second phone
     expect(ledgerCount(papa).present).toBe(1);
   });
+
+  // ── Held drafts (v8; F16 6.2 I, WP-F14-22 and WP-F16-17) ─────────────────
+  const heldRow = async (id: string) =>
+    (await server.sys('select kind, typed_text, author_id, in_book_choice from held_drafts where id = $1', [id])).rows[0] as
+      | { kind: string; typed_text: string | null; author_id: string; in_book_choice: boolean | null }
+      | undefined;
+  const gone = async (id: string) => (await server.sys('select gone from held_drafts_gone where id = $1', [id])).rows[0]?.gone;
+  const typedDraft = (p: Phone, text: string) => {
+    tick(5_000);
+    return p.store.createDraft({ childId: ASHA, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: text }).id;
+  };
+  /** Papa's pull as his phone asks for it: the in-book digest and the held section. */
+  const papaPull = async () => {
+    const r = await server.serverFor(PAPA).rpc('sync_pull', { p_since: { books: { [ASHA]: {} }, held: { cursor: null } }, p_limit: 200 });
+    const d = r.data as { books: { visible: unknown }[]; held: { rows: unknown[] } };
+    return { visible: d.books[0].visible, held: d.held.rows };
+  };
+
+  it('[F16-REQ-029] [F14-REQ-039] a held letter goes up as an author-only row; the co-parent never sees it; the author\'s other phone gets it in the waiting row', async () => {
+    const before = await papaPull();
+    ids.held = typedDraft(mama, 'You asked for more at breakfast.');
+    expect(outbox(mama)).toEqual([]); // a draft that was never held never leaves the phone
+    mama.store.setDraftTyped(ids.held, 'You asked for more at breakfast, and more again.');
+    expect(outbox(mama)).toEqual([]);
+    expect(mama.store.holdDraft(ids.held, { inBookChoice: true })).toBe(true);
+    expect(outbox(mama)).toEqual(['held.upsert']);
+    await mama.sync();
+    expect(outbox(mama)).toEqual([]);
+    expect(await heldRow(ids.held)).toEqual({ kind: 'held_letter', typed_text: 'You asked for more at breakfast, and more again.', author_id: MAMA, in_book_choice: true });
+
+    // The co-parent: no row through RLS, nothing in his pull, the same book digest.
+    expect((await server.userSql(PAPA, 'select count(*)::int as n from held_drafts')).rows[0].n).toBe(0);
+    expect(await papaPull()).toEqual(before);
+    await papa.sync();
+    expect(papa.db.get('SELECT id FROM drafts WHERE id = ?', ids.held)).toBeNull();
+    expect(row(papa, ids.held)).toBeNull();
+
+    // Mama's second phone: the held letter arrives in the waiting row, words and choice intact (F14-REQ-041).
+    await mama2.sync();
+    expect(mama2.store.listHeldDrafts(ASHA).map((d) => [d.id, d.typedText, d.inBookChoice])).toEqual([
+      [ids.held, 'You asked for more at breakfast, and more again.', true],
+    ]);
+    expect(outbox(mama2)).toEqual([]); // what arrived is not sent back
+  }, 60_000);
+
+  it('[F16-REQ-029] held words by compare and set between Mama\'s two phones: both kept, the author chooses', async () => {
+    mama.store.setDraftTyped(ids.held, 'You asked for more at breakfast, then for the spoon.');
+    mama2.store.setDraftTyped(ids.held, 'More, you said, at breakfast.');
+    await mama.sync();
+    const r = await mama2.sync();
+    expect(r.conflicts).toBe(1);
+    expect((await heldRow(ids.held))?.typed_text).toBe('You asked for more at breakfast, then for the spoon.');
+    expect(mama2.store.listHeldDrafts(ASHA)[0].typedText).toBe('You asked for more at breakfast, then for the spoon.');
+    const [copy] = mama2.store.listConflicts(ids.held);
+    expect(copy).toMatchObject({ draft: true, words: { final_text: 'More, you said, at breakfast.' } });
+    expect(outbox(mama2)).toEqual([]);
+    mama2.relaunch();
+    expect(mama2.store.listConflicts(ids.held).map((c) => c.words.final_text)).toEqual(['More, you said, at breakfast.']);
+
+    expect(mama2.store.resolveConflict(copy.opId, 'mine')).toBe(true);
+    expect(outbox(mama2)).toEqual(['held.upsert']);
+    expect((await mama2.sync()).conflicts).toBe(0);
+    expect((await heldRow(ids.held))?.typed_text).toBe('More, you said, at breakfast.');
+    await mama.sync();
+    expect(mama.store.listHeldDrafts(ASHA)[0].typedText).toBe('More, you said, at breakfast.');
+    expect(mama2.store.listConflicts()).toEqual([]);
+  }, 60_000);
+
+  it('[F16-REQ-029] Keep after Plus: the held draft becomes a letter, its held row goes in the same transaction, the other phone keeps one copy', async () => {
+    const recorded = ledgerCount(mama).recorded;
+    tick(5_000);
+    const d = mama.store.listHeldDrafts(ASHA)[0];
+    mama.store.saveLetterFromDraft(d.id, {
+      id: d.id, kind: 'letter', occurredOn: iso().slice(0, 10), capturedAt: d.createdAt, captureMode: 'typed', editLevel: 'verbatim',
+      promptKey: null, engineVersion: 5, rawTranscript: d.typedText!, machineEdits: [], finalText: d.typedText!, inBook: true,
+      soundsLikeMe: null, childId: ASHA, authorSignsAs: 'Mama', audioUri: null,
+    });
+    expect(outbox(mama)).toEqual(['entry.upsert']);
+    expect(ledgerCount(mama).recorded).toBe(recorded + 1); // kept with its words: it counts now (M17)
+    await mama.sync();
+    expect(await heldRow(ids.held)).toBeUndefined();
+    expect(await gone(ids.held)).toBe('kept');
+    expect((await serverEntry(ids.held))?.final_text).toBe('More, you said, at breakfast.');
+
+    await mama2.sync();
+    expect(mama2.store.listHeldDrafts(ASHA)).toEqual([]);
+    expect(row(mama2, ids.held)).toMatchObject({ final_text: 'More, you said, at breakfast.', author_id: MAMA });
+    await papa.sync();
+    expect(row(papa, ids.held)?.final_text).toBe('More, you said, at breakfast.'); // now a letter in the book
+  }, 60_000);
+
+  it('[F16-REQ-029] [F16-U31] let go on one phone: the row leaves the server and the other phone lets its copy go', async () => {
+    ids.letGo = typedDraft(mama, 'The day you met the rain.');
+    mama.store.holdDraft(ids.letGo, { inBookChoice: null });
+    await mama.sync();
+    await mama2.sync();
+    expect(mama2.store.listHeldDrafts(ASHA).map((d) => d.id)).toEqual([ids.letGo]);
+
+    expect(mama.store.beginDiscard(ids.letGo)).toBe(true);
+    expect(mama.store.finishDiscard(ids.letGo)).toBe(true);
+    expect(outbox(mama)).toEqual(['held.discard']);
+    await mama.sync();
+    expect(await heldRow(ids.letGo)).toBeUndefined();
+    expect(await gone(ids.letGo)).toBe('discarded');
+    await mama2.sync();
+    expect(mama2.store.listHeldDrafts(ASHA)).toEqual([]);
+    expect(mama2.db.get<{ state: string }>('SELECT state FROM drafts WHERE id = ?', ids.letGo)?.state).toBe('discarding'); // the launch sweep finishes it
+    expect(outbox(mama2)).toEqual([]);
+  }, 60_000);
+
+  it('[F16-REQ-029] [F14-REQ-037] a voice-only letter waiting for its words is a waiting_letter row; once its words exist the letter replaces it', async () => {
+    tick(5_000);
+    const draft = mama.store.createDraft({ childId: ASHA, captureMode: 'spoken', promptKey: null, audioUri: 'file:///asha/take-1.m4a', audioDurationMs: 4_000 });
+    const recorded = ledgerCount(mama).recorded;
+    const e = mama.store.saveVoiceOnlyFromDraft(draft, { childId: ASHA, authorSignsAs: 'Mama', inBook: true, engineVersion: 5, audioExists: true });
+    ids.waiting = e.id;
+    expect(ledgerCount(mama).recorded).toBe(recorded); // no words yet: it does not count
+    expect(outbox(mama)).toEqual(['held.upsert']);
+    await mama.sync();
+    expect((await heldRow(ids.waiting))?.kind).toBe('waiting_letter');
+    expect(await serverEntry(ids.waiting)).toBeUndefined();
+    await papa.sync();
+    expect(row(papa, ids.waiting)).toBeNull();
+    await mama2.sync();
+    expect(mama2.store.listWaitingForWords(ASHA).map((x) => x.id)).toEqual([ids.waiting]); // its recording returns through backup (F08)
+
+    tick();
+    expect(mama.store.setWordsForWaitingEntry(ids.waiting, {
+      rawTranscript: 'you clapped for the bath', machineEdits: [], finalText: 'you clapped for the bath', editLevel: 'verbatim', engineVersion: 5,
+    })).toBe(true);
+    expect(outbox(mama)).toEqual(['entry.upsert']);
+    await mama.sync();
+    expect(await heldRow(ids.waiting)).toBeUndefined();
+    expect(await gone(ids.waiting)).toBe('kept');
+    expect((await serverEntry(ids.waiting))?.raw_transcript).toBe('you clapped for the bath');
+    await mama2.sync();
+    expect(row(mama2, ids.waiting)).toMatchObject({ final_text: 'you clapped for the bath', raw_transcript: 'you clapped for the bath' });
+    expect(mama2.store.listWaitingForWords(ASHA)).toEqual([]);
+  }, 60_000);
+
+  it('[F16-REQ-029] [LEGAL-REQ-009] without consent a held upload waits on the phone; letting one go still reaches the server', async () => {
+    ids.kept = typedDraft(mama, 'Your first word was a song.');
+    mama.store.holdDraft(ids.kept, { inBookChoice: true });
+    await mama.sync();
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    ids.paused = typedDraft(mama, 'You hummed all the way home.');
+    mama.store.holdDraft(ids.paused, { inBookChoice: true });
+    mama.store.deleteDraft(ids.kept);
+    expect(outbox(mama)).toEqual(['held.upsert', 'held.discard']);
+    const r = await mama.sync();
+    expect(r.phase).toBe('paused_consent');
+    expect(await heldRow(ids.paused)).toBeUndefined();
+    expect(await heldRow(ids.kept)).toBeUndefined(); // the let-go reached the server while paused
+    expect(outbox(mama)).toEqual(['held.upsert']);
+
+    await server.sensitiveConsent(MAMA, 'accept');
+    await mama.sync();
+    expect((await heldRow(ids.paused))?.typed_text).toBe('You hummed all the way home.');
+    expect(outbox(mama)).toEqual([]);
+  }, 60_000);
+
+  it('[F16-REQ-029] the server refuses a second raw transcript once one is set (SCIMM), and a held row of another author is invisible', async () => {
+    await server.sys("update held_drafts set raw_transcript = 'you hummed' where id = $1", [ids.paused]);
+    await expect(server.userSql(MAMA, "update held_drafts set raw_transcript = 'you sang' where id = $1", [ids.paused])).rejects.toMatchObject({ code: 'SCIMM' });
+    expect((await server.userSql(PAPA, 'select id from held_drafts where id = $1', [ids.paused])).rows).toEqual([]);
+    await expect(server.userSql(PAPA, "update held_drafts set typed_text = 'x' where id = $1 returning id", [ids.paused])).resolves.toMatchObject({ rows: [] });
+    expect((await server.sys('select count(*)::int as n from held_drafts_gone g where g.author_id <> $1', [MAMA])).rows[0].n).toBe(0);
+  }, 60_000);
 });

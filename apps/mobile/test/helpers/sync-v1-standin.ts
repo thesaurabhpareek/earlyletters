@@ -74,10 +74,36 @@ export const SYNC_PUSH_V1_EDITS: SyncPushEdit[] = [
   },
 ];
 
+/**
+ * Held drafts (WP-F16-17, F16 6.2 I; sync-v1-held-standin.sql): two op branches and
+ * their duplicate answer. Applied after SYNC_PUSH_V1_EDITS, only while no migration
+ * defines held_drafts.
+ */
+export const SYNC_PUSH_HELD_EDITS: SyncPushEdit[] = [
+  {
+    why: 'a duplicate held op repeats its first answer (the row state, and a words refusal again)',
+    anchor: '        end if;\n      else\n        case v_type\n',
+    becomes:
+      "        elsif v_type like 'held.%' then\n" +
+      "          v_res := v_res || case when v_type = 'held.upsert' then sync_private.held_dup(v_op, v_id) else '{}'::jsonb end;\n" +
+      '        end if;\n      else\n        case v_type\n',
+  },
+  {
+    why: 'held.upsert (whole row, words by compare and set) and held.discard',
+    anchor: "        else\n          raise exception 'unknown op type' using errcode = '22023';",
+    becomes:
+      "        when 'held.upsert' then\n" +
+      '          v_res := sync_private.held_upsert(v_op, v_id, o);\n\n' +
+      "        when 'held.discard' then\n" +
+      '          v_res := sync_private.held_discard(v_id);\n\n' +
+      "        else\n          raise exception 'unknown op type' using errcode = '22023';",
+  },
+];
+
 /** Applies the edits to a sync_push definition (pg_get_functiondef). Throws on a missing or repeated anchor. */
-export function patchSyncPush(definition: string): string {
+export function patchSyncPush(definition: string, edits: SyncPushEdit[] = SYNC_PUSH_V1_EDITS): string {
   let out = definition;
-  for (const e of SYNC_PUSH_V1_EDITS) {
+  for (const e of edits) {
     const n = out.split(e.anchor).length - 1;
     if (n !== 1) {
       throw new Error(`sync-v1 stand-in: anchor for "${e.why}" found ${n} times in sync_push; S02 changed its shape, update test/helpers/sync-v1-standin.ts`);
