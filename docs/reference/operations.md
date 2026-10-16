@@ -3,12 +3,12 @@ title: Operations
 owner: reference-docs
 covers: [.github/**, agents/roster.json, apps/mobile/eas.json, apps/mobile/scripts/**]
 verified_at: b513056
-verified_on: 2026-10-15
+verified_on: 2026-10-16
 ---
 
 # Operations: CI, releases, environments, agents
 
-How code is checked, how builds and database changes are released, which secrets exist (by name only), and the agent team in brief. Verified at `b513056`: `develop` at `d74e860` plus the documentation-leads commit, which adds two agents to `agents/roster.json`; nothing else on this page differs from `develop`.
+How code is checked, how builds and database changes are released, which secrets exist (by name only), and the agent team in brief. Verified at `b513056`: `develop` at `d74e860` plus the documentation-leads commit, which adds two agents to `agents/roster.json`; nothing else on this page differs from `develop`. The release lanes were re-read on 16 Oct against `develop` at `07f1107`, where D-089 to D-092 and ADR 0022 are merged.
 
 ## Workflows
 
@@ -42,16 +42,16 @@ Branch protection steps and the required check names: `.github/README.md`. Actio
 
 ## Branches and release lanes
 
-From `CLAUDE.md`, `docs/release/TESTFLIGHT.md` and the workflows:
+From `CLAUDE.md`, ADR 0022 (`docs/adr/0022-release-engineering.md`), `docs/release/TESTFLIGHT.md` and the workflows:
 
 | Lane | Source | How | State |
 |---|---|---|---|
 | Feature work | Short branches (`feat/`, `fix/`, `chore/`, `docs/`, `exp/`) into `develop` by PR | CI plus migration guard | In use |
 | TestFlight (internal) | `develop` | EAS profile `testflight`: store distribution, `EXPO_PUBLIC_APP_ENV=preview`, so the bundle id ends in `.preview`; server features and analytics off | No build made yet (`TESTFLIGHT.md`) |
-| App Store | An `ios-v<major>.<minor>.<patch>` tag | EAS profile `production`; `app.config.ts` says not to upload it until the publisher domain is final | Not started |
+| App Store | A `release/<major>.<minor>` branch cut from `main` at freeze, with fixes cherry-picked from `develop`; an `ios-v<x.y.z>-rc.<n>` tag builds a candidate, and `ios-v<x.y.z>` marks the one released (D-089, ADR 0022) | EAS profile `production`; `app.config.ts` says not to upload it until the publisher domain is final. The store workflow (BL-437) and the version file (BL-436) are in open PRs #110 and #109, so no workflow on `develop` builds from an RC tag | Not started: `release/1.0` not cut, no RC tags (`docs/release/1.0.0.md`) |
 | Database | `main`, then a `db-v*` tag | `deploy-db.yml` | Target projects do not exist yet (`docs/ops/DEPLOY.md`) |
 
-`main` is always releasable (`CLAUDE.md`). Before a TestFlight build, `npm run preflight:testflight -w @scribe/mobile` (`apps/mobile/scripts/preflight-testflight.mjs`) checks configuration and prints WARN and UNVERIFIED lines; it needs no secrets. Build profiles in full: [mobile-app.md](mobile-app.md#build-profiles-and-switches).
+`main` is always releasable (`CLAUDE.md`). There are no over-the-air updates in v1.0: fixes ship as new builds (D-091). Release record and readiness for v1.0: `docs/release/1.0.0.md`. Before a TestFlight build, `npm run preflight:testflight -w @scribe/mobile` (`apps/mobile/scripts/preflight-testflight.mjs`) checks configuration and prints WARN and UNVERIFIED lines; it needs no secrets. Build profiles in full: [mobile-app.md](mobile-app.md#build-profiles-and-switches).
 
 `docs/release/journey/` is generated: 20 journeys of screenshots and step JSON from the web end-to-end flows (`apps/mobile/e2e-web`), with critiques and a PDF (`docs/release/journey/INDEX.md`).
 

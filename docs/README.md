@@ -26,7 +26,7 @@ Start here. This page says which document answers which question. It is kept cur
 |---|---|
 | What did we decide, why, and how hard is it to undo? | [decisions/README.md](decisions/README.md) (register format) and [decisions/INDEX.md](decisions/INDEX.md) (generated; being filled) |
 | The dated decision log, D-001 onwards | [DECISIONS.md](DECISIONS.md) |
-| Why a technical design was chosen (ADR 0001 to 0020, 0101) | [adr/](adr/) |
+| Why a technical design was chosen (ADR 0001 to 0020, 0022, 0101) | [adr/](adr/) |
 | Technical design per area (mobile, sync, audio, security, privacy, performance, quality, payments, accessibility, red team) | [tdd/](tdd/) (TDD 01 to 10) |
 
 ## What we are building
@@ -92,5 +92,7 @@ Start here. This page says which document answers which question. It is kept cur
 | Question | Read |
 |---|---|
 | How to make the first TestFlight build, and what it lacks | [release/TESTFLIGHT.md](release/TESTFLIGHT.md) |
+| How a store release is cut, tagged and submitted (two lanes, release branch, RC tags) | [adr/0022-release-engineering.md](adr/0022-release-engineering.md) (D-089 to D-092) |
+| Where v1.0 stands: release record, readiness and dates | [release/1.0.0.md](release/1.0.0.md) |
 | What the app really looks like, screen by screen | [release/journey/INDEX.md](release/journey/INDEX.md): generated from the web end-to-end flows; 20 journeys of screenshots, step JSON, critiques and a PDF (about 350 files; do not edit by hand) |
 | Release lanes and workflows | [reference/operations.md](reference/operations.md) |

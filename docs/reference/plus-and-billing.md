@@ -3,7 +3,7 @@ title: Plus and billing
 owner: reference-docs
 covers: [apps/mobile/src/lib/billing/**, apps/mobile/modules/scribe-store/**, apps/mobile/storekit/**, apps/mobile/src/app/settings/plus.tsx, apps/mobile/src/app/plus/**, packages/core/src/plan.ts, packages/content/src/pricing.ts]
 verified_at: d74e860
-verified_on: 2026-10-15
+verified_on: 2026-10-16
 ---
 
 # Plus and billing
@@ -42,7 +42,7 @@ How "letters kept" is counted so a reinstall cannot reset it (`lib/billing/lette
 | Store | Key | Notes |
 |---|---|---|
 | Keychain | `earlyletters.letters.keptEver` | Through `lib/supabase/secure-storage.ts`, `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` |
-| Database mirror | `settings` row `letters.keptEver` | Counted in the same transaction as the save (`saveLetterFromDraft`) |
+| Database mirror | `settings` row `letters.keptEver` | Counted in the same transaction as the save (`saveLetterFromDraft` in `lib/store.ts`) |
 | Letters present | `entries` | The third witness |
 
 `lettersKept` is the largest of the three. `startLetterLedger()` at boot and `keepLetterGate()` heal it after a reinstall or a backup restore. It holds a number only: no id, hash, timestamp or content. A deleted letter still counts (D-083). `eraseLetterLedger()` exists for "Erase everything"; no screen calls it on `develop`.
@@ -78,4 +78,4 @@ The live prices are whatever App Store Connect says; changing one means changing
 
 ## Testing
 
-`apps/mobile/test/billing-plan.test.ts`, `billing-ledger.test.ts`, `billing-plan-reminders.test.ts`; `packages/core/test` covers `plan.ts`. Device flow `apps/mobile/e2e/flows/E2E-14-restore-purchases.yaml`. Sandbox setup: `docs/release/TESTFLIGHT.md` and `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
+`apps/mobile/test/billing-plan.test.ts`, `billing-ledger.test.ts`, `billing-plan-reminders.test.ts`; `packages/core/test` covers `plan.ts`. Device flow `apps/mobile/e2e/flows/E2E-14-restore-purchases.yaml`. Two older device flows still expect gates the code no longer has: `E2E-06-read-together-plus-gate.yaml` (3 free Read together sessions, then Plus) and `E2E-07-add-child-plus-gate.yaml` (a second book needs Plus), also listed that way in `apps/mobile/e2e/README.md`. Sandbox setup: `docs/release/TESTFLIGHT.md` and `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
