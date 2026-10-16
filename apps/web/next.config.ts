@@ -48,7 +48,8 @@ const securityHeaders = [
 ];
 
 // Links that carry a token never leak their address through Referer (docs/tdd/04-security-identity.md 3.1.6).
-const tokenLinkPaths = ['/a', '/i', '/j', '/r'];
+// `/auth` covers the sign-in link page at /auth/confirm and /auth/callback (PRD V2 F02).
+const tokenLinkPaths = ['/a', '/auth', '/i', '/j', '/r'];
 
 /**
  * One address for the site: earlyletters.com. The other names people may type or have bookmarked answer with a

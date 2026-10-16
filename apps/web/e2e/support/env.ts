@@ -3,6 +3,9 @@ export const TEST_ENV = {
   RESEND_API_KEY: 're_e2e_dummy_key',
   RESEND_SEGMENT_ID: 'seg_e2e_dummy',
   UNSUBSCRIBE_SECRET: 'e2e-unsubscribe-secret-not-real',
+  // The apple-app-site-association file is made at build time from these (fictional ids, never the real team).
+  APPLE_TEAM_ID: 'ABCDE12345',
+  IOS_BUNDLE_ID: 'com.example.scribe',
 } as const;
 
 /** Set by global-setup for the workers. */
