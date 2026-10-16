@@ -347,6 +347,11 @@ await sys(`set app.escrow_rotation = '2:3'`);
 check('a rewrap to a version the server does not trust is refused', await errOf(() => rewrap(CHILD, 2, 3)) === '22023');
 await sys(`reset app.escrow_rotation`);
 check('once the founder clears the setting, the wraps are closed to the escrow role again', await errOf(() => batchOf(1, 2)) === 'SCBKO rotation');
+check('[RLS re-review note 6] and so are the addresses: no rotation, no due notices (SCBKO rotation)',
+  await errOf(() => esc(`select public.escrow_rotation_notices_due(2, 10) r`)) === 'SCBKO rotation');
+await sys(`set app.escrow_rotation = '1:3'`);
+check('a rotation to another version does not open the notices of this one', await errOf(() => esc(`select public.escrow_rotation_notices_due(2, 10) r`)) === 'SCBKO rotation');
+await sys(`reset app.escrow_rotation`);
 check('after rotation, restores read the new wraps', (await sys(`select escrow_key_version v from child_keys where profile_id = $1 and child_id = $2`, [A, CHILD])).rows[0].v === 2);
 await sys(`update escrow_rotation_notices set sent_at = now() - interval '91 days'`);
 check('sent notices go after 90 days', (await asRole('service_role', `select public.backup_svc_sweep(now(), 100) r`).then((x) => x.rows[0].r)).old_notices === 1);

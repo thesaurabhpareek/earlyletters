@@ -1485,11 +1485,16 @@ $$;
 
 -- The rotation emails still to send: the notice id (the email's idempotency key) and the address,
 -- only for accounts whose key this rotation has moved, so the escrow role learns an address only
--- when it has used that account's key.
+-- when it has used that account's key, and only while app.escrow_rotation names a rotation to
+-- p_to_version (runbook R6 clears the setting only once no notice is pending).
 create or replace function public.escrow_rotation_notices_due(p_to_version int, p_limit int default 50)
 returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   perform public.escrow_require_on();
+  if p_to_version is null or regexp_replace(coalesce(current_setting('app.escrow_rotation', true), ''), '\s', '', 'g')
+                             !~ ('^[0-9]+:' || p_to_version::text || '$') then
+    raise exception 'no rotation is running' using errcode = 'SCBKO', detail = 'rotation';
+  end if;
   return coalesce((select jsonb_agg(jsonb_build_object('notice_id', n.id, 'email', n.email) order by n.created_at)
                      from (select x.id, x.created_at, u.email
                              from escrow_rotation_notices x
