@@ -184,15 +184,25 @@ describe('the 30 day purge', () => {
     expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 10 * DAY).toISOString());
   });
 
-  it('[D-085] with sync on the server owns the clock: nothing is purged or erased here', () => {
+  it('[D-085] with sync on the server owns the clock: the launch purge erases nothing here', () => {
     save(id1);
     store.deleteEntry(id1);
     setServerFeaturesForTests(true);
     const d = disk([`file:///Documents/${id1}.m4a`]);
     expect(store.purgeExpired(T0 + 60 * DAY, d.eraser)).toBe(0);
-    expect(store.eraseEntry(id1, d.eraser)).toBe(false);
     expect(d.present.size).toBe(1);
     expect(store.listDeleted()).toHaveLength(1);
+  });
+
+  it('[F16-REQ-024] with sync on, Erase now works: a letter the server never had is erased here with nothing sent', () => {
+    save(id1);
+    store.deleteEntry(id1);
+    setServerFeaturesForTests(true);
+    const d = disk([`file:///Documents/${id1}.m4a`]);
+    expect(store.eraseEntry(id1, d.eraser)).toBe(true);
+    expect(d.present.size).toBe(0);
+    expect(store.listDeleted()).toEqual([]);
+    expect(store.localSqlDb().all('SELECT type FROM sync_outbox')).toEqual([]);
   });
 
   it('a purged letter never comes back: no row, no file, nothing for the sweep to re-attach', () => {

@@ -47,6 +47,11 @@ export interface SyncEngineDeps {
   random?: () => number;
   /** Called after local data changed (the store re-renders its screens). */
   onChange?: () => void;
+  /**
+   * After every pull: the app finishes erasing letters the server erased for good
+   * (store.finishServerErased with the device file eraser). Never throws here.
+   */
+  afterPull?: () => void;
   /** Rows per pull page, all books together (server max 500). */
   pageSize?: number;
   /** Retry timers only run while this is true (app in the foreground). */
@@ -251,6 +256,11 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     }
     const dropped = tx(() => dropStaleHeld(db, now()));
     if (dropped > 0) changed();
+    try {
+      deps.afterPull?.();
+    } catch {
+      // The next pull or the next launch finishes it; a pull never fails for it.
+    }
     tx(() => {
       writeSetting(db, SYNC_SETTING.lastSyncedAt, iso());
       if (verify) writeSetting(db, SYNC_SETTING.lastVerifyAt, iso());

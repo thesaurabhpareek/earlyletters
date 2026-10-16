@@ -525,6 +525,35 @@ export function enqueueHeldDiscard(db: SqlDb, id: string, ctx: EnqueueContext): 
   appendOp(db, { type: 'held.discard', id, data: {} }, ctx, { bookId: book });
 }
 
+// ── Erase now for a letter the server holds (WP-F16-13, F16-REQ-024) ──────
+/**
+ * Erase ops wait in their own lane, after every other op, so one that waits
+ * for a server that cannot erase yet never holds up the rest of the queue.
+ */
+export const ERASE_LANE = 2;
+
+/**
+ * "Erase now" on a letter the server may hold: one entry.erase, sent after the
+ * local row is gone (store.eraseEntry erases the file, then the row, then calls
+ * this). It carries the id only, never words. It still goes during a consent
+ * pause (a deletion, LEGAL-REQ-009). Only this account's own letters.
+ */
+export function enqueueEntryErase(db: SqlDb, id: string, bookId: string | null, ctx: EnqueueContext): void {
+  if (!syncOwner(db)) return;
+  if (db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE entity_id = ? AND type = 'entry.erase'", id)!.n > 0) return;
+  appendOp(db, { type: 'entry.erase', id, data: {} }, ctx, { lane: ERASE_LANE, bookId });
+}
+
+/** Whether any op of this letter ever left the phone (the server may hold it). */
+export function everSent(db: SqlDb, id: string): boolean {
+  return db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox WHERE entity_id = ? AND (sent_at IS NOT NULL OR attempts > 0)', id)!.n > 0;
+}
+
+/** Whether an erase of this letter is still on its way to the server (a pull must not bring it back). */
+export function eraseQueued(db: SqlDb, id: string): boolean {
+  return db.get<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE entity_id = ? AND type = 'entry.erase'", id)!.n > 0;
+}
+
 /** A held draft became a letter (Keep after Plus): its letter replaces the held row on the server, so no held upload is needed. */
 export function dropQueuedHeldUpsert(db: SqlDb, id: string): void {
   db.run("DELETE FROM sync_outbox WHERE entity_id = ? AND type = 'held.upsert' AND sent_at IS NULL AND attempts = 0 AND lane = 1", id);
@@ -763,7 +792,7 @@ export function takeBatch(db: SqlDb, opts: { now: string; onlyDeletes?: boolean;
   const maxOps = opts.maxOps ?? 50;
   const maxBytes = opts.maxBytes ?? 200_000;
   const rows = db.all<OutboxRow>(
-    `SELECT o.* FROM sync_outbox o WHERE ${sendable(db)} ${opts.onlyDeletes ? "AND o.type IN ('entry.delete', 'held.discard')" : ''}
+    `SELECT o.* FROM sync_outbox o WHERE ${sendable(db)} ${opts.onlyDeletes ? "AND o.type IN ('entry.delete', 'held.discard', 'entry.erase')" : ''}
      ORDER BY o.lane, o.seq LIMIT ?`,
     maxOps,
   );
@@ -774,6 +803,8 @@ export function takeBatch(db: SqlDb, opts: { now: string; onlyDeletes?: boolean;
   let bytes = 0;
   for (const r of rows) {
     if (out.length > 0 && bytes + r.payload.length > maxBytes) break;
+    // An erase waiting for a server that can erase is skipped until its time (its lane never blocks the rest).
+    if (r.lane === ERASE_LANE && r.next_attempt_at && r.next_attempt_at > opts.now) continue;
     // One op per letter per batch: the next op of a letter leaves only after this one's answer
     // rebased it (F16-REQ-025). The batch ends here, so queue order is kept exactly.
     // A held draft and the letter it becomes share the id, so held ops take part in the same rule.

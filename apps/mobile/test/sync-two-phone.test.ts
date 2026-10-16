@@ -81,6 +81,7 @@ async function phone(name: string, uid: string): Promise<Phone> {
     createSyncEngine({
       db: store.localSqlDb(), supabase: s, userId: uid, newId: () => uuid7(), now: () => clock.t, random: () => 1,
       setTimer: () => 0, clearTimer: () => {}, isActive: () => false,
+      afterPull: () => store.finishServerErased(() => {}), // as lib/sync/index.ts wires it, with no files on disk
     });
   return {
     name,
@@ -541,6 +542,64 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     await mama.sync();
     expect((await heldRow(ids.paused))?.typed_text).toBe('You hummed all the way home.');
     expect(outbox(mama)).toEqual([]);
+  }, 60_000);
+
+  // ── Erase now with sync on (WP-F16-13; F16-REQ-024, D-085) ─────────────
+  it('[F16-REQ-024] Erase now: the server copy and its history go at once, and the author\'s other phone drops it at its next pull', async () => {
+    ids.erase = writeLetter(mama, ASHA, 'The day you threw the spoon.');
+    await mama.sync();
+    editWords(mama, ids.erase, 'The day you threw the spoon, twice.');
+    await mama.sync();
+    await mama2.sync();
+    await papa.sync();
+    expect(row(papa, ids.erase)).not.toBeNull();
+
+    tick();
+    mama.store.deleteEntry(ids.erase);
+    await mama.sync();
+    await mama2.sync();
+    await papa.sync();
+    expect(mama2.store.listDeleted().map((e) => e.id)).toContain(ids.erase);
+    expect(row(papa, ids.erase)).toBeNull(); // someone else's deleted letter already left Papa's phone
+
+    expect(mama.store.eraseEntry(ids.erase, () => {})).toBe(true);
+    expect(row(mama, ids.erase)).toBeNull();
+    expect(outbox(mama)).toEqual(['entry.erase']);
+    await mama.sync();
+    expect(outbox(mama)).toEqual([]);
+    expect(await serverEntry(ids.erase)).toBeUndefined();
+    expect((await server.sys('select count(*)::int as n from entry_versions where entry_id = $1', [ids.erase])).rows[0].n).toBe(0);
+    expect((await server.sys("select 1 from purge_ledger where entity_type = 'entry' and entity_id = $1", [ids.erase])).rows).toHaveLength(1);
+
+    await mama2.sync(); // an ordinary pull, not the daily verify
+    expect(row(mama2, ids.erase)).toBeNull();
+    expect(mama2.store.listDeleted().map((e) => e.id)).not.toContain(ids.erase);
+    expect(outbox(mama2)).toEqual([]);
+  }, 60_000);
+
+  it('[F16-REQ-024] Erase now before the delete ever left: the server erases the live copy and the co-parent\'s phone drops it', async () => {
+    ids.eraseLive = writeLetter(mama, ASHA, 'Your first time on the swing.');
+    await mama.sync();
+    await papa.sync();
+    expect(row(papa, ids.eraseLive)).not.toBeNull();
+    tick();
+    mama.store.deleteEntry(ids.eraseLive);
+    expect(mama.store.eraseEntry(ids.eraseLive, () => {})).toBe(true);
+    expect(outbox(mama)).toEqual(['entry.erase']); // the queued delete went with the row
+    const lost = await mama.sync(flaky(server.serverFor(MAMA), { loseAnswer: 1, only: 'sync_push' }));
+    expect(lost.phase).toBe('offline');
+    expect(await serverEntry(ids.eraseLive)).toBeUndefined(); // applied, answer lost
+    tick(2_000);
+    expect(await mama.sync()).toMatchObject({ rejected: 0, phase: 'idle' }); // the retry is a no-op
+    expect(outbox(mama)).toEqual([]);
+    await papa.sync();
+    expect(row(papa, ids.eraseLive)).toBeNull();
+  }, 60_000);
+
+  it('[F16-REQ-024] only the author erases: the co-parent\'s erase of Mama\'s letter is refused and changes nothing', async () => {
+    const r = await server.serverFor(PAPA).rpc('sync_push', { p_ops: [{ op: uuid7(), type: 'entry.erase', id: ids.first, data: {} }] });
+    expect((r.data as { results: { ok: boolean; code?: string }[] }).results[0]).toMatchObject({ ok: false, code: 'P0002' });
+    expect((await serverEntry(ids.first))?.deleted_at).toBeNull();
   }, 60_000);
 
   it('[F16-REQ-029] the server refuses a second raw transcript once one is set (SCIMM), and a held row of another author is invisible', async () => {

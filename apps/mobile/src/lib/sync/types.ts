@@ -101,7 +101,9 @@ export type PushOpType =
   /** v1 (WP-F16-17, F16 6.2 I): an author-only held or waiting draft, whole row. */
   | 'held.upsert'
   /** v1 (WP-F16-17): the author let a held draft go; the server deletes its row (and, F08, its backup). */
-  | 'held.discard';
+  | 'held.discard'
+  /** v1 (WP-F16-13, F16-REQ-024): Erase now for a letter the server holds; the server purges it for good. */
+  | 'entry.erase';
 
 /** What a held_drafts row is (F16 6.2 I; S07 HELD_KINDS). */
 export type HeldKind = 'held_letter' | 'waiting_letter' | 'held_words';
@@ -357,7 +359,8 @@ export interface PullResponse {
 // ── Engine state ───────────────────────────────────────────────────────────
 
 /** Per-letter sync state, stored in entries.sync_state. */
-export type EntrySyncState = 'local' | 'pending' | 'synced' | 'rejected' | 'held' | 'gone';
+/** 'erased': the server erased this deleted letter for good; the phone finishes erasing it (file, then row). */
+export type EntrySyncState = 'local' | 'pending' | 'synced' | 'rejected' | 'held' | 'gone' | 'erased';
 
 /** Per-book state, stored in children.server_state. */
 export type BookServerState = 'local' | 'pending' | 'synced' | 'refused' | 'left' | 'deleted';

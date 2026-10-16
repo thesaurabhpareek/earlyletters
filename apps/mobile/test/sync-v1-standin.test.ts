@@ -8,9 +8,23 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { patchSyncPush, SYNC_PUSH_HELD_EDITS, SYNC_PUSH_V1_EDITS } from './helpers/sync-v1-standin';
+import { patchSyncPush, SYNC_PULL_ERASE_EDITS, SYNC_PUSH_ERASE_EDITS, SYNC_PUSH_HELD_EDITS, SYNC_PUSH_V1_EDITS } from './helpers/sync-v1-standin';
 
 const MIGRATIONS = resolve(__dirname, '../../../supabase/migrations');
+
+/** The text of the newest `create or replace function public.<name>` in the migrations. */
+function newest(name: string): { file: string; text: string } {
+  const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql')).sort();
+  for (const f of files.reverse()) {
+    const sql = readFileSync(join(MIGRATIONS, f), 'utf8');
+    const start = sql.lastIndexOf(`create or replace function public.${name}(`);
+    if (start < 0) continue;
+    const bodyStart = sql.indexOf('$$', start);
+    const end = sql.indexOf('$$;', bodyStart + 2);
+    return { file: f, text: sql.slice(start, end + 3) };
+  }
+  throw new Error(`no ${name} in supabase/migrations`);
+}
 
 /** The text of the newest `create or replace function public.sync_push` in the migrations. */
 function newestSyncPush(): { file: string; text: string } {
@@ -66,5 +80,18 @@ describe('sync v1 stand-in (request to S02, WP-F16-14)', () => {
     for (const e of SYNC_PUSH_HELD_EDITS) expect(out, `${file}: ${e.why}`).toContain(e.becomes.trim());
     expect(out.indexOf("when 'held.upsert'")).toBeLessThan(out.indexOf("raise exception 'unknown op type'"));
     expect(v1.split('\n').filter((l) => !out.includes(l))).toEqual([]); // nothing of the v1 body is lost
+  });
+
+  it('Erase now (WP-F16-13): the entry.erase branch and the pull digest check apply to the newest sync_push and sync_pull, each anchor once', () => {
+    const push = newestSyncPush();
+    if (push.text.includes("'entry.erase'")) return; // S02's migration carries it: the stand-in is not loaded
+    const v1 = push.text.includes('conflict_groups') ? push.text : patchSyncPush(push.text);
+    const out = patchSyncPush(patchSyncPush(v1, SYNC_PUSH_ERASE_EDITS), SYNC_PUSH_HELD_EDITS);
+    expect(out).toContain("when 'entry.erase' then");
+    expect(out).toContain("when 'held.upsert' then");
+    const pull = newest('sync_pull');
+    const p = patchSyncPush(pull.text, SYNC_PULL_ERASE_EDITS);
+    expect(p, pull.file).toContain('sync_private.entry_erasures');
+    expect(pull.text.split('\n').filter((l) => !p.includes(l))).toEqual([]);
   });
 });

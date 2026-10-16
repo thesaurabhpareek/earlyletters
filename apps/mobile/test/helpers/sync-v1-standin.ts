@@ -100,13 +100,41 @@ export const SYNC_PUSH_HELD_EDITS: SyncPushEdit[] = [
   },
 ];
 
+/**
+ * Erase now in a sync build (WP-F16-13, F16-REQ-024; sync-v1-erase-standin.sql):
+ * the entry.erase branch. A duplicate needs nothing new (the entry.% duplicate
+ * answers the letter's state, or missing once it is erased).
+ */
+export const SYNC_PUSH_ERASE_EDITS: SyncPushEdit[] = [
+  {
+    why: 'entry.erase: the author purges a letter for good now',
+    anchor: "        else\n          raise exception 'unknown op type' using errcode = '22023';",
+    becomes:
+      "        when 'entry.erase' then\n" +
+      '          v_res := sync_private.erase_entry(v_id);\n\n' +
+      "        else\n          raise exception 'unknown op type' using errcode = '22023';",
+  },
+];
+
+/** The pull half: an erasure in a book makes its next pull recompute the removal digest. */
+export const SYNC_PULL_ERASE_EDITS: SyncPushEdit[] = [
+  {
+    why: 'an erasure after the cursor recomputes the book digest',
+    anchor: "                 or coalesce((v_req ->> 'verify')::boolean, false) or coalesce((v_req ->> 'ids')::boolean, false)\n",
+    becomes:
+      "                 or coalesce((v_req ->> 'verify')::boolean, false) or coalesce((v_req ->> 'ids')::boolean, false)\n" +
+      '                 or exists (select 1 from sync_private.entry_erasures x\n' +
+      '                             where x.child_id = b.id and x.sync_xid > v_after_x and x.sync_xid < v_xmin)\n',
+  },
+];
+
 /** Applies the edits to a sync_push definition (pg_get_functiondef). Throws on a missing or repeated anchor. */
 export function patchSyncPush(definition: string, edits: SyncPushEdit[] = SYNC_PUSH_V1_EDITS): string {
   let out = definition;
   for (const e of edits) {
     const n = out.split(e.anchor).length - 1;
     if (n !== 1) {
-      throw new Error(`sync-v1 stand-in: anchor for "${e.why}" found ${n} times in sync_push; S02 changed its shape, update test/helpers/sync-v1-standin.ts`);
+      throw new Error(`sync-v1 stand-in: anchor for "${e.why}" found ${n} times; S02 changed the function's shape, update test/helpers/sync-v1-standin.ts`);
     }
     out = out.replace(e.anchor, () => e.becomes);
   }

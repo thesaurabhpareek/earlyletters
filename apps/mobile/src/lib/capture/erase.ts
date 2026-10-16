@@ -10,7 +10,7 @@
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
-import { eraseEntry, purgeExpired, recordLaunch, type AudioEraser } from '../store';
+import { eraseEntry, finishServerErased, purgeExpired, recordLaunch, type AudioEraser } from '../store';
 
 export const eraseAudioFile: AudioEraser = (uri, entryId) => {
   // The web preview has no recordings on disk (the sweep skips it too): nothing to remove there.
@@ -26,9 +26,14 @@ export function eraseDeletedLetter(id: string): boolean {
   return eraseEntry(id, eraseAudioFile);
 }
 
+/** Letters the server erased for good: their files, then their rows (after every pull, and at launch). */
+export function finishErasedLetters(): number {
+  return finishServerErased(eraseAudioFile);
+}
+
 /** Launch purge, then record this launch for the clock guard. Returns how many letters were erased. */
 export function purgeShelfAtLaunch(nowMs = Date.now()): number {
-  const n = purgeExpired(nowMs, eraseAudioFile);
+  const n = purgeExpired(nowMs, eraseAudioFile) + finishServerErased(eraseAudioFile);
   recordLaunch(nowMs);
   return n;
 }

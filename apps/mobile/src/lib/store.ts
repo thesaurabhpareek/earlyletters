@@ -59,7 +59,11 @@ import {
   enqueueBookCreate,
   enqueueBookUpdate,
   enqueueEntryDelete,
+  enqueueEntryErase,
   enqueueEntryRestore,
+  everSent,
+  getEntryRow,
+  syncOwner,
   enqueueEntryUpsert,
   enqueuePrefs,
   dropQueuedHeldUpsert,
@@ -691,22 +695,65 @@ export function erasesAt(deletedAt: string): string {
  * that is gone, and the next erase or purge finishes the job; the other order
  * would leave a file with no row, which the sweep re-attaches as a draft.
  * Only a deleted letter can be erased (a live letter is refused). Returns true
- * when the letter is gone, false when it was not on the shelf, the build syncs
- * (the server owns deletion then), or the file could not be removed.
+ * when the letter is gone, false when it was not on the shelf, it is another
+ * person's letter, or the file could not be removed.
+ *
+ * With sync on (WP-F16-13, F16-REQ-024): when the server may hold the letter,
+ * the row's removal and one `entry.erase` are one transaction; the server then
+ * erases its copy for good, and the author's other phones drop theirs after their
+ * next pull. The erase never carries words.
  */
 export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
-  if (capabilities.sync) return false;
   const c = ctx();
   const uri = entries.deletedAudioUri(c, id);
   if (uri === undefined) return false;
+  let serverMayHold = false;
+  let bookId: string | null = null;
+  if (capabilities.sync) {
+    const owner = syncOwner(c.db);
+    const row = getEntryRow(c.db, id);
+    if (!row) return false;
+    if (owner && row.author_id !== null && row.author_id !== owner) return false; // only the author erases
+    bookId = row.child_id;
+    serverMayHold = owner !== null && row.sync_state !== 'gone' && row.sync_state !== 'erased'
+      && (row.server_version !== null || everSent(c.db, id));
+  }
   try {
     eraseAudio(uri, id);
   } catch {
     return false; // keep the row; the file may still be there
   }
-  const done = entries.eraseRow(c, id);
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.eraseRow(c, id);
+    if (done && serverMayHold) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
+  });
   if (done) bus.emit('entries');
+  if (done && serverMayHold) signalOutbox();
   return done;
+}
+
+/**
+ * Letters the server erased for good while they waited in Recently deleted here
+ * (Erase now on another phone of this author, or the purge; `sync_state` 'erased'):
+ * the file first, then the row, with nothing sent. Runs after every pull and at
+ * launch. Returns how many were erased.
+ */
+export function finishServerErased(eraseAudio: AudioEraser): number {
+  const c = ctx();
+  let n = 0;
+  for (const r of c.db.all<{ id: string; audio_uri: string | null }>(
+    "SELECT id, audio_uri FROM entries WHERE sync_state = 'erased' AND deleted_at IS NOT NULL ORDER BY id",
+  )) {
+    try {
+      eraseAudio(r.audio_uri, r.id);
+    } catch {
+      continue; // the next run tries again
+    }
+    if (entries.eraseRow(c, r.id)) n++;
+  }
+  if (n > 0) bus.emit('entries');
+  return n;
 }
 
 /**

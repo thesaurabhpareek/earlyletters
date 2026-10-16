@@ -19,7 +19,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
 import type { RpcResult, SupabaseLike } from '../../src/lib/sync/types';
-import { SYNC_PUSH_HELD_EDITS, patchSyncPush } from './sync-v1-standin';
+import { SYNC_PULL_ERASE_EDITS, SYNC_PUSH_ERASE_EDITS, SYNC_PUSH_HELD_EDITS, patchSyncPush } from './sync-v1-standin';
 
 export interface SyncServer {
   pg: PGlite;
@@ -27,6 +27,8 @@ export interface SyncServer {
   standIn: boolean;
   /** True when held drafts (WP-F16-17) came from sync-v1-held-standin.sql. */
   heldStandIn: boolean;
+  /** True when Erase now (WP-F16-13) came from sync-v1-erase-standin.sql. */
+  eraseStandIn: boolean;
   /** SQL as the migration role (no RLS). */
   sys: (sql: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
   /** SQL as a signed-in user (RLS applies). */
@@ -85,6 +87,7 @@ export async function startSyncServer(opts: { users: string[]; protocol?: 'v0' |
 
   let standIn = false;
   let heldStandIn = false;
+  let eraseStandIn = false;
   if (opts.protocol === 'v1') {
     const has = await pg.query<{ v1: boolean }>(
       "select exists (select 1 from pg_proc where proname = 'sync_push' and prosrc like '%conflict_groups%') as v1",
@@ -95,6 +98,18 @@ export async function startSyncServer(opts: { users: string[]; protocol?: 'v0' |
       const def = await pg.query<{ d: string }>("select pg_get_functiondef('public.sync_push(jsonb)'::regprocedure) as d");
       await pg.exec(patchSyncPush(def.rows[0].d));
       standIn = true;
+    }
+    // Erase now (WP-F16-13): the same arrangement, until a migration's sync_push knows entry.erase.
+    const erase = await pg.query<{ e: boolean }>(
+      "select exists (select 1 from pg_proc where proname = 'sync_push' and prosrc like '%entry.erase%') as e",
+    );
+    if (!erase.rows[0].e) {
+      await pg.exec(readFileSync(join(__dirname, 'sync-v1-erase-standin.sql'), 'utf8'));
+      const push = await pg.query<{ d: string }>("select pg_get_functiondef('public.sync_push(jsonb)'::regprocedure) as d");
+      await pg.exec(patchSyncPush(push.rows[0].d, SYNC_PUSH_ERASE_EDITS));
+      const pull = await pg.query<{ d: string }>("select pg_get_functiondef('public.sync_pull(jsonb, int)'::regprocedure) as d");
+      await pg.exec(patchSyncPush(pull.rows[0].d, SYNC_PULL_ERASE_EDITS));
+      eraseStandIn = true;
     }
     // Held drafts (WP-F16-17): the same arrangement, until a migration defines held_drafts.
     const held = await pg.query<{ t: string | null }>("select to_regclass('public.held_drafts')::text as t");
@@ -149,7 +164,7 @@ export async function startSyncServer(opts: { users: string[]; protocol?: 'v0' |
     await userSql(uid, `select public.record_policy_act('sensitive-data', '1.0.0', $1, $2, $3, '1', 'ios')`, [act, source, screen]);
   };
 
-  return { pg, standIn, heldStandIn, sys, userSql, serverFor, consent, sensitiveConsent };
+  return { pg, standIn, heldStandIn, eraseStandIn, sys, userSql, serverFor, consent, sensitiveConsent };
 }
 
 /** Wraps a server: the next calls fail without reaching it, or reach it and lose the answer. */

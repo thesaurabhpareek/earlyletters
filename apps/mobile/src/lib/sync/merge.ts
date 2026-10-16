@@ -55,6 +55,8 @@ import {
   rejectOp,
   removeOp,
   sameWords,
+  ERASE_LANE,
+  eraseQueued,
   settleHeldAnswer,
   syncOwner,
   wireLanguage,
@@ -67,6 +69,8 @@ import {
 } from './outbox';
 
 const MOD48 = 2 ** 48;
+/** An erase refused by a server that cannot erase yet tries again after this long. */
+const ERASE_RETRY_MS = 6 * 3600_000;
 
 /** The digest the server computes: count and 48-bit sum of the ids' last 12 hex digits. */
 export function digestOf(ids: Iterable<string>): Digest {
@@ -82,7 +86,7 @@ export function digestOf(ids: Iterable<string>): Digest {
 /** Letters of a book this phone holds as confirmed by the server in this epoch. */
 function confirmedIds(db: SqlDb, childId: string, epoch: number): { id: string; author_id: string | null }[] {
   return db.all(
-    "SELECT id, author_id FROM entries WHERE child_id = ? AND server_version IS NOT NULL AND server_epoch = ? AND sync_state NOT IN ('held', 'gone')",
+    "SELECT id, author_id FROM entries WHERE child_id = ? AND server_version IS NOT NULL AND server_epoch = ? AND sync_state NOT IN ('held', 'gone', 'erased')",
     childId, epoch,
   );
 }
@@ -240,6 +244,10 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     if (r.ok) {
       pushed++;
       removeOp(db, row.seq);
+      if (row.type === 'entry.erase') {
+        // Erased on the server (or already gone there, or kept under a hold until it lifts): the row left this phone first.
+        continue;
+      }
       if (row.type.startsWith('entry.')) {
         if (r.missing) {
           // The server does not have this letter: a restore sends it whole; a delete has nothing to do.
@@ -265,6 +273,12 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
       }
       continue;
     }
+    // A server that cannot erase yet (no entry.erase): the erase waits in its lane and tries again later.
+    if (row.type === 'entry.erase' && r.code === '22023') {
+      db.run('UPDATE sync_outbox SET attempts = attempts + 1, next_attempt_at = ? WHERE seq = ?',
+        new Date(Date.parse(ctx.now) + ERASE_RETRY_MS).toISOString(), row.seq);
+      continue;
+    }
     // Refused for good.
     if (r.code === 'SCPLS' && (row.type === 'book.create' || row.type === 'book.first_run')) {
       // Older servers only (Plus is decided on the phone since 20261004000000): the book and its
@@ -283,12 +297,9 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
       for (const id of ids) db.run("UPDATE children SET server_state = 'refused' WHERE id = ?", id);
     } else if (row.type.startsWith('entry.')) {
       if (r.gone) {
-        // Deleted on another phone and purged: it stays in Recently deleted here, never uploads again.
+        // Purged on the server: already deleted here, it is erased here too; otherwise it stays in Recently deleted.
         db.run('DELETE FROM sync_outbox WHERE entity_id = ?', row.entity_id);
-        db.run(
-          "UPDATE entries SET deleted_at = COALESCE(deleted_at, ?), server_version = NULL, server_epoch = NULL, sync_state = 'gone' WHERE id = ?",
-          ctx.now, row.entity_id,
-        );
+        markGone(db, row.entity_id, ctx.now);
       } else if (!hasPendingOps(db, row.entity_id)) {
         db.run("UPDATE entries SET sync_state = 'rejected' WHERE id = ?", row.entity_id);
       }
@@ -313,6 +324,8 @@ const bool = (v: boolean | null | undefined) => (v === null || v === undefined ?
 const opt = (v: string | null | undefined): string | null => (typeof v === 'string' && v !== '' ? v : null);
 
 function mergeOwnRow(db: SqlDb, row: PulledRow, epoch: number, now: string): void {
+  // Erased on this phone, its erase not yet applied on the server: it never comes back.
+  if (eraseQueued(db, row.id)) return;
   const local = getEntryRow(db, row.id);
   const edits = JSON.stringify(row.machine_edits ?? []);
   if (!local) {
@@ -558,6 +571,21 @@ function mergeBook(db: SqlDb, b: PulledBook, now: string): boolean {
   return true;
 }
 
+/**
+ * One of this account's letters the server no longer holds (erased there, by Erase
+ * now on another phone or by the 30 day purge, F16-REQ-024). Already deleted on
+ * this phone: it is erased here too (`erased`; the store removes the file, then the
+ * row, right after the sync, never in the pull). Still live here (this phone missed
+ * the deletion): it moves to Recently deleted (`gone`) and never uploads again.
+ */
+function markGone(db: SqlDb, id: string, now: string): void {
+  db.run(
+    `UPDATE entries SET sync_state = CASE WHEN deleted_at IS NOT NULL THEN 'erased' ELSE 'gone' END,
+       deleted_at = COALESCE(deleted_at, ?), server_version = NULL, server_epoch = NULL WHERE id = ?`,
+    now, id,
+  );
+}
+
 /** Drops what this phone holds for a book that the server no longer lists (per the id list). */
 function reconcileIds(db: SqlDb, childId: string, ids: string[], owner: string | null, epoch: number, now: string): void {
   const keep = new Set(ids);
@@ -565,11 +593,7 @@ function reconcileIds(db: SqlDb, childId: string, ids: string[], owner: string |
     if (keep.has(r.id)) continue;
     if (r.author_id === owner || r.author_id === null) {
       if (hasPendingOps(db, r.id)) continue;
-      // Deleted on another phone and purged since this phone last looked: keep it in Recently deleted.
-      db.run(
-        "UPDATE entries SET deleted_at = COALESCE(deleted_at, ?), server_version = NULL, server_epoch = NULL, sync_state = 'gone' WHERE id = ?",
-        now, r.id,
-      );
+      markGone(db, r.id, now);
     } else {
       // Someone else's letter that is private, set aside or deleted now: it leaves this phone.
       db.run('DELETE FROM entries WHERE id = ?', r.id);
@@ -697,7 +721,7 @@ export function enterRestoreMode(db: SqlDb, res: PullResponse, ctx: EnqueueConte
   // new epoch, an operator mistake): every letter, since versions from before the restore prove nothing.
   const everything = res.reason === 'cursor_ahead';
   const mine = db.all<LocalEntryRow>(
-    `SELECT * FROM entries WHERE server_version IS NOT NULL AND sync_state <> 'gone'
+    `SELECT * FROM entries WHERE server_version IS NOT NULL AND sync_state NOT IN ('gone', 'erased')
        AND (author_id IS NULL OR author_id = ?) AND (? = 1 OR server_epoch IS NULL OR server_epoch <> ?)`,
     owner ?? '', everything ? 1 : 0, res.epoch,
   );

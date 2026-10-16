@@ -297,7 +297,8 @@ export type DeletedEntry = Entry & { deletedAt: string };
 export function listDeleted({ db }: RepoContext): DeletedEntry[] {
   return db
     .all<EntryRow & { deleted_at: string }>(
-      `SELECT ${COLS}, deleted_at FROM entries WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC, id DESC`,
+      // 'erased': erased for good on the server; it leaves this phone right after the sync (never restorable).
+      `SELECT ${COLS}, deleted_at FROM entries WHERE deleted_at IS NOT NULL AND sync_state <> 'erased' ORDER BY deleted_at DESC, id DESC`,
     )
     .map((r) => ({ ...fromRow(r), deletedAt: r.deleted_at }));
 }
