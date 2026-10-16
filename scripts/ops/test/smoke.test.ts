@@ -21,6 +21,8 @@ const KEY = 'sb_publishable_smoke0fixture0key0only';
 const DB_PASSWORD = 'pw-fixture-0f9e8d';
 const DB_URL = `postgresql://postgres.${REF}:${DB_PASSWORD}@aws-0-us-west-1.pooler.supabase.com:5432/postgres`;
 const ARGS = ['--project-ref', REF];
+/** The alpha's run after AF-13: apple-token has no readable route yet, and the caller says so. */
+const ALPHA = [...ARGS, '--expect-unchecked', 'apple-token'];
 const NOW = new Date('2026-10-22T09:00:00Z');
 
 type FunctionState = 'ready' | 'not_ready' | 'stopped' | 'deleted' | 'gateway_jwt' | 'no_route' | ((req: Request) => Promise<Response>);
@@ -131,7 +133,7 @@ async function run(s: StandIn, args: string[] = ARGS, env = ENV) {
 }
 
 Deno.test('green: a seeded staging project passes every check, anonymously', async () => {
-  const r = await run(seeded());
+  const r = await run(seeded(), ALPHA);
   assert.equal(r.code, 0, r.lines.join('\n'));
   assert.deepEqual([...r.byCheck.entries()].filter(([, v]) => v === 'FAIL'), []);
   for (const c of ['policy version terms', 'policy version sensitive-data', 'consent pepper', 'statement logging', 'function config', 'function content', 'function purge-worker', 'auth health', 'sign-up', 'sign-in providers', ...CRON_JOBS.map((j) => `cron ${j.name}`)]) {
@@ -139,8 +141,9 @@ Deno.test('green: a seeded staging project passes every check, anonymously', asy
   }
   // apple-token keeps the gateway JWT check and has no route yet (requested from S01): reported, not hidden, not counted as evidence.
   assert.equal(r.byCheck.get('function apple-token'), 'NOT CHECKED');
-  assert.match(r.lines.find((l) => l.includes(' function apple-token:'))!, /behind gateway JWT verification \(401\), as deployed; reading the route needs a session; health route requested from S01/);
-  assert.match(r.lines.at(-1)!, /^GREEN: 14 passed, 1 not checked/);
+  assert.match(r.lines.find((l) => l.includes(' function apple-token:'))!,
+    /behind gateway JWT verification \(401\), as deployed; reading the route needs a session; health route requested from S01; expected unchecked; presence not confirmed by this run or anywhere else$/);
+  assert.equal(r.lines.at(-1), 'GREEN: 14 passed; 1 not checked, as the caller asked (listed above; not evidence)');
   // Anonymous: the publishable key as apikey, never an Authorization header; read-only SQL, two statements.
   assert.ok(r.requests.every((q) => q.headers.get('apikey') === KEY && !q.headers.has('authorization')));
   assert.deepEqual(r.sql, [PROBE_SQL, CRON_SQL]);
@@ -150,7 +153,7 @@ Deno.test('green: a seeded staging project passes every check, anonymously', asy
 });
 
 Deno.test('planted failure (QA re-review): a scratch project with no policy versions and a stopped function is red', async () => {
-  const r = await run(scratchProject());
+  const r = await run(scratchProject(), ALPHA);
   assert.equal(r.code, 1);
   const failed = [...r.byCheck.entries()].filter(([, v]) => v === 'FAIL').map(([k]) => k).sort();
   assert.deepEqual(failed, ['function purge-worker', 'policy version sensitive-data', 'policy version terms']);
@@ -160,7 +163,54 @@ Deno.test('planted failure (QA re-review): a scratch project with no policy vers
   assert.match(r.markdown!, /^### Staging smoke \(RA-07-06\): RED: 3 of 15 checks failed/);
   assert.equal(r.slept(), 2, 'a 503 from the platform is retried before it counts');
   // The same run once the project is seeded and the function redeployed: green again.
-  assert.equal((await run(seeded())).code, 0);
+  assert.equal((await run(seeded(), ALPHA)).code, 0);
+});
+
+Deno.test('planted failure (review W N1): a missing function behind a gateway that answers 401 first never exits 0', async () => {
+  // The stand-in's gateway answers 401 for apple-token whether or not it exists: the run cannot tell.
+  const missing = seeded();
+  missing.functions['apple-token'] = 'gateway_jwt';
+  const bare = await run(missing);
+  assert.equal(bare.code, 1, 'not named as expected-unchecked: red');
+  assert.match(bare.lines.find((l) => l.includes(' function apple-token:'))!, /^FAIL .*not named in --expect-unchecked, so it counts as red \(a missing function must not pass\)$/);
+
+  // Named: green, and the line says plainly that nothing confirmed it is there.
+  const named = await run(missing, ALPHA);
+  assert.equal(named.code, 0);
+  assert.match(named.markdown!, /\| function apple-token \| NOT CHECKED \| .*presence not confirmed by this run or anywhere else \|/);
+
+  // With the deploy job's function list: confirmed there, or red when the list lacks it.
+  const listed = await run(missing, [...ALPHA, '--deployed', 'config,content,purge-worker,apple-token']);
+  assert.equal(listed.code, 0);
+  assert.match(listed.lines.find((l) => l.includes(' function apple-token:'))!, /presence confirmed only by the deploy job's function list \(--deployed\), not by this run$/);
+  const unlisted = await run(missing, [...ALPHA, '--deployed', 'config,content,purge-worker']);
+  assert.equal(unlisted.code, 1);
+  assert.match(unlisted.lines.find((l) => l.includes(' function apple-token:'))!, /^FAIL .*not in the deploy job's function list \(--deployed\)$/);
+  assert.equal(unlisted.requests.filter((q) => q.url.includes('/apple-token/')).length, 0);
+
+  // An expected-unchecked function that is plainly missing (404) or broken (5xx) is still red.
+  for (const state of ['deleted', 'stopped'] as const) {
+    const s = seeded();
+    s.functions['apple-token'] = state;
+    assert.equal((await run(s, ALPHA)).byCheck.get('function apple-token'), 'FAIL', state);
+  }
+  const usage = await run(seeded(), [...ARGS, '--functions', 'config', '--expect-unchecked', 'apple-token']);
+  assert.equal(usage.code, 2);
+  assert.match(usage.lines[0], /--expect-unchecked names a function that is not being checked/);
+});
+
+Deno.test('--db-only: policy versions and the database facts, no function or Auth request', async () => {
+  const r = await run(seeded(), [...ARGS, '--db-only']);
+  assert.equal(r.code, 0, r.lines.join('\n'));
+  assert.ok(r.requests.every((q) => q.url.includes('/rest/v1/policy_versions')));
+  assert.deepEqual(r.sql, [PROBE_SQL, CRON_SQL]);
+  assert.equal(r.byCheck.get('functions and sign-up'), 'NOT CHECKED');
+  assert.equal(r.lines.filter((l) => /^(PASS|FAIL|NOT CHECKED)/.test(l)).length, 9);
+  const red = await run(scratchProject(), [...ARGS, '--db-only']);
+  assert.equal(red.code, 1, 'no policy versions is still red on a database deploy');
+  for (const bad of [['--db-only', '--no-db'], ['--db-only', '--functions', 'config'], ['--db-only', '--expect-unchecked', 'apple-token']]) {
+    assert.equal((await run(seeded(), [...ARGS, ...bad])).code, 2, bad.join(' '));
+  }
 });
 
 Deno.test('functions: deleted, unconfigured, behind the gateway, without the route, flaky', async () => {
@@ -178,18 +228,18 @@ Deno.test('functions: deleted, unconfigured, behind the gateway, without the rou
   // A function that keeps the gateway JWT check on develop is NOT CHECKED behind it; the smoke never asks to change its posture.
   const g = seeded();
   g.functions['analytics-forget'] = 'gateway_jwt';
-  const rg = await run(g, [...ARGS, '--functions', 'analytics-forget']);
+  const rg = await run(g, [...ARGS, '--functions', 'analytics-forget', '--expect-unchecked', 'analytics-forget']);
   assert.equal(rg.code, 0);
-  assert.match(rg.lines.find((l) => l.includes(' function analytics-forget:'))!, /^NOT CHECKED .*behind gateway JWT verification \(401\), as deployed; reading the route needs a session$/);
+  assert.match(rg.lines.find((l) => l.includes(' function analytics-forget:'))!, /^NOT CHECKED .*behind gateway JWT verification \(401\), as deployed; reading the route needs a session; expected unchecked/);
   assert.ok(!rg.text.includes('--no-verify-jwt'));
 
   const t = seeded();
   t.functions.config = 'no_route';
   t.functions['apple-token'] = 'no_route';
   t.flaky = { content: 2 };
-  const r2 = await run(t);
+  const r2 = await run(t, ALPHA);
   assert.match(r2.lines.find((l) => l.includes(' function config:'))!, /^FAIL .*without the health route \(405\)/);
-  assert.match(r2.lines.find((l) => l.includes(' function apple-token:'))!, /^NOT CHECKED .*no health route yet \(405\); health route requested from S01/);
+  assert.match(r2.lines.find((l) => l.includes(' function apple-token:'))!, /^NOT CHECKED .*answered 405, no health route yet; health route requested from S01; expected unchecked/);
   assert.equal(r2.byCheck.get('function content'), 'PASS', 'two busy answers, then ready');
   t.flaky = { content: 1 };
   const r3 = await run(t, [...ARGS, '--attempts', '1', '--functions', 'content']);
@@ -224,6 +274,12 @@ Deno.test('database: pepper, pg_cron, each job, statement logging, connection an
   assert.match(noCron.lines.find((l) => l.includes(' cron:'))!, /pg_cron is not enabled/);
   assert.deepEqual(noCron.sql, [PROBE_SQL]);
 
+  s.probe = { ...PROBE_OK, cron_installed: null };
+  const noUsage = await run(s);
+  assert.match(noUsage.lines.find((l) => l.includes(' cron:'))!, /^FAIL .*no USAGE on schema cron/);
+  assert.equal(noUsage.byCheck.get('consent pepper'), 'PASS', 'a role without cron USAGE still reports the pepper');
+  assert.equal(noUsage.byCheck.get('statement logging'), 'PASS');
+
   s.probe = PROBE_OK;
   s.cron = [
     { name: 'scribe-purge-due', schedule: '17 * * * *', active: false },
@@ -254,7 +310,7 @@ Deno.test('database: pepper, pg_cron, each job, statement logging, connection an
 
   const noUrl = await run(seeded(), ARGS, envOf({ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY }));
   assert.equal(noUrl.code, 1, 'a workflow that forgot the database URL is red, not quietly green');
-  const skipped = await run(seeded(), [...ARGS, '--no-db'], envOf({ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY }));
+  const skipped = await run(seeded(), [...ALPHA, '--no-db'], envOf({ SUPABASE_URL: BASE, SUPABASE_PUBLISHABLE_KEY: KEY }));
   assert.equal(skipped.code, 0);
   assert.equal(skipped.byCheck.get('database (consent pepper, statement logging, cron)'), 'NOT CHECKED');
   assert.deepEqual(skipped.sql, []);
@@ -268,7 +324,7 @@ Deno.test('sign-up: Auth health, sign-ups on (or off for the staging stop), prov
   assert.match(r.lines.find((l) => l.includes('auth health'))!, /^FAIL .*unexpected status 503/);
   assert.match(r.lines.find((l) => l.includes('sign-up:'))!, /^FAIL .*sign-ups are off/);
   assert.match(r.lines.find((l) => l.includes('sign-in providers'))!, /^FAIL\s+sign-in providers: email on, apple off/);
-  const stop = await run({ ...seeded(), settings: { external: { email: true, apple: true }, disable_signup: true } }, [...ARGS, '--signups', 'closed']);
+  const stop = await run({ ...seeded(), settings: { external: { email: true, apple: true }, disable_signup: true } }, [...ALPHA, '--signups', 'closed']);
   assert.equal(stop.byCheck.get('sign-up'), 'PASS');
   assert.equal(stop.code, 0);
   assert.equal((await run(seeded(), [...ARGS, '--signups', 'closed'])).byCheck.get('sign-up'), 'FAIL');

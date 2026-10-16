@@ -8,9 +8,16 @@
  *   node scripts/ops/staging-smoke.ts --project-ref <ref> [--summary "$GITHUB_STEP_SUMMARY"]
  *
  * Options: --functions a,b (default: AF-13's config, content, purge-worker,
- * apple-token), --providers email,apple, --signups open|closed (closed for the
- * staging stop rehearsal), --no-db (function deploys, which hold no database
- * URL), --attempts 1..5 (function health retries on 5xx, 2 s apart).
+ * apple-token); --expect-unchecked a (functions allowed to end NOT CHECKED
+ * because their route cannot be read, behind the gateway or not built yet;
+ * any other unreadable function is red, since a missing one must not pass);
+ * --deployed a,b,c (the deploy job's `supabase functions list`: a checked
+ * function missing from it is red, and an expected-unchecked one says its
+ * presence came from there); --providers email,apple; --signups open|closed
+ * (closed for the staging stop rehearsal); --no-db (function deploys, which
+ * hold no database URL) or --db-only (database deploys: policy versions,
+ * pepper, logging, cron); --attempts 1..5 (function health retries on no
+ * answer and on 502, 503, 504 and 546, 2 s apart).
  *
  * Reads, anonymously, only policy_versions (document, version, effective_at),
  * the health routes and Auth's public settings; in Postgres, read only and

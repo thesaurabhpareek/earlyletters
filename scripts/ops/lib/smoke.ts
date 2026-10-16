@@ -13,7 +13,9 @@
  *    `pgaudit.log`, and any per-role or per-database override of them, cannot
  *    copy letter text from RPC calls into Postgres logs;
  *  - cron: each `scribe-*` job is scheduled, active and on its documented schedule;
- *  - Edge Functions: each one's health route answers 200 with the health envelope;
+ *  - Edge Functions: each one's health route answers 200 with the health envelope.
+ *    A route it cannot read (behind the gateway, or not built yet) is red unless
+ *    the caller named the function in --expect-unchecked: a missing function never passes;
  *  - sign-up reachable: Auth answers its health route, and its public settings say
  *    sign-ups are on with the expected providers. No account is created, no email sent.
  *
@@ -86,7 +88,9 @@ export const DEFAULT_PROVIDERS = ['email', 'apple'] as const;
 /** Read-only and content-free by construction: catalog and settings only, the pepper reduced to a boolean in Postgres. */
 export const PROBE_SQL = `select json_build_object(
   'pepper_ready', char_length(btrim(coalesce(current_setting('app.consent_pepper', true), ''))) >= 32,
-  'cron_installed', to_regclass('cron.job') is not null,
+  'cron_installed', case when not exists (select 1 from pg_catalog.pg_namespace where nspname = 'cron') then false
+                         when not has_schema_privilege('cron', 'usage') then null
+                         else to_regclass('cron.job') is not null end,
   'log_statement', current_setting('log_statement'),
   'log_min_duration_statement', current_setting('log_min_duration_statement'),
   'pgaudit_log', current_setting('pgaudit.log', true),
@@ -111,7 +115,13 @@ export interface SmokeConfig {
   key: string;
   db: DbTarget | null;
   skipDb: boolean;
+  /** Policy versions and the database facts only: what deploy-db.yml deploys. */
+  dbOnly: boolean;
   functions: FunctionSpec[];
+  /** Functions the caller expects to end NOT CHECKED (behind the gateway, or no route yet). Any other NOT CHECKED is red. */
+  expectUnchecked: Set<string>;
+  /** The deploy job's own function list (`supabase functions list`), when it has one. */
+  deployed: Set<string> | null;
   providers: string[];
   signups: 'open' | 'closed';
   attempts: number;
@@ -165,15 +175,34 @@ export function resolveSmoke(argv: string[], env: Env): { cfg: SmokeConfig; prob
     else if (ref && db.projectRef !== ref) problems.push('SUPABASE_DB_URL belongs to another project than SUPABASE_URL');
   }
 
-  const names = listFlag(flags.functions) ?? [...DEFAULT_FUNCTIONS];
+  const dbOnly = flags['db-only'] === true;
+  if (dbOnly && skipDb) problems.push('--db-only and --no-db exclude each other');
+  if (dbOnly && (flags.functions !== undefined || flags['expect-unchecked'] !== undefined || flags.deployed !== undefined)) {
+    problems.push('--db-only checks no functions: drop --functions, --expect-unchecked and --deployed');
+  }
+  const known = (flag: string, n: string): FunctionSpec | null => {
+    if (n === 'escrow') problems.push(`--${flag}: escrow lives in its own project (D-102) and is not checked here`);
+    const spec = FUNCTIONS.find((f) => f.name === n) ?? null;
+    if (!spec && n !== 'escrow') problems.push(`--${flag}: unknown function name (see FUNCTIONS in scripts/ops/lib/smoke.ts)`);
+    return spec;
+  };
   const functions: FunctionSpec[] = [];
-  for (const n of names) {
-    if (n === 'escrow') problems.push('--functions: escrow lives in its own project (D-102) and is not checked here');
-    else {
-      const spec = FUNCTIONS.find((f) => f.name === n);
-      if (!spec) problems.push('--functions: unknown function name (see FUNCTIONS in scripts/ops/lib/smoke.ts)');
-      else if (!functions.includes(spec)) functions.push(spec);
-    }
+  for (const n of dbOnly ? [] : listFlag(flags.functions) ?? [...DEFAULT_FUNCTIONS]) {
+    const spec = known('functions', n);
+    if (spec && !functions.includes(spec)) functions.push(spec);
+  }
+  const expectUnchecked = new Set<string>();
+  for (const n of listFlag(flags['expect-unchecked']) ?? []) {
+    if (!known('expect-unchecked', n)) continue;
+    if (!functions.some((f) => f.name === n)) problems.push('--expect-unchecked names a function that is not being checked');
+    expectUnchecked.add(n);
+  }
+  if (flags['expect-unchecked'] === true) problems.push('--expect-unchecked <a,b> needs names');
+  let deployed: Set<string> | null = null;
+  if (flags.deployed !== undefined) {
+    const names = listFlag(flags.deployed);
+    if (!names) problems.push('--deployed <a,b> needs the deploy job\'s function list');
+    else deployed = new Set(names.filter((n) => known('deployed', n)));
   }
   const providers = listFlag(flags.providers) ?? [...DEFAULT_PROVIDERS];
   if (!providers.every((p) => (KNOWN_PROVIDERS as readonly string[]).includes(p))) problems.push(`--providers: one of ${KNOWN_PROVIDERS.join(', ')}`);
@@ -186,7 +215,7 @@ export function resolveSmoke(argv: string[], env: Env): { cfg: SmokeConfig; prob
 
   if (problems.length) return { cfg: null, problems };
   return {
-    cfg: { url, projectRef: ref!, key, db, skipDb, functions, providers, signups: signups as 'open' | 'closed', attempts, summaryPath },
+    cfg: { url, projectRef: ref!, key, db, skipDb, dbOnly, functions, expectUnchecked, deployed, providers, signups: signups as 'open' | 'closed', attempts, summaryPath },
     problems: [],
   };
 }
@@ -289,8 +318,25 @@ function isEnvelope(v: unknown, ok: boolean): v is Record<string, unknown> {
 
 const RETRY_STATUSES = new Set([0, 502, 503, 504, 546]);
 
+/**
+ * A route the smoke cannot read proves nothing about whether the function exists
+ * (a gateway may answer 401 before it looks the function up). So it stays
+ * NOT CHECKED only when the caller named it in --expect-unchecked, and the line
+ * says where its presence was confirmed, if anywhere; otherwise it is red.
+ */
+function unreadable(cfg: SmokeConfig, spec: FunctionSpec, check: string, why: string): CheckResult {
+  if (!cfg.expectUnchecked.has(spec.name)) {
+    return fail(check, `${why}; not named in --expect-unchecked, so it counts as red (a missing function must not pass)`);
+  }
+  const presence = cfg.deployed?.has(spec.name)
+    ? "presence confirmed only by the deploy job's function list (--deployed), not by this run"
+    : 'presence not confirmed by this run or anywhere else';
+  return notChecked(check, `${why}; expected unchecked; ${presence}`);
+}
+
 export async function checkFunction(deps: SmokeDeps, cfg: SmokeConfig, spec: FunctionSpec): Promise<CheckResult> {
   const check = `function ${spec.name}`;
+  if (cfg.deployed && !cfg.deployed.has(spec.name)) return fail(check, "not in the deploy job's function list (--deployed)");
   let r: HttpResult = { status: 0, error: 'network' };
   for (let attempt = 1; attempt <= cfg.attempts; attempt++) {
     r = await get(deps, cfg, `/functions/v1/${spec.name}/health`);
@@ -306,9 +352,9 @@ export async function checkFunction(deps: SmokeDeps, cfg: SmokeConfig, spec: Fun
   if (r.status === 503 && isEnvelope(body, false)) return fail(check, 'deployed, but its required secrets are not all set (503; docs/ops/SECURITY.md)');
   const requested = spec.health === 'requested' ? `; health route requested from ${spec.owner}` : '';
   if (spec.gateway === 'jwt' && (r.status === 401 || r.status === 403)) {
-    return notChecked(check, `behind gateway JWT verification (${r.status}), as deployed; reading the route needs a session${requested}`);
+    return unreadable(cfg, spec, check, `behind gateway JWT verification (${r.status}), as deployed; reading the route needs a session${requested}`);
   }
-  if (spec.health === 'requested' && r.status === 405) return notChecked(check, `deployed, no health route yet (405)${requested}`);
+  if (spec.health === 'requested' && r.status === 405) return unreadable(cfg, spec, check, `answered 405, no health route yet${requested}`);
   if (r.status === 401 || r.status === 403) {
     return fail(check, `refused by the gateway (${r.status}): it is deployed with JWT verification, but develop deploys it with --no-verify-jwt (docs/ops/README.md step 4)`);
   }
@@ -342,7 +388,8 @@ export async function checkAuth(deps: SmokeDeps, cfg: SmokeConfig): Promise<Chec
 
 export interface Probe {
   pepper_ready: boolean;
-  cron_installed: boolean;
+  /** null: schema cron exists but this role has no USAGE on it. */
+  cron_installed: boolean | null;
   log_statement: string;
   log_min_duration_statement: string;
   pgaudit_log: string | null;
@@ -353,7 +400,7 @@ export function parseProbe(text: string): Probe | null {
   const v = json(text);
   if (!isObject(v)) return null;
   const { pepper_ready, cron_installed, log_statement, log_min_duration_statement, pgaudit_log, log_overrides } = v;
-  if (typeof pepper_ready !== 'boolean' || typeof cron_installed !== 'boolean') return null;
+  if (typeof pepper_ready !== 'boolean' || (typeof cron_installed !== 'boolean' && cron_installed !== null)) return null;
   if (typeof log_statement !== 'string' || typeof log_min_duration_statement !== 'string') return null;
   if (pgaudit_log !== null && typeof pgaudit_log !== 'string') return null;
   if (!Array.isArray(log_overrides) || !log_overrides.every((x) => typeof x === 'string')) return null;
@@ -439,6 +486,10 @@ export async function checkDatabase(deps: SmokeDeps, cfg: SmokeConfig): Promise<
       : fail('consent pepper', 'missing or shorter than 32 characters (supabase/APPLY.md step 6)'),
     checkLogging(p),
   ];
+  if (p.cron_installed === null) {
+    out.push(fail('cron', 'this database role has no USAGE on schema cron, so the jobs cannot be read'));
+    return out;
+  }
   if (!p.cron_installed) {
     out.push(fail('cron', 'pg_cron is not enabled (supabase/APPLY.md step 7)'));
     return out;
@@ -463,15 +514,21 @@ export async function runSmoke(deps: SmokeDeps, cfg: SmokeConfig): Promise<Repor
   const checks: CheckResult[] = [];
   checks.push(...(await checkPolicyVersions(deps, cfg)));
   checks.push(...(await checkDatabase(deps, cfg)));
-  for (const f of cfg.functions) checks.push(await checkFunction(deps, cfg, f));
-  checks.push(...(await checkAuth(deps, cfg)));
+  if (cfg.dbOnly) {
+    checks.push(notChecked('functions and sign-up', 'skipped with --db-only (a database deploy checks what it deploys)'));
+  } else {
+    for (const f of cfg.functions) checks.push(await checkFunction(deps, cfg, f));
+    checks.push(...(await checkAuth(deps, cfg)));
+  }
   const failed = checks.filter((c) => c.status === 'FAIL').length;
   return { at: deps.now().toISOString(), checks, failed, notChecked: checks.filter((c) => c.status === 'NOT CHECKED').length, green: failed === 0 };
 }
 
 export function verdictLine(r: Report): string {
   if (!r.green) return `RED: ${r.failed} of ${r.checks.length} checks failed`;
-  return r.notChecked ? `GREEN: ${r.checks.length - r.notChecked} passed, ${r.notChecked} not checked (listed above)` : `GREEN: all ${r.checks.length} checks passed`;
+  return r.notChecked
+    ? `GREEN: ${r.checks.length - r.notChecked} passed; ${r.notChecked} not checked, as the caller asked (listed above; not evidence)`
+    : `GREEN: all ${r.checks.length} checks passed`;
 }
 
 export function reportLines(r: Report): string[] {
@@ -499,8 +556,8 @@ export function reportMarkdown(r: Report): string {
 export const USAGE = [
   'Usage (docs/ops/runbooks/staging-smoke.md):',
   '  SUPABASE_URL=https://<ref>.supabase.co SUPABASE_PUBLISHABLE_KEY=<publishable key> SUPABASE_DB_URL=<postgres URL> \\',
-  '  node scripts/ops/staging-smoke.ts --project-ref <ref> [--functions a,b] [--providers email,apple]',
-  '    [--signups open|closed] [--no-db] [--attempts 3] [--summary "$GITHUB_STEP_SUMMARY"]',
+  '  node scripts/ops/staging-smoke.ts --project-ref <ref> [--functions a,b] [--expect-unchecked a] [--deployed a,b,c]',
+  '    [--providers email,apple] [--signups open|closed] [--no-db | --db-only] [--attempts 3] [--summary "$GITHUB_STEP_SUMMARY"]',
   'Exit 0 green, 1 red, 2 usage or an unexpected stop.',
 ];
 
