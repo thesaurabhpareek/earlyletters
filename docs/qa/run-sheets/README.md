@@ -46,6 +46,7 @@ Dates and founder steps (F01 to F27) are in `docs/release/ALPHA_PLAN.md` (PR #15
 | AL-07 Account deletion | `AL-07-account-deletion.md` | R1, staging, build 2 | Drill Mama: Plus renewing for AL-07.2; Drill Papa: Free, 1 letter kept; Drill D: Free | 70 min | F19 (request and cancel); before F27 (completion) | J8; 07 G3 |
 | AL-08 The server switch and the kill path | `AL-08-server-kill-switch.md` | Build 1 (part A), R1 and a switch-off build of the same commit (parts B, C) | Part A Free; parts B and C Plus on | 80 min | F12 (A); F19 (B, C) | go/no-go check 4 |
 | AL-09 StoreKit sandbox purchase and trial | `AL-09-storekit-sandbox.md`, with S06's D-1 to D-12 detail (`feat/plus-status-alpha`) | Build 2 (build 1 for the first rows) | Free, exactly 2 letters kept before | 75 min | after F14; F25 | 5 |
+| AL-10 Rollback rehearsals: staging stop, pack downloads switch, database restore, TestFlight expiry (RA-19-05) | `AL-10-rehearsals.md` | None for parts A and C; build 1 or 2 for B; R1 for D | Not relevant | about 3 h in four sittings | founder steps by date: C by Wed 21, A before Thu 22, B Fri 23, D Tue 27 or Wed 28 | go/no-go checks; `docs/release/AUTOMATION.md` 2.10 |
 
 ### Suggested sessions
 
@@ -56,6 +57,7 @@ Dates and founder steps (F01 to F27) are in `docs/release/ALPHA_PLAN.md` (PR #15
 | Backup drill on R2 | F23 | AL-06 |
 | Build 2 checks | F25 | AL-09, the AL-05 smoke rows, the AL-03 50-run set (a helper), AL-01 and AL-02 on build 2, AL-07.1 to .3 |
 | Staging deletion completion | Before F27 | AL-07.7 to .9 |
+| Rollback rehearsals | Wed 21 to Wed 28 | AL-10 part C (by Wed 21), part A (before Thu 22), part B (Fri 23, the same day as AL-08 parts B and C on R1, which are the fifth rehearsal), part D (after build 2 is in TestFlight) |
 
 Evidence file names: `docs/qa/evidence/<date>-<build>-<device tag of Phone A>.md`, one per session.
 
