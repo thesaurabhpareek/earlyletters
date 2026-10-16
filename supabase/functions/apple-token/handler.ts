@@ -26,6 +26,9 @@
  *   Authorization: Bearer <the signed-in user's access token>
  *   {"code": "<authorizationCode>", "clientId": "<bundle id the code was issued to>"}
  * 204 (no body, x-request-id header); errors use the packages/api envelope.
+ * GET or HEAD /functions/v1/apple-token/health: 200 when its secrets are set, 503
+ * otherwise (RA-07-06; _shared/health). Behind the gateway's JWT check like every
+ * other route here, so it needs a session; it reads nothing about the caller.
  *
  * Never logged, never returned, never stored in the clear: the code, the
  * tokens, the person's id, email or Apple user id. Log lines carry closed
@@ -47,6 +50,8 @@
  */
 import { failure, HEADER_REQUEST_ID, httpStatusFor, type ApiErrorCode } from '../../../packages/api/src/envelope.ts';
 import { bundleId } from '../../../packages/brand/index.ts';
+// The shared health route comes with PR #202 (S07, RA-07-06); it must be on develop before this merges.
+import { healthResponse, isHealthRequest } from '../_shared/health/health.ts';
 import { createLogger, type ErrorCode, type FunctionName, type LogSink, type Provider } from '../_shared/log/log.ts';
 import { APPLE_AUDIENCE, makeClientSecret, wrapAppleToken, type AppleKeyConfig } from '../purge-worker/lib/apple.ts';
 
@@ -198,6 +203,14 @@ export function makeAppleTokenHandler(env: EnvGetter, opts: AppleTokenOptions = 
       return reply(503, failure({ code: 'unavailable', retryable: true }, log.reqId));
     };
 
+    // GET or HEAD /apple-token/health (RA-07-06, _shared/health): 200 when every required secret is set, 503
+    // otherwise. It reads nothing about the caller and starts no work. Gateway JWT verification stays on
+    // (index.ts), so only a caller with a valid session reaches it; the staging smoke reports NOT CHECKED.
+    if (isHealthRequest(req, 'apple-token')) {
+      const ready = readAppleTokenConfig(env) !== null;
+      log.info('request.done', { status: ready ? 200 : 503, outcome: ready ? 'ok' : 'server_error' });
+      return healthResponse(req, ready, log.reqId);
+    }
     if (req.method !== 'POST') return fail('bad_request', false, 405);
     if (!ROUTE_RE.test(new URL(req.url).pathname)) return fail('not_found', false);
 

@@ -237,6 +237,37 @@ Deno.test('fails closed without its secrets, and calls nobody', async () => {
   assert.equal(w.calls.length, 0);
 });
 
+Deno.test('[RA-07-06] health: 200 when its secrets are set, 503 when one is missing; reads nobody, starts nothing', async () => {
+  const HEALTH = 'https://fn.local/functions/v1/apple-token/health';
+  const ready = world();
+  const ok = await ready.handler(new Request(HEALTH));
+  assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get('cache-control'), 'no-store');
+  assert.match(ok.headers.get('x-request-id') ?? '', REQUEST_ID_RE);
+  const body = await ok.json();
+  assert.equal(body.ok, true);
+  assert.deepEqual(body.data, { status: 'ready' });
+  assert.equal((await ready.handler(new Request('https://fn.local/apple-token/health', { method: 'HEAD' }))).status, 200, 'the platform path');
+  assert.equal(ready.calls.length, 0, 'no session check, no Apple call, no database call');
+  for (const missing of ['APPLE_TEAM_ID', 'APPLE_SIGNIN_PRIVATE_KEY', 'TOKEN_KEK_V2']) {
+    const e = env();
+    delete e[missing];
+    if (missing === 'TOKEN_KEK_V2') delete e.TOKEN_KEK_V1;
+    const w = world({ env: e });
+    const res = await w.handler(new Request(HEALTH));
+    assert.equal(res.status, 503, missing);
+    const text = await res.text();
+    assert.equal(JSON.parse(text).error.code, 'unavailable');
+    assert.ok(!text.includes(missing), 'never names the missing setting');
+    assert.equal(w.calls.length, 0);
+  }
+  // Only GET and HEAD on exactly /apple-token/health; a POST there is not a capture call either.
+  const w = world();
+  assert.equal((await w.handler(req({ code: CODE }, undefined, HEALTH))).status, 404);
+  assert.equal((await w.handler(new Request('https://fn.local/apple-token/health/x'))).status, 405);
+  assert.equal(w.calls.length, 0);
+});
+
 Deno.test('validates the request: method, route, body shape and size, before any call', async () => {
   const w = world();
   assert.equal((await w.handler(req(null, undefined, ROUTE, 'GET'))).status, 405);
