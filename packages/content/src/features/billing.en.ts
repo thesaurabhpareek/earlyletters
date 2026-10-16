@@ -24,7 +24,8 @@ export const billingCopy = {
   /** Marketing content above Apple's plan buttons (SubscriptionStoreView). */
   store: {
     title: 'Plus',
-    subtitle: 'A few extras for the books you keep.',
+    // Plus adds one thing in v1.0 (keeping more letters), so no "extras" (S41).
+    subtitle: 'Two letters free. Then Plus.',
     features: [
       'Keep adding letters to every book, as many as you like.',
     ],
@@ -42,13 +43,16 @@ export const billingCopy = {
    */
   keepGate: {
     title: "Keep adding to {child}'s book",
-    body: 'Your first two letters are kept, and always will be. To add more, join Plus.',
-    heldNote: 'This letter is safe on your phone. Come back to it once Plus is on.',
+    body: 'Your first two letters are kept for good. Plus lets you keep adding letters.',
+    // Where the letter is now, not what to do later (S22).
+    heldNote: 'This one waits on Tonight, exactly as it is.',
+    // The chip on the held letter's own card at the top of the sheet.
+    heldChip: 'Waiting',
     seePlus: 'See Plus',
     holdButton: 'Keep it here for now',
     redeemLink: 'Redeem a code',
-    lapsedBody: 'Plus has ended. Every letter stays yours to read, play and export. To add new ones, Plus can start again.',
-    offline: 'Plus needs the internet to start. Your letter stays safe on your phone until then.',
+    lapsedBody: 'Plus has ended. Every letter you kept is still yours to read, play and export.',
+    offline: 'Plus needs a connection to start. This one waits on Tonight.',
     secondFreeNote: 'That was your second free letter.',
     plusIsOn: 'Plus is on. Your letter is waiting for you to keep it.',
   },
@@ -65,17 +69,19 @@ export const billingCopy = {
   plan: {
     title: 'Plan',
     statusTitle: 'Plus',
-    off: 'Your first two letters are free. Plus lets you keep adding.',
+    off: 'Your first two letters are free. Plus lets you keep adding.', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (no status card when Plus is off)
     on: 'Plus is on.',
     trial: 'Plus is on, free until {date}.',
     trialCancelBy: 'Cancel by {cancelBy} and you pay nothing.',
     renews: 'Plus renews on {date}.',
     ends: 'Plus stays on until {date}. It will not renew.',
-    grace: 'There is a problem with the payment for Plus. Your letters are fine, and Plus stays on while Apple tries again.',
-    retry: 'Apple could not take the payment for Plus, so Plus is paused. Every letter you have kept is safe.',
+    grace: 'Apple could not take the last payment. Plus stays on while Apple tries again.',
+    retry: 'Plus is paused until a payment goes through. Every letter you kept is still here.',
     shared: 'Shared with you through Apple Family Sharing.',
-    monthly: 'Monthly',
-    yearly: 'Yearly',
+    // Plan names equal the App Store Connect display names (D-077; BRAND.md glossary).
+    monthly: 'Plus Monthly',
+    annual: 'Plus Annual',
+    yearly: 'Yearly', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (replaced by `annual`)
     seePlans: 'See what Plus adds',
     redeem: 'Redeem a code',
     redeemHelp: 'Opens Apple\'s sheet for an offer code.',
@@ -84,14 +90,17 @@ export const billingCopy = {
     manageHelp: 'Change or cancel in Apple\'s subscriptions screen.',
     restore: 'Restore purchases',
     restoreHelp: 'Finds Plus bought with this Apple Account.',
+    // The Restore row's subtitle while it checks, and its result inline under the row (S41).
     restoring: 'Checking with the App Store',
     restored: 'Plus is on.',
+    // `restoreNone` is the S41 wording for this result; the screen moves to it in P6.
     restoreNothing: 'No Plus was found for this Apple Account.',
-    restoreFailed: 'The App Store could not be reached. Please try again in a moment.',
+    restoreNone: 'No Plus found for this Apple Account.',
+    restoreFailed: 'The App Store did not answer. Try again in a moment.',
     refund: 'Request a refund',
     refundHelp: 'Apple decides refunds. Your letters, recordings and books never change.',
     refundSent: 'Apple has your request and will email you.',
-    payment: 'Apple handles payment for Plus. We never see your card details.',
+    payment: 'Apple takes the payment. Card details stay with Apple.',
     needsNewerIos: 'Plus can be added on iOS 17 or later.',
     unavailable: 'Plus is not available on this device yet.',
     saveCopy: 'Save a copy of the terms',

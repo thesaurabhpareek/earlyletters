@@ -14,7 +14,7 @@ export const playerCopy = {
   positionText: '{elapsed} of {total}',
   notOnPhone: 'The recording for this letter is not on this phone.',
   notOnPhoneReadAloud: 'The recording for this letter is not on this phone. Read this one aloud together.',
-  cannotPlay: 'This recording cannot play right now. It is still kept.',
+  cannotPlay: 'This recording will not play here. Export keeps the file.',
   loading: 'Getting the recording ready',
   /** The switch between the listening copy and the untouched original (founder decision 8). */
   originalLabel: 'Original recording',

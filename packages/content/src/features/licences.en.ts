@@ -12,8 +12,9 @@ interface Item {
 }
 
 export const licences = {
-  title: 'Licences',
-  rowLabel: 'Licences',
+  // US spelling on screen (D-087); the object and file keep their names so imports stay stable.
+  title: 'Licenses',
+  rowLabel: 'Licenses',
   intro: 'This app is built with the help of open work by many people. Thank you.',
   sections: [
     {
