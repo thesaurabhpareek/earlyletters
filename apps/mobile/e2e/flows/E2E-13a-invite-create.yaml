@@ -10,6 +10,7 @@ name: E2E-13a Co-parent invite, create (simulator A)
 tags:
   - e2e-coparent
   - E2E-13
+  - p0-nightly
   - B-REQ-007
   - PRD-REQ-014
   - D-055

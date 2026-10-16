@@ -608,3 +608,98 @@ The founder delegated these calls to the coordinator on 15 Oct. Each is marked "
 - **Status:** Decided, 15 Oct 2026 (delegated by founder). Turns D-069 from "Recommended" into decided.
 - **Decision:** at most two parents per book, enforced by the server, and either parent can see and remove family members. It takes effect with co-parent sharing in v1.1. v1.0 has no sharing, so nothing changes in v1.0.
 - **Effects:** the server check and SCCAP (`parents_full`) are parked for v1.1 with G-02 and G-17 (`docs/backlog/future/06-coparent-sharing-v1-1.md` section 5, PR #117).
+
+## Decisions of 13 and 14 Oct 2026 (founder, in the PRD V2 session)
+
+The founder gave D-100 to D-103 in the PRD V2 session (`docs/prd/v2/_AUTHORING.md` section 3b, M14 to M17). D-104 lists three delivery defaults that are proposed, not decided: they take effect only when the founder confirms them, in this PR or in writing. Counsel and Apple sign-off are never delegated.
+
+Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as D-089 to D-094 (PR #128), but PR #108 had already recorded the release-engineering decisions as D-089 to D-092 and PR #122 the 15 Oct delegated calls as D-093 to D-099, so they are D-100 to D-105 here (old to new: D-089 to D-100, D-090 to D-101, D-091 to D-102, D-092 to D-103, D-093 to D-104, D-094 to D-105). The text is unchanged; only the ids and their cross-references moved. D-106 to D-108 were added on the same day.
+
+| ID | Decision | Status | Proceed? | Date |
+|---|---|---|---|---|
+| D-100 | Server features are on in v1.0: sign-in, sync, co-parent sharing, encrypted recording backup, status report and reminder emails | Decided (founder, 13 Oct 2026; confirmed 15 Oct) | Yes, after the security gate | 2026-10-13 |
+| D-101 | Keep the full v1.0 scope and move the date; the plan of record is PRD V2 `08-delivery.md` | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-102 | Recording backup keys are recoverable through server escrow, and the copy says so | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-103 | A free letter counts only when it is your own letter, its words exist, and you keep it from Review | Decided (founder, 13 Oct 2026) | Yes | 2026-10-13 |
+| D-104 | Three delivery defaults: low-risk merges by the coordinator, free backup, voice-only counting | Proposed; awaits founder confirmation | No, until confirmed | 2026-10-14 |
+| D-105 | PRD V2 is the product spec of record once PR #124 merges | Decided (founder, 3 and 13 Oct 2026) | Yes, on merge | 2026-10-14 |
+| D-106 | Alpha in two weeks: option B ships as a TestFlight alpha against staging, target Thu 29 Oct 2026; submission re-planned after the alpha; review delegation widened to app code | Decided (founder, build thread, 15 Oct 2026); the delegation widening is proposed by the coordinator and awaits the founder's confirmation | Yes for the alpha; the delegation waits | 2026-10-15 |
+| D-107 | Merge delegation widened: the coordinator merges app code, docs and tests into `develop` after two independent reviews and green CI; database, auth, payments, release configuration, the engine files and production deploys stay founder merges | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
+| D-108 | Backup recovery: a device enrolled for at least 7 days approves a restore request; F08-REQ-034 amended to the backup server as built (ten functions, nine settings) | Decided (founder, 15 Oct 2026) | Yes | 2026-10-15 |
+| D-109 | Experience pass calls F2 to F8 (PR #170 section 7): lamp gradient allowed, app.welcome lockup, welcome-first order held for counsel, Declared Age Range owner, Plus display names, server surfaces in v1.0, typed letters skip Review | Delegated call by the coordinator (founder may reverse) | Yes, except F4 (held) | 2026-10-16 |
+
+### D-100 Server features are on in v1.0 (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
+- **Status, 15 Oct 2026:** Confirmed by the founder in the build thread, 15 Oct 2026 (chose B: server features on, date moves); the on-device-only assumption behind D-085 to D-088, D-095 and #118 is superseded where they conflict; the exact submission date (mid-January or May 2027) is still open.
+- **Decision:** the release build profiles set `EXPO_PUBLIC_SERVER_FEATURES=on`. Sign-in, sync, co-parent sharing (at most two parents, D-069), encrypted backup of the owner's recordings (D-073) and the subscription status report with reminder emails (D-080) ship in v1.0. The switch in `apps/mobile/src/lib/capabilities.ts` stays as the kill path.
+- **Reverses:** commit c1764f9 ("v1.0 on-device only"). **Amends:** D-085 (its "amends D-073 for v1.0" clause no longer applies; backup ships), D-087 (show "I was invited" again; the Family tab is live), D-088 (the "Data Not Collected" privacy label is no longer true once accounts exist; privacy label 1.4.0 is drafted with counsel).
+- **Gate:** nobody outside the family signs in before BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322 and BL-349 merge and pass one shared security review (PRD V2 09 R-17). Migrations are applied to staging, then production, through CI. Legal pages describing a server product are live before sign-in.
+- **Owner:** founder; streams S01 to S07, S17 and S20 (PRD V2 `08-delivery.md` section 3).
+
+### D-101 Full v1.0 scope, date moves (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, after critique round 1 (options: cut to fit November; keep scope and move the date; raise review capacity). PRD V2 M15.
+- **Decision:** v1.0 keeps every P0 work package, including recording backup and co-parent sharing; only the P1 extras listed in PRD V2 `08-delivery.md` section 6.4 are cut. The date follows the merge budget. As planned on 15 Oct: submission in the week of Mon 3 May 2027, about 40% confidence (`08-delivery.md` section 2.2). This replaces ROADMAP 2.1's 2 Nov target.
+- **Owner:** founder; delivery lead.
+
+### D-102 Recoverable backup keys, honest copy (founder)
+- **Status:** Decided by the founder, 13 Oct 2026, from two options (recoverable through escrow; end to end only). PRD V2 M16.
+- **Decision:** keep server escrow so a family can recover recordings after losing every device. Copy says recordings are encrypted, that we hold a recovery key under strict, logged access, and that recordings are never read, sold or used to train models. No copy claims "only your family's keys can open it". The escrow key runs only in a separate project and one function; custody, rotation, the access log and owner emails on each use are specified in PRD V2 F08 section 6.5 and F17.
+- **Effects:** microphone purpose string, Terms 6.2 and 12.4, Privacy Policy, Consumer Health Data notice and privacy labels change before release (counsel). ADR 0006 is amended (stream S05).
+- **Owner:** founder; S05, S16, S17.
+
+### D-103 Counting the free letters (founder)
+- **Status:** Decided by the founder, 13 Oct 2026. PRD V2 M17.
+- **Decision:** a letter counts toward the 2 free letters (D-082) only when (a) you are its author, (b) its words exist, and (c) you keep it from Review with the words on screen. The other parent's synced letters never count. A voice-only letter saved before its speech model arrives is kept safely and counts only once its words exist and you keep it from Review. The ledger still never decreases, and Erase everything still resets it.
+- **Amends:** D-083 (its rule that "a voice letter kept without words" counts at once, and any counting of letters present on the device regardless of author).
+- **Owner:** payments engineer (stream S06), local store (S03).
+
+### D-104 Three delivery defaults (proposed)
+- **Status:** Proposed by the coordinator, 14 Oct 2026. Not in force until the founder confirms each item. Until then the founder merges every pull request, and items 2 and 3 are the spec defaults PRD V2 is written against.
+- **Proposal:**
+  1. The coordinator may merge pull requests that change only docs, evidence or tests, after two independent review agents pass them. Anything touching server code, `supabase/**`, auth, payments, migrations or release configuration is merged only by the founder (D-041).
+  2. Encrypted recording backup is free for everyone. Plus remains the membership that lets you keep new letters (D-082); it does not gate backup.
+  3. Voice-only letters follow D-103.
+- **Owner:** founder (confirmation); coordinator.
+
+### D-105 PRD V2 is the product spec of record
+- **Status:** Decided (founder asked for PRD V2 on 3 Oct and chose its source order on 13 Oct). Takes effect when PR #124 merges to `develop`.
+- **Decision:** `docs/prd/v2/` replaces `docs/prd/PRD.md` 1.3 as the requirements of record. Existing requirement IDs keep their meaning. Where V2 and a LEGAL-REQ disagree on a legal duty, counsel decides; no founder decision retires a legal duty by itself.
+- **Owner:** PM lane.
+
+### D-106 Alpha in two weeks (founder, 15 Oct 2026)
+- **Status:** Decided by the founder in the build thread; the delegation widening is proposed by the coordinator and awaits the founder's one-word confirmation.
+- **Decision:** Option B ships as an alpha: a TestFlight build with server features on against the staging project, for the founder's family and invited friends, target Thu 29 Oct 2026. App Store submission is re-planned after the alpha. Review delegation: app code may be merged by the coordinator after two independent review agents pass it; database, auth, payments, migrations and release configuration stay founder merges, batched daily.
+- **Owner:** founder; coordinator.
+
+### D-107 Merge delegation widened (founder, 15 Oct 2026)
+- **Status:** Decided by the founder, 15 Oct 2026, about 17:00 UTC: "Widen." Confirms the delegation part of D-106 and replaces item 1 of D-104.
+- **Decision:** the coordinator may merge pull requests into `develop` that change app code (`apps/mobile`, `packages/*`, `apps/web` content and components), docs or tests, once two independent review agents pass the pull request and CI is green on its head.
+- **Founder-only merges:**
+  - `supabase/**`: database, migrations, access rules.
+  - Auth.
+  - Payments: billing, StoreKit, `packages/core/src/plan.ts`.
+  - Release configuration: `.github/**`, `apps/mobile/eas.json`, `apps/mobile/app.config.ts`.
+  - The CODEOWNERS-protected engine files: `EditType` and `packages/core/src/types.ts`, `verify.ts`, `meaning.ts`, `pipeline.ts`.
+  - Any production deploy: the website on `main`, the App Store, TestFlight external groups.
+- **Effects:** `docs/agents/COORDINATION.md` section 6 states the rule.
+- **Owner:** founder; coordinator.
+
+### D-108 Backup recovery: device age and F08-REQ-034 (founder, 15 Oct 2026)
+- **Status:** Decided by the founder, 15 Oct 2026.
+- **Decision:** Backup recovery: a device must be enrolled for at least 7 days before it can approve a restore request. F08-REQ-034 is amended to match the backup server as built: ten functions and nine settings, not four functions and three secrets.
+- **Effects:** PR #151 (`feat/backup-server`, the S05 backup server). The F08-REQ-034 text in PRD V2 (`docs/prd/v2/features/F08-recordings.md`, PR #124) is updated to match in a follow-up.
+- **Owner:** founder; S05.
+
+### D-109 Experience pass calls (coordinator, 16 Oct 2026)
+- **Status:** Delegated call by the coordinator under the founder's standing delegation (decide what is industry standard; the founder's instruction of 4 Oct, "Decide right answer on my behalf that are standard for industry apps", as for D-083 to D-088), 16 Oct 2026. The founder may reverse any item. Counsel sign-off is not delegated.
+- **Source:** the experience pass spec, PR #170 (`docs/experience-pass-oct`), section 7.
+- **Decision:**
+  1. F2 approved: in BRAND_SYSTEM section 4, the gradient item of the "Never" line becomes "Never: a gradient anywhere except the app icon tile and the atmosphere lamp (tokens.atmosphere, Lamp), which is decorative, capped for contrast, and never sits inside, behind or around the mark." The line's other "Never" items (the two contrast bans and pure black behind the mark) stay. Reason: the founder asked for the website's light and gradients in the app.
+  2. F3 approved: new brand registry context `app.welcome`, the stacked lockup at 96 pt on the welcome screen.
+  3. F4 held: the welcome-first order waits for counsel's answer to C1.
+  4. F5: the Declared Age Range call is owned by S14 with S17, due before App Store submission, not needed for TestFlight; subject to counsel's answer to COUNSEL_PACKET Q5. Note (merge train): in PRD V2 `08-delivery.md` section 3 the age gate (F01) sits with stream S12; the coordinator confirms which stream owns the call.
+  5. F6: the App Store Connect display names are Plus Monthly and Plus Annual; S06 corrects `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`.
+  6. F7 answered by the founder's option B (D-100): sign-in, sync, co-parent and backup surfaces are in v1.0 and get their own experience package.
+  7. F8 approved: typed letters skip Review, because typed words are never machine-edited.
+- **Effects:** for a typed letter, D-103's condition (c) is met when the author keeps it on Write with the words on screen; the Keep gate and the counting in D-082, D-083 and D-103 are unchanged. Follow-ups, not in this entry: the BRAND_SYSTEM section 4 edit; the `app.welcome` registry context (and the `app.header` title, which names the welcome today); `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` (still "Plus Yearly"); PR #170 (S20 for F8).
+- **Owner:** coordinator; founder for reversal.

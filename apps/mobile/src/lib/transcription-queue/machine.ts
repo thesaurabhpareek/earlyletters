@@ -17,6 +17,7 @@
  *   once, DATA-REQ-040).
  */
 import type { SpeechLanguage } from '../models/catalog';
+import { RunInputError } from '../transcribe-run';
 
 export type JobKind = 'draft' | 'entry';
 
@@ -190,4 +191,19 @@ export function nextRetryAt(s: QueueState): number | null {
 /** Languages that have jobs waiting for their packs (the runtime starts those downloads). */
 export function languagesWaiting(s: QueueState): SpeechLanguage[] {
   return [...new Set(Object.values(s.jobs).filter((j) => j.phase === 'waiting_for_pack').map((j) => j.language))].sort();
+}
+
+/**
+ * The job failure for an error, by code only (never by its text, LEGAL-REQ-014). ScribeAudio errors carry
+ * `ERR_SCRIBE_AUDIO_*` codes; a recording whose length cannot be trusted (RunInputError, review L9) is a
+ * decode failure: the job shows Try again and Type instead, and a waiting letter keeps waiting.
+ */
+export function jobFailureOf(e: unknown): JobFailure {
+  const code = (e as { code?: unknown } | null)?.code;
+  if (code === 'ERR_SCRIBE_AUDIO_FILE_MISSING') return 'file_missing';
+  if (code === 'ERR_SCRIBE_AUDIO_DECODE') return 'decode_failed';
+  if (code === 'ERR_SCRIBE_AUDIO_UNSUPPORTED') return 'unsupported';
+  if (e instanceof RunInputError) return 'decode_failed';
+  if (e instanceof Error && e.message === 'model_load_failed') return 'model_load_failed';
+  return 'transcribe_failed';
 }

@@ -3,10 +3,11 @@
  * "Real family details never go in code, tests or fixtures"). Tests, fixtures
  * and docs use the fictional family "Asha" (nickname "Ashu"), born 2025-04-12.
  *
- * This test reads every tracked file (`git ls-files`) and fails if it finds the
- * founder's real child's name (any listed spelling or script) or real birth
- * date. The guard must not leak what it guards, so it stores only SHA-256
- * hashes:
+ * This test reads every tracked file (`git ls-files`) and fails if it finds a
+ * real family name or the real birth date. The names are the founder's
+ * child's name, in any listed spelling or script, and another family
+ * member's first name. The guard must not leak what it guards, so it stores
+ * only SHA-256 hashes:
  *  - names: hash of a lowercase NFC word token (letters, marks and digits);
  *  - dates: hash of the canonical YYYY-MM-DD form. ISO dates, slash dates
  *    (Y/M/D, M/D/Y, D/M/Y) and written dates ("12 April 2025",
@@ -25,13 +26,17 @@ import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/** Real child's name: Latin spellings, nickname, short form, Arabic and Devanagari script. */
+/**
+ * Real family names: the child's name (Latin spellings, nickname, short form,
+ * Arabic and Devanagari script) and another family member's first name.
+ */
 const NAME_HASHES = new Set([
   '177b773d483d3fe541cd127ca95b62d7099e80651206c6ab7d6aa63eaa3bdc2c',
   'dee25ccf29ed1665c936a0408d7deb6114740652b9957bb90bd008aeeff2ae22',
   '3c38aafb0579dafe18bb584dce2786ccaab6835245f2979af4bb7dd2b6b90775',
   '135916c7098cd3db913f1513826f60a601d834d55b8ce3199fba861d3299ea07',
   '7d084f36695b4a19b1904fd8e1c012b34bf695a4c22989c1997ad3dd32331fff',
+  'c3136f593290df45b93c312c18c9c7ab815e9ab4a9fc7101b1eac66db868a200',
 ]);
 
 /** Real birth date, canonical YYYY-MM-DD. */
@@ -78,7 +83,7 @@ export function tokens(text: string): string[] {
 
 export function findings(text: string): string[] {
   const hits = new Set<string>();
-  for (const t of tokens(text)) if (NAME_HASHES.has(sha(t))) hits.add('real child name');
+  for (const t of tokens(text)) if (NAME_HASHES.has(sha(t))) hits.add('real family name');
   for (const d of dateCandidates(text)) if (DATE_HASHES.has(sha(d))) hits.add('real birth date');
   return [...hits];
 }
@@ -97,7 +102,7 @@ describe('no real family details in tracked files', () => {
     expect(findings('आशा, آشا, Nina, Tara, Neela')).toEqual([]);
   });
 
-  it('no tracked file contains the real child name or birth date', () => {
+  it('no tracked file contains a real family name or the real birth date', () => {
     const bad: string[] = [];
     for (const f of trackedFiles()) {
       const path = join(ROOT, f);
