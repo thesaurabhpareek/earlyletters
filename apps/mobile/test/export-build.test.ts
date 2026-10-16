@@ -8,6 +8,7 @@
  */
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { en } from '@scribe/content';
 import {
   audioMissingReason,
   audioPath,
@@ -74,7 +75,7 @@ describe('names and paths', () => {
     ['Asha\u0000\u001f\u007f', 'Asha'],
     ['आशा', 'आशा'],
     ['عمر', 'عمر'],
-    ['Ash́a', 'Ásha'.normalize('NFC').replace('Á', 'Ash́'.normalize('NFC').charAt(0) + 'sh').slice(0, 0) + 'Ásha'.normalize('NFC') === 'Ásha' ? 'Asha'.replace('As', 'As') && 'Ash́a'.normalize('NFC') : 'Ash́a'.normalize('NFC')],
+    ['Ashe\u0301', 'Ash\u00e9'], // a decomposed accent is stored composed (NFC)
     ['', 'fallback'],
     ['   ', 'fallback'],
     ['/', 'fallback'],
@@ -127,7 +128,9 @@ describe('chapters, years and paper', () => {
   });
 
   it('chapterName and yearOf: Before You, the newborn month, numbered months, years of twelve', () => {
-    expect(chapterName(null)).toBe(chapterName(null));
+    expect(chapterName(null)).toBe(en.book.beforeYouChapter);
+    expect(chapterName(0)).toBe(en.book.chapterNewborn);
+    expect(chapterName(16)).toBe(en.book.chapterTitle.replace('{month}', '16'));
     expect(chapterName(null)).not.toBe(chapterName(0));
     expect(chapterName(0)).not.toBe(chapterName(1));
     expect(chapterName(16)).toContain('16');

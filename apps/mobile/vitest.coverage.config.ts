@@ -8,7 +8,7 @@
  * and by the Playwright journeys in e2e-web/), `src/app` (Expo Router
  * routes), `src/dev` (seed and preview tools), the Expo and native adapters
  * (`expo-adapter.ts`, `*.native.ts`, `open-native.ts`) and the account
- * deletion hook (React). Thresholds: baseline of 15 Oct 2026 (docs/qa/COVERAGE.md).
+ * deletion hook (React). Thresholds: baseline of 16 Oct 2026 (docs/qa/COVERAGE.md).
  */
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { coverage, INSTRUMENTED } from '../../scripts/coverage/preset';
@@ -37,7 +37,7 @@ export default mergeConfig(
           'src/lib/db/repos/open-native.ts',
           'src/lib/account-deletion/use-account-deletion.ts',
         ],
-        thresholds: { statements: 0, branches: 0, functions: 0, lines: 0 },
+        thresholds: { statements: 54.45, branches: 55, functions: 48.43, lines: 55.17 },
       }),
     },
   }),

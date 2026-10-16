@@ -29,7 +29,9 @@ const ON_STATES: PlanView['state'][] = ['trial', 'active', 'grace'];
 
 const keep = (over: Partial<Parameters<typeof decideKeepLetter>[0]> = {}) => decideKeepLetter({ now: NOW, plan: NO_PLAN, lettersKept: 0, ...over });
 
-function input(over: Partial<DecideInput> & { viewer?: Partial<DecideInput['viewer']> } = {}): DecideInput {
+type Over = Omit<Partial<DecideInput>, 'viewer'> & { viewer?: Partial<DecideInput['viewer']> };
+
+function input(over: Over = {}): DecideInput {
   const base: DecideInput = {
     now: NOW, feature: 'backup_upload', surface: 'normal', isBirthday: false, signedIn: true, online: true,
     viewer: { roleInBook: 'parent', own: NO_PLAN }, book: { coveredByOtherParent: false }, initiatedBy: 'user',

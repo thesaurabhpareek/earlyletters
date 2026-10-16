@@ -2,7 +2,7 @@
  * `npm run test:coverage` for @scribe/api: the signed-document contracts
  * (manifest, remote config, content blocks, envelope, standards). The
  * consumer run (vitest.consumers.config.ts) tests other packages' code and
- * is not part of this denominator. Thresholds: baseline of 15 Oct 2026.
+ * is not part of this denominator. Thresholds: baseline of 16 Oct 2026.
  */
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { coverage, INSTRUMENTED } from '../../scripts/coverage/preset';
@@ -15,7 +15,7 @@ export default mergeConfig(
       ...INSTRUMENTED,
       coverage: coverage({
         include: ['src/**/*.ts'],
-        thresholds: { statements: 0, branches: 0, functions: 0, lines: 0 },
+        thresholds: { statements: 94.69, branches: 91.7, functions: 94.73, lines: 95.74 },
       }),
     },
   }),
