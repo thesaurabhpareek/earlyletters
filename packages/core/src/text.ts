@@ -86,9 +86,77 @@ export function splitsCluster(text: string, pos: number): boolean {
   return hi >= 0xd800 && hi <= 0xdbff && lo >= 0xdc00 && lo <= 0xdfff;
 }
 
+/** Hyphens that join two words into one ("uh-uh", "mm-hmm", "so-so"). En and em dashes are not joiners. */
+const HYPHEN = /^[-\u2010\u2011]$/;
+const WORDISH = /^[\p{L}\p{M}\p{N}]$/u;
+
+/** The code point that ends just before index `i`, or ''. */
+function codePointBefore(text: string, i: number): string {
+  if (i <= 0) return '';
+  const lo = text.charCodeAt(i - 1);
+  return lo >= 0xdc00 && lo <= 0xdfff && i >= 2 ? text.slice(i - 2, i) : text[i - 1];
+}
+
+/** The code point that starts at index `i`, or ''. */
+function codePointAt(text: string, i: number): string {
+  return i < text.length ? String.fromCodePoint(text.codePointAt(i)!) : '';
+}
+
+/**
+ * True when the word at [start, end) of `text` is joined to a neighbouring
+ * word by a hyphen, so it is one part of a hyphenated word: "uh-uh" (no),
+ * "mm-hmm" (yes), "uh-oh", "so-so", "bye-bye". Removing a part changes the
+ * word (F06-REQ-005, R-01 D6).
+ */
+export function hyphenJoined(text: string, start: number, end: number): boolean {
+  const left = HYPHEN.test(text[start - 1] ?? '') && WORDISH.test(codePointBefore(text, start - 1));
+  const right = HYPHEN.test(text[end] ?? '') && WORDISH.test(codePointAt(text, end + 1));
+  return left || right;
+}
+
+const HYPHEN_COMPOUND = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[-\u2010\u2011][\p{L}\p{M}\p{N}]+)+/gu;
+
+/** The hyphenated words of `text`, NFC and lowercased, in order ("uh-uh", "so-so"). */
+export function hyphenCompounds(text: string): string[] {
+  return [...text.matchAll(HYPHEN_COMPOUND)].map((m) => nfc(m[0]).toLowerCase());
+}
+
 /* FUNCTION_WORDS and FILLERS live in lang/english-tables.ts (re-exported above). */
 
 /* Which repeats are collapsed, suggested or kept lives in repeats.ts. */
+
+/** An en or em dash between two digits, with any spaces or tabs around it (the second digit is not consumed: "1–2–3"). */
+const NUMBER_DASH = /(\d)([ \t]*)[–—]([ \t]*)(?=\d)/g;
+
+/**
+ * A dash between two numbers is a range ("2 – 3 hours"): it becomes a hyphen
+ * with its spacing kept. Run before the house rule turns other dashes into
+ * commas, which would make the range a list ("2, 3 hours"). Engine 6.
+ */
+export function numberDashToHyphen(s: string): string {
+  return s.replace(NUMBER_DASH, '$1$2-$3');
+}
+
+const DIGIT_GROUPS = /\p{N}+(?:[.,:/٫٬]\p{N}+)*/gu;
+const digitGroups = (s: string) => (s.match(DIGIT_GROUPS) ?? []).join('|');
+
+/**
+ * `s.replace(re, rep)`, except that a match is kept as it was when replacing
+ * it would join, split or change a number with the characters on either
+ * side: "2 ,3" must never become "2,3" (found by the F06-REQ-021 property
+ * test, 15 Oct; engine 6). Every tidy step of the house rule goes through it.
+ */
+export function replaceKeepingNumbers(s: string, re: RegExp, rep: string): string {
+  return s.replace(re, (...args: unknown[]) => {
+    const m = args[0] as string;
+    const offset = args[args.length - 2] as number;
+    const groups = args.slice(1, -2) as string[];
+    const r = rep.replace(/\$(\d)/g, (_x, n: string) => groups[Number(n) - 1] ?? '');
+    const b = s[offset - 1] ?? '';
+    const a = s[offset + m.length] ?? '';
+    return digitGroups(b + r + a) === digitGroups(b + m + a) ? r : m;
+  });
+}
 
 /**
  * Normalize characters per the founder's standing rule: no em dashes,
@@ -96,20 +164,24 @@ export function splitsCluster(text: string, pos: number): boolean {
  * Applied to the final text only; the raw transcript is never altered.
  */
 export function normalizeChars(input: string): string {
-  let s = input;
-  s = s.replace(/\s*—\s*/g, ', '); // em dash
+  // Whitespace here is [^\S\uFEFF]: JavaScript's \s also matches U+FEFF, an
+  // invisible character this pass must never drop (found by the F06-REQ-021
+  // property test, 15 Oct; engine 6).
+  let s = numberDashToHyphen(input); // a range stays a range, never a list
+  s = replaceKeepingNumbers(s, /[^\S\uFEFF]*—[^\S\uFEFF]*/g, ', '); // em dash
   s = s.replace(/(\d)–(\d)/g, '$1-$2'); // en dash in ranges
-  s = s.replace(/\s*–\s*/g, ', '); // other en dashes
+  s = replaceKeepingNumbers(s, /[^\S\uFEFF]*–[^\S\uFEFF]*/g, ', '); // other en dashes
   s = s.replace(/[‘’′]/g, "'");
   s = s.replace(/[“”″]/g, '"');
   s = s.replace(/…/g, '...');
   s = s.replace(/[  ]/g, ' ');
   s = s.replace(/­/g, '');
   // Tidy artifacts the substitutions can leave behind.
-  s = s.replace(/,\s*,/g, ',');
-  s = s.replace(/\s+,/g, ',');
-  s = s.replace(/,\s*([.!?])/g, '$1');
-  s = s.replace(/^,\s*/gm, '');
+  // None of them may join, split or change a number ("2 ,3" stays, never "2,3").
+  s = replaceKeepingNumbers(s, /,[^\S\uFEFF]*,/g, ',');
+  s = replaceKeepingNumbers(s, /[^\S\uFEFF]+,/g, ',');
+  s = replaceKeepingNumbers(s, /,[^\S\uFEFF]*([.!?])/g, '$1');
+  s = replaceKeepingNumbers(s, /^,[^\S\uFEFF]*/gm, '');
   s = s.replace(/[ \t]{2,}/g, ' ');
   return s;
 }

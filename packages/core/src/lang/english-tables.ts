@@ -77,6 +77,36 @@ export const KINSHIP: ReadonlySet<string> = frozenSet([
   'baby', 'son', 'daughter', 'husband', 'wife', 'cousin', 'nanny', 'teacher',
 ]);
 
+/**
+ * Everyday English words that are also given names or family nicknames
+ * (F06-REQ-008 nameWords, F07 7.2 rule 4 commonWords). A dictionary term
+ * spelled like one of these gets no automatic case-only fix: with a child
+ * named Hope, "I hope you sleep" stays as said, and with a nickname Bean,
+ * "she ate a bean" does too. Modals, function words, pronouns, kinship,
+ * negations and numbers are guarded by their own tables ("will", "may").
+ * Seed list for engine 6; a native reviewer extends it (WP-F07-02).
+ */
+export const COMMON_WORDS: ReadonlySet<string> = frozenSet([
+  // F06-REQ-008 seeds
+  'hope', 'will', 'joy', 'grace', 'rose', 'june', 'faith',
+  // virtues and words used as names
+  'mercy', 'patience', 'charity', 'harmony', 'melody', 'liberty', 'justice', 'destiny', 'journey', 'blessing', 'miracle',
+  'haven', 'heaven', 'honor', 'honour', 'true', 'noble', 'royal', 'king', 'prince', 'princess', 'duke', 'earl', 'major',
+  // months, seasons, weather, nature
+  'april', 'august', 'summer', 'autumn', 'winter', 'dawn', 'eve', 'sky', 'star', 'rain', 'storm', 'sunny', 'river',
+  'brook', 'lake', 'ocean', 'forest', 'stone', 'clay', 'glen', 'dale', 'cliff', 'reed', 'sage', 'willow', 'rowan',
+  // flowers, gems, colours
+  'lily', 'daisy', 'poppy', 'holly', 'ivy', 'hazel', 'olive', 'violet', 'iris', 'heather', 'ruby', 'pearl', 'amber',
+  'jade', 'coral', 'crystal', 'blue', 'gray', 'grey', 'ginger',
+  // names that are everyday words
+  'bill', 'mark', 'pat', 'rob', 'frank', 'drew', 'chase', 'hunter', 'carter', 'mason', 'cooper', 'page', 'grant',
+  'ray', 'rich', 'miles', 'jack', 'max', 'penny', 'sandy', 'rusty', 'misty', 'carol', 'ace', 'cash',
+  // family nicknames that are everyday words
+  'honey', 'angel', 'bear', 'cub', 'bean', 'peanut', 'pumpkin', 'button', 'bug', 'buddy', 'bunny', 'monkey', 'chick',
+  'duck', 'ducky', 'kitty', 'cookie', 'muffin', 'pickle', 'cherry', 'berry', 'candy', 'sunshine', 'champ', 'kiddo',
+  'munchkin', 'sweetie', 'darling', 'love', 'dear', 'sugar', 'peach', 'pip', 'bubba', 'bub', 'tiger', 'lamb', 'mouse',
+]);
+
 /** Pronouns beyond the function-word list. */
 export const PRONOUNS: ReadonlySet<string> = frozenSet([
   'hers', 'mine', 'yours', 'theirs', 'ours', 'myself', 'yourself', 'himself', 'herself', 'itself', 'ourselves',

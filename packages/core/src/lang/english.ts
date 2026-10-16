@@ -9,6 +9,7 @@
 import {
   AGREEMENT_GROUPS,
   CLEFT_OPENERS,
+  COMMON_WORDS,
   DANGLING,
   DISCOURSE_AFTER_YOU,
   FILLERS,
@@ -39,8 +40,8 @@ export const ENGLISH_PACK: TextRulesPack = {
   kind: 'text-rules',
   schema: 1,
   language: 'en',
-  version: '1.0.0',
-  engine: 1,
+  version: '1.1.0',
+  engine: 2, // meaning.commonWords (engine 6, F06-REQ-008)
   name: { english: 'English', native: 'English' },
   script: { primary: 'Latn', variants: [], direction: 'ltr', cased: true, segmentation: 'space' },
   attribution: [],
@@ -77,6 +78,7 @@ export const ENGLISH_PACK: TextRulesPack = {
     pronouns: list(PRONOUNS),
     kinship: list(KINSHIP),
     alwaysCapitalized: ['i', "i'm", "i've", "i'll", "i'd"],
+    commonWords: list(COMMON_WORDS),
     agreementGroups: AGREEMENT_GROUPS.map((g) => [...g]),
     tenseGroups: TENSE_GROUPS.map((g) => [...g]),
     agreementInflections: [{ add: 's' }, { add: 'es' }, { strip: 'y', add: 'ies', afterConsonant: true }],
