@@ -11,6 +11,7 @@
     "build": "tsx src/build-css.ts",
     "build:grain": "tsx src/build-grain.ts",
     "test": "vitest run",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

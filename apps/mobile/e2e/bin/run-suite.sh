@@ -3,7 +3,10 @@
 # between flows (container and export inspection, text size for E2E-15).
 # macOS only. See ../README.md section 4.
 #
-#   apps/mobile/e2e/bin/run-suite.sh [--udid <UDID>] [--app <path/to/App.app>] [--only E2E-05] [--junit]
+#   apps/mobile/e2e/bin/run-suite.sh [--udid <UDID>] [--app <path/to/App.app>] [--only E2E-05] [--tag p0-nightly] [--junit]
+#
+# --tag runs only the flows whose tags list that tag (for example the P0
+# nightly set; bin/run-p0-nightly.sh adds the two-simulator E2E-13).
 #
 # Env:
 #   APP_ID   bundle id of the e2e build (default com.earlyletters.scribe.preview)
@@ -20,12 +23,14 @@ APP_ID="${APP_ID:-com.earlyletters.scribe.preview}"
 UDID="booted"
 APP=""
 ONLY=""
+TAG=""
 JUNIT=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --udid) UDID="$2"; shift 2 ;;
     --app) APP="$2"; shift 2 ;;
     --only) ONLY="$2"; shift 2 ;;
+    --tag) TAG="$2"; shift 2 ;;
     --junit) JUNIT=1; shift ;;
     *) echo "unknown argument $1" >&2; exit 2 ;;
   esac
@@ -52,6 +57,8 @@ FLOWS=(
   E2E-08-delete-and-undo
   E2E-09-account-deletion
   E2E-10-export
+  E2E-17a-export-listening-copy
+  E2E-17b-export-original-only
   E2E-11-analytics-consent
   E2E-12-sign-in-email
   E2E-15-voiceover-smoke
@@ -82,6 +89,7 @@ host_check() {
 
 for name in "${FLOWS[@]}"; do
   if [[ -n "$ONLY" && "$name" != "$ONLY"* ]]; then continue; fi
+  if [[ -n "$TAG" ]] && ! has_tag "$name" "$TAG"; then continue; fi
   if has_tag "$name" needs-backend && [[ -z "${MAESTRO_E2E_SUPABASE_URL:-}" ]]; then
     RESULTS+=("SKIP $name (needs the e2e backend)"); continue
   fi
@@ -96,6 +104,9 @@ for name in "${FLOWS[@]}"; do
     E2E-01a*) host_check "$name-container" "$HERE/inspect-container.sh" gate-stopped || ok=0 ;;
     E2E-01b*) host_check "$name-container" "$HERE/inspect-container.sh" gate-passed || ok=0 ;;
     E2E-10*) host_check "$name-zip" env OUT="$OUT/$name-zip" "$HERE/inspect-export.sh" || ok=0 ;;
+    E2E-17a*) host_check "$name-zip" env OUT="$OUT/$name-zip" REQUIRE_LISTENING=1 "$HERE/inspect-export.sh" --originals || ok=0 ;;
+    E2E-17b*) host_check "$name-zip" env OUT="$OUT/$name-zip" REQUIRE_LISTENING=1 \
+        COMPARE_WITH="$OUT/E2E-17a-export-listening-copy-zip/audio-hashes.txt" "$HERE/inspect-export.sh" --originals || ok=0 ;;
   esac
   if [[ "$name" == E2E-15* ]]; then "$HERE/a11y-sizes.sh" default >/dev/null; fi
 
