@@ -1,0 +1,99 @@
+# Agent fence (D-041, BL-122, CI-11). Fails a pull request that touches the
+# database, CI or authentication code unless it carries the `approve-migration`
+# label, which only the founder applies after an independent review run.
+#
+# Runs on pull_request_target so the copy of this workflow on the base branch
+# is used, not the one in the pull request. It never checks out or runs pull
+# request code: it reads the changed-file list through the API, and the path
+# rules (.github/scripts/fence-paths.mjs, tested by fence-paths.test.mjs) from
+# the base commit through the API.
+#
+# Limitation: until branch protection makes the `fence` check required, this
+# is advisory; a failing check does not stop a merge. See .github/README.md.
+name: Fence
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: fence-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  fence:
+    name: fence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Check fenced paths against the approve-migration label
+        # shell: bash runs this with -eo pipefail; the script sets it again so
+        # a failing command in a pipeline can never read as "nothing fenced".
+        # The test .github/scripts/fence-paths.test.mjs runs this exact block.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CHANGED: ${{ github.event.pull_request.changed_files }}
+          APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'approve-migration') }}
+          RULES: .github/scripts/fence-paths.mjs
+          # Bootstrap only, used when the base commit has no RULES (HTTP 404):
+          # a case-insensitive substring match that fences a superset of what
+          # fence-paths.mjs fences (the test checks this on its fixtures).
+          FALLBACK_FENCE: '^(supabase/|\.github/)|(auth|session|sign[^a-z0-9/]?(in|up|out)|log[^a-z0-9/]?(in|out)|passkey|token|jwt|credential|supabase)'
+        run: |
+          set -euo pipefail
+          fail() { echo "::error title=fence::$1"; exit 1; }
+
+          # One line per changed file ("F<tab>path") and, for renames, one for
+          # the old path ("P<tab>path"): moving a file out of a fenced folder
+          # is still a change to it. Any API error fails the fence.
+          listing="$RUNNER_TEMP/fence-files.tsv"
+          gh api --paginate "repos/$REPO/pulls/$PR/files" \
+            --jq '.[] | "F\t\(.filename)", (.previous_filename // empty | "P\t\(.)")' > "$listing" \
+            || fail "Could not list the pull request's files; failing closed. Re-run the check."
+
+          # The API lists at most 3000 files, and a partial listing must not
+          # read as clean: the count has to match the pull request's own.
+          listed=$(grep -c "^F$(printf '\t')" "$listing" || true)
+          [[ "$CHANGED" =~ ^[0-9]+$ ]] || fail "The event has no changed_files count; failing closed."
+          [ "$listed" -eq "$CHANGED" ] \
+            || fail "Listed $listed changed files but the pull request reports $CHANGED (the API stops at 3000); failing closed."
+          files=$(cut -f2- "$listing" | sort -u)
+
+          # The path rules come from the base commit through the API, never
+          # from the pull request, so a pull request cannot loosen the rules
+          # that judge it. No pull request code is checked out or run. Only a
+          # 404 (the base predates the rules) uses the fallback pattern.
+          rules="$RUNNER_TEMP/fence-paths.mjs"
+          if gh api -H 'Accept: application/vnd.github.raw+json' \
+              "repos/$REPO/contents/$RULES?ref=$BASE_SHA" > "$rules" 2> "$RUNNER_TEMP/fence-rules.err"; then
+            [ -s "$rules" ] || fail "The rules file at the base commit is empty; failing closed."
+            echo "Fence rules from $RULES at base $BASE_SHA."
+            hits=$(printf '%s\n' "$files" | node "$rules")
+          elif grep -q 'HTTP 404' "$RUNNER_TEMP/fence-rules.err"; then
+            echo "::warning title=fence bootstrap::The base commit has no $RULES; using the built-in fallback pattern."
+            hits=$(printf '%s\n' "$files" | { grep -iE "$FALLBACK_FENCE" || [ $? -eq 1 ]; } \
+              | { grep -vE '^(docs|packages/design-tokens)/' || [ $? -eq 1 ]; })
+          else
+            cat "$RUNNER_TEMP/fence-rules.err" >&2
+            fail "Could not fetch the fence rules from the base commit; failing closed. Re-run the check."
+          fi
+
+          if [ -z "$hits" ]; then
+            echo "No fenced paths touched ($listed files checked)."
+            exit 0
+          fi
+          echo "Fenced paths in this pull request:"
+          printf '%s\n' "$hits" | sed 's/^/  /'
+          if [ "$APPROVED" = "true" ]; then
+            echo "approve-migration label present; the fence passes."
+            exit 0
+          fi
+          fail "This pull request touches supabase/**, .github/** or auth code. It needs an independent review run and the founder's approve-migration label (D-041)."
