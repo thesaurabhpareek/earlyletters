@@ -545,6 +545,19 @@ export function enqueueEntryErase(db: SqlDb, id: string, bookId: string | null, 
   appendOp(db, { type: 'entry.erase', id, data: {} }, ctx, { lane: ERASE_LANE, bookId });
 }
 
+/** Erase now on a waiting letter the server holds as a held row: one held.discard (no row is left here to read). */
+export function enqueueHeldDiscardForErased(db: SqlDb, id: string, bookId: string | null, ctx: EnqueueContext): void {
+  if (!syncOwner(db)) return;
+  appendOp(db, { type: 'held.discard', id, data: {} }, ctx, { bookId });
+}
+
+/** Whether any held op of this letter or draft ever left the phone. */
+export function heldEverSent(db: SqlDb, id: string): boolean {
+  return db.get<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM sync_outbox WHERE entity_id = ? AND type LIKE 'held.%' AND (sent_at IS NOT NULL OR attempts > 0)", id,
+  )!.n > 0;
+}
+
 /** Whether any op of this letter ever left the phone (the server may hold it). */
 export function everSent(db: SqlDb, id: string): boolean {
   return db.get<{ n: number }>('SELECT COUNT(*) AS n FROM sync_outbox WHERE entity_id = ? AND (sent_at IS NOT NULL OR attempts > 0)', id)!.n > 0;
@@ -590,6 +603,13 @@ export function settleHeldAnswer(db: SqlDb, opId: string, id: string, r: HeldAns
   }
   let copied = false;
   const draft = getDraftRow(db, id);
+  // Kept on another phone before this phone's upload arrived (`held: null`): the words this phone sent
+  // stay as a conflict copy until the letter arrives (merge.adoptHeldDraft drops it if they match).
+  if (draft && draft.state !== 'discarding' && r.held === null && (draft.typed_text ?? '').trim() !== ''
+      && !listConflictCopies(db, id).some((c) => c.words.final_text === draft.typed_text)) {
+    addHeldConflictCopy(db, opId, id, draft.typed_text!, null, now);
+    copied = true;
+  }
   if (draft && (r.conflict_groups ?? []).includes('text') && r.current) {
     const theirs = r.current.typed_text ?? null;
     if ((draft.typed_text ?? null) !== theirs) {
@@ -677,7 +697,11 @@ function sendable(db: SqlDb): string {
 /** Ops that can still reach the server (a book the server refused holds its letters on the phone). */
 /** Ops that can leave now (held ops waiting for a server with held drafts are not counted). */
 export function pendingCount(db: SqlDb): number {
-  return db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM sync_outbox o WHERE ${sendable(db)}`)!.n;
+  // An erase waiting for a server that can erase is not pending work either (it never holds a pause or the drain).
+  return db.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM sync_outbox o WHERE ${sendable(db)}
+       AND NOT (o.lane = ${ERASE_LANE} AND o.next_attempt_at IS NOT NULL AND o.next_attempt_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
+  )!.n;
 }
 
 export function rejectedUnseenCount(db: SqlDb): number {

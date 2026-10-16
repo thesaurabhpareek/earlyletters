@@ -208,8 +208,8 @@ function ensureEngine(): void {
 
 /**
  * Letters the server erased for good (Erase now on another phone, or the purge):
- * the device eraser removes the file, then the row (F16-REQ-024). Loaded on first
- * use from inside a running engine, so an off build never loads it.
+ * the device eraser removes the file, then the row (F16-REQ-024). Required lazily,
+ * from inside a running engine, so this module does not import the file system.
  */
 function finishErasedLetters(): void {
   (require('../capture/erase') as typeof import('../capture/erase')).finishErasedLetters();

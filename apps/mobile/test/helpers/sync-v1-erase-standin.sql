@@ -4,13 +4,13 @@
 -- build) in runnable form; S02 owns sync_push, sync_pull and every migration.
 -- Delete it when S02's migration lands (sync-server.ts then skips it by itself).
 --
--- What it adds (docs/adr/0023-sync-protocol-v1.md section 12):
+-- What it adds (docs/adr/0025-sync-protocol-v1.md section 12):
 --   1. sync_private.erase_entry: the author's own letter, deleted or not yet (its
 --      delete may still be queued behind the erase on the phone), is purged now the
 --      way purge_due purges it after 30 days: the photo goes to the storage purge
 --      queue, purge_ledger gets 'entry' (so a restore replay never brings it back),
---      and the row goes (entry_versions cascade). Another person's letter: P0002.
---      Missing: { missing: true }, so a retry is a no-op. Under a legal hold it is
+--      and the row goes (entry_versions cascade). Missing, or another person's
+--      letter: { missing: true }, the same answer, and nothing changes; a retry is a no-op. Under a legal hold it is
 --      kept, tombstoned, until the hold lifts ({ deferred: true }).
 --   2. sync_private.entry_erasures: book and letter ids only, never words. The next
 --      pull of that book recomputes its removal digest, so every phone that still
@@ -45,7 +45,8 @@ begin
     return jsonb_build_object('missing', true);
   end if;
   if r.author_id is distinct from v_uid then
-    raise exception 'entry not found' using errcode = 'P0002';
+    -- The same answer as no letter at all: nothing tells anyone that another person's letter exists.
+    return jsonb_build_object('missing', true);
   end if;
   if public.entry_is_held(p_id) then
     update public.entries set deleted_at = coalesce(deleted_at, now()), deleted_reason = coalesce(deleted_reason, 'user') where id = p_id;

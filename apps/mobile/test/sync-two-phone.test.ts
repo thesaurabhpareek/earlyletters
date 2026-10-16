@@ -639,10 +639,30 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect(row(papa, ids.eraseLive)).toBeNull();
   }, 60_000);
 
-  it('[F16-REQ-024] only the author erases: the co-parent\'s erase of Mama\'s letter is refused and changes nothing', async () => {
+  it('[F16-REQ-024] only the author erases: the co-parent\'s erase of Mama\'s letter changes nothing and says nothing about it', async () => {
     const r = await server.serverFor(PAPA).rpc('sync_push', { p_ops: [{ op: uuid7(), type: 'entry.erase', id: ids.first, data: {} }] });
-    expect((r.data as { results: { ok: boolean; code?: string }[] }).results[0]).toMatchObject({ ok: false, code: 'P0002' });
+    const none = await server.serverFor(PAPA).rpc('sync_push', { p_ops: [{ op: uuid7(), type: 'entry.erase', id: uuid7(), data: {} }] });
+    const strip = (x: unknown) => { const o = (x as { results: Record<string, unknown>[] }).results[0]; return { ok: o.ok, missing: o.missing }; };
+    expect(strip(r.data)).toEqual({ ok: true, missing: true });
+    expect(strip(none.data)).toEqual(strip(r.data)); // the same answer as no letter at all
     expect((await serverEntry(ids.first))?.deleted_at).toBeNull();
+  }, 60_000);
+
+  it('[F16-REQ-024] Erase now on a voice-only letter waiting for its words: its held row goes too, and the other phone drops it (review A2-1)', async () => {
+    tick(5_000);
+    const draft = mama.store.createDraft({ childId: ASHA, captureMode: 'spoken', promptKey: null, audioUri: 'file:///asha/take-2.m4a', audioDurationMs: 3_000 });
+    const e = mama.store.saveVoiceOnlyFromDraft(draft, { childId: ASHA, authorSignsAs: 'Mama', inBook: true, engineVersion: 5, audioExists: true });
+    await mama.sync();
+    await mama2.sync();
+    expect(mama2.store.listWaitingForWords(ASHA).map((x) => x.id)).toContain(e.id);
+    tick();
+    mama.store.deleteEntry(e.id);
+    expect(mama.store.eraseEntry(e.id, () => {})).toBe(true);
+    expect(outbox(mama)).toEqual(['held.discard']);
+    await mama.sync();
+    expect(await heldRow(e.id)).toBeUndefined();
+    await mama2.sync();
+    expect(mama2.store.listWaitingForWords(ASHA).map((x) => x.id)).not.toContain(e.id);
   }, 60_000);
 
   it('[F16-REQ-029] the server refuses a second raw transcript once one is set (SCIMM), and a held row of another author is invisible', async () => {

@@ -4,7 +4,7 @@
 -- runnable form; S02 owns the table, sync_push and sync_pull. When S02's
 -- migration lands this file stops loading by itself. Delete it then.
 --
--- What it adds (docs/adr/0023-sync-protocol-v1.md section 12):
+-- What it adds (docs/adr/0025-sync-protocol-v1.md section 12):
 --   1. held_drafts: author-only rows for letters held at the Keep gate and voice-only
 --      letters waiting for their words. RLS: the author, while a parent of the book.
 --      The consent gate (SCCON), raw_transcript immutable once non-empty (SCIMM),

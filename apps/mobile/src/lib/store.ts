@@ -61,7 +61,9 @@ import {
   enqueueEntryDelete,
   enqueueEntryErase,
   enqueueEntryRestore,
+  enqueueHeldDiscardForErased,
   everSent,
+  heldEverSent,
   getEntryRow,
   syncOwner,
   enqueueEntryUpsert,
@@ -709,6 +711,7 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   const uri = entries.deletedAudioUri(c, id);
   if (uri === undefined) return false;
   let serverMayHold = false;
+  let heldOnServer = false;
   let bookId: string | null = null;
   if (capabilities.sync) {
     const owner = syncOwner(c.db);
@@ -718,6 +721,8 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
     bookId = row.child_id;
     serverMayHold = owner !== null && row.sync_state !== 'gone' && row.sync_state !== 'erased'
       && (row.server_version !== null || everSent(c.db, id));
+    // A voice-only letter waiting for its words lives on the server as a held row (v8): that row goes too.
+    heldOnServer = owner !== null && (row.held_v != null || heldEverSent(c.db, id));
   }
   try {
     eraseAudio(uri, id);
@@ -728,9 +733,10 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   c.db.transaction(() => {
     done = entries.eraseRow(c, id);
     if (done && serverMayHold) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
+    if (done && heldOnServer) enqueueHeldDiscardForErased(c.db, id, bookId, enqueueContext(c));
   });
   if (done) bus.emit('entries');
-  if (done && serverMayHold) signalOutbox();
+  if (done && (serverMayHold || heldOnServer)) signalOutbox();
   return done;
 }
 

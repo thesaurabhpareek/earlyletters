@@ -59,7 +59,9 @@ describe('[F16-REQ-024] the erase op', () => {
     expect(queue(db).map((o) => [o.type, o.lane])).toEqual([['entry.upsert', 1], ['entry.erase', ERASE_LANE]]);
     const all = takeBatch(db, { now: NOW });
     expect(all.ops.map((o) => o.type)).toEqual(['entry.upsert', 'entry.erase']);
-    expect(all.ops[1]).toMatchObject({ id: 'e1', data: {} });
+    expect(Object.keys(all.ops[1]).sort()).toEqual(['data', 'id', 'op', 'type']); // the id only, never words
+    expect(all.ops[1].data).toEqual({});
+    expect(all.ops[1].id).toBe('e1');
     expect(takeBatch(db, { now: NOW, onlyDeletes: true }).ops.map((o) => o.type)).toEqual(['entry.erase']);
   });
 

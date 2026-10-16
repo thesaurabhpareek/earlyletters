@@ -41,6 +41,8 @@ import {
   addConflictCopy,
   addHeldConflictCopy,
   appendOp,
+  opsFor,
+  removeConflictCopy,
   enqueueEntryUpsert,
   enqueueHeldDraft,
   entrySnapshot,
@@ -361,13 +363,18 @@ function insertOwnRow(db: SqlDb, row: PulledRow, edits: string, epoch: number, n
 function adoptHeldDraft(db: SqlDb, id: string, now: string): void {
   const d = getDraftRow(db, id);
   if (!d) return;
-  // This phone changed the held draft's words and the letter was kept elsewhere from other words: they
-  // stay as a conflict copy of the letter (never uploaded unless the author picks them), never lost.
+  // Let go on this phone, not yet finished: nothing of it is adopted or kept; the launch sweep finishes it.
+  if (d.state === 'discarding') return;
+  // This phone changed the held draft's words (its own upload is still queued or in flight) and the letter
+  // was kept elsewhere from other words: they stay as a conflict copy of the letter, never lost.
   const mine = d.typed_text ?? '';
   const kept = getEntryRow(db, id)?.final_text ?? '';
-  if (mine.trim() !== '' && mine !== kept && !listConflictCopies(db, id).some((c) => c.words.final_text === mine)) {
+  const edited = opsFor(db, id).some((o) => o.type === 'held.upsert');
+  if (edited && mine.trim() !== '' && mine !== kept && !listConflictCopies(db, id).some((c) => c.words.final_text === mine)) {
     addHeldConflictCopy(db, `kept-${id}`, id, mine, getEntryRow(db, id)?.server_version ?? null, now);
   }
+  // A copy that matches the kept words is no conflict (this phone's upload carried what was kept).
+  for (const c of listConflictCopies(db, id)) if (c.draft && c.words.final_text === kept) removeConflictCopy(db, c.opId);
   db.run(
     `UPDATE entries SET audio_uri = COALESCE(audio_uri, ?),
        audio_duration_ms = COALESCE(audio_duration_ms, (SELECT audio_duration_ms FROM drafts WHERE id = ?)),
