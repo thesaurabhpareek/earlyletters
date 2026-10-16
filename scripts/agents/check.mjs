@@ -58,7 +58,7 @@ export function check(root = ROOT) {
     if (!existsSync(memPath)) errors.push(`${where}: missing agents/${a.handle}/MEMORY.md`);
     else {
       const n = readFileSync(memPath, "utf8").split("\n").length;
-      if (n > 150) warnings.push(`${where}: MEMORY.md is ${n} lines; the limit is 120`);
+      if (n > 120) warnings.push(`${where}: MEMORY.md is ${n} lines; the limit is 120`);
     }
   }
 
