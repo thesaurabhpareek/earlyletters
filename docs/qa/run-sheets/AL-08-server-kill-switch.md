@@ -45,7 +45,7 @@ Remote kill switches (`killSwitches.sync`, `invites`) have no consumers in the a
 
 | # | Do | Expected | Capture |
 |---|---|---|---|
-| AL-08.12 | Repeat the drill-phone check on Phone B; it must hold only drill letters. From TestFlight > Previous Builds install build 1 over R1 or build 2. | The app opens and every drill letter is readable and exportable. The local database is newer than build 1 knows; the migrator leaves a newer file untouched (`newer: true` in `apps/mobile/src/lib/db/migrations.ts`), so this checks build 1 can read it. If anything is missing or the app does not open, testers must **never** be told to go back to an older build: the kill path is a switch-off build from the current commit (Part C) | yes or no; what failed |
+| AL-08.12 | Repeat the drill-phone check (`README.md` rule 3) on Phone B; it must hold only drill letters. If any part fails, **stop here**: do not install the older build; record `stop` and skip this row. If it passes, from TestFlight > Previous Builds install build 1 over R1 or build 2. | The app opens and every drill letter is readable and exportable. The local database is newer than build 1 knows; the migrator leaves a newer file untouched (`newer: true` in `apps/mobile/src/lib/db/migrations.ts`), so this checks build 1 can read it. If anything is missing or the app does not open, testers must **never** be told to go back to an older build: the kill path is a switch-off build from the current commit (Part C) | Drill-phone check: pass or stop; yes or no; what failed |
 
 ## Pass rule
 

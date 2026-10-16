@@ -10,7 +10,7 @@ During the alpha, staging holds the family's real letters (from founder step F16
 
 **1. Drill data only.** Drills use only:
 - the **drill child "Asha"**, a book the drill itself makes on a drill phone;
-- **drill app accounts**: "Drill Mama" (Sign in with Apple on drill Apple Account A, whose email is Mailbox 1, or email with Mailbox 1), "Drill Papa" (Mailbox 2), "Drill C" (Mailbox 3, the cap check), "Drill D" (Mailbox 4, the deletion run to completion), and two spare aliases kept unused for the "new address" steps (Mailbox 5 for AL-04.7, Mailbox 6 for AL-08.5). Mailboxes are the founder's own test aliases, never a family member's address;
+- **drill app accounts**: "Drill Mama" (Sign in with Apple on drill Apple Account A, whose email is Mailbox 1, or email with Mailbox 1), "Drill Papa" (Mailbox 2), "Drill C" (Mailbox 3, the cap check), "Drill D" (Mailbox 4, the deletion run to completion), and three spare aliases kept unused for the "new address" steps (Mailbox 5 for AL-04.7, Mailbox 6 for AL-08.5, Mailbox 7 for the T11 session, where it becomes "Drill E", the only account that session deletes). Mailboxes are the founder's own test aliases, never a family member's address. The T11 session also needs a drill Google account for its Google sign-in;
 - **two drill Apple Accounts** (A and B) for the phones in Sign in with Apple and backup drills, never the founder's own Apple Account if the family's app account signs in with Apple. Both need adding as TestFlight testers;
 - the scripted Asha letters (DEVICE_TEST_PLAN P-08) read by a consenting adult, never a real letter.
 
@@ -41,9 +41,9 @@ Dates and founder steps (F01 to F27) are in `docs/release/ALPHA_PLAN.md` (PR #15
 | AL-02 Record, transcribe, edit and save offline | `AL-02-record-offline.md` | Build 1, build 2 | Free, nothing kept before | 45 min | F12, F25 | 6, 8 (J2 to J5) |
 | AL-03 Kill the app during save, and while recording | `AL-03-kill-during-save.md` | Build 1 (10-run subset), build 2 (50 runs each) | Plus on | 45 min; about 4 h | F12 (subset); F25 (a helper) | 9 |
 | AL-04 Sign in with Apple and email | `AL-04-sign-in.md` | R1, build 2 | Free, exactly 1 letter kept before | 75 min | F19; F25 smoke | 1 |
-| AL-05 Two-phone sync, co-parent invite and the two-parent cap | `AL-05-two-phone-sync.md` | R1, build 2 | Plus on for Drill Mama; Free for Drill Papa | 90 min | F19; F25 smoke | 2, 3 |
+| AL-05 Two-phone sync, co-parent invite and the two-parent cap | `AL-05-two-phone-sync.md` | R1, build 2 | Plus on for Drill Mama; Free for Drill Papa, who keeps exactly 1 letter (AL-05.9) | 90 min | F19; F25 smoke | 2, 3 |
 | AL-06 Backup upload and restore on a second phone | `AL-06-backup-restore.md`, with S05's `docs/qa/BACKUP_RESTORE_DRILL.md` (PR #150) | R2 | Plus on | 2.5 h | F23 | 4 |
-| AL-07 Account deletion | `AL-07-account-deletion.md` | R1, staging, build 2 | Drill Mama: Plus renewing for AL-07.2; Drill D: Free | 70 min | F19 (request and cancel); before F27 (completion) | J8; 07 G3 |
+| AL-07 Account deletion | `AL-07-account-deletion.md` | R1, staging, build 2 | Drill Mama: Plus renewing for AL-07.2; Drill Papa: Free, 1 letter kept; Drill D: Free | 70 min | F19 (request and cancel); before F27 (completion) | J8; 07 G3 |
 | AL-08 The server switch and the kill path | `AL-08-server-kill-switch.md` | Build 1 (part A), R1 and a switch-off build of the same commit (parts B, C) | Part A Free; parts B and C Plus on | 80 min | F12 (A); F19 (B, C) | go/no-go check 4 |
 | AL-09 StoreKit sandbox purchase and trial | `AL-09-storekit-sandbox.md`, with S06's D-1 to D-12 detail (`feat/plus-status-alpha`) | Build 2 (build 1 for the first rows) | Free, exactly 2 letters kept before | 75 min | after F14; F25 | 5 |
 
@@ -59,8 +59,8 @@ Dates and founder steps (F01 to F27) are in `docs/release/ALPHA_PLAN.md` (PR #15
 
 Evidence file names: `docs/qa/evidence/<date>-<build>-<device tag of Phone A>.md`, one per session.
 
-The founder's hours for these are in `docs/release/ALPHA_PLAN.md` section 4 (F19 2 h, F23 2.5 h, F25 2.5 h); the build 1 check and AL-03's 50-run set add about 6 h [E] that the alpha plan does not hold yet. The drills also need phones and accounts the alpha plan does not list: at least two drill phones with no family letters, a third drill phone for AL-05 (the second parent), a drill Apple Account, and four drill mailboxes. A device operator or a family helper can run AL-01, AL-02 and AL-03; AL-04 to AL-09 need the founder for staging and App Store Connect steps.
+The founder's hours for these are in `docs/release/ALPHA_PLAN.md` section 4 (F19 2 h, F23 2.5 h, F25 2.5 h); the build 1 check and AL-03's 50-run set add about 6 h [E] that the alpha plan does not hold yet. The drills also need phones and accounts the alpha plan does not list: at least two drill phones with no family letters, a third drill phone for AL-05 (the second parent), the two drill Apple Accounts (both TestFlight testers), and the seven drill mailboxes in rule 1. A device operator or a family helper can run AL-01, AL-02 and AL-03; AL-04 to AL-09 need the founder for staging and App Store Connect steps.
 
 ## Other run sheets
 
-- `2026-10-30-T11-session-1.md`: PRD V2 device spikes round 1 (T11) from PR #143. Under D-106 the alpha drills above come first; its speech and backup-spike blocks still feed T11 and T15, and its phones follow the drill identity rule above.
+- `2026-10-30-T11-session-1.md`: PRD V2 device spikes round 1 (T11) from PR #143. Under D-106 the alpha drills above come first; its speech and backup-spike blocks still feed T11 and T15. It opens with the drill identity rule above and its own check row (T11.0), and its deletion block deletes only Drill E with guarded SQL.

@@ -1,6 +1,6 @@
 # AL-06 Backup upload and restore on a second phone with the recoverable key
 
-> **Drill identities first.** Follow `README.md` "Drill identities". Turning backup on uploads every recording of the signed-in account's books, so do the drill-phone check (rule 3, with part c) on both phones before B6-01: only Drill Mama's drill book may be on them. The proxy certificate goes on Phone A only and comes off (Settings > General > VPN and Device Management, and Certificate Trust Settings) at the end of the drill.
+> **Drill identities first.** Follow `README.md` "Drill identities". Turning backup on uploads every recording of the signed-in account's books, so do the drill-phone check (rule 3, with part c) on both phones in AL-06.0, before S05's B6-P1: only Drill Mama's drill book may be on them. The proxy certificate goes on Phone A only and comes off (Settings > General > VPN and Device Management, and Certificate Trust Settings) at the end of the drill.
 
 | | |
 |---|---|
@@ -10,7 +10,7 @@
 | Phones and accounts | Drill phones only: Phone A (SE 3) and Phone B (current iPhone), both signed in to iOS with **drill Apple Account A**, iCloud Keychain on for round A; the app account Drill Mama on both. Never the founder's own Apple Account: the drill's Keychain items and recovery emails must not mix with the family's |
 | Time | about 2.5 h, as F23 plans [E] |
 | Needs first | PRs #150 and #151 merged (S05 client and server), the backup flag PR and the escrow key PR merged; founder steps F18 and F20 done (escrow project `scribe-escrow-staging`, the drill-key ceremony, secrets, `EXPO_PUBLIC_ESCROW_URL`); a proxy (Proxyman or Charles) on the Mac with its certificate trusted on Phone A only; 6 scripted Asha recordings |
-| Record in | the session's evidence file, rows AL-06.1 to AL-06.6, plus S05's B6 rows |
+| Record in | the session's evidence file, rows AL-06.0 to AL-06.6, plus S05's B6 rows |
 
 **The detailed run sheet is S05's**: `docs/qa/BACKUP_RESTORE_DRILL.md` (WP-F08-B6), on PR #150 (`feat/backup-client`) until it merges. Follow its steps B6-P1 to B6-P5, B6-01 to B6-04 and B6-06 in that order. This sheet only sets the alpha subset, what each row must capture, and the go rule. Where the two disagree, S05's file holds the steps and this file holds the alpha pass rule; tell S19 so one of them is fixed.
 
@@ -20,6 +20,7 @@ The alpha subset uses **6 recordings instead of 20** (alpha plan F23 [R]): 3 of 
 
 | # | S05 step | What must be true for the alpha | Capture |
 |---|---|---|---|
+| AL-06.0 | Before B6-P1, on Phone A and Phone B | The drill-phone check (`README.md` rule 3, with part c) passes on both: iOS Settings shows drill Apple Account A at the top; Settings > Account shows Drill Mama (Mailbox 1 masked); the child switcher lists only the drill child Asha and the Book holds only drill letters; Settings > Plan shows Plus on. If any part fails, **stop** before the proxy certificate goes on or backup is turned on | pass or stop, per phone |
 | AL-06.1 | B6-01 on Phone A | Turning backup on shows the four claims and nothing more (encrypted on this phone; a recovery key; our recovery service logs every use and emails you; never listened to, sold or used to train models) and no count; "Backed up" appears; staging `audio_blobs` has 6 confirmed rows and `child_keys` one row for (Asha, Mama) | Minutes to "Backed up"; row counts |
 | AL-06.2 | B6-02 during AL-06.1 | Zero matches in the proxy capture for `ftyp`, for the hex SHA-256 of three recordings and for a 64-byte run copied from one recording; uploads go only to the resumable upload path and the `entry-audio` bucket | The search terms and their counts (all 0). The capture file stays on the Mac |
 | AL-06.3 | B6-03 on Phone A | After a kill mid-upload and 30 s of airplane mode, the upload continues from where it was (a `HEAD`, then only the missing parts); nothing uploads while a recording runs; exactly one confirmed row for that letter | yes or no per part |
@@ -29,7 +30,7 @@ The alpha subset uses **6 recordings instead of 20** (alpha plan F23 [R]): 3 of 
 
 ## Go rule (alpha item 4)
 
-AL-06.1 to AL-06.4 and AL-06.6 pass, and the escrow function answers its two checks on the escrow project (runbook B6, founder step F20). If any of them fails, build 2 ships to the family with backup **off** (`EXPO_PUBLIC_BACKUP=off`), item 4 fails, and the decision rule in `docs/qa/ALPHA_GO_NO_GO.md` applies.
+AL-06.0 to AL-06.4 and AL-06.6 pass, and the escrow function answers its two checks on the escrow project (runbook B6, founder step F20). If any of them fails, build 2 ships to the family with backup **off** (`EXPO_PUBLIC_BACKUP=off`), item 4 fails, and the decision rule in `docs/qa/ALPHA_GO_NO_GO.md` applies.
 
 ## Stop rule
 
