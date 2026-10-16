@@ -176,6 +176,42 @@ export interface StorySource {
   visual: string;
 }
 
+/**
+ * Kill switches that the server also enforces, and how:
+ *  - `invites`, `statusReport`: the main project's `KILL_SWITCHES` function
+ *    secret (same names as remote config), read by invite-redeem and
+ *    subscription-status;
+ *  - `backupUploads`: the database setting `app.backup_enabled` (S05 PR #151;
+ *    uploads and key storage raise SCBKO while it is off);
+ *  - `escrow`: the database setting `app.escrow_enabled` and the escrow
+ *    project's own secret `ESCROW_SWITCH` (the function runs only while it is
+ *    `on`), so restores stop without any phone (F08 6.5 C9).
+ */
+export const SERVER_ENFORCED_KILL_SWITCHES = ['invites', 'statusReport', 'backupUploads', 'escrow'] as const;
+
+/**
+ * The manual steps that make a signed kill-switch state hold on the server
+ * as well, and the reminder that a copy more than 7 days old cannot clear a
+ * switch on a phone that sees it late (F19-REQ-008): after clearing one,
+ * publish config again weekly until active phones have refreshed.
+ */
+export function killSwitchSteps(killSwitches: Record<string, boolean>): string[] {
+  const on = Object.entries(killSwitches).filter(([, v]) => v).map(([k]) => k).sort();
+  const fnSwitches = on.filter((k) => k === 'invites' || k === 'statusReport');
+  const onOff = (k: string) => (on.includes(k) ? 'off' : 'on');
+  const steps = [
+    'Server-side switches, main project (function secrets apply to the next invocation):',
+    fnSwitches.length ? `  npx supabase secrets set KILL_SWITCHES=${fnSwitches.join(',')}` : '  npx supabase secrets unset KILL_SWITCHES',
+    `  alter database postgres set app.backup_enabled = '${onOff('backupUploads')}';`,
+    `  alter database postgres set app.escrow_enabled = '${onOff('escrow')}';`,
+    'Escrow project (scribe-escrow):',
+    `  npx supabase secrets set ESCROW_SWITCH=${onOff('escrow')} --project-ref <scribe-escrow ref>`,
+  ];
+  steps.push(on.length ? `Switches on: ${on.join(', ')}.` : 'No switch is on.');
+  steps.push('If this publish clears a switch: a config more than 7 days old cannot clear a switch on a phone that first sees it late (F19-REQ-008), so run "publish.ts config" again each week for 4 weeks.');
+  return steps;
+}
+
 export function buildContentBundle(
   input: { prompts: readonly Prompt[]; stories: readonly StorySource[]; extraBlocks?: readonly unknown[] },
   version: number,

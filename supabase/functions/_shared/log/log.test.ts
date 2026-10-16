@@ -87,7 +87,11 @@ Deno.test('the canary scanner finds fixtures and generic shapes', () => {
 // everything goes through the logger (the one sink in log.ts) or the ops CLI printer.
 Deno.test('no console.* calls outside the logger sink and the ops CLI printer', async () => {
   const root = new URL('../../../../', import.meta.url);
-  const dirs = ['supabase/functions/purge-worker', 'supabase/functions/analytics-forget', 'supabase/functions/_shared/log', 'scripts/ops'];
+  const dirs = [
+    'supabase/functions/purge-worker', 'supabase/functions/analytics-forget', 'supabase/functions/_shared',
+    'supabase/functions/config', 'supabase/functions/content', 'supabase/functions/invite-redeem',
+    'supabase/functions/subscription-status', 'scripts/ops',
+  ];
   const allowed = new Set(['supabase/functions/_shared/log/log.ts', 'scripts/ops/lib/cli.ts']);
   const offenders: string[] = [];
   const walk = async (rel: string) => {

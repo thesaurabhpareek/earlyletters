@@ -74,6 +74,8 @@ Deno.test('config: required secrets, Apple only when complete, budget bounds', (
   assert.deepEqual(full.apple!.clientIds, ['com.earlyletters.scribe', 'com.earlyletters.web']);
   assert.deepEqual(Object.keys(full.tokenKeks), ['1', '2']);
   assert.equal(full.budgetMs, 110_000);
+  const more = readConfig(env({ ...base, APPLE_TEAM_ID: 'TEAM123456', APPLE_SIGNIN_KEY_ID: 'KEY1234567', APPLE_SIGNIN_PRIVATE_KEY: 'pem', APPLE_EXTRA_CLIENT_IDS: ' com.earlyletters.scribe.preview, bad id!,com.earlyletters.scribe ' })).config!;
+  assert.deepEqual(more.apple!.clientIds, ['com.earlyletters.scribe', 'com.earlyletters.scribe.preview']);
 });
 
 Deno.test('safeEqual compares secrets without short-circuit on content', () => {
