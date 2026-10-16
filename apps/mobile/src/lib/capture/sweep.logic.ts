@@ -10,6 +10,8 @@
  * - Files are matched to rows by file name, not by full URI: iOS moves the
  *   app container on updates, so a stored file:// path goes stale while the
  *   file itself is still in Documents. A stale path is rebased, not lost.
+ *   Matching by name is also why a file in a subfolder (the recorder's own,
+ *   below) and a row that names the same file anywhere still pair up.
  * - A draft still marked `recording` means the app was killed mid-take. If
  *   its file has bytes and plays (or could not be probed), the take is
  *   finalized (hashed, marked ready) and shows on Tonight. If the file is
@@ -48,7 +50,7 @@ export interface SweepEntry {
 }
 
 export interface SweepSnapshot {
-  /** Audio files found where the recorder writes (Documents). */
+  /** Audio files found where recordings live: the recorder's folder and the top of Documents (recordings.ts). */
   files: SweepFile[];
   drafts: SweepDraft[];
   /** Every entry with audio, tombstoned ones included (never treat their files as orphans). */
@@ -74,6 +76,20 @@ export type SweepAction =
   | { kind: 'missing-audio'; ref: 'draft' | 'entry'; id: string };
 
 const AUDIO_EXT = /\.(m4a|mp4|aac|caf|wav|3gp|webm)$/i;
+
+/**
+ * The folder expo-audio 57 writes every take to, inside the folder the
+ * recorder is given (`directory: 'document'` in recorder.ts, so Documents):
+ * - iOS: `<Documents>/ExpoAudio/recording-<UUID>.m4a` (ios/AudioUtils.swift,
+ *   createRecordingUrl);
+ * - Android: `<files>/Audio/recording-<UUID>.m4a` (AudioRecorder.kt,
+ *   createRecordingFilePath); expo-file-system's Paths.document is `<files>`.
+ * The app never moves the file, so this folder is where the rows point.
+ * Check it again when expo-audio is upgraded.
+ */
+export function recorderFolder(os: string): string {
+  return os === 'android' ? 'Audio' : 'ExpoAudio';
+}
 
 export function fileNameOf(uri: string): string {
   const clean = uri.split(/[?#]/)[0].replace(/\/+$/, '');
