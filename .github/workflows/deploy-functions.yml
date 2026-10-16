@@ -199,6 +199,16 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN_STAGING }}
           PROJECT_REF: ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
         run: |
+          # Second escrow guard, after the plan's: refuse before any API call, so a
+          # plan bug can never send escrow (or a look-alike) to staging.
+          for fn in $DEPLOY; do
+            case "$fn" in
+              escrow|escrow-*|escrow_*)
+                echo "::error::$fn is never deployed by this workflow (D-102: its own project, founder only). Nothing was deployed."
+                exit 1
+                ;;
+            esac
+          done
           if ! supabase functions list --project-ref "$PROJECT_REF" -o json > "$RUNNER_TEMP/before.json"; then
             echo "::error::Could not list staging's functions. Check SUPABASE_ACCESS_TOKEN_STAGING (a token that can deploy Edge Functions to the staging project) and SUPABASE_STAGING_PROJECT_REF."
             exit 1

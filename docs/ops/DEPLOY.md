@@ -60,9 +60,9 @@ Do these in order. None of them can be done by CI or by an agent.
 Settings > Environments.
 
 1. **`staging`**
-   - Deployment branches and tags: "Selected branches and tags", add branch `main`.
+   - Deployment branches and tags: "Selected branches and tags", add branches `main` and `develop`.
    - Environment secret `SUPABASE_DB_URL_STAGING` = the staging session pooler URL.
-   - No reviewers needed.
+   - Required reviewers: you, while staging holds the alpha's real letters (D-106, `docs/ops/ENVIRONMENTS.md`), so a manual run from `develop` waits for your approval. Leave "Prevent self-review" off while you are the only reviewer.
 2. **`production`**
    - Required reviewers: you. Leave "Prevent self-review" off while you are the only reviewer, or nobody can approve.
    - Deployment branches and tags: "Selected branches and tags", add a **tag** rule `db-v*`. Remove any branch rule.
@@ -151,6 +151,11 @@ Today the file still describes `early-letters` (2 files). On the first staging d
 
 **The token (AF-06).** `SUPABASE_ACCESS_TOKEN_STAGING` on the `staging` Environment only: the narrowest token that can deploy Edge Functions to the staging project. Classic tokens carry the whole account; scoped tokens are a public alpha (AUTOMATION.md 2.2). This is the one exception to the no-token rule above (POPS-04): it is not in `deploy-db.yml` and not on `production`. CLI 2.119.0 accepts only tokens shaped `sbp_`, `sbp_oauth_` or `sbp_v0_` followed by 40 hex characters and refuses others before calling the API (**Verified** with the binary); whether a scoped token has that shape is **Unverified**.
 
+Rules for the token, in this order:
+1. **Set the `staging` reviewer and branch rules first** (founder step 2 above: required reviewer, deployment branches `main` and `develop`), then read them back in Settings > Environments > `staging` (AF-02, AF-07). Only then add the token. A push to `develop` that changes a function's code, which a coordinator merge of `packages/**` can do (D-107), deploys after that reviewer approves, and nothing else stands between such a merge and a project holding the family's letters.
+2. **Never fall back to a classic access token** if a scoped one is refused. A classic token reaches every project on the account, production included. Leave the secret unset instead (the run says NOT DEPLOYED and you deploy from your computer), or keep staging in an organization the token cannot leave (AF-06).
+3. **Until the approver account exists (AF-02)**, any session holding your GitHub credential can approve as you, so the reviewer is a policy, not a control. Hold the token until AF-02 is in place, or accept that for the alpha.
+
 **Dispatch** needs the workflow on the default branch (`main` today, AF-05). Until then the push trigger on `develop` is the only way it runs; agents never dispatch it (AUTOMATION.md 2.11).
 
 ## Rollback
@@ -186,7 +191,7 @@ A restore is the last resort. For a schema mistake, a forward-fix migration is f
 | Workflows | actionlint 1.7.12 with shellcheck 0.10.0: no findings |
 | `supabase functions deploy <name> --project-ref --use-api [--no-verify-jwt]` and `supabase functions list --project-ref -o json` in CLI 2.119.0 (16 Oct 2026) | `--help` of the 2.119.0 release binary, and that binary run against a local stand-in for the Management API (`--profile supabase-local`): deploy sends `verify_jwt: false` only with `--no-verify-jwt`; `list -o json` prints only a JSON array (`slug`, `status`, `version`, `updated_at`, `verify_jwt`) on stdout; no token, or a token of the wrong shape, stops before any request |
 | The plan's import closure | equals the files the CLI uploads for every function on `develop` with #202, #139 and #178 (the same stand-in run) |
-| `deploy-functions.yml` and the smoke steps | each step's script run locally against the stand-in and #202's smoke (its HTTP answers stubbed): green, NOT DEPLOYED, a failed deploy, an unchanged version, a missing health route, missing secrets, a missing script, a manual run on `main` or for `escrow`. `node --test .github/scripts/functions-deploy.test.mjs`: 20 tests |
+| `deploy-functions.yml` and the smoke steps | each step's script run locally against the stand-in and #202's smoke (its HTTP answers stubbed): green, NOT DEPLOYED, a failed deploy, an unchanged version, a missing health route, missing secrets, a missing script, a manual run on `main` or for `escrow`, and `escrow`, `escrow-keys` or `escrow_v2` reaching the Deploy step (refused before any API call). `node --test .github/scripts/functions-deploy.test.mjs`: 22 tests |
 | `psql` on `ubuntu-24.04` | actions/runner-images `images/ubuntu/Ubuntu2404-Readme.md` and `scripts/build/install-postgresql.sh` (PostgreSQL 16 from the PGDG repository, client included) |
 
 Not verified: no workflow has run on GitHub, and `supabase start` / `db reset` / `db lint` could not run here (no Docker daemon in the build environment). For the smoke and the functions: no run against a real Supabase project (the gateway's answer for a missing function, the pooler accepting psql's read-only transaction, `cron.job` visible to the role in `SUPABASE_DB_URL_STAGING`, and a scoped token working with the CLI are all open until the first staging run).

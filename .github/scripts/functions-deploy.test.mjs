@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -227,6 +227,31 @@ test('confirm: an unchanged version, a wrong gateway setting, a missing function
   assert.match(r.markdown, /purge-worker .*status is THROTTLED/);
   assert.match(r.markdown, /analytics-forget .*not in the function list/);
   assert.match(r.markdown, /apple-token .*the deploy command failed/);
+});
+
+test('confirm: a list that does not report verify_jwt fails the posture check, for either expected setting', () => {
+  const noJwt = (slug) => {
+    const f = fn(slug, 2, 200, false);
+    delete f.verify_jwt;
+    return f;
+  };
+  const r = confirm({
+    before: asList(fn('config', 1, 100, false), fn('analytics-forget', 1, 100, true)),
+    after: asList(noJwt('config'), { ...noJwt('analytics-forget'), verify_jwt: null }),
+    deployed: ['config', 'analytics-forget'],
+  });
+  assert.equal(r.ok, false);
+  assert.match(r.markdown, /RED, 2 of 2 not confirmed/);
+  assert.match(r.markdown, /\| config \| 1 to 2 \| not reported \| FAIL: the function list does not report verify_jwt, so the gateway JWT check \(expected off\) is unconfirmed/);
+  assert.match(r.markdown, /analytics-forget .*expected on\) is unconfirmed/);
+});
+
+test('deploy-functions.yml: the Deploy step refuses an escrow name itself, before any deploy (second guard after the plan)', () => {
+  const yml = readFileSync(join(REPO, '.github', 'workflows', 'deploy-functions.yml'), 'utf8');
+  const step = yml.slice(yml.indexOf('- name: Deploy\n'), yml.indexOf('- name: Confirm in the function list'));
+  const guardAt = step.indexOf('escrow|escrow-*|escrow_*');
+  assert.ok(guardAt > 0, 'the Deploy step has its own escrow guard');
+  assert.ok(guardAt < step.indexOf('supabase functions deploy'), 'the guard runs before the first deploy');
 });
 
 test('confirm: prints closed values only (no ids, paths or odd strings)', () => {

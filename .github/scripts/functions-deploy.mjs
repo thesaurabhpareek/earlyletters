@@ -254,10 +254,13 @@ export function confirm({ before, after, deployed, failed = [], noVerifyJwt = NO
     const u1 = num(now.updated_at);
     const moved = !was || (v0 !== null && v1 !== null && v1 > v0) || (u0 !== null && u1 !== null && u1 > u0);
     if (!moved) problems.push('same version and update time as before the deploy');
+    // A posture check: an answer that does not say whether the gateway checks JWTs is a failure, not a pass.
     let jwt = 'not reported';
     if (typeof now.verify_jwt === 'boolean') {
       jwt = now.verify_jwt ? 'on' : 'off';
       if (now.verify_jwt !== wantJwt) problems.push(`gateway JWT check is ${jwt}, expected ${wantJwt ? 'on' : 'off'}`);
+    } else {
+      problems.push(`the function list does not report verify_jwt, so the gateway JWT check (expected ${wantJwt ? 'on' : 'off'}) is unconfirmed`);
     }
     const version = v1 === null ? '' : was && v0 !== null ? `${v0} to ${v1}` : `new, ${v1}`;
     rows.push({ name, ok: problems.length === 0, version, jwt, result: problems.length ? problems.join('; ') : 'ACTIVE, new version' });
