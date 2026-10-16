@@ -1,0 +1,128 @@
+# SKETCH, NOT ENABLED (named .example on purpose). The workflow is S20's: RA-20-10a in
+# docs/release/AUTOMATION.md section 5 copies what it needs into .github/workflows/kill-harness.yml.
+# S19 owns the harness it calls (apps/mobile/e2e/kill/, RA-19-04) and the evidence it produces.
+#
+# What it needs before it can go green:
+#   - RA-20-18: the wiring line in apps/mobile/src/app/_layout.tsx, first line of Root():
+#       useE2eSeams(); // src/dev/e2e-seams.ts: inert unless EXPO_PUBLIC_E2E=1 and not production
+#     with `import { useE2eSeams } from '@/dev/e2e-seams';`
+#   - AF-05: `develop` as the default branch, or the schedule below never fires (scheduled workflows
+#     run only from the default branch).
+#   - A microphone on the runner for DL-01 [U]. If the simulator cannot record, the drill writes
+#     `record_failed` and the harness exits 3 (incomplete, never green); then DL-01 runs on the
+#     founder's Mac (AF-14), with a silent virtual input (apps/mobile/e2e/README.md section 9).
+#
+# Budget (estimates [E] until the first runs): DL-02 about 5 s a run, so 500 runs about 45 min;
+# DL-01 about 36 s a run (2 to 60 s of recording plus a launch), so 500 runs about 5 h, inside the
+# 6 h job limit with little room: split it into two shards of 250 and merge (`--merge`).
+# Nightly from Thu 22 Oct: 50 runs each. Gate (B2-11): 500 of 500 each, on the freeze commit, Tue 27.
+
+name: Kill harness (DL-01, DL-02)
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: Runs per mode (the gate is 500)
+        required: false
+        default: '500'
+  schedule:
+    - cron: '41 9 * * *' # nightly, 50 runs per mode (see the runs expression below)
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kill-harness-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  XCODE_VERSION: '26.6'
+  RUNS: ${{ github.event_name == 'schedule' && '50' || inputs.runs }}
+
+jobs:
+  build:
+    name: e2e simulator app (Release JavaScript, seams on)
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4 # pin by SHA as in ios-compile.yml
+        with:
+          persist-credentials: false
+      - name: Select Xcode
+        run: sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build env (testflight profile, servers off, e2e seams on, never production)
+        run: |
+          node -e '
+            const env = require("./apps/mobile/eas.json").build.testflight.env || {};
+            Object.assign(env, { EXPO_PUBLIC_SERVER_FEATURES: "off", EXPO_PUBLIC_E2E: "1", EXPO_PUBLIC_APP_ENV: "preview" });
+            for (const [k, v] of Object.entries(env)) console.log(k + "=" + v);
+          ' >> "$GITHUB_ENV"
+      - name: Prebuild and pods
+        working-directory: apps/mobile
+        run: |
+          npx expo prebuild --platform ios --no-install --clean
+          (cd ios && pod install)
+      - name: xcodebuild Release for the simulator (no signing)
+        working-directory: apps/mobile/ios
+        run: |
+          name="$(basename *.xcodeproj .xcodeproj)"
+          xcodebuild -workspace "$name.xcworkspace" -scheme "$name" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+          app="$(find "$RUNNER_TEMP/dd/Build/Products/Release-iphonesimulator" -maxdepth 1 -name '*.app' | head -n 1)"
+          # Release check B-8 in reverse: this build must contain the seam, or every run times out.
+          grep -q e2eKillDrill "$app/main.jsbundle" || { echo "::error::the e2e seam is not in the bundle (RA-20-18 wiring line?)"; exit 1; }
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/app.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e2e-sim-app
+          path: ${{ runner.temp }}/app.zip
+          retention-days: 3
+
+  harness:
+    name: ${{ matrix.mode }}
+    needs: build
+    runs-on: macos-26
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [dl02, dl01]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: e2e-sim-app
+          path: ${{ runner.temp }}
+      - name: Simulator
+        run: |
+          ditto -x -k "$RUNNER_TEMP/app.zip" "$RUNNER_TEMP/app"
+          echo "APP=$(find "$RUNNER_TEMP/app" -maxdepth 1 -name '*.app' | head -n 1)" >> "$GITHUB_ENV"
+          UDID="$(xcrun simctl create kill-se3 'iPhone SE (3rd generation)')"
+          xcrun simctl bootstatus "$UDID" -b
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+      - name: Kill harness (exit 0 only when every run kept its letter and the self-check caught every plant)
+        # --mic-silent: a hosted runner has no room microphone. Never pass it on a Mac in a family room.
+        run: |
+          node apps/mobile/e2e/kill/run-kill-harness.mjs --mode "${{ matrix.mode }}" --udid "$UDID" --app "$APP" \
+            --runs "$RUNS" --out "$RUNNER_TEMP/kill" ${{ matrix.mode == 'dl01' && '--mic-silent' || '' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kill-${{ matrix.mode }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/kill
+          retention-days: 30

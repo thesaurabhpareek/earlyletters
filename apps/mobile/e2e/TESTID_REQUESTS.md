@@ -166,6 +166,7 @@ The flows pass these as Maestro `launchApp.arguments`. On iOS they arrive in `NS
 | `e2eClockOffsetHours` | integer, may be negative | Added to `Date.now()` in one seam (`nowMs()`) used by the age gate (`lib/age-gate.ts`), Read together and reminders. | 01 |
 | `e2eConfig` | JSON | Merged over the remote config after the signed copy loads (for example `{"readTogetherFreeSessions":5}` or `{"killSwitches":{"packDownloads":true}}`). Keeps the existing rule that the free sessions value may only be raised. | 05, 06 |
 | `e2eTranscriber` | `auto` (default), `none`, `sample` | `none`: no speech model and no sample words, so Review offers "keep the recording" (letter waiting for words). `sample`: the existing sample transcriber. | 03 |
+| `e2eKillDrill`, `e2eKillRun`, `e2eKillKind`, `e2eKillPlant` | mode `setup`, `verify`, `dl01`, `dl02`; run number; kind `typed`, `spoken`, `spoken-unhashed`; plant `none`, `loss`, `double` | **Built (16 Oct, RA-19-04), by S19 in `src/dev/kill-drill.ts`**, loaded only through `src/dev/e2e-seams.ts`, which applies the hard rule above. Passes the 18+ gate and makes the drill child Asha, waits for the launch sweep, then saves a letter (DL-02) or starts a take (DL-01) through the app's own store and recorder calls, writing markers to `Library/Caches/kill-drill` for `kill/run-kill-harness.mjs`. Plants break a save on purpose for the harness self-check. **Needs one wiring line from S20 (RA-20-18):** `useE2eSeams();` as the first line of `Root()` in `app/_layout.tsx`, with `import { useE2eSeams } from '@/dev/e2e-seams';` | kill harness (README section 9) |
 
 ## 4. Build and config requests
 
@@ -178,7 +179,7 @@ The flows pass these as Maestro `launchApp.arguments`. On iOS they arrive in `NS
 | B-5 | `app.config.ts`: `ios.privacyManifests` from `docs/legal/app-store-privacy-labels.md` 3.3 | integration + legal | Not present today |
 | B-6 | `app.config.ts`: `extra.eas.projectId` and `owner` after `eas init` (the config is dynamic, so the founder pastes the id) | founder + integration | EAS Build, Submit, Update |
 | B-7 | Only if the local Supabase stack is used for e2e (README 4.2): an `e2e-local` profile with `NSAllowsLocalNetworking` | integration | Lets the simulator reach `http://127.0.0.1:54321`. Never in `preview` or `production` (LEGAL-REQ-021). Not needed with the hosted e2e project. |
-| B-8 | Release check: production bundle contains no `e2eSeed`, `e2eOffline`, `e2eConfig` strings | platform | Section 3 hard rule |
+| B-8 | Release check: production bundle contains no `e2eSeed`, `e2eOffline`, `e2eConfig` or `e2eKillDrill` strings (the e2e build must contain `e2eKillDrill`; `ci/kill-harness.yml.example` checks that side) | platform | Section 3 hard rule |
 
 ## 5. Backend for e2e (founder)
 

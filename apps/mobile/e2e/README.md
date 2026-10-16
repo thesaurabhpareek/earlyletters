@@ -47,7 +47,7 @@ Exit 0 means all ran and passed, 1 a flow failed, 3 nothing failed but a P0 flow
 
 Requirement and decision ids are in each flow's `tags`, so `maestro test --include-tags=PRD-REQ-019 ...` runs everything that proves one requirement, and a trace script can read them (TDD 07 2.1).
 
-Folder layout: `flows/` (one file per flow), `subflows/` (launch, gate, first run, sign-in, settings, wait, go back, dev client), `scripts/` (Maestro JavaScript: backend guard, test user, sign-in code, deletion status), `bin/` (host scripts), `ci/` (a GitHub Actions sketch, not enabled), `config.yaml` (Maestro workspace).
+Folder layout: `flows/` (one file per flow), `subflows/` (launch, gate, first run, sign-in, settings, wait, go back, dev client), `scripts/` (Maestro JavaScript: backend guard, test user, sign-in code, deletion status), `bin/` (host scripts), `kill/` (the DL-01 and DL-02 kill harness, section 9; not Maestro), `ci/` (GitHub Actions sketches, not enabled), `config.yaml` (Maestro workspace).
 
 ## 3. Builds
 
@@ -131,9 +131,40 @@ To prove "no request to PostHog or Sentry before consent" (PRD-REQ-016, LEGAL-RE
 
 `ci/ios-e2e.yml.example` is a GitHub Actions sketch for a `macos-26` runner (arm64, no Docker: V), triggered by hand, with the nightly schedule commented out. It is not enabled; the coordinator moves it to `.github/workflows/` once section 1 is done. EAS Workflows' built-in `maestro` job is the alternative that needs no runner of ours (V: Expo docs).
 
+`ci/kill-harness.yml.example` is the sketch for the kill harness (section 9): one job builds the e2e simulator app on the runner (no EAS build spent), then DL-02 and DL-01 run as two jobs. S20 turns it into `.github/workflows/kill-harness.yml` (RA-20-10a in `docs/release/AUTOMATION.md`).
+
 ## 8. What these flows do not cover (and where it is)
 
 Real microphone audio and transcription speed, Sign in with Apple and Google sheets, mail clients and universal links from Mail and Messages, StoreKit sandbox and Family Sharing, notifications at their times, VoiceOver itself, export opening on Mac and Windows, app size, haptics, fonts and AUSoundIsolation: all in `docs/qa/DEVICE_TEST_PLAN.md`. Access rules, deletion purge and sync parity: `supabase/tests`. Pure logic: `npm test`.
+
+## 9. The kill harness (DL-01, DL-02; B2-11, never waived)
+
+`kill/run-kill-harness.mjs` (RA-19-04) kills the app 500 times during save (DL-02) and 500 times while recording (DL-01) on an iOS simulator, and checks after every kill that no letter or recording was lost or doubled (DATA-REQ-048, F04-REQ-024, F08-REQ-019; `docs/qa/DEVICE_TEST_PLAN.md` DL-01 and DL-02). It is not a Maestro flow: Maestro cannot time a kill to the millisecond.
+
+**How a run works.** The harness launches the app with launch arguments (`-e2eKillDrill dl02 -e2eKillRun 17 ...`). The e2e build's seam (`apps/mobile/src/dev/kill-drill.ts`, loaded by `src/dev/e2e-seams.ts`) waits for the app's own launch sweep, writes a `boot` marker, makes the run's draft (DL-02: a typed letter, a spoken one hashed at Finish, or a spoken one Save must hash; DL-01: a live take through `beginTake`, as Listen does), writes an `armed` marker and starts the save or the recording through the same store and recorder calls Review and Listen use. The harness sees `armed` from the host, waits a random 0 to 400 ms (DL-02) or 2 to 60 s (DL-01), and sends SIGKILL to the app's process (simulator apps are host processes). The next launch runs the sweep; the harness then reads the app's SQLite file read-only and hashes the files from the host (`kill/snapshot.mjs`), and `kill/oracle.mjs` judges the killed run. The app never judges itself. Markers live in `Library/Caches/kill-drill`, which the sweep never reads; letters say only "Asha kill drill <run>", and spoken DL-02 letters use a generated tone (`afconvert` of a sine wave), never a voice.
+
+**It cannot pass vacuously.** Before the real runs, on its own fresh install, the harness runs planted failures through the same seam (`-e2eKillPlant loss`: the draft goes and the letter comes 3 s later; `double`: the letter is written and the draft kept; for DL-01, the take's file removed, or two extra letters pointing at it). Each must come back as lost or doubled; if one does not, the harness stops with exit 4 and runs nothing else. The real runs then start on a second fresh install. `apps/mobile/test/qa-kill-harness.test.ts` runs the loop, the oracle and the snapshot reader on Linux in `npm test`, against a fake app built on the app's own migrator, repositories and sweep planner, including an app whose save is not one transaction (exit 1), one that ignores the plants (exit 4) and one that never arms (exit 3).
+
+**Exit codes.** 0 every run kept its letter or take exactly once and the self-check caught every plant; 1 a run lost, doubled or damaged one; 2 usage or a refused setup; 3 incomplete (a timeout, no microphone, fewer runs judged than asked); 4 the self-check missed a plant. Only 0 is green. Reports go to `--out` (default `~/.scribe-kill/<mode>-<UTC time>`, never the repo): `report.json` and `report.md` (run numbers, outcomes and reasons; no ids, no words), also appended to the GitHub step summary.
+
+**What it needs.**
+1. An e2e simulator build: release JavaScript, `EXPO_PUBLIC_E2E=1`, `EXPO_PUBLIC_APP_ENV` not `production`, and S20's wiring line in `app/_layout.tsx` (RA-20-18): `useE2eSeams();` as the first line of `Root()`, with `import { useE2eSeams } from '@/dev/e2e-seams';`. Without it the app never arms and every run times out (exit 3). `ci/kill-harness.yml.example` builds it on the runner with `xcodebuild -configuration Release -sdk iphonesimulator`.
+2. macOS with Xcode 26 and Node 22. A booted simulator: `xcrun simctl create kill-se3 "iPhone SE (3rd generation)"`.
+3. For DL-01, a microphone input the simulator can record from, and one that hears nothing: the simulator records from the Mac's input for up to a minute a run. **On a Mac, never in a family room:** install a silent virtual input (for example BlackHole), select it in System Settings > Sound > Input, then pass `--mic-silent`. Without the flag DL-01 refuses to start. By default the harness uninstalls the app at the end, which deletes every drill recording. On a hosted runner the flag is safe; whether the runner's simulator can record at all is unverified [U]: if it cannot, the drill writes `record_failed` and the harness exits 3, and DL-01 runs on the founder's Mac (AF-14).
+
+```bash
+# DL-02, the gate size (about 45 min [E])
+node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl02 --udid <udid> --app /path/to/App.app --runs 500
+# DL-01 (about 5 h [E] for 500): two shards of 250 on two simulators, then merge
+node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl01 --udid <udid-1> --app App.app --runs 250 --mic-silent --out /tmp/k1
+node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl01 --udid <udid-2> --app App.app --runs 250 --mic-silent --out /tmp/k2
+node apps/mobile/e2e/kill/run-kill-harness.mjs --merge /tmp/k1/report.json /tmp/k2/report.json
+```
+Other options: `--kind typed|spoken|spoken-unhashed|mixed` (DL-02, default mixed), `--delay-ms A-B`, `--seed N` (a report's seed replays its delays), `--self-check N` (planted runs of each kind, default 2), `--bundle-id`, `--keep-app`, `--json`.
+
+**Reading a DL-02 report.** On a fast simulator a save commits in a few milliseconds, so most kills land after the commit: the `draft` row counts kills that came before it, and "killed inside Save after the commit" counts letters whose save had not returned. A report with no `draft` outcomes is still a pass, but say so in the evidence file. The `spoken-unhashed` kind widens the window: Save hashes a 2-minute recording first.
+
+**Evidence.** Each gate run gets a file under `docs/qa/evidence/` (`<date>-<build>-sim-kill.md`) with the two report summaries, the commit and the simulator; B2-11 in `docs/qa/ALPHA_GO_NO_GO.md` links it. 500 of 500 on the freeze commit for each mode, plus the 50-run SE 3 set by hand (`docs/qa/run-sheets/AL-03-kill-during-save.md`), is the gate.
 
 ## Sources (opened 3 Oct 2026)
 
