@@ -2,12 +2,14 @@
  * Per-language gate report (F05 7.1; F05-REQ-002 to F05-REQ-006; WP-F05-02).
  * Mac only, like the rest of this kit: see README.md section 7.
  *
- *   npm run gate -- --language en                 full tier, shipped model
- *   npm run gate -- --language hi --tier compact  the small-model tier
- *   npm run gate -- --language en --device experiments/device.local.json
- *   npm run gate -- --language en --replay        re-clean stored raw transcripts (engine or pack change only)
- *   npm run gate -- --language en --evidence      also write docs/qa/evidence/F05-gate-en.md (numbers only)
- *   npm run gate -- --check                       F05-REQ-006: are recorded gates still current? (any OS, no audio)
+ * From the repo root:
+ *   npm run gate -w @scribe/experiments -- --language en                 full tier, shipped model
+ *   npm run gate -w @scribe/experiments -- --language hi --tier compact  the small-model tier
+ *   npm run gate -w @scribe/experiments -- --language en --device experiments/device.local.json
+ *   npm run gate -w @scribe/experiments -- --language en --replay        re-clean stored raw transcripts (engine or pack change only)
+ *   npm run gate -w @scribe/experiments -- --language en --evidence      also write docs/qa/evidence/F05-gate-en.md (numbers only)
+ *   npm run gate -w @scribe/experiments -- --check                       F05-REQ-006: are recorded gates still current? (any OS, no audio)
+ *   add --debug to print a failure's full message (it can hold your words; never paste it anywhere)
  *
  * Reads experiments/config.local.json (phrases with `language`, `speaker`,
  * `kind`, `group`), your recordings in experiments/recordings/, and the
@@ -24,7 +26,7 @@ import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, rmS
 import { basename, join, resolve } from 'node:path';
 import { toNFC, type ScriptCode } from '@scribe/core';
 import { SPEECH_MODELS, VAD_MODEL_ID, isSpeechLanguage, type SpeechLanguage, type SpeechModelId, type Tier } from '../apps/mobile/src/lib/models/catalog';
-import { toWav16, transcribeWav, type MacTools } from './gate-audio';
+import { safeErrorMessage, toWav16, transcribeWav, type MacTools } from './gate-audio';
 import {
   buildGateReport,
   clipsFor,
@@ -103,8 +105,17 @@ function decoderVersion(whisperDir: string): string | null {
 
 function readDeviceRuns(path: string | undefined): DeviceRun[] {
   if (!path) return [];
-  const json = JSON.parse(readFileSync(path, 'utf8')) as DeviceRun[] | { runs: DeviceRun[] };
+  const json = readJson<DeviceRun[] | { runs: DeviceRun[] }>(path, 'The device runs file');
   return Array.isArray(json) ? json : (json.runs ?? []);
+}
+
+/** Reads a JSON file of the person's own; a parse error names the file, never the text around the mistake. */
+function readJson<T>(path: string, what: string): T {
+  try {
+    return JSON.parse(readFileSync(path, 'utf8')) as T;
+  } catch {
+    fail(`${what} (${path}) is not valid JSON. Check its commas, brackets and quotes.`);
+  }
 }
 
 const pct = (n: number | null) => (n === null ? 'n/a' : `${(n * 100).toFixed(1)}%`);
@@ -113,12 +124,14 @@ async function main(): Promise<void> {
   if (has('check')) return check();
 
   const language = flag('language');
-  if (!isSpeechLanguage(language)) fail('Usage: npm run gate -- --language <en|hi|es|zh|fr|ar|pt> [--tier full|compact]. See experiments/README.md section 7.');
+  if (!isSpeechLanguage(language)) {
+    fail('Usage, from the repo root: npm run gate -w @scribe/experiments -- --language <en|hi|es|zh|fr|ar|pt> [--tier full|compact]. See experiments/README.md section 7.');
+  }
   const tier = (flag('tier') ?? 'full') as Tier;
   if (tier !== 'full' && tier !== 'compact') fail('--tier is full or compact');
   const configPath = pathFlag('config') ?? join(ROOT, 'config.local.json');
   if (!existsSync(configPath)) fail(`No config at ${configPath}. Run ./experiments/setup.sh, then edit config.local.json (README section 7).`);
-  const config = JSON.parse(readFileSync(configPath, 'utf8')) as GateConfig;
+  const config = readJson<GateConfig>(configPath, 'The config');
   const { clips, problems } = clipsFor(config, language);
   for (const p of problems) console.warn(`config: ${p}`);
   if (!clips.length) fail(`No phrases with language "${language}" in ${configPath}.`);
@@ -145,7 +158,7 @@ async function main(): Promise<void> {
 
   if (replayed) {
     if (!existsSync(cachePath)) fail(`Nothing to replay: ${cachePath} is missing. Run without --replay first.`);
-    const cache = JSON.parse(readFileSync(cachePath, 'utf8')) as { decode: unknown; modelFileSha256: string | null; vadFileSha256?: string | null; decoder: string | null; clips: ClipOutcome[] };
+    const cache = readJson<{ decode: unknown; modelFileSha256: string | null; vadFileSha256?: string | null; decoder: string | null; clips: ClipOutcome[] }>(cachePath, 'The stored transcripts');
     if (JSON.stringify(cache.decode) !== JSON.stringify(decodePart(fingerprint))) {
       fail('The model, decoder, prompt, voice detector, planner or clean-up changed since these transcripts were made. Run without --replay.');
     }
@@ -250,4 +263,4 @@ function clipsMarkdown(report: GateReport, details: ReturnType<typeof buildGateR
   return lines.join('\n');
 }
 
-main().catch((e: unknown) => fail(`gate failed: ${e instanceof Error ? e.message : String(e)}`));
+main().catch((e: unknown) => fail(`gate failed: ${safeErrorMessage(e, has('debug'))}`));

@@ -17,6 +17,7 @@
  *   once, DATA-REQ-040).
  */
 import type { SpeechLanguage } from '../models/catalog';
+import { RunInputError } from '../transcribe-run';
 
 export type JobKind = 'draft' | 'entry';
 
@@ -187,38 +188,22 @@ export function nextRetryAt(s: QueueState): number | null {
   return at;
 }
 
-/**
- * A speech download that failed tries again by itself, further apart each
- * time, while the app is open (F05-U29: 1 minute up to 6 hours). Only
- * failures that can clear without the person: a manifest not published yet,
- * a host error, a download that did not check out, a full volume that was
- * freed, a pause lifted. Waiting for Wi-Fi resumes in the pack engine; no
- * space waits for the next launch or a tap; an app that is too old and a
- * download the person stopped never retry on their own.
- */
-export const DOWNLOAD_RETRY_DELAYS_MS: readonly number[] = [60_000, 5 * 60_000, 30 * 60_000, 2 * 60 * 60_000, 6 * 60 * 60_000];
-
-const RETRYABLE_DOWNLOAD_FAILURES: ReadonlySet<string> = new Set([
-  'no_manifest',
-  'not_in_manifest',
-  'download_failed',
-  'hash_mismatch',
-  'storage_error',
-  'downloads_paused',
-  'offline',
-]);
-
-export function isRetryableDownloadFailure(reason: string): boolean {
-  return RETRYABLE_DOWNLOAD_FAILURES.has(reason);
-}
-
-/** Delay before automatic attempt `attempt` (1 = the first retry); the last delay repeats. */
-export function downloadRetryDelayMs(attempt: number): number {
-  const i = Math.max(0, Math.min(DOWNLOAD_RETRY_DELAYS_MS.length - 1, Math.floor(attempt) - 1));
-  return DOWNLOAD_RETRY_DELAYS_MS[i];
-}
-
 /** Languages that have jobs waiting for their packs (the runtime starts those downloads). */
 export function languagesWaiting(s: QueueState): SpeechLanguage[] {
   return [...new Set(Object.values(s.jobs).filter((j) => j.phase === 'waiting_for_pack').map((j) => j.language))].sort();
+}
+
+/**
+ * The job failure for an error, by code only (never by its text, LEGAL-REQ-014). ScribeAudio errors carry
+ * `ERR_SCRIBE_AUDIO_*` codes; a recording whose length cannot be trusted (RunInputError, review L9) is a
+ * decode failure: the job shows Try again and Type instead, and a waiting letter keeps waiting.
+ */
+export function jobFailureOf(e: unknown): JobFailure {
+  const code = (e as { code?: unknown } | null)?.code;
+  if (code === 'ERR_SCRIBE_AUDIO_FILE_MISSING') return 'file_missing';
+  if (code === 'ERR_SCRIBE_AUDIO_DECODE') return 'decode_failed';
+  if (code === 'ERR_SCRIBE_AUDIO_UNSUPPORTED') return 'unsupported';
+  if (e instanceof RunInputError) return 'decode_failed';
+  if (e instanceof Error && e.message === 'model_load_failed') return 'model_load_failed';
+  return 'transcribe_failed';
 }

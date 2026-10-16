@@ -47,7 +47,7 @@ import { PLAN_DEFAULTS, planChunks, vadWindows } from '../apps/mobile/src/lib/tr
 import { joinChunks, looksLikeLoop, speechOnly } from '../apps/mobile/src/lib/transcribe-post';
 import { DEFAULT_PROMPT_SEEDS, PROMPT_TOKEN_CAP, chunkPrompt, isDictionaryEcho, stripPromptEcho } from '../apps/mobile/src/lib/transcribe-prompt';
 import { DECODE_OPTIONS, LOOP_RETRY_TEMPERATURE, VAD_OPTIONS } from '../apps/mobile/src/lib/transcribe-run';
-import { align, dictionaryAccuracy, errorCounts, metricFor, normWords, units, type Metric } from './score';
+import { align, dictionaryAccuracy, errorCounts, normWords, units, type Metric } from './score';
 
 export const GATE_SCHEMA = 'early-letters.f05-gate/1';
 export const GATE_TOOL_VERSION = 1;
@@ -1038,7 +1038,7 @@ export function newEvidenceFile(language: SpeechLanguage): string {
   return [
     `# F05 gate: ${name} (${language})`,
     '',
-    'Written by `npm run gate` (experiments/gate.ts). Numbers, versions and codes only: no recording, transcript, name or speaker is in this file. Bars and rules: `docs/prd/v2/features/F05-transcription.md` section 7.1 (proposed bars, founder question Q2). Raw reports stay on the Mac in `experiments/reports/` (git-ignored).',
+    'Written by `npm run gate -w @scribe/experiments` (experiments/gate.ts). Numbers, versions and codes only: no recording, transcript, name or speaker is in this file. Bars and rules: `docs/prd/v2/features/F05-transcription.md` section 7.1 (on the `docs/prd-v2` branch, PR #124, until it merges; proposed bars, founder question Q2). Raw reports stay on the Mac in `experiments/reports/` (git-ignored).',
     '',
     '## Founder decision (FT-34, DR-01)',
     '',

@@ -62,14 +62,17 @@ const usable = (ms: number | null | undefined): ms is number => typeof ms === 'n
 
 /**
  * The duration a run plans over (security review L9, JavaScript side): the
- * decoder's own measure when it is a real number, else the one stored at
- * capture, else 0 (an empty recording). NaN, infinity and negative values
- * never reach the planner; a length past `MAX_RUN_MS` is refused rather
- * than truncated, because a shortened raw transcript would be permanent.
+ * decoder's own measure when it is a real number above zero, else the one
+ * stored at capture. NaN, infinity, zero and negative values never reach the
+ * planner. When neither length can be trusted, or one is past `MAX_RUN_MS`,
+ * the run is refused: planning over 0 would call the recording silent and
+ * give a waiting letter permanent empty words, and a shortened raw
+ * transcript would be permanent too. The job fails instead (Try again, or
+ * type), and the letter keeps waiting for its words.
  */
 export function runDurationMs(probedMs: number | null | undefined, storedMs: number | null | undefined): number {
-  const ms = usable(probedMs) ? probedMs : usable(storedMs) ? storedMs : 0;
-  if (ms > MAX_RUN_MS) throw new RunInputError('duration_invalid');
+  const ms = usable(probedMs) ? probedMs : usable(storedMs) ? storedMs : null;
+  if (ms === null || ms > MAX_RUN_MS) throw new RunInputError('duration_invalid');
   return ms;
 }
 

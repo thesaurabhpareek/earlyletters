@@ -14,7 +14,8 @@ const audioSwift = readFileSync(join(__dirname, '..', '..', '..', '..', 'modules
 
 describe('[F05-REQ-018] large packs are hashed natively', () => {
   it('uses ScribeAudio sha256File when ScribeFiles has none, before any JavaScript slicing', () => {
-    expect(adapter).toMatch(/requireOptionalNativeModule<.*sha256File.*\('ScribeAudio'\)/);
+    expect(adapter).toMatch(/import \{ ScribeAudio \} from '\.\.\/\.\.\/\.\.\/modules\/scribe-audio'/);
+    expect(adapter).toMatch(/ScribeAudio!?\.sha256File\(uri\)/);
     const method = adapter.slice(adapter.indexOf('async sha256('));
     expect(method.indexOf('nativeSha256File')).toBeGreaterThan(-1);
     expect(method.indexOf('nativeSha256File')).toBeLessThan(method.indexOf('createSha256()'));

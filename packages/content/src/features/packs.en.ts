@@ -28,6 +28,9 @@ export const packsCopy = {
     failed: 'Not downloaded yet',
   },
   failures: {
+    // Nothing is published for this phone yet: a tap cannot help, so the line does not ask for one.
+    no_manifest: 'Not available yet.',
+    not_in_manifest: 'Not available yet.',
     offline: 'Starts when you are back online.',
     no_space: 'Needs more free space on this phone.',
     downloads_paused: 'Downloads are paused for now. Please try again later.',

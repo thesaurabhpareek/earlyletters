@@ -3,6 +3,7 @@ whisper.cpp/
 openai-whisper/
 hf/
 .venv-hinglish/
+.venv-hindi/
 # Gate reports (numbers only, but from your recordings) and every local config: never commit.
 # The committable summary is docs/qa/evidence/F05-gate-<lang>.md, written only with --evidence.
 reports/

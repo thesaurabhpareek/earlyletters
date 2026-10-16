@@ -129,10 +129,12 @@ function rateOf(errors: number, refUnits: number, hypUnits: number): number {
   return errors / refUnits;
 }
 
-/** Word error rate of one utterance (edit distance / reference words). */
+/** Word error rate of one utterance (edit distance / reference words). Mandarin has no words to count: use `cer`. */
 export function wer(reference: string, hypothesis: string, language?: ScoreLanguage): number {
-  const c = errorCounts(reference, hypothesis, language === 'zh' ? 'en' : (language ?? 'en'));
-  return rateOf(c.errors, c.refUnits, c.hypUnits);
+  if (language === 'zh') throw new Error('wer_not_for_zh: Mandarin is scored by character (cer)');
+  const r = normWords(reference, language);
+  const h = normWords(hypothesis, language);
+  return rateOf(align(r, h).filter((o) => o.op !== 'match').length, r.length, h.length);
 }
 
 /** Character error rate of one utterance (Mandarin's primary metric). */

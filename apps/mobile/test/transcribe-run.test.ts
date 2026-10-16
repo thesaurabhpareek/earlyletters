@@ -9,6 +9,7 @@ import { SPEECH_LANGUAGES } from '../src/lib/models/catalog';
 import { toWhisperLanguage } from '../src/lib/transcribe-language';
 import { planChunks, type Chunk } from '../src/lib/transcribe-plan';
 import type { ChunkDecode } from '../src/lib/transcribe-post';
+import { initialQueue, jobFailureOf, reduce } from '../src/lib/transcription-queue/machine';
 import { DEFAULT_PROMPT_SEEDS } from '../src/lib/transcribe-prompt';
 import {
   DECODE_OPTIONS,
@@ -37,8 +38,52 @@ describe('[security review L9] the planner only ever sees a real duration', () =
     expect(runDurationMs(Number.NaN, 90_000)).toBe(90_000);
     expect(runDurationMs(Number.POSITIVE_INFINITY, 90_000)).toBe(90_000);
     expect(runDurationMs(-5, 90_000)).toBe(90_000);
-    expect(runDurationMs(0, null)).toBe(0);
-    expect(runDurationMs(undefined, Number.NaN)).toBe(0);
+    expect(runDurationMs(0, 90_000)).toBe(90_000);
+  });
+
+  it('refuses to plan when neither length can be trusted: an unknown length is never called silence', () => {
+    for (const [probed, stored] of [
+      [0, null],
+      [undefined, Number.NaN],
+      [Number.NaN, 0],
+      [Number.POSITIVE_INFINITY, -1],
+      [null, undefined],
+    ] as const) {
+      expect(() => runDurationMs(probed, stored), `${probed} ${stored}`).toThrow(RunInputError);
+    }
+  });
+
+  it('a waiting letter with an unknown length fails its job visibly and keeps waiting for its words (never empty words)', () => {
+    // The queue's own steps, in order: the run refuses, the failure is classified, the reducer records it.
+    let thrown: unknown = null;
+    try {
+      runDurationMs(0, null); // ScribeAudio.probe gives 0 when it cannot read a rate; nothing was stored at capture
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toBeInstanceOf(RunInputError);
+    const failure = jobFailureOf(thrown);
+    expect(failure).toBe('decode_failed'); // Review shows Try again and Type instead (not file_missing or unsupported)
+
+    let s = reduce(initialQueue(), { type: 'packs', ready: ['en'] });
+    s = reduce(s, { type: 'enqueue', id: 'letter-1', kind: 'entry', language: 'en', capturedAt: '2026-10-16T08:00:00Z' });
+    s = reduce(s, { type: 'start', id: 'letter-1' });
+    s = reduce(s, { type: 'fail', id: 'letter-1', failure, now: 1_000 });
+    // Not 'done' with outcome no_speech: deliver() never runs, so setWordsForWaitingEntry never writes '' and the
+    // letter stays transcript_status 'waiting' (Write the words stays on the letter page).
+    expect(s.jobs['letter-1']).toMatchObject({ phase: 'failed', failure: 'decode_failed' });
+    expect(s.jobs['letter-1'].outcome).toBeUndefined();
+    s = reduce(s, { type: 'retry', id: 'letter-1' });
+    expect(s.jobs['letter-1'].phase).toBe('queued');
+  });
+
+  it('the queue reads every failure by its code, never by its text', () => {
+    expect(jobFailureOf(Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_FILE_MISSING' }))).toBe('file_missing');
+    expect(jobFailureOf(Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_DECODE' }))).toBe('decode_failed');
+    expect(jobFailureOf(Object.assign(new Error('x'), { code: 'ERR_SCRIBE_AUDIO_UNSUPPORTED' }))).toBe('unsupported');
+    expect(jobFailureOf(new Error('model_load_failed'))).toBe('model_load_failed');
+    expect(jobFailureOf(new Error('Asha'))).toBe('transcribe_failed');
+    expect(jobFailureOf(null)).toBe('transcribe_failed');
   });
 
   it('refuses an absurd length instead of planning thousands of windows or cutting the letter short', () => {

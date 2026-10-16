@@ -53,6 +53,7 @@ describe('scoring in every launch script (R5 4.4 E8, WP-F05-02)', () => {
     expect(cer('我今天很想你，宝贝。', '我今天很想你宝贝')).toBe(0);
     expect(cer('我今天很想你', '我明天很想你')).toBeCloseTo(1 / 6);
     expect(errorCounts('我今天很想你', '我明天很想你', 'zh')).toEqual({ errors: 1, refUnits: 6, hypUnits: 6 });
+    expect(() => wer('我今天很想你', '我明天很想你', 'zh')).toThrow('wer_not_for_zh');
   });
 
   it('compares Arabic without harakat or tatweel (Whisper writes none), and nothing else', () => {

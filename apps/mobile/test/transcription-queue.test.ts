@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { DictionaryTerm } from '@scribe/core';
 import {
+  DAY_MS,
   DOWNLOAD_RETRY_DELAYS_MS,
-  MAX_AUTO_ATTEMPTS,
-  RETRY_DELAYS_MS,
+  DownloadRetries,
+  MAX_FULL_RETRIES_PER_DAY,
   downloadRetryDelayMs,
   isRetryableDownloadFailure,
+} from '../src/lib/transcription-queue/download-retry';
+import {
+  MAX_AUTO_ATTEMPTS,
+  RETRY_DELAYS_MS,
   initialQueue,
   languagesWaiting,
   nextJob,
@@ -198,20 +203,133 @@ describe('cleaning spoken words in their language (constitution)', () => {
   });
 });
 
-describe('[F05-U29] speech downloads that fail try again by themselves, further apart each time', () => {
+/** A fake clock and timer list for the retry scheduler: advance() fires due timers in time order. */
+function retryHarness(opts: { allowed?: () => boolean } = {}) {
+  let now = 1_000_000;
+  let nextId = 1;
+  const timers = new Map<number, { at: number; fn: () => void }>();
+  const requests: Array<{ language: string; at: number }> = [];
+  let allowed = opts.allowed ?? (() => true);
+  const retries = new DownloadRetries<string>({
+    now: () => now,
+    setTimer: (fn, ms) => {
+      const id = nextId++;
+      timers.set(id, { at: now + ms, fn });
+      return id;
+    },
+    clearTimer: (id) => void timers.delete(id as number),
+    allowed: () => allowed(),
+    request: (language) => requests.push({ language, at: now }),
+  });
+  const advance = (ms: number) => {
+    const end = now + ms;
+    for (;;) {
+      const due = [...timers.entries()].filter(([, t]) => t.at <= end).sort((a, b) => a[1].at - b[1].at)[0];
+      if (!due) break;
+      timers.delete(due[0]);
+      now = due[1].at;
+      due[1].fn();
+    }
+    now = end;
+  };
+  return {
+    retries,
+    requests,
+    advance,
+    timers,
+    get now() {
+      return now;
+    },
+    setAllowed: (f: () => boolean) => (allowed = f),
+  };
+}
+
+describe('[F05-U29] speech downloads that fail try again by themselves (download-retry.ts)', () => {
   it('backs off from 1 minute to 6 hours, then stays at 6 hours', () => {
     expect(DOWNLOAD_RETRY_DELAYS_MS[0]).toBe(60_000);
     expect(DOWNLOAD_RETRY_DELAYS_MS[DOWNLOAD_RETRY_DELAYS_MS.length - 1]).toBe(6 * 60 * 60_000);
     const delays = [1, 2, 3, 4, 5, 6, 50].map(downloadRetryDelayMs);
     for (let i = 1; i < delays.length; i++) expect(delays[i]).toBeGreaterThanOrEqual(delays[i - 1]);
     expect(downloadRetryDelayMs(50)).toBe(6 * 60 * 60_000);
-    expect(downloadRetryDelayMs(0)).toBe(60_000);
   });
 
-  it('retries what can clear without the person, never a stop, a full phone or an app that is too old', () => {
+  it('retries what can clear without the person, never a stop, a full phone, Wi-Fi waits or an app that is too old', () => {
     for (const r of ['no_manifest', 'not_in_manifest', 'download_failed', 'hash_mismatch', 'storage_error', 'downloads_paused', 'offline']) {
       expect(isRetryableDownloadFailure(r), r).toBe(true);
     }
     for (const r of ['cancelled', 'no_space', 'needs_app_update', 'waiting_for_wifi']) expect(isRetryableDownloadFailure(r), r).toBe(false);
+    const h = retryHarness();
+    expect(h.retries.failed('en', 'no_space')).toBeNull();
+    h.advance(DAY_MS);
+    expect(h.requests).toEqual([]);
+  });
+
+  it('a manifest that is not published yet is asked for again, further apart each time', () => {
+    const h = retryHarness();
+    const started = h.now;
+    h.retries.failed('en', 'no_manifest');
+    h.advance(60_000);
+    expect(h.requests.map((r) => r.at - started)).toEqual([60_000]);
+    h.retries.failed('en', 'no_manifest'); // the retry failed too
+    h.advance(5 * 60_000);
+    expect(h.requests.map((r) => r.at - started)).toEqual([60_000, 6 * 60_000]);
+  });
+
+  it('a success clears the chain: nothing fires afterwards', () => {
+    const h = retryHarness();
+    h.retries.failed('en', 'download_failed');
+    h.retries.succeeded('en');
+    h.advance(DAY_MS);
+    expect(h.requests).toEqual([]);
+    expect(h.retries.pending('en')).toBeNull();
+  });
+
+  it('removing the files in Settings stops the chain', () => {
+    const h = retryHarness();
+    h.retries.failed('hi', 'download_failed');
+    h.retries.clear('hi');
+    h.advance(DAY_MS);
+    expect(h.requests).toEqual([]);
+  });
+
+  it('without a yes, or in the background, nothing runs; the retry waits for the next foreground, once', () => {
+    let allowed = false;
+    const h = retryHarness({ allowed: () => allowed });
+    h.retries.failed('en', 'no_manifest');
+    h.advance(10 * 60_000);
+    expect(h.requests).toEqual([]);
+    expect(h.retries.pending('en')).toMatchObject({ waiting: true });
+    h.retries.foreground(); // still not allowed (no yes yet)
+    expect(h.requests).toEqual([]);
+    allowed = true;
+    h.retries.foreground();
+    h.retries.foreground(); // a second foreground before the request reported back asks nothing more
+    expect(h.requests).toHaveLength(1);
+  });
+
+  it('a download that did not check out costs a full download each time: at most 3 in any 24 hours', () => {
+    expect(MAX_FULL_RETRIES_PER_DAY).toBe(3);
+    const h = retryHarness();
+    // Every retry fails the hash check again (a host that keeps serving the wrong bytes).
+    h.retries.failed('en', 'hash_mismatch');
+    for (let i = 0; i < 40; i++) {
+      const before = h.requests.length;
+      h.advance(60 * 60_000);
+      if (h.requests.length > before) h.retries.failed('en', 'hash_mismatch');
+    }
+    const times = h.requests.map((r) => r.at);
+    expect(times.length).toBeGreaterThan(MAX_FULL_RETRIES_PER_DAY);
+    for (const t of times) expect(times.filter((u) => u > t - DAY_MS && u <= t).length).toBeLessThanOrEqual(MAX_FULL_RETRIES_PER_DAY);
+    expect(times[MAX_FULL_RETRIES_PER_DAY] - times[0]).toBeGreaterThanOrEqual(DAY_MS);
+  });
+
+  it('cheap failures keep their own backoff: a stopped download is not capped like a full re-download', () => {
+    const h = retryHarness();
+    h.retries.failed('en', 'download_failed');
+    for (let i = 0; i < 8; i++) {
+      h.advance(6 * 60 * 60_000);
+      h.retries.failed('en', 'download_failed');
+    }
+    expect(h.requests.length).toBeGreaterThan(MAX_FULL_RETRIES_PER_DAY);
   });
 });

@@ -177,7 +177,12 @@ interface CliJson {
 
 /** whisper-cli JSON (full) to the shape whisper.rn returns: the joined text, and one timed segment per token (centiseconds). */
 export function parseWhisperJson(text: string): ChunkDecode {
-  const json = JSON.parse(text) as CliJson;
+  let json: CliJson;
+  try {
+    json = JSON.parse(text) as CliJson;
+  } catch {
+    throw new Error('whisper_json_unreadable'); // JSON.parse quotes the text near the error: heard words stay out of messages
+  }
   const segments: WhisperSegment[] = [];
   for (const seg of json.transcription ?? []) {
     for (const t of seg.tokens ?? []) {
@@ -192,6 +197,45 @@ export function parseWhisperJson(text: string): ChunkDecode {
 // Running it (side effects)
 // ---------------------------------------------------------------------------
 
+/**
+ * A tool that failed, by name and exit status only. Never the command line or its output: the command line
+ * holds the prompt (the child's name and the family's words) and the output can hold heard words.
+ */
+export class ToolFailed extends Error {
+  constructor(
+    readonly tool: string,
+    readonly status: number | string | null,
+  ) {
+    super(`${tool}_failed: exit ${status ?? 'unknown'}`);
+    this.name = 'ToolFailed';
+  }
+}
+
+/**
+ * What a gate failure may print: tool failures (name and exit status) and this kit's own code-style messages
+ * (`duration_invalid`, `wav_invalid`). Anything else could carry a transcript or a family name (a parse error
+ * quotes the text near the mistake), so only its type is shown, unless the person asks with --debug.
+ */
+export function safeErrorMessage(e: unknown, debug = false): string {
+  if (debug) return e instanceof Error ? (e.stack ?? e.message) : String(e);
+  if (e instanceof ToolFailed) return e.message;
+  const m = e instanceof Error ? e.message : '';
+  if (/^[a-z][a-z0-9]*(?:_[a-z0-9]+)+(?:: [\w .,:/@-]{0,160})?$/.test(m)) return m; // codes always hold an underscore
+  return `${e instanceof Error ? e.name : typeof e} (run again with --debug to see the full message; it may contain your words)`;
+}
+
+/** Runs a tool and returns its standard output; a failure becomes a ToolFailed with no argument or output text in it. */
+export function runTool(tool: string, file: string, args: readonly string[], opts: { stdout?: boolean } = {}): string {
+  try {
+    const out = execFileSync(file, args, { encoding: 'utf8', stdio: ['ignore', opts.stdout ? 'pipe' : 'ignore', 'pipe'], maxBuffer: 16 * 1024 * 1024 });
+    return typeof out === 'string' ? out : '';
+  } catch (e) {
+    const err = e as { status?: number | null; code?: unknown; signal?: unknown };
+    const status = typeof err.status === 'number' ? err.status : typeof err.signal === 'string' ? err.signal : typeof err.code === 'string' ? err.code : null;
+    throw new ToolFailed(tool, status);
+  }
+}
+
 export interface MacTools {
   whisperCli: string;
   vadTool: string;
@@ -199,7 +243,7 @@ export interface MacTools {
 }
 
 export function toWav16(tools: MacTools, src: string, out: string): void {
-  execFileSync(tools.ffmpeg, ['-y', '-loglevel', 'error', '-i', src, '-ar', String(SAMPLE_RATE), '-ac', '1', '-c:a', 'pcm_s16le', out]);
+  runTool('ffmpeg', tools.ffmpeg, ['-y', '-loglevel', 'error', '-i', src, '-ar', String(SAMPLE_RATE), '-ac', '1', '-c:a', 'pcm_s16le', out]);
 }
 
 export interface FileRun {
@@ -233,7 +277,7 @@ export async function transcribeWav(o: {
     detectSpeech: async (buf) => {
       const path = slice(buf);
       try {
-        return parseVadSegments(execFileSync(o.tools.vadTool, vadArgs(path, o.vadModel), { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
+        return parseVadSegments(runTool('vad_tool', o.tools.vadTool, vadArgs(path, o.vadModel), { stdout: true }));
       } finally {
         rmSync(path, { force: true });
       }
@@ -249,7 +293,7 @@ export async function transcribeWav(o: {
     const path = slice(chunkPcm(pcm, chunk.pieces));
     const outBase = path.replace(/\.wav$/, '');
     try {
-      execFileSync(o.tools.whisperCli, whisperArgs({ model: o.model, wav: path, outBase, language, prompt, temperature }), { stdio: ['ignore', 'ignore', 'pipe'] });
+      runTool('whisper_cli', o.tools.whisperCli, whisperArgs({ model: o.model, wav: path, outBase, language, prompt, temperature }));
       return parseWhisperJson(readFileSync(`${outBase}.json`, 'utf8'));
     } finally {
       rmSync(path, { force: true });

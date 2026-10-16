@@ -22,7 +22,7 @@
  */
 import { AppState, type AppStateStatus } from 'react-native';
 import { ENGINE_VERSION, toNFC } from '@scribe/core';
-import { ScribeAudio, scribeAudioErrorCode } from '../../../modules/scribe-audio';
+import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
 import {
   deleteSetting,
@@ -59,22 +59,20 @@ import { releaseContexts, whisperModule } from '../models/whisper-runtime';
 import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, type Transcriber } from '../transcribe';
 import { createSampleTranscriber } from '../transcribe-sample';
 import { createWhisperTranscriber } from '../transcribe-whisper';
-import { RunInputError } from '../transcribe-run';
 import { copyForLetter } from '../audio-enhance';
 import { trackTranscriptionCompleted } from '../analytics/track';
 import { getSpokenLanguages } from '../language';
 import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
+import { DownloadRetries } from './download-retry';
 import {
-  downloadRetryDelayMs,
   initialQueue,
-  isRetryableDownloadFailure,
+  jobFailureOf,
   languagesWaiting,
   nextJob,
   nextRetryAt,
   reduce,
   type Job,
-  type JobFailure,
   type QueueEvent,
   type QueueState,
 } from './machine';
@@ -156,8 +154,7 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
       dispatch({ type: 'foreground', value: true });
       syncLetters();
       refreshReady();
-      // A download retry that came due while the app was away runs now.
-      for (const [lang, retry] of downloadRetries) if (!retry.timer && speechAutoStartAllowed()) void requestSpeechFor(lang);
+      retries.foreground(); // a download retry that came due while the app was away runs now
     } else if (s === 'background') {
       dispatch({ type: 'foreground', value: false });
       controller?.abort(); // the job goes back to the queue and starts again on return
@@ -187,7 +184,7 @@ function stopTranscriptionQueue(): void {
   stopFns = [];
   if (retryTimer) clearTimeout(retryTimer);
   retryTimer = null;
-  for (const lang of [...downloadRetries.keys()]) clearDownloadRetry(lang);
+  retries.clearAll();
   started = false;
 }
 
@@ -231,38 +228,29 @@ export async function startSpeechDownload(language: SpeechLanguage, opts: { allo
   await requestSpeechFor(language, opts);
 }
 
-/** Starts the downloads a language needs. Internal: callers outside this file use startSpeechDownload (a tap) or wait for a yes. */
-export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
+/**
+ * Starts the downloads a language needs. Internal: callers outside this file use startSpeechDownload (a tap) or
+ * wait for a yes. `automatic` marks a retry nobody tapped for: Wi-Fi only, whatever the mobile data setting.
+ */
+export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean; automatic?: boolean } = {}): Promise<void> {
   askedDownload.add(language);
-  const r = await ensureSpeechFor(language, opts).catch(() => ({ ok: false as const, reason: 'download_failed' }));
-  if (r.ok) clearDownloadRetry(language);
-  else if (isRetryableDownloadFailure(r.reason)) scheduleDownloadRetry(language);
+  const { automatic, ...rest } = opts;
+  const r = await ensureSpeechFor(language, automatic ? { ...rest, allowCellularOnce: false, wifiOnly: true } : rest).catch(
+    () => ({ ok: false as const, reason: 'download_failed' }),
+  );
+  if (r.ok) retries.succeeded(language);
+  else retries.failed(language, r.reason);
   refreshReady();
 }
 
-/** Automatic download retries per language (F05-U29), while the app is open and after a yes. */
-const downloadRetries = new Map<SpeechLanguage, { attempt: number; timer: ReturnType<typeof setTimeout> | null }>();
-
-function scheduleDownloadRetry(language: SpeechLanguage): void {
-  if (!started) return;
-  const prev = downloadRetries.get(language);
-  if (prev?.timer) clearTimeout(prev.timer);
-  const attempt = (prev?.attempt ?? 0) + 1;
-  const timer = setTimeout(() => {
-    const entry = downloadRetries.get(language);
-    if (entry) entry.timer = null;
-    // Only the download the person already said yes to, and only in the foreground (no background work).
-    if (!started || !state.foreground || !speechAutoStartAllowed()) return;
-    void requestSpeechFor(language);
-  }, downloadRetryDelayMs(attempt));
-  downloadRetries.set(language, { attempt, timer });
-}
-
-function clearDownloadRetry(language: SpeechLanguage): void {
-  const entry = downloadRetries.get(language);
-  if (entry?.timer) clearTimeout(entry.timer);
-  downloadRetries.delete(language);
-}
+/** Automatic retries of failed speech downloads (download-retry.ts): after a yes, in the foreground, Wi-Fi only. */
+const retries = new DownloadRetries<SpeechLanguage>({
+  now: () => Date.now(),
+  setTimer: (fn, ms) => setTimeout(fn, ms),
+  clearTimer: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
+  allowed: () => started && state.foreground && speechAutoStartAllowed(),
+  request: (language) => void requestSpeechFor(language, { automatic: true }),
+});
 
 /**
  * Why a language's speech download last failed, when it did and nothing is in flight now: a pack engine code
@@ -318,7 +306,7 @@ export async function removeSpeechPack(id: SpeechModelId): Promise<void> {
   for (const lang of SPEECH_LANGUAGES) {
     if (!planFor([lang]).packs.includes(id)) continue;
     askedDownload.delete(lang);
-    clearDownloadRetry(lang); // removed on purpose: the automatic retries stop (letters still waiting may ask again, as before)
+    retries.clear(lang); // removed on purpose: the automatic retries stop (letters still waiting may ask again, as before)
   }
   refreshReady();
 }
@@ -446,16 +434,6 @@ function noteInterruptedLaunch(): void {
   }
 }
 
-function failureOf(e: unknown): JobFailure {
-  const code = scribeAudioErrorCode(e);
-  if (code === 'ERR_SCRIBE_AUDIO_FILE_MISSING') return 'file_missing';
-  if (code === 'ERR_SCRIBE_AUDIO_DECODE') return 'decode_failed';
-  if (e instanceof RunInputError) return 'decode_failed'; // a length the planner cannot trust (review L9)
-  if (code === 'ERR_SCRIBE_AUDIO_UNSUPPORTED') return 'unsupported';
-  if (e instanceof Error && e.message === 'model_load_failed') return 'model_load_failed';
-  return 'transcribe_failed';
-}
-
 async function runJob(id: string): Promise<void> {
   const job = state.jobs[id];
   if (!job) return;
@@ -502,7 +480,7 @@ async function runJob(id: string): Promise<void> {
       dispatch({ type: 'interrupt', id });
       refreshReady();
     } else {
-      const failure = failureOf(e);
+      const failure = jobFailureOf(e);
       if (failure === 'model_load_failed') recordMemoryFailure();
       report('failed');
       dispatch({ type: 'fail', id, failure, now: Date.now() });

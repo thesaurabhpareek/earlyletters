@@ -11,7 +11,7 @@ import type { DictionaryTerm } from '@scribe/core';
 import { SPEECH_MODELS, WHISPER_CPP_BUILD, asrModelFor, type SpeechLanguage } from '../apps/mobile/src/lib/models/catalog';
 import { chunkSampleCount, planChunks } from '../apps/mobile/src/lib/transcribe-plan';
 import { VAD_OPTIONS } from '../apps/mobile/src/lib/transcribe-run';
-import { chunkPcm, parseVadSegments, parseWav, parseWhisperJson, vadArgs, wavBytes, whisperArgs, windowPcm } from './gate-audio';
+import { ToolFailed, chunkPcm, parseVadSegments, parseWav, parseWhisperJson, runTool, safeErrorMessage, vadArgs, wavBytes, whisperArgs, windowPcm } from './gate-audio';
 import {
   ADVERSARIAL,
   GATE_BARS,
@@ -408,6 +408,48 @@ describe('the Mac run mirrors the phone (gate-audio.ts)', () => {
         { text: '.', t0: 90, t1: 95 },
       ],
     });
+  });
+});
+
+describe('privacy: a failing tool never prints the prompt or what it heard', () => {
+  // A stand-in for whisper-cli that fails: the command line carries the prompt with the family's names, and the
+  // tool writes a heard word to stderr before it exits.
+  const failing = ['-e', 'console.error("heard: Ashu"); process.exit(3)', '--', '--prompt', 'Asha, Ashu, Nani.'];
+
+  it('runTool reports the tool and its exit status only', () => {
+    let err: unknown = null;
+    try {
+      runTool('whisper_cli', process.execPath, failing);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(ToolFailed);
+    expect((err as Error).message).toBe('whisper_cli_failed: exit 3');
+    expect(JSON.stringify(err)).not.toMatch(/Asha|Ashu|Nani|prompt/);
+    expect(safeErrorMessage(err)).toBe('whisper_cli_failed: exit 3');
+  });
+
+  it('a tool that cannot start is named by its code, not by its arguments', () => {
+    expect(() => runTool('vad_tool', '/nonexistent/whisper-vad-speech-segments', ['--prompt', 'Asha'])).toThrow('vad_tool_failed: exit ENOENT');
+  });
+
+  it('unreadable decoder output and parse errors never quote the words', () => {
+    expect(() => parseWhisperJson('{"transcription": [ {"text": " Asha slept')).toThrow('whisper_json_unreadable');
+    let parseError: unknown = null;
+    try {
+      JSON.parse('Asha walked to Nani'); // Node quotes the text: "Asha walked to Nani" is not valid JSON
+    } catch (e) {
+      parseError = e;
+    }
+    expect(safeErrorMessage(parseError)).not.toMatch(/Asha|Nani/);
+    expect(safeErrorMessage(new Error('Asha'))).not.toMatch(/Asha/);
+    expect(safeErrorMessage(new Error('asha'))).not.toMatch(/asha/); // a bare word is not a code
+    expect(safeErrorMessage(new Error('duration_invalid'))).toBe('duration_invalid');
+    expect(safeErrorMessage(parseError, true)).toMatch(/Asha/); // only when the person asks with --debug
+  });
+
+  it('a run that succeeds returns the tool output', () => {
+    expect(runTool('node', process.execPath, ['-e', 'process.stdout.write("Speech segment 0: start = 1.00, end = 2.00")'], { stdout: true })).toContain('Speech segment 0');
   });
 });
 

@@ -21,6 +21,7 @@ import * as Crypto from 'expo-crypto';
 import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import * as Network from 'expo-network';
 import { createSha256 } from '@scribe/api';
+import { ScribeAudio } from '../../../modules/scribe-audio';
 import type { Connection, NetworkPort, PackFs, PackHttp } from './engine';
 
 const SLICE_BYTES = 1024 * 1024;
@@ -36,10 +37,9 @@ const NATIVE_DIGEST_MAX_BYTES = 32 * 1024 * 1024;
  * builds with neither module (Expo Go, web).
  */
 const ScribeFilesHash = requireOptionalNativeModule<{ sha256File?: (uri: string) => Promise<string> }>('ScribeFiles');
-const ScribeAudioHash = requireOptionalNativeModule<{ sha256File?: (uri: string) => Promise<string> }>('ScribeAudio');
 const nativeSha256File: ((uri: string) => Promise<string>) | null =
   (ScribeFilesHash?.sha256File && ((uri: string) => ScribeFilesHash.sha256File!(uri))) ||
-  (ScribeAudioHash?.sha256File && ((uri: string) => ScribeAudioHash.sha256File!(uri))) ||
+  (ScribeAudio && ((uri: string) => ScribeAudio!.sha256File(uri))) ||
   null;
 
 const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
