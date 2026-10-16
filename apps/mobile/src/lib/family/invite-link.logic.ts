@@ -96,3 +96,14 @@ export function decodePendingInvite(raw: string | null, now: number): PendingInv
     return null;
   }
 }
+
+/** Compare-and-clear for the stored invite: clear when it is this token, or when it is damaged. */
+export function shouldClearPendingInvite(raw: string | null, token: string): boolean {
+  if (!raw) return false;
+  try {
+    const v = JSON.parse(raw) as { t?: unknown };
+    return typeof v.t !== 'string' || v.t === token;
+  } catch {
+    return true;
+  }
+}

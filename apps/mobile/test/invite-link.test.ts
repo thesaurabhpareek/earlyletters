@@ -7,6 +7,7 @@ import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import {
   PENDING_INVITE_MAX_AGE_MS,
+  shouldClearPendingInvite,
   decodePendingInvite,
   encodePendingInvite,
   inviteUrl,
@@ -327,10 +328,48 @@ describe('the Family tab with a co-parent (F11 6.2 A and D)', () => {
     expect(leftSince(seen, [papa], true)).toEqual([]);
   });
 
-  it('[F11-REQ-023] never announces a departure for a book only on this phone, or one this person left', () => {
+  it('[F11-REQ-023] never announces a departure for a book the server does not list for this person (onServer false)', () => {
     expect(leftSince([{ id: 'p', signsAs: 'Papa' }], [], false)).toEqual([]);
     expect(decodeSeen('{oops')).toEqual([]);
     expect(decodeSeen(JSON.stringify([{ id: 1 }, { id: 'x', signsAs: 'X' }]))).toEqual([{ id: 'x', signsAs: 'X' }]);
     expect(seenCoParentsKey('c1')).toBe('family.seenCoParents.c1');
+  });
+});
+
+describe('review fixes (PR #184)', () => {
+  const screen = (p: string) => readFileSync(join(__dirname, '..', 'src', 'app', ...p.split('/')), 'utf8');
+
+  it('[BL-322] what an invite said, and a tap on Join, belong to the account that saw them', () => {
+    // A sign-out, then another account on this phone: it peeks again and must tap Join itself.
+    const src = screen('invite/index.tsx');
+    expect(src).toMatch(/const userId = authUserId\(auth\.state\);\s*useEffect\(\(\) => \{\s*started\.current = null;\s*setPreview\(null\);\s*setWantsJoin\(false\);\s*\}, \[userId\]\);/);
+    // And the plan, with no preview and no tap, never accepts.
+    const base: JoinInputs = { loaded: true, token: TOKEN, signedIn: true, canSync: true, preview: null, busy: null, wantsJoin: false, joinedChildId: null, error: null };
+    expect(joinPlan(base)).toEqual({ view: 'peeking', next: 'peek' });
+  });
+
+  it('[A-REQ-028] the join sheet clears only the invite it used; a newer link that arrived meanwhile is kept', () => {
+    const stored = (t: string) => encodePendingInvite({ token: t, receivedAt: 1 });
+    const other = 'q8Zr0_Yc-3Jk9LmN2pQ4sT6vW8xZ1aB3cD5eF7gH9iJ';
+    expect(shouldClearPendingInvite(stored(TOKEN), TOKEN)).toBe(true);
+    expect(shouldClearPendingInvite(stored(other), TOKEN)).toBe(false);
+    expect(shouldClearPendingInvite(null, TOKEN)).toBe(false);
+    expect(shouldClearPendingInvite('{damaged', TOKEN)).toBe(true);
+    expect(screen('invite/index.tsx')).not.toMatch(/clearPendingInvite\(\)/);
+  });
+
+  it('[F11-U10] the inviter sees "{child}\'s book has two parents.", never the invitee\'s line', () => {
+    expect(screen('(tabs)/family.tsx')).toMatch(/error === 'book_full' \? f\.create\.full : f\.errors\[error\]/);
+    expect(screen('invite/new.tsx')).toMatch(/error === 'book_full' \|\|/);
+  });
+
+  it('a non-parent invite is final: no "Try again" loop', () => {
+    expect(screen('invite/index.tsx')).toMatch(/p\.role !== 'parent'[\s\S]{0,240}setError\('not_found'\)/);
+    expect(FINAL_INVITE_ERRORS).toContain('not_found');
+  });
+
+  it('[F11-REQ-011] the leave sheet promises only what this build does (S03 and S13 list left books later)', () => {
+    expect(familyCopy.leave.takeOutHelp).toBe('Your letters leave the book and stay yours.');
+    expect(familyCopy.leave.done).not.toMatch(/read|export|on this phone/i);
   });
 });

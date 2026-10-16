@@ -25,6 +25,7 @@ import { TextInput, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { InviteComingSoon } from '@/components/family/invite-coming-soon';
+import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { inviteDestination } from '@/lib/family/entry.logic';
@@ -73,6 +74,15 @@ function JoinBook() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // What an invite said, and a tap on Join, belong to the account that saw them: a different account
+  // (sign-out, then someone else signs in on this phone) looks again and is asked again.
+  const userId = authUserId(auth.state);
+  useEffect(() => {
+    started.current = null;
+    setPreview(null);
+    setWantsJoin(false);
+  }, [userId]);
+
   const plan = joinPlan({
     loaded,
     token,
@@ -85,10 +95,11 @@ function JoinBook() {
     error,
   });
 
-  const fail = async (e: unknown, stage: 'peek' | 'accept') => {
+  const fail = async (e: unknown, stage: 'peek' | 'accept', t: string) => {
     const kind = inviteErrorKind(e);
+    // The catalogue knows create and accept; a peek is the first half of accepting.
     track('invite_failed', { stage: 'accept', reason: trackedInviteReason(kind) });
-    if (FINAL_INVITE_ERRORS.includes(kind)) await clearPendingInvite();
+    if (FINAL_INVITE_ERRORS.includes(kind)) await clearPendingInvite(t);
     setFailedAt(stage);
     setError(kind);
   };
@@ -101,14 +112,14 @@ function JoinBook() {
       const p = await peekInvite(auth.client, t);
       if (p.role !== 'parent') {
         // v1.0 has no family-member path (B1, D4): this build cannot use the invite.
-        await clearPendingInvite();
+        await clearPendingInvite(t);
         setFailedAt('peek');
-        setError('unknown');
+        setError('not_found');
       } else {
         setPreview(p);
       }
     } catch (e) {
-      await fail(e, 'peek');
+      await fail(e, 'peek', t);
     } finally {
       setBusy(null);
     }
@@ -120,12 +131,12 @@ function JoinBook() {
     setBusy('accept');
     try {
       const childId = await acceptInvite(auth.client, t);
-      await clearPendingInvite();
+      await clearPendingInvite(t);
       const name = getChild(childId)?.name ?? (await bookName(auth.client, childId).catch(() => null));
       haptic('success');
       setJoined({ childId, name });
     } catch (e) {
-      await fail(e, 'accept');
+      await fail(e, 'accept', t);
     } finally {
       setBusy(null);
     }
@@ -171,7 +182,7 @@ function JoinBook() {
   };
 
   const notNow = async () => {
-    await clearPendingInvite();
+    if (token) await clearPendingInvite(token);
     close();
   };
 

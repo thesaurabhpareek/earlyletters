@@ -11,8 +11,10 @@
  *     `classifySqlstate` in packages/api has no rule for it yet (F11-REQ-026; requested from S07 as
  *     `SCCAP: parents_full`). Either way it becomes `book_full` and is never retried.
  *  3. Everything else goes through `classifySqlstate` (ADR 0017), so the app and the server agree.
- *  4. Only for SCINV from a server that sends no detail yet (develop's 20261005000000), the
- *     message is matched against the fixed phrases of that file. It is never shown or logged.
+ *  4. For SCINV without a detail (develop's 20261005000000, and S02's v1 gate files too for not
+ *     found, used, revoked, expired and already a member; details requested from S02), the
+ *     message is matched against the fixed phrases of those files. It is never shown or logged,
+ *     and an unmatched one reads as not_found, which is final.
  */
 import { classifySqlstate } from '@scribe/api';
 import { errorCode, errorMessage, isNetworkError } from '../supabase/errors.logic';

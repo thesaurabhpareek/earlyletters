@@ -244,7 +244,8 @@ function FamilyShared() {
               <Text className="text-base leading-6 text-muted-foreground">{copy.familyTab.emptyBody}</Text>
             </View>
           )}
-          <ErrorLine message={error ? fill(f.errors[error], { child }) : null} />
+          {/* F11-U10: the inviter's line for a full book is create.full; errors.book_full is the invitee's. */}
+          <ErrorLine message={error ? fill(error === 'book_full' ? f.create.full : f.errors[error], { child }) : null} />
         </View>
 
         {state.showInviteCard && (
