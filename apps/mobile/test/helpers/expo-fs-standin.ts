@@ -9,7 +9,8 @@
  * - list() returns the folder's direct children only (iOS contentsOfDirectory), as File and Directory
  *   instances, and throws when the folder does not exist;
  * - a File for a missing path says exists false; delete() of a missing file throws;
- * - a folder in `unreadable` exists but its list() throws, as a read error would.
+ * - a folder in `unreadable` exists but its list() throws, as a read error would on iOS; one in
+ *   `listsAsEmpty` lists as empty, as an unreadable folder does on Android.
  *
  * Where expo-audio 57 puts a take (`directory: 'document'`): iOS `<Documents>/ExpoAudio/recording-<UUID>.m4a`
  * (ios/AudioUtils.swift createRecordingUrl), Android `<files>/Audio/recording-<UUID>.m4a`
@@ -28,8 +29,13 @@ export interface Disk {
   /** This container's Caches folder, with a trailing slash. */
   caches: string;
   os: 'ios' | 'android';
-  /** Folders (uri without the trailing slash) that exist but whose list() fails, as a read error would. */
+  /** Folders (uri without the trailing slash) that exist but whose list() fails, as a read error would on iOS. */
   unreadable: Set<string>;
+  /**
+   * Folders whose list() returns nothing although files are there: expo-file-system on Android
+   * (JavaFile.listFilesAsUnified) gives an empty list when java.io.File.listFiles() returns null.
+   */
+  listsAsEmpty: Set<string>;
 }
 
 export interface Container {
@@ -44,8 +50,9 @@ export function iosContainer(id: string): Container {
   return { documents: `${root}/Documents/`, caches: `${root}/Library/Caches/`, os: 'ios' };
 }
 
+/** An Android app data folder. The package name is a neutral stand-in, not the app's (packages/brand owns that). */
 export function androidContainer(): Container {
-  const root = 'file:///data/user/0/com.earlyletters.scribe';
+  const root = 'file:///data/user/0/org.example.standin';
   return { documents: `${root}/files/`, caches: `${root}/cache/`, os: 'android' };
 }
 
@@ -63,7 +70,7 @@ function joinParts(parts: (string | { uri: string })[]): string {
 }
 
 export function createDisk(c: Container): Disk {
-  const disk: Disk = { files: new Map(), dirs: new Set(), documents: c.documents, caches: c.caches, os: c.os, unreadable: new Set() };
+  const disk: Disk = { files: new Map(), dirs: new Set(), documents: c.documents, caches: c.caches, os: c.os, unreadable: new Set(), listsAsEmpty: new Set() };
   mkdirp(disk, c.documents);
   mkdirp(disk, c.caches);
   return disk;
@@ -208,6 +215,7 @@ export function expoFileSystem(current: () => Disk) {
       const here = strip(this.uri);
       if (!disk.dirs.has(here)) throw new Error('ERR_DIRECTORY_NOT_FOUND');
       if (disk.unreadable.has(here)) throw new Error('ERR_DIRECTORY_READ');
+      if (disk.listsAsEmpty.has(here)) return [];
       const dirs = [...disk.dirs].filter((u) => parentOf(u) === here).map((u) => new Directory(u));
       const files = [...disk.files.keys()].filter((u) => parentOf(u) === here).map((u) => new File(u));
       return [...dirs, ...files];

@@ -188,6 +188,24 @@ describe('[DL-01] a take cut off by a kill, on a disk laid out as expo-audio wri
     expect(await app.sweep.runLaunchSweep()).toEqual({ 'finalize-recording': 1 });
     expect(app.store.getDraft(take.id)).toMatchObject({ state: 'ready', audioUri: rec.uri });
   });
+
+  it('on Android, a recorder folder that lists as empty (unreadable there) does not drop the take; the next launch finalizes it', async () => {
+    h.disk = createDisk(androidContainer());
+    layOutApp(h.disk);
+    let app = await launch();
+    const asha = addAsha(app);
+    const rec = recorderFor(h.disk);
+    const take = await app.recorder.beginTake(rec as never, { childId: asha, promptKey: 'first-laugh' });
+    h.disk.listsAsEmpty.add(recorderDir(h.disk));
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    // The plan said "no file", but the take's file is still there: the draft is kept as it was.
+    expect(app.store.getDraft(take.id)).toMatchObject({ state: 'recording', audioUri: rec.uri, promptKey: 'first-laugh' });
+    h.disk.listsAsEmpty.clear();
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finalize-recording': 1 });
+    expect(app.store.getDraft(take.id)).toMatchObject({ state: 'ready', audioUri: rec.uri, promptKey: 'first-laugh' });
+  });
 });
 
 describe('[DATA-REQ-048] saved letters after iOS gives the app a new container', () => {
@@ -213,6 +231,21 @@ describe('[DATA-REQ-048] saved letters after iOS gives the app a new container',
     // A second launch has nothing left to do.
     app = await launch();
     expect(await app.sweep.runLaunchSweep()).toEqual({});
+  });
+
+  it('a letter whose exact file is at the top of Documents stays on it when ExpoAudio holds a different file of that name', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const name = 'recording-7B6A5C4D-0000-4000-8000-00000000C1A5.m4a';
+    const top = put(h.disk, `${h.disk.documents}${name}`, 100);
+    put(h.disk, `${recorderDir(h.disk)}/${name}`, 50);
+    const id = '0199a5b0-0000-7000-8000-00000000e004';
+    app.store.saveEntry(letter({ id, childId: asha, audioUri: top, audioSha256: sha256(bytesAt(top)), audioBytes: 100 }));
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    const saved = app.store.getEntry(id)!;
+    expect(saved.audioUri).toBe(top);
+    expect(sha256(bytesAt(saved.audioUri!))).toBe(saved.audioSha256);
   });
 });
 
@@ -282,6 +315,105 @@ describe('[D-085] erase removes the recording where it is now (privacy)', () => 
     expect(namesIn(h.disk, recorderDir(h.disk))).toEqual([]);
     expect(await app.sweep.runLaunchSweep()).toEqual({});
     expect(app.store.listDrafts(asha)).toEqual([]);
+  });
+
+  it('Erase now never removes a file another letter points at: same name, one at the top of Documents, one in ExpoAudio', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const name = 'recording-3E4F5A6B-0000-4000-8000-0000000DE1E9.m4a';
+    const gone = put(h.disk, `${h.disk.documents}${name}`, 100);
+    const kept = put(h.disk, `${recorderDir(h.disk)}/${name}`, 50);
+    const erased = '0199a5b0-0000-7000-8000-00000000e005';
+    const live = '0199a5b0-0000-7000-8000-00000000e006';
+    app.store.saveEntry(letter({ id: erased, childId: asha, audioUri: gone }));
+    app.store.saveEntry(letter({ id: live, childId: asha, audioUri: kept, audioSha256: sha256(bytesAt(kept)), audioBytes: 50 }));
+    app.store.deleteEntry(erased);
+    expect(app.erase.eraseDeletedLetter(erased)).toBe(true);
+    expect(h.disk.files.has(gone)).toBe(false);
+    expect(h.disk.files.has(kept)).toBe(true);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(app.store.getEntry(live)).toMatchObject({ audioUri: kept, audioSha256: sha256(bytesAt(kept)) });
+  });
+
+  it('the 30 day purge keeps a recording that a draft still points at exactly', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const shared = put(h.disk, `${recorderDir(h.disk)}/recording-3E4F5A6B-0000-4000-8000-0000000DE1EA.m4a`, 70);
+    const id = '0199a5b0-0000-7000-8000-00000000e007';
+    app.store.saveEntry(letter({ id, childId: asha, audioUri: shared }));
+    app.store.deleteEntry(id);
+    const draft = app.store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: shared, audioDurationMs: 4000, state: 'ready' });
+    vi.setSystemTime(T0 + 30 * DAY + 60_000);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(app.store.listDeleted()).toEqual([]); // the letter is erased
+    expect(h.disk.files.has(shared)).toBe(true); // the draft's recording is not
+    expect(app.store.getDraft(draft.id)).toMatchObject({ audioUri: shared, state: 'ready' });
+  });
+
+  it('the 30 day purge still runs when a recordings folder cannot be listed (erase needs no snapshot)', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-3E4F5A6B-0000-4000-8000-0000000DE1EB.m4a`, 20_000);
+    const id = '0199a5b0-0000-7000-8000-00000000e008';
+    app.store.saveEntry(letter({ id, childId: asha, audioUri: uri }));
+    app.store.deleteEntry(id);
+    h.disk.unreadable.add(recorderDir(h.disk));
+    vi.setSystemTime(T0 + 31 * DAY);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toBeNull(); // the sweep itself changes nothing
+    expect(app.store.listDeleted()).toEqual([]);
+    expect(h.disk.files.has(uri)).toBe(false);
+  });
+});
+
+describe('edge cases on a real layout', () => {
+  it('an empty ExpoAudio folder: nothing to do', async () => {
+    const app = await launch();
+    addAsha(app);
+    h.disk.dirs.add(recorderDir(h.disk));
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+  });
+
+  it('a zero-byte take with no row is kept, re-attached as unrecoverable and counted in Settings > Recordings', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const empty = put(h.disk, `${recorderDir(h.disk)}/recording-0E0E0E0E-0000-4000-8000-000000000000.m4a`, 0);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ reattach: 1 });
+    expect(app.store.countUnrecoverableTakes()).toBe(1);
+    expect(app.store.listDrafts(asha).map((d) => [d.audioUri, d.state])).toEqual([[empty, 'unrecoverable']]); // never shown as ready
+    expect(h.disk.files.has(empty)).toBe(true);
+  });
+
+  it('files that are not recordings in ExpoAudio are never listed, re-attached or erased', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const others = ['.DS_Store', 'notes.txt', 'recording-1.m4a.part'].map((n) => put(h.disk, `${recorderDir(h.disk)}/${n}`, 10));
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-0F0F0F0F-0000-4000-8000-000000000001.m4a`, 30);
+    const id = '0199a5b0-0000-7000-8000-00000000e009';
+    app.store.saveEntry(letter({ id, childId: asha, audioUri: uri }));
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    app.store.deleteEntry(id);
+    expect(app.erase.eraseDeletedLetter(id)).toBe(true);
+    expect(namesIn(h.disk, recorderDir(h.disk))).toEqual(['.DS_Store', 'notes.txt', 'recording-1.m4a.part']);
+    for (const o of others) expect(h.disk.files.has(o)).toBe(true);
+  });
+
+  it('a same-name pair with no row becomes one draft on the recorder copy; the other copy stays on disk', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const name = 'recording-0A0A0A0A-0000-4000-8000-000000000002.m4a';
+    const top = put(h.disk, `${h.disk.documents}${name}`, 40);
+    const rec = put(h.disk, `${recorderDir(h.disk)}/${name}`, 40);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ reattach: 1 });
+    expect(app.store.listDrafts(asha).map((d) => d.audioUri)).toEqual([rec]);
+    expect(h.disk.files.has(top)).toBe(true);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({}); // no second draft
   });
 });
 

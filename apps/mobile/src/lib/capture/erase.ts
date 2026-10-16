@@ -10,21 +10,32 @@
  * pairs files with rows by name, so a file of that name left in a recording
  * folder would come back as a draft at the next launch (recordings.ts).
  *
+ * A file another draft or letter may own is never removed: one the other row
+ * names exactly, or a same-name file the sweep could pair with it
+ * (sweep.logic.ts belongsToAnotherRow). The letter's row still goes; the file
+ * stays with the row that has it.
+ *
  * Idempotent: a file that is already gone is success. A file that exists and
  * cannot be removed throws, which keeps the row on the shelf for a retry.
  */
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
-import { eraseEntry, purgeExpired, recordLaunch, type AudioEraser } from '../store';
-import { filesForRecording } from './recordings';
+import { audioRows, eraseEntry, purgeExpired, recordLaunch, type AudioEraser } from '../store';
+import { erasableFiles } from './recordings';
 
 export const eraseAudioFile: AudioEraser = (uri, entryId) => {
   // The web preview has no recordings on disk (the sweep skips it too): nothing to remove there.
   if (uri && Platform.OS !== 'web') {
-    for (const f of filesForRecording(uri)) if (f.exists) f.delete();
+    for (const f of erasableFiles(uri, otherAudioUris(entryId))) if (f.exists) f.delete();
   }
   removeListeningCopy(entryId);
 };
+
+/** Stored paths of every other draft and letter, deleted letters included (they can still be restored). */
+function otherAudioUris(entryId: string): string[] {
+  const { drafts, entries } = audioRows();
+  return [...drafts, ...entries.filter((e) => e.id !== entryId)].flatMap((r) => (r.audioUri ? [r.audioUri] : []));
+}
 
 /** Erase now, from the shelf. True when the letter and its recording are gone. */
 export function eraseDeletedLetter(id: string): boolean {

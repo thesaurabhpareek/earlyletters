@@ -7,11 +7,12 @@
  * Rules:
  * - Audio is never deleted here. Every file ends attached to a row, or listed
  *   in Settings > Recordings as a recording without a letter.
- * - Files are matched to rows by file name, not by full URI: iOS moves the
- *   app container on updates, so a stored file:// path goes stale while the
- *   file itself is still in Documents. A stale path is rebased, not lost.
- *   Matching by name is also why a file in a subfolder (the recorder's own,
- *   below) and a row that names the same file anywhere still pair up.
+ * - A row keeps the listed file at exactly its stored path. Only when that
+ *   path is not listed is it matched by file name: iOS moves the app
+ *   container on updates, so a stored file:// path goes stale while the file
+ *   itself is still in Documents. A stale path is rebased, not lost. When two
+ *   folders hold the same name, the name match takes the recorder's folder
+ *   (listed last), but never moves a row off a file that is where it says.
  * - A draft still marked `recording` means the app was killed mid-take. If
  *   its file has bytes and plays (or could not be probed), the take is
  *   finalized (hashed, marked ready) and shows on Tonight. If the file is
@@ -104,10 +105,35 @@ export function isAudioFile(uri: string): boolean {
   return AUDIO_EXT.test(fileNameOf(uri));
 }
 
+/**
+ * Erase guard (erase.ts): whether a file may belong to another draft or
+ * letter, so erasing one letter must leave it on the phone.
+ * `candidate` is the erased letter's stored path (`storedUri`) or a file of
+ * the same name in a recording folder; `others` are the stored paths of every
+ * other draft and letter, deleted ones included (they can still be restored).
+ * - Another row whose stored path is exactly the candidate owns it.
+ * - A same-name file in a recording folder may be another same-name row's
+ *   (the sweep pairs a row by name when its path is stale), so it stays.
+ * - The erased letter's own stored file stays only if another row of that
+ *   name has no file at its own path, so the sweep would pair it with this one.
+ */
+export function belongsToAnotherRow(candidate: string, storedUri: string, others: readonly string[], exists: (uri: string) => boolean): boolean {
+  const name = fileNameOf(candidate);
+  return others.some((u) => u === candidate || (fileNameOf(u) === name && (candidate !== storedUri || !exists(u))));
+}
+
 export function planLaunchSweep(s: SweepSnapshot): SweepAction[] {
   const actions: SweepAction[] = [];
+  const atPath = new Map<string, SweepFile>();
+  /** By file name; the later listing (the recorder's folder) wins a clash. */
   const files = new Map<string, SweepFile>();
-  for (const f of s.files) if (isAudioFile(f.uri)) files.set(fileNameOf(f.uri), f);
+  for (const f of s.files) {
+    if (!isAudioFile(f.uri)) continue;
+    atPath.set(f.uri, f);
+    files.set(fileNameOf(f.uri), f);
+  }
+  /** A row's file: the one listed at exactly its stored path, else one of the same name. */
+  const fileFor = (uri: string) => atPath.get(uri) ?? files.get(fileNameOf(uri));
   const claimed = new Set<string>();
   const skip = new Set(s.skipDraftIds);
 
@@ -119,7 +145,7 @@ export function planLaunchSweep(s: SweepSnapshot): SweepAction[] {
     const name = fileNameOf(d.audioUri);
     claimed.add(name);
     if (skip.has(d.id)) continue;
-    const file = files.get(name);
+    const file = fileFor(d.audioUri);
     if (d.state === 'recording') {
       if (!file) actions.push({ kind: 'drop-empty-recording', draftId: d.id });
       else if (file.bytes > 0 && file.playable === false) actions.push({ kind: 'unplayable-recording', draftId: d.id, uri: file.uri, bytes: file.bytes });
@@ -133,9 +159,8 @@ export function planLaunchSweep(s: SweepSnapshot): SweepAction[] {
 
   for (const e of s.entries) {
     if (!e.audioUri) continue;
-    const name = fileNameOf(e.audioUri);
-    claimed.add(name);
-    const file = files.get(name);
+    claimed.add(fileNameOf(e.audioUri));
+    const file = fileFor(e.audioUri);
     if (!file) {
       if (!e.deleted) actions.push({ kind: 'missing-audio', ref: 'entry', id: e.id });
     }

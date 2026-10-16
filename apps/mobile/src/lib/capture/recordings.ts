@@ -8,8 +8,14 @@
  *    puts back by file name.
  * 2. The recorder's own folder, `Documents/ExpoAudio` on iOS and
  *    `<files>/Audio` on Android (sweep.logic.ts recorderFolder). Every take
- *    is written here. It comes last so it wins a same-name clash in the
- *    sweep's by-name map (it is where the recorder put the file).
+ *    is written here. It comes last so it wins a same-name clash when the
+ *    sweep pairs a stale path by name; a row whose exact path is listed
+ *    always keeps its own file.
+ *
+ * The wipes still to be built, "Erase everything on this phone"
+ * (DATA-REQ-024) and the wipe after an account is deleted (DATA-REQ-023),
+ * must remove recordings through recordingFolders() and keep
+ * `Documents/models`.
  *
  * Not recursive, on purpose: Documents also holds the database (`SQLite/`)
  * and the speech models (`models/`), and on Android the packs and remote
@@ -21,7 +27,7 @@
  */
 import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
-import { fileNameOf, isAudioFile, recorderFolder } from './sweep.logic';
+import { belongsToAnotherRow, fileNameOf, isAudioFile, recorderFolder } from './sweep.logic';
 
 /** The folders that hold recordings, top of Documents first, then the recorder's folder. */
 export function recordingFolders(): Directory[] {
@@ -48,15 +54,35 @@ export function listRecordingFiles(): File[] {
 
 /**
  * The file a stored path names, and a file of the same name in each
- * recording folder. After iOS moves the app's container, a stored path
- * names the old one while the recording sits in this one; the sweep pairs
- * them by name, so erasing must remove that file too, or the next sweep
- * would find it with no row and bring it back as a draft.
+ * recording folder, each path once. After iOS moves the app's container, a
+ * stored path names the old one while the recording sits in this one; the
+ * sweep pairs them by name, so erasing must consider that file too, or the
+ * next sweep would find it with no row and bring it back as a draft.
  */
 export function filesForRecording(uri: string): File[] {
   const out = [new File(uri)];
   const name = fileNameOf(uri);
   if (!isAudioFile(name) || name.includes('/')) return out;
-  for (const dir of recordingFolders()) out.push(new File(dir, name));
+  for (const dir of recordingFolders()) {
+    const f = new File(dir, name);
+    if (!out.some((o) => o.uri === f.uri)) out.push(f);
+  }
   return out;
+}
+
+/**
+ * What erasing the recording at `uri` may remove: those of
+ * filesForRecording(uri) that exist and that no other row may own
+ * (sweep.logic.ts belongsToAnotherRow). `otherUris` are the stored paths of
+ * every other draft and letter. A file another row may own is left for it.
+ */
+export function erasableFiles(uri: string, otherUris: readonly string[]): File[] {
+  const exists = (u: string) => {
+    try {
+      return new File(u).exists;
+    } catch {
+      return false; // unknown counts as "not where it says", which keeps the candidate
+    }
+  };
+  return filesForRecording(uri).filter((f) => f.exists && !belongsToAnotherRow(f.uri, uri, otherUris, exists));
 }
