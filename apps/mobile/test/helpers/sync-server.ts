@@ -5,7 +5,7 @@
  * the signed-in user, named jsonb arguments, errors as { code, message } and
  * status 0 for no response. Same harness as test/sync-e2e.test.ts.
  *
- * Protocol v1 (docs/adr/0023-sync-protocol-v1.md) needs S02's words compare and
+ * Protocol v1 (docs/adr/0025-sync-protocol-v1.md) needs S02's words compare and
  * set (WP-F16-14). Until a migration defines it, `startSyncServer({ protocol: 'v1' })`
  * loads helpers/sync-v1-standin.sql (the objects v1 adds) and applies the anchored
  * edits in helpers/sync-v1-standin.ts to the newest real sync_push: S03's request to

@@ -1,7 +1,7 @@
 /**
  * Sync wire types and the injected server surface (DECISIONS D-023; SQL in
  * supabase/migrations/20261004100000_sync_engine.sql and 20261005000000, which
- * document every field; protocol v1 in docs/adr/0023-sync-protocol-v1.md).
+ * document every field; protocol v1 in docs/adr/0025-sync-protocol-v1.md).
  * Pure TypeScript: no React Native, no supabase-js import, so the engine runs
  * in Node tests against a fake or against PGlite.
  *
