@@ -93,3 +93,7 @@ packages/emails/out/
 # INDEX.md, steps/*.json and critiques/ stay tracked. See docs/release/journey/README.md.
 docs/release/journey/screens/**
 *.pdf
+
+# coverage reports (npm run test:coverage); scripts/coverage is the tooling, not a report
+coverage/
+!/scripts/coverage/
