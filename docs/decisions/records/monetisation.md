@@ -70,8 +70,8 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: the windows are data (one row per counsel change), but changing a published promise needs new legal text
 - **Revisit when:** law: counsel changes any window or a state changes its auto-renewal law
 - **Review by:** 2026-12-01
-- **Status:** amended by D-080. Code shipped ahead of the log: merged PR #121 ships on-device plan reminders and a purchase confirmation under D-094, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`.
-- **As built:** not built: no server sees purchases in v1.0; on-device plan reminders exist in `apps/mobile/src/lib/billing/plan-reminders.ts` (PR #121, under D-094, which is proposed in open PR #122)
+- **Status:** amended by D-080. Code shipped ahead of the log: merged PR #121 ships on-device plan reminders and a purchase confirmation under D-094 (Decided, delegated by founder, 15 Oct).
+- **As built:** not built: no server sees purchases in v1.0; on-device plan reminders exist in `apps/mobile/src/lib/billing/plan-reminders.ts` (PR #121, under D-094)
 - **Also:** D-053 says these windows no longer apply to a server we do not have (DEBATES Q-003); D-080 gives the server a data source again
 
 ### D-036 Purchase rules: account first, contributors never offered, no double offers
@@ -161,7 +161,7 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Reversal cost:** medium: removing it needs Privacy Policy and Terms changes and another way to meet 17602
 - **Revisit when:** law: counsel confirms Apple's own emails or local notifications meet 17602 (COUNSEL_PACKET); platform: v1.1 server release starts
 - **Review by:** on trigger
-- **Status:** parked: needs a server, which v1.0 does not have (D-085, PR #54). Code shipped ahead of the log: merged PR #121 ships on-device plan reminders in its place under D-094, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`
+- **Status:** parked: needs a server, which v1.0 does not have (D-085, PR #54). Code shipped ahead of the log: merged PR #121 ships on-device plan reminders in its place under D-094 (Decided, delegated by founder, 15 Oct)
 - **As built:** not built; on-device reminders in `apps/mobile/src/lib/billing/plan-reminders.ts` stand in (PR #121)
 
 ### D-081 Purchase consent records (supersedes D-049)
@@ -196,3 +196,15 @@ Plus: what it gates, prices, how it is sold through Apple, purchase rules, renew
 - **Review by:** on trigger
 - **Status:** in force
 - **As built:** `apps/mobile/src/lib/billing/letter-ledger.native.ts`, `apps/mobile/src/lib/db/repos/ledger.ts`
+
+### D-094 Plan reminders and the purchase confirmation ship in v1.0, as a courtesy
+- **Source:** `docs/DECISIONS.md` D-094 (Decided, delegated by founder, 2026-10-15; needs counsel: COUNSEL_PACKET C-1 to C-3 and Q37); PR #122 (merged 15 Oct 2026); PR #121 (merged 15 Oct 2026)
+- **Decided:** v1.0 ships on-device plan reminders (local notifications in the Q-003 windows, on the purchaser's phones only, never through Family Sharing) and, after a new purchase, a confirmation of what was agreed with "Save a copy". They follow D-083: no price, "free trial", "free months" or "we will email you" in app copy. Reminders are a courtesy, not a guaranteed delivery: the app and the Subscription Terms say they can come late or not at all, and that Settings, Plan and Apple's receipts hold every date.
+- **Why:** not recorded in the source
+- **Door:** one-way after launch: once the Subscription Terms describe the reminders and families receive them, removing them changes a published promise
+- **Reversal cost:** medium: code plus a Subscription Terms change and counsel review
+- **Revisit when:** law: counsel answers COUNSEL_PACKET C-1 to C-3 and Q37; platform: a server release brings back the D-080 reminder emails
+- **Review by:** on trigger
+- **Status:** in force: needs counsel; the Subscription Terms wording is requested on open PR #81, whose 3.0.0 text does not yet call reminders a courtesy (per the source); device test row S2-17 is in open PR #123
+- **As built:** `apps/mobile/src/lib/billing/plan-reminders.ts`, `apps/mobile/src/app/plus/confirmed.tsx`
+- **Also:** stands in for the D-080 server reminder emails while v1.0 has no server

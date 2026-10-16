@@ -191,15 +191,16 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **As built:** `packages/core/src/safety.ts` (not enabled); `apps/mobile/src/app/settings/index.tsx` (static row)
 
 ### D-040 Minimum iOS 17
-- **Source:** `docs/DECISIONS.md` D-040 (Recommended, proceed: yes, 2026-10-03)
-- **Decided:** iOS 17 minimum.
-- **Why:** StoreKit 2 needs iOS 15; XCUITest accessibility audits need 17; Declared Age Range is called only where it exists (TDD 07 OQ-1, TDD 09 Q6, TDD 01 OQ-6).
+- **Source:** `docs/DECISIONS.md` D-040 (Recommended, proceed: yes, 2026-10-03); D-098 (Decided, delegated by founder, 2026-10-15; DEBATES Q-002), PR #122 (merged 15 Oct 2026)
+- **Decided:** iOS 17 minimum. D-098 makes it decided; follow-ups: set the iOS deployment target to 17.0, the store listing and Help say iOS 17 or later, and the "needs iOS 17" fallbacks in billing copy stay.
+- **Why:** StoreKit 2 needs iOS 15; XCUITest accessibility audits need 17; Declared Age Range is called only where it exists (TDD 07 OQ-1, TDD 09 Q6, TDD 01 OQ-6). D-098: Apple's subscription store view (the Plus sheet) needs iOS 17.
 - **Door:** two-way: raising or lowering the floor is a build setting (raising it later drops users on older phones)
 - **Reversal cost:** low
 - **Revisit when:** platform: the minimum iOS can become 26 (ADR 0016 revisits Apple-hosted packs then)
 - **Review by:** on trigger
 - **Status:** in force
-- **As built:** not built: no deployment target is set in `apps/mobile/app.config.ts`; open PR #126 sets 17.0 under D-098 (proposed in open PR #122)
+- **As built:** not built: no deployment target is set in `apps/mobile/app.config.ts`; open PR #126 sets 17.0 under D-098
+- **Also:** D-098
 
 ### D-044 Sign-in methods at v1.0: Apple and email link plus code; Google in v1.1
 - **Source:** `docs/DECISIONS.md` D-044 (Recommended, proceed: yes, 2026-10-03)
@@ -220,7 +221,7 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Reversal cost:** low: a manifest and catalog change
 - **Revisit when:** cost: the pack host leaves its free tier (R2: 10 GB-month storage, 10M Class B requests a month, per ADR 0016); platform: Apple-hosted Background Assets become usable (minimum iOS 26)
 - **Review by:** on trigger
-- **Status:** in force: the host itself is not yet chosen (D-097 proposes `packs.earlyletters.app` on Cloudflare R2 in open PR #122)
+- **Status:** in force: the host is chosen by D-097 (`packs.earlyletters.app` on Cloudflare R2); the move is a follow-up in open PR #126
 - **As built:** `apps/mobile/src/lib/models/catalog.ts`
 
 ### D-051 Standard over custom
@@ -306,3 +307,15 @@ The iOS app: speech models, languages, audio, design system, accessibility, sign
 - **Status:** in force
 - **As built:** `packages/api/src/content.ts`, `packages/content/src/stories.en.ts`, `apps/mobile/src/components/content-blocks`
 - **Also:** BRIEF-20261003-16
+
+### D-097 Pack and model host: packs.earlyletters.app on Cloudflare R2
+- **Source:** `docs/DECISIONS.md` D-097 (Decided, delegated by founder, 2026-10-15; takes DEBATES Q-001 option b); PR #122 (merged 15 Oct 2026)
+- **Decided:** one hostname, `packs.earlyletters.app`, serves both language packs and speech models from Cloudflare R2. DNS for `earlyletters.com` stays where it is, so email DNS does not move.
+- **Why:** not recorded in the source beyond DEBATES Q-001; the source notes that email DNS does not move
+- **Door:** two-way: the host sits behind the signed manifest (D-046, ADR 0016), but the hostname is compiled into each build
+- **Reversal cost:** low before launch; medium after: installed builds keep fetching from the old host until families update
+- **Revisit when:** cost: the R2 free tier is exceeded (see D-046); platform: Apple-hosted Background Assets become usable (minimum iOS 26)
+- **Review by:** on trigger
+- **Status:** in force: follow-ups not yet done (source): set `EXPO_PUBLIC_DOCS_BASE_URL` for the build profiles, move `SELF_HOST_BASE` in the model catalog, update ADR 0016 and the model hosting doc (PR #35), and the founder creates the R2 bucket and DNS record. The code change is in open PR #126
+- **As built:** not built: `apps/mobile/src/lib/models/catalog.ts` still names `models.earlyletters.com` (`SELF_HOST_BASE`)
+- **Also:** answers the host question left open by D-046 and ADR-0016

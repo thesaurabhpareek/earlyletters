@@ -23,8 +23,8 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Reversal cost:** low: a build switch
 - **Revisit when:** law: counsel approves or changes `analyticsConsent.*`
 - **Review by:** on trigger
-- **Status:** amended by D-062. Code shipped ahead of the log: merged PR #118 turns analytics off in every v1.0 build profile under D-095, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`.
-- **As built:** `packages/analytics/src/consent.ts`, `apps/mobile/src/components/consent/analytics-consent-sheet.tsx`. Note: PR #118 (merged) turns analytics off in every v1.0 build profile through `EXPO_PUBLIC_ANALYTICS`, under D-095, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`.
+- **Status:** amended by D-062; for v1.0, amended by D-095 (no analytics SDK or consent sheet in v1.0)
+- **As built:** `packages/analytics/src/consent.ts`, `apps/mobile/src/components/consent/analytics-consent-sheet.tsx`; switched off in every v1.0 build profile under D-095 (`apps/mobile/src/lib/capabilities.ts`, `apps/mobile/eas.json`)
 
 ### D-004 Publish as an individual Apple Developer account; no LLC for now
 - **Source:** `docs/DECISIONS.md` D-004 (Decided, founder, 2026-10-03); restated as D-064 (Decided, founder, 2026-10-03)
@@ -150,8 +150,8 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Reversal cost:** low: code and configuration
 - **Revisit when:** scale: no threshold is set for how many consenting families make the findings meaningful; the decision-science agent should propose one (no source names it); law: counsel changes the consent reading
 - **Review by:** on trigger
-- **Status:** in force for the log; code shipped ahead of the log: merged PR #118 keeps analytics off in every v1.0 build profile (`EXPO_PUBLIC_ANALYTICS`) under D-095, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`
-- **As built:** `packages/analytics/src/insights/engine.ts`, `supabase/migrations/20261004300000_insights_aggregates.sql`. Note: PR #118 (merged) keeps analytics off in every v1.0 profile under D-095, which is logged in open PR #122 as Decided (delegated by founder) but is not in `docs/DECISIONS.md`; the log still says opt-in PostHog at launch.
+- **Status:** amended by D-095 for v1.0: no analytics SDK or consent sheet in v1.0; opt-in analytics returns, with consent, in v1.1 (D-095 text)
+- **As built:** `packages/analytics/src/insights/engine.ts`, `supabase/migrations/20261004300000_insights_aggregates.sql`
 - **Also:** BRIEF-20261003-12
 
 ### D-088 In-app feedback: v1.0 keeps "Data Not Collected"; Help email row
@@ -175,3 +175,26 @@ Who the publisher is, age rules, consent, analytics, retention, what others may 
 - **Review by:** on trigger
 - **Status:** in force
 - **As built:** `supabase/migrations/20261004000000_plus_on_device_only.sql` (`purge_ledger` 60 days); the device-side record is not built
+
+### D-095 No analytics SDK or consent sheet in v1.0
+- **Source:** `docs/DECISIONS.md` D-095 (Decided, delegated by founder, 2026-10-15; confirms D-088 and changes the v1.0 part of D-062); PR #122 (merged 15 Oct 2026); PR #118 (merged 15 Oct 2026)
+- **Decided:** a build switch, `EXPO_PUBLIC_ANALYTICS`, off in every v1.0 profile. Off means no consent sheet, no usage switch in Settings, Privacy, no PostHog client even if a key is set, and analytics never starts. `packages/analytics` stays. Opt-in analytics returns, with consent, in v1.1.
+- **Why:** it confirms D-088's "Data Not Collected" (source); the App Store privacy label stays "Data Not Collected" (D-095 effects). No further reason recorded in the source
+- **Door:** one-way after launch: turning analytics on changes the published App Store privacy label
+- **Reversal cost:** medium: the switch is a build setting, but turning it on needs a privacy label change, the consent flow and counsel review
+- **Revisit when:** platform: v1.1 planning starts (the source returns analytics with consent in v1.1); law: counsel changes the consent reading
+- **Review by:** on trigger
+- **Status:** in force
+- **As built:** `apps/mobile/src/lib/capabilities.ts` (`ANALYTICS`), `apps/mobile/eas.json` (`EXPO_PUBLIC_ANALYTICS` off in every profile), `apps/mobile/src/lib/analytics/index.ts`
+- **Also:** amends D-003 and D-062 for v1.0
+
+### D-096 The export carries the consent choices on this phone
+- **Source:** `docs/DECISIONS.md` D-096 (Decided, delegated by founder, 2026-10-15); PR #122 (merged 15 Oct 2026)
+- **Decided:** the export (schema 1.1.0) adds `consent_on_this_phone` to `account.json`: the 18+ answer and the usage-sharing choice. No server consent history in v1.0, because there is no server; a later version adds it as its own field.
+- **Why:** not recorded in the source; the source names it the phone part of G-19 and LEGAL-REQ-034
+- **Door:** one-way after launch: families keep their exports, so a field once shipped stays in the format; later fields can be added but not taken back
+- **Reversal cost:** low before launch: code; medium after: a new export schema version
+- **Revisit when:** platform: a server release adds a consent history (the source says it becomes its own field)
+- **Review by:** on trigger
+- **Status:** in force: the code is in open PR #120, not merged
+- **As built:** not built: `apps/mobile/src/lib/export/build.logic.ts` has no `consent_on_this_phone` on `develop`; open PR #120 adds it

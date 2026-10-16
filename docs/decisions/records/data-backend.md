@@ -47,7 +47,7 @@ Supabase, the local database, sync, visibility, remote config, packs hosting and
 - **Reversal cost:** medium: changing the signing key needs a release; changing the host is a manifest change
 - **Revisit when:** platform: the minimum iOS becomes 26 (Apple-hosted packs); cost: Edge Function invocations for documents pass about $60 a month (the ADR's estimate at 220k MAU; no budget is set in any source)
 - **Review by:** on trigger
-- **Status:** proposed: the ADR header says Proposed; D-065, D-066 and D-068 adopt its pack, content and config parts; the host (F-1, F-2) is proposed as D-097 in open PR #122
+- **Status:** proposed: the ADR header says Proposed; D-065, D-066 and D-068 adopt its pack, content and config parts; the host (F-1, F-2) is decided as D-097 (merged PR #122), though the ADR header still says Proposed
 - **As built:** `apps/mobile/src/lib/packs/engine.ts`, `packages/api/src/pack-manifest.ts`, `scripts/packs/publish.ts`
 
 ### ADR-0017 API and service standards

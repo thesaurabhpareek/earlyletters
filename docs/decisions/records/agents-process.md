@@ -93,13 +93,15 @@ How work is planned, assigned, reviewed and merged: the backlog, the agent harne
 - **Status:** in force: open PR #128 also records a wider merge delegation (D-107, "Widen.", 15 Oct), not merged
 - **As built:** not built (process rule; backup not in v1.0)
 
-### R-013 Release team: a `release` agent; `ops` as Platform and Reliability
-- **Source:** Project doc `infra/release-engineering-plan.md` (D-090, Decided, founder); open PR #108 (D-090 text: "Decided (founder, 13 Oct 2026; recommended 3 Oct)"); founder approval of #108 to #112 on 14 Oct (comment on #108)
-- **Decided:** a `release` agent (versions, release records, store metadata as code, the runbook) and `ops` re-chartered as Platform and Reliability Engineer; a separate SRE agent after launch, once there are real users and a first Sev 1 or 2 drill.
-- **Why:** not recorded in the sources read
+### D-090 Release team: a `release` agent; `ops` as Platform and Reliability
+- **Source:** `docs/DECISIONS.md` D-090 (Decided, founder, 2026-10-13; recommended 3 Oct); PR #108 (merged 15 Oct 2026)
+- **Decided:** a `release` agent (Release Engineer: versions, release records, store metadata as code, the runbook) and `ops` re-chartered as Platform and Reliability Engineer (DevOps and SRE). Defined on the harness branch; until the harness runs, used in interactive sessions by handle under COORDINATION.md. A separate SRE agent after launch, once there are real users and a first Sev 1 or 2 drill.
+- **Why:** not recorded in the source
 - **Door:** two-way: agent charters
 - **Reversal cost:** low
 - **Revisit when:** customer: real users and a first Sev 1 or 2 drill (the source's trigger for an SRE agent)
 - **Review by:** on trigger
-- **Status:** in force: the log entry D-090 is in open PR #108 and the agent in open PR #112, not merged
+- **Status:** in force: the agent definitions are in open PR #112, not merged
 - **As built:** not built on this branch (open PR #112)
+- **Also:** R-013
+

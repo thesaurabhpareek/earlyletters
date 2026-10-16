@@ -80,7 +80,7 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **Reversal cost:** low
 - **Revisit when:** team: a second person with merge rights joins; platform: the repository goes private (environments and rulesets then need a paid plan)
 - **Review by:** 2026-10-23
-- **Status:** in force: a founder action in GitHub settings, not yet done
+- **Status:** in force: a founder action in GitHub settings, not yet done. The environment and the tag and branch rulesets are now in the log as the 15 Oct gate amendment of D-089 (merged PR #108, ADR 0022 decision 8); branch protection for `develop` and `main` is not in the log
 - **As built:** not built: agent sessions cannot change repository settings; `.github/workflows/deploy-db.yml` already uses an environment
 
 ### R-009 The repository stays public on GitHub Free
@@ -117,35 +117,51 @@ Beta, domains, the release lane and its gates, the repository, accounts and runn
 - **As built:** `apps/mobile/eas.json`; `.github/workflows/agents.yml` (the harness runs only when the `AGENTS_ENABLED` repository variable is true, ADR 0018)
 - **Also:** the cost doc's website host (Cloudflare Pages) differs from D-063 (Vercel)
 
-### R-012 Release engineering model: two lanes, release branch, version file, RC tags
-- **Source:** Project doc `infra/release-engineering-plan.md` (lists D-089 as Decided, founder); open PR #108 (D-089 text, ADR 0022); comment on #108 (15 Oct 00:41 UTC): "The founder replied 'Approved' in the release-engineering thread on 14 Oct, after reviewing #108 to #112"; comment on #79 (14 Oct): "The founder approved D-089 on 13 Oct"
-- **Decided:** a preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, and a store lane (`production` profile). `release/1.0` is cut from `main` at freeze (Mon 26 Oct) and fixes are cherry-picked. One version in a version.json file in the app folder; build numbers from EAS. `ios-v1.0.0-rc.<n>` tags build candidates; the candidate that passes FT-39 is submitted; `ios-v1.0.0` is tagged after release. Store text generated from `packages/content`.
-- **Why:** not recorded in the sources read
+### D-089 Release engineering model: two lanes, release branch, version file, RC tags
+- **Source:** `docs/DECISIONS.md` D-089 (Decided, founder, 2026-10-13, recommended 3 Oct; gate amended 15 Oct, founder); ADR 0022 (Accepted, 2026-10-13; amended 15 Oct); PR #108 (merged 15 Oct 2026)
+- **Decided:** a preview lane (`testflight` profile, `.preview` record) for C0, C1 and every build before freeze, and a store lane (`production` profile). `release/1.0` is cut from `main` at freeze (Mon 26 Oct) and fixes are cherry-picked from `develop`. One version in a version.json file in the app folder; build numbers only from EAS. `ios-v1.0.0-rc.<n>` tags build candidates into the production record's internal TestFlight; the candidate that passes FT-39 is submitted (FT-45); `ios-v1.0.0` is tagged after release. Store text generated from `packages/content`. Gate (15 Oct): store-lane jobs run in the GitHub environment `app-store` with the founder as required reviewer, with tag and branch rulesets only admins bypass (see R-008).
+- **Why:** ADR 0022 context: there was no defined path from a frozen tree to the binary Apple reviews, no single place for the version, no store metadata the pipeline could push and no rule for what a release tag means. A release branch was chosen because v1.0.1 work and fix waves keep landing on `develop` during review, so without one the submitted code could only be protected by freezing everyone (ADR 0022 alternatives). The gate changed because the 3 Oct design assumed a private repository; it is public (D-089 text).
+- **Alternatives:** release from `main` with tags only (freezes `main`); freeze on `develop` with no release branch (freezes everyone through review); one lane for C0 and C1 too (undoes the preview lane); build on every push to `release/*` (spends free builds); repository secrets and a written rule only (any workflow run on any branch can read repository secrets); EAS Workflows or fastlane (a second pipeline outside our checks). All from ADR 0022.
 - **Door:** two-way: release process and tags
 - **Reversal cost:** low
-- **Revisit when:** team: a second engineer joins; platform: OTA updates are adopted (see R-014)
+- **Revisit when:** team: a second engineer joins; platform: OTA updates are adopted (see D-091)
 - **Review by:** on trigger
-- **Status:** in force: the log entry D-089 is in open PR #108, not merged
-- **As built:** `.github/workflows/testflight.yml`, `docs/release/TESTFLIGHT.md`; the version file and store workflow are in open PRs #109 and #110
+- **Status:** in force
+- **As built:** `.github/workflows/testflight.yml`, `docs/release/TESTFLIGHT.md`; the version file and store workflow are in open PRs #109 and #110; the release runbook is in open PR #111
+- **Also:** R-012; ADR-0022 (decisions 1 to 8 and 10; decision 9 is D-091)
 
-### R-014 No OTA updates in v1.0
-- **Source:** Project doc `infra/release-engineering-plan.md` (D-091, "Decided (founder, 13 Oct)"); open PR #108 (D-091 text); founder approval of #108 to #112 on 14 Oct (comment on #108)
+### D-091 No OTA updates in v1.0
+- **Source:** `docs/DECISIONS.md` D-091 (Decided, founder, 2026-10-13; changes the 3 Oct recommendation to ship `expo-updates`); ADR 0022 decision 9; PR #108 (merged 15 Oct 2026)
 - **Decided:** no `expo-updates` in v1.0. Fixes ship as PATCH builds from the release branch, with expedited review for an S0.
-- **Why:** v1.0 became on-device only (PR #54) and plans "Data Not Collected" (D-088); an update check on every launch is a new network destination for the data map and a privacy-label question for counsel, three weeks before submission (D-091 text in #108).
+- **Why:** v1.0 became on-device only (PR #54) and plans "Data Not Collected" (D-088); an update check on every launch is a new network destination for the data map and a privacy-label question for counsel, three weeks before submission (D-091 rationale).
+- **Alternatives:** OTA in v1.0, the 3 Oct recommendation (ADR 0022 decision 9).
 - **Door:** two-way: adding `expo-updates` later is a release
 - **Reversal cost:** low
 - **Revisit when:** platform: v1.1, when sign-in brings a server anyway (from the source)
 - **Review by:** on trigger
-- **Status:** in force: the log entry D-091 is in open PR #108, not merged
+- **Status:** in force
 - **As built:** `apps/mobile/package.json` has no `expo-updates`
+- **Also:** R-014; ADR-0022 decision 9
 
-### R-015 EAS Free, then Starter when builds exceed it
-- **Source:** Project doc `infra/release-engineering-plan.md` (D-092, Decided, founder); open PR #108 (D-092 text: "Decided (founder, 13 Oct 2026; matches the cost decisions of 3 Oct)"); Project doc `infra/cost-decisions-2026-10-03.md`
-- **Decided:** EAS Free (15 iOS builds a month) until builds would exceed it, then Starter ($19 a month plus usage); also move to Starter for a month if Free's low-priority queue holds up a release candidate.
+### D-092 EAS Free, then Starter when builds exceed it
+- **Source:** `docs/DECISIONS.md` D-092 (Decided, founder, 2026-10-13; matches the cost decisions of 3 Oct); PR #108 (merged 15 Oct 2026); Project doc `infra/cost-decisions-2026-10-03.md`
+- **Decided:** EAS Free (15 iOS builds a month) until builds would exceed it, then Starter ($19 a month plus usage); also move to Starter for a month if Free's low-priority queue (one concurrent build) holds up a release candidate.
 - **Why:** not recorded in the sources beyond the cost posture (R-011)
 - **Door:** two-way: a plan change
 - **Reversal cost:** low
 - **Revisit when:** cost: more than 15 iOS builds in a month; cost: queue time holds up a release candidate (both from the source)
 - **Review by:** 2026-11-15
-- **Status:** in force: the log entry D-092 is in open PR #108, not merged
+- **Status:** in force
 - **As built:** `apps/mobile/eas.json`
+- **Also:** R-015
+
+### D-093 The 13 Oct integration branch is never merged
+- **Source:** `docs/DECISIONS.md` D-093 (Decided, delegated by founder, 2026-10-15; the founder can reverse it); PR #122 (merged 15 Oct 2026)
+- **Decided:** `auto/2026-10-13-integration` (the Line B fix wave merged onto the 4 Oct `develop`) is never merged. Line B's fixes reach `develop` one concern per PR, as mapped in the port map (open PR #117). The release runbook lands through PR #111 and the device test plan rows through PR #123. The branch is kept, not deleted, so parked code can be reused.
+- **Why:** not recorded in the source
+- **Door:** two-way: the branch is kept, so any fix on it can still be ported
+- **Reversal cost:** low: porting is per concern and nothing is deleted
+- **Revisit when:** team: a fix needed for v1.0 exists only on the integration branch and is not in the port map
+- **Review by:** on trigger
+- **Status:** in force: the port map (#117), runbook (#111) and test plan rows (#123) are open PRs, not merged
+- **As built:** not built: a branch rule; the branch is still on the remote
