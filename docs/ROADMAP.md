@@ -34,7 +34,7 @@ Owner: lead PM (coordinator merges). **Version 2.1, 3 Oct 2026 (evening)**, by t
 | 1 | Mon 5 to Fri 9 Oct | Commit and merge this wave; BL-330 Apple token capture; BL-347 email-link fix; BL-322 invite confirm; finish BL-331 to BL-333 tests and their APPLY.md section; BL-349 privacy manifest; BL-339 EAS project id; BL-335 public key line in `packages/api/src/keys.ts` | FT-01 to FT-20: Apple enrolment, counsel engaged, eight decisions, Paid Apps, Apple key, app record and products, Supabase staging with every migration, Auth and Resend, DNS, Google (cuttable), R2 and signing key, `eas init` and the first build, counsel package, mailing address, GitHub | A development build on a real iPhone records, transcribes, saves and plays; staging has every migration; sign-in works against staging |
 | 2 | Mon 12 to Fri 16 Oct | Fix what the device spikes find; BL-342 plan reminders; BL-336 iOS 17 target; BL-337 pack host; first signed publish of config, content and packs (coordinator, with the founder's OK); qa-e2e's Maestro flows and device plan | FT-21 to FT-31: 14 recordings, device spikes (speech per language on SE 3, StoreKit sandbox, three sign-ins, two-phone sync, deletion, kill test, size), production database (Tue 13), PostHog, **C0 Wed 14**, **Beta App Review Thu 15**, recruit C1, reviewers, trademark screen, Small Business Program, DPAs, legal pages live (Wed 14) | C0 running on the founding family's phones; no open S0; Beta App Review submitted |
 | 3 | Mon 19 to Fri 23 Oct | Daily C1 fixes; store screenshots from the release build (BL-340); review notes and demo account (BL-341) | FT-32 to FT-38: **C1 from Mon 19**, daily triage, counsel comments (Fri 23), per-language go or no-go (Fri 23), trademark opinion if needed, check the support resources, insurance quotes, screenshot review | C1 families recording; crash-free sessions 99.5% or more |
-| 4 | Mon 26 to Fri 30 Oct | **Feature freeze Mon 26.** Fixes only; release PR to `main`; tag `ios-v1.0.0` | FT-39 to FT-44: release-candidate device checks, C1 exit review (Thu 29), counsel sign-off and 1.0.0 policy versions (Thu 29), D-031 Hindi script (Fri 30), listing and privacy answers (Fri 30), approve the release | Release candidate tagged; listing complete |
+| 4 | Mon 26 to Fri 30 Oct | **Feature freeze Mon 26.** Fixes only; release PR to `main`; `release/1.0` cut; first RC tag `ios-v1.0.0-rc.1` (ADR 0022; `ios-v1.0.0` follows release) | FT-39 to FT-44: release-candidate device checks, C1 exit review (Thu 29), counsel sign-off and 1.0.0 policy versions (Thu 29), D-031 Hindi script (Fri 30), listing and privacy answers (Fri 30), approve the release | Release candidate built; listing complete |
 | Submit | Mon 2 to Fri 6 Nov | Answer App Review questions within a day | FT-45: submit with manual release | In review |
 | Buffer | 9 to 20 Nov | One rejection cycle | Release on approval (planned Mon 16 Nov) | Live in the US App Store |
 
@@ -56,7 +56,7 @@ Mon 19  FT-32 C1 starts
 Fri 23  FT-33 counsel comments; FT-34 language go or no-go
 Mon 26  feature freeze (BL-342 in)
 Thu 29  FT-40 C1 exit; FT-41 counsel sign-off
-Fri 30  FT-43 listing; tag ios-v1.0.0
+Fri 30  FT-43 listing; RC that passed FT-39 chosen (ios-v1.0.0 is tagged after release, ADR 0022)
 Mon 2   FT-45 submit
 ```
 
