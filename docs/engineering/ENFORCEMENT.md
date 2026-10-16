@@ -4,11 +4,11 @@ Every MUST rule in the compendium and what enforces it today. Status words: **en
 
 Rules that stay `not yet` are the backlog for the stewards' standing duty 2: turn one into a real check per run, or file it as a backlog proposal for `product`. The owner of each chapter keeps its rows current in the same PR that changes a rule or adds a check.
 
-Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 38 pending in open PRs, 34 partly enforced, review-only or covered by the rule they cite, 78 not yet.
+Totals across 208 rules (2026-10-15, counted from the rows below): 43 enforced, 45 pending in open PRs or branches, 39 partly enforced, review-only or covered by the rule they cite, 81 not yet. Chapter 11 (16 MUST rules, plus REL-R11 and REL-R12 as SHOULD) came with ADR 0022 (D-089).
 
-**Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above are not recounted): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so API-R01, API-G4, DQ-R12, DQ-R13, DSR-R06, DSR-R07 and DSR-R08 were rewritten on 15 Oct to say what is on `develop` and what is still missing; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
+**Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above were recounted on 15 Oct only to add chapter 11, not to re-verify the older rows): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so API-R01, API-G4, DQ-R12, DQ-R13, DSR-R06, DSR-R07 and DSR-R08 were rewritten on 15 Oct to say what is on `develop` and what is still missing; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
 
-## principal-architect (chapters 01, 02, 10)
+## principal-architect (chapters 01, 02, 10, 11)
 
 | Rule id | Level | Enforced by | Status | Gap id |
 |---|---|---|---|---|
@@ -61,6 +61,22 @@ Totals across 192 rules (2026-10-03, counted from the rows below): 42 enforced, 
 | OBS-R11 | MUST | review; SLO measurement | not yet measured | PDATA-06 |
 | OBS-R12 | MUST | alerts with runbook ids | not yet | PDATA-06, WS-18 |
 | OBS-R14 | MUST | runbook wrapper; agents without prod credentials | not yet | PINF-01 |
+| REL-R01 | MUST | branch ruleset on `release/*` (founder setup); coordinator-only pushes until then | not yet (founder setup) | REL-G3 |
+| REL-R02 | MUST | `apps/mobile/test/release-config.test.ts` | pending (BL-436 branch) | none |
+| REL-R03 | MUST NOT | same test: no build number in config, remote versioning with `autoIncrement` | pending (BL-436 branch) | none |
+| REL-R04 | MUST NOT | tag ruleset on `ios-v*`; release tag needs an RC tag on the same commit | not yet (founder setup) | REL-G3 |
+| REL-R05 | MUST | `release-ios.yml` tag, version and branch checks | pending (BL-437 branch) | none |
+| REL-R06 | MUST | release record review | review | none |
+| REL-R07 | MUST | `release-ios.yml` checks (tests, metadata drift, placeholders); size, privacy manifest, E2E handlers by hand | pending (BL-437 branch), partly | REL-G4 |
+| REL-R08 | MUST | `scripts/release/store-config.ts` drift test | pending (BL-436 branch) | none |
+| REL-R09 | MUST | content rules test (limits, no beta wording) | enforced on develop | none |
+| REL-R10 | MUST | `store-config.ts` refuses a later version without notes; `reviewNotes` in content | pending (BL-436, BL-437 branches) | none |
+| REL-R13 | MUST | review; CODE-R19 | review | none |
+| REL-R14 | MUST | review until `expo-updates` exists (none in v1.0, D-091) | review | none |
+| REL-R15 | MUST | release record review; DB-R09 | review | none |
+| REL-R16 | MUST | founder; health report | review | BL-439 |
+| REL-R17 | MUST | `app-store` environment secrets used only by `release-ios.yml`; gitleaks | pending PR #30 (gitleaks) and founder setup | REL-G3 |
+| REL-R18 | MUST NOT | fence path `.eas/**` | not yet | REL-G2 |
 
 Gap ids defined here:
 - CODE-G1: CI check that fails or labels PRs over 400 lines or 20 files (excluding lockfile, generated, test data).
@@ -77,6 +93,9 @@ Gap ids defined here:
 - OBS-G2: typed `OpsLog` logger with Asha canary unit tests.
 - OBS-G3: `ops_health` views and the 5-minute job.
 - OBS-G4: end-to-end log canary over every log stream.
+- REL-G2: add `.eas/**` to `fence.yml` and CODEOWNERS (PR #30 owns the fence today).
+- REL-G3: available now on GitHub Free because the repository is public (founder setup, FT-20): branch ruleset on `release/*`, tag rulesets for `ios-v*` and `android-v*`, and the release secrets in the `app-store` environment with the founder as required reviewer.
+- REL-G4: add the size budget (`scripts/size/measure.ts --ipa`) and the privacy-manifest diff to the RC checks once an RC artifact is available to CI.
 
 ## data-steward (chapters 03, 04)
 
