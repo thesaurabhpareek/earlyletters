@@ -83,7 +83,8 @@
     "e2e:web:journey": "JOURNEY_SHOTS=1 playwright test -c e2e-web/playwright.config.ts",
     "preflight:testflight": "node scripts/preflight-testflight.mjs",
     "test": "vitest run",
-    "e2e:web:index": "node e2e-web/support/build-index.mjs"
+    "e2e:web:index": "node e2e-web/support/build-index.mjs",
+    "e2e:web:pack": "bash e2e-web/support/pack-journey.sh"
   },
   "private": true
 }
