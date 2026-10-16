@@ -17,6 +17,7 @@ import {
   STORE_CONFIG_PATH,
 } from '../../../scripts/release/store-config';
 import { storeListing } from '../../../packages/content/src/store.en';
+import { REVIEW_NOTES, withReviewContact } from '../../../scripts/release/with-review-contact';
 
 const APP = join(__dirname, '..');
 const config = () => appConfig({ config: {} } as Parameters<typeof appConfig>[0]);
@@ -77,5 +78,47 @@ describe('store.config.json (EAS Metadata)', () => {
     expect(listingProblems(undefined, sharing).length).toBeGreaterThan(0);
     expect(listingProblems('on', sharing)).toEqual([]);
     expect(listingProblems('off', plain)).toEqual([]);
+  });
+});
+
+describe('App Review contact (added in CI only)', () => {
+  const contact = { firstName: 'Asha', lastName: 'Reviewer', email: 'review@earlyletters.com', phone: '+1 555 0100', demoRequired: false };
+  const secret = { ...contact, copyright: '2026 Asha Reviewer' };
+
+  it('adds the contact, default notes and copyright without touching the listing', () => {
+    const base = buildStoreConfig(FIRST_VERSION);
+    const out = withReviewContact(base, JSON.stringify(secret)) as unknown as { apple: { review: Record<string, unknown>; info: unknown; copyright: unknown } };
+    expect(out.apple.review).toMatchObject({ ...contact, notes: REVIEW_NOTES });
+    expect(out.apple.review.copyright).toBeUndefined();
+    expect(out.apple.copyright).toBe('2026 Asha Reviewer');
+    expect(out.apple.info).toEqual(base.apple.info);
+  });
+
+  it('fails loudly when the secret is missing or incomplete', () => {
+    expect(() => withReviewContact({}, undefined)).toThrow(/not set/);
+    expect(() => withReviewContact({}, JSON.stringify({ firstName: 'A' }))).toThrow(/lastName, email, phone, copyright/);
+  });
+
+  it('never echoes a malformed secret', () => {
+    const raw = 'firstName: Asha Reviewer, phone 555 0100';
+    let message = '';
+    try {
+      withReviewContact({}, raw);
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toMatch(/not valid JSON/);
+    expect(message).not.toContain('Asha');
+    expect(message).not.toContain('555');
+    expect(() => withReviewContact({}, '[1]')).toThrow(/JSON object/);
+  });
+
+  it('requires an international phone number with a leading plus', () => {
+    expect(() => withReviewContact({}, JSON.stringify({ ...secret, phone: '5550100' }))).toThrow(/starting with "\+"/);
+    expect(() => withReviewContact({}, JSON.stringify({ ...secret, phone: '+1 (555) 010-0100' }))).not.toThrow();
+  });
+
+  it('keeps review notes within the App Store Connect limit (4,000 bytes)', () => {
+    expect(new TextEncoder().encode(REVIEW_NOTES).length).toBeLessThanOrEqual(4000);
   });
 });
