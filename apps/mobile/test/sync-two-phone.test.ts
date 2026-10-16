@@ -366,10 +366,15 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     await server.sys("update entries set final_text = rtrim(final_text) where id = $1", [ids.first]);
   }, 60_000);
 
-  it('the receipt helper is not a client RPC: nothing in public can rewrite applied_v', async () => {
+  it('the receipt helpers are not client RPCs: none in public, none callable by anon (review B2-3)', async () => {
+    if (!server.standIn) return; // S02's migration owns these once it lands
     const { rows } = await server.sys(
-      "select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like '%note_applied%'");
+      "select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like '%note_applied%' or p.proname like '%dup_outcome%')");
     expect(rows).toEqual([]);
+    const priv = await server.sys(`select has_schema_privilege('anon', 'sync_private', 'usage') as schema_use,
+      has_function_privilege('anon', 'sync_private.note_applied(uuid, uuid, boolean, boolean)', 'execute') as note,
+      has_function_privilege('anon', 'sync_private.dup_outcome(uuid, uuid)', 'execute') as dup`);
+    expect(priv.rows[0]).toEqual({ schema_use: false, note: false, dup: false });
   });
 
   it('[F14-REQ-036] after every sync, each phone counts only its own author\'s letters', () => {
