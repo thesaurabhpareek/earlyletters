@@ -4,7 +4,7 @@ import UIKit
 
 // THROWAWAY DIAGNOSTIC (ci/ios-compile-try-storefix, never merged): SwiftUI.Transaction is visible here too, so
 // name StoreKit's type for this file only, to see whether anything else stops the build.
-fileprivate typealias Transaction = StoreKit.Transaction
+typealias Transaction = StoreKit.Transaction
 
 /// Plus through Apple only (docs/adr/0013; founder decision 3, 3 Oct 2026).
 ///
