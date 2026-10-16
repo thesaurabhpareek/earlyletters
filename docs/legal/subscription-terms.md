@@ -3,7 +3,7 @@ title: Early Letters Plus Subscription Terms
 version: 3.1.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-15
+last_updated: 2026-10-16
 owner: founder
 shown_at: the Plus screen in the app, Settings > Plan, the App Store listing and earlyletters.com
 ---
@@ -16,7 +16,7 @@ These terms are part of the Early Letters Terms of Service (https://earlyletters
 
 ## What is free
 
-Your first 2 letters. A letter counts when it is your own, its words are on screen, and you keep it. Your co-parent's letters never count toward yours. Recording, typing, reading, playing recordings, reading together, a book for each child, writing with your co-parent, recording backup, export and deletion are always free.
+Your first 2 letters. A letter counts when it is your own, it has words and not only a recording, and you keep it. Your co-parent's letters never count toward yours. Recording, typing, reading, playing recordings, reading together, a book for each child, writing with your co-parent, export and deletion are always free. Recording backup, once it is available, will be free too.
 
 ## What Plus adds
 
@@ -35,7 +35,7 @@ Apple allows one free trial per person for Plus, across both plans. Switching pl
 
 Your plan renews automatically at the end of each period, and at the end of a free trial, at the price shown when you subscribed, until you cancel. Apple charges your Apple Account at the end of the free trial, then at the start of each month or year. With no trial, you are charged when you confirm the purchase.
 
-We never see your card details or receipts. If you have an account, the app tells us your plan, trial end date, renewal date and whether you have cancelled, so we can send the reminders below.
+We never see your card details or receipts. Your plan is checked with Apple on your phone, and our servers do not receive it.
 
 ## How to cancel
 
@@ -48,9 +48,9 @@ Cancel at least 24 hours before your free trial or current period ends to avoid 
 
 Settings, Plan always shows when your trial ends or your plan renews, and your Apple Account holds Apple's record of every purchase. Right after you subscribe, the app shows what you agreed to, with a button to save a copy.
 
-We also remind you before a free trial ends, before a yearly plan renews, and once a year on a monthly plan: on the iPhone you subscribed with, as a notification if you allow them and as a note in the app, and by email if you have an account. Emails include your plan's price. If you have already cancelled, there is nothing to do.
+We also remind you before a free trial ends, before a yearly plan renews, and once a year on a monthly plan: on the iPhone you subscribed with, as a notification if you allow them and as a message in the app. If you have already cancelled, there is nothing to do.
 
-Reminders can arrive late or not at all, for example if the app is deleted or notifications are off, and we cannot see a cancellation made in your Apple Account until you next open the app. The dates in Settings, Plan and your Apple Account are the ones to rely on.
+Reminders can arrive late or not at all, for example if the app is deleted or notifications are off, and the app cannot see a cancellation made in your Apple Account until you next open it. The dates in Settings, Plan and your Apple Account are the ones to rely on.
 
 Apple tells you about any price increase and asks for your agreement where its rules require. We will not charge you a higher price for a plan you already have unless you agree first.
 
@@ -68,7 +68,7 @@ Apple decides refunds. Ask at reportaproblem.apple.com, or in Early Letters unde
 
 ## If Plus ends
 
-Your books, letters, recordings and backup stay. Keeping another new letter needs Plus again.
+Your books, letters and recordings stay. Keeping another new letter needs Plus again.
 
 ## Questions
 
@@ -80,4 +80,4 @@ Your books, letters, recordings and backup stay. Keeping another new letter need
 
 | Version | Date | Change |
 |---|---|---|
-| 3.1.0 | 2026-10-15 | Plus after the first 2 letters, current prices and trials, reminders by phone and email, Family Sharing and offer codes. |
+| 3.1.0 | 2026-10-16 | Plus after the first 2 letters, current prices and trials, reminders on the phone, Family Sharing and offer codes. |

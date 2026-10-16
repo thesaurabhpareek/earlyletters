@@ -1,7 +1,7 @@
 ---
 title: Legal benchmark, v1.0 texts (option B)
 version: 1.1.0
-last_updated: 2026-10-15
+last_updated: 2026-10-16
 owner: founder
 ---
 
@@ -60,7 +60,7 @@ Drafting support, not legal advice. Each row is a fact the drafts on this branch
 | 33 | Vercel paid Pro is opted out of AI training by default | vercel.com changelog | 2 Oct 2026; blocked 15 Oct | **Unverified** in this pass |
 | 34 | Supabase function secrets are shared by every function in a project and not across projects, so a separate project isolates the escrow key | PRD V2 F08 assumption A6 | not opened | **Unverified**; WP-F08-B4 checks it |
 
-## 4. Product facts, checked in the code (origin/develop at 4183844 and 56ec5b5, 15 Oct 2026)
+## 4. Product facts, checked in the code (origin/develop at 4183844 and 56ec5b5, 15 Oct 2026; re-checked 16 Oct 2026 at develop ef79bd3, `feat/backup-server` ad222eb, `chore/pack-host-ios17` e55c721 (PR #126), `feat/db-v1-gate` 3d2d440 (PR #140), `feat/platform-v1-contracts` feea25f (PR #138))
 
 | Claim | Where checked | Verified |
 |---|---|---|
@@ -68,16 +68,28 @@ Drafting support, not legal advice. Each row is a fact the drafts on this branch
 | No analytics client is constructed while `EXPO_PUBLIC_ANALYTICS` is off (D-095) | PR #118 on develop | **Yes** for the switch in `eas.json`; the code path was not re-read |
 | Plan reminders and the purchase confirmation with Save a copy are built, described as a courtesy, with no price in app copy | `packages/content/src/features/billing.en.ts` (`reminders`, `note`, `confirmation`); `apps/mobile/src/lib/billing/plan-reminders.logic.ts`; rules test (PR #121) | **Yes** |
 | Plus prices are $4.99 a month and $49.99 a year | `packages/content/src/pricing.ts`; `apps/mobile/storekit/EarlyLetters.storekit`; `apps/web/src/content/pricing.ts` on main (69299f8) | **Yes** |
-| Recording backup, the escrow function, `audio_blobs`, `child_keys`, the status report endpoint and the reminder email scheduler are not built | `supabase/migrations`, `supabase/functions`, `packages/api` | **Yes** (searched; none found). `purge-worker/lib/buckets.ts` marks `entry-audio` as `since: 'v1.1'` |
+| Recording backup, the escrow function, `audio_blobs`, `child_keys`, the status report endpoint and the reminder email scheduler are not built on develop | `supabase/migrations`, `supabase/functions`, `packages/api` | **Yes** (searched; none found on develop). 16 Oct: the backup server is on `feat/backup-server`; the phone side is a contract only (`packages/api/src/server/recovery-key.ts`); `supabase/functions/subscription-status/handler.ts` on `feat/platform-v1-contracts` is a shell; no reminder email sender anywhere. The drafts say backup is not available yet and leave out the status report and reminder emails |
 | The microphone purpose string ends "Your recordings stay on this phone." | `packages/content/src/permissions.en.ts` | **Yes**; labels 1.4.0 asks the content owner to drop that sentence |
 | The website's delete page links to `/privacy#14-your-choices-and-rights` | `apps/web/src/lib/legal/delete-account-copy.ts` on main | **Yes**. The short Privacy Policy 2.1.0 moves rights to section 10, so `delete-account-page.md` gives `/privacy#10-your-rights`; the website owner changes the link with the copy |
 | Supabase is the database and sign-in service | `@supabase/supabase-js` in `apps/mobile/src/lib/auth/*` (develop 56ec5b5) | **Yes** |
 | Resend sends our emails | `supabase/functions/purge-worker/lib/resend.ts` | **Yes** |
-| Cloudflare R2 delivers speech packs | searched `apps/mobile/src`, `packages`, `supabase/functions` on develop and on `feat/backup-server` for R2, Cloudflare and `packs.earlyletters.app` | **No code yet.** Decided for packs (D-097); models still download from `huggingface.co` and `models.earlyletters.com` (`apps/mobile/src/lib/models/catalog.ts`) |
-| Encrypted recording backups are stored in Supabase Storage | `supabase/migrations/20261015230000_backup_server.sql` on `feat/backup-server` at 7a0f45d (`insert into storage.buckets ... 'entry-audio'`, policies on `storage.objects`); `docs/ops/BACKUP_RUNBOOK.md` on that branch | **Yes**, on an unmerged branch. The founder's 15 Oct list named R2 for backups; the texts follow the code |
-| A restore waits 72 hours when the account has another enrolled device and 24 hours when it has none; only a device enrolled at least 7 days before the request may approve; release is refused unless a log row exists | same migration header and runbook section "Approvals and holds"; `escrow_set_request_state` | **Yes**, on the branch. The 7-day rule is marked [R], pending the founder |
+| Cloudflare R2 delivers the app's settings and its language and speech files | 15 Oct: searched `apps/mobile/src`, `packages`, `supabase/functions` on develop and `feat/backup-server`: no code. 16 Oct: PR #126 at e55c721 sets `EXPO_PUBLIC_DOCS_BASE_URL=https://packs.earlyletters.app` in every `eas.json` profile, so the signed remote config, pack manifest and content bundle (`apps/mobile/src/lib/remote/index.ts`, fetched by `startRemote` on every launch) come from it, and `PACKS_ORIGIN`/`SELF_HOST_BASE` in `catalog.ts` point self-hosted speech files at it (R2 per the comment and D-097) | **Yes, on the unmerged PR #126**; not on develop. The drafts name R2 for this, so PR #163 merges after #126 |
+| Encrypted recording backups are stored in Supabase Storage | `supabase/migrations/20261015230000_backup_server.sql` on `feat/backup-server` at 7a0f45d and again at ad222eb (`insert into storage.buckets ... 'entry-audio'`, policies on `storage.objects`); `docs/ops/BACKUP_RUNBOOK.md` on that branch | **Yes**, on an unmerged branch. The founder's 15 Oct list named R2 for backups; the texts follow the code |
+| A restore waits 72 hours when the account has another enrolled device and 24 hours when it has none; only a device enrolled at least 7 days before the request may approve; release is refused unless a log row exists; the recovery key is opened for `restore`, `rotation` or `legal`; emails go on request, release and rotation | migration header, `escrow_long_hold`, `backup_approve_request`, `escrow_set_request_state`, the `escrow_unwraps.reason` check; `packages/content/src/emails/backup.en.ts` (ad222eb) | **Yes**, on the branch. The 7-day rule is decided (D-108, 15 Oct). A `legal` use has no code path yet (runbook: "not built in this release") |
 | Hugging Face serves upstream model files | `catalog.ts` builds `https://huggingface.co/<repo>/resolve/<revision>/<file>` | **Yes**; the published texts name it |
 | Sign in with Google | `apps/mobile/src/lib/auth/google.ts`; the button shows only when `EXPO_PUBLIC_GOOGLE_*` client IDs are set | **Yes, conditional**. The published texts name only Sign in with Apple and the email link; a build that sets the Google IDs needs one added line |
+| The escrow private key is a function secret in the separate project `scribe-escrow`, and on two sealed paper copies; anyone with it plus a copy of the main database and bucket could open recordings with no log row or email | `supabase/functions/escrow/config.ts`; `docs/ops/BACKUP_RUNBOOK.md` sections 1, 3 (K3, K6, quarterly seal check) and 4 at ad222eb | **Yes**, on the branch. Privacy Policy 4 says so |
+| Push notifications are not built | `packages/api/src/server/push.ts` (payload shapes only); no push-send function and no token table on any branch above | **Yes** (per review A on PR #163; re-checked: no sender). The drafts mention no push |
+| New-device sign-in notices are not built | no `account_sessions_seen` table and no sender on any branch above | **Yes**. The drafts do not mention them |
+| No server of ours sees purchases; Plus is checked on the phone | `supabase/migrations/20261004000000_plus_on_device_only.sql` drops `store_subscriptions`, `store_notifications`, `app_account_tokens` | **Yes**. Privacy 2 and the Subscription Terms say our servers do not receive purchases |
+| The co-parent invite email subject names the inviter | `packages/content/src/emails/family.en.ts` line 32: "{inviter} invited you to write together" | **Yes**. Privacy 5 says an invitation names the parent who sent it |
+| Month reminders show the child's name only when names are on | `packages/content/src/features/reminders.en.ts` (`monthBodyNames` and `monthBodyNeutral`); `apps/mobile/src/lib/reminders/planner.ts` | **Yes** |
+| The inviting parent can undo a join within 72 hours | `undo_parent_join` in `20261015020000_v1_gate_coparent_invites_undo.sql` on `feat/db-v1-gate` | **Yes**, on the unmerged branch (per review A; not re-read line by line) |
+| Per-book choices are kept on the server | `child_member_prefs` (`include_in_reminders`, `celebrations_paused`, `notify_letters`) | **Yes** |
+| After an under-18 answer the phone keeps only the time of the No | `ageGate.stoppedAt` (`apps/mobile/src/lib/age-gate.logic.ts`; D-026) | **Yes** |
+| A sign-in within a day before account deletion is not required by the code | searched migrations and `apps/mobile/src/lib/account-deletion` | **Yes** (none found). The delete page no longer says so |
+| The website marks an unsubscribed address in Resend; there is no scrambled suppression record | `apps/web/src/lib/notify/unsubscribe-handler.ts` on main | **Yes**. The drafts no longer promise a scrambled copy |
+| The website loads Vercel Web Analytics only when `NEXT_PUBLIC_ANALYTICS=vercel` | `apps/web/src/lib/analytics/WebAnalytics.tsx` on main | **Yes**, conditional. Whether production sets it was not checked |
 | No analytics or crash SDK runs | `posthog-react-native` is in `apps/mobile/package.json` but never constructed while `EXPO_PUBLIC_ANALYTICS` is off; no Sentry package | **Yes** |
 | The separate health notice is loaded by the website | `apps/web/src/lib/legal/documents.ts` on main maps `/health-privacy` to `consumer-health-data-notice.md` | **Yes**. This branch removes that file; the website must drop or redirect `/health-privacy` before develop is next merged into main |
 
@@ -85,4 +97,4 @@ Drafting support, not legal advice. Each row is a fact the drafts on this branch
 
 | Version | Date | Change |
 |---|---|---|
-| 1.1.0 | 2026-10-15 | Rebuilt for option B. Apple rows re-read on 15 Oct 2026 with quotes; law and vendor rows marked Unverified because their sites were blocked in this session; product rows checked on develop at 4183844, including that the build switch is still off and backup, escrow and the status report are not built. Version 1.0.0 of 4 Oct was drafted in PR #81 and never merged. |
+| 1.1.0 | 2026-10-16 | Rebuilt for option B. Apple rows re-read on 15 Oct 2026 with quotes; law and vendor rows marked Unverified because their sites were blocked in this session; product rows checked on develop at 4183844, including that the build switch is still off and backup, escrow and the status report are not built. 16 Oct: product rows re-checked against the branches named in section 4 after the two reviews of PR #163 (R2 in #126; backup at ad222eb; D-108; unbuilt push, new-device notices, status report; invite subject; undo; under-18 time). Version 1.0.0 of 4 Oct was drafted in PR #81 and never merged. |

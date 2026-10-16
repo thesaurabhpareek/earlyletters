@@ -3,7 +3,7 @@ title: Early Letters Terms of Service
 version: 3.1.0
 status: draft-for-counsel
 effective_date: TBD
-last_updated: 2026-10-15
+last_updated: 2026-10-16
 owner: founder
 applies_to: Early Letters iOS app and earlyletters.com
 ---
@@ -14,7 +14,7 @@ Version 3.1.0. Effective [effective date].
 
 ## The short version
 
-This summary helps. The full terms below are what count.
+This is a summary. The full terms below are what count.
 
 - Early Letters is for adults, 18 and over. Your child is who the letters are for, not a user.
 - Your words and recordings are yours. We use them only to run Early Letters for you and your co-parent.
@@ -32,7 +32,7 @@ This summary helps. The full terms below are what count.
 
 ## 2. Who can use Early Letters
 
-2.1 You must be 18 or older. If you tell the app you are under 18, it stops and keeps nothing. If we learn that an account belongs to someone under 18, we will close it.
+2.1 You must be 18 or older. If you tell the app you are under 18, it stops. It keeps only the time of that answer, on the phone, so it can wait a day before asking again. If we learn that an account belongs to someone under 18, we will close it.
 
 2.2 You may start a book for a child only if you are the child's parent or legal guardian, or are expecting the child. Anyone else joins a book only when a parent invites them.
 
@@ -42,11 +42,11 @@ This summary helps. The full terms below are what count.
 
 ## 3. Your account
 
-3.1 You can write and keep letters on your phone without an account. To sync your book, use a second phone, back up recordings or share a book, you need one. You can sign in with Apple, or with a link and code we email you.
+3.1 You can write and keep letters on your phone without an account. To sync your book, use a second phone or share a book, you need one. You can sign in with Apple, or with a link and code we email you.
 
-3.2 Keep your phone and email secure. You are responsible for what happens through your account unless it is our fault. We email you when a new device signs in; if it was not you, use the link in that email and tell us.
+3.2 Keep your phone and email secure. You are responsible for what happens through your account unless it is our fault. If you think someone else has used your account, tell us right away.
 
-3.3 An invite link or code works once and expires after 7 days. Share it only with the person it is for. If someone joins through a misused invite, you can undo the join for 72 hours.
+3.3 An invite link or code works once and expires after 7 days. Share it only with the person it is for. If the wrong person joins, the parent who sent the invite can undo the join within 72 hours.
 
 3.4 An account is for one person.
 
@@ -54,7 +54,7 @@ This summary helps. The full terms below are what count.
 
 4.1 Each child has their own book. A book can have at most two parents, with equal rights.
 
-4.2 A letter is private to its author until the author adds it to the book. No one can edit or delete another person's letters, and neither parent can remove the other.
+4.2 A letter is private to its author until the author adds it to the book. No one can edit or delete another person's letters. After the first 72 hours, neither parent can remove the other.
 
 4.3 A parent can leave a book at any time and chooses whether to leave their letters in it or take them out. Letters already on the other parent's phone or in an export cannot be taken back.
 
@@ -86,13 +86,13 @@ This summary helps. The full terms below are what count.
 
 7.1 When you sign in and agree to sync, your letters and your child's details are stored on our servers so they reach your other devices and your co-parent.
 
-7.2 Recording backup is free and off until you turn it on. Recordings are encrypted on your phone before upload. We keep a recovery key so you can restore them on a new phone, and we use it only as the Privacy Policy, section 4, describes.
+7.2 Recording backup is not available yet. When it is, it will be free and off until you turn it on, and we will keep a recovery key so you can restore your recordings on a new phone. We will use that key only as the Privacy Policy, section 4, describes.
 
-7.3 You can export everything at any time, free, including after Plus ends. Please keep your own copy. If backup is off and a phone is gone, we cannot bring back recordings that were only on it.
+7.3 You can export everything at any time, free, including after Plus ends. Recordings are kept on your phone, and in your own iPhone backup if you use one. We cannot bring back a recording that was only on a phone you no longer have. Please keep your own copy.
 
 ## 8. Plus
 
-8.1 Recording, typing, reading, playing recordings, reading together, a book for each child, writing with a co-parent, backup, export and deletion are free. Your first 2 letters are free to keep. After that, keeping a new letter needs Plus. Only your own letters count toward the 2; your co-parent's never do. A letter waiting for Plus is kept on your phone and never discarded.
+8.1 Recording, typing, reading, playing recordings, reading together, a book for each child, writing with a co-parent, export and deletion are free. Recording backup will be free too. Your first 2 letters are free to keep. After that, keeping a new letter needs Plus. Only your own letters count toward the 2; your co-parent's never do. A letter waiting for Plus is kept on your phone and never discarded.
 
 8.2 Plus costs US $4.99 a month, with the first month free for new subscribers, or US $49.99 a year, with the first 2 months free for new subscribers. Apple allows one free trial per person for Plus. The price and trial Apple shows before you subscribe are the terms that apply.
 
@@ -118,7 +118,7 @@ Early Letters is still being built. Features may change, pause or sometimes brea
 
 ## 12. If we close Early Letters
 
-If we ever close Early Letters, we will tell you at least 90 days ahead, stop new charges, and keep export working the whole time, including backed-up recordings. If someone else takes over the Service, they must keep sections 5.3, 8.4 and this section, or give you the same notice and export.
+If we ever close Early Letters, we will tell you at least 90 days ahead, stop new charges, and keep export working the whole time, including recordings in backup. If someone else takes over the Service, they must keep sections 5.3, 8.4 and this section, or give you the same notice and export.
 
 ## 13. Disclaimers
 
@@ -151,16 +151,16 @@ Small changes, such as fixing typos, take effect when posted. A change that affe
 If you got the app from the Apple App Store:
 
 - These Terms are between you and us, not Apple. We, not Apple, are responsible for the app and its content, its maintenance and support, and any warranty, product, legal compliance or intellectual property claims about it.
-- Your licence is a non-transferable licence to use the app on Apple devices you own or control, as the Apple Media Services Terms allow, including through Family Sharing.
+- Your license is a non-transferable license to use the app on Apple devices you own or control, as the Apple Media Services Terms allow, including through Family Sharing.
 - If the app fails to meet a warranty, you may tell Apple, and Apple will refund the price you paid for the app. Apple has no other warranty duty for it.
 - You confirm you are not in an embargoed country or on a US restricted-party list.
-- You must follow any third-party terms that apply, such as your mobile data plan.
+- You must follow any third-party terms that apply, such as your cellular data plan.
 - Questions, complaints or claims about the app go to [legal name], [mailing address], [phone number], hello@earlyletters.com.
 - Apple and its subsidiaries are third-party beneficiaries of these Terms and may enforce them against you.
 
 ## 19. General
 
-These Terms and the documents they name are the whole agreement. If part is invalid, the rest stays in effect. You may not transfer your rights; we may transfer ours in a sale or merger together with our promises in sections 5.3, 8.4 and 12. If we do not enforce a term straight away, we can still enforce it later. If we translate these Terms, the English version controls unless your local law says otherwise.
+These Terms and the documents they name are the whole agreement. If part is invalid, the rest stays in effect. You may not transfer your rights; we may transfer ours in a sale or merger together with our promises in sections 5.3, 8.4 and 12. If we do not enforce a term right away, we can still enforce it later. If we translate these Terms, the English version controls unless your local law says otherwise.
 
 ## 20. Contact
 
@@ -172,4 +172,4 @@ California residents: under California Civil Code section 1789.3, you may contac
 
 | Version | Date | Change |
 |---|---|---|
-| 3.1.0 | 2026-10-15 | Covers accounts, books shared by two parents, recording backup, and Plus after the first 2 letters. |
+| 3.1.0 | 2026-10-16 | Covers accounts, books shared by two parents, recording backup when it is available, and Plus after the first 2 letters. |

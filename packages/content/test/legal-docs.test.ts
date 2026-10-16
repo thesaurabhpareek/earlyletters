@@ -2,11 +2,12 @@
  * The legal documents describe the build we ship, in words a family can read (LEGAL-REQ-064,
  * ENGINEERING_REQUIREMENTS 1.3.0).
  *
- * Option B (founder, 15 Oct 2026) ships accounts, sync, co-parent sharing, encrypted recording backup with a
- * recovery key we hold, and the subscription status report. The on-device drafts of pull request #81 said the
- * opposite, and the 3 Oct drafts carried prices that D-082 replaced. The founder's direction of 15 Oct also asks
- * that published pages carry no internal references, name only services the build uses, and never read as a
- * decision log. This test holds both. If it fails, fix the document, not the test (CLAUDE.md).
+ * Option B (founder, 15 Oct 2026) ships accounts, sync and co-parent sharing, with encrypted recording backup and
+ * a recovery key we hold to follow. The on-device drafts of pull request #81 said the opposite, and the 3 Oct
+ * drafts carried prices that D-082 replaced. The founder's direction of 15 Oct also asks that published pages carry
+ * no internal references, name only services the build uses, and never read as a decision log; the two reviews of
+ * pull request #163 (16 Oct) add that they describe only what the code does, or say a feature is not available
+ * yet. This test holds all of it. If it fails, fix the document, not the test (CLAUDE.md).
  *
  * What is exempt, and why:
  * - Changelog sections of internal documents: they record what earlier versions said.
@@ -68,6 +69,11 @@ const CURRENT: Line[] = DOCS.flatMap(lines).filter((l) => !isChangelog(l));
 /** Everything a reader of a published page sees: the body, its changelog included; not the frontmatter. */
 const PUBLISHED_BODY: Line[] = DOCS.filter((d) => PUBLISHED.includes(d.path)).flatMap(lines).filter((l) => l.section !== 'frontmatter');
 
+/** D-102 wording: what a recoverable backup may never claim. Supabase hosts the encrypted files, the sealed keys and
+ * the recovery service, so no provider "cannot open" them either. */
+const D102 =
+  /only (?:your|the) family'?s keys|only you can (?:play|hear|open)|\bwe (?:cannot|can't|can not) (?:listen|read|hear|open)\b|\b(?:it|they|Supabase|our providers?) (?:cannot|can't|can not) (?:open|decrypt)\b|recordings never leave/i;
+
 /** The only blanks a published draft may hold. Each is a fact only the founder can give. */
 const FOUNDER_BLANKS = new Set(['legal name', 'mailing address', 'county', 'effective date', 'phone number']);
 
@@ -111,23 +117,23 @@ describe('legal documents: no on-device claims from the earlier drafts (option B
     expect(offenders(PUBLISHED_BODY, /\bno accounts?\b|\bwithout (?:an )?account or sync\b/i)).toEqual([]);
   });
 
-  it('[LEGAL-REQ-064] published documents follow the D-091 backup wording rules', () => {
-    // Never "only your family's keys"; never a claim that we cannot read letters or listen to recordings.
-    const D091 = /only (?:your|the) family'?s keys|only you can (?:play|hear|open)|\bwe (?:cannot|can't|can not) (?:listen|read|hear|open)\b|recordings never leave/i;
-    expect(offenders(PUBLISHED_BODY, D091)).toEqual([]);
+  it('[LEGAL-REQ-064] published documents follow the D-102 backup wording rules', () => {
+    // Never "only your family's keys"; never a claim that we, or a provider that holds the keys, cannot read
+    // letters or open recordings.
+    expect(offenders(PUBLISHED_BODY, D102)).toEqual([]);
   });
 
   it('[LEGAL-REQ-064] the claim patterns catch the earlier wording and let the option B wording pass', () => {
-    const D091 = /only (?:your|the) family'?s keys|only you can (?:play|hear|open)|\bwe (?:cannot|can't|can not) (?:listen|read|hear|open)\b/i;
     expect(/\bno accounts?\b/i.test('There is no account. You do not sign in.')).toBe(true);
-    expect(D091.test('Your recordings stay on your phone, so we cannot listen to them.')).toBe(true);
-    expect(D091.test("An encrypted backup only your family's keys can open.")).toBe(true);
+    expect(D102.test('Your recordings stay on your phone, so we cannot listen to them.')).toBe(true);
+    expect(D102.test("An encrypted backup only your family's keys can open.")).toBe(true);
+    expect(D102.test('Supabase stores encrypted recording backups, which it cannot open.')).toBe(true);
     for (const s of [
-      'We use it only to restore your recordings to your own phone, to replace the key, or when the law requires it.',
+      'Our recovery service uses the recovery key for three things only: to send your key to a new phone signed in to your account, to replace the recovery key with a new one, and to answer a valid legal request.',
       'Letters already on their phone, or in an export, stay with them. We cannot reach those copies.',
       'You can write and keep letters on your phone without an account.',
     ]) {
-      expect(D091.test(s) || /\bno accounts?\b/i.test(s), s).toBe(false);
+      expect(D102.test(s) || /\bno accounts?\b/i.test(s), s).toBe(false);
     }
   });
 });
@@ -157,7 +163,20 @@ describe('published documents read as legal text, not as working notes (founder,
     expect(offenders(PUBLISHED_BODY, NOT_USED)).toEqual([]);
   });
 
+  it('[LEGAL-REQ-064] describe no feature the code does not have yet (reviews of pull request #163)', () => {
+    // Not built on 16 Oct 2026: server pushes, the new-device sign-in notice, the subscription status report and
+    // its reminder emails, a scrambled suppression record. When one ships, its pattern leaves this list in the
+    // same pull request that adds it to the texts.
+    const NOT_BUILT =
+      /\bnotification token\b|\bpush notification|\bnew device signs in\b|\bwhen a new device\b|\bstatus report\b|\bthe app tells us your plan\b|\bby email if you have an account\b|\breminder emails?\b|\bscrambled copy\b/i;
+    expect(offenders(PUBLISHED_BODY, NOT_BUILT)).toEqual([]);
+    // Recording backup's phone side is not built, so the texts that describe backup say it is not available yet.
+    for (const p of ['privacy-policy.md', 'terms-of-service.md']) expect(doc(p).text, p).toContain('Recording backup is not available yet.');
+  });
+
   it('[LEGAL-REQ-064] the Privacy Policy and the service providers page name the services the build uses', () => {
+    // Cloudflare R2 serves the app's signed settings and its language and speech files from pull request #126 on,
+    // so the texts that name it merge after #126.
     for (const p of ['privacy-policy.md', 'subprocessors.md']) {
       for (const name of ['Supabase', 'Cloudflare R2', 'Resend', 'Vercel', 'Apple', 'Hugging Face']) expect(doc(p).text, `${p}: ${name}`).toContain(name);
     }
