@@ -202,15 +202,22 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
    * Every matching row, page by page in a stable order: a hosted project
    * answers at most `max_rows` (1000 by default) per request, and the queue
    * resets confirmed jobs the server does not list, so a short list must never
-   * pass for a whole one. Any failed page throws.
+   * pass for a whole one. `unique` names the columns that make the order total
+   * (two rows with one `created_at` must not swap between pages). Any failed page throws.
    */
-  async function select<T>(table: string, columns: string, opts: { confirmedOnly?: boolean; profileColumn?: string } = {}): Promise<T[]> {
+  async function select<T>(
+    table: string,
+    columns: string,
+    opts: { confirmedOnly?: boolean; profileColumn?: string; unique: string[] },
+  ): Promise<T[]> {
     const out: T[] = [];
     for (let from = 0; ; from += PAGE_ROWS) {
       let q = sb.from(table).select(columns);
       if (opts.profileColumn) q = q.eq(opts.profileColumn, profileId);
       if (opts.confirmedOnly) q = q.eq('state', 'confirmed');
-      const { data, error, status } = await q.order('created_at').range(from, from + PAGE_ROWS - 1);
+      let ordered = q.order('created_at');
+      for (const c of opts.unique) ordered = ordered.order(c);
+      const { data, error, status } = await ordered.range(from, from + PAGE_ROWS - 1);
       if (error) throw serverError(error, status);
       const page = (data ?? []) as unknown as T[];
       out.push(...page);
@@ -223,7 +230,7 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
     },
     // RLS: the owner reads their own rows; every column but escrow_wrap is granted. Filtered to me as well,
     // so a policy that ever let a co-parent read rows could not make this phone act on their key.
-    listKeys: async () => (await select<ChildKeyWire>('child_keys', CHILD_KEY_COLUMNS, { profileColumn: 'profile_id' })).map(childKeyRow),
+    listKeys: async () => (await select<ChildKeyWire>('child_keys', CHILD_KEY_COLUMNS, { profileColumn: 'profile_id', unique: ['child_id', 'key_version'] })).map(childKeyRow),
     storeKey: async (k) => {
       await rpc(BACKUP_RPC.storeKey, storeKeyArgs(k));
     },
@@ -237,7 +244,7 @@ function supabaseServer(sb: SupabaseClient, accessToken: () => Promise<string | 
     },
     // RLS: the author reads their own rows; filtered to me again, by author and by the path built from it.
     listBlobs: async () =>
-      (await select<BlobWire>('audio_blobs', BLOB_COLUMNS, { profileColumn: 'author_id', confirmedOnly: true }))
+      (await select<BlobWire>('audio_blobs', BLOB_COLUMNS, { profileColumn: 'author_id', confirmedOnly: true, unique: ['object_path'] }))
         .map((r) => blobRow(r, profileId))
         .filter((r): r is NonNullable<typeof r> => r !== null),
     recordConsent: async (action) => {
