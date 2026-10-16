@@ -26,6 +26,12 @@
  *                     `EXPO_PUBLIC_POSTHOG_KEY` is set, and startAnalytics() does nothing.
  *                     packages/analytics stays; analytics returns with consent in v1.1.
  *
+ *   BACKUP            `EXPO_PUBLIC_BACKUP=on` in the build's env, and server features on. Anything
+ *                     else is OFF, and off in every profile today (PRD V2 08-delivery T23: the backup
+ *                     client merges with the flag off; T27 turns it on for C1 families who opt in).
+ *                     Off: lib/backup/gate.ts loads nothing, the Settings row is not offered, the
+ *                     native ScribeKeys module is never looked up (F08-REQ-041).
+ *
  * Pure TypeScript (no React Native), so Node tests read it directly.
  */
 
@@ -43,6 +49,16 @@ let testOverride: boolean | null = null;
 const ANALYTICS_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_ANALYTICS);
 
 let analyticsTestOverride: boolean | null = null;
+
+/** Inlined at bundle time, like the server switch. Same rule: only `on` is on. */
+const BACKUP_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_BACKUP);
+
+let backupTestOverride: boolean | null = null;
+
+/** True only in a build made with server features on and `EXPO_PUBLIC_BACKUP=on`. */
+export function backupEnabled(): boolean {
+  return serverFeaturesEnabled() && (backupTestOverride ?? BACKUP_BUILD_VALUE);
+}
 
 /** True only in a build made with `EXPO_PUBLIC_ANALYTICS=on` (v1.1 onwards, with consent). */
 export function analyticsEnabled(): boolean {
@@ -80,6 +96,10 @@ export const capabilities = {
   get analytics(): boolean {
     return analyticsEnabled();
   },
+  /** Encrypted backup of the owner's recordings (D-073, D-102). Its own build flag, off by default. */
+  get backup(): boolean {
+    return backupEnabled();
+  },
 } as const;
 
 /**
@@ -91,6 +111,13 @@ export function setServerFeaturesForTests(value: boolean | null): void {
   const env = typeof process !== 'undefined' ? process.env : undefined;
   if (!env?.VITEST) throw new Error('setServerFeaturesForTests is for tests only');
   testOverride = value;
+}
+
+/** Tests only, like setServerFeaturesForTests: run the backup tests with the flag on (server features still apply). */
+export function setBackupForTests(value: boolean | null): void {
+  const env = typeof process !== 'undefined' ? process.env : undefined;
+  if (!env?.VITEST) throw new Error('setBackupForTests is for tests only');
+  backupTestOverride = value;
 }
 
 /** Tests only, like setServerFeaturesForTests: run the analytics tests with the switch on. */

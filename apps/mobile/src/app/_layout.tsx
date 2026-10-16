@@ -19,6 +19,7 @@ import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
+import { startBackup } from '@/lib/backup/gate';
 import { PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
@@ -79,6 +80,7 @@ function startServices(launchedAt: number): void {
   safely(() => startTranscriptionQueue());
   safely(startListeningCopies); // the player's clearer listening copy lookup, stale copies swept
   safely(startSync); // waits for a signed-in, consented session itself (syncAllowed)
+  safely(startBackup); // capabilities.backup off: returns at once and loads nothing (lib/backup/gate.ts)
   safely(startPlus); // StoreKit 2 entitlements on this phone
   safely(startLetterLedger); // heals the free-letter count after a reinstall or a backup restore (D-083)
   safely(startReminders);

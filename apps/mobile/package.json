@@ -86,5 +86,6 @@
     "e2e:web:index": "node e2e-web/support/build-index.mjs",
     "e2e:web:pack": "bash e2e-web/support/pack-journey.sh"
   },
+  "expo": { "autolinking": { "exclude": ["scribe-keys"] } },
   "private": true
 }
