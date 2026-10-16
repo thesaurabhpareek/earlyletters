@@ -12,8 +12,8 @@ Labels: **Verified** (checked on an opened vendor page on 3 Oct 2026), **Assumpt
 | `earlyletters.com` | Website on Vercel (`/`, `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, later `/delete-account`), `/.well-known/` files, universal-link fallback pages `/auth/callback` and `/i/*` | Sends through Resend (`hello@`), receives at `hello@` (and the suggested `privacy@`, `security@`, `dmarc@`) |
 | `www.earlyletters.com` | Redirect to the apex | none |
 | `send.earlyletters.com` | Nothing on the web; Resend's return-path (bounce) domain | Resend bounces only |
-| `packs.earlyletters.com` | Language and model packs CDN (decision 15) | none |
 | `earlyletters.app` and `www.earlyletters.app` | Permanent redirect to `https://earlyletters.com` | none, and locked against spoofing (section 4) |
+| `packs.earlyletters.app` | Language packs, speech models and signed documents, on Cloudflare R2 (D-097, 15 Oct 2026; decision 15) | none |
 
 ## 2. Porkbun account and domain safety
 
@@ -96,9 +96,11 @@ In Vercel, add `earlyletters.app` and `www.earlyletters.app` to the website proj
 - No analytics or log forwarding for paths under `/i/` and `/auth/` (tokens: AUTH_SETUP 5.3), and the website's own analytics follow decision 12 (opt-in, no cross-site tracking).
 - Vercel collects telemetry about deployments, not visitors; turn off any "Web Analytics" or "Speed Insights" unless the data map lists them.
 
-## 6. packs.earlyletters.com (language and model packs CDN)
+## 6. packs.earlyletters.app (language and model packs CDN)
 
-The platform owner picks the CDN (decision 15: Apple-hosted assets first, else cheap egress such as Cloudflare R2 or Hugging Face). DNS consequences, so the choice is made knowingly:
+**Decided (D-097, 15 Oct 2026, delegated by founder; DEBATES Q-001 option b):** `packs.earlyletters.app` on Cloudflare R2, option A below applied to `earlyletters.app`, not `earlyletters.com`. Only the redirect domain moves its DNS hosting to Cloudflare; `earlyletters.com` (website, Resend mail) stays at Porkbun. The app reads it as `EXPO_PUBLIC_DOCS_BASE_URL` (every `eas.json` profile) and `SELF_HOST_BASE` (`apps/mobile/src/lib/models/catalog.ts`); `scripts/packs/publish.ts` defaults to it.
+
+The table below is kept for the record. The platform owner picks the CDN (decision 15: Apple-hosted assets first, else cheap egress such as Cloudflare R2 or Hugging Face). DNS consequences, so the choice is made knowingly:
 
 | Option | DNS change | Notes |
 |---|---|---|
