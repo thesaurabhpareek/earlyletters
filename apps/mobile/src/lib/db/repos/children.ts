@@ -72,7 +72,7 @@ export function prefsRow(
 ): { signsAs: string; remindersOn: boolean; hidden: boolean; quiet: boolean } | null {
   const r = db.get<{ signs_as: string; reminders_on: number; hidden_at: string | null; quiet_at: string | null }>(
     'SELECT signs_as, reminders_on, hidden_at, quiet_at FROM child_member_prefs WHERE child_id = ?', id);
-  return r ? { signsAs: r.signs_as, remindersOn: r.reminders_on === 1, hidden: r.hidden_at !== null, quiet: r.quiet_at !== null } : null;
+  return r ? { signsAs: r.signs_as, remindersOn: r.reminders_on !== 0, hidden: r.hidden_at !== null, quiet: r.quiet_at !== null } : null;
 }
 
 /** Writes this person's signature and reminder choice for a book, creating the prefs row if needed. */

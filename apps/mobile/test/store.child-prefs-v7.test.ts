@@ -6,7 +6,7 @@
  * schema with no value lost. Sync still sends the signature and the reminder
  * switch as prefs.upsert, and a pulled book brings them back. Fictional Asha family only.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import { children, type RepoContext } from '../src/lib/db/repos';
 import type { SqlDb } from '../src/lib/db/sql';
@@ -16,6 +16,13 @@ import { takeOwnership } from '../src/lib/sync/ownership';
 import type { PullResponse, PushOp } from '../src/lib/sync/types';
 import { nodeDb } from './helpers/node-db';
 import { fixture } from './helpers/store-fixture';
+
+vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
+vi.mock('../src/lib/db/repos/open-native', () => ({
+  openNativeDb: () => {
+    throw new Error('native open must not be used in tests');
+  },
+}));
 
 const NOW = '2026-10-03T09:00:00.000Z';
 const ME = '11111111-1111-1111-1111-111111111111';
@@ -81,6 +88,27 @@ describe('per-person choices on the current schema', () => {
     expect(children.get(f.ctx, 'c1')).not.toHaveProperty('quiet');
     expect(f.db.get('SELECT hidden_at FROM children WHERE id = ?', 'c1')).toEqual({ hidden_at: null });
     f.close();
+  });
+
+  it('signed in, hide and quiet queue nothing, and a signature change sends only the two server fields (review of #166)', async () => {
+    const store = await import('../src/lib/store');
+    const h = nodeDb();
+    expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => NOW, newId: ctx.newId }).ok).toBe(true);
+    const id = store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
+    takeOwnership(h.db, ME, ctx);
+    h.db.run('DELETE FROM sync_outbox');
+    store.hideChild(id);
+    store.unhideChild(id);
+    store.setChildQuiet(id, true);
+    expect(h.db.all('SELECT type FROM sync_outbox')).toEqual([]);
+    store.updateChild(id, { signsAs: 'Amma' });
+    const payloads = h.db.all<{ type: string; payload: string }>('SELECT type, payload FROM sync_outbox');
+    for (const p of payloads.filter((x) => x.type === 'prefs.upsert')) {
+      for (const k of Object.keys((JSON.parse(p.payload) as PushOp).data)) expect(['signs_as', 'include_in_reminders']).toContain(k);
+    }
+    expect(payloads.some((x) => x.type === 'prefs.upsert')).toBe(true);
+    store.closeStore();
+    h.close();
   });
 
   it('a new book after sign-in sends its creation and my signature from child_member_prefs, and marks me its creator', () => {

@@ -429,7 +429,9 @@ function mergeBook(db: SqlDb, b: PulledBook, now: string): boolean {
   // This person's choices (v7): the server holds the signature and the reminder switch; hide and quiet stay
   // on the phone until the server has them (S02 WP-F12-09).
   const mine = prefsRow(db, b.id);
-  upsertPrefs(db, b.id, { signsAs: m.my_signs_as ?? mine?.signsAs ?? '', remindersOn: m.include_in_reminders }, now);
+  const next = { signsAs: m.my_signs_as ?? mine?.signsAs ?? '', remindersOn: m.include_in_reminders };
+  // Written only when something differs, so updated_at keeps saying when this person last chose.
+  if (!mine || mine.signsAs !== next.signsAs || mine.remindersOn !== next.remindersOn) upsertPrefs(db, b.id, next, now);
   return true;
 }
 
