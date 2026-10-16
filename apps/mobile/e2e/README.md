@@ -6,7 +6,7 @@ Labels: **V** verified on a vendor page or in installed source on 3 Oct 2026 (so
 
 ## 1. Status: what must happen before the first run
 
-1. **testIDs and e2e seams in the app.** `apps/mobile/src` has no `testID` on any screen today, and no way to seed data, shift the clock, override remote config or force offline. The full request list is `TESTID_REQUESTS.md` (sections 1 to 3; owner of `apps/mobile/src/**` is mobile-polish this wave). Every flow fails at its first selector until then.
+1. **testIDs and e2e seams in the app.** The shared primitives forward `testID` since #116 (`apps/mobile/test/testid-primitives.test.ts`), but the screens still set almost none: on 15 Oct, `node apps/mobile/e2e/bin/lint-flows.mjs --app` finds 125 of the 134 ids the flows use missing from `apps/mobile/src`. There is still no way to seed data, shift the clock, override remote config or force offline. The full request list is `TESTID_REQUESTS.md` (sections 1 to 3; owner of `apps/mobile/src/**` is mobile-polish this wave). Every flow fails at its first selector until then.
 2. **An `e2e` EAS build profile** (simulator `.app`, release JavaScript, `EXPO_PUBLIC_E2E=1`): request B-1 in `TESTID_REQUESTS.md`.
 3. **An e2e backend** for the flows tagged `needs-backend` (E2E-09, 12, 13): a separate Supabase project, section 5 of `TESTID_REQUESTS.md`. Flows without that tag run fully offline on the simulator.
 
@@ -33,6 +33,17 @@ TDD 07 planned 15 flows on 3 Oct morning; the founder's decisions that day chang
 | E2E-13 | `E2E-13a/b/c-*.yaml` + `bin/run-coparent.sh` | Co-parent invite round trip on two simulators: Mama invites, Papa joins through the 18+ gate and sign-in, Mama sees Papa | backend, 2 simulators |
 | E2E-14 | `E2E-14-restore-purchases.yaml` | Apple's store view with the StoreKit file, a test purchase, Restore purchases | app run from Xcode |
 | E2E-15 | `E2E-15-voiceover-smoke.yaml` | AX5 in light and dark: every P0 control reachable and enabled, screenshots for a human look; the VoiceOver walk is manual (DEVICE_TEST_PLAN S1-23) | offline |
+| E2E-17 | `E2E-17a-export-listening-copy.yaml`, `E2E-17b-export-original-only.yaml` + `bin/inspect-export.sh --originals` | Added 15 Oct (PRD V2 07 section 2.6). With a listening copy on the phone, export carries only the originals, byte for byte (F15-REQ-001, F15-REQ-002); 17b switches the player to the original and exports again: the same originals with the same hashes. The inspector fails if a listening copy's bytes are in the ZIP, if an original's hash differs from its capture hash, or if the seed made no recordings | offline, seed `asha-recordings` |
+
+### The P0 nightly set
+
+PRD V2 (`08-delivery.md` section 3.3, S19; R5 EQ-10) runs five P0 flows every night: **E2E-01** (01a then 01b, which runs on 01a's install), **E2E-03**, **E2E-12**, **E2E-13** (two simulators) and **E2E-17** (17a then 17b). Each of those files carries the tag `p0-nightly`, and `bin/lint-flows.mjs` fails if one of the five loses it. Run them with:
+```bash
+apps/mobile/e2e/bin/run-p0-nightly.sh --udid-a <se3-udid> --udid-b <second-udid> --app /path/to/EarlyLetters.app --junit
+```
+Exit 0 means all ran and passed, 1 a flow failed, 3 nothing failed but a P0 flow was skipped (no second simulator or no e2e backend): a nightly with a skip is not green. Where it runs (GitHub macOS minutes, a Mac mini or Maestro Cloud) is the founder's call (07 Q6); the workflow line is a request to S20.
+
+`npm test` runs the flow lint on every machine through `apps/mobile/test/qa-e2e-flows.test.ts`, so a broken flow file fails CI on Linux before anyone needs a Mac.
 
 Requirement and decision ids are in each flow's `tags`, so `maestro test --include-tags=PRD-REQ-019 ...` runs everything that proves one requirement, and a trace script can read them (TDD 07 2.1).
 
@@ -77,8 +88,9 @@ export MAESTRO_E2E_SUPABASE_URL=https://<e2e-ref>.supabase.co
 export MAESTRO_E2E_PROJECT_REF=<e2e-ref>
 export MAESTRO_E2E_SERVICE_KEY=<the e2e project's secret key>      # never staging or production
 export MAESTRO_PROD_PROJECT_REF=<production ref>                    # scripts refuse it
+export MAESTRO_STAGING_PROJECT_REF=<staging ref>                    # refused too: staging holds the family's letters (D-106)
 ```
-Maestro passes shell variables that start with `MAESTRO_` into flows and scripts (V). `scripts/lib-guard.js` refuses any URL that is not the e2e project or `http://127.0.0.1`, any URL containing the production ref, and any email that is not a test address.
+Maestro passes shell variables that start with `MAESTRO_` into flows and scripts (V). `scripts/lib-guard.js` refuses any URL that is not the e2e project or `http://127.0.0.1`, any URL containing the production or staging ref, an e2e ref equal to either, a hosted URL when either ref is unset (it fails closed), and any email that is not a test address. `apps/mobile/test/qa-e2e-guard.test.ts` runs the guard in Node on every `npm test`.
 
 Sign-in codes (`scripts/fetch-otp.js`):
 - `OTP_SOURCE=admin` (default): GoTrue's admin `generate_link` returns the 6-digit `email_otp` without sending mail (V-code: `@supabase/auth-js` 2.117.2). Proves the app's code path; mail delivery is a device check.
