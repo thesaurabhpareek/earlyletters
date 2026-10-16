@@ -77,6 +77,7 @@ Turn `EXPO_PUBLIC_SERVER_FEATURES` to `on` in an `eas.json` profile only when ev
 8. **Legal and copy.** Privacy Policy, privacy label and the claims registry (VOICE.md "Proof before words") updated and counsel-approved for server-stored letters; the coming-soon copy (`familyCopy.soon`) is no longer shown; App Review notes explain sign-in and sharing.
 9. **The "tell me" promise.** On first launch of the build with sharing on, a person whose phone has `family.coParentNotify` set sees one quiet, dismissible note on the Family tab that writing together is here (no push, no count), and the setting is then cleared. Without this, the v1.0 button would have promised something nobody keeps.
 10. **Remote config.** `flags.familyTeaser` has no effect in the new build (the shared Family tab replaces the teaser).
+11. **Security fixes.** The sign-in and sharing fixes from `docs/reviews/2026-10-04-security-privacy.md` are done: BL-347 (H1, email sign-in link), BL-330 (H3, Apple token revocation), BL-322 and BL-331 (H2, invites and membership). An independent review (D-041) of `lib/auth`, `lib/sync`, `lib/family` and the server migrations passes on the commit that flips the switch. These fixes matter only once sign-in exists, so the switch is where they are enforced.
 
 ---
 
