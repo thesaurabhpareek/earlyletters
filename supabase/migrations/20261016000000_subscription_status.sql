@@ -127,7 +127,7 @@ create table public.subscription_consents (
   pseudonymised_at timestamptz,           -- retention clock: rows are deleted 3 years after this
   sub_ref text not null unique check (sub_ref ~ '^[0-9a-f]{64}$'),
   product_id text not null check (product_id ~ '^[a-z0-9][a-z0-9._-]{0,99}$'),
-  offer_type text not null check (offer_type in ('none', 'introductory', 'promotional', 'offer_code')),
+  offer_type text not null check (offer_type in ('none', 'introductory', 'promotional', 'offer_code', 'win_back')),
   terms_shown text not null check (terms_shown ~ '^(none_outside_app|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\+[0-9a-f]{8})?)$'),
   shown_at timestamptz not null,
   recorded_at timestamptz not null default now(),
@@ -353,7 +353,7 @@ begin
        or jsonb_typeof(v_consent -> 'product_id') is distinct from 'string'
        or (v_consent ->> 'product_id') !~ '^[a-z0-9][a-z0-9._-]{0,99}$'
        or jsonb_typeof(v_consent -> 'offer_type') is distinct from 'string'
-       or (v_consent ->> 'offer_type') not in ('none', 'introductory', 'promotional', 'offer_code')
+       or (v_consent ->> 'offer_type') not in ('none', 'introductory', 'promotional', 'offer_code', 'win_back')
        or jsonb_typeof(v_consent -> 'terms_shown') is distinct from 'string'
        or (v_consent ->> 'terms_shown') !~ '^(none_outside_app|[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\+[0-9a-f]{8})?)$' then
       raise exception 'consent facts outside the contract' using errcode = '22023';

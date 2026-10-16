@@ -19,6 +19,7 @@ import {
   afterStored,
   EMPTY_REPORT_STATE,
   errorCodeFromAnswer,
+  offerTypeOf,
   parseReportState,
   planReports,
   purchaseKey,
@@ -85,6 +86,22 @@ describe('status-report.logic: what a report carries', () => {
   it('a paid monthly plan has no trial end; billing retry keeps the period end it is retrying', () => {
     expect(statusFieldsOf(monthlyPaid())).toMatchObject({ plan: 'monthly', trial_end: null, renewal_date: '2026-11-20T10:00:00.000Z' });
     expect(statusFieldsOf(monthlyPaid({ state: 'inBillingRetryPeriod' }))?.renewal_date).toBe('2026-11-20T10:00:00.000Z');
+  });
+
+  it('[F14-REQ-044] a win-back offer is reported as win_back, not promotional (S07 #138 OFFER_TYPES); only an unknown kind falls back', () => {
+    expect(offerTypeOf('win_back')).toBe('win_back');
+    expect(offerTypeOf('other')).toBe('promotional');
+    expect(offerTypeOf(undefined)).toBe('none');
+    const winBack = sanitizeRefs([annualTrial({ isTrial: false, offerType: 'win_back', freePeriod: true })]);
+    expect(winBack[0].offerType).toBe('win_back');
+    let state = addPendingConsent(EMPTY_REPORT_STATE, {
+      productId: 'plus.annual', originalPurchasedAt: '2026-10-29T17:59:00.000Z', termsVersion: '1.4.0+0a1b2c3d',
+      shownAt: '2026-10-29T17:59:30.000Z', queuedAt: '2026-10-29T17:59:30.000Z',
+    });
+    const [p] = planReports(winBack, state, { owner: ASHA_MAMA, now: NOW });
+    expect(p.report.consent?.offer_type).toBe('win_back');
+    state = afterStored(state, ASHA_MAMA, p, 'recorded');
+    expect(state.pending).toEqual([]);
   });
 
   it('[F14-REQ-044] a free period from an offer code is a trial end too (notices key on the free period, not the product)', () => {

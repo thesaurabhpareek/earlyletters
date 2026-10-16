@@ -374,7 +374,8 @@ enum Entitlements {
     return t.offerType == .introductory
   }
 
-  /// How the current period was offered. Win-back and any later kind read as "other".
+  /// How the current period was offered. A win-back offer (iOS 18) is "win_back" (contract
+  /// OFFER_TYPES, S07 #138); a kind newer than this build reads as "other".
   private static func offerTypeName(_ t: Transaction) -> String {
     let type: Transaction.OfferType?
     if #available(iOS 17.2, *) {
@@ -386,6 +387,7 @@ enum Entitlements {
     if type == .introductory { return "introductory" }
     if type == .promotional { return "promotional" }
     if type == .code { return "offer_code" }
+    if #available(iOS 18.0, *), type == .winBack { return "win_back" }
     return "other"
   }
 

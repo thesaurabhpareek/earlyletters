@@ -57,7 +57,7 @@ const SUB_REF_RE = /^[0-9a-f]{64}$/;
 const LIVE_STATES: ReadonlySet<RenewalStateName> = new Set(['subscribed', 'inGracePeriod', 'inBillingRetryPeriod', 'unknown']);
 const ENDED_STATES: ReadonlySet<RenewalStateName> = new Set(['expired', 'revoked']);
 const ENVIRONMENTS = new Set(['production', 'sandbox', 'xcode']);
-const NATIVE_OFFERS: ReadonlySet<string> = new Set(['none', 'introductory', 'promotional', 'offer_code', 'other']);
+const NATIVE_OFFERS: ReadonlySet<string> = new Set(['none', 'introductory', 'promotional', 'offer_code', 'win_back', 'other']);
 
 /** Consent facts waiting for the purchase's first report. Matched by product and first-purchase date. */
 export interface PendingConsent {
@@ -147,9 +147,10 @@ export function sanitizeRefs(raw: unknown): NativeStatusRef[] {
 }
 
 /**
- * The contract's offer type. A kind this build does not know (`other`, for example a
- * win-back offer, which Plus does not configure) is reported as `promotional` until the
- * contract names it (request to S07 in the PR).
+ * The contract's offer type. A win-back offer is `win_back` (S07 added it to OFFER_TYPES
+ * for #178; Plus configures none). Only a kind newer than this build (`other`, none
+ * exists as of iOS 18) is reported as `promotional`, the nearest kind, until the contract
+ * names it.
  */
 export function offerTypeOf(native: NativeOfferType | undefined): OfferType {
   if (native === 'other') return 'promotional';

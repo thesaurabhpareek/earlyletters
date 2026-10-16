@@ -155,6 +155,10 @@ check('[LEGAL-REQ-049] exactly one consent record, with product, offer type, ter
 r = await report(B, base(subRef(sB, 2000000505), { consent: consentFacts({ product_id: 'plus.monthly', offer_type: 'offer_code', terms_shown: 'none_outside_app' }) }), { key: randomUUID() });
 check('[F14-REQ-044] an offer code redeemed outside the app records terms_shown none_outside_app', r.consent === 'recorded'
   && (await consentRows()).some((c) => c.terms_shown === 'none_outside_app' && c.offer_type === 'offer_code'));
+r = await report(B, base(subRef(sB, 2000000808), { consent: consentFacts({ offer_type: 'win_back' }) }), { key: randomUUID() });
+check('[F14-REQ-044] a win-back offer is recorded as its own offer type (contract OFFER_TYPES, S07 #138)', r.consent === 'recorded'
+  && (await consentRows()).some((c) => c.offer_type === 'win_back'));
+check('an offer type outside the contract is still refused', (await reportCode(B, base(subRef(sB, 2000000809), { consent: consentFacts({ offer_type: 'winback' }) }))) === '22023');
 check('consent rows are append-only (an update is refused)', (await codeOf(() => sys(`update subscription_consents set terms_shown = '9.9.9'`))) !== 'ok');
 check('consent rows are append-only (a delete outside the retention purge is refused)', (await codeOf(() => sys(`delete from subscription_consents`))) !== 'ok');
 
@@ -208,7 +212,7 @@ check('an account with no consent records deletes without the pepper', await (as
 
 // ── 9. Retention: 3 years after pseudonymisation (D-081, Privacy Policy section 10) ──
 const purge = async (at) => (await sys(`select public.subscription_retention_purge($1::timestamptz) n`, [at])).rows[0].n;
-check('the retention purge keeps a record younger than 3 years', (await purge(iso(Date.now() + 2 * 365 * DAY))) === 0 && (await consentRows()).length === 2);
+check('the retention purge keeps a record younger than 3 years', (await purge(iso(Date.now() + 2 * 365 * DAY))) === 0 && (await consentRows()).length === 3);
 check('the retention purge deletes it 3 years after pseudonymisation, and only the pseudonymised one',
   (await purge(iso(Date.now() + 3 * 366 * DAY))) === 1 && (await consentRows()).every((c) => c.profile_id === B));
 check('the retention purge is service role only', (await codeOf(() => as(B, `select public.subscription_retention_purge()`))) === '42501');

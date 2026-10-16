@@ -28,7 +28,7 @@ export interface NativeTransaction {
   isTrial: boolean;
   /**
    * How the current period was offered (StoreKit `offer.type`, iOS 17.2+; `offerType` before).
-   * `other` is a kind this build does not know (for example a win-back offer, which Plus does not use).
+   * `win_back` is StoreKit's iOS 18 win-back offer (Plus configures none); `other` is a kind newer than this build.
    */
   offerType?: NativeOfferType;
   /** The current period is free under any offer: an introductory trial or an offer code with a free period. */
@@ -38,7 +38,7 @@ export interface NativeTransaction {
   revokedAt?: string;
 }
 
-export type NativeOfferType = 'none' | 'introductory' | 'promotional' | 'offer_code' | 'other';
+export type NativeOfferType = 'none' | 'introductory' | 'promotional' | 'offer_code' | 'win_back' | 'other';
 
 /** Product.SubscriptionInfo.RenewalState, by name. */
 export type RenewalStateName = 'subscribed' | 'inGracePeriod' | 'inBillingRetryPeriod' | 'expired' | 'revoked' | 'unknown';
