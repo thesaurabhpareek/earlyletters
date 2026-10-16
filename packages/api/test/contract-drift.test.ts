@@ -53,7 +53,7 @@ const PLANNED_SQLSTATES: Record<string, string> = {
   SCKIL: 'request to S02: SQL-side kill switch for the PostgREST paths (detail: the switch name)',
   SCBKO: 'S05 PR #151 (20261015230000, pending): backup or escrow off on the server',
   SCQTA: 'S05 PR #151 (20261015230000, pending): backup quota reached',
-  SCSES: 'S05 PR #151 (20261015230000, pending): the escrow caller\'s session has ended',
+  SCSTP: 'S05 PR #151 (20261015230000, pending): step-up needed (sign in again, then retry)',
 };
 
 describe('[ADR-0017] error codes equal the migrations', () => {

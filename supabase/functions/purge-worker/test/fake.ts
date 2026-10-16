@@ -55,6 +55,9 @@ export class FakeWorld {
   alertState = new Map<string, number | null>();
   ledger: { t: string; id: string; at: string }[] = [];
   retentionCalls = 0;
+  /** Arguments of each subscription_retention_purge call; null while S06's migration is absent (404). */
+  subscriptionRetentionCalls: string[] = [];
+  subscriptionRetentionMissing = false;
   finalized = new Map<string, Record<string, unknown>>();
   extraResidue: { table_schema: string; table_name: string; column_name: string }[] = [];
 
@@ -311,6 +314,10 @@ export class FakeWorld {
       case 'ops_retention':
         this.retentionCalls++;
         return { audit_log: 0, forget_quota: 0 };
+      case 'subscription_retention_purge':
+        if (this.subscriptionRetentionMissing) throw { status: 404, code: 'PGRST202' };
+        this.subscriptionRetentionCalls.push(String(a.p_now));
+        return 2;
       default:
         throw { status: 404, code: 'PGRST202' };
     }

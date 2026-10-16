@@ -2,7 +2,8 @@
  * Typed wrappers for the service-only database functions the worker calls.
  * SQL: supabase/migrations/20261002020000_data_governance.sql (prepare and
  * finalize), 20261003020000_purge_batching.sql (purge_due, backoff) and
- * 20261004200000_ops_deletion_worker.sql (everything named ops_*).
+ * 20261004200000_ops_deletion_worker.sql (everything named ops_*), and
+ * S06's 20261016000000_subscription_status.sql (subscription_retention_purge, PR #178).
  * Every id travels in an RPC body, never in a URL.
  */
 import type { ServiceClient } from './lib/service.ts';
@@ -117,6 +118,8 @@ export const db = (c: ServiceClient) => ({
   ledgerSince: (from: string, until: string, limit = 50_000) =>
     c.rpc<{ t: string; id: string; at: string }[]>('ops_ledger_between', { p_from: from, p_until: until, p_limit: limit }),
   retention: () => c.rpc<Record<string, number>>('ops_retention', {}),
+  /** S06's 20261016000000 (PR #178): deletes D-081 consent records 3 years after pseudonymisation. Returns the count. */
+  subscriptionRetention: (now: string) => c.rpc<number>('subscription_retention_purge', { p_now: now }),
 });
 
 export type Db = ReturnType<typeof db>;

@@ -216,7 +216,7 @@ export const ESCROW_ERROR_DETAILS = [
   'restore_open',
   /** SCBKO: escrow is paused while a key rotation runs. */
   'rotation',
-  /** SCSES: the session behind `p_session` has ended; sign in again. */
+  /** 28000 (S05 PR #151): the session was ended, for example by the Stop link; sign in again. */
   'session_ended',
 ] as const;
 export type EscrowErrorDetail = (typeof ESCROW_ERROR_DETAILS)[number];

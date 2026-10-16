@@ -34,6 +34,7 @@ import {
   enqueueStatusReport,
   settleQueued,
   PendingPurchaseSchema,
+  pendingMatches,
   reportFromPending,
   parsePullResponse,
   parsePushResponse,
@@ -269,6 +270,10 @@ describe('[D-080] subscription status report and [D-081] consent record', () => 
     for (const k of keys) expect(k).not.toMatch(/transaction|receipt|jws|price|amount|card|token|currency/i);
   });
 
+  it('[F14-REQ-044] a win-back offer reports as itself (S06 #178)', () => {
+    expect(parseStatusReport({ ...report, consent: { ...report.consent!, offer_type: 'win_back' } }).ok).toBe(true);
+  });
+
   it('[F14-REQ-044] an outside offer code records none_outside_app; a bad version is refused', () => {
     expect(parseStatusReport({ ...report, consent: { ...report.consent!, offer_type: 'offer_code', terms_shown: 'none_outside_app' } }).ok).toBe(true);
     expect(parseStatusReport({ ...report, consent: { ...report.consent!, terms_shown: 'latest' } }).ok).toBe(false);
@@ -307,10 +312,12 @@ describe('[D-080] subscription status report and [D-081] consent record', () => 
     expect(parseStatusReport({ ...report, subscribed_since: '2025-03-01T10:00:00Z' }).ok).toBe(false);
   });
 
-  it('[F14-REQ-043] signed out, the consent moment waits under an opaque handle until the salt exists', () => {
-    const pending = { local_ref: '0192e000-0000-7000-8000-0000000000aa', consent: report.consent!, queued_at: '2026-10-15T19:00:00.000Z' };
+  it('[F14-REQ-043] signed out, the consent moment waits keyed by product and first-purchase time until the salt exists', () => {
+    const pending = { product_id: 'plus.annual', first_purchase_at: '2026-10-15T18:59:00.000Z', consent: report.consent!, queued_at: '2026-10-15T19:00:00.000Z' };
     expect(v.safeParse(PendingPurchaseSchema, pending).success).toBe(true);
     expect(v.safeParse(PendingPurchaseSchema, { ...pending, original_transaction_id: '2000000123456789' }).success).toBe(false);
+    expect(pendingMatches(pending, 'plus.annual', '2026-10-15T18:59:00Z')).toBe(true);
+    expect(pendingMatches(pending, 'plus.monthly', '2026-10-15T18:59:00Z')).toBe(false);
     const { schema_version: _s, consent: _c, ...status } = report;
     const built = reportFromPending(pending, status);
     expect(parseStatusReport(built).ok).toBe(true);
@@ -394,14 +401,18 @@ describe('[F11-REQ-084] push payloads carry no content', () => {
 });
 
 describe('[F08 6.5] the S05 backup-server codes and details', () => {
-  it('SCRAT pending, SCIMM restore_open, SCBKO rotation and SCSES session_ended survive the envelope', () => {
+  it('SCRAT pending, SCIMM restore_open, SCBKO rotation, 28000 session_ended and SCSTP survive the envelope', () => {
     const id = newRequestId();
     for (const detail of ['pending', 'restore_open', 'rotation', 'session_ended'] as const) {
       expect(ERROR_DETAILS).toContain(detail);
       expect(ESCROW_ERROR_DETAILS).toContain(detail);
       expect(failure({ code: 'conflict', retryable: false, detail }, id).error.detail).toBe(detail);
     }
-    expect(classifySqlstate('SCSES')).toEqual({ code: 'unauthorized', action: 'reauth', retryable: true });
+    // As #151's integrated head raises them: 28000 with detail session_ended (Stop link), SCSTP step_up_required.
+    expect(classifySqlstate('28000')).toEqual({ code: 'unauthorized', action: 'reauth', retryable: true });
+    expect(failure({ code: 'unauthorized', retryable: true, sqlstate: '28000', detail: 'session_ended' }, id).error).toEqual({ code: 'unauthorized', retryable: true, sqlstate: '28000', detail: 'session_ended' });
+    expect(classifySqlstate('SCSTP')).toEqual({ code: 'reauth_required', action: 'tell_user', retryable: false });
+    expect(classifySqlstate('SCSES').code).toBe('bad_request');
     expect(classifySqlstate('SCBKO')).toEqual({ code: 'paused', action: 'retry', retryable: true });
     expect(classifySqlstate('SCIMM').action).toBe('reject');
     expect(classifySqlstate('SCRAT', 'queue').action).toBe('retry');

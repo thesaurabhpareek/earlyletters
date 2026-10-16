@@ -355,6 +355,19 @@ Deno.test('daily: the ledger is copied to the ops-ledger bucket and old files ar
   assert.deepEqual(findCanaries(log.raw.join('\n')), []);
 });
 
+Deno.test('daily: D-081 consent records past their 3 years are purged once a day; a missing function is skipped quietly', async () => {
+  const w = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  const { log } = await run(w, testConfig(), 'daily');
+  assert.deepEqual(w.subscriptionRetentionCalls, ['2026-11-05T03:17:00.000Z']);
+  assert.ok(log.lines.some((l) => l.event === 'retention.done' && l.counts?.rows === 2));
+  const before = new FakeWorld(new Date('2026-11-05T03:17:00Z'));
+  before.subscriptionRetentionMissing = true;
+  const r2 = await run(before, testConfig(), 'daily');
+  assert.ok(r2.log.lines.some((l) => l.event === 'retention.done' && l.outcome === 'skipped'));
+  assert.ok(!r2.log.lines.some((l) => l.event === 'retention.failed'));
+  assert.equal(before.retentionCalls, 1);
+});
+
 Deno.test('the run stops starting new work at its time budget', async () => {
   const { w } = await ashaWorld({ apple: false });
   let t = w.now.getTime();
