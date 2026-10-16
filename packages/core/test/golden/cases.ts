@@ -203,7 +203,7 @@ export const GOLDEN_CASES: GoldenCase[] = [
     id: 'r01-d4-model-direction-mark',
     lang: 'en',
     raw: 'Asha laughed at the duck.',
-    model: [{ type: 'punctuation', original: 'laughed', replacement: 'laughed‏' }],
+    model: [{ type: 'punctuation', original: 'laughed', replacement: 'laughed\u200F' }],
   },
   {
     id: 'r01-d9-model-noun-plural',

@@ -65,8 +65,8 @@ const BASE_SENTENCE_END = '.!?।॥？！؟';
 const BASE_CLOSERS = `"'”’)]»」』）`;
 const BASE_OPENERS = `"'“‘([«「『（`;
 /** Spaces only (no comma, no mark): two fillers this close are one spoken word ("uh uh", "mm hmm"). */
-const TRAILING_SPACES = /[ \t  ]+$/;
-const LEADING_SPACES = /^[ \t  ]+/;
+const TRAILING_SPACES = /[ \t\u00A0\u202F]+$/;
+const LEADING_SPACES = /^[ \t\u00A0\u202F]+/;
 
 function escapeClass(chars: string): string {
   return chars.replace(/[\\\]\[^-]/g, '\\$&');
@@ -119,8 +119,8 @@ export function normalizeCharsWith(input: string, house: HousePolicy): string {
   const c = escapeRe(comma.trim() || ',');
   if (house.dashes === 'replace') {
     s = numberDashToHyphen(s); // a range stays a range, never a list (engine 6)
-    // [^\S﻿]: whitespace without U+FEFF, an invisible character never dropped here (engine 6).
-    s = replaceKeepingNumbers(s, /[^\S﻿]*[—–]+[^\S﻿]*/g, comma);
+    // [^\S\uFEFF]: whitespace without U+FEFF, an invisible character never dropped here (engine 6).
+    s = replaceKeepingNumbers(s, /[^\S\uFEFF]*[—–]+[^\S\uFEFF]*/g, comma);
   }
   if (house.quotes === 'straight') {
     s = s.replace(/[‘’′]/g, "'");

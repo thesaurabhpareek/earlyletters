@@ -201,7 +201,7 @@ function makeLangs(): Lang[] {
 
 /* ---------- the oracle: independent definitions ---------- */
 
-const WORD = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[‌‍]+[\p{L}\p{M}\p{N}]+|['’][\p{L}\p{M}\p{N}]+)*/gu;
+const WORD = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[\u200C\u200D]+[\p{L}\p{M}\p{N}]+|['’][\p{L}\p{M}\p{N}]+)*/gu;
 const HAN = /\p{Script=Han}/u;
 const WORDISH = /[\p{L}\p{M}\p{N}]/u;
 const lw = (s: string) => s.normalize('NFC').toLowerCase().replace(/’/g, "'");
@@ -238,7 +238,7 @@ const INVISIBLE = /[\p{Default_Ignorable_Code_Point}\p{Bidi_Control}]/u;
 const invisibles = (s: string) => [...s].filter((c) => INVISIBLE.test(c)).join('');
 const DIGITS = /\p{N}+(?:[.,:/٫٬]\p{N}+)*/gu;
 const digits = (s: string) => [...s.matchAll(DIGITS)].map((m) => m[0]).join('|');
-const HYPHENATED = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[-‐‑][\p{L}\p{M}\p{N}]+)+/gu;
+const HYPHENATED = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[-\u2010\u2011][\p{L}\p{M}\p{N}]+)+/gu;
 const hyphenated = (s: string) => [...s.matchAll(HYPHENATED)].map((m) => lw(m[0]));
 const lettersOnly = (s: string) => s.normalize('NFC').replace(/[^\p{L}\p{M}\p{N}]/gu, '').toLowerCase();
 
@@ -347,7 +347,7 @@ function broken(raw: string, accepted: Edit[], lang: Lang, dict: DictionaryTerm[
   const hyRaw = hyphenated(raw);
   const hyFin = hyphenated(text);
   for (const h of new Set(hyRaw)) if (hyFin.filter((x) => x === h).length < hyRaw.filter((x) => x === h).length) return 'hyphenated_word_cut';
-  if (/(^|[^\p{L}\p{N}\p{M}‌‍])\p{M}/u.test(text) && !/(^|[^\p{L}\p{N}\p{M}‌‍])\p{M}/u.test(raw)) return 'orphan_mark';
+  if (/(^|[^\p{L}\p{N}\p{M}\u200C\u200D])\p{M}/u.test(text) && !/(^|[^\p{L}\p{N}\p{M}\u200C\u200D])\p{M}/u.test(raw)) return 'orphan_mark';
   // Names: every name fix follows the F07 7.2 rules; no capital lands mid-sentence on an everyday word.
   for (const e of accepted) {
     if (e.type === 'stt_fix') {
@@ -386,7 +386,7 @@ function brokenFinal(editedRaw: string, final: string, lang: Lang): string | nul
 
 /* ---------- the generator ---------- */
 
-const INVIS = ['‎', '‏', '‮', '​', '‌', '‍', '⁦', '؜', '﻿'];
+const INVIS = ['\u200E', '\u200F', '\u202E', '\u200B', '\u200C', '\u200D', '\u2066', '\u061C', '\uFEFF'];
 const QUOTES: Array<[string, string]> = [['“', '”'], ['‘', '’'], ['„', '“'], ['«', '»'], ['「', '」'], ['"', '"']];
 const MOODS = ['?', '!', '？', '！', '؟', '¿', '¡', '.', '。', '।', '?!'];
 const MARKS = ['́', '̀', '̂', '̈', 'ा', 'ि', 'े', '्', 'ं', 'َ', 'ُ', 'ِ'];
@@ -552,7 +552,7 @@ describe('[F06-REQ-021] zero accepted meaning changes: R-01 launch gate property
     expect(b('Usha came.', at('Usha came.', 'Usha', 'Asha', 'stt_fix'))).toBe('added_or_swapped_word'); // D13: Usha may not stand for Asha
     expect(b('I said no.', at('I said no.', 'no', 'Noa', 'stt_fix'))).toBe('added_or_swapped_word'); // a heard-as that is a negation
     expect(b('I am not sad.', at('I am not sad.', 'not ', '', 'filler'))).toBe('negation_removed');
-    expect(b('Asha slept.', at('Asha slept.', 'slept', 'slept‏'))).toBe('invisible_changed'); // D4
+    expect(b('Asha slept.', at('Asha slept.', 'slept', 'slept\u200F'))).toBe('invisible_changed'); // D4
     expect(b('She said ‘um, up’ now.', at('She said ‘um, up’ now.', 'um, ', '', 'filler'))).toBe('quoted_words_edited'); // D7
     expect(b('We saw the dogs.', at('We saw the dogs.', 'dogs', 'dog', 'agreement'))).toBe('added_or_swapped_word'); // D9
     expect(b('You did it.', at('You did it.', '.', '？'))).toBe('mood_changed'); // D5

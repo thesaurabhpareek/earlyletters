@@ -91,7 +91,7 @@ export function clean(
 }
 
 /** Direction marks, joiners and other invisible characters a hostile edit might add (R-01 D4). */
-export const INVISIBLES = ['‎', '‏', '‮', '​', '‌', '‍', '⁦', '؜', '﻿'] as const;
+export const INVISIBLES = ['\u200E', '\u200F', '\u202E', '\u200B', '\u200C', '\u200D', '\u2066', '\u061C', '\uFEFF'] as const;
 
 /** Two dictionary entries where one's heard-as is the other's name (R-01 D13). */
 export function twoNames(child: string, other: string): DictionaryTerm[] {

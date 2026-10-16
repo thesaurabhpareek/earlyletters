@@ -119,7 +119,7 @@ describe('[F06-REQ-014] F07 save check for a taught heard-as (F07-REQ-012, F07 7
 
 describe('[F06-REQ-005] hyphenated words are one word', () => {
   it('hyphenJoined sees a hyphen on either side of a word, never a dash', () => {
-    const s = 'Uh-uh, she said so-so — then mm‑hmm.';
+    const s = 'Uh-uh, she said so-so — then mm\u2011hmm.';
     const at = (w: string, nth = 0) => {
       let i = -1;
       for (let k = 0; k <= nth; k++) i = s.indexOf(w, i + 1);
@@ -130,7 +130,7 @@ describe('[F06-REQ-005] hyphenated words are one word', () => {
     expect(hyphenJoined(s, ...at('so', 1))).toBe(true);
     expect(hyphenJoined(s, ...at('then'))).toBe(false); // an em dash is not a joiner
     expect(hyphenJoined(s, ...at('hmm'))).toBe(true); // U+2011 non-breaking hyphen
-    expect(hyphenCompounds(s)).toEqual(['uh-uh', 'so-so', 'mm‑hmm']);
+    expect(hyphenCompounds(s)).toEqual(['uh-uh', 'so-so', 'mm\u2011hmm']);
   });
 
   it('no punctuation or whitespace edit splits or makes one (found by the F06-REQ-021 property test)', () => {
@@ -159,12 +159,12 @@ describe('[F06-REQ-016] the house character rule never changes a number or drops
   it('normalizeChars: ranges stay ranges, numbers stay numbers, U+FEFF stays', () => {
     expect(normalizeChars('She slept 2 – 3 hours.')).toBe('She slept 2 - 3 hours.');
     expect(normalizeChars('She slept 2 ,3 hours.')).toBe('She slept 2 ,3 hours.');
-    expect(normalizeChars('Asha nodded﻿, and smiled')).toBe('Asha nodded﻿, and smiled');
+    expect(normalizeChars('Asha nodded\uFEFF, and smiled')).toBe('Asha nodded\uFEFF, and smiled');
     expect(normalizeChars('I love you — always.')).toBe('I love you, always.'); // unchanged house rule
   });
 
   it('quotedSpans: U+FEFF before a closing quote does not open the quote to edits (property test finding)', () => {
-    const raw = 'Asha said ‘um, up﻿’ and laughed.';
+    const raw = 'Asha said ‘um, up\uFEFF’ and laughed.';
     const at = raw.indexOf('‘');
     expect(quotedSpans(raw)).toContainEqual({ start: at, end: raw.indexOf('’') + 1 });
   });

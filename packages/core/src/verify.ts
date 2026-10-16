@@ -146,7 +146,7 @@ function splitsHyphenated(raw: string, e: Edit): boolean {
   const a = Math.max(0, e.start - 64);
   const b = Math.min(raw.length, e.end + 64);
   const before = raw.slice(a, b);
-  if (!/[-‐‑]/.test(before) && !/[-‐‑]/.test(e.replacement)) return false;
+  if (!/[-\u2010\u2011]/.test(before) && !/[-\u2010\u2011]/.test(e.replacement)) return false;
   const after = raw.slice(a, e.start) + e.replacement + raw.slice(e.end, b);
   return hyphenCompounds(before).join('|') !== hyphenCompounds(after).join('|');
 }

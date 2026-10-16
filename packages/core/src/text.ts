@@ -87,7 +87,7 @@ export function splitsCluster(text: string, pos: number): boolean {
 }
 
 /** Hyphens that join two words into one ("uh-uh", "mm-hmm", "so-so"). En and em dashes are not joiners. */
-const HYPHEN = /^[-‐‑]$/;
+const HYPHEN = /^[-\u2010\u2011]$/;
 const WORDISH = /^[\p{L}\p{M}\p{N}]$/u;
 
 /** The code point that ends just before index `i`, or ''. */
@@ -114,7 +114,7 @@ export function hyphenJoined(text: string, start: number, end: number): boolean 
   return left || right;
 }
 
-const HYPHEN_COMPOUND = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[-‐‑][\p{L}\p{M}\p{N}]+)+/gu;
+const HYPHEN_COMPOUND = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:[-\u2010\u2011][\p{L}\p{M}\p{N}]+)+/gu;
 
 /** The hyphenated words of `text`, NFC and lowercased, in order ("uh-uh", "so-so"). */
 export function hyphenCompounds(text: string): string[] {
@@ -164,13 +164,13 @@ export function replaceKeepingNumbers(s: string, re: RegExp, rep: string): strin
  * Applied to the final text only; the raw transcript is never altered.
  */
 export function normalizeChars(input: string): string {
-  // Whitespace here is [^\S﻿]: JavaScript's \s also matches U+FEFF, an
+  // Whitespace here is [^\S\uFEFF]: JavaScript's \s also matches U+FEFF, an
   // invisible character this pass must never drop (found by the F06-REQ-021
   // property test, 15 Oct; engine 6).
   let s = numberDashToHyphen(input); // a range stays a range, never a list
-  s = replaceKeepingNumbers(s, /[^\S﻿]*—[^\S﻿]*/g, ', '); // em dash
+  s = replaceKeepingNumbers(s, /[^\S\uFEFF]*—[^\S\uFEFF]*/g, ', '); // em dash
   s = s.replace(/(\d)–(\d)/g, '$1-$2'); // en dash in ranges
-  s = replaceKeepingNumbers(s, /[^\S﻿]*–[^\S﻿]*/g, ', '); // other en dashes
+  s = replaceKeepingNumbers(s, /[^\S\uFEFF]*–[^\S\uFEFF]*/g, ', '); // other en dashes
   s = s.replace(/[‘’′]/g, "'");
   s = s.replace(/[“”″]/g, '"');
   s = s.replace(/…/g, '...');
@@ -178,10 +178,10 @@ export function normalizeChars(input: string): string {
   s = s.replace(/­/g, '');
   // Tidy artifacts the substitutions can leave behind.
   // None of them may join, split or change a number ("2 ,3" stays, never "2,3").
-  s = replaceKeepingNumbers(s, /,[^\S﻿]*,/g, ',');
-  s = replaceKeepingNumbers(s, /[^\S﻿]+,/g, ',');
-  s = replaceKeepingNumbers(s, /,[^\S﻿]*([.!?])/g, '$1');
-  s = replaceKeepingNumbers(s, /^,[^\S﻿]*/gm, '');
+  s = replaceKeepingNumbers(s, /,[^\S\uFEFF]*,/g, ',');
+  s = replaceKeepingNumbers(s, /[^\S\uFEFF]+,/g, ',');
+  s = replaceKeepingNumbers(s, /,[^\S\uFEFF]*([.!?])/g, '$1');
+  s = replaceKeepingNumbers(s, /^,[^\S\uFEFF]*/gm, '');
   s = s.replace(/[ \t]{2,}/g, ' ');
   return s;
 }

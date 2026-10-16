@@ -18,7 +18,7 @@ describe.each([...PACK_MODES, 'none'] as const)('[F06-REQ-019] Hindi, pack %s: R
 
   it('[F06-REQ-001] a word keeps its vowel signs and viramas: R-01 D1 (tokenizer)', () => {
     expect(R.tokens('मेरी प्यारी बेटी हिंदी').map((t) => t.word)).toEqual(['मेरी', 'प्यारी', 'बेटी', 'हिंदी']);
-    expect(R.tokens('क्‍ष').length).toBe(1);
+    expect(R.tokens('क्\u200Dष').length).toBe(1);
   });
 
   it('[F06-REQ-002] never genders the child: R-01 D2 (बेटी, daughter, to बेटा, son)', () => {

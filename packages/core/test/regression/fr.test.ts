@@ -43,7 +43,7 @@ describe.each(PACK_MODES)('[F06-REQ-019] French, pack %s: R-01 cases are refused
   });
 
   it('[F06-REQ-016] the no-break space before ? and ! is kept with the French pack: R-01 D14 (French part)', () => {
-    expect(clean('Tu viens ? Oui !', L, loadPack(L), { level: 'verbatim' }).text).toBe('Tu viens ? Oui !');
+    expect(clean('Tu viens\u00A0? Oui\u00A0!', L, loadPack(L), { level: 'verbatim' }).text).toBe('Tu viens\u00A0? Oui\u00A0!');
   });
 
   it('[F06-REQ-019] control: a taught mishearing is still spelled the family way at verbatim', () => {

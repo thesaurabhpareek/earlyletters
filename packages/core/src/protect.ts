@@ -61,10 +61,10 @@ const SPACE_SENSITIVE_CLOSERS = new Set(["'", '’', '”', '＂', '＇']);
 const BEFORE_OPENER = /[\s([{\-–—"“‘«‹「『〝｢]/u;
 /**
  * A space for quote pairing. JavaScript's \s also matches U+FEFF, an
- * invisible character: "up﻿’" must still close its quote, or the words
+ * invisible character: "up\uFEFF’" must still close its quote, or the words
  * inside lose their protection (found by the F06-REQ-021 property test, 15 Oct).
  */
-const SPACE = /[^\S﻿]/u;
+const SPACE = /[^\S\uFEFF]/u;
 
 function opensAt(text: string, i: number): boolean {
   const ch = text[i];
