@@ -91,8 +91,11 @@ let killSource: SyncKillSource | null = null;
  * never touches the remote module for sync. Metro resolves the inline require when
  * it bundles the app.
  */
-function remoteKillSource(): SyncKillSource {
-  const remote = require('../remote') as typeof import('../remote');
+type RemoteModule = Pick<typeof import('../remote'), 'getRemoteConfig' | 'remoteConfigDoc'>;
+
+/** Exported for the test of the real reader (the key it reads and the change wiring); `load` is the module. */
+export function remoteKillSource(load: () => RemoteModule = () => require('../remote') as RemoteModule): SyncKillSource {
+  const remote = load();
   return {
     killed: () => remote.getRemoteConfig().killSwitches.sync === true,
     subscribe: (listener) => remote.remoteConfigDoc.subscribe(() => listener()),

@@ -219,6 +219,26 @@ describe('[F16-REQ-018] switch on, signed in: the remote kill switch through sta
   });
 });
 
+describe('[F16-REQ-018] the real kill-switch reader (review B2-2)', () => {
+  it('reads killSwitches.sync, no other switch, and forwards a config change', () => {
+    const { remoteKillSource } = sync;
+    let config = { killSwitches: { sync: false, serverContent: true } };
+    let heard: (() => void) | null = null;
+    const fake = {
+      getRemoteConfig: () => config,
+      remoteConfigDoc: { subscribe: (l: () => void) => { heard = l; return () => {}; } },
+    };
+    const source = remoteKillSource(() => fake as never);
+    expect(source.killed()).toBe(false); // another switch never pauses sync
+    config = { killSwitches: { sync: true, serverContent: false } };
+    expect(source.killed()).toBe(true);
+    let woke = 0;
+    source.subscribe(() => woke++);
+    (heard as unknown as () => void)();
+    expect(woke).toBe(1);
+  });
+});
+
 describe('the same build with the switch on (contrast)', () => {
   it('wires sync at boot: sign-in, auth, invites, the upload queue and the foreground listener', () => {
     caps.setServerFeaturesForTests(true);

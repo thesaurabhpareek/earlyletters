@@ -172,8 +172,41 @@ function settleWords(db: SqlDb, row: OutboxRow, r: PushResultOk, ctx: EnqueueCon
   // the letter keeps its words and those ops keep their base, so the server can still refuse them.
   const pendingWords = queuedWordOps(db, row.entity_id).length > 0;
   if (!pendingWords) takeWords(db, row.entity_id, current);
-  rebaseQueued(db, row.entity_id, r.entry?.v ?? current.v, { exceptWords: true });
+  rebaseQueued(db, row.entity_id, laterV(r.entry?.v ?? null, current.v), { exceptWords: true });
   return copied;
+}
+
+/** The later of two server versions (decimal xid8 text). */
+function laterV(a: string | null, b: string): string {
+  if (a === null) return b;
+  return /^\d+$/.test(a) && /^\d+$/.test(b) && BigInt(b) > BigInt(a) ? b : a;
+}
+
+function isWordsOp(row: OutboxRow): boolean {
+  if (row.type === 'entry.reupload') return true;
+  if (row.type !== 'entry.upsert') return false;
+  return ((JSON.parse(row.payload) as PushOp).changed ?? ALL_GROUPS).includes('text');
+}
+
+/**
+ * The version this phone records for a letter after an op's answer: the next words
+ * edit is compared against it, so it must never name a state whose words this phone
+ * has not seen (ADR 0023 section 5).
+ * - A duplicate reports the letter as it is now, which may hold another phone's words:
+ *   its own write's version (`applied_v`) is used. A duplicate of a words op with no
+ *   `applied_v` and no `current` (a receipt written before protocol v1) says nothing
+ *   about the words, so the version this phone had is kept; with none, '0', so the
+ *   next words edit is compared, never applied unseen.
+ * - After a words conflict the phone has the server's words (`current`): the later of
+ *   the row's version and the words version, so "Use this phone's version" is not
+ *   refused again for a version the phone already holds.
+ */
+function stateVersion(db: SqlDb, row: OutboxRow, r: PushResultOk, v: string): string {
+  if (r.dup) {
+    if (r.applied_v) return r.applied_v;
+    if (!r.current && isWordsOp(row)) return getEntryRow(db, row.entity_id)?.server_version ?? '0';
+  }
+  return r.current ? laterV(v, r.current.v) : v;
 }
 
 export interface PushOutcome {
@@ -214,9 +247,7 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
           if (row.type === 'entry.delete') db.run('UPDATE entries SET server_version = NULL, server_epoch = NULL WHERE id = ?', row.entity_id);
         } else {
           if (settleWords(db, row, r, ctx)) conflicts++;
-          // A duplicate reports the letter as it is now, which may hold another phone's words this phone has
-          // not seen: the version its words descend from is the one its own op wrote (protocol v1 applied_v).
-          const s = r.entry && r.dup && r.applied_v ? { ...r.entry, v: r.applied_v } : r.entry;
+          const s = r.entry ? { ...r.entry, v: stateVersion(db, row, r, r.entry.v) } : r.entry;
           if (s) applyEntryState(db, s, epoch, ctx.now);
         }
         refreshEntryState(db, row.entity_id);
@@ -521,7 +552,9 @@ function mergeBook(db: SqlDb, b: PulledBook, now: string): boolean {
   // This person's choices (v7): the server holds the signature and the reminder switch; hide and quiet stay
   // on the phone until the server has them (S02 WP-F12-09).
   const mine = prefsRow(db, b.id);
-  upsertPrefs(db, b.id, { signsAs: m.my_signs_as ?? mine?.signsAs ?? '', remindersOn: m.include_in_reminders }, now);
+  const next = { signsAs: m.my_signs_as ?? mine?.signsAs ?? '', remindersOn: m.include_in_reminders };
+  // Written only when something differs, so updated_at keeps saying when this person last chose.
+  if (!mine || mine.signsAs !== next.signsAs || mine.remindersOn !== next.remindersOn) upsertPrefs(db, b.id, next, now);
   return true;
 }
 
