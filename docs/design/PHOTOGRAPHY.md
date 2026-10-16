@@ -1,6 +1,6 @@
 # Photography: sourcing and licensing
 
-Status: interim library, checked 2026-10-01. Files are in `apps/mobile/assets/photos/`, and each file's record is in `LICENSES.md` there.
+Status: interim library, checked 2026-10-01. Files are in `docs/brand/archive/photos/`, and each file's record is in `LICENSES.md` there. They were moved out of `apps/mobile/assets/` on 15 Oct 2026 because no screen uses them yet; when one does, copy the file into the app and record it there.
 
 ## 1. Position
 
