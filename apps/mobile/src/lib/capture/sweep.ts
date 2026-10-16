@@ -9,10 +9,10 @@
  * path names the old container; the file is matched by name in this one),
  * re-attaches stray recordings to the active book as drafts (they show on
  * Tonight), and reports the rest in Settings > Recordings. A take a kill cut
- * off is probed first: one that will
- * not play is kept and listed, not shown as ready (D-085). The sweep never
- * deletes audio. After it, the 30 day shelf purge runs (erase.ts), never
- * while a take is being recorded. Returns counts only.
+ * off is probed first: one that will not play is kept and listed, not shown
+ * as ready (D-085). The sweep never deletes audio. After it, the 30 day shelf
+ * purge runs (erase.ts), never while a take is being recorded. Returns counts
+ * only.
  */
 import { Platform } from 'react-native';
 import {
