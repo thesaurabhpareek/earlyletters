@@ -387,14 +387,14 @@ Rules:
 2. **Do not run the first App Store Connect upload until `company.domain` is final** (PRD 9 Q5, BL-053). Dev and preview builds use a separate bundle id suffix (`.dev`, `.preview`) so the real id is untouched.
 3. `eas.json` profiles: `development` (dev client, internal), `preview` (release config, internal TestFlight for the founding family, `__DEV__` false), `production` (store). Each profile sets `EXPO_PUBLIC_ENV` and the remote-config/Supabase endpoints; no secrets in the bundle (LEGAL-REQ-026). Secrets in EAS secrets.
 4. Runtime version policy: `fingerprint` (native fingerprint) so an OTA update can never target a binary with different native modules. **Unverified** exact option name in SDK 57; the alternative is `appVersion`.
-5. **OTA (EAS Update) policy**:
+5. **OTA (EAS Update) policy** (not in v1.0: D-091, ADR 0022 decision 9; this policy applies if OTA is adopted later):
    - Allowed: JS and asset fixes, copy changes already approved, config default changes, bug fixes that do not change data handling.
    - Not allowed by OTA (store release only): anything that changes what data is collected, sent or to whom (new network host, new SDK, new analytics event, consent text), anything that changes the privacy label or manifest (LEGAL-REQ-042, -043), local schema migrations that cannot be rolled back, permission changes, Plus pricing or disclosure text (LEGAL-REQ-046). Reason: App Review guideline on code changes plus our disclosures must match the reviewed build. 
    - Updates download in the background and apply on the next cold start; never reload mid-session (a parent may be recording).
    - Channels: `preview` and `production`; a staged rollout percentage for production OTA where supported (**Unverified**), and an immediate rollback by republishing the previous update.
    - Every OTA must pass the same release gates as a binary except device-matrix and store checks (7.9).
    - `expo-updates` makes a network request at launch (update check). This is not analytics, but it is a network destination: list it in the data map and privacy label review (LEGAL-REQ-041). Check after first frame (`checkAutomatically: 'ON_LOAD'` with `fallbackToCacheTimeout: 0`, names **Unverified**) so launch never waits.
-6. Release tags `ios-v<major>.<minor>.<patch>` (CLAUDE.md). Build number auto-incremented by EAS.
+6. Release tags `ios-v<major>.<minor>.<patch>` (CLAUDE.md). Build number auto-incremented by EAS. Amended by ADR 0022: `ios-v<x.y.z>-rc.<n>` on a `release/*` branch builds a candidate, and `ios-v<x.y.z>` marks the released one; the version lives in `apps/mobile/version.json`.
 7. Privacy manifest (`PrivacyInfo.xcprivacy`) generated in `app.config.ts` from `docs/legal/data-map.yaml` once it exists; until then a checked-in list reviewed per release. Required-reason APIs used by Expo modules (UserDefaults, file timestamps, disk space for the low-storage check) declared.
 8. CI builds Android on every PR (no release) so parity breaks show up immediately.
 
