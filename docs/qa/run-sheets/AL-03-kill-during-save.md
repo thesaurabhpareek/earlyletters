@@ -1,12 +1,15 @@
 # AL-03 Kill the app during save, and while recording
 
+> **Drill identities first.** Follow `README.md` "Drill identities": drill child Asha, drill accounts only, never the family book. Do the drill-phone check (rule 3) before AL-03.1: a kill test on a phone with a real book puts real letters at risk.
+
 | | |
 |---|---|
 | Proves | Atomic local save: every kill ends with exactly one entry whose recording matches its hash, or an intact draft with its file; nothing lost, nothing doubled (DATA-REQ-048, F04-REQ-024, F04-REQ-004, F04-REQ-009). Never waived (07 section 5.3: "kill during save 500 of 500 and 50 of 50"). Alpha plan item 9 |
-| Builds | Build 1: the 10-run hand subset before Family and Friends get it. Build 2: the 50-run SE 3 subset on Wed 28 Oct (F25; a family helper can run it). The 500-run Simulator gate from the freeze commit is S19's kill harness (`apps/mobile/e2e/kill/`, not built on 15 Oct: see below) |
-| Phones | Phone A (SE 3) |
+| Builds | Build 1: the 10-run hand subset before Family and Friends get it (after F12). Build 2: the 50-run SE 3 subset at F25 (a family helper can run it). The 500-run Simulator gate from the freeze commit is S19's kill harness (`apps/mobile/e2e/kill/`, not built yet: see below) |
+| Plan | **Plus on**: the sandbox trial from AL-09.2, or a development build with the StoreKit file (AL-09, Builds row) if the products are not in the sandbox yet; the evidence rows then say "StoreKit file". On Free the third letter kept opens the Keep sheet, so from run 3 on Save would open the sheet and no save would be killed |
+| Phones and accounts | Drill phone only: Phone A (SE 3). No sign-in needed on build 1; on build 2, signed out or a drill account |
 | Time | Build 1 subset (10 + 10 + 10 runs) about 45 min. Build 2: 50 kills during save (25 typed in AL-03.1, 25 spoken in AL-03.2) about 100 min and 50 kills while recording about 150 min (07 section 2.7 budget), about 4 h in all, which is more than the 2.5 h founder step F25 holds, so a helper runs it [E] |
-| Needs first | AL-02 done (a model on the phone helps but is not needed); the phone charged; Low Power off; a tally sheet (paper is fine) |
+| Needs first | The drill-phone check passed; Plus on (Plan row): check Settings > Plan says Plus is on before run 1; AL-02 done (a model on the phone helps but is not needed); the phone charged; Low Power off; a tally sheet (paper is fine) |
 | Record in | the session's evidence file, rows AL-03.1 to AL-03.4, with the tallies |
 
 How to kill by hand: swipe up from the bottom edge and hold to open the app switcher, then swipe the app's card up. Hand timing cannot hit a millisecond offset, so vary it on purpose: kill at once, after about half a second, after about one second, and so on in turn. Write the run number on the tally before each kill.
@@ -28,6 +31,6 @@ Lost = 0 and doubled = 0 in every row. For the alpha go (item 9) build 2 needs 5
 
 One lost or doubled letter is S0. Stop at once, do not reinstall or export over it, note the run number and what was on screen, and file the issue. The phone stays as it is until S10 (capture) and S03 (local store) have looked.
 
-## The 500-run Simulator gate (status 15 Oct)
+## The 500-run Simulator gate
 
-`docs/release/ALPHA_PLAN.md` (PR #152) asks S19 for a DL-01 and DL-02 harness on a macOS runner (`apps/mobile/e2e/kill/`, due Wed 21 Oct), running 500 of 500 each from the freeze commit on Tue 27 Oct. It is **not built** in this pull request. It needs: an e2e simulator build (TESTID_REQUESTS.md request B-1), a way to kill at a random 0 to 400 ms after Save (`xcrun simctl terminate` from the host while a Maestro flow taps Save), and a macOS runner or the founder's Mac overnight (alpha plan risk 9; workflow file by request to S20). Until it exists, alpha item 9 cannot pass.
+`docs/release/ALPHA_PLAN.md` (PR #152) asks S19 for a DL-01 and DL-02 harness on a macOS runner (`apps/mobile/e2e/kill/`), running 500 of 500 each from the freeze commit; the alpha plan holds its dates. It is **not built** in the pull request that added this sheet (#176). It needs: an e2e simulator build (TESTID_REQUESTS.md request B-1), a way to kill at a random 0 to 400 ms after Save (`xcrun simctl terminate` from the host while a Maestro flow taps Save), and a macOS runner or the founder's Mac overnight (alpha plan risk 9; workflow file by request to S20). Until it exists, alpha item 9 cannot pass.

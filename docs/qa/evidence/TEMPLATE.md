@@ -32,17 +32,18 @@ Keychain item name, key material, a Supabase key, or a push token. Use the ficti
 
 ## Phones
 
-| Label | Device tag | Model | iOS | Storage free | Apple Account | iCloud Keychain | Battery and thermal state at start |
-|---|---|---|---|---|---|---|---|
-| Phone A | se3 | iPhone SE (3rd generation) | | GB | Account A | on / off | %, nominal |
-| Phone B | current | | | GB | Account A / Account B | on / off | %, nominal |
-| Phone C | | | | GB | Account C | on / off | |
+| Label | Device tag | Model | iOS | Storage free | Apple Account (drill label) | iCloud Keychain | App account (drill label) | Plan: Plus or Free, and letters already kept | Drill-phone check (`run-sheets/README.md` rule 3) | Battery and thermal state at start |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Phone A | se3 | iPhone SE (3rd generation) | | GB | drill Apple Account A | on / off | Drill Mama / signed out | Free, 0 kept / Plus on (sandbox or StoreKit file) | pass / stop | %, nominal |
+| Phone B | current | | | GB | drill Apple Account A / B | on / off | | | pass / stop | %, nominal |
+| Phone C | | | | GB | | on / off | Drill Papa | | pass / stop | |
 
-Sandbox testers used (labels only): Sandbox 1, Sandbox 2.
+Sandbox or purchase accounts used (labels only), and which account Apple's sheet used (AL-09 account check).
 Settings during the session: Dark on / off; text size default / AX5; Bold Text on / off; Reduce Motion on / off; Low Power on / off; network Wi-Fi / cellular / airplane.
 
 ## Before the first step
 
+- [ ] Every phone passed the drill-phone check (`docs/qa/run-sheets/README.md` "Drill identities" rule 3): signed out or a drill account, only the drill child Asha in the Book, the drill Apple Account where the sheet needs it. A phone that fails is not used, and nothing on it is deleted or reinstalled.
 - [ ] Every letter, name and recording used today is fictional (Asha, Avi, Mama, Papa) or a scripted Asha letter read by a consenting adult (DEVICE_TEST_PLAN P-08).
 - [ ] Screen recording and screenshots go to your own storage, never the repo; only their file names go below.
 - [ ] Each phone's App Privacy Report is on (Settings > Privacy and Security > App Privacy Report) so the domains the app contacted can be read at the end.
@@ -60,7 +61,7 @@ Result words: **pass**, **fail**, **blocked** (with the reason, for example "swi
 
 | Phone | Domains in the App Privacy Report for the app | Expected for this build | Match? |
 |---|---|---|---|
-| Phone A | | build 1: the pack host only, and only after a download tap; build 2: also the staging Supabase host, and only after sign-in | |
+| Phone A | | build 1: `packs.earlyletters.app` (signed config and documents) and the speech model host (`huggingface.co`, only after a download tap); build 2: also the staging Supabase host, only after sign-in; never an analytics or crash-report host | |
 
 ## Issues filed
 

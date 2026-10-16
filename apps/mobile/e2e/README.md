@@ -88,8 +88,9 @@ export MAESTRO_E2E_SUPABASE_URL=https://<e2e-ref>.supabase.co
 export MAESTRO_E2E_PROJECT_REF=<e2e-ref>
 export MAESTRO_E2E_SERVICE_KEY=<the e2e project's secret key>      # never staging or production
 export MAESTRO_PROD_PROJECT_REF=<production ref>                    # scripts refuse it
+export MAESTRO_STAGING_PROJECT_REF=<staging ref>                    # refused too: staging holds the family's letters (D-106)
 ```
-Maestro passes shell variables that start with `MAESTRO_` into flows and scripts (V). `scripts/lib-guard.js` refuses any URL that is not the e2e project or `http://127.0.0.1`, any URL containing the production ref, and any email that is not a test address.
+Maestro passes shell variables that start with `MAESTRO_` into flows and scripts (V). `scripts/lib-guard.js` refuses any URL that is not the e2e project or `http://127.0.0.1`, any URL containing the production or staging ref, an e2e ref equal to either, a hosted URL when either ref is unset (it fails closed), and any email that is not a test address. `apps/mobile/test/qa-e2e-guard.test.ts` runs the guard in Node on every `npm test`.
 
 Sign-in codes (`scripts/fetch-otp.js`):
 - `OTP_SOURCE=admin` (default): GoTrue's admin `generate_link` returns the 6-digit `email_otp` without sending mail (V-code: `@supabase/auth-js` 2.117.2). Proves the app's code path; mail delivery is a device check.

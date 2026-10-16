@@ -1,36 +1,81 @@
 # AL-07 Account deletion
 
+> **Drill identities first.** Follow `README.md` "Drill identities". Account deletion covers every book of the account and tombstones every letter it wrote at once, so this sheet deletes **only drill accounts** (Drill Mama, then Drill D), never an account that has ever been in a real family book. Do the drill-phone check (rule 3) on each phone before its first step, and check in Settings > Account that the masked email is the drill mailbox named in the row before you confirm any deletion. The staging SQL below changes exactly one row or nothing; never edit it to a broader `where`.
+
 | | |
 |---|---|
 | Proves | In-app account deletion, never waived (07 section 5.3): export is offered first as the main action (F15-REQ-016, DATA-REQ-053); the Apple billing line with Manage shows when Plus will renew (C-REQ-019); a 30-day undo (LEGAL-REQ-029); the co-parent keeps the book and their letters (DATA-REQ-012, K-22); after completion nothing remains but pseudonymised acceptances and the suppression hash (LEGAL-REQ-031); Apple's token is revoked (BL-330, A-NFR-011). DEVICE_TEST_PLAN S2-13; `docs/ops/README.md` step 7 (staging, before the first build to anyone outside the family). Alpha plan journey J8; G3 "deletion verification in staging" |
-| Builds | Rehearsal R1 on Fri 23 Oct for AL-07.1 to AL-07.6; staging completion (AL-07.7 to AL-07.9) before friends get build 2 on Thu 29 Oct; a check of AL-07.1 to AL-07.3 on build 2 (F25). Build 1 has no accounts: AL-07.10 only |
-| Phones and accounts | Phone A on app account "Mama" (Account A) in Asha's book with Papa (AL-05); a separate fixture account "Account D" (Mailbox 2) with its own book and 2 letters, for the run to completion. Never the founder's real account |
+| Builds | Rehearsal R1 at F19 for AL-07.1 to AL-07.6; staging completion (AL-07.7 to AL-07.9) before F27, before any friend signs in; a check of AL-07.1 to AL-07.3 on build 2 at F25. Build 1 has no accounts: AL-07.10 only |
+| Plan | Drill Mama: Plus renewing in the sandbox for AL-07.2 (AL-09.2 first), else record AL-07.2 as n/a. Drill D: Free, 2 letters kept |
+| Phones and accounts | Drill phones only. Phone A: Drill Mama (Mailbox 1), in the drill book for Asha with Drill Papa still a parent. Phone C: Drill Papa. Phone B: Drill D (Mailbox 4), its own drill book with 2 letters, made only for the run to completion |
 | Time | about 40 min on the phones, plus about 30 min for the founder on staging [E] |
-| Needs first | AL-04 and AL-05 passed; staging function secrets set and `purge-worker` deployed and scheduled (F17); the consent pepper set on staging (APPLY.md step 6, R-17 checklist 5.5); for AL-07.2, a sandbox Plus subscription that will renew (AL-09) |
-| Record in | the session's evidence file, rows AL-07.1 to AL-07.10 |
+| Needs first | AL-04 and AL-05.1 to AL-05.14 done, with Drill Papa still in the drill book (run AL-05.15, the leave step, after this sheet); staging function secrets set and `purge-worker` deployed and scheduled (F17); the consent pepper set on staging (APPLY.md step 6, R-17 checklist 5.5) |
+| Record in | the session's evidence file, rows AL-07.0 to AL-07.10 |
 
 ## Steps
 
 | # | Do | Expected | Capture |
 |---|---|---|---|
-| AL-07.1 | Phone A (Mama, signed in): Settings > Delete account. Read the screen. | Export is offered first, as the main action, before any confirm; the screen says what happens to each book in plain words (Asha's book stays with Papa); no fear or loss wording | Screenshot name; yes or no per part |
-| AL-07.2 | With sandbox Plus renewing (AL-09 first), open Delete account again. | The Apple billing line with Manage subscription shows before the confirm, because deleting the account does not stop Apple's billing | yes or no; "n/a, no subscription" if AL-09 has not run |
-| AL-07.3 | Continue; type the confirm word; confirm. | Deletion is scheduled with a 30-day undo; the app signs out; the letters on the phone are handled as the screen said | yes or no |
-| AL-07.4 | Phone C (Papa): open Asha's book. | Mama's letters have left the shared book (the request tombstones every letter she wrote: PRD V2 F11, from `supabase/migrations/20261003000000_security_and_family.sql` section 5); Papa's book and letters stay | yes or no per part |
-| AL-07.5 | Phone A: sign in again as Mama within the 30 days. Cancel deletion. | Everything comes back: Mama's letters return to the shared book and to Papa's phone within one sync | yes or no; seconds |
-| AL-07.6 | Founder, staging: confirm the request moved to cancelled (Table Editor `deletion_requests`, status only). | `cancelled`, with no step run against the account | status word |
-| AL-07.7 | Phone B, fixture Account D: request deletion as in AL-07.3. Founder, staging only: make that request due now in the SQL editor (`deletion_requests.scheduled_for` for that one request), then wait for the hourly purge or run it as the ops README says. Never on production. | The worker runs every step; the receipt lists each system; `apple: revoked` if Account D used Apple, or `apple: no_token` if it used email | How the clock was moved; receipt step names and results (no ids) |
-| AL-07.8 | Founder: `scripts/ops/verify-deletion.ts` for that request (runbooks/stuck-deletion.md section 6 shows the command). | No residue: no row, Storage object or Auth user points at the person, except the pseudonymised acceptances and the suppression hash | The script's summary line (counts only) |
+| AL-07.0 | The drill-phone check on Phone A, Phone B and Phone C. On Phone A, Settings > Account shows Mailbox 1 masked; on Phone B, Mailbox 4. | All pass. If not, **stop** before anything is deleted | pass or stop |
+| AL-07.1 | Phone A (Drill Mama, signed in): Settings > Delete account. Read the screen. | Export is offered first, as the main action, before any confirm; the screen says what happens to each book in plain words (Asha's book stays with Papa); no fear or loss wording | Screenshot name; yes or no per part |
+| AL-07.2 | With sandbox Plus renewing (AL-09.2 first), open Delete account again. | The Apple billing line with Manage subscription shows before the confirm, because deleting the account does not stop Apple's billing | yes or no; "n/a, no subscription" if AL-09 has not run |
+| AL-07.3 | Check once more that Settings > Account shows Mailbox 1 (Drill Mama). Continue; type the confirm word; confirm. | Deletion of Drill Mama is scheduled with a 30-day undo; the app signs out; the letters on the phone are handled as the screen said | yes or no |
+| AL-07.4 | Phone C (Drill Papa): open Asha's book. | Mama's letters have left the shared book (the request tombstones every letter she wrote: PRD V2 F11, from `supabase/migrations/20261003000000_security_and_family.sql` section 5); Papa's book and letters stay | yes or no per part |
+| AL-07.5 | Phone A: sign in again as Drill Mama within the 30 days. Cancel deletion. | Everything comes back: Mama's letters return to the shared book and to Papa's phone within one sync | yes or no; seconds |
+| AL-07.6 | Founder, staging SQL editor, read only: query 1 below with Drill Mama's user id (Authentication > Users, found by Mailbox 1). | One row, `status` = `cancelled`, with no step run against the account | status word |
+| AL-07.7 | Phone B (Drill D): request deletion as in AL-07.3 (check Mailbox 4 first). Founder, staging only: query 2 below must return exactly one row; then run statement 3 with that row's id. Then wait for the next hourly purge job and the purge worker (APPLY.md step 7, `docs/ops/README.md` step 5). Never on production. | Query 2 returns 1 row; statement 3 finishes without an error (it changes exactly that one row, or raises and changes nothing). The worker then runs every step; the receipt lists each system, with `apple: revoked` if Drill D used Apple or `apple: no_token` if it used email | Rows from query 2 (must be 1); statement 3: done or stopped; receipt step names and results (no ids) |
+| AL-07.8 | Founder: `scripts/ops/verify-deletion.ts` for that request (runbooks/stuck-deletion.md section 6 shows the command). | No residue: no row, Storage object or Auth user points at Drill D, except the pseudonymised acceptances and the suppression hash | The script's summary line (counts only) |
 | AL-07.9 | Phone B: open the app. | It offers one export, then clears the account's data from the phone (F02-REQ-007); signing in again starts a new account | yes or no |
 | AL-07.10 | Build 1 only: Settings. | No Account and no Delete account row (no accounts in build 1, `capabilities.ts`); Export works offline | yes or no |
 
+## Staging SQL (founder, SQL editor on `scribe-staging` only)
+
+The SQL editor runs as the database owner and ignores access rules, so each statement names the drill account's id and checks the row count. Paste the id only into the editor; it never goes into evidence, an issue or a chat.
+
+**1. Drill Mama's request after the cancel (AL-07.6), read only:**
+```sql
+select status, cancelled_at is not null as cancelled
+  from public.deletion_requests
+ where profile_id = '<Drill Mama user id>'
+   and kind = 'account'
+ order by requested_at desc
+ limit 1;
+```
+
+**2. Find Drill D's one scheduled request (AL-07.7), read only.** It must return exactly one row. If it returns none or more than one, stop and tell S19 and S02:
+```sql
+select id, status, scheduled_for
+  from public.deletion_requests
+ where profile_id = '<Drill D user id>'
+   and kind = 'account'
+   and status = 'scheduled';
+```
+
+**3. Make that one request due now (AL-07.7).** It changes exactly one row or nothing: if the count is not 1 it raises an error and the change is undone. If the editor shows the error, stop.
+```sql
+do $$
+declare n integer;
+begin
+  update public.deletion_requests
+     set scheduled_for = now()
+   where id = '<the id from query 2>'
+     and profile_id = '<Drill D user id>'
+     and kind = 'account'
+     and status = 'scheduled';
+  get diagnostics n = row_count;
+  if n <> 1 then
+    raise exception 'stop: % rows matched, expected exactly 1; nothing was changed', n;
+  end if;
+end $$;
+```
+
 ## Pass rule
 
-AL-07.1, AL-07.3 to AL-07.8 pass (AL-07.2 when Plus is set up). Alpha go needs AL-07.7 and AL-07.8 to have passed on staging at least once: until they do, friends do not sign in (`docs/ops/README.md` step 7 makes it a gate before the first build to anyone outside the family).
+AL-07.0, AL-07.1, AL-07.3 to AL-07.8 pass (AL-07.2 when Plus is set up). Alpha go needs AL-07.7 and AL-07.8 to have passed on staging at least once: until they do, friends do not sign in (`docs/ops/README.md` step 7 makes it a gate before the first build to anyone outside the family).
 
 ## Stop rule
 
-S0: the co-parent loses a letter of their own, deletion touches an account other than the one asked for, or a request the person cancelled runs anyway. Stop the purge worker schedule on staging (`supabase/cron/purge-worker.sql` job) and tell the founder.
+S0: the co-parent loses a letter of their own, deletion touches an account other than the drill account asked for, or a request the person cancelled runs anyway. Stop the purge worker schedule on staging (`supabase/cron/purge-worker.sql` job) and tell the founder.
 
 ## Not proved here
 

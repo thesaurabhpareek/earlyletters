@@ -1,12 +1,15 @@
 # AL-06 Backup upload and restore on a second phone with the recoverable key
 
+> **Drill identities first.** Follow `README.md` "Drill identities". Turning backup on uploads every recording of the signed-in account's books, so do the drill-phone check (rule 3, with part c) on both phones before B6-01: only Drill Mama's drill book may be on them. The proxy certificate goes on Phone A only and comes off (Settings > General > VPN and Device Management, and Certificate Trust Settings) at the end of the drill.
+
 | | |
 |---|---|
-| Proves | Recordings back up encrypted: zero plaintext in any upload (F08-REQ-018, F08-REQ-020); an upload cut by a kill or airplane mode resumes (F08-U17); a second phone restores every recording with equal hashes (F08-REQ-023); with iCloud Keychain off, a restore asks the recovery service, which holds the request and emails the owner (D-102, F08-REQ-028, F08-REQ-029). Alpha plan item 4 |
-| Builds | Rehearsal R2 (`preview`, servers on, `EXPO_PUBLIC_BACKUP=on`, the staging escrow URL and the **drill** key) on Tue 27 Oct, founder step F23. Never build 1, and never a build with the production escrow key |
-| Phones and accounts | Phone A (SE 3) and Phone B (current iPhone), both on **one** Apple Account (Account A), iCloud Keychain on for round A; the app account "Mama" on both |
+| Proves | Recordings back up encrypted: zero plaintext in any upload (F08-REQ-018, F08-REQ-020); an upload cut by a kill or airplane mode resumes (F08-U17); a second phone restores every recording with equal hashes (F08-REQ-023); with iCloud Keychain off, a restore asks the recovery service, which holds the request and emails the owner (D-102, D-108, F08-REQ-028, F08-REQ-029). Alpha plan item 4 |
+| Builds | Rehearsal R2 (`preview`, servers on, `EXPO_PUBLIC_BACKUP=on`, the staging escrow URL and the **drill** key) at founder step F23. Never build 1, and never a build with the production escrow key |
+| Plan | **Plus on** (the sandbox trial from AL-09.2): the drill keeps 7 letters with recordings, and on Free the third kept letter opens the Keep sheet |
+| Phones and accounts | Drill phones only: Phone A (SE 3) and Phone B (current iPhone), both signed in to iOS with **drill Apple Account A**, iCloud Keychain on for round A; the app account Drill Mama on both. Never the founder's own Apple Account: the drill's Keychain items and recovery emails must not mix with the family's |
 | Time | about 2.5 h, as F23 plans [E] |
-| Needs first | PRs #150 and #151 merged (S05 client and server), the backup flag PR and the escrow key PR merged (Mon 26 Oct); founder steps F18 and F20 done (escrow project `scribe-escrow-staging`, the drill-key ceremony, secrets, `EXPO_PUBLIC_ESCROW_URL`); a proxy (Proxyman or Charles) on the Mac with its certificate trusted on Phone A only; 6 scripted Asha recordings |
+| Needs first | PRs #150 and #151 merged (S05 client and server), the backup flag PR and the escrow key PR merged; founder steps F18 and F20 done (escrow project `scribe-escrow-staging`, the drill-key ceremony, secrets, `EXPO_PUBLIC_ESCROW_URL`); a proxy (Proxyman or Charles) on the Mac with its certificate trusted on Phone A only; 6 scripted Asha recordings |
 | Record in | the session's evidence file, rows AL-06.1 to AL-06.6, plus S05's B6 rows |
 
 **The detailed run sheet is S05's**: `docs/qa/BACKUP_RESTORE_DRILL.md` (WP-F08-B6), on PR #150 (`feat/backup-client`) until it merges. Follow its steps B6-P1 to B6-P5, B6-01 to B6-04 and B6-06 in that order. This sheet only sets the alpha subset, what each row must capture, and the go rule. Where the two disagree, S05's file holds the steps and this file holds the alpha pass rule; tell S19 so one of them is fixed.

@@ -17,7 +17,7 @@ Labels: **V** verified on a vendor page on 3 Oct 2026; **A** assumption to confi
 
 ### Server-on items (M14)
 
-PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14, M16). Every profile in `apps/mobile/eas.json` builds with `EXPO_PUBLIC_SERVER_FEATURES=off` today (F: 15 Oct), and a switch-off build shows "coming soon" for all of these, so they need a build made with the switch on and pointed at staging (S20 owns the per-profile switch, `08-delivery.md` S20 row). Evidence rows for them carry the extra header fields and numbers in `evidence/README.md` "Server-on rows".
+PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14, M16). Every profile in `apps/mobile/eas.json` builds with `EXPO_PUBLIC_SERVER_FEATURES=off` today (F: 15 Oct), and a switch-off build shows "coming soon" for all of these, so they need a build made with the switch on and pointed at staging (S20 owns the per-profile switch, `08-delivery.md` S20 row). Evidence rows for them carry the header fields in `evidence/TEMPLATE.md` and the numbers in each item's **Record** line below; they run only on drill phones and drill accounts (`run-sheets/README.md` "Drill identities").
 
 | Item | Needs | When (`08-delivery.md` 10.2) |
 |---|---|---|
@@ -93,25 +93,25 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 ### S1-06 Sign in with Apple (AUTH_SETUP 11.1)
 - **Steps:** Signed out, after the first letter: Keep the book > Apple. Once with "Share My Email" and once (second Apple ID) with "Hide My Email". Then Terms sheet (with the 18+ line), sensitive-data sheet, Agree. Sign out and in again.
 - **Expected:** Supabase > Users shows the Apple identity; no Terms sheet on the second sign-in; a receipt or notice email reaches the `privaterelay.appleid.com` address (needs AUTH_SETUP 2.5 relay setup).
-- **Record:** S1-06 row (no email addresses in evidence).
+- **Record:** S1-06 row (no email addresses in evidence; switch on, staging): seconds from the Apple sheet closing to signed in, 3 tries each (a smoke; the gate is 06-nfr's lab run, 50 runs, p90 3 s, A-NFR-004); Terms sheet on the first sign-in (yes, no) and on the second (must be no); relay email arrived (yes, no, minutes); identity "listed" in Supabase Users, never the id.
 - **Update:** AUTH_SETUP 11 (tick 11.1), and 2.1 "Assumption: EAS capability sync" can become Verified (V: Expo "iOS capabilities": `eas build` enables supported entitlements on the App ID).
 
 ### S1-07 Sign in with Google (AUTH_SETUP 11.2)
 - **Steps:** A build with both Google client ids (AUTH_SETUP 3.5). Keep the book > Google. If the button is missing, the build lacks the ids.
 - **Expected:** Signs in; Supabase shows the Google identity; a nonce error means "Skip nonce check" is off.
-- **Record:** S1-07 row.
+- **Record:** S1-07 row (switch on, staging, both Google client ids in the build): seconds to signed in, 3 tries; button present (yes, no); identity listed; no nonce error.
 - **Update:** AUTH_SETUP 11.2. Note: D-054 includes Google at launch; ROADMAP section 4 allows cutting it.
 
 ### S1-08 Email link and code in real mail apps (AUTH_SETUP 11.3, 11.4; A-REQ-018, A-REQ-022, A-REQ-023)
 - **Steps:** Continue with email, with a brand-new address and with a known one. Open the link from: iOS Mail, Gmail app, Outlook app, and a link forwarded in Messages. Type the code by hand once. Open a one-hour-old link. Open the link on a laptop.
 - **Expected:** The link opens the app (not Safari) and signs in; the code also works; the old link says it has expired and offers the code; the laptop page verifies nothing and shows the "Open the app" fallback; one email holds both link and code; no click-tracking redirect in the link (AUTH_SETUP 4.1).
-- **Record:** S1-08 row: one line per mail app.
+- **Record:** S1-08 row (switch on, staging, AASA live): one line per mail app (iOS Mail, Gmail, Outlook, Messages forward) with opened the app (yes, no) and signed in (yes, no); email arrival seconds (06-nfr gate: p90 30 s over 50 sends, A-NFR-004); code typed by hand works; expired-link message seen; laptop page signs nothing in; no click-tracking redirect in the link.
 - **Update:** AUTH_SETUP 11.3, 11.4 and the template assumption in section 6 ("GoTrue verifies a signup token and a magic-link token under `type=email`").
 
 ### S1-09 Universal links for invites (A-REQ-022, A-REQ-028)
 - **Steps:** From the Family tab, invite a co-parent; share the link to yourself in Messages and WhatsApp. On a second phone: (a) app not installed, tap the link; (b) app installed, cold (killed) and warm; (c) long-press the link and choose "Open in Early Letters"; (d) paste it on "I was invited". Then answer No on the 18+ gate on a fresh install opened from the link.
 - **Expected:** (a) the website's `/i/` page with no child name (B-NFR-002); (b) the app opens on "Join the family book" after the 18+ gate, cold and warm; (c) works; (d) works without reading the clipboard on its own (A-REQ-029); after a No the invite is dropped (TDD 01 F-20).
-- **Record:** S1-09 row.
+- **Record:** S1-09 row (switch on, staging, AASA on Apple's CDN; Phone A on Account A invites, Phone B on Account B joins): cases (a) to (d) each pass or fail; cold and warm open; the invite page shows no child name (yes, no); after an 18+ No the invite is dropped (yes, no); no clipboard read without a tap.
 - **Update:** AUTH_SETUP 11.5; `docs/ops/DOMAINS.md` if the AASA or the `/i/` page misbehaves.
 
 ### S1-10 First recording, save, and the letter waiting for its words
@@ -217,7 +217,7 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 - **Steps:** Mama's phone invites Papa's phone (S1-09). Mama saves a letter while both are online; time until it appears on Papa's phone. Then Mama offline: save two letters ("Not sent yet"), kill, relaunch offline (still there), go online.
 - **Needs:** a switch-on build on both phones and two Apple Accounts (Mama on Account A, Papa on Account B).
 - **Expected:** online, both apps in the foreground with the book open, no try over 30 s (PRD V2 `06-nfr.md` section 4: p95 30 s, p99 60 s, replacing PRD 1.3's 5 s; 10 tries are a smoke, not the p95 gate); offline letters queue visibly, survive a kill and sync later; Papa never sees Mama's raw transcript (PRD-REQ-004) or her private letters.
-- **Record:** S1-22 row: 10 timings.
+- **Record:** S1-22 row: 10 timings in s from the save tap on A to the row on B, with the slowest; offline queue counts (saved offline 2, after the kill 2, after reconnecting on B 2); raw transcript or private letter visible on B (must be no). The budget is the one in the Expected line above; 10 tries are a smoke, not the p95 gate.
 - **Update:** PRD 7.3 measured column; TDD 02.
 
 ### S1-23 VoiceOver walk (script V-01 to V-10; A-NFR-005 to -007, LEGAL-REQ-051)
@@ -258,7 +258,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).
 - **Expected:** (a) the item appears on B within 2 minutes (F08 assumption A2) and deletion reaches both phones; (b) about 1 s or less per 10 MB on SE 3 (F08 section 9, an assumption); (c) the upload resumes without re-sending finished parts.
-- **Record:** B1-01 row in the session's evidence file with the numbers in `evidence/README.md` "Server-on rows" (WP-F08-B1). No key material, item names or tokens.
+- **Record:** B1-01 row in the session's evidence file (WP-F08-B1): Keychain item made on A at hh:mm and seen on B at hh:mm (minutes); deleted on A and gone from B (yes, no, minutes); 15 MB encrypt time on the SE 3 in s; upload resumed after the kill (yes, no; parts re-sent); HPKE on iOS 17 (yes, no, or "not measured: no iOS 17 phone"). No key material, item names or tokens.
 - **Update:** F08 section 13 A2 and section 9 (through the PM lane), and the owner-backup ADR draft (T13). A failure of (a) is a stop for the per-author key design and goes to the founder and S05 the same day.
 
 ---

@@ -58,6 +58,7 @@ jobs:
       MAESTRO_E2E_PROJECT_REF: ${{ secrets.MAESTRO_E2E_PROJECT_REF }}
       MAESTRO_E2E_SERVICE_KEY: ${{ secrets.MAESTRO_E2E_SERVICE_KEY }}
       MAESTRO_PROD_PROJECT_REF: ${{ secrets.MAESTRO_PROD_PROJECT_REF }}
+      MAESTRO_STAGING_PROJECT_REF: ${{ secrets.MAESTRO_STAGING_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
 
