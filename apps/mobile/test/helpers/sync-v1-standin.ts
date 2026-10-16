@@ -107,6 +107,15 @@ export const SYNC_PUSH_HELD_EDITS: SyncPushEdit[] = [
  */
 export const SYNC_PUSH_ERASE_EDITS: SyncPushEdit[] = [
   {
+    why: 'an upload of an erased letter is gone, never a new insert, even once purge_ledger forgets it (the 60 day forget)',
+    anchor: '          v_exists := found;\n',
+    becomes:
+      '          v_exists := found;\n' +
+      "          if not v_exists and sync_private.was_erased(v_id) then\n" +
+      "            raise exception 'this letter was erased' using errcode = 'SCDEL', detail = 'purged';\n" +
+      '          end if;\n',
+  },
+  {
     why: 'entry.erase: the author purges a letter for good now',
     anchor: "        else\n          raise exception 'unknown op type' using errcode = '22023';",
     becomes:

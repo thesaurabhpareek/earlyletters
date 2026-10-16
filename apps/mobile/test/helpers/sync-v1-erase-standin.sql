@@ -15,8 +15,10 @@
 --   2. sync_private.entry_erasures: book and letter ids only, never words. The next
 --      pull of that book recomputes its removal digest, so every phone that still
 --      holds the letter learns it is gone at its next pull, not at the daily verify.
---   3. Two anchored edits: the entry.erase branch in sync_push, and the digest
---      check in sync_pull (sync-v1-standin.ts, SYNC_ERASE_EDITS).
+--   3. Three anchored edits: the entry.erase branch in sync_push; an upload of an
+--      id with a recorded erasure is refused as purged (the 60 day forget: purge_ledger
+--      forgets, entry_erasures does not); and the digest check in sync_pull
+--      (sync-v1-standin.ts, SYNC_PUSH_ERASE_EDITS and SYNC_PULL_ERASE_EDITS).
 -- Not here (S02 and S05): the recording's backup object at audio_blobs.object_path
 -- (F08-REQ-024), and trimming entry_erasures once every phone has pulled past it.
 
@@ -68,5 +70,14 @@ begin
   return jsonb_build_object('erased', true);
 end;
 $$;
+-- Whether a letter id was erased (a positive record, never "a base and no row", which a server restore
+-- also produces; final re-check B-R1). Definer: clients cannot read entry_erasures.
+create function sync_private.was_erased(p_id uuid)
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select exists (select 1 from sync_private.entry_erasures x where x.entry_id = p_id and x.author_id = auth.uid());
+$$;
+revoke execute on function sync_private.was_erased(uuid) from public, anon;
+grant execute on function sync_private.was_erased(uuid) to authenticated;
+
 revoke execute on function sync_private.erase_entry(uuid) from public, anon;
 grant execute on function sync_private.erase_entry(uuid) to authenticated;

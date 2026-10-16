@@ -116,7 +116,8 @@ create function public.held_drafts_note_gone()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   if tg_op = 'INSERT' then
-    delete from public.held_drafts_gone g where g.id = new.id;
+    -- A held row made again clears a let-go marker; an erase marker is never cleared (re-check B-R2).
+    delete from public.held_drafts_gone g where g.id = new.id and g.gone <> 'erased';
     return new;
   end if;
   insert into public.held_drafts_gone as g (id, author_id, gone)
@@ -169,6 +170,10 @@ begin
     -- Kept already (on another phone, or this op arrived late): the letter is the row now.
     return jsonb_build_object('held', null);
   end if;
+  if sync_private.held_erased(p_id) then
+    -- Erased with Erase now: an upload of it (a Restore made offline elsewhere) is gone (re-check B-R2).
+    raise exception 'this letter was erased' using errcode = 'SCDEL', detail = 'purged';
+  end if;
   if sync_private.held_id_taken(p_id) then
     -- Another author's row (RLS hides it): one plain refusal, never a key-violation that names it.
     raise exception 'held id not available' using errcode = '22023';
@@ -213,6 +218,14 @@ begin
   return v_res;
 end;
 $$;
+
+-- Whether this author erased a held id (definer: held_drafts_gone has no client grants).
+create function sync_private.held_erased(p_id uuid)
+returns boolean language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select exists (select 1 from public.held_drafts_gone g where g.id = p_id and g.author_id = auth.uid() and g.gone = 'erased');
+$$;
+revoke execute on function sync_private.held_erased(uuid) from public, anon;
+grant execute on function sync_private.held_erased(uuid) to authenticated;
 
 -- Whether a held id belongs to someone else (definer: RLS hides other authors' rows).
 create function sync_private.held_id_taken(p_id uuid)

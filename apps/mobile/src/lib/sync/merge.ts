@@ -307,6 +307,16 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
       continue;
     }
     if (row.book_id && parked.has(row.book_id)) continue; // failed only because its book is not on the server
+    if (row.type === 'held.upsert' && r.gone) {
+      // Erased with Erase now on another phone (its marker says so): this phone's copy goes too, words and
+      // all, whatever was queued for it (a Restore made offline never undoes an erase; re-check B-R2).
+      removeOp(db, row.seq);
+      db.run('DELETE FROM sync_outbox WHERE entity_id = ?', row.entity_id);
+      db.run('DELETE FROM rejected_writes WHERE entity_id = ?', row.entity_id);
+      db.run("UPDATE drafts SET state = 'discarding', held_v = NULL WHERE id = ? AND state <> 'recording'", row.entity_id);
+      db.run("UPDATE entries SET deleted_at = COALESCE(deleted_at, ?), sync_state = 'erased', held_v = NULL WHERE id = ?", ctx.now, row.entity_id);
+      continue;
+    }
     rejected++;
     rejectOp(db, row, r.code, ctx.now);
     if (row.type === 'book.create' || row.type === 'book.first_run') {

@@ -659,6 +659,16 @@ export function settleHeldAnswer(
     // These words are the server's now.
     db.run('UPDATE drafts SET held_typed = ? WHERE id = ?', sent.typed_text ?? null, id);
   }
+  // A let-go queued behind this upload (made before its answer came) names the version this phone now
+  // knows, forward only, so the server never keeps the row for words that were this phone's own (re-check R1).
+  if (v) {
+    for (const o of opsFor(db, id).filter((x) => x.type === 'held.discard' && untouched(x))) {
+      const p = JSON.parse(o.payload) as PushOp;
+      if (p.base && /^\d+$/.test(p.base) && /^\d+$/.test(v) && BigInt(p.base) >= BigInt(v)) continue;
+      p.base = v;
+      db.run('UPDATE sync_outbox SET payload = ? WHERE seq = ?', JSON.stringify(p), o.seq);
+    }
+  }
   const later = opsFor(db, id).filter((o) => o.type === 'held.upsert' && untouched(o));
   if (later.length > 0) {
     const d = getDraftRow(db, id);

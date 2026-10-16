@@ -809,6 +809,67 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect(mama.store.listDeleted().map((e) => e.id)).toContain(ids.pausedSynced);
   }, 60_000);
 
+  it('[F16-REQ-029] a let-go right after a held upload whose answer was lost sticks on both phones (re-check A-R1)', async () => {
+    const id = typedDraft(mama, 'Six.');
+    mama.store.holdDraft(id, { inBookChoice: true });
+    await mama.sync(flaky(server.serverFor(MAMA), { loseAnswer: 1, only: 'sync_push' })); // applied, answer lost
+    expect((await heldRow(id))?.typed_text).toBe('Six.');
+    expect(mama.store.beginDiscard(id)).toBe(true);
+    expect(mama.store.finishDiscard(id)).toBe(true);
+    tick(2_000);
+    await mama.sync();
+    await mama.sync();
+    expect(await heldRow(id)).toBeUndefined();
+    expect(mama.store.listHeldDrafts(ASHA).map((x) => x.id)).not.toContain(id);
+    await mama2.sync();
+    expect(mama2.store.listHeldDrafts(ASHA).map((x) => x.id)).not.toContain(id);
+  }, 60_000);
+
+  it('[F16-REQ-024] Erase now holds past the 60 day forget: an offline edit of an erased letter never brings it back (final review B6, P5)', async () => {
+    ids.forgot = writeLetter(mama, ASHA, 'You ate a whole pear.');
+    await mama.sync();
+    await mama2.sync();
+    editWords(mama2, ids.forgot, 'You ate a whole pear, and the core.'); // offline
+    tick();
+    mama.store.deleteEntry(ids.forgot);
+    expect(mama.store.eraseEntry(ids.forgot, () => {})).toBe(true);
+    await mama.sync();
+    await server.sys("delete from purge_ledger where entity_type = 'entry' and entity_id = $1", [ids.forgot]); // the 60 day trim
+    const r = await mama2.sync();
+    expect(r.pushed).toBe(0);
+    expect(await serverEntry(ids.forgot)).toBeUndefined();
+    expect(mama2.store.listDeleted().map((e) => e.id)).toContain(ids.forgot); // its words stay on that phone, in Recently deleted
+    await mama.sync();
+    await papa.sync();
+    expect(row(mama, ids.forgot)).toBeNull();
+    expect(row(papa, ids.forgot)).toBeNull();
+  }, 60_000);
+
+  it('[F16-REQ-024] a Restore made offline on the other phone never undoes Erase now on a waiting letter (re-check B-R2, P3b)', async () => {
+    tick(5_000);
+    const draft = mama.store.createDraft({ childId: ASHA, captureMode: 'spoken', promptKey: null, audioUri: 'file:///asha/take-4.m4a', audioDurationMs: 3_000 });
+    const e = mama.store.saveVoiceOnlyFromDraft(draft, { childId: ASHA, authorSignsAs: 'Mama', inBook: true, engineVersion: 5, audioExists: true });
+    await mama.sync();
+    await mama2.sync();
+    tick();
+    mama.store.deleteEntry(e.id);
+    await mama.sync();
+    await mama2.sync();
+    expect(mama2.store.listDeleted().map((x) => x.id)).toContain(e.id);
+    mama2.store.undeleteEntry(e.id); // offline
+    expect(outbox(mama2)).toEqual(['held.upsert']);
+    expect(mama.store.eraseEntry(e.id, () => {})).toBe(true);
+    await mama.sync();
+    expect(await gone(e.id)).toBe('erased');
+    await mama2.sync();
+    expect(await heldRow(e.id)).toBeUndefined();
+    expect(await gone(e.id)).toBe('erased');
+    expect(row(mama2, e.id)).toBeNull();
+    expect(outbox(mama2)).toEqual([]);
+    await mama.sync();
+    expect(row(mama, e.id)).toBeNull();
+  }, 60_000);
+
   it('[TDD 06 P-1] after a server restore, a letter with an edit queued goes back up with the edit, never as erased (final re-check B-R1, P11)', async () => {
     ids.restored = writeLetter(mama, ASHA, 'Your first word, and it was ball.');
     await mama.sync();
