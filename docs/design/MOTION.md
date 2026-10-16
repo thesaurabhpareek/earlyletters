@@ -123,6 +123,13 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 - One element (moon or envelope) breathes opacity 0.85↔1 over 8 s (Calm's slowest pace, M10), only while focused and app active. Text and action static.
 - Off under RM, Low Power Mode (`expo-battery`) and Android animator scale 0.
 
+### (k) Lamp light
+- The website's lamp on the app's paper: one warm radial pool (`Lamp`, `components/ui/lamp.tsx`), on **welcome, Tonight and Book only**. Never on a screen that records or plays a voice (principle 1: continuous motion follows a real signal, and this one does not).
+- Arrives once over `tokens.motion.lamp.arriveMs` (1.2 s, M3 easing), then breathes its opacity down by 12 % and back over 9 s (`breathMs`, the site's lamp swell is 8.6 s). Opacity only, as a Reanimated CSS animation on one wrapper (native, no JS per frame; a real CSS animation on web); the gradient is drawn once and rasterised. No flicker (the site's filament flicker is not ported), no colour drift, no blur. The site's 2 % scale swell is not ported either: scaling a full-screen layer dropped frames in a headless-Chromium measurement (12 slow frames in 8 s against none with opacity alone, none under Reduce Motion).
+- Peak opacity is `tokens.atmosphere.peak` (light 10 %, dark 16 %), capped by `packages/design-tokens/test/atmosphere.test.ts` so every text colour keeps 4.5:1 on the lit paper, also under Increase Contrast.
+- Off: Reduce Motion (the final state, still), Increase Contrast (plain paper), a screen that is not focused, the app in the background.
+- Not ported from the website: grain and paper textures. A tiled image costs memory and a decode on every cold start (D-065), the web grain is dithering for large gradients that the app's small pool does not need, and the dark paper is already warm (`dark.bg` is red over green over blue). Revisit only if a device shows banding in the pool.
+
 ## 6. Haptics map
 
 **Policy (Oct 3 2026): a haptic marks an outcome, never a navigation.** `Button` plays no haptic by default; a call site passes `haptic` only where the press is an outcome (Speak / Type start a capture, Save, Delete). Continue, Back, Close, tab changes, sheet opening and scrolling are silent. `success` and `warning` are never dropped by the 100 ms throttle (`lib/haptics.shared.ts`). Android mapping is built (`lib/haptics.android.ts`).
