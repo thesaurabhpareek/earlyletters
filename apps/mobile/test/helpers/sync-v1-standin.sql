@@ -9,7 +9,7 @@
 --
 -- Two parts:
 --   this file      the objects protocol v1 adds (below);
---   sync-v1-standin.ts  seven anchored edits to whatever sync_push the migrations
+--   sync-v1-standin.ts  six anchored edits to whatever sync_push the migrations
 --                  define last (20261005000000 on develop, 20261015030000 with the
 --                  R-17 gate), so the stand-in never replaces S02's newer body and
 --                  never undoes its hardening. A missing anchor fails loudly.
