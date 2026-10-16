@@ -419,23 +419,20 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect(mama.store.listDeleted().map((e) => e.id)).toContain(ids.pausedSynced);
   }, 60_000);
 
-  it('[F16-REQ-024] a phone offline past the 60 day forget cannot bring an erased letter back: its edit names a past version (final review B6, P5)', async () => {
-    ids.forgot = writeLetter(mama, ASHA, 'You ate a whole pear.');
+  it('[TDD 06 P-1] after a server restore, a letter with an edit queued goes back up with the edit, never as erased (final re-check B-R1, P11)', async () => {
+    ids.restored = writeLetter(mama, ASHA, 'Your first word, and it was ball.');
     await mama.sync();
-    await mama2.sync();
-    editWords(mama2, ids.forgot, 'You ate a whole pear, and the core.'); // offline
-    tick();
-    mama.store.deleteEntry(ids.forgot);
+    // The server is restored to a point before that letter existed (the drill in sync-e2e.test.ts).
+    const restorePoint = new Date(Date.now() - 3600_000).toISOString();
+    await server.sys('set session_replication_role = replica');
+    await server.sys('delete from entries where id = $1', [ids.restored]);
+    await server.sys('set session_replication_role = origin');
+    await server.sys(`select public.sync_begin_epoch('drill', $1)`, [restorePoint]);
+    editWords(mama, ids.restored, 'Your first word, and it was ball, twice.');
+    await mama.sync(); // it pushes before its pull learns of the restore
     await mama.sync();
-    // The server's purge, then its 60 day trim of the ledger, while the second phone was away.
-    await server.sys('delete from entries where id = $1', [ids.forgot]);
-    await server.sys("delete from purge_ledger where entity_type = 'entry' and entity_id = $1", [ids.forgot]);
-    const r = await mama2.sync();
-    expect(r.pushed).toBe(0);
-    expect(await serverEntry(ids.forgot)).toBeUndefined();
-    expect(mama2.store.listDeleted().map((e) => e.id)).toContain(ids.forgot); // its words stay on that phone, in Recently deleted
-    await mama.sync();
-    await papa.sync();
-    expect(row(papa, ids.forgot)).toBeNull();
+    expect(await serverEntry(ids.restored)).toMatchObject({ final_text: 'Your first word, and it was ball, twice.', deleted_at: null });
+    expect(row(mama, ids.restored)).toMatchObject({ final_text: 'Your first word, and it was ball, twice.', deleted_at: null });
+    expect(mama.store.listDeleted().map((e) => e.id)).not.toContain(ids.restored);
   }, 60_000);
 });
