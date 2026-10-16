@@ -65,9 +65,8 @@ export function makeDocumentHandler(fn: 'config' | 'content', routes: DocumentRo
   return async (req: Request): Promise<Response> => {
     const started = Date.now();
     const incoming = req.headers.get(HEADER_REQUEST_ID) ?? '';
-    // 'config' and 'content' are not in the shared logger's FUNCTIONS list yet (request in the ADR 0016 report); it logs them as 'unknown'.
     const log = createLogger({
-      fn: fn as unknown as FunctionName,
+      fn: fn satisfies FunctionName,
       version: opts.version ?? '1',
       sink: opts.logSink,
       now: opts.now,

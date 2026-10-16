@@ -113,6 +113,11 @@ const READS = [
   ['sync_rate_windows', 'select 1 from sync_rate_windows', [],                        [1, 0, 0, 0, 0, 0]],
   // Idempotency keys (20261005000000): no client access at all; create_child_invite and record_policy_act use them.
   ['idempotency_keys', 'select 1 from idempotency_keys', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Subscription status report (20261016000000, S06; behaviour in subscription_status.test.mjs): functions only, never read by the app (D-080 rule 4).
+  ['subscription_salts', 'select 1 from subscription_salts', [],                      ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['subscription_status', 'select 1 from subscription_status', [],                    ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['subscription_consents', 'select 1 from subscription_consents', [],                ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['subscription_report_rates', 'select 1 from subscription_report_rates', [],        ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
   ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], [1, 1, 1, 0, 0, '42501']],
   ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], [1, 0, 0, 0, 0, '42501']],
@@ -174,6 +179,9 @@ const RPCS = [
   ['leave_child', `select public.leave_child('${CHILD}')`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['remove_child_member', `select public.remove_child_member('${CHILD}', '${N}')`,      ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['rate_hit', `select public.rate_hit('membership')`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // Subscription status report (20261016000000, S06): any full account may report its own purchase; anonymous sessions never. The server switch app.status_report_enabled is unset here, so it fails closed (SCKIL); behaviour with it on is in subscription_status.test.mjs.
+  ['status_salt', `select public.status_salt()`,                                        ['SCKIL', 'SCKIL', 'SCKIL', 'SCKIL', 'SCANO', '42501']],
+  ['status_report_store', `select public.status_report_store('{"schema_version": 1, "sub_ref": "${'a'.repeat(64)}", "environment": "sandbox", "plan": "annual", "trial_end": null, "renewal_date": "2027-03-01T10:00:00Z", "cancelled": false, "reported_at": "2026-10-15T10:00:00Z"}'::jsonb)`, ['SCKIL', 'SCKIL', 'SCKIL', 'SCKIL', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
@@ -201,6 +209,9 @@ const SERVICE_ONLY = [
   // Internal helpers (20261005000000): called only from security-definer functions.
   `select public.max_parents_per_book()`, `select public.request_idempotency_key()`,
   `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
+  // Subscription status internals and the retention purge (20261016000000, S06).
+  `select public.subscription_rate_hit('${A}', 'report')`, `select public.subscription_report_switch()`, `select public.subscription_instant('"2026-10-15T10:00:00Z"'::jsonb, false)`,
+  `select public.subscription_retention_purge(now())`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));

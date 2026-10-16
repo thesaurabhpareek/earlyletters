@@ -3,14 +3,18 @@
  * Publishing pipeline (ADR 0016), run by `npm test -w @scribe/api`. Checks
  * that what the script publishes is exactly what a phone accepts.
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   base64ToBytes,
   generateSigningKey,
+  KILL_SWITCH_KEYS,
   parsePackManifest,
+  parseRemoteConfig,
   sha256Hex,
   verifySignedDocument,
   type TrustedKey,
+  ENDPOINTS,
 } from '../../packages/api/src/index';
 import { ENGLISH_PACK } from '../../packages/core/src/lang/index';
 import { PROMPTS } from '../../packages/content/src/prompts';
@@ -23,19 +27,23 @@ import {
   buildTextRulesPack,
   configModule,
   contentModule,
+  killSwitchSteps,
   packVersionNumber,
   publishedVersion,
   readPublished,
   readSigningKey,
   sign,
   uploadCommands,
+  documentObjects,
+  documentUploadCommands,
+  DOCUMENT_CACHE,
 } from './lib';
 
 const key = generateSigningKey();
 const trusted: TrustedKey[] = [{ keyId: 'el-test', publicKey: key.publicKey, kinds: ['pack-manifest', 'remote-config', 'content-bundle'] }];
 const env = { EL_SIGNING_KEY: key.secretKey, EL_SIGNING_KEY_ID: 'el-test' };
 const spanishSource = JSON.stringify({ ...structuredClone(ENGLISH_PACK), language: 'es', name: { english: 'Spanish', native: 'Español' }, version: '1.2.3' }, null, 2);
-const opts = { baseUrl: 'https://packs.earlyletters.com/', minAppVersion: '1.0.0' };
+const opts = { baseUrl: 'https://packs.earlyletters.app/', minAppVersion: '1.0.0' };
 
 describe('signing key', () => {
   it('reads a trusted key from the environment', () => {
@@ -59,7 +67,7 @@ describe('text-rules packs', () => {
     const a = buildTextRulesPack('es', spanishSource, opts);
     const b = buildTextRulesPack('es', JSON.stringify(JSON.parse(spanishSource)), opts);
     expect(a.entry).toMatchObject({ id: 'text-rules.es', kind: 'text-rules', language: 'es', version: 1_002_003, fileName: 'es.rules.json', required: true });
-    expect(a.entry.url).toBe('https://packs.earlyletters.com/text-rules.es/1002003/es.rules.json');
+    expect(a.entry.url).toBe('https://packs.earlyletters.app/text-rules.es/1002003/es.rules.json');
     expect(a.entry.sha256).toBe(sha256Hex(a.bytes));
     expect(a.entry.sha256).toBe(b.entry.sha256);
     expect(a.bytes.length).toBeLessThan(spanishSource.length);
@@ -137,5 +145,58 @@ describe('published modules', () => {
     expect(cmd).toContain('public, max-age=31536000, immutable');
     const big = uploadCommands([{ ...es, bytes: new Uint8Array(1) , entry: es.entry, objectKey: 'speech/x.bin' }].map((f) => ({ ...f, bytes: { length: 600_000_000 } as Uint8Array })), 'b');
     expect(big[0]).toMatch(/^rclone copyto/);
+  });
+});
+
+describe('[WP-F19-16] the remote-config signing path with the M14 kill switches', () => {
+  const source = JSON.parse(readFileSync(new URL('./remote-config.json', import.meta.url), 'utf8')) as { killSwitches: Record<string, boolean> };
+
+  it('the committed source lists every kill switch, all off, and builds strictly', () => {
+    expect(Object.keys(source.killSwitches).sort()).toEqual([...KILL_SWITCH_KEYS].sort());
+    expect(Object.values(source.killSwitches).every((v) => v === false)).toBe(true);
+    const c = buildRemoteConfig(source, 2, '2026-10-15T12:00:00.000Z');
+    expect(c.killSwitches.backupUploads).toBe(false);
+  });
+
+  it('a signed config with backupUploads, escrow and statusReport set verifies and parses on a phone', () => {
+    const k = readSigningKey(env, trusted);
+    const c = buildRemoteConfig({ ...source, killSwitches: { ...source.killSwitches, backupUploads: true, escrow: true, statusReport: true } }, 3, '2026-10-15T12:00:00.000Z');
+    const { text } = sign('remote-config', c, k, trusted);
+    const v = verifySignedDocument(JSON.parse(text), 'remote-config', trusted);
+    expect(v.ok).toBe(true);
+    const parsed = v.ok ? parseRemoteConfig(v.doc.payload) : null;
+    expect(parsed?.ok && parsed.value.killSwitches).toMatchObject({ backupUploads: true, escrow: true, statusReport: true });
+  });
+
+  it('prints the server-side secret steps and the re-sign rule for clearing a switch', () => {
+    const steps = killSwitchSteps({ ...source.killSwitches, invites: true, escrow: true, sync: true });
+    expect(steps).toContain('  npx supabase secrets set KILL_SWITCHES=invites');
+    expect(steps).toContain('  npx supabase secrets set ESCROW_SWITCH=off --project-ref <scribe-escrow ref>');
+    expect(steps).toContain("  alter database postgres set app.escrow_enabled = 'off';");
+    expect(steps).toContain("  alter database postgres set app.backup_enabled = 'on';");
+    expect(steps).toContain('Switches on: escrow, invites, sync.');
+    const off = killSwitchSteps(source.killSwitches);
+    expect(off).toContain('  npx supabase secrets unset KILL_SWITCHES');
+    expect(off).toContain('  npx supabase secrets set ESCROW_SWITCH=on --project-ref <scribe-escrow ref>');
+    expect(off.some((s) => /each week for 4 weeks/.test(s))).toBe(true);
+  });
+});
+
+describe('signed documents on the pack host (D-097)', () => {
+  it('puts each document at the exact path the app requests, without the query string', () => {
+    const objs = documentObjects({ remoteConfig: 'RC', packManifest: 'PM', contentEn: 'CB' });
+    expect(objs.map((o) => `/${o.objectKey}`)).toEqual([ENDPOINTS.remoteConfig.path, ENDPOINTS.packManifest.path, ENDPOINTS.contentBundle.path]);
+    expect(objs.map((o) => o.text)).toEqual(['RC', 'PM', 'CB']);
+    for (const o of objs) expect(o.objectKey).not.toMatch(/^\/|\?/);
+  });
+  it('skips documents that have never been published', () => {
+    expect(documentObjects({ remoteConfig: null, packManifest: 'PM', contentEn: null }).map((o) => o.objectKey)).toEqual(['functions/v1/config/v1/packs']);
+  });
+  it('uploads documents as JSON that is revalidated every time, never as immutable', () => {
+    const [cmd] = documentUploadCommands(documentObjects({ remoteConfig: null, packManifest: 'PM', contentEn: null }), 'early-letters-packs');
+    expect(cmd).toContain('early-letters-packs/functions/v1/config/v1/packs');
+    expect(cmd).toContain('--content-type application/json');
+    expect(cmd).toContain(`--cache-control "${DOCUMENT_CACHE}"`);
+    expect(cmd).not.toContain('immutable');
   });
 });
