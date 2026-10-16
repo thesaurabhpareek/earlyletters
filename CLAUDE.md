@@ -15,7 +15,7 @@ The machine may remove and repair. It may never add meaning.
 |---|---|
 | `apps/mobile` | Expo SDK 57 app: iOS first, Android later (Expo Router) |
 | `packages/core` | Faithful-edit engine, verifier, age math, prompt selection, safety tiers. Pure TS, no React Native |
-| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 104 prompts. `VOICE.md`, `BRAND.md` |
+| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 103 prompts. `VOICE.md`, `BRAND.md` |
 | `packages/design-tokens` | Colours, type, spacing, motion. One source for iOS and web |
 | `packages/brand` | Public name, store name, company, bundle ID |
 | `supabase/migrations` | Database schema and access rules |
@@ -32,7 +32,7 @@ The machine may remove and repair. It may never add meaning.
 ## Commands
 ```bash
 npm install            # once, at the repo root
-npm test               # every workspace (~1,150 tests: core, mobile, api, analytics, content, emails, tokens, experiments); Node 22+
+npm test               # every workspace with a test script: core, mobile, api, analytics, content, brand, emails, design-tokens, experiments; Node 22.5+ (node:sqlite)
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
 npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (15 files)
 npm run test:functions # Edge Functions and ops scripts (Deno via npx)
@@ -64,6 +64,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Commit and push work in progress at least every 30 minutes, and always before launching parallel agents: to your branch, or to `wip/<topic>` if it is not ready for a PR.
 
 ## Branches and commits
-- `main` is always releasable. Work on short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `exp/<what>` (experiments), `docs/<what>`.
+- `develop` is the integration branch and always green; `main` is live (website and tagged releases). Every change is a PR into `develop`. Full rules: `docs/DEVELOPMENT.md`.
+- Short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `test/<what>`, `qa/<what>`, `exp/<what>` (experiments), `docs/<what>`.
 - One concern per pull request. Database changes ship as a new migration file; never edit a migration that has been applied.
-- Release tags: `ios-v<major>.<minor>.<patch>`.
+- Releases (ADR 0022, `docs/ops/RELEASE.md`): `release/<major>.<minor>` cut from `main` at freeze, fixes cherry-picked from `develop`. Version only in `apps/mobile/version.json`; build numbers only from EAS. `ios-v<x.y.z>-rc.<n>` builds a candidate, `ios-v<x.y.z>` marks the released one; tags never move.

@@ -6,7 +6,7 @@ Rules that stay `not yet` are the backlog for the stewards' standing duty 2: tur
 
 Totals across 208 rules (2026-10-15, counted from the rows below): 43 enforced, 45 pending in open PRs or branches, 39 partly enforced, review-only or covered by the rule they cite, 81 not yet. Chapter 11 (16 MUST rules, plus REL-R11 and REL-R12 as SHOULD) came with ADR 0022 (D-089).
 
-**Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above were recounted on 15 Oct only to add chapter 11, not to re-verify the older rows): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so API-R01, API-G4, DQ-R12 and DSR-R07 were rewritten on 15 Oct to say what is on `develop` and what is still missing; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
+**Known drift since 2026-10-03** (noted 15 Oct when the compendium landed; the totals above were recounted on 15 Oct only to add chapter 11, not to re-verify the older rows): rows that cited PRs #4, #27, #28, #29, #31, #36 and #39 were re-checked against `develop` at `56ec5b5` on 15 Oct and now say `on develop` or `enforced on develop`; `packages/api` (21 files) and `supabase/functions/` (`purge-worker`, `analytics-forget`, `config`, `content`, `_shared`) exist, so API-R01, API-G4, DQ-R12, DQ-R13, DSR-R06, DSR-R07 and DSR-R08 were rewritten on 15 Oct to say what is on `develop` and what is still missing; `packages/brand` sets the support address. Each owner's first standing run should sweep its rows.
 
 ## principal-architect (chapters 01, 02, 10, 11)
 
@@ -133,8 +133,8 @@ Gap ids defined here:
 | DQ-R08 | MUST | fixture tests; scheduled invariant job | fixtures on develop; schedule not yet | PDATA-06 |
 | DQ-R09 | MUST | `domain.test.ts` | enforced on develop (#31) | CORE-05 |
 | DQ-R11 | MUST | `purge_due()` + `purge_batching.test.mjs` | DB clocks on develop (pending files) | DB-13 |
-| DQ-R12 | MUST | `purge-worker` function and `supabase/cron/purge-worker.sql`; `purge_due()` cron; 31-day page | partly on develop (worker and cron file); `purge_due` cron and page not yet; live deploy is a founder step | PDATA-02 |
-| DQ-R13 | MUST | device purge job | not yet | PPRIV-01, WS-09 |
+| DQ-R12 | MUST | `purge-worker` function and `supabase/cron/purge-worker.sql`; `purge_due()` cron; 31-day page | partly on develop (worker, cron file, daily SLA alert email in `alerts.ts`); `purge_due` cron and a true page not yet; live deploy is a founder step | PDATA-02 |
+| DQ-R13 | MUST | launch purge (`purgeExpired`, `store.shelf.test.ts`) | partly on develop (on-device builds); synced path not yet | PPRIV-01, WS-09 |
 | DQ-R14 | MUST | date indexes; 7-year clock or table removal | not yet | DB-13 |
 | DQ-R15 | MUST NOT | review; runbooks | not yet | WS-18 |
 | DQ-R16 | MUST | path CHECK constraints + storage policies | enforced on develop for `entry-photos` | PDATA-09 |
@@ -182,7 +182,7 @@ Gap ids defined here:
 | SEC-R09 | MUST | `dependabot.yml`; repo setting | pending PR #30; setting founder-only | CI-05 |
 | SEC-R10 | MUST | SHA pins | pending PR #30 (CI files); not yet (`agents.yml`, `agents-check.yml`, `claude.yml`) | CI-06 |
 | SEC-R11 | MUST | review | review (pattern present in PR #30) | |
-| SEC-R12 | MUST | branch protection or ruleset | not yet | CI-01, CI-04 |
+| SEC-R12 | MUST | branch protection or ruleset | not yet (decided 14 Oct, #127 item 7; founder applies the settings) | CI-01 |
 | SEC-R13 | MUST | `fence.yml` | pending PR #30 (advisory until SEC-R12) | CI-11, BL-122 |
 | SEC-R14 | MUST | `migration-guard.yml` from base ref | pending PR #30 | CI-09 |
 | SEC-R15 | MUST | `app.config.ts` entitlement; `config.test.ts` | enforced on develop (#27) | PSEC-05, WS-20 |
@@ -224,9 +224,9 @@ Gap ids defined here:
 | DSR-R03 | MUST | deletion UI re-auth | not yet | DATA-REQ-019 |
 | DSR-R04 | MUST NOT | `request_book_deletion`, `delete_entry`, `child_members_guard`, `data_governance.test.mjs` | enforced on develop (repo; not live); pending PR #32 (DB-01) | DB-01, DB-17, DB-03 |
 | DSR-R05 | MUST | `privacy_requests` table | not yet | TDD 05 7.8 |
-| DSR-R06 | MUST | SQL functions plus purge worker | enforced in repo (SQL); not yet (worker) | PDATA-02 |
+| DSR-R06 | MUST | SQL functions plus purge worker (`account.ts`, `supabase/cron/purge-worker.sql`) | enforced in repo (SQL); worker on develop with tests; live deploy is a founder step | PDATA-02 |
 | DSR-R07 | MUST | device launch purge (`store.ts`); `analytics-forget`; `purge-worker`; backups by age | partly on develop (launch purge, both functions); purge on sync and backups not yet | PPRIV-01, PDATA-04, PDATA-02, DQ-R21 |
-| DSR-R08 | MUST | `audit_events` and receipt checks; emails | enforced on develop (DB); not yet (emails) | PDATA-02 |
+| DSR-R08 | MUST | `audit_events` and receipt checks; purge-worker emails via Resend | enforced on develop (DB); emails on develop, live sender unverified | PDATA-02 |
 | DSR-R09 | MUST | `SCPRG` purged-id set | pending PR #32 | DB-02 |
 | DSR-R10 | MUST | `legal_holds`, `is_held`, `purge_due`, hold test | enforced on develop (repo; not live); not yet (hold audit events, review alert) | DB-03 |
 | DSR-R11 | MUST | preservation script | not yet | LEGAL-REQ-057 |

@@ -74,7 +74,7 @@ Collected from the five chapters on 2026-10-03, most consequential first. Each c
 | # | Decision | Recommended default | Raised by |
 |---|---|---|---|
 | 1 | Build the purge worker (PDATA-02) and device purge (PPRIV-01) before any beta family's data reaches a backend? On 15 Oct the `purge-worker` Edge Function is on `develop`, but only migration files 1 and 2 are applied live, so nothing executes the published 31, 38 and 45-day deletion promise yet | Yes | compliance-engineer, data-steward |
-| 2 | Turn on branch protection on `develop` and `main` (which on a private repo needs GitHub Pro or Team), and pause unattended agent runs and remove agent write connectors until it is on (CI-01, CI-04, PINF-01) | Yes | security-architect, ai-eng-lead |
+| 2 | Decided 14 Oct (#127 item 7): branch protection on `develop` and `main`, rulesets for `ios-v*` and `release/*`, an `app-store` environment; the repository is public, so GitHub Free includes them. Still yours: apply the settings, and keep unattended agent runs off (`AGENTS_ENABLED` unset) until they are on (CI-01, PINF-01) | Apply the settings | security-architect, ai-eng-lead |
 | 3 | When a contributor leaves or is removed, are their letters kept in the book or tombstoned? | none given | data-steward, security-architect |
 | 4 | Can one parent remove the other co-parent: yes, only the book creator, or only with both parents' agreement (WS-02)? | none given | security-architect |
 | 5 | One contract package named `packages/api` holding generated DB types, the SQLSTATE registry, typed RPC wrappers and content-block schemas (BRIEF 17 vs WS-04) | `packages/api` | principal-architect |
@@ -89,7 +89,7 @@ Collected from the five chapters on 2026-10-03, most consequential first. Each c
 | 14 | Who keeps the request log until a `privacy_requests` table exists | Founder, in the support mailbox, fields per DSR-R05 | compliance-engineer |
 | 15 | Deep-link scheme: keep `scribe` or rename before the first build (DOC-17) | Rename | security-architect |
 | 16 | Email sign-in codes: 6 or 8 digits before public launch (TDD 04 OQ-S1) | none given | security-architect |
-| 17 | Compile packages to JS with an `exports` map, or raw TS with explicit `.ts` imports for Deno (MONO-04)? Needs an ADR before the first Edge Function | ADR first | principal-architect |
+| 17 | Compile packages to JS with an `exports` map, or raw TS with explicit `.ts` imports for Deno (MONO-04)? Edge Functions are on `develop` since 3 Oct, and four of them (`analytics-forget`, `config`, `content`, `purge-worker`) import `packages/api` as raw TS, so the ADR now records the choice already in use and whether to keep it | ADR | principal-architect |
 | 18 | Alert channel for Sev 1 and 2: Sentry alerts or a new push or SMS service | Sentry alerts | principal-architect |
 | 19 | Where scheduled data invariant checks run (pg_cron or an Edge Function) | none given | data-steward |
 | 20 | `AGENTS.md`: forbid it, or add a root `AGENTS.md` symlinked to `CLAUDE.md` so OpenCode reads the constitution | Symlink | ai-eng-lead |

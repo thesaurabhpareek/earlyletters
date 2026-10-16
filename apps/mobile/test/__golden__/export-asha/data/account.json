@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "format": "early-letters-export",
   "signed_in": false,
   "plan": "free",
@@ -15,5 +15,9 @@
       "role": "parent",
       "signs_as": "Mama"
     }
-  ]
+  ],
+  "consent_on_this_phone": {
+    "age_confirmed": true,
+    "usage_sharing": "not_answered"
+  }
 }
