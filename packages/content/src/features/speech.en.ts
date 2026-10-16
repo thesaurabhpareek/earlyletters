@@ -8,7 +8,7 @@
 export const speechSettingsCopy = {
   title: 'Writing down your words',
   footer:
-    'Removing a language frees space. Recordings and letters stay, and new recordings wait for their words until it is added again.',
+    'Removing a language frees space. Recordings and letters stay. New recordings wait for their words until you add the language again.',
   // The language row's trailing action when the model is not on this phone (S42).
   downloadButton: 'Download',
   ready: 'On this phone, {n} MB',

@@ -24,8 +24,8 @@ export const billingCopy = {
   /** Marketing content above Apple's plan buttons (SubscriptionStoreView). */
   store: {
     title: 'Plus',
-    // Plus adds one thing in v1.0 (keeping more letters), so no "extras" (S41).
-    subtitle: 'Two letters free. Then Plus.',
+    // Plus adds one thing in v1.0 (keeping more letters), so no "extras" (S41). The same words as settingsHome.planHelp.
+    subtitle: 'Your first two letters are free. Plus lets you keep adding letters.',
     features: [
       'Keep adding letters to every book, as many as you like.',
     ],
@@ -44,15 +44,16 @@ export const billingCopy = {
   keepGate: {
     title: "Keep adding to {child}'s book",
     body: 'Your first two letters are kept for good. Plus lets you keep adding letters.',
-    // Where the letter is now, not what to do later (S22).
-    heldNote: 'This one waits on Tonight, exactly as it is.',
+    // heldNote and offline are held until P3: they promise the letter "waits on Tonight", and today Tonight shows
+    // only the first draft, so a held letter can be out of sight (spec S22 has the new words; P3 lists every draft).
+    heldNote: 'This letter is safe on your phone. Come back to it once Plus is on.',
     // The chip on the held letter's own card at the top of the sheet.
     heldChip: 'Waiting',
     seePlus: 'See Plus',
     holdButton: 'Keep it here for now',
     redeemLink: 'Redeem a code',
     lapsedBody: 'Plus has ended. Every letter you kept is still yours to read, play and export.',
-    offline: 'Plus needs a connection to start. This one waits on Tonight.',
+    offline: 'Plus needs the internet to start. Your letter stays safe on your phone until then.',
     secondFreeNote: 'That was your second free letter.',
     plusIsOn: 'Plus is on. Your letter is waiting for you to keep it.',
   },
@@ -65,7 +66,13 @@ export const billingCopy = {
     isOn: 'Plus is on.',
   },
 
-  /** Settings, Plan (the path the Subscription Terms and plus.legal.cancel name). */
+  /**
+   * Settings, Plan (the path the Subscription Terms and plus.legal.cancel name).
+   * Registered disclosure text: docs/legal/in-app-disclosures.md section 3 quotes the `billingCopy.plan.*` row
+   * (Terms 14.6). Existing words change only through counsel with a version bump of that file, so the experience
+   * pass's new wording for payment, grace, retry and restoreFailed waits for counsel (spec S41). New keys
+   * (annual, restoreNone) are additions nothing shows yet; P6 switches the screen after counsel sees them.
+   */
   plan: {
     title: 'Plan',
     statusTitle: 'Plus',
@@ -75,11 +82,12 @@ export const billingCopy = {
     trialCancelBy: 'Cancel by {cancelBy} and you pay nothing.',
     renews: 'Plus renews on {date}.',
     ends: 'Plus stays on until {date}. It will not renew.',
-    grace: 'Apple could not take the last payment. Plus stays on while Apple tries again.',
-    retry: 'Plus is paused until a payment goes through. Every letter you kept is still here.',
+    grace: 'There is a problem with the payment for Plus. Your letters are fine, and Plus stays on while Apple tries again.',
+    retry: 'Apple could not take the payment for Plus, so Plus is paused. Every letter you have kept is safe.',
     shared: 'Shared with you through Apple Family Sharing.',
-    // Plan names equal the App Store Connect display names (D-077; BRAND.md glossary).
-    monthly: 'Plus Monthly',
+    // Plan names equal the App Store Connect display names (D-077; BRAND.md glossary). `monthly` is held until P6:
+    // today's Plan screen shows it as the period beside `yearly`, so "Plus Monthly" would sit next to "Yearly".
+    monthly: 'Monthly',
     annual: 'Plus Annual',
     yearly: 'Yearly', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (replaced by `annual`)
     seePlans: 'See what Plus adds',
@@ -93,14 +101,15 @@ export const billingCopy = {
     // The Restore row's subtitle while it checks, and its result inline under the row (S41).
     restoring: 'Checking with the App Store',
     restored: 'Plus is on.',
-    // `restoreNone` is the S41 wording for this result; the screen moves to it in P6.
+    // `restoreNone` is the S41 wording for this result; P6 moves the screen to it once counsel has seen it, and only
+    // then is restoreNothing retired.
     restoreNothing: 'No Plus was found for this Apple Account.',
     restoreNone: 'No Plus found for this Apple Account.',
-    restoreFailed: 'The App Store did not answer. Try again in a moment.',
+    restoreFailed: 'The App Store could not be reached. Please try again in a moment.',
     refund: 'Request a refund',
     refundHelp: 'Apple decides refunds. Your letters, recordings and books never change.',
     refundSent: 'Apple has your request and will email you.',
-    payment: 'Apple takes the payment. Card details stay with Apple.',
+    payment: 'Apple handles payment for Plus. We never see your card details.',
     needsNewerIos: 'Plus can be added on iOS 17 or later.',
     unavailable: 'Plus is not available on this device yet.',
     saveCopy: 'Save a copy of the terms',

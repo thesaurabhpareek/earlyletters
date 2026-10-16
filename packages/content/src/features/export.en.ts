@@ -18,7 +18,7 @@ export const exportCopy = {
     // the phone. The export is built on this phone (lib/export reads no network). Counsel claims review.
     offlineNote: 'The export is made on this phone. It goes only where you send it.',
     // Above the disabled button while the book has no letter.
-    emptyNote: 'Export opens once the book has a letter.',
+    emptyNote: 'You can export once the book has a letter.',
     packing: 'Packing your letters',
     checking: 'Checking every file',
     progressA11y: 'Export progress',

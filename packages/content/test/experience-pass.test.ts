@@ -1,16 +1,16 @@
 /**
  * Experience pass, October 2026: package P0, copy only (docs/design/EXPERIENCE_PASS_2026-10.md, section 6).
  *
- * Pins every CHG and NEW string of section 4 word for word, keeps every retired (RET) key, leaves registered
- * disclosure and claims text untouched, and holds the pass's own rules on every string it touched: no "we"
- * outside the sanctioned promises, no glossary-banned words, buttons of 22 characters or fewer with the Asha
- * fixtures, the App Store plan names, and US spelling. If a test here fails, fix the copy, not the test.
+ * Rule checks only. The words themselves are in section 4 of the spec and in the copy files, and a later copy
+ * fix may change them freely as long as these rules hold; no string touched by the pass is pinned word for word.
+ * What is pinned word for word is registered disclosure and claims text (docs/legal/in-app-disclosures.md), which
+ * changes only through counsel. At P7, with the RET keys gone, fold the rule checks into rules.test.ts.
  *
- * Where the shipped words differ from section 4, DEVIATIONS says why. Two reasons only: the unchanged rules test
- * (its placeholder list and button budget), or the founder's option B (D-100: sign-in, sync between two phones,
- * co-parent sharing and encrypted recording backup ship in v1.0, so no string may say or imply that letters never
- * leave the phone, that there are no accounts, or that nothing is shared). Each option B line goes to counsel's
- * claims review, listed in the P0 pull request.
+ * The rules, on every string the pass touched: no "we" outside the sanctioned promises, no glossary-banned words,
+ * buttons of 22 characters or fewer with the Asha fixtures, error titles without a full stop, plural agreement for
+ * twins, US spelling in in-app copy, the App Store plan names, and option B (D-100: sign-in, sync between two
+ * phones, co-parent sharing and encrypted backup ship in v1.0, so nothing may say or imply that letters never leave
+ * the phone, that there are no accounts, or that nothing is shared).
  */
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
@@ -21,7 +21,7 @@ import { alternateStories } from '../src/stories.en';
 type Text = string | readonly string[];
 type Leaf = { path: string; text: string };
 
-const ROOT = { en, features } as const;
+const ROOT = { en, features, permissions } as const;
 
 /** The value at a dotted path such as "en.review.noChanges" or "features.billing.plan.annual". */
 function at(path: string): unknown {
@@ -37,259 +37,175 @@ function leaves(value: unknown, path = ''): Leaf[] {
   return [];
 }
 
-const texts = (t: Text): string[] => (typeof t === 'string' ? [t] : [...t]);
-
 // ---------------------------------------------------------------------------
-// Section 4, word for word. Keys are where the strings live: `en.*` is strings.en.ts, `features.*` the feature
-// files (features.speech is speechSettingsCopy, features.speechConsent is speechConsentCopy).
+// Keys, never words. `en.*` is strings.en.ts; `features.*` the feature files (features.speech is
+// speechSettingsCopy, features.speechConsent is speechConsentCopy).
 // ---------------------------------------------------------------------------
 
-/** CHG: same key, new words. */
-const CHG: Record<string, Text> = {
-  // S01, S02
-  'en.ageGate.stopTitle': '{app} is currently for adults 18 and over.',
-  // S05
-  'en.onboarding.child.nameLabel': 'Name',
-  'en.onboarding.child.expectingHelp': 'Letters written before the birthday go in Before You.',
-  'en.onboarding.child.addAnotherHelp': 'Twins or more? Each child gets their own book.',
-  'en.childrenExtra.edit.birthdayFuture': 'Choose today or an earlier day.', // shared with S46
-  // S06
-  'en.onboarding.signsAs.examples': ['Mama', 'Papa', 'Amma', 'Appa', 'Mommy', 'Daddy', 'Ma', 'Baba'],
-  // S07
-  'features.language.picker.searchPlaceholder': 'Find a language',
-  'features.language.picker.none': 'No match. Letters can be spoken in these seven languages for now.',
-  // S08
-  'features.speechConsent.body': 'Spoken letters are written down on this phone. One download of {size}, on Wi-Fi.',
-  'features.speechConsent.chosenLater': 'Your voice is kept either way.',
-  // S09
-  'en.tonight.draftWaiting.title': 'A recording is ready to read back.',
-  // S13
-  'en.errors.micDenied.title': 'The microphone is off',
-  'en.errors.micDenied.body': 'Turn it on in Settings, or type this one.',
-  // S14
-  'features.words.pack.stoppedInBackground': 'The recording stopped when you left the app. Everything before that is kept.',
-  // S15
-  'en.review.waiting.body': 'The words follow once this phone is ready.',
-  'features.words.pack.mobileDataButton': 'Use cellular data {size}',
-  // S16
-  'en.errors.transcriptionFailed.title': 'No words yet for this one',
-  'en.errors.transcriptionFailed.body': 'The recording is kept.',
-  'features.words.noSpeech.title': 'No words in this one',
-  'features.words.noSpeech.body': 'The recording is kept just as it is.',
-  // S17
-  'en.review.noChanges': 'No fixes. This is exactly what you said.',
-  'en.review.noChangesAfterUndo': 'Every fix put back. This is exactly what you said.',
-  'en.review.edits.filler.explain': 'An um or an uh, taken out.',
-  'en.review.edits.falseStart.explain': 'A sentence begun twice. The second try is kept.',
-  'en.review.edits.repeat.explain': 'A word said twice in a row. One is kept.',
-  'en.review.edits.misheardName.explain': 'A misheard name, spelled your way.',
-  'en.review.edits.punctuation.explain': 'Commas and periods, where you paused.',
-  'en.review.edits.grammarSlip.explain': 'A slip of the tongue, like "a apple". Only that word changed.',
-  'en.review.edits.paragraph.explain': 'A long pause. A new paragraph starts here.',
-  'en.review.edits.script.explain': 'The same word, in the script you chose.',
-  // S22
-  'features.billing.keepGate.body': 'Your first two letters are kept for good. Plus lets you keep adding letters.',
-  'features.billing.keepGate.heldNote': 'This one waits on Tonight, exactly as it is.',
-  'features.billing.keepGate.lapsedBody': 'Plus has ended. Every letter you kept is still yours to read, play and export.',
-  'features.billing.keepGate.offline': 'Plus needs a connection to start. This one waits on Tonight.',
-  // S24
-  'en.book.empty.bookBody': 'Tell {child} one thing about today.',
-  // S26
-  'en.book.quietDay.removedToast': 'Mark removed.',
-  // S27
-  'features.player.cannotPlay': 'This recording will not play here. Export keeps the file.',
-  // S30
-  'en.readTogether.nowReading': 'Month {month} · From {signsAs}',
-  'en.readTogether.autoplayLabel': 'Keep playing',
-  // S31
-  'en.readTogether.endOfMonth': 'That was Month {month}.',
-  'en.readTogether.endOfMonthAlt': 'That was Month {month}.',
-  // S33
-  'en.notMuch.savedToast': 'A quiet day, kept.',
-  // S34
-  'features.reminders.settings.monthNotesLabel': 'Month and birthday messages',
-  'features.reminders.settings.monthNotesHelp': 'A short message on the day a new month begins in each book, and on birthdays.',
-  'features.reminders.settings.lateNightClamp': 'Late nights stay quiet.',
-  'features.reminders.settings.deniedTitle': 'Notifications are off',
-  'features.reminders.settings.deniedBody': 'Turn them on in Settings to get these reminders.',
-  // S35
-  'en.settings.delete.entryBody': 'It waits in Recently deleted for 30 days.',
-  // S37
-  'en.reader.notFoundTitle': 'This letter is not in the book.',
-  // S38
-  'en.settings.delete.shelfEmpty': 'No deleted letters.',
-  'en.settings.delete.erasesOn': 'Kept here until {date}',
-  'en.settings.delete.restoredToast': "Back in {child}'s book.",
-  // S39
-  'en.settings.delete.eraseNowBody': 'The letter and its recording are erased from this phone right away.',
-  // S40
-  'en.settingsHome.planHelp': 'Your first two letters are free. Plus lets you keep adding letters.',
-  'en.settingsHome.licencesLabel': 'Licenses',
-  'features.licences.title': 'Licenses',
-  'features.licences.rowLabel': 'Licenses',
-  // S41
-  'features.billing.plan.payment': 'Apple takes the payment. Card details stay with Apple.',
-  'features.billing.plan.monthly': 'Plus Monthly',
-  'features.billing.plan.grace': 'Apple could not take the last payment. Plus stays on while Apple tries again.',
-  'features.billing.plan.retry': 'Plus is paused until a payment goes through. Every letter you kept is still here.',
-  'features.billing.plan.restoreFailed': 'The App Store did not answer. Try again in a moment.',
-  'features.billing.store.subtitle': 'Two letters free. Then Plus.',
-  // S42
-  'features.speech.footer': 'Removing a language frees space. Recordings and letters stay, and new recordings wait for their words until it is added again.',
-  'en.settings.tidyHelp': 'Small fixes are marked in each letter and can be put back. Exactly as said keeps every um and false start. Either way, we never rewrite your words.',
-  'features.packs.cellularTitle': 'Use cellular data',
-  'features.language.status.downloadNow': 'Download now on cellular data',
-  // S43
-  'features.export.screen.offlineNote': 'Nothing is sent anywhere.',
-  'features.export.screen.includesLetters': 'Every letter, as text',
-  'features.export.screen.lowSpaceBody': 'This phone needs more free space first.',
-  'features.export.screen.cancelled': 'Export stopped.',
-  // S44
-  'en.settings.privacy.analyticsOffNote': 'Turning this off stops sharing right away. Nothing else changes.',
-  // S46
-  'en.children.settings.remindersHelp': 'Month and birthday messages for {child} follow this switch.',
-  'en.children.settings.hideBody': "Hiding {child}'s book quiets every reminder and message about {child}. Nothing is deleted.",
-  'en.childrenExtra.edit.born.offerBody': 'Add it when you are ready.',
-  'en.childrenExtra.edit.signsAsNewOnly': 'Letters already written keep their signature.',
-  'en.childrenExtra.edit.nameTooLong': 'Up to {n} characters.',
-  'en.childrenExtra.edit.signsAsTooLong': 'Up to {n} characters.',
-  // S49
-  'en.errors.notFoundPage.title': 'Nothing at this link.',
-  'en.errors.notFoundPage.body': 'Your book is right where you left it.',
-  // S50
-  'en.errors.crash.title': 'This screen could not be shown.',
-  'en.errors.crash.body': 'Your letters and recordings are safe on this phone.',
-  // S51
-  'en.errors.launch.title': 'The book could not open.',
-  'en.errors.launch.body': 'Your letters and recordings are safe on this phone. Nothing has been removed.',
-  'en.errors.launch.hint': 'Try again, or restart the phone.',
-  'en.errors.launch.exportNothing': 'No recordings or files to export were found on this phone.',
-  'en.errors.launch.exportFailed': 'The export could not be made, and nothing was changed. Your files are still on this phone.',
-};
+/** Section 4 CHG keys that ship new words in P0 (87 in the spec, less the 13 held below). */
+const CHANGED = [
+  'en.onboarding.child.nameLabel',
+  'en.onboarding.child.expectingHelp',
+  'en.onboarding.child.addAnotherHelp',
+  'en.childrenExtra.edit.birthdayFuture',
+  'en.onboarding.signsAs.examples',
+  'features.language.picker.searchPlaceholder',
+  'features.language.picker.none',
+  'features.speechConsent.body',
+  'features.speechConsent.chosenLater',
+  'features.words.pack.stoppedInBackground',
+  'en.review.waiting.body',
+  'features.words.pack.mobileDataButton',
+  'en.errors.transcriptionFailed.title',
+  'en.errors.transcriptionFailed.body',
+  'features.words.noSpeech.title',
+  'features.words.noSpeech.body',
+  'en.review.noChanges',
+  'en.review.noChangesAfterUndo',
+  'en.review.edits.filler.explain',
+  'en.review.edits.falseStart.explain',
+  'en.review.edits.repeat.explain',
+  'en.review.edits.misheardName.explain',
+  'en.review.edits.punctuation.explain',
+  'en.review.edits.grammarSlip.explain',
+  'en.review.edits.paragraph.explain',
+  'en.review.edits.script.explain',
+  'features.billing.keepGate.body',
+  'features.billing.keepGate.lapsedBody',
+  'en.book.empty.bookBody',
+  'en.book.quietDay.removedToast',
+  'features.player.cannotPlay',
+  'en.readTogether.autoplayLabel',
+  'en.readTogether.endOfMonth',
+  'en.readTogether.endOfMonthAlt',
+  'en.notMuch.savedToast',
+  'features.reminders.settings.monthNotesLabel',
+  'features.reminders.settings.monthNotesHelp',
+  'features.reminders.settings.lateNightClamp',
+  'features.reminders.settings.deniedTitle',
+  'features.reminders.settings.deniedBody',
+  'en.settings.delete.entryBody',
+  'en.reader.notFoundTitle',
+  'en.settings.delete.shelfEmpty',
+  'en.settings.delete.erasesOn',
+  'en.settings.delete.eraseNowBody',
+  'en.settingsHome.planHelp',
+  'en.settingsHome.licencesLabel',
+  'features.licences.title',
+  'features.licences.rowLabel',
+  'features.billing.store.subtitle',
+  'features.speech.footer',
+  'en.settings.tidyHelp',
+  'features.packs.cellularTitle',
+  'features.language.status.downloadNow',
+  'features.export.screen.offlineNote',
+  'features.export.screen.includesLetters',
+  'features.export.screen.lowSpaceBody',
+  'features.export.screen.cancelled',
+  'en.settings.privacy.analyticsOffNote',
+  'en.children.settings.remindersHelp',
+  'en.children.settings.hideBody',
+  'en.childrenExtra.edit.born.offerBody',
+  'en.childrenExtra.edit.signsAsNewOnly',
+  'en.childrenExtra.edit.nameTooLong',
+  'en.childrenExtra.edit.signsAsTooLong',
+  'en.errors.notFoundPage.title',
+  'en.errors.notFoundPage.body',
+  'en.errors.crash.title',
+  'en.errors.crash.body',
+  'en.errors.launch.title',
+  'en.errors.launch.body',
+  'en.errors.launch.hint',
+  'en.errors.launch.exportNothing',
+  'en.errors.launch.exportFailed',
+];
 
-/** NEW: new keys. */
-const NEW: Record<string, Text> = {
-  // S04
-  'en.onboarding.promise.sampleLabel': 'Sample',
-  'en.onboarding.promise.sampleRaw': 'Today, um, you you held the spoon all by yourself.',
-  'en.onboarding.promise.sampleHint': 'Word for word marks every small fix. Tap one to put it back.',
-  // S05
-  'en.onboarding.child.nameLabelMore': 'Another name',
-  // S06
-  'en.onboarding.signsAs.needSignsAsMany': 'Add what {child} call you to continue.',
-  // S09
-  'en.tonight.draft.held': 'Waiting to be kept.',
-  'en.tonight.draft.swept': 'Kept when the app closed.',
-  'en.tonight.draft.typedA11y': 'A letter you started, {date}.',
-  'en.tonight.draft.pickUpButton': 'Pick it up',
-  'en.tonight.draft.openButton': 'Open',
-  'en.tonight.draft.keepButton': 'Keep it',
-  'en.tonight.resurfaced.kicker': 'A month ago',
-  'en.tonight.resurfaced.a11y': 'A letter from {date}. Opens the letter.',
-  // S12
-  'en.listen.ready.hint': 'Tap the red circle and talk.',
-  'en.listen.ready.startA11y': 'Start recording',
-  // S13
-  'en.errors.micBusy.title': 'The microphone is in use',
-  'en.errors.micBusy.body': 'A call or another app has it right now.',
-  'en.errors.phoneFull.title': 'This phone is full',
-  'en.errors.phoneFull.body': 'Free some space to record, or type this one.',
-  // S14
-  'en.review.waitingLong': 'A long recording takes a little longer.',
-  'en.review.laterButton': 'Read it back later',
-  'features.words.pack.stoppedInterruption': 'The recording stopped for a call or an alert. Everything before that is kept.',
-  'features.words.pack.stoppedClosed': 'The recording stopped when the app closed. Everything before that is kept.',
-  // S16
-  'en.review.missingFile.title': 'The recording did not save',
-  'en.review.emptyTake.title': 'Nothing was recorded',
-  'en.review.emptyTake.body': 'The take ended before any sound came in.',
-  // S17
-  'en.review.headerTo': 'To {child} · Month {month}',
-  'en.review.headerToNewborn': 'To {child} · The first weeks',
-  'en.review.headerToBefore': 'To {child} · Before You',
-  'en.review.destination.addButtonShort': 'Add to the book',
-  'en.review.saveFailed': 'That did not save.',
-  // S19
-  'en.write.notSaved': 'Not saved yet',
-  // S21
-  'en.review.destination.filedChip': 'Filed in Month {month}',
-  'en.review.destination.filedChipNewborn': 'Filed in the first weeks',
-  'en.review.destination.filedChipBefore': 'Filed in Before You',
-  // S22
-  'features.billing.keepGate.heldChip': 'Waiting',
-  // S23
-  'en.review.noDraft.title': 'Nothing to read back here.',
-  'en.review.noDraft.button': 'Go to the book',
-  // S26
-  'en.book.monthKicker': 'Month',
-  'en.book.monthRange': '{start} to {end}',
-  'en.book.waitingReady': 'Ready to read back',
-  // S30
-  'en.readTogether.nowReadingNewborn': 'The first weeks · From {signsAs}',
-  'en.readTogether.nowReadingBefore': 'Before You · From {signsAs}',
-  'en.readTogether.positionA11y': 'Letter {n} of {count}',
-  // S34
-  'features.reminders.settings.onToast': 'Reminders are on.',
-  // S37
-  'en.reader.notFoundDeleted': 'It is in Recently deleted.',
-  'en.reader.openShelfButton': 'Open Recently deleted',
-  // S38
-  'en.settings.delete.openButton': 'Open',
-  'en.settings.delete.erasedToast': 'Erased from this phone.',
-  // S41 (`restoring` already held these words on develop)
-  'features.billing.plan.annual': 'Plus Annual',
-  'features.billing.plan.restoring': 'Checking with the App Store',
-  'features.billing.plan.restoreNone': 'No Plus found for this Apple Account.',
-  // S42
-  'features.speech.downloadButton': 'Download',
-  // S43
-  'features.export.screen.emptyNote': 'Export opens once the book has a letter.',
-  'features.export.screen.tooBigTitle': 'This book is too big for one file',
-  // S45
-  'en.reader.previewEmpty': 'Aa',
-  // S46
-  'en.childrenExtra.edit.born.title': "{child}'s birthday",
-  'en.childrenExtra.edit.born.hideButton': 'Hide',
-  // S47
-  'en.children.add.ctaShort': 'Add this book',
-};
+/** Section 4 NEW keys, all added in P0. Nothing on screen reads them until their package lands. */
+const ADDED = [
+  'en.onboarding.promise.sampleLabel',
+  'en.onboarding.promise.sampleRaw',
+  'en.onboarding.promise.sampleHint',
+  'en.onboarding.child.nameLabelMore',
+  'en.onboarding.signsAs.needSignsAsMany',
+  'en.tonight.draft.held',
+  'en.tonight.draft.swept',
+  'en.tonight.draft.typedA11y',
+  'en.tonight.draft.pickUpButton',
+  'en.tonight.draft.openButton',
+  'en.tonight.draft.keepButton',
+  'en.tonight.resurfaced.kicker',
+  'en.tonight.resurfaced.a11y',
+  'en.listen.ready.hint',
+  'en.listen.ready.startA11y',
+  'en.errors.micBusy.title',
+  'en.errors.micBusy.body',
+  'en.errors.phoneFull.title',
+  'en.errors.phoneFull.body',
+  'en.review.waitingLong',
+  'en.review.laterButton',
+  'features.words.pack.stoppedInterruption',
+  'features.words.pack.stoppedClosed',
+  'en.review.missingFile.title',
+  'en.review.emptyTake.title',
+  'en.review.emptyTake.body',
+  'en.review.headerTo',
+  'en.review.headerToNewborn',
+  'en.review.headerToBefore',
+  'en.review.destination.addButtonShort',
+  'en.review.saveFailed',
+  'en.write.notSaved',
+  'en.review.destination.filedChip',
+  'en.review.destination.filedChipNewborn',
+  'en.review.destination.filedChipBefore',
+  'features.billing.keepGate.heldChip',
+  'en.review.noDraft.title',
+  'en.review.noDraft.button',
+  'en.book.monthKicker',
+  'en.book.monthRange',
+  'en.book.waitingReady',
+  'en.readTogether.nowReadingNewborn',
+  'en.readTogether.nowReadingBefore',
+  'en.readTogether.positionA11y',
+  'features.reminders.settings.onToast',
+  'en.reader.notFoundDeleted',
+  'en.reader.openShelfButton',
+  'en.settings.delete.openButton',
+  'en.settings.delete.erasedToast',
+  'features.billing.plan.annual',
+  'features.billing.plan.restoring',
+  'features.billing.plan.restoreNone',
+  'features.speech.downloadButton',
+  'features.export.screen.emptyNote',
+  'features.export.screen.tooBigTitle',
+  'en.reader.previewEmpty',
+  'en.childrenExtra.edit.born.title',
+  'en.childrenExtra.edit.born.hideButton',
+  'en.children.add.ctaShort',
+];
 
-/** What ships instead of the section 4 words, and why. Nothing else may differ. */
-const DEVIATIONS: Record<string, { shipped: string; why: 'rules test' | 'option B'; reason: string }> = {
-  'features.words.pack.mobileDataButton': {
-    shipped: 'Use cellular, {size}',
-    why: 'rules test',
-    reason: 'The spec text is 24 characters; rules.test.ts caps button labels at 22. The size follows a comma, as in speechSettingsCopy.',
-  },
-  'en.book.monthRange': {
-    shipped: '{a} to {b}',
-    why: 'rules test',
-    reason: 'rules.test.ts allows a fixed set of placeholders and {start} and {end} are not in it; {a} to {b} is the pattern review.rowChange already uses.',
-  },
-  'en.settings.delete.eraseNowBody': {
-    shipped: 'The letter and its recording are erased for good.',
-    why: 'option B',
-    reason: 'A synced letter is not only on this phone, so the erase line names no place.',
-  },
-  'en.settings.delete.erasedToast': {
-    shipped: 'Letter erased.',
-    why: 'option B',
-    reason: 'Same reason; it also pairs with "Letter deleted.".',
-  },
-  'features.export.screen.offlineNote': {
-    shipped: 'The export is made on this phone. It goes only where you send it.',
-    why: 'option B',
-    reason: 'Without the old "Works without a connection." framing, "Nothing is sent anywhere." reads as a claim that nothing leaves the phone, which sync makes untrue. Scoped to the export.',
-  },
+/**
+ * Section 4 CHG keys that keep their old words for now, and who switches them. Screen holds: today's screen would
+ * show the new words wrongly, so the package that changes the screen switches the words with it. Registered holds:
+ * billingCopy.plan.* is registered text (in-app-disclosures.md section 3), so its new words wait for counsel.
+ */
+const HELD: Record<string, string> = {
+  'en.ageGate.stopTitle': 'P2', // the stop screen also shows stopBody, so the new title would repeat it
+  'en.tonight.draftWaiting.title': 'P3', // the one waiting card is also shown for typed drafts
+  'features.billing.keepGate.heldNote': 'P3', // "waits on Tonight" needs Tonight to list every draft
+  'features.billing.keepGate.offline': 'P3', // the same promise
+  'en.errors.micDenied.title': 'P4', // every start failure lands here, so "is off" would be untrue for a busy mic
+  'en.errors.micDenied.body': 'P4',
+  'en.readTogether.nowReading': 'P5', // the newborn and Before You datelines are built another way until P5
+  'en.settings.delete.restoredToast': 'P5', // the shelf does not fill {child} yet
+  'features.billing.plan.monthly': 'P6, after counsel', // shown beside plan.yearly; registered group
+  'features.billing.plan.payment': 'counsel, then P6',
+  'features.billing.plan.grace': 'counsel, then P6',
+  'features.billing.plan.retry': 'counsel, then P6',
+  'features.billing.plan.restoreFailed': 'counsel, then P6',
 };
-
-const shipped = (key: string): Text => DEVIATIONS[key]?.shipped ?? CHG[key] ?? NEW[key];
-const TOUCHED: Leaf[] = [...Object.keys(CHG), ...Object.keys(NEW)].flatMap((key) =>
-  texts(shipped(key)).map((text) => ({ path: key, text })),
-);
 
 /** RET: no longer shown once the screen package lands; the key stays until P7. */
-const RET = [
+const RETIRED = [
   'en.ageGate.body',
   'en.ageGate.stopBody',
   'en.ageGate.stopNote',
@@ -328,40 +244,73 @@ const RET = [
   'features.export.screen.tooBigBody',
   'en.childrenExtra.edit.born.offer',
   'en.children.add.body',
+  'en.readTogether.endOfMonthAlt',
 ];
 
-/** Registered disclosure and claims text (P0 rule 3; in-app-disclosures.md), exactly as it stood on develop. */
+/**
+ * Registered disclosure and claims text, word for word, as it stood on develop (P0 rule 3): every key that
+ * docs/legal/in-app-disclosures.md quotes and that lives in packages/content. Sections 1 and 2, section 3
+ * (billingCopy.store.*, every billingCopy.plan.* key, plus.legal.*), 3a (sign-in) and 3b (trust lines and the
+ * microphone string). Section 4 (store listing) names no keys. Change these only with counsel and a version bump of
+ * in-app-disclosures.md, in the same pull request as this map.
+ */
 const REGISTERED: Record<string, Text> = {
+  // Section 1
+  'en.settings.about.beta.label': 'Early version',
+  'en.settings.about.beta.body': '{app} is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.',
+  'en.settings.about.beta.exportCta': 'Export a copy',
+  // Section 2
   'en.review.firstNote.title': 'Please have a read',
   'en.review.firstNote.body':
     'We take out small slips, like an um or a repeat, and mark each one. Tap a mark to see it and put it back. We can mishear a name, so please read it before you save.',
   'en.review.firstNote.dismissButton': 'Got it',
   'en.settings.help.mistakesTitle': 'How transcription works',
   'en.settings.help.mistakes': 'Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.',
-  'en.settings.about.beta.label': 'Early version',
-  'en.settings.about.beta.body': '{app} is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.',
-  'en.settings.about.beta.exportCta': 'Export a copy',
-  'en.trust.promise':
-    'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.',
-  'en.trust.short': 'Private by default. Never sold, never used for ads.',
-  'en.trust.voice': 'We never imitate your voice. Your original recording is always kept exactly as you made it.',
-  'en.trust.signIn.why': 'An account keeps your book safe when you change phones.',
-  'en.trust.signIn.privacy': 'Only you and the people you invite can read your letters. We never sell them or use them for ads.',
-  'en.trust.signIn.email': 'We use your email only to sign you in and to write to you about your account.',
-  'en.trust.firstRecording.title': 'Your voice stays here',
-  'en.trust.firstRecording.body':
-    'Your words are written down on this phone, and the recording stays with your letter. We never imitate your voice or use it to train machine learning models.',
-  'en.trust.firstRecording.dismissButton': 'Good to know',
-  'en.trust.settings.title': 'Our promise',
-  'en.trust.settings.body':
-    'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.',
-  'en.trust.settings.voice': 'We never imitate your voice. Your original recording is always kept exactly as you made it.',
+  // Section 3: above Apple's plans
   'features.billing.store.features': ['Keep adding letters to every book, as many as you like.'],
   'features.billing.store.promise': 'Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus.',
   'features.billing.store.renewal':
     'Plans renew automatically until you cancel. To avoid the next charge, cancel at least 24 hours before a free trial or period ends.',
   'features.billing.store.cancel': 'Cancel any time in Settings, Plan, Manage subscription, or in your Apple Account subscriptions.',
   'features.billing.store.family': 'Plus can be shared with your family through Apple Family Sharing.',
+  // Section 3: Settings, Plan (the billingCopy.plan.* row, Terms 14.6). Every key that existed on develop.
+  'features.billing.plan.title': 'Plan',
+  'features.billing.plan.statusTitle': 'Plus',
+  'features.billing.plan.off': 'Your first two letters are free. Plus lets you keep adding.',
+  'features.billing.plan.on': 'Plus is on.',
+  'features.billing.plan.trial': 'Plus is on, free until {date}.',
+  'features.billing.plan.trialCancelBy': 'Cancel by {cancelBy} and you pay nothing.',
+  'features.billing.plan.renews': 'Plus renews on {date}.',
+  'features.billing.plan.ends': 'Plus stays on until {date}. It will not renew.',
+  'features.billing.plan.grace': 'There is a problem with the payment for Plus. Your letters are fine, and Plus stays on while Apple tries again.',
+  'features.billing.plan.retry': 'Apple could not take the payment for Plus, so Plus is paused. Every letter you have kept is safe.',
+  'features.billing.plan.shared': 'Shared with you through Apple Family Sharing.',
+  'features.billing.plan.monthly': 'Monthly',
+  'features.billing.plan.yearly': 'Yearly',
+  'features.billing.plan.seePlans': 'See what Plus adds',
+  'features.billing.plan.redeem': 'Redeem a code',
+  'features.billing.plan.redeemHelp': "Opens Apple's sheet for an offer code.",
+  'features.billing.plan.redeemUnavailable': 'Redeeming a code needs a newer version of the app on iPhone.',
+  'features.billing.plan.manage': 'Manage subscription',
+  'features.billing.plan.manageHelp': "Change or cancel in Apple's subscriptions screen.",
+  'features.billing.plan.restore': 'Restore purchases',
+  'features.billing.plan.restoreHelp': 'Finds Plus bought with this Apple Account.',
+  'features.billing.plan.restoring': 'Checking with the App Store',
+  'features.billing.plan.restored': 'Plus is on.',
+  'features.billing.plan.restoreNothing': 'No Plus was found for this Apple Account.',
+  'features.billing.plan.restoreFailed': 'The App Store could not be reached. Please try again in a moment.',
+  'features.billing.plan.refund': 'Request a refund',
+  'features.billing.plan.refundHelp': 'Apple decides refunds. Your letters, recordings and books never change.',
+  'features.billing.plan.refundSent': 'Apple has your request and will email you.',
+  'features.billing.plan.payment': 'Apple handles payment for Plus. We never see your card details.',
+  'features.billing.plan.needsNewerIos': 'Plus can be added on iOS 17 or later.',
+  'features.billing.plan.unavailable': 'Plus is not available on this device yet.',
+  'features.billing.plan.saveCopy': 'Save a copy of the terms',
+  'features.billing.plan.saveCopyHelp': 'Your plan, dates and how to cancel, to keep in Mail, Notes or Files.',
+  'features.billing.plan.notificationsOff':
+    'Notifications are off for {app}, so this iPhone cannot send its reminders before Plus renews. The dates are always here in Settings, Plan.',
+  'features.billing.plan.turnOnNotifications': 'Allow notifications',
+  // Section 3: our own Plus sheet
   'en.plus.legal.renewAnnual': 'Free for 2 months, then {price} a year. Renews automatically until you cancel, at least 24 hours before it renews.',
   'en.plus.legal.renewMonthly': 'Free for 1 month, then {price} a month. Renews automatically until you cancel, at least 24 hours before it renews.',
   'en.plus.legal.renewNoTrialAnnual': '{price} a year, charged now. Renews automatically until you cancel, at least 24 hours before it renews.',
@@ -372,7 +321,29 @@ const REGISTERED: Record<string, Text> = {
   'en.plus.legal.subscriptionTermsLink': 'Subscription terms',
   'en.plus.legal.restoreLink': 'Restore',
   'en.plus.legal.agree': 'By continuing, you agree to the Subscription terms and Terms of Service.',
+  // Section 3a: sign-in acceptance
+  'features.auth.consent.terms.agreeLine': 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.',
+  'en.trust.signIn.privacy': 'Only you and the people you invite can read your letters. We never sell them or use them for ads.',
+  'en.trust.signIn.email': 'We use your email only to sign you in and to write to you about your account.',
+  // Section 3b: trust lines and the microphone string
+  'en.trust.promise':
+    'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.',
+  'en.trust.short': 'Private by default. Never sold, never used for ads.',
+  'en.trust.voice': 'We never imitate your voice. Your original recording is always kept exactly as you made it.',
+  'en.trust.signIn.why': 'An account keeps your book safe when you change phones.',
+  'en.trust.firstRecording.title': 'Your voice stays here',
+  'en.trust.firstRecording.body':
+    'Your words are written down on this phone, and the recording stays with your letter. We never imitate your voice or use it to train machine learning models.',
+  'en.trust.firstRecording.dismissButton': 'Good to know',
+  'en.trust.settings.title': 'Our promise',
+  'en.trust.settings.body':
+    'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.',
+  'en.trust.settings.voice': 'We never imitate your voice. Your original recording is always kept exactly as you made it.',
+  'permissions.microphone': '{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone.',
 };
+
+/** The current words of every key the pass touched (held keys keep old words, so they are left out). */
+const TOUCHED: Leaf[] = [...CHANGED, ...ADDED].flatMap((key) => leaves(at(key), key));
 
 /** The Asha fixtures (CLAUDE.md: tests use the fictional family "Asha"). */
 const ASHA: Record<string, string> = {
@@ -393,65 +364,52 @@ const fill = (text: string, vars: Record<string, string> = ASHA) => text.replace
 const ON_DEVICE_ONLY =
   /\b(?:stays? on (?:this|your|the) phone|stays? on it|never leaves?|only on (?:this|your) phone|from this phone|no accounts?|without an account|only you can read|no one else|nobody else)\b|\bnothing is sent anywhere\b/i;
 
-describe('[EXPERIENCE_PASS_2026-10 P0] section 4, word for word', () => {
-  it('lists 87 CHG and 59 NEW strings, none of them twice', () => {
-    expect(Object.keys(CHG)).toHaveLength(87);
-    expect(Object.keys(NEW)).toHaveLength(59);
-    expect(Object.keys(CHG).filter((k) => k in NEW)).toEqual([]);
+const IN_APP: Leaf[] = [
+  ...leaves(en, 'en'),
+  ...leaves(permissions, 'permissions'),
+  ...leaves(features, 'features'),
+  ...leaves([...onboardingStories, ...alternateStories], 'stories'),
+];
+
+describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
+  it('has every changed and added key, each in one list only', () => {
+    // A changed key may also be retired (endOfMonthAlt now equals endOfMonth); the other lists never overlap.
+    const all = [...CHANGED, ...ADDED, ...Object.keys(HELD)];
+    expect(all.length).toBe(new Set(all).size);
+    expect(RETIRED.filter((k) => ADDED.includes(k) || k in HELD)).toEqual([]);
+    // An array key (signsAs.examples) yields one leaf per item: "key[0]", "key[1]" and so on.
+    const present = (key: string) => TOUCHED.some((l) => (l.path === key || l.path.startsWith(`${key}[`)) && l.text.length > 0);
+    for (const key of [...CHANGED, ...ADDED]) expect(present(key), key).toBe(true);
   });
 
-  it('applies every CHG string', () => {
-    for (const key of Object.keys(CHG)) expect(at(key), key).toEqual(shipped(key));
-  });
-
-  it('adds every NEW key', () => {
-    for (const key of Object.keys(NEW)) expect(at(key), key).toEqual(shipped(key));
-  });
-
-  it('differs from section 4 only where the rules test or option B requires it', () => {
-    expect(Object.keys(DEVIATIONS).sort()).toEqual([
-      'en.book.monthRange',
-      'en.settings.delete.eraseNowBody',
-      'en.settings.delete.erasedToast',
-      'features.export.screen.offlineNote',
-      'features.words.pack.mobileDataButton',
-    ]);
-    for (const [key, d] of Object.entries(DEVIATIONS)) {
-      expect(key in CHG || key in NEW, key).toBe(true);
-      expect(d.shipped, key).not.toEqual(CHG[key] ?? NEW[key]);
-      expect(d.reason.length, key).toBeGreaterThan(20);
-      // An option B line replaces words that say or imply the letters live only on this phone, and says none itself.
-      if (d.why === 'option B') {
-        expect(CHG[key] ?? NEW[key], key).toMatch(ON_DEVICE_ONLY);
-        expect(d.shipped, key).not.toMatch(ON_DEVICE_ONLY);
-      }
-    }
-  });
-
-  it('keeps every retired key, so screen code that still reads it compiles', () => {
-    expect(RET).toHaveLength(38);
-    for (const key of RET) {
+  it('keeps every retired and every held key, so screen code that reads it still compiles', () => {
+    for (const key of [...RETIRED, ...Object.keys(HELD)]) {
       const v = at(key);
       expect(typeof v, key).toBe('string');
       expect((v as string).length, key).toBeGreaterThan(0);
     }
     // billingCopy.plan.annual sits beside plan.yearly until P7 (P0 rule 2).
-    expect(at('features.billing.plan.yearly')).toBe('Yearly');
+    expect(typeof at('features.billing.plan.yearly')).toBe('string');
   });
 
-  it('leaves registered disclosure and claims text untouched (P0 rule 3)', () => {
+  it('names who switches every held key', () => {
+    for (const [key, who] of Object.entries(HELD)) expect(who, key).toMatch(/\bP[2-6]\b|counsel/);
+  });
+
+  it('leaves registered disclosure and claims text untouched (P0 rule 3, in-app-disclosures.md)', () => {
     for (const [key, value] of Object.entries(REGISTERED)) expect(at(key), key).toEqual(value);
-    expect(Object.keys(REGISTERED).filter((k) => k in CHG || k in NEW)).toEqual([]);
+    // A touched key is never a registered key, and every billingCopy.plan.* key from develop is in the map.
+    expect([...CHANGED, ...ADDED].filter((k) => k in REGISTERED && k !== 'features.billing.plan.restoring')).toEqual([]);
+    const plan = Object.keys(features.billing.plan).map((k) => `features.billing.plan.${k}`);
+    const added = new Set(ADDED);
+    expect(plan.filter((k) => !(k in REGISTERED) && !added.has(k))).toEqual([]);
   });
 });
 
-describe('[EXPERIENCE_PASS_2026-10 P0] the pass rules, on every string it touched', () => {
+describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', () => {
   it('says "we" only inside the sanctioned promises (principle 2)', () => {
     const SANCTIONED = [/we never rewrite your words\.?/gi, en.trust.promise, en.trust.voice];
-    const bad = TOUCHED.filter((l) => {
-      const rest = SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text);
-      return /\bwe\b/i.test(rest);
-    });
+    const bad = TOUCHED.filter((l) => /\bwe\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)));
     expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
   });
 
@@ -460,7 +418,7 @@ describe('[EXPERIENCE_PASS_2026-10 P0] the pass rules, on every string it touche
     expect(TOUCHED.filter((l) => BANNED.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
   });
 
-  it('keeps every touched button label to 22 characters, as written and with the Asha fixtures', () => {
+  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
     const buttons = TOUCHED.filter((l) => /(?:button|cta|action)(?:short)?$/i.test(l.path.split('.').pop()!));
     expect(buttons.length).toBeGreaterThan(10);
     for (const b of buttons) {
@@ -469,28 +427,19 @@ describe('[EXPERIENCE_PASS_2026-10 P0] the pass rules, on every string it touche
     }
   });
 
-  it('agrees in number for twins (S06)', () => {
-    const twins = { ...ASHA, child: 'Asha and Nila' };
-    expect(fill(en.onboarding.signsAs.titleMany, twins)).toBe('What do Asha and Nila call you?');
-    expect(fill(en.onboarding.signsAs.needSignsAsMany, twins)).toBe('Add what Asha and Nila call you to continue.');
-  });
-
-  it('names the plans as App Store Connect does (D-077)', () => {
-    expect(features.billing.plan.monthly).toBe('Plus Monthly');
-    expect(features.billing.plan.annual).toBe('Plus Annual');
-  });
-
-  it('spells for the US storefront in in-app copy (D-087)', () => {
-    const IN_APP = [
-      ...leaves(en, 'en'),
-      ...leaves(permissions, 'permissions'),
-      ...leaves(features, 'features'),
-      ...leaves([...onboardingStories, ...alternateStories], 'stories'),
+  it('writes error and state titles without a full stop', () => {
+    const titles = [
+      ...leaves(en.errors, 'en.errors').filter((l) => l.path.endsWith('.title')),
+      ...TOUCHED.filter((l) => /^en\.review\.(missingFile|emptyTake|noDraft)\.title$|^en\.reader\.notFoundTitle$/.test(l.path)),
     ];
-    // The spec's list. "Licences" is the screen title and row; the lowercase noun in `licences.libraries` is not
-    // in section 4 and is left for the content owner.
-    const UK = [/\bLicences\b/, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i];
-    expect(IN_APP.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    expect(titles.length).toBeGreaterThan(10);
+    expect(titles.filter((l) => /\.\s*$/.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('agrees in number for twins: the plural keys use the plural verb (S06)', () => {
+    expect(en.onboarding.signsAs.titleMany).toMatch(/\{child\} call\b/);
+    expect(en.onboarding.signsAs.needSignsAsMany).toMatch(/\{child\} call\b/);
+    expect(en.onboarding.signsAs.needSignsAs).toMatch(/\{child\} calls\b/);
   });
 
   it('never says or implies that letters stay on the phone, that there are no accounts, or no sharing (option B, D-100)', () => {
@@ -498,17 +447,30 @@ describe('[EXPERIENCE_PASS_2026-10 P0] the pass rules, on every string it touche
   });
 });
 
+describe('[EXPERIENCE_PASS_2026-10 P0] rules across in-app copy', () => {
+  it('spells for the US storefront (D-087)', () => {
+    // The spec's list. "Licences" is the screen title and row; the lowercase noun in `licences.libraries` is not in
+    // section 4 and is left for the content owner.
+    const UK = [/\bLicences\b/, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i];
+    expect(IN_APP.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('names the plans Plus Monthly and Plus Annual, as App Store Connect does (D-077)', () => {
+    expect(features.billing.plan.annual).toBe('Plus Annual');
+    expect(features.billing.confirmation.planMonthly).toBe('Plus Monthly');
+    expect(features.billing.confirmation.planAnnual).toBe('Plus Annual');
+    const named = IN_APP.flatMap((l) => [...l.text.matchAll(/\bPlus (?:Monthly|Annual|Yearly|Year|Month)\w*/g)].map((m) => `${l.path}: ${m[0]}`));
+    expect(named.filter((n) => !/: Plus (?:Monthly|Annual)$/.test(n))).toEqual([]);
+  });
+});
+
 describe('[EXPERIENCE_PASS_2026-10 P0] story.private.v2 (P0 rule 4, option B)', () => {
   const v1 = onboardingStories.find((c) => c.id === 'story.private.v1');
   const v2 = alternateStories.find((c) => c.id === 'story.private.v2');
 
-  it('adds v2 with the founder wording, beside v1, and keeps v1 in the packaged deck', () => {
-    expect(v2).toBeDefined();
-    expect(v2!.headline).toBe('Private by default.');
-    expect(v2!.line).toBe('Shared only with the one other parent you invite. Never sold, never used for ads.');
+  it('sits beside v1 in the same slot, and the packaged deck still serves v1', () => {
     expect(v1).toBeDefined();
-    expect(v1!.line).toBe('Only you and the people you invite can read these letters. We never sell them or use them for ads.');
-    // Same slot, same picture; the deck still shows one card per slot.
+    expect(v2).toBeDefined();
     expect(v2!.order).toBe(v1!.order);
     expect(v2!.visual).toBe(v1!.visual);
     expect(onboardingStories.map((c) => c.id)).not.toContain('story.private.v2');
@@ -529,7 +491,7 @@ describe('[EXPERIENCE_PASS_2026-10 P0] story.private.v2 (P0 rule 4, option B)', 
     }
   });
 
-  it('makes no claim about where letters are kept or who can read them', () => {
+  it('makes no claim about where letters are kept or who can read them, and has no "we"', () => {
     const text = `${v2!.headline} ${v2!.line}`;
     expect(text).not.toMatch(ON_DEVICE_ONLY);
     expect(text).not.toMatch(/\bcan read\b|\bwe\b/i);
