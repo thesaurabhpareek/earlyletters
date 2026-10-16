@@ -2,10 +2,11 @@
   "name": "@scribe/experiments",
   "version": "0.1.0",
   "private": true,
-  "description": "Speech-model experiments on real family recordings. Mac only.",
+  "description": "Speech-model experiments and the per-language gate (F05 7.1) on real family recordings. Mac only; nothing leaves the Mac.",
   "scripts": {
     "experiment": "tsx run.ts",
     "experiment:edits": "tsx edit-compare.ts",
+    "gate": "tsx gate.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

@@ -9,7 +9,7 @@ Read the repo root `CLAUDE.md` first: the constitution, content rules and privac
 From the repo root, once:
 
 ```bash
-nvm use                 # Node 22 (see .nvmrc); mobile tests need node:sqlite
+nvm use                 # Node 22.5 or later (.nvmrc, root package.json engines); mobile tests need node:sqlite
 npm ci
 ```
 
@@ -34,7 +34,7 @@ npm run typecheck -w @scribe/mobile
 | `modules/` | Local native modules (hand-written Swift lives in `modules/*/ios`) |
 | `test/` | Vitest unit tests for the pure parts of `src/lib` (run in Node, no React Native) |
 | `web-preview/` | Web-only Metro shims used by `metro.config.js` |
-| `assets/` | Icons, licensed photos and sounds. `assets/expo.icon` and `assets/images/icon.png` are placeholders until the brand icon exists |
+| `assets/` | App icon, splash, Android icons and favicon in `assets/brand`, read by `app.config.ts`. Nothing else is bundled: the licensed photo library and the sound synthesizer live in `docs/brand/archive/` until a screen uses them (`test/bundle-assets.test.ts` keeps them out) |
 
 ## Native folders
 

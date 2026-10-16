@@ -5,11 +5,10 @@ Amends: ADR 0006 (decision items 1 to 4). Implements: D-073, D-102 (recoverable 
 Spec: PRD V2 F08 section 6.5 (key model, object format, server objects, A to G), F08 section 12 (WP-F08-B2 to B5c), F17 Storage and backup row.
 Code (client half, PR `feat/backup-client`): `apps/mobile/modules/scribe-keys/`, `apps/mobile/src/lib/backup/`, `apps/mobile/src/app/settings/backup.tsx`, `packages/content/src/features/backup.en.ts`. Server half: PR #151 (`feat/backup-server`: `supabase/migrations/<ts>_backup_server.sql` and `supabase/functions/escrow/`); the client's wire to it is `lib/backup/wire.ts`, checked by `test/backup-wire.test.ts`. Contracts: S07's `packages/api/src/server/recovery-key.ts` (PR #138).
 
-Number (as of 15 Oct 2026):
-- 0018 to 0020 are on `develop` (0020 merged with #39).
-- 0021 and 0022 are taken by open PRs (#42 engineering compendium, #108 release engineering).
-- 0023 is used twice on unmerged branches: `feat/auth-v1-gate` (email links, PKCE) and `feat/sync-v1-alpha` (sync protocol v1).
-- 0024 is the next number free on every branch of `origin`. The coordinator renumbers at merge if needed.
+Number (as of 16 Oct 2026):
+- 0018 to 0022 are on `develop`.
+- 0023 is used on `feat/auth-v1-gate` (email links, PKCE); 0025 on the sync branches (sync protocol v1).
+- This ADR has been 0024 since 15 Oct, when it was free on every branch. On 16 Oct `docs/release-automation-plan` (unmerged) also took 0024 for the release automation pipeline. The coordinator renumbers whichever merges second; 0026 is free today.
 
 Evidence key as in ADR 0016: **V** verified, **V-code** read or tested in this repo, **U** unverified (a device or the server must confirm), **E** estimate.
 
