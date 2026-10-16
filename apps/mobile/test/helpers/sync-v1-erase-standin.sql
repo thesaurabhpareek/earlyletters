@@ -20,7 +20,8 @@
 --      forgets, entry_erasures does not); and the digest check in sync_pull
 --      (sync-v1-standin.ts, SYNC_PUSH_ERASE_EDITS and SYNC_PULL_ERASE_EDITS).
 -- Not here (S02 and S05): the recording's backup object at audio_blobs.object_path
--- (F08-REQ-024), and trimming entry_erasures once every phone has pulled past it.
+-- (F08-REQ-024). entry_erasures is never trimmed while an upload could still bring
+-- the letter back (ADR 0025 section 12).
 
 create schema if not exists sync_private;
 revoke all on schema sync_private from public, anon;
