@@ -43,6 +43,15 @@ export const ENGINE_VERSION = 5;
 //   नही, मत, ना, न) are guarded. Dictionary terms no longer match the start
 //   of a longer Indic word. ZWJ and ZWNJ stay inside a word. Pinned by
 //   test/golden.test.ts (CORE-08).
+// Pending 6 (2026-10-15, WP-F06-02, not yet bumped): the verifier refuses
+//   more. No edit may add, remove or move a direction mark, joiner or other
+//   invisible character (new reason changes_invisible, R-01 D4); every
+//   Unicode quotation style is counted and protects its words from removals,
+//   dictionary fixes and agreement (R-01 D7); agreement accepts only the
+//   pack's closed verb and article groups, never the generic -s rule, so a
+//   noun's number never changes (R-01 D9). Golden corpus output is
+//   unchanged. F06-REQ-018 moves ENGINE_VERSION to 6 once, with WP-F06-03
+//   and WP-F06-05, and records golden/engine-v6.json then.
 
 export interface CleanOptions {
   level: EditLevel;
