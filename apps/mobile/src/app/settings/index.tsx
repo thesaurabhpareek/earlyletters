@@ -9,11 +9,12 @@ import { brand, supportMailto } from '@scribe/brand';
 import { ListRow, ListSection, Text } from '@/components/ui';
 import { getAppearance } from '@/components/child/child-store';
 import { useTheme } from '@/lib/a11y';
+import { backupInBuild, loadBackup } from '@/lib/backup/gate';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { remindersSummary } from '@/lib/reminders';
 import { listChildren, subscribe, type Child } from '@/lib/store';
-import { licences } from '@scribe/content';
+import { backupCopy, licences } from '@scribe/content';
 
 /**
  * Settings home (PRD C, C-REQ-016; PRD B section 9). Every destination is one tap from here.
@@ -37,11 +38,19 @@ const ROUTES = {
   privacy: '/settings/privacy',
   storage: '/settings/storage',
   recordings: '/settings/recordings',
+  backup: '/settings/backup',
   appearance: '/settings/appearance',
   deleteAccount: '/settings/delete-account',
 } as const;
 
 const go = (route: string) => () => router.push(route as Href);
+
+/** On or Off for the backup row, from the last state backup reported. Empty until it has one. */
+function backupRowValue(): string | undefined {
+  const s = loadBackup()?.backupView()?.status.kind;
+  if (!s || s === 'unavailable') return undefined;
+  return s === 'off' ? backupCopy.rowOff : backupCopy.rowOn;
+}
 const openWeb = (url: string) => () => void WebBrowser.openBrowserAsync(url);
 
 /** A row that opens more detail in place (VoiceOver: "button, collapsed"). */
@@ -117,6 +126,8 @@ export default function Settings() {
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
         <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
         <ListRow title={h.recordingsLabel} trailing="chevron" onPress={go(ROUTES.recordings)} />
+        {/* Encrypted backup (WP-F08-B5c): only in a build with capabilities.backup on; gate.ts loads nothing otherwise. */}
+        {backupInBuild() ? <ListRow title={backupCopy.title} value={backupRowValue()} trailing="chevron" onPress={go(ROUTES.backup)} /> : null}
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
       </ListSection>
 
