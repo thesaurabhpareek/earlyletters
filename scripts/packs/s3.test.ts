@@ -13,7 +13,7 @@ import type { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { generateSigningKey, type TrustedKey } from '../../packages/api/src/index';
+import { base64ToBytes, generateSigningKey, signDocument, type DocumentKind, type TrustedKey } from '../../packages/api/src/index';
 import { PROMPTS } from '../../packages/content/src/prompts';
 import { onboardingStories } from '../../packages/content/src/stories.en';
 import { readSigningKey, uploadOrder, type ReleaseIndex } from './lib';
@@ -279,5 +279,64 @@ describe('upload to an S3-compatible bucket', () => {
       expect(nothing.ok).toBe(false);
       expect(nothing.lines[0]).toMatch(/^FAIL pack-manifest: .* answered HTTP 404/);
     });
+  });
+});
+
+describe('checkHosted accepts a document only as the app does (review A of #162, finding 6)', () => {
+  const secret = base64ToBytes(key.secretKey)!;
+  const at = '2026-10-16T00:00:00.000Z';
+  const PATHS: Record<DocumentKind, string> = { 'pack-manifest': 'functions/v1/config/v1/packs', 'remote-config': 'functions/v1/config/v1/remote-config', 'content-bundle': 'functions/v1/content/v1/bundle' };
+  const manifest = (version: number, packs: unknown[] = []) => ({ schemaVersion: 1, version, generatedAt: at, packs });
+  const config = (over: Record<string, unknown> = {}) => ({ schemaVersion: 1, version: 3, generatedAt: at, ...over });
+  const bundle = (blocks: unknown[]) => ({ schemaVersion: 1, version: 2, generatedAt: at, locale: 'en', blocks });
+  /** A host serving exactly these signed documents, and pack files by URL and size. */
+  const host = (docs: Partial<Record<DocumentKind, unknown>>, files: Record<string, number> = {}): typeof fetch => async (input, init) => {
+    const url = String(input).replace(/\?.*$/, '');
+    const kind = (Object.keys(docs) as DocumentKind[]).find((k) => url === `${BASE}/${PATHS[k]}`);
+    if (kind) return new Response(JSON.stringify(signDocument(kind, docs[kind], secret, 'el-test')), { status: 200, headers: { 'content-type': 'application/json', etag: '"x"' } });
+    const size = files[url];
+    if (size === undefined) return new Response('', { status: 404 });
+    const range = new Headers(init?.headers).get('range');
+    return new Response(init?.method === 'HEAD' ? null : 'x'.repeat(range ? 16 : size), { status: range ? 206 : 200, headers: { 'content-length': String(range ? 16 : size) } });
+  };
+
+  it('fails a signed remote config or content bundle that the app would drop', async () => {
+    const r = await checkHosted(BASE, trusted, host({ 'pack-manifest': manifest(1), 'remote-config': { schemaVersion: 2, version: 3 }, 'content-bundle': { schemaVersion: 1, version: 'two' } }));
+    expect(r.ok).toBe(false);
+    expect(r.lines).toContain('FAIL remote-config: the payload does not match the RemoteConfig schema; the app drops it and keeps its bundled defaults (kill switches included)');
+    expect(r.lines).toContain('FAIL content-bundle: the payload does not match the ContentBundle schema; the app drops it and shows its packaged copy');
+  });
+
+  it('warns about values the app ignores or replaces, and blocks it skips', async () => {
+    const r = await checkHosted(
+      BASE,
+      trusted,
+      host({
+        'pack-manifest': manifest(1),
+        'remote-config': config({ readTogetherFreeSessions: -1, killSwitches: { packDownloads: true, recording: true } }),
+        'content-bundle': bundle([{ type: 'tip', id: 'calm', placement: 'book', body: 'Bad \u2014 dash' }, { type: 'nope' }]),
+      }),
+    );
+    expect(r.ok).toBe(true);
+    expect(r.lines.find((l) => l.startsWith('WARN remote-config: the app ignores or replaces'))).toMatch(/\$\.readTogetherFreeSessions.*\$\.killSwitches\.recording/);
+    expect(r.lines).toContain('ok   remote-config v3: kill switches on: packDownloads');
+    expect(r.lines).toContain('WARN content-bundle: 2 blocks the app would skip (unknown type, bad fields or a content rule); those slots fall back to the packaged copy');
+  });
+
+  it('compares the live versions with the ones committed in published.ts (rollback protection)', async () => {
+    const docs = host({ 'pack-manifest': manifest(4), 'remote-config': config(), 'content-bundle': bundle([]) });
+    const behind = await checkHosted(BASE, trusted, docs, { 'pack-manifest': 5, 'remote-config': 3, 'content-bundle': 2 });
+    expect(behind.lines).toContain('WARN pack-manifest: the host serves v4, but published.ts says v5 was published. A phone that has v5 refuses v4 as a rollback; upload the latest release.');
+    const ahead = await checkHosted(BASE, trusted, docs, { 'pack-manifest': 3 });
+    expect(ahead.lines.some((l) => /^WARN pack-manifest: the host serves v4, newer than published.ts \(v3\)/.test(l))).toBe(true);
+    const same = await checkHosted(BASE, trusted, docs, { 'pack-manifest': 4, 'remote-config': 3, 'content-bundle': 2 });
+    expect(same.lines.filter((l) => l.startsWith('WARN'))).toEqual([]);
+  });
+
+  it('checks every mirror for the listed size', async () => {
+    const entry = { id: 'speech-model.whisper-small-q5_1', kind: 'speech-model', language: 'mul', version: 1, url: `${BASE}/m/1/ggml-small-q5_1.bin`, mirrors: ['https://mirror-a.test/m.bin', 'https://mirror-b.test/m.bin'], bytes: 6_000_000, sha256: 'a'.repeat(64), fileName: 'ggml-small-q5_1.bin', minAppVersion: '1.0.0', required: false };
+    const r = await checkHosted(BASE, trusted, host({ 'pack-manifest': manifest(1, [entry]) }, { [entry.url]: 6_000_000, 'https://mirror-a.test/m.bin': 6_000_000, 'https://mirror-b.test/m.bin': 5 }));
+    expect(r.lines).toContain('ok   speech-model.whisper-small-q5_1 v1: mirror mirror-a.test has 6000000 bytes');
+    expect(r.lines).toContain('WARN speech-model.whisper-small-q5_1 v1: mirror https://mirror-b.test/m.bin has 5 bytes, manifest says 6000000');
   });
 });

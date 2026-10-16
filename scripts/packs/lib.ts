@@ -179,8 +179,8 @@ export function buildRemoteConfig(source: unknown, version: number, generatedAt:
   return r.value;
 }
 
-/** Paths in `given` that the parsed value does not keep exactly (unknown keys, or values replaced by a fallback). */
-function ignoredPaths(given: unknown, kept: unknown, path = '$'): string[] {
+/** Paths in `given` that the parsed value does not keep exactly (unknown keys, or values replaced by a fallback). Also used by `verify` (s3.ts). */
+export function ignoredPaths(given: unknown, kept: unknown, path = '$'): string[] {
   if (given && typeof given === 'object' && !Array.isArray(given)) {
     if (!kept || typeof kept !== 'object') return [path];
     return Object.entries(given as Record<string, unknown>).flatMap(([k, v]) =>

@@ -21,8 +21,18 @@ import { createReadStream, readFileSync, statSync } from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import { join } from 'node:path';
-import { decideDocumentVersion, documentPayloadSha256, parsePackManifest, verifySignedDocument, type TrustedKey, type VersionDecision } from '../../packages/api/src/index';
-import { RELEASE_DOCUMENTS, uploadOrder, type ReleaseFile, type ReleaseIndex } from './lib';
+import {
+  decideDocumentVersion,
+  documentPayloadSha256,
+  parseContentBundle,
+  parsePackManifest,
+  parseRemoteConfig,
+  verifySignedDocument,
+  type DocumentKind,
+  type TrustedKey,
+  type VersionDecision,
+} from '../../packages/api/src/index';
+import { ignoredPaths, RELEASE_DOCUMENTS, uploadOrder, type ReleaseFile, type ReleaseIndex } from './lib';
 import { sha256File } from './release';
 
 // ---------------------------------------------------------------------------
@@ -341,13 +351,24 @@ export interface HostedCheck {
 }
 
 /**
- * Fetches the manifest from `baseUrl` exactly as a phone would, verifies its
- * signature against the keys the app ships, parses it, and checks that every
- * pack URL answers HEAD with the listed size and a Range request with 206;
- * packs of 5 MB or less are downloaded and hashed. Also verifies the remote
- * config and content bundle when present.
+ * Fetches each signed document from `baseUrl` exactly as a phone would and
+ * accepts it only as the app does (apps/mobile/src/lib/remote): signature
+ * against the keys the app ships, then the kind's own parser
+ * (`parsePackManifest`, `parseRemoteConfig`, `parseContentBundle`); a payload
+ * the app would drop fails here too, and values the app would ignore or
+ * replace, and entries or blocks it would skip, are warned about. With
+ * `committed` (the versions in supabase/functions/*\/published.ts), a live
+ * version below or above the committed one is warned about (rollback
+ * protection). Then every pack URL must answer HEAD with the listed size and
+ * a Range request with 206; packs of 5 MB or less on our host are downloaded
+ * and hashed; each mirror is checked for its size.
  */
-export async function checkHosted(baseUrl: string, trusted: readonly TrustedKey[], fetchFn: typeof fetch = fetch): Promise<HostedCheck> {
+export async function checkHosted(
+  baseUrl: string,
+  trusted: readonly TrustedKey[],
+  fetchFn: typeof fetch = fetch,
+  committed: Partial<Record<DocumentKind, number>> = {},
+): Promise<HostedCheck> {
   const base = baseUrl.replace(/\/+$/, '');
   const lines: string[] = [];
   const result: HostedCheck = { ok: true, lines, manifestVersion: null, packs: [] };
@@ -391,9 +412,39 @@ export async function checkHosted(baseUrl: string, trusted: readonly TrustedKey[
     return verified.doc.payload;
   }
 
+  /** The live version against the one committed in published.ts (what phones may already hold). */
+  const compareVersion = (kind: DocumentKind, live: number) => {
+    const c = committed[kind];
+    if (!c) return;
+    if (live < c) warn(`${kind}: the host serves v${live}, but published.ts says v${c} was published. A phone that has v${c} refuses v${live} as a rollback; upload the latest release.`);
+    else if (live > c) warn(`${kind}: the host serves v${live}, newer than published.ts (v${c}). Commit supabase/functions/*/published.ts, or the next release reuses a version and upload refuses it.`);
+  };
+
   const payload = await document('pack-manifest', true);
-  await document('remote-config', false);
-  await document('content-bundle', false);
+
+  // Remote config and content bundle: parsed exactly as the app parses them (apps/mobile/src/lib/remote/index.ts).
+  const configPayload = await document('remote-config', false);
+  if (configPayload !== null) {
+    const r = parseRemoteConfig(configPayload);
+    if (!r.ok) bad('remote-config: the payload does not match the RemoteConfig schema; the app drops it and keeps its bundled defaults (kill switches included)');
+    else {
+      const ignored = ignoredPaths(configPayload, r.value);
+      if (ignored.length) warn(`remote-config: the app ignores or replaces with its defaults: ${ignored.join(', ')}`);
+      good(`remote-config v${r.value.version}: kill switches on: ${Object.entries(r.value.killSwitches).filter(([, v]) => v).map(([k]) => k).join(', ') || 'none'}`);
+      compareVersion('remote-config', r.value.version);
+    }
+  }
+  const contentPayload = await document('content-bundle', false);
+  if (contentPayload !== null) {
+    const r = parseContentBundle(contentPayload);
+    if (!r.ok) bad('content-bundle: the payload does not match the ContentBundle schema; the app drops it and shows its packaged copy');
+    else {
+      if (r.skipped) warn(`content-bundle: ${r.skipped} blocks the app would skip (unknown type, bad fields or a content rule); those slots fall back to the packaged copy`);
+      good(`content-bundle v${r.value.version}: ${r.value.blocks.length} blocks, locale ${r.value.locale}`);
+      compareVersion('content-bundle', r.value.version);
+    }
+  }
+
   if (payload === null) return result;
   const parsed = parsePackManifest(payload);
   if (!parsed.ok) {
@@ -403,6 +454,7 @@ export async function checkHosted(baseUrl: string, trusted: readonly TrustedKey[
   if (parsed.skipped) warn(`pack-manifest: ${parsed.skipped} entries the app would skip`);
   result.manifestVersion = parsed.value.version;
   good(`pack-manifest v${parsed.value.version}: ${parsed.value.packs.length} packs`);
+  compareVersion('pack-manifest', parsed.value.version);
   for (const p of parsed.value.packs) {
     let ok = true;
     try {
@@ -435,6 +487,18 @@ export async function checkHosted(baseUrl: string, trusted: readonly TrustedKey[
     } catch (e) {
       bad(`${p.id} v${p.version}: ${p.url} unreachable (${(e as Error).message})`);
       ok = false;
+    }
+    // Mirrors are the fallback a phone tries when the primary fails: each must serve the same size.
+    for (const m of p.mirrors) {
+      try {
+        const head = await fetchFn(m, { method: 'HEAD' });
+        const len = Number(head.headers.get('content-length') ?? -1);
+        if (head.status !== 200) warn(`${p.id} v${p.version}: mirror ${m} answered HTTP ${head.status}`);
+        else if (len !== p.bytes) warn(`${p.id} v${p.version}: mirror ${m} has ${len} bytes, manifest says ${p.bytes}`);
+        else good(`${p.id} v${p.version}: mirror ${new URL(m).host} has ${p.bytes} bytes`);
+      } catch (e) {
+        warn(`${p.id} v${p.version}: mirror ${m} unreachable (${(e as Error).message})`);
+      }
     }
     result.packs.push({ id: p.id, version: p.version, url: p.url, bytes: p.bytes, ok });
   }

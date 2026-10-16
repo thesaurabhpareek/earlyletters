@@ -19,19 +19,23 @@ You need two things, both done below:
 
 ## The 15 minutes (Cloudflare R2, recommended)
 
-| # | Step | Time |
+Times are an Assumption (nobody has run these steps on the real accounts yet).
+
+| # | Step | Time (Assumption) |
 |---|---|---|
 | 1 | Signing key | 3 min |
 | 2 | Bucket | 1 min |
 | 3 | Custom domain | 2 min, plus activation |
 | 4 | API token | 2 min |
-| 5 | Shell variables | 1 min |
+| 5 | Upload credentials | 1 min |
 | 6 | Build the release | 1 min |
 | 7 | Upload and check | 1 min |
-| 8 | Commit | 2 min |
+| 8 | Commit and open the PR | 3 min |
 | 9 | Verify with curl and the preflight | 2 min |
 
 ### 1. Signing key (once)
+
+In your own terminal (it refuses to print the secret to a pipe, a file or CI):
 
 ```bash
 node scripts/packs/keygen.mjs            # key id defaults to el-YYYY-MM; plain Node, writes nothing to disk
@@ -39,21 +43,27 @@ node scripts/packs/keygen.mjs            # key id defaults to el-YYYY-MM; plain 
 
 It prints:
 - a **public** line: paste it into `TRUSTED_SIGNING_KEYS` in `packages/api/src/keys.ts`;
-- two **secret** lines (`EL_SIGNING_KEY_ID=...`, `EL_SIGNING_KEY=...`), shown once. Save them in the password manager, **and** in a file outside the repo for the scripts:
+- two **secret** lines (`EL_SIGNING_KEY_ID=...`, `EL_SIGNING_KEY=...`), shown once. Save them in the password manager, **and** in a file outside every git checkout for the scripts:
 
 ```bash
 mkdir -p ~/.config/early-letters && chmod 700 ~/.config/early-letters
 pbpaste > ~/.config/early-letters/signing.env    # or paste with an editor; the two lines only
 chmod 600 ~/.config/early-letters/signing.env
+pbcopy < /dev/null                               # clear the clipboard (Universal Clipboard would sync it to your other devices)
 ```
 
-The secret never goes in the repo, CI, EAS, Vercel, Cloudflare or a chat. `publish.ts` refuses a `--key-file` inside the repo, and refuses any key that is not in `keys.ts` (so nothing can be published that phones would reject). Key format: Ed25519, the raw 32-byte seed and public key in standard base64, exactly what `packages/api/src/integrity.ts` verifies.
+The secret never goes in the repo, CI, EAS, Vercel, Cloudflare or a chat. Three guards back that up:
+- `publish.ts` refuses a `--key-file` inside this repo, any of its worktrees, its git directory or any other git repository (real paths, symlinks resolved, letter case ignored where the disk ignores it), and refuses any key that is not in `keys.ts`, so nothing can be published that phones would reject;
+- `.gitignore` ignores `signing.env`, `*.signing.env`, `r2.env` and `*.r2.env` at any depth;
+- `node scripts/packs/secret-scan.mjs --staged` fails if a staged file holds a signing key or an R2 secret (step 8 runs it), and `npm test` fails if a tracked file does.
+
+Key format: Ed25519, the raw 32-byte seed and public key in standard base64, exactly what `packages/api/src/integrity.ts` verifies. If your home folder or `~/.config` is itself a git repository (a dotfiles repo), keep the file elsewhere or export the two variables from your password manager instead: the script refuses any key file inside a git repository.
 
 Keep the `keys.ts` change in your working tree for step 6, and commit it in step 8.
 
 ### 2. Bucket
 
-Cloudflare dashboard > Storage and databases > R2 > Create bucket: name **`early-letters-packs`**, location Automatic, default storage class **Standard** (the free tier covers Standard only: Read, R2 pricing). Leave public access through `r2.dev` **off**: it is rate-limited and for development only (Read, R2 public buckets).
+Cloudflare dashboard > Storage and databases > R2 > Create bucket (Read; menu names may differ in today's dashboard): name **`early-letters-packs`**, location Automatic, default storage class **Standard** (the free tier covers Standard only: Read, R2 pricing). Leave public access through `r2.dev` **off**: it is rate-limited and for development only (Read, R2 public buckets).
 
 ### 3. Custom domain
 
@@ -68,15 +78,26 @@ R2 > Overview > Manage API tokens > Create API token:
 - Apply to **specific buckets only**: `early-letters-packs`.
 - Copy the **Access Key ID**, the **Secret Access Key** (shown once: password manager) and the S3 endpoint **`https://<ACCOUNT_ID>.r2.cloudflarestorage.com`** (Read, R2 S3 get started).
 
-### 5. Shell variables (this terminal only)
+### 5. Upload credentials (a file, not your shell history)
+
+Typing the secret after `export` would save it in `~/.zsh_history`. Put the four lines in a file next to the signing key instead, with an editor:
 
 ```bash
-export PACKS_S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com   # no bucket, no path
-export PACKS_S3_BUCKET=early-letters-packs
-export PACKS_S3_ACCESS_KEY_ID=<access key id>
-export PACKS_S3_SECRET_ACCESS_KEY=<secret access key>
-# PACKS_S3_REGION defaults to auto (R2). For AWS S3 set the bucket's region and an https://s3.<region>.amazonaws.com endpoint.
+# ~/.config/early-letters/r2.env   (chmod 600)
+PACKS_S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+PACKS_S3_BUCKET=early-letters-packs
+PACKS_S3_ACCESS_KEY_ID=<access key id>
+PACKS_S3_SECRET_ACCESS_KEY=<secret access key>
 ```
+
+Then, in the terminal you will upload from:
+
+```bash
+chmod 600 ~/.config/early-letters/r2.env
+set -a; . ~/.config/early-letters/r2.env; set +a
+```
+
+`PACKS_S3_ENDPOINT` has no bucket and no path. `PACKS_S3_REGION` defaults to `auto` (R2); for AWS S3 add the bucket's region and an `https://s3.<region>.amazonaws.com` endpoint.
 
 ### 6. Build the release
 
@@ -118,18 +139,30 @@ Plain signed HTTPS requests (AWS Signature Version 4; no SDK and no new dependen
 - a document the host already serves under the same version with different content, or under a higher version, is **refused** (phones would refuse it too: G-18, rollback protection);
 - nothing is ever deleted.
 
-Then it runs `verify` against `https://packs.earlyletters.app`: it fetches the manifest as a phone does, checks the signature against `keys.ts`, checks every pack URL for size and Range support, and downloads and hashes every pack of 5 MB or less on our host. `--dry-run` shows what would be sent. `npx tsx scripts/packs/publish.ts verify` runs the check alone, any time, with no key.
+Then it runs `verify` against `https://packs.earlyletters.app`, which accepts each document only the way the app does:
+- the signature against `keys.ts`;
+- then the document's own parser, as `apps/mobile/src/lib/remote` runs it. A payload the app would drop fails; values the app would ignore or replace, and entries or blocks it would skip, are warned about.
+- each live version against the one committed in `published.ts` (a phone refuses an older one);
+- every pack URL for size and Range support, every mirror for size, and a download and hash of every pack of 5 MB or less on our host.
+
+`--dry-run` shows what would be sent. `npx tsx scripts/packs/publish.ts verify` runs the check alone, any time, with no key.
 
 ### 8. Commit
 
-On a short branch (for example `chore/packs-signing-key`), one PR:
+One short branch, one PR:
 
 ```bash
-git add packages/api/src/keys.ts supabase/functions/config/published.ts supabase/functions/content/published.ts
+git switch -c chore/packs-signing-key
+git add packages/api/src/keys.ts supabase/functions/config/published.ts supabase/functions/content/published.ts scripts/packs/remote-config.json
+node scripts/packs/secret-scan.mjs --staged      # must say "no signing key or upload secret"; stop if it names a file
 git commit -m "chore(packs): trust the el-YYYY-MM signing key; first signed release"
+git push -u origin chore/packs-signing-key
+gh pr create --base develop --fill
 ```
 
-`published.ts` is the counter the next release adds one to. If it is not committed, the next release reuses a version number with different content, and `upload` stops (phones would refuse it). Merge before `eas build`.
+(`remote-config.json` is listed even when unchanged: adding an unchanged file is harmless, and a kill switch you set must be in git, which is the audit log of what was served.)
+
+`published.ts` is the counter the next release adds one to. If it is not committed, the next release reuses a version number with different content, and `upload` stops (phones would refuse it). **You merge this PR yourself**, before `eas build`: it changes the app's trust root and release configuration, which D-107 keeps as founder merges.
 
 ### 9. Verify
 
@@ -145,7 +178,30 @@ npm run preflight:testflight -w @scribe/mobile -- --skip-prebuild               
 
 ## If earlyletters.app is not on Cloudflare yet
 
-An R2 custom domain must be a zone in the same Cloudflare account (Read). D-097 moves only `earlyletters.app` (today a redirect; `earlyletters.com` and email stay at Porkbun): add the zone on the Free plan, recreate every `.app` record from `docs/ops/DOMAINS.md` section 4 (Vercel records DNS-only), add Cloudflare's CAs to CAA, switch the nameservers at Porkbun, then DNSSEC (DOMAINS section 6). About 10 minutes of work; the nameserver change can take longer to be seen (Assumption: usually within an hour, up to a day). Steps 1 and 2 above can run meanwhile. If the first build cannot wait, use the fallback below and move to R2 later: same hostname, same paths, so the move is a DNS change only.
+An R2 custom domain must be a zone in the same Cloudflare account (Read). D-097 moves only **`earlyletters.app`** (today a redirect). `earlyletters.com`, the website's records and all email stay at Porkbun, untouched. (`docs/ops/DOMAINS.md` section 6, row A, still describes moving `.com` and `packs.earlyletters.com`; for D-097 follow the steps here instead.)
+
+Do them in this order. The order matters for DNSSEC: a DS record at the registry that does not match the new nameservers makes the domain stop resolving for validating resolvers (Read, Cloudflare DNSSEC).
+
+1. **If Porkbun DNSSEC is on for `earlyletters.app`** (DOMAINS.md section 2 turns it on while DNS is at Porkbun): Porkbun > Domain Management > `earlyletters.app` > Details > DNSSEC, turn it off and remove its DS record. Then wait for the old DS record to expire at the `.app` registry before step 4. Cloudflare says DS TTLs are commonly 24 to 48 hours (Read); `dig +short DS earlyletters.app` printing nothing means it is gone. If DNSSEC was never on, skip this and the wait.
+2. **Cloudflare > Add a domain**: `earlyletters.app`, Free plan. Cloudflare imports the records it can see. Make them exactly the `.app` table in DOMAINS.md section 4:
+   - the apex A record and the `www` CNAME from Vercel's domain card, **DNS only** (grey cloud: Vercel serves the redirect and its own certificate);
+   - MX `@` `0 .`;
+   - TXT `@` `v=spf1 -all`;
+   - TXT `_dmarc` `v=DMARC1; p=reject; adkim=s; aspf=s`;
+   - optionally TXT `*._domainkey` `v=DKIM1; p=`.
+   Check them against Porkbun with `dig @<cloudflare-nameserver> earlyletters.app ANY` before going on.
+3. **CAA on `earlyletters.app`**, exactly these records, so both Vercel (Let's Encrypt) and Cloudflare (the R2 custom domain's certificate) can issue:
+   - `0 issue "letsencrypt.org"` (keep, for Vercel);
+   - `0 issue "pki.goog"` (Google Trust Services, Cloudflare);
+   - `0 issue "ssl.com"` (Cloudflare);
+   - `0 issuewild ";"` (keep: no wildcard certificates).
+   Cloudflare says it adds records for the CAs it uses on its own once a zone has any CAA record and Universal SSL is on (Read, Cloudflare "Add CAA records"). Leave any records it adds. If its Universal certificate (which covers `*.earlyletters.app`) stays pending because of `issuewild ";"`, replace that record with `0 issuewild "pki.goog"`. Assumption: Cloudflare's CA list can change, so check its "Certificate authorities" page that day.
+4. **Porkbun > Domain Management > `earlyletters.app` > Authoritative nameservers**: replace Porkbun's with the two Cloudflare shows. Wait until Cloudflare marks the zone **Active** (Assumption: usually within an hour, up to a day).
+5. **DNSSEC on Cloudflare**: Cloudflare > `earlyletters.app` > DNS > Settings > **Enable DNSSEC** (Read). It shows the DS record: Key Tag, Algorithm (13), Digest Type (2), Digest.
+6. **DS record at Porkbun**: Porkbun > Domain Management > `earlyletters.app` > Details > **Registry DNSSEC** (the option for third-party nameservers), dsData: paste Key Tag, Algorithm, Digest Type and Digest exactly (Read, Porkbun "How to install DNSSEC"). Cloudflare shows DNSSEC as active once the registry has it.
+7. Check: `dig +short CAA earlyletters.app`, `dig +short DS earlyletters.app` (one record, Cloudflare's), `curl -sI https://earlyletters.app` (still the 308 redirect to `https://earlyletters.com`).
+
+About 10 minutes of work, plus the two waits (the DS expiry in step 1 only if DNSSEC was on, and the nameserver change in step 4). Steps 1 and 2 of the main path can run meanwhile. If the first build cannot wait, use the fallback below and move to R2 later: same hostname, same paths, so the move is a DNS change only.
 
 ## Fallback: a static Vercel project
 
@@ -171,7 +227,7 @@ Any other static host works the same way: serve the directory at the root of an 
 
 Cloudflare without a cache rule (Read, Cloudflare default cache behaviour and R2 cache docs): JSON and extensionless files are not cached at the edge, so every document and text pack request reaches R2 (no egress fee; one read operation each). `.bin` model files are cached at the edge, but only up to **512 MB per file** on Free, Pro and Business, so the 574 MB model is always served from R2 itself. Range requests are passed through. None of this needs changing for the beta. Later, a cache rule making `*.rules.json` "Eligible for cache" (respecting origin headers) would cut reads; the documents should stay revalidated.
 
-Kill switches: a remote-config change reaches open apps within about 5 minutes (`no-cache` here, plus the app's 4-minute refresh; LEGAL-REQ-040).
+Kill switches: a remote-config change reaches open apps within about 5 minutes (Assumption: `no-cache` here, plus the app's 4-minute refresh; LEGAL-REQ-040; not measured on a phone).
 
 ## Changing a pack
 
@@ -186,7 +242,7 @@ The rule that decides everything: **a phone replaces an installed pack only with
 
 1. Put the last good content back in `packs/text-rules/<lang>.json` with a **higher** version (bad 1.0.1, good content shipped as 1.0.2).
 2. `release`, `upload`, commit. Each phone picks it up at its next manifest check (at most 6 hours while the app is open; text packs are small enough to download on any network).
-3. Emergency brake while you prepare it: set `"packDownloads": true` under `killSwitches` in `scripts/packs/remote-config.json`, `release`, `upload`. Phones stop starting new downloads within about 5 minutes; installed packs keep working. Set it back to `false` the same way.
+3. Emergency brake while you prepare it: set `"packDownloads": true` under `killSwitches` in `scripts/packs/remote-config.json`, `release`, `upload`, then commit `scripts/packs/remote-config.json` and both `published.ts` files (step 8). Phones stop starting new downloads within about 5 minutes (Assumption); installed packs keep working. Set it back to `false` the same way, and commit again.
 4. **Never delete old versions** from the bucket: phones mid-download, older app versions (`minAppVersion`) and the rollback itself need them. `upload` never deletes; do not delete in the dashboard. Their storage cost is a few kilobytes (text) or a few hundred MB (a model) inside the free tier.
 5. Never re-upload an older manifest: phones refuse it, and so does `upload`.
 
@@ -237,14 +293,20 @@ Not proven here (needs the founder's accounts or a real iPhone):
 | `FAIL <pack>: ... answered HTTP 404` | the manifest lists a file that is not there | upload again (it uploads packs before the manifest) |
 | `FAIL <pack>: ... SHA-256 is not the manifest's` | the wrong bytes are served at that path | a stale cache or a hand upload; never reuse a versioned path |
 | `WARN ... ignores Range` | downloads work but cannot resume | expected only on some static hosts; R2 supports Range |
+| `FAIL remote-config: the payload does not match ...` or `FAIL content-bundle: ...` | signed, but the app would drop it and keep its defaults (kill switches included) | fix `scripts/packs/remote-config.json` or the content source, build and upload a new release |
+| `WARN remote-config: the app ignores or replaces ...` | the app keeps its default for those values | fix the named keys; `release` refuses them, so this means the hosted copy came from elsewhere |
+| `WARN ...: the host serves vN, but published.ts says vM` | the live copy is older than what was published (phones that have vM refuse vN) | upload the latest release |
+| `WARN ...: the host serves vN, newer than published.ts` | a release was uploaded but `published.ts` not committed | commit step 8 now |
 | `upload`: `same_version_conflict` | `published.ts` was not committed after an earlier release | pull, commit, build the release again |
 
 ## Files
 
-- `scripts/packs/keygen.mjs`: the key, once.
-- `scripts/packs/publish.ts`: `release`, `upload`, `verify`, `serve`, and the step-by-step `packs`, `config`, `content`, `all`.
+- `scripts/packs/keygen.mjs`: the key, once (terminal only).
+- `scripts/packs/publish.ts`: `release`, `upload`, `verify`, `serve`. **`release` then `upload` is the only supported way to publish.** The step-by-step `packs`, `config`, `content`, `all` commands are for development only: they print `wrangler` upload commands that overwrite without the checks `upload` makes (versioned paths, G-18).
 - `scripts/packs/release.ts`: the release directory, model downloads, the local static server.
 - `scripts/packs/s3.ts`: S3-compatible upload (SigV4) and the hosted check.
+- `scripts/packs/key-file.ts`: where the signing key file may live.
+- `scripts/packs/secret-scan.mjs`: refuses a signing key or R2 secret in staged or tracked files.
 - `scripts/packs/lib.ts`: the pure parts (packs, manifest, signing, paths, headers).
 
 ## Sources (read 15 Oct 2026, as search excerpts of these pages)

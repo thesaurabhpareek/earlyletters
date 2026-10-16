@@ -89,8 +89,18 @@ function mappedFetch(map: Record<string, string>): typeof fetch {
 }
 
 describe('keygen.mjs', () => {
+  it('prints nothing secret to a pipe, a file or CI unless --to-pipe is given on purpose', () => {
+    // spawnSync's stdout is a pipe, as it is for `keygen.mjs > file`, a CI log or an agent transcript.
+    for (const env of [{ ...process.env, CI: '' }, { ...process.env, CI: 'true' }]) {
+      const r = spawnSync(process.execPath, [KEYGEN, 'el-2026-10'], { encoding: 'utf8', env });
+      expect(r.status).toBe(3);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toMatch(/Refusing to print a signing key/);
+    }
+  });
+
   it('makes a key with plain Node that the app verifier accepts, and prints the secret once, to stdout only', () => {
-    const r = spawnSync(process.execPath, [KEYGEN, 'el-2026-10'], { encoding: 'utf8' });
+    const r = spawnSync(process.execPath, [KEYGEN, 'el-2026-10', '--to-pipe'], { encoding: 'utf8' });
     expect(r.status).toBe(0);
     expect(r.stderr).toBe('');
     const pub = /publicKey: '([A-Za-z0-9+/=]{44})'/.exec(r.stdout)?.[1];
@@ -110,7 +120,7 @@ describe('keygen.mjs', () => {
   });
 
   it('refuses a bad key id and keeps the same rule as packages/api', () => {
-    const r = spawnSync(process.execPath, [KEYGEN, 'Bad Id'], { encoding: 'utf8' });
+    const r = spawnSync(process.execPath, [KEYGEN, 'Bad Id', '--to-pipe'], { encoding: 'utf8' });
     expect(r.status).toBe(2);
     expect(r.stdout).toBe('');
     expect(fs.readFileSync(KEYGEN, 'utf8')).toContain(`KEY_ID_RE = ${KEY_ID_RE.toString()}`);
@@ -414,7 +424,13 @@ describe('release directory', () => {
     it('refuses a key file inside the repository and a key the shipped keys.ts does not trust', () => {
       const inside = run(['release', '--key-file', 'scripts/packs/remote-config.json']);
       expect(inside.status).toBe(1);
-      expect(inside.stderr).toMatch(/inside the repository/);
+      expect(inside.stderr).toMatch(/inside this repository/);
+      // The bypass from the review of #162: the same file reached through a symlinked folder outside the repo.
+      const link = path.join(tmp('symlink'), 'repo');
+      fs.symlinkSync(REPO, link, 'dir');
+      const viaLink = run(['release', '--key-file', path.join(link, 'scripts/packs/remote-config.json')]);
+      expect(viaLink.status).toBe(1);
+      expect(viaLink.stderr).toMatch(/inside this repository .*reached through/);
       const file = path.join(tmp('keyfile'), 'signing.env');
       fs.writeFileSync(file, `EL_SIGNING_KEY_ID=el-test\nEL_SIGNING_KEY=${key.secretKey}\n`);
       const untrusted = run(['release', '--key-file', file]);

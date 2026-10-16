@@ -12,7 +12,8 @@
  *   npx tsx scripts/packs/publish.ts verify  [--base-url https://packs.earlyletters.app]           # what phones will see, no key needed
  *   npx tsx scripts/packs/publish.ts serve   [--dir dist/release] [--port 8787]                    # preview a release locally
  *
- *   Step by step (prints wrangler commands; deploying the Supabase functions is optional):
+ *   Development only (release + upload is the only supported way to publish: these print wrangler
+ *   commands that overwrite without upload's checks; deploying the Supabase functions is optional):
  *   npx tsx scripts/packs/publish.ts packs   [--base-url ...] [--min-app 1.0.0]
  *   npx tsx scripts/packs/publish.ts config  [--kill sync] [--unkill sync]
  *   npx tsx scripts/packs/publish.ts content
@@ -47,7 +48,7 @@
  * secret.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve, sep } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { KILL_SWITCH_KEYS, TRUSTED_SIGNING_KEYS, type PackEntry } from '../../packages/api/src/index';
 import { PROMPTS } from '../../packages/content/src/prompts';
@@ -73,6 +74,7 @@ import {
   type ModelMode,
   VERCEL_HOBBY_UPLOAD_BYTES,
 } from './lib';
+import { checkKeyFile } from './key-file';
 import { buildRelease, serveRelease, RELEASE_INDEX_FILE } from './release';
 import { checkHosted, readReleaseIndex, s3ConfigFromEnv, S3_ENV, uploadRelease } from './s3';
 
@@ -115,10 +117,10 @@ function signingKey() {
   const env: Record<string, string | undefined> = { EL_SIGNING_KEY: process.env.EL_SIGNING_KEY, EL_SIGNING_KEY_ID: process.env.EL_SIGNING_KEY_ID };
   const file = arg('key-file');
   if (file) {
-    const path = resolve(file);
-    if (path.startsWith(ROOT + sep)) fail(`--key-file ${file} is inside the repository. Keep the signing key outside it (and out of git), for example ~/.config/early-letters/signing.env.`);
-    if (!existsSync(path)) fail(`--key-file ${file} does not exist.`);
-    Object.assign(env, parseKeyFile(readFileSync(path, 'utf8')));
+    // Real path, every checkout of this repo, its git dir, any other git repo, and letter case where the disk ignores it (key-file.ts).
+    const check = checkKeyFile(file, ROOT);
+    if (check.problem) fail(check.problem);
+    Object.assign(env, parseKeyFile(readFileSync(check.real, 'utf8')));
   }
   try {
     return readSigningKey(env, TRUSTED_SIGNING_KEYS);
@@ -127,12 +129,23 @@ function signingKey() {
   }
 }
 
+/** The document versions committed in supabase/functions/*\/published.ts: what phones may already hold. */
+function committedVersions() {
+  const config = readFileSync(CONFIG_MODULE, 'utf8');
+  const content = (readPublished(readFileSync(CONTENT_MODULE, 'utf8'), 'CONTENT_BUNDLES') as Record<string, string> | null) ?? {};
+  return {
+    'pack-manifest': publishedVersion(readPublished(config, 'PACK_MANIFEST')),
+    'remote-config': publishedVersion(readPublished(config, 'REMOTE_CONFIG')),
+    'content-bundle': publishedVersion(content.en),
+  };
+}
+
 async function main(): Promise<void> {
   // ------------------------------------------------------------------ no key needed
   if (what === 'verify') {
     const base = arg('base-url') ?? DEFAULT_BASE_URL;
     out(`Checking ${base} the way a phone does (trusted key ids: ${TRUSTED_SIGNING_KEYS.map((k) => k.keyId).join(', ') || 'NONE: packages/api/src/keys.ts is empty'})`);
-    const r = await checkHosted(base, TRUSTED_SIGNING_KEYS);
+    const r = await checkHosted(base, TRUSTED_SIGNING_KEYS, fetch, committedVersions());
     for (const l of r.lines) out(l);
     out(r.ok ? '\nEvery check passed: a build with this host and these keys will download these packs.' : '\nSomething is wrong above; phones would ignore the manifest or fail a download.');
     process.exit(r.ok ? 0 : 1);
@@ -160,7 +173,7 @@ async function main(): Promise<void> {
     for (const n of index.notIncluded) out(`not uploaded: ${n.id} v${n.version} stays on ${n.url} (${n.reason})`);
     if (flag('dry-run') || flag('no-verify')) return;
     out(`\nChecking ${index.baseUrl} as a phone would:`);
-    const r = await checkHosted(index.baseUrl, TRUSTED_SIGNING_KEYS);
+    const r = await checkHosted(index.baseUrl, TRUSTED_SIGNING_KEYS, fetch, committedVersions());
     for (const l of r.lines) out(l);
     out(r.ok ? '\nLive. Commit supabase/functions/*/published.ts and scripts/packs/remote-config.json now: git is the audit log of what was served.' : '\nUploaded, but the public host does not serve it correctly yet (custom domain, cache or key): see docs/ops/PACKS_HOSTING.md, "Verify".');
     process.exit(r.ok ? 0 : 1);

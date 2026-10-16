@@ -4,7 +4,7 @@
  * Run ONCE, on your own computer, with plain Node 22 or later. No install,
  * no network, nothing written to disk:
  *
- *   node scripts/packs/keygen.mjs [key-id]        # key-id defaults to el-YYYY-MM
+ *   node scripts/packs/keygen.mjs [key-id]        # key-id defaults to el-YYYY-MM; prints only to a terminal
  *
  * It prints two things:
  *  1. the PUBLIC key line to paste into packages/api/src/keys.ts (commit it;
@@ -52,11 +52,24 @@ and pass --key-file <path>. Next: docs/ops/PACKS_HOSTING.md.
 `;
 }
 
-export function main(argv = process.argv.slice(2)) {
-  const keyId = argv[0] ?? `el-${new Date().toISOString().slice(0, 7)}`;
+/**
+ * The secret is printed only to an interactive terminal: piped output lands
+ * in files, CI logs and agent transcripts. `--to-pipe` overrides it on
+ * purpose (the test uses it; so would `... --to-pipe | your-password-manager-cli`).
+ */
+export function main(argv = process.argv.slice(2), io = { isTTY: Boolean(process.stdout.isTTY), ci: Boolean(process.env.CI) }) {
+  const toPipe = argv.includes('--to-pipe');
+  const positional = argv.filter((a) => !a.startsWith('--'));
+  const keyId = positional[0] ?? `el-${new Date().toISOString().slice(0, 7)}`;
   if (!KEY_ID_RE.test(keyId)) {
     process.stderr.write('key id: lowercase letters, digits and hyphens, 2 to 32 characters\n');
     return 2;
+  }
+  if (!toPipe && (!io.isTTY || io.ci)) {
+    process.stderr.write(
+      'Refusing to print a signing key to a pipe, a file or CI: run this in your own terminal (docs/ops/PACKS_HOSTING.md, step 1). Pass --to-pipe only to pipe it straight into a password manager.\n',
+    );
+    return 3;
   }
   process.stdout.write(render(keyId, generate()));
   return 0;

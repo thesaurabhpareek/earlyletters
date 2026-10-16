@@ -54,6 +54,11 @@ yarn-error.*
 .env
 .env.*
 !.env.development
+# pack signing key and upload credentials, at any depth (docs/ops/PACKS_HOSTING.md); they belong in ~/.config/early-letters/
+signing.env
+*.signing.env
+r2.env
+*.r2.env
 .env*.local
 apps/*/.env
 credentials.json
