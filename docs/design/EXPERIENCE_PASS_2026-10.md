@@ -1,9 +1,9 @@
 # Experience pass, October 2026
 
 v1.1, 2026-10-16 (v1.0 was 2026-10-15). Status: **spec for build, not merged**. Branch `docs/experience-pass-oct`, into `develop`.
-Scope: v1.0 with server features on (option B, D-100, confirmed 15 Oct). v1.0 ships sign-in, sync between a person's phones, co-parent sharing with at most two parents per book (D-069), and encrypted backup of the owner's recordings in Supabase Storage, free for everyone (D-104 item 2), with a recovery key we hold under strict, logged access (D-102, D-108). Those surfaces (sign-in and the email code, Account, the Family tab and invite, joining a book, backup settings, restore on a new phone, erase across devices) are specified in chapter 7 of section 4 and built in package P8. P0 to P7 do not edit P8's files (section 6).
+Scope: v1.0 with server features on (option B, D-100, confirmed 15 Oct). v1.0 ships sign-in, sync between a person's phones, co-parent sharing with at most two parents per book (D-069), and encrypted backup of the owner's recordings in Supabase Storage, free for everyone as the proposed default (D-104 item 2: "Proposed; awaits founder confirmation" in `docs/DECISIONS.md`, founder item F10), with a recovery key we hold under strict, logged access (D-102, D-108). Those surfaces (sign-in and the email code, Account, the Family tab and invite, joining a book, backup settings, restore on a new phone, erase across devices) are specified in chapter 7 of section 4 and built in package P8. P0 to P7 do not edit P8's files (section 6).
 
-**What changed in v1.1.** Option B replaces every on-device-only assumption; package P8 and chapter 7 are new; `story.private.v2`, `book.monthRange` and `wordsCopy.pack.mobileDataButton` match PR #181 as built; the Recordings and Erase now lines cover our backup and the synced letter; transitions after first run are specified (section 5.8); every package boundary is a file list, with requests between packages (section 6); the strings that read as machine-written are replaced (review B6); PR #181 is the source of truth for strings, and the keys section 6 listed for it are applied in #181 at `de2b916`; the before contact sheets are out of git; the founder's and the coordinator's calls are recorded in section 7 (D-109).
+**What changed in v1.1.** Option B replaces every on-device-only assumption; package P8 and chapter 7 are new; `story.private.v2`, `book.monthRange` and `wordsCopy.pack.mobileDataButton` match PR #181 as built; the Recordings and Erase now lines cover our backup and the synced letter; transitions after first run are specified (section 5.8); every package boundary is a file list, with requests between packages (section 6); the strings that read as machine-written are replaced (review B6); PR #181 is the source of truth for strings, and the keys section 6 listed for it are applied in #181 at `de2b916`, plus final notes; the before contact sheets are out of git; the founder's and the coordinator's calls are recorded in section 7 (D-109).
 
 The founder's brief, in one line: some screens sound machine-made ("We ask everyone the same question."), several screens do not meet the bar the website set, and the app should feel like a journey, with light, motion and pictures where they earn their place, built with a premium product mindset.
 
@@ -21,11 +21,11 @@ This document is the one spec an engineer builds from. It merges four critiques 
 
 The nine "before" contact sheets (812 KB) are not in git: COORDINATION section 8 keeps screenshots in the session scratchpad. They are at `/tmp/claude-0/-home-user-earlyletters/9c7d4e54-75ea-5024-8f40-e18f5142ba43/scratchpad/experience-pass/before/` (`01-first-run-1.jpg` to `09-errors-empty.jpg`), cut from the journey record on `origin/chore/journey-refresh` (b7afe42), which stays the source every screen entry cites.
 
-**Sources added for v1.1.** On `origin/develop` (17d6319, merged into this branch): `docs/DECISIONS.md` D-100 to D-109 (D-109 from #173, merged as `b22876b`), `docs/agents/COORDINATION.md`, PRD V2 `08-delivery.md` section 3 (streams S01 to S20 and the files each owns), `features/F08-recordings.md` (6.5 and 6.7), `F11`, `F16`, `F17`, the sign-in, Account, Family, invite and delete-account code and copy. Open pull requests read at their heads: #181 (P0, read at `7d3b507`, `bcf301e` and `de2b916`), #150 (backup client, `5c32ad1`), #151 (backup server, `ad222eb`), #148 (`946b14a`) and `feat/coparent-alpha` (`5f6b5a3`) for invite, join and leave, #146 and #182 (sync, held drafts), #163 (server-product legal set). Both reviews of this PR (B, comment 6218727236; A, comment 6218750279).
+**Sources added for v1.1.** On `origin/develop` (17d6319, merged into this branch): `docs/DECISIONS.md` D-100 to D-109 (D-109 from #173, merged as `b22876b`; D-110 is added by this PR), `docs/agents/COORDINATION.md`, PRD V2 `08-delivery.md` section 3 (streams S01 to S20 and the files each owns), `features/F08-recordings.md` (6.5 and 6.7), `F11`, `F16`, `F17`, the sign-in, Account, Family, invite and delete-account code and copy. Open pull requests read at their heads: #181 (P0, read at `7d3b507`, `bcf301e` and `de2b916`), #150 (backup client, `5c32ad1`), #151 (backup server, `ad222eb`), #148 (`946b14a`) and `feat/coparent-alpha` (`a39094f`) for invite, join and leave, #146 and #182 (sync, held drafts), #163 (server-product legal set). Both reviews of this PR (B, comment 6218727236; A, comment 6218750279).
 
 **Sources read for this pass.** On `origin/develop` (56ec5b5): `CLAUDE.md`, `packages/content/VOICE.md`, `BRAND.md`, every copy file in `packages/content/src`, `docs/brand/BRAND_SYSTEM.md`, `docs/design/DESIGN_LANGUAGE.md`, `MOTION.md`, `COMPONENTS.md`, `BENCHMARK.md`, `packages/design-tokens/src/tokens.ts`, `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-002, -003), `docs/legal/in-app-disclosures.md`, `docs/prd/PRD.md` (K-07, PRD-REQ-019, the A-REQ table), `docs/DECISIONS.md` (D-026), the gate, onboarding and Tonight code, `apps/mobile/src/app/_layout.tsx`, the e2e-web flows. PR #99 (`feat/mobile-calm-brand`, open then, merged since as `d74e860`): `lamp.tsx`, `lamp.logic.ts`, `quote-pair.tsx`, `tokens.atmosphere`, MOTION 5k, its before and after captures. On `origin/main` (69299f8): `apps/web` `Aurora.tsx` and its CSS, `globals.css`, the drawings in `apps/web/src/components/drawings`. The journey record on `origin/chore/journey-refresh` (b7afe42): `INDEX.md`, all 147 `steps/*.json`, and the screenshots for every distinct screen, light and dark (the nine contact sheets in the scratchpad are the ones looked at for this spec, on top of the four lenses' own looks).
 
-**How to read a screen entry.** Copy tables use these marks: **KEEP** (same key, same words), **CHG** (same key, new words), **NEW** (new key), **RET** (no longer shown; the key stays until package P7 deletes it, so nothing breaks in between; in P8's own copy files P8 deletes it, section 6). `{app}` comes from `packages/brand`; `{child}`, `{signsAs}`, `{month}`, `{size}`, `{date}`, `{n}`, `{a}`, `{b}`, `{email}`, `{inviter}`, `{coParent}` are filled at runtime (all in the `rules.test.ts` placeholder list). For chapter 7, a mark is against `develop` unless the entry names the open pull request that adds the key (#148, #150, `feat/coparent-alpha`). Strings: #181 (P0, at `de2b916`) is the source of truth; section 4 matches it word for word, apart from the 13 held keys. A row that says "Held in #181" is a CHG that #181 keeps at `develop`'s words until the named package switches it (section 6). Every button label is 22 characters or fewer with the Asha fixtures. Screenshot references are to `docs/release/journey/screens/<id>.png` on `origin/chore/journey-refresh` (b7afe42); PR #132 (merged as `b151598`) took the journey screens out of git on `develop`, so that branch is where they stay readable.
+**How to read a screen entry.** Copy tables use these marks: **KEEP** (same key, same words), **CHG** (same key, new words), **NEW** (new key), **RET** (no longer shown; the key stays until package P7 deletes it, so nothing breaks in between; in P8's own copy files P8 deletes it, section 6). `{app}` comes from `packages/brand`; `{child}`, `{signsAs}`, `{month}`, `{size}`, `{date}`, `{n}`, `{a}`, `{b}`, `{email}`, `{inviter}`, `{coParent}` are filled at runtime (all in the `rules.test.ts` placeholder list). For chapter 7, a mark is against `develop` unless the entry names the open pull request that adds the key (#148, #150, `feat/coparent-alpha`). Strings: #181 (P0, at `de2b916`, plus final notes) is the source of truth; section 4 matches it word for word, apart from the 13 held keys. A row that says "Held in #181" is a CHG that #181 keeps at `develop`'s words until the named package switches it (section 6). Every button label is 22 characters or fewer with the Asha fixtures. Screenshot references are to `docs/release/journey/screens/<id>.png` on `origin/chore/journey-refresh` (b7afe42); PR #132 (merged as `b151598`) took the journey screens out of git on `develop`, so that branch is where they stay readable.
 
 **Benchmark marks.** *verified* = read from the primary source today (15 Oct 2026). The HIG quotes in this spec were re-read for this spec from Apple's documentation JSON (`developer.apple.com/tutorials/data/design/human-interface-guidelines/<page>.json`: onboarding, launching, writing, alerts, feedback, loading, progress-indicators, motion, settings, entering-data, privacy). Quotes the lenses cite from other HIG pages (modality, pickers, managing notifications, tab bars) are marked *verified by the product lens* where used. *repo-verified* = recorded as read from the primary source in `docs/design/BENCHMARK.md` or `MOTION.md`, not re-read today. *memory, unverified* = recollection only: dayoneapp.com, apple.com, headspace.com, calm.com, culturedcode.com, bear.app, overcast.fm, tinybeans.com, qeepsake.com and huckleberrycare.com did not resolve from this sandbox today. The HIG in-app purchase page returned 404 to the product lens, so it is cited from memory.
 
@@ -60,7 +60,7 @@ Ten rules, merged from the four lenses. Each names its benchmark and how it was 
 | 2 | **Say the thing, never why.** No "we ask", no "we sort", no preamble, no reassurance padding. "We" appears only in the three sanctioned promises and in counsel-registered disclosure text. | Help lines that justify a field are deleted. Errors say what happened and what to do. | HIG Writing: "Avoid using *we* altogether because it may be unclear who the 'we' in question refers to." and "Check each word to be sure it needs to be there. If you can use fewer words, do so." HIG Alerts: "Avoid explaining alert buttons." (*verified*) |
 | 3 | **One job, one primary action, one literary line.** Each key screen has one Literata line big enough to carry it, one primary action in the thumb zone, and quiet alternatives beneath. Two serif lines never compete; two questions never stack. | Tonight's prompt, "The book is open.", the letter itself, a month numeral. | The website hero on `origin/main` (one serif line on the lamp light, read); HIG Onboarding: "design a flow that's fast, fun, and optional" (*verified*); DESIGN_LANGUAGE principle 3, "Quiet UI, loud letters" (repo). |
 | 4 | **Show, do not tell. The person's own words and the product's own objects are the pictures.** A sample you can tap, the held letter itself, the book cover with the child's name, the product's own line drawings. No stock photographs, no faces, no mascot. | Promise specimen, Plus gate held letter, book cover, export cover thumbnail. | HIG Onboarding: "Teach through interactivity." (*verified*); the website ProofLetter (read on `origin/main`); DESIGN_LANGUAGE 9, "No stock baby photos, anywhere" (repo); Day One "On This Day" resurfaces your own entries (*repo-verified*, BENCHMARK S6). |
-| 5 | **One light per room, never on a voice or a problem.** The lamp (PR #99) lights paper behind arrival, first run, Tonight, Write, the Book and the Family tab, tinted by the time of day. It never cuts between rooms: it fades down and comes back (section 5.8). A still dusk pool may sit low behind Read together's controls at night. It never sits behind a recording being made, a letter page, an error, a sheet that sells, or the brand mark. Its strength is capped so every text colour keeps 4.5:1. | See the scene table in section 5.2. | The website `Aurora.tsx` (amber to rose to dusk, read); HIG Motion: "Add motion purposefully, supporting the experience without overshadowing it." (*verified*); MOTION 5k and the atmosphere contrast test on PR #99 (repo). |
+| 5 | **One light per room, never on a voice or a problem.** The lamp (PR #99) lights paper behind arrival, first run, Tonight, Write, the Book and the Family tab, tinted by the time of day. It never cuts between rooms: it fades down and comes back (section 5.8). A still dusk pool may sit low behind Read together's controls at night. It never sits behind a recording being made, a letter page, an error, a sheet that sells, or the brand mark. Its strength is capped so the reading colours keep 4.5:1 everywhere on screen and the status colours keep it wherever text sits (D-110). | See the scene table in section 5.2. | The website `Aurora.tsx` (amber to rose to dusk, read); HIG Motion: "Add motion purposefully, supporting the experience without overshadowing it." (*verified*); MOTION 5k and the atmosphere contrast test on PR #99 (repo). |
 | 6 | **Motion is the receipt and the map.** Commit first, then move. A save files into its month, a card grows into its page, pages turn sideways, a deleted card leaves its row. Every sequence is under 900 ms, any tap skips it, and controls are opaque and hittable from the first frame. | MOTION 5e, 5f and a new page turn, built as specified. | HIG Motion: "Aim for brevity and precision in feedback animations." and "Let people cancel motion." (*verified*); Things 3 in-place expansion (*repo-verified*, MOTION M13); the website's "Filed in Month 9" card (read). |
 | 7 | **Stillness where people speak, read or struggle. Every layer has a still twin and a plain twin.** On Listen only the voice moves the aura. On the letter page and in errors nothing loops. Reduce Motion turns every arrival into one 200 ms fade and shows drawings complete. Increase Contrast and Reduce Transparency show plain paper. | The table in section 5.6. | HIG Motion: "Make motion optional." and the caution on oscillation "around 0.2 Hz" (*verified*); Calm's slowest breathing pace, 8 a minute (*repo-verified*, MOTION M10). |
 | 8 | **Honest states.** Name the real cause; never reuse one state for another problem; one primary action and at most one quiet escape; Undo for what can be undone, a confirm only for what cannot; a toast states what just happened and is replaced, never stacked or contradicted; after a kill or crash, put people back where they were. | Mic off, mic busy and phone full are three screens; delete uses Undo; erase uses a sheet. | HIG Writing: errors should "avoid blame, and be clear about what someone can do to fix it." HIG Alerts: "Avoid displaying alerts for common, undoable actions, even when they're destructive." HIG Feedback: "Warn people when they initiate a task that can cause data loss that's unexpected and irreversible." HIG Launching: "Restore the previous state when your app restarts." (*verified*) |
@@ -292,7 +292,7 @@ Copy:
 |---|---|---|
 | `onboarding.child.title` | Who is this book for? | KEEP |
 | `onboarding.child.nameLabel` | Name | CHG |
-| `onboarding.child.nameLabelMore` | Another name | NEW (second and later rows) |
+| `onboarding.child.nameLabelMore` | Another child's name | NEW (second and later rows; "Another name" read as a nickname for the same child; as #181's final notes) |
 | `onboarding.child.namePlaceholder` | First name, or the name you use at home | KEEP |
 | `onboarding.child.nameHelp` | (not shown) | RET |
 | `onboarding.child.birthdayLabel` | Birthday | KEEP |
@@ -429,7 +429,7 @@ Copy:
 Visual:
 - Lamp `tonight` scene: anchor top, tone from the greeting's daypart (section 5.2), breathing per MOTION 5k.
 - The dateline (`letterDateline`, "ASHA · 7 MONTHS") as today.
-- The greeting drops from `display` to `title2` (Literata Medium 22/28) and turns two-tone, the website's "Meera is / asleep." move: "Good evening, " in `text` and "Mama." in `textMuted`.
+- The greeting drops from `display` to `title2` (Literata Medium 22/28) and turns two-tone, the website's "Asha is / asleep." move: "Good evening, " in `text` and "Mama." in `textMuted`.
 - **The prompt is the one literary line**: new token `type.promptHero` (Literata Regular 28/36, max scale 1.8), directly on the paper with no card, 24 pt below the greeting, max 4 lines. "Another thought" stays a quiet text button with ArrowsClockwise, 12 pt below.
 - **Unfinished letters**, between the prompt and Speak and Type: one card per draft, newest first, no totals. Each card is letter-shaped (`surfaceRaised`, `radius.md`, elevation 1, a 3 pt `accent` rule on its left edge, 16 pt padding). It shows the dateline ("Tuesday evening, 0:42" for a recording, "Tuesday evening" for typing), then either the person's first words in `letterBody`, two lines with a fade, or the state line in `footnote` `textMuted`, then the action as a text button. The state comes from the draft's own fields:
 
@@ -640,7 +640,7 @@ States: first time (the note); no fixes (`review.noChanges`); every fix put back
 
 Acceptance:
 - [ ] No "we" on the screen except inside the registered first-time note.
-- [ ] VoiceOver reads the letter header as "To Asha, Month 7" and "From Mama", never the "·" separator.
+- [ ] VoiceOver reads the letter header as "To Asha, Month 4" and "From Mama", never the "·" separator.
 - [ ] Every mark is visible from the first frame, tappable, reversible both ways, and each one is an `EditType` checked by `verifyEdits` (constitution).
 - [ ] "Exactly as said" and "Exactly as you said it." appear only when the final words equal the raw words (D-086).
 - [ ] With a two-word name, the primary reads "Add to the book" whenever "Add to {child}'s book" would pass 22 characters.
@@ -715,13 +715,14 @@ Copy:
 |---|---|---|
 | `billingCopy.keepGate.title` | Keep adding to {child}'s book | KEEP |
 | `billingCopy.keepGate.body` | Your first two letters are kept for good. Plus lets you keep adding letters. | CHG |
-| `billingCopy.keepGate.heldNote` | This one waits on Tonight, exactly as it is. | CHG. Held in #181 until P3: it is true only once Tonight shows every draft. |
+| `billingCopy.keepGate.heldNote` | This one waits on this phone, on Tonight, exactly as it is, for as long as you like. | CHG. Held in #181 until P3: it is true only once Tonight shows every draft. Follows #163's register 3.1.0, row "Keep step and held letter": the letter waits on this phone and is never discarded (C10). |
+| `billingCopy.keepGate.heldNoteSynced` | This one waits on Tonight, exactly as it is, for as long as you like. It syncs privately with your account. | NEW (signed in; register 3.1.0: "and syncs privately when signed in"). P6 shows it on the Keep sheet when signed in; the content owner adds it with P3's switch (C10). |
 | `billingCopy.keepGate.heldChip` | Waiting | NEW (chip on the held letter) |
 | `billingCopy.keepGate.seePlus` | See Plus | KEEP, primary |
 | `billingCopy.keepGate.holdButton` | Keep it here for now | KEEP, quiet |
 | `billingCopy.keepGate.redeemLink` | Redeem a code | KEEP |
 | `billingCopy.keepGate.lapsedBody` | Plus has ended. Every letter you kept is still yours to read, play and export. | CHG |
-| `billingCopy.keepGate.offline` | Plus needs a connection to start. This one waits on Tonight. | CHG. Held in #181 until P3, as `heldNote`. |
+| `billingCopy.keepGate.offline` | Plus needs a connection to start. This one waits on this phone, on Tonight, exactly as it is. | CHG. Held in #181 until P3, as `heldNote`; register 3.1.0 as `heldNote` (C10). |
 | `billingCopy.gate.unavailable` | Plus is not available on this device yet. | KEEP |
 
 Visual: a full-height sheet on paper. At the top, the **held letter itself** as a small paper card (`surfaceRaised`, `radius.md`, elevation 1, rotated -2 degrees): its dateline, its first two lines in `letterBody` with a fade, "From Mama", and the "Waiting" chip. Then the title in `title1`, the body in `body`, the held note in `footnote` `textMuted`. Then "See Plus" (opens the Plus store screen with Apple's `SubscriptionStoreView`), "Keep it here for now", and the "Redeem a code" link. No lamp and no lockup on this sheet: the stacked lockup belongs above Apple's subscription view (registry `app.paywall`), and light is for the person's moments, not for selling. No price, trial or countdown anywhere on the sheet (D-083).
@@ -805,7 +806,7 @@ Visual:
 - **A new phone, recordings coming back** (S62): P8's `components/backup/restore-line.tsx` sits above the first opener while a restore runs: one line and a thin determinate bar, no count. P5 places it; P8 owns it.
 - Lamp `book` scene (top, 0.6, still) behind the header, with `persistKey="tabs"`; cards are opaque.
 
-Motion: the first Book view per session settles the header (opacity 0.6 to 1, y 6 to 0, `gentle`; MOTION 5a). A new letter arrives in place with the 1.6 s `accentSoft` wash: when the route carries `arrived=<entry id>` (set by P4 after a save, section 5.8 row 5), the list is positioned before its first frame so that card is in view under its opener, then the wash runs; the param is cleared after use so Back and tab taps never replay it. Opening a letter uses the measured-rect transition (MOTION 5f): the tapped card's rect grows to full screen by translate and scale, radius `md` to 0, on `standard`; content fades in from 60 percent progress; the list behind dims to 0.96 with no blur. Back reverses it if the card is still visible, otherwise a 200 ms fade. Reduce Motion: 200 ms cross-fades. Fallback on any failure: the native push.
+Motion: the first Book view per session settles the header (opacity 0.6 to 1, y 6 to 0, `gentle`; MOTION 5a). A new letter arrives in place with the 1.6 s `accentSoft` wash: when the route carries `arrived=<entry id>` (set by P4 after a save, section 5.8 row 5), the list is positioned before its first frame so that card is in view under its opener, then the wash runs; the param is cleared after use so Back and tab taps never replay it. Opening a letter uses the measured-rect transition (MOTION 5f, built by P1 as `CardToPage`): the tapped card's rect grows to full screen by translate and scale, radius `md` to 0, on `standard`; the card's dateline and opening lines are carried whole into the page (P1's contract, section 6, P5) and only the rest of the letter fades in from 60 percent progress; the list behind dims to 0.96 with no blur. Back reverses it if the card is still visible, otherwise a 200 ms fade. Reduce Motion: 200 ms cross-fades. Fallback (no measured card, a page column that differs from the card's, or Reduce Motion): a 200 ms cross-fade of the whole page inside the modal, paper and words together, as P1 built it (#192); the native push stays only until P5 mounts `CardToPage` and asks P1 to switch the route (section 6, P5).
 
 States: one letter (J09-02); many months (J09-04); a recording waiting (J09-03); no words (J09-05); quiet days and removing a mark with Undo (J08-03, J08-05, J08-06); dark (J18-03); a letter from the other parent; a month both parents wrote in (`book.fromTwo`); a letter deleted on another phone (its card collapses out of its row on the next pull, `exitMs`, with no toast, because nobody tapped anything here); recordings coming back on a new phone (the restore line).
 
@@ -814,7 +815,9 @@ Acceptance:
 - [ ] Month openers show the numeral, the letter count and the date range; VoiceOver reads "2 letters, from Mama", never the "·" separator.
 - [ ] No ellipsis glyph in any excerpt; the stored letter is never cut.
 - [ ] A quiet-day mark is never counted or shown in the letter face.
-- [ ] The card-to-page transition reverses on Back and falls back to the native push under Reduce Motion or on failure.
+- [ ] The card-to-page transition reverses on Back, and under Reduce Motion or on failure falls back to a 200 ms cross-fade of the whole page.
+- [ ] When a card opens into its page, VoiceOver focus lands on the page's opening once the move or the fade settles, and the list behind cannot be reached by swiping (check on a device that the presenting screen is hidden; hide the list explicitly if not).
+- [ ] Excerpts keep whole lines at every Dynamic Type size, including the three below the default (xSmall, Small and Medium, font scale 0.823, 0.882 and 0.941): two lines clip at exactly two rendered lines, and the fade sits on the last of them.
 - [ ] After a save, the Book shows the new card in view and washed, once; the other parent's letter is signed with their name and carries no badge.
 - [ ] The month range reads "{a} to {b}" filled with real dates, never a raw placeholder.
 
@@ -885,7 +888,7 @@ States: a typed letter (`noRecording`); a recording not on this phone (the exist
 
 Acceptance:
 - [ ] The dateline reads "Month 2 · From Mama" or "The first weeks · From Mama".
-- [ ] There is no "1 / 5" text; VoiceOver reads "Letter 1 of 5", and the dateline as "Month 2, from Mama", never the "·" separator.
+- [ ] There is no "1 / 5" text; VoiceOver reads "Letter 1 of 5", and the dateline as "Month 4, from Mama", never the "·" separator.
 - [ ] The dusk pool appears only in the evening and later, never moves, and never sits behind the letter text.
 - [ ] No word highlight (D-059).
 
@@ -1025,6 +1028,7 @@ Copy:
 | `settingsHome.deleteAccountLabel` | Delete account | KEEP. Signed in only, its own section, destructive style; it opens S64. Requested by P8. |
 | `settingsHome.licencesLabel` | Licenses | CHG (US) |
 | `licences.title`, `licences.rowLabel` | Licenses | CHG (US) |
+| `licences.libraries` | React Native, Expo and the other libraries in this app are open source. Each one is listed below with its license. | CHG (US spelling, and the page now lists each library, #175; as #181's final notes) |
 | `struggling.*` | as today, word for word | KEEP (FT-36 owns any change) |
 | `settingsHome.strugglingA11yHint` | Shows free, confidential support lines. | KEEP |
 
@@ -1131,7 +1135,7 @@ Acceptance:
 #### S44 Privacy
 Step J16-02. Before: `screens/J16-02.png` (stale: the usage switch is hidden on `develop` because `capabilities.analytics` is off). Verdict: polish. Package P6.
 
-Copy: `consentCopy.neverTitle` "What we never do" and its three lines KEEP (registered claims); `settings.privacy.documentsTitle` KEEP; the policy links are whatever #163 leaves: #163 removes the Consumer Health Data notice (`healthPrivacyLink`, `strings.en.ts` line 758), so P6 renders the documents list from content as it stands when P6 lands, adds no link of its own, and checks the web targets against #169 (review A2c); `settings.privacy.analyticsOffNote` CHG "Turning this off stops sharing right away. Nothing else changes." (US; the screen part is hidden in v1.0). With server features on, Privacy also holds the sync-and-sharing consent row and its withdrawal sheet; their words are S14's with S16 and counsel (WP-F17-18), and P6 lays them out like the other rows without changing them.
+Copy: `consentCopy.neverTitle` "What we never do" and its three lines KEEP (registered claims); `settings.privacy.documentsTitle` KEEP; the policy links are whatever #163 leaves, with one owned removal. #163 deletes the Consumer Health Data notice document but not its two links: `healthPrivacyLink` (`strings.en.ts` line 871 on #181's head), rendered at `settings/privacy.tsx` line 76, and `authCopy.consent.terms.healthLink`, rendered at `(auth)/sign-in/consent.tsx` line 136. **P6 with S14** removes the Privacy row from `privacy.tsx` and asks the content owner (S16) to retire `healthPrivacyLink` in the same merge; **P8a with S01** removes the account-setup link from `consent.tsx` and retires `healthLink` in `auth.en.ts` (P8a's file). Both land after #163 merges and no later than #169, which takes `/health-privacy` off the website, so no link ever points at a missing page. P6 otherwise renders the documents list from content and adds no link of its own (review A2c); `settings.privacy.analyticsOffNote` CHG "Turning this off stops sharing right away. Nothing else changes." (US; the screen part is hidden in v1.0). With server features on, Privacy also holds the sync-and-sharing consent row and its withdrawal sheet; their words are S14's with S16 and counsel (WP-F17-18), and P6 lays them out like the other rows without changing them.
 
 Visual: the three never-lines become a plain list on paper, each with a 20 pt Phosphor icon in `textMuted`, not white grouped rows (rows look tappable and are not). The policy links stay as rows.
 
@@ -1157,7 +1161,7 @@ Copy:
 | `children.settings.remindersHelp` | Month and birthday messages for {child} follow this switch. | CHG |
 | `children.settings.hideLabel` | Hide this book | KEEP, in `text`, not destructive red (nothing is deleted) |
 | `children.settings.hideBody` | Hiding {child}'s book quiets every reminder and message about {child}. Nothing is deleted. | CHG (review B1: the old reason is dropped) |
-| `children.settings.hideShared` | Only for you. {coParent} still sees {child}'s book as before. | NEW, shown under `hideBody` only when the book has two parents. Hiding is per person: it never changes the co-parent's book (WP-F12-09 adds the per-person server column, S02; #166 adds the local per-person table, S03). Until those land, `store.hideChild` writes only on this phone, so the line stays true either way. |
+| `children.settings.hideShared` | Hiding is only for you. {coParent} still sees {child}'s book as before. | NEW (a full sentence, review B; as #181's final notes), shown under `hideBody` only when the book has two parents. Hiding is per person: it never changes the co-parent's book (WP-F12-09 adds the per-person server column, S02; #166 adds the local per-person table, S03). Until those land, `store.hideChild` writes only on this phone, so the line stays true either way. |
 | `familyCopy.bookRow.label` | Write this book together | NEW in `family.en.ts` (P8's file), replacing `familyCopy.soon.settingsRow` and `settingsRowHelp` with server features on. One parent: the row opens the invite sheet (S58). Two parents: the row's value is the co-parent's signature ("Papa") and it opens the Family tab. P6 builds the row in `children/[id].tsx` on P8's request. |
 | `childrenExtra.edit.born.title` | {child}'s birthday | NEW (card title) |
 | `childrenExtra.edit.born.offerBody` | Add it when you are ready. | CHG |
@@ -1335,7 +1339,7 @@ No journey step yet (j22). Package P8a. Logic: **S01** (`record_policy_act`, `my
 
 | Key | After | Mark |
 |---|---|---|
-| `consent.terms.*` | as today | KEEP verbatim (LEGAL-REQ-001, -006). `healthLink` goes when #163 merges, which removes that notice. Trims for counsel: C6. |
+| `consent.terms.*` | as today | KEEP verbatim (LEGAL-REQ-001, -006), except `healthLink`: RET, and its row leaves `consent.tsx` (P8a with S01), after #163 merges and no later than #169 (S44). Trims for counsel: C6. |
 | `consent.age.title` | (not shown) | RET ("One quick question") |
 | `consent.age.body` | Are you 18 or older? | KEEP, now the title |
 | `consent.age.help` | (not shown) | RET ("We ask everyone the same question.", the line the founder objected to; C2 covers it, as for the gate) |
@@ -1368,7 +1372,7 @@ Problem: the signed-out body is two reasons and a reassurance; "Sync and family 
 | `account.sync.waiting` | Not set up yet | CHG ("Waiting for your answer") |
 | `account.finishSetup`, passkey keys, `devicesTitle`, `signOutOthers*` | as today | KEEP |
 | `account.signOut`, `signOutTitle`, `cancel` | Sign out / Sign out on this phone? / Cancel | KEEP |
-| `account.signOutBody` | Your letters stay on this phone. Sign in again any time. | CHG |
+| `account.signOutBody` | Your letters stay on this phone. Sign in again any time. | CHG. True (signing out leaves this phone's letters in place), so it is one of the three keys P8's test allows to say "stay on this phone" (section 6). |
 | `account.signOutWaiting` | Your newest letters are still on their way. This phone signs out once they are sent. | CHG (no "we will") |
 
 Visual: an iOS Settings page, no lamp. Signed in: a header on paper with the method's mark at 28 pt (Apple's logo as Apple allows, Google's G, or EnvelopeSimple), "Signed in with email" in `headline` and the address in `footnote` `textMuted`. Then Sync (one row with its value, or "Finish setting up" as a row), Passkeys, Devices, and "Sign out" as a row in `text`, not red: nothing is deleted (Delete account is on Settings home, S64). Signed out: the small closed cover, the title, the body and "Sign in".
@@ -1495,9 +1499,9 @@ Copy (`backupCopy`, `packages/content/src/features/backup.en.ts`; marks against 
 |---|---|---|
 | `title`, `rowOn`, `rowOff`, `sheetTitle`, `turnOnButton`, `signInFirst` | Back up my recordings / On / Off / Back up your recordings / Back up my recordings / Sign in to back up your recordings. | KEEP |
 | `sheetBody` | Your recordings are encrypted on this phone before they leave it. We keep a recovery key so you can get them back on a new phone. We use it only through our recovery service, which logs every use and emails you each time. We never listen to your recordings, sell them or use them to train models. | KEEP verbatim: the disclosure D-102 requires; counsel approves it (C7) |
-| `sheetNotIncluded` | Other family members can't hear your recordings yet. Listening copies stay on this phone. | KEEP verbatim; C7 proposes dropping "yet" |
+| `sheetNotIncluded` | Other family members can't hear your recordings yet. Listening copies stay on this phone. | KEEP verbatim; C7 proposes dropping "yet". True (listening copies are never uploaded), so it is one of the three keys P8's test allows to say "stay on this phone" (section 6). |
 | `sheetReturning`, `turnOnFailed` | Your backed-up recordings come back to this phone on their own. Turn on backup here to back up new ones too. / Backup didn't turn on. Check your connection and try again. | KEEP (#150: the off card on a new phone; the line under the button when the consent act did not reach the server) |
-| `sheetFree` | Free for everyone, with or without Plus. | NEW (D-104 item 2. The Plus checks in `rules.test.ts` scan billing and store copy, not this file, and Plus copy still never mentions backup.) |
+| `sheetFree` | Free for everyone, with or without Plus. | NEW, **held until the founder confirms D-104 item 2** (proposed, not decided; F10): the key may exist, and P8c shows it only after the confirmation. The Plus checks in `rules.test.ts` scan billing and store copy, not this file, and Plus copy never mentions backup. |
 | `unavailable` | Backup is not available on this phone right now. Your recordings are kept here as always. | CHG ("not ready ... yet") |
 | `lastBackedUp`, `backingUp`, `needsConsent`, `signInAgain` | Backed up {date} / Backing up / Backup is off. Turn it on again to keep backing up new recordings. / Sign in again to keep backing up your recordings. | KEEP |
 | `waitingKey` | New recordings back up from {date}. We emailed you to check it's you. | KEEP verbatim (#150; disclosure, counsel, C7): this phone waits for its key from the recovery service |
@@ -1509,7 +1513,7 @@ Copy (`backupCopy`, `packages/content/src/features/backup.en.ts`; marks against 
 | `cellularTitle` | Use cellular data | CHG (US, principle 10) |
 | `cellularHelp`, `offButton`, `offTitle`, `offBody`, `offKeep`, `keepOn` | as on #150 | KEEP |
 
-Visual: an iOS Settings page, no lamp. **Off**, signed in: one card on paper (`surfaceRaised`, `radius.lg`, 20 pt padding): a 72 pt `accentSoft` circle with Phosphor Microphone (Light, 40 pt), `sheetTitle` in `title2`, `sheetBody` in `body`, `sheetNotIncluded` in `footnote` `textMuted`, "Back up my recordings" full width, then `sheetFree` in `footnote`, centred. **On**: a grouped list. The first row "Back up my recordings" with "On" and the state as its subtitle, not a row of its own (`lastBackedUp`; `backingUp` with a small spinner; `waitingWifi`; `paused`; `waitingKey`; `keyStopped`; `signInAgain` with "Sign in"; `quotaReached` with WarningCircle in `caution` and "Write to us"). `someKeptHere`, when it applies, is the section's footer. Then "Use cellular data" with `cellularHelp` as the footer. Then "Turn off backup" in `text` with a chevron, which opens the native alert (`offTitle`, `offBody`, `keepOn` as the default, `offKeep`). A restore in progress, or a request from a new phone (S62), is the first section.
+Visual: an iOS Settings page, no lamp. **Off**, signed in: one card on paper (`surfaceRaised`, `radius.lg`, 20 pt padding): a 72 pt `accentSoft` circle with Phosphor Microphone (Light, 40 pt), `sheetTitle` in `title2`, `sheetBody` in `body`, `sheetNotIncluded` in `footnote` `textMuted`, "Back up my recordings" full width, then, once the founder has confirmed D-104 item 2, `sheetFree` in `footnote`, centred. **On**: a grouped list. The first row "Back up my recordings" with "On" and the state as its subtitle, not a row of its own (`lastBackedUp`; `backingUp` with a small spinner; `waitingWifi`; `paused`; `waitingKey`; `keyStopped`; `signInAgain` with "Sign in"; `quotaReached` with WarningCircle in `caution` and "Write to us"). `someKeptHere`, when it applies, is the section's footer. Then "Use cellular data" with `cellularHelp` as the footer. Then "Turn off backup" in `text` with a chevron, which opens the native alert (`offTitle`, `offBody`, `keepOn` as the default, `offKeep`). A restore in progress, or a request from a new phone (S62), is the first section.
 
 Motion: turning on records the consent act first; on success the card folds into the On rows (`LinearTransition` `standard`, 280 ms) with `tap`; on failure the card stays, its button is enabled again, and `turnOnFailed` shows under it. Reduce Motion: a 200 ms cross-fade.
 
@@ -1519,7 +1523,7 @@ Acceptance:
 - [ ] Nothing is encrypted or uploaded before the consent act reaches the server (F08-REQ-039).
 - [ ] No count of what is left, no percentage, no "only you", "only your family's keys" or "end-to-end" (#150's `apps/mobile/test/backup-copy.test.ts` stays green).
 - [ ] The recovery key is named on the off card, word for word.
-- [ ] "Free for everyone, with or without Plus." is on the off card; no Plus line mentions backup.
+- [ ] "Free for everyone, with or without Plus." shows on the off card only after the founder confirms D-104 item 2; no Plus line mentions backup either way.
 
 #### S62 Restore on a new phone
 No journey step yet (j23; the device drill is WP-F08-B6). Package P8c. Logic: **S05** (`lib/backup/restore.ts` on #150: list, download, check, decrypt, place; `restore_requests` with the 72 h hold when an enrolled phone exists and 24 h when none; D-108's 7-day enrolment; the foreground check for a waiting request), **S01** (the `new-device-sign-in` email before any recovery-key use; Not me signs out every session), S07 (`push-send`: a time-sensitive push with no ids, F11-REQ-029), **S03** (the words of every letter arrive first, through sync).
@@ -1629,14 +1633,15 @@ const atmosphere = {
   /** The website's lamp colours (apps/web Aurora.module.css on main). Decorative only. */
   tone: { amber: '#F3C98B', gold: '#FFE2A8', rose: '#F08C7C', dusk: '#8076E2' },
   /**
-   * Peak opacity of each tone at the core of the pool, by scheme. Each cap keeps every text token
-   * (text, textMuted, accent, success, caution, recording, destructive, focus) at 4.5:1 or more on
-   * the lit paper, with a margin (computed with the WCAG 2.x formula; limits in brackets):
-   * light amber 0.12 (0.140), gold 0.24 (0.305), rose 0.05 (0.065), dusk 0.04 (0.050);
-   * dark amber 0.18 (0.215), gold 0.16 (0.195), rose 0.24 (0.280), dusk 0.30 (0.370).
+   * Peak opacity of each tone at the core of the pool, by scheme, capped by D-110 (WCAG 2.x formula):
+   * the reading colours (text, textMuted, accent, focus) keep 4.5:1 everywhere on screen at the peak;
+   * the status colours (success, caution, recording, destructive) keep 4.5:1 where text actually
+   * sits, and never sit on the gate's or Read together's lit paper. `onLitPaper` records where.
+   * Light values as P1 built them (#192 at 3d7c7fd); v1.0 of this spec capped light mode by
+   * `caution` at the core (0.12, 0.24, 0.05, 0.04), which read as plain paper. Dark is unchanged.
    */
   peak: {
-    light: { amber: 0.12, gold: 0.24, rose: 0.05, dusk: 0.04 },
+    light: { amber: 0.35, gold: 0.78, rose: 0.17, dusk: 0.12 },
     dark: { amber: 0.18, gold: 0.16, rose: 0.24, dusk: 0.3 },
   },
   /** Tonight's light by greetingKey(): core and tail tone, and intensity (0 to 1). */
@@ -1676,7 +1681,7 @@ Also in `tokens.ts`:
 | `motion.lamp` | #99's `{ arriveMs: 1200, breathMs: 9000, breathOpacityMin: 0.88 }` plus `dimTo: 0.7`, `leaveMs: 160`, `returnMs: 280` | `dimTo`: "Not much today" lights down (S33). `leaveMs` (equal to `exitMs`): a lit room fades out as an unlit one covers it. `returnMs` (equal to `enter.durationMs`): a lit room comes back, or a tab's light settles to the next tab's (section 5.8). |
 | `motion.route` | `{ dissolveMs: 280 }` | The cross-dissolve into and out of Listen, Review and Read together (section 5.8); where the platform ignores a duration, its own cross-dissolve is accepted |
 
-`packages/design-tokens/test/atmosphere.test.ts` (from #99) is extended: for each scheme and each tone, blending the tone at its `peak` into `bg` keeps every text token at 4.5:1 or more; every `scene` and `daypart` names a real tone; `intensity` is between 0 and 1; and `tokens.test.ts` still holds every sequence under 900 ms and the 2 s ceiling. Under Increase Contrast there is no lamp at all (#99's `lampOpacity` returns 0), so the high-contrast tokens need no lamp check.
+`packages/design-tokens/test/atmosphere.test.ts` (from #99) and `apps/mobile/test/lamp.test.ts` are extended to D-110, over three phone sizes (iPhone 17 Pro, iPhone SE, the Pro Max size): for each scheme, scene and daypart, the reading colours keep 4.5:1 over the whole screen at every tone's peak, and the status colours keep 4.5:1 over the areas where status text is placed (in a room lit from the top, from 70 percent of the height down; never on the gate or Read together); in dark mode every text colour keeps 4.5:1 everywhere; every `scene` and `daypart` names a real tone; `intensity` is between 0 and 1; and `tokens.test.ts` still holds every sequence under 900 ms and the 2 s ceiling. Under Increase Contrast there is no lamp at all (#99's `lampOpacity` returns 0), so the high-contrast tokens need no lamp check.
 
 ### 5.2 The lamp
 
@@ -1697,11 +1702,11 @@ Also in `tokens.ts`:
 
 Where it never appears: Listen, Review, the saved moment, the letter page, the Plus gate sheet and the Plus store screen, Settings (Account, Back up my recordings and Delete account included), every error and state screen, the struggling page, and every utility sheet (pickers, confirms, sign-in, invite, join, leave, the restore approval). Write is the one sheet that is a room, with its own `write` scene. In Read together it appears only as the still dusk pool at night, behind the controls.
 
-The light-mode limits are low on purpose: rose and dusk at 0.05 and 0.04 are a whisper on `#FBF8F3`, because `success` and `caution` text would drop under 4.5:1 above that. Light mode carries its warmth with gold and amber; dark mode, where evenings mostly happen, carries the website's full amber, rose and dusk.
+D-110 sets where contrast is proven. v1.0 of this spec capped every tone so even `caution` kept 4.5:1 at the pool's core, and light mode read as plain paper in P1's screenshots. Now the reading colours are proven everywhere and the status colours only where text sits, so light mode carries a visible pool of gold and amber while every line stays readable; dark mode, where evenings mostly happen, carries the website's full amber, rose and dusk, unchanged.
 
 ### 5.3 Paper texture: not in v1.0
 
-The Visual lens proposed `apps/web/public/textures/paper-v1.webp` (34.7 KB) at 4 percent behind the letter in light mode. Rejected for v1.0: #99 measured and recorded why textures are not ported (a decode on every cold start, memory against D-065, and the small pool needs no dithering), and the letter page's strength is plain paper. Revisit only if a device shows banding in the pool.
+The Visual lens proposed `apps/web/public/textures/paper-v1.webp` (34.7 KB) at 4 percent behind the letter in light mode. Rejected for v1.0: #99 measured and recorded why textures are not ported (a decode on every cold start, memory against D-065, and the small pool needs no dithering), and the letter page's strength is plain paper. Revisit only if a device shows banding in the pool. Revisited in P1 (#192, coordinator's screenshot review, 16 Oct): the larger light-mode pool under D-110 showed rings, so P1 ports the website's film grain for light mode only (`packages/design-tokens/textures/grain.png`, 128 px, 11 KB, built deterministically and checked byte for byte), drawn inside the lamp's layer so it comes and goes with the light. The letter page stays plain paper.
 
 ### 5.4 Illustration and assets
 
@@ -1759,7 +1764,7 @@ Every sequence is under `sequenceMaxMs` (900 ms), any tap skips it, and controls
 
 ### 5.7 Size budget
 
-D-065: App Store download under 40 MB; JS assets sub-budget 3 MB, 1.4 MB used (`docs/ops/APP_SIZE.md`). This pass adds no images, no fonts and no native code. The three ported drawings are about 7 KB of path source (the website's eight total about 19 KB). The book cover, the lamp extensions, the page turn and the card transition are code. New Phosphor glyphs are a few KB each, imported one at a time. Estimated total: under 0.1 MB of JS. The app still ships no photographs; nothing may import `apps/mobile/assets/photos` (that folder is not bundled because nothing requires it, and it must stay that way). P1 states the measured bundle delta in its PR.
+D-065: App Store download under 40 MB; JS assets sub-budget 3 MB, 1.4 MB used (`docs/ops/APP_SIZE.md`). This pass adds no fonts and no native code, and one image: P1's 11 KB light-mode grain (5.3). The three ported drawings are about 7 KB of path source (the website's eight total about 19 KB). The book cover, the lamp extensions, the page turn and the card transition are code. New Phosphor glyphs are a few KB each, imported one at a time. Estimated total: under 0.1 MB of JS. The app still ships no photographs; nothing may import `apps/mobile/assets/photos` (that folder is not bundled because nothing requires it, and it must stay that way). P1 states the measured bundle delta in its PR (#192, as reviewer C re-measured: assets +11,493 B, the grain; bytecode +30,796 B; gzip +15,251 B).
 
 ### 5.8 Transitions after first run
 
@@ -1828,16 +1833,16 @@ E2E flows in `apps/mobile/e2e-web` assert literal strings and are not run in CI.
 | `apps/mobile/src/app/(tabs)/book.tsx` | P5 | P4 asks P5 to read and clear `arrived` (S26). P8c asks P5 to place `<RestoreLine />` above the first opener (S62). |
 | `apps/mobile/src/app/letter/[id].tsx` | P5 | P8c: `backupCopy.recordingOnItsWay` in place of the player while a restore runs; `book.recordingBackedUp` from S05's backup state (S27). |
 | `apps/mobile/src/app/settings/recently-deleted.tsx`, `components/book/confirm-sheet.tsx` | P5 | P8: the synced states of S63 (hide Erase now until WP-F16-13; the server date line). |
-| `apps/mobile/src/app/settings/index.tsx` | P6 | P8: the Account, Back up my recordings and Delete account rows (S40). |
+| `apps/mobile/src/app/settings/index.tsx` | P6 | P8: the Account, Back up my recordings and Delete account rows (S40). #150 already adds the Backup row here, so P6 merges after #150 and S05 reviews P6's edit to this file. |
 | `apps/mobile/src/app/settings/children/[id].tsx` | P6 | P8b: the "Write this book together" row (`familyCopy.bookRow.label`, S46). |
-| `apps/mobile/src/app/settings/recordings.tsx` | P6 | Reads backup's state from S05's `lib/backup` for the S42 card; asks S05 for a read function if #150's view is not enough. |
+| `apps/mobile/src/app/settings/recordings.tsx` | P6 | Reads backup's state from S05's `lib/backup` for the S42 card; asks S05 for a read function if #150's view is not enough. S05 is this file's board owner (`08-delivery.md` 3.3), so S05 reviews P6's edit, and P6 merges after #150. |
 | `apps/mobile/src/lib/auth/ui.tsx` | P8a | P8b and P8c use the sheet frame unchanged. |
 | `apps/mobile/src/lib/store.ts`, `lib/db/**`, `lib/sync/**` | S03, no package | P3 reads `listDrafts` and `Draft.held` (#182) unchanged; P5 and P8 read sync state. No package edits the local schema. |
 | `apps/mobile/src/lib/{auth,family,backup,account-deletion}/**` (except `lib/auth/ui.tsx`) | S01, S04, S05, S14, no package | P8 reads them; logic changes are requests to the stream. |
 
 ### P0 Copy (packages/content only), lands first: PR #181
 
-Built as #181 (`feat/experience-p0-copy`, at `de2b916`). Files: `packages/content/src/strings.en.ts`; `packages/content/src/features/{speech,billing,words,reminders,export,language,licences,packs,player}.en.ts`; `packages/content/src/stories.en.ts`; new `packages/content/test/experience-pass.test.ts`; the pinned strings only in `apps/mobile/test/keep-awake.test.ts` and `apps/mobile/test/shelf-strings.test.ts` (#181 needed them for `npm test`; no other package edits these two tests). Not P0's: `features/{auth,family,backup,account-deletion}.en.ts`, which are P8's.
+Built as #181 (`feat/experience-p0-copy`, at `de2b916`, plus final notes: `onboarding.child.nameLabelMore`, `children.settings.hideShared` and `licences.libraries` as in section 4). Files: `packages/content/src/strings.en.ts`; `packages/content/src/features/{speech,billing,words,reminders,export,language,licences,packs,player}.en.ts`; `packages/content/src/stories.en.ts`; new `packages/content/test/experience-pass.test.ts`; the pinned strings only in `apps/mobile/test/keep-awake.test.ts` and `apps/mobile/test/shelf-strings.test.ts` (#181 needed them for `npm test`; no other package edits these two tests). Not P0's: `features/{auth,family,backup,account-deletion}.en.ts`, which are P8's.
 
 Rules for this package:
 1. Every CHG and NEW string in section 4 that lives in P0's files, exactly as written there, except the 13 held keys, which keep `develop`'s words until their package switches them (below). No other wording changes.
@@ -1846,7 +1851,7 @@ Rules for this package:
 4. Stories: `story.private.v2` (ids are never reused) as built in #181: headline "Private by default.", line "Shared only with the other parent, if you invite them. Never sold, never used for ads." (the founder's words). Two sentences, so it passes `rules.test.ts` "keeps each reassurance to one or two short sentences", and it says who the letters are shared with without claiming who can read them or where they are stored. It sits in `alternateStories`, not in the packaged deck: the deck requires `order === position` and the fallback test expects four cards, so adding it there would show two privacy cards. `story.private.v1` stays served; which card the server serves is D-066 and a counsel item (C4).
 5. Button labels (keys ending in `Button`, `cta`, `action`) are 22 characters or fewer with the Asha fixtures. No new placeholder: only names already in the `rules.test.ts` list.
 
-**#181 is the source of truth for strings.** At `bcf301e` it differed from section 4 in the keys below, where this spec's words are better against VOICE.md or are new in v1.1. **All of them are applied in #181 at `de2b916`** (checked key by key against section 4), so nobody applies them again; the table stays as the record of why.
+**#181 is the source of truth for strings.** At `bcf301e` it differed from section 4 in the keys below, where this spec's words are better against VOICE.md or are new in v1.1. **All of them are applied in #181 at `de2b916`, plus final notes** (checked key by key against section 4), so nobody applies them again; the table stays as the record of why. The final notes change three strings to the words section 4 now holds (`nameLabelMore`, `hideShared`, `licences.libraries`).
 
 | Key | #181 at `bcf301e` | Applied at `de2b916` | Why |
 |---|---|---|---|
@@ -1864,7 +1869,7 @@ Rules for this package:
 | `settings.recordings.backedUpTitle` | (missing) | Kept on this phone and backed up | NEW in v1.1 (S42) |
 | `settings.recordings.backedUpBody` | (missing) | Recordings are kept on this phone and in our encrypted backup. We hold a recovery key under strict, logged access, so they can come back on a new phone. We never listen to them, sell them or use them to train models. | NEW in v1.1 (S42); disclosure text with "we" (D-102, C7): `experience-pass.test.ts` lists it with the registered keys as an allowed "we", and nothing shows it before counsel approves it |
 | `settings.recordings.exportFooter` | (missing) | Export any time to keep a copy of your own. | NEW in v1.1 (S42) |
-| `children.settings.hideShared` | (missing) | Only for you. {coParent} still sees {child}'s book as before. | NEW in v1.1 (S46) |
+| `children.settings.hideShared` | (missing) | Hiding is only for you. {coParent} still sees {child}'s book as before. | NEW in v1.1 (S46); the final-notes wording (review B) |
 | `tabs.tonight`, `tabs.book`, `tabs.family` | (missing) | Tonight / Book / Family | NEW in v1.1 (S57): the tab titles move out of `(tabs)/_layout.tsx` |
 | `familyTab.emptyTitle`, `familyTab.emptyBody`, `familyTab.inviteNeedsSignIn` | develop's words, unmarked | the `// retired by EXPERIENCE_PASS_2026-10; delete in P7` marker | RET in v1.1 (S57) |
 
@@ -1889,7 +1894,7 @@ Requests in: P8c (the `backup/approve` route options and the watcher line in `_l
 
 Acceptance:
 - [ ] Every reader of `tokens.atmosphere` is updated in the same PR (`lamp.tsx`, `lamp.logic.ts`, `atmosphere.test.ts`, `lamp.test.ts`).
-- [ ] The atmosphere test proves 4.5:1 for every text token at every tone's peak, both schemes, and covers the `family` scene.
+- [ ] Contrast follows D-110, proven by tests over three phone sizes (iPhone 17 Pro, iPhone SE, the Pro Max size), both schemes, every scene including `family` and every daypart: the everyday text colours (`text`, `textMuted`, `accent`, `focus`) hold 4.5:1 everywhere on screen at every lamp tone's peak; the status colours (`success`, `caution`, `recording`, `destructive`) hold 4.5:1 where text actually sits (WCAG 1.4.3 measures text against the background behind it), and never sit on the lit paper of the gate or Read together.
 - [ ] `Lamp` with `persistKey` mounts lit and does not arrive again; `useUnlitRoom()` fades and returns it over `leaveMs` and `returnMs`; with Reduce Motion it is still; with Increase Contrast it renders nothing (unit tests on the logic).
 - [ ] `BookCover` renders a 60-character name in three lines with a fade and never an ellipsis glyph (unit test on the logic).
 - [ ] Toast: showing a second toast replaces the first (unit test).
@@ -1920,11 +1925,11 @@ Files: `apps/mobile/src/app/(tabs)/index.tsx` (where the `[0]` is, line 57); new
 
 Not touched: `lib/store.ts` (`listDrafts` already returns every draft), `lib/db/**` and `lib/capture/**`.
 
-Switches (held in #181; the content owner changes the lines, merged with this package): `tonight.draftWaiting.title` to "A recording is ready to read back."; `billingCopy.keepGate.heldNote` to "This one waits on Tonight, exactly as it is."; `billingCopy.keepGate.offline` to "Plus needs a connection to start. This one waits on Tonight." The two Keep gate lines promise what P3 builds (a card for every draft on Tonight), so they switch with P3 even though the Keep sheet itself is P6's.
+Switches (held in #181; the content owner changes the lines, merged with this package): `tonight.draftWaiting.title` to "A recording is ready to read back."; `billingCopy.keepGate.heldNote` to "This one waits on this phone, on Tonight, exactly as it is, for as long as you like."; `billingCopy.keepGate.offline` to "Plus needs a connection to start. This one waits on this phone, on Tonight, exactly as it is."; and the new `billingCopy.keepGate.heldNoteSynced`, "This one waits on Tonight, exactly as it is, for as long as you like. It syncs privately with your account.", which P6's Keep sheet shows when signed in. All three follow #163's register 3.1.0 ("Keep step and held letter") and go to counsel (C10). The two Keep gate lines promise what P3 builds (a card for every draft on Tonight), so they switch with P3 even though the Keep sheet itself is P6's.
 
 Tests: `draft-card.logic` maps each draft state to its line and action, and a draft without `held` to the first row (unit); j04 covers two drafts after a relaunch; j08 asserts "A quiet day, kept." and Undo.
 
-Acceptance: every checkbox under S09 and S33, and rows 1, 2 and 6 of 5.8 on Tonight.
+Acceptance: every checkbox under S09 and S33, and rows 1, 2, 3a and 6 of 5.8 on Tonight. Rows that use "·" as a separator carry an accessibility label without it ("To Asha, Month 4", "Month 4, from Mama"); VoiceOver never reads the separator. On Tonight that is the dateline ("Asha, 7 months"). When a card opens into a page, VoiceOver focus lands on the page and the list behind cannot be reached. Excerpts keep whole lines at every Dynamic Type size, including the three below the default (xSmall, Small and Medium). On Tonight: the draft cards' first words, and "A month ago" opening its letter.
 
 ### P4 Capture and Review
 
@@ -1940,7 +1945,7 @@ Switches (held in #181; the content owner changes the lines, merged with this pa
 
 Tests: review-view logic for the header row and the fallback button label; a unit test that a start failure with permission granted maps to "busy", not "denied"; `free-space.test.ts` for the threshold; j06 covers put back, the saved chip and the landing on the Book; j07 covers keeping a typed letter from Write with no Review screen.
 
-Acceptance: every checkbox under S11 to S21 and S23, and rows 1 to 5c of 5.8.
+Acceptance: every checkbox under S11 to S21 and S23, and rows 1 to 5c of 5.8. Rows that use "·" as a separator carry an accessibility label without it ("To Asha, Month 4", "Month 4, from Mama"); VoiceOver never reads the separator. In Review that is the letter header (`review.headerTo*`). When a card opens into a page, VoiceOver focus lands on the page and the list behind cannot be reached. Excerpts keep whole lines at every Dynamic Type size, including the three below the default (xSmall, Small and Medium). In P4 no card opens into a page; the excerpt rule applies to the saved moment's card while it files into its month.
 
 ### P5 Book, letter and Read together
 
@@ -1948,13 +1953,15 @@ Depends on: P0, P1.
 
 Files: `apps/mobile/src/app/(tabs)/book.tsx`; every file in `apps/mobile/src/components/book/` except P1's `book-cover.tsx` and `book-cover.logic.ts` (that is `letter-card.tsx`, `chapters.ts`, `app-note.tsx`, `quiet-day-row.tsx`, `undo-toast.tsx`, `confirm-sheet.tsx`, `reading-size-sheet.tsx`, `shelf.logic.ts`, `letter-words.logic.ts`, `quiet-day.logic.ts`, `copy.ts` and their tests); `apps/mobile/src/app/letter/[id].tsx`; `apps/mobile/src/app/read-together.tsx`; `apps/mobile/src/components/player/audio-player.tsx`; `apps/mobile/src/components/child/whose-book-sheet.tsx`, `child-switcher.tsx`; `apps/mobile/src/app/settings/recently-deleted.tsx`; e2e `j09-book.flow.ts`, `j10-letter.flow.ts`, `j11-read-together.flow.ts`.
 
+Card to page, P1's contract (#192 at `3d7c7fd`): P5 wraps each card's dateline and excerpt in `CardText` (with its `fade`), passes the page's dateline and the whole letter to `CardToPage` as `opening`, and places that opening on the letter page with `PageOpening`. The letter page opens in the card's text column, with the same width, type and gaps, so its first lines wrap exactly as they did on the card and the words travel without reflowing. Without a measured card, without a shared column, or under Reduce Motion, the transition falls back to a 200 ms cross-fade of the whole page. The letter route stays a native push until the page mounts `CardToPage`; then P5 asks P1 to switch `ROUTES['letter/[id]']` to `cardToPage` (one line and its test).
+
 Requests in: P4 (`arrived`); P8 (the restore line in the Book, the letter page's backup and restore lines, the synced erase states of S63).
 
 Switches (held in #181; the content owner changes the lines, merged with this package): `readTogether.nowReading` to "Month {month} · From {signsAs}", with the first-weeks and Before You datelines built the same way (S30); `settings.delete.restoredToast` to "Back in {child}'s book.", with `{child}` filled (S38).
 
 Tests: chapters logic (the month range filled as `{a} to {b}`, the current month, newborn and Before You openers, `book.fromTwo` order); shelf logic (the joined date line, no countdown, no Erase now in a sync build without the server erase); j10 covers delete returning to the Book with Undo, and Erase now showing "Letter erased."; j11 covers the page turn's button path and the dateline.
 
-Acceptance: every checkbox under S24 to S32 and S35 to S39, the P5 parts of S62 and S63, and rows 5, 7 and 8 of 5.8.
+Acceptance: every checkbox under S24 to S32 and S35 to S39, the P5 parts of S62 and S63, and rows 5, 7 and 8 of 5.8. Rows that use "·" as a separator carry an accessibility label without it ("To Asha, Month 4", "Month 4, from Mama"); VoiceOver never reads the separator. In P5 that is the opener's line ("2 letters, from Mama"), the letter cards' datelines and Read together's dateline (`readTogether.nowReading*`). When a card opens into a page, VoiceOver focus lands on the page and the list behind cannot be reached. Excerpts keep whole lines at every Dynamic Type size, including the three below the default (xSmall, Small and Medium). In P5: every letter card opening into its page (`CardToPage`), and every excerpt on the Book and Recently deleted.
 
 ### P6 Settings, Plus and errors
 
@@ -2022,6 +2029,8 @@ The coordinator made the calls of this section on 16 Oct under the founder's sta
 | F7 | Scope of sign-in, sync, co-parent and backup surfaces | **Answered by option B** (D-100; D-109 item 6): in v1.0, with their own experience package | Chapter 7 and P8; every surface v1.0 of this spec held back is now specified |
 | F8 | Typed letters skip Review (S20) | **Approved** (D-109 item 7): typed words are never machine-edited | Ships as specified (P4) |
 | F9 | After a letter is kept, the app lands on the Book with that letter in view, in its month (S21, 5.8 row 5), instead of returning to Tonight | **Decided** by the coordinator under the founder's delegation, 16 Oct; the founder may reverse it | Ships as specified: P4 selects the Book on the book the letter was kept in and sets `arrived` before Review fades, P5 shows the letter, and the second-free-letter line becomes the Book's toast. Benchmarks: Apple Journal and Day One return to the list where the new entry sits (*memory, unverified*) |
+| F11 | The lamp's contrast rule (D-110, added to `docs/DECISIONS.md` by this PR): the everyday text colours hold 4.5:1 everywhere at every tone's peak; the status colours hold 4.5:1 where text sits and never sit on the gate's or Read together's lit paper; tests over three phone sizes | **Decided** by the coordinator under the founder's delegation, 16 Oct; the founder may reverse it | P1's acceptance line 2 (section 6) and 5.1; P1 (#192) builds and tests it |
+| F10 | Confirm D-104 item 2: encrypted recording backup is free for everyone, and Plus never gates it | **Pending the founder**: `docs/DECISIONS.md` lists D-104 as "Proposed; awaits founder confirmation" | Until confirmed, P8c ships the backup screen without `sheetFree`, and nothing in the app says backup is free or paid |
 
 Nothing in this pass is irreversible: every change is code or copy and can be reverted. No asset in it carries an attribution duty beyond the Licenses screen (section 5.4).
 
@@ -2037,7 +2046,8 @@ Nothing in this pass is irreversible: every change is code or copy and can be re
 | C6 | Registered lines that claim who can read under option B: `trust.signIn.privacy` ("Only you and the people you invite can read your letters. We never sell them or use them for ads.", on the sign-in sheet) and `authCopy.consent.terms.body` ("Your letters stay private to you and the family you invite."). Proposed: the founder's line from C4 for the first, and "the other parent, if you invite them" for the second. The P8 line `familyCopy.card.privacy` already uses the C4 words, because it is not registered. | review A1; #163 |
 | C7 | Backup disclosure lines (D-102: "Copy says recordings are encrypted, that we hold a recovery key under strict, logged access, and that recordings are never read, sold or used to train models."): `backupCopy.sheetBody`, `sheetNotIncluded` (proposed without "yet": "Your co-parent reads your letters but cannot play your recordings."), `restoreWaiting` and `waitingKey`, the approval sheet (S62, worded so it never calls the other phone "this"; F08 6.7 should match), `settings.recordings.backedUpBody` and `onPhoneBodyBackupOff` (S42), `book.recordingBackedUp` (S27), and `sensitiveConsent.declineHelp`, whose comment still says "v1.0 has no backup". Also, outside this pass: the microphone purpose string ("Your recordings stay on this phone.", F08-REQ-036). | D-102, F08 6.7, review A2a |
 | C8 | Erase and deletion lines under option B: `settings.delete.eraseNowBody` "The letter and its recording are erased for good." (database backups still roll off over 7 days, #181), `accountDeletionCopy.what.intro` with the recording backup named and photos removed (S64). | review A2b; F17 8.4 |
-| C9 | The Privacy screen's documents list after #163 removes the Consumer Health Data notice (`healthPrivacyLink`), with the web pages #169 changes. | review A2c |
+| C9 | The Privacy screen's documents list after #163 removes the Consumer Health Data notice. The two links that point at it (`healthPrivacyLink` on Privacy, `consent.terms.healthLink` in account setup) are removed by P6 with S14 and P8a with S01, after #163 and no later than #169 (S44). Counsel confirms no separate notice is needed (register 3.1.0, Q32). | review A2c; re-review A note 2 |
+| C10 | The held-letter lines on the Keep step (S22): `keepGate.heldNote`, `heldNoteSynced` and `offline`, written to #163's register 3.1.0 row "Keep step and held letter" (waits on this phone, syncs privately when signed in, never discarded). | #163 `in-app-disclosures.md` 3.1.0; re-review A note 4 |
 
 ---
 
