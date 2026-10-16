@@ -27,17 +27,22 @@ export interface Sealed {
 
 /**
  * Keys that never leave native code in the app: the book keys (a synchronizable
- * Keychain item per book, author and version) and this install's
- * device private key (this device only, never synced). JavaScript only ever
+ * Keychain item per book, author and version) and a device private key per
+ * install and account (this device only, never synced). JavaScript only ever
  * sees per-recording file keys, wrapped keys and public keys.
  */
 export interface KeyVault {
   /** False where the platform lacks what backup needs (iOS before 17, web, Android today). */
   supported(): boolean;
-  deviceKey(): Promise<DeviceKey | null>;
+  /**
+   * This install's device key for one account. One pair per (install, profile): the server ties
+   * a device id to one profile (#151 `backup_register_device`), so a second account on this phone
+   * gets its own pair, and a revoked one is replaced by a new pair (only after Try again).
+   */
+  deviceKey(profileId: string): Promise<DeviceKey | null>;
   /** Makes the pair the first time; returns the existing one after that. */
-  createDeviceKey(): Promise<DeviceKey>;
-  deleteDeviceKey(): Promise<void>;
+  createDeviceKey(profileId: string): Promise<DeviceKey>;
+  deleteDeviceKey(profileId: string): Promise<void>;
   /** Versions of this book key present on this phone (from the synchronizable items). Empty when none. */
   bookKeyVersions(ref: BookKeyRef): Promise<number[]>;
   /** Adds a random 256-bit key under `version`. Throws `key_exists` when that version is already there. */
@@ -51,7 +56,7 @@ export interface KeyVault {
   /** Seals the book key to a recipient X25519 public key (the escrow key) with HPKE base mode. */
   sealBookKey(ref: BookKeyRef, version: number, recipient: Uint8Array, info: Uint8Array, aad: Uint8Array): Promise<Sealed>;
   /**
-   * Opens a book key sealed to this device's key and stores it under `version`. Throws on any
+   * Opens a book key sealed to this device's key (the one for `ref.profileId`) and stores it under `version`. Throws on any
    * mismatch. With `check`, the opened key must match `check.expected` (HMAC under it of
    * `check.label`, 16 bytes) or nothing is written (`key_check_failed`).
    */
@@ -112,6 +117,11 @@ export type NetworkKind = 'wifi' | 'cellular' | 'none' | 'unknown';
 /** What may run right now. Read between every step and every part of an upload. */
 export interface Conditions {
   network(): Promise<NetworkKind>;
+  /**
+   * The last network seen is not Wi-Fi (cellular, unknown or none), read synchronously between
+   * parts and segments, so an upload that began on Wi-Fi stops when the phone leaves it.
+   */
+  meteredNow(): boolean;
   /** The app is in the foreground (uploads never run in the background, F08 6.5 A step 5). */
   foreground(): boolean;
   /** A recording, Review or playback is live: backup waits (F08-REQ-025, never during capture). */

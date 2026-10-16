@@ -6,10 +6,10 @@
  */
 import type { BackupServer, EscrowClient, EscrowPublicKey } from './contract';
 import { createKeyManager } from './keys';
-import type { BackupDb } from './local-db';
+import type { BackupDb, UploadJob } from './local-db';
 import type { Aead, Clock, Conditions, FileIO, KeyVault } from './ports';
 import { META, createUploadQueue, type BackupSource, type GateReason } from './queue';
-import { createRestore, type BlobDownloader, type RestoreKeyStatus, type RestoreLocal } from './restore';
+import { HAS_BACKUP_META, createRestore, type BlobDownloader, type RestoreKeyStatus, type RestoreLocal } from './restore';
 import type { HttpLike } from './tus';
 
 export interface BackupServiceDeps {
@@ -29,11 +29,14 @@ export interface BackupServiceDeps {
   escrowKeys: () => readonly EscrowPublicKey[];
   random?: () => number;
   partBytes?: number;
+  /** Called when what Settings shows changes in the middle of a pass (a download starts). */
+  onChange?: () => void;
 }
 
 /**
  * What the Settings row says. Never a count of what is left (F08 6.5 A step 6;
  * VOICE.md, no counting). `restore` is set while recordings are coming back.
+ * Nothing reads "Backed up" while any recording of mine is not backed up.
  */
 export type BackupStatus =
   | { kind: 'unavailable' }
@@ -43,24 +46,47 @@ export type BackupStatus =
   | { kind: 'paused' }
   /** A server call needs a fresh sign-in (`SCSTP`, `28000`): say so, never retry silently. */
   | { kind: 'sign_in_again' }
+  /** This phone waits for its key from the recovery service before new recordings back up. */
+  | { kind: 'waiting_key'; holdUntil: string }
+  /** That wait was stopped (Stop, Not me, a revoked phone): only Try again asks once more. */
+  | { kind: 'key_stopped' }
   | { kind: 'backing_up' }
   | { kind: 'waiting_wifi' }
+  /** Every other recording is backed up, but some stay only on this phone (changed since capture, too long, not my book). */
+  | { kind: 'some_kept_here' }
   | { kind: 'current'; lastBackedUpAt: string | null };
 
 export interface BackupView {
   status: BackupStatus;
   restore: RestoreKeyStatus | null;
+  /** The server holds recordings of mine: a returning person (the Off screen says theirs come back on their own). */
+  hasBackup: boolean;
 }
+
+/** Blocked for good and kept only on this phone: never sent, so never "Backed up". */
+const KEPT_HERE = new Set(['hash_mismatch', 'too_large', 'not_parent']);
+const isOpen = (j: UploadJob) => j.state !== 'confirmed' && j.state !== 'blocked';
 
 export function createBackupService(d: BackupServiceDeps) {
   d.db.resetForProfile(d.profileId);
   const keys = createKeyManager({ vault: d.vault, server: d.server, meta: d.db, clock: d.clock, profileId: d.profileId, escrowKeys: d.escrowKeys });
   let stopped = false;
   const isStopped = () => stopped;
-  const queue = createUploadQueue({ ...d, keys, stopped: isStopped });
-  const restore = createRestore({ ...d, keys, stopped: isStopped });
-  let lastGate: GateReason | null = null;
   let lastRestore: RestoreKeyStatus | null = null;
+  const queue = createUploadQueue({ ...d, keys, stopped: isStopped });
+  const restore = createRestore({
+    ...d,
+    keys,
+    stopped: isStopped,
+    onRestoring: () => {
+      if (lastRestore?.kind === 'restoring') return;
+      lastRestore = { kind: 'restoring' };
+      d.onChange?.();
+    },
+  });
+  let lastGate: GateReason | null = null;
+  /** The upload side's own wait for a key through escrow (a phone with every recording but no key). */
+  let keyWait: RestoreKeyStatus | null = null;
 
   const available = () => d.vault.supported() && d.escrowKeys().length > 0;
 
@@ -95,22 +121,55 @@ export function createBackupService(d: BackupServiceDeps) {
 
   async function pass(): Promise<void> {
     if (!d.vault.supported() || stopped) return;
+    let askedEscrow = false;
     // A restore pass asks the server for its list, so it runs only while a spoken letter of mine
     // has no recording on this phone (a new phone, or one restored from a device backup).
     if (d.local.anyMissing()) {
       try {
         const r = await restore.run();
-        lastRestore = r.keys.kind === 'ready' ? null : r.keys;
+        askedEscrow = r.escrow;
+        lastRestore = r.keys.kind === 'ready' ? (r.remaining > 0 ? { kind: 'restoring' } : null) : r.keys;
       } catch {
         // the next tick tries again; restore never blocks the app
+        if (lastRestore?.kind === 'restoring') lastRestore = null;
       }
     } else lastRestore = null;
     if (d.db.getMeta(META.enabled) !== 'on' || stopped) return;
     try {
       await uploads();
+      // New recordings wait for a key that only escrow can bring (iCloud Keychain did not), and
+      // no restore asked for it in this pass: ask here, with the same Stop and sign-in rules.
+      if (d.db.getMeta(META.keyState) === 'needs_escrow' && !askedEscrow && !stopped) {
+        const k = await restore.escrowStep();
+        keyWait = k.kind === 'ready' ? null : k;
+        if (k.kind === 'ready') {
+          d.db.deleteMeta(META.keyState);
+          keys.refresh();
+          await uploads();
+        }
+      } else if (d.db.getMeta(META.keyState) !== 'needs_escrow') keyWait = null;
     } catch {
       // as above
     }
+  }
+
+  function status(): BackupStatus {
+    if (!available()) return { kind: 'unavailable' };
+    if (d.db.getMeta(META.enabled) !== 'on') return { kind: 'off' };
+    const paused = d.db.getMeta(META.paused);
+    if (paused === 'consent') return { kind: 'needs_consent' };
+    if (paused === 'quota') return { kind: 'quota' };
+    const jobs = d.db.jobs();
+    const keptHere = jobs.some((j) => j.state === 'blocked' && KEPT_HERE.has(j.lastError ?? ''));
+    if (!jobs.some(isOpen)) return keptHere ? { kind: 'some_kept_here' } : { kind: 'current', lastBackedUpAt: d.db.getMeta(META.lastBackedUpAt) };
+    if (queue.isRunning()) return { kind: 'backing_up' };
+    if (lastGate === 'wifi' || lastGate === 'offline') return { kind: 'waiting_wifi' };
+    if (lastGate === 'sign_in' || keyWait?.kind === 'sign_in_again') return { kind: 'sign_in_again' };
+    if (keyWait?.kind === 'waiting_hold') return { kind: 'waiting_key', holdUntil: keyWait.holdUntil };
+    if (keyWait?.kind === 'stopped') return { kind: 'key_stopped' };
+    // Anything still open (retrying, waiting for its key, for its letter's text to sync, or for its
+    // turn) is not backed up: say it carries on later. Never "Backed up" while one is waiting.
+    return { kind: 'paused' };
   }
 
   return {
@@ -130,22 +189,29 @@ export function createBackupService(d: BackupServiceDeps) {
       queue.sweepTmp();
     },
 
-    /** Launch: sweep backup-tmp before anything runs, then work. Never throws. */
+    /**
+     * Launch: sweep backup-tmp before anything runs, then work. Never throws.
+     * A quota pause is lifted once per launch, so one `backup_begin` asks again
+     * (the quota may have been raised); a fresh `SCQTA` sets it back.
+     */
     async start(): Promise<void> {
       queue.sweepTmp();
+      if (d.db.getMeta(META.paused) === 'quota') d.db.deleteMeta(META.paused);
       await tick();
     },
 
     /**
      * Turn on (F08 6.5 A steps 3 to 5): record the `backup` consent act first;
-     * nothing is made or uploaded before the server has it (F08-REQ-039).
+     * nothing is made or uploaded before the server has it (F08-REQ-039). The
+     * device key is registered after, best effort: uploads do not need it, and
+     * restore asks again (so a refused or revoked device never fails turn-on).
      */
     async turnOn(): Promise<'on' | 'unavailable'> {
       if (!available()) return 'unavailable';
       await d.server.recordConsent('accept');
       d.db.setMeta(META.enabled, 'on');
       d.db.deleteMeta(META.paused);
-      await keys.ensureDevice();
+      await keys.ensureDevice().catch(() => undefined);
       checkServer = true;
       void tick();
       return 'on';
@@ -161,27 +227,21 @@ export function createBackupService(d: BackupServiceDeps) {
       d.db.setMeta(META.enabled, 'off');
     },
 
+    /** The person tapped Try again (a stopped restore, or a stopped wait for this phone's key). */
+    async tryAgain(): Promise<void> {
+      await restore.tryAgain();
+      keyWait = null;
+      if (lastRestore?.kind === 'stopped') lastRestore = null;
+    },
+
     isOn: () => d.db.getMeta(META.enabled) === 'on',
 
     view(): BackupView {
-      if (!available()) return { status: { kind: 'unavailable' }, restore: lastRestore };
-      if (d.db.getMeta(META.enabled) !== 'on') return { status: { kind: 'off' }, restore: lastRestore };
-      const paused = d.db.getMeta(META.paused);
-      if (paused === 'consent') return { status: { kind: 'needs_consent' }, restore: lastRestore };
-      if (paused === 'quota') return { status: { kind: 'quota' }, restore: lastRestore };
-      const open = d.db.jobs().some((j) => j.state !== 'confirmed' && j.state !== 'blocked');
-      const lastBackedUpAt = d.db.getMeta(META.lastBackedUpAt);
-      if (!open) return { status: { kind: 'current', lastBackedUpAt }, restore: lastRestore };
-      if (queue.isRunning()) return { status: { kind: 'backing_up' }, restore: lastRestore };
-      if (lastGate === 'wifi' || lastGate === 'offline') return { status: { kind: 'waiting_wifi' }, restore: lastRestore };
-      if (lastGate === 'killed') return { status: { kind: 'paused' }, restore: lastRestore };
-      if (lastGate === 'sign_in') return { status: { kind: 'sign_in_again' }, restore: lastRestore };
-      // A recording that is retrying, or waiting for its key, is not "backed up": say it carries on later.
-      if (d.db.getMeta(META.keyState) || d.db.jobs().some((j) => j.state !== 'confirmed' && j.state !== 'blocked' && j.attempts > 0)) {
-        return { status: { kind: 'paused' }, restore: lastRestore };
-      }
-      return { status: { kind: 'current', lastBackedUpAt }, restore: lastRestore };
+      return { status: status(), restore: lastRestore, hasBackup: d.db.getMeta(HAS_BACKUP_META) === '1' };
     },
+
+    /** When a waiting upload may run next (its backoff ends): the app wakes the queue then. */
+    nextWakeAt: () => queue.nextWakeAt(),
 
     /** Allow backup on mobile data (off by default, ADR 0016 section 4.3). */
     setCellular(on: boolean): void {

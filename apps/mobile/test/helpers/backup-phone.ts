@@ -15,7 +15,7 @@ import type { SqlDb } from '../../src/lib/db/sql';
 import { openBackupDb } from '../../src/lib/backup/local-db';
 import { backupSource, restoreLocal } from '../../src/lib/backup/local-store';
 import type { Conditions, NetworkKind } from '../../src/lib/backup/ports';
-import { createBackupService } from '../../src/lib/backup/service';
+import { createBackupService, type BackupView } from '../../src/lib/backup/service';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './backup-node';
 import { nodeDb } from './node-db';
 
@@ -40,12 +40,15 @@ export function makePhone(o: { backend: FakeBackend; uid: string; icloud: FakeIC
   const cond = { net: 'wifi' as NetworkKind, fg: true, busy: false, cell: false, killed: false, escrowKilled: false };
   const conditions: Conditions = {
     network: async () => cond.net,
+    meteredNow: () => cond.net !== 'wifi',
     foreground: () => cond.fg,
     busy: () => cond.busy,
     cellularAllowed: () => cond.cell,
     uploadsKilled: () => cond.killed,
     escrowKilled: () => cond.escrowKilled,
   };
+  /** What Settings was told mid-pass (a download starting), in order. */
+  const changes: BackupView[] = [];
   const service = createBackupService({
     db: backupDb,
     vault,
@@ -61,10 +64,11 @@ export function makePhone(o: { backend: FakeBackend; uid: string; icloud: FakeIC
     source: backupSource({ db: () => local, profileId: o.uid, heldOnServer: (id) => o.backend.rows.get(o.uid)?.has(id) ?? false }),
     local: restoreLocal({ db: () => local, profileId: o.uid, fileExists: files.exists }),
     escrowKeys: () => o.backend.escrowKeys(),
+    onChange: () => changes.push(service.view()),
     random: () => 0.5,
     partBytes: 64 * 1024,
   });
-  return { ...o, root, files, local, backupDb, vault, cond, service };
+  return { ...o, root, files, local, backupDb, vault, cond, service, changes };
 }
 
 export type Phone = ReturnType<typeof makePhone>;

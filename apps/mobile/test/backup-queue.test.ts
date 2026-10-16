@@ -22,7 +22,7 @@ import { HEADER_LEN, SEGMENT_SIZE, decryptBody, parseHeader, wrapAad } from '../
 import { createKeyManager } from '../src/lib/backup/keys';
 import { openBackupDb, type BackupDb } from '../src/lib/backup/local-db';
 import type { Aead, Conditions, FileIO, NetworkKind } from '../src/lib/backup/ports';
-import { createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
+import { MAX_JOB_ATTEMPTS, createUploadQueue, type BackupSourceItem } from '../src/lib/backup/queue';
 import type { HttpLike } from '../src/lib/backup/tus';
 import { FakeBackend, FakeICloud, fakeM4a, nodeAead, nodeFiles, nodeVault, sha256Hex } from './helpers/backup-node';
 import { nodeDb } from './helpers/node-db';
@@ -56,6 +56,7 @@ function rig() {
   const cond = { net: 'wifi' as NetworkKind, fg: true, busy: false, cell: false, killed: false, escrowKilled: false, busyAfterSeals: undefined as number | undefined };
   const conditions: Conditions = {
     network: async () => cond.net,
+    meteredNow: () => cond.net !== 'wifi',
     foreground: () => cond.fg,
     busy: () => cond.busy,
     cellularAllowed: () => cond.cell,
@@ -120,8 +121,10 @@ function rig() {
       },
     ]),
   ) as unknown as BackupServer;
+  const httpHooks: ((method: string) => void)[] = [];
   const http: HttpLike = async (url, init) => {
     const r = await backend.http(url, init);
+    for (const h of httpHooks) h(init.method);
     point(`tus:${init.method}:after`);
     return r;
   };
@@ -215,6 +218,8 @@ function rig() {
     settle,
     seals: () => seals,
     tmpFiles: () => readdirSync(files.tmpDir),
+    /** Runs after every resumable-upload call returns (before the queue sees the answer). */
+    onHttp: (h: (method: string) => void) => void httpHooks.push(h),
   };
 }
 
@@ -290,6 +295,70 @@ describe('[F08-REQ-025] backup never gets in the way, and waits for what it need
     r.cond.net = 'cellular';
     r.cond.cell = true;
     await r.make().drain();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+  });
+
+  it('[ADR 0016 4.3] leaving Wi-Fi mid-upload stops before the next part; back on Wi-Fi it resumes from the saved offset', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(5 * SEGMENT_SIZE);
+    let patches = 0;
+    let afterSwitch = 0;
+    r.onHttp((m) => {
+      if (m !== 'PATCH') return;
+      if (patches >= 1) afterSwitch += 1;
+      patches += 1;
+      if (patches === 1) r.cond.net = 'cellular'; // the phone walks out of the house after the first part
+    });
+    expect(await r.make().drain()).toEqual({ kind: 'gate', reason: 'wifi' });
+    expect(afterSwitch).toBeLessThanOrEqual(1);
+    const job = r.db().job(item.entryId)!;
+    expect(job.state).toBe('uploading');
+    expect(job.uploadOffset).toBe(PART);
+    // Still on mobile data: nothing more is sent.
+    const sent = r.backend.requests.filter((x) => x.kind === 'tus').length;
+    expect(await r.make().drain()).toEqual({ kind: 'gate', reason: 'wifi' });
+    expect(r.backend.requests.filter((x) => x.kind === 'tus').length).toBe(sent);
+    // Wi-Fi again: the rest goes, from the saved offset, and nothing is sent twice.
+    r.cond.net = 'wifi';
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+    const bodyBytes = r.backend.requests.filter((x) => x.kind === 'tus').reduce((n, x) => n + x.body.length, 0);
+    expect(bodyBytes).toBe(r.db().job(item.entryId)!.cipherBytes);
+  });
+
+  it('with Use mobile data on, leaving Wi-Fi does not stop the upload', async () => {
+    const r = rig();
+    const { item } = await r.addRecording(5 * SEGMENT_SIZE);
+    r.cond.cell = true;
+    r.onHttp((m) => {
+      if (m === 'PATCH') r.cond.net = 'cellular';
+    });
+    await r.make().drain();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+  });
+
+  it(`a recording refused ${MAX_JOB_ATTEMPTS} times rests until the next launch; before that the queue says when to wake`, async () => {
+    const r = rig();
+    const { item } = await r.addRecording(2000);
+    r.backend.faults.set('begin', 1000);
+    const q = r.make();
+    await q.drain();
+    const first = r.db().job(item.entryId)!;
+    expect(first.attempts).toBe(1);
+    expect(q.nextWakeAt()).toBe(first.nextAttemptAt);
+    for (let i = 1; i < MAX_JOB_ATTEMPTS; i++) {
+      r.clock.t = q.nextWakeAt()!;
+      await q.drain();
+    }
+    expect(r.db().job(item.entryId)!.attempts).toBe(MAX_JOB_ATTEMPTS);
+    expect(q.nextWakeAt()).toBeNull();
+    const begins = r.backend.requests.filter((x) => x.kind === 'begin').length;
+    r.clock.t += 24 * 60 * 60 * 1000;
+    await q.drain();
+    expect(r.backend.requests.filter((x) => x.kind === 'begin').length).toBe(begins); // resting until the next launch
+    r.backend.faults.set('begin', 0);
+    await r.make().drain(); // the next launch tries again
     expect(r.db().job(item.entryId)!.state).toBe('confirmed');
   });
 
@@ -498,6 +567,7 @@ describe('[F08-U17] the kill path: a kill at any step resumes to one confirmed, 
     { at: 'tus:POST:after', countdown: 1, why: 'the resumable upload was made, its URL was never saved' },
     { at: 'tus:PATCH:after', countdown: 2, why: 'two parts in the bucket, the offset was never saved' },
     { at: 'tus:PATCH:after', countdown: 6, why: 'every part in the bucket, "uploaded" was never saved' },
+    { at: 'before:confirm', countdown: 1, why: '"uploaded" saved, backup_confirm never sent' },
     { at: 'after:confirm', countdown: 1, why: 'backup_confirm went through, the answer was lost' },
   ];
 
@@ -519,6 +589,28 @@ describe('[F08-U17] the kill path: a kill at any step resumes to one confirmed, 
       expect(r.tmpFiles()).toEqual([]);
     });
   }
+
+  it('two kills in a row (mid-upload, then right after the relaunch asked for the offset): still one confirmed object', async () => {
+    const r = rig();
+    const { item, plain } = await r.addRecording(5 * SEGMENT_SIZE + 77);
+    r.kill.at = 'tus:PATCH:after';
+    r.kill.countdown = 2;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    r.make().sweepTmp();
+    r.kill.at = 'tus:HEAD:after';
+    r.kill.countdown = 1;
+    await expect(r.make().drain()).rejects.toBeInstanceOf(Killed);
+    r.kill.dead = false;
+    r.reopen();
+    r.make().sweepTmp();
+    await r.settle();
+    expect(r.db().job(item.entryId)!.state).toBe('confirmed');
+    expect([...r.backend.blobs.values()].filter((b) => b.entryId === item.entryId && b.state === 'confirmed')).toHaveLength(1);
+    expect(sha256Hex((await r.serverPlaintext(item.entryId))!)).toBe(sha256Hex(plain));
+    expect(r.tmpFiles()).toEqual([]);
+  });
 
   it('the ciphertext file was lost mid-upload (iOS purged it): rebuilt byte for byte, the upload resumes at its offset', async () => {
     const r = rig();

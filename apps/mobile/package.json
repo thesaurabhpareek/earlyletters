@@ -85,5 +85,6 @@
     "test": "vitest run",
     "e2e:web:index": "node e2e-web/support/build-index.mjs"
   },
+  "expo": { "autolinking": { "exclude": ["scribe-keys"] } },
   "private": true
 }

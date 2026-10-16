@@ -32,7 +32,6 @@ import { localSqlDb, notifyStoreChanged, subscribe, uuidv7 } from '../store';
 import { errorCode, errorStatus, getSupabaseOrNull, isNetworkError } from '../supabase';
 import { readSupabaseEnv } from '../supabase/env';
 import { APP_ENV } from '../build-env';
-import { b64 } from './bytes';
 import {
   BACKUP_BUCKET,
   BACKUP_POLICY_DOCUMENT,
@@ -40,9 +39,8 @@ import {
   BackupServerError,
   type BackupServer,
   type EscrowClient,
-  type EscrowPublicKey,
 } from './contract';
-import { BUNDLED_ESCROW_KEYS } from './escrow-keys';
+import { BUNDLED_ESCROW_KEYS, escrowKeysFor } from './escrow-keys';
 import { BACKUP_DB_FILE, openBackupDb, type BackupDb } from './local-db';
 import { backupSource, restoreLocal } from './local-store';
 import type { Aead, BookKeyRef, ByteSink, ByteSource, Conditions, FileIO, KeyVault, NetworkKind } from './ports';
@@ -76,9 +74,9 @@ function nativeVault(): KeyVault {
   };
   return {
     supported: () => !!k && k.isSupported(),
-    deviceKey: () => need().deviceKey(),
-    createDeviceKey: () => need().createDeviceKey(),
-    deleteDeviceKey: () => need().deleteDeviceKey(),
+    deviceKey: (p) => need().deviceKey(p),
+    createDeviceKey: (p) => need().createDeviceKey(p),
+    deleteDeviceKey: (p) => need().deleteDeviceKey(p),
     bookKeyVersions: (r) => need().bookKeyVersions(KEYCHAIN_SERVICE, account(r)),
     createBookKey: async (r, v) => {
       try {
@@ -95,7 +93,7 @@ function nativeVault(): KeyVault {
     sealBookKey: (r, v, recipient, info, aad) => need().sealBookKey(KEYCHAIN_SERVICE, account(r), v, recipient, info, aad),
     openBookKey: async (r, v, s, info, aad, check) => {
       try {
-        await need().openBookKey(KEYCHAIN_SERVICE, account(r), v, s.enc, s.ct, info, aad, check?.label ?? new Uint8Array(0), check?.expected ?? null);
+        await need().openBookKey(KEYCHAIN_SERVICE, account(r), r.profileId, v, s.enc, s.ct, info, aad, check?.label ?? new Uint8Array(0), check?.expected ?? null);
       } catch (e) {
         if (scribeKeysErrorCode(e) === 'ERR_SCRIBE_KEYS_CHECK') throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
         throw e;
@@ -309,22 +307,8 @@ function escrowClient(accessToken: () => Promise<string | null>): EscrowClient {
   });
 }
 
-/**
- * [R] `EXPO_PUBLIC_ESCROW_KEY` (`v<version>:<base64>`): the staging drill key in development and
- * preview builds. A production build ignores it and trusts only the bundled keys, so a stray
- * variable can never seal families' book keys to a drill key.
- */
-function escrowKeys(): readonly EscrowPublicKey[] {
-  if (APP_ENV === 'production') return BUNDLED_ESCROW_KEYS;
-  const m = /^v(\d+):([A-Za-z0-9+/=]{44})$/.exec((process.env.EXPO_PUBLIC_ESCROW_KEY ?? '').trim());
-  if (!m) return BUNDLED_ESCROW_KEYS;
-  try {
-    b64(m[2]);
-    return [...BUNDLED_ESCROW_KEYS, { version: Number(m[1]), publicKey: m[2] }];
-  } catch {
-    return BUNDLED_ESCROW_KEYS;
-  }
-}
+/** [R] `EXPO_PUBLIC_ESCROW_KEY`: the staging drill key, trusted only in a development-profile build (escrow-keys.ts). */
+const escrowKeys = () => escrowKeysFor(APP_ENV, process.env.EXPO_PUBLIC_ESCROW_KEY, BUNDLED_ESCROW_KEYS);
 
 // ── Transport ─────────────────────────────────────────────────────────────
 
@@ -347,15 +331,18 @@ const downloader = {
 
 // ── Conditions ────────────────────────────────────────────────────────────
 
+/** The last network seen: refreshed by every `network()` read and by every change event, read between parts. */
 let netKind: NetworkKind = 'unknown';
+function kindOf(s: Network.NetworkState): NetworkKind {
+  if (s.isConnected === false) return 'none';
+  if (s.type === Network.NetworkStateType.WIFI) return 'wifi';
+  if (s.type === Network.NetworkStateType.CELLULAR) return 'cellular';
+  if (s.type === Network.NetworkStateType.NONE) return 'none';
+  return 'unknown';
+}
 async function network(): Promise<NetworkKind> {
   try {
-    const s = await Network.getNetworkStateAsync();
-    if (s.isConnected === false) netKind = 'none';
-    else if (s.type === Network.NetworkStateType.WIFI) netKind = 'wifi';
-    else if (s.type === Network.NetworkStateType.CELLULAR) netKind = 'cellular';
-    else if (s.type === Network.NetworkStateType.NONE) netKind = 'none';
-    else netKind = 'unknown';
+    netKind = kindOf(await Network.getNetworkStateAsync());
   } catch {
     netKind = 'unknown';
   }
@@ -365,6 +352,7 @@ async function network(): Promise<NetworkKind> {
 function conditions(db: () => BackupDb | null): Conditions {
   return {
     network,
+    meteredNow: () => netKind !== 'wifi',
     foreground: () => AppState.currentState === 'active',
     busy: () => getAudioMode() !== 'idle' || activeTakeId() !== null,
     cellularAllowed: () => db()?.getMeta('cellular') === 'on',
@@ -418,9 +406,11 @@ async function current(): Promise<BackupService | null> {
     conditions: conditions(() => backupDb),
     clock: { now: () => Date.now(), sleep: (ms) => new Promise((r) => setTimeout(r, ms)) },
     profileId: s.uid,
+    // Held drafts wait for S03's held-draft op (WP-F14-22): with no `heldOnServer`, they are not listed at all.
     source: backupSource({ db: localSqlDb, profileId: s.uid }),
     local: restoreLocal({ db: localSqlDb, profileId: s.uid, fileExists: nativeFiles.exists, changed: notifyStoreChanged }),
     escrowKeys,
+    onChange: () => emit(),
   });
   serviceFor = s.uid;
   return service;
@@ -447,8 +437,24 @@ function kick(delayMs = 3000): void {
     void current()
       .then((s) => s?.tick())
       .catch(() => undefined)
-      .finally(emit);
+      .finally(() => {
+        emit();
+        wakeLater();
+      });
   }, delayMs);
+}
+
+let wake: ReturnType<typeof setTimeout> | null = null;
+/** While in the foreground, one pass when the earliest waiting upload's backoff ends (never in the background). */
+function wakeLater(): void {
+  if (wake) clearTimeout(wake);
+  wake = null;
+  const at = service?.nextWakeAt() ?? null;
+  if (at === null || AppState.currentState !== 'active') return;
+  wake = setTimeout(() => {
+    wake = null;
+    if (AppState.currentState === 'active') kick(0);
+  }, Math.max(1000, at - Date.now()));
 }
 
 let started = false;
@@ -464,7 +470,11 @@ export function startBackupRuntime(): void {
   AppState.addEventListener('change', (st) => {
     if (st === 'active') kick(500);
   });
-  Network.addNetworkStateListener(() => kick(1000));
+  Network.addNetworkStateListener((s) => {
+    // Read between parts: leaving Wi-Fi stops an upload at the next part, before the timer fires.
+    netKind = kindOf(s);
+    kick(1000);
+  });
   subscribe(() => kick());
   getSupabaseOrNull()?.auth.onAuthStateChange(() => kick(500));
 }
@@ -528,6 +538,7 @@ export function restoreForLetter(entryId: string): void {
 }
 
 export function tryRestoreAgain(): void {
-  service?.restore.clearStopped();
-  kick(0);
+  void (service?.tryAgain() ?? Promise.resolve())
+    .catch(() => undefined)
+    .finally(() => kick(0));
 }

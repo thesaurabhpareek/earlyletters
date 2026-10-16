@@ -40,8 +40,10 @@ export interface SourceOptions {
   profileId: string;
   /**
    * Whether the server has a `held_drafts` row for this draft id. Held drafts
-   * travel through S03's held-draft op (WP-F14-22, local v8), not built yet, so
-   * the default says no and held drafts wait (F08-U31).
+   * travel through S03's held-draft op (WP-F14-22, local v8), not built yet.
+   * Without it (the app today) held drafts are not listed at all: a draft that
+   * could never upload must not sit in the queue as a recording "waiting"
+   * (F08-U31). They join once S03's op exists and passes this in.
    */
   heldOnServer?: (draftId: string) => boolean;
 }
@@ -72,6 +74,8 @@ export function backupSource(o: SourceOptions): BackupSource {
         onServer: r.server_version !== null,
       }));
       const saved = new Set(out.map((i) => i.entryId));
+      const heldOnServer = o.heldOnServer;
+      if (!heldOnServer) return out;
       for (const r of drafts) {
         if (saved.has(r.id)) continue;
         out.push({
@@ -82,7 +86,7 @@ export function backupSource(o: SourceOptions): BackupSource {
           audioSha256: r.audio_sha256,
           audioBytes: r.audio_bytes,
           capturedAt: r.created_at,
-          onServer: o.heldOnServer?.(r.id) ?? false,
+          onServer: heldOnServer(r.id),
         });
       }
       return out;

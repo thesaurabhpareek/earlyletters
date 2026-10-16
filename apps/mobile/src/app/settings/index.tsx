@@ -49,7 +49,8 @@ const go = (route: string) => () => router.push(route as Href);
 function backupRowValue(): string | undefined {
   const s = loadBackup()?.backupView()?.status.kind;
   if (!s || s === 'unavailable') return undefined;
-  return s === 'off' ? backupCopy.rowOff : backupCopy.rowOn;
+  // Consent withdrawn reads Off: backup is not running, and the screen offers turning it on.
+  return s === 'off' || s === 'needs_consent' ? backupCopy.rowOff : backupCopy.rowOn;
 }
 const openWeb = (url: string) => () => void WebBrowser.openBrowserAsync(url);
 

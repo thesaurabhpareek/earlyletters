@@ -25,6 +25,9 @@ export const backupCopy = {
     'Your recordings are encrypted on this phone before they leave it. We keep a recovery key so you can get them back on a new phone. We use it only through our recovery service, which logs every use and emails you each time. We never listen to your recordings, sell them or use them to train models.',
   sheetNotIncluded: "Other family members can't hear your recordings yet. Listening copies stay on this phone.",
   turnOnButton: 'Back up my recordings',
+  /** The turn-on sheet for a person whose recordings are already in the backup (a new phone). */
+  sheetReturning: 'Your backed-up recordings come back to this phone on their own. Turn on backup here to back up new ones too.',
+  turnOnFailed: "Backup didn't turn on. Check your connection and try again.",
   signInFirst: 'Sign in to back up your recordings.',
   unavailable: 'Backup is not ready on this phone yet. Your recordings are kept here as always.',
 
@@ -34,7 +37,13 @@ export const backupCopy = {
   waitingWifi: 'Backs up on Wi-Fi',
   paused: 'Backup will carry on later.',
   signInAgain: 'Sign in again to keep backing up your recordings.',
+  /** This phone waits for its key from the recovery service (no iCloud Keychain) before new recordings back up. */
+  waitingKey: "New recordings back up from {date}. We emailed you to check it's you.",
+  keyStopped: 'Backing up from this phone was stopped.',
+  /** Some recordings were changed after they were made, are too long, or are in a book that is not yours: never sent. */
+  someKeptHere: 'Some recordings stay on this phone and are not in the backup.',
   quotaReached: "New recordings are not being backed up. Write to us and we'll help.",
+  writeToUs: 'Write to us',
   needsConsent: 'Backup is off. Turn it on again to keep backing up new recordings.',
 
   cellularTitle: 'Use mobile data',
@@ -49,8 +58,8 @@ export const backupCopy = {
 
   /** A new phone (F08 6.5 B; F08-U18, U19). */
   restoreLooking: 'Bringing your recordings to this phone.',
-  restoreWaiting:
-    "Your recordings will start coming back by {date}. We emailed you to check it's you. If you still have your old iPhone, open the app there to say yes sooner.",
+  /** No approval on the old phone in this build: that sentence returns with the approval sheet. */
+  restoreWaiting: "Your recordings will start coming back by {date}. We emailed you to check it's you.",
   restoreUnavailable: 'Your recordings will come back when we can reach them.',
   restoreStopped: 'Bringing your recordings to this phone was stopped.',
   restoreSignInAgain: 'Sign in again to bring your recordings to this phone.',

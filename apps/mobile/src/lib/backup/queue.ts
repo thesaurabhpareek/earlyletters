@@ -29,7 +29,7 @@
  * when a recording or playback starts. No network, no sign-in, a full quota
  * or a kill switch only make jobs wait.
  */
-import { retryDelayMs } from '@scribe/api';
+import { ENDPOINT_CLASSES, retryDelayMs } from '@scribe/api';
 import { b64, bytesToBase64, hexToBytes, wipe } from './bytes';
 import {
   BACKUP_BUCKET,
@@ -103,13 +103,31 @@ export const META = {
 
 const tmpName = (entryId: string) => `${entryId}.enc`;
 
+/**
+ * A recording refused this many times in a row (`write_rpc.maxAttempts`, packages/api standards)
+ * rests until the next launch, so a permanent refusal never re-sends parts all day.
+ */
+export const MAX_JOB_ATTEMPTS = ENDPOINT_CLASSES.write_rpc.maxAttempts;
+
 export function createUploadQueue(d: QueueDeps) {
   const random = d.random ?? Math.random;
   let onServer = new Map<string, boolean>();
   let running: Promise<StepOutcome | null> | null = null;
 
+  /** Jobs that reached MAX_JOB_ATTEMPTS in this run of the app: they wait for the next launch. */
+  const resting = new Set<string>();
+
   const stopped = () => d.stopped?.() ?? false;
   const keepGoing = () => !stopped() && !d.conditions.busy() && d.conditions.foreground() && !d.conditions.uploadsKilled();
+  /** Before every part: as keepGoing, and never on mobile data without the person's yes (ADR 0016 section 4.3). */
+  const keepSending = () => keepGoing() && (d.conditions.cellularAllowed() || !d.conditions.meteredNow());
+
+  /** Why a step stopped part way: the gate that closed, so Settings says the true thing ("Backs up on Wi-Fi"). */
+  async function stopReason(): Promise<GateReason> {
+    const g = await gate();
+    if (g) return g;
+    return !d.conditions.cellularAllowed() && d.conditions.meteredNow() ? 'wifi' : 'busy';
+  }
 
   async function gate(): Promise<GateReason | null> {
     if (stopped() || d.db.getMeta(META.enabled) !== 'on') return 'off';
@@ -149,6 +167,7 @@ export function createUploadQueue(d: QueueDeps) {
 
   function later(job: UploadJob, code: string, retryAfterSeconds: number | null = null): StepOutcome {
     const attempts = job.attempts + 1;
+    if (attempts >= MAX_JOB_ATTEMPTS) resting.add(job.entryId);
     d.db.updateJob(job.entryId, {
       attempts,
       lastError: code,
@@ -276,7 +295,7 @@ export function createUploadQueue(d: QueueDeps) {
     }
     d.db.updateJob(job.entryId, { keyVersion: key.version });
     const r = await sealInto({ ...job, keyVersion: key.version }, false);
-    if (r === 'stopped') return { kind: 'gate', reason: 'busy' };
+    if (r === 'stopped') return { kind: 'gate', reason: await stopReason() };
     if (r === 'missing') return later(job, 'missing');
     if (r === 'mismatch') {
       d.db.updateJob(job.entryId, { state: 'blocked', lastError: 'hash_mismatch' });
@@ -324,7 +343,7 @@ export function createUploadQueue(d: QueueDeps) {
 
   async function stepUpload(job: UploadJob): Promise<StepOutcome> {
     const tmp = await ensureTmp(job);
-    if (tmp === 'stopped') return { kind: 'gate', reason: 'busy' };
+    if (tmp === 'stopped') return { kind: 'gate', reason: await stopReason() };
     if (tmp === 'reset') return { kind: 'progressed' };
     const fresh = d.db.job(job.entryId)!;
     const target = await d.server.uploadTarget(fresh.objectPath!, fresh.uploadToken);
@@ -337,10 +356,10 @@ export function createUploadQueue(d: QueueDeps) {
       readPart: (offset, length) => d.files.readSlice(fresh.tmpUri!, offset, length),
       progress: { url: fresh.uploadUrl, offset: fresh.uploadOffset },
       onProgress: (p) => d.db.updateJob(job.entryId, { state: 'uploading', uploadUrl: p.url, uploadOffset: p.offset }),
-      keepGoing,
+      keepGoing: keepSending,
       partBytes: d.partBytes,
     });
-    if (result === 'stopped') return { kind: 'gate', reason: 'busy' };
+    if (result === 'stopped') return { kind: 'gate', reason: await stopReason() };
     d.db.updateJob(job.entryId, { state: 'uploaded' });
     return { kind: 'progressed' };
   }
@@ -394,7 +413,7 @@ export function createUploadQueue(d: QueueDeps) {
     for (const j of d.db.jobs()) {
       if (j.state === 'confirmed' || j.state === 'blocked') continue;
       if ((j.nextAttemptAt ?? 0) > now) continue;
-      if (!onServer.get(j.entryId)) continue;
+      if (!onServer.get(j.entryId) || resting.has(j.entryId)) continue;
       return j;
     }
     return null;
@@ -511,6 +530,21 @@ export function createUploadQueue(d: QueueDeps) {
 
     isRunning: () => running !== null,
     gate,
+
+    /**
+     * When the next waiting job may run (its backoff ends), or null: the app wakes the queue then
+     * while it is in the foreground, instead of waiting for the next foreground or store change.
+     */
+    nextWakeAt(): number | null {
+      const now = d.clock.now();
+      let best: number | null = null;
+      for (const j of d.db.jobs()) {
+        if (j.state === 'confirmed' || j.state === 'blocked' || resting.has(j.entryId)) continue;
+        if (!onServer.get(j.entryId) || j.nextAttemptAt === null || j.nextAttemptAt <= now) continue;
+        if (best === null || j.nextAttemptAt < best) best = j.nextAttemptAt;
+      }
+      return best;
+    },
   };
   return api;
 }

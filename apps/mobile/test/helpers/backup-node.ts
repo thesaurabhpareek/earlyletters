@@ -135,7 +135,7 @@ export interface NodeVaultOptions {
   supported?: boolean;
 }
 
-export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, Map<number, Uint8Array>>; device: { id: string; sk: Uint8Array } | null } {
+export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, Map<number, Uint8Array>>; devices: Map<string, { id: string; sk: Uint8Array }> } {
   const local = new Map<string, Map<number, Uint8Array>>();
   const store = () => o.icloud?.items ?? local;
   const acc = (r: BookKeyRef) => `${r.profileId}:${r.childId}`;
@@ -146,17 +146,20 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
   };
   const v = {
     local,
-    device: null as { id: string; sk: Uint8Array } | null,
+    /** As ScribeKeys: one device key per (install, account), this device only, never synced. */
+    devices: new Map<string, { id: string; sk: Uint8Array }>(),
     supported: () => o.supported ?? true,
-    async deviceKey() {
-      return v.device ? { deviceId: v.device.id, publicKey: x25519PublicOf(v.device.sk) } : null;
+    async deviceKey(profileId: string) {
+      const d = v.devices.get(profileId);
+      return d ? { deviceId: d.id, publicKey: x25519PublicOf(d.sk) } : null;
     },
-    async createDeviceKey() {
-      if (!v.device) v.device = { id: randomUUID(), sk: x25519Pair().sk };
-      return { deviceId: v.device.id, publicKey: x25519PublicOf(v.device.sk) };
+    async createDeviceKey(profileId: string) {
+      if (!v.devices.has(profileId)) v.devices.set(profileId, { id: randomUUID(), sk: x25519Pair().sk });
+      const d = v.devices.get(profileId)!;
+      return { deviceId: d.id, publicKey: x25519PublicOf(d.sk) };
     },
-    async deleteDeviceKey() {
-      v.device = null;
+    async deleteDeviceKey(profileId: string) {
+      v.devices.delete(profileId);
     },
     async bookKeyVersions(r: BookKeyRef) {
       return [...(store().get(acc(r))?.keys() ?? [])].sort((a, b) => a - b);
@@ -185,8 +188,9 @@ export function nodeVault(o: NodeVaultOptions): KeyVault & { local: Map<string, 
       return { enc: s.enc, ct: s.ct };
     },
     async openBookKey(r: BookKeyRef, version: number, s: Sealed, info: Uint8Array, aad: Uint8Array, check: { label: Uint8Array; expected: Uint8Array } | null) {
-      if (!v.device) throw new Error('no_device');
-      const bk = hpkeOpen(v.device.sk, s, info, aad);
+      const device = v.devices.get(r.profileId);
+      if (!device) throw new Error('no_device');
+      const bk = hpkeOpen(device.sk, s, info, aad);
       // As ScribeKeys: a key that fails the row's check is never written.
       if (check && !createHmac('sha256', buf(bk)).update(buf(check.label)).digest().subarray(0, 16).equals(buf(check.expected))) {
         throw Object.assign(new Error('key_check_failed'), { code: 'key_check_failed' });
@@ -299,8 +303,12 @@ export class FakeBackend {
   stepUpRequired = false;
   /** The caller's session has ended (a Stop signed out every session): escrow answers 401 unauthorized, sqlstate 28000, detail session_ended. */
   sessionEnded = false;
-  /** The main project refuses the next upload RPCs with this SQLSTATE and detail (`SCSTP step_up_required`, `28000 session_ended`). */
-  refuseRpc: { code: string; detail: string } | null = null;
+  /**
+   * `backup_begin` refuses with this SQLSTATE and detail while set. #151 raises `28000` (no detail) from
+   * `require_user()` on every upload RPC; it raises `SCSTP` only from `backup_delete_all`, so an
+   * `SCSTP` here is the client's defensive case.
+   */
+  refuseRpc: { code: string; detail: string | null } | null = null;
   /** Letters erased on the server (purge_ledger): `backup_begin` refuses them with SCDEL purged, as #151. */
   readonly purged = new Set<string>();
   /** False: rows are read back without a key check (a row stored before #151 kept one). */
@@ -340,8 +348,11 @@ export class FakeBackend {
       async registerDevice(x) {
         b.record('registerDevice', x);
         b.fault('registerDevice');
+        // As #151 backup_register_device: a device id is one profile's, with one public key; a revoked one stays revoked.
         const d = b.devices.get(x.deviceId);
-        if (d && d.uid !== uid) throw new BackupServerError('42501', false);
+        if (d && (d.uid !== uid || d.publicKey !== x.publicKey)) throw new BackupServerError(BACKUP_ERRORS.immutable, false);
+        if (d?.revoked) throw new BackupServerError(BACKUP_ERRORS.immutable, false, null, 'revoked');
+        if (!d && [...b.devices.values()].some((o) => o.publicKey === x.publicKey)) throw new BackupServerError(BACKUP_ERRORS.immutable, false);
         if (!d) b.devices.set(x.deviceId, { uid, publicKey: x.publicKey, enrolledAt: b.now(), revoked: false });
       },
       async listKeys() {
@@ -474,7 +485,8 @@ export class FakeBackend {
         if (b.stepUpRequired) throw new BackupServerError('reauth_required', false);
         if (b.sessionEnded) throw new BackupServerError('unauthorized', false, null, 'session_ended');
         const d = b.devices.get(deviceId);
-        if (!d || d.uid !== uid || d.revoked) throw new BackupServerError('42501', false);
+        // As #151: an unknown or revoked device is P0002 device_unknown (escrow 404).
+        if (!d || d.uid !== uid || d.revoked) throw new BackupServerError('not_found', false, null, 'device_unknown');
         const recent = b.now() - 90 * 24 * H;
         const other = [...b.devices.entries()].some(([id, x]) => id !== deviceId && x.uid === uid && !x.revoked && x.enrolledAt >= recent);
         const req = { requestId: randomUUID(), state: 'requested' as const, holdUntil: new Date(b.now() + (other ? 72 : 24) * H).toISOString(), uid, deviceId };
@@ -487,6 +499,7 @@ export class FakeBackend {
         b.releaseCalls += 1;
         const r = b.restores.get(requestId);
         if (!r || r.uid !== uid || r.deviceId !== deviceId) throw new BackupServerError('forbidden', false, null, 'device_unknown');
+        if (b.devices.get(deviceId)?.revoked) throw new BackupServerError('not_found', false, null, 'device_unknown');
         if (r.state === 'cancelled' || r.state === 'expired') return { state: r.state };
         // Held: the answer is the hold, nothing is opened (recovery-key.ts ReleaseResult).
         if (r.state !== 'approved' && b.now() < Date.parse(r.holdUntil)) return { state: r.state === 'requested' ? 'requested' : 'approved', holdUntil: r.holdUntil };

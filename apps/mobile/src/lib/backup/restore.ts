@@ -27,9 +27,9 @@
  * file (a newer local file wins).
  */
 import { bytesToHex } from './bytes';
-import { BackupServerError, ESCROW_DETAILS, needsSignIn, type BackupServer, type BlobRow, type EscrowClient } from './contract';
+import { BackupServerError, ESCROW_DETAILS, needsSignIn, type BackupServer, type BlobRow, type EscrowClient, type ReleasedKey } from './contract';
 import { BackupStopped, HEADER_LEN, decryptBody, parseHeader, wrapAad } from './format';
-import type { KeyManager, BookKeyState } from './keys';
+import { DeviceRevoked, type KeyManager, type BookKeyState } from './keys';
 import type { BackupDb } from './local-db';
 import type { Aead, Clock, Conditions, FileIO, KeyVault } from './ports';
 
@@ -111,6 +111,8 @@ export type RestoreOutcome =
 /** What the person sees about restore (F08 6.7 `backup.restoreWaiting`, `restoreUnavailable`). */
 export type RestoreKeyStatus =
   | { kind: 'ready' }
+  /** Keys are here and recordings are downloading: "Bringing your recordings to this phone." */
+  | { kind: 'restoring' }
   | { kind: 'waiting_icloud'; until: number }
   | { kind: 'waiting_hold'; holdUntil: string }
   | { kind: 'stopped' }
@@ -133,6 +135,8 @@ export interface RestoreDeps {
   profileId: string;
   /** True once this service was stopped (another account signed in): no new step starts. */
   stopped?: () => boolean;
+  /** Called as a download starts, so Settings can say recordings are coming back while they do. */
+  onRestoring?: () => void;
 }
 
 /** A download tried this many times with a bad object is left "not on this phone" (F08-U20: retried once). */
@@ -145,6 +149,15 @@ export const ESCROW_POLL_MS = 5 * 60 * 1000;
 
 const REQUEST_META = 'restoreRequest';
 const STOPPED_META = 'restoreStopped';
+/**
+ * Keys escrow released to this device, saved (still sealed to this device's key, so ciphertext
+ * only) before they are used. A failure after a release retries from this copy and never asks
+ * escrow to release again on its own: every release opens the keys again, writes access-log
+ * rows and emails the owner (#151), so only Try again asks once more.
+ */
+const RELEASED_META = 'restoreReleased';
+/** The server has confirmed recordings of mine (a returning person: Settings says so when backup is off here). */
+export const HAS_BACKUP_META = 'hasBackup';
 
 export function createRestore(d: RestoreDeps) {
   let blobs: BlobRow[] | null = null;
@@ -156,6 +169,7 @@ export function createRestore(d: RestoreDeps) {
 
   async function listBlobs(refresh = false): Promise<BlobRow[]> {
     if (!blobs || refresh) blobs = await d.server.listBlobs();
+    if (blobs.length > 0 && !d.db.getMeta(HAS_BACKUP_META)) d.db.setMeta(HAS_BACKUP_META, '1');
     return blobs;
   }
 
@@ -214,6 +228,7 @@ export function createRestore(d: RestoreDeps) {
     if (gated) return gated;
 
     attempt += 1;
+    d.onRestoring?.();
     const dl = d.files.tmpUri(`${blob.entryId}.${attempt}.dl`);
     const plain = d.files.tmpUri(`${blob.entryId}.${attempt}.restoring`);
     const cleanup = () => {
@@ -239,20 +254,27 @@ export function createRestore(d: RestoreDeps) {
       }
       const ref = { profileId: d.profileId, childId: blob.childId };
       const fileKey = await d.vault.unwrapFileKey(ref, header.keyVersion, header.wrapped, wrapAad(blob.entryId, d.profileId, header.keyVersion));
-      const source = d.files.openRead(dl);
-      source.read(HEADER_LEN);
-      const sink = d.files.openWrite(plain);
       let result;
       let halted = false;
+      // The file key is wiped however this ends, including when a file cannot be opened.
       try {
-        result = await decryptBody(header, fileKey, source, sink, d.aead, keepGoing);
-      } catch (e) {
-        if (!(e instanceof BackupStopped)) throw e;
-        halted = true;
+        const source = d.files.openRead(dl);
+        try {
+          source.read(HEADER_LEN);
+          const sink = d.files.openWrite(plain);
+          try {
+            result = await decryptBody(header, fileKey, source, sink, d.aead, keepGoing);
+          } catch (e) {
+            if (!(e instanceof BackupStopped)) throw e;
+            halted = true;
+          } finally {
+            sink.close();
+          }
+        } finally {
+          source.close();
+        }
       } finally {
         fileKey.fill(0);
-        source.close();
-        sink.close();
       }
       if (halted || !result) {
         cleanup();
@@ -313,9 +335,29 @@ export function createRestore(d: RestoreDeps) {
    * shows up then), and at once when the hold has ended. Never re-asks on its
    * own after a Stop, a Not me, an expiry or a revoked device.
    */
+  /** Stores keys saved from a release. A key that can never be stored here stops (Try again asks escrow once more). */
+  async function storeSaved(held: { requestId: string; deviceId: string; keys: ReleasedKey[] }): Promise<RestoreKeyStatus> {
+    try {
+      await d.keys.storeReleased(held.keys, held.deviceId, held.requestId);
+    } catch (e) {
+      // A network blip while checking the rows: try the saved copy again on the next pass, asking escrow nothing.
+      if (e instanceof BackupServerError && e.retryable) return { kind: 'unavailable' };
+      if (needsSignIn(e)) return { kind: 'sign_in_again' };
+      // The release does not open here or fails its row's check: never asked again on its own.
+      d.db.setMeta(STOPPED_META, 'release_unusable');
+      return { kind: 'stopped' };
+    }
+    d.db.deleteMeta(RELEASED_META);
+    d.db.deleteMeta(REQUEST_META);
+    return { kind: 'ready' };
+  }
+
   async function escrowStep(): Promise<RestoreKeyStatus> {
     if (d.db.getMeta(STOPPED_META)) return { kind: 'stopped' };
-    if (d.conditions.escrowKilled() || stopped()) return { kind: 'unavailable' };
+    if (stopped()) return { kind: 'unavailable' };
+    const held = d.db.getMeta(RELEASED_META);
+    if (held) return storeSaved(JSON.parse(held) as { requestId: string; deviceId: string; keys: ReleasedKey[] });
+    if (d.conditions.escrowKilled()) return { kind: 'unavailable' };
     try {
       const device = await d.keys.ensureDevice();
       const saved = d.db.getMeta(REQUEST_META);
@@ -340,10 +382,18 @@ export function createRestore(d: RestoreDeps) {
         return { kind: 'waiting_hold', holdUntil: r.holdUntil };
       }
       if (r.state !== 'released') return { kind: 'unavailable' };
-      await d.keys.storeReleased(r.keys, device.deviceId, requestId);
-      d.db.deleteMeta(REQUEST_META);
-      return { kind: 'ready' };
+      // Saved first: whatever happens next, this release is not asked for again on its own.
+      const release = { requestId, deviceId: device.deviceId, keys: r.keys };
+      d.db.setMeta(RELEASED_META, JSON.stringify(release));
+      d.db.setMeta(REQUEST_META, JSON.stringify({ requestId, holdUntil: req.holdUntil, polledAt: now }));
+      return await storeSaved(release);
     } catch (e) {
+      // This account's device key was revoked (Not me, or removed in Settings): only Try again makes a new one.
+      if (e instanceof DeviceRevoked) {
+        d.db.deleteMeta(REQUEST_META);
+        d.db.setMeta(STOPPED_META, 'device_revoked');
+        return { kind: 'stopped' };
+      }
       const detail = e instanceof BackupServerError ? e.detail : null;
       if (detail && (ESCROW_DETAILS.stopped as readonly string[]).includes(detail)) {
         d.db.deleteMeta(REQUEST_META);
@@ -365,18 +415,26 @@ export function createRestore(d: RestoreDeps) {
      * escrow releases keys during this pass, the recordings they open come back
      * in the same pass. Returns what is still waiting on keys.
      */
-    async run(): Promise<{ restored: number; keys: RestoreKeyStatus }> {
+    async run(): Promise<{ restored: number; keys: RestoreKeyStatus; remaining: number; escrow: boolean }> {
       const pass = async () => {
         let restored = 0;
+        let remaining = 0;
         let waitingUntil: number | null = null;
         let needEscrow = false;
         const all = [...(await listBlobs(true))].sort((a, b) => (a.entryId < b.entryId ? -1 : 1));
-        for (const blob of all) {
-          if (stopped()) break;
+        for (let i = 0; i < all.length; i++) {
+          const blob = all[i];
+          if (stopped()) {
+            remaining += all.length - i;
+            break;
+          }
           const r = await restoreOne(blob);
           if (r.kind === 'done') restored += 1;
-          else if (r.kind === 'gate') break;
-          else if (r.kind === 'key') {
+          else if (r.kind === 'retry') remaining += 1;
+          else if (r.kind === 'gate') {
+            remaining += all.length - i;
+            break;
+          } else if (r.kind === 'key') {
             if (r.state === 'needs_escrow') needEscrow = true;
             else if (r.state === 'waiting') {
               const st = await d.keys.keyFor(blob.childId, { create: false });
@@ -384,17 +442,17 @@ export function createRestore(d: RestoreDeps) {
             }
           }
         }
-        return { restored, waitingUntil, needEscrow };
+        return { restored, remaining, waitingUntil, needEscrow };
       };
       const first = await pass();
       if (first.needEscrow) {
         const keys = await escrowStep();
-        if (keys.kind !== 'ready') return { restored: first.restored, keys };
+        if (keys.kind !== 'ready') return { restored: first.restored, keys, remaining: first.remaining, escrow: true };
         const second = await pass();
-        return { restored: first.restored + second.restored, keys: second.needEscrow ? { kind: 'unavailable' } : { kind: 'ready' } };
+        return { restored: first.restored + second.restored, keys: second.needEscrow ? { kind: 'unavailable' } : { kind: 'ready' }, remaining: second.remaining, escrow: true };
       }
-      if (first.waitingUntil !== null) return { restored: first.restored, keys: { kind: 'waiting_icloud', until: first.waitingUntil } };
-      return { restored: first.restored, keys: { kind: 'ready' } };
+      if (first.waitingUntil !== null) return { restored: first.restored, keys: { kind: 'waiting_icloud', until: first.waitingUntil }, remaining: first.remaining, escrow: false };
+      return { restored: first.restored, keys: { kind: 'ready' }, remaining: first.remaining, escrow: false };
     },
 
     /** One letter, when it is opened: may use mobile data for a small recording. */
@@ -403,8 +461,15 @@ export function createRestore(d: RestoreDeps) {
       return blob ? restoreOne(blob, true) : null;
     },
 
-    /** The person tapped Try again after a stopped or expired request. */
-    clearStopped(): void {
+    /**
+     * The person tapped Try again after a stopped, expired or unusable request. A revoked or
+     * unknown device gets a new device key first (never on its own, ADR 0024); a release that
+     * could not be used is dropped, so escrow is asked once more.
+     */
+    async tryAgain(): Promise<void> {
+      const why = d.db.getMeta(STOPPED_META);
+      if (why === 'device_revoked' || why === 'device_unknown') await d.keys.replaceDevice();
+      d.db.deleteMeta(RELEASED_META);
       d.db.deleteMeta(STOPPED_META);
     },
 

@@ -1,6 +1,9 @@
 /**
  * Local Expo module `ScribeKeys` (iOS 17 and later for HPKE; ADR 0024).
  * Optional: absent in Expo Go, on web and on Android, so callers handle null.
+ * Not autolinked yet (`apps/mobile/package.json` `expo.autolinking.exclude`):
+ * it has never been compiled, so no iOS build carries it until a Mac build
+ * does. Until then `ScribeKeys` is null and backup reports itself unavailable.
  * Loaded only by `src/lib/backup/runtime.ts`, which only `src/lib/backup/gate.ts`
  * loads, and only in a build with `capabilities.backup` on.
  *
@@ -13,9 +16,10 @@ export interface ScribeKeysNative {
   isSupported(): boolean;
   /** file:// URI of Application Support/backup-tmp/, made if missing, excluded from backup. */
   backupTmpDirectory(): string;
-  deviceKey(): Promise<{ deviceId: string; publicKey: Uint8Array } | null>;
-  createDeviceKey(): Promise<{ deviceId: string; publicKey: Uint8Array }>;
-  deleteDeviceKey(): Promise<void>;
+  /** One device key per (install, account): `profileId` is the account, a lowercase UUID. */
+  deviceKey(profileId: string): Promise<{ deviceId: string; publicKey: Uint8Array } | null>;
+  createDeviceKey(profileId: string): Promise<{ deviceId: string; publicKey: Uint8Array }>;
+  deleteDeviceKey(profileId: string): Promise<void>;
   bookKeyVersions(service: string, account: string): Promise<number[]>;
   createBookKey(service: string, account: string, version: number): Promise<void>;
   deleteBookKeys(service: string, account: string): Promise<void>;
@@ -34,6 +38,8 @@ export interface ScribeKeysNative {
   openBookKey(
     service: string,
     account: string,
+    /** Whose device key opens it; `account` must start with `<profileId>:`. */
+    profileId: string,
     version: number,
     enc: Uint8Array,
     ct: Uint8Array,

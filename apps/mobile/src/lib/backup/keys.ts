@@ -5,9 +5,10 @@
  *   item per version keyed `<profile_id>:<child_id>:v<n>`, so it reaches the author's other
  *   Apple devices through iCloud Keychain (F08-REQ-021). Two parents of one
  *   book each have their own BK; neither is ever given the other's.
- * - One X25519 device key pair per install, private key this device only
- *   (F08-REQ-027). Its public key is registered in `backup_devices`; the escrow
- *   function seals released BKs to it.
+ * - One X25519 device key pair per (install, account), private key this device
+ *   only (F08-REQ-027). Its public key is registered in `backup_devices`, which
+ *   ties a device id to one account; the escrow function seals released BKs to
+ *   it. A revoked pair is replaced only after the person taps Try again.
  * - The never-create rule (F08-REQ-028): while the server holds an active
  *   `child_keys` row for (child, me), this phone never makes a BK. It waits up
  *   to 2 minutes for iCloud Keychain, then restores through escrow.
@@ -28,6 +29,8 @@
  */
 import { b64, bytesToBase64, equalBytes } from './bytes';
 import {
+  BACKUP_ERRORS,
+  BackupServerError,
   escrowAad,
   escrowInfo,
   isKeyExists,
@@ -77,6 +80,16 @@ const waitKey = (childId: string) => `icloudWaitSince:${childId}`;
 /** A local key of this version that may not be the escrowed one (its store was refused and the row has no check). */
 const untrustedKey = (childId: string, v: number) => `untrustedKey:${childId}:${v}`;
 const DEVICE_REGISTERED = 'deviceRegistered';
+/** The server refused this device key as revoked (`SCIMM revoked`): only Try again makes a new one. */
+export const DEVICE_REVOKED = 'deviceRevoked';
+
+/** Thrown by `ensureDevice` while this account's device key is revoked and Try again has not been tapped. */
+export class DeviceRevoked extends Error {
+  readonly code = 'device_revoked';
+  constructor() {
+    super('device_revoked');
+  }
+}
 
 export function createKeyManager(d: KeyManagerDeps) {
   let rows: ChildKeyRow[] | null = null;
@@ -137,14 +150,38 @@ export function createKeyManager(d: KeyManagerDeps) {
   }
 
   return {
-    /** Makes (once) and registers (once per device id) this install's device key pair. */
+    /**
+     * Makes (once) and registers (once per device id) this install's device key pair for this
+     * account. A key the server calls revoked is never replaced here on its own: it throws
+     * `DeviceRevoked` until the person taps Try again (`replaceDevice`).
+     */
     async ensureDevice(): Promise<DeviceKey> {
-      const key = (await d.vault.deviceKey()) ?? (await d.vault.createDeviceKey());
+      if (d.meta.getMeta(DEVICE_REVOKED)) throw new DeviceRevoked();
+      const key = (await d.vault.deviceKey(d.profileId)) ?? (await d.vault.createDeviceKey(d.profileId));
       if (d.meta.getMeta(DEVICE_REGISTERED) !== key.deviceId) {
-        await d.server.registerDevice({ deviceId: key.deviceId, publicKey: bytesToBase64(key.publicKey) });
+        try {
+          await d.server.registerDevice({ deviceId: key.deviceId, publicKey: bytesToBase64(key.publicKey) });
+        } catch (e) {
+          if (e instanceof BackupServerError && e.code === BACKUP_ERRORS.immutable && e.detail === 'revoked') {
+            d.meta.setMeta(DEVICE_REVOKED, key.deviceId);
+            throw new DeviceRevoked();
+          }
+          throw e;
+        }
         d.meta.setMeta(DEVICE_REGISTERED, key.deviceId);
       }
       return key;
+    },
+
+    /**
+     * Try again after this device was revoked or is unknown to the server (Not me, removed in
+     * Settings): a new device key pair for this account, registered on the next `ensureDevice`.
+     * Only ever from the person's tap, never on its own (ADR 0024).
+     */
+    async replaceDevice(): Promise<void> {
+      await d.vault.deleteDeviceKey(d.profileId);
+      d.meta.deleteMeta(DEVICE_REGISTERED);
+      d.meta.deleteMeta(DEVICE_REVOKED);
     },
 
     /**

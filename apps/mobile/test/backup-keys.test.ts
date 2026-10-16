@@ -11,7 +11,8 @@ import { describe, expect, it } from 'vitest';
 import { bytesToBase64, equalBytes } from '../src/lib/backup/bytes';
 import { BackupServerError, escrowAad, escrowInfo, keyCheckLabel, packEscrowWrap, releaseAad, releaseInfo, unpackEscrowWrap, type BackupServer } from '../src/lib/backup/contract';
 import { wrapAad } from '../src/lib/backup/format';
-import { ICLOUD_WAIT_MS, createKeyManager, type MetaStore } from '../src/lib/backup/keys';
+import { DeviceRevoked, ICLOUD_WAIT_MS, createKeyManager, type MetaStore } from '../src/lib/backup/keys';
+import { escrowKeysFor } from '../src/lib/backup/escrow-keys';
 import { FakeBackend, FakeICloud, hpkeOpen, hpkeSeal, nodeVault, x25519PublicOf } from './helpers/backup-node';
 
 const MAMA = '11111111-1111-4111-8111-111111111111';
@@ -273,7 +274,38 @@ describe('[F08-REQ-028] never create a book key while the server holds one', () 
   });
 });
 
-describe('[F08-REQ-027] a device key pair per install', () => {
+describe('[F08-REQ-027] a device key pair per install and account', () => {
+  it('two accounts on one phone each get their own pair, and both register (#151 ties a device id to one account)', async () => {
+    const b = new FakeBackend(() => 0);
+    const vault = nodeVault({ icloud: null });
+    const make = (uid: string) =>
+      createKeyManager({ vault, server: b.serverFor(uid), meta: memMeta(), clock: { now: () => 0, sleep: async () => {} }, profileId: uid, escrowKeys: () => b.escrowKeys() });
+    const mama = await make(MAMA).ensureDevice();
+    const papa = await make(PAPA).ensureDevice();
+    expect(papa.deviceId).not.toBe(mama.deviceId);
+    expect(equalBytes(papa.publicKey, mama.publicKey)).toBe(false);
+    expect(b.devices.get(mama.deviceId)?.uid).toBe(MAMA);
+    expect(b.devices.get(papa.deviceId)?.uid).toBe(PAPA);
+    expect((await make(MAMA).ensureDevice()).deviceId).toBe(mama.deviceId); // Mama again: her own pair, as before
+  });
+
+  it('a revoked device key (SCIMM revoked) is never replaced on its own; replaceDevice (Try again) makes and registers a new one', async () => {
+    const b = new FakeBackend(() => 0);
+    const vault = nodeVault({ icloud: null });
+    const make = () =>
+      createKeyManager({ vault, server: b.serverFor(MAMA), meta: memMeta(), clock: { now: () => 0, sleep: async () => {} }, profileId: MAMA, escrowKeys: () => b.escrowKeys() });
+    const first = await make().ensureDevice();
+    b.devices.get(first.deviceId)!.revoked = true;
+    const keys = make(); // a fresh backup.db: it registers again
+    await expect(keys.ensureDevice()).rejects.toBeInstanceOf(DeviceRevoked);
+    await expect(keys.ensureDevice()).rejects.toBeInstanceOf(DeviceRevoked); // and stays so, asking nothing
+    expect(b.requests.filter((r) => r.kind === 'registerDevice')).toHaveLength(2);
+    await keys.replaceDevice();
+    const second = await keys.ensureDevice();
+    expect(second.deviceId).not.toBe(first.deviceId);
+    expect(b.devices.get(second.deviceId)).toMatchObject({ uid: MAMA, revoked: false });
+  });
+
   it('is made once and registered once', async () => {
     const b = new FakeBackend(() => 0);
     const p = phone(b, MAMA, null);
@@ -338,5 +370,22 @@ describe('[F08-REQ-027] a device key pair per install', () => {
     if (released.state !== 'released') throw new Error('expected a release');
     await expect(c.keys.storeReleased(released.keys, device.deviceId, req.requestId)).rejects.toMatchObject({ code: 'key_check_failed' });
     expect(await c.vault.bookKeyVersions({ profileId: MAMA, childId: ASHA })).toEqual([]);
+  });
+});
+
+describe('[security 4] the drill escrow key is trusted only in a development-profile build', () => {
+  const drill = `v9:${Buffer.alloc(32, 9).toString('base64')}`;
+  const bundled = [{ version: 1, publicKey: Buffer.alloc(32, 1).toString('base64') }];
+
+  it('preview, TestFlight (preview) and production builds ignore it', () => {
+    for (const env of ['preview', 'production']) expect(escrowKeysFor(env, drill, bundled)).toEqual(bundled);
+  });
+
+  it('a development build adds it, never in place of a bundled version, and ignores anything malformed', () => {
+    expect(escrowKeysFor('development', drill, bundled)).toEqual([...bundled, { version: 9, publicKey: Buffer.alloc(32, 9).toString('base64') }]);
+    expect(escrowKeysFor('development', `v1:${Buffer.alloc(32, 9).toString('base64')}`, bundled)).toEqual(bundled);
+    for (const bad of ['', 'v0:abc', `9:${Buffer.alloc(32).toString('base64')}`, `v9:${Buffer.alloc(31).toString('base64')}`]) {
+      expect(escrowKeysFor('development', bad, bundled), bad).toEqual(bundled);
+    }
   });
 });

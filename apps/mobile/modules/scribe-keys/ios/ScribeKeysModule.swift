@@ -18,10 +18,12 @@ final class ScribeKeysException: Exception, @unchecked Sendable {
   override var reason: String { message }
 }
 
-/// This install's X25519 key pair and the random id registered with it. This device only, never synced.
-private struct DeviceItem: Codable {
+/// This install's X25519 key pair for one account, and the random id registered with it.
+/// This device only, never synced. The private key is the item's raw 32 bytes (kSecValueData);
+/// the id is in kSecAttrGeneric, so no JSON or base64 copy of the key is ever made.
+private struct DeviceItem {
   var id: String
-  var sk: String
+  var sk: Data
 }
 
 /// Encrypted recording backup (WP-F08-B2; ADR 0024). Long-lived secrets stay here:
@@ -30,20 +32,27 @@ private struct DeviceItem: Codable {
 /// public keys and the per-recording file keys it encrypts segments with.
 ///
 /// - Book keys: kSecClassGenericPassword, kSecAttrSynchronizable true,
-///   kSecAttrAccessibleAfterFirstUnlock (iCloud Keychain carries them to the
-///   person's other devices; readable while locked after the first unlock, so an
-///   upload that started in the foreground can finish). One item per version,
+///   kSecAttrAccessibleWhenUnlocked (iCloud Keychain carries them to the person's
+///   other devices; readable only while the phone is unlocked, because every
+///   backup step runs in the foreground). One item per version,
 ///   account `<profile_id>:<child_id>:v<n>`, value the key's 32 raw bytes: iCloud
 ///   resolves conflicts per item, so a sync can never drop one version while
 ///   writing another, and creating a version is a single atomic add.
-/// - Device key: kSecAttrSynchronizable false,
-///   kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly (never in a backup, never on
-///   another phone, F08-REQ-027).
+/// - Device keys: one per (install, account), service `scribe.backup.device`,
+///   account `<profile_id>`, kSecAttrSynchronizable false,
+///   kSecAttrAccessibleWhenUnlockedThisDeviceOnly (never in a backup, never on
+///   another phone, F08-REQ-027). The server ties a device id to one account, so a
+///   second account on this phone gets its own pair.
+/// - `deleteBookKeys` deletes synchronizable items, which removes them from every
+///   device on that Apple Account (iCloud Keychain). Only "delete the backup"
+///   (WP-F08-B5d) may call it, and it must say so.
+/// - Items use the app's default access group. A later Keychain sharing group (a
+///   widget or an extension) must keep the app's own group first in
+///   `keychain-access-groups`, or the app stops finding these items.
 /// - HPKE base mode, DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, AES-256-GCM
 ///   (RFC 9180), iOS 17 and later. `isSupported` is false before that.
 public class ScribeKeysModule: Module {
   private static let deviceService = "scribe.backup.device"
-  private static let deviceAccount = "install"
   /// Read-modify-write of an item must not interleave; async functions may run concurrently.
   private static let lock = NSLock()
 
@@ -79,29 +88,36 @@ public class ScribeKeysModule: Module {
 
     // ── Device key ─────────────────────────────────────────────────────────
 
-    AsyncFunction("deviceKey") { () throws -> [String: Any]? in
+    AsyncFunction("deviceKey") { (profileId: String) throws -> [String: Any]? in
+      let account = try Self.profileAccount(profileId)
       Self.lock.lock()
       defer { Self.lock.unlock() }
-      guard let item = try Self.readDevice() else { return nil }
+      guard var item = try Self.readDevice(account) else { return nil }
+      defer { item.sk.resetBytes(in: 0..<item.sk.count) }
       return ["deviceId": item.id, "publicKey": try Self.devicePrivateKey(item).publicKey.rawRepresentation]
     }
 
-    AsyncFunction("createDeviceKey") { () throws -> [String: Any] in
+    AsyncFunction("createDeviceKey") { (profileId: String) throws -> [String: Any] in
+      let account = try Self.profileAccount(profileId)
       Self.lock.lock()
       defer { Self.lock.unlock() }
-      if let item = try Self.readDevice() {
+      if var item = try Self.readDevice(account) {
+        defer { item.sk.resetBytes(in: 0..<item.sk.count) }
         return ["deviceId": item.id, "publicKey": try Self.devicePrivateKey(item).publicKey.rawRepresentation]
       }
       let key = Curve25519.KeyAgreement.PrivateKey()
-      let item = DeviceItem(id: UUID().uuidString.lowercased(), sk: key.rawRepresentation.base64EncodedString())
-      try Self.write(service: Self.deviceService, account: Self.deviceAccount, data: try JSONEncoder().encode(item), synchronizable: false)
-      return ["deviceId": item.id, "publicKey": key.publicKey.rawRepresentation]
+      let id = UUID().uuidString.lowercased()
+      var raw = key.rawRepresentation
+      defer { raw.resetBytes(in: 0..<raw.count) }
+      try Self.addDevice(account: account, id: id, sk: raw)
+      return ["deviceId": id, "publicKey": key.publicKey.rawRepresentation]
     }
 
-    AsyncFunction("deleteDeviceKey") { () throws in
+    AsyncFunction("deleteDeviceKey") { (profileId: String) throws in
+      let account = try Self.profileAccount(profileId)
       Self.lock.lock()
       defer { Self.lock.unlock() }
-      try Self.delete(service: Self.deviceService, account: Self.deviceAccount, synchronizable: false)
+      try Self.delete(service: Self.deviceService, account: account, synchronizable: false)
     }
 
     // ── Book keys ──────────────────────────────────────────────────────────
@@ -181,22 +197,28 @@ public class ScribeKeysModule: Module {
     /// replace a good key here or, through iCloud Keychain, on the person's other devices.
     /// JavaScript calls this only for a version this phone lacks or cannot trust.
     AsyncFunction("openBookKey") {
-      (service: String, account: String, version: Int, enc: Data, ct: Data, info: Data, aad: Data, checkLabel: Data, expectedCheck: Data?) throws in
+      (service: String, account: String, profileId: String, version: Int, enc: Data, ct: Data, info: Data, aad: Data, checkLabel: Data, expectedCheck: Data?) throws in
       guard #available(iOS 17.0, *) else { throw ScribeKeysException("ERR_SCRIBE_KEYS_UNSUPPORTED", "Needs iOS 17") }
       guard version >= 1 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "Bad key version") }
+      let deviceAccount = try Self.profileAccount(profileId)
+      // The book key's account starts with the same profile: a release is only ever stored for its own account.
+      guard account.hasPrefix("\(deviceAccount):") else { throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "Bad key account") }
       Self.lock.lock()
       defer { Self.lock.unlock() }
-      guard let device = try Self.readDevice() else {
+      guard var device = try Self.readDevice(deviceAccount) else {
         throw ScribeKeysException("ERR_SCRIBE_KEYS_NO_DEVICE", "This phone has no device key")
       }
+      defer { device.sk.resetBytes(in: 0..<device.sk.count) }
       let privateKey = try Self.devicePrivateKey(device)
-      let bookKey: Data
+      var bookKey: Data
       do {
         var recipient = try HPKE.Recipient(privateKey: privateKey, ciphersuite: Self.suite(), info: info, encapsulatedKey: enc)
         bookKey = try recipient.open(ct, authenticating: aad)
       } catch {
         throw ScribeKeysException("ERR_SCRIBE_KEYS_OPEN", "The key did not open")
       }
+      // Best effort: Swift may hold other copies, but this one does not outlive the call.
+      defer { bookKey.resetBytes(in: 0..<bookKey.count) }
       guard bookKey.count == 32 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_OPEN", "The key did not open") }
       if let expected = expectedCheck {
         let check = Data(HMAC<SHA256>.authenticationCode(for: checkLabel, using: SymmetricKey(data: bookKey)).prefix(16))
@@ -257,10 +279,11 @@ public class ScribeKeysModule: Module {
     return data
   }
 
+  /// The strictest class the foreground-only code allows: readable only while the phone is unlocked.
   private static func attributes(data: Data, synchronizable: Bool) -> [String: Any] {
     [
       kSecValueData as String: data,
-      kSecAttrAccessible as String: synchronizable ? kSecAttrAccessibleAfterFirstUnlock : kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+      kSecAttrAccessible as String: synchronizable ? kSecAttrAccessibleWhenUnlocked : kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
     ]
   }
 
@@ -328,9 +351,12 @@ public class ScribeKeysModule: Module {
   private static func lockedBookKey(_ service: String, _ account: String, _ version: Int) throws -> SymmetricKey {
     lock.lock()
     defer { lock.unlock() }
-    guard version >= 1, let raw = try read(service: service, account: versioned(account, version), synchronizable: true), raw.count == 32 else {
+    guard version >= 1, var raw = try read(service: service, account: versioned(account, version), synchronizable: true) else {
       throw ScribeKeysException("ERR_SCRIBE_KEYS_NO_KEY", "No book key of that version on this phone")
     }
+    // SymmetricKey keeps its own copy; this one is cleared (best effort).
+    defer { raw.resetBytes(in: 0..<raw.count) }
+    guard raw.count == 32 else { throw ScribeKeysException("ERR_SCRIBE_KEYS_NO_KEY", "No book key of that version on this phone") }
     return SymmetricKey(data: raw)
   }
 
@@ -341,20 +367,46 @@ public class ScribeKeysModule: Module {
     return d == 0
   }
 
-  private static func readDevice() throws -> DeviceItem? {
-    guard let data = try read(service: deviceService, account: deviceAccount, synchronizable: false) else { return nil }
-    guard let item = try? JSONDecoder().decode(DeviceItem.self, from: data) else {
+  /// The device item's account: the profile id, a lowercase UUID (nothing else is ever accepted).
+  private static func profileAccount(_ profileId: String) throws -> String {
+    let p = profileId.lowercased()
+    guard UUID(uuidString: p) != nil else { throw ScribeKeysException("ERR_SCRIBE_KEYS_INPUT", "Bad profile id") }
+    return p
+  }
+
+  private static func readDevice(_ account: String) throws -> DeviceItem? {
+    var q = query(service: deviceService, account: account, synchronizable: false)
+    q[kSecReturnData as String] = true
+    q[kSecReturnAttributes as String] = true
+    q[kSecMatchLimit as String] = kSecMatchLimitOne
+    var out: CFTypeRef?
+    let status = SecItemCopyMatching(q as CFDictionary, &out)
+    if status == errSecItemNotFound { return nil }
+    guard status == errSecSuccess, let found = out as? [String: Any] else {
+      throw ScribeKeysException("ERR_SCRIBE_KEYS_KEYCHAIN", "Keychain read failed (\(status))")
+    }
+    guard let sk = found[kSecValueData as String] as? Data, sk.count == 32,
+          let generic = found[kSecAttrGeneric as String] as? Data,
+          let id = String(data: generic, encoding: .utf8), UUID(uuidString: id) != nil else {
       throw ScribeKeysException("ERR_SCRIBE_KEYS_ITEM", "The device key item could not be read")
     }
-    return item
+    return DeviceItem(id: id, sk: sk)
+  }
+
+  /// Add only, so two calls can never leave two different keys behind one id.
+  private static func addDevice(account: String, id: String, sk: Data) throws {
+    var add = query(service: deviceService, account: account, synchronizable: false)
+    for (k, v) in attributes(data: sk, synchronizable: false) { add[k] = v }
+    add[kSecAttrGeneric as String] = Data(id.utf8)
+    let status = SecItemAdd(add as CFDictionary, nil)
+    guard status == errSecSuccess else {
+      throw ScribeKeysException("ERR_SCRIBE_KEYS_KEYCHAIN", "Keychain write failed (\(status))")
+    }
   }
 
   private static func devicePrivateKey(_ item: DeviceItem) throws -> Curve25519.KeyAgreement.PrivateKey {
-    guard let raw = Data(base64Encoded: item.sk) else {
-      throw ScribeKeysException("ERR_SCRIBE_KEYS_ITEM", "The device key item could not be read")
-    }
     do {
-      return try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: raw)
+      return try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: item.sk)
     } catch {
       throw ScribeKeysException("ERR_SCRIBE_KEYS_ITEM", "The device key item could not be read")
     }

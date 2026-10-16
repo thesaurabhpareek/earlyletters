@@ -120,3 +120,13 @@ describe('[F08-REQ-041] a build with the flag off loads none of backup', () => {
     expect(layout).toMatch(/import \{ startBackup \} from '@\/lib\/backup\/gate';/);
   });
 });
+
+describe('[security 1] the never-compiled native module is in no iOS build yet', () => {
+  it('apps/mobile/package.json excludes scribe-keys from Expo autolinking, and the JS side treats it as absent', () => {
+    const pkg = JSON.parse(readFileSync(join(APP, 'package.json'), 'utf8')) as { expo?: { autolinking?: { exclude?: string[] } } };
+    // Remove this line, and this test, in the PR whose Mac or macOS CI build first compiles modules/scribe-keys.
+    expect(pkg.expo?.autolinking?.exclude).toEqual(['scribe-keys']);
+    const index = readFileSync(join(APP, 'modules', 'scribe-keys', 'index.ts'), 'utf8');
+    expect(index).toMatch(/requireOptionalNativeModule<ScribeKeysNative>\('ScribeKeys'\)/);
+  });
+});
