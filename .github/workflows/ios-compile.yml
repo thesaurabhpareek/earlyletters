@@ -170,6 +170,7 @@ jobs:
             ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
+            -IDEBuildingContinueBuildingAfterErrors=YES \
             build > "$log" 2>&1
           status=$?
           grep -E '(error|warning): |\*\* BUILD (SUCCEEDED|FAILED) \*\*|^The following build commands failed' "$log" | grep -v '/Pods/' | head -400 || true
@@ -200,6 +201,25 @@ jobs:
           else
             echo "::notice title=iOS compile succeeded::Xcode ${XCODE_VERSION}, scheme ${SCHEME}, $(grep -c ': warning: ' "$log" || true) warnings in total"
           fi
+          # Each local module on its own: built (its product exists), or how many of the errors are in its files.
+          # xcodebuild keeps going after an error (above), so one broken module does not hide the others.
+          products="$RUNNER_TEMP/DerivedData/Build/Products"
+          modules=""
+          for spec in "$GITHUB_WORKSPACE"/apps/mobile/modules/*/ios/*.podspec; do
+            pod=$(basename "$spec" .podspec)
+            dir=$(basename "$(dirname "$(dirname "$spec")")")
+            errs=$(grep -c "apps/mobile/modules/${dir}/" "$errors" || true)
+            if [ -n "$(find "$products" -maxdepth 3 \( -name "lib${pod}.a" -o -name "${pod}.framework" \) -print -quit 2>/dev/null)" ]; then
+              state="built"
+            elif [ "$errs" -gt 0 ]; then
+              state="FAILED, ${errs} error(s)"
+            else
+              state="not built (no error in its files; a dependency or the build stopped first)"
+            fi
+            modules="${modules}${dir} (${pod}): ${state}%0A"
+            echo "- ${dir} (\`${pod}\`): ${state}" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "::notice title=Local modules::${modules}"
           if [ $status -ne 0 ]; then
             echo "Last 150 lines of the log:"; tail -150 "$log"
           fi
