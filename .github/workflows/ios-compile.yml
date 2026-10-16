@@ -1,0 +1,178 @@
+# Compiles the iOS app, including every Swift file under apps/mobile/modules, for the iOS Simulator. No signing,
+# no secrets, no upload: it proves the native project generates and builds before anyone spends an EAS build on
+# it. Until this runs, no Swift in this repository has ever been compiled.
+#
+# What it does: npm ci; `expo prebuild --platform ios --no-install` with the env of the eas.json `testflight`
+# profile and EXPO_PUBLIC_SERVER_FEATURES=off; pod install; xcodebuild for the simulator with
+# CODE_SIGNING_ALLOWED=NO. Compile errors become annotations on the file and line, and a list in the run summary.
+#
+# Runner and Xcode, checked on 16 Oct 2026:
+# - Expo SDK 57 needs Xcode 26.4 or later (docs.expo.dev/versions/v57.0.0, "Support for Android and iOS versions";
+#   source expo/expo packages/@expo/sdk-compatibility/src/sdk-compatibility.json: "xcodeVersionRange": ">=26.4.0").
+# - macos-15 tops out at Xcode 26.3, so this uses macos-26 (arm64, 3 CPU, 7 GB), whose image ships Xcode 26.4.1,
+#   26.5 and 26.6 (actions/runner-images images/macos/macos-26-arm64-Readme.md, image 20260907.0351.1).
+#   XCODE_VERSION pins 26.6; the job fails with the list of installed Xcodes if the image drops it.
+# - Standard GitHub-hosted runners, macOS included, are free and unlimited for public repositories
+#   (docs.github.com/en/actions/reference/runners/github-hosted-runners, "Standard GitHub-hosted runners for
+#   public repositories"). This repository is public.
+#
+# Caches: CocoaPods (the download cache and ios/Pods, keyed on the lockfile, the app config and the podspecs) and
+# DerivedData (keyed on the same plus the Swift sources, restoring the newest older one, so a re-run in the same
+# pull request builds incrementally). A pull request's caches are its own; once this file is on the default branch,
+# a workflow_dispatch run on develop seeds caches every pull request can read.
+name: iOS compile
+
+on:
+  pull_request:
+    paths:
+      - apps/mobile/modules/**
+      - apps/mobile/app.config.ts
+      - apps/mobile/package.json
+      - apps/mobile/ios/**
+      - package-lock.json
+      - .github/workflows/ios-compile.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-compile-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  XCODE_VERSION: '26.6'
+  NODE_VERSION: '22'
+
+jobs:
+  compile:
+    name: iOS simulator build (no signing)
+    runs-on: macos-26
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          set -euo pipefail
+          app="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ ! -d "$app" ]; then
+            echo "::error::Xcode ${XCODE_VERSION} is not on this image. Installed:"; ls -d /Applications/Xcode*.app; exit 1
+          fi
+          sudo xcode-select -s "$app/Contents/Developer"
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: Build env from the eas.json testflight profile (server features off)
+        run: |
+          set -euo pipefail
+          node -e '
+            const env = require("./apps/mobile/eas.json").build.testflight.env || {};
+            env.EXPO_PUBLIC_SERVER_FEATURES = "off";
+            for (const [k, v] of Object.entries(env)) {
+              if (!/^EXPO_PUBLIC_[A-Z0-9_]+$/.test(k) || /[\r\n]/.test(String(v))) { console.error("refusing " + k); process.exit(1); }
+              console.log(k + "=" + v);
+            }
+          ' | tee -a "$GITHUB_ENV"
+
+      - name: expo prebuild --platform ios --no-install
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios --no-install --clean
+
+      - name: Native project facts
+        id: project
+        working-directory: apps/mobile/ios
+        run: |
+          set -euo pipefail
+          ws=$(ls -d ./*.xcworkspace | head -1)
+          echo "workspace=${ws#./}" >> "$GITHUB_OUTPUT"
+          echo "scheme=$(basename "$ws" .xcworkspace)" >> "$GITHUB_OUTPUT"
+          echo "Workspace ${ws#./}; Podfile.properties.json:"; cat Podfile.properties.json
+
+      - name: Restore CocoaPods
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/mobile/ios/Pods
+          key: pods-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json', 'apps/mobile/app.config.ts', 'apps/mobile/modules/**/*.podspec', 'apps/mobile/ios/Podfile.properties.json') }}
+          restore-keys: |
+            pods-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+
+      - name: pod install
+        working-directory: apps/mobile/ios
+        run: pod install
+
+      - name: Restore DerivedData
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/DerivedData
+          key: dd-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('package-lock.json', 'apps/mobile/app.config.ts', 'apps/mobile/modules/**') }}
+          restore-keys: |
+            dd-${{ runner.os }}-xcode${{ env.XCODE_VERSION }}-
+
+      - name: xcodebuild (iOS Simulator, Debug, CODE_SIGNING_ALLOWED=NO)
+        working-directory: apps/mobile/ios
+        env:
+          WORKSPACE: ${{ steps.project.outputs.workspace }}
+          SCHEME: ${{ steps.project.outputs.scheme }}
+        run: |
+          # The default shell stops at the first failure; this step reports the errors before it fails.
+          set +e
+          set -uo pipefail
+          log="$RUNNER_TEMP/xcodebuild.log"
+          # Full log to a file; only the lines a person needs on screen.
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build > "$log" 2>&1
+          status=$?
+          grep -E '(error|warning): |\*\* BUILD (SUCCEEDED|FAILED) \*\*|^The following build commands failed' "$log" | grep -v '/Pods/' | head -400 || true
+          # Every compile error as an annotation on its file and line, and a list in the summary.
+          root="$GITHUB_WORKSPACE/"
+          {
+            echo "### iOS compile: $([ $status -eq 0 ] && echo succeeded || echo failed) (Xcode ${XCODE_VERSION}, scheme ${SCHEME})"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^/[^:]+:[0-9]+:[0-9]+: error: ' "$log" | sort -u | head -100 | while IFS= read -r line; do
+            file="${line%%:*}"; rest="${line#*:}"; ln="${rest%%:*}"; rest="${rest#*:}"; col="${rest%%:*}"; msg="${rest#*: error: }"
+            rel="${file#"$root"}"
+            esc="${msg//%/%25}"
+            echo "::error file=${rel},line=${ln},col=${col}::${esc}"
+            echo "- \`${rel}:${ln}:${col}\`: ${msg}" >> "$GITHUB_STEP_SUMMARY"
+          done
+          if [ $status -ne 0 ]; then
+            echo "Last 150 lines of the log:"; tail -150 "$log"
+          fi
+          exit $status
+
+      - name: Keep the build log
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: xcodebuild-log
+          path: ${{ runner.temp }}/xcodebuild.log
+          retention-days: 14
