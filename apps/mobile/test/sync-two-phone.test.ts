@@ -382,4 +382,60 @@ describe('two parents, three phones, one server (protocol v1)', () => {
     expect(ledgerCount(mama2).present).toBe(2); // the same author's letters, pulled to a second phone
     expect(ledgerCount(papa).present).toBe(1);
   });
+
+  it('[LEGAL-REQ-009] a letter deleted during a consent pause stays deleted when consent returns (final review B-1, P10)', async () => {
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    ids.paused = writeLetter(mama, ASHA, 'You held the spoon by yourself.');
+    expect((await mama.sync()).phase).toBe('paused_consent'); // the upload met SCCON and waits
+    tick();
+    mama.store.deleteEntry(ids.paused);
+    expect(outbox(mama)).toEqual([]); // it never reached the server: deleted before it left, nothing to send
+    await mama.sync();
+    await server.sensitiveConsent(MAMA, 'accept');
+    await mama.sync();
+    expect(await serverEntry(ids.paused)).toBeUndefined();
+    expect(mama.store.listDeleted().map((e) => e.id)).toContain(ids.paused);
+    await papa.sync();
+    expect(row(papa, ids.paused)).toBeNull();
+  }, 60_000);
+
+  it('[LEGAL-REQ-009] a delete the server took drops every earlier upload of the letter still queued', async () => {
+    ids.pausedSynced = writeLetter(mama, ASHA, 'Your laugh at bath time.');
+    await mama.sync();
+    await papa.sync();
+    await server.sensitiveConsent(MAMA, 'withdraw');
+    editWords(mama, ids.pausedSynced, 'Your laugh at bath time, and the splash.');
+    expect((await mama.sync()).phase).toBe('paused_consent');
+    tick();
+    mama.store.deleteEntry(ids.pausedSynced);
+    await mama.sync(); // the delete goes during the pause
+    expect((await serverEntry(ids.pausedSynced))?.deleted_at).not.toBeNull();
+    await server.sensitiveConsent(MAMA, 'accept');
+    await mama.sync();
+    expect((await serverEntry(ids.pausedSynced))?.deleted_at).not.toBeNull(); // the waiting edit never brought it back
+    expect(outbox(mama)).toEqual([]);
+    await papa.sync();
+    expect(row(papa, ids.pausedSynced)).toBeNull();
+    expect(mama.store.listDeleted().map((e) => e.id)).toContain(ids.pausedSynced);
+  }, 60_000);
+
+  it('[F16-REQ-024] a phone offline past the 60 day forget cannot bring an erased letter back: its edit names a past version (final review B6, P5)', async () => {
+    ids.forgot = writeLetter(mama, ASHA, 'You ate a whole pear.');
+    await mama.sync();
+    await mama2.sync();
+    editWords(mama2, ids.forgot, 'You ate a whole pear, and the core.'); // offline
+    tick();
+    mama.store.deleteEntry(ids.forgot);
+    await mama.sync();
+    // The server's purge, then its 60 day trim of the ledger, while the second phone was away.
+    await server.sys('delete from entries where id = $1', [ids.forgot]);
+    await server.sys("delete from purge_ledger where entity_type = 'entry' and entity_id = $1", [ids.forgot]);
+    const r = await mama2.sync();
+    expect(r.pushed).toBe(0);
+    expect(await serverEntry(ids.forgot)).toBeUndefined();
+    expect(mama2.store.listDeleted().map((e) => e.id)).toContain(ids.forgot); // its words stay on that phone, in Recently deleted
+    await mama.sync();
+    await papa.sync();
+    expect(row(papa, ids.forgot)).toBeNull();
+  }, 60_000);
 });

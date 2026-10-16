@@ -233,6 +233,11 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     if (r.ok) {
       pushed++;
       removeOp(db, row.seq);
+      // A delete the server took: every upload of the letter queued before it is moot, and one that
+      // waited (a consent pause sends deletions first) must never bring the letter back.
+      if (row.type === 'entry.delete') {
+        db.run("DELETE FROM sync_outbox WHERE entity_id = ? AND type IN ('entry.upsert', 'entry.reupload') AND seq < ?", row.entity_id, row.seq);
+      }
       if (row.type.startsWith('entry.')) {
         if (r.missing) {
           // The server does not have this letter: a restore sends it whole; a delete has nothing to do.
@@ -282,6 +287,12 @@ export function applyPushResponse(db: SqlDb, rows: OutboxRow[], res: PushRespons
     }
   }
   const unanswered = rows.filter((r) => !answered.has(r.op_id));
+  if (res.paused) {
+    // SCCON: the op that met it and every op after it did not apply (the server rolled that op back and
+    // stopped). They are as if never sent, so a delete made during the pause drops them instead of
+    // overtaking them, and nothing waits to bring the letter back when consent returns.
+    for (const u of unanswered) db.run('UPDATE sync_outbox SET sent_at = NULL, attempts = 0, next_attempt_at = NULL WHERE seq = ?', u.seq);
+  }
   return {
     pushed,
     rejected,

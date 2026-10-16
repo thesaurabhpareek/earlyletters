@@ -686,7 +686,11 @@ export function erasesAt(deletedAt: string): string {
  */
 export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   if (capabilities.sync) return false;
-  const c = ctx();
+  return eraseHere(ctx(), id, eraseAudio);
+}
+
+/** The file, then the row: a deleted letter erased on this phone only, nothing sent. */
+function eraseHere(c: RepoContext, id: string, eraseAudio: AudioEraser): boolean {
   const uri = entries.deletedAudioUri(c, id);
   if (uri === undefined) return false;
   try {
@@ -701,18 +705,21 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
 
 /**
  * Launch purge: erases letters that have waited SHELF_DAYS or more. Does
- * nothing when the build syncs (the server owns the clock, spec 2.2 step 7)
- * or when `nowMs` is earlier than the latest recorded launch (a phone clock
- * moved back). Returns how many letters were erased.
+ * nothing when `nowMs` is earlier than the latest recorded launch (a phone
+ * clock moved back). When the build syncs, the server's clock rules every
+ * letter it holds (spec 2.2 step 7), so only letters it never held, or no
+ * longer holds, with nothing queued for them, are erased here, with nothing
+ * sent; otherwise they would wait in Recently deleted forever. Returns how
+ * many letters were erased.
  */
 export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
-  if (capabilities.sync) return 0;
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
   if (Number.isFinite(last) && nowMs < last) return 0;
   const c = ctx();
+  const cutoff = new Date(nowMs - SHELF_MS).toISOString();
   let erased = 0;
-  for (const id of entries.expiredIds(c, new Date(nowMs - SHELF_MS).toISOString())) {
-    if (eraseEntry(id, eraseAudio)) erased += 1;
+  for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
+    if (eraseHere(c, id, eraseAudio)) erased += 1;
   }
   return erased;
 }
