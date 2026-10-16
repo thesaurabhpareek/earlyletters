@@ -25,14 +25,19 @@ export const wordsCopy = {
     askTitle: 'Get your {name} words ready',
     askBody: 'Your voice is kept. To write down the words, this phone needs a one-time download of {size}.',
     askButton: 'Download on Wi-Fi',
-    // The Wi-Fi wait card: one time, this download only.
-    mobileDataButton: 'Use mobile data {size}',
-    // Review, after leaving the app ended the take.
-    stoppedInBackground: 'The recording stopped when you left the app. Everything up to then is kept.',
+    // The Wi-Fi wait card: one time, this download only. US term (D-087). The spec's "Use cellular data {size}"
+    // is 24 characters and the button budget is 22 (rules.test.ts), so the size follows a comma, as in
+    // `speechSettingsCopy` ("Waits for Wi-Fi, {n} MB").
+    mobileDataButton: 'Use cellular, {size}',
+    // Review: why a take stopped early, above the sheet (S14).
+    stoppedInBackground: 'The recording stopped when you left the app. Everything before that is kept.',
+    stoppedInterruption: 'The recording stopped for a call or an alert. Everything before that is kept.',
+    stoppedClosed: 'The recording stopped when the app closed. Everything before that is kept.',
   },
   noSpeech: {
-    title: 'No talking in this one',
-    body: 'The recording is kept just as it is. You can add words by typing them.',
+    // Never says or implies that nobody spoke: the take may hold a laugh or a babble (D-086).
+    title: 'No words in this one',
+    body: 'The recording is kept just as it is.',
     // Nobody spoke: one action each, the recording itself is never touched (D-086).
     tryAgainButton: 'Try again',
     recordAgainButton: 'Record again',
