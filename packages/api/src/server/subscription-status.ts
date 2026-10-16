@@ -41,8 +41,13 @@ export type StoreEnvironment = (typeof STORE_ENVIRONMENTS)[number];
 export const PLAN_PERIODS = ['monthly', 'annual'] as const;
 export type PlanPeriod = (typeof PLAN_PERIODS)[number];
 
-/** How the free period (if any) was offered (R4 PT-10, F14-REQ-044). */
-export const OFFER_TYPES = ['none', 'introductory', 'promotional', 'offer_code'] as const;
+/**
+ * How the free period (if any) was offered (R4 PT-10, F14-REQ-044).
+ * `win_back` is StoreKit's iOS 18 win-back offer (S06 PR #178 deviation 2):
+ * Plus configures none, but a build that sees one reports it as itself, not
+ * as `promotional`. S06's SQL accepts it.
+ */
+export const OFFER_TYPES = ['none', 'introductory', 'promotional', 'offer_code', 'win_back'] as const;
 export type OfferType = (typeof OFFER_TYPES)[number];
 
 /** `terms_shown` for an offer code redeemed outside the app, where we showed no terms (F14-REQ-044). */
@@ -109,6 +114,7 @@ export const StatusReportSchema = v.strictObject({
 });
 export type StatusReport = v.InferOutput<typeof StatusReportSchema>;
 
+/** `older` stays in the vocabulary, but S06's SQL never returns it: receive order decides (PR #178 deviation 3). */
 export const STORED_OUTCOMES = ['created', 'updated', 'unchanged', 'older'] as const;
 export type StoredOutcome = (typeof STORED_OUTCOMES)[number];
 export const CONSENT_OUTCOMES = ['recorded', 'already_recorded', 'none'] as const;
@@ -185,20 +191,27 @@ export function settleQueued(queue: readonly QueuedStatusReport[], sentKey: stri
 
 /**
  * Signed out, there is no salt yet, so no `sub_ref` can be made. What waits
- * on the phone instead is the consent moment, keyed by an opaque handle the
- * native store module makes (a random UUID it maps to the transaction inside
- * Swift and the Keychain; JavaScript never sees a transaction id,
- * F14-REQ-014). At sign-in the app fetches the salt, asks the module for the
- * `sub_ref` and current status of each handle, attaches the consent facts and
- * enqueues the report. Only `purchased` ownership makes a pending notice.
+ * on the phone instead is the consent moment, keyed by the product and the
+ * first-purchase time StoreKit reports for it (S06 PR #178 deviation 1,
+ * accepted: no Keychain item, no id stored, the same L2 on the phone). At
+ * sign-in the app fetches the salt, asks the native store module for each
+ * purchase's `sub_ref` and status, matches a waiting consent by product and
+ * first-purchase time, and enqueues the report. JavaScript never sees a
+ * transaction id (F14-REQ-014). Only `purchased` ownership makes one.
  */
-export const LOCAL_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const PendingPurchaseSchema = v.strictObject({
-  local_ref: v.pipe(v.string(), v.regex(LOCAL_REF_RE)),
+  product_id: v.pipe(v.string(), v.regex(PRODUCT_ID_RE)),
+  /** StoreKit's original purchase date for this subscription (device-reported, phone only, never sent). */
+  first_purchase_at: isoTime,
   consent: ConsentFactsSchema,
   queued_at: isoTime,
 });
 export type PendingPurchase = v.InferOutput<typeof PendingPurchaseSchema>;
+
+/** Whether a waiting consent belongs to a purchase the native module described. */
+export function pendingMatches(p: Pick<PendingPurchase, 'product_id' | 'first_purchase_at'>, product_id: string, first_purchase_at: string): boolean {
+  return p.product_id === product_id && Date.parse(p.first_purchase_at) === Date.parse(first_purchase_at);
+}
 
 /** Builds the first report for a pending purchase once the native module has its `sub_ref` and status. */
 export function reportFromPending(

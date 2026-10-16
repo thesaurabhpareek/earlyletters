@@ -101,9 +101,10 @@ export const ERROR_DETAILS = [
   'step_up_required', 'device_unknown', 'device_revoked', 'on_hold', 'cancelled', 'deletion_pending',
   'limit_restores', 'limit_keys', 'limit_keys_stored', 'key_exists', 'revoked', 'entry', 'key', 'object',
   'nothing', 'released', 'count', 'code', 'size', 'approvals', 'begin', 'devices',
-  // S05 backup server (feat/backup-server, 15 Oct): SCRAT pending (32 open reservations per account),
+  // S05 backup server (PR #151, ad222eb): SCRAT pending (32 open reservations per account),
   // SCIMM restore_open (revoking a device while another has an open restore), SCBKO rotation
-  // (escrow key rotation guard), SCSES session_ended (the session behind p_session has ended).
+  // (escrow key rotation guard), 28000 session_ended (the session was ended, for example by the
+  // Stop link), SCSTP step_up_required (needs a sign-in in the last 10 minutes in a live session).
   'pending', 'restore_open', 'rotation', 'session_ended',
   // Kill switches (remote-config.ts KILL_SWITCH_KEYS), for `paused`
   'sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport',
@@ -203,9 +204,11 @@ export const SQLSTATE_RULES: Readonly<Record<string, ErrorRule>> = {
   SCBKO: rule('paused', 'retry'),
   // S05 (PR #151): the backup quota is reached.
   SCQTA: rule('quota_full', 'tell_user'),
-  // S05 (PR #151, escrow only, detail session_ended): the session that asked has ended; sign in again.
-  SCSES: rule('unauthorized', 'reauth'),
+  // S05 (PR #151): a sign-in in the last 10 minutes, in a live session, is needed (detail step_up_required):
+  // ask the person to sign in again, then retry. Never a silent token refresh, which cannot satisfy it.
+  SCSTP: rule('reauth_required', 'tell_user'),
   SCANO: rule('anonymous_refused', 'reject'),
+  // Not signed in, or (detail session_ended, S05 PR #151) the session was ended by the Stop link: sign in again.
   '28000': rule('unauthorized', 'reauth'),
   SCRAT: rule('rate_limited', 'tell_user'),
   // Founder decision 3 (Oct 3): the server stops enforcing Plus; kept until the migration removing it lands.
