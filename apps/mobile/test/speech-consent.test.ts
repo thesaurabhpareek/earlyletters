@@ -121,8 +121,11 @@ describe('wiring', () => {
 
   it('every other call to requestSpeechFor is gated; a tap goes through startSpeechDownload, which records the yes', () => {
     const calls = [...queue.matchAll(/requestSpeechFor\(/g)].length;
-    // definition + the three gated calls + startSpeechDownload
-    expect(calls).toBe(5);
+    // definition + the three gated calls + the automatic retry (F05-U29) + startSpeechDownload
+    expect(calls).toBe(6);
+    // The retry scheduler only asks while allowed() holds, which includes the yes (behaviour: transcription-queue.test.ts).
+    expect(queue).toMatch(/allowed: \(\) => started && state\.foreground && speechAutoStartAllowed\(\)/);
+    expect(queue).toMatch(/request: \(language\) => void requestSpeechFor\(language, \{ automatic: true \}\)/);
     expect(queue).toMatch(/export async function startSpeechDownload[\s\S]*?setSpeechDownloadChoice\('yes'\);\s*await requestSpeechFor\(language, opts\)/);
     expect(src('app/settings/recordings.tsx')).not.toMatch(/\brequestSpeechFor\b/);
   });
