@@ -3,6 +3,12 @@ import ExpoModulesCore
 import StoreKit
 import UIKit
 
+/// SwiftUI also declares `Transaction` and becomes visible with ExpoModulesCore, so a bare
+/// `Transaction` is ambiguous (Xcode 26.6, iOS compile check #188). Every `Transaction` in
+/// this module means StoreKit's. Internal, not fileprivate: it appears in internal
+/// signatures (`Entitlements.isLive`).
+typealias Transaction = StoreKit.Transaction
+
 /// Plus through Apple only (docs/adr/0013; founder decision 3, 3 Oct 2026).
 ///
 /// Everything here is Apple's own: SubscriptionStoreView renders the plans,
