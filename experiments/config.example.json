@@ -1,8 +1,9 @@
 {
-  "_readme": "Copy of this file lives at config.local.json (git-ignored). Put your real family words ONLY in the local copy.",
+  "_readme": "Copy of this file lives at config.local.json (git-ignored). Put your real family words ONLY in the local copy. Each phrase may name its own language (en, hi, es, zh, fr, ar, pt; default: language below), speaker (any label: it never leaves your Mac), kind (scripted, unscripted, whisper, white_noise, noise, code_switched, wrong_language) and group (Arabic dialect group, or pt-BR / pt-PT). README section 7.",
   "childName": "Asha",
   "language": "en",
   "models": ["base", "small", "large-v3-turbo-q5_0"],
+  "scripts": { "zh": "Hans" },
   "dictionary": [
     { "term": "Asha", "kind": "child", "heardAs": [] },
     { "term": "Ashu", "kind": "nickname", "heardAs": [] },
@@ -11,8 +12,9 @@
     { "term": "chalo", "kind": "word", "heardAs": [] }
   ],
   "phrases": [
-    { "file": "01.m4a", "expected": "Asha walked to Mumma today and then she said bau to the dog." },
-    { "file": "02.m4a", "expected": "Chalo Ashu, time for bath, she was not wanting to sleep na." },
-    { "file": "silence-white-noise.m4a", "expected": "" }
+    { "file": "01.m4a", "expected": "Asha walked to Mumma today and then she said bau to the dog.", "speaker": "mumma", "kind": "scripted" },
+    { "file": "02.m4a", "expected": "Chalo Ashu, time for bath, she was not wanting to sleep na.", "speaker": "papa", "kind": "code_switched" },
+    { "file": "03-hi.m4a", "expected": "आज आशा ने पहली बार पापा बोला।", "language": "hi", "speaker": "papa", "kind": "scripted" },
+    { "file": "silence-white-noise.m4a", "expected": "", "kind": "noise" }
   ]
 }
