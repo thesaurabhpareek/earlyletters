@@ -5,7 +5,7 @@
  * created with mode 0600 in a path the operator chooses (keep it out of the
  * repo and delete it when the ticket closes).
  */
-import { writeFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
 export type Args = { flags: Record<string, string | true>; lists: Record<string, string[]> };
@@ -42,6 +42,11 @@ export function fail(message: string, code = 1): never {
 /** Writes a file only the operator can read. */
 export function writePrivate(path: string, text: string): void {
   writeFileSync(path, text, { mode: 0o600 });
+}
+
+/** Appends content-free text (a GitHub step summary, for example). */
+export function appendText(path: string, text: string): void {
+  appendFileSync(path, text);
 }
 
 export const argv = (): string[] => process.argv.slice(2);

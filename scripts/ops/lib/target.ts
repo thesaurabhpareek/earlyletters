@@ -30,4 +30,39 @@ export function resolveTarget(input: { url: string; serviceKey: string; projectR
   return { target: { url: input.url.trim().replace(/\/+$/, ''), serviceKey: input.serviceKey, projectRef: ref!, operator: input.operator, ticket: input.ticket as string }, problems: [] };
 }
 
-export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** libpq settings for a Postgres URL, passed to psql as PG* variables so the password is never in argv. */
+export interface DbTarget {
+  env: Record<'PGHOST' | 'PGPORT' | 'PGUSER' | 'PGPASSWORD' | 'PGDATABASE' | 'PGSSLMODE', string>;
+  /** The Supabase project the URL belongs to: `db.<ref>.supabase.co`, or a pooler host with user `postgres.<ref>`. */
+  projectRef: string | null;
+}
+
+export function dbTargetOf(raw: string): DbTarget | null {
+  let u: URL;
+  try {
+    u = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (u.protocol !== 'postgres:' && u.protocol !== 'postgresql:') return null;
+  if (!u.hostname || !u.username) return null;
+  let user: string, password: string, database: string;
+  try {
+    user = decodeURIComponent(u.username);
+    password = decodeURIComponent(u.password);
+    database = decodeURIComponent(u.pathname.replace(/^\//, ''));
+  } catch {
+    return null;
+  }
+  const host = u.hostname.toLowerCase();
+  const direct = /^db\.([a-z0-9]{8,40})\.supabase\.co$/.exec(host);
+  const pooled = /\.pooler\.supabase\.com$/.test(host) ? /^postgres\.([a-z0-9]{8,40})$/.exec(user) : null;
+  const sslmode = u.searchParams.get('sslmode') ?? 'require';
+  if (!/^(disable|allow|prefer|require|verify-ca|verify-full)$/.test(sslmode)) return null;
+  return {
+    env: { PGHOST: host, PGPORT: u.port || '5432', PGUSER: user, PGPASSWORD: password, PGDATABASE: database || 'postgres', PGSSLMODE: sslmode },
+    projectRef: direct?.[1] ?? pooled?.[1] ?? null,
+  };
+}
+
+export const UUID_RE =/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
