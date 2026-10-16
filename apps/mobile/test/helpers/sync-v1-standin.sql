@@ -2,7 +2,7 @@
 -- after every real file in supabase/migrations, and only when those files do not
 -- already define protocol v1 (the check: sync_push mentions conflict_groups).
 --
--- It is S03's request to S02 in runnable form (docs/adr/0023-sync-protocol-v1.md,
+-- It is S03's request to S02 in runnable form (docs/adr/0025-sync-protocol-v1.md,
 -- "Requests"; WP-F16-14 words compare and set). S02 owns sync_push and every
 -- migration; when S02's migration lands, the stand-in stops loading by itself and
 -- the two-phone test runs against S02's real SQL. Delete both files then.

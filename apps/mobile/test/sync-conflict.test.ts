@@ -1,6 +1,6 @@
 /// <reference types="node" />
 /**
- * Protocol v1 on the phone (docs/adr/0023-sync-protocol-v1.md; WP-F16-15): the
+ * Protocol v1 on the phone (docs/adr/0025-sync-protocol-v1.md; WP-F16-15): the
  * words conflict copy, the rebase of queued ops (F16-REQ-025), one op per letter
  * per batch, the per-group pull merge, the language mapping (G-26) and the remote
  * kill switch, against a scripted server. The real SQL runs in

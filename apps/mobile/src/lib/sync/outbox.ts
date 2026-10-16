@@ -14,7 +14,7 @@
  *   (sync.ownerId), and other people's letters are never uploaded.
  * - A letter waiting for its words (transcript_status 'waiting') is held: its
  *   raw transcript is set once, later, and the server would refuse a change.
- * - Protocol v1 (docs/adr/0023-sync-protocol-v1.md): an op's `base` is the
+ * - Protocol v1 (docs/adr/0025-sync-protocol-v1.md): an op's `base` is the
  *   server version its words descend from. A new op behind other queued ops of
  *   the same letter inherits their base and is rebased when they apply
  *   (F16-REQ-025); a batch carries at most one op per letter, so the rebase

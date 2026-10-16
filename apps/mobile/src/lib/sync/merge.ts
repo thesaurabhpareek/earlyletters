@@ -2,7 +2,7 @@
  * Applying server answers to the phone's SQLite. Pure (SqlDb only); the engine
  * runs each function inside one local transaction.
  *
- * Merge rules (D-023; protocol v1 in docs/adr/0023-sync-protocol-v1.md):
+ * Merge rules (D-023; protocol v1 in docs/adr/0025-sync-protocol-v1.md):
  * - Words (`text` group) are compare and set: the server takes this phone's words
  *   only if nobody changed them since the op's base. On a conflict the phone
  *   follows the server's words and keeps its own as a conflict copy for the
@@ -183,7 +183,7 @@ function isWordsOp(row: OutboxRow): boolean {
 /**
  * The version this phone records for a letter after an op's answer: the next words
  * edit is compared against it, so it must never name a state whose words this phone
- * has not seen (ADR 0023 section 5).
+ * has not seen (ADR 0025 section 5).
  * - A duplicate reports the letter as it is now, which may hold another phone's words:
  *   its own write's version (`applied_v`) is used. A duplicate of a words op with no
  *   `applied_v` and no `current` (a receipt written before protocol v1) says nothing
