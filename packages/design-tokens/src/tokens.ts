@@ -357,18 +357,39 @@ const atmosphere = {
   /** The website's lamp colours (apps/web Aurora.module.css on main). Decorative only. */
   tone: { amber: '#F3C98B', gold: '#FFE2A8', rose: '#F08C7C', dusk: '#8076E2' },
   /**
-   * Peak opacity of each tone at the core of the pool, by scheme. Each cap keeps every text token
-   * (text, textMuted, accent, success, caution, recording, destructive, focus) at 4.5:1 or more on
-   * the lit paper, with a margin (WCAG 2.x formula; the limits, in brackets, are recomputed by
-   * test/atmosphere.test.ts): light amber 0.12 (0.144), gold 0.24 (0.309), rose 0.05 (0.070),
-   * dusk 0.04 (0.051); dark amber 0.18 (0.220), gold 0.16 (0.197), rose 0.24 (0.283), dusk 0.30 (0.372).
-   * Light mode carries its warmth with gold and amber; rose and dusk are a whisper there, because
-   * `caution` text would drop under 4.5:1 above that. Dark mode carries the site's full evening.
+   * Peak opacity of each tone at the core of the pool, by scheme (WCAG 2.x formula; the limits, in
+   * brackets, are recomputed by test/atmosphere.test.ts).
+   * - Dark: every text colour (onLitPaper.reading and .status) keeps 4.5:1 at the peak:
+   *   amber 0.18 (0.220), gold 0.16 (0.197), rose 0.24 (0.283), dusk 0.30 (0.372).
+   * - Light: the reading colours keep 4.5:1 at the peak, so anywhere on the screen:
+   *   amber 0.35 (0.400), gold 0.78 (0.872), rose 0.17 (0.193), dusk 0.12 (0.140); the margin covers the
+   *   blend of two tones along the radius and the grain. The status colours
+   *   keep 4.5:1 outside the pool's core, which sits above or beside the text block (the light
+   *   geometry in apps/mobile lamp.logic.ts; proven where text actually sits, in apps/mobile
+   *   test/lamp.test.ts). At the old whole-pool cap (amber 0.14, set by `caution`) the paper read
+   *   as plain white.
    */
   peak: {
-    light: { amber: 0.12, gold: 0.24, rose: 0.05, dusk: 0.04 },
+    light: { amber: 0.35, gold: 0.78, rose: 0.17, dusk: 0.12 },
     dark: { amber: 0.18, gold: 0.16, rose: 0.24, dusk: 0.3 },
   },
+  /**
+   * The colours text takes on lit paper, by how close to the light they may sit. Reading colours may
+   * sit anywhere, including at the core. Status colours sit outside the core: in the lower 30 percent
+   * of a room lit from the top (Tonight's "A quiet day, kept." line), never on the gate or behind Read
+   * together's controls; in a card or an inline state they are on their own surface.
+   */
+  onLitPaper: {
+    reading: ['text', 'textMuted', 'accent', 'focus'],
+    status: ['success', 'caution', 'recording', 'destructive'],
+  },
+  /**
+   * Film grain over the light-scheme pool, so an 8-bit display shows no rings in the soft tail
+   * (website: atmosphere Grain on paper). Signed specks: black or white, half each, each with an
+   * alpha up to its max (out of 255). Tile: `tile` pixels drawn at 1/`scale` points per pixel.
+   * The texture is packages/design-tokens/textures/grain.png, made by src/build-grain.ts.
+   */
+  grain: { tile: 128, scale: 3, blackMax: 4, whiteMax: 12, seed: 20261016 },
   /** Tonight's light by greetingKey() (apps/mobile lib/copy.ts): core and tail tone, and intensity (0 to 1). */
   daypart: {
     earlyMorning: { core: 'gold', tail: 'gold', intensity: 0.7 },

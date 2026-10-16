@@ -7,7 +7,10 @@ import { tokens, type ColorScheme, type Daypart, type LampScene, type LampTone }
 
 export type LampAnchor = 'top' | 'center' | 'bottom';
 
-/** Where the light sits, as fractions of the screen. `r` is the gradient radius against the box (EXPERIENCE_PASS 5.2). */
+/**
+ * Dark scheme: where the light sits, as fractions of the screen. `r` is the gradient radius against the box
+ * (EXPERIENCE_PASS 5.2), so the pool is an ellipse the shape of the screen.
+ */
 export const ANCHORS: Record<LampAnchor, { cx: number; cy: number; r: number }> = {
   top: { cx: 0.5, cy: 0, r: 0.95 },
   center: { cx: 0.5, cy: 0.42, r: 0.8 },
@@ -15,7 +18,7 @@ export const ANCHORS: Record<LampAnchor, { cx: number; cy: number; r: number }> 
 };
 
 /**
- * Strong core, long soft tail (the website's closest-side radial lamp). One gradient, drawn once.
+ * Dark scheme: strong core, long soft tail (the website's closest-side radial lamp). One gradient, drawn once.
  * Offset 0 takes the core tone; the others take the tail tone.
  */
 export const STOPS = [
@@ -24,6 +27,31 @@ export const STOPS = [
   { offset: 0.66, opacity: 0.12 },
   { offset: 1, opacity: 0 },
 ] as const;
+
+/**
+ * Light scheme (paper): a large, soft, round pool, like the website's lamp on paper. `cx` is a fraction of the
+ * width, `cy` of the height, `r` of the longer side (the website's vmax), so the pool stays round on every screen.
+ * Its core sits above or beside the text block, never on it: above the top edge for a room lit from the top,
+ * over the upper third for the gate, below the bottom edge for Read together.
+ */
+export const PAPER_ANCHORS: Record<LampAnchor, { cx: number; cy: number; r: number }> = {
+  top: { cx: 0.5, cy: -0.1, r: 1.15 },
+  center: { cx: 0.5, cy: 0.3, r: 0.9 },
+  bottom: { cx: 0.5, cy: 1.1, r: 0.95 },
+};
+
+/**
+ * Light scheme: the pool's falloff. (1 - t^2)^power from the core (t 0) to the rim (t 1), drawn as `stops` evenly
+ * spaced stops so the curve has no visible corner (the old four stops showed as rings). The colour moves from the
+ * core tone to the tail tone between `shiftFrom` and `shiftTo`, warmer and deeper toward the edge.
+ */
+export const PAPER_SHAPE = { stops: 21, power: 1.8, shiftFrom: 0.15, shiftTo: 0.65 } as const;
+
+/**
+ * A room lit from the top keeps every status colour (tokens.atmosphere.onLitPaper.status) at 4.5:1 from this
+ * fraction of the height down; above it, only the reading colours. Tonight's "A quiet day, kept." sits far below.
+ */
+export const STATUS_CLEAR_FROM = 0.7;
 
 /** One light, resolved: where it sits, its two tones, how strong it is (0 to 1) and whether it breathes. */
 export type LampLight = { anchor: LampAnchor; core: LampTone; tail: LampTone; intensity: number; breathe: boolean };
@@ -74,12 +102,100 @@ export function lampAllowed(a: { highContrast: boolean; reduceTransparency: bool
   return !a.highContrast && !a.reduceTransparency;
 }
 
-/** The gradient's stops for a light: each stop's opacity is stop x peak[scheme][tone]. Intensity is the wrapper's opacity. */
-export function lampStops(light: Pick<LampLight, 'core' | 'tail'>, scheme: ColorScheme) {
-  return STOPS.map((s, i) => {
-    const tone = i === 0 ? light.core : light.tail;
-    return { offset: s.offset, color: tokens.atmosphere.tone[tone], opacity: s.opacity * tokens.atmosphere.peak[scheme][tone] };
+export type LampStop = { offset: number; color: string; opacity: number };
+
+const rgbOf = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const hexOf = (c: number[]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+const smoothstep = (a: number, b: number, x: number) => {
+  const u = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return u * u * (3 - 2 * u);
+};
+
+/**
+ * The gradient's stops for a light. Intensity is the wrapper's opacity.
+ * Dark: four stops, each stop's opacity is stop x peak.dark[tone] (offset 0 the core tone, the rest the tail).
+ * Light: PAPER_SHAPE's eased stops; colour and peak move from the core tone to the tail tone along the radius.
+ */
+export function lampStops(light: Pick<LampLight, 'core' | 'tail'>, scheme: ColorScheme): LampStop[] {
+  const { tone, peak } = tokens.atmosphere;
+  if (scheme === 'dark') {
+    return STOPS.map((s, i) => {
+      const t = i === 0 ? light.core : light.tail;
+      return { offset: s.offset, color: tone[t], opacity: s.opacity * peak.dark[t] };
+    });
+  }
+  const S = PAPER_SHAPE;
+  const core = rgbOf(tone[light.core]);
+  const tail = rgbOf(tone[light.tail]);
+  return Array.from({ length: S.stops }, (_, i) => {
+    const t = i / (S.stops - 1);
+    const w = smoothstep(S.shiftFrom, S.shiftTo, t);
+    const fall = Math.max(0, 1 - t * t) ** S.power;
+    return {
+      offset: Math.round(t * 10000) / 10000,
+      color: hexOf(core.map((v, k) => v + (tail[k] - v) * w)),
+      opacity: Math.round(fall * (peak.light[light.core] + (peak.light[light.tail] - peak.light[light.core]) * w) * 10000) / 10000,
+    };
   });
+}
+
+export type LampBox = { width: number; height: number };
+
+/**
+ * Where the gradient sits in a box of this size. Dark: fractions of the box (objectBoundingBox, an ellipse the
+ * screen's shape). Light: points (userSpaceOnUse), a round pool sized by the longer side.
+ */
+export function lampGeometry(anchor: LampAnchor, scheme: ColorScheme, box: LampBox) {
+  if (scheme === 'dark') return { units: 'objectBoundingBox' as const, ...ANCHORS[anchor] };
+  const a = PAPER_ANCHORS[anchor];
+  return { units: 'userSpaceOnUse' as const, cx: a.cx * box.width, cy: a.cy * box.height, r: a.r * Math.max(box.width, box.height) };
+}
+
+/**
+ * What the gradient paints at a point of the box, before the light's intensity: the colour and opacity SVG
+ * interpolates between the two stops around it (straight, not premultiplied). For the contrast tests.
+ */
+export function lampPaintAt(light: Pick<LampLight, 'anchor' | 'core' | 'tail'>, scheme: ColorScheme, box: LampBox, x: number, y: number): { rgb: number[]; opacity: number } {
+  const g = lampGeometry(light.anchor, scheme, box);
+  const t =
+    g.units === 'objectBoundingBox'
+      ? Math.hypot(x / box.width - g.cx, y / box.height - g.cy) / g.r
+      : Math.hypot(x - g.cx, y - g.cy) / g.r;
+  const stops = lampStops(light, scheme);
+  if (t >= 1) {
+    const last = stops[stops.length - 1];
+    return { rgb: rgbOf(last.color), opacity: last.opacity };
+  }
+  let i = 0;
+  while (i < stops.length - 2 && stops[i + 1].offset <= t) i++;
+  const a = stops[i];
+  const b = stops[i + 1];
+  const u = (t - a.offset) / (b.offset - a.offset);
+  const ca = rgbOf(a.color);
+  const cb = rgbOf(b.color);
+  return { rgb: ca.map((v, k) => v + (cb[k] - v) * u), opacity: a.opacity + (b.opacity - a.opacity) * u };
+}
+
+/**
+ * The grain's average effect on the paper, as two small alphas: how much black and how much white it lays over
+ * every pixel on average (half the specks each, alpha uniform from 0 to its max). Light scheme only.
+ */
+export function grainMean(scheme: ColorScheme): { black: number; white: number } {
+  if (scheme === 'dark') return { black: 0, white: 0 };
+  const g = tokens.atmosphere.grain;
+  return { black: (0.5 * g.blackMax) / 2 / 255, white: (0.5 * g.whiteMax) / 2 / 255 };
+}
+
+/** The lit paper's colour at a point: the pool at `intensity` over the paper, then the grain's average. */
+export function litPaperAt(light: LampLight, scheme: ColorScheme, paper: string, box: LampBox, x: number, y: number): number[] {
+  const p = lampPaintAt(light, scheme, box, x, y);
+  const a = p.opacity * light.intensity;
+  const lit = rgbOf(paper).map((v, k) => v * (1 - a) + p.rgb[k] * a);
+  const gm = grainMean(scheme);
+  // The grain lies inside the light's layer, so it is as strong as the light.
+  const b = gm.black * light.intensity;
+  const w = gm.white * light.intensity;
+  return lit.map((v) => v * (1 - b - w) + 255 * w);
 }
 
 /** Two lights with the same key draw the same gradient, so a change between them only moves opacity. */

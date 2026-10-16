@@ -104,12 +104,14 @@ Full rules: [docs/brand/BRAND_SYSTEM.md](../brand/BRAND_SYSTEM.md). Assets: `pac
 
 ## 2b. Atmosphere: the lamp
 
-The website's lamp light on the app's paper (`tokens.atmosphere`, `components/ui/lamp.tsx`; MOTION 5k). One soft radial pool, decorative only: never text, never the only signal, never a glow around the mark.
+The website's lamp light on the app's paper (`tokens.atmosphere`, `components/ui/lamp.tsx`; MOTION 5k). One soft radial pool, decorative only: never text, never the only signal, never a glow around the mark. On paper it is a large, round, soft pool whose core sits above or beside the text block, with the website's faint film grain so the soft tail shows no rings; in dark mode it is the site's evening.
 
 | Token | Values | Rule |
 |---|---|---|
 | `atmosphere.tone` | amber `#F3C98B`, gold `#FFE2A8`, rose `#F08C7C`, dusk `#8076E2` | The website's Aurora colours. One palette; the older `lampGold`, `lampRose`, `lampDusk` drafts are retired. |
-| `atmosphere.peak` | light: amber 0.12, gold 0.24, rose 0.05, dusk 0.04; dark: amber 0.18, gold 0.16, rose 0.24, dusk 0.30 | The opacity of a tone at the pool's core. Every text colour (`text`, `textMuted`, `accent`, `success`, `caution`, `recording`, `destructive`, `focus`) keeps 4.5:1 on the lit paper at every tone's peak, both schemes; `packages/design-tokens/test/atmosphere.test.ts` recomputes the limits and `apps/mobile/test/lamp.test.ts` samples the whole gradient. Light mode is warmed by gold and amber; rose and dusk are a whisper there because `caution` would drop under 4.5:1. |
+| `atmosphere.peak` | light: amber 0.35, gold 0.78, rose 0.17, dusk 0.12; dark: amber 0.18, gold 0.16, rose 0.24, dusk 0.30 | The opacity of a tone at the pool's core. Light mode is warmed by gold and amber; rose and dusk stay lighter there. |
+| `atmosphere.onLitPaper` | reading: `text`, `textMuted`, `accent`, `focus`; status: `success`, `caution`, `recording`, `destructive` | Contrast where text sits. Dark: every text colour keeps 4.5:1 everywhere. Light: reading colours keep 4.5:1 everywhere, even at the core; status colours keep 4.5:1 outside the core (in a room lit from the top, from 70 percent of the height down), and never sit on the gate's or Read together's lit paper. `packages/design-tokens/test/atmosphere.test.ts` recomputes the peak limits; `apps/mobile/test/lamp.test.ts` samples every scene over the whole screen of three phones and each measured text box in its own colour. |
+| `atmosphere.grain` | a 128 px tile drawn at 3 pixels per point (`packages/design-tokens/textures/grain.png`, 11 KB), black specks up to 4/255, white up to 12/255 | Light mode only, inside the lamp's layer: dithers the soft tail so an 8-bit display shows no rings. Made by `src/build-grain.ts`; the test checks the file against it. |
 | `atmosphere.scene` | gate, welcome, form, finish, tonight, write, book, family, readTogether | Where the light appears. Anything not listed has no lamp: Listen, Review, the saved moment, the letter page, the Plus gate and store, Settings, every error and state screen, utility sheets. |
 | `atmosphere.daypart` | earlyMorning to lateNight | Tonight's tone by the greeting's time of day: gold in the morning, amber in the evening, a rose tail at night, dusk late at night. |
 

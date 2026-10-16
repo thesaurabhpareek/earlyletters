@@ -12,8 +12,12 @@
  * scene it is #99's warm pool (gold into amber, breathing), so screens that have not moved to
  * scenes yet keep their light.
  *
- * Cost (D-065, 60 fps on older iPhones): each light is one SVG RadialGradient drawn once, no blur,
- * no Skia, no new dependency. Only opacity moves: a layer's opacity carries the intensity (it
+ * Shape: on paper a large, round, soft pool (21 eased stops, sized by the longer side) whose core sits
+ * above or beside the text block, with the website's film grain over it (an 11 KB tile from
+ * @scribe/design-tokens/textures) so the soft tail shows no 8-bit rings; in dark mode #99's ellipse.
+ *
+ * Cost (D-065, 60 fps on older iPhones): each light is one SVG RadialGradient (and on paper one grain
+ * pattern) drawn once, no blur, no Skia, no new dependency. Only opacity moves: a layer's opacity carries the intensity (it
  * arrives, rises and dims over tokens.motion.lamp.arriveMs on M3 easing), and one wrapper carries the
  * breath as a Reanimated CSS animation (native, UI thread, no JS per frame; a real CSS animation on
  * web). A change of scene that moves the pool (the gate's centred light to the welcome's top light)
@@ -35,32 +39,36 @@
  *   read: that needs expo-battery, a new dependency; the loop is one native opacity animation.)
  * - Decorative: ignores touches, hidden from VoiceOver and TalkBack.
  * - Never on a screen that records or plays a voice, sells, or reports a problem (EXPERIENCE_PASS 5.2).
- * - Peaks are capped by tokens so every text colour keeps 4.5:1 on the lit paper
- *   (packages/design-tokens/test/atmosphere.test.ts; the whole gradient in apps/mobile/test/lamp.test.ts).
+ * - Peaks are capped by tokens so text keeps 4.5:1 where it sits (tokens.atmosphere.onLitPaper): the
+ *   reading colours anywhere, the status colours outside the core in light mode, every colour in dark
+ *   (packages/design-tokens/test/atmosphere.test.ts; the whole screen and the measured text boxes in
+ *   apps/mobile/test/lamp.test.ts).
  *
  * Put it first in a screen's root, outside any ScrollView.
  */
 import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
-import { AppState, StyleSheet } from 'react-native';
+import { AppState, StyleSheet, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import Animated, { ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, Image as SvgImage, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { tokens, type ColorScheme } from '@scribe/design-tokens';
+import { grainTexture } from '@scribe/design-tokens/textures';
 import { useTheme } from '@/lib/a11y';
 import { greetingKey } from '@/lib/copy';
 import { STANDARD_EASING, useReducedMotion } from '@/lib/motion';
 import {
-  ANCHORS,
   breathKeyframes,
   coverTarget,
   geometryKey,
   lampAllowed,
+  lampGeometry,
   lampMemory,
   lampRooms,
   lampStops,
   planLampMount,
   resolveLamp,
   shouldBreathe,
+  type LampBox,
   type LampInput,
   type LampKey,
   type LampLayerPlan,
@@ -121,6 +129,15 @@ export function LampView({ persistKey, arrive, focused = true, ...input }: LampP
   const light = resolveLamp({ ...input, daypart });
   const key = light ? geometryKey(light) : null;
   const level = light?.intensity ?? 0;
+
+  // The light-scheme pool is round and sized in points, so it needs the box (the window until the first layout).
+  const win = useWindowDimensions();
+  const [measured, setMeasured] = useState<LampBox | null>(null);
+  const box = measured ?? { width: win.width, height: win.height };
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (width > 0 && height > 0) setMeasured((b) => (b && b.width === width && b.height === height ? b : { width, height }));
+  }, []);
 
   const nextId = useRef(0);
   const [layers, setLayers] = useState<Layer[]>(() =>
@@ -193,18 +210,25 @@ export function LampView({ persistKey, arrive, focused = true, ...input }: LampP
       importantForAccessibility="no-hide-descendants"
       accessibilityElementsHidden
       aria-hidden
+      onLayout={onLayout}
       style={[StyleSheet.absoluteFill, coverStyle]}>
       <Animated.View style={[StyleSheet.absoluteFill, breath]} shouldRasterizeIOS renderToHardwareTextureAndroid>
         {layers.map((l) => (
-          <LampLayer key={l.id} layer={l} scheme={scheme} reduced={reduced} onGone={gone} />
+          <LampLayer key={l.id} layer={l} scheme={scheme} box={box} reduced={reduced} onGone={gone} />
         ))}
       </Animated.View>
     </Animated.View>
   );
 }
 
-/** One gradient, drawn once. Its wrapper's opacity is the light's level. */
-function LampLayer({ layer, scheme, reduced, onGone }: { layer: Layer; scheme: ColorScheme; reduced: boolean; onGone: (id: number) => void }) {
+/** The grain tile in points (tokens.atmosphere.grain: 128 pixels at @3x). */
+const GRAIN_TILE = tokens.atmosphere.grain.tile / tokens.atmosphere.grain.scale;
+
+/**
+ * One gradient, drawn once. Its wrapper's opacity is the light's level. In the light scheme the grain lies over
+ * the pool inside the same layer, so it comes and goes with the light and dithers the soft tail (no rings).
+ */
+function LampLayer({ layer, scheme, box, reduced, onGone }: { layer: Layer; scheme: ColorScheme; box: LampBox; reduced: boolean; onGone: (id: number) => void }) {
   const id = `lamp${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const o = useSharedValue(reduced ? layer.to : layer.from);
   const { to, ms, id: layerId } = layer;
@@ -221,18 +245,25 @@ function LampLayer({ layer, scheme, reduced, onGone }: { layer: Layer; scheme: C
   }, [to, ms, reduced, o, layerId, onGone]);
   const style = useAnimatedStyle(() => ({ opacity: o.value }));
 
-  const a = ANCHORS[layer.light.anchor];
+  const g = lampGeometry(layer.light.anchor, scheme, box);
+  const grain = scheme === 'light';
   return (
     <Animated.View style={[StyleSheet.absoluteFill, style]}>
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
-          <RadialGradient id={id} cx={a.cx} cy={a.cy} r={a.r} fx={a.cx} fy={a.cy}>
+          <RadialGradient id={id} gradientUnits={g.units} cx={g.cx} cy={g.cy} r={g.r} fx={g.cx} fy={g.cy}>
             {lampStops(layer.light, scheme).map((s) => (
               <Stop key={s.offset} offset={s.offset} stopColor={s.color} stopOpacity={s.opacity} />
             ))}
           </RadialGradient>
+          {grain ? (
+            <Pattern id={`${id}g`} patternUnits="userSpaceOnUse" x="0" y="0" width={GRAIN_TILE} height={GRAIN_TILE}>
+              <SvgImage href={grainTexture} x="0" y="0" width={GRAIN_TILE} height={GRAIN_TILE} preserveAspectRatio="none" />
+            </Pattern>
+          ) : null}
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
+        {grain ? <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id}g)`} /> : null}
       </Svg>
     </Animated.View>
   );

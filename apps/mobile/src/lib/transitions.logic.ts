@@ -193,6 +193,34 @@ export function cardToPageFrame(card: Rect, screen: { width: number; height: num
   };
 }
 
+/**
+ * The words the card and the page share (the dateline and the opening lines) are carried, never redrawn: one block
+ * of text, laid out once at the page's column, moves from where it sat on the card to where it sits on the page,
+ * with the paper. They need the same column, or the lines would wrap differently and the words would jump.
+ */
+export function canCarry(cardText: Rect | undefined, pageText: Rect | undefined): boolean {
+  return !!cardText && !!pageText && Math.abs(cardText.width - pageText.width) <= 1 && pageText.height >= cardText.height - 1;
+}
+
+/**
+ * Where the carried block is at `progress`, and how much of it shows:
+ * - `x`, `y`: its top left, from the card's text to the page's, on the same curve as the paper;
+ * - `excerpt`: the height of the lines the card showed, always fully visible (the card's own words never leave);
+ * - `extra`: how much of the rest shows below them, never past the paper's bottom edge;
+ * - `extraOpacity`: the rest of the words fade in from contentFrom of the way (and out first on the way back);
+ * - `cardFade`: the card's own fade over the end of its last line, which gives way as the rest arrives.
+ */
+export function carryFrame(card: Rect, cardText: Rect, pageText: Rect, screen: { width: number; height: number }, progress: number) {
+  'worklet';
+  const f = cardToPageFrame(card, screen, progress);
+  const p = Math.min(1, Math.max(0, progress));
+  const x = cardText.x + (pageText.x - cardText.x) * p;
+  const y = cardText.y + (pageText.y - cardText.y) * p;
+  const excerpt = cardText.height;
+  const extra = Math.min(Math.max(0, pageText.height - excerpt), Math.max(0, f.y + f.height - (y + excerpt)));
+  return { x, y, excerpt, extra, extraOpacity: f.contentOpacity, cardFade: 1 - f.contentOpacity };
+}
+
 /** Back reverses the growth only while the card is still on screen; otherwise the page fades (MOTION 5f). */
 export function cardBackMove(card: Rect | undefined, screen: { width: number; height: number }): 'shrink' | 'fade' {
   if (!card) return 'fade';

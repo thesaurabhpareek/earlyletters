@@ -7,17 +7,24 @@ import {
   ANCHORS,
   LAMP_KEYS,
   NIGHT,
+  PAPER_ANCHORS,
+  PAPER_SHAPE,
+  STATUS_CLEAR_FROM,
   STOPS,
   breathKeyframes,
   coverTarget,
   createRoomsStore,
   geometryKey,
+  grainMean,
   lampAllowed,
+  lampGeometry,
   lampMemory,
   lampStops,
+  litPaperAt,
   planLampMount,
   resolveLamp,
   shouldBreathe,
+  type LampBox,
   type LampLight,
 } from '../src/components/ui/lamp.logic';
 
@@ -72,6 +79,13 @@ describe('Lamp scenes resolve from tokens', () => {
   it('anchors are where the spec puts them: top, centre and bottom of the screen', () => {
     expect(ANCHORS).toEqual({ top: { cx: 0.5, cy: 0, r: 0.95 }, center: { cx: 0.5, cy: 0.42, r: 0.8 }, bottom: { cx: 0.5, cy: 1, r: 0.9 } });
   });
+
+  it('on paper the core sits above or beside the text block: above the top edge, over the upper third, below the bottom edge', () => {
+    expect(PAPER_ANCHORS.top.cy).toBeLessThan(0);
+    expect(PAPER_ANCHORS.center.cy).toBeLessThan(ANCHORS.center.cy);
+    expect(PAPER_ANCHORS.bottom.cy).toBeGreaterThan(1);
+    for (const a of Object.values(PAPER_ANCHORS)) expect(a.cx).toBe(0.5);
+  });
 });
 
 describe('Lamp accessibility', () => {
@@ -118,13 +132,13 @@ describe('Lamp accessibility', () => {
 });
 
 describe('Lamp gradient', () => {
-  it('fades to nothing at its edge, so no hard edge ever shows', () => {
+  it('dark: four stops that fade to nothing at the edge, so no hard edge ever shows', () => {
     expect(STOPS[0].opacity).toBe(1);
     expect(STOPS[STOPS.length - 1].opacity).toBe(0);
     for (let i = 1; i < STOPS.length; i++) expect(STOPS[i].opacity).toBeLessThan(STOPS[i - 1].opacity);
   });
 
-  it('the core takes the core tone and the tail the tail tone, each at stop x its own peak', () => {
+  it('dark: the core takes the core tone and the tail the tail tone, each at stop x its own peak', () => {
     const night = resolveLamp({ scene: 'tonight', daypart: 'night' })!;
     const stops = lampStops(night, 'dark');
     expect(stops[0]).toEqual({ offset: 0, color: A.tone.amber, opacity: A.peak.dark.amber });
@@ -134,7 +148,32 @@ describe('Lamp gradient', () => {
     }
   });
 
-  /** WCAG 2.x, sRGB. SVG interpolates stop colour and stop opacity separately (non-premultiplied), so sample that. */
+  it('light: many eased stops (no corner in the curve, so no rings), falling smoothly from the core tone at its peak to nothing', () => {
+    const evening = resolveLamp({ scene: 'tonight', daypart: 'evening' })!;
+    const stops = lampStops(evening, 'light');
+    expect(stops).toHaveLength(PAPER_SHAPE.stops);
+    expect(PAPER_SHAPE.stops).toBeGreaterThanOrEqual(16);
+    expect(stops[0]).toEqual({ offset: 0, color: A.tone.gold, opacity: A.peak.light.gold });
+    expect(stops[stops.length - 1]).toMatchObject({ offset: 1, color: A.tone.amber, opacity: 0 });
+    for (let i = 1; i < stops.length; i++) {
+      expect(stops[i].opacity).toBeLessThan(stops[i - 1].opacity);
+      // Even spacing, and no step between two stops bigger than an eighth of the peak: a smooth curve.
+      expect(stops[i].offset - stops[i - 1].offset).toBeCloseTo(1 / (PAPER_SHAPE.stops - 1), 3);
+      expect(stops[i - 1].opacity - stops[i].opacity).toBeLessThanOrEqual(A.peak.light.gold / 8);
+    }
+  });
+
+  it('light: the pool is round and sized by the longer side, whatever the box', () => {
+    for (const box of [{ width: 402, height: 874 }, { width: 1024, height: 1366 }, { width: 874, height: 402 }]) {
+      const g = lampGeometry('top', 'light', box);
+      expect(g.units).toBe('userSpaceOnUse');
+      expect(g.r).toBeCloseTo(PAPER_ANCHORS.top.r * Math.max(box.width, box.height));
+      expect(g.cx).toBeCloseTo(box.width / 2);
+    }
+    expect(lampGeometry('top', 'dark', { width: 402, height: 874 })).toEqual({ units: 'objectBoundingBox', ...ANCHORS.top });
+  });
+
+  /** WCAG 2.x, sRGB. */
   const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const lum = (c: number[]) => {
     const [r, g, b] = c.map((v) => {
@@ -147,32 +186,148 @@ describe('Lamp gradient', () => {
     const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
     return (hi + 0.05) / (lo + 0.05);
   };
-  const TEXT = ['text', 'textMuted', 'accent', 'success', 'caution', 'recording', 'destructive', 'focus'] as const;
+  const READING = A.onLitPaper.reading;
+  const STATUS = A.onLitPaper.status;
+  /** Every light a room can show, at full strength and the top of the breath: the brightest the pool can ever be. */
+  const lights: [string, LampLight][] = [
+    ['no scene (#99)', resolveLamp({})!],
+    ...SCENES.filter((s) => s !== 'tonight' && s !== 'readTogether').map((s) => [s, { ...resolveLamp({ scene: s })!, intensity: 1 }] as [string, LampLight]),
+    ...DAYPARTS.map((d) => [`tonight ${d}`, { ...resolveLamp({ scene: 'tonight', daypart: d })!, intensity: 1 }] as [string, LampLight]),
+    ['readTogether', resolveLamp({ scene: 'readTogether', daypart: 'night' })!],
+  ];
+  /** The phones the app runs on, portrait only (app.config: orientation portrait, no tablet): 17 Pro, SE, Pro Max. */
+  const BOXES: LampBox[] = [
+    { width: 402, height: 874 },
+    { width: 375, height: 667 },
+    { width: 440, height: 956 },
+  ];
+  /** Every point of a grid over the box, edges included. */
+  const grid = (box: LampBox, n = 24) =>
+    Array.from({ length: (n + 1) * (n + 1) }, (_, i) => [((i % (n + 1)) / n) * box.width, (Math.floor(i / (n + 1)) / n) * box.height]);
 
-  it('every text colour keeps 4.5:1 everywhere in every scene and daypart, light and dark, at full strength', () => {
-    const lights: [string, LampLight][] = [
-      ...SCENES.filter((s) => s !== 'tonight' && s !== 'readTogether').map((s) => [s, resolveLamp({ scene: s })!] as [string, LampLight]),
-      ...DAYPARTS.map((d) => [`tonight ${d}`, resolveLamp({ scene: 'tonight', daypart: d })!] as [string, LampLight]),
-      ['readTogether', resolveLamp({ scene: 'readTogether', daypart: 'night' })!],
-    ];
-    for (const scheme of ['light', 'dark'] as const) {
-      const c = tokens[scheme];
-      const bg = rgb(c.bg);
-      for (const [name, light] of lights) {
-        // Full intensity (1) and the top of the breath (1), whatever the scene asks: the brightest the pool can ever be.
-        const stops = lampStops(light, scheme).map((s) => ({ ...s, rgb: rgb(s.color) }));
-        for (let i = 0; i <= 100; i++) {
-          const t = i / 100;
-          const j = Math.max(0, stops.findIndex((s, k) => k > 0 && s.offset >= t) - 1);
-          const [s0, s1] = [stops[j], stops[j + 1]];
-          const f = (t - s0.offset) / (s1.offset - s0.offset);
-          const col = s0.rgb.map((v, k) => v + (s1.rgb[k] - v) * f);
-          const alpha = s0.opacity + (s1.opacity - s0.opacity) * f;
-          const lit = col.map((v, k) => v * alpha + bg[k] * (1 - alpha));
-          for (const k of TEXT) expect(ratio(rgb(c[k]), lit), `${k} on ${scheme} ${name} at ${t}`).toBeGreaterThanOrEqual(4.5);
+  it('dark: every text colour keeps 4.5:1 everywhere, in every scene and daypart', () => {
+    const c = tokens.dark;
+    for (const [name, light] of lights) {
+      for (const box of BOXES) {
+        for (const [x, y] of grid(box)) {
+          const lit = litPaperAt(light, 'dark', c.bg, box, x, y);
+          for (const k of [...READING, ...STATUS]) expect(ratio(rgb(c[k]), lit), `${k} on dark ${name} at ${x},${y}`).toBeGreaterThanOrEqual(4.5);
         }
       }
     }
+  });
+
+  it('light: every reading colour (text, textMuted, accent, focus) keeps 4.5:1 everywhere, even at the core', () => {
+    const c = tokens.light;
+    for (const [name, light] of lights) {
+      for (const box of BOXES) {
+        for (const [x, y] of grid(box)) {
+          const lit = litPaperAt(light, 'light', c.bg, box, x, y);
+          for (const k of READING) expect(ratio(rgb(c[k]), lit), `${k} on light ${name} at ${x},${y} of ${box.width}x${box.height}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
+  });
+
+  it(`light: in a room lit from the top every status colour keeps 4.5:1 from ${STATUS_CLEAR_FROM * 100} percent of the height down`, () => {
+    const c = tokens.light;
+    for (const [name, light] of lights.filter(([, l]) => l.anchor === 'top')) {
+      for (const box of BOXES) {
+        for (const [x, y] of grid(box).filter(([, gy]) => gy >= STATUS_CLEAR_FROM * box.height)) {
+          const lit = litPaperAt(light, 'light', c.bg, box, x, y);
+          for (const k of STATUS) expect(ratio(rgb(c[k]), lit), `${k} on light ${name} at ${x},${y}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
+  });
+
+  /**
+   * Where text actually sits, each in its own colour: the text boxes on the lit paper of the web build (402 x 874,
+   * no safe area, so the text is as close to a top light as it can be), measured on 16 Oct 2026. Text on a card,
+   * a button fill or the tab bar is on its own surface and is not listed. On a phone the top inset moves the text
+   * further from a top light; the reading colours keep 4.5:1 anywhere (above), so a move never breaks them.
+   */
+  type Box = { what: string; token: keyof typeof tokens.light; x: number; y: number; w: number; h: number };
+  const ROOMS: { room: string; box: LampBox; lights: LampLight[]; text: Box[] }[] = [
+    {
+      room: 'Tonight',
+      box: { width: 402, height: 808 },
+      lights: [
+        resolveLamp({})!,
+        ...DAYPARTS.map((d) => resolveLamp({ scene: 'tonight', daypart: d })!),
+        resolveLamp({ scene: 'tonight', daypart: 'evening', intensity: tokens.motion.lamp.dimTo })!,
+      ],
+      text: [
+        { what: 'dateline', token: 'textMuted', x: 20, y: 17, w: 115, h: 23 },
+        { what: 'greeting', token: 'text', x: 20, y: 45, w: 354, h: 50 },
+        { what: 'subtitle', token: 'textMuted', x: 20, y: 96, w: 346, h: 30 },
+        { what: 'Not much today', token: 'accent', x: 139, y: 745, w: 123, h: 30 },
+        { what: 'A quiet day, kept.', token: 'success', x: 116, y: 746, w: 121, h: 28 },
+        { what: 'Undo', token: 'accent', x: 261, y: 746, w: 37, h: 27 },
+      ],
+    },
+    {
+      room: 'the age question',
+      box: { width: 402, height: 874 },
+      lights: [resolveLamp({ scene: 'gate' })!],
+      text: [
+        { what: 'question', token: 'text', x: 20, y: 59, w: 334, h: 53 },
+        { what: 'body', token: 'textMuted', x: 20, y: 127, w: 274, h: 30 },
+        { what: 'Continue (not yet chosen)', token: 'textMuted', x: 166, y: 807, w: 69, h: 30 },
+      ],
+    },
+    {
+      room: 'the welcome',
+      box: { width: 402, height: 874 },
+      lights: [resolveLamp({ scene: 'welcome' })!, resolveLamp({ scene: 'form' })!, resolveLamp({ scene: 'finish' })!],
+      text: [
+        { what: 'title', token: 'text', x: 24, y: 336, w: 266, h: 66 },
+        { what: 'promise', token: 'textMuted', x: 24, y: 404, w: 328, h: 57 },
+        { what: 'voice line', token: 'text', x: 24, y: 481, w: 347, h: 54 },
+        { what: 'free line', token: 'textMuted', x: 24, y: 553, w: 208, h: 28 },
+      ],
+    },
+  ];
+
+  it('where text actually sits, each text keeps 4.5:1 in its own colour over its whole box (Tonight, the age question, the welcome)', () => {
+    for (const scheme of ['light', 'dark'] as const) {
+      const c = tokens[scheme];
+      for (const { room, box, lights: ls, text } of ROOMS) {
+        for (const light of ls) {
+          for (const t of text) {
+            for (let i = 0; i <= 8; i++) {
+              for (let j = 0; j <= 4; j++) {
+                const [x, y] = [t.x + (t.w * i) / 8, t.y + (t.h * j) / 4];
+                const lit = litPaperAt(light, scheme, c.bg, box, x, y);
+                expect(ratio(rgb(c[t.token]), lit), `${room}: ${t.what} (${t.token}) on ${scheme} ${geometryKey(light)} at ${light.intensity}`).toBeGreaterThanOrEqual(4.5);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('light: the paper reads lit, not white: a warm core at the top that still warms the middle of the screen', () => {
+    const box = { width: 402, height: 874 };
+    const paper = rgb(tokens.light.bg);
+    const evening = resolveLamp({ scene: 'tonight', daypart: 'evening' })!;
+    const top = litPaperAt(evening, 'light', tokens.light.bg, box, box.width / 2, 0);
+    const middle = litPaperAt(evening, 'light', tokens.light.bg, box, box.width / 2, box.height / 2);
+    // Warmth on paper is blue taken away (red stays near full): at least 50 levels at the top, 12 at the middle.
+    expect(paper[2] - top[2]).toBeGreaterThanOrEqual(50);
+    expect(paper[2] - middle[2]).toBeGreaterThanOrEqual(12);
+  });
+
+  it('light: the grain is signed and faint, and lies inside the light (it comes and goes with it); dark has none', () => {
+    const g = A.grain;
+    expect(grainMean('dark')).toEqual({ black: 0, white: 0 });
+    expect(grainMean('light').black).toBeCloseTo((0.5 * g.blackMax) / 2 / 255);
+    expect(g.blackMax / 255).toBeLessThanOrEqual(0.02); // a speck moves a pixel by a few levels at most
+    expect(g.whiteMax / 255).toBeLessThanOrEqual(0.06);
+    const lampSrc = readFileSync(join(SRC, 'components', 'ui', 'lamp.tsx'), 'utf8');
+    expect(lampSrc).toMatch(/grainTexture/);
+    expect(lampSrc).toMatch(/const grain = scheme === 'light'/);
   });
 });
 

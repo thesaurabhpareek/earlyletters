@@ -14,8 +14,10 @@ import {
   HAND_OFF,
   ROUTES,
   SWIPE,
+  canCarry,
   cardBackMove,
   cardToPageFrame,
+  carryFrame,
   fileIntoMonthPlan,
   moveOptions,
   pageTurnPlan,
@@ -183,6 +185,51 @@ describe('card to page (MOTION 5f)', () => {
     expect(cardBackMove(card, screen)).toBe('shrink');
     expect(cardBackMove({ ...card, y: -400 }, screen)).toBe('fade');
     expect(cardBackMove(undefined, screen)).toBe('fade');
+  });
+
+  // The card's words: dateline and two lines at 32 from the edge; on the page the same column opens 92 from the top.
+  const cardText = { x: 32, y: 336, width: 338, height: 88 };
+  const pageText = { x: 32, y: 92, width: 338, height: 214 };
+
+  it("the card's own words are carried, never redrawn: they start exactly where they were and end where the page puts them", () => {
+    const start = carryFrame(card, cardText, pageText, screen, 0);
+    // The rest may show only down to the card's own bottom edge, and not yet: it is still clear.
+    expect(start).toMatchObject({ x: 32, y: 336, excerpt: 88, extra: 320 + 148 - (336 + 88), extraOpacity: 0, cardFade: 1 });
+    const end = carryFrame(card, cardText, pageText, screen, 1);
+    expect(end).toMatchObject({ x: 32, y: 92, excerpt: 88, extra: 214 - 88, extraOpacity: 1, cardFade: 0 });
+  });
+
+  it('at every frame the excerpt is whole (never an empty card or page), and only the rest fades in, inside the paper', () => {
+    for (let i = 0; i <= 50; i++) {
+      const t = i / 50;
+      const k = carryFrame(card, cardText, pageText, screen, t);
+      const f = cardToPageFrame(card, screen, t);
+      expect(k.excerpt).toBe(cardText.height);
+      // The carried words sit inside the paper, and the rest never draws past its bottom edge.
+      expect(k.x).toBeGreaterThanOrEqual(f.x - 1e-9);
+      expect(k.y).toBeGreaterThanOrEqual(f.y - 1e-9);
+      expect(k.x + pageText.width).toBeLessThanOrEqual(f.x + f.width + 1e-9);
+      expect(k.y + k.excerpt + k.extra).toBeLessThanOrEqual(f.y + f.height + 1e-9);
+      // The rest of the words arrive with the rest of the page, and the card's fade gives way to them.
+      expect(k.extraOpacity).toBeCloseTo(f.contentOpacity);
+      expect(k.cardFade + k.extraOpacity).toBeCloseTo(1);
+    }
+  });
+
+  it("carries only when the page opens in the card's column, so the lines wrap the same; otherwise the page fades in whole", () => {
+    expect(canCarry(cardText, pageText)).toBe(true);
+    expect(canCarry(cardText, { ...pageText, width: 362 })).toBe(false);
+    expect(canCarry(undefined, pageText)).toBe(false);
+    expect(canCarry(cardText, undefined)).toBe(false);
+    expect(canCarry(cardText, { ...pageText, height: 40 })).toBe(false);
+  });
+
+  it('the card names its words and the page its opening; the fallback fades paper and words together (source)', () => {
+    const src = readFileSync(join(__dirname, '..', 'src', 'components', 'motion', 'card-transition.tsx'), 'utf8');
+    expect(src).toMatch(/export function CardText\b/);
+    expect(src).toMatch(/export function PageOpening\b/);
+    // Faded: the content takes the same opacity as the paper (fade.value), so no frame shows paper without words.
+    expect(src).toContain('opacity: carrying.value ? cardToPageFrame(from.value, screen, p.value).contentOpacity : fade.value');
   });
 });
 

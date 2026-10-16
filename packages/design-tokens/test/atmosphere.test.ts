@@ -22,12 +22,17 @@ type Mode = 'light' | 'dark';
 type Tone = keyof typeof a.tone;
 const MODES: Mode[] = ['light', 'dark'];
 const TONES = Object.keys(a.tone) as Tone[];
-/** Every colour that can be text on the paper the lamp lights. */
+/** Every colour that can be text on the paper the lamp lights: reading colours and status colours. */
 const TEXT_ON_PAPER = ['text', 'textMuted', 'accent', 'success', 'caution', 'recording', 'destructive', 'focus'] as const;
+/**
+ * The colours each scheme's peak must keep at 4.5:1. Dark: all of them. Light: the reading colours; the status
+ * colours keep 4.5:1 outside the core, where they sit (apps/mobile test/lamp.test.ts, measured text boxes).
+ */
+const AT_PEAK: Record<Mode, readonly (typeof TEXT_ON_PAPER)[number][]> = { light: a.onLitPaper.reading, dark: TEXT_ON_PAPER };
 const palette = (mode: Mode, hc: boolean) => ({ ...tokens[mode], ...(hc ? tokens.highContrast[mode] : {}) });
-const worst = (mode: Mode, hc: boolean, lit: number[]) => Math.min(...TEXT_ON_PAPER.map((k) => ratio(palette(mode, hc)[k], lit)));
+const worst = (mode: Mode, hc: boolean, lit: number[]) => Math.min(...AT_PEAK[mode].map((k) => ratio(palette(mode, hc)[k], lit)));
 
-/** The highest alpha at which a tone keeps every text colour at 4.5:1 (bisection). */
+/** The highest alpha at which a tone keeps the scheme's peak colours at 4.5:1 (bisection). */
 function limit(mode: Mode, hc: boolean, tone: Tone): number {
   let lo = 0;
   let hi = 1;
@@ -67,15 +72,25 @@ describe('atmosphere tokens: the lamp palette', () => {
     expect(a.peak.light.gold).toBeGreaterThan(a.peak.light.rose);
     expect(a.peak.light.amber).toBeGreaterThan(a.peak.light.dusk);
   });
+
+  it('light paper reads lit, not white: gold and amber are strong enough to see (the old whole-pool caps were 0.24 and 0.12)', () => {
+    expect(a.peak.light.gold).toBeGreaterThanOrEqual(0.6);
+    expect(a.peak.light.amber).toBeGreaterThanOrEqual(0.3);
+  });
+
+  it('every text colour is either a reading colour (anywhere on lit paper) or a status colour (outside the core), never both', () => {
+    expect([...a.onLitPaper.reading, ...a.onLitPaper.status].sort()).toEqual([...TEXT_ON_PAPER].sort());
+    for (const k of a.onLitPaper.reading) expect(a.onLitPaper.status as readonly string[]).not.toContain(k);
+  });
 });
 
-describe('atmosphere tokens: every text colour keeps 4.5:1 at every tone peak', () => {
+describe('atmosphere tokens: text keeps 4.5:1 at every tone peak (dark: every colour; light: the reading colours)', () => {
   for (const mode of MODES) {
     for (const hc of [false, true]) {
       for (const tone of TONES) {
         it(`${mode}${hc ? ' + Increase Contrast' : ''}, ${tone} at its peak (${a.peak[mode][tone]})`, () => {
           const lit = mix(a.tone[tone], palette(mode, hc).bg, a.peak[mode][tone]);
-          for (const k of TEXT_ON_PAPER) {
+          for (const k of AT_PEAK[mode]) {
             expect(ratio(palette(mode, hc)[k], lit), `${k} on ${mode} paper lit ${tone}`).toBeGreaterThanOrEqual(4.5);
           }
         });
