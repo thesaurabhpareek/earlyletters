@@ -53,7 +53,7 @@ export const testflightCopy = {
   /** "What to Test", one per build. */
   whatToTest: {
     build1: [
-      `Thank you for trying ${brand.name} early. This build keeps everything on your phone: there is no sign-in and no sharing in it yet.`,
+      `Thank you for testing ${brand.name}. This build keeps everything on your phone: there is no sign-in and no sharing in it yet.`,
       [
         'Please try:',
         '- Setting up the book: your child\'s name, a birthday or due date, and how you sign your letters.',
@@ -98,13 +98,13 @@ export const testflightCopy = {
    */
   invitation: {
     family: [
-      `Would you try ${brand.name} early? It is the baby memory book you fill by talking: you tell your child something about the day, and it keeps your words and your voice as a letter.`,
+      `Would you help test ${brand.name}? It is the baby memory book you fill by talking: you tell your child something about the day, and it keeps your words and your voice as a letter.`,
       'Apple will email you an invitation to TestFlight. It is an early test, so some things will not work yet.',
       'When you send feedback, please never include your child\'s name or the words of a letter.',
       visibilityLine,
     ].join('\n\n'),
     friends: [
-      `Would you try ${brand.name} early? It is the baby memory book you fill by talking: you tell your child something about the day, and it keeps your words and your voice as a letter.`,
+      `Would you help test ${brand.name}? It is the baby memory book you fill by talking: you tell your child something about the day, and it keeps your words and your voice as a letter.`,
       'Apple will email you an invitation to TestFlight. It is an early test, so some things will not work yet. This build keeps everything on your phone, with no sign-in.',
       'When you send feedback, please never include your child\'s name or the words of a letter.',
       visibilityLine,
