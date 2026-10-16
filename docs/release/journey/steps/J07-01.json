@@ -5,6 +5,7 @@
   "title": "Write, empty",
   "note": "A page, not a form: the child's name and age, the prompt as a quiet line, and a blank letter. Save is off until something is typed.",
   "from": "J01-14",
+  "shot": "screens/J07-01.png",
   "route": "/write",
   "viewport": {
     "width": 402,
@@ -21,11 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "Close Asha · 0 days Tell Asha how the name was chosen. Save",
+  "text": "Close Asha · 0 days What calms Asha down right now? A song, a sway, a sound? Save",
   "lines": [
     "Close",
     "Asha · 0 days",
-    "Tell Asha how the name was chosen.",
+    "What calms Asha down right now? A song, a sway, a sound?",
     "Save"
   ]
 }

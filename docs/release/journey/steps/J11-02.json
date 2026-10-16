@@ -5,6 +5,7 @@
   "title": "Next letter",
   "note": "Next and Back one move through the book. The date line names who wrote it and the month of age.",
   "from": "J11-01",
+  "shot": "screens/J11-02.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,

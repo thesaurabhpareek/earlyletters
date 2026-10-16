@@ -5,6 +5,7 @@
   "title": "Restore purchases cannot reach the App Store",
   "note": "Restore asks StoreKit. With no store (web) the app answers calmly that the App Store could not be reached and to try again. On a phone with no Plus purchase it would say none was found.",
   "from": "J12-01",
+  "shot": "screens/J12-02.png",
   "route": "/settings/plus",
   "viewport": {
     "width": 402,

@@ -5,6 +5,7 @@
   "title": "The export did not finish",
   "note": "On a phone Export builds a ZIP in the cache and opens the iOS share sheet. The web build has no file system, so it lands on the honest failure card with \"Export again\". The card says the phone needs more free space (the web has none to give).",
   "from": "J15-01",
+  "shot": "screens/J15-02.png",
   "route": "/settings/export",
   "viewport": {
     "width": 402,

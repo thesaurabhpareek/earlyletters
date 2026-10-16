@@ -5,6 +5,7 @@
   "title": "Listening",
   "note": "Full-screen and calm: who it is to, \"Only you, until you add it to the book\", a running clock and a glow that moves with the voice. Microphone permission was granted (on a phone iOS asks once, in its own alert, which a browser cannot show).",
   "from": "J04-03",
+  "shot": "screens/J05-01.png",
   "route": "/listen",
   "viewport": {
     "width": 402,

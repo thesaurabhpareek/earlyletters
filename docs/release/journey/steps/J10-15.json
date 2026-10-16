@@ -5,6 +5,7 @@
   "title": "Erased",
   "note": "The letter and its recording are gone from this phone at once, and the shelf is empty. (On a phone the recording file is removed first, then the row; the web preview has no recording files.)",
   "from": "J10-14",
+  "shot": "screens/J10-15.png",
   "route": "/settings/recently-deleted",
   "viewport": {
     "width": 402,

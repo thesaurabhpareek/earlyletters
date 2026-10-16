@@ -5,6 +5,7 @@
   "title": "Listening, dark",
   "note": "The listening screen in the dark theme. (Fake microphone tone on web.)",
   "from": "J18-05",
+  "shot": "screens/J18-06.png",
   "route": "/listen",
   "viewport": {
     "width": 402,

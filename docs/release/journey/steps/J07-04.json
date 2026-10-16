@@ -5,7 +5,8 @@
   "title": "Saved to the book",
   "note": "The letter settles into a card with a confirmation, then Review closes on its own after a moment (or on tap).",
   "from": "J07-03",
-  "route": "/review",
+  "shot": "screens/J07-04.png",
+  "route": "/",
   "viewport": {
     "width": 402,
     "height": 874

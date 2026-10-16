@@ -5,6 +5,7 @@
   "title": "Change words",
   "note": "The person may edit any word themselves, in the letter face. Done returns.",
   "from": "J06-07",
+  "shot": "screens/J06-08.png",
   "route": "/review",
   "viewport": {
     "width": 402,

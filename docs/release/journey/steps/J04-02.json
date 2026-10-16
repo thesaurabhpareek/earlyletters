@@ -5,6 +5,7 @@
   "title": "Another thought",
   "note": "The prompt card swaps for a different one in place. There is no limit and nothing is counted.",
   "from": "J04-01",
+  "shot": "screens/J04-02.png",
   "route": "/",
   "viewport": {
     "width": 402,
@@ -21,13 +22,13 @@
     }
   },
   "scrolls": false,
-  "text": "Asha · 7 months Good afternoon, Mama. What do you want Asha to know about today? A thought to start with What can you see out the window tonight? Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
+  "text": "Asha · 7 months Good afternoon, Mama. What do you want Asha to know about today? A thought to start with Describe Asha's face at the end of peekaboo. Another thought A letter is waiting to be read back. Read it back Speak Type Not much today Tonight Book Family",
   "lines": [
     "Asha · 7 months",
     "Good afternoon, Mama.",
     "What do you want Asha to know about today?",
     "A thought to start with",
-    "What can you see out the window tonight?",
+    "Describe Asha's face at the end of peekaboo.",
     "Another thought",
     "A letter is waiting to be read back.",
     "Read it back",

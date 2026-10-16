@@ -5,6 +5,7 @@
   "title": "Deleted, with Undo",
   "note": "After the confirm, the letter moves to Recently deleted for 30 days. The screen says so and Undo stays until the person taps Undo, Close or Back (no timer).",
   "from": "J10-07",
+  "shot": "screens/J10-08.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -21,11 +22,16 @@
     }
   },
   "scrolls": false,
-  "text": "Letter deleted. It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book. Letter deleted. Undo",
+  "text": "Letter deleted. It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book. Letter deleted. Undo Delete this letter? Close You can undo this for 30 days from Recently deleted. Keep it Delete letter",
   "lines": [
     "Letter deleted.",
     "It waits in Recently deleted for 30 days. Undo it now, or close to go back to the book.",
     "Letter deleted.",
-    "Undo"
+    "Undo",
+    "Delete this letter?",
+    "Close",
+    "You can undo this for 30 days from Recently deleted.",
+    "Keep it",
+    "Delete letter"
   ]
 }

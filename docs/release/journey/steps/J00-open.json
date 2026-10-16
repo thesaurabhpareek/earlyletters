@@ -4,6 +4,7 @@
   "kind": "happy",
   "title": "The first thing anyone sees: one plain question",
   "note": "The same question for everyone (A-REQ-030).",
+  "shot": "screens/J00-open.png",
   "route": "/",
   "viewport": {
     "width": 402,

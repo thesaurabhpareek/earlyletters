@@ -5,6 +5,7 @@
   "title": "A due date too far ahead",
   "note": "A due date can be at most 305 days away, the same range the phone picker offers.",
   "from": "J01-10",
+  "shot": "screens/J01-11.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

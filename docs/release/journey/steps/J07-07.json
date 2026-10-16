@@ -5,6 +5,7 @@
   "title": "Kept private",
   "note": "Keep private saves the letter outside the book. It stays on the phone and can be added later.",
   "from": "J07-03",
+  "shot": "screens/J07-07.png",
   "route": "/review",
   "viewport": {
     "width": 402,

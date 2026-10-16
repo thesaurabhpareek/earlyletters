@@ -5,6 +5,8 @@
   "title": "Keep it",
   "note": "Choosing \"Keep it\" closes the sheet and changes nothing: the letter is still on its page.",
   "from": "J10-06",
+  "shot": "screens/J10-07.png",
+  "full": "screens/J10-07-full.png",
   "route": "/letter/:id",
   "viewport": {
     "width": 402,
@@ -21,10 +23,10 @@
     }
   },
   "scrolls": true,
-  "text": "Aa Thursday, August 13, 2026. Asha is 5 months old. Private So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, with small fixes Recording kept on this phone Exactly as said Add to book Delete",
+  "text": "Aa Saturday, August 15, 2026. Asha is 5 months old. Private So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:00 0:42 Spoken, with small fixes Recording kept on this phone Exactly as said Add to book Delete",
   "lines": [
     "Aa",
-    "Thursday, August 13, 2026. Asha is 5 months old.",
+    "Saturday, August 15, 2026. Asha is 5 months old.",
     "Private",
     "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
     "From Mama",

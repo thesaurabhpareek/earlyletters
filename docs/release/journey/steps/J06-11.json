@@ -5,7 +5,8 @@
   "title": "Kept private",
   "note": "The letter is saved outside the book. It is only on this phone and can be added later from the letter page.",
   "from": "J06-02",
-  "route": "/review",
+  "shot": "screens/J06-11.png",
+  "route": "/",
   "viewport": {
     "width": 402,
     "height": 874

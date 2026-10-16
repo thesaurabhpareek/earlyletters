@@ -5,6 +5,7 @@
   "title": "Birthday corrected",
   "note": "A baby who was saved as born today is now about seven months old; letters are filed by the true age from here on.",
   "from": "J03-26",
+  "shot": "screens/J03-27.png",
   "route": "/settings/children/:id",
   "viewport": {
     "width": 402,
@@ -21,22 +22,20 @@
     }
   },
   "scrolls": false,
-  "text": "Asha Rose's book Name and birthday Name Asha Rose Birthday March 17, 2026 Sign my letters to Asha Rose as Papa Include Asha Rose in my reminders Your reminder time is shared across your children. Messages about Asha Rose's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Family can read Asha Rose's book Family see the letters you add to Asha Rose's book. This starts once family can join.",
+  "text": "Asha Rose's book Name and birthday Name Asha Rose Birthday March 19, 2026 Sign my letters to Asha Rose as Papa Include Asha Rose in my reminders Your reminder time is shared across your children. Messages about Asha Rose's months and birthday follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update.",
   "lines": [
     "Asha Rose's book",
     "Name and birthday",
     "Name",
     "Asha Rose",
     "Birthday",
-    "March 17, 2026",
+    "March 19, 2026",
     "Sign my letters to Asha Rose as",
     "Papa",
     "Include Asha Rose in my reminders",
     "Your reminder time is shared across your children. Messages about Asha Rose's months and birthday follow this switch.",
     "Write this book together",
     "Coming soon",
-    "Sharing a book with a co-parent is coming in a later update.",
-    "Family can read Asha Rose's book",
-    "Family see the letters you add to Asha Rose's book. This starts once family can join."
+    "Sharing a book with a co-parent is coming in a later update."
   ]
 }

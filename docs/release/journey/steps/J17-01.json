@@ -5,6 +5,8 @@
   "title": "Family tab: coming soon",
   "note": "The tab keeps its place and describes what is coming (one book, two voices; each from their own phone; private to the family) with a promise that every letter stays on this phone until then. There is no invite flow in v1.0.",
   "from": "J16-01",
+  "shot": "screens/J17-01.png",
+  "full": "screens/J17-01-full.png",
   "route": "/family",
   "viewport": {
     "width": 402,

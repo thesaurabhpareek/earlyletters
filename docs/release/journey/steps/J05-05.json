@@ -5,6 +5,7 @@
   "title": "Typing instead",
   "note": "The person lands on the Write page for the same prompt.",
   "from": "J05-04",
+  "shot": "screens/J05-05.png",
   "route": "/write",
   "viewport": {
     "width": 402,
@@ -21,11 +22,11 @@
     }
   },
   "scrolls": false,
-  "text": "Close Asha · 0 days Tell Asha how the name was chosen. Save",
+  "text": "Close Asha · 0 days What calms Asha down right now? A song, a sway, a sound? Save",
   "lines": [
     "Close",
     "Asha · 0 days",
-    "Tell Asha how the name was chosen.",
+    "What calms Asha down right now? A song, a sway, a sound?",
     "Save"
   ]
 }

@@ -5,6 +5,7 @@
   "title": "Reopening the app: still stopped",
   "note": "Relaunching shows the same stop screen. The answer cannot be retried by restarting.",
   "from": "J02-02",
+  "shot": "screens/J02-03.png",
   "route": "/",
   "viewport": {
     "width": 402,

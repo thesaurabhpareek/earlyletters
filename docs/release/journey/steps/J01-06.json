@@ -5,6 +5,7 @@
   "title": "A very long name stops at 60 characters, and says so",
   "note": "The person pastes 90 letters. The field keeps the first 60 and a quiet line explains the limit, so nothing is cut without a word. The limit is the same one the book and the server use.",
   "from": "J01-05",
+  "shot": "screens/J01-06.png",
   "route": "/onboarding",
   "viewport": {
     "width": 402,

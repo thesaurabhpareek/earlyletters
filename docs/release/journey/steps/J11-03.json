@@ -5,6 +5,7 @@
   "title": "Play the next one on its own",
   "note": "A switch turns on autoplay: when a recording ends the page turns and the next voice starts.",
   "from": "J11-02",
+  "shot": "screens/J11-03.png",
   "route": "/read-together",
   "viewport": {
     "width": 402,
